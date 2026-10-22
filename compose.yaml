@@ -1,0 +1,45 @@
+# Local development stack. Pinned images; same Postgres/Redis images as the Testcontainers tests.
+# Works with Docker Compose or `podman compose`.
+name: helper2
+
+services:
+  postgres:
+    image: docker.io/pgvector/pgvector:0.8.6-pg18-trixie
+    environment:
+      POSTGRES_DB: helper2
+      POSTGRES_USER: ${H2_DATABASE_USER:-helper2}
+      POSTGRES_PASSWORD: ${H2_DATABASE_PASSWORD:-helper2-local-only}
+    ports: ["5432:5432"]
+    volumes: ["pgdata:/var/lib/postgresql"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d helper2"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: docker.io/library/redis:8.10.2-alpine
+    # Cache only: no persistence on purpose. Bounded memory with LRU eviction.
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+  # Full app in a container (optional): `podman compose --profile app up`
+  app:
+    profiles: ["app"]
+    build: { context: ., dockerfile: deploy/Dockerfile }
+    environment:
+      H2_DATABASE_URL: jdbc:postgresql://postgres:5432/helper2
+      H2_DATABASE_USER: ${H2_DATABASE_USER:-helper2}
+      H2_DATABASE_PASSWORD: ${H2_DATABASE_PASSWORD:-helper2-local-only}
+      H2_REDIS_HOST: redis
+      H2_NVIDIA_API_KEY: ${H2_NVIDIA_API_KEY:-}
+    ports: ["8080:8080"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+volumes:
+  pgdata:

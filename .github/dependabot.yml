@@ -1,0 +1,40 @@
+# Weekly update PRs; minor and patch bumps grouped per ecosystem, majors one PR each.
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: /backend
+    schedule: { interval: weekly, day: monday }
+    groups:
+      gradle-minor-patch: { update-types: [minor, patch] }
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule: { interval: weekly, day: monday }
+    groups:
+      npm-minor-patch: { update-types: [minor, patch] }
+    ignore:
+      # Held back until the lint plugins support them (docs/roadmap.md, Frontend): typescript-eslint
+      # needs TypeScript <6.1, eslint-plugin-jsx-a11y needs ESLint <=9, and @eslint/js follows ESLint.
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
+      - dependency-name: eslint
+        update-types: [version-update:semver-major]
+      - dependency-name: "@eslint/js"
+        update-types: [version-update:semver-major]
+
+  # Actions are pinned to commit SHAs; Dependabot moves the SHA and its version comment together.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    groups:
+      actions: { patterns: ["*"] }
+
+  # Base images of deploy/Dockerfile and deploy/postgres/Dockerfile. A change under deploy/postgres also
+  # needs a new postgres.image.tag in the chart's values.yaml (CI fails the PR until it has one).
+  - package-ecosystem: docker
+    directories: [/deploy, /deploy/postgres]
+    schedule: { interval: weekly, day: monday }
+    ignore:
+      # A Postgres major needs pg_upgrade or dump/restore of the data directory, never a base-image bump.
+      - dependency-name: "*postgres"
+        update-types: [version-update:semver-major]

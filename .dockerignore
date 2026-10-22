@@ -1,0 +1,10 @@
+**/node_modules
+**/build
+**/.gradle
+**/dist
+.remember
+.env
+backend/bin
+deploy/k8s/**/app.env
+**/terraform.tfvars
+**/.terraform

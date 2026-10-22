@@ -1,0 +1,416 @@
+spring:
+  application:
+    name: helper2
+  profiles:
+    # Every external setting uses the H2_ prefix, profiles included. --spring.profiles.active still wins.
+    active: ${H2_PROFILES:}
+  config:
+    # Local secrets/settings from the repo-root .env (gitignored). Real env vars still win.
+    # Two paths: started from backend/ (Gradle, IDE) or from the repo root.
+    # Tests replace the list (build.gradle.kts): an imported .env cannot be undone by a system property.
+    import: ${helper2.dotenv-import:optional:file:../.env[.properties],optional:file:.env[.properties]}
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    url: ${H2_DATABASE_URL:jdbc:postgresql://localhost:5432/helper2}
+    username: ${H2_DATABASE_USER:helper2}
+    password: ${H2_DATABASE_PASSWORD:helper2-local-only}
+    hikari:
+      maximum-pool-size: ${H2_DATABASE_POOL_SIZE:10}
+      connection-timeout: 3000
+  flyway:
+    locations: classpath:db/migration
+  session:
+    data:
+      redis:
+        # Sign-in sessions, shared by every replica. Timeout and cookie: server.servlet.session below.
+        namespace: helper2:session
+  data:
+    redis:
+      host: ${H2_REDIS_HOST:localhost}
+      port: ${H2_REDIS_PORT:6379}
+      password: ${H2_REDIS_PASSWORD:}
+      timeout: 250ms
+      connect-timeout: 500ms
+  docker:
+    compose:
+      enabled: false
+  ai:
+    model:
+      # "none" = no model: the guide falls back to search results and enrichment is skipped.
+      # NVIDIA Nemotron on Nebius Token Factory (OpenAI-compatible client) is enabled by profile `llm-nebius`.
+      chat: none
+      embedding: none
+      image: none
+      audio:
+        speech: none
+        transcription: none
+      moderation: none
+    openai:
+      chat:
+        # Bound every model call: the SDK default is a 10-minute timeout and 3 retries (up to 4 attempts).
+        # 40 s is above the slowest call measured with thinking off (repo classification, 12-14 s per batch).
+        timeout: ${H2_LLM_TIMEOUT:40s}
+        # 0: the SDK does not retry on its own, so every attempt is one of ours and is charged to a daily budget.
+        max-retries: ${H2_LLM_MAX_RETRIES:0}
+  mvc:
+    problemdetails:
+      enabled: true
+  web:
+    resources:
+      # The SPA and its caching rules are served by ai.helper2.platform.SinglePageApp only.
+      add-mappings: false
+
+server:
+  port: ${H2_PORT:8080}
+  # Trust X-Forwarded-* ONLY behind a proxy that always overwrites them (set H2_FORWARD_HEADERS_STRATEGY=native|framework there).
+  # Default none: otherwise clients could spoof X-Forwarded-For and bypass per-IP rate limits.
+  forward-headers-strategy: ${H2_FORWARD_HEADERS_STRATEGY:none}
+  servlet:
+    session:
+      cookie:
+        same-site: lax
+        http-only: true
+        # Secure by default (HTTPS everywhere it is deployed); the dev profile turns it off for http://localhost.
+        secure: ${H2_COOKIE_SECURE:true}
+
+management:
+  server:
+    # Empty: actuator on the app port. The cluster sets a separate port that the public Service does not route.
+    port: ${H2_MANAGEMENT_PORT:}
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+  health:
+    redis:
+      # Cache is optional: its outage must not take the app out of rotation.
+      enabled: false
+  metrics:
+    distribution:
+      # Buckets, so Grafana can take p95 across a time range (a client-side percentile cannot).
+      percentiles-histogram:
+        http.server.requests: true
+        http.client.requests: true
+        helper2.scout.run: true
+        helper2.guide.model.call: true
+        helper2.search.latency: true
+        helper2.source.latency: true
+    tags:
+      application: helper2
+      environment: ${H2_ENVIRONMENT:local}
+  otlp:
+    metrics:
+      export:
+        # Metrics stay pull-based (Alloy scrapes /actuator/prometheus); the OTel starter would
+        # otherwise also push them to localhost:4318 every minute.
+        enabled: false
+  logging:
+    export:
+      otlp:
+        # Logs stay on stdout as JSON (with traceId/spanId); no second copy over OTLP.
+        enabled: false
+  tracing:
+    sampling:
+      probability: ${H2_TRACING_SAMPLING:1.0}
+    export:
+      # Off unless H2_TRACING_EXPORT=true, so local runs and tests do not try to reach a collector.
+      enabled: ${H2_TRACING_EXPORT:false}
+  opentelemetry:
+    resource-attributes:
+      service.name: helper2
+      deployment.environment.name: ${H2_ENVIRONMENT:local}
+    tracing:
+      export:
+        otlp:
+          # OTLP over HTTP/protobuf; in the cluster: http://alloy.observability.svc:4318/v1/traces
+          endpoint: ${H2_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
+
+logging:
+  structured:
+    format:
+      console: ${H2_LOG_FORMAT:logstash}
+
+helper2:
+  # Where sign-in returns to (the SPA). "/" when the SPA is served by the backend itself.
+  frontend-url: ${H2_FRONTEND_URL:/}
+  # Vector search (ADR 0012): NVIDIA embeddings stored in Postgres (pgvector). Empty key = keyword search only.
+  embedding:
+    api-key: ${H2_NVIDIA_API_KEY:}
+    base-url: ${H2_NVIDIA_EMBEDDING_BASE_URL:https://integrate.api.nvidia.com/v1}
+    model: ${H2_NVIDIA_EMBEDDING_MODEL:nvidia/nemotron-3.5-embed-1b}
+    dimensions: 1024
+    # 50 texts every 15 s = 4 requests/min, far below the API catalog's rate limit; ~25k rows in about 2 h.
+    batch: 50
+    every: PT15S
+  guide:
+    # Nemotron thinking per call (chat_template_kwargs.enable_thinking). Off: measured 27 Oct 2026, see ADR 0014.
+    thinking:
+      plan: ${H2_GUIDE_THINK_PLAN:false}
+      choose: ${H2_GUIDE_THINK_CHOOSE:false}
+      verify: ${H2_GUIDE_THINK_VERIFY:false}
+    # Global cap across all visitors; each question costs 3 calls (plan, choose, reason check), each retry
+    # one more. 0 disables the model.
+    daily-model-calls: ${H2_GUIDE_DAILY_MODEL_CALLS:600}
+    # Fresh (not cached) questions per client (IP; IPv6 by /64) per UTC day; past it the answer is search results only.
+    client-daily-questions: ${H2_GUIDE_CLIENT_DAILY_QUESTIONS:30}
+    # Questions running at once, JSON and streamed together; one more is refused at once as busy (503).
+    max-concurrent: ${H2_GUIDE_MAX_CONCURRENT:8}
+    # A question is cancelled after this long and the client gets a timeout (504).
+    question-deadline: ${H2_GUIDE_QUESTION_DEADLINE:PT90S}
+    # The streamed guide sends a keep-alive comment this often while a question runs (the client gives up after 45 s).
+    heartbeat: ${H2_GUIDE_HEARTBEAT:PT15S}
+    cache-ttl: ${H2_GUIDE_CACHE_TTL:PT24H}
+    cache-max-entries: 500
+    # How many retrieved results Nemotron 3 Super chooses from (ADR 0015). 24 beat 12 in the 20-query
+    # evaluation of 26 Oct 2026 (docs/eval/run-8-12-candidates.md vs docs/evaluation.md).
+    max-candidates: ${H2_GUIDE_MAX_CANDIDATES:24}
+  catalog:
+    # Search results waiting to be written to the catalog in the background; more are dropped and counted.
+    observation-queue: 256
+  search:
+    # A source's answer is cached this long and, while it lasts, served when the source fails.
+    stale-for: ${H2_SEARCH_STALE_FOR:24h}
+    # Most results asked of each source per search.
+    per-source-limit: ${H2_SEARCH_PER_SOURCE_LIMIT:30}
+    # How long search waits for the English translation of a non-English query before running it untranslated.
+    translate-timeout-ms: ${H2_SEARCH_TRANSLATE_TIMEOUT_MS:2500}
+    # Non-English queries translated by the fast model per UTC day (ADR 0011); separate from the guide's cap.
+    daily-translations: ${H2_SEARCH_DAILY_TRANSLATIONS:300}
+  # Requests per client address; past them the answer is 429.
+  rate-limit:
+    search-per-minute: ${H2_RATE_LIMIT_SEARCH_PER_MINUTE:60}
+    report-per-hour: ${H2_RATE_LIMIT_REPORT_PER_HOUR:20}
+    guide-per-minute: ${H2_RATE_LIMIT_GUIDE_PER_MINUTE:10}
+    recent-per-minute: ${H2_RATE_LIMIT_RECENT_PER_MINUTE:60}
+  security:
+    # /actuator/prometheus without sign-in (the other actuator endpoints but health and info stay ADMIN only).
+    # Only where the management port is not public.
+    metrics-public: ${H2_METRICS_PUBLIC:false}
+    # Comma-separated "registrationId:subject" entries granted ADMIN (GitHub: numeric user id, never the
+    # renameable login). OIDC providers may also use "registrationId:email" when email_verified=true.
+    admins: ${H2_ADMINS:}
+  scout:
+    enabled: ${H2_SCOUT_ENABLED:false}
+    # Each replica checks shortly after startup, then every tick; the Scout runs when the last scheduled run
+    # ended at least "every" ago (or never ran), once across replicas (ScoutConfiguration). A tick at most this
+    # far apart is how late a run can start. Per-collector intervals below.
+    initial-delay: ${H2_SCOUT_INITIAL_DELAY:PT20S}
+    tick: ${H2_SCOUT_TICK:PT1H}
+    every: ${H2_SCOUT_EVERY:PT15M}
+    ai-deadlines:
+      # Conference files change a few times a month; one contents call + ~70 raw files per pass.
+      interval: ${H2_SCOUT_AI_DEADLINES_INTERVAL:P1D}
+    mcp-registry:
+      # The registry asks aggregators to poll about hourly.
+      interval: ${H2_SCOUT_MCP_INTERVAL:PT1H}
+    max-items-per-run: 500
+    # Shared by all collectors AND the backlog of not-yet-enriched resources, per scheduled run.
+    max-enrichments-per-run: ${H2_SCOUT_MAX_ENRICHMENTS:20}
+    # Enrichment model calls per UTC day, apart from the guide's cap; past it resources wait in the backlog.
+    daily-enrichment-calls: ${H2_SCOUT_DAILY_ENRICHMENT_CALLS:300}
+    hf-trending:
+      interval: ${H2_SCOUT_HF_INTERVAL:P1D}
+      min-likes: 20
+    tavily:
+      # Each query costs 1 Tavily credit per run (search_depth basic): 7 queries every 5 days ~ 42 credits/month.
+      interval: ${H2_SCOUT_TAVILY_INTERVAL:P5D}
+      queries: >-
+        new AI tool launched,
+        new open-source LLM released,
+        new MCP server released,
+        new AI agent framework released,
+        new model released OpenAI Anthropic Google Gemini,
+        new model released xAI Grok Meta Llama Mistral,
+        new model released NVIDIA Nemotron DeepSeek Qwen
+    hf-provider-orgs:
+      # Newest models of providers' official Hub organisations (one Hub call per org).
+      interval: ${H2_SCOUT_HF_ORGS_INTERVAL:P1D}
+      orgs: meta-llama,nvidia,mistralai,deepseek-ai,Qwen,google,openai,xai-org
+      per-org: 20
+    github-awesome:
+      interval: ${H2_SCOUT_AWESOME_INTERVAL:P1D}
+      # GitHub topic pairs; only repos named "awesome..." are kept (topic search alone returns prompt sites and apps).
+      topic-queries: >-
+        topic:awesome-list topic:llm,
+        topic:awesome topic:llm,
+        topic:awesome-list topic:artificial-intelligence,
+        topic:awesome-list topic:ai-agents,
+        topic:awesome topic:mcp,
+        topic:awesome topic:generative-ai
+      max-lists: 10
+      min-list-stars: 1000
+      # Per pass (once a day) and per Scout run (every 15 min); a pass resumes from an entry offset.
+      max-entries-per-pass: 1000
+      max-entries-per-run: ${H2_SCOUT_AWESOME_PER_RUN:200}
+      min-repo-stars: 50
+      # Fast model (helper2.llm.fast-model) batch size: 25 entries took 12-14 s on Nemotron 3 Nano (2026-10-26).
+      classify-batch: 25
+      # Classifier model calls per UTC day (about 8 batches per daily pass); the cap only bites when something loops.
+      classifier-daily-calls: ${H2_SCOUT_AWESOME_CLASSIFIER_DAILY_CALLS:300}
+  sources:
+    github:
+      enabled: ${H2_SOURCE_GITHUB_ENABLED:true}
+      base-url: https://api.github.com
+      token: ${H2_GITHUB_TOKEN:}
+      timeout: 2500ms
+      cache-ttl: 30m
+    huggingface:
+      enabled: ${H2_SOURCE_HF_ENABLED:true}
+      base-url: https://huggingface.co
+      token: ${H2_HF_TOKEN:}
+      timeout: 2500ms
+      cache-ttl: 30m
+    npm:
+      enabled: ${H2_SOURCE_NPM_ENABLED:true}
+      base-url: https://registry.npmjs.org
+      timeout: 2500ms
+      cache-ttl: 30m
+    arxiv:
+      enabled: ${H2_SOURCE_ARXIV_ENABLED:true}
+      base-url: https://export.arxiv.org
+      timeout: 3s
+      cache-ttl: 6h
+    tavily:
+      # Disabled (reported as SKIPPED) until H2_TAVILY_API_KEY is set.
+      enabled: ${H2_SOURCE_TAVILY_ENABLED:true}
+      base-url: https://api.tavily.com
+      token: ${H2_TAVILY_API_KEY:}
+      # Measured 2.0-4.2 s per call (26 Oct 2026); 3 s cut off real answers on prod.
+      timeout: ${H2_SOURCE_TAVILY_TIMEOUT:6s}
+      cache-ttl: 30m
+    hf-trending:
+      enabled: ${H2_SOURCE_HF_TRENDING_ENABLED:true}
+      base-url: https://huggingface.co
+      token: ${H2_HF_TOKEN:}
+      timeout: 10s
+    tavily-scout:
+      # Disabled (reported as SKIPPED) until H2_TAVILY_API_KEY is set.
+      enabled: ${H2_SOURCE_TAVILY_SCOUT_ENABLED:true}
+      base-url: https://api.tavily.com
+      token: ${H2_TAVILY_API_KEY:}
+      timeout: 10s
+    github-awesome:
+      # Disabled (reported as SKIPPED) until H2_GITHUB_TOKEN is set: GraphQL rejects anonymous calls.
+      enabled: ${H2_SOURCE_GITHUB_AWESOME_ENABLED:true}
+      base-url: https://api.github.com
+      token: ${H2_GITHUB_TOKEN:}
+      timeout: 15s
+    hf-provider-orgs:
+      enabled: ${H2_SOURCE_HF_ORGS_ENABLED:true}
+      base-url: https://huggingface.co
+      token: ${H2_HF_TOKEN:}
+      timeout: 10s
+    ai-deadlines:
+      enabled: ${H2_SOURCE_AI_DEADLINES_ENABLED:true}
+      base-url: https://api.github.com
+      # Optional: raises the contents API limit from 60 to 5,000 calls per hour.
+      token: ${H2_GITHUB_TOKEN:}
+      timeout: 15s
+    mcp-registry:
+      enabled: ${H2_SOURCE_MCP_ENABLED:true}
+      base-url: https://registry.modelcontextprotocol.io
+      timeout: 10s
+    semantic:
+      # Embedding call (~0.3 s) plus the HNSW query; parallel with live sources, like the index.
+      timeout: ${H2_SOURCE_SEMANTIC_TIMEOUT:3s}
+      # Cosine distance cut-off (0 = same, 2 = opposite). Measured 27 Oct 2026 (ADR 0012): keyword hits for
+      # the same need 0.28-0.55, other topics 0.72-0.95, nonsense queries 0.81 at best.
+      max-distance: ${H2_SOURCE_SEMANTIC_MAX_DISTANCE:0.65}
+    index:
+      # Runs in parallel with live sources that wait 2.5-6 s, so 3 s adds no wait in the worst case.
+      # 1.5 s was too tight: the index query took 0.8-1.1 s on prod (5.5k resources, 2026-10-26) and
+      # timed out, which drops the catalog from every search.
+      timeout: ${H2_SOURCE_INDEX_TIMEOUT:3s}
+    curated:
+      enabled: ${H2_SOURCE_CURATED_ENABLED:true}
+      timeout: 1000ms
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+  docker:
+    compose:
+      enabled: true
+      file: ../compose.yaml
+      lifecycle-management: start-only
+logging:
+  structured:
+    format:
+      console: ""
+server:
+  servlet:
+    session:
+      cookie:
+        secure: ${H2_COOKIE_SECURE:false}
+helper2:
+  frontend-url: http://localhost:5173/
+  security:
+    metrics-public: true
+
+---
+# Sign-in with a GitHub OAuth App (local dev and production). Register one per environment:
+#   local: homepage http://localhost:5173, callback http://localhost:5173/login/oauth2/code/github
+# GitHub's user id (numeric, never the renameable login) is the subject: H2_ADMINS=github:<id>.
+spring:
+  config:
+    activate:
+      on-profile: oauth-github
+  security:
+    oauth2:
+      client:
+        registration:
+          github:
+            client-name: GitHub
+            client-id: ${H2_GITHUB_OAUTH_CLIENT_ID}
+            client-secret: ${H2_GITHUB_OAUTH_CLIENT_SECRET}
+            scope: read:user
+
+---
+# Nebius Token Factory (OpenAI-compatible) serving NVIDIA Nemotron open models.
+# Needs H2_NEBIUS_API_KEY (server-side only). Confirm model ids with: GET https://api.tokenfactory.nebius.com/v1/models
+#   H2_NEBIUS_REASONING_MODEL: picks tools, writes prompts, enriches metadata (Nemotron 3 Super by default)
+#   H2_NEBIUS_FAST_MODEL:      plans the guide's search, translates queries, classifies awesome lists (Nemotron 3 Nano
+#                              by default; set it empty to use the reasoning model for these too)
+spring:
+  config:
+    activate:
+      on-profile: llm-nebius
+  ai:
+    model:
+      chat: openai
+    openai:
+      api-key: ${H2_NEBIUS_API_KEY}
+      base-url: https://api.tokenfactory.nebius.com/v1
+      chat:
+        model: ${H2_NEBIUS_REASONING_MODEL:nvidia/nemotron-3-super-120b-a12b}
+        temperature: 0.0
+        max-tokens: 2048
+helper2:
+  llm:
+    provider-label: nebius-token-factory
+    reasoning-model: ${H2_NEBIUS_REASONING_MODEL:nvidia/nemotron-3-super-120b-a12b}
+    fast-model: ${H2_NEBIUS_FAST_MODEL:nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B}
+    # Send the choose call's JSON schema as response_format (guided decoding). See SpringAiGuideModel.call.
+    native-schema: ${H2_NEBIUS_NATIVE_SCHEMA:true}
+    # Super's reasoning tokens count against max_tokens; 2048 truncated the choose JSON. See SpringAiGuideModel.
+    choose-max-tokens: ${H2_NEBIUS_CHOOSE_MAX_TOKENS:8192}
+    # Same reason for the Scout's enrichment call (18/120 runs failed at 2048). See SpringAiEnrichmentModel.
+    enrich-max-tokens: ${H2_NEBIUS_ENRICH_MAX_TOKENS:8192}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: demo
+helper2:
+  scout:
+    enabled: false

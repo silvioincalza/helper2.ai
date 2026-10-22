@@ -1,0 +1,45 @@
+.env
+*.local
+backend/build/
+backend/.gradle/
+frontend/node_modules/
+frontend/dist/
+frontend/src/api/schema.d.ts
+frontend/test-results/
+frontend/playwright-report/
+.DS_Store
+.remember/
+
+# Gradle wrapper must be versioned (overrides global *.jar ignore)
+!backend/gradle/wrapper/gradle-wrapper.jar
+
+# IntelliJ IDEA: share run configurations, code style and VCS mapping; keep the rest local.
+# (Re-includes what a global ".idea/" ignore would hide.)
+!.idea/
+.idea/*
+!.idea/runConfigurations/
+!.idea/codeStyles/
+!.idea/vcs.xml
+*.iml
+out/
+
+# Eclipse / VS Code (local only)
+.vscode/
+backend/bin/
+backend/.classpath
+backend/.project
+backend/.settings/
+
+# k8s staging secrets and local terraform files
+deploy/k8s/*/app.env
+deploy/k8s/terraform/terraform.tfvars
+deploy/k8s/terraform/backend.hcl
+deploy/k8s/terraform/.terraform/
+# written by CI only (edge module stub for validate), never part of a real plan
+deploy/k8s/terraform/*_override.tf
+
+# Kotlin compiler daemon data
+.kotlin/
+
+# Local notes, not published
+.private/
