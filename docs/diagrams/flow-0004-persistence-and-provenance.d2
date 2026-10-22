@@ -1,0 +1,80 @@
+# Flowchart: how one search reads discovery dates and records what it saw, off the request path.
+# Shows the batched date read, the live-only filter, the bounded queue (drop when full) and the
+# background upsert with origin rank, record fingerprints, reports moved with their records, orphan clean-up,
+# labels and event dates.
+# Source of truth: backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt (search, record),
+#   backend/src/main/java/ai/helper2/catalog/ResourceCatalog.java (firstDiscovered, record),
+#   backend/src/main/java/ai/helper2/catalog/internal/ObservationQueue.java,
+#   backend/src/main/java/ai/helper2/catalog/internal/ResourceStore.java (upsert,
+#   moveReportsOfEmptiedResources, deleteOrphans),
+#   backend/src/main/kotlin/ai/helper2/shared/DateFact.kt.
+# Render: cd docs/diagrams && d2 fmt flow-0004-persistence-and-provenance.d2 && d2 flow-0004-persistence-and-provenance.d2 flow-0004-persistence-and-provenance.svg
+
+...@style
+
+direction: down
+
+merged: "Merged results of one search\n(ids = UUIDv5 of canonical URL)" {class: end}
+read: "firstDiscovered(results):\none batched SELECT" {class: app}
+readok: "Read worked?" {class: decision}
+known: "discovered = first_discovered_at,\nor UNKNOWN if not stored yet" {class: app}
+unavailable: "All discovery dates UNKNOWN\n+ INDEX_UNAVAILABLE notice" {class: app}
+live: "Hits fetched LIVE now?\n(cache replays were recorded\nwhen fetched)" {class: decision}
+none: "Nothing to record" {class: end}
+offer: "ObservationQueue.offer(write)" {class: app}
+full: "Queue full (256)\nor shut down?" {class: decision}
+dropped: "Dropped, counted\noutcome=dropped\n(date waits for next sighting)" {class: fail}
+answer: "Search answers now\n(no write on the request path)" {class: end}
+
+writer: catalog-observations thread (one writer) {
+  class: group
+  direction: down
+  resources: "Upsert resource by canonical_url\n(rows sorted by URL)" {class: data}
+  rank: "Existing row from a\nstronger origin?\nDEMO > CURATED >\nINDEXED > OBSERVED" {class: decision}
+  keep: "Keep its fields;\nlast_seen_at and a newer\nupdated_at still apply" {class: data}
+  take: "Take the new fields;\nnull dates never\noverwrite known ones" {class: data}
+  records: "Upsert source_record\n(source_id, external_id)" {class: data}
+  moved: "Record moved to\nanother resource?" {class: decision}
+  emptied: "Old resource left\nwithout records?" {class: decision}
+  oneOwner: "All its records went\nto one resource?" {class: decision}
+  moveReports: "Move issue_report and\nreview_item rows to it" {class: data}
+  held: "Report or review item\nstill points at it?" {class: decision}
+  kept: "Keep it for\nthe reviewer" {class: data}
+  orphan: "Delete it\nif OBSERVED" {class: data}
+  labels: "Rebuild labels and event dates\nfrom current records" {class: data}
+  ok: "outcome=written" {class: end}
+  failed: "outcome=failed\n(warning logged)" {class: fail}
+
+  resources -> rank
+  rank -> keep: yes
+  rank -> take: no
+  keep -> records
+  take -> records
+  records -> moved
+  moved -> emptied: yes
+  moved -> labels: no
+  emptied -> oneOwner: yes
+  emptied -> labels: no
+  oneOwner -> moveReports: yes
+  oneOwner -> held: no
+  moveReports -> held
+  held -> kept: yes
+  held -> orphan: no
+  kept -> labels
+  orphan -> labels
+  labels -> ok
+  records -> failed: exception {class: config}
+}
+
+merged -> read: {class: hot}
+read -> readok
+readok -> known: yes {class: hot}
+readok -> unavailable: no
+known -> live
+unavailable -> live
+live -> none: no
+live -> offer: yes {class: hot}
+offer -> full
+full -> dropped: yes
+full -> answer: "no: queued" {class: hot}
+full -> writer.resources: "later, in the background" {class: config}

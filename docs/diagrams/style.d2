@@ -1,0 +1,154 @@
+# Shared look for every Helper2 diagram. Import with `...@style` at the top of a diagram.
+# The theme overrides make every default dark with cyan lines; classes add meaning by colour:
+# app = cyan, NVIDIA / Nemotron = green, data = violet, external = amber, ports = pink.
+
+vars: {
+  d2-config: {
+    pad: 60
+    theme-overrides: {
+      # Neutrals: N1 text … N7 canvas background.
+      N1: "#E2E8F0"
+      N2: "#CBD5E1"
+      N3: "#94A3B8"
+      N4: "#64748B"
+      N5: "#334155"
+      N6: "#1E293B"
+      N7: "#070B14"
+      # Base: B1 strokes and lines, B4–B6 fills from outer container to leaf shape.
+      B1: "#22D3EE"
+      B2: "#22D3EE"
+      B3: "#0E7490"
+      B4: "#0B1222"
+      B5: "#0D1528"
+      B6: "#0F1B2E"
+      AA2: "#A78BFA"
+      AA4: "#1E1B4B"
+      AA5: "#170F2E"
+      AB4: "#0F1F05"
+      AB5: "#1F1406"
+    }
+  }
+}
+
+# Monospace everywhere (shapes and connections, four levels deep).
+*.style.font: mono
+*.*.style.font: mono
+*.*.*.style.font: mono
+*.*.*.*.style.font: mono
+(* -> *)[*].style.font: mono
+*.(* -> *)[*].style.font: mono
+*.*.(* -> *)[*].style.font: mono
+
+classes: {
+  group: {
+    # Title outside the frame, top left: edges that enter a group at the top never cross it.
+    label.near: outside-top-left
+    style: {
+      fill: "#0B1222"
+      stroke: "#1E293B"
+      stroke-width: 2
+      font-color: "#64748B"
+      border-radius: 16
+      bold: true
+    }
+  }
+  app: {
+    style: {
+      fill: "#0B1E2D"
+      stroke: "#22D3EE"
+      font-color: "#CFFAFE"
+      border-radius: 10
+      shadow: true
+    }
+  }
+  ai: {
+    style: {
+      fill: "#0F1F05"
+      stroke: "#76B900"
+      font-color: "#D9F99D"
+      border-radius: 10
+      shadow: true
+    }
+  }
+  data: {
+    style: {
+      fill: "#170F2E"
+      stroke: "#A78BFA"
+      font-color: "#EDE9FE"
+      shadow: true
+    }
+  }
+  ext: {
+    style: {
+      fill: "#1F1406"
+      stroke: "#F59E0B"
+      font-color: "#FEF3C7"
+      border-radius: 10
+    }
+  }
+  port: {
+    shape: hexagon
+    style: {
+      fill: "#2A0B1E"
+      stroke: "#F472B6"
+      font-color: "#FCE7F3"
+    }
+  }
+  person: {
+    shape: person
+    style: {
+      fill: "#0F172A"
+      stroke: "#E2E8F0"
+      font-color: "#E2E8F0"
+    }
+  }
+  hot: {
+    style: {
+      stroke: "#22D3EE"
+      font-color: "#67E8F9"
+      stroke-width: 3
+      animated: true
+    }
+  }
+  ai-call: {
+    style: {
+      stroke: "#76B900"
+      font-color: "#BEF264"
+      stroke-width: 3
+    }
+  }
+  config: {
+    style: {
+      stroke: "#64748B"
+      stroke-dash: 4
+      font-color: "#94A3B8"
+    }
+  }
+  # Flowcharts: a branch in the code, and an end state the caller sees.
+  decision: {
+    shape: diamond
+    style: {
+      fill: "#0B1222"
+      stroke: "#22D3EE"
+      font-color: "#CFFAFE"
+    }
+  }
+  end: {
+    shape: oval
+    style: {
+      fill: "#0F172A"
+      stroke: "#E2E8F0"
+      font-color: "#E2E8F0"
+      bold: true
+    }
+  }
+  fail: {
+    shape: oval
+    style: {
+      fill: "#2A0B1E"
+      stroke: "#F472B6"
+      font-color: "#FCE7F3"
+      bold: true
+    }
+  }
+}

@@ -1,0 +1,187 @@
+# Software architecture of helper2: the Spring Modulith modules, their ports (pink hexagons) and the
+# adapters that implement them, the two stores, and every external service the code calls.
+# Kotlin domain packages (search, guide, scout, shared) hold the rules; Java adapters sit in web,
+# cache, config and internal sub-packages and in the sources and catalog modules.
+# Source of truth: backend/src/main/java/ai/helper2/*/package-info.java (modules),
+#   backend/src/main/kotlin/ai/helper2/search/Ports.kt, scout/Ports.kt, scout/Scout.kt, scout/Enrichment.kt,
+#   guide/Guide.kt, guide/GuideCost.kt (ports),
+#   backend/src/main/java/ai/helper2/sources/SourcesConfiguration.java (sources and collectors),
+#   backend/src/main/java/ai/helper2/catalog/CatalogConfiguration.java (index, curated, semantic sources),
+#   backend/src/main/java/ai/helper2/platform/http/ObservedHttp.java (observed client of sources and embedder),
+#   backend/src/main/resources/application.yaml (base URLs, llm-nebius profile, helper2.embedding),
+#   backend/src/test/java/ai/helper2/architecture/ModularityTest.java (rules).
+# Render: cd docs/diagrams && d2 fmt software-architecture.d2 && d2 software-architecture.d2 software-architecture.svg
+
+...@style
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+browser: "Browser\nReact SPA (served by SinglePageApp)" {class: person}
+
+app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
+  class: group
+
+  search: "search (Kotlin domain)" {
+    class: group
+    ctl: "SearchController\nGET /search, /sources" {class: app}
+    core: "SearchResources\nQueryAnalyzer · ResultMerger\nRanking · Filtering · Facets" {class: app}
+    p_source: SearchSource {class: port}
+    p_cache: SearchCache {class: port}
+    p_observer: "ResultObserver\nRecordedOutcomes" {class: port}
+    p_translate: QueryTranslator {class: port}
+    cache: "RedisSearchCache\n(search.cache)" {class: app}
+    ctl -> core: {class: hot}
+    core -> p_source: {class: hot}
+    core -> p_cache
+    core -> p_observer
+    core -> p_translate
+    cache -> p_cache: implements {class: config}
+  }
+
+  guide: "guide (Kotlin domain)" {
+    class: group
+    ctl: "GuideController (JSON)\nGuideStreamController (SSE)" {class: app}
+    core: "AskGuide\nGuideValidator · GuideAnswerCache\nClientQuota" {class: app}
+    p_model: GuideModel {class: port}
+    p_store: GuideAnswerStore {class: port}
+    model: "SpringAiGuideModel\n(guide.internal)" {class: app}
+    store: "RedisGuideAnswerStore\n(guide.internal)" {class: app}
+    ctl -> core: {class: hot}
+    core -> p_model: {class: ai-call}
+    core -> p_store
+    model -> p_model: implements {class: config}
+    store -> p_store: implements {class: config}
+  }
+
+  scout: "scout (Kotlin domain)" {
+    class: group
+    ctl: "AdminController\nPOST /admin/scout-runs\nreview items" {class: app}
+    core: "RunScout · EnrichResource\nEvidenceValidator" {class: app}
+    p_collector: Collector {class: port}
+    p_index: CatalogIndex {class: port}
+    p_enrich: EnrichmentModel {class: port}
+    p_stores: "ScoutStore\nEnrichmentStore\nEnrichmentBacklog" {class: port}
+    model: "SpringAiEnrichmentModel\n(scout.internal)" {class: app}
+    jdbc: "JdbcScoutStore\nJdbcEnrichmentStore" {class: app}
+    ctl -> core
+    core -> p_collector
+    core -> p_index
+    core -> p_enrich: {class: ai-call}
+    core -> p_stores
+    model -> p_enrich: implements {class: config}
+    jdbc -> p_stores: implements {class: config}
+  }
+
+  catalog: "catalog (Java)" {
+    class: group
+    ctl: "ResourcesController\nresources, recent, events,\nmodel families, reports" {class: app}
+    catalog: "ResourceCatalog · ReviewQueue\nusecase: GetResourceDetail · ListModelFamilies\nReportIssue · ResolveReviewItem" {class: app}
+    queue: "ObservationQueue\n(one writer thread)" {class: app}
+    store: ResourceStore {class: app}
+    index: "CatalogSearchSource\nhelper2-index · curated" {class: app}
+    semantic: "SemanticSearchSource\nhelper2-semantic" {class: app}
+    embed: "NvidiaEmbedder\nEmbeddingIndexer" {class: app}
+    ctl -> catalog
+    catalog -> queue
+    queue -> store
+    catalog -> store
+    index -> store
+    semantic -> embed: query vector {class: ai-call}
+    semantic -> store
+    embed -> store: "pending texts,\nvectors"
+  }
+
+  sources: "sources (Java adapters, HttpClients)" {
+    class: group
+    live: "SearchSource adapters\nGitHubSource · NpmSource · ArxivSource\nHuggingFaceModelsSource\nHuggingFaceSpacesSource · TavilySource" {class: app}
+    collectors: "Collector adapters\nMcpRegistryCollector · TavilyCollector\nHuggingFaceTrendingCollector\nHuggingFaceProviderOrgsCollector\nGitHubAwesomeCollector · AiDeadlinesCollector" {class: app}
+    classifier: "SpringAiRepoClassifier\n(or Heuristic without a model)" {class: app}
+    collectors -> classifier: awesome-list entries {class: ai-call}
+  }
+
+  identity: "identity (Java)" {
+    class: group
+    sec: "SecurityConfiguration\nCSRF · ADMIN allow-list" {class: app}
+    me: "MeController\nBookmarks · Users" {class: app}
+  }
+
+  platform: "platform (open module)" {
+    class: group
+    llm: "llm: LlmSettings · DailyBudget\nRedisCallCounter · ModelCallMetrics\nSpringAiQueryTranslator" {class: app}
+    edge: "RateLimitInterceptor · RateLimiter\nApiExceptionHandler · SinglePageApp\nCircuitBreaker · PromptTemplate" {class: app}
+    http: "http: ObservedHttp\n(pooled, observed RestClient;\nUser-Agent with build version)" {class: app}
+  }
+
+  shared: "shared (open, Kotlin)\nCanonicalUrl · ResourceId · DateFact\nLanguageDetector · Vocabulary" {class: app}
+  api: "api (open)\ngenerated from api/openapi.yaml" {class: app}
+
+  guide.core -> search.core: "retrieve candidates" {class: hot}
+  sources.live -> search.p_source: implements {class: config}
+  catalog.index -> search.p_source: implements {class: config}
+  catalog.semantic -> search.p_source: implements {class: config}
+  catalog.catalog -> search.p_observer: implements {class: config}
+  catalog.catalog -> scout.p_index: implements {class: config}
+  platform.llm -> search.p_translate: implements {class: config}
+  sources.collectors -> scout.p_collector: implements {class: config}
+  sources.live -> platform.http: "HTTP client" {class: config}
+  catalog.embed -> platform.http: "HTTP client" {class: config}
+}
+
+stores: STORES {
+  class: group
+  pg: "PostgreSQL 18 + pgvector\nsystem of record" {
+    shape: cylinder
+    class: data
+  }
+  redis: "Redis 8\ndisposable cache" {
+    shape: cylinder
+    class: data
+  }
+}
+
+nvidia: "NVIDIA models" {
+  class: group
+  nebius: "Nebius Token Factory\n(OpenAI-compatible, profile llm-nebius)\nNemotron 3 Super (reasoning)\nNemotron 3 Nano (fast, default)" {class: ai}
+  embeddings: "NVIDIA API catalog\nintegrate.api.nvidia.com\nnemotron-3.5-embed-1b" {class: ai}
+}
+
+hosts: "PUBLIC SOURCES (HTTPS)" {
+  class: group
+  github: "api.github.com" {class: ext}
+  raw: "raw.githubusercontent.com" {class: ext}
+  hf: "huggingface.co" {class: ext}
+  npm: "registry.npmjs.org" {class: ext}
+  arxiv: "export.arxiv.org" {class: ext}
+  tavily: "api.tavily.com" {class: ext}
+  mcp: "registry.modelcontextprotocol.io" {class: ext}
+}
+
+oauth: "github.com OAuth\n(profile oauth-github; off on\nstaging and prod)" {class: ext}
+
+browser -> app.search.ctl: "search" {class: hot}
+browser -> app.guide.ctl: "ask (SSE)" {class: hot}
+browser -> app.catalog.ctl
+browser -> app.identity.me
+
+app.search.cache -> stores.redis: "h2:v1:src:*"
+app.guide.store -> stores.redis: "h2:v1:guide-answer:*"
+app.platform.llm -> stores.redis: "h2:v1:budget:*"
+app.catalog.store -> stores.pg: JDBC
+app.scout.jdbc -> stores.pg: JDBC
+app.identity.me -> stores.pg: "bookmarks, users"
+app.identity.sec -> oauth: "sign-in for /admin" {class: config}
+
+app.guide.model -> nvidia.nebius: "plan, choose,\nreason check" {class: ai-call}
+app.scout.model -> nvidia.nebius: enrich {class: ai-call}
+app.platform.llm -> nvidia.nebius: "translate query" {class: ai-call}
+app.sources.classifier -> nvidia.nebius: "classify repos" {class: ai-call}
+app.catalog.embed -> nvidia.embeddings: "/embeddings" {class: ai-call}
+
+app.sources.live -> hosts: "HTTPS: search calls"
+app.sources.collectors -> hosts: "HTTPS: Scout collection"

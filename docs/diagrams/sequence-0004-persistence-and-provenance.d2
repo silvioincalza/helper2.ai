@@ -1,0 +1,53 @@
+# Sequence: one search that sees a resource for the first time, then the background write.
+# Shows that the response leaves before the catalog write, so the first sighting has an UNKNOWN
+# discovery date and the next search shows it.
+# Source of truth: backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt,
+#   backend/src/main/java/ai/helper2/catalog/ResourceCatalog.java,
+#   backend/src/main/java/ai/helper2/catalog/internal/ObservationQueue.java,
+#   backend/src/main/java/ai/helper2/catalog/internal/ResourceStore.java,
+#   backend/src/test/java/ai/helper2/api/SearchApiIT.java (discoveredDateIsRecordedByTheCatalogAndDetailPageWorks).
+# Render: cd docs/diagrams && d2 fmt sequence-0004-persistence-and-provenance.d2 && d2 sequence-0004-persistence-and-provenance.d2 sequence-0004-persistence-and-provenance.svg
+
+...@style
+
+shape: sequence_diagram
+
+controller: SearchController {class: app}
+search: SearchResources {class: app}
+catalog: ResourceCatalog {class: app}
+queue: ObservationQueue {class: app}
+store: ResourceStore {class: app}
+pg: PostgreSQL {class: data}
+
+first: First search {
+  controller -> search: "search(request)" {class: hot}
+  search -> search: "sources in parallel,\nmerge by ResourceId"
+  search -> catalog: "firstDiscovered(merged)"
+  catalog -> store: "firstDiscovered(ids)"
+  store -> pg: "SELECT id, first_discovered_at\nWHERE id = ANY(:ids)"
+  pg -> store: "no row for the new resource"
+  catalog -> search: "{} (empty map)"
+  search -> search: "discovered = UNKNOWN"
+  search -> catalog: "record(live results only)"
+  catalog -> queue: "offer(persistObserved)"
+  queue -> catalog: "true (queued)"
+  search -> controller: "SearchOutcome" {class: hot}
+}
+
+background: Background thread catalog-observations {
+  queue -> store: "upsert(results, OBSERVED,\nlive source ids)"
+  store -> pg: "INSERT resource ... ON CONFLICT\n(canonical_url) DO UPDATE"
+  store -> pg: "INSERT source_record ... ON CONFLICT\n(source_id, external_id) DO UPDATE"
+  store -> pg: "move reports and review items of\nemptied resources (one new owner)"
+  store -> pg: "delete OBSERVED orphans with no\nreport or review item; rebuild\nlabels, refresh event dates"
+  queue -> queue: "outcome=written"
+}
+
+next: Next search {
+  controller -> search: "search(request)" {class: hot}
+  search -> catalog: "firstDiscovered(merged)"
+  catalog -> store: "firstDiscovered(ids)"
+  store -> pg: "SELECT ..."
+  pg -> store: "first_discovered_at"
+  search -> controller: "discovered = KNOWN" {class: hot}
+}
