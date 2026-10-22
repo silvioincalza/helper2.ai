@@ -1,0 +1,1174 @@
+openapi: 3.1.0
+info:
+  title: Helper2.ai API
+  version: 1.0.2
+  summary: Federated metasearch for AI resources, with explicit provenance and source status.
+  description: |
+    Contract-first REST API for Helper2.ai. This file is the source of truth:
+    the Spring backend generates its controller interfaces and DTOs from it, and the
+    React frontend generates its TypeScript types from it.
+
+    Honesty rules encoded in the contract:
+    * Every search response lists every configured source and what happened to it.
+    * Every date is a `DateFact`, which can say "unknown"; nothing is invented.
+    * Every field value carries an `origin` (source-provided, AI-extracted, curated, ...).
+    * Relationships and AI-extracted facts carry a `verification` status and evidence.
+  license:
+    name: Apache 2.0
+    identifier: Apache-2.0
+servers:
+  - url: /api/v1
+tags:
+  - name: search
+  - name: resources
+  - name: guide
+  - name: guide-stream
+  - name: setup
+  - name: sources
+  - name: me
+  - name: admin
+
+paths:
+  /search:
+    get:
+      tags: [search]
+      operationId: search
+      summary: Search once across all configured sources.
+      description: |
+        Queries every enabled source in parallel with a per-source timeout. A slow or failed
+        source never blocks the others; its outcome is reported in `sources[]` and the
+        response is marked partial in `coverage`.
+      parameters:
+        - { name: q, in: query, required: true, schema: { type: string, minLength: 1, maxLength: 200 } }
+        - name: path
+          in: query
+          description: Audience path. Changes ranking emphasis only; never hides results.
+          schema: { $ref: '#/components/schemas/AudiencePath' }
+        - { name: type, in: query, schema: { type: array, maxItems: 20, items: { $ref: '#/components/schemas/ResourceType' } }, style: form, explode: true }
+        - { name: source, in: query, schema: { type: array, maxItems: 20, items: { type: string, maxLength: 40 } }, style: form, explode: true }
+        - { name: license, in: query, description: "SPDX-ish license id, or `unknown`.", schema: { type: array, maxItems: 20, items: { type: string, maxLength: 60 } }, style: form, explode: true }
+        - { name: openSource, in: query, schema: { $ref: '#/components/schemas/TriState' } }
+        - { name: pricing, in: query, schema: { type: array, maxItems: 20, items: { $ref: '#/components/schemas/PricingFilter' } }, style: form, explode: true }
+        - { name: platform, in: query, schema: { type: array, maxItems: 20, items: { type: string, maxLength: 40 } }, style: form, explode: true }
+        - { name: useCase, in: query, schema: { type: array, maxItems: 20, items: { type: string, maxLength: 40 } }, style: form, explode: true }
+        - { name: techLevel, in: query, schema: { type: array, maxItems: 20, items: { $ref: '#/components/schemas/TechLevelFilter' } }, style: form, explode: true }
+        - { name: audience, in: query, schema: { type: array, maxItems: 20, items: { $ref: '#/components/schemas/Audience' } }, style: form, explode: true }
+        - { name: updatedAfter, in: query, description: "Only results whose last-updated date is known and on/after this day.", schema: { type: string, format: date } }
+        - { name: sort, in: query, schema: { $ref: '#/components/schemas/SortOrder' } }
+        - { name: page, in: query, schema: { type: integer, minimum: 0, maximum: 50, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+      responses:
+        '200':
+          description: Aggregated (possibly partial) results.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SearchResponse' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '429': { $ref: '#/components/responses/Problem' }
+
+  /recent:
+    get:
+      tags: [resources]
+      operationId: listRecent
+      summary: Newest resources in the Helper2 index, by the publication date their source states.
+      description: |
+        For the home page "Today" list. Only resources whose source states a publication date, from
+        `days` ago up to now, newest first; never Helper2's discovery date. Served from the index, so it
+        does not call live sources.
+      parameters:
+        - { name: days, in: query, schema: { type: integer, minimum: 1, maximum: 30, default: 14 } }
+        - { name: type, in: query, schema: { type: array, maxItems: 20, items: { $ref: '#/components/schemas/ResourceType' } }, style: form, explode: true }
+        - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 24, default: 12 } }
+      responses:
+        '200':
+          description: Newest resources (possibly empty).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RecentResponse' }
+        '400': { $ref: '#/components/responses/Problem' }
+  /events/upcoming:
+    get:
+      tags: [resources]
+      operationId: listUpcomingEvents
+      summary: Next AI events (conferences and industry events), soonest first.
+      description: |
+        For the home page "Next events" list. Only EVENTs whose source states when they take place and
+        that have not ended yet; an event without a stated date is never listed. Served from the index.
+      parameters:
+        - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 60, default: 6 } }
+      responses:
+        '200':
+          description: Upcoming events (possibly empty).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UpcomingEventsResponse' }
+        '400': { $ref: '#/components/responses/Problem' }
+  /resources/{id}:
+    get:
+      tags: [resources]
+      operationId: getResource
+      summary: Resource detail with provenance, evidence and relationships.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Resource detail.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ResourceDetail' }
+        '404': { $ref: '#/components/responses/Problem' }
+
+  /resources/{id}/setup:
+    get:
+      tags: [setup]
+      operationId: getResourceSetup
+      summary: How to install, configure and connect this resource to AI tools, from its source data only.
+      description: |
+        The setup facts come only from the resource's own source records, fetched at request time with their
+        retrieval time: for an MCP server, its entry in the Official MCP Registry (remote URL or package,
+        transport, environment variables). Each AI client's snippet is generated from those facts with the
+        format that client's own documentation states (`docsUrl`). A client that cannot use an option is
+        listed with the reason instead of a snippet. Nothing is invented: when the sources state no setup
+        data, `options` is empty and the answer says so.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Setup guide (possibly without options when the sources state none).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SetupGuide' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '503': { $ref: '#/components/responses/Problem' }
+
+  /resources/{id}/guide:
+    post:
+      tags: [setup]
+      operationId: askResourceGuide
+      summary: Step-by-step guide for one tool from its own documentation, or the answer to a question about it.
+      description: |
+        Reads the tool's own documents (GitHub README, npm package README, Hugging Face model or Space card) from
+        fixed hosts. A model may only pick and order passages from them; a deterministic check keeps a step only
+        when its quote is found in the cited document and its command is whole lines of one code block (or one
+        inline code span) of that document, exactly as written. Without a question the answer is the full guide
+        (requirements, install, configure, use, connect) and is the same for every visitor; with one, it starts
+        with the answer. POST because it can call a model: it shares the guide's rate limit and has its own
+        daily cap. `status` says when there is nothing to show and why.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ToolGuideRequest' }
+      responses:
+        '200':
+          description: Guide (possibly without steps; see status).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ToolGuide' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '429': { $ref: '#/components/responses/Problem' }
+
+  /model-families:
+    get:
+      tags: [resources]
+      operationId: listModelFamilies
+      summary: AI model families (OpenAI GPT, Anthropic Claude, xAI Grok, Google Gemini, Meta Llama...) for side-by-side comparison.
+      description: >-
+        Official specs are curated from the provider's own pages, each with its URL, a verbatim excerpt and the
+        date it was read. Listed models are the provider's newest models found by Scout on its official Hugging Face
+        organisation. Nothing is combined across sources.
+      responses:
+        '200':
+          description: Every family, in display order.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ModelFamiliesResponse' }
+
+  /resources/{id}/reports:
+    post:
+      tags: [resources]
+      operationId: reportResource
+      summary: Report wrong or outdated information. Goes to the human review queue.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/IssueReportRequest' }
+      responses:
+        '202':
+          description: Accepted for review.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IssueReportAccepted' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '429': { $ref: '#/components/responses/Problem' }
+
+  /guide:
+    post:
+      tags: [guide]
+      operationId: askGuide
+      summary: Ask the AI guide which catalog resources fit a need, with citations and a ready-to-use prompt.
+      description: |
+        Retrieval first, AI second. The request is turned into search terms (fast model), real
+        candidates are retrieved with the normal federated search, and the reasoning model may only
+        choose among those candidates. A deterministic validator drops any recommendation that was
+        not a candidate or whose quote does not appear in the candidate's own text. Without a model
+        the guide degrades to the top search results with status LLM_UNAVAILABLE.
+
+        Shares its bounds with `/guide/stream`: 503 at once when too many questions are running,
+        504 when the question passes its deadline (it is cancelled).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GuideRequest' }
+      responses:
+        '200':
+          description: Guide answer (possibly degraded; see status).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GuideResponse' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '429': { $ref: '#/components/responses/Problem' }
+        '503': { $ref: '#/components/responses/Problem' }
+        '504': { $ref: '#/components/responses/Problem' }
+
+  /guide/stream:
+    post:
+      # Own tag: the generated GuideApi stays JSON-only; the stream is a hand-written SseEmitter handler.
+      tags: [guide-stream]
+      operationId: askGuideStream
+      summary: Ask the AI guide and receive each step as a server-sent event while it works.
+      description: |
+        Same answer as `POST /guide`, sent as `text/event-stream` so the client can show real progress.
+        Events, in this order (a step that does not happen is skipped; nothing is invented):
+
+        | event | data | when |
+        |---|---|---|
+        | `planned` | `GuideStreamPlanned` | the fast model turned the need into search terms |
+        | `retrieved` | `GuideStreamRetrieved` | federated search returned the candidates |
+        | `chosen` | `GuideStreamChosen` | the reasoning model proposed its picks |
+        | `validated` | `GuideStreamValidated` | the validator kept or rejected each pick |
+        | `checked` | `GuideStreamChecked` | a second model call checked each kept pick's reason against its quote |
+        | `answer` | `GuideResponse` | always last on success; the same body `POST /guide` returns |
+        | `error` | `Problem` | always last on failure |
+
+        A cached answer is sent as a single `answer` event. There is no retry on the server: a client
+        must not reconnect automatically, because each question costs model calls. Shares the rate
+        limit of `POST /guide`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GuideRequest' }
+      responses:
+        '200':
+          description: Stream of guide events; see the table above for each event's data schema.
+          content:
+            text/event-stream:
+              schema: { type: string }
+        '400': { $ref: '#/components/responses/Problem' }
+        '429': { $ref: '#/components/responses/Problem' }
+
+  /sources:
+    get:
+      tags: [sources]
+      operationId: listSources
+      summary: Disclosed source registry with last known health.
+      responses:
+        '200':
+          description: All configured sources, enabled or not.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/SourceInfo' }
+
+  /me:
+    get:
+      tags: [me]
+      operationId: getMe
+      summary: Current session. Anonymous use is fully supported.
+      responses:
+        '200':
+          description: Session info.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Me' }
+
+  /me/bookmarks:
+    get:
+      tags: [me]
+      operationId: listBookmarks
+      responses:
+        '200':
+          description: Server-side bookmarks of the signed-in user.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Bookmark' } }
+        '401': { $ref: '#/components/responses/Problem' }
+    post:
+      tags: [me]
+      operationId: addBookmarks
+      summary: Add one or more bookmarks (also used to merge local bookmarks after sign-in).
+      description: An account keeps at most 500 bookmarks; a request that would exceed that is refused with 400.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              maxItems: 200
+              items: { $ref: '#/components/schemas/BookmarkRequest' }
+      responses:
+        '200':
+          description: Full bookmark list after merge.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Bookmark' } }
+        '400': { $ref: '#/components/responses/Problem' }
+        '401': { $ref: '#/components/responses/Problem' }
+
+  /me/bookmarks/{resourceId}:
+    delete:
+      tags: [me]
+      operationId: deleteBookmark
+      parameters:
+        - { name: resourceId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204': { description: Removed (idempotent). }
+        '401': { $ref: '#/components/responses/Problem' }
+
+  /admin/review-items:
+    get:
+      tags: [admin]
+      operationId: listReviewItems
+      parameters:
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/ReviewStatus' } }
+      responses:
+        '200':
+          description: Human review queue.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/ReviewItem' } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+
+  /admin/review-items/{id}/resolution:
+    put:
+      tags: [admin]
+      operationId: resolveReviewItem
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReviewResolution' }
+      responses:
+        '200':
+          description: Resolved item.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReviewItem' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+
+  /admin/scout-runs:
+    get:
+      tags: [admin]
+      operationId: listScoutRuns
+      responses:
+        '200':
+          description: Recent AI Resource Scout runs.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/ScoutRun' } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+    post:
+      tags: [admin]
+      operationId: startScoutRun
+      summary: Run collection for one source (or all) now.
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ScoutRunRequest' }
+      responses:
+        '202':
+          description: Run finished or started; see status.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/ScoutRun' } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+
+components:
+  responses:
+    Problem:
+      description: RFC 9457 problem details.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+
+  schemas:
+    Problem:
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+
+    AudiencePath:
+      type: string
+      enum: [USE_AI, BUILD_WITH_AI]
+    Audience:
+      type: string
+      description: Who a resource is primarily for. UNKNOWN when no source says.
+      enum: [USE_AI, BUILD_WITH_AI, BOTH, UNKNOWN]
+    ResourceType:
+      type: string
+      description: |
+        Tools (PRODUCT…DATASET) and knowledge about AI (ARTICLE, PAPER, NEWS, EVENT).
+        Helper2.ai only covers the AI world; non-AI content is filtered out.
+      enum: [PRODUCT, MODEL, AGENT, PROMPT, SKILL, MCP_SERVER, LIBRARY, DATASET, ARTICLE, PAPER, NEWS, EVENT, OTHER]
+    TechLevel:
+      type: string
+      enum: [BEGINNER, INTERMEDIATE, ADVANCED]
+    TechLevelFilter:
+      type: string
+      enum: [BEGINNER, INTERMEDIATE, ADVANCED, UNKNOWN]
+    Pricing:
+      type: string
+      enum: [FREE, FREEMIUM, PAID, OPEN_SOURCE_SELF_HOSTED]
+    EventKind:
+      type: string
+      enum: [CONFERENCE, HACKATHON, MEETUP, TALK, WORKSHOP]
+    EventFormat:
+      type: string
+      enum: [IN_PERSON, ONLINE, HYBRID]
+    PricingFilter:
+      type: string
+      enum: [FREE, FREEMIUM, PAID, OPEN_SOURCE_SELF_HOSTED, UNKNOWN]
+    TriState:
+      type: string
+      enum: ['true', 'false', unknown]
+    SortOrder:
+      type: string
+      enum: [RELEVANCE, NEWEST, RECENTLY_UPDATED]
+    ValueOrigin:
+      type: string
+      description: |
+        SOURCE_PROVIDED = stated by the source's own metadata. AI_EXTRACTED = extracted by the
+        AI Resource Scout from retrieved material and validated against evidence.
+        AI_SUMMARY = generated text built only from validated claims. CURATED = written by the
+        Helper2 editorial seed (not live). COMMUNITY = user submission. DEMO = fixture data.
+      enum: [SOURCE_PROVIDED, AI_EXTRACTED, AI_SUMMARY, CURATED, COMMUNITY, DEMO]
+    Verification:
+      type: string
+      enum: [VERIFIED, UNVERIFIED, CONFLICTING, REJECTED]
+    SourceMode:
+      type: string
+      description: |
+        LIVE = queried at request time. INDEXED = Helper2's own PostgreSQL index built by the
+        Scout. CURATED = editorial seed shipped with the app. DEMO = fixture source for tests/demos.
+      enum: [LIVE, INDEXED, CURATED, DEMO]
+    SourceOutcome:
+      type: string
+      enum: [SUCCEEDED, FAILED, TIMED_OUT, RATE_LIMITED, SKIPPED]
+    ServedFrom:
+      type: string
+      enum: [LIVE, CACHE, STALE_CACHE, NONE]
+    Freshness:
+      type: string
+      description: How fresh this card's data is, from the best source that contributed it.
+      enum: [LIVE, CACHED, STALE, INDEXED, CURATED, DEMO]
+
+    DateFact:
+      type: object
+      required: [status, precision]
+      description: A date that may be unknown. Never filled with a guess.
+      properties:
+        value: { type: [string, 'null'], format: date-time }
+        precision: { type: string, enum: [INSTANT, DAY, UNKNOWN] }
+        status:
+          type: string
+          description: CONFLICTING = two sources state different days for this date; `value` is still the earliest (published, event start) or latest (event end) of them, and `alternatives` holds the others.
+          enum: [KNOWN, UNKNOWN, CONFLICTING]
+        sourceId: { type: [string, 'null'] }
+        alternatives:
+          type: array
+          description: Values other sources state for this date, besides `value`.
+          items: { $ref: '#/components/schemas/SourcedValue' }
+
+    Timeline:
+      type: object
+      required: [published, updated, discovered]
+      properties:
+        published: { $ref: '#/components/schemas/DateFact' }
+        updated: { $ref: '#/components/schemas/DateFact' }
+        discovered:
+          $ref: '#/components/schemas/DateFact'
+          description: When Helper2.ai first saw this resource (indexed or in a live search).
+        eventStart:
+          description: EVENT only — when the event takes place (distinct from when it was announced). null for other types.
+          oneOf: [{ $ref: '#/components/schemas/DateFact' }, { type: 'null' }]
+        eventEnd:
+          description: EVENT only — last day of the event as its source states it. null for other types.
+          oneOf: [{ $ref: '#/components/schemas/DateFact' }, { type: 'null' }]
+
+    SourcedValue:
+      type: object
+      required: [value, sourceId]
+      properties:
+        value: { type: string }
+        sourceId: { type: string }
+
+    FieldConflict:
+      type: object
+      required: [field, values]
+      properties:
+        field: { type: string }
+        values: { type: array, items: { $ref: '#/components/schemas/SourcedValue' } }
+
+    PopularityMetric:
+      type: object
+      description: A real metric reported by a named source. Never combined across sources.
+      required: [metric, value, sourceId, asOf]
+      properties:
+        metric: { type: string, enum: [GITHUB_STARS, HF_LIKES, HF_DOWNLOADS, NPM_DOWNLOADS_WEEKLY] }
+        value: { type: integer, format: int64 }
+        sourceId: { type: string }
+        asOf: { type: string, format: date-time }
+
+    ResultSourceRef:
+      type: object
+      required: [sourceId, sourceName, url, mode, retrievedAt]
+      properties:
+        sourceId: { type: string }
+        sourceName: { type: string }
+        url: { type: string, format: uri }
+        mode: { $ref: '#/components/schemas/SourceMode' }
+        retrievedAt: { type: string, format: date-time }
+
+    ResultCard:
+      type: object
+      required: [id, title, type, audience, url, sources, timeline, freshness, tags, useCases, platforms, popularity, conflicts, descriptionOrigin, compatibleWith]
+      properties:
+        id: { type: string, format: uuid, description: "Stable: UUIDv5 of the canonical URL." }
+        title: { type: string }
+        description: { type: [string, 'null'] }
+        descriptionOrigin: { $ref: '#/components/schemas/ValueOrigin' }
+        type: { $ref: '#/components/schemas/ResourceType' }
+        audience: { $ref: '#/components/schemas/Audience' }
+        techLevel: { oneOf: [{ $ref: '#/components/schemas/TechLevel' }, { type: 'null' }] }
+        useCases: { type: array, items: { type: string } }
+        tags: { type: array, items: { type: string } }
+        license: { type: [string, 'null'] }
+        pricing: { oneOf: [{ $ref: '#/components/schemas/Pricing' }, { type: 'null' }] }
+        platforms: { type: array, items: { type: string } }
+        openSource: { type: [boolean, 'null'] }
+        url: { type: string, format: uri, description: Link to the original. }
+        canonicalUrl: { type: string }
+        sources: { type: array, items: { $ref: '#/components/schemas/ResultSourceRef' } }
+        timeline: { $ref: '#/components/schemas/Timeline' }
+        popularity: { type: array, items: { $ref: '#/components/schemas/PopularityMetric' } }
+        freshness: { $ref: '#/components/schemas/Freshness' }
+        conflicts: { type: array, items: { $ref: '#/components/schemas/FieldConflict' } }
+        compatibleWith:
+          type: array
+          description: AI tools this resource works with, derived by disclosed rules from source tags, type and file formats. Never model-generated.
+          items: { $ref: '#/components/schemas/CompatibilityFlag' }
+        location: { type: [string, 'null'], description: "EVENT only: city and country as the source states it." }
+        eventKind: { oneOf: [{ $ref: '#/components/schemas/EventKind' }, { type: 'null' }], description: "EVENT only: what kind of event the source calls it; null when it does not say." }
+        eventFormat: { oneOf: [{ $ref: '#/components/schemas/EventFormat' }, { type: 'null' }], description: "EVENT only: online, in person or both, as the source states it; null when it does not say." }
+
+    ModelFamiliesResponse:
+      type: object
+      required: [families]
+      properties:
+        families: { type: array, items: { $ref: '#/components/schemas/ModelFamily' } }
+
+    ModelFamily:
+      type: object
+      required: [id, provider, name, openWeights, card, specs, listedModels]
+      properties:
+        id: { type: string, description: "Stable id; matches CompatibilityFlag.tool for providers (openai, anthropic, xai, google...)." }
+        provider: { type: string }
+        name: { type: string }
+        openWeights: { type: [boolean, 'null'], description: null when no official page states it. }
+        card: { $ref: '#/components/schemas/ResultCard' }
+        specs:
+          type: array
+          description: "Official specs of the family's flagship. Fields: flagship, contextTokens, maxOutputTokens, inputUsdPerMTok, outputUsdPerMTok, inputModalities, outputModalities, license, knowledgeCutoff, released, and benchmark:<name>."
+          items: { $ref: '#/components/schemas/Assertion' }
+        listedModels:
+          type: array
+          description: Newest models of this provider in the Helper2 index, newest first.
+          items: { $ref: '#/components/schemas/ListedModel' }
+
+    ListedModel:
+      type: object
+      required: [resourceId, title, url, sourceId, retrievedAt]
+      properties:
+        resourceId: { type: string, format: uuid }
+        title: { type: string }
+        url: { type: string, format: uri }
+        sourceId: { type: string }
+        retrievedAt: { type: string, format: date-time }
+        published: { type: [string, 'null'], format: date-time, description: As the source stated it; null = unknown. }
+
+    CompatibilityFlag:
+      type: object
+      required: [tool, label, basis, evidence]
+      properties:
+        tool: { type: string, description: "Stable id, e.g. openai, anthropic, xai, ollama, mcp. Provider ids match model-family ids." }
+        label: { type: string }
+        basis: { type: string, enum: [TAG, TYPE, FORMAT], description: "TAG = a source listed the tag; TYPE = implied by resource type (MCP server); FORMAT = implied by published file format (GGUF)." }
+        evidence: { type: string, description: The tag, type or format that was seen. }
+        sourceId: { type: [string, 'null'], description: Source that stated the tag; null for TYPE. }
+
+    SourceStatus:
+      type: object
+      required: [sourceId, name, mode, outcome, servedFrom, resultCount, checkedAt]
+      properties:
+        sourceId: { type: string }
+        name: { type: string }
+        mode: { $ref: '#/components/schemas/SourceMode' }
+        outcome: { $ref: '#/components/schemas/SourceOutcome' }
+        servedFrom: { $ref: '#/components/schemas/ServedFrom' }
+        resultCount: { type: integer }
+        latencyMs: { type: [integer, 'null'], format: int64 }
+        checkedAt: { type: string, format: date-time }
+        cachedAt: { type: [string, 'null'], format: date-time, description: When the served cache entry was fetched from the source. }
+        message: { type: [string, 'null'], description: Safe, user-facing explanation. }
+
+    Coverage:
+      type: object
+      required: [partial, sourcesQueried, sourcesSucceeded, sourcesConfigured, note]
+      properties:
+        partial: { type: boolean }
+        sourcesConfigured: { type: integer }
+        sourcesQueried: { type: integer }
+        sourcesSucceeded: { type: integer }
+        note: { type: string, description: Disclosure that coverage is limited to the listed sources. }
+
+    FacetValue:
+      type: object
+      required: [value, count]
+      properties:
+        value: { type: string, description: "`unknown` is its own bucket." }
+        count: { type: integer }
+
+    Facets:
+      type: object
+      required: [type, source, license, openSource, pricing, platform, useCase, techLevel, audience]
+      properties:
+        type: { type: array, items: { $ref: '#/components/schemas/FacetValue' } }
+        source: { type: array, items: { $ref: '#/components/schemas/FacetValue' } }
+        license: { type: array, items: { $ref: '#/components/schemas/FacetValue' } }
+        openSource: { type: array, items: { $ref: '#/components/schemas/FacetValue' } }
+        pricing: { type: array, items: { $ref: '#/components/schemas/FacetValue' } }
+        platform: { type: array, items: { $ref: '#/components/schemas/FacetValue' } }
+        useCase: { type: array, items: { $ref: '#/components/schemas/FacetValue' } }
+        techLevel: { type: array, items: { $ref: '#/components/schemas/FacetValue' } }
+        audience: { type: array, items: { $ref: '#/components/schemas/FacetValue' } }
+
+    Notice:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: GUIDE_DAILY_QUOTA (guide only) = this client's AI answers for the UTC day are used up; the answer is search results only.
+          enum: [CACHE_UNAVAILABLE, INDEX_UNAVAILABLE, QUERY_EXPANDED, ALL_SOURCES_FAILED, GUIDE_DAILY_QUOTA]
+        message: { type: string }
+
+    QueryInterpretation:
+      type: object
+      description: |
+        Deterministic (non-AI) query analysis. `expandedTerms` are equivalents added from a
+        fixed EN/IT lexicon so English-only sources can match non-English queries.
+      required: [expandedTerms, detectedUseCases]
+      properties:
+        expandedTerms: { type: array, items: { type: string } }
+        detectedUseCases: { type: array, items: { type: string } }
+
+    SearchResponse:
+      type: object
+      required: [query, executedAt, coverage, sources, results, facets, total, page, size, notices, interpretation]
+      properties:
+        notices: { type: array, items: { $ref: '#/components/schemas/Notice' } }
+        interpretation: { $ref: '#/components/schemas/QueryInterpretation' }
+        query: { type: string }
+        path: { oneOf: [{ $ref: '#/components/schemas/AudiencePath' }, { type: 'null' }] }
+        sort: { $ref: '#/components/schemas/SortOrder' }
+        executedAt: { type: string, format: date-time }
+        coverage: { $ref: '#/components/schemas/Coverage' }
+        sources: { type: array, items: { $ref: '#/components/schemas/SourceStatus' } }
+        results: { type: array, items: { $ref: '#/components/schemas/ResultCard' } }
+        facets: { $ref: '#/components/schemas/Facets' }
+        total: { type: integer, description: Matches after filters, across all pages. }
+        page: { type: integer }
+        size: { type: integer }
+
+    Evidence:
+      type: object
+      required: [id, sourceUrl, retrievedAt]
+      properties:
+        id: { type: string, format: uuid }
+        sourceUrl: { type: string, format: uri }
+        retrievedAt: { type: string, format: date-time }
+        excerpt: { type: [string, 'null'], description: Short excerpt, stored within source terms. }
+
+    Assertion:
+      type: object
+      required: [field, value, origin, verification, evidence]
+      properties:
+        field: { type: string }
+        value: { type: string }
+        origin: { $ref: '#/components/schemas/ValueOrigin' }
+        verification: { $ref: '#/components/schemas/Verification' }
+        sourceId: { type: [string, 'null'] }
+        evidence: { type: array, items: { $ref: '#/components/schemas/Evidence' } }
+
+    Relationship:
+      type: object
+      required: [kind, targetTitle, verification, evidence]
+      properties:
+        kind: { type: string, enum: [INTEGRATES_WITH, USES, SUPPORTS, COMPATIBLE_WITH] }
+        targetId: { type: [string, 'null'], format: uuid }
+        targetTitle: { type: string }
+        verification: { $ref: '#/components/schemas/Verification' }
+        evidence: { type: array, items: { $ref: '#/components/schemas/Evidence' } }
+
+    SummaryClaim:
+      type: object
+      required: [text, evidence]
+      properties:
+        text: { type: string }
+        evidence: { type: array, items: { $ref: '#/components/schemas/Evidence' } }
+
+    AiSummary:
+      type: object
+      required: [claims, model, promptVersion, generatedAt]
+      properties:
+        claims: { type: array, items: { $ref: '#/components/schemas/SummaryClaim' } }
+        model: { type: string }
+        promptVersion: { type: string }
+        generatedAt: { type: string, format: date-time }
+
+    SourceRecordInfo:
+      type: object
+      required: [sourceId, externalId, url, retrievedAt, fingerprint]
+      properties:
+        sourceId: { type: string }
+        externalId: { type: string }
+        url: { type: string, format: uri }
+        retrievedAt: { type: string, format: date-time }
+        fingerprint: { type: string }
+
+    RecentResponse:
+      type: object
+      required: [items, since, generatedAt]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/ResultCard' } }
+        since: { type: string, format: date-time, description: Oldest publication date included. }
+        generatedAt: { type: string, format: date-time }
+
+    UpcomingEventsResponse:
+      type: object
+      required: [items, generatedAt]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/ResultCard' } }
+        generatedAt: { type: string, format: date-time }
+
+    ResourceDetail:
+      type: object
+      required: [card, assertions, relationships, sourceRecords, enrichmentStatus]
+      properties:
+        card: { $ref: '#/components/schemas/ResultCard' }
+        assertions: { type: array, items: { $ref: '#/components/schemas/Assertion' } }
+        relationships: { type: array, items: { $ref: '#/components/schemas/Relationship' } }
+        summary: { oneOf: [{ $ref: '#/components/schemas/AiSummary' }, { type: 'null' }] }
+        sourceRecords: { type: array, items: { $ref: '#/components/schemas/SourceRecordInfo' } }
+        enrichmentStatus: { type: string, enum: [NOT_RUN, VALIDATED, PARTIAL, REJECTED, LLM_UNAVAILABLE] }
+
+    SetupGuide:
+      type: object
+      required: [resourceId, title, options, clients, sources]
+      properties:
+        resourceId: { type: string, format: uuid }
+        title: { type: string }
+        version: { type: [string, 'null'], description: Version the setup facts are for, as the source states it. }
+        options:
+          type: array
+          description: Ways to run the resource, as its source states them; empty when the sources state none.
+          items: { $ref: '#/components/schemas/SetupOption' }
+        clients:
+          type: array
+          description: One entry per AI client, in a fixed order; empty when there are no options.
+          items: { $ref: '#/components/schemas/SetupClient' }
+        sources:
+          type: array
+          description: Where the setup facts were read, with when.
+          items:
+            type: object
+            required: [sourceId, url, retrievedAt]
+            properties:
+              sourceId: { type: string }
+              url: { type: string, format: uri }
+              retrievedAt: { type: string, format: date-time }
+
+    SetupOption:
+      type: object
+      required: [id, kind, transport, label, settings]
+      properties:
+        id: { type: string, description: Stable within this answer; snippets refer to it. }
+        kind: { type: string, enum: [REMOTE, PACKAGE, COMMAND] }
+        transport: { type: string, enum: [STREAMABLE_HTTP, SSE, STDIO] }
+        label: { type: string, description: 'For example "Hosted server" or "npm package @scope/name".' }
+        url: { type: [string, 'null'], format: uri, description: REMOTE only. }
+        registryType: { type: [string, 'null'], description: 'PACKAGE only: npm, pypi or oci, as the registry states it.' }
+        identifier: { type: [string, 'null'], description: PACKAGE only. }
+        runtime: { type: [string, 'null'], description: 'PACKAGE only: the program that launches it (npx, uvx, docker).' }
+        requires: { type: [string, 'null'], description: 'What must be installed first, e.g. "Node.js (for npx)".' }
+        settings:
+          type: array
+          description: Environment variables (STDIO) or headers (REMOTE) the source declares.
+          items: { $ref: '#/components/schemas/SetupSetting' }
+
+    SetupSetting:
+      type: object
+      required: [name, kind, required, secret]
+      properties:
+        name: { type: string }
+        kind: { type: string, enum: [ENV, HEADER] }
+        description: { type: [string, 'null'] }
+        required: { type: boolean }
+        secret: { type: boolean, description: Shown as a placeholder; a value is never filled in. }
+        value: { type: [string, 'null'], description: 'The value or default the source publishes (never a secret''s), as it appears in the snippets.' }
+
+    SetupClient:
+      type: object
+      required: [id, name, docsUrl, snippets]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        docsUrl: { type: string, format: uri, description: The client's own documentation the snippet format follows. }
+        snippets:
+          type: array
+          items:
+            type: object
+            required: [optionId, supported]
+            properties:
+              optionId: { type: string }
+              supported: { type: boolean }
+              where: { type: [string, 'null'], description: 'Where it goes: a terminal, or a config file path.' }
+              language: { type: [string, 'null'], description: 'shell, json, jsonc, toml or yaml.' }
+              text: { type: [string, 'null'], description: Ready to paste; secrets are placeholders. }
+              note: { type: [string, 'null'], description: Why it is not supported, or what to do after pasting. }
+
+    ToolGuideRequest:
+      type: object
+      properties:
+        question: { type: [string, 'null'], minLength: 3, maxLength: 500, description: A question about this tool; empty for the full guide. }
+
+    ToolGuide:
+      type: object
+      required: [resourceId, title, status, sections, documents, rejected, generatedAt]
+      properties:
+        resourceId: { type: string, format: uuid }
+        title: { type: string }
+        status:
+          type: string
+          enum: [OK, NO_STEPS, NO_MATERIAL, LLM_UNAVAILABLE]
+          description: 'OK: steps passed the checks. NO_STEPS: documents read, nothing passed. NO_MATERIAL: no document to read. LLM_UNAVAILABLE: no model now (see unavailable).'
+        question: { type: [string, 'null'] }
+        unavailable: { type: [string, 'null'], description: 'With LLM_UNAVAILABLE: "budget" (today''s model calls are used up) or "error".' }
+        sections:
+          type: array
+          items:
+            type: object
+            required: [kind, steps]
+            properties:
+              kind: { type: string, enum: [ANSWER, REQUIREMENTS, INSTALL, CONFIGURE, USE, CONNECT] }
+              steps:
+                type: array
+                items:
+                  type: object
+                  required: [text, quote, source, caution]
+                  properties:
+                    text: { type: string, description: AI-written instruction (labelled as AI in the UI). }
+                    quote: { type: string, description: Passage of the cited document that supports the step, checked. }
+                    source: { type: string, description: Key of the document in documents. }
+                    code:
+                      oneOf:
+                        - type: 'null'
+                        - type: object
+                          required: [text]
+                          properties:
+                            language: { type: [string, 'null'] }
+                            text: { type: string, description: Copied from one code block of the document, checked. }
+                    caution: { type: boolean, description: 'The command pipes a download into a shell, uses sudo or deletes recursively.' }
+        documents:
+          type: array
+          items:
+            type: object
+            required: [key, kind, url, retrievedAt]
+            properties:
+              key: { type: string }
+              kind: { type: string, enum: [README, PACKAGE_README, MODEL_CARD] }
+              url: { type: string, format: uri }
+              retrievedAt: { type: string, format: date-time }
+        model: { type: [string, 'null'] }
+        rejected: { type: integer, description: Proposed steps the checks removed. }
+        generatedAt: { type: string, format: date-time }
+
+    IssueReportRequest:
+      type: object
+      required: [kind, message]
+      properties:
+        kind: { type: string, enum: [WRONG, OUTDATED, BROKEN_LINK, OTHER] }
+        field: { type: [string, 'null'], maxLength: 60 }
+        message: { type: string, minLength: 5, maxLength: 2000 }
+
+    IssueReportAccepted:
+      type: object
+      required: [reportId]
+      properties:
+        reportId: { type: string, format: uuid }
+
+    GuideRequest:
+      type: object
+      required: [request]
+      properties:
+        request: { type: string, minLength: 3, maxLength: 500, description: The need in plain words, any language. }
+        path: { oneOf: [{ $ref: '#/components/schemas/AudiencePath' }, { type: 'null' }] }
+
+    GuideRecommendation:
+      type: object
+      required: [resourceId, title, url, type, reason, quote, sourceIds, aiReasoned]
+      properties:
+        resourceId: { type: string, format: uuid }
+        title: { type: string }
+        url: { type: string, format: uri }
+        type: { $ref: '#/components/schemas/ResourceType' }
+        reason: { type: string, description: AI-written explanation (labelled as AI in the UI). }
+        quote: { type: string, description: Exact text from the resource's own description that supports the reason. }
+        description:
+          type: [string, 'null']
+          description: The resource's own description, the text the quote was checked against, so a client can show the quote in context.
+        sourceIds: { type: array, items: { type: string } }
+        aiReasoned:
+          type: boolean
+          description: True when the model chose this pick and it passed the evidence check; false for a plain top search result shown because no AI pick survived.
+        checks:
+          type: array
+          description: One entry per constraint in GuideResponse.constraints, in the same order.
+          items: { $ref: '#/components/schemas/GuideCheck' }
+        reasonCheck:
+          type: string
+          enum: [SUPPORTED, REMOVED, NOT_CHECKED]
+          default: NOT_CHECKED
+          description: |
+            Outcome of a second model call that compares `reason` with the quote, the resource's own text
+            and the confirmed checks. SUPPORTED: no claim beyond that evidence was found (a model check, not a
+            proof). REMOVED: it found one, so `reason` is empty. NOT_CHECKED: no check ran (no model, budget,
+            failure) or this is a fallback result.
+
+    GuideCheck:
+      type: object
+      required: [constraint, status]
+      properties:
+        constraint: { type: string, description: 'A requirement the user stated, in a few words (e.g. "free", "self-hosted").' }
+        status:
+          type: string
+          enum: [CONFIRMED, NOT_CONFIRMED]
+          description: CONFIRMED only when the quote appears word for word in the resource's own text. NOT_CONFIRMED means the source does not show it, not that it is false.
+        quote: { type: [string, 'null'], description: 'Exact text from the resource that shows the constraint is met, or for licence constraints the licence the source states (e.g. "License: MIT (stated by GitHub)").' }
+
+    GuidePrompt:
+      type: object
+      required: [text, basedOn]
+      properties:
+        text: { type: string, description: AI-generated prompt the user can copy. }
+        basedOn:
+          type: array
+          description: Catalog prompts this was adapted from; never empty, because a prompt not adapted from a catalog prompt is not shown.
+          items:
+            type: object
+            required: [resourceId, title]
+            properties:
+              resourceId: { type: string, format: uuid }
+              title: { type: string }
+
+    GuideModelInfo:
+      type: object
+      required: [provider, fastModel, reasoningModel]
+      properties:
+        provider: { type: string }
+        fastModel: { type: string }
+        reasoningModel: { type: string }
+
+    GuideResponse:
+      type: object
+      required: [status, searchQuery, recommendations, candidatesConsidered, sources, notices, generatedAt]
+      properties:
+        status: { type: string, enum: [OK, PARTIAL, LLM_UNAVAILABLE, NO_CANDIDATES] }
+        searchQuery: { type: string, description: Search terms actually used to retrieve candidates. }
+        recommendations: { type: array, items: { $ref: '#/components/schemas/GuideRecommendation' } }
+        prompt: { oneOf: [{ $ref: '#/components/schemas/GuidePrompt' }, { type: 'null' }] }
+        model: { oneOf: [{ $ref: '#/components/schemas/GuideModelInfo' }, { type: 'null' }] }
+        candidatesConsidered: { type: integer }
+        rejected: { type: integer, description: AI suggestions dropped by the validator. }
+        constraints:
+          type: array
+          description: Requirements the planning model read from the need; each recommendation is checked against them.
+          items: { type: string }
+        sources: { type: array, items: { $ref: '#/components/schemas/SourceStatus' } }
+        notices: { type: array, items: { $ref: '#/components/schemas/Notice' } }
+        generatedAt: { type: string, format: date-time }
+
+    GuideStreamPlanned:
+      type: object
+      required: [searchQuery, constraints]
+      properties:
+        searchQuery: { type: string, description: Search terms the fast model wrote (qualifiers removed). }
+        constraints: { type: array, items: { type: string }, description: Requirements read from the need. }
+        model: { type: string, description: The fast model's id. }
+
+    GuideStreamRetrieved:
+      type: object
+      required: [candidates, sources]
+      properties:
+        candidates: { type: integer, description: Real search results the reasoning model may choose from. }
+        sources: { type: array, items: { $ref: '#/components/schemas/SourceStatus' } }
+
+    GuideStreamChosen:
+      type: object
+      required: [proposed]
+      properties:
+        proposed: { type: integer, description: Picks the reasoning model proposed, before validation. }
+        model: { type: string, description: The reasoning model's id. }
+
+    GuideStreamValidated:
+      type: object
+      required: [kept, rejected]
+      properties:
+        kept: { type: integer }
+        rejected: { type: integer }
+
+    GuideStreamChecked:
+      type: object
+      required: [supported, removed, notChecked]
+      properties:
+        supported: { type: integer, description: Reasons the check found supported by the quote. }
+        removed: { type: integer, description: Reasons removed because the check found an unsupported claim. }
+        notChecked: { type: integer, description: Reasons without a verdict (the check failed or was not answered). }
+
+    SourceInfo:
+      type: object
+      required: [id, name, mode, enabled, homepage, resourceTypes]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        mode: { $ref: '#/components/schemas/SourceMode' }
+        enabled: { type: boolean }
+        homepage: { type: string, format: uri }
+        termsUrl: { type: [string, 'null'], format: uri }
+        attribution: { type: [string, 'null'] }
+        resourceTypes: { type: array, items: { $ref: '#/components/schemas/ResourceType' } }
+        lastOutcome: { oneOf: [{ $ref: '#/components/schemas/SourceOutcome' }, { type: 'null' }] }
+        lastCheckedAt: { type: [string, 'null'], format: date-time }
+
+    Me:
+      type: object
+      required: [authenticated, roles, loginProviders]
+      properties:
+        authenticated: { type: boolean }
+        displayName: { type: [string, 'null'] }
+        roles: { type: array, items: { type: string, enum: [USER, ADMIN] } }
+        loginProviders:
+          type: array
+          description: OAuth2 registrations the user can sign in with (path /oauth2/authorization/{id}).
+          items:
+            type: object
+            required: [id, name]
+            properties:
+              id: { type: string }
+              name: { type: string }
+
+    BookmarkRequest:
+      type: object
+      required: [resourceId, title, url]
+      properties:
+        resourceId: { type: string, format: uuid }
+        title: { type: string, maxLength: 300 }
+        url: { type: string, format: uri, description: "http(s) only, max 2000 chars (validated server-side)." }
+        type: { oneOf: [{ $ref: '#/components/schemas/ResourceType' }, { type: 'null' }] }
+
+    Bookmark:
+      type: object
+      required: [resourceId, title, url, savedAt]
+      properties:
+        resourceId: { type: string, format: uuid }
+        title: { type: string }
+        url: { type: string, format: uri }
+        type: { oneOf: [{ $ref: '#/components/schemas/ResourceType' }, { type: 'null' }] }
+        savedAt: { type: string, format: date-time }
+
+    ReviewStatus:
+      type: string
+      enum: [OPEN, ACCEPTED, REJECTED]
+
+    ReviewItem:
+      type: object
+      required: [id, kind, status, reason, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        kind: { type: string, enum: [ENRICHMENT_VALIDATION, SOURCE_CONFLICT, RELATIONSHIP_CANDIDATE, USER_REPORT] }
+        status: { $ref: '#/components/schemas/ReviewStatus' }
+        resourceId: { type: [string, 'null'], format: uuid }
+        resourceTitle: { type: [string, 'null'] }
+        reason: { type: string }
+        details: { type: [string, 'null'] }
+        createdAt: { type: string, format: date-time }
+        resolvedAt: { type: [string, 'null'], format: date-time }
+        resolvedBy: { type: [string, 'null'] }
+
+    ReviewResolution:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [ACCEPTED, REJECTED] }
+        note: { type: [string, 'null'], maxLength: 1000 }
+
+    ScoutRunRequest:
+      type: object
+      properties:
+        sourceId: { type: [string, 'null'], description: Omit to run every enabled collector. }
+
+    ScoutRun:
+      type: object
+      required: [id, sourceId, status, startedAt, itemsSeen, itemsChanged]
+      properties:
+        id: { type: string, format: uuid }
+        sourceId: { type: string }
+        status: { type: string, enum: [RUNNING, SUCCEEDED, FAILED, SKIPPED] }
+        startedAt: { type: string, format: date-time }
+        finishedAt: { type: [string, 'null'], format: date-time }
+        itemsSeen: { type: integer }
+        itemsChanged: { type: integer }
+        enrichmentsQueued: { type: integer }
+        message: { type: [string, 'null'] }
