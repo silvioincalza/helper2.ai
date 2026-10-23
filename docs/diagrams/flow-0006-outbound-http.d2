@@ -1,0 +1,70 @@
+# Flowchart: one outbound source call, from the pooled Apache client to the outcome the search reports.
+# Shows the pool wait, connect/response timeouts, the redirect rules (sources follow redirects without an
+# https-to-http downgrade; the embedder follows none), the status mapping to SourceFailure, and how
+# SearchResources turns each failure into a source outcome.
+# Source of truth: backend/src/main/java/ai/helper2/platform/http/ObservedHttp.java (restClientBuilder,
+#   requestFactory, NoDowngradeRedirects), backend/src/main/java/ai/helper2/sources/HttpClients.java
+#   (getText, getJson, mapStatus, retryAfter), backend/src/main/java/ai/helper2/catalog/internal/NvidiaEmbedder.java,
+#   backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt (Run.collect).
+# Render: cd docs/diagrams && d2 fmt flow-0006-outbound-http.d2 && d2 flow-0006-outbound-http.d2 flow-0006-outbound-http.svg
+
+...@style
+
+direction: down
+
+start: "source.search(query)\non a virtual thread" {class: end}
+pool: "Free pooled connection\nwithin 250 ms?" {class: decision}
+send: "Connect + send\n(connect timeout = source timeout)" {class: app}
+redirect: "Redirect?" {class: decision}
+follows: "Client follows redirects?\n(sources: yes; embedder: no)" {class: decision}
+down: "https → http?" {class: decision}
+noredir: "Not followed:\nthe 3xx is the response" {class: app}
+status: "Status 2xx?" {class: decision}
+limited: "429, or 403 with\nx-ratelimit-remaining 0,\nor 503 with Retry-After?" {class: decision}
+rl: "SourceFailure.RateLimited\n(pause from Retry-After\nor x-ratelimit-reset)" {class: app}
+httpfail: "SourceFailure.Unavailable\n\"HTTP <status>\"" {class: app}
+netfail: "SourceFailure.Unavailable\n\"network error or timeout\"" {class: app}
+json: "Body is a JSON\nobject or array?" {class: decision}
+badjson: "SourceFailure.Unavailable\n\"malformed response\"" {class: app}
+hits: "Map items to SourceHits" {class: app}
+
+search: SearchResources.collect {
+  class: group
+  direction: down
+  deadline: "Done before the source's\ndeadline (from its own start)?" {class: decision}
+  timedout: "TIMED_OUT\n(future cancelled)" {class: fail}
+  kind: "Result?" {class: decision}
+  ok: "SUCCEEDED, LIVE\n(cache put)" {class: end}
+  ratelimited: "RATE_LIMITED\ncooldown until pause\n(default 1 min)" {class: fail}
+  failed: "FAILED\n\"Source unavailable\" or\n\"Source returned an error\"" {class: fail}
+
+  deadline -> timedout: no
+  deadline -> kind: yes {class: hot}
+  kind -> ok: hits {class: hot}
+  kind -> ratelimited: RateLimited
+  kind -> failed: "Unavailable or\nother exception"
+}
+
+start -> pool: {class: hot}
+pool -> netfail: "no"
+pool -> send: yes {class: hot}
+send -> netfail: "connect or\nresponse timeout,\nI/O error"
+send -> redirect: {class: hot}
+redirect -> follows: yes
+follows -> down: yes
+follows -> noredir: no
+down -> noredir: yes
+down -> send: "no: follow"
+noredir -> status
+redirect -> status: no {class: hot}
+status -> json: yes {class: hot}
+status -> limited: no
+limited -> rl: yes
+limited -> httpfail: no
+json -> hits: yes {class: hot}
+json -> badjson: no
+hits -> search.deadline: {class: hot}
+rl -> search.deadline
+httpfail -> search.deadline
+netfail -> search.deadline
+badjson -> search.deadline

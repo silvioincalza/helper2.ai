@@ -1,0 +1,46 @@
+# Sequence: a GitHub search call that hits the rate limit, and the next search during the pause.
+# Shows the observed RestClient on Apache HttpClient 5, the status mapping to RateLimited and the
+# per-source cooldown in SearchResources.
+# Source of truth: backend/src/main/java/ai/helper2/sources/GitHubSource.java (search),
+#   backend/src/main/java/ai/helper2/sources/HttpClients.java (getJson, mapStatus),
+#   backend/src/main/java/ai/helper2/platform/http/ObservedHttp.java (restClientBuilder, USER_AGENT, BoundedUriConvention),
+#   backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt (Run.start, Run.collect).
+# Render: cd docs/diagrams && d2 fmt sequence-0006-outbound-http.d2 && d2 sequence-0006-outbound-http.d2 sequence-0006-outbound-http.svg
+
+...@style
+
+shape: sequence_diagram
+
+search: SearchResources {class: app}
+source: GitHubSource {class: app}
+http: "HttpClients\n(getJson, mapStatus)" {class: app}
+client: "RestClient from ObservedHttp\n+ Apache HttpClient 5" {class: app}
+github: api.github.com {class: ext}
+
+call: Search 1 {
+  search -> source: "submit search(query)\non a virtual thread" {class: hot}
+  source -> http: "getJson(call, clock)"
+  http -> client: "GET /search/repositories?q=...\nUser-Agent .../1.0.0, Bearer token"
+  client -> github: "HTTPS (span + traceparent;\nuri tag without query)" {class: hot}
+  github -> client: "403, x-ratelimit-remaining: 0,\nx-ratelimit-reset: <epoch s>"
+  client -> http: "RestClientResponseException"
+  http -> source: "throw RateLimited(until reset)"
+  source -> search: "ExecutionException(RateLimited)"
+  search -> search: "cooldownUntil[github] =\nstart + pause;\noutcome RATE_LIMITED"
+}
+
+pause: Search 2, during the pause {
+  search -> search: "cooldown active:\nno call, outcome SKIPPED,\nstale cache entry if any"
+}
+
+later: Search 3, after the pause {
+  search -> source: "submit search(query)" {class: hot}
+  source -> http: "getJson(call, clock)"
+  http -> client: "GET /search/repositories?q=..."
+  client -> github: "HTTPS" {class: hot}
+  github -> client: "200 JSON"
+  client -> http: "body"
+  http -> source: "JsonNode"
+  source -> search: "SourceHits"
+  search -> search: "SUCCEEDED, LIVE"
+}
