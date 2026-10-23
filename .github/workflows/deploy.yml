@@ -1,0 +1,114 @@
+# Deploys one environment with `make deploy` (deploy/k8s/Makefile) on the self-hosted runner in the
+# mesh. Called by cd.yml only; it has no trigger of its own, so a pull request can never reach it.
+name: deploy
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: staging or prod
+        type: string
+        required: true
+      tag:
+        description: image tag = 12-char commit. Empty = the caller's commit; for prod, what staging runs
+        type: string
+        default: ''
+    outputs:
+      tag:
+        description: the tag that was deployed
+        value: ${{ jobs.deploy.outputs.tag }}
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, incalzame]
+    timeout-minutes: 15
+    environment:
+      name: ${{ inputs.environment }}
+      url: ${{ inputs.environment == 'prod' && 'https://helper2.ai' || 'https://helper2.incalza.me' }}
+    # Never cancel a running deploy: an interrupted `helm upgrade --wait` leaves the release
+    # pending-upgrade and blocks the next one.
+    concurrency:
+      group: deploy-${{ inputs.environment }}
+      cancel-in-progress: false
+    env:
+      ENV: ${{ inputs.environment }}
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    defaults:
+      run:
+        working-directory: deploy/k8s
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      # Before the checkout below: older tags predate .github/actions, so it must load from this commit.
+      - uses: ./.github/actions/bao-login
+        with:
+          addr: ${{ vars.BAO_ADDR }}
+          role: deploy-${{ inputs.environment }}
+
+      # Cluster access comes only from the env's OpenBao entry, so the prod approval gates prod access.
+      # The runner itself holds no kube credentials.
+      - name: Kubeconfig from OpenBao
+        run: |
+          set -euo pipefail
+          kc=$(mktemp "$RUNNER_TEMP/kubeconfig.XXXXXX")
+          bao kv get -mount=helper2/kv -field=kubeconfig "ci/$ENV" > "$kc"
+          echo "KUBECONFIG=$kc" >> "$GITHUB_ENV"
+
+      - name: Resolve tag
+        id: tag
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          tag=$INPUT_TAG
+          if [[ -z $tag && $ENV == prod ]]; then
+            # Promote = the exact tag staging runs (README: prod never gets an untested tag).
+            # The prod deployer may `get` this one Deployment in staging and nothing else (rbac.tf).
+            image=$(kubectl -n helper2-staging get deployment helper2 \
+              -o jsonpath='{.spec.template.spec.containers[?(@.name=="app")].image}')
+            tag=${image##*:}
+          fi
+          tag=${tag:-${GITHUB_SHA::12}}
+          [[ $tag =~ ^[0-9a-f]{12}$ ]] || { echo "tag must be a 12-char commit, got '$tag'"; exit 1; }
+          # A branch or tag named like the hex would win ref resolution over the commit: refuse it.
+          if [[ -n $(git for-each-ref "refs/tags/$tag" "refs/heads/$tag" "refs/remotes/origin/$tag") ]]; then
+            echo "a ref named $tag exists, refusing"; exit 1
+          fi
+          sha=$(git rev-parse --verify --quiet "$tag^{commit}") || { echo "no commit $tag"; exit 1; }
+          [[ $sha == "$tag"* ]] || { echo "$tag resolved to $sha"; exit 1; }
+          # Only commits that reached main (and so passed CI) may run with deploy secrets.
+          git fetch --quiet origin +refs/heads/main:refs/remotes/origin/main
+          git merge-base --is-ancestor "$sha" refs/remotes/origin/main || { echo "$tag is not on main"; exit 1; }
+          # Chart and image from the same commit, so an old image never runs with a newer chart.
+          git checkout --quiet --detach "$sha"
+          echo "TAG=$tag" >> "$GITHUB_ENV"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Deploying $tag to $ENV" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Write app.env from OpenBao
+        run: |
+          set -euo pipefail
+          umask 077
+          # The env dirs hold only the git-ignored app.env, so a fresh checkout lacks them.
+          mkdir -p "$ENV"
+          bao kv get -mount=helper2/kv -field=app_env "ci/$ENV" > "$ENV/app.env"
+
+      - name: Diff
+        run: make diff
+
+      - name: Deploy
+        run: make deploy
+
+      - name: Status
+        run: make status
+
+      - name: Clean up
+        if: always()
+        run: rm -f "$ENV/app.env" "${KUBECONFIG:-}"
