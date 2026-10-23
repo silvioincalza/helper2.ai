@@ -1,0 +1,73 @@
+# Flowchart: what SearchResources does with each source in one search, then merge and coverage.
+# Shows disabled sources, the rate-limit cooldown, the fresh/stale Redis windows for LIVE sources,
+# the per-source deadline counted from the source's own start, and the notices.
+# Source of truth: backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt (Run.start, Run.collect, stale, search),
+#   backend/src/main/kotlin/ai/helper2/search/ResultMerger.kt,
+#   backend/src/main/java/ai/helper2/search/cache/RedisSearchCache.java.
+# Render: cd docs/diagrams && d2 fmt flow-0008-federated-search.d2 && d2 flow-0008-federated-search.d2 flow-0008-federated-search.svg
+
+...@style
+
+direction: down
+
+req: "GET /api/v1/search?q=…" {class: end}
+
+each: For each source (in parallel) {
+  class: group
+  direction: down
+  enabled: "descriptor.enabled?" {class: decision}
+  disabled: "SKIPPED\n\"Disabled in configuration\"" {class: end}
+  cooldown: "In cooldown after\na rate limit?" {class: decision}
+  paused: "SKIPPED (+ stale entry\nif one exists)" {class: end}
+  live: "mode == LIVE?" {class: decision}
+  fresh: "Redis entry younger\nthan cacheTtl?" {class: decision}
+  cached: "SUCCEEDED, served CACHE\n(no live call)" {class: end}
+  call: "source.search(query)\non a virtual thread" {class: app}
+  deadline: "Answer within timeout,\ncounted from own start?" {class: decision}
+  ok: "SUCCEEDED, LIVE\n(LIVE: put entry, TTL 24 h)" {class: end}
+  failed: "TIMED_OUT / RATE_LIMITED /\nFAILED (rate limit sets cooldown)" {class: fail}
+  stale: "Entry younger\nthan 24 h?" {class: decision}
+  stalehit: "outcome kept,\nserved STALE_CACHE" {class: end}
+  none: "outcome kept,\nserved NONE, 0 hits" {class: fail}
+
+  enabled -> disabled: no
+  enabled -> cooldown: yes
+  cooldown -> paused: yes
+  cooldown -> live: no
+  live -> fresh: yes
+  live -> call: "no (index,\ncurated)"
+  fresh -> cached: yes
+  fresh -> call: "no / miss"
+  call -> deadline
+  deadline -> ok: yes {class: hot}
+  deadline -> failed: "no / error"
+  failed -> stale
+  stale -> stalehit: yes
+  stale -> none: no
+}
+
+merge: "ResultMerger.merge:\ngroup by canonical or repo URL;\nconflicts kept, value null;\ndates: earliest / latest,\nCONFLICTING if days differ" {class: app}
+discovered: "observer.firstDiscovered\n(one read)" {class: data}
+idxdown: "INDEX_UNAVAILABLE\nnotice" {class: fail}
+record: "record(LIVE hits only)\n→ background queue" {class: data}
+rank: "rank → filter → sort → page" {class: app}
+coverage: "coverage.partial = any enabled\nsource not SUCCEEDED" {class: app}
+allfail: "No success and\nno stale entry?" {class: decision}
+notice: "ALL_SOURCES_FAILED\nnotice" {class: fail}
+resp: "200 SearchResponse\n(sources[], coverage, notices)" {class: end}
+
+req -> each.enabled: {class: hot}
+each.ok -> merge: {class: hot}
+each.cached -> merge
+each.stalehit -> merge
+each.paused -> merge: "stale hits, if any"
+merge -> discovered
+discovered -> idxdown: "error"
+discovered -> record: {class: hot}
+idxdown -> record
+record -> rank: {class: hot}
+rank -> coverage
+coverage -> allfail
+allfail -> notice: yes
+allfail -> resp: no {class: hot}
+notice -> resp
