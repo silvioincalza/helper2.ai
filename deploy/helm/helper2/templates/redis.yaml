@@ -1,0 +1,57 @@
+# Cache only: no persistence on purpose (never the source of truth, ADR 0005).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: redis } }
+  template:
+    metadata:
+      labels: { app: redis }
+      {{- if and .Values.redis.auth.enabled (not .Values.redis.auth.existingSecret) }}
+      annotations:
+        # Redis reads its password at start only: a new one in app.env restarts it (with the app).
+        checksum/auth: {{ get (include "helper2.env" . | fromJson) "H2_REDIS_PASSWORD" | sha256sum }}
+      {{- end }}
+    spec:
+      securityContext: { runAsNonRoot: true, runAsUser: 999, runAsGroup: 999, seccompProfile: { type: RuntimeDefault } }
+      containers:
+        - name: redis
+          image: {{ .Values.redis.image }}
+          {{- if .Values.redis.auth.enabled }}
+          # requirepass comes in as config on stdin (`redis-server -`), not in argv. REDISCLI_AUTH also
+          # lets the probe's redis-cli authenticate.
+          command: ["/bin/sh", "-ec"]
+          args:
+            - |
+              exec redis-server - --save "" --appendonly no --maxmemory {{ .Values.redis.maxMemory }} --maxmemory-policy allkeys-lru <<EOF
+              requirepass $REDISCLI_AUTH
+              EOF
+          env:
+            - name: REDISCLI_AUTH
+              valueFrom: { {{ include "helper2.redisPasswordFrom" . }} }
+          {{- else }}
+          args: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", {{ .Values.redis.maxMemory | quote }}, "--maxmemory-policy", "allkeys-lru"]
+          {{- end }}
+          ports: [{ containerPort: 6379, name: redis }]
+          readinessProbe: { exec: { command: ["sh", "-c", "redis-cli ping | grep -qx PONG"] }, periodSeconds: 5 }
+          resources:
+            {{- toYaml .Values.redis.resources | nindent 12 }}
+          securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }
+          volumeMounts: [{ name: tmp, mountPath: /data }]
+      volumes: [{ name: tmp, emptyDir: {} }]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" . | nindent 4 }}
+spec:
+  selector: { app: redis }
+  ports: [{ port: 6379, targetPort: redis }]
