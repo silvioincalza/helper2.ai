@@ -1,0 +1,72 @@
+# Flowchart: the two loops of vector search: the indexer that keeps resource_embedding current, and
+# the semantic source that answers one search.
+# Shows the conditional activation, the cluster lock embedding-indexer (one batch per period across all
+# replicas), the batch selection, the pause after a rate limit, the query-vector
+# cache, the distance cut-off and the fusion by rank.
+# Source of truth: backend/src/main/java/ai/helper2/catalog/CatalogConfiguration.java (VectorSearch, IndexerSchedule),
+#   backend/src/main/java/ai/helper2/platform/ClusterLock.java,
+#   backend/src/main/java/ai/helper2/catalog/internal/EmbeddingIndexer.java, NvidiaEmbedder.java, ResourceStore.java,
+#   backend/src/main/java/ai/helper2/catalog/SemanticSearchSource.java.
+# Render: cd docs/diagrams && d2 fmt flow-0012-vector-search-pgvector.d2 && d2 flow-0012-vector-search-pgvector.d2 flow-0012-vector-search-pgvector.svg
+
+...@style
+
+direction: down
+
+key: "H2_NVIDIA_API_KEY set?" {class: decision}
+off: "Keyword search only:\nno indexer, no helper2-semantic" {class: end}
+key -> off: no
+
+indexer: "Indexer on each replica (thread embedding-indexer, every 15 s)" {
+  class: group
+  direction: down
+  lock: "Lock \"embedding-indexer\" free?\n(ShedLock row; held at least\n13.5 s, at most 2 min 30 s)" {class: decision}
+  skip: "Skip this period:\nanother replica embeds" {class: end}
+  paused: "Paused after a\nrate limit (2 min)?" {class: decision}
+  idle: "return 0" {class: end}
+  pending: "pendingEmbeddings(model, 50):\nno vector or md5(text) changed;\nmost popular first; no DEMO rows" {class: data}
+  empty: "Nothing pending?" {class: decision}
+  uptodate: "backlog = 0,\nlast.success = now" {class: end}
+  embed: "NvidiaEmbedder.embed\n(input_type=passage, 30 s client)" {class: ai}
+  result: "Result?" {class: decision}
+  save: "saveEmbeddings, backlog gauge,\nlast.success = now" {class: data}
+  limited: "failures{rate_limited},\npause 2 min" {class: fail}
+  failed: "failures{embedding|database},\nretry next tick" {class: fail}
+  lock -> skip: no
+  lock -> paused: "yes: EmbeddingIndexer.tick"
+  paused -> idle: yes
+  paused -> pending: no
+  pending -> empty
+  empty -> uptodate: yes
+  empty -> embed: no {class: ai-call}
+  embed -> result
+  result -> save: "vectors ok" {class: hot}
+  result -> limited: "HTTP 429"
+  result -> failed: "other error"
+}
+
+search: "SemanticSearchSource.search (one search)" {
+  class: group
+  direction: down
+  blank: "Query text blank?" {class: decision}
+  nohits: "no hits" {class: end}
+  cached: "Query vector in memory\n(last 1000)?" {class: decision}
+  qembed: "embed(text, QUERY)" {class: ai}
+  qerr: "429 → RateLimited (1 min cooldown)\nother → Unavailable" {class: fail}
+  knn: "HNSW: cosine distance ≤ 0.65,\nnearest first, LIMIT 30" {class: data}
+  hits: "Hits, rank = distance order;\nlabels and popularity attached" {class: end}
+  blank -> nohits: yes
+  blank -> cached: no
+  cached -> knn: yes {class: hot}
+  cached -> qembed: no {class: ai-call}
+  qembed -> knn: ok
+  qembed -> qerr: error
+  knn -> hits: {class: hot}
+}
+
+fuse: "SearchResources → Ranking:\n+ 1 / (60 + rank + 1), like any source" {class: app}
+
+key -> indexer.lock: yes
+key -> search.blank: yes {class: hot}
+search.hits -> fuse: {class: hot}
+indexer.save -> search.knn: "vectors used\nby later searches" {class: config}
