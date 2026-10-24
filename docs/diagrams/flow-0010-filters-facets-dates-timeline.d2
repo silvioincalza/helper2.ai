@@ -1,0 +1,59 @@
+# Flowchart: from ranked results to the page the user sees: filters with Unknown, facet counts, sort, page,
+# and the timeline view in the browser.
+# Source of truth: backend/src/main/kotlin/ai/helper2/search/Filtering.kt (Filtering, Facets, Sorting),
+#   backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt (search),
+#   backend/src/main/kotlin/ai/helper2/shared/DateFact.kt (earliest, latest, lastChange),
+#   backend/src/main/kotlin/ai/helper2/search/ResultMerger.kt, frontend/src/components/DateFactView.tsx,
+#   frontend/src/lib/searchState.ts (toApiParams), frontend/src/lib/timeline.ts.
+# Render: cd docs/diagrams && d2 fmt flow-0010-filters-facets-dates-timeline.d2 && d2 flow-0010-filters-facets-dates-timeline.d2 flow-0010-filters-facets-dates-timeline.svg
+
+...@style
+
+direction: down
+
+view: "view=timeline in the URL?" {class: decision}
+tl: "toApiParams: sort=NEWEST,\nsize=50 (view stays in browser)" {class: app}
+list: "Send filters, sort, page, size" {class: app}
+
+ranked: "Ranked results of this query\n(≤ 30 hits per source, merged)" {class: app}
+
+filter: Filtering.matches (per result) {
+  class: group
+  direction: down
+  facet: "For each selected facet:\nvalue in selection?\n(no source said → \"unknown\")" {class: decision}
+  drop: "Result filtered out" {class: fail}
+  after: "updatedAfter set?" {class: decision}
+  known: "Updated date known\nand on or after it?" {class: decision}
+  keep: "Result kept" {class: end}
+  facet -> drop: no
+  facet -> after: yes
+  after -> keep: no
+  after -> known: yes
+  known -> keep: yes
+  known -> drop: "no / unknown"
+}
+
+facets: "Facets.compute: each facet counts with\nevery filter except its own;\nknown values by count, unknown last" {class: app}
+sort: "Sort: RELEVANCE keeps order;\nNEWEST / RECENTLY_UPDATED:\nunknown dates last" {class: app}
+page: "Page (page 0..50, size 1..50)" {class: app}
+cards: "CardMapper: dates as DateFact\n(value, precision, source, alternatives;\nCONFLICTING when two sources\nstate different UTC days)" {class: app}
+
+group: "Timeline view?" {class: decision}
+month: "Group by UTC month of the\npublished date (source-stated)" {class: app}
+unknown: "No published date →\none \"unknown\" group, last" {class: end}
+listview: "List of cards" {class: end}
+
+view -> tl: yes
+view -> list: no
+tl -> ranked
+list -> ranked
+ranked -> filter.facet: {class: hot}
+ranked -> facets
+filter.keep -> sort: {class: hot}
+sort -> page: {class: hot}
+page -> cards: {class: hot}
+facets -> cards
+cards -> group
+group -> month: yes
+group -> listview: no {class: hot}
+month -> unknown

@@ -1,0 +1,40 @@
+# Sequence: the timeline view with one filter set, from the browser URL to grouped cards.
+# Shows that the view is UI-only (the API gets sort=NEWEST, size=50), where filters, facets and sort run,
+# and that the browser groups by the source-stated published date, never the discovery date.
+# Source of truth: frontend/src/lib/searchState.ts, frontend/src/components/SearchResults.tsx,
+#   frontend/src/components/ResultsTimeline.tsx, frontend/src/lib/timeline.ts,
+#   backend/src/main/java/ai/helper2/search/web/SearchController.java, CardMapper.java,
+#   backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt, Filtering.kt.
+# Render: cd docs/diagrams && d2 fmt sequence-0010-filters-facets-dates-timeline.d2 && d2 sequence-0010-filters-facets-dates-timeline.d2 sequence-0010-filters-facets-dates-timeline.svg
+
+...@style
+
+shape: sequence_diagram
+
+user: User {class: person}
+sr: SearchResults {class: app}
+ctl: SearchController {class: app}
+fs: SearchResources {class: app}
+flt: "Filtering / Facets / Sorting" {class: app}
+cm: CardMapper {class: app}
+tl: ResultsTimeline {class: app}
+
+user -> sr: "/?q=vector database&license=unknown&view=timeline" {class: hot}
+sr -> sr: "toApiParams: drop view,\nsort=NEWEST, size=50"
+sr -> ctl: "GET /api/v1/search?q=…&license=unknown\n&sort=NEWEST&size=50" {class: hot}
+ctl -> ctl: "SearchFilters(licenses = {unknown})"
+ctl -> fs: "search(SearchRequest)" {class: hot}
+fs -> fs: "fan-out, merge, rank (ADR 0008, 0009)"
+fs -> flt: "Filtering.apply(ranked, filters)" {class: hot}
+flt -> fs: "results with no license stated"
+fs -> flt: "Sorting.sort(filtered, NEWEST)"
+flt -> fs: "published DESC, unknown last"
+fs -> flt: "Facets.compute(ranked, filters)"
+flt -> fs: "counts per facet, own filter ignored"
+fs -> ctl: "SearchOutcome (page 0, 50 items)"
+ctl -> cm: "card(result) for each"
+cm -> ctl: "timeline: published, updated, discovered\n(DateFact: value, precision, sourceId,\nstatus, alternatives)"
+ctl -> sr: "200 SearchResponse" {class: hot}
+sr -> tl: "cards" {class: hot}
+tl -> tl: "groupByCreationMonth:\nUTC month of published (kept value,\nalso when CONFLICTING);\nno date → \"unknown\" group at the end"
+tl -> user: "Months, newest first" {class: hot}
