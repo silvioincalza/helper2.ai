@@ -1,0 +1,65 @@
+# Flowchart: language detection and query translation in one search.
+# Shows the evidence rules of LanguageDetector, which sources start at once, the bounded wait for the
+# translation, the checks on the untrusted answer, and how the English words are disclosed.
+# Source of truth: backend/src/main/kotlin/ai/helper2/shared/LanguageDetector.kt,
+#   backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt (search, startTranslation, awaitTranslation, withTranslation),
+#   backend/src/main/java/ai/helper2/platform/llm/SpringAiQueryTranslator.java, LlmConfiguration.java.
+# Render: cd docs/diagrams && d2 fmt flow-0011-language-aware-search.d2 && d2 flow-0011-language-aware-search.d2 flow-0011-language-aware-search.svg
+
+...@style
+
+direction: down
+
+q: "Query text" {class: end}
+
+detect: LanguageDetector.detect {
+  class: group
+  direction: down
+  letters: "At least 6 letters?" {class: decision}
+  lingua: "Best Lingua language" {class: app}
+  en: "English?" {class: decision}
+  short: "Latin script and\nfewer than 8 words?" {class: decision}
+  evidence: "Function word of that language\nor a letter with a diacritic?" {class: decision}
+  gap: "Confidence gap to the\nsecond language ≥ 0.05?" {class: decision}
+  none: "No language:\nEnglish + simple only" {class: end}
+  code: "ISO code (e.g. it)" {class: end}
+  letters -> none: no
+  letters -> lingua: yes
+  lingua -> en
+  en -> none: "yes (\"en\")"
+  en -> short: no
+  short -> evidence: yes
+  short -> gap: no
+  evidence -> code: yes
+  evidence -> none: no
+  gap -> code: yes
+  gap -> none: no
+}
+
+all: "Start every source with the\nquery as typed" {class: app}
+model: "Translator configured?" {class: decision}
+start: "Start model call (fast model)\nand sources with usesTranslation = false\n(helper2-semantic)" {class: ai}
+budget: "Cached answer (24 h) or\ndaily translation budget left (300)?" {class: decision}
+wait: "Wait for the answer,\nat most 2500 ms" {class: app}
+check: "Answer arrived, no link,\nnot equal to the query?" {class: decision}
+clean: "Keep letters, digits, spaces, hyphens;\n≤ 12 words, ≤ 120 chars" {class: app}
+untranslated: "Search untranslated" {class: fail}
+expand: "English words first in expansions\nand required variants\n(QUERY_EXPANDED: \"Also searched for\")" {class: app}
+late: "Start the other sources now;\neach deadline from its own start" {class: app}
+stem: "Catalog adds stemmer\nh2_ts_config(code)" {class: data}
+
+q -> detect.letters: {class: hot}
+detect.none -> all
+detect.code -> model: {class: hot}
+detect.code -> stem
+model -> all: no
+model -> start: yes {class: hot}
+start -> budget
+budget -> wait: yes {class: hot}
+budget -> untranslated: "no (null)"
+wait -> check
+check -> clean: yes {class: hot}
+check -> untranslated: "no / timeout / error"
+clean -> expand: {class: hot}
+expand -> late: {class: hot}
+untranslated -> late

@@ -1,0 +1,43 @@
+# Sequence: an Italian query ("app per tradurre testi") with translation in parallel with the semantic source.
+# Shows that helper2-semantic starts at once, the other sources wait for the translation (at most 2500 ms),
+# and each source's deadline starts at its own start.
+# Source of truth: backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt,
+#   backend/src/main/kotlin/ai/helper2/shared/LanguageDetector.kt,
+#   backend/src/main/java/ai/helper2/platform/llm/SpringAiQueryTranslator.java, DailyBudget.java,
+#   backend/src/main/java/ai/helper2/catalog/SemanticSearchSource.java, CatalogSearchSource.java.
+# Render: cd docs/diagrams && d2 fmt sequence-0011-language-aware-search.d2 && d2 sequence-0011-language-aware-search.d2 sequence-0011-language-aware-search.svg
+
+...@style
+
+shape: sequence_diagram
+
+fs: SearchResources {class: app}
+ld: LanguageDetector {class: app}
+tr: SpringAiQueryTranslator {class: app}
+budget: "DailyBudget\n(translation)" {class: app}
+llm: "Nebius Token Factory\n(fast Nemotron model)" {class: ai}
+sem: "SemanticSearchSource\n(usesTranslation = false)" {class: app}
+idx: "CatalogSearchSource\n(helper2-index)" {class: app}
+gh: "GitHubSource and\nother live sources" {class: app}
+
+fs -> ld: "detect(\"app per tradurre testi\")" {class: hot}
+ld -> fs: "\"it\" (function word \"per\")"
+fs -> tr: "toEnglish(text, \"it\") on the executor" {class: ai-call}
+fs -> sem: "search(query as typed), deadline 3 s\nfrom now" {class: hot}
+
+model: Translation (bounded by 2500 ms) {
+  tr -> tr: "in-memory cache: miss"
+  tr -> budget: "tryAcquire()"
+  budget -> tr: "true (under 300 today)"
+  tr -> llm: "translate-query prompt,\n400 tokens, thinking off" {class: ai-call}
+  llm -> tr: "\"translation app text\"" {class: ai-call}
+  tr -> fs: "English words"
+}
+
+fs -> fs: "drop links, keep words (≤ 12),\nexpansions = [\"translation app text\", …]"
+fs -> idx: "search(query, language=it), deadline 3 s\nfrom this start" {class: hot}
+fs -> gh: "search(text OR English words),\ndeadline from this start" {class: hot}
+sem -> fs: "nearest rows"
+idx -> fs: "rows (English + simple + Italian stemmer)"
+gh -> fs: "hits"
+fs -> fs: "merge, rank, notice QUERY_EXPANDED\n\"Also searched for: …\""
