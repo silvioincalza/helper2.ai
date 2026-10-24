@@ -1,0 +1,55 @@
+# Flowchart: one fresh guide question in AskGuide.answer, from the request to the final status.
+# Shows plan → retrieve → choose → GuideValidator, every degraded exit, and the stream events sent on the way.
+# The cost guard in front of it (cache, single-flight, quota) is in flow-0017; the reason check in flow-0016.
+# Source of truth: backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (AskGuide.answer), guide/Guide.kt (GuideValidator),
+#   backend/src/main/java/ai/helper2/guide/web/GuideStreamController.java (event names).
+# Render: cd docs/diagrams && d2 fmt flow-0015-ai-guide-evidence-gate.d2 && d2 flow-0015-ai-guide-evidence-gate.d2 flow-0015-ai-guide-evidence-gate.svg
+
+...@style
+
+direction: down
+
+ask: "POST /api/v1/guide/stream\n(or POST /api/v1/guide)\nrequest 3–500 chars" {class: person}
+guard: "Cost guard (ADR 0017):\ncache, single-flight, quota" {class: app}
+hasModel: "Model configured\nand quota left?" {class: decision}
+plan: "plan(): fast model →\nsearchQuery, constraints,\nwantsReading, webQuery" {class: ai}
+planOk: "Plan call ok?" {class: decision}
+rawText: "Search with the\nuser's own text" {class: app}
+planned: "event: planned" {class: config}
+search: "SearchResources.search\n(size 24; tool types only\nunless reading is asked)" {class: app}
+retrieved: "event: retrieved\n(candidates c1…c24)" {class: config}
+any: "Any candidate?" {class: decision}
+noCand: "NO_CANDIDATES" {class: end}
+modelOk: "Model still usable?" {class: decision}
+degraded: "LLM_UNAVAILABLE:\ntop 3 search results,\nmarked not AI-reasoned" {class: fail}
+choose: "choose(): reasoning model,\nJSON schema, picks with quotes" {class: ai}
+chooseOk: "Choose call ok?" {class: decision}
+chosen: "event: chosen" {class: config}
+validator: "GuideValidator.validate:\nknown key, quote verbatim\n≥ 40 chars and 6 words,\nno link, ≤ 3 picks" {class: app}
+validated: "event: validated" {class: config}
+kept: "Any pick kept?" {class: decision}
+partial: "PARTIAL:\ntop 3 search results" {class: fail}
+check: "Reason check (ADR 0016)\nevent: checked" {class: ai}
+answer: "OK (none rejected)\nor PARTIAL\nevent: answer" {class: end}
+
+ask -> guard -> hasModel
+hasModel -> rawText: no
+hasModel -> plan: yes {class: hot}
+plan -> planOk
+planOk -> planned: yes {class: hot}
+planOk -> rawText: no
+planned -> search: {class: hot}
+rawText -> search
+search -> retrieved -> any
+any -> noCand: no
+any -> modelOk: yes {class: hot}
+modelOk -> degraded: no
+modelOk -> choose: yes {class: hot}
+choose -> chooseOk
+chooseOk -> degraded: no
+chooseOk -> chosen: yes {class: hot}
+chosen -> validator: {class: hot}
+validator -> validated -> kept
+kept -> partial: no
+kept -> check: yes {class: hot}
+check -> answer: {class: hot}

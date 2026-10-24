@@ -1,0 +1,47 @@
+# Sequence: a streamed guide question that is not cached, with every Server-Sent Event the browser receives
+# and the :keep-alive comments sent every H2_GUIDE_HEARTBEAT (15 s) while the question runs.
+# Source of truth: backend/src/main/java/ai/helper2/guide/web/GuideStreamController.java (askGuideStream, Events),
+#   backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (AskGuide.ask/answer), guide/Guide.kt (GuideValidator),
+#   backend/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java (plan, choose, verifyReasons).
+# Render: cd docs/diagrams && d2 fmt sequence-0015-ai-guide-evidence-gate.d2 && d2 sequence-0015-ai-guide-evidence-gate.d2 sequence-0015-ai-guide-evidence-gate.svg
+
+...@style
+
+shape: sequence_diagram
+
+browser: Browser {class: person}
+ctrl: GuideStreamController {class: app}
+hb: "guide-heartbeat\n(one shared scheduler)" {class: app}
+svc: AskGuide {class: app}
+model: SpringAiGuideModel {class: app}
+tf: "Token Factory\n(Nemotron)" {class: ai}
+search: SearchResources {class: app}
+gate: GuideValidator {class: app}
+
+browser -> ctrl: "POST /api/v1/guide/stream\n{request}"
+ctrl -> browser: "200 text/event-stream\n(no-store, X-Accel-Buffering: no)"
+ctrl -> svc: "ask(request, path, events, client)\non a virtual thread"
+ctrl -> hb: "keepAlive(): every 15 s\n(H2_GUIDE_HEARTBEAT)"
+svc -> model: "plan(request, path)"
+model -> tf: "fast model, plan.txt" {class: ai-call}
+tf -> model: "searchQuery, constraints,\nwantsReading, webQuery"
+model -> svc: GuideSearchPlan
+svc -> browser: "event: planned"
+svc -> search: "search(query, filters, size 24, webQuery)"
+search -> svc: SearchOutcome
+svc -> browser: "event: retrieved"
+svc -> model: "choose(request, candidates c1…cN,\nconstraints)"
+model -> tf: "reasoning model, choose.txt,\nnative JSON schema" {class: ai-call}
+hb -> browser: ":keep-alive (comment)\nwhile no event comes"
+tf -> model: "picks: key, reason, quote, checks"
+model -> svc: GuideProposal
+svc -> browser: "event: chosen"
+svc -> gate: "validate(proposal, candidates,\nconstraints, allowReading)"
+gate -> svc: "kept picks, rejected count,\nconstraint checks"
+svc -> browser: "event: validated"
+svc -> model: "verifyReasons(request, claims)\n(ADR 0016)"
+model -> svc: "verdicts by key"
+svc -> browser: "event: checked"
+svc -> ctrl: GuideAnswer
+ctrl -> browser: "event: answer (GuideResponse)\nthen the stream completes"
+ctrl -> hb: "cancel keep-alive"
