@@ -1,0 +1,37 @@
+# Sequence: one pass of GitHubAwesomeCollector, the collector with the most steps and the only one that calls a model.
+# Source of truth: backend/src/main/java/ai/helper2/sources/GitHubAwesomeCollector.java, AwesomeListParser.java,
+#   SpringAiRepoClassifier.java, RepoClassifier.java,
+#   backend/src/main/resources/prompts/sources/classify-repos.txt.
+# Render: cd docs/diagrams && d2 fmt sequence-0020-scout-collectors.d2 && d2 sequence-0020-scout-collectors.d2 sequence-0020-scout-collectors.svg
+
+...@style
+
+shape: sequence_diagram
+
+runner: RunScout {class: app}
+col: GitHubAwesomeCollector {class: app}
+gh: "GitHub REST\n+ GraphQL" {class: ext}
+parser: AwesomeListParser {class: app}
+cls: SpringAiRepoClassifier {class: app}
+tf: "Token Factory\n(fast model)" {class: ai}
+heur: RepoClassifier.Heuristic {class: app}
+
+runner -> col: "collect(checkpoint, resumeCursor \"200\", 500)"
+col -> col: "RunInterval.allowsPass (resume: yes)"
+col -> gh: "GET /search/repositories\n(6 topic queries, stars ≥ 1000)"
+gh -> col: "repos; keep names with \"awesome\""
+col -> gh: "GET /repos/{list}/readme\n(top 10 lists)"
+gh -> col: "README markdown"
+col -> parser: "entries(readme, list)"
+parser -> col: "linked repositories, by section"
+col -> col: "slice entries 200–399 (≤ 200 per run)"
+col -> gh: "POST /graphql (50 repositories per call)"
+gh -> col: "stars, description, topics,\nlicence, archived, fork"
+col -> cls: "classify(batch of 25 facts)"
+cls -> cls: "classifier budget tryAcquire()"
+cls -> tf: "classify-repos.txt;\none line per repo, thinking off" {class: ai-call}
+tf -> cls: "{items: [{id, ai, type}]}"
+cls -> col: "verdicts (unknown ids and\ntypes dropped)"
+col -> heur: "classify(ids the model\ndid not answer)"
+heur -> col: "keyword verdicts"
+col -> runner: "CollectedBatch(AI repos,\nnextCursor \"400\" or null, checkpoint)"

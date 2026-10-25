@@ -1,0 +1,66 @@
+# Flowchart: what each Scout collector does in collect(), after RunScout has called it.
+# Shows the shared gates (enabled, token, run interval) and the decisions inside each collector,
+# with the awesome-list classifier in detail.
+# Source of truth: backend/src/main/java/ai/helper2/sources/ (McpRegistryCollector, HuggingFaceTrendingCollector,
+#   HuggingFaceProviderOrgsCollector, TavilyCollector, GitHubAwesomeCollector, SpringAiRepoClassifier,
+#   RepoClassifier, AiDeadlinesCollector, RunInterval, SourcesConfiguration),
+#   backend/src/main/resources/application.yaml (helper2.scout.*, helper2.sources.*).
+# Render: cd docs/diagrams && d2 fmt flow-0020-scout-collectors.d2 && d2 flow-0020-scout-collectors.d2 flow-0020-scout-collectors.svg
+
+...@style
+
+direction: down
+
+call: "collect(checkpoint,\nresumeCursor, maxItems)" {class: app}
+enabled: "Enabled? (Tavily needs\nH2_TAVILY_API_KEY, awesome\nlists need H2_GITHUB_TOKEN)" {class: decision}
+skipped: "SKIPPED by RunScout" {class: end}
+due: "RunInterval: no checkpoint,\ninterval passed, or resume?" {class: decision}
+notDue: "CollectedBatch.notDue()" {class: end}
+which: "Which collector?" {class: decision}
+
+mcp: "MCP Registry (1 h):\n/v0.1/servers?updated_since,\nlatest versions only, cursor pages" {class: ext}
+hft: "HF trending (1 d):\ntop 100 by trendingScore,\nlikes ≥ 20" {class: ext}
+hfo: "HF provider orgs (1 d):\n20 newest models per org,\norg added as a tag" {class: ext}
+tav: "Tavily (5 d): 7 news queries,\nstart_date = last pass day\n(first run: last week)" {class: ext}
+aid: "ai-deadlines (1 d): one YAML\nper conference, raw host only,\nnext edition not ended" {class: ext}
+
+awesome: GitHub awesome lists (1 d) {
+  class: group
+  direction: down
+  lists: "Topic search: repos named\n\"awesome…\", ≥ 1000 stars,\ntop 10 lists" {class: ext}
+  slice: "README links → entries;\n≤ 1000 per pass, ≤ 200 per run\nfrom the offset cursor" {class: app}
+  facts: "GraphQL facts, 50 per call;\nnot archived, not fork,\n≥ 50 stars" {class: ext}
+  model: "LLM configured\nand fast model set?" {class: decision}
+  classify: "SpringAiRepoClassifier:\nbatches of 25, own budget\n(300 calls per UTC day)" {class: ai}
+  answered: "Model answered\nthis id?" {class: decision}
+  heuristic: "RepoClassifier.Heuristic\n(keyword rules)" {class: app}
+  keep: "Keep ai=true,\nwith the given type" {class: app}
+
+  lists -> slice -> facts -> model
+  model -> classify: yes
+  model -> heuristic: no
+  classify -> answered
+  answered -> keep: yes
+  answered -> heuristic: "no (error, budget,\nmissing id)"
+  heuristic -> keep
+}
+
+batch: "CollectedBatch(hits,\nnextCursor, checkpoint)" {class: end}
+
+call -> enabled
+enabled -> skipped: no
+enabled -> due: yes {class: hot}
+due -> notDue: no
+due -> which: yes {class: hot}
+which -> mcp
+which -> hft
+which -> hfo
+which -> tav
+which -> aid
+which -> awesome.lists
+mcp -> batch
+hft -> batch
+hfo -> batch
+tav -> batch
+aid -> batch
+awesome.keep -> batch
