@@ -1,0 +1,39 @@
+# Sequence: one enrichment of a changed resource that ends PARTIAL and opens a review item.
+# Source of truth: backend/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt (EnrichResource.attempt),
+#   backend/src/main/kotlin/ai/helper2/scout/Enrichment.kt (EvidenceValidator),
+#   backend/src/main/java/ai/helper2/scout/internal/SpringAiEnrichmentModel.java, JdbcEnrichmentStore.java,
+#   backend/src/main/java/ai/helper2/catalog/ReviewQueue.java.
+# Render: cd docs/diagrams && d2 fmt sequence-0019-evidence-gated-enrichment.d2 && d2 sequence-0019-evidence-gated-enrichment.d2 sequence-0019-evidence-gated-enrichment.svg
+
+...@style
+
+shape: sequence_diagram
+
+runner: RunScout {class: app}
+svc: EnrichResource {class: app}
+store: JdbcEnrichmentStore {class: app}
+model: SpringAiEnrichmentModel {class: app}
+budget: DailyBudget "enrichment" {class: app}
+tf: "Token Factory\n(reasoning model)" {class: ai}
+val: EvidenceValidator {class: app}
+review: ReviewQueue {class: app}
+
+runner -> svc: "enrich(resourceId)"
+svc -> store: "load(resourceId)"
+store -> svc: "materials (one per source record),\nsource facts, fingerprint"
+svc -> store: "lastSuccessfulFingerprint(resourceId)"
+store -> svc: "different (text changed)"
+svc -> model: "propose(input)"
+model -> budget: "tryAcquire()"
+budget -> model: "true"
+model -> tf: "enrich-v3 prompt;\n<material evidenceId=…> text as ‹ ›\n(4000 chars per record)" {class: ai-call}
+tf -> model: "JSON: fields, relationships,\nsummary, each with citations"
+model -> svc: "EnrichmentProposal"
+svc -> store: "resourcesTitled(relationship targets)"
+store -> svc: "known titles → ids"
+svc -> val: "validate(input, proposal)"
+val -> svc: "ValidationResult: PARTIAL,\nerrors, checked items"
+svc -> store: "save(run, result, PARTIAL)"
+store -> store: "INSERT enrichment_run;\nDELETE AI_EXTRACTED field_assertion;\nINSERT fields, relationships,\nclaims, evidence"
+store -> review: "open(ENRICHMENT_VALIDATION, errors)"
+svc -> runner: "PARTIAL"
