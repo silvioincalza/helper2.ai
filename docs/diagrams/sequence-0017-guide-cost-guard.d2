@@ -1,0 +1,47 @@
+# Sequence: the cost guard around one guide question that misses the cache and is answered fresh.
+# Source of truth: backend/src/main/java/ai/helper2/platform/RateLimitInterceptor.java, RedisRateLimiter.java,
+#   backend/src/main/java/ai/helper2/platform/ClientKey.java (shared by the rate limiters and the quota),
+#   backend/src/main/java/ai/helper2/guide/web/GuideLimits.java, GuideController.java,
+#   backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (AskGuide.ask), GuideCost.kt (ClientQuota, GuideAnswerCache),
+#   backend/src/main/java/ai/helper2/guide/internal/RedisGuideAnswerStore.java.
+# Render: cd docs/diagrams && d2 fmt sequence-0017-guide-cost-guard.d2 && d2 sequence-0017-guide-cost-guard.d2 sequence-0017-guide-cost-guard.svg
+
+...@style
+
+shape: sequence_diagram
+
+browser: Browser {class: person}
+rl: RateLimitInterceptor {class: app}
+ctrl: "GuideController /\nGuideStreamController" {class: app}
+limits: GuideLimits {class: app}
+svc: AskGuide {class: app}
+cache: GuideAnswerCache {class: app}
+quota: ClientQuota {class: app}
+redis: Redis {class: data}
+model: SpringAiGuideModel {class: app}
+
+browser -> rl: "POST /api/v1/guide"
+rl -> redis: "limiter.acquire(remote address): Lua\nINCR + PEXPIRE h2:v1:rate:guide:<ClientKey>"
+redis -> rl: "count ≤ 10 per minute"
+rl -> ctrl: "allowed"
+ctrl -> ctrl: "ClientKey.of(remote address)\n(IPv6 → /64, zone id dropped)"
+ctrl -> limits: "tryStart(work, onTimeout)"
+limits -> limits: "semaphore permit (8);\ndeadline timer 90 s"
+limits -> svc: "ask(request, path, progress, client)\non a virtual thread"
+svc -> cache: "get(key)"
+cache -> redis: "GET h2:v1:guide-answer:<sha256>"
+redis -> cache: "nil"
+cache -> svc: "miss"
+svc -> svc: "inFlight.putIfAbsent(key)"
+svc -> quota: "tryAcquire(client)"
+quota -> redis: "Lua: INCR + PEXPIRE\nh2:v1:budget:guide-client:<hash>:<day>"
+redis -> quota: "count ≤ 30"
+quota -> svc: "true"
+svc -> model: "plan, choose, verifyReasons\n(each attempt: guide budget unit)" {class: ai-call}
+model -> svc: "results"
+svc -> cache: "put(key, answer)\nif cacheable"
+cache -> redis: "SET … EX 24 h"
+svc -> svc: "inFlight.remove(key);\nwaiting askers get the answer"
+svc -> limits: "answer; permit released"
+limits -> ctrl: "answer"
+ctrl -> browser: "200 GuideResponse\n(Cache-Control: no-store)"

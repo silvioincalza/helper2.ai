@@ -1,0 +1,55 @@
+# Flowchart: every guard a guide question passes before it may spend model calls, in code order.
+# Rate limit (interceptor) → slot and deadline (GuideLimits) → answer cache → single-flight → client quota
+# → global daily budget (taken before each model attempt).
+# Source of truth: backend/src/main/java/ai/helper2/platform/RateLimitInterceptor.java, ClientKey.java,
+#   backend/src/main/java/ai/helper2/guide/web/GuideLimits.java, GuideStreamController.java (keep-alive),
+#   backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (AskGuide.ask),
+#   backend/src/main/kotlin/ai/helper2/guide/GuideCost.kt (ClientQuota, GuideAnswerCache),
+#   backend/src/main/java/ai/helper2/guide/internal/RedisGuideAnswerStore.java, GuideConfiguration.java.
+# Render: cd docs/diagrams && d2 fmt flow-0017-guide-cost-guard.d2 && d2 flow-0017-guide-cost-guard.d2 flow-0017-guide-cost-guard.svg
+
+...@style
+
+direction: down
+
+ask: "POST /api/v1/guide\nor /api/v1/guide/stream" {class: person}
+rate: "Rate limit: 10 per minute\nper client (IPv6 by /64),\nshared by both endpoints" {class: decision}
+r429: "429 Too Many Requests\n+ Retry-After" {class: fail}
+slot: "GuideLimits: free slot?\n(H2_GUIDE_MAX_CONCURRENT 8)" {class: decision}
+busy: "503 Guide busy\n(error event on the stream)" {class: fail}
+key: "Cache key: normalised text |\npath | config hash" {class: app}
+cache: "Answer cache hit?\nmemory, then Redis" {class: decision}
+cached: "Cached answer\n(same generatedAt)" {class: end}
+flight: "Same key already\nbeing answered?" {class: decision}
+shared: "Wait for that answer\n(single-flight; the stream\ngets only :keep-alive)" {class: end}
+quota: "ClientQuota: fresh question\nleft today for this ClientKey?\n(H2_GUIDE_CLIENT_DAILY_QUESTIONS 30)" {class: decision}
+searchOnly: "Search-only answer\n+ notice GUIDE_DAILY_QUOTA" {class: end}
+run: "Plan → search → choose →\nvalidate → reason check" {class: ai}
+budget: "Global daily budget unit\nbefore each model attempt?\n(H2_GUIDE_DAILY_MODEL_CALLS 600)" {class: decision}
+degraded: "Degraded answer\n(top search results)" {class: fail}
+deadline: "Deadline passed?\n(H2_GUIDE_QUESTION_DEADLINE 90 s)" {class: decision}
+timeout: "504 Guide timed out,\nworker interrupted" {class: fail}
+cacheable: "Cacheable? AI pick and\nno reason NOT_CHECKED" {class: decision}
+store: "Store 24 h in memory\nand Redis" {class: data}
+answer: "Answer" {class: end}
+
+ask -> rate
+rate -> r429: over
+rate -> slot: ok {class: hot}
+slot -> busy: no
+slot -> key: "yes (stream: :keep-alive\nevery 15 s from now)" {class: hot}
+key -> cache
+cache -> cached: hit
+cache -> flight: miss {class: hot}
+flight -> shared: yes
+flight -> quota: no {class: hot}
+quota -> searchOnly: no
+quota -> run: yes {class: hot}
+run -> budget
+budget -> degraded: no
+budget -> deadline: yes {class: hot}
+deadline -> timeout: yes
+deadline -> cacheable: no {class: hot}
+cacheable -> store: yes
+cacheable -> answer: no
+store -> answer: {class: hot}
