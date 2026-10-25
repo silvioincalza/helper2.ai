@@ -1,0 +1,59 @@
+# Sequence: one scheduled Scout run on one replica: the tick takes the cluster lock scout-run, checks the end of
+# the last scheduled run (table scout_schedule), runs one due collector with its cursor and enrichments, drains
+# the backlog, records the new end time, then releases the lock.
+# Source of truth: backend/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt (RunScout.tryRunScheduled, runCollector,
+#   drainBacklog),
+#   backend/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java (ScoutSchedule, scoutRunLock,
+#   ClusterRunLock, catalogIndex),
+#   backend/src/main/java/ai/helper2/platform/ClusterLock.java, ClusterLockConfiguration.java (ShedLock, db time),
+#   backend/src/main/java/ai/helper2/scout/internal/JdbcScoutStore.java, JdbcEnrichmentStore.java.
+# Render: cd docs/diagrams && d2 fmt sequence-0018-scout-runner.d2 && d2 sequence-0018-scout-runner.d2 sequence-0018-scout-runner.svg
+
+...@style
+
+shape: sequence_diagram
+
+sched: ScoutSchedule {class: config}
+lock: "ClusterLock\n(ShedLock JDBC)" {class: app}
+pg: "PostgreSQL\ntables shedlock,\nscout_schedule" {class: data}
+runner: RunScout {class: app}
+store: JdbcScoutStore {class: app}
+col: "Collector\n(e.g. McpRegistryCollector)" {class: app}
+ext: "Source API" {class: ext}
+index: "CatalogIndex\n(ResourceCatalog)" {class: app}
+backlog: JdbcEnrichmentStore {class: app}
+enrich: EnrichResource {class: app}
+
+sched -> runner: "tick: tryRunScheduled(H2_SCOUT_EVERY)\n(first after 20 s, then every H2_SCOUT_TICK)"
+runner -> lock: "RunLock.runExclusively\n(ClusterRunLock: \"scout-run\")"
+lock -> pg: "take \"scout-run\" where lock_until <= db now\n(at most 1 h + enrichments)"
+pg -> lock: "taken (another replica's\ntick would get BUSY here)"
+lock -> runner: "due check + runAll"
+runner -> store: "lastScheduledRunEnd()"
+store -> pg: "SELECT last_ended_at\nFROM scout_schedule"
+store -> runner: "ended ≥ H2_SCOUT_EVERY ago\n(else NOT_DUE)"
+runner -> runner: "EnrichmentBudget(20)"
+runner -> store: "save(RUNNING)"
+runner -> store: "cursor(sourceId)"
+store -> runner: "checkpoint, resumeCursor,\npassStartedAt"
+runner -> col: "collect(checkpoint, resumeCursor, 500)"
+col -> col: "RunInterval.allowsPass?"
+col -> ext: "GET …?updated_since=checkpoint" {class: hot}
+ext -> col: "items + nextCursor"
+col -> runner: "CollectedBatch(hits, nextCursor, checkpoint)"
+runner -> index: "index(merged hits, sourceId)"
+index -> runner: "changed resource ids"
+runner -> store: "saveCursor(new checkpoint\nor resumeCursor)"
+runner -> backlog: "eligible(changed ids)"
+backlog -> runner: "ids with description ≥ 40 chars"
+runner -> enrich: "enrich(id) while budget left\n(ADR 0019)" {class: ai-call}
+enrich -> runner: "EnrichmentOutcome"
+runner -> store: "save(SUCCEEDED, seen,\nchanged, queued)"
+runner -> backlog: "pending(budget left + attempted)"
+backlog -> runner: "resources still to enrich"
+runner -> enrich: "enrich(id) one at a time, budget allowing;\nUNCHANGED gives its slot back" {class: ai-call}
+runner -> store: "scheduledRunEnded(now)"
+store -> pg: "upsert scout_schedule\nlast_ended_at = now"
+runner -> lock: "RAN"
+lock -> pg: "release \"scout-run\"\n(lock_until = db now)"
+lock -> sched: "RAN"

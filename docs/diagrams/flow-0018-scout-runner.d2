@@ -1,0 +1,81 @@
+# Flowchart: one Scout run (RunScout.tryRunScheduled or tryRunAll), from the trigger to the run summaries.
+# Shows the cluster lock scout-run (a ShedLock row in Postgres table shedlock) held by every run, the due check
+# against the end of the last scheduled run (table scout_schedule), per-collector isolation, cursor and
+# checkpoint rules, the shared enrichment budget, and the backlog drain at the end. Enrichment itself is in flow-0019.
+# Source of truth: backend/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt (RunScout), scout/Scout.kt (ScheduledRun, ScheduledRunStore),
+#   backend/src/main/java/ai/helper2/scout/internal/JdbcScoutStore.java (scout_schedule),
+#   backend/src/main/kotlin/ai/helper2/scout/Ports.kt (CollectedBatch),
+#   backend/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java (ScoutSchedule, scoutRunLock,
+#   ClusterRunLock), backend/src/main/java/ai/helper2/platform/ClusterLock.java,
+#   backend/src/main/java/ai/helper2/scout/web/AdminController.java (startScoutRun),
+#   backend/src/main/java/ai/helper2/sources/RunInterval.java.
+# Render: cd docs/diagrams && d2 fmt flow-0018-scout-runner.d2 && d2 flow-0018-scout-runner.d2 flow-0018-scout-runner.svg
+
+...@style
+
+direction: down
+
+trigger: "ScoutSchedule tick on each replica\n(H2_SCOUT_ENABLED): first after 20 s,\nthen every H2_SCOUT_TICK (1 h)" {class: end}
+admin: "POST /api/v1/admin/scout-runs" {class: end}
+guard: "Lock \"scout-run\" free\nin the cluster?" {class: decision}
+busy: "BUSY: next tick tries again (tick) /\n409 Conflict (admin)" {class: fail}
+due: "Last scheduled run ended\n≥ H2_SCOUT_EVERY ago, or none?\n(table scout_schedule)" {class: decision}
+notdue: "NOT_DUE:\nrelease \"scout-run\"" {class: end}
+budget: "EnrichmentBudget =\nmax-enrichments-per-run (20)" {class: app}
+
+each: For each collector (isolated) {
+  class: group
+  direction: down
+  enabled: "Collector enabled?" {class: decision}
+  skipped: "SKIPPED\n\"Disabled in configuration\"" {class: end}
+  collect: "collect(checkpoint, resumeCursor,\nmax-items-per-run 500)" {class: app}
+  due: "Interval passed or\npass unfinished?" {class: decision}
+  notdue: "SKIPPED\n\"Not due yet (run interval)\"" {class: end}
+  index: "Merge hits, CatalogIndex.index\n→ changed resource ids" {class: app}
+  cursor: "nextCursor set?" {class: decision}
+  resume: "Save resumeCursor;\ncheckpoint unchanged" {class: data}
+  done: "Pass complete:\ncheckpoint = pass start" {class: data}
+  enrich: "Eligible changed ids\n(description ≥ 40 chars):\nenrich while budget left;\nUNCHANGED gives its slot back" {class: ai}
+  ok: "SUCCEEDED\n(seen, changed, queued)" {class: end}
+  failed: "FAILED\n\"Collection failed: <class>\"\ncursor not moved" {class: fail}
+  stop: "LLM_UNAVAILABLE\n(provider down or daily\nbudget spent)?" {class: decision}
+  stopped: "Budget set to 0:\nno more model calls this run" {class: app}
+
+  enabled -> skipped: no
+  enabled -> collect: yes
+  collect -> due
+  due -> notdue: no
+  due -> index: yes
+  index -> cursor
+  cursor -> resume: yes
+  cursor -> done: no
+  resume -> enrich
+  done -> enrich
+  enrich -> stop: "after each call"
+  stop -> enrich: "no: next id"
+  stop -> stopped: yes
+  stopped -> ok
+  enrich -> ok: "no id or\nbudget left"
+  collect -> failed: "exception" {class: config}
+  index -> failed: "exception" {class: config}
+}
+
+drain: "Drain backlog one at a time:\npending(budget left + attempted)" {class: ai}
+out: "Run summaries saved (scout_run)" {class: app}
+record: "Tick only (RAN): scout_schedule\nlast_ended_at = now" {class: data}
+release: "\"scout-run\" released;\nsummaries returned" {class: end}
+
+trigger -> guard
+admin -> guard
+guard -> busy: no
+guard -> due: "yes (tick)" {class: hot}
+guard -> budget: "yes (admin)"
+due -> notdue: no
+due -> budget: yes {class: hot}
+budget -> each.enabled: {class: hot}
+each.ok -> drain: {class: hot}
+each.failed -> drain: "next collector,\nthen backlog"
+drain -> out: {class: hot}
+out -> record: tick {class: hot}
+out -> release: admin
+record -> release: {class: hot}
