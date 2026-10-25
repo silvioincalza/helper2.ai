@@ -1,0 +1,42 @@
+# Flowchart: the reason check that runs after GuideValidator, and the verdict each kept pick gets.
+# Source of truth: backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (AskGuide.verdicts), guide/Guide.kt (ReasonCheck), guide/GuideCost.kt (GuideAnswerCache.isCacheable),
+#   backend/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java (verifyReasons),
+#   backend/src/main/resources/prompts/guide/verify-reasons.txt.
+# Render: cd docs/diagrams && d2 fmt flow-0016-guide-reason-check.d2 && d2 flow-0016-guide-reason-check.d2 flow-0016-guide-reason-check.svg
+
+...@style
+
+direction: down
+
+kept: "Picks kept by\nGuideValidator" {class: app}
+anyKept: "At least one\nkept pick?" {class: decision}
+skip: "No reason check,\nno checked event\n(answer is PARTIAL)" {class: end}
+claims: "One ReasonClaim per pick:\nreason, quote, candidate text,\nCONFIRMED constraint checks" {class: app}
+budget: "Guide daily budget\nhas a unit?" {class: decision}
+call: "verifyReasons: reasoning model,\nthinking off, 4096 max tokens,\nJSON schema" {class: ai}
+callOk: "Call ok and\nJSON readable?" {class: decision}
+allNot: "Every pick NOT_CHECKED\n(no pick removed)" {class: fail}
+verdict: "Verdict for this key?" {class: decision}
+supported: "SUPPORTED:\nreason shown" {class: end}
+removed: "REMOVED: reason blanked,\npick and quote stay" {class: end}
+notChecked: "NOT_CHECKED:\nUI says it was not checked" {class: fail}
+event: "event: checked\n(supported, removed, notChecked)" {class: config}
+cache: "Answer cached only when\nno AI pick is NOT_CHECKED" {class: data}
+
+kept -> anyKept
+anyKept -> skip: no
+anyKept -> claims: yes {class: hot}
+claims -> budget
+budget -> allNot: "no (GuideBudgetExhausted)"
+budget -> call: yes {class: ai-call}
+call -> callOk
+callOk -> allNot: no
+callOk -> verdict: yes {class: hot}
+verdict -> supported: "true"
+verdict -> removed: "false"
+verdict -> notChecked: "missing or unknown key"
+supported -> event
+removed -> event
+notChecked -> event
+allNot -> event
+event -> cache
