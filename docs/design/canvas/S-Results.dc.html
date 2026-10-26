@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Search results</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>body{margin:0}a{color:#6d28d9}a:hover{color:#3b1d8f}</style>
+</helmet>
+<div style="background: #faf8ff; color: #14121a; font-family: Inter, system-ui, sans-serif; min-height: 100vh">
+<dc-import name="S-Header" box="{{yes}}" active="Search" query="mcp postgres" hint-size="100%,170px"></dc-import>
+<main style="max-width: 1120px; margin: 0 auto; padding: 24px 24px 64px; display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+<h1 style="position: absolute; left: -9999px">Results for mcp postgres</h1>
+<aside aria-label="Filters" style="flex: 1 1 220px; max-width: 260px; background: #ffffff; border: 1px solid #e4def5; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="upd" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: #514c5e">Updated after</label>
+<input id="upd" type="date" style="min-height: 40px; border-radius: 8px; border: 1px solid #c9bfe8; padding: 0 10px; font: 14px Inter, sans-serif">
+<span style="font-size: 12px; color: #514c5e">Only results with a known last-updated date on or after this day.</span>
+</div>
+<sc-for list="{{facets}}" as="f" hint-placeholder-count="3">
+<fieldset style="border: 0; border-top: 1px solid #efeaf9; margin: 0; padding: 14px 0 0; display: flex; flex-direction: column; gap: 8px">
+<legend style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: #514c5e; padding: 0">{{f.name}}</legend>
+<sc-for list="{{f.items}}" as="i" hint-placeholder-count="4">
+<label style="display: flex; align-items: center; gap: 10px; font-size: 14px"><input type="checkbox" checked="{{i.on}}" style="width: 18px; height: 18px; accent-color: #7c3aed"> {{i.label}} <span style="margin-left: auto; color: #514c5e">{{i.count}}</span></label>
+</sc-for>
+</fieldset>
+</sc-for>
+</aside>
+<section aria-label="Search results" style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: #ffffff; border: 1px solid #e4def5; border-radius: 14px; font-size: 14px">
+<span style="color: #0f4d3c; font-weight: 600">✓</span><span>8 of 8 sources responded</span><a href="S-Sources.dc.html" style="margin-left: auto; font-size: 13px; font-weight: 600">Show details</a>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px">
+<h2 style="margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 32px">87 results</h2>
+<label style="display: flex; align-items: center; gap: 8px; font-size: 14px">Sort by <select style="min-height: 40px; border-radius: 8px; border: 1px solid #c9bfe8; padding: 0 10px; font: 14px Inter, sans-serif; background: #ffffff"><option>Relevance</option><option>Newest</option><option>Recently updated</option></select></label>
+</div>
+<sc-for list="{{results}}" as="r" hint-placeholder-count="3">
+<article style="background: #ffffff; border: 1px solid #e4def5; border-radius: 18px; padding: 18px 22px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+<span style="font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: #e3f3ee; color: #0f4d3c">MCP server</span>
+<span style="font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid #c9bfe8">{{r.fresh}}</span>
+</div>
+<h3 style="margin: 0; font-family: 'JetBrains Mono', monospace; font-weight: 500; font-size: 18px"><a href="S-Resource.dc.html" style="color: #14121a; text-decoration: none">{{r.name}}</a></h3>
+<div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; font-size: 14px">
+<a href="#">Open original {{r.host}} ↗</a>
+<button type="button" style="min-height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid #c9bfe8; background: #ffffff; font: 500 13px Inter, sans-serif">Save</button>
+</div>
+<p style="margin: 0; font-size: 15px; line-height: 1.5; color: #3d3949">{{r.desc}}</p>
+<dl style="margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px 16px">
+<div><dt style="font-size: 13px; color: #514c5e">Platforms</dt><dd style="margin: 0; font-size: 15px">node</dd></div>
+<div><dt style="font-size: 13px; color: #514c5e">License</dt><dd style="margin: 0; font-size: 15px">{{r.license}}</dd></div>
+<div><dt style="font-size: 13px; color: #514c5e">Open source</dt><dd style="margin: 0; font-size: 15px">Yes</dd></div>
+</dl>
+<p style="margin: 0; font-size: 13px; color: #514c5e">{{r.pop}}</p>
+<div style="display: flex; flex-wrap: wrap; gap: 4px"><sc-for list="{{r.tags}}" as="g" hint-placeholder-count="4"><span style="font-size: 13px; padding: 0 8px; border-radius: 999px; background: #f3effc; color: #3d3949; line-height: 22px">{{g}}</span></sc-for></div>
+<p style="margin: 0; font-size: 13px; color: #514c5e">3 facts not stated by any source · <a href="S-Resource.dc.html">All facts</a></p>
+<div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px"><span style="color: #514c5e">Sources:</span> npm registry <span style="padding: 1px 8px; border-radius: 999px; border: 1px solid #6d28d9; color: #6d28d9; font-size: 12px">Live</span> Helper2 index <span style="padding: 1px 8px; border-radius: 999px; border: 1px solid #7c3aed; color: #3b1d8f; font-size: 12px">Indexed</span></div>
+</article>
+</sc-for>
+<div aria-label="Source status" style="display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 12px 16px; border-radius: 14px; background: #14121a; font-family: 'JetBrains Mono', monospace; font-size: 12px">
+<span style="color: #86efac">● github ok</span><span style="color: #86efac">● npm ok</span><span style="color: #86efac">● hf-models ok</span><span style="color: #86efac">● arxiv ok</span><span style="color: #86efac">● mcp-registry ok</span><span style="color: #fcd34d">● tavily cache</span><span style="color: #86efac">● helper2-index ok</span><span style="color: #86efac">● curated ok</span>
+</div>
+</section>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+renderVals() {
+const it = (label, count, on) => ({ label, count, on: !!on });
+return {
+yes: true,
+facets: [
+{ name: 'Type', items: [it('MCP server', 51), it('Paper', 21), it('News', 15)] },
+{ name: 'License', items: [it('MIT', 34), it('Apache-2.0', 6), it('ISC', 3), it('Unknown', 41)] },
+{ name: 'Source', items: [it('GitHub', 30), it('Helper2 index', 30), it('arXiv', 20), it('npm registry', 7)] }
+],
+results: [
+{ name: 'mcp-postgres', host: 'npmjs.com', fresh: 'Cached', desc: 'Model Context Protocol server for PostgreSQL database operations', license: 'MIT', pop: '1.1K npm weekly downloads · npm registry · as of Oct 26, 2026', tags: ['database', 'mcp', 'model-context-protocol', 'postgres'] },
+{ name: 'dsh-mcp-postgres', host: 'npmjs.com', fresh: 'Cached', desc: 'MCP Postgres server toolkit for dsh - SQL queries via Model Context Protocol. Name reserved; first release in development.', license: 'MIT', pop: '13 npm weekly downloads · npm registry · as of Oct 26, 2026', tags: ['agent', 'mcp', 'postgres'] },
+{ name: '[another MCP server]', host: '[host]', fresh: 'Fresh', desc: '[Description as stated by the source]', license: '[license]', pop: '[metric] · [source] · as of [date]', tags: ['mcp', 'postgres'] }
+]
+};
+}
+}
+</script>
+</body>
+</html>

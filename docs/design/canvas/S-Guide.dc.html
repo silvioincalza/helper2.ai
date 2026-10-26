@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Guide answer</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>body{margin:0}a{color:#6d28d9}a:hover{color:#3b1d8f}</style>
+</helmet>
+<div style="background: #faf8ff; color: #14121a; font-family: Inter, system-ui, sans-serif; min-height: 100vh">
+<dc-import name="S-Header" box="{{yes}}" active="Search" query="an MCP server so my agent can query a Postgres database" hint-size="100%,170px"></dc-import>
+<main style="max-width: 1120px; margin: 0 auto; padding: 24px 24px 64px; display: flex; flex-direction: column; gap: 20px">
+<section aria-labelledby="g-h" style="background: #ffffff; border: 1px solid #e4def5; border-radius: 18px; padding: 22px 24px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: flex-start; gap: 12px">
+<h1 id="g-h" style="margin: 0; flex: 1; font-size: 16px; font-weight: 650; line-height: 1.4">Ask the AI guide: <q style="font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 24px">an MCP server so my agent can query a Postgres database</q></h1>
+<a href="S-Results.dc.html" aria-label="Close the guide answer" style="width: 44px; height: 44px; border-radius: 10px; border: 1px solid #c9bfe8; color: #14121a; display: flex; align-items: center; justify-content: center; font-size: 20px; text-decoration: none">×</a>
+</div>
+<p style="margin: 0; font-size: 15px"><span style="color: #0f4d3c; font-weight: 600">✓</span> Picked from real search results; every quote checked word for word.</p>
+<p style="margin: 0; font-size: 13px; color: #514c5e">Searched the catalog for: postgres mcp server · 12 candidates considered · 2 AI suggestions removed: no supporting evidence</p>
+<ol style="margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px">
+<sc-for list="{{picks}}" as="p" hint-placeholder-count="3">
+<li style="border: 1px solid #e4def5; border-radius: 18px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+<span style="font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: {{p.bg}}; color: {{p.fg}}">{{p.type}}</span>
+<span style="margin-left: auto; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: #e3f3ee; color: #0f4d3c">✓ Quote checked</span>
+</div>
+<h2 style="margin: 0; font-family: 'JetBrains Mono', monospace; font-weight: 500; font-size: 17px"><a href="S-Resource.dc.html" style="color: #14121a; text-decoration: none">{{p.name}}</a></h2>
+<blockquote style="margin: 0; padding: 10px 12px; background: #f7f4fe; border-radius: 10px; font-family: 'Instrument Serif', Georgia, serif; font-size: 17px; line-height: 1.4"><span style="font-family: Inter, sans-serif; font-size: 12px; color: #514c5e">Evidence, checked word for word:</span> “{{p.quote}}”</blockquote>
+<p style="margin: 0; font-size: 14px; line-height: 1.5; color: #3d3949"><strong style="font-weight: 600; color: #14121a">Model's explanation (not checked):</strong> {{p.why}}</p>
+<ul style="margin: 0; padding: 0; list-style: none; font-size: 13px; display: flex; flex-direction: column; gap: 4px">
+<sc-for list="{{p.checks}}" as="c" hint-placeholder-count="2"><li style="color: {{c.color}}">{{c.mark}} <strong>{{c.k}}</strong>: {{c.v}}</li></sc-for>
+</ul>
+<p style="margin: 0; margin-top: auto; font-size: 12px; color: #514c5e">Sources: {{p.src}}</p>
+</li>
+</sc-for>
+</ol>
+<section aria-labelledby="pr-h" style="background: #faf8ff; border: 1px solid #e4def5; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px">
+<h2 id="pr-h" style="margin: 0; font-size: 16px; font-weight: 650">Ready-to-use prompt <span style="font-size: 12px; font-weight: 500; padding: 2px 8px; border-radius: 999px; border: 1px solid #c9bfe8">Written by AI</span></h2>
+<pre style="margin: 0; white-space: pre-wrap; font: 14px/1.5 'JetBrains Mono', monospace; background: #ffffff; border-radius: 10px; padding: 12px">[Prompt adapted from catalog prompts: connect to my Postgres database read-only through an MCP server and …]</pre>
+<p style="margin: 0; font-size: 13px; color: #514c5e">Based on: <a href="#">[catalog prompt]</a></p>
+<button type="button" style="align-self: flex-start; min-height: 44px; padding: 0 16px; border-radius: 10px; border: 0; background: #7c3aed; color: #ffffff; font: 600 14px Inter, sans-serif">Copy prompt</button>
+</section>
+<p style="margin: 0; font-size: 12px; color: #514c5e">Answered by nvidia/Nemotron-3-Super (choosing) and nvidia/Nemotron-Nano (planning) on nebius-token-factory</p>
+</section>
+<div style="display: flex; align-items: baseline; gap: 12px">
+<h2 style="margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 28px">All 87 results</h2>
+<a href="S-Results.dc.html" style="font-size: 14px; font-weight: 600">Search results continue below →</a>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+renderVals() {
+const ok = (k, v) => ({ k, v, mark: '✓', color: '#0f4d3c' });
+const no = (k) => ({ k, v: 'not confirmed by any source', mark: 'ⓘ', color: '#514c5e' });
+const mcp = { type: 'MCP server', bg: '#e3f3ee', fg: '#0f4d3c' };
+return {
+yes: true,
+picks: [
+{ ...mcp, name: 'mcp-postgres', quote: 'Model Context Protocol server for PostgreSQL database operations', why: 'It is an MCP server built for Postgres, so an agent can run queries through it.', checks: [ok('Postgres', '“PostgreSQL database operations”'), no('read-only access')], src: 'npm, helper2-index' },
+{ ...mcp, name: '[postgres MCP server]', quote: '[Exact sentence from the resource’s own description, at least 40 characters and 6 words]', why: '[Model’s reason, shown as written]', checks: [ok('Postgres', '“[quote]”'), ok('read-only access', '“[quote]”')], src: 'github' },
+{ type: 'Library', bg: '#f3effc', fg: '#3d3949', name: '[agent toolkit]', quote: '[Exact sentence from the resource’s own description]', why: '[Model’s reason, shown as written]', checks: [no('Postgres')], src: 'github, npm' }
+]
+};
+}
+}
+</script>
+</body>
+</html>

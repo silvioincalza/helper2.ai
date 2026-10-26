@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Helper2.ai colours</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="background: #faf8ff; color: #14121a; font-family: Inter, system-ui, sans-serif">
+<main style="max-width: 1120px; margin: 0 auto; padding: 56px 24px 80px; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<p style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #7c3aed">Design system · Colours</p>
+<h1 style="margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 56px; line-height: 1">Every colour, in both themes</h1>
+<p style="margin: 0; max-width: 64ch; font-size: 16px; line-height: 1.55; color: #3d3949">Light and dark follow the device setting. Text colours pass 4.5:1 on the backgrounds their note names, in both themes. The CSS variable is the token name with two dashes in front, for example <code style="font-family: 'JetBrains Mono', monospace">--accent</code>.</p>
+</div>
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) 96px 96px; gap: 0; background: #ffffff; border: 1px solid #e4def5; border-radius: 18px; overflow: hidden">
+<span style="padding: 12px 18px; font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: #514c5e; border-bottom: 1px solid #e4def5">Token and use</span>
+<span style="padding: 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; text-transform: uppercase; color: #514c5e; border-bottom: 1px solid #e4def5; text-align: center">Light</span>
+<span style="padding: 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; text-transform: uppercase; color: #514c5e; border-bottom: 1px solid #e4def5; text-align: center">Dark</span>
+<sc-for list="{{tokens}}" as="t" hint-placeholder-count="30">
+<div style="padding: 12px 18px; border-bottom: 1px solid #efeaf9; display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 500">{{t.name}}</span>
+<span style="font-size: 13px; line-height: 1.45; color: #3d3949">{{t.use}}</span>
+</div>
+<div style="padding: 10px; border-bottom: 1px solid #efeaf9; display: flex; flex-direction: column; align-items: center; gap: 4px">
+<span style="width: 56px; height: 36px; border-radius: 8px; background: {{t.light}}; border: 1px solid #e4def5"></span>
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #514c5e">{{t.light}}</span>
+</div>
+<div style="padding: 10px; border-bottom: 1px solid #272233; background: #14121a; display: flex; flex-direction: column; align-items: center; gap: 4px">
+<span style="width: 56px; height: 36px; border-radius: 8px; background: {{t.dark}}; border: 1px solid #332d42"></span>
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #a9a2bb">{{t.dark}}</span>
+</div>
+</sc-for>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1800}}'>
+class Component extends DCLogic {
+renderVals() {
+const rows = [
+['bg','#faf8ff','#14121a',"Page background behind everything."],
+['surface','#ffffff','#1d1a25',"Cards, header band, result list, details panel."],
+['surface-tint','#f3effc','#2a2240',"Idle pills, selected result row, close buttons."],
+['quote-bg','#f7f4fe','#221c30',"Behind a checked guide quote only."],
+['ink','#14121a','#f1eefa',"Primary text and headings on bg, surface and surface-tint."],
+['ink-2','#3d3949','#cdc7dc',"Body copy, card summaries, the model's explanation."],
+['muted','#514c5e','#a9a2bb',"Metadata: source, dates, counts, captions. Passes 4.5:1 on surface and bg."],
+['border','#e4def5','#332d42',"Card and panel outlines."],
+['border-strong','#c9bfe8','#4a4260',"Input and secondary-button borders, dashed empty states."],
+['divider','#efeaf9','#272233',"Rules between result rows and table rows."],
+['accent','#7c3aed','#a78bfa',"Primary button fill (one per area), eyebrow labels, checkbox and radio accent, the logo tile. Pair with on-accent."],
+['on-accent','#ffffff','#14121a',"Text and icons on an accent fill."],
+['accent-ink','#6d28d9','#c4b5fd',"Text links and text buttons."],
+['accent-deep','#3b1d8f','#ddd6fe',"Text on surface-tint pills and paper tags."],
+['focus','#a78bfa','#c4b5fd',"3px focus ring on every control."],
+['selected','#14121a','#f1eefa',"Fill of the active pill or filter; text on it uses on-selected."],
+['on-selected','#ffffff','#14121a',"Text on a selected fill."],
+['checked-bg','#e3f3ee','#123528',"'Quote checked' badge and completed progress steps."],
+['checked-ink','#0f4d3c','#86efac',"Text on checked-bg."],
+['not-stated','#7a3e00','#fbbf77',"'Unknown' values, 'First seen' dates and cautions (cache, rate-limited, stale)."],
+['danger','#b42318','#ff8f8f',"Errors only: failed sources and requests, rejected claims, form errors. Always with words and an icon."],
+['tag-model-bg','#fdebd3','#3a2a12',"Model tag fill."],
+['tag-model-ink','#7a3e00','#fbbf77',"Model tag text."],
+['tag-news-bg','#e6f0fb','#13263d',"News tag fill."],
+['tag-news-ink','#173f70','#93c5fd',"News tag text."],
+['tag-paper-bg','#ede7fd','#2a2240',"Paper tag fill."],
+['tag-mcp-bg','#e3f3ee','#123528',"MCP server tag fill; text uses checked-ink."],
+['console','#14121a','#0c0a10',"Source status bar background, the one dark band."],
+['status-ok','#86efac','#86efac',"Source answered. Only on console."],
+['status-warn','#fcd34d','#fcd34d',"Source served from cache or rate-limited. Only on console."]
+];
+return { tokens: rows.map(([name, light, dark, use]) => ({ name, light, dark, use })) };
+}
+}
+</script>
+</body>
+</html>

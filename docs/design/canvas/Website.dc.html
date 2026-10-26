@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Helper2.ai — website</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#6d28d9}a:hover{color:#3b1d8f}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid #a78bfa;outline-offset:2px}
+</style>
+</helmet>
+<div style="background: #faf8ff; color: #14121a; font-family: Inter, system-ui, sans-serif">
+
+<header style="background: #ffffff; border-bottom: 1px solid #e4def5">
+<div style="max-width: 1120px; margin: 0 auto; padding: 14px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px">
+<a href="#top" aria-label="helper2.ai home" style="display: flex; align-items: center; gap: 16px; color: #14121a; text-decoration: none">
+<span style="width: 40px; height: 40px; border-radius: 12px; background: {{accent}}; display: flex; align-items: center; justify-content: center">
+<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="4" opacity="0.55"></circle><path d="M12 12 18.4 5.6"></path><circle cx="17" cy="16.5" r="2" fill="#ffffff" stroke="none"></circle></svg>
+</span>
+<span style="display: flex; flex-direction: column; gap: 2px"><span style="font-family: 'Instrument Serif', Georgia, serif; font-size: 30px; line-height: 1">helper2.ai</span><span style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #514c5e; line-height: 1.2">AI on your radar</span></span>
+</a>
+<nav aria-label="Sections" style="display: flex; flex-wrap: wrap; gap: 4px 20px; font-size: 15px; font-weight: 500">
+<a href="#how" style="color: #3d3949; text-decoration: none; padding: 10px 0">How it works</a>
+<a href="#radar" style="color: #3d3949; text-decoration: none; padding: 10px 0">What’s new</a>
+<a href="#sources" style="color: #3d3949; text-decoration: none; padding: 10px 0">Sources</a>
+<a href="#honesty" style="color: #3d3949; text-decoration: none; padding: 10px 0">Honesty</a>
+</nav>
+<a href="#top" style="margin-left: auto; min-height: 44px; padding: 0 18px; border-radius: 10px; background: {{accent}}; color: #ffffff; font-size: 15px; font-weight: 600; text-decoration: none; display: flex; align-items: center">Open the app</a>
+</div>
+</header>
+
+<section id="top" aria-labelledby="hero-h" style="max-width: 1120px; margin: 0 auto; padding: 72px 24px 56px; display: flex; flex-wrap: wrap; gap: 48px; align-items: center">
+<div style="flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 22px">
+<p style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: {{accent}}">A metasearch engine only for the AI world</p>
+<h1 id="hero-h" style="margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: clamp(44px, 6vw, 76px); line-height: 0.98; text-wrap: balance">Find the right AI tool. See the proof.</h1>
+<p style="margin: 0; max-width: 60ch; font-size: 19px; line-height: 1.55; color: #3d3949">Tools, models, agents, MCP servers, libraries, papers and news, from a disclosed set of sources. Search as you type, or describe what you need and the guide picks up to three, each with a quote checked word for word.</p>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; flex-wrap: wrap; gap: 10px">
+<label for="site-q" style="position: absolute; left: -9999px">Search or ask</label>
+<input id="site-q" type="search" value="an MCP server so my agent can query Postgres" style="flex: 1 1 300px; min-height: 56px; box-sizing: border-box; border-radius: 14px; border: 1px solid #c9bfe8; background: #ffffff; padding: 0 18px; font: 17px Inter, sans-serif; color: #14121a">
+<button type="button" style="min-height: 56px; padding: 0 20px; border-radius: 14px; border: 1px solid #c9bfe8; background: #ffffff; color: #14121a; font: 500 16px Inter, sans-serif">Search</button>
+<button type="button" style="min-height: 56px; padding: 0 22px; border-radius: 14px; border: 0; background: {{accent}}; color: #ffffff; font: 600 16px Inter, sans-serif">Ask the guide</button>
+</div>
+<p style="margin: 0; font-size: 13px; color: #514c5e">Typing searches every source · Ask the guide (or Shift+Enter) gets up to 3 picks with checked quotes</p>
+</div>
+</div>
+<figure aria-label="A guide pick" style="flex: 1 1 340px; min-width: 0; margin: 0; background: #ffffff; border: 1px solid #e4def5; border-radius: 18px; padding: 22px; display: flex; flex-direction: column; gap: 12px">
+<p style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: {{accent}}">Guide · pick 1 of 3</p>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 17px; font-weight: 500">postgres-mcp</span>
+<span style="font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: #e3f3ee; color: #0f4d3c">MCP server</span>
+<span style="margin-left: auto; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: #e3f3ee; color: #0f4d3c">Quote checked</span>
+</div>
+<blockquote style="margin: 0; padding: 12px 14px; background: #f7f4fe; border-radius: 10px; font-family: 'Instrument Serif', Georgia, serif; font-size: 20px; line-height: 1.35">[Exact sentence from the resource’s own description, matched word for word]</blockquote>
+<p style="margin: 0; font-size: 14px; line-height: 1.5; color: #3d3949"><strong style="font-weight: 600; color: #14121a">Model’s explanation (not checked):</strong> exposes a Postgres database to agents through MCP.</p>
+<p style="margin: 0; font-size: 13px; color: #514c5e">Planning: Nemotron Nano · Choosing: Nemotron 3 Super · on Nebius Token Factory</p>
+</figure>
+</section>
+
+<section aria-label="What you can find" style="background: #ffffff; border-top: 1px solid #e4def5; border-bottom: 1px solid #e4def5">
+<div style="max-width: 1120px; margin: 0 auto; padding: 22px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px">
+<span style="font-size: 14px; color: #514c5e; margin-right: 6px">One catalog for</span>
+<sc-for list="{{types}}" as="t" hint-placeholder-count="10"><span style="font-size: 14px; font-weight: 500; padding: 8px 14px; border-radius: 999px; background: {{t.bg}}; color: {{t.fg}}">{{t.label}}</span></sc-for>
+</div>
+</section>
+
+<section id="how" aria-labelledby="how-h" style="max-width: 1120px; margin: 0 auto; padding: 80px 24px 40px; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; flex-direction: column; gap: 10px; max-width: 720px">
+<p style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: {{accent}}">How the guide answers</p>
+<h2 id="how-h" style="margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: clamp(36px, 4vw, 52px); line-height: 1.05">Retrieval first, Nemotron second, a validator last.</h2>
+<p style="margin: 0; font-size: 17px; line-height: 1.55; color: #3d3949">The model never decides what is true. It can only choose from things a real search found, and its quotes are checked before you see them.</p>
+</div>
+<ol style="margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px">
+<sc-for list="{{steps}}" as="s" hint-placeholder-count="3">
+<li style="background: #ffffff; border: 1px solid #e4def5; border-radius: 18px; padding: 22px; display: flex; flex-direction: column; gap: 10px">
+<span style="font-family: 'Instrument Serif', Georgia, serif; font-size: 44px; line-height: 1; color: {{accent}}">{{s.n}}</span>
+<h3 style="margin: 0; font-size: 19px; font-weight: 600">{{s.t}}</h3>
+<p style="margin: 0; font-size: 15px; line-height: 1.55; color: #3d3949">{{s.d}}</p>
+<p style="margin: 0; margin-top: auto; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #514c5e">{{s.m}}</p>
+</li>
+</sc-for>
+</ol>
+</section>
+
+<section id="radar" aria-labelledby="radar-h" style="max-width: 1120px; margin: 0 auto; padding: 48px 24px; display: flex; flex-direction: column; gap: 20px">
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 18px">
+<h2 id="radar-h" style="margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: clamp(36px, 4vw, 52px); line-height: 1.05">What’s new</h2>
+<p style="margin: 0; font-size: 15px; color: #514c5e">The newest resources the sources report, by topic. Dates are the source’s own.</p>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{topics}}" as="t" hint-placeholder-count="5"><span style="font-size: 14px; font-weight: 500; padding: 9px 14px; border-radius: 999px; background: {{t.bg}}; color: {{t.fg}}">{{t.label}}</span></sc-for>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px">
+<sc-for list="{{cards}}" as="c" hint-placeholder-count="3">
+<article style="background: #ffffff; border: 1px solid #e4def5; border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+<span style="font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: {{c.bg}}; color: {{c.fg}}">{{c.type}}</span>
+<span style="font-size: 13px; color: #514c5e">{{c.src}}</span>
+<span style="margin-left: auto; font-size: 13px; color: {{c.dateColor}}">{{c.date}}</span>
+</div>
+<h3 style="margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 24px; line-height: 1.15">{{c.title}}</h3>
+<p style="margin: 0; font-size: 14px; line-height: 1.5; color: #3d3949">{{c.body}}</p>
+<span style="margin-top: auto; font-size: 14px; font-weight: 600; color: #6d28d9">Ask the guide about this</span>
+</article>
+</sc-for>
+</div>
+</section>
+
+<section id="sources" aria-labelledby="sources-h" style="max-width: 1120px; margin: 0 auto; padding: 48px 24px; display: flex; flex-wrap: wrap; gap: 32px">
+<div style="flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+<p style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: {{accent}}">Disclosed sources</p>
+<h2 id="sources-h" style="margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: clamp(36px, 4vw, 52px); line-height: 1.05">We search these. Not the whole web.</h2>
+<p style="margin: 0; font-size: 16px; line-height: 1.55; color: #3d3949">Every search shows what happened to each source: answered, served from cache, rate-limited or failed.</p>
+<p style="margin: 0; font-size: 14px; line-height: 1.55; color: #514c5e">Not connected: Hacker News, PyPI, Product Hunt and There’s An AI For That, because their terms or APIs don’t allow it.</p>
+</div>
+<div style="flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+<div style="background: #ffffff; border: 1px solid #e4def5; border-radius: 14px; overflow: hidden">
+<sc-for list="{{sources}}" as="o" hint-placeholder-count="8">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 12px 16px; border-bottom: 1px solid #efeaf9">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 500; flex: 1 1 180px">{{o.name}}</span>
+<span style="font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: {{o.bg}}; color: {{o.fg}}">{{o.mode}}</span>
+<span style="font-size: 13px; color: #514c5e; flex: 1 1 200px">{{o.note}}</span>
+</div>
+</sc-for>
+</div>
+<div aria-label="Source status example" style="display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 12px 16px; border-radius: 14px; background: #14121a; font-family: 'JetBrains Mono', monospace; font-size: 12px">
+<span style="color: #86efac">● github ok</span><span style="color: #86efac">● npm ok</span><span style="color: #86efac">● hf-models ok</span><span style="color: #fcd34d">● arxiv rate-limited</span><span style="color: #86efac">● mcp-registry ok</span><span style="color: #fcd34d">● tavily cache</span>
+</div>
+</div>
+</section>
+
+<section id="honesty" aria-labelledby="honesty-h" style="max-width: 1120px; margin: 0 auto; padding: 48px 24px 80px; display: flex; flex-direction: column; gap: 24px">
+<h2 id="honesty-h" style="margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: clamp(36px, 4vw, 52px); line-height: 1.05">Never guessed.</h2>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px">
+<sc-for list="{{rules}}" as="r" hint-placeholder-count="4">
+<div style="border-top: 2px solid #14121a; padding-top: 14px; display: flex; flex-direction: column; gap: 8px">
+<p style="margin: 0; font-size: 17px; font-weight: 600">{{r.t}}</p>
+<p style="margin: 0; font-size: 15px; line-height: 1.55; color: #3d3949">{{r.d}}</p>
+</div>
+</sc-for>
+</div>
+</section>
+
+<section aria-labelledby="cta-h" style="background: #14121a; color: #f1eefa">
+<div style="max-width: 1120px; margin: 0 auto; padding: 64px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 24px 40px">
+<div style="flex: 999 1 460px; min-width: 0; display: flex; flex-direction: column; gap: 10px">
+<h2 id="cta-h" style="margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: clamp(36px, 4.5vw, 56px); line-height: 1.02">Describe what you need. Get picks you can check.</h2>
+<p style="margin: 0; font-size: 16px; color: #cdc7dc">Free and open source under Apache-2.0. Built for the Nebius × NVIDIA Global AI Hackathon.</p>
+</div>
+<div style="flex: 1 1 260px; display: flex; flex-wrap: wrap; gap: 10px">
+<a href="#top" style="flex: 1 1 160px; min-height: 52px; border-radius: 12px; background: #a78bfa; color: #14121a; font-size: 16px; font-weight: 600; text-decoration: none; display: flex; align-items: center; justify-content: center">Open the app</a>
+<a href="#top" style="flex: 1 1 160px; min-height: 52px; border-radius: 12px; border: 1px solid #4a4260; color: #f1eefa; font-size: 16px; font-weight: 500; text-decoration: none; display: flex; align-items: center; justify-content: center">Source code ↗</a>
+</div>
+</div>
+</section>
+
+<footer style="border-top: 1px solid #e4def5; background: #ffffff">
+<div style="max-width: 1120px; margin: 0 auto; padding: 24px; display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: 13px; color: #514c5e">
+<span>helper2.ai · AI on your radar</span>
+<span>Results can be incomplete, out of date or wrong. Each one shows where it came from and when it was checked.</span>
+<span style="margin-left: auto">Apache-2.0</span>
+</div>
+</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#7c3aed","options":["#7c3aed","#0f766e","#be185d"]},"$preview":{"width":1440,"height":4300}}'>
+class Component extends DCLogic {
+renderVals() {
+const tint = { bg: '#f3effc', fg: '#3b1d8f' };
+return {
+accent: this.props.accent ?? '#7c3aed',
+types: ['Tools', 'Models', 'Agents', 'Prompts', 'Skills', 'MCP servers', 'Libraries', 'Datasets', 'Papers', 'News'].map((label) => ({ label, ...tint })),
+steps: [
+{ n: '1', t: 'Search real sources', d: 'A fast Nemotron model turns your words, in any language, into search terms. A normal federated search then retrieves up to 12 real candidates.', m: 'Nemotron Nano · federated search' },
+{ n: '2', t: 'Nemotron chooses', d: 'A reasoning model picks at most 3 of those candidates, explains why with a quote, and can adapt a ready-to-use prompt from catalog prompts.', m: 'Nemotron 3 Super · Nebius Token Factory' },
+{ n: '3', t: 'A validator checks', d: 'Each pick must name a retrieved candidate, and its quote must appear word for word in that candidate’s text: at least 40 characters and 6 words. Rejected suggestions are counted and shown.', m: 'deterministic · no model involved' }
+],
+topics: [
+{ label: 'MCP servers', bg: '#14121a', fg: '#ffffff' }, { label: 'Agents', ...tint }, { label: 'RAG', ...tint }, { label: 'Speech', ...tint }, { label: 'Papers', ...tint }
+],
+cards: [
+{ type: 'MCP server', bg: '#e3f3ee', fg: '#0f4d3c', src: 'MCP Registry', date: '[stated date]', dateColor: '#514c5e', title: '[New MCP server]', body: '[Registry description as stated]' },
+{ type: 'Paper', bg: '#ede7fd', fg: '#3b1d8f', src: 'arXiv', date: '[stated date]', title: '[Paper title on agent tool use]', dateColor: '#514c5e', body: '[Abstract excerpt as published]' },
+{ type: 'News', bg: '#e6f0fb', fg: '#173f70', src: 'Tavily · [outlet]', date: 'First seen [date]', dateColor: '#7a3e00', title: '[Headline from the article]', body: '[Article lead as published]' }
+],
+sources: [
+{ name: 'GitHub', mode: 'Live', note: 'Repositories; created and pushed dates', bg: '#e3f3ee', fg: '#0f4d3c' },
+{ name: 'Hugging Face', mode: 'Live', note: 'Models and Spaces; trending models daily', bg: '#e3f3ee', fg: '#0f4d3c' },
+{ name: 'npm', mode: 'Live', note: 'Packages; latest publish date', bg: '#e3f3ee', fg: '#0f4d3c' },
+{ name: 'arXiv', mode: 'Live', note: 'AI categories only; 1 request every 3 s', bg: '#e3f3ee', fg: '#0f4d3c' },
+{ name: 'Tavily', mode: 'Live', note: 'AI news and articles, when a key is set', bg: '#e3f3ee', fg: '#0f4d3c' },
+{ name: 'Official MCP Registry', mode: 'Indexed', note: 'Synced hourly; CC0', bg: '#ede7fd', fg: '#3b1d8f' },
+{ name: 'Helper2 index', mode: 'Indexed', note: 'Full-text search over everything seen', bg: '#ede7fd', fg: '#3b1d8f' },
+{ name: 'Curated list', mode: 'Curated', note: 'Editorial; no dates or prices asserted', bg: '#fdebd3', fg: '#7a3e00' }
+],
+rules: [
+{ t: 'Missing means “Not stated”', d: 'If no source gave a fact, we say so. We never fill in dates, popularity or prices.' },
+{ t: 'Dates are the source’s own', d: 'Published and updated come from the source. Otherwise you see when Helper2.ai first saw it.' },
+{ t: 'Unchecked text is labelled', d: 'Only the quote is verified. The model’s reason is always marked “not checked”.' },
+{ t: 'Search keeps working', d: 'No model key, provider down or credits gone: the guide falls back to the top real results, clearly labelled.' }
+]
+};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Resource page</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>body{margin:0}a{color:#6d28d9}a:hover{color:#3b1d8f}</style>
+</helmet>
+<div style="background: #faf8ff; color: #14121a; font-family: Inter, system-ui, sans-serif; min-height: 100vh">
+<dc-import name="S-Header" box="{{yes}}" active="Search" query="mcp postgres" hint-size="100%,170px"></dc-import>
+<main style="max-width: 1120px; margin: 0 auto; padding: 24px 24px 64px; display: flex; flex-direction: column; gap: 20px">
+<a href="S-Results.dc.html" style="font-size: 14px; font-weight: 600; text-decoration: none">← Back to results</a>
+<article style="background: #ffffff; border: 1px solid #e4def5; border-radius: 18px; padding: 24px 28px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+<span style="font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: #e3f3ee; color: #0f4d3c">MCP server</span>
+<span style="font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid #c9bfe8">Cached</span>
+</div>
+<h1 style="margin: 0; font-family: 'JetBrains Mono', monospace; font-weight: 500; font-size: 32px">mcp-postgres</h1>
+<div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; font-size: 15px">
+<a href="#">Open original npmjs.com ↗</a>
+<button type="button" style="min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid #c9bfe8; background: #ffffff; font: 500 14px Inter, sans-serif">Save</button>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px">
+<p style="margin: 0; font-size: 17px; line-height: 1.55; color: #3d3949">Model Context Protocol server for PostgreSQL database operations</p>
+<p style="margin: 0; font-size: 13px; color: #514c5e">Description: from the source</p>
+</div>
+<sc-for list="{{blocks}}" as="b" hint-placeholder-count="2">
+<div style="display: flex; flex-direction: column; gap: 8px; border-top: 1px solid #efeaf9; padding-top: 14px">
+<h2 style="margin: 0; font-family: 'JetBrains Mono', monospace; font-weight: 500; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: #514c5e">{{b.title}}</h2>
+<dl style="margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px 20px">
+<sc-for list="{{b.facts}}" as="f" hint-placeholder-count="4"><div><dt style="font-size: 13px; color: #514c5e">{{f.k}}</dt><dd style="margin: 0; font-size: 15px; color: {{f.color}}">{{f.v}}</dd></div></sc-for>
+</dl>
+</div>
+</sc-for>
+<p style="margin: 0; font-size: 14px">1.1K npm weekly downloads · npm registry · as of Oct 26, 2026</p>
+<div style="display: flex; flex-wrap: wrap; gap: 4px"><sc-for list="{{tags}}" as="g" hint-placeholder-count="5"><span style="font-size: 13px; padding: 0 8px; border-radius: 999px; background: #f3effc; color: #3d3949; line-height: 22px">{{g}}</span></sc-for></div>
+</article>
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+<section aria-labelledby="claims-h" style="flex: 999 1 520px; min-width: 0; background: #ffffff; border: 1px solid #e4def5; border-radius: 18px; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px">
+<h2 id="claims-h" style="margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 28px">What the sources say</h2>
+<sc-for list="{{claims}}" as="c" hint-placeholder-count="3">
+<div style="display: flex; flex-direction: column; gap: 6px; border-top: 1px solid #efeaf9; padding-top: 12px">
+<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center"><strong style="font-size: 15px">{{c.k}}</strong><span style="font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid {{c.color}}; color: {{c.color}}">{{c.badge}}</span></div>
+<blockquote style="margin: 0; padding: 8px 12px; background: #f7f4fe; border-radius: 10px; font-family: 'Instrument Serif', Georgia, serif; font-size: 17px">{{c.quote}}</blockquote>
+<p style="margin: 0; font-size: 12px; color: #514c5e">{{c.src}}</p>
+</div>
+</sc-for>
+</section>
+<section aria-labelledby="rep-h" style="flex: 1 1 300px; background: #ffffff; border: 1px solid #e4def5; border-radius: 18px; padding: 20px 24px; display: flex; flex-direction: column; gap: 12px">
+<h2 id="rep-h" style="margin: 0; font-size: 17px; font-weight: 650">Report wrong information</h2>
+<label for="rep-field" style="font-size: 14px; font-weight: 500">What is wrong?</label>
+<select id="rep-field" style="min-height: 44px; border-radius: 8px; border: 1px solid #c9bfe8; padding: 0 10px; font: 14px Inter, sans-serif; background: #ffffff"><option>License</option><option>Description</option><option>Dates</option></select>
+<label for="rep-text" style="font-size: 14px; font-weight: 500">Details <span style="color: #514c5e; font-weight: 400">(optional)</span></label>
+<textarea id="rep-text" rows="3" style="border-radius: 8px; border: 1px solid #c9bfe8; padding: 10px; font: 14px Inter, sans-serif; resize: vertical"></textarea>
+<button type="button" style="align-self: flex-start; min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid #c9bfe8; background: #ffffff; font: 500 14px Inter, sans-serif">Send report</button>
+</section>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1600}}'>
+class Component extends DCLogic {
+renderVals() {
+const f = (k, v) => ({ k, v: v || 'Unknown', color: v ? '#14121a' : '#7a3e00' });
+return {
+yes: true,
+blocks: [
+{ title: 'Facts', facts: [f('Platforms', 'node'), f('License', 'MIT'), f('Open source', 'Yes'), f('Pricing', null), f('Tech level', null), f('Audience', 'For building with AI'), f('Use cases', null), f('Source records', '2')] },
+{ title: 'Dates', facts: [f('Published', 'Sep 30, 2026 (source: npm)'), f('Last updated', 'Oct 19, 2026, 12:15 PM UTC (source: npm)'), f('First seen by Helper2.ai', 'Oct 22, 2026')] }
+],
+tags: ['database', 'mcp', 'model-context-protocol', 'postgres', 'postgresql'],
+claims: [
+{ k: 'License', badge: '✓ Verified', color: '#0f4d3c', quote: '“license”: “MIT”', src: 'npm registry · retrieved Oct 26, 2026' },
+{ k: 'Use case: database access', badge: '? Unverified', color: '#514c5e', quote: '“Model Context Protocol server for PostgreSQL database operations”', src: 'AI Resource Scout · from the npm description · awaiting review' },
+{ k: 'Pricing', badge: '⚠ Conflicting', color: '#7a3e00', quote: '[Two sources disagree; both values shown and sent to review]', src: '[source A] · [source B]' }
+]
+};
+}
+}
+</script>
+</body>
+</html>

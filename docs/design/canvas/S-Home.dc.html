@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Home</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>body{margin:0}a{color:#6d28d9}a:hover{color:#3b1d8f}</style>
+</helmet>
+<div style="background: #faf8ff; color: #14121a; font-family: Inter, system-ui, sans-serif; min-height: 100vh">
+<dc-import name="S-Header" box="{{no}}" show-logo="{{no}}" active="Search" hint-size="100%,70px"></dc-import>
+<main style="max-width: 1120px; margin: 0 auto; padding: 0 24px 64px; display: flex; flex-direction: column; gap: 40px">
+<h1 style="position: absolute; left: -9999px">Find AI tools and resources, with evidence for every pick</h1>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 28px; padding-top: 88px">
+<div aria-hidden="true" style="display: flex; align-items: center; gap: 24px">
+<span style="width: 64px; height: 64px; border-radius: 18px; background: #7c3aed; display: flex; align-items: center; justify-content: center">
+<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="4" opacity="0.55"></circle><path d="M12 12 18.4 5.6"></path><circle cx="17" cy="16.5" r="2" fill="#ffffff" stroke="none"></circle></svg>
+</span>
+<span style="display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Instrument Serif', Georgia, serif; font-size: 64px; line-height: 1">helper2.ai</span><span style="font-size: 14px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #514c5e">AI on your radar</span></span>
+</div>
+<div style="width: 100%; max-width: 704px; display: flex; flex-direction: column; gap: 10px; align-items: center">
+<div role="search" style="width: 100%; display: flex; flex-wrap: wrap; gap: 10px">
+<label for="home-q" style="position: absolute; left: -9999px">Search AI resources</label>
+<input id="home-q" type="search" placeholder="Search tools, models, MCP servers… or ask in plain words" style="flex: 1 1 300px; min-height: 56px; box-sizing: border-box; border-radius: 14px; border: 1px solid #c9bfe8; background: #ffffff; padding: 0 18px; font: 17px Inter, sans-serif; color: #14121a">
+<a href="S-Results.dc.html" style="min-height: 56px; padding: 0 20px; border-radius: 14px; border: 1px solid #c9bfe8; background: #ffffff; color: #14121a; font: 500 16px Inter, sans-serif; text-decoration: none; display: flex; align-items: center">Search</a>
+<a href="S-Guide.dc.html" style="min-height: 56px; padding: 0 22px; border-radius: 14px; background: #7c3aed; color: #ffffff; font: 600 16px Inter, sans-serif; text-decoration: none; display: flex; align-items: center">Ask the guide</a>
+</div>
+<p style="margin: 0; font-size: 13px; color: #514c5e; text-align: center">Enter searches every source · Ask the guide (or Shift+Enter) gets up to 3 picks with checked quotes</p>
+</div>
+</div>
+<section aria-labelledby="new-h" style="display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 16px">
+<h2 id="new-h" style="margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 36px; line-height: 1">What’s new</h2>
+<p style="margin: 0; font-size: 13px; color: #514c5e">The newest resources in the Helper2 index from the last 14 days, by the date each source states.</p>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{topics}}" as="t" hint-placeholder-count="6"><button type="button" aria-pressed="{{t.on}}" style="min-height: 40px; padding: 0 14px; border-radius: 999px; border: 0; background: {{t.bg}}; color: {{t.fg}}; font: 500 14px Inter, sans-serif">{{t.label}}</button></sc-for>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px">
+<sc-for list="{{cards}}" as="c" hint-placeholder-count="6">
+<article style="background: #ffffff; border: 1px solid #e4def5; border-radius: 18px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+<span style="font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: {{c.bg}}; color: {{c.fg}}">{{c.type}}</span>
+<span style="font-size: 13px; color: #514c5e">{{c.src}}</span>
+<span style="margin-left: auto; font-size: 13px; color: #514c5e">{{c.date}}</span>
+</div>
+<h3 style="margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 24px; line-height: 1.15"><a href="S-Resource.dc.html" style="color: #14121a; text-decoration: none">{{c.title}}</a></h3>
+<p style="margin: 0; font-size: 14px; line-height: 1.5; color: #3d3949">{{c.body}}</p>
+<a href="S-Guide.dc.html" style="margin-top: auto; min-height: 40px; display: flex; align-items: center; font-size: 14px; font-weight: 600; text-decoration: none">Ask the guide about this</a>
+</article>
+</sc-for>
+</div>
+</section>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1200}}'>
+class Component extends DCLogic {
+renderVals() {
+const tint = (on) => ({ bg: on ? '#14121a' : '#f3effc', fg: on ? '#ffffff' : '#3b1d8f', on: on ? 'true' : 'false' });
+const mcp = { type: 'MCP server', bg: '#e3f3ee', fg: '#0f4d3c', src: 'Official MCP Registry' };
+return {
+no: false,
+topics: ['All', 'MCP servers', 'Models', 'Libraries', 'Papers', 'News'].map((label, i) => ({ label, ...tint(i === 0) })),
+cards: [
+{ ...mcp, date: 'Published Oct 26, 2026', title: 'LicenseSaaS', body: 'Search and list software for licensing and white-labeling deals, message sellers and buyers.' },
+{ ...mcp, date: 'Published Oct 26, 2026', title: 'Imaginou', body: 'AI product videos from photos: showroom, presenter and comedic campaigns with storyboard approval.' },
+{ ...mcp, date: 'Published Oct 26, 2026', title: 'com.njligames/kanban-importer', body: 'Read and move Trello cards by the task ids your AI assistant invented.' },
+{ type: 'Model', bg: '#fdebd3', fg: '#7a3e00', src: 'Hugging Face', date: 'Published [date]', title: '[New small speech model]', body: '[Model card summary as stated by the publisher]' },
+{ type: 'Paper', bg: '#ede7fd', fg: '#3b1d8f', src: 'arXiv', date: 'Published [date]', title: '[Paper on agent tool use]', body: '[Abstract excerpt as published]' },
+{ type: 'News', bg: '#e6f0fb', fg: '#173f70', src: 'Tavily · [outlet]', date: 'Published [date]', title: '[Headline from the article]', body: '[Article lead as published]' }
+]
+};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,200 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "DS-Brand.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 2400,
+      "title": "Brand book",
+      "expand": "fill",
+      "page": "system"
+    },
+    "DS-Colors.dc.html": {
+      "x": 1520,
+      "y": 0,
+      "w": 1440,
+      "h": 1800,
+      "title": "Colours · light and dark",
+      "expand": "fill",
+      "page": "system"
+    },
+    "DS-Type.dc.html": {
+      "x": 3040,
+      "y": 0,
+      "w": 1440,
+      "h": 1500,
+      "title": "Type, spacing, radius",
+      "expand": "fill",
+      "page": "system"
+    },
+    "DS-Components.dc.html": {
+      "x": 4560,
+      "y": 0,
+      "w": 1440,
+      "h": 2600,
+      "title": "Components",
+      "expand": "fill",
+      "page": "system"
+    },
+    "One-Page.dc.html": {
+      "expand": "fill",
+      "h": 1100,
+      "is_interactive": true,
+      "title": "Prototype · One page, one box",
+      "w": 1440,
+      "x": 0,
+      "y": 0,
+      "page": "proto"
+    },
+    "S-Admin.dc.html": {
+      "expand": "fill",
+      "h": 1200,
+      "title": "Screens · 7 Admin",
+      "w": 1440,
+      "x": 9120,
+      "y": 290,
+      "page": "screens"
+    },
+    "S-Guide.dc.html": {
+      "expand": "fill",
+      "h": 1500,
+      "title": "Screens · 3 Guide answer",
+      "w": 1440,
+      "x": 3040,
+      "y": 290,
+      "page": "screens"
+    },
+    "S-Header.dc.html": {
+      "h": 170,
+      "title": "Screens · Header (shared)",
+      "w": 1440,
+      "x": 0,
+      "y": 0,
+      "page": "screens"
+    },
+    "S-Home.dc.html": {
+      "expand": "fill",
+      "h": 1200,
+      "title": "Screens · 1 Home",
+      "w": 1440,
+      "x": 0,
+      "y": 290,
+      "page": "screens"
+    },
+    "S-Phone-Home.dc.html": {
+      "h": 844,
+      "title": "Screens · 8 Home on phone",
+      "w": 390,
+      "x": 10640,
+      "y": 290,
+      "page": "screens"
+    },
+    "S-Resource.dc.html": {
+      "expand": "fill",
+      "h": 1600,
+      "title": "Screens · 4 Resource page",
+      "w": 1440,
+      "x": 4560,
+      "y": 290,
+      "page": "screens"
+    },
+    "S-Results.dc.html": {
+      "expand": "fill",
+      "h": 1500,
+      "title": "Screens · 2 Search results",
+      "w": 1440,
+      "x": 1520,
+      "y": 290,
+      "page": "screens"
+    },
+    "S-Saved.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "title": "Screens · 5 Saved",
+      "w": 1440,
+      "x": 6080,
+      "y": 290,
+      "page": "screens"
+    },
+    "S-Sources.dc.html": {
+      "expand": "fill",
+      "h": 1300,
+      "title": "Screens · 6 Sources",
+      "w": 1440,
+      "x": 7600,
+      "y": 290,
+      "page": "screens"
+    },
+    "Website.dc.html": {
+      "expand": "fill",
+      "h": 4300,
+      "title": "Website · one-page landing",
+      "w": 1440,
+      "x": 1520,
+      "y": 0,
+      "page": "proto"
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-10-26T00:10:00Z",
+    "v": 1
+  },
+  "designSystems": [
+    {
+      "artifact": "https://claude.ai/artifact/4oRK7kdSSpwD6bjTFRUouF",
+      "copiedAt": "2026-10-26T01:26:00Z",
+      "namespace": "helper2",
+      "title": "Helper2.ai",
+      "version": "1792977803-41d9"
+    }
+  ],
+  "launch": {
+    "view": "canvas",
+    "page": "system"
+  },
+  "notes": {
+    "screens": {
+      "kind": "title1",
+      "maxW": 8000,
+      "text": "App screens · Helper2.ai design system",
+      "w": 240,
+      "x": 0,
+      "y": -300,
+      "page": "screens"
+    }
+  },
+  "order": [
+    "DS-Brand.dc.html",
+    "DS-Colors.dc.html",
+    "DS-Type.dc.html",
+    "DS-Components.dc.html",
+    "One-Page.dc.html",
+    "Website.dc.html",
+    "S-Header.dc.html",
+    "S-Home.dc.html",
+    "S-Results.dc.html",
+    "S-Guide.dc.html",
+    "S-Resource.dc.html",
+    "S-Saved.dc.html",
+    "S-Sources.dc.html",
+    "S-Admin.dc.html",
+    "S-Phone-Home.dc.html"
+  ],
+  "pages": [
+    {
+      "id": "system",
+      "name": "Design system"
+    },
+    {
+      "id": "proto",
+      "name": "Prototype & website"
+    },
+    {
+      "id": "screens",
+      "name": "App screens"
+    }
+  ],
+  "title": "Helper2.ai"
+}

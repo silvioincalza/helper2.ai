@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Helper2.ai header</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<header style="background: #ffffff; border-bottom: 1px solid #e4def5; font-family: Inter, system-ui, sans-serif; color: #14121a">
+<div style="max-width: 1120px; margin: 0 auto; padding: 12px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 28px">
+<sc-if value="{{showLogo}}" hint-placeholder-val="{{ true }}">
+<a href="S-Home.dc.html" aria-label="Helper2.ai home" style="display: flex; align-items: center; gap: 16px; color: #14121a; text-decoration: none">
+<span style="width: 40px; height: 40px; border-radius: 12px; background: #7c3aed; display: flex; align-items: center; justify-content: center">
+<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="4" opacity="0.55"></circle><path d="M12 12 18.4 5.6"></path><circle cx="17" cy="16.5" r="2" fill="#ffffff" stroke="none"></circle></svg>
+</span>
+<span style="display: flex; flex-direction: column; gap: 2px"><span style="font-family: 'Instrument Serif', Georgia, serif; font-size: 30px; line-height: 1">helper2.ai</span><span style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #514c5e; line-height: 1.2">AI on your radar</span></span>
+</a>
+</sc-if>
+<nav aria-label="Main" style="display: flex; gap: 4px 20px; font-size: 15px; font-weight: 500">
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="3">
+<a href="{{n.href}}" aria-current="{{n.current}}" style="color: {{n.color}}; text-decoration: none; padding: 12px 0; border-bottom: 2px solid {{n.line}}">{{n.label}}</a>
+</sc-for>
+</nav>
+<a href="#" style="margin-left: auto; min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid #c9bfe8; color: #14121a; font-size: 14px; font-weight: 500; text-decoration: none; display: flex; align-items: center">Sign in with GitHub</a>
+</div>
+<sc-if value="{{box}}" hint-placeholder-val="{{ true }}">
+<div style="max-width: 1120px; margin: 0 auto; padding: 0 24px 14px; display: flex; flex-direction: column; gap: 8px">
+<div role="search" style="display: flex; flex-wrap: wrap; gap: 10px">
+<label for="hdr-q" style="position: absolute; left: -9999px">Search AI resources</label>
+<input id="hdr-q" type="search" value="{{query}}" placeholder="Search tools, models, MCP servers… or ask in plain words" style="flex: 1 1 300px; min-height: 56px; box-sizing: border-box; border-radius: 14px; border: 1px solid #c9bfe8; background: #faf8ff; padding: 0 18px; font: 17px Inter, sans-serif; color: #14121a">
+<button type="button" style="min-height: 56px; padding: 0 20px; border-radius: 14px; border: 1px solid #c9bfe8; background: #ffffff; color: #14121a; font: 500 16px Inter, sans-serif">Search</button>
+<a href="S-Guide.dc.html" style="min-height: 56px; padding: 0 22px; border-radius: 14px; background: #7c3aed; color: #ffffff; font: 600 16px Inter, sans-serif; text-decoration: none; display: flex; align-items: center">Ask the guide</a>
+</div>
+<p style="margin: 0; font-size: 13px; color: #514c5e">Typing searches every source · Ask the guide (or Shift+Enter) gets up to 3 picks with checked quotes</p>
+</div>
+</sc-if>
+</header>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"box":{"editor":"boolean","default":true},"showLogo":{"editor":"boolean","default":true},"active":{"editor":"enum","options":["Search","Saved","Sources","Admin"],"default":"Search"},"query":{"editor":"text","default":"mcp postgres"},"admin":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":170}}'>
+class Component extends DCLogic {
+renderVals() {
+const active = this.props.active ?? 'Search';
+const items = [['Search', 'S-Home.dc.html'], ['Saved', 'S-Saved.dc.html'], ['Sources', 'S-Sources.dc.html']];
+if (this.props.admin) items.push(['Admin', 'S-Admin.dc.html']);
+return {
+box: this.props.box ?? true,
+showLogo: this.props.showLogo ?? true,
+query: this.props.query ?? 'mcp postgres',
+nav: items.map(([label, href]) => ({ label, href, current: label === active ? 'page' : 'false', color: label === active ? '#14121a' : '#3d3949', line: label === active ? '#7c3aed' : 'transparent' }))
+};
+}
+}
+</script>
+</body>
+</html>

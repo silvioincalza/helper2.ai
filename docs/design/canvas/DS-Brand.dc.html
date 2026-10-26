@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Helper2.ai brand book</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>body{margin:0}a{color:#6d28d9}a:hover{color:#3b1d8f}</style>
+</helmet>
+<div style="background: #faf8ff; color: #14121a; font-family: Inter, system-ui, sans-serif">
+<header style="background: #14121a; color: #f1eefa">
+<div style="max-width: 1120px; margin: 0 auto; padding: 64px 24px 56px; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 32px">
+<div style="flex: 999 1 480px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+<p style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #c4b5fd">Design system</p>
+<h1 style="margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: clamp(56px, 7vw, 96px); line-height: 0.95">Helper2.ai</h1>
+<p style="margin: 0; max-width: 60ch; font-size: 18px; line-height: 1.55; color: #cdc7dc">One system for every part of Helper2.ai: the search-and-ask box, results, the AI guide, What’s new, resource pages, saved resources, sources and admin. Calm lavender paper, a serif for anything editorial, a sans for doing things, a mono for names that came from a source.</p>
+</div>
+<div aria-hidden="true" style="flex: 1 1 260px; display: flex; align-items: center; gap: 16px">
+<span style="width: 64px; height: 64px; border-radius: 18px; background: #a78bfa; display: flex; align-items: center; justify-content: center">
+<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#14121a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="4" opacity="0.55"></circle><path d="M12 12 18.4 5.6"></path><circle cx="17" cy="16.5" r="2" fill="#14121a" stroke="none"></circle></svg>
+</span>
+<span style="display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Instrument Serif', Georgia, serif; font-size: 40px; line-height: 1">helper2.ai</span><span style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #a9a2bb">AI on your radar</span></span>
+</div>
+</div>
+</header>
+<main style="max-width: 1120px; margin: 0 auto; padding: 56px 24px 80px; display: flex; flex-direction: column; gap: 56px">
+<section aria-labelledby="pr-h" style="display: flex; flex-direction: column; gap: 20px">
+<h2 id="pr-h" style="margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 44px">Principles</h2>
+<ol style="margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px">
+<sc-for list="{{principles}}" as="p" hint-placeholder-count="6">
+<li style="background: #ffffff; border: 1px solid #e4def5; border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 8px">
+<span style="font-family: 'Instrument Serif', Georgia, serif; font-size: 36px; line-height: 1; color: #7c3aed">{{p.n}}</span>
+<h3 style="margin: 0; font-size: 17px; font-weight: 600">{{p.t}}</h3>
+<p style="margin: 0; font-size: 15px; line-height: 1.55; color: #3d3949">{{p.d}}</p>
+</li>
+</sc-for>
+</ol>
+</section>
+<section aria-labelledby="cf-h" style="display: flex; flex-wrap: wrap; gap: 32px">
+<div style="flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+<h2 id="cf-h" style="margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 44px">Writing</h2>
+<ul style="margin: 0; padding-left: 20px; font-size: 16px; line-height: 1.7; color: #3d3949">
+<li>Talk like a knowledgeable colleague: “Typing searches every source.”</li>
+<li>Buttons say what happens: <strong>Search</strong>, <strong>Ask the guide</strong>, <strong>Save</strong>, <strong>Copy prompt</strong>, <strong>Try again</strong>.</li>
+<li>Errors say what went wrong and what to do next, without apology.</li>
+<li>Never invent popularity, dates or facts. Mock content uses brackets: [stated date].</li>
+<li>Metadata reads source first, then date: “GitHub · Oct 21, 2026”.</li>
+<li>A fact no source gave reads <span style="color: #7a3e00">Unknown</span>.</li>
+</ul>
+</div>
+<div style="flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+<h2 style="margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 44px">Logo</h2>
+<p style="margin: 0; font-size: 16px; line-height: 1.6; color: #3d3949">A white stroke radar (ring, sweep and one blip) on a 40 px violet tile with 12 px corners, 16 px left of the wordmark “helper2.ai” in Instrument Serif. Under it, the tagline <strong>AI ON YOUR RADAR</strong> in Inter, 12 px, semibold, uppercase, tracked 0.08em, muted. Never recolour the radar, add effects, or drop the wordmark in the header.</p>
+<div style="display: flex; flex-wrap: wrap; gap: 16px">
+<div style="flex: 1 1 200px; padding: 24px; border-radius: 18px; background: #ffffff; border: 1px solid #e4def5; display: flex; align-items: center; gap: 16px">
+<span style="width: 40px; height: 40px; border-radius: 12px; background: #7c3aed; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="4" opacity="0.55"></circle><path d="M12 12 18.4 5.6"></path><circle cx="17" cy="16.5" r="2" fill="#ffffff" stroke="none"></circle></svg></span>
+<span style="font-size: 13px; color: #514c5e">Light</span>
+</div>
+<div style="flex: 1 1 200px; padding: 24px; border-radius: 18px; background: #14121a; display: flex; align-items: center; gap: 16px">
+<span style="width: 40px; height: 40px; border-radius: 12px; background: #a78bfa; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#14121a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="4" opacity="0.55"></circle><path d="M12 12 18.4 5.6"></path><circle cx="17" cy="16.5" r="2" fill="#14121a" stroke="none"></circle></svg></span>
+<span style="font-size: 13px; color: #a9a2bb">Dark</span>
+</div>
+</div>
+</div>
+</section>
+<section aria-labelledby="roles-h" style="display: flex; flex-direction: column; gap: 16px">
+<h2 id="roles-h" style="margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 44px">Colour roles</h2>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px">
+<sc-for list="{{roles}}" as="r" hint-placeholder-count="9">
+<div style="display: flex; gap: 12px; align-items: center; background: #ffffff; border: 1px solid #e4def5; border-radius: 14px; padding: 12px">
+<span style="flex: none; width: 48px; height: 48px; border-radius: 10px; background: {{r.c}}; border: 1px solid #e4def5"></span>
+<span style="display: flex; flex-direction: column; gap: 2px"><strong style="font-size: 15px">{{r.role}}</strong><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #514c5e">{{r.token}}</span><span style="font-size: 13px; color: #3d3949">{{r.use}}</span></span>
+</div>
+</sc-for>
+</div>
+</section>
+<section aria-labelledby="tags-h" style="display: flex; flex-wrap: wrap; gap: 32px">
+<div style="flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+<h2 id="tags-h" style="margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 44px">Type tags</h2>
+<p style="margin: 0; font-size: 15px; color: #3d3949">Every resource carries one. Fill and text differ in lightness, not just hue.</p>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{tags}}" as="t" hint-placeholder-count="6"><span style="font-size: 13px; font-weight: 600; padding: 4px 11px; border-radius: 999px; background: {{t.bg}}; color: {{t.fg}}">{{t.label}}</span></sc-for>
+</div>
+</div>
+<div style="flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+<h2 style="margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 44px">Icons</h2>
+<p style="margin: 0; font-size: 15px; line-height: 1.6; color: #3d3949">Small 14 px stroke glyphs beside words, never alone: check, cross, clock, pause, warn, info, bookmark, external link, refresh. “→” for go further, “↗” for an external source. No emoji. An icon-only button, such as close ×, has an accessible label.</p>
+</div>
+</section>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2400}}'>
+class Component extends DCLogic {
+renderVals() {
+return {
+principles: [
+{ n: '1', t: 'One entry point', d: 'One box in the header of every page. Typing searches; Ask the guide sends the same words to the guide. No second field, no scope switch.' },
+{ n: '2', t: 'Show where every fact came from', d: 'Each result, fact and pick names its source. A value no source stated reads Unknown. Dates are the source’s own, otherwise “First seen”.' },
+{ n: '3', t: 'Checked versus not checked', d: 'A quote the validator matched sits on the quote background with a Quote checked badge. The model’s reason is always labelled not checked.' },
+{ n: '4', t: 'State in words, not colour alone', d: 'Every status carries a word and an icon: answered, cached, rate-limited, failed; verified, conflicting, rejected.' },
+{ n: '5', t: 'Editorial voice, tool behaviour', d: 'Instrument Serif for headings, feed titles and quotes; Inter for controls and text; JetBrains Mono for resource names and source status.' },
+{ n: '6', t: 'Quiet surfaces, one accent', d: 'Violet marks the one primary action per area. Selection uses ink, so state and action never look alike.' }
+],
+roles: [
+{ role: 'Page', token: 'bg', c: '#faf8ff', use: 'Everything sits on it.' },
+{ role: 'Objects', token: 'surface + border', c: '#ffffff', use: 'Cards, lists, panels.' },
+{ role: 'Idle chips', token: 'surface-tint', c: '#f3effc', use: 'Filter, topic and example pills.' },
+{ role: 'Selected', token: 'selected', c: '#14121a', use: 'The active pill or tab.' },
+{ role: 'Primary action', token: 'accent', c: '#7c3aed', use: 'One per area: Ask the guide.' },
+{ role: 'Links', token: 'accent-ink', c: '#6d28d9', use: 'Text links and text buttons.' },
+{ role: 'Checked', token: 'checked-bg / -ink', c: '#e3f3ee', use: 'Quote checked, verified, succeeded.' },
+{ role: 'Caution', token: 'not-stated', c: '#7a3e00', use: 'Unknown, First seen, cached, rate-limited.' },
+{ role: 'Error', token: 'danger', c: '#b42318', use: 'Failed sources, rejected claims, form errors.' }
+],
+tags: [
+{ label: 'MCP server', bg: '#e3f3ee', fg: '#0f4d3c' }, { label: 'Model', bg: '#fdebd3', fg: '#7a3e00' }, { label: 'Paper', bg: '#ede7fd', fg: '#3b1d8f' },
+{ label: 'News · Article', bg: '#e6f0fb', fg: '#173f70' }, { label: 'Library', bg: '#f3effc', fg: '#3d3949' }, { label: 'Product, Agent, Prompt, Skill, Dataset, Event, Other', bg: '#f3effc', fg: '#3d3949' }
+]
+};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+# Flowchart: the one box. What typed text does: live search, or "Ask the guide".
+# Shows the 3-character minimum and the 700 ms pause for live search, the four-word rule of the one button,
+# Shift+Enter, Enter in an empty box, and what each choice writes to the URL.
+# Source of truth: frontend/src/components/OneBox.tsx, frontend/src/pages/HomePage.tsx,
+#   frontend/src/lib/searchState.ts, frontend/src/components/SearchResults.tsx.
+# Render: cd docs/diagrams && d2 fmt flow-0025-frontend-one-box.d2 && d2 flow-0025-frontend-one-box.d2 flow-0025-frontend-one-box.svg
+
+...@style
+
+direction: down
+
+type: "User types in the box" {class: person}
+
+live: Live search (onType) {
+  class: group
+  direction: down
+  min: "At least 3 characters\n(after trim, ≤ 200)?" {class: decision}
+  wait: "Wait 700 ms after\nthe last key" {class: app}
+  home: "On the home page and\nq differs from the URL?" {class: decision}
+  replace: "Replace URL ?q=…\n(keeps ask and filters)" {class: app}
+  nothing: "Nothing yet" {class: end}
+  min -> nothing: no
+  min -> wait: yes
+  wait -> home
+  home -> replace: yes {class: hot}
+  home -> nothing: no
+}
+
+key: "Enter or the one button" {class: app}
+empty: "Enter in an empty box?" {class: decision}
+clear: "Back to the empty home page" {class: end}
+shift: "Shift+Enter?" {class: decision}
+words: "4 words or more?\n(the button label follows)" {class: decision}
+search: "Search: ?q=… (cancel live timer)" {class: app}
+ask: "Ask the guide: ?q=…&ask=…\n(question ≤ 500 chars)" {class: app}
+
+page: HomePage {
+  class: group
+  direction: down
+  results: "SearchResults: GET /api/v1/search\n(old request aborted; previous results\nstay, dimmed, aria-busy)" {class: app}
+  guide: "GuideSection: POST /api/v1/guide/stream\n(GuideProgress, five steps)" {class: app}
+  suggest: "q has 4+ words and no ask:\n\"Ask the guide\" suggestion" {class: app}
+}
+
+other: "On another page: navigate to /\nwith the same parameters" {class: app}
+
+type -> live.min: "each key"
+type -> key: "Enter / button"
+live.replace -> page.results: {class: hot}
+key -> empty
+empty -> clear: yes
+empty -> shift: no
+shift -> ask: yes
+shift -> words: no
+words -> ask: yes
+words -> search: no {class: hot}
+search -> page.results: {class: hot}
+live.replace -> page.suggest: "4+ words typed"
+ask -> page.guide: {class: ai-call}
+ask -> page.results: "same q"
+search -> other: "not on /"
+ask -> other: "not on /"

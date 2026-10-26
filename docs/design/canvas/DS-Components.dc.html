@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Helper2.ai components</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>body{margin:0}a{color:#6d28d9}</style>
+</helmet>
+<div style="background: #faf8ff; color: #14121a; font-family: Inter, system-ui, sans-serif">
+<main style="max-width: 1120px; margin: 0 auto; padding: 56px 24px 80px; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<p style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #7c3aed">Design system · Components</p>
+<h1 style="margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 56px; line-height: 1">Eleven parts for every screen</h1>
+</div>
+
+<section aria-labelledby="c-header" style="display: flex; flex-direction: column; gap: 10px">
+<h2 id="c-header" style="margin: 0; font-size: 18px; font-weight: 650">Header <span style="font-weight: 400; color: #514c5e; font-size: 14px">· logo, nav and the one box on every page except the empty home</span></h2>
+<div style="border: 1px solid #e4def5; border-radius: 14px; overflow: hidden"><dc-import name="S-Header" box="{{yes}}" active="Search" query="" hint-size="100%,170px"></dc-import></div>
+</section>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(480px, 1fr)); gap: 20px">
+
+<section aria-labelledby="c-btn" style="background: #ffffff; border: 1px solid #e4def5; border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 12px">
+<h2 id="c-btn" style="margin: 0; font-size: 18px; font-weight: 650">Button <span style="font-weight: 400; color: #514c5e; font-size: 14px">· primary, secondary, text, icon; 44px+</span></h2>
+<div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+<button type="button" style="min-height: 44px; padding: 0 16px; border-radius: 10px; border: 0; background: #7c3aed; color: #ffffff; font: 600 14px Inter, sans-serif">Ask the guide</button>
+<button type="button" style="min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid #c9bfe8; background: #ffffff; color: #14121a; font: 500 14px Inter, sans-serif">Search</button>
+<button type="button" style="min-height: 44px; padding: 0; border: 0; background: transparent; color: #6d28d9; font: 600 14px Inter, sans-serif">Show details</button>
+<button type="button" aria-label="Close" style="width: 44px; height: 44px; border-radius: 10px; border: 1px solid #c9bfe8; background: #ffffff; font-size: 20px">×</button>
+<button type="button" disabled style="min-height: 44px; padding: 0 16px; border-radius: 10px; border: 0; background: #7c3aed; color: #ffffff; opacity: 0.55; font: 600 14px Inter, sans-serif">Ask the guide</button>
+</div>
+</section>
+
+<section aria-labelledby="c-pill" style="background: #ffffff; border: 1px solid #e4def5; border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 12px">
+<h2 id="c-pill" style="margin: 0; font-size: 18px; font-weight: 650">Pill <span style="font-weight: 400; color: #514c5e; font-size: 14px">· topic and type filters; selected is ink, not violet</span></h2>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" aria-pressed="true" style="min-height: 40px; padding: 0 14px; border-radius: 999px; border: 0; background: #14121a; color: #ffffff; font: 500 14px Inter, sans-serif">All 6</button>
+<button type="button" aria-pressed="false" style="min-height: 40px; padding: 0 14px; border-radius: 999px; border: 0; background: #f3effc; color: #3b1d8f; font: 500 14px Inter, sans-serif">MCP servers 3</button>
+<button type="button" aria-pressed="false" style="min-height: 40px; padding: 0 14px; border-radius: 999px; border: 0; background: #f3effc; color: #3b1d8f; font: 500 14px Inter, sans-serif">Papers 1</button>
+</div>
+</section>
+
+<section aria-labelledby="c-badge" style="background: #ffffff; border: 1px solid #e4def5; border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 12px">
+<h2 id="c-badge" style="margin: 0; font-size: 18px; font-weight: 650">Badge <span style="font-weight: 400; color: #514c5e; font-size: 14px">· type, mode and state, always in words</span></h2>
+<div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center">
+<span style="font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: #e3f3ee; color: #0f4d3c">MCP server</span>
+<span style="font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: #fdebd3; color: #7a3e00">Model</span>
+<span style="font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: #ede7fd; color: #3b1d8f">Paper</span>
+<span style="font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: #e3f3ee; color: #0f4d3c">✓ Quote checked</span>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12px">
+<span style="padding: 2px 8px; border-radius: 999px; border: 1px solid #6d28d9; color: #6d28d9">Live</span>
+<span style="padding: 2px 8px; border-radius: 999px; border: 1px solid #7c3aed; color: #3b1d8f">Indexed</span>
+<span style="padding: 2px 8px; border-radius: 999px; border: 1px dashed #c9bfe8">Curated</span>
+<span style="padding: 2px 8px; border-radius: 999px; border: 1px solid #0f4d3c; color: #0f4d3c">✓ Succeeded</span>
+<span style="padding: 2px 8px; border-radius: 999px; border: 1px solid #7a3e00; color: #7a3e00">⏸ Rate limited</span>
+<span style="padding: 2px 8px; border-radius: 999px; border: 1px solid #b42318; color: #b42318">✕ Failed</span>
+</div>
+</section>
+
+<section aria-labelledby="c-facts" style="background: #ffffff; border: 1px solid #e4def5; border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 12px">
+<h2 id="c-facts" style="margin: 0; font-size: 18px; font-weight: 650">FactList <span style="font-weight: 400; color: #514c5e; font-size: 14px">· a value no source gave reads Unknown</span></h2>
+<dl style="margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 16px">
+<div><dt style="font-size: 13px; color: #514c5e">License</dt><dd style="margin: 0; font-size: 15px">MIT</dd></div>
+<div><dt style="font-size: 13px; color: #514c5e">Pricing</dt><dd style="margin: 0; font-size: 15px; color: #7a3e00">Unknown</dd></div>
+<div><dt style="font-size: 13px; color: #514c5e">Published</dt><dd style="margin: 0; font-size: 15px">Sep 30, 2026 <span style="font-size: 13px; color: #514c5e">(npm)</span></dd></div>
+</dl>
+</section>
+
+<section aria-labelledby="c-banner" style="background: #ffffff; border: 1px solid #e4def5; border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 10px">
+<h2 id="c-banner" style="margin: 0; font-size: 18px; font-weight: 650">Banner <span style="font-weight: 400; color: #514c5e; font-size: 14px">· caution, error, ok, empty; never a modal</span></h2>
+<div style="padding: 10px 14px; border-radius: 14px; border: 1px solid #7a3e00; font-size: 14px">⚠ 6 of 8 sources responded. Results may be incomplete.</div>
+<div role="alert" style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 14px; border: 1px solid #b42318; font-size: 14px">⚠ Search failed. Check your connection and try again.<button type="button" style="margin-left: auto; min-height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid #c9bfe8; background: #ffffff; font: 500 13px Inter, sans-serif">Try again</button></div>
+<div style="padding: 10px 14px; border-radius: 14px; border: 1px dashed #c9bfe8; font-size: 14px">No results for “vectr databse”. Try fewer words, or ask the guide.</div>
+</section>
+
+<section aria-labelledby="c-status" style="background: #ffffff; border: 1px solid #e4def5; border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 12px">
+<h2 id="c-status" style="margin: 0; font-size: 18px; font-weight: 650">SourceStatus <span style="font-weight: 400; color: #514c5e; font-size: 14px">· every source on every search</span></h2>
+<div style="display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 12px 16px; border-radius: 14px; background: #14121a; font-family: 'JetBrains Mono', monospace; font-size: 12px">
+<span style="color: #86efac">● github ok</span><span style="color: #86efac">● npm ok</span><span style="color: #fcd34d">● arxiv rate-limited</span><span style="color: #fcd34d">● tavily cache</span><span style="color: #86efac">● mcp-registry ok</span>
+</div>
+</section>
+
+<section aria-labelledby="c-result" style="background: #ffffff; border: 1px solid #e4def5; border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 12px">
+<h2 id="c-result" style="margin: 0; font-size: 18px; font-weight: 650">ResultCard <span style="font-weight: 400; color: #514c5e; font-size: 14px">· results, saved items, resource head</span></h2>
+<article style="border: 1px solid #e4def5; border-radius: 18px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; gap: 8px"><span style="font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: #e3f3ee; color: #0f4d3c">MCP server</span><span style="font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid #c9bfe8">Cached</span></div>
+<h3 style="margin: 0; font-family: 'JetBrains Mono', monospace; font-weight: 500; font-size: 17px">mcp-postgres</h3>
+<p style="margin: 0; font-size: 14px; color: #3d3949">Model Context Protocol server for PostgreSQL database operations</p>
+<p style="margin: 0; font-size: 13px; color: #514c5e">1.1K npm weekly downloads · npm registry · as of Oct 26, 2026</p>
+</article>
+</section>
+
+<section aria-labelledby="c-pick" style="background: #ffffff; border: 1px solid #e4def5; border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 12px">
+<h2 id="c-pick" style="margin: 0; font-size: 18px; font-weight: 650">GuidePick <span style="font-weight: 400; color: #514c5e; font-size: 14px">· checked quote first, unchecked reason after</span></h2>
+<article style="border: 1px solid #e4def5; border-radius: 18px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; gap: 8px; align-items: center"><span style="font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: #e3f3ee; color: #0f4d3c">MCP server</span><span style="margin-left: auto; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: #e3f3ee; color: #0f4d3c">✓ Quote checked</span></div>
+<h3 style="margin: 0; font-family: 'JetBrains Mono', monospace; font-weight: 500; font-size: 17px">mcp-postgres</h3>
+<blockquote style="margin: 0; padding: 8px 12px; background: #f7f4fe; border-radius: 10px; font-family: 'Instrument Serif', Georgia, serif; font-size: 17px">“Model Context Protocol server for PostgreSQL database operations”</blockquote>
+<p style="margin: 0; font-size: 13px; color: #3d3949"><strong style="color: #14121a">Model's explanation (not checked):</strong> built for Postgres, so an agent can run queries through it.</p>
+</article>
+</section>
+
+<section aria-labelledby="c-feed" style="background: #ffffff; border: 1px solid #e4def5; border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 12px">
+<h2 id="c-feed" style="margin: 0; font-size: 18px; font-weight: 650">FeedCard <span style="font-weight: 400; color: #514c5e; font-size: 14px">· What’s new, by stated date</span></h2>
+<article style="border: 1px solid #e4def5; border-radius: 18px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; gap: 8px; align-items: center"><span style="font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: #e3f3ee; color: #0f4d3c">MCP server</span><span style="font-size: 13px; color: #514c5e">Official MCP Registry</span><span style="margin-left: auto; font-size: 13px; color: #514c5e">Published Oct 26, 2026</span></div>
+<h3 style="margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 24px">LicenseSaaS</h3>
+<p style="margin: 0; font-size: 14px; color: #3d3949">Search and list software for licensing and white-labeling deals, message sellers and buyers.</p>
+<span style="font-size: 14px; font-weight: 600; color: #6d28d9">Ask the guide about this</span>
+</article>
+</section>
+
+<section aria-labelledby="c-box" style="background: #ffffff; border: 1px solid #e4def5; border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 12px">
+<h2 id="c-box" style="margin: 0; font-size: 18px; font-weight: 650">Omnibox <span style="font-weight: 400; color: #514c5e; font-size: 14px">· the one search-and-ask box, 56px</span></h2>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<label for="cb-q" style="position: absolute; left: -9999px">Search or ask</label>
+<input id="cb-q" type="search" placeholder="Search or ask in plain words" style="flex: 1 1 220px; min-height: 56px; box-sizing: border-box; border-radius: 14px; border: 1px solid #c9bfe8; padding: 0 16px; font: 16px Inter, sans-serif">
+<button type="button" style="min-height: 56px; padding: 0 16px; border-radius: 14px; border: 1px solid #c9bfe8; background: #ffffff; font: 500 15px Inter, sans-serif">Search</button>
+<button type="button" style="min-height: 56px; padding: 0 18px; border-radius: 14px; border: 0; background: #7c3aed; color: #ffffff; font: 600 15px Inter, sans-serif">Ask the guide</button>
+</div>
+</section>
+
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2600}}'>
+class Component extends DCLogic {
+renderVals() { return { yes: true }; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,897 @@
+{
+  "common": {
+    "unknown": "Unknown",
+    "yes": "Yes",
+    "no": "No",
+    "retry": "Try again",
+    "loading": "Loading…",
+    "optional": "optional",
+    "opensNewTab": "(opens in a new tab)"
+  },
+  "guideMe": {
+    "label": "Guide me",
+    "aria": "Guide me: {{title}}",
+    "question": "What is {{title}}, and what can I use it for?"
+  },
+  "logo": {
+    "tagline": "AI on your radar"
+  },
+  "nav": {
+    "main": "Main",
+    "home": "Helper2.ai home",
+    "search": "Search",
+    "models": "AI models",
+    "saved": "Saved",
+    "sources": "Sources",
+    "admin": "Admin",
+    "language": "Language",
+    "signIn": "Sign in",
+    "signInWith": "Sign in with {{provider}}",
+    "signOut": "Sign out",
+    "signedIn": "Signed in",
+    "skip": "Skip to main content",
+    "mission": "Mission",
+    "privacy": "Privacy",
+    "theme": {
+      "label": "Theme: {{current}}. Change to {{next}}",
+      "system": "follow system",
+      "light": "light",
+      "dark": "dark"
+    }
+  },
+  "footer": {
+    "coverage": "Helper2.ai searches the sources listed on the Sources page, not the whole web.",
+    "colSite": "Helper2.ai",
+    "colCode": "Open source",
+    "copyright": "© {{year}} Silvio Incalza",
+    "github": "GitHub",
+    "githubLabel": "Helper2.ai source code on GitHub (opens in a new tab)",
+    "license": "Apache-2.0",
+    "licenseLabel": "Apache-2.0 license (opens in a new tab)",
+    "mission": "Mission",
+    "privacy": "Privacy",
+    "versionLabel": "Release notes for version {{version}} (opens in a new tab)"
+  },
+  "home": {
+    "title": "Describe what you need.",
+    "lede": "Tools, models, MCP servers, libraries and papers. NVIDIA Nemotron picks from real search results, and every pick shows the sentence that proves it.",
+    "suggestGuide": "Sounds like a question — ask the guide: “{{q}}” →",
+    "examples": "Try an example",
+    "eyebrow": "AI on your radar",
+    "titleAccent": "Get picks you can verify.",
+    "sourcesLine_one": "Searches {{count}} disclosed source",
+    "sourcesLine_other": "Searches {{count}} disclosed sources",
+    "hint": "A few words search every source. A sentence, or Shift+Enter, asks the guide.",
+    "example": {
+      "postgres": {
+        "label": "Postgres MCP server",
+        "need": "an MCP server so my agent can query a Postgres database"
+      },
+      "embeddings": {
+        "label": "Laptop embedding model",
+        "need": "a small open model for text embeddings that runs on a laptop"
+      },
+      "translation": {
+        "label": "Free document translation",
+        "need": "translate documents between languages for free"
+      }
+    }
+  },
+  "search": {
+    "label": "Search AI resources",
+    "placeholder": "Search tools, models, MCP servers… or ask in plain words",
+    "submit": "Search",
+    "enterQuery": "Type what you are looking for to search the listed sources.",
+    "heroPlaceholder": "Describe what you need, or type a name"
+  },
+  "results": {
+    "title": "Search results",
+    "count_one": "{{count}} result",
+    "count_other": "{{count}} results",
+    "loading": "Searching the listed sources…",
+    "queryingSource": "{{name}}: querying…",
+    "errorTitle": "Search is unavailable",
+    "errorBody": "We could not reach the Helper2.ai service. Nothing was searched.",
+    "partialTitle": "Partial results.",
+    "partialBody": "Only {{ok}} of {{total}} queried sources responded, so these results may be incomplete.",
+    "noticeInfo": "Notice",
+    "noticeWarning": "Warning",
+    "alsoSearched": "Also searched for: {{terms}}",
+    "lexiconNote": "added from a fixed word list, not AI",
+    "suggestUseCase": "Narrow by use case:",
+    "emptyTitle": "No results from the sources searched",
+    "emptyRemoveFilters": "Remove all filters",
+    "emptyTryOther": "Try different or fewer words.",
+    "allFailedTitle": "No source responded",
+    "allFailedBody": "None of the listed sources returned an answer, so nothing was actually searched. This is not the same as \"no results\". Try again in a moment.",
+    "emptySearched": "Sources searched:",
+    "notice": {
+      "CACHE_UNAVAILABLE": "Cache unavailable: every source was queried live for this search.",
+      "INDEX_UNAVAILABLE": "Helper2 index unavailable: discovery dates are unknown for this search.",
+      "ALL_SOURCES_FAILED": "No source could be reached."
+    }
+  },
+  "timeline": {
+    "viewLabel": "Show results as",
+    "view": {
+      "list": "List",
+      "timeline": "Timeline"
+    },
+    "order": "By the date each item was created, newest first.",
+    "label": "Results by creation date",
+    "created": "Created",
+    "noDate": "Creation date not stated",
+    "unknown": "Creation date unknown",
+    "unknownHint": "No source states when these were created. We do not use the date Helper2.ai found them instead."
+  },
+  "sort": {
+    "label": "Sort by",
+    "RELEVANCE": "Relevance",
+    "NEWEST": "Newest",
+    "RECENTLY_UPDATED": "Recently updated"
+  },
+  "filters": {
+    "title": "Filters",
+    "active": "Active filters",
+    "clearAll": "Clear all filters",
+    "remove": "Remove filter: {{filter}}",
+    "updatedAfter": "Updated after",
+    "updatedAfterHint": "Only results with a known last-updated date on or after this day."
+  },
+  "facet": {
+    "type": "Type",
+    "audience": "Audience",
+    "useCase": "Use case",
+    "techLevel": "Technical level",
+    "source": "Source",
+    "license": "License",
+    "pricing": "Pricing",
+    "platform": "Platform",
+    "openSource": "Open source"
+  },
+  "sources": {
+    "panelTitle": "Source status",
+    "summary": "{{ok}} of {{total}} sources responded",
+    "show": "Show details",
+    "hide": "Hide details",
+    "count": {
+      "FAILED_one": "{{count}} failed",
+      "FAILED_other": "{{count}} failed",
+      "TIMED_OUT_one": "{{count}} timed out",
+      "TIMED_OUT_other": "{{count}} timed out",
+      "RATE_LIMITED_one": "{{count}} rate limited",
+      "RATE_LIMITED_other": "{{count}} rate limited",
+      "SKIPPED_one": "{{count}} skipped",
+      "SKIPPED_other": "{{count}} skipped",
+      "STALE_one": "{{count}} from stale cache",
+      "STALE_other": "{{count}} from stale cache"
+    },
+    "col": {
+      "source": "Source",
+      "mode": "Mode",
+      "outcome": "Outcome",
+      "servedFrom": "Served from",
+      "results": "Results",
+      "latency": "Latency",
+      "checkedAt": "Checked at",
+      "cachedAt": "Cached at"
+    },
+    "latencyMs": "{{ms}} ms"
+  },
+  "outcome": {
+    "SUCCEEDED": "Succeeded",
+    "FAILED": "Failed",
+    "TIMED_OUT": "Timed out",
+    "RATE_LIMITED": "Rate limited",
+    "SKIPPED": "Skipped"
+  },
+  "servedFrom": {
+    "LIVE": "Live",
+    "CACHE": "From cache",
+    "STALE_CACHE": "Stale cache",
+    "NONE": "No data"
+  },
+  "freshness": {
+    "LIVE": "Live",
+    "CACHED": "Cached",
+    "STALE": "Stale data",
+    "INDEXED": "Indexed",
+    "CURATED": "Curated",
+    "DEMO": "Demo"
+  },
+  "mode": {
+    "LIVE": {
+      "label": "Live",
+      "hint": "Queried at the moment you search."
+    },
+    "INDEXED": {
+      "label": "Indexed",
+      "hint": "Helper2.ai's own index, built ahead of time by the Scout. May lag behind the original."
+    },
+    "CURATED": {
+      "label": "Curated",
+      "hint": "Editorial seed written by Helper2. Not live."
+    },
+    "DEMO": {
+      "label": "Demo",
+      "hint": "Fixture data for demonstrations and tests. Not real listings."
+    }
+  },
+  "origin": {
+    "SOURCE_PROVIDED": "From source",
+    "AI_EXTRACTED": "Extracted by AI",
+    "AI_SUMMARY": "AI summary",
+    "CURATED": "Curated by Helper2",
+    "COMMUNITY": "Community submission",
+    "DEMO": "Demo data"
+  },
+  "verification": {
+    "VERIFIED": "Verified",
+    "UNVERIFIED": "Unverified",
+    "CONFLICTING": "Conflicting",
+    "REJECTED": "Rejected"
+  },
+  "type": {
+    "PRODUCT": "Product",
+    "MODEL": "Model",
+    "AGENT": "Agent",
+    "PROMPT": "Prompt",
+    "SKILL": "Skill",
+    "MCP_SERVER": "MCP server",
+    "LIBRARY": "Library",
+    "DATASET": "Dataset",
+    "ARTICLE": "Article",
+    "PAPER": "Paper",
+    "NEWS": "News",
+    "EVENT": "Event",
+    "OTHER": "Other"
+  },
+  "audience": {
+    "USE_AI": "For using AI",
+    "BUILD_WITH_AI": "For building with AI",
+    "BOTH": "Both",
+    "UNKNOWN": "Unknown"
+  },
+  "techLevel": {
+    "BEGINNER": "Beginner",
+    "INTERMEDIATE": "Intermediate",
+    "ADVANCED": "Advanced",
+    "UNKNOWN": "Unknown"
+  },
+  "pricing": {
+    "FREE": "Free",
+    "FREEMIUM": "Freemium",
+    "PAID": "Paid",
+    "OPEN_SOURCE_SELF_HOSTED": "Open source, self-hosted",
+    "UNKNOWN": "Unknown"
+  },
+  "useCase": {
+    "writing": "Writing",
+    "translation": "Translation",
+    "image-generation": "Image generation",
+    "coding": "Coding",
+    "research": "Research",
+    "summarization": "Summarization",
+    "transcription": "Transcription",
+    "automation": "Automation",
+    "design": "Design",
+    "learning": "Learning",
+    "data-analysis": "Data analysis",
+    "chat": "Chat",
+    "video": "Video",
+    "audio": "Audio"
+  },
+  "popularity": {
+    "line": "{{value}} {{metric}} · {{source}} · as of {{date}}",
+    "GITHUB_STARS": "GitHub stars",
+    "HF_LIKES": "Hugging Face likes",
+    "HF_DOWNLOADS": "Hugging Face downloads",
+    "NPM_DOWNLOADS_WEEKLY": "npm weekly downloads"
+  },
+  "date": {
+    "published": "Published",
+    "updated": "Last updated",
+    "discovered": "Discovered by Helper2",
+    "conflicting": "Sources disagree",
+    "fromSource": "source: {{source}}",
+    "eventStart": "Takes place"
+  },
+  "card": {
+    "openOriginal": "Open original",
+    "noDescription": "No description available.",
+    "descriptionOrigin": "Description",
+    "pricing": "Pricing",
+    "platforms": "Platforms",
+    "useCases": "Use cases",
+    "audience": "Audience",
+    "license": "License",
+    "openSource": "Open source",
+    "techLevel": "Technical level",
+    "sourceRecords": "Source records",
+    "unknownFacts_one": "{{count}} fact not stated by any source",
+    "unknownFacts_other": "{{count}} facts not stated by any source",
+    "allFacts": "All facts",
+    "tags": "Tags",
+    "compatibleWith": "Works with",
+    "sources": "Sources",
+    "timeline": "Dates",
+    "popularity": "Popularity metrics",
+    "conflicts": "Conflicts between sources",
+    "conflictOn": "Sources disagree on {{field}}"
+  },
+  "models": {
+    "title": "Compare AI models",
+    "about": "About this comparison",
+    "lede": "Model families side by side. Every official spec links to the provider page it was read from, with the exact words and the date. Newest models come from the providers' official Hugging Face organisations.",
+    "error": "Could not load the model families.",
+    "pick": "Compare up to {{max}}",
+    "pickSome": "Pick at least one family to compare.",
+    "caption": "Official specs of each family's flagship model",
+    "spec": "Spec",
+    "notStated": "Not stated",
+    "source": "source",
+    "readOn": "read on {{date}}",
+    "best": "best among those stated",
+    "benchmarkNote": "Highlighted: best among the values stated. Benchmark scores are published by each provider on its own setup and are not strictly comparable.",
+    "newest": "Newest {{family}} models found by Scout",
+    "noneListed": "No models from this provider's Hugging Face organisation in the index yet (closed-model providers publish none there).",
+    "via": "via {{source}}",
+    "officialPage": "Official models page",
+    "field": {
+      "flagship": "Flagship model",
+      "openWeights": "Open weights",
+      "contextTokens": "Context window (tokens)",
+      "maxOutputTokens": "Max output (tokens)",
+      "inputUsdPerMTok": "Input price / 1M tokens",
+      "outputUsdPerMTok": "Output price / 1M tokens",
+      "inputModalities": "Input",
+      "outputModalities": "Output",
+      "license": "License",
+      "knowledgeCutoff": "Knowledge cutoff",
+      "released": "Released"
+    }
+  },
+  "askGuide": {
+    "title": "Not sure which model fits? Ask the guide",
+    "lede": "Type your question in the box above, or start from one of these. The guide searches every source and only recommends what it can back with a quote.",
+    "examples": "Example questions",
+    "compareExample": "{{a}} or {{b}} for coding agents?",
+    "example1": "An open-weight model I can run on my own GPU",
+    "example2": "A model for long documents in Italian"
+  },
+  "compat": {
+    "basis": {
+      "TAG": "{{source}} lists the tag “{{evidence}}”",
+      "TYPE": "MCP servers work with any MCP client (Claude, Cursor, VS Code…)",
+      "FORMAT": "Published as {{evidence}} weights, which this runtime loads"
+    }
+  },
+  "bookmark": {
+    "save": "Save",
+    "saved": "Saved",
+    "label": "Save {{title}}"
+  },
+  "pagination": {
+    "label": "Pagination",
+    "prev": "Previous",
+    "next": "Next",
+    "status": "Page {{page}} of {{pages}}"
+  },
+  "detail": {
+    "backToSearch": "Back to search",
+    "notFound": "Resource not found",
+    "errorTitle": "Could not load this resource",
+    "summary": "AI summary",
+    "noSummary": "No AI summary",
+    "summaryMeta": "Generated by {{model}} (prompt {{version}}) on {{date}}. Every claim cites its evidence.",
+    "citations_one": "{{count}} citation",
+    "citations_other": "{{count}} citations",
+    "assertions": "Facts and where they come from",
+    "noAssertions": "No individual facts recorded.",
+    "col": {
+      "field": "Field",
+      "value": "Value",
+      "origin": "Origin",
+      "verification": "Verification",
+      "evidence": "Evidence",
+      "externalId": "Record",
+      "retrieved": "Retrieved",
+      "fingerprint": "Fingerprint"
+    },
+    "relationships": "Verified relationships",
+    "noVerified": "No verified relationships.",
+    "candidates": "Unverified candidates",
+    "candidatesHint": "These links were suggested automatically and have not been confirmed. Treat them as leads, not facts.",
+    "sourceRecords": "Source records (provenance)",
+    "noEvidence": "No evidence attached.",
+    "evidenceLink": "Evidence",
+    "retrievedAt": "Retrieved {{date}}"
+  },
+  "enrichment": {
+    "NOT_RUN": "The AI Resource Scout has not analysed this resource yet.",
+    "VALIDATED": "The AI analysis was checked against its evidence.",
+    "PARTIAL": "Only part of the AI analysis passed validation; the rest was dropped.",
+    "REJECTED": "An AI analysis was produced but failed validation, so it is not shown.",
+    "LLM_UNAVAILABLE": "The language model was unavailable, so no AI analysis could be made for this resource."
+  },
+  "relationship": {
+    "INTEGRATES_WITH": "Integrates with",
+    "USES": "Uses",
+    "SUPPORTS": "Supports",
+    "COMPATIBLE_WITH": "Compatible with"
+  },
+  "report": {
+    "title": "Report wrong or outdated info",
+    "kind": "What is the problem?",
+    "field": "Which field",
+    "message": "Describe the problem",
+    "hint": "{{count}} / 2000 characters (at least 5)",
+    "submit": "Send report",
+    "errorLength": "Please write between 5 and 2000 characters.",
+    "errorGeneric": "The report could not be sent. Please try again.",
+    "success": "Thank you. Your report was sent to the human review queue.",
+    "kinds": {
+      "WRONG": "Wrong information",
+      "OUTDATED": "Outdated information",
+      "BROKEN_LINK": "Broken link",
+      "OTHER": "Something else"
+    }
+  },
+  "saved": {
+    "title": "Saved resources",
+    "empty": "Nothing saved yet.",
+    "remove": "Remove",
+    "removeLabel": "Remove {{title}} from saved",
+    "savedAt": "saved {{date}}",
+    "localNote": "Saved in this browser only.",
+    "serverNote": "Saved on your account.",
+    "storageFailed": "Your browser blocked storage, so saved items will be lost when you leave this page.",
+    "serverError": "Could not sync with your account. Please try again later."
+  },
+  "sourcesPage": {
+    "title": "Sources",
+    "lede": "These are all the sources Helper2.ai can search. Anything not listed here is not covered.",
+    "modes": "How sources work",
+    "error": "Could not load the source list.",
+    "disabled": "Disabled",
+    "terms": "Terms",
+    "neverChecked": "Never checked",
+    "col": {
+      "enabled": "Enabled",
+      "types": "Resource types",
+      "terms": "Terms",
+      "attribution": "Attribution",
+      "lastOutcome": "Last outcome"
+    }
+  },
+  "admin": {
+    "title": "Admin",
+    "forbidden": "You need an administrator account to see this page.",
+    "signInFailed": "Sign-in did not complete. Try again.",
+    "signInPrompt": "Sign in with an administrator account to review reports and run the scout.",
+    "reviewQueue": "Review queue",
+    "status": "Status",
+    "queueEmpty": "Nothing in this queue.",
+    "accept": "Accept",
+    "reject": "Reject",
+    "loadError": "Could not load.",
+    "actionFailed": "The action failed. Please try again.",
+    "scoutRuns": "Scout runs",
+    "runNow": "Run now",
+    "noRuns": "No runs yet.",
+    "reviewStatus": {
+      "OPEN": "Open",
+      "ACCEPTED": "Accepted",
+      "REJECTED": "Rejected"
+    },
+    "kind": {
+      "ENRICHMENT_VALIDATION": "Enrichment validation",
+      "SOURCE_CONFLICT": "Source conflict",
+      "RELATIONSHIP_CANDIDATE": "Relationship candidate",
+      "USER_REPORT": "User report"
+    },
+    "runStatus": {
+      "RUNNING": "Running",
+      "SUCCEEDED": "Succeeded",
+      "FAILED": "Failed",
+      "SKIPPED": "Skipped"
+    },
+    "col": {
+      "status": "Status",
+      "started": "Started",
+      "seen": "Items seen",
+      "changed": "Items changed",
+      "message": "Message"
+    }
+  },
+  "notFound": {
+    "title": "Page not found"
+  },
+  "glossary": {
+    "whatIs": "What does this mean?",
+    "mcp_server": {
+      "term": "MCP server",
+      "def": "A small program that lets an AI assistant use an outside tool or data source through the Model Context Protocol, an open standard."
+    },
+    "model": {
+      "term": "Model",
+      "def": "The trained AI system that produces text, images or other output. Products and agents are built on top of models."
+    },
+    "agent": {
+      "term": "Agent",
+      "def": "Software that uses a model to carry out multi-step tasks on its own, often by calling tools."
+    },
+    "prompt": {
+      "term": "Prompt",
+      "def": "The instructions or text you give an AI model. A prompt template is a reusable one."
+    },
+    "skill": {
+      "term": "Skill",
+      "def": "A packaged set of instructions and files that teaches an AI assistant to do a specific task."
+    },
+    "library": {
+      "term": "Library",
+      "def": "Reusable code that developers add to their own software."
+    },
+    "dataset": {
+      "term": "Dataset",
+      "def": "A collection of data used to train or test AI models."
+    },
+    "product": {
+      "term": "Product",
+      "def": "A finished AI app or service that you use directly, without writing code."
+    },
+    "article": {
+      "term": "Article",
+      "def": "Writing about AI: a guide, tutorial, course or blog post."
+    },
+    "paper": {
+      "term": "Paper",
+      "def": "A research paper, usually from arXiv."
+    },
+    "news": {
+      "term": "News",
+      "def": "A news story about AI."
+    },
+    "event": {
+      "term": "Event",
+      "def": "A conference, meetup, webinar or hackathon."
+    },
+    "other": {
+      "term": "Other",
+      "def": "An AI resource that fits none of the other types."
+    },
+    "typeAssigned": "Helper2 assigns the type from the source's data, keyword rules or an AI model, so it can be wrong.",
+    "license": {
+      "term": "License",
+      "def": "The rules for using, changing and sharing the resource. Always read the license itself before relying on it."
+    },
+    "open_source": {
+      "term": "Open source",
+      "def": "The source code is public under a license that lets others use and modify it. It does not always mean free of charge."
+    },
+    "tech_level": {
+      "term": "Technical level",
+      "def": "How much technical skill is needed to get started."
+    },
+    "platform": {
+      "term": "Platform",
+      "def": "Where it runs, for example web, desktop, mobile or command line."
+    },
+    "popularity": {
+      "term": "Popularity",
+      "def": "Counts such as stars or downloads reported by one source. They are never combined into a single score."
+    },
+    "provenance": {
+      "term": "Provenance",
+      "def": "Where a piece of information came from and when it was retrieved."
+    }
+  },
+  "guide": {
+    "title": "Ask the AI guide",
+    "lede": "Describe what you need in your own words. The guide searches the catalog, picks what fits and explains why, quoting each resource. It can only recommend things it actually found.",
+    "label": "What do you need?",
+    "placeholder": "e.g. an open-source MCP server so my agent can query a Postgres database",
+    "ask": "Ask the guide",
+    "asking": "Searching and thinking…",
+    "askingHint": "This usually takes about 15 seconds.",
+    "searchedFor": "Searched the catalog for: {{q}}",
+    "considered": "{{n}} candidates considered",
+    "rejected_one": "{{count}} AI suggestion removed: no supporting evidence",
+    "rejected_other": "{{count}} AI suggestions removed: no supporting evidence",
+    "aiReason": "AI reasoning",
+    "reasonLabel": "Model's explanation (not checked)",
+    "reasonSupported": "Model's explanation (checked against the quote by a second model call)",
+    "reasonRemoved": "The model's explanation claimed more than the quote shows, so it is not shown.",
+    "evidence": "Evidence, checked word for word in the resource's own text",
+    "fromDescription": "From the resource's own description",
+    "checksLabel": "Your requirements, checked against the source",
+    "checkConfirmed": "confirmed by the source:",
+    "checkNotConfirmed": "not confirmed by the source (it may still be true; check before you rely on it)",
+    "noAi": "Top search result, no AI reasoning",
+    "noFit": "The AI found nothing in the results that clearly fits your need. Showing the best search results instead.",
+    "promptTitle": "Ready-to-use prompt",
+    "promptAi": "Written by AI",
+    "basedOn": "Adapted from catalog prompts:",
+    "promptReview": "Third parties wrote the prompts it adapts. Read it before you paste it, and never add a password or key it asks for.",
+    "copy": "Copy prompt",
+    "copied": "Copied",
+    "answeredBy": "Planning: {{fast}} · Choosing: {{reasoning}} · on {{provider}}",
+    "status": {
+      "OK": "All AI suggestions passed the evidence check.",
+      "PARTIAL": "Some AI suggestions were removed because the evidence did not support them.",
+      "LLM_UNAVAILABLE": "The AI model is not available right now. Showing the best search results instead.",
+      "NO_CANDIDATES": "Nothing in the catalog matched. Try different words or the normal search."
+    },
+    "notice": {
+      "GUIDE_DAILY_QUOTA": "You have used today's AI answers, so this answer shows the top search results without AI picks. AI answers are available again after midnight UTC."
+    },
+    "error": "The guide could not answer. Please try again.",
+    "streamFailure": {
+      "IDLE_TIMEOUT": "The guide sent nothing for 45 seconds, so the request was stopped. Please try again.",
+      "MALFORMED": "The guide sent a reply this page could not read. Please try again.",
+      "ENDED_EARLY": "The connection closed before the answer arrived. Please try again."
+    },
+    "sources": "Sources searched",
+    "close": "Close the guide answer",
+    "quoteChecked": "Quote checked",
+    "step": {
+      "plannedTitle": "Understanding your need",
+      "plannedRun": "Turning your words into search terms",
+      "plannedDone": "Search terms: “{{q}}”",
+      "retrievedTitle": "Searching the sources",
+      "retrievedRun": "Waiting for every source to answer",
+      "retrievedDone": "{{n}} real candidates · {{ok}} of {{all}} sources answered",
+      "chosenTitle": "Nemotron is choosing",
+      "chosenRun": "Reading the candidates",
+      "chosenDone_one": "{{count}} pick proposed",
+      "chosenDone_other": "{{count}} picks proposed",
+      "validatedTitle": "Checking each quote against the source",
+      "validatedRun": "Matching each quote with the resource’s own text",
+      "validatedDone": "{{kept}} kept · {{rejected}} rejected",
+      "checkedTitle": "Checking each reason against its quote",
+      "checkedRun": "A second model call checks that each explanation stays within its quote",
+      "checkedDone": "Checked the reasons: {{supported}} supported, {{removed}} removed",
+      "checkedNotChecked_one": "{{count}} not checked",
+      "checkedNotChecked_other": "{{count}} not checked",
+      "finishing": "Preparing the answer"
+    },
+    "stepState": {
+      "done": "done",
+      "active": "in progress",
+      "waiting": "not started"
+    },
+    "elapsed": "{{s}} s",
+    "progressLabel": "How the guide is answering",
+    "sourcesLabel": "Sources and their outcome",
+    "howMade": "How this answer was made",
+    "strip": {
+      "planned": "1 · Planned",
+      "found": "2 · Found",
+      "chose": "3 · Chose",
+      "checked": "4 · Checked"
+    },
+    "sourcesAnswered": "{{ok}} of {{all}} sources answered",
+    "proposed_one": "{{count}} pick proposed",
+    "proposed_other": "{{count}} picks proposed",
+    "kept_one": "{{count}} pick kept",
+    "kept_other": "{{count}} picks kept",
+    "noneRejected": "No pick rejected",
+    "askedFor": "You asked for:",
+    "best": "Best match"
+  },
+  "events": {
+    "title": "Next events",
+    "lede": "AI conferences, hackathons, meetups, talks and workshops in the next three months, online or in person, soonest first. Only events whose source states the dates are listed.",
+    "error": "Could not load the next events.",
+    "empty": "No events with stated dates in the next three months.",
+    "kind": {
+      "CONFERENCE": "Conference",
+      "HACKATHON": "Hackathon",
+      "MEETUP": "Meetup",
+      "TALK": "Talk",
+      "WORKSHOP": "Workshop"
+    },
+    "format": {
+      "IN_PERSON": "In person",
+      "ONLINE": "Online",
+      "HYBRID": "Hybrid"
+    }
+  },
+  "radar": {
+    "title": "What’s new",
+    "lede": "The newest resources in the Helper2 index from the last 7 days, by the date each source states. Nothing is called live.",
+    "published": "Published",
+    "updated": "Updated",
+    "firstSeen": "First seen",
+    "noDate": "Date unknown",
+    "empty": "Nothing with a stated publication date in the last 7 days.",
+    "error": "Could not load what’s new right now."
+  },
+  "mission": {
+    "title": "Our mission",
+    "lede": "Help people find the right AI resource for their need, and show the proof behind every answer.",
+    "sections": [
+      {
+        "title": "Why Helper2.ai exists",
+        "paragraphs": [
+          "New AI models, tools, agents, MCP servers and papers appear every day. General search engines mix them with marketing pages and old content, so it is hard to know what is real and current.",
+          "Helper2.ai searches only sources about AI, tells you which sources it searched, and shows where every result comes from and when it was checked."
+        ]
+      },
+      {
+        "title": "What we promise",
+        "items": [
+          "Proof before opinion. The guide only recommends a resource when it can quote a real source that supports the choice.",
+          "Honest coverage. We list every source we search and show what each one returned. We do not claim to search the whole web.",
+          "No invented facts. We never fill in dates, popularity or other facts that no source stated.",
+          "Open by default. The source code is public under the Apache-2.0 license.",
+          "Privacy first. No ads, no tracking, and we never sell data."
+        ]
+      },
+      {
+        "title": "Who is behind it",
+        "paragraphs": [
+          "Helper2.ai is an independent project by Silvio Incalza, a software engineer based in Switzerland. The AI guide runs on NVIDIA Nemotron models served by Nebius Token Factory."
+        ]
+      }
+    ],
+    "feedback": "Ideas, mistakes or missing sources? Open an issue on GitHub.",
+    "feedbackLink": "Open an issue on GitHub (opens in a new tab)"
+  },
+  "privacy": {
+    "title": "Privacy",
+    "updated": "Last updated: 26 October 2026",
+    "lede": "Helper2.ai collects as little as possible. You can search and ask the guide without an account. There are no ads, no analytics and no tracking cookies, and we never sell data.",
+    "contactIntro": "Silvio Incalza, Switzerland, is responsible for this website. For any privacy question or request, write to",
+    "sections": [
+      {
+        "title": "What we process and why",
+        "items": [
+          "Your searches and guide questions: the text you type, used only to answer you. It is not linked to your account. Search results are cached for up to 30 minutes and guide answers for up to 24 hours, keyed by the question. Please do not type personal or secret information.",
+          "Your account, if you sign in with GitHub: your GitHub user ID (a number), your display name and the date you first signed in. We ask GitHub only for basic profile access. We never see your GitHub password.",
+          "Saved items: if you are signed in, they are stored on our server with your account. If you are not signed in, they stay only in your browser.",
+          "Reports you send about a resource: the text you write, linked to your account if you are signed in.",
+          "Technical data: your IP address is kept in memory for a short time to limit abuse (rate limits). Our servers also write technical logs to keep the service running and secure."
+        ]
+      },
+      {
+        "title": "Cookies and browser storage",
+        "items": [
+          "A session cookie, only when you sign in, so you stay signed in.",
+          "A security cookie (XSRF-TOKEN) that protects forms against cross-site request forgery.",
+          "Browser storage for your language choice and, if you are not signed in, your saved items.",
+          "All of these are strictly necessary for the site to work. We use no advertising, analytics or third-party cookies."
+        ]
+      },
+      {
+        "title": "Who receives data",
+        "items": [
+          "Search sources: to find results, your search text is sent to the sources that answer live, such as GitHub, Hugging Face, npm, arXiv and Tavily. The Sources page lists them all. Each provider handles the request under its own privacy policy, and some of them are in the United States.",
+          "AI models: guide questions, and searches written in a language other than English, are sent to NVIDIA Nemotron models on Nebius Token Factory. We send only the text, never your account data.",
+          "GitHub, when you choose to sign in with it.",
+          "Hosting: our servers are in Germany (European Union)."
+        ]
+      },
+      {
+        "title": "How long we keep data",
+        "items": [
+          "Cached searches and guide answers: up to 30 minutes and 24 hours.",
+          "Your account and saved items: until you remove them or ask us to delete them.",
+          "Reports: until they are handled. If your account is deleted, your reports stay without your name."
+        ]
+      },
+      {
+        "title": "Your rights",
+        "paragraphs": [
+          "Under the Swiss Federal Act on Data Protection (FADP) and, where it applies, the EU General Data Protection Regulation (GDPR), you can ask what data we hold about you, and ask us to correct, delete or export it. Write to the address above. You can also complain to the Swiss Federal Data Protection and Information Commissioner (FDPIC) or to the data protection authority in your country."
+        ]
+      },
+      {
+        "title": "Changes",
+        "paragraphs": [
+          "If this notice changes, we update this page and the date at the top."
+        ]
+      }
+    ]
+  },
+  "how": {
+    "title": "How the guide answers",
+    "lede": "Retrieval first, Nemotron second, a validator last. The model never decides what is true.",
+    "steps": {
+      "search": {
+        "title": "Search real sources",
+        "body": "A fast Nemotron model turns your words, in any language, into search terms. A normal search across every source then finds up to 12 real candidates."
+      },
+      "choose": {
+        "title": "Nemotron chooses",
+        "body": "A reasoning model picks at most 3 of those candidates, explains why with a quote, and can adapt a ready-to-use prompt from catalog prompts."
+      },
+      "check": {
+        "title": "A validator checks",
+        "body": "Each pick must be one of the candidates, and its quote must appear word for word in that resource’s text. Rejected suggestions are counted and shown."
+      }
+    },
+    "rulesTitle": "Never guessed",
+    "rules": {
+      "notStated": {
+        "title": "Missing means unknown",
+        "body": "If no source gave a fact, it says Unknown. Dates, popularity and prices are never filled in."
+      },
+      "dates": {
+        "title": "Dates are the source’s own",
+        "body": "Published and updated come from the source. Otherwise you see when Helper2.ai first saw it."
+      },
+      "unchecked": {
+        "title": "Every explanation is labelled",
+        "body": "Code checks the quote word for word. A second model call checks the explanation; the page says if it was checked, removed or not checked."
+      },
+      "fallback": {
+        "title": "Search keeps working",
+        "body": "If the AI model is unavailable, the guide shows the top real results instead, clearly labelled."
+      }
+    }
+  },
+  "setup": {
+    "title": "Set up {{title}}",
+    "loading": "Reading how to set it up…",
+    "error": "The setup data could not be read now.",
+    "howToRun": "How to run it",
+    "yourTool": "Your AI tool",
+    "remote": "Hosted server, nothing to install. Endpoint:",
+    "package": "Runs locally from the {{type}} package {{id}}",
+    "requires": "needs {{what}}",
+    "headers": "Headers it asks for",
+    "env": "Environment variables it asks for",
+    "required": "required",
+    "optional": "optional",
+    "secret": "secret: fill in your own",
+    "default": "default {{value}}",
+    "where": "Paste into",
+    "unsupported": "Not available in {{client}}:",
+    "placeholders": "Replace each <placeholder> with your own value. Format from",
+    "docs": "{{client}} docs",
+    "from": "From its Official MCP Registry entry, version {{version}}, read {{date}}.",
+    "registryEntry": "Registry entry",
+    "copy": "Copy",
+    "copied": "Copied",
+    "connectTitle": "Connect it to your AI tool",
+    "command": "Runs locally with {{cmd}}, as its README shows",
+    "fromReadme": "From the config example in its README, read {{date}}.",
+    "readme": "README",
+    "stepsTitle": "Step by step",
+    "answerTitle": "Answer",
+    "backToSteps": "Back to the steps",
+    "reading": "Reading its documentation… (up to half a minute)",
+    "answering": "Looking for the answer in its documentation…",
+    "stepsError": "The guide could not be loaded now.",
+    "stepsNote": "Steps written by AI from the tool's own documentation. Every quote and command below was checked word for word against it.",
+    "askLabel": "Ask about {{title}}",
+    "askPlaceholder": "e.g. How do I use it with Cursor? Does it need an API key?",
+    "ask": "Ask",
+    "caution": "This command runs a script from the internet, uses sudo or deletes files. Read it before you run it.",
+    "quoteLabel": "Where the {{doc}} says this",
+    "readOn": "read {{date}}",
+    "writtenBy": "steps chosen by {{model}}",
+    "section": {
+      "ANSWER": "Answer",
+      "REQUIREMENTS": "What you need first",
+      "INSTALL": "Install",
+      "CONFIGURE": "Configure",
+      "USE": "Use it",
+      "CONNECT": "Connect to an AI tool"
+    },
+    "doc": {
+      "README": "README",
+      "PACKAGE_README": "npm README",
+      "MODEL_CARD": "model card"
+    },
+    "status": {
+      "NO_MATERIAL": "{{title}} has no README or model card Helper2 can read.",
+      "NO_STEPS": "Nothing in its documentation could be checked word for word for this. Open the original for its own instructions.",
+      "LLM_UNAVAILABLE": "The AI guide is not available right now. Try again later.",
+      "BUDGET": "The AI guide has used today's budget. Try again tomorrow.",
+      "OK": ""
+    }
+  }
+}

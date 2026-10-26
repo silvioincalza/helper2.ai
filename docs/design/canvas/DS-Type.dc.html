@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Helper2.ai type and spacing</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="background: #faf8ff; color: #14121a; font-family: Inter, system-ui, sans-serif">
+<main style="max-width: 1120px; margin: 0 auto; padding: 56px 24px 80px; display: flex; flex-direction: column; gap: 40px">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<p style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #7c3aed">Design system · Type and sizes</p>
+<h1 style="margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 56px; line-height: 1">Three faces, one job each</h1>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px">
+<div style="background: #ffffff; border: 1px solid #e4def5; border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 6px"><span style="font-family: 'Instrument Serif', Georgia, serif; font-size: 48px; line-height: 1">Aa</span><strong style="font-size: 15px">Instrument Serif · display</strong><span style="font-size: 14px; color: #3d3949">Page and section headings, feed titles, checked quotes.</span></div>
+<div style="background: #ffffff; border: 1px solid #e4def5; border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 48px; line-height: 1; font-weight: 500">Aa</span><strong style="font-size: 15px">Inter · sans</strong><span style="font-size: 14px; color: #3d3949">Every control and all running text.</span></div>
+<div style="background: #ffffff; border: 1px solid #e4def5; border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 6px"><span style="font-family: 'JetBrains Mono', monospace; font-size: 44px; line-height: 1">Aa</span><strong style="font-size: 15px">JetBrains Mono · mono</strong><span style="font-size: 14px; color: #3d3949">Resource names and source status. Self-hosted in the app.</span></div>
+</div>
+<section aria-labelledby="sc-h" style="display: flex; flex-direction: column; gap: 0; background: #ffffff; border: 1px solid #e4def5; border-radius: 18px; overflow: hidden">
+<h2 id="sc-h" style="margin: 0; padding: 14px 20px; font-family: 'JetBrains Mono', monospace; font-weight: 500; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: #514c5e; border-bottom: 1px solid #e4def5">Type scale</h2>
+<sc-for list="{{styles}}" as="s" hint-placeholder-count="12">
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 20px; padding: 14px 20px; border-bottom: 1px solid #efeaf9">
+<span style="flex: 0 0 150px; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #514c5e">{{s.name}} · {{s.size}}</span>
+<span style="flex: 1 1 300px; min-width: 0; font-family: {{s.fam}}; font-size: {{s.size}}; line-height: {{s.lh}}; font-weight: {{s.w}}; letter-spacing: {{s.ls}}; text-transform: {{s.tt}}">{{s.sample}}</span>
+<span style="flex: 0 1 260px; font-size: 13px; color: #3d3949">{{s.use}}</span>
+</div>
+</sc-for>
+</section>
+<div style="display: flex; flex-wrap: wrap; gap: 24px">
+<section aria-labelledby="sp-h" style="flex: 1 1 420px; min-width: 0; background: #ffffff; border: 1px solid #e4def5; border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 10px">
+<h2 id="sp-h" style="margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 32px">Spacing</h2>
+<sc-for list="{{spacing}}" as="p" hint-placeholder-count="8">
+<div style="display: flex; align-items: center; gap: 12px">
+<span style="flex: 0 0 90px; font-family: 'JetBrains Mono', monospace; font-size: 13px">{{p.name}}</span>
+<span style="flex: none; height: 14px; width: {{p.v}}; background: #7c3aed; border-radius: 3px"></span>
+<span style="font-size: 13px; color: #3d3949">{{p.v}} · {{p.use}}</span>
+</div>
+</sc-for>
+</section>
+<section aria-labelledby="ra-h" style="flex: 1 1 420px; min-width: 0; background: #ffffff; border: 1px solid #e4def5; border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 12px">
+<h2 id="ra-h" style="margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 32px">Radius and sizes</h2>
+<div style="display: flex; flex-wrap: wrap; gap: 14px">
+<sc-for list="{{radii}}" as="r" hint-placeholder-count="5">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><span style="width: 72px; height: 48px; background: #f3effc; border: 1px solid #c9bfe8; border-radius: {{r.v}}"></span><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px">{{r.name}}</span><span style="font-size: 12px; color: #514c5e">{{r.v}}</span></div>
+</sc-for>
+</div>
+<ul style="margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.7; color: #3d3949">
+<li><code style="font-family: 'JetBrains Mono', monospace">target-min</code> 44px: minimum height of any control</li>
+<li><code style="font-family: 'JetBrains Mono', monospace">box-height</code> 56px: the search box and its buttons</li>
+<li><code style="font-family: 'JetBrains Mono', monospace">content-max</code> 1120px: width of the page column</li>
+<li>Focus: 3px <code style="font-family: 'JetBrains Mono', monospace">focus</code> outline, 2px offset. No shadows anywhere.</li>
+</ul>
+</section>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+renderVals() {
+const serif = "'Instrument Serif', Georgia, serif", sans = 'Inter, system-ui, sans-serif', mono = "'JetBrains Mono', monospace";
+const s = (name, fam, size, lh, w, sample, use, ls = 'normal', tt = 'none') => ({ name, fam, size, lh, w, sample, use, ls, tt });
+return {
+styles: [
+s('display-xl', serif, '64px', '64px', 400, 'helper2.ai', 'Wordmark on the empty home.'),
+s('display-l', serif, '48px', '48px', 400, 'Find the right AI tool', 'Page headings.'),
+s('display-m', serif, '32px', '36px', 400, 'What’s new', 'Section headings, header wordmark.'),
+s('display-s', serif, '24px', '28px', 400, 'whisper.cpp — new release', 'Feed card titles, the guide’s echoed question.'),
+s('quote', serif, '17px', '24px', 400, '“An exact sentence from the source.”', 'Checked quotes only.'),
+s('input', sans, '17px', '24px', 400, 'Search or ask anything about AI', 'The search-and-ask box.'),
+s('body', sans, '15px', '22px', 400, 'Typing searches every source.', 'Default running text.'),
+s('body-s', sans, '14px', '21px', 400, 'Release notes summary as published.', 'Card summaries, pills, secondary buttons.'),
+s('label', sans, '13px', '18px', 600, 'Guide', 'Eyebrows and badges, uppercase.', '0.06em', 'uppercase'),
+s('caption', sans, '13px', '18px', 400, 'GitHub · Oct 21, 2026', 'Source, date and count metadata.'),
+s('mono-m', mono, '15px', '22px', 500, 'postgres-mcp', 'Resource names.'),
+s('mono-s', mono, '12px', '16px', 400, '● github ok', 'Source status, facet headings.')
+],
+spacing: [['space-1', '4px', 'icon to text'], ['space-2', '8px', 'between pills'], ['space-3', '12px', 'card parts'], ['space-4', '16px', 'card padding, grid gaps'], ['space-5', '20px', 'page sections'], ['space-6', '24px', 'gutters, panels'], ['space-8', '32px', 'header blocks'], ['space-16', '64px', 'page bottom']].map(([name, v, use]) => ({ name, v, use })),
+radii: [['radius-sm', '8px'], ['radius-md', '10px'], ['radius-lg', '14px'], ['radius-xl', '18px'], ['radius-pill', '999px']].map(([name, v]) => ({ name, v }))
+};
+}
+}
+</script>
+</body>
+</html>

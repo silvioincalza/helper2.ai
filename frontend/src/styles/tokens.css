@@ -1,0 +1,119 @@
+/*
+ * Helper2.ai design system: warm paper, deep indigo ink, one saffron accent (spiritual editorial colour);
+ * Space Grotesk for headings, Inter for reading, JetBrains Mono for names that came from a source (tech type).
+ * Light on :root, dark under [data-theme="dark"] (public/theme.js sets it from the saved choice or the device). Saffron is a fill, never small text on paper (2.9:1):
+ * text on it is indigo, and saffron-coloured text uses --accent-ink.
+ */
+:root {
+  color-scheme: light;
+
+  --bg: #f7f2e9;
+  --surface: #fffdf8;
+  --surface-tint: #efe9dd;
+  --quote-bg: #fbefe2;
+  --hero-bg: #f4ede1;
+  --ink: #1b1c3f;
+  --ink-2: #35344f;
+  --muted: #4f4b63; /* 7.5:1 on --bg */
+  --border: #e7dfd0;
+  --border-strong: #d3c7b2;
+  --divider: #efe9dd;
+  --accent: #e06a1d; /* saffron */
+  --on-accent: #1b1c3f; /* 4.9:1 on saffron */
+  --accent-ink: #a8420a; /* saffron as text, 5.2:1 on --bg */
+  --accent-deep: #2d2e60; /* indigo */
+  --focus: #e06a1d;
+  --selected: #1b1c3f;
+  --on-selected: #ffffff;
+  --checked-bg: #e3f3ee;
+  --checked-ink: #0f4d3c;
+  --not-stated: #7a3e00;
+  --danger: #b42318; /* errors only, 6.4:1 on --surface */
+  --mark: #fde68a; /* the checked quote, highlighted in its source text */
+  --tag-model-bg: #fdebd3;
+  --tag-model-ink: #7a3e00;
+  --tag-news-bg: #e6f0fb;
+  --tag-news-ink: #173f70;
+  --tag-paper-bg: #e6e7f5;
+  --tag-mcp-bg: #e3f3ee;
+  --console: #1b1c3f;
+  --status-ok: #2f8f5b;
+  --status-warn: #c98a0b;
+  --ring: #e2d6c2;
+  --header-bg: rgba(255, 253, 248, 0.94);
+
+  /* Older names used across app.css, mapped onto the design system. */
+  --text: var(--ink);
+  --text-muted: var(--muted);
+  --surface-1: var(--surface);
+  --surface-2: var(--surface-tint);
+  --cyan: var(--accent-ink);
+  --violet: var(--accent-deep);
+  --ok: var(--checked-ink);
+  --warn: var(--not-stated);
+
+  --font-display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Inter Variable', Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* The app's own spacing steps (kept), plus the design system's sizes. */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-pill: 999px;
+  --radius: var(--radius-md);
+  --target-min: 44px;
+  --box-height: 56px;
+  --maxw: 1120px;
+  --motion: 160ms;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #15162f;
+  --surface: #1d1e3d;
+  --surface-tint: #26274f;
+  --quote-bg: #2a2440;
+  --hero-bg: #191a38;
+  --ink: #f3f1ea;
+  --ink-2: #d4d2e4;
+  --muted: #aeacc6;
+  --border: #2f3058;
+  --border-strong: #45477a;
+  --divider: #26274f;
+  --accent: #f08a42;
+  --on-accent: #15162f;
+  --accent-ink: #f4a46a;
+  --accent-deep: #c9cae3;
+  --focus: #f4a46a;
+  --selected: #f3f1ea;
+  --on-selected: #15162f;
+  --checked-bg: #123528;
+  --checked-ink: #86efac;
+  --not-stated: #fbbf77;
+  --danger: #ff8f8f;
+  --mark: #6b5310;
+  --tag-model-bg: #3a2a12;
+  --tag-model-ink: #fbbf77;
+  --tag-news-bg: #13263d;
+  --tag-news-ink: #93c5fd;
+  --tag-paper-bg: #26274f;
+  --tag-mcp-bg: #123528;
+  --console: #0f1024;
+  --status-ok: #86efac;
+  --status-warn: #fcd34d;
+  --ring: #2f3058;
+  --header-bg: rgba(29, 30, 61, 0.94);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --motion: 0ms; }
+}
