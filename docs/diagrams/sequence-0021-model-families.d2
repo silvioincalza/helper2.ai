@@ -1,0 +1,30 @@
+# Sequence: the Models page asks for the families and their cited specs.
+# Source of truth: frontend/src/pages/ModelsPage.tsx, frontend/src/api/client.ts,
+#   backend/src/main/java/ai/helper2/catalog/web/ResourcesController.java (listModelFamilies),
+#   backend/src/main/java/ai/helper2/catalog/usecase/ListModelFamilies.java, usecase/GetResourceDetail.java.
+# Render: cd docs/diagrams && d2 fmt sequence-0021-model-families.d2 && d2 sequence-0021-model-families.d2 sequence-0021-model-families.svg
+
+...@style
+
+shape: sequence_diagram
+
+page: "ModelsPage\n(/models)" {class: person}
+ctrl: ResourcesController {class: app}
+fam: ListModelFamilies {class: app}
+details: GetResourceDetail {class: app}
+db: PostgreSQL {class: data}
+
+page -> ctrl: "GET /api/v1/model-families"
+ctrl -> fam: "list(5)"
+fam -> db: "SELECT … FROM model_family\nORDER BY position"
+db -> fam: "id, provider, name, open_weights,\nresource_id, provider_tags"
+fam -> details: "find(resourceId) per family"
+details -> db: "resource, source records,\nassertions + evidence"
+db -> details: "rows"
+details -> fam: "Detail (card, assertions)"
+fam -> db: "newest hf-provider-orgs MODEL\nrecords tagged with provider_tags\n(LIMIT 5)"
+db -> fam: "listed models"
+fam -> ctrl: "List<Family>"
+ctrl -> ctrl: "specs = CURATED assertions\nwith no source id"
+ctrl -> page: "200 ModelFamiliesResponse\n(max-age 5 min)"
+page -> page: "table: one column per family;\nmissing field → \"Not stated\";\nexcerpt and URL per value"

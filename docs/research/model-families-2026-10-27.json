@@ -1,0 +1,1775 @@
+[
+  {
+    "provider": "OpenAI",
+    "family": "GPT",
+    "modelsPageUrl": "https://developers.openai.com/api/docs/models",
+    "modelsPageNote": "platform.openai.com/docs/models 301-redirects here; excerpts were validated against the .md variant of each page.",
+    "flagship": {
+      "name": "GPT-6 Astra",
+      "apiId": "gpt-6-astra",
+      "basis": {
+        "value": "GPT-6 Astra",
+        "url": "https://developers.openai.com/api/docs/models.md",
+        "excerpt": "If you're not sure where to start, use [GPT-6 Astra](/api/docs/models/gpt-6-astra), our flagship model for complex reasoning and coding.",
+        "excerptMode": "verbatim"
+      }
+    },
+    "description": "OpenAI's GPT family on the API is led by GPT-6 Astra, a reasoning model aimed at complex reasoning, coding, computer use and research, with GPT-6.1 Sol and GPT-6 Luna as lower-cost tiers.",
+    "fields": {
+      "contextWindow": {
+        "value": 1050000,
+        "url": "https://developers.openai.com/api/docs/models/gpt-6-astra.md",
+        "excerpt": "1,050,000 context window",
+        "note": "Model page also states \"Maximum input tokens: 922,000\".",
+        "excerptMode": "verbatim"
+      },
+      "maxOutputTokens": {
+        "value": 128000,
+        "url": "https://developers.openai.com/api/docs/models/gpt-6-astra.md",
+        "excerpt": "128,000 max output tokens",
+        "excerptMode": "verbatim"
+      },
+      "inputPricePerMTokUsd": {
+        "value": 10,
+        "url": "https://developers.openai.com/api/docs/models/gpt-6-astra.md",
+        "excerpt": "| Input | $10 | 1M tokens |",
+        "note": "Prompts with more than 272K input tokens are priced at 2x input and 1.5x output for the full request (same page).",
+        "excerptMode": "verbatim"
+      },
+      "outputPricePerMTokUsd": {
+        "value": 50,
+        "url": "https://developers.openai.com/api/docs/models/gpt-6-astra.md",
+        "excerpt": "| Output | $50 | 1M tokens |",
+        "excerptMode": "verbatim"
+      },
+      "inputModalities": {
+        "value": [
+          "text",
+          "image"
+        ],
+        "url": "https://developers.openai.com/api/docs/models/gpt-6-astra.md",
+        "excerpt": "Input modalities: text, image",
+        "excerptMode": "verbatim"
+      },
+      "outputModalities": {
+        "value": [
+          "text"
+        ],
+        "url": "https://developers.openai.com/api/docs/models/gpt-6-astra.md",
+        "excerpt": "Output modalities: text",
+        "excerptMode": "verbatim"
+      },
+      "openWeights": null,
+      "license": null,
+      "knowledgeCutoff": {
+        "value": "2026-04-30",
+        "url": "https://developers.openai.com/api/docs/models/gpt-6-astra.md",
+        "excerpt": "Apr 30, 2026 knowledge cutoff",
+        "excerptMode": "verbatim"
+      },
+      "releaseDate": {
+        "value": "2026-09-03",
+        "url": "https://deploymentsafety.openai.com/gpt-6-astra",
+        "excerpt": "Published September 3, 2026",
+        "note": "Also listed in the API changelog under \"September, 2026\" / \"Sep 3\": \"Released GPT-6 Astra\".",
+        "excerptMode": "verbatim"
+      }
+    },
+    "benchmarks": [],
+    "benchmarksNote": "OpenAI announcement page (openai.com/index/gpt-6-astra/) returned HTTP 403 to automated fetches, so no OpenAI-published capability benchmark numbers were captured. Other providers publish GPT-6 Astra scores, but those are not OpenAI's own and are excluded.",
+    "retrievedAt": "2026-10-27"
+  },
+  {
+    "provider": "Anthropic",
+    "family": "Claude",
+    "modelsPageUrl": "https://platform.claude.com/docs/en/models/overview",
+    "modelsPageNote": "docs.anthropic.com/en/docs/about-claude/models/overview 301-redirects to platform.claude.com.",
+    "flagship": {
+      "name": "Claude Opus 5.5",
+      "apiId": "claude-opus-5-5",
+      "basis": {
+        "value": "Claude Opus 5.5",
+        "url": "https://platform.claude.com/docs/en/models/overview.md",
+        "excerpt": "If you're unsure which model to use, start with [Claude Opus 5.5](https://platform.claude.com/docs/en/models/opus-5-5/overview) for most workloads.",
+        "excerptMode": "verbatim"
+      },
+      "alternative": {
+        "value": "Claude Fable 5.1 (claude-fable-5-1)",
+        "url": "https://platform.claude.com/docs/en/models/overview.md",
+        "excerpt": "Use [Claude Fable 5.1](https://platform.claude.com/docs/en/models/fable-5-1/overview) for demanding reasoning and long-horizon agentic work",
+        "note": "Fable 5.1 is the higher-priced ($10/$50) tier; Opus 5.5 is the recommended default and is labeled \"Latest\".",
+        "excerptMode": "verbatim"
+      }
+    },
+    "description": "Anthropic's Claude family currently centers on Claude Opus 5.5, recommended as the default for long-running agentic coding and knowledge work, alongside Fable 5.1, Sonnet 5.5 and Haiku 5.5.",
+    "fields": {
+      "contextWindow": {
+        "value": 1000000,
+        "url": "https://platform.claude.com/docs/en/models/opus-5-5/overview.md",
+        "excerpt": "| [Context window](https://platform.claude.com/docs/en/build-with-claude/context-windows) | 1M tokens |",
+        "excerptMode": "verbatim",
+        "stated": "1M tokens"
+      },
+      "maxOutputTokens": {
+        "value": 128000,
+        "url": "https://platform.claude.com/docs/en/models/opus-5-5/overview.md",
+        "excerpt": "| Max output | 128K tokens |",
+        "note": "Synchronous Messages API limit; up to 300K on the Batch API with a beta header.",
+        "excerptMode": "verbatim",
+        "stated": "128K tokens"
+      },
+      "inputPricePerMTokUsd": {
+        "value": 4,
+        "url": "https://platform.claude.com/docs/en/models/opus-5-5/overview.md",
+        "excerpt": "| Input | $4 / MTok |",
+        "excerptMode": "verbatim"
+      },
+      "outputPricePerMTokUsd": {
+        "value": 20,
+        "url": "https://platform.claude.com/docs/en/models/opus-5-5/overview.md",
+        "excerpt": "| Output | $20 / MTok |",
+        "excerptMode": "verbatim"
+      },
+      "inputModalities": {
+        "value": [
+          "text",
+          "image"
+        ],
+        "url": "https://platform.claude.com/docs/en/models/opus-5-5/overview.md",
+        "excerpt": "| Input → output | Text and images → text |",
+        "excerptMode": "verbatim"
+      },
+      "outputModalities": {
+        "value": [
+          "text"
+        ],
+        "url": "https://platform.claude.com/docs/en/models/opus-5-5/overview.md",
+        "excerpt": "| Input → output | Text and images → text |",
+        "excerptMode": "verbatim"
+      },
+      "openWeights": null,
+      "license": null,
+      "knowledgeCutoff": {
+        "value": "2026-06",
+        "url": "https://platform.claude.com/docs/en/models/opus-5-5/overview.md",
+        "excerpt": "| Reliable knowledge cutoff | Jun 2026 |",
+        "note": "Training data cutoff is also Jun 2026 per the same page.",
+        "excerptMode": "verbatim"
+      },
+      "releaseDate": {
+        "value": "2026-09-22",
+        "url": "https://platform.claude.com/docs/en/models/opus-5-5/overview.md",
+        "excerpt": "**Latest.** Released September 22, 2026.",
+        "excerptMode": "verbatim"
+      }
+    },
+    "benchmarks": [
+      {
+        "benchmark": "Terminal-Bench 4.0",
+        "key": "terminal-bench-4.0",
+        "score": 66.4,
+        "unit": "%",
+        "url": "https://www.anthropic.com/claude-opus-5-5",
+        "excerpt": "Agentic codingTerminal-Bench 4.0¹ | 66.4% |",
+        "columnHeaderExcerpt": "Opus 5.5 | Fable 5.1 | Opus 5 | GPT-6 Astra | GPT-5.6 Sol |",
+        "note": "Opus 5.5 at xhigh effort per Anthropic footnote; standard error ±2.6 pts.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "FrontierCode v1.1 (Main)",
+        "key": "frontiercode-v1.1-main",
+        "score": 54.4,
+        "unit": "%",
+        "url": "https://www.anthropic.com/claude-opus-5-5",
+        "excerpt": "Agentic codingFrontierCode v1.1 (Main) | 54.4% |",
+        "columnHeaderExcerpt": "Opus 5.5 | Fable 5.1 | Opus 5 | GPT-6 Astra | GPT-5.6 Sol |",
+        "note": "Value is the Opus 5.5 column (first value column). Unless otherwise noted, Anthropic reports Opus 5.5 at adaptive thinking, max effort.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "CursorBench 4.0",
+        "key": "cursorbench-4.0",
+        "score": 57.8,
+        "unit": "%",
+        "url": "https://www.anthropic.com/claude-opus-5-5",
+        "excerpt": "Agentic codingCursorBench 4.0 | 57.8% |",
+        "columnHeaderExcerpt": "Opus 5.5 | Fable 5.1 | Opus 5 | GPT-6 Astra | GPT-5.6 Sol |",
+        "note": "Value is the Opus 5.5 column (first value column). Unless otherwise noted, Anthropic reports Opus 5.5 at adaptive thinking, max effort.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "GDPval-AA v2.1",
+        "key": "gdpval-aa-v2.1",
+        "score": 1846,
+        "unit": "Elo",
+        "url": "https://www.anthropic.com/claude-opus-5-5",
+        "excerpt": "Knowledge workGDPval-AA v2.1 | 1846 |",
+        "columnHeaderExcerpt": "Opus 5.5 | Fable 5.1 | Opus 5 | GPT-6 Astra | GPT-5.6 Sol |",
+        "note": "Value is the Opus 5.5 column (first value column). Unless otherwise noted, Anthropic reports Opus 5.5 at adaptive thinking, max effort.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "AutomationBench",
+        "key": "automationbench",
+        "score": 40.0,
+        "unit": "%",
+        "url": "https://www.anthropic.com/claude-opus-5-5",
+        "excerpt": "Business workflowsAutomationBench² | 40.0% |",
+        "columnHeaderExcerpt": "Opus 5.5 | Fable 5.1 | Opus 5 | GPT-6 Astra | GPT-5.6 Sol |",
+        "note": "Run and reported by Zapier per Anthropic footnote.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "Humanity's Last Exam (with tools)",
+        "key": "hle-with-tools",
+        "score": 67.7,
+        "unit": "%",
+        "url": "https://www.anthropic.com/claude-opus-5-5",
+        "excerpt": "Multidisciplinary reasoningHumanity's Last Exam | 67.7%with tools |",
+        "columnHeaderExcerpt": "Opus 5.5 | Fable 5.1 | Opus 5 | GPT-6 Astra | GPT-5.6 Sol |",
+        "note": "Value is the Opus 5.5 column (first value column). Unless otherwise noted, Anthropic reports Opus 5.5 at adaptive thinking, max effort.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "Terminal-Bench-Science 0.1",
+        "key": "terminal-bench-science-0.1",
+        "score": 58.7,
+        "unit": "%",
+        "url": "https://www.anthropic.com/claude-opus-5-5",
+        "excerpt": "Agentic scientific researchTerminal-Bench-Science 0.1³ | 58.7% |",
+        "columnHeaderExcerpt": "Opus 5.5 | Fable 5.1 | Opus 5 | GPT-6 Astra | GPT-5.6 Sol |",
+        "note": "Value is the Opus 5.5 column (first value column). Unless otherwise noted, Anthropic reports Opus 5.5 at adaptive thinking, max effort.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "OSWorld 2.1 (partial)",
+        "key": "osworld-2.1-partial",
+        "score": 81.8,
+        "unit": "%",
+        "url": "https://www.anthropic.com/claude-opus-5-5",
+        "excerpt": "Computer useOSWorld 2.1 | 81.8%partial |",
+        "columnHeaderExcerpt": "Opus 5.5 | Fable 5.1 | Opus 5 | GPT-6 Astra | GPT-5.6 Sol |",
+        "note": "Value is the Opus 5.5 column (first value column). Unless otherwise noted, Anthropic reports Opus 5.5 at adaptive thinking, max effort.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "Chartography (with tools)",
+        "key": "chartography-with-tools",
+        "score": 89.0,
+        "unit": "%",
+        "url": "https://www.anthropic.com/claude-opus-5-5",
+        "excerpt": "Visual chart recognitionChartography | 89.0%with tools |",
+        "columnHeaderExcerpt": "Opus 5.5 | Fable 5.1 | Opus 5 | GPT-6 Astra | GPT-5.6 Sol |",
+        "note": "Value is the Opus 5.5 column (first value column). Unless otherwise noted, Anthropic reports Opus 5.5 at adaptive thinking, max effort.",
+        "excerptMode": "table-flattened"
+      }
+    ],
+    "benchmarksNote": "Table values only. The announcement prose also gives default-effort (medium) figures, e.g. CursorBench 52.5% and FrontierCode 54.6%, which are not mixed in here.",
+    "retrievedAt": "2026-10-27"
+  },
+  {
+    "provider": "xAI",
+    "family": "Grok",
+    "modelsPageUrl": "https://docs.x.ai/developers/models",
+    "modelsPageNote": "docs.x.ai/docs/models redirects here. Site branding reads \"SpaceXSI\".",
+    "flagship": {
+      "name": "Grok 4.7",
+      "apiId": "grok-4.7",
+      "basis": {
+        "value": "Grok 4.7",
+        "url": "https://docs.x.ai/developers/models.md",
+        "excerpt": "For everything else, including code, use Grok 4.7. It is the most capable model we’ve built.",
+        "excerptMode": "verbatim"
+      }
+    },
+    "description": "xAI's Grok family is led by Grok 4.7, a text-and-image-input model positioned for coding, agentic tasks and knowledge work, with dedicated Imagine and Voice models for media.",
+    "fields": {
+      "contextWindow": {
+        "value": 500000,
+        "url": "https://docs.x.ai/developers/grok-4-7.md",
+        "excerpt": "| Context window | 500,000 tokens |",
+        "excerptMode": "verbatim"
+      },
+      "maxOutputTokens": {
+        "value": "No text output limit",
+        "url": "https://docs.x.ai/developers/grok-4-7.md",
+        "excerpt": "| Output limit | No text output limit |",
+        "note": "Provider states no text output limit; not a number.",
+        "excerptMode": "verbatim"
+      },
+      "inputPricePerMTokUsd": {
+        "value": 2.0,
+        "url": "https://docs.x.ai/developers/models.md",
+        "excerpt": "| grok-4.7 (< 200k prompt tokens) | 500k | $2.00 | $0.50 | $6.00 |",
+        "note": "Requests with ≥ 200k prompt tokens are billed at $4.00 input / $12.00 output for all tokens.",
+        "excerptMode": "verbatim"
+      },
+      "outputPricePerMTokUsd": {
+        "value": 6.0,
+        "url": "https://docs.x.ai/developers/models.md",
+        "excerpt": "| grok-4.7 (< 200k prompt tokens) | 500k | $2.00 | $0.50 | $6.00 |",
+        "excerptMode": "verbatim"
+      },
+      "inputModalities": {
+        "value": [
+          "text",
+          "image"
+        ],
+        "url": "https://docs.x.ai/developers/grok-4-7.md",
+        "excerpt": "| Modalities | Text and image input; text output |",
+        "excerptMode": "verbatim"
+      },
+      "outputModalities": {
+        "value": [
+          "text"
+        ],
+        "url": "https://docs.x.ai/developers/grok-4-7.md",
+        "excerpt": "| Modalities | Text and image input; text output |",
+        "excerptMode": "verbatim"
+      },
+      "openWeights": null,
+      "license": null,
+      "knowledgeCutoff": {
+        "value": "2026-05",
+        "url": "https://docs.x.ai/developers/grok-4-7.md",
+        "excerpt": "| Knowledge cutoff | May 2026 |",
+        "excerptMode": "verbatim"
+      },
+      "releaseDate": {
+        "value": "2026-09-21",
+        "url": "https://x.ai/news/grok-4-7",
+        "excerpt": "Sep 21, 2026 Introducing Grok 4.7",
+        "excerptMode": "verbatim"
+      }
+    },
+    "benchmarks": [
+      {
+        "benchmark": "CursorBench 4.0",
+        "key": "cursorbench-4.0",
+        "score": 46.3,
+        "unit": "%",
+        "url": "https://x.ai/news/grok-4-7",
+        "excerpt": "Software engineeringCursorBench 4.0 46.3%",
+        "columnHeaderExcerpt": "Grok 4.7 xHigh Grok 4.6 High GPT-5.6 Sol Max Fable 5.1 Max",
+        "note": "Value is the Grok 4.7 xHigh column (first value column).",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "DeepSWE v1.1",
+        "key": "deepswe-v1.1",
+        "score": 71.0,
+        "unit": "%",
+        "url": "https://x.ai/news/grok-4-7",
+        "excerpt": "Software engineeringDeepSWE v1.1 71.0%*",
+        "columnHeaderExcerpt": "Grok 4.7 xHigh Grok 4.6 High GPT-5.6 Sol Max Fable 5.1 Max",
+        "note": "Asterisk: high-effort score (not xHigh).",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "EEBench",
+        "key": "eebench",
+        "score": 64.0,
+        "unit": "%",
+        "url": "https://x.ai/news/grok-4-7",
+        "excerpt": "Electrical engineeringEEBench 64.0%",
+        "columnHeaderExcerpt": "Grok 4.7 xHigh Grok 4.6 High GPT-5.6 Sol Max Fable 5.1 Max",
+        "note": "Value is the Grok 4.7 xHigh column (first value column).",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "AA Briefcase v1.1",
+        "key": "aa-briefcase-v1.1",
+        "score": 1657,
+        "unit": "score",
+        "url": "https://x.ai/news/grok-4-7",
+        "excerpt": "Multi-hour office workAA Briefcase v1.1 1,657",
+        "columnHeaderExcerpt": "Grok 4.7 xHigh Grok 4.6 High GPT-5.6 Sol Max Fable 5.1 Max",
+        "note": "Value is the Grok 4.7 xHigh column (first value column).",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "Terminal-Bench 4.0",
+        "key": "terminal-bench-4.0",
+        "score": 37.6,
+        "unit": "%",
+        "url": "https://x.ai/news/grok-4-7",
+        "excerpt": "Multi-hour terminal workTerminal-Bench 4.0 37.6%",
+        "columnHeaderExcerpt": "Grok 4.7 xHigh Grok 4.6 High GPT-5.6 Sol Max Fable 5.1 Max",
+        "note": "Value is the Grok 4.7 xHigh column (first value column).",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "Harvey Legal Agent Benchmark",
+        "key": "harvey-legal-agent",
+        "score": 19.6,
+        "unit": "%",
+        "url": "https://x.ai/news/grok-4-7",
+        "excerpt": "Legal workHarvey Legal Agent Benchmark 19.6%",
+        "columnHeaderExcerpt": "Grok 4.7 xHigh Grok 4.6 High GPT-5.6 Sol Max Fable 5.1 Max",
+        "note": "Value is the Grok 4.7 xHigh column (first value column).",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "HealthBench Professional",
+        "key": "healthbench-professional",
+        "score": 56.7,
+        "unit": "%",
+        "url": "https://x.ai/news/grok-4-7",
+        "excerpt": "Clinical reasoningHealthBench Professional 56.7%",
+        "columnHeaderExcerpt": "Grok 4.7 xHigh Grok 4.6 High GPT-5.6 Sol Max Fable 5.1 Max",
+        "note": "Value is the Grok 4.7 xHigh column (first value column).",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "LatchBio biosafety benchmark",
+        "key": "latchbio-biosafety",
+        "score": 62.4,
+        "unit": "%",
+        "url": "https://x.ai/news/grok-4-7",
+        "excerpt": "topping LatchBio’s biosafety benchmark at 62.4%",
+        "note": "Safety benchmark.",
+        "excerptMode": "table-flattened"
+      }
+    ],
+    "retrievedAt": "2026-10-27"
+  },
+  {
+    "provider": "Google",
+    "family": "Gemini",
+    "modelsPageUrl": "https://ai.google.dev/gemini-api/docs/models",
+    "flagship": {
+      "name": "Gemini 4 Argon",
+      "apiId": "gemini-4-argon",
+      "basis": {
+        "value": "Gemini 4 Argon",
+        "url": "https://ai.google.dev/gemini-api/docs/models",
+        "excerpt": "Our flagship reasoning model with a unified 1M context window and long decodes up to 1M tokens.",
+        "excerptMode": "verbatim"
+      }
+    },
+    "description": "Google's Gemini family on the Gemini API is led by Gemini 4 Argon, a multimodal-input reasoning model built for complex software engineering, math and science, and multi-step agents.",
+    "fields": {
+      "contextWindow": {
+        "value": 1048576,
+        "url": "https://ai.google.dev/gemini-api/docs/models/gemini-4-argon.md.txt",
+        "excerpt": "**Context window (unified input and output token limit)** 1,048,576",
+        "excerptMode": "verbatim"
+      },
+      "maxOutputTokens": {
+        "value": 65536,
+        "url": "https://ai.google.dev/gemini-api/docs/models/gemini-4-argon.md.txt",
+        "excerpt": "**Max output** 65,536 (default synchronous) / up to 1,048,576 (with [long decode](https://ai.google.dev/gemini-api/docs/long-decode))",
+        "note": "65,536 by default; up to 1,048,576 with long decode.",
+        "excerptMode": "verbatim"
+      },
+      "inputPricePerMTokUsd": {
+        "value": 2.0,
+        "url": "https://ai.google.dev/gemini-api/docs/pricing.md.txt",
+        "excerpt": "| Input price | Not available | $2.00 through November 30, 2026. $4.00 starting December 1, 2026. |",
+        "note": "Standard paid tier; rises to $4.00 on 2026-12-01.",
+        "excerptMode": "verbatim"
+      },
+      "outputPricePerMTokUsd": {
+        "value": 10.0,
+        "url": "https://ai.google.dev/gemini-api/docs/pricing.md.txt",
+        "excerpt": "| Output price (including thinking tokens) | Not available | $10.00 through November 30, 2026. $20.00 starting December 1, 2026. |",
+        "note": "Standard paid tier; rises to $20.00 on 2026-12-01.",
+        "excerptMode": "verbatim"
+      },
+      "inputModalities": {
+        "value": [
+          "text",
+          "image",
+          "video",
+          "audio",
+          "pdf"
+        ],
+        "url": "https://ai.google.dev/gemini-api/docs/models/gemini-4-argon.md.txt",
+        "excerpt": "**Inputs** Text, Image, Video, Audio, and PDF **Output** Text",
+        "excerptMode": "verbatim"
+      },
+      "outputModalities": {
+        "value": [
+          "text"
+        ],
+        "url": "https://ai.google.dev/gemini-api/docs/models/gemini-4-argon.md.txt",
+        "excerpt": "**Inputs** Text, Image, Video, Audio, and PDF **Output** Text",
+        "excerptMode": "verbatim"
+      },
+      "openWeights": null,
+      "license": null,
+      "knowledgeCutoff": {
+        "value": "2026-03",
+        "url": "https://deepmind.google/models/model-cards/gemini-4-argon/",
+        "excerpt": "The knowledge cutoff for Gemini 4 is March 2026, but in some domains the model’s knowledge may be less up to date.",
+        "note": "Sentence on the Gemini 4 Argon model card refers to \"Gemini 4\", not Argon specifically.",
+        "excerptMode": "verbatim"
+      },
+      "releaseDate": {
+        "value": "2026-10-13",
+        "url": "https://ai.google.dev/gemini-api/docs/changelog.md.txt",
+        "excerpt": "## October 13, 2026 - **Gemini 4 Argon (`gemini-4-argon`) generally available (GA)**",
+        "note": "GA date per Gemini API changelog.",
+        "excerptMode": "verbatim"
+      }
+    },
+    "benchmarks": [
+      {
+        "benchmark": "Vals Index",
+        "key": "vals-index",
+        "score": 68.9,
+        "unit": "%",
+        "url": "https://deepmind.google/models/model-cards/gemini-4-argon/",
+        "excerpt": "Vals Index | | 68.9% |",
+        "columnHeaderExcerpt": "Gemini 4 Argon | GPT-6 Astra | Claude Fable 5.1 | Claude Opus 5.5 |",
+        "note": "Value is the Gemini 4 Argon column (first value column); results as of October 2026.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "AutomationBench",
+        "key": "automationbench",
+        "score": 51.3,
+        "unit": "%",
+        "url": "https://deepmind.google/models/model-cards/gemini-4-argon/",
+        "excerpt": "AutomationBench | Score | 51.3% |",
+        "columnHeaderExcerpt": "Gemini 4 Argon | GPT-6 Astra | Claude Fable 5.1 | Claude Opus 5.5 |",
+        "note": "Value is the Gemini 4 Argon column (first value column); results as of October 2026.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "Vals Finance Agent v2",
+        "key": "vals-finance-agent-v2",
+        "score": 65.4,
+        "unit": "%",
+        "url": "https://deepmind.google/models/model-cards/gemini-4-argon/",
+        "excerpt": "Vals Finance Agent v2 | | 65.4% |",
+        "columnHeaderExcerpt": "Gemini 4 Argon | GPT-6 Astra | Claude Fable 5.1 | Claude Opus 5.5 |",
+        "note": "Value is the Gemini 4 Argon column (first value column); results as of October 2026.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "Harvey's Legal Agent Benchmark",
+        "key": "harvey-legal-agent",
+        "score": 19.6,
+        "unit": "%",
+        "url": "https://deepmind.google/models/model-cards/gemini-4-argon/",
+        "excerpt": "Harvey's Legal Agent Benchmark | | 19.6% |",
+        "columnHeaderExcerpt": "Gemini 4 Argon | GPT-6 Astra | Claude Fable 5.1 | Claude Opus 5.5 |",
+        "note": "Value is the Gemini 4 Argon column (first value column); results as of October 2026.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "DeepSWE v1.1",
+        "key": "deepswe-v1.1",
+        "score": 77.9,
+        "unit": "%",
+        "url": "https://deepmind.google/models/model-cards/gemini-4-argon/",
+        "excerpt": "DeepSWE v1.1 | | 77.9% |",
+        "columnHeaderExcerpt": "Gemini 4 Argon | GPT-6 Astra | Claude Fable 5.1 | Claude Opus 5.5 |",
+        "note": "Value is the Gemini 4 Argon column (first value column); results as of October 2026.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "FrontierSWE v2",
+        "key": "frontierswe-v2",
+        "score": 55.0,
+        "unit": "%",
+        "url": "https://deepmind.google/models/model-cards/gemini-4-argon/",
+        "excerpt": "FrontierSWE v2 | | 55.0% |",
+        "columnHeaderExcerpt": "Gemini 4 Argon | GPT-6 Astra | Claude Fable 5.1 | Claude Opus 5.5 |",
+        "note": "Value is the Gemini 4 Argon column (first value column); results as of October 2026.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "Vibe Code Bench",
+        "key": "vibe-code-bench",
+        "score": 91.9,
+        "unit": "%",
+        "url": "https://deepmind.google/models/model-cards/gemini-4-argon/",
+        "excerpt": "Vibe Code Bench | | 91.9% |",
+        "columnHeaderExcerpt": "Gemini 4 Argon | GPT-6 Astra | Claude Fable 5.1 | Claude Opus 5.5 |",
+        "note": "Value is the Gemini 4 Argon column (first value column); results as of October 2026.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "Terminal-Bench 4.0",
+        "key": "terminal-bench-4.0",
+        "score": 57.4,
+        "unit": "%",
+        "url": "https://deepmind.google/models/model-cards/gemini-4-argon/",
+        "excerpt": "Terminal-bench 4.0 | | 57.4% |",
+        "columnHeaderExcerpt": "Gemini 4 Argon | GPT-6 Astra | Claude Fable 5.1 | Claude Opus 5.5 |",
+        "note": "Value is the Gemini 4 Argon column (first value column); results as of October 2026.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "PostTrainBench",
+        "key": "posttrainbench",
+        "score": 45.3,
+        "unit": "%",
+        "url": "https://deepmind.google/models/model-cards/gemini-4-argon/",
+        "excerpt": "PostTrainBench | | 45.3% |",
+        "columnHeaderExcerpt": "Gemini 4 Argon | GPT-6 Astra | Claude Fable 5.1 | Claude Opus 5.5 |",
+        "note": "Value is the Gemini 4 Argon column (first value column); results as of October 2026.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "Terminal-Bench Science 0.1",
+        "key": "terminal-bench-science-0.1",
+        "score": 57.6,
+        "unit": "%",
+        "url": "https://deepmind.google/models/model-cards/gemini-4-argon/",
+        "excerpt": "Terminal-Bench Science 0.1 | | 57.6% |",
+        "columnHeaderExcerpt": "Gemini 4 Argon | GPT-6 Astra | Claude Fable 5.1 | Claude Opus 5.5 |",
+        "note": "Value is the Gemini 4 Argon column (first value column); results as of October 2026.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "LABBench 2",
+        "key": "labbench-2",
+        "score": 88.8,
+        "unit": "%",
+        "url": "https://deepmind.google/models/model-cards/gemini-4-argon/",
+        "excerpt": "LABBench 2 | | 88.8% |",
+        "columnHeaderExcerpt": "Gemini 4 Argon | GPT-6 Astra | Claude Fable 5.1 | Claude Opus 5.5 |",
+        "note": "Value is the Gemini 4 Argon column (first value column); results as of October 2026.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "RiemannBench",
+        "key": "riemannbench",
+        "score": 76.0,
+        "unit": "%",
+        "url": "https://deepmind.google/models/model-cards/gemini-4-argon/",
+        "excerpt": "RiemannBench | | 76.0% |",
+        "columnHeaderExcerpt": "Gemini 4 Argon | GPT-6 Astra | Claude Fable 5.1 | Claude Opus 5.5 |",
+        "note": "Value is the Gemini 4 Argon column (first value column); results as of October 2026.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "GraphWalks BFS up to 128k (F1)",
+        "key": "graphwalks-bfs-128k",
+        "score": 99.7,
+        "unit": "%",
+        "url": "https://deepmind.google/models/model-cards/gemini-4-argon/",
+        "excerpt": "GraphWalks | Up to 128k, BFS (F1) | 99.7% |",
+        "columnHeaderExcerpt": "Gemini 4 Argon | GPT-6 Astra | Claude Fable 5.1 | Claude Opus 5.5 |",
+        "note": "Value is the Gemini 4 Argon column (first value column); results as of October 2026.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "GraphWalks BFS 256k to 1M (F1)",
+        "key": "graphwalks-bfs-256k-1m",
+        "score": 84.2,
+        "unit": "%",
+        "url": "https://deepmind.google/models/model-cards/gemini-4-argon/",
+        "excerpt": "256k to 1M, BFS (F1) | 84.2% |",
+        "columnHeaderExcerpt": "Gemini 4 Argon | GPT-6 Astra | Claude Fable 5.1 | Claude Opus 5.5 |",
+        "note": "Value is the Gemini 4 Argon column (first value column); results as of October 2026.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "Agent's Last Exam (pass rate)",
+        "key": "agents-last-exam-pass",
+        "score": 39.5,
+        "unit": "%",
+        "url": "https://deepmind.google/models/model-cards/gemini-4-argon/",
+        "excerpt": "Agent's Last Exam | Pass rate | 39.5% |",
+        "columnHeaderExcerpt": "Gemini 4 Argon | GPT-6 Astra | Claude Fable 5.1 | Claude Opus 5.5 |",
+        "note": "Value is the Gemini 4 Argon column (first value column); results as of October 2026.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "OSWorld-2.0 (offline subset, partial score)",
+        "key": "osworld-2.0-offline-partial",
+        "score": 69.2,
+        "unit": "%",
+        "url": "https://deepmind.google/models/model-cards/gemini-4-argon/",
+        "excerpt": "OSWorld-2.0 | Offline subset Partial score | 69.2% |",
+        "columnHeaderExcerpt": "Gemini 4 Argon | GPT-6 Astra | Claude Fable 5.1 | Claude Opus 5.5 |",
+        "note": "Value is the Gemini 4 Argon column (first value column); results as of October 2026.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "Chartography",
+        "key": "chartography",
+        "score": 71.6,
+        "unit": "%",
+        "url": "https://deepmind.google/models/model-cards/gemini-4-argon/",
+        "excerpt": "Chartography | | 71.6% |",
+        "columnHeaderExcerpt": "Gemini 4 Argon | GPT-6 Astra | Claude Fable 5.1 | Claude Opus 5.5 |",
+        "note": "Value is the Gemini 4 Argon column (first value column); results as of October 2026.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "LVBench",
+        "key": "lvbench",
+        "score": 91.7,
+        "unit": "%",
+        "url": "https://deepmind.google/models/model-cards/gemini-4-argon/",
+        "excerpt": "LVBench | | 91.7% |",
+        "columnHeaderExcerpt": "Gemini 4 Argon | GPT-6 Astra | Claude Fable 5.1 | Claude Opus 5.5 |",
+        "note": "Value is the Gemini 4 Argon column (first value column); results as of October 2026.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "CWE-bench v1",
+        "key": "cwe-bench-v1",
+        "score": 68.0,
+        "unit": "%",
+        "url": "https://deepmind.google/models/model-cards/gemini-4-argon/",
+        "excerpt": "CWE-bench v1 | | 68.0% |",
+        "columnHeaderExcerpt": "Gemini 4 Argon | GPT-6 Astra | Claude Fable 5.1 | Claude Opus 5.5 |",
+        "note": "Value is the Gemini 4 Argon column (first value column); results as of October 2026.",
+        "excerptMode": "table-flattened"
+      }
+    ],
+    "retrievedAt": "2026-10-27"
+  },
+  {
+    "provider": "Meta",
+    "family": "Llama",
+    "modelsPageUrl": "https://dev.meta.ai/llama",
+    "modelsPageNote": "llama.com now redirects to dev.meta.ai; Meta's developer site leads with its newer Muse models (e.g. \"Muse Spark Open\"), while Llama remains documented under /llama. The newest Llama generation listed is Llama 4.",
+    "flagship": {
+      "name": "Llama 4 Maverick",
+      "apiId": null,
+      "huggingFaceRepo": "meta-llama/Llama-4-Maverick-17B-128E-Instruct",
+      "basis": {
+        "value": "Llama 4 Maverick",
+        "url": "https://dev.meta.ai/llama/docs/model-cards-and-prompt-formats/llama4",
+        "excerpt": "The Llama 4 Models are a collection of pretrained and instruction-tuned mixture-of-experts LLMs offered in two sizes: Llama 4 Scout & Llama 4 Maverick.",
+        "note": "Maverick is the larger of the two released Llama 4 models (400B total, 17B active).",
+        "excerptMode": "verbatim"
+      }
+    },
+    "description": "Meta's Llama family is an open-weight model line whose latest generation, Llama 4, comprises the mixture-of-experts models Scout and Maverick with text and image input.",
+    "fields": {
+      "contextWindow": {
+        "value": 1000000,
+        "url": "https://raw.githubusercontent.com/meta-llama/llama-models/main/models/llama4/MODEL_CARD.md",
+        "excerpt": "Llama 4 Maverick (17Bx128E) | 17B (Activated) 400B (Total) | Multilingual text and image | Multilingual text and code | 1M | ~22T | August 2024",
+        "excerptMode": "table-flattened",
+        "stated": "1M"
+      },
+      "maxOutputTokens": null,
+      "inputPricePerMTokUsd": null,
+      "outputPricePerMTokUsd": null,
+      "inputModalities": {
+        "value": [
+          "text",
+          "image"
+        ],
+        "url": "https://raw.githubusercontent.com/meta-llama/llama-models/main/models/llama4/MODEL_CARD.md",
+        "excerpt": "Llama 4 Maverick (17Bx128E) | 17B (Activated) 400B (Total) | Multilingual text and image | Multilingual text and code",
+        "note": "Docs page: \"Input: Text + up to 5 images\".",
+        "excerptMode": "table-flattened"
+      },
+      "outputModalities": {
+        "value": [
+          "text"
+        ],
+        "url": "https://dev.meta.ai/llama/docs/model-cards-and-prompt-formats/llama4",
+        "excerpt": "Output: Text-only",
+        "note": "Model card lists output modalities as \"Multilingual text and code\".",
+        "excerptMode": "verbatim"
+      },
+      "openWeights": {
+        "value": true,
+        "url": "https://raw.githubusercontent.com/meta-llama/llama-models/main/models/llama4/MODEL_CARD.md",
+        "excerpt": "the Llama 4 Maverick model is released as both BF16 and FP8 quantized weights",
+        "excerptMode": "verbatim"
+      },
+      "license": {
+        "value": "Llama 4 Community License Agreement",
+        "url": "https://raw.githubusercontent.com/meta-llama/llama-models/main/models/llama4/MODEL_CARD.md",
+        "excerpt": "**License**: A custom commercial license, the Llama 4 Community License Agreement",
+        "excerptMode": "verbatim"
+      },
+      "knowledgeCutoff": {
+        "value": "2024-08",
+        "url": "https://dev.meta.ai/llama/docs/model-cards-and-prompt-formats/llama4",
+        "excerpt": "The models have a knowledge cutoff of August 2024.",
+        "excerptMode": "verbatim"
+      },
+      "releaseDate": {
+        "value": "2025-04-05",
+        "url": "https://raw.githubusercontent.com/meta-llama/llama-models/main/models/llama4/MODEL_CARD.md",
+        "excerpt": "**Model Release Date:** April 5, 2025",
+        "excerptMode": "verbatim"
+      }
+    },
+    "benchmarks": [
+      {
+        "benchmark": "MMMU",
+        "key": "mmmu",
+        "score": 73.4,
+        "unit": "%",
+        "url": "https://raw.githubusercontent.com/meta-llama/llama-models/main/models/llama4/MODEL_CARD.md",
+        "excerpt": "MMMU | 0 | accuracy | No multimodal support | 69.4 | 73.4",
+        "columnHeaderExcerpt": "Category | Benchmark | # Shots | Metric | Llama 3.3 70B | Llama 3.1 405B | Llama 4 Scout | Llama 4 Maverick",
+        "note": "Instruction-tuned model table; value is the last (Llama 4 Maverick) column.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "MMMU Pro",
+        "key": "mmmu-pro",
+        "score": 59.6,
+        "unit": "%",
+        "url": "https://raw.githubusercontent.com/meta-llama/llama-models/main/models/llama4/MODEL_CARD.md",
+        "excerpt": "MMMU Pro^ | 0 | accuracy | | 52.2 | 59.6",
+        "columnHeaderExcerpt": "Category | Benchmark | # Shots | Metric | Llama 3.3 70B | Llama 3.1 405B | Llama 4 Scout | Llama 4 Maverick",
+        "note": "Instruction-tuned model table; value is the last (Llama 4 Maverick) column.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "MathVista",
+        "key": "mathvista",
+        "score": 73.7,
+        "unit": "%",
+        "url": "https://raw.githubusercontent.com/meta-llama/llama-models/main/models/llama4/MODEL_CARD.md",
+        "excerpt": "MathVista | 0 | accuracy | | 70.7 | 73.7",
+        "columnHeaderExcerpt": "Category | Benchmark | # Shots | Metric | Llama 3.3 70B | Llama 3.1 405B | Llama 4 Scout | Llama 4 Maverick",
+        "note": "Instruction-tuned model table; value is the last (Llama 4 Maverick) column.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "ChartQA",
+        "key": "chartqa",
+        "score": 90.0,
+        "unit": "%",
+        "url": "https://raw.githubusercontent.com/meta-llama/llama-models/main/models/llama4/MODEL_CARD.md",
+        "excerpt": "ChartQA | 0 | relaxed_accuracy | | 88.8 | 90.0",
+        "columnHeaderExcerpt": "Category | Benchmark | # Shots | Metric | Llama 3.3 70B | Llama 3.1 405B | Llama 4 Scout | Llama 4 Maverick",
+        "note": "Instruction-tuned model table; value is the last (Llama 4 Maverick) column.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "DocVQA (test)",
+        "key": "docvqa-test",
+        "score": 94.4,
+        "unit": "%",
+        "url": "https://raw.githubusercontent.com/meta-llama/llama-models/main/models/llama4/MODEL_CARD.md",
+        "excerpt": "DocVQA (test) | 0 | anls | | 94.4 | 94.4",
+        "columnHeaderExcerpt": "Category | Benchmark | # Shots | Metric | Llama 3.3 70B | Llama 3.1 405B | Llama 4 Scout | Llama 4 Maverick",
+        "note": "Instruction-tuned model table; value is the last (Llama 4 Maverick) column.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "LiveCodeBench (10/01/2024-02/01/2025)",
+        "key": "livecodebench-2410-2502",
+        "score": 43.4,
+        "unit": "%",
+        "url": "https://raw.githubusercontent.com/meta-llama/llama-models/main/models/llama4/MODEL_CARD.md",
+        "excerpt": "LiveCodeBench (10/01/2024-02/01/2025) | 0 | pass@1 | 33.3 | 27.7 | 32.8 | 43.4",
+        "columnHeaderExcerpt": "Category | Benchmark | # Shots | Metric | Llama 3.3 70B | Llama 3.1 405B | Llama 4 Scout | Llama 4 Maverick",
+        "note": "Instruction-tuned model table; value is the last (Llama 4 Maverick) column.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "MMLU-Pro",
+        "key": "mmlu-pro",
+        "score": 80.5,
+        "unit": "%",
+        "url": "https://raw.githubusercontent.com/meta-llama/llama-models/main/models/llama4/MODEL_CARD.md",
+        "excerpt": "MMLU Pro | 0 | macro_avg/acc | 68.9 | 73.4 | 74.3 | 80.5",
+        "columnHeaderExcerpt": "Category | Benchmark | # Shots | Metric | Llama 3.3 70B | Llama 3.1 405B | Llama 4 Scout | Llama 4 Maverick",
+        "note": "Instruction-tuned model table; value is the last (Llama 4 Maverick) column.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "GPQA Diamond",
+        "key": "gpqa-diamond",
+        "score": 69.8,
+        "unit": "%",
+        "url": "https://raw.githubusercontent.com/meta-llama/llama-models/main/models/llama4/MODEL_CARD.md",
+        "excerpt": "GPQA Diamond | 0 | accuracy | 50.5 | 49.0 | 57.2 | 69.8",
+        "columnHeaderExcerpt": "Category | Benchmark | # Shots | Metric | Llama 3.3 70B | Llama 3.1 405B | Llama 4 Scout | Llama 4 Maverick",
+        "note": "Instruction-tuned model table; value is the last (Llama 4 Maverick) column.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "MGSM",
+        "key": "mgsm",
+        "score": 92.3,
+        "unit": "%",
+        "url": "https://raw.githubusercontent.com/meta-llama/llama-models/main/models/llama4/MODEL_CARD.md",
+        "excerpt": "MGSM | 0 | average/em | 91.1 | 91.6 | 90.6 | 92.3",
+        "columnHeaderExcerpt": "Category | Benchmark | # Shots | Metric | Llama 3.3 70B | Llama 3.1 405B | Llama 4 Scout | Llama 4 Maverick",
+        "note": "Instruction-tuned model table; value is the last (Llama 4 Maverick) column.",
+        "excerptMode": "table-flattened"
+      }
+    ],
+    "retrievedAt": "2026-10-27"
+  },
+  {
+    "provider": "Mistral AI",
+    "family": "Mistral",
+    "modelsPageUrl": "https://docs.mistral.ai/models",
+    "modelsPageNote": "docs.mistral.ai/getting-started/models/models_overview/ redirects here.",
+    "flagship": {
+      "name": "Mistral Large 4",
+      "apiId": "mistral-large-4",
+      "basis": {
+        "value": "Mistral Large 4",
+        "url": "https://docs.mistral.ai/models.md",
+        "excerpt": "| [Mistral Large 4](/models/mistral-large-4-0) | `mistral-large-4` | Public Preview | 1M | A state-of-the-art, open-weight, general-purpose multimodal model. |",
+        "note": "Status is Public Preview. The GA alternative is Mistral Medium 3.5 (mistral-medium-3-5), described as \"Our frontier-class multimodal model optimized for agentic and coding use cases.\"",
+        "excerptMode": "verbatim"
+      }
+    },
+    "description": "Mistral AI's general-purpose line is topped by Mistral Large 4, a 1.05T-parameter mixture-of-experts multimodal model in public preview whose weights Mistral says it will publish.",
+    "fields": {
+      "contextWindow": {
+        "value": 1000000,
+        "url": "https://docs.mistral.ai/models/mistral-large-4-0.md",
+        "excerpt": "- Context length: 1M",
+        "excerptMode": "verbatim",
+        "stated": "1M"
+      },
+      "maxOutputTokens": null,
+      "inputPricePerMTokUsd": {
+        "value": 1.36,
+        "url": "https://docs.mistral.ai/models/mistral-large-4-0.md",
+        "excerpt": "- Pricing: Input $1.36 /M Tokens; Cached input $0.14 /M Tokens; Output $4.18 /M Tokens",
+        "note": "Public-preview pricing.",
+        "excerptMode": "verbatim"
+      },
+      "outputPricePerMTokUsd": {
+        "value": 4.18,
+        "url": "https://docs.mistral.ai/models/mistral-large-4-0.md",
+        "excerpt": "- Pricing: Input $1.36 /M Tokens; Cached input $0.14 /M Tokens; Output $4.18 /M Tokens",
+        "note": "Public-preview pricing.",
+        "excerptMode": "verbatim"
+      },
+      "inputModalities": {
+        "value": [
+          "text",
+          "image"
+        ],
+        "url": "https://docs.mistral.ai/models/mistral-large-4-0.md",
+        "excerpt": "- Input: text, image",
+        "excerptMode": "verbatim"
+      },
+      "outputModalities": {
+        "value": [
+          "text"
+        ],
+        "url": "https://docs.mistral.ai/models/mistral-large-4-0.md",
+        "excerpt": "- Output: reasoning, text",
+        "note": "Docs list \"reasoning, text\".",
+        "excerptMode": "verbatim"
+      },
+      "openWeights": {
+        "value": "coming_soon",
+        "url": "https://docs.mistral.ai/models/mistral-large-4-0.md",
+        "excerpt": "- Open weights: [Coming soon](https://huggingface.co/mistralai/Mistral-Large-4-1T-A52B), 1.05T parameters, 52B active",
+        "note": "Not yet released as of 2026-10-27: the linked Hugging Face repo did not exist when checked. Announcement: \"Weights drop end of this month.\"",
+        "excerptMode": "verbatim"
+      },
+      "license": null,
+      "knowledgeCutoff": null,
+      "releaseDate": {
+        "value": "2026-10-06",
+        "url": "https://docs.mistral.ai/models/mistral-large-4-0.md",
+        "excerpt": "- Release date: 2026-10-06",
+        "note": "Public preview release.",
+        "excerptMode": "verbatim"
+      }
+    },
+    "benchmarks": [
+      {
+        "benchmark": "DeepSWE v1.1",
+        "key": "deepswe-v1.1",
+        "score": 61.7,
+        "unit": "%",
+        "url": "https://mistral.ai/news/mistral-large-4/",
+        "excerpt": "scoring 61.7% on DeepSWE v1.1, 59.4% on SWE-Atlas-QnA, and 28.3% on Terminal-Bench 4.",
+        "excerptMode": "verbatim"
+      },
+      {
+        "benchmark": "SWE-Atlas-QnA",
+        "key": "swe-atlas-qna",
+        "score": 59.4,
+        "unit": "%",
+        "url": "https://mistral.ai/news/mistral-large-4/",
+        "excerpt": "scoring 61.7% on DeepSWE v1.1, 59.4% on SWE-Atlas-QnA, and 28.3% on Terminal-Bench 4.",
+        "excerptMode": "verbatim"
+      },
+      {
+        "benchmark": "Terminal-Bench 4.0",
+        "key": "terminal-bench-4.0",
+        "score": 28.3,
+        "unit": "%",
+        "url": "https://mistral.ai/news/mistral-large-4/",
+        "excerpt": "scoring 61.7% on DeepSWE v1.1, 59.4% on SWE-Atlas-QnA, and 28.3% on Terminal-Bench 4.",
+        "note": "Prose says \"Terminal-Bench 4\"; chart is titled \"Terminal Bench 4.0\".",
+        "excerptMode": "verbatim"
+      },
+      {
+        "benchmark": "Coding Agent Index",
+        "key": "coding-agent-index",
+        "score": 49.8,
+        "unit": "%",
+        "url": "https://mistral.ai/news/mistral-large-4/",
+        "excerpt": "Its combined Coding Agent Index score of 49.8%",
+        "excerptMode": "verbatim"
+      },
+      {
+        "benchmark": "AA - AutomationBench",
+        "key": "aa-automationbench",
+        "score": 59.9,
+        "unit": "%",
+        "url": "https://mistral.ai/news/mistral-large-4/",
+        "excerpt": "On AutomationBench — 657 business workflows across apps like Gmail, Google Sheets, Slack, and Salesforce — it scores 59.9%",
+        "note": "Chart labeled \"AA - AutomationBench\"; may not be the same run/setup as other providers' AutomationBench figures.",
+        "excerptMode": "verbatim"
+      },
+      {
+        "benchmark": "Cybench",
+        "key": "cybench",
+        "score": 93,
+        "unit": "%",
+        "url": "https://mistral.ai/news/mistral-large-4/",
+        "excerpt": "It also solves 93% of the challenges in Cybench",
+        "excerptMode": "verbatim"
+      },
+      {
+        "benchmark": "Lakera B3 AI Security Benchmark",
+        "key": "lakera-b3",
+        "score": 93.3,
+        "unit": "%",
+        "url": "https://mistral.ai/news/mistral-large-4/",
+        "excerpt": "On Lakera’s public B3 AI Security Benchmark, ML4 resists 93.3% of attacks",
+        "note": "Safety benchmark.",
+        "excerptMode": "verbatim"
+      }
+    ],
+    "retrievedAt": "2026-10-27"
+  },
+  {
+    "provider": "DeepSeek",
+    "family": "DeepSeek",
+    "modelsPageUrl": "https://api-docs.deepseek.com/quick_start/pricing/",
+    "modelsPageNote": "DeepSeek's \"Models & Pricing\" page; the URL without trailing slash serves the \"Your First API Call\" page.",
+    "flagship": {
+      "name": "DeepSeek-V4-Pro",
+      "apiId": "deepseek-v4-pro",
+      "modelVersion": "DeepSeek-V4-Pro-0813",
+      "basis": {
+        "value": "deepseek-v4-pro",
+        "url": "https://api-docs.deepseek.com/quick_start/pricing/",
+        "excerpt": "MODEL VERSION | DeepSeek-V4.1-Flash-1017 | DeepSeek-V4-Pro-0813 |",
+        "note": "The API lists two models, deepseek-flash and deepseek-v4-pro. V4-Pro is the higher-priced, larger model; the newer DeepSeek-V4.1-Flash-1017 (2026-10-17) supports vision but DeepSeek does not claim it surpasses V4-Pro.",
+        "excerptMode": "table-flattened"
+      }
+    },
+    "description": "DeepSeek's API models are deepseek-v4-pro (DeepSeek-V4-Pro-0813, MIT-licensed open weights) and the cheaper deepseek-flash, both with 1M-token context and selectable thinking modes.",
+    "fields": {
+      "contextWindow": {
+        "value": 1000000,
+        "url": "https://api-docs.deepseek.com/quick_start/pricing/",
+        "excerpt": "CONTEXT LENGTH | 1M | MAX OUTPUT | MAXIMUM: 384K |",
+        "note": "Single merged table cell shared by deepseek-flash and deepseek-v4-pro.",
+        "excerptMode": "table-flattened",
+        "stated": "1M"
+      },
+      "maxOutputTokens": {
+        "value": 384000,
+        "url": "https://api-docs.deepseek.com/quick_start/pricing/",
+        "excerpt": "CONTEXT LENGTH | 1M | MAX OUTPUT | MAXIMUM: 384K |",
+        "note": "Stated as \"384K\"; merged cell shared by both models.",
+        "excerptMode": "table-flattened",
+        "stated": "MAXIMUM: 384K"
+      },
+      "inputPricePerMTokUsd": {
+        "value": 1.32,
+        "url": "https://api-docs.deepseek.com/quick_start/pricing/",
+        "excerpt": "1M INPUT TOKENS (CACHE MISS) | OFF-PEAK | $0.15 | $0.66 | PEAK | $0.3 | $1.32 |",
+        "note": "Peak, cache-miss rate (second column = deepseek-v4-pro). Off-peak is $0.66; peak hours are 01:00-04:00 and 06:00-10:00 UTC weekdays.",
+        "excerptMode": "table-flattened"
+      },
+      "outputPricePerMTokUsd": {
+        "value": 3.96,
+        "url": "https://api-docs.deepseek.com/quick_start/pricing/",
+        "excerpt": "1M OUTPUT TOKENS | OFF-PEAK | $0.6 | $1.98 | PEAK | $1.2 | $3.96 |",
+        "note": "Peak rate; off-peak is $1.98.",
+        "excerptMode": "table-flattened"
+      },
+      "inputModalities": {
+        "value": [
+          "text"
+        ],
+        "url": "https://api-docs.deepseek.com/quick_start/pricing/",
+        "excerpt": "Vision | ✓ | Not supported |",
+        "note": "Vision is \"Not supported\" for deepseek-v4-pro (second column).",
+        "excerptMode": "table-flattened"
+      },
+      "outputModalities": null,
+      "openWeights": {
+        "value": true,
+        "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro-0813/raw/main/README.md",
+        "excerpt": "This repository and the model weights are licensed under the [MIT License](LICENSE).",
+        "excerptMode": "verbatim"
+      },
+      "license": {
+        "value": "MIT",
+        "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro-0813/raw/main/README.md",
+        "excerpt": "license: mit",
+        "excerptMode": "verbatim"
+      },
+      "knowledgeCutoff": null,
+      "releaseDate": {
+        "value": "2026-08-13",
+        "url": "https://api-docs.deepseek.com/news/news260813/",
+        "excerpt": "DeepSeek-V4-Pro GA Release 2026/08/13",
+        "note": "GA release of V4-Pro (a preview was released 2026-04-24).",
+        "excerptMode": "verbatim"
+      }
+    },
+    "benchmarks": [
+      {
+        "benchmark": "HLE (no tools)",
+        "key": "hle-no-tools",
+        "score": 42.7,
+        "unit": "%",
+        "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro-0813/raw/main/README.md",
+        "excerpt": "| HLE (wo / w tools) | 42.7 / 60.0 |",
+        "columnHeaderExcerpt": "| Benchmark | DeepSeek-V4-Pro-0813 | DeepSeek-V4-Flash-0731 |",
+        "note": "Value is the DeepSeek-V4-Pro-0813 column (first value column); max reasoning effort.",
+        "excerptMode": "verbatim"
+      },
+      {
+        "benchmark": "HLE (with tools)",
+        "key": "hle-with-tools",
+        "score": 60.0,
+        "unit": "%",
+        "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro-0813/raw/main/README.md",
+        "excerpt": "| HLE (wo / w tools) | 42.7 / 60.0 |",
+        "columnHeaderExcerpt": "| Benchmark | DeepSeek-V4-Pro-0813 | DeepSeek-V4-Flash-0731 |",
+        "note": "Value is the DeepSeek-V4-Pro-0813 column (first value column); max reasoning effort.",
+        "excerptMode": "verbatim"
+      },
+      {
+        "benchmark": "Terminal Bench 2.1",
+        "key": "terminal-bench-2.1",
+        "score": 87.9,
+        "unit": "%",
+        "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro-0813/raw/main/README.md",
+        "excerpt": "| Terminal Bench 2.1 | 87.9 |",
+        "columnHeaderExcerpt": "| Benchmark | DeepSeek-V4-Pro-0813 | DeepSeek-V4-Flash-0731 |",
+        "note": "Value is the DeepSeek-V4-Pro-0813 column (first value column); max reasoning effort.",
+        "excerptMode": "verbatim"
+      },
+      {
+        "benchmark": "NL2Repo",
+        "key": "nl2repo",
+        "score": 61.5,
+        "unit": "%",
+        "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro-0813/raw/main/README.md",
+        "excerpt": "| NL2Repo | 61.5 |",
+        "columnHeaderExcerpt": "| Benchmark | DeepSeek-V4-Pro-0813 | DeepSeek-V4-Flash-0731 |",
+        "note": "Value is the DeepSeek-V4-Pro-0813 column (first value column); max reasoning effort.",
+        "excerptMode": "verbatim"
+      },
+      {
+        "benchmark": "Cybergym",
+        "key": "cybergym",
+        "score": 83.3,
+        "unit": "%",
+        "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro-0813/raw/main/README.md",
+        "excerpt": "| Cybergym | 83.3 |",
+        "columnHeaderExcerpt": "| Benchmark | DeepSeek-V4-Pro-0813 | DeepSeek-V4-Flash-0731 |",
+        "note": "Value is the DeepSeek-V4-Pro-0813 column (first value column); max reasoning effort.",
+        "excerptMode": "verbatim"
+      },
+      {
+        "benchmark": "DeepSWE",
+        "key": "deepswe",
+        "score": 62.7,
+        "unit": "%",
+        "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro-0813/raw/main/README.md",
+        "excerpt": "| DeepSWE | 62.7 |",
+        "columnHeaderExcerpt": "| Benchmark | DeepSeek-V4-Pro-0813 | DeepSeek-V4-Flash-0731 |",
+        "note": "No version stated; not assumed to be v1.1.",
+        "excerptMode": "verbatim"
+      },
+      {
+        "benchmark": "Toolathlon-Verified",
+        "key": "toolathlon-verified",
+        "score": 74.1,
+        "unit": "%",
+        "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro-0813/raw/main/README.md",
+        "excerpt": "| Toolathlon-Verified | 74.1 |",
+        "columnHeaderExcerpt": "| Benchmark | DeepSeek-V4-Pro-0813 | DeepSeek-V4-Flash-0731 |",
+        "note": "Value is the DeepSeek-V4-Pro-0813 column (first value column); max reasoning effort.",
+        "excerptMode": "verbatim"
+      },
+      {
+        "benchmark": "Agents' Last Exam",
+        "key": "agents-last-exam",
+        "score": 25.7,
+        "unit": "%",
+        "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro-0813/raw/main/README.md",
+        "excerpt": "| Agents' Last Exam | 25.7 |",
+        "columnHeaderExcerpt": "| Benchmark | DeepSeek-V4-Pro-0813 | DeepSeek-V4-Flash-0731 |",
+        "note": "Metric (pass vs score) not stated.",
+        "excerptMode": "verbatim"
+      },
+      {
+        "benchmark": "AutomationBench (Public)",
+        "key": "automationbench-public",
+        "score": 31.8,
+        "unit": "%",
+        "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro-0813/raw/main/README.md",
+        "excerpt": "| AutomationBench (Public) | 31.8 |",
+        "columnHeaderExcerpt": "| Benchmark | DeepSeek-V4-Pro-0813 | DeepSeek-V4-Flash-0731 |",
+        "note": "Value is the DeepSeek-V4-Pro-0813 column (first value column); max reasoning effort.",
+        "excerptMode": "verbatim"
+      }
+    ],
+    "retrievedAt": "2026-10-27"
+  },
+  {
+    "provider": "Alibaba",
+    "family": "Qwen",
+    "modelsPageUrl": "https://www.alibabacloud.com/help/en/model-studio/models",
+    "modelsPageNote": "Alibaba Cloud Model Studio \"Recommended models\" page. Qwen Cloud also has a per-model page: https://www.qwencloud.com/models/qwen3.8-max",
+    "flagship": {
+      "name": "Qwen3.8-Max",
+      "apiId": "qwen3.8-max",
+      "basis": {
+        "value": "qwen3.8-max",
+        "url": "https://www.alibabacloud.com/help/en/model-studio/text-generation-model",
+        "excerpt": "For the strongest reasoning, choose qwen3.8-max.",
+        "excerptMode": "verbatim"
+      }
+    },
+    "description": "Alibaba's Qwen family is led by Qwen3.8-Max, a 2.4-trillion-parameter mixture-of-experts model served via API with image and video input, whose open checkpoint Qwen3.8-2.4T-A95B is published on Hugging Face.",
+    "fields": {
+      "contextWindow": {
+        "value": 1000000,
+        "url": "https://www.alibabacloud.com/help/en/model-studio/text-generation-model",
+        "excerpt": "qwen3.8-max | 1M | Supported | Supported | Supported | Supported |",
+        "note": "Model Studio \"Context\" column. Qwen Cloud lists Max Input 991K.",
+        "excerptMode": "table-flattened",
+        "stated": "1M"
+      },
+      "maxOutputTokens": {
+        "value": 131000,
+        "url": "https://www.qwencloud.com/models/qwen3.8-max",
+        "excerpt": "Max Output 131K",
+        "note": "Stated as \"131K\" on Qwen Cloud.",
+        "excerptMode": "verbatim",
+        "stated": "131K"
+      },
+      "inputPricePerMTokUsd": {
+        "value": 2,
+        "url": "https://www.qwencloud.com/models/qwen3.8-max",
+        "excerpt": "Input $2Per 1M tokens",
+        "excerptMode": "verbatim"
+      },
+      "outputPricePerMTokUsd": {
+        "value": 6,
+        "url": "https://www.qwencloud.com/models/qwen3.8-max",
+        "excerpt": "Output $6Per 1M tokens",
+        "excerptMode": "verbatim"
+      },
+      "inputModalities": {
+        "value": [
+          "image",
+          "text",
+          "video"
+        ],
+        "url": "https://www.qwencloud.com/models/qwen3.8-max",
+        "excerpt": "Input ImageTextVideo Output Text",
+        "excerptMode": "verbatim"
+      },
+      "outputModalities": {
+        "value": [
+          "text"
+        ],
+        "url": "https://www.qwencloud.com/models/qwen3.8-max",
+        "excerpt": "Input ImageTextVideo Output Text",
+        "excerptMode": "verbatim"
+      },
+      "openWeights": {
+        "value": true,
+        "url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/README.md",
+        "excerpt": "For the first time, Qwen3.8 brings a Qwen-Max-class model to open release.",
+        "note": "Open weights are the Qwen3.8-2.4T-A95B checkpoint (text-generation; 262,144 native context, extensible to 1,010,000). The API model qwen3.8-max adds vision input and 1M default context.",
+        "excerptMode": "verbatim"
+      },
+      "license": {
+        "value": "other (license_name: qwen3.8-max)",
+        "url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/README.md",
+        "excerpt": "license: other license_name: qwen3.8-max",
+        "excerptMode": "verbatim"
+      },
+      "knowledgeCutoff": null,
+      "releaseDate": {
+        "value": "2026-08-02",
+        "url": "https://www.alibabacloud.com/help/en/model-studio/newly-released-models",
+        "excerpt": "2026-08-02 | International | qwen3.8-max |",
+        "note": "Model Studio release notes, International deployment. A snapshot qwen3.8-max-0902 followed on 2026-09-02.",
+        "excerptMode": "table-flattened"
+      }
+    },
+    "benchmarks": [
+      {
+        "benchmark": "Terminal Bench 2.1",
+        "key": "terminal-bench-2.1",
+        "score": 86.6,
+        "unit": "%",
+        "url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/README.md",
+        "excerpt": "Terminal Bench 2.1 | 84.6 | 84.6 | 88.8 | 74.5 | 86.6 |",
+        "columnHeaderExcerpt": "| Opus 4.8 | Fable 5 | GPT 5.6 Sol (max) | Qwen3.7-Max | Qwen3.8-Max",
+        "note": "From the Qwen3.8-2.4T-A95B Hugging Face card; value is the last column, labeled \"Qwen3.8-Max\".",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "SWE-bench Pro",
+        "key": "swe-bench-pro",
+        "score": 67.7,
+        "unit": "%",
+        "url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/README.md",
+        "excerpt": "SWE-bench Pro | 69.2 | 80.0 | 64.6 | 60.6 | 67.7 |",
+        "columnHeaderExcerpt": "| Opus 4.8 | Fable 5 | GPT 5.6 Sol (max) | Qwen3.7-Max | Qwen3.8-Max",
+        "note": "From the Qwen3.8-2.4T-A95B Hugging Face card; value is the last column, labeled \"Qwen3.8-Max\".",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "DeepSWE 1.1",
+        "key": "deepswe-v1.1",
+        "score": 56.6,
+        "unit": "%",
+        "url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/README.md",
+        "excerpt": "DeepSWE 1.1 | 59.0 | 70.0 | 73.0 | 21.6 | 56.6 |",
+        "columnHeaderExcerpt": "| Opus 4.8 | Fable 5 | GPT 5.6 Sol (max) | Qwen3.7-Max | Qwen3.8-Max",
+        "note": "From the Qwen3.8-2.4T-A95B Hugging Face card; value is the last column, labeled \"Qwen3.8-Max\".",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "NL2Repo-Bench",
+        "key": "nl2repo",
+        "score": 55.9,
+        "unit": "%",
+        "url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/README.md",
+        "excerpt": "NL2Repo-Bench | 69.4 | -- | -- | 47.2 | 55.9 |",
+        "columnHeaderExcerpt": "| Opus 4.8 | Fable 5 | GPT 5.6 Sol (max) | Qwen3.7-Max | Qwen3.8-Max",
+        "note": "From the Qwen3.8-2.4T-A95B Hugging Face card; value is the last column, labeled \"Qwen3.8-Max\".",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "FrontierSWE",
+        "key": "frontierswe",
+        "score": 73.5,
+        "unit": "%",
+        "url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/README.md",
+        "excerpt": "FrontierSWE | 70.0 | 88.8 | -- | 40.7 | 73.5 |",
+        "columnHeaderExcerpt": "| Opus 4.8 | Fable 5 | GPT 5.6 Sol (max) | Qwen3.7-Max | Qwen3.8-Max",
+        "note": "Unversioned; Gemini reports \"FrontierSWE v2\".",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "PaperBench",
+        "key": "paperbench",
+        "score": 93.0,
+        "unit": "%",
+        "url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/README.md",
+        "excerpt": "PaperBench | 80.3 | 88.8 | 90.5 | 64.8 | 93.0 |",
+        "columnHeaderExcerpt": "| Opus 4.8 | Fable 5 | GPT 5.6 Sol (max) | Qwen3.7-Max | Qwen3.8-Max",
+        "note": "From the Qwen3.8-2.4T-A95B Hugging Face card; value is the last column, labeled \"Qwen3.8-Max\".",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "Agents' Last Exam (Pass)",
+        "key": "agents-last-exam-pass",
+        "score": 27.0,
+        "unit": "%",
+        "url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/README.md",
+        "excerpt": "Agents' Last Exam (Pass / Score) | 27.0 / 45.1 | -- / -- | 30.6 / 53.6 | 11.8 / 31.1 | 27.0 / 52.4 |",
+        "columnHeaderExcerpt": "| Opus 4.8 | Fable 5 | GPT 5.6 Sol (max) | Qwen3.7-Max | Qwen3.8-Max",
+        "note": "From the Qwen3.8-2.4T-A95B Hugging Face card; value is the last column, labeled \"Qwen3.8-Max\". Score metric: 52.4.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "Automation-Bench (Pass@1)",
+        "key": "automation-bench-pass1",
+        "score": 27.3,
+        "unit": "%",
+        "url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/README.md",
+        "excerpt": "Automation-Bench (Pass@1) | 27.2 | 29.1 | 29.7 | 14.2 | 27.3 |",
+        "columnHeaderExcerpt": "| Opus 4.8 | Fable 5 | GPT 5.6 Sol (max) | Qwen3.7-Max | Qwen3.8-Max",
+        "note": "From the Qwen3.8-2.4T-A95B Hugging Face card; value is the last column, labeled \"Qwen3.8-Max\".",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "Toolathlon Verified (Pass@1)",
+        "key": "toolathlon-verified",
+        "score": 72.5,
+        "unit": "%",
+        "url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/README.md",
+        "excerpt": "Toolathlon Verified (Pass@1) | 76.2 | 77.9 | 74.9 | 49.7 | 72.5 |",
+        "columnHeaderExcerpt": "| Opus 4.8 | Fable 5 | GPT 5.6 Sol (max) | Qwen3.7-Max | Qwen3.8-Max",
+        "note": "From the Qwen3.8-2.4T-A95B Hugging Face card; value is the last column, labeled \"Qwen3.8-Max\".",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "HLE w/ tools",
+        "key": "hle-with-tools",
+        "score": 56.2,
+        "unit": "%",
+        "url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/README.md",
+        "excerpt": "HLE w/ tools | 57.9 | 64.5 | 58.0 | 53.5 | 56.2 |",
+        "columnHeaderExcerpt": "| Opus 4.8 | Fable 5 | GPT 5.6 Sol (max) | Qwen3.7-Max | Qwen3.8-Max",
+        "note": "From the Qwen3.8-2.4T-A95B Hugging Face card; value is the last column, labeled \"Qwen3.8-Max\".",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "GPQA Diamond",
+        "key": "gpqa-diamond",
+        "score": 92.6,
+        "unit": "%",
+        "url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/README.md",
+        "excerpt": "GPQA Diamond | 92.0 | 92.6 | 94.1 | 92.4 | 92.6 |",
+        "columnHeaderExcerpt": "| Opus 4.8 | Fable 5 | GPT 5.6 Sol (max) | Qwen3.7-Max | Qwen3.8-Max",
+        "note": "From the Qwen3.8-2.4T-A95B Hugging Face card; value is the last column, labeled \"Qwen3.8-Max\".",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "HLE",
+        "key": "hle-no-tools",
+        "score": 43.6,
+        "unit": "%",
+        "url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/README.md",
+        "excerpt": "HLE | 45.7 | 53.3 | 47.2 | 41.4 | 43.6 |",
+        "columnHeaderExcerpt": "| Opus 4.8 | Fable 5 | GPT 5.6 Sol (max) | Qwen3.7-Max | Qwen3.8-Max",
+        "note": "From the Qwen3.8-2.4T-A95B Hugging Face card; value is the last column, labeled \"Qwen3.8-Max\". Listed as \"HLE\", separate from \"HLE w/ tools\"; treated as no-tools.",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "IFBench",
+        "key": "ifbench",
+        "score": 82.8,
+        "unit": "%",
+        "url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/README.md",
+        "excerpt": "IFBench | 62.2 | 63.5 | 72.7 | 79.1 | 82.8 |",
+        "columnHeaderExcerpt": "| Opus 4.8 | Fable 5 | GPT 5.6 Sol (max) | Qwen3.7-Max | Qwen3.8-Max",
+        "note": "From the Qwen3.8-2.4T-A95B Hugging Face card; value is the last column, labeled \"Qwen3.8-Max\".",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "HealthBench",
+        "key": "healthbench",
+        "score": 60.2,
+        "unit": "%",
+        "url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/README.md",
+        "excerpt": "HealthBench | 52.4 | -- | 55.3 | 54.5 | 60.2 |",
+        "columnHeaderExcerpt": "| Opus 4.8 | Fable 5 | GPT 5.6 Sol (max) | Qwen3.7-Max | Qwen3.8-Max",
+        "note": "From the Qwen3.8-2.4T-A95B Hugging Face card; value is the last column, labeled \"Qwen3.8-Max\".",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "MRCR v2 256K (8-needle)",
+        "key": "mrcr-v2-256k-8needle",
+        "score": 92.9,
+        "unit": "%",
+        "url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/README.md",
+        "excerpt": "MRCR v2 256K (8-needle) | 83.2 | -- | 93.8 | 86.7 | 92.9 |",
+        "columnHeaderExcerpt": "| Opus 4.8 | Fable 5 | GPT 5.6 Sol (max) | Qwen3.7-Max | Qwen3.8-Max",
+        "note": "From the Qwen3.8-2.4T-A95B Hugging Face card; value is the last column, labeled \"Qwen3.8-Max\".",
+        "excerptMode": "table-flattened"
+      },
+      {
+        "benchmark": "LongBench v2",
+        "key": "longbench-v2",
+        "score": 66.3,
+        "unit": "%",
+        "url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/README.md",
+        "excerpt": "LongBench v2 | 69.1 | -- | 67.1 | 65.3 | 66.3 |",
+        "columnHeaderExcerpt": "| Opus 4.8 | Fable 5 | GPT 5.6 Sol (max) | Qwen3.7-Max | Qwen3.8-Max",
+        "note": "From the Qwen3.8-2.4T-A95B Hugging Face card; value is the last column, labeled \"Qwen3.8-Max\".",
+        "excerptMode": "table-flattened"
+      }
+    ],
+    "retrievedAt": "2026-10-27"
+  },
+  {
+    "provider": "NVIDIA",
+    "family": "Nemotron",
+    "modelsPageUrl": "https://developer.nvidia.com/topics/ai/nemotron",
+    "modelsPageNote": "developer.nvidia.com/nemotron redirects here.",
+    "flagship": {
+      "name": "NVIDIA Nemotron 3 Ultra 550B A55B",
+      "apiId": null,
+      "huggingFaceRepo": "nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16",
+      "basis": {
+        "value": "Nemotron 3 Ultra",
+        "url": "https://developer.nvidia.com/topics/ai/nemotron",
+        "excerpt": "Ultra is designed for applications demanding the highest reasoning accuracy for complex agentic tasks.",
+        "note": "apiId is null: no hosted-API model id was captured; the Hugging Face repo id is given instead. Newer Nemotron 3.5 Super VL / Bolt models exist (Oct 2026) but NVIDIA positions Ultra for highest reasoning accuracy.",
+        "excerptMode": "verbatim"
+      }
+    },
+    "description": "NVIDIA's Nemotron family consists of open models with open weights, training data and recipes; its top tier, Nemotron 3 Ultra, is a 550B-parameter (55B active) hybrid Mamba-Transformer MoE reasoning model with up to 1M-token context.",
+    "fields": {
+      "contextWindow": {
+        "value": 1000000,
+        "url": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16/raw/main/README.md",
+        "excerpt": "| **Context Length** | Up to 1M tokens |",
+        "note": "Serving examples default to 256k; up to 1M configurable.",
+        "excerptMode": "verbatim",
+        "stated": "Up to 1M tokens"
+      },
+      "maxOutputTokens": null,
+      "inputPricePerMTokUsd": null,
+      "outputPricePerMTokUsd": null,
+      "inputModalities": {
+        "value": [
+          "text"
+        ],
+        "url": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16/raw/main/README.md",
+        "excerpt": "- **Input Type(s):** Text",
+        "excerptMode": "verbatim"
+      },
+      "outputModalities": {
+        "value": [
+          "text"
+        ],
+        "url": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16/raw/main/README.md",
+        "excerpt": "- **Output Type(s):** Text",
+        "excerptMode": "verbatim"
+      },
+      "openWeights": {
+        "value": true,
+        "url": "https://developer.nvidia.com/topics/ai/nemotron",
+        "excerpt": "the training data used for these models, as well as their weights, are open and available on Hugging Face",
+        "excerptMode": "verbatim"
+      },
+      "license": {
+        "value": "OpenMDW-1.1",
+        "url": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16/raw/main/README.md",
+        "excerpt": "| **License** | [OpenMDW License Agreement, version 1.1]",
+        "excerptMode": "verbatim"
+      },
+      "knowledgeCutoff": {
+        "value": {
+          "preTraining": "2025-09",
+          "postTraining": "2026-05"
+        },
+        "url": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16/raw/main/README.md",
+        "excerpt": "* The post-training data has a cutoff date of May 2026. * The pre-training data has a cutoff date of September 2025.",
+        "note": "Two data cutoffs stated (pre-training and post-training).",
+        "excerptMode": "verbatim"
+      },
+      "releaseDate": {
+        "value": "2026-06-04",
+        "url": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16/raw/main/README.md",
+        "excerpt": "| **Release Date** | June 4, 2026 |",
+        "excerptMode": "verbatim"
+      }
+    },
+    "benchmarks": [
+      {
+        "benchmark": "Terminal Bench 2.1",
+        "key": "terminal-bench-2.1",
+        "score": 56.4,
+        "unit": "%",
+        "url": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16/raw/main/README.md",
+        "excerpt": "| Terminal Bench 2.1 | 56.4 |",
+        "columnHeaderExcerpt": "| Benchmark | N-3-Ultra <br> 550B-A55B |",
+        "note": "Value is the N-3-Ultra 550B-A55B column (first value column).",
+        "excerptMode": "verbatim"
+      },
+      {
+        "benchmark": "GDPVal",
+        "key": "gdpval",
+        "score": 46.7,
+        "unit": "%",
+        "url": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16/raw/main/README.md",
+        "excerpt": "| GDPVal | 46.7 |",
+        "columnHeaderExcerpt": "| Benchmark | N-3-Ultra <br> 550B-A55B |",
+        "note": "Value is the N-3-Ultra 550B-A55B column (first value column).",
+        "excerptMode": "verbatim"
+      },
+      {
+        "benchmark": "SWE-Bench Verified",
+        "key": "swe-bench-verified",
+        "score": 70.7,
+        "unit": "%",
+        "url": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16/raw/main/README.md",
+        "excerpt": "| SWE-Bench Verified | 70.7 |",
+        "columnHeaderExcerpt": "| Benchmark | N-3-Ultra <br> 550B-A55B |",
+        "note": "Value is the N-3-Ultra 550B-A55B column (first value column).",
+        "excerptMode": "verbatim"
+      },
+      {
+        "benchmark": "SWE-Bench Multilingual",
+        "key": "swe-bench-multilingual",
+        "score": 67.7,
+        "unit": "%",
+        "url": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16/raw/main/README.md",
+        "excerpt": "| SWE-Bench Multilingual | 67.7 |",
+        "columnHeaderExcerpt": "| Benchmark | N-3-Ultra <br> 550B-A55B |",
+        "note": "Value is the N-3-Ultra 550B-A55B column (first value column).",
+        "excerptMode": "verbatim"
+      },
+      {
+        "benchmark": "TauBench V3 (average)",
+        "key": "taubench-v3-avg",
+        "score": 70.9,
+        "unit": "%",
+        "url": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16/raw/main/README.md",
+        "excerpt": "| &nbsp;&nbsp;Average | 70.9 |",
+        "columnHeaderExcerpt": "| Benchmark | N-3-Ultra <br> 550B-A55B |",
+        "note": "Value is the N-3-Ultra 550B-A55B column (first value column).",
+        "excerptMode": "verbatim"
+      },
+      {
+        "benchmark": "BrowseComp",
+        "key": "browsecomp",
+        "score": 44.4,
+        "unit": "%",
+        "url": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16/raw/main/README.md",
+        "excerpt": "| BrowseComp | 44.4 |",
+        "columnHeaderExcerpt": "| Benchmark | N-3-Ultra <br> 550B-A55B |",
+        "note": "Value is the N-3-Ultra 550B-A55B column (first value column).",
+        "excerptMode": "verbatim"
+      },
+      {
+        "benchmark": "LiveCodeBench (v6)",
+        "key": "livecodebench-v6",
+        "score": 89.0,
+        "unit": "%",
+        "url": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16/raw/main/README.md",
+        "excerpt": "| LiveCodeBench (v6) | 89.0 |",
+        "columnHeaderExcerpt": "| Benchmark | N-3-Ultra <br> 550B-A55B |",
+        "note": "Value is the N-3-Ultra 550B-A55B column (first value column).",
+        "excerptMode": "verbatim"
+      },
+      {
+        "benchmark": "IMOAnswerBench (no tools)",
+        "key": "imoanswerbench-no-tools",
+        "score": 88.6,
+        "unit": "%",
+        "url": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16/raw/main/README.md",
+        "excerpt": "| IMOAnswerBench (no tools) | 88.6 |",
+        "columnHeaderExcerpt": "| Benchmark | N-3-Ultra <br> 550B-A55B |",
+        "note": "Value is the N-3-Ultra 550B-A55B column (first value column).",
+        "excerptMode": "verbatim"
+      },
+      {
+        "benchmark": "GPQA (no tools)",
+        "key": "gpqa-no-tools",
+        "score": 87.0,
+        "unit": "%",
+        "url": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16/raw/main/README.md",
+        "excerpt": "| GPQA (no tools) | 87.0 |",
+        "columnHeaderExcerpt": "| Benchmark | N-3-Ultra <br> 550B-A55B |",
+        "note": "GPQA variant (Diamond not stated).",
+        "excerptMode": "verbatim"
+      },
+      {
+        "benchmark": "SciCode (subtask)",
+        "key": "scicode-subtask",
+        "score": 44.6,
+        "unit": "%",
+        "url": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16/raw/main/README.md",
+        "excerpt": "| SciCode (subtask) | 44.6 |",
+        "columnHeaderExcerpt": "| Benchmark | N-3-Ultra <br> 550B-A55B |",
+        "note": "Value is the N-3-Ultra 550B-A55B column (first value column).",
+        "excerptMode": "verbatim"
+      },
+      {
+        "benchmark": "HLE (no tools)",
+        "key": "hle-no-tools",
+        "score": 26.7,
+        "unit": "%",
+        "url": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16/raw/main/README.md",
+        "excerpt": "| HLE (no tools) | 26.7 |",
+        "columnHeaderExcerpt": "| Benchmark | N-3-Ultra <br> 550B-A55B |",
+        "note": "Value is the N-3-Ultra 550B-A55B column (first value column).",
+        "excerptMode": "verbatim"
+      },
+      {
+        "benchmark": "HLE (with tools)",
+        "key": "hle-with-tools",
+        "score": 37.4,
+        "unit": "%",
+        "url": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16/raw/main/README.md",
+        "excerpt": "| HLE (with tools) | 37.4 |",
+        "columnHeaderExcerpt": "| Benchmark | N-3-Ultra <br> 550B-A55B |",
+        "note": "Value is the N-3-Ultra 550B-A55B column (first value column).",
+        "excerptMode": "verbatim"
+      },
+      {
+        "benchmark": "MMLU-Pro",
+        "key": "mmlu-pro",
+        "score": 86.8,
+        "unit": "%",
+        "url": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16/raw/main/README.md",
+        "excerpt": "| MMLU-Pro | 86.8 |",
+        "columnHeaderExcerpt": "| Benchmark | N-3-Ultra <br> 550B-A55B |",
+        "note": "Value is the N-3-Ultra 550B-A55B column (first value column).",
+        "excerptMode": "verbatim"
+      },
+      {
+        "benchmark": "IFBench (prompt loose)",
+        "key": "ifbench-prompt-loose",
+        "score": 81.7,
+        "unit": "%",
+        "url": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16/raw/main/README.md",
+        "excerpt": "| IFBench (prompt loose) | 81.7 |",
+        "columnHeaderExcerpt": "| Benchmark | N-3-Ultra <br> 550B-A55B |",
+        "note": "Value is the N-3-Ultra 550B-A55B column (first value column).",
+        "excerptMode": "verbatim"
+      },
+      {
+        "benchmark": "AA-LCR",
+        "key": "aa-lcr",
+        "score": 65.4,
+        "unit": "%",
+        "url": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16/raw/main/README.md",
+        "excerpt": "| AA-LCR | 65.4 |",
+        "columnHeaderExcerpt": "| Benchmark | N-3-Ultra <br> 550B-A55B |",
+        "note": "Value is the N-3-Ultra 550B-A55B column (first value column).",
+        "excerptMode": "verbatim"
+      },
+      {
+        "benchmark": "RULER (1M)",
+        "key": "ruler-1m",
+        "score": 94.7,
+        "unit": "%",
+        "url": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16/raw/main/README.md",
+        "excerpt": "| RULER (1M) | 94.7 |",
+        "columnHeaderExcerpt": "| Benchmark | N-3-Ultra <br> 550B-A55B |",
+        "note": "Value is the N-3-Ultra 550B-A55B column (first value column).",
+        "excerptMode": "verbatim"
+      },
+      {
+        "benchmark": "Longbench v2 (≤ 1M)",
+        "key": "longbench-v2-1m",
+        "score": 61.9,
+        "unit": "%",
+        "url": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16/raw/main/README.md",
+        "excerpt": "| Longbench v2 (≤ 1M) | 61.9 |",
+        "columnHeaderExcerpt": "| Benchmark | N-3-Ultra <br> 550B-A55B |",
+        "note": "Value is the N-3-Ultra 550B-A55B column (first value column).",
+        "excerptMode": "verbatim"
+      },
+      {
+        "benchmark": "MMLU-ProX (avg)",
+        "key": "mmlu-prox-avg",
+        "score": 83.0,
+        "unit": "%",
+        "url": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16/raw/main/README.md",
+        "excerpt": "| MMLU-ProX (avg en/de/fr/es/it/ja/zh/hi/pt/ko) | 83.0 |",
+        "columnHeaderExcerpt": "| Benchmark | N-3-Ultra <br> 550B-A55B |",
+        "note": "Value is the N-3-Ultra 550B-A55B column (first value column).",
+        "excerptMode": "verbatim"
+      }
+    ],
+    "retrievedAt": "2026-10-27"
+  }
+]
