@@ -1,0 +1,83 @@
+# Flowchart: who may call what, how a sign-in becomes ADMIN, and where bookmarks are kept.
+# The admin host (admin.helper2.ai via WireGuard and Traefik) is drawn as planned: it is not in deploy/ yet.
+# Source of truth: backend/src/main/java/ai/helper2/identity/SecurityConfiguration.java, CurrentUser.java, MeController.java,
+#   backend/src/main/java/ai/helper2/identity/internal/Users.java, Bookmarks.java,
+#   frontend/src/context/BookmarksContext.tsx, frontend/src/pages/AdminPage.tsx, deploy/k8s/terraform/variables.tf.
+# Render: cd docs/diagrams && d2 fmt flow-0023-identity-and-admin.d2 && d2 flow-0023-identity-and-admin.d2 flow-0023-identity-and-admin.svg
+
+...@style
+
+direction: down
+
+req: "Request to /api/**" {class: end}
+
+access: SecurityConfiguration rules {
+  class: group
+  direction: down
+  open: "Public GET (search, recent, sources,\nresources, model families, events, me)\nor POST reports / guide?" {class: decision}
+  anon: "Allowed, no account" {class: end}
+  admin: "/api/v1/admin/** or /actuator/**\n(not health, info)?" {class: decision}
+  isadmin: "Session has ROLE_ADMIN?" {class: decision}
+  bm: "/api/v1/me/bookmarks?" {class: decision}
+  signed: "Signed in?" {class: decision}
+  okadmin: "Allowed (admin)" {class: end}
+  ok: "Allowed (own bookmarks)" {class: end}
+  e401: "401 (no redirect)" {class: fail}
+  deny: "Any other /api/**: denied" {class: fail}
+  e403: "403" {class: fail}
+  open -> anon: yes {class: hot}
+  open -> admin: no
+  admin -> isadmin: yes
+  admin -> bm: no
+  isadmin -> okadmin: yes
+  isadmin -> e403: "signed in,\nnot admin"
+  isadmin -> e401: "no session"
+  bm -> signed: yes
+  bm -> deny: no
+  signed -> ok: yes
+  signed -> e401: no
+}
+
+signin: Sign-in (only from /admin) {
+  class: group
+  direction: down
+  profile: "Profile oauth-github active?\n(not on staging or prod today)" {class: decision}
+  nosign: "No sign-in offered" {class: end}
+  github: "GitHub OAuth2, scope read:user" {class: ext}
+  roles: "\"github:<numeric id>\"\nin H2_ADMINS?" {class: decision}
+  user: "ROLE_USER" {class: app}
+  adm: "ROLE_USER + ROLE_ADMIN" {class: app}
+  ensure: "AuthenticationSuccessEvent →\nUsers.ensure: upsert app_user\n(provider, subject, name; no e-mail)" {class: data}
+  back: "Redirect to /admin\n(failure: /admin?signin=failed)" {class: end}
+  profile -> nosign: no
+  profile -> github: yes
+  github -> roles
+  roles -> adm: yes
+  roles -> user: no
+  adm -> ensure
+  user -> ensure
+  ensure -> back
+}
+
+bookmarks: Bookmarks {
+  class: group
+  direction: down
+  who: "Signed in?" {class: decision}
+  local: "Browser storage\nh2.bookmarks.v1" {class: app}
+  merge: "Once after sign-in: POST local list,\nthen clear local" {class: app}
+  cap: "Account would hold\nmore than 500?" {class: decision}
+  saved: "Saved (idempotent,\nfirst savedAt kept)" {class: end}
+  refused: "400, whole request\nrolled back" {class: fail}
+  who -> local: no
+  who -> merge: yes
+  merge -> cap
+  cap -> refused: yes
+  cap -> saved: no
+}
+
+planned: "Planned, not in deploy/:\nadmin.helper2.ai only via WireGuard\nthrough Traefik (no app-level filter)" {class: config}
+
+req -> access.open: {class: hot}
+access.e401 -> signin.profile: "admin page\nshows SignIn"
+signin.back -> bookmarks.who
+planned -> access.admin: "would front" {class: config}
