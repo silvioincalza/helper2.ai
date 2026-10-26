@@ -1,0 +1,109 @@
+# The JVM image (SPA embedded). Anonymous-only demo: no oauth-github profile, so no sign-in.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: helper2
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" . | nindent 4 }}
+spec:
+  replicas: {{ required "app.replicas" .Values.app.replicas }}
+  # One new pod at a time, and an old one goes only once the new one is ready: no capacity lost in a deploy.
+  strategy: { type: RollingUpdate, rollingUpdate: { maxUnavailable: 0, maxSurge: 1 } }
+  selector: { matchLabels: { app: helper2 } }
+  template:
+    metadata:
+      labels: { app: helper2 }
+      annotations:
+        # A new app.env (e.g. a rotated token) restarts the app; Postgres reads its password only at init.
+        checksum/env: {{ include "helper2.env" . | sha256sum }}
+        # For a Prometheus-style scraper (allow its namespace with networkPolicy.metricsNamespace).
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8081"
+        prometheus.io/path: /actuator/prometheus
+    spec:
+      # No Docker-link style variables (REDIS_PORT=tcp://…) from the Services: the app reads only
+      # its own H2_ variables.
+      enableServiceLinks: false
+      # Replicas on different nodes when the cluster can, so one node going down does not take them all.
+      topologySpreadConstraints:
+        - { maxSkew: 1, topologyKey: kubernetes.io/hostname, whenUnsatisfiable: ScheduleAnyway, labelSelector: { matchLabels: { app: helper2 } } }
+      securityContext: { runAsNonRoot: true, runAsUser: 10001, seccompProfile: { type: RuntimeDefault } }
+      containers:
+        - name: app
+          image: {{ include "helper2.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          envFrom: [{ secretRef: { name: helper2-env } }]
+          env:
+            - { name: H2_PROFILES, value: {{ .Values.app.springProfiles | quote }} }
+            - { name: H2_DATABASE_URL, value: "jdbc:postgresql://postgres:5432/helper2" }
+            - { name: H2_DATABASE_USER, value: helper2 }
+            - { name: H2_REDIS_HOST, value: redis }
+            {{- if .Values.redis.auth.enabled }}
+            # spring.data.redis.password
+            - name: H2_REDIS_PASSWORD
+              valueFrom: { {{ include "helper2.redisPasswordFrom" . }} }
+            {{- end }}
+            - { name: H2_SCOUT_ENABLED, value: {{ .Values.app.scoutEnabled | toString | quote }} }
+            - { name: H2_SCOUT_INITIAL_DELAY, value: {{ required "app.scoutInitialDelay" .Values.app.scoutInitialDelay | quote }} }
+            - { name: H2_SCOUT_EVERY, value: {{ required "app.scoutEvery" .Values.app.scoutEvery | quote }} }
+            - { name: H2_SCOUT_MAX_ENRICHMENTS, value: {{ .Values.app.scoutMaxEnrichments | toString | quote }} }
+            - { name: H2_COOKIE_SECURE, value: "true" }
+            # Only the edge (cloudflared or the Ingress controller) reaches this pod (NetworkPolicy); the
+            # edge sets X-Forwarded-For, and Tomcat takes the right-most address that is not an internal proxy.
+            - { name: H2_FORWARD_HEADERS_STRATEGY, value: native }
+            - { name: H2_LOG_FORMAT, value: logstash }
+            # Tag on every metric and span; spans go by OTLP/HTTP to app.tracing.endpoint when export is on.
+            - { name: H2_ENVIRONMENT, value: {{ required "app.environment" .Values.app.environment | quote }} }
+            - { name: H2_TRACING_EXPORT, value: {{ .Values.app.tracing.export | toString | quote }} }
+            - { name: H2_TRACING_SAMPLING, value: {{ .Values.app.tracing.sampling | toString | quote }} }
+            - { name: H2_OTLP_TRACES_ENDPOINT, value: {{ .Values.app.tracing.endpoint | quote }} }
+            # Actuator on its own port: the Service (and so the edge) only routes 8080, which keeps
+            # the metrics that are open on 8081 off the public site.
+            - { name: H2_MANAGEMENT_PORT, value: "8081" }
+            - { name: H2_METRICS_PUBLIC, value: "true" }
+          ports: [{ containerPort: 8080, name: http }, { containerPort: 8081, name: management }]
+          # Startup runs Flyway and loads the Lingua language models: up to periodSeconds x
+          # failureThreshold (app.startupSeconds) before the kubelet restarts the container. Liveness
+          # and readiness only start once this has passed, so neither needs an initial delay.
+          startupProbe:
+            httpGet: { path: /actuator/health/liveness, port: management }
+            periodSeconds: 5
+            failureThreshold: {{ div (required "app.startupSeconds" .Values.app.startupSeconds) 5 }}
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: management }
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /actuator/health/liveness, port: management }
+            periodSeconds: 10
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.app.resources | nindent 12 }}
+          securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }
+          volumeMounts: [{ name: tmp, mountPath: /tmp }]
+      volumes: [{ name: tmp, emptyDir: {} }]
+{{- if gt (int .Values.app.replicas) 1 }}
+---
+# Node drains and other voluntary evictions keep all replicas but one serving.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: helper2
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ sub (int .Values.app.replicas) 1 }}
+  selector: { matchLabels: { app: helper2 } }
+{{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: helper2
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" . | nindent 4 }}
+spec:
+  selector: { app: helper2 }
+  ports: [{ port: 80, targetPort: http }]

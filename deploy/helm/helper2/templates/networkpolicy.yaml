@@ -1,0 +1,118 @@
+# Inside the namespace: app <- cloudflared (when enabled); postgres/redis <- app only; postgres <- backup.
+# From outside: app <- the Ingress controller's namespace (when ingress is enabled); the app's
+# management port <- the metrics scraper's namespace (networkPolicy.metricsNamespace, when set).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ingress-rules
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" . | nindent 4 }}
+spec:
+  podSelector: {}
+  policyTypes: [Ingress]
+  ingress:
+    {{- if .Values.cloudflared.enabled }}
+    - from: [{ podSelector: { matchLabels: { app: cloudflared } } }]
+      ports: [{ port: 8080 }]
+    {{- end }}
+    {{- if .Values.ingress.enabled }}
+    - from: [{ namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: {{ required "ingress.controllerNamespace is required" .Values.ingress.controllerNamespace }} } } }]
+      ports: [{ port: 8080 }]
+    {{- end }}
+    {{- with .Values.networkPolicy.metricsNamespace }}
+    - from: [{ namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: {{ . }} } } }]
+      ports: [{ port: 8081 }]
+    {{- end }}
+    - from: [{ podSelector: { matchLabels: { app: helper2 } } }]
+      ports: [{ port: 5432 }, { port: 6379 }]
+    - from: [{ podSelector: { matchLabels: { app: pg-backup } } }]
+      ports: [{ port: 5432 }]
+{{- with .Values.networkPolicy.egress }}
+{{- if .enabled }}
+{{- $dns := dict "to" (list (dict "namespaceSelector" (dict "matchLabels" (dict "kubernetes.io/metadata.name" .dns.namespace)) "podSelector" (dict "matchLabels" .dns.podLabels))) "ports" (list (dict "port" 53 "protocol" "UDP") (dict "port" 53 "protocol" "TCP")) }}
+{{- $internet := dict "ipBlock" (dict "cidr" .external.cidr "except" .external.except) }}
+---
+# Egress: nothing for any pod here (postgres and redis stay at that), then allowed per workload below.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: egress-default-deny
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" $ | nindent 4 }}
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: egress-app
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" $ | nindent 4 }}
+spec:
+  podSelector: { matchLabels: { app: helper2 } }
+  policyTypes: [Egress]
+  egress:
+    - {{ toJson $dns }}
+    - to: [{ podSelector: { matchLabels: { app: postgres } } }]
+      ports: [{ port: 5432, protocol: TCP }]
+    - to: [{ podSelector: { matchLabels: { app: redis } } }]
+      ports: [{ port: 6379, protocol: TCP }]
+    {{- if .otlp.namespace }}
+    - to: [{ namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: {{ .otlp.namespace }} } } }]
+      ports: [{ port: {{ .otlp.port }}, protocol: TCP }]
+    {{- end }}
+    - to: [{{ toJson $internet }}]
+      ports:
+        {{- range .external.appPorts }}
+        - { port: {{ . }}, protocol: TCP }
+        {{- end }}
+{{- if $.Values.cloudflared.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: egress-cloudflared
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" $ | nindent 4 }}
+spec:
+  podSelector: { matchLabels: { app: cloudflared } }
+  policyTypes: [Egress]
+  egress:
+    - {{ toJson $dns }}
+    - to: [{ podSelector: { matchLabels: { app: helper2 } } }]
+      ports: [{ port: 8080, protocol: TCP }]
+    - to: [{{ toJson $internet }}]
+      ports:
+        {{- range .external.cloudflaredPorts }}
+        - { port: {{ . }}, protocol: TCP }
+        {{- end }}
+{{- end }}
+{{- if $.Values.backup.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: egress-backup
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" $ | nindent 4 }}
+spec:
+  podSelector: { matchLabels: { app: pg-backup } }
+  policyTypes: [Egress]
+  egress:
+    - {{ toJson $dns }}
+    - to: [{ podSelector: { matchLabels: { app: postgres } } }]
+      ports: [{ port: 5432, protocol: TCP }]
+    {{- if $.Values.backup.offsite.enabled }}
+    # The off-site bucket (backup.offsite.endpoint), HTTPS.
+    - to: [{{ toJson $internet }}]
+      ports: [{ port: 443, protocol: TCP }]
+    {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

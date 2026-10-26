@@ -1,0 +1,83 @@
+# Flowchart: the checks a request meets at the HTTP edge of the app, in order.
+# Shows the two ports, the client address, CSRF, the rate limiter keyed by handler (IPv6 by /64) and
+# counted in Redis for all replicas (in-memory fallback while Redis is down),
+# and the SPA fallback with its cache headers.
+# Source of truth: deploy/helm/helper2/templates/app.yaml, networkpolicy.yaml,
+#   backend/src/main/resources/application.yaml (server.*, management.*),
+#   backend/src/main/java/ai/helper2/identity/SecurityConfiguration.java,
+#   backend/src/main/java/ai/helper2/platform/RateLimitInterceptor.java, RateLimiter.java, ClientKey.java,
+#   RedisRateLimiter.java,
+#   InMemoryRateLimiter.java, CircuitBreaker.java, SinglePageApp.java.
+# Render: cd docs/diagrams && d2 fmt flow-0024-http-edge-protection.d2 && d2 flow-0024-http-edge-protection.d2 flow-0024-http-edge-protection.svg
+
+...@style
+
+direction: down
+
+in: "Request" {class: end}
+port: "Port?" {class: decision}
+mgmt: "8081 management: only from the\nobservability namespace (NetworkPolicy);\nnot in the Service or the tunnel" {class: config}
+metrics: "/actuator/prometheus, health" {class: end}
+
+app: "8080 app (from cloudflared only)" {class: app}
+addr: "remoteAddr: X-Forwarded-For used only when\nH2_FORWARD_HEADERS_STRATEGY=native\n(default none)" {class: app}
+headers: "Response headers: CSP 'self' only,\nReferrer-Policy strict-origin-when-cross-origin" {class: app}
+
+csrf: "Not GET and no matching\nX-XSRF-TOKEN header?" {class: decision}
+e403: "403" {class: fail}
+auth: "Access rules (ADR 0023)" {class: app}
+api: "Path under /api/**?" {class: decision}
+
+limit: RateLimitInterceptor {
+  class: group
+  direction: down
+  limited: "Handler is search, reportResource,\naskGuide(Stream) or listRecent?\n(async re-dispatch not charged)" {class: decision}
+  key: "ClientKey: IPv4, or IPv6 /64\n(zone id dropped,\nIPv4-mapped → IPv4)" {class: app}
+  breaker: "Redis circuit closed?\n(opens 30 s after an error)" {class: decision}
+  redis: "Redis Lua: INCR h2:v1:rate:<limiter>:<key>,\nPEXPIRE window on count 1; PTTL" {class: data}
+  memory: "InMemoryRateLimiter (this replica,\n≤ 50,000 clients kept);\nhelper2.rate-limit.fallback + 1" {class: app}
+  window: "Count in fixed window\n≤ limit?" {class: decision}
+  e429: "429 problem+json,\nRetry-After = window time left" {class: fail}
+  pass: "Controller" {class: end}
+  limited -> pass: no
+  limited -> key: yes
+  key -> breaker
+  breaker -> redis: yes {class: hot}
+  breaker -> memory: no
+  redis -> window: ok {class: hot}
+  redis -> memory: "error: open circuit"
+  memory -> window
+  window -> pass: yes {class: hot}
+  window -> e429: no
+}
+
+spa: SinglePageApp {
+  class: group
+  direction: down
+  assets: "/assets/** file?" {class: decision}
+  immutable: "max-age 1 year,\npublic, immutable" {class: end}
+  file: "Other existing file?" {class: decision}
+  nocache: "file, no-cache" {class: end}
+  route: "No extension and not api/, oauth2/,\nlogin/, actuator/, /logout?" {class: decision}
+  index: "index.html, no-cache" {class: end}
+  e404: "404" {class: fail}
+  assets -> immutable: yes
+  assets -> file: no
+  file -> nocache: yes
+  file -> route: no
+  route -> index: yes {class: hot}
+  route -> e404: no
+}
+
+in -> port
+port -> mgmt: "8081"
+mgmt -> metrics
+port -> app: "8080" {class: hot}
+app -> addr: {class: hot}
+addr -> headers
+headers -> csrf
+csrf -> e403: yes
+csrf -> auth: no {class: hot}
+auth -> api
+api -> limit.limited: yes {class: hot}
+api -> spa.assets: no
