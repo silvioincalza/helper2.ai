@@ -1,0 +1,48 @@
+# Flowchart: where an event's dates come from and which events GET /api/v1/events/upcoming lists.
+# Source of truth: backend/src/main/java/ai/helper2/sources/AiDeadlinesCollector.java (nextEdition, toHit),
+#   backend/src/main/kotlin/ai/helper2/shared/DateFact.kt (scheduledDay),
+#   backend/src/main/java/ai/helper2/catalog/internal/ResourceStore.java (refreshEventDates, upcomingEvents),
+#   scripts/industry-events-seed.mjs, backend/src/main/resources/db/migration/R__industry_events.sql,
+#   backend/src/main/java/ai/helper2/catalog/web/ResourcesController.java (listUpcomingEvents).
+# Render: cd docs/diagrams && d2 fmt flow-0022-next-events.d2 && d2 flow-0022-next-events.d2 flow-0022-next-events.svg
+
+...@style
+
+direction: down
+
+conf: "ai-deadlines collector:\none YAML file per conference" {class: app}
+edition: "An edition with a parseable\nstart that has not ended?" {class: decision}
+noEdition: "Conference skipped\nin this pass" {class: fail}
+linkOk: "Official link and\ntitle present?" {class: decision}
+hit: "EVENT record: start/end day\n(DAY precision, source\nai-deadlines), city, country" {class: app}
+
+curated: "Industry events research file:\ndate excerpt from the event's site" {class: data}
+seedOk: "Start date, URL and\ndate excerpt present?" {class: decision}
+seedFail: "Seed script fails" {class: fail}
+seed: "R__industry_events.sql:\nEVENT + eventDates assertion\nwith the excerpt as evidence;\nevents no longer in the file removed" {class: data}
+
+other: "Tavily EVENT records\n(news about events)" {class: ext}
+noDate: "No stated dates" {class: app}
+
+resource: "resource.event_starts_at =\nearliest record start;\nevent_ends_at = latest end" {class: data}
+
+get: "GET /api/v1/events/upcoming\n?size=6 (1–24)" {class: person}
+listed: "type EVENT, start stated,\nend (or start) ≥ today 00:00 UTC?" {class: decision}
+hidden: "Not listed" {class: end}
+out: "Soonest first;\nCache-Control max-age 5 min" {class: end}
+
+conf -> edition
+edition -> noEdition: no
+edition -> linkOk: yes {class: hot}
+linkOk -> noEdition: no
+linkOk -> hit: yes {class: hot}
+hit -> resource: "CatalogIndex.index" {class: hot}
+curated -> seedOk
+seedOk -> seedFail: no
+seedOk -> seed: yes
+seed -> resource: "Flyway"
+other -> noDate -> resource
+get -> listed
+resource -> listed: {class: config}
+listed -> hidden: no
+listed -> out: yes {class: hot}

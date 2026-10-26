@@ -1,0 +1,42 @@
+# Sequence: the ai-deadlines collector stores a conference's next edition, then the home page lists it.
+# Source of truth: backend/src/main/java/ai/helper2/sources/AiDeadlinesCollector.java,
+#   backend/src/main/java/ai/helper2/catalog/internal/ResourceStore.java (refreshEventDates, upcomingEvents),
+#   backend/src/main/java/ai/helper2/catalog/ResourceCatalog.java (index), usecase/ListUpcomingEvents.java,
+#   backend/src/main/java/ai/helper2/catalog/web/ResourcesController.java, frontend/src/components/NextEvents.tsx.
+# Render: cd docs/diagrams && d2 fmt sequence-0022-next-events.d2 && d2 sequence-0022-next-events.d2 sequence-0022-next-events.svg
+
+...@style
+
+shape: sequence_diagram
+
+runner: RunScout {class: app}
+col: AiDeadlinesCollector {class: app}
+gh: "GitHub contents API" {class: ext}
+raw: "raw.githubusercontent.com" {class: ext}
+cat: ResourceCatalog {class: app}
+home: "NextEvents\n(home page)" {class: person}
+ctrl: ResourcesController {class: app}
+details: ListUpcomingEvents {class: app}
+rs: ResourceStore {class: app}
+db: PostgreSQL {class: data}
+
+runner -> col: "collect(checkpoint, null, 500)\n(due once a day)"
+col -> gh: "GET /repos/huggingface/ai-deadlines/\ncontents/src/data/conferences"
+gh -> col: "file names + download_url"
+col -> col: "download_url on the raw host?\n(else skipped; no token sent)"
+col -> raw: "GET <conference>.yml (no token)"
+raw -> col: "editions: start, end, city, country, link"
+col -> col: "nextEdition(today):\nsoonest edition not ended"
+col -> runner: "EVENT hits with scheduled days"
+runner -> cat: "index(hits, ai-deadlines)"
+cat -> rs: "upsert(hits, INDEXED)"
+rs -> db: "upsert source_record;\nrefreshEventDates(resource ids)"
+home -> ctrl: "GET /api/v1/events/upcoming?size=6"
+ctrl -> details: "list(today 00:00 UTC, 6)"
+details -> rs: "upcomingEvents(today, 6)"
+rs -> db: "type EVENT, start stated,\nend (or start) on or after today"
+db -> rs: "ids, soonest first"
+rs -> details: "ids"
+details -> rs: "findResource, recordsOf (per id)"
+details -> ctrl: "EVENT results"
+ctrl -> home: "200 UpcomingEventsResponse\n(max-age 5 min)"
