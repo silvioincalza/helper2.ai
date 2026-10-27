@@ -1,0 +1,81 @@
+# CD: every push to main runs CI, builds the image once, deploys staging, then waits for approval
+# on the `prod` environment to promote the same tag. Manual runs redeploy or promote a given tag.
+# No pull_request trigger here: self-hosted jobs must never run fork code (the repo is public).
+name: cd
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: environment to deploy
+        type: choice
+        options: [staging, prod]
+        default: prod
+      tag:
+        description: 12-char commit already built. Empty = HEAD of main for staging, what staging runs for prod
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    if: github.event_name == 'push'
+    uses: ./.github/workflows/ci.yml
+
+  image:
+    needs: ci
+    runs-on: [self-hosted, incalzame]
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+    concurrency:
+      group: image-${{ github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/bao-login
+        with:
+          addr: ${{ vars.BAO_ADDR }}
+          role: deploy
+      # Postgres + pgvector (ADR 0012): built and pushed only when postgres.image.tag is not in Harbor yet.
+      - env:
+          ENGINE: ${{ vars.IMAGE_ENGINE || 'podman' }}
+        run: make -C deploy/k8s postgres-image ENGINE="$ENGINE"
+      # Built from `git archive` of the commit (Makefile), pushed to Harbor as TAG.
+      - env:
+          ENGINE: ${{ vars.IMAGE_ENGINE || 'podman' }}
+        run: make -C deploy/k8s image TAG="${GITHUB_SHA::12}" ENGINE="$ENGINE"
+
+  staging:
+    needs: image
+    uses: ./.github/workflows/deploy.yml
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      environment: staging
+
+  prod:
+    needs: staging
+    uses: ./.github/workflows/deploy.yml
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      environment: prod
+      # Exactly what staging just got, even if a later push has moved staging on meanwhile.
+      tag: ${{ needs.staging.outputs.tag }}
+
+  manual:
+    if: github.event_name == 'workflow_dispatch'
+    uses: ./.github/workflows/deploy.yml
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      environment: ${{ inputs.environment }}
+      tag: ${{ inputs.tag }}

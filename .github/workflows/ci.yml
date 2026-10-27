@@ -1,0 +1,179 @@
+# CI: frontend and backend checks, the chart, Terraform and the diagrams, on GitHub-hosted runners.
+# Runs on pull requests and is called by cd.yml before every deploy, so main never ships
+# a commit that did not pass here. Never add `pull_request_target`: the repo is public.
+# Third-party actions are pinned to commit SHAs (Dependabot keeps them current).
+name: ci
+
+on:
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      # The schema is generated from ../api/openapi.yaml (git-ignored); lint/typecheck/build regenerate it too.
+      - run: npm run gen:api
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npx vitest run
+      - run: npm run build
+      # Playwright e2e needs a running backend; not part of CI yet.
+
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+      # Testcontainers (Postgres, Redis) uses the runner's Docker.
+      - run: ./gradlew --no-daemon test
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: backend-test-reports
+          path: backend/build/reports/tests/
+          retention-days: 7
+
+  # The app image as `make image` builds it, not pushed. Pull requests only: on main, CD builds it.
+  image:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: deploy/Dockerfile
+          platforms: linux/amd64
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # A pushed Postgres tag is never rebuilt (make postgres-image), so a change under deploy/postgres must
+  # come with a new postgres.image.tag; the image is built here (not pushed) to prove it builds.
+  postgres-image:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Changed, and tag bumped?
+        id: changed
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet "$BASE" HEAD -- deploy/postgres; then
+            echo "deploy/postgres unchanged"; echo "changed=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          tag() { git show "$1:deploy/helm/helper2/values.yaml" | yq '.postgres.image.tag'; }
+          old=$(tag "$BASE"); new=$(tag HEAD)
+          if [[ $old == "$new" ]]; then
+            echo "::error file=deploy/helm/helper2/values.yaml::deploy/postgres changed but postgres.image.tag is still $old: a pushed tag is never rebuilt, so set a new one"
+            exit 1
+          fi
+          echo "postgres.image.tag $old -> $new"
+      - if: steps.changed.outputs.changed == 'true'
+        run: docker build --platform linux/amd64 deploy/postgres
+
+  # Lint and render the chart for staging and prod and validate it against the Kubernetes schemas.
+  chart:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.26'
+          cache: false
+      - name: Install helm and kubeconform
+        run: |
+          go install helm.sh/helm/v4/cmd/helm@v4.3.1
+          go install github.com/yannh/kubeconform/cmd/kubeconform@v0.8.0
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+      - run: make -C deploy/k8s chart-check
+
+  # fmt and validate, without the R2 state backend (no credentials in CI). Pull requests only, like
+  # diagrams: CD does not apply Terraform, so neither may block a deploy.
+  terraform:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: deploy/k8s/terraform
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: 1.17.0
+          terraform_wrapper: false
+      - run: terraform fmt -check -recursive -diff
+      # The edge module (platform repo) pulls a private submodule, so it is validated against a stub with
+      # the same inputs and outputs (ci/edge-stub). The override file exists only in this job.
+      - name: terraform init -backend=false, edge module stubbed
+        run: |
+          echo 'module "edge" { source = "./ci/edge-stub" }' > ci_override.tf
+          terraform init -backend=false -input=false
+      - run: terraform validate
+
+  # The committed SVGs must be what d2 renders from the committed sources (docs/diagrams/README.md).
+  diagrams:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.26'
+          cache: false
+      - name: Install d2
+        run: |
+          go install oss.terrastruct.com/d2@v0.7.1
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+      - name: Re-render and compare
+        working-directory: docs/diagrams
+        run: |
+          set -euo pipefail
+          for f in *.d2; do
+            [[ $f == style.d2 ]] && continue
+            d2 fmt "$f"
+            d2 "$f" "${f%.d2}.svg"
+          done
+          if [[ -n $(git status --porcelain -- .) ]]; then
+            git status --short -- .
+            echo "::error::docs/diagrams is not what d2 v0.7.1 renders: run the loop in docs/diagrams/README.md and commit the result"
+            exit 1
+          fi

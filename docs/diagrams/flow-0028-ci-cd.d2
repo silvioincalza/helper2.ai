@@ -1,0 +1,68 @@
+# Flowchart: from a pull request to prod. PR checks on GitHub-hosted runners; on main, CI again, one
+# image build on the self-hosted runner, staging, the prod approval, prod with the same tag.
+# Source of truth: .github/workflows/ci.yml, cd.yml, deploy.yml, deploy/k8s/Makefile (image,
+#   postgres-image, chart-check, diff, deploy, status), deploy/k8s/CI.md.
+# Render: cd docs/diagrams && d2 fmt flow-0028-ci-cd.d2 && d2 flow-0028-ci-cd.d2 flow-0028-ci-cd.svg
+
+...@style
+
+direction: down
+
+dev: Developer {class: person}
+pr: "Pull request" {class: end}
+
+checks: ci.yml (GitHub-hosted, on every PR) {
+  class: group
+  grid-columns: 3
+  frontend: "frontend:\nlint, typecheck,\nVitest, build" {class: app}
+  backend: "backend:\ngradlew test\n(Testcontainers)" {class: app}
+  chart: "chart:\nhelm lint + template\n| kubeconform" {class: app}
+  image: "PR only: app image\nbuild, no push" {class: app}
+  pg: "PR only: Postgres image\n+ tag bumped?" {class: app}
+  tf: "PR only: terraform\nfmt + validate (stub)" {class: app}
+  d2: "PR only: diagrams\nre-rendered = committed?" {class: app}
+}
+
+green: "All checks green?" {class: decision}
+fix: "Fix and push again" {class: fail}
+merge: "Merge to main" {class: app}
+
+cd: cd.yml (push to main) {
+  class: group
+  direction: down
+  ci: "ci.yml again\n(frontend, backend, chart)" {class: app}
+  build: "image job (self-hosted):\nbao-login role deploy\nmake postgres-image, make image" {class: app}
+  exists: "Tag already\nin Harbor?" {class: decision}
+  reuse: "Not rebuilt" {class: app}
+  push: "Build from git archive,\npush TAG = commit[0:12]" {class: data}
+  staging: "deploy.yml env staging:\ndiff, deploy, status" {class: app}
+  ok: "Staging rollout\nhealthy?" {class: decision}
+  rollback: "helm --rollback-on-failure:\nprevious revision; prod not run" {class: fail}
+  approve: "Prod reviewer\napproves?" {class: decision}
+  wait: "Prod waits\n(not deployed)" {class: end}
+  prod: "deploy.yml env prod:\nsame tag as staging" {class: app}
+  live: "helper2.ai runs the tag" {class: end}
+
+  ci -> build: {class: hot}
+  build -> exists
+  exists -> reuse: yes
+  exists -> push: no {class: hot}
+  reuse -> staging
+  push -> staging: {class: hot}
+  staging -> ok
+  ok -> rollback: no
+  ok -> approve: yes {class: hot}
+  approve -> wait: no
+  approve -> prod: yes {class: hot}
+  prod -> live: {class: hot}
+}
+
+manual: "Manual run (workflow_dispatch):\nenvironment + tag;\nprod with empty tag = promote\nwhat staging runs" {class: config}
+
+dev -> pr: {class: hot}
+pr -> checks: {class: hot}
+checks -> green
+green -> fix: no
+green -> merge: yes {class: hot}
+merge -> cd.ci: {class: hot}
+manual -> cd.prod: {class: config}
