@@ -1,0 +1,72 @@
+# Flowchart: where each kind of telemetry goes, and the switches that decide it.
+# Shows the actuator filter, trace export and sampling, the context wrapper for search threads,
+# structured logs on stdout, the pull of meters on the management port, and the Grafana dashboard.
+# Source of truth: backend/src/main/resources/application.yaml (management.*, logging.structured),
+#   backend/src/main/java/ai/helper2/platform/observability/ObservabilityConfiguration.java,
+#   backend/src/main/java/ai/helper2/search/config/SearchConfiguration.java, MicrometerSearchMetrics.java,
+#   backend/src/main/java/ai/helper2/platform/llm/ModelCallMetrics.java, LlmConfiguration.java,
+#   backend/src/main/java/ai/helper2/platform/http/ObservedHttp.java, backend/src/main/java/ai/helper2/sources/SourcesConfiguration.java,
+#   deploy/helm/helper2/templates/app.yaml, deploy/helm/helper2/values.yaml, deploy/grafana/helper2.json.
+# Render: cd docs/diagrams && d2 fmt flow-0026-observability.d2 && d2 flow-0026-observability.d2 flow-0026-observability.svg
+
+...@style
+
+direction: down
+
+req: "HTTP request" {class: end}
+act: "Path under /actuator?\n(probes, scrapes)" {class: decision}
+noobs: "No observation:\nno span, no http.server.requests" {class: end}
+obs: "Server observation:\nspan + http.server.requests" {class: app}
+
+work: Inside the request {
+  class: group
+  direction: down
+  ctx: "searchExecutor wrapped by\nContextExecutorService:\nsource calls keep the trace" {class: app}
+  client: "ObservedHttp RestClient\n(sources, embedder; bounded URI):\nclient span, http.client.requests,\ntrace headers" {class: app}
+  model: "ModelCallMetrics.observe\n(guide steps, translate, enrich,\nclassify): span +\nhelper2.guide.model.call, tokens" {class: app}
+  meters: "Domain meters: helper2.search.*,\nhelper2.source.*, helper2.cache.events,\nhelper2.catalog.*, helper2.embedding.*,\n*.budget.remaining gauges …" {class: app}
+  ctx -> client
+  ctx -> meters
+  model -> meters
+}
+
+traces: Traces {
+  class: group
+  direction: down
+  export: "H2_TRACING_EXPORT=true?\n(chart: true; default false)" {class: decision}
+  drop: "Not exported" {class: end}
+  sample: "Sampled? (H2_TRACING_SAMPLING, 1.0)" {class: decision}
+  otlp: "OTLP/HTTP to H2_OTLP_TRACES_ENDPOINT\n(Alloy :4318 → Tempo)" {class: ext}
+  export -> drop: no
+  export -> sample: yes
+  sample -> otlp: yes {class: hot}
+  sample -> drop: no
+}
+
+logs: "Structured logs on stdout\n(H2_LOG_FORMAT=logstash JSON,\ntraceId and spanId; no OTLP copy)" {class: app}
+
+metrics: Metrics {
+  class: group
+  direction: down
+  registry: "Micrometer registry\n(tags application, environment;\nbuckets for latency timers)" {class: app}
+  endpoint: "/actuator/prometheus on\nH2_MANAGEMENT_PORT 8081" {class: app}
+  scrape: "Alloy scrapes (pod annotations)\n→ remote write to Prometheus" {class: ext}
+  grafana: "Grafana dashboard helper2.json\n(rows: overview, HTTP, search,\nguide, Scout, embeddings, runtime;\nlatency from _bucket series)" {class: ext}
+  alerts: "Alert rules: none yet" {class: fail}
+  registry -> endpoint
+  endpoint -> scrape: {class: hot}
+  scrape -> grafana: {class: hot}
+  grafana -> alerts: {class: config}
+}
+
+req -> act
+act -> noobs: yes
+act -> obs: no {class: hot}
+obs -> work.ctx: {class: hot}
+obs -> work.model
+obs -> traces.export
+work.client -> traces.export
+work.model -> traces.export
+obs -> logs
+work.meters -> metrics.registry: {class: hot}
+obs -> metrics.registry
