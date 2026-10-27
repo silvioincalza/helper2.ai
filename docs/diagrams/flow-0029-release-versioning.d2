@@ -1,0 +1,50 @@
+# Flowchart: the release workflow, from a pushed v* tag to the published GitHub release.
+# Shows every check in order: deleted or moved tag, name, annotated, on main, one version in four files.
+# Source of truth: .github/workflows/release.yml, deploy/k8s/CI.md (Releases),
+#   backend/build.gradle.kts, frontend/package.json, deploy/helm/helper2/Chart.yaml.
+# Render: cd docs/diagrams && d2 fmt flow-0029-release-versioning.d2 && d2 flow-0029-release-versioning.d2 flow-0029-release-versioning.svg
+
+...@style
+
+direction: down
+
+owner: Owner {class: person}
+tag: "git tag -a vX.Y.Z -m <notes> <commit>\ngit push origin vX.Y.Z" {class: app}
+push: "Push of a v* tag\n(release.yml, GitHub-hosted)" {class: end}
+
+deleted: "Tag deleted?" {class: decision}
+moved: "Push forced, or the tag\nhad a previous value?" {class: decision}
+name: "Name matches\nvX.Y.Z?" {class: decision}
+annotated: "Annotated tag?" {class: decision}
+main: "Commit on main?" {class: decision}
+versions: "build.gradle.kts, package.json,\nChart.yaml, openapi.yaml\nat the commit = X.Y.Z?" {class: decision}
+exists: "GitHub release\nalready exists?" {class: decision}
+
+e_deleted: "Fail: release tags\nare permanent" {class: fail}
+e_moved: "Fail: tags are immutable,\npublish a new version" {class: fail}
+e_name: "Fail: not vX.Y.Z" {class: fail}
+e_annotated: "Fail: must be annotated" {class: fail}
+e_main: "Fail: not on main" {class: fail}
+e_versions: "Fail: file <name> has\nanother version" {class: fail}
+keep: "Left as is" {class: end}
+publish: "gh release create vX.Y.Z\nnotes = tag message\n+ image helper2:<commit[0:12]>" {class: app}
+done: "Release published" {class: end}
+
+owner -> tag: {class: hot}
+tag -> push: {class: hot}
+push -> deleted: {class: hot}
+deleted -> e_deleted: yes
+deleted -> moved: no {class: hot}
+moved -> e_moved: yes
+moved -> name: no {class: hot}
+name -> e_name: no
+name -> annotated: yes {class: hot}
+annotated -> e_annotated: no
+annotated -> main: yes {class: hot}
+main -> e_main: no
+main -> versions: yes {class: hot}
+versions -> e_versions: no
+versions -> exists: yes {class: hot}
+exists -> keep: yes
+exists -> publish: no {class: hot}
+publish -> done: {class: hot}
