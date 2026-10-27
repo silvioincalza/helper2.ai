@@ -1,0 +1,25 @@
+# helper2 staging - https://helper2.incalza.me (namespace helper2-staging).  make ENV=staging deploy
+# Hosted platform settings (same in staging and prod).
+image:
+  repository: harbor-i.infra.incalza.me/helper2/apps/helper2
+postgres:
+  image:
+    repository: harbor-i.infra.incalza.me/helper2/apps/postgres
+  storageClassName: local-path
+cloudflared:
+  enabled: true
+networkPolicy:
+  metricsNamespace: observability
+  egress:
+    otlp:
+      namespace: observability
+app:
+  tracing:
+    export: true
+    endpoint: http://alloy.observability.svc:4318/v1/traces
+  environment: staging
+  # One replica: staging has little traffic, and the cluster's memory goes to prod first.
+  replicas: 1
+  # No Scout on staging: it would spend Nemotron calls on the same sources prod already indexes.
+  # Search and the AI guide still work; staging's catalog stays as last indexed.
+  scoutEnabled: false

@@ -1,0 +1,3 @@
+# Copy to terraform.tfvars (git-ignored). environment comes from `make ENV=...`.
+cloudflare_account_id = "6d9c67600aa42e58340b88e932cbec31"
+cloudflare_api_token  = "REPLACE-ME"

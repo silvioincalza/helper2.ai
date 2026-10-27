@@ -1,0 +1,161 @@
+# Generic defaults for any Kubernetes cluster. Per environment: a values file of your own
+# (values-staging.yaml and values-prod.yaml are the hosted helper2.ai environments).
+# Required: image.repository, image.tag, postgres.image.repository and envFile. Expose the app with
+# ingress.enabled or cloudflared.enabled (or your own route to the Service `helper2`, port 80).
+#
+# Object names are fixed (helper2, postgres, redis, ...), not prefixed with the release name: one
+# release per namespace, and the names had to stay identical when Helm adopted the kustomize objects.
+
+image:
+  # Your registry, e.g. ghcr.io/<owner>/helper2 (image built from deploy/Dockerfile). Required.
+  repository: ""
+  # Required. Tags are never rebuilt or moved (one commit, one image), so a node may reuse what it
+  # already pulled.
+  tag: ""
+  pullPolicy: IfNotPresent
+
+# Content of <env>/app.env (git-ignored), passed with --set-file envFile=... It becomes the Secret
+# helper2-env. Must contain H2_DATABASE_PASSWORD.
+envFile: ""
+
+app:
+  springProfiles: llm-nebius
+  # The Scout and the embedding indexer run on one replica at a time (ShedLock in Postgres); rate limits
+  # and sign-in sessions are in Redis. Above 1: a PodDisruptionBudget keeps replicas - 1 available.
+  # Postgres connections: (replicas + 1 during a deploy) x H2_DATABASE_POOL_SIZE (10) = 40 at 3 replicas,
+  # under Postgres' default max_connections of 100 (backup and psql need a few more).
+  replicas: 3
+  # Scout = scheduled collection + LLM enrichment. Each replica checks shortly after startup
+  # (scoutInitialDelay), then hourly (H2_SCOUT_TICK, default PT1H); the Scout runs when the last scheduled
+  # run ended at least scoutEvery ago (or never ran): one run per scoutEvery in total, whatever the number
+  # of replicas, and a deploy does not add one. Each collector also keeps its own interval, so with P1D
+  # every collector runs at most once a day.
+  scoutEnabled: true
+  scoutInitialDelay: PT20S
+  scoutEvery: P1D
+  # At most this many enrichments (Nemotron calls) per run. The app also caps calls per UTC day
+  # (H2_SCOUT_DAILY_ENRICHMENT_CALLS, default 300), so a large backlog after a fresh database is spread
+  # over several days.
+  scoutMaxEnrichments: 200
+  # Longest allowed startup (Flyway migrations, Lingua models) before the startup probe restarts the
+  # container. A multiple of 5 (the probe period). A deploy starts the replicas one after another, and
+  # all of them must be ready within the `helm --wait` timeout (12m in the hosted deploy).
+  startupSeconds: 300
+  # prod | staging, set per environment; the `environment` tag on metrics and spans.
+  environment: ""
+  # OTLP traces. Off by default; set export: true and your collector's endpoint, and
+  # networkPolicy.egress.otlp.namespace so the app may reach it.
+  tracing:
+    export: false
+    # Traffic is low; probes and scrapes are not traced (ObservabilityConfiguration).
+    sampling: 1.0
+    endpoint: ""
+  resources:
+    requests: { cpu: 250m, memory: 768Mi }
+    limits: { memory: 1Gi }
+
+postgres:
+  # postgres:18.6-alpine plus pgvector (deploy/postgres/Dockerfile), pushed to your registry. A pushed
+  # tag is never rebuilt, so any change under deploy/postgres needs a new tag (CI checks this on PRs).
+  image:
+    # Required, e.g. ghcr.io/<owner>/helper2-postgres.
+    repository: ""
+    tag: 18.6-pgvector0.8.6
+    # Optional pin, "sha256:<hex>" of that tag. When set, the pods run repository:tag@digest, so the
+    # runtime takes exactly that image even if the tag were overwritten. Setting or changing it
+    # restarts Postgres once; change it together with tag.
+    digest: ""
+  # volumeClaimTemplates are immutable: changing these needs a new StatefulSet.
+  # Empty = the cluster's default storage class.
+  storageClassName: ""
+  storage: 5Gi
+  resources:
+    # Vectors: ~25k rows x 1024 floats = ~100 MB, plus the HNSW index of about the same size.
+    requests: { cpu: 50m, memory: 512Mi }
+    limits: { memory: 1Gi }
+
+redis:
+  image: docker.io/library/redis:8.10.2-alpine
+  maxMemory: 128mb
+  # requirepass, from a Secret. Default: the key H2_REDIS_PASSWORD of helper2-env, i.e. a line
+  # H2_REDIS_PASSWORD=<openssl rand -hex 32> in <env>/app.env (letters and digits only: it goes into the
+  # Redis config as is). Or existingSecret: a Secret managed outside the chart. The app gets the same
+  # value as H2_REDIS_PASSWORD (spring.data.redis.password).
+  auth:
+    enabled: true
+    existingSecret: ""
+    existingSecretKey: H2_REDIS_PASSWORD
+  resources:
+    requests: { cpu: 20m, memory: 64Mi }
+    limits: { memory: 192Mi }
+
+# Optional: expose the app through the cluster's Ingress controller.
+ingress:
+  enabled: false
+  # e.g. nginx, traefik. Empty = the cluster's default IngressClass.
+  className: ""
+  host: ""
+  # TLS Secret for host (e.g. issued by cert-manager through annotations). Empty = no TLS section.
+  tlsSecretName: ""
+  annotations: {}
+  # Namespace of the Ingress controller pods: the network policy lets only them reach the app.
+  controllerNamespace: ""
+
+# Optional: expose the app through a remotely-managed Cloudflare tunnel. The token Secret
+# (tokenSecret, key `token`) is created outside the chart.
+cloudflared:
+  enabled: false
+  image: docker.io/cloudflare/cloudflared:2026.8.3
+  tokenSecret: cloudflared-token
+  resources:
+    requests: { cpu: 10m, memory: 32Mi }
+    limits: { memory: 128Mi }
+
+# Egress (templates/networkpolicy.yaml): denied for every pod in the namespace, then allowed per
+# workload. app: DNS, postgres, redis, the OTLP collector, HTTPS to `external`. cloudflared: DNS, the
+# app, the Cloudflare edge. pg-backup: DNS, postgres, HTTPS to `external` when backup.offsite is on.
+# postgres and redis: nothing.
+networkPolicy:
+  # Namespace of the metrics scraper allowed on the management port 8081. Empty = no scraper access.
+  metricsNamespace: ""
+  egress:
+    enabled: true
+    dns:
+      namespace: kube-system
+      podLabels: { k8s-app: kube-dns }
+    # Receives the app's traces (app.tracing.endpoint). Empty namespace = no egress rule for traces.
+    otlp:
+      namespace: ""
+      port: 4318
+    # The internet: the app's sources and models, the off-site backup. The private ranges stay closed
+    # (in-cluster peers are allowed by pod selector above, not by address).
+    external:
+      cidr: 0.0.0.0/0
+      except: [10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10, 169.254.0.0/16]
+      # The app speaks HTTPS only.
+      appPorts: [443]
+      # cloudflared to the Cloudflare edge (--protocol http2 = TCP 7844).
+      cloudflaredPorts: [7844]
+
+# Nightly pg_dump to its own PVC, kept 7 days. Restore: deploy/k8s/README.md.
+backup:
+  enabled: false
+  schedule: "30 2 * * *"
+  timeZone: Etc/UTC
+  retentionDays: 7
+  # Empty = the cluster's default storage class.
+  storageClassName: ""
+  storage: 5Gi
+  # Optional off-site copy to S3-compatible storage (Cloudflare R2): after the dump, every dump on the
+  # PVC that the bucket lacks is uploaded (rclone copy, never deletes there). Retention in the bucket
+  # is its lifecycle rule. Needs networkPolicy.egress.external to allow the endpoint.
+  offsite:
+    enabled: false
+    image: docker.io/rclone/rclone:1.75.2
+    # e.g. https://<account-id>.r2.cloudflarestorage.com
+    endpoint: ""
+    bucket: ""
+    prefix: helper2-prod
+    # Secret with access_key_id and secret_access_key (a token with Object Read & Write on this bucket
+    # only), created outside the chart.
+    secret: pg-backup-offsite

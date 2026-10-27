@@ -1,0 +1,28 @@
+# helper2 prod - https://helper2.ai (www redirects to the apex; namespace helper2-prod).  make ENV=prod deploy
+# Hosted platform settings (same in staging and prod).
+image:
+  repository: harbor-i.infra.incalza.me/helper2/apps/helper2
+postgres:
+  image:
+    repository: harbor-i.infra.incalza.me/helper2/apps/postgres
+  storageClassName: local-path
+cloudflared:
+  enabled: true
+networkPolicy:
+  metricsNamespace: observability
+  egress:
+    otlp:
+      namespace: observability
+app:
+  tracing:
+    export: true
+    endpoint: http://alloy.observability.svc:4318/v1/traces
+  environment: prod
+  replicas: 3
+  # Scout: one run per day (the first start runs at once), up to 200 enrichments per run.
+  scoutEvery: P1D
+backup:
+  # User data (bookmarks, reports, reviews) is not rebuildable by the Scout.
+  enabled: true
+  timeZone: Europe/Zurich
+  storageClassName: nfs-k8s
