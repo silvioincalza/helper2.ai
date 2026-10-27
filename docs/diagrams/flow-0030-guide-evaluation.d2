@@ -1,0 +1,55 @@
+# Flowchart: scripts/eval-guide.mjs, from the fixed query set to docs/evaluation.md.
+# Source of truth: scripts/eval-guide.mjs, docs/eval/guide-queries.json.
+# Render: cd docs/diagrams && d2 fmt flow-0030-guide-evaluation.d2 && d2 flow-0030-guide-evaluation.d2 flow-0030-guide-evaluation.svg
+
+...@style
+
+direction: down
+
+start: "node scripts/eval-guide.mjs\n[baseUrl] [--fresh[=TEXT]]" {class: person}
+queries: "Read docs/eval/guide-queries.json\n(20 fixed queries)" {class: data}
+csrf: "GET /api/v1/me →\nXSRF-TOKEN cookie?" {class: decision}
+noBackend: "Stop: \"is the\nbackend running?\"" {class: fail}
+
+loop: For each query, in order {
+  class: group
+  direction: down
+  pause: "Wait 7 s after the first\n(guide limit: 10 per minute)" {class: config}
+  fresh: "--fresh given?" {class: decision}
+  suffix: "Append \" TEXT\"\n(new cache key)" {class: app}
+  post: "POST /api/v1/guide\n(JSON endpoint, no path)" {class: app}
+  ok: "HTTP 200?" {class: decision}
+  err: "Row: HTTP <status>" {class: fail}
+  quota: "Notice GUIDE_DAILY_QUOTA?" {class: decision}
+  cached: "generatedAt older than\nthe request − 1 s?" {class: decision}
+  fromCache: "Mark (cache);\nleave out of latency" {class: end}
+  row: "Keep status, AI picks,\nrejected, reason checks,\nconstraint checks, latency" {class: end}
+
+  pause -> fresh
+  fresh -> suffix: yes
+  fresh -> post: no
+  suffix -> post
+  post -> ok
+  ok -> err: no
+  ok -> quota: yes
+  quota -> cached: no
+  cached -> fromCache: yes
+  cached -> row: no
+}
+
+stopQuota: "Stop with an error;\ndocs/evaluation.md unchanged\n(run again after 00:00 UTC)" {class: fail}
+summary: "Totals: statuses, kept / rejected,\nreason check, checks confirmed,\np50 / p90 / max latency" {class: app}
+keep: "Read the hand-written notes\nbetween the markers\n(placeholder if none)" {class: app}
+write: "Rewrite docs/evaluation.md\n(summary, per-query table,\nhow to run, notes kept)" {class: data}
+manual: "By hand: relevance of top picks,\nupdate the notes, move the\nold run to docs/eval/" {class: person}
+
+start -> queries -> csrf
+csrf -> noBackend: no
+csrf -> loop.pause: yes {class: hot}
+loop.row -> summary
+loop.fromCache -> summary
+loop.err -> summary
+loop.quota -> stopQuota: yes
+summary -> keep: {class: hot}
+keep -> write: {class: hot}
+write -> manual

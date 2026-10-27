@@ -1,0 +1,22 @@
+[
+  { "id": "b01", "path": "BUILD_WITH_AI", "request": "an open-source MCP server so my agent can query a Postgres database" },
+  { "id": "b02", "path": "BUILD_WITH_AI", "request": "MCP server to read and create GitHub issues from an AI agent" },
+  { "id": "b03", "path": "BUILD_WITH_AI", "request": "a small open model for text embeddings that runs on a laptop" },
+  { "id": "b04", "path": "BUILD_WITH_AI", "request": "Python library to build retrieval-augmented generation over PDF files" },
+  { "id": "b05", "path": "BUILD_WITH_AI", "request": "speech-to-text model I can self-host, Apache or MIT licence" },
+  { "id": "b06", "path": "BUILD_WITH_AI", "request": "framework to orchestrate several AI agents that call tools" },
+  { "id": "b07", "path": "BUILD_WITH_AI", "request": "npm package to stream LLM responses in a React app" },
+  { "id": "b08", "path": "BUILD_WITH_AI", "request": "MCP server for Slack so an assistant can read channels" },
+  { "id": "b09", "path": "BUILD_WITH_AI", "request": "tool to evaluate LLM outputs with automated tests" },
+  { "id": "b10", "path": "BUILD_WITH_AI", "request": "recent paper on reducing hallucinations in retrieval-augmented generation" },
+  { "id": "b11", "path": "BUILD_WITH_AI", "request": "open model for image segmentation" },
+  { "id": "b12", "path": "BUILD_WITH_AI", "request": "MCP server that lets an agent browse the web with a headless browser" },
+  { "id": "b13", "path": "BUILD_WITH_AI", "request": "library to extract structured JSON from LLM output with a schema" },
+  { "id": "b14", "path": "BUILD_WITH_AI", "request": "un server MCP per leggere file da Google Drive" },
+  { "id": "u01", "path": "USE_AI", "request": "translate documents between languages for free" },
+  { "id": "u02", "path": "USE_AI", "request": "summarise my meeting notes into decisions and next steps" },
+  { "id": "u03", "path": "USE_AI", "request": "transcribe a podcast episode into text" },
+  { "id": "u04", "path": "USE_AI", "request": "write a polite reply to a customer complaint" },
+  { "id": "n01", "path": null, "request": "latest news about NVIDIA Nemotron models" },
+  { "id": "x01", "path": "BUILD_WITH_AI", "request": "a quantum blockchain toaster that writes poems" }
+]
