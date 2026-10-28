@@ -39,7 +39,7 @@ data class GuideSearchPlan @JvmOverloads constructor(
 val READING_TYPES = setOf(ResourceType.ARTICLE, ResourceType.PAPER, ResourceType.NEWS, ResourceType.EVENT)
 
 /** Courses and certifications: retrieved only for [GuideIntent.LEARN], so they never fill a tool question's slots. */
-val LEARN_TYPES: Set<ResourceType> = ResourceType.entries.filter { it.name == "COURSE" }.toSet()
+val LEARN_TYPES: Set<ResourceType> = setOf(ResourceType.COURSE)
 
 /** What a tool question may retrieve. */
 val TOOL_TYPES: Set<ResourceType> = ResourceType.entries.toSet() - READING_TYPES - LEARN_TYPES
@@ -152,6 +152,13 @@ interface GuideModel {
     fun choose(request: String, candidates: List<Candidate>, constraints: List<String>): GuideProposal
 
     /**
+     * [choose] with thinking on when [think]: a broad "what is new" question has no subject to match, so picking
+     * needs judgment (with thinking off, Nemotron 3 Super returned no pick at all, 28 Oct 2026; ADR 0032).
+     */
+    fun choose(request: String, candidates: List<Candidate>, constraints: List<String>, think: Boolean): GuideProposal =
+        choose(request, candidates, constraints)
+
+    /**
      * Second model call: for each claim, true when its reason says only what its quote, text or confirmed
      * checks show. Keys missing from the answer stay NOT_CHECKED. A model check, not a proof.
      */
@@ -245,8 +252,6 @@ data class GuideAnswer(
     val comparison: Comparison? = null,
     /** [GuideIntent.WHAT_IS] only. */
     val explanation: Explanation? = null,
-    /** Candidates left out of a dated answer because their source states no creation date. */
-    val undatedDropped: Int = 0,
 )
 
 /**

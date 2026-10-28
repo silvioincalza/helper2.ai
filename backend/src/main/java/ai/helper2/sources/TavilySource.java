@@ -59,7 +59,7 @@ public class TavilySource implements SearchSource {
     public List<SourceHit> search(SourceQuery query) {
         Map<String, Object> body = new LinkedHashMap<>(Map.of(
             "query", queryText(query),
-            "topic", "news",
+            "topic", topic(query),
             "search_depth", "basic",
             "max_results", Math.min(query.getLimit(), 20)));
         if (query.getPublishedAfter() != null) {
@@ -68,6 +68,14 @@ public class TavilySource implements SearchSource {
         }
         JsonNode root = HttpClients.getJson(() -> http.post().uri("/search").body(body).retrieve().body(String.class), clock);
         return HttpClients.hits(root.path("results"), clock.instant(), (item, now, rank) -> toHit(item, "tavily", now, rank));
+    }
+
+    /**
+     * News, except for a guide question without a period ("what is RAG?"): there the general web finds explainers and
+     * product pages, which news search does not. Non-AI pages are still dropped by the gate in {@link #toHit}.
+     */
+    static String topic(SourceQuery query) {
+        return query.getWebQuery() != null && query.getPublishedAfter() == null ? "general" : "news";
     }
 
     /**

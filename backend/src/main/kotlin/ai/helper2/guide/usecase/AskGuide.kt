@@ -105,6 +105,9 @@ class AskGuide(
             else -> "9+"
         }
 
+        /** Web pages that can announce a new resource. */
+        private val WEB_ANNOUNCEMENTS = setOf(ResourceType.NEWS, ResourceType.ARTICLE)
+
         private const val MAX_SUBJECTS = 3
         private const val MAX_SUBJECT_CHARS = 60
 
@@ -118,7 +121,8 @@ class AskGuide(
         private const val EXPLAIN_CANDIDATES = 12
         private const val RELATED_CARDS = 4
         private const val MAX_EVENTS = 5
-        private const val SUBJECT_REASON = "The subject's own page."
+        /** Not "the subject's own page": a concept ("retrieval augmented generation") has none, only namesakes. */
+        private const val SUBJECT_REASON = "Matches the name you asked about."
         private const val RELATED_REASON = "Related search result."
     }
 
@@ -188,9 +192,10 @@ class AskGuide(
         } finally {
             if (Thread.currentThread().isInterrupted) outcome = "timeout"
             observation.lowCardinalityKeyValue("outcome", outcome)
-            observation.lowCardinalityKeyValue("intent", question.intentTag)
             observation.stop()
-            meters.counter("helper2.guide.questions", "outcome", outcome, "intent", question.intentTag).increment()
+            meters.counter("helper2.guide.questions", "outcome", outcome).increment()
+            // Its own meter: adding a tag to helper2.guide.questions would split the series the dashboard and alerts read.
+            meters.counter("helper2.guide.intents", "intent", question.intentTag).increment()
         }
     }
 
@@ -240,7 +245,8 @@ class AskGuide(
     private fun read(q: Question, progress: GuideProgress, asked: Asked, model: GuideModel?): Reading {
         var modelFailed = model == null
         val plan = if (model == null) null else try {
-            model.plan(q.text, q.path, q.clarification)
+            // The two-argument form unless the user answered a clarification: a model that only implements it keeps working.
+            if (q.clarification == null) model.plan(q.text, q.path) else model.plan(q.text, q.path, q.clarification)
         } catch (e: RuntimeException) {
             log.warn("guide plan failed: ${failure(e)}")
             asked.budgetExhausted = e is GuideBudgetExhausted
@@ -248,19 +254,23 @@ class AskGuide(
             null
         }
         val text = q.fullText
+        // Only what the user's own words support: the fast model copies values from its examples.
+        val subjects = plan?.subjects.orEmpty().map { it.trim().replace(Regex("\\s+"), " ") }
+            .filter { it.isNotEmpty() && it.length <= MAX_SUBJECT_CHARS && !GuideValidator.containsLink(it) }
+            .filter { text.contains(it, ignoreCase = true) }
+            .distinctBy { it.lowercase() }.take(MAX_SUBJECTS)
+        val modelIntent = plan?.intent?.takeIf { grounded(it, text, subjects) }
         val intent = when {
             q.drops.intent -> GuideIntent.SUGGEST
-            else -> plan?.intent ?: IntentRules.intentOf(text) ?: GuideIntent.SUGGEST
+            else -> modelIntent ?: IntentRules.intentOf(text) ?: GuideIntent.SUGGEST
         }
-        val planned = if (q.drops.window) null else plan?.window ?: IntentRules.windowOf(text)
+        val modelWindow = plan?.window?.takeIf { IntentRules.mentionsTime(text) }
+        val planned = if (q.drops.window) null else modelWindow ?: IntentRules.windowOf(text)
         val window = planned?.resolve(LocalDate.ofInstant(clock.instant(), ZoneOffset.UTC))
         // A period with no other intent is a question about what is new ("AI tools from last month").
         val effective = if (window != null && intent == GuideIntent.SUGGEST) GuideIntent.NEWEST else intent
         val constraints = GuideValidator.normalizedConstraints(plan?.constraints.orEmpty())
-            .filter { it.lowercase() !in q.drops.constraints }
-        val subjects = plan?.subjects.orEmpty().map { it.trim().replace(Regex("\\s+"), " ") }
-            .filter { it.isNotEmpty() && it.length <= MAX_SUBJECT_CHARS && !GuideValidator.containsLink(it) }
-            .distinctBy { it.lowercase() }.take(MAX_SUBJECTS)
+            .filter { it.lowercase() !in q.drops.constraints && IntentRules.constraintStated(it, text) }
         val query = plan?.let { PlannedQueries.searchQueryOf(it.searchQuery) }?.ifBlank { null } ?: text
         if (!modelFailed) progress.planned(query, constraints)
         progress.understood(effective, subjects, window)
@@ -277,6 +287,14 @@ class AskGuide(
             webQuery = plan?.let { PlannedQueries.webQueryOf(it.webQuery) },
             allowReading = wantsReading(text, plan),
         )
+    }
+
+    /** A model intent the user's words support: newness for NEWEST, the named subjects for the subject intents. */
+    private fun grounded(intent: GuideIntent, text: String, subjects: List<String>): Boolean = when (intent) {
+        GuideIntent.NEWEST -> IntentRules.mentionsNewness(text)
+        GuideIntent.COMPARE -> subjects.size >= 2
+        GuideIntent.ALTERNATIVES, GuideIntent.WHAT_IS -> subjects.isNotEmpty()
+        else -> true
     }
 
     /**
@@ -325,18 +343,31 @@ class AskGuide(
         val browse: Boolean = false,
         val exclude: (MergedResult) -> Boolean = { false },
         val notices: List<Notice> = emptyList(),
+        /** Reading types may be chosen even though the question asks for no reading (web announcements for NEWEST). */
+        val allowReading: Boolean = false,
+        /** The chooser thinks before answering: only for a broad browse, where it has no subject to match. */
+        val think: Boolean = false,
     )
 
     /** "AI tools born last month": created inside the window, chosen among the most relevant and used, shown newest first. */
     private fun newest(q: Question, r: Reading, progress: GuideProgress, asked: Asked, model: GuideModel?): GuideAnswer {
         val subject = IntentRules.subjectWords(r.query)
-        val filters = readingFilter(r).copy(publishedAfter = r.window?.from, publishedBefore = r.window?.to)
+        // Web announcements count: "new AI tools last month" is answered as much by an article launching one as by a
+        // catalog entry. The web query is AI-scoped and the web source drops non-AI pages.
+        val types = TOOL_TYPES + if (r.allowReading) READING_TYPES else WEB_ANNOUNCEMENTS
+        val filters = SearchFilters(types = types, publishedAfter = r.window?.from, publishedBefore = r.window?.to)
+        val browse = r.window != null && subject.isBlank()
         val retrieval = Retrieval(
-            text = subject.ifBlank { r.query },
+            // Browsing ranks by popularity inside the window: words like "AI tools" would favour projects named "tool".
+            text = if (browse) "" else subject.ifBlank { r.query },
             filters = filters,
             // No period: "latest" orders by date. With a period, relevance inside it; the picks are dated below.
             sort = if (r.window == null) SortOrder.NEWEST else SortOrder.RELEVANCE,
-            browse = r.window != null && subject.isBlank(),
+            browse = browse,
+            // A new entry without a description cannot be quoted, so it can never be chosen; it would only take a slot.
+            exclude = { it.description.isNullOrBlank() },
+            allowReading = true,
+            think = browse,
         )
         val answer = picks(q, r, progress, asked, model, retrieval)
         return answer.copy(recommendations = answer.recommendations.sortedWith(compareByDescending(nullsLast()) { it.result.published.value }))
@@ -372,8 +403,10 @@ class AskGuide(
         val candidates = outcome.results.filterNot(retrieval.exclude).take(maxCandidates).mapIndexed { i, res -> Candidate("c${i + 1}", res) }
         // Defence in depth: the search filter already removed reading types; keep the model and the
         // validator on the same rule in case a source mislabels a type after filtering.
-        val choosable = if (r.allowReading) candidates else candidates.filter { it.result.type !in READING_TYPES }
+        val allowReading = r.allowReading || retrieval.allowReading
+        val choosable = if (allowReading) candidates else candidates.filter { it.result.type !in READING_TYPES }
         progress.retrieved(candidates.size, outcome)
+        if (log.isDebugEnabled) log.debug("guide candidates: {}", candidates.map { "${it.key} ${it.result.type} ${it.result.title.take(60)} ${it.result.published.value} desc=${it.result.description?.length ?: 0}" })
         val query = retrieval.text
         val constraints = r.constraints
         if (candidates.isEmpty()) {
@@ -387,7 +420,7 @@ class AskGuide(
             if (choosable.isEmpty()) {
                 return degraded(GuideStatus.PARTIAL, query, candidates, outcome, 0, modelUsed = true, constraints).withNotices(retrieval.notices)
             }
-            model.choose(text, choosable, constraints)
+            if (retrieval.think) model.choose(text, choosable, constraints, true) else model.choose(text, choosable, constraints)
         } catch (e: RuntimeException) {
             log.warn("guide choose failed: ${failure(e)}")
             asked.budgetExhausted = e is GuideBudgetExhausted
@@ -395,7 +428,7 @@ class AskGuide(
         }
         val chooseEnd = System.nanoTime()
         progress.chosen(proposal.picks.size)
-        val checked = validator.validate(proposal, choosable, constraints, r.allowReading).insideWindow(retrieval.filters)
+        val checked = validator.validate(proposal, choosable, constraints, allowReading).insideWindow(retrieval.filters)
         progress.validated(checked.picks.size, checked.rejected)
         // Search rank of each kept pick. A pick far down the list is the first sign of text written to be chosen
         // (content poisoning): its quote is genuine, so the gate cannot catch it.
@@ -448,8 +481,13 @@ class AskGuide(
         return copy(picks = inside, rejected = rejected + out, rejectedBy = rejectedBy + (GuideValidator.Rejection.OUTSIDE_WINDOW to out))
     }
 
+    /**
+     * The evidence includes the creation date its source states, when known: a reason that says "new this month" is
+     * then checked against that date instead of being removed for a claim the text cannot show.
+     */
     private fun claimsOf(checked: GuideValidator.Result) = checked.picks.map { (c, p) ->
-        ReasonClaim(c.key, p.reason, p.quote, c.text, checked.checks[c.key].orEmpty().filter { it.status == CheckStatus.CONFIRMED })
+        val created = c.result.published.value?.let { "\nCreated: ${DateTimeFormatter.ISO_LOCAL_DATE.format(it.atOffset(ZoneOffset.UTC))} (as stated by ${c.result.published.sourceId ?: "its source"})" } ?: ""
+        ReasonClaim(c.key, p.reason, p.quote, c.text + created, checked.checks[c.key].orEmpty().filter { it.status == CheckStatus.CONFIRMED })
     }
 
     /**
@@ -498,6 +536,7 @@ class AskGuide(
             .filter { row -> row.cells.any { it.text != null } }
             .toList()
         progress.validated(rows.sumOf { row -> row.cells.count { it.text != null } }, rejected)
+        log.info("guide compare: subjects=${present.size} rows=${proposal.rows.size} keptRows=${rows.size} rejectedCells=$rejected")
         val claims = rows.flatMapIndexed { i, row ->
             row.cells.filter { it.text != null }.map { cell -> ReasonClaim("r${i + 1}-${cell.subjectKey}", cell.text!!, cell.quote!!, byKey.getValue(cell.subjectKey).text, emptyList()) }
         }
@@ -529,10 +568,15 @@ class AskGuide(
      */
     private fun explain(q: Question, r: Reading, progress: GuideProgress, asked: Asked, model: GuideModel?): GuideAnswer {
         val subject = r.subjects.firstOrNull() ?: r.query
-        val outcome = search.search(SearchRequest(text = subject, path = q.path, size = EXPLAIN_CANDIDATES, webQuery = r.webQuery))
-        val ordered = outcome.results.sortedByDescending { isSubject(it, subject) }
+        val outcome = search.search(SearchRequest(text = subject, path = q.path, size = maxCandidates, webQuery = r.webQuery))
+        // Only what can be quoted: an entry without a description cannot support a sentence. The subject's own entry
+        // first, then web explainers (articles, news), which say what a thing is better than projects named after it.
+        val ordered = outcome.results.filterNot { it.description.isNullOrBlank() }
+            .sortedWith(compareByDescending<MergedResult> { isSubject(it, subject) }.thenByDescending { it.type in WEB_ANNOUNCEMENTS })
+            .take(EXPLAIN_CANDIDATES)
         val candidates = ordered.mapIndexed { i, res -> Candidate("c${i + 1}", res) }
         progress.retrieved(candidates.size, outcome)
+        if (log.isDebugEnabled) log.debug("guide explain candidates: {}", candidates.map { "${it.key} ${it.result.type} ${it.result.title.take(60)} subject=${isSubject(it.result, subject)} desc=${it.result.description?.length ?: 0}" })
         if (candidates.isEmpty()) {
             return GuideAnswer(GuideStatus.NO_CANDIDATES, subject, emptyList(), null, !r.modelFailed, 0, 0, outcome, clock.instant(), r.constraints)
         }
@@ -566,6 +610,7 @@ class AskGuide(
             if (ok) c!!.key to p else null
         }.take(MAX_SENTENCES)
         progress.validated(kept.size, rejected)
+        log.info("guide explain: candidates=${candidates.size} proposed=${proposal.sentences.size} kept=${kept.size} rejected=$rejected")
         val claims = kept.mapIndexed { i, (key, p) -> ReasonClaim("e${i + 1}", p.text.trim(), p.quote.trim(), byKey.getValue(key).text, emptyList()) }
         val verdicts = if (claims.isEmpty()) emptyMap() else verdicts(model, q.fullText, claims, progress)
         val sentences = kept.mapIndexedNotNull { i, (key, p) ->

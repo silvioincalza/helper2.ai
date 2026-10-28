@@ -1,6 +1,6 @@
 # 0032 — Guide intents: understand the question, ask back when vague, retrieve and answer by intent
 
-**Status.** Proposed (2026-10-28). **Builds on:** [0014](0014-llm-integration.md), [0015](0015-ai-guide-evidence-gate.md),
+**Status.** Accepted (2026-10-28). **Builds on:** [0014](0014-llm-integration.md), [0015](0015-ai-guide-evidence-gate.md),
 [0016](0016-guide-reason-check.md), [0017](0017-guide-cost-guard.md), [0030](0030-guide-evaluation.md)
 
 ## Context
@@ -160,9 +160,11 @@ back to the strict filter:
 - Catalog (`helper2-index`, `helper2-curated`): `WHERE published_at >= ?`, ranked by text rank and popularity inside
   the window. Under our control.
 - GitHub: `created:>YYYY-MM-DD` search qualifier (documented).
-- Hugging Face models and Spaces: sort by creation date (to verify: `sort=createdAt`), then filter.
-- Tavily: time-range parameter (to verify: name and values).
-- arXiv: `submittedDate:[from TO to]` (to verify).
+- Hugging Face models and Spaces: `sort=trendingScore`, then the strict filter. Checked 2026-10-28: `sort=createdAt`
+  works but its newest entries are test checkpoints; trending ones are new and used.
+- Tavily: `start_date` (YYYY-MM-DD), documented.
+- arXiv: `submittedDate:[from TO to]` (checked 2026-10-28); browsing sorts by `submittedDate`.
+- GitHub additionally sorts by stars inside a window (checked 2026-10-28), so new repositories people use come first.
 - npm, semantic index: no date support; results go through the strict filter.
 
 The per-source cache key adds the window (`…|limit|web|after=YYYY-MM-DD`). Without it a windowed query would be served
@@ -269,8 +271,13 @@ either, and most platform courses end with a certificate.
   the platforms without an API. Each entry links the provider's own page; Scout enrichment
   ([0019](0019-evidence-gated-enrichment.md)) fills the description from that page.
 - **Source 2, platform sources**: one `SearchSource` (live, at search time) per platform whose API access is
-  confirmed, like `GitHubSource` and `NpmSource` ([0008](0008-federated-search.md)), returning `COURSE` hits with the
-  fields above. Disabled and reported as SKIPPED without credentials.
+  confirmed, like `GitHubSource` and `NpmSource` ([0008](0008-federated-search.md)). **None today**: checked
+  2026-10-28, Coursera's catalog endpoint has no search, O'Reilly's search API and edX's Discovery API answer 401
+  without an enterprise or client key, and Udemy's API answers 403. Those platforms come through Sources 1 and 3.
+- **Where the card fields live**: no new column. Platform is a `PLATFORM` label; level is `tech_level`; pricing is
+  `pricing`, set only where the page states it; credential (`certification`, `certificate`) and format
+  (`exam-only`, `self-paced`, `instructor-led`, `live-event`) are tags, also kept typed in `source_record.extra`.
+  Migration `V3__course_type.sql` adds the type and the `COURSE_CANDIDATE` review kind; the seed is `R__courses.sql`.
 - **Source 3, Scout collector** `CourseCollector` ([0020](0020-scout-collectors.md)): weekly Tavily searches restricted
   to each platform's domain (`include_domains`) for new AI courses and certification pages. New pages go to the admin
   review list ([0019](0019-evidence-gated-enrichment.md)), never straight to the catalog.
@@ -297,11 +304,32 @@ clear ones that must not. Pass criteria per intent: `NEWEST` — every pick born
 `WHAT_IS` — every sentence quoted; `WHEN` — the date equals the event record; `LEARN` — every pick has type
 `COURSE`. The production question of the Context table is case `n01`.
 
+### 11. Learned in the live check (2026-10-28, Nemotron 3 Nano plans, Nemotron 3 Super chooses)
+- **Grounding.** The fast planner copies values from its examples: a one-month window on "what is RAG?", subjects
+  and "works offline" on "an open source MCP server to query Postgres". Code keeps only what the user's words support:
+  a model window only when the text names a time (`IntentRules.mentionsTime`), subjects only when they appear in the
+  text, a constraint only when the text states it (`IntentRules.constraintStated`, fixed synonym list), NEWEST only
+  with time or newness words, COMPARE with 2 grounded subjects, ALTERNATIVES and WHAT_IS with 1. The prompt's field
+  formats use placeholders, and it says never to copy a value from the examples.
+- **Web, AI only.** NEWEST also retrieves web announcements (NEWS, ARTICLE) and WHAT_IS puts web explainers right after
+  the subject's own entry. Tavily runs as `general` search for a guide question without a period, `news` otherwise; its
+  AI relevance gate and the AI-scoped web query keep it to the AI world.
+- **Browsing ranks by popularity.** With a window and no subject, the search text is empty: the words "AI tools" ranked
+  projects named "tool" first. Entries without a description are left out of NEWEST and WHAT_IS: they cannot be quoted.
+- **Thinking for broad questions only.** With thinking off, Nemotron 3 Super returned no pick for "AI tools born last
+  month" (three tries); with thinking on it picked three quoted, checked tools in about 10 s. `GuideModel.choose(…,
+  think)` turns it on only for a NEWEST browse; every other question keeps thinking off (ADR 0014).
+- **Dates as evidence.** The chooser sees each candidate's source-stated creation day (`created="…"`), and the reason
+  check gets it as evidence, so "a new tool" is checked against that date instead of being removed.
+- Result on the reproduced question: status OK, three AI picks created inside the window, newest first, every reason
+  SUPPORTED. "vLLM vs SGLang" compares both, "what is retrieval augmented generation?" explains in two quoted
+  sentences, "courses to learn LangChain" picks the O'Reilly course.
+
 ## Consequences
 - The guide answers the kind of question asked, and shows how it read it, so a misreading is visible and correctable.
 - One extra round trip only for vague questions; a clarification costs one model call.
-- `NEWEST` is honest but smaller: npm and other undated results are dropped. The answer says how many were dropped
-  for an unknown birth date.
+- A broad "what is new" question takes about 10 s longer (thinking on for its choose call).
+- `NEWEST` is honest but smaller: npm and other undated results are dropped, silently; the answer does not count them.
 - `NpmSource` no longer reports a `published` date, and a migration clears the wrong dates already in the catalog: npm results sort last under "Newest" in normal search too.
 - Two new prompts (`compare`, `explain`) and their schemas to maintain and evaluate.
 - The course list needs editorial review; the collector proposes, an admin accepts. Platform APIs (Coursera, edX, Udemy) may need partner keys; until then those platforms are covered only through the collector and the seed.

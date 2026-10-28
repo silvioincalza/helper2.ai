@@ -300,9 +300,15 @@ class SpringAiGuideModel implements GuideModel {
 
     @Override
     public GuideProposal choose(String request, List<Candidate> candidates, List<String> constraints) {
+        return choose(request, candidates, constraints, false);
+    }
+
+    @Override
+    public GuideProposal choose(String request, List<Candidate> candidates, List<String> constraints, boolean think) {
         String list = candidates.stream()
             .map(c -> "<candidate key=\"" + c.getKey() + "\" type=\"" + c.getResult().getType() + "\""
                 + (c.getResult().getLicense() == null ? "" : " license=\"" + untrusted(c.getResult().getLicense()).replace("\"", "'") + "\"")
+                + created(c)
                 + ">\n"
                 + untrusted(c.getText()) + "\n</candidate>")
             .collect(Collectors.joining("\n"));
@@ -310,7 +316,7 @@ class SpringAiGuideModel implements GuideModel {
             : constraints.stream().map(c -> untrusted(c, MAX_NEED_CHARS)).collect(Collectors.joining("; "));
         Choice choice = call(reasoningModel, chooseSystem,
             need(request) + "\n\nCONSTRAINTS:\n" + constraintList + "\n\nCANDIDATES:\n" + list, Choice.class,
-            nativeSchemaForChoose, chooseMaxTokens, "choose", thinking.choose());
+            nativeSchemaForChoose, chooseMaxTokens, "choose", thinking.choose() || think);
         if (choice == null) {
             return new GuideProposal(List.of(), null, List.of());
         }
@@ -381,6 +387,8 @@ class SpringAiGuideModel implements GuideModel {
                 return metrics.observe(step, model, () -> {
                     var response = spec.responseEntity(converter);
                     metrics.tokens(step, response.response());
+                    // Model output only (no user text); off unless this logger is set to DEBUG.
+                    log.debug("guide {} answer: {}", step, response.entity());
                     return response.entity();
                 });
             } catch (RuntimeException e) {
@@ -393,6 +401,12 @@ class SpringAiGuideModel implements GuideModel {
             }
         }
         throw new GuideUnavailable("model call failed: " + last.getClass().getSimpleName(), ModelErrors.category(last));
+    }
+
+    /** The creation date its source states, as a day; code's fact, not candidate text. Empty when unknown. */
+    private static String created(Candidate c) {
+        var published = c.getResult().getPublished().getValue();
+        return published == null ? "" : " created=\"" + published.toString().substring(0, 10) + "\"";
     }
 
     private static List<ConstraintQuote> checks(List<Choice.Check> checks) {

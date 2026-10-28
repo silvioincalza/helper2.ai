@@ -8,6 +8,9 @@ import { typeTagClass } from '@/lib/typeTag';
 
 type Recommendation = GuideResponse['recommendations'][number];
 
+/** A follow-up the user asks from the answer: their reply to our question, or parts of the reading to remove. */
+export type Refinement = { clarification?: string | undefined; drop?: string[] | undefined };
+
 /**
  * Where [quote] sits inside [text], matched like the validator does (case and runs of whitespace ignored).
  * Null when it is not there (e.g. the quote came from the title), so the caller shows the quote alone.
@@ -27,8 +30,11 @@ export function locateQuote(text: string, quote: string): { before: string; matc
  * requirements as confirmed / not confirmed, and the model's explanation folded away and labelled with the outcome of
  * the reason check (checked by a second model call, removed, or not checked).
  */
-export function GuideAnswer({ answer }: { answer: GuideResponse }) {
+export function GuideAnswer({ answer, onRefine }: { answer: GuideResponse; onRefine?: ((r: Refinement) => void) | undefined }) {
   const { t } = useTranslation();
+  if (answer.status === 'NEEDS_CLARIFICATION' && answer.clarification) {
+    return <Clarify clarification={answer.clarification} onRefine={onRefine} />;
+  }
   const ok = answer.status === 'OK';
   // The model ran but no pick survived (it chose none, or all were rejected): say so plainly.
   const noAiPick = answer.model != null && answer.recommendations.length > 0 && !answer.recommendations.some((r) => r.aiReasoned);
@@ -82,12 +88,14 @@ export function GuideAnswer({ answer }: { answer: GuideResponse }) {
         </p>
       )}
 
-      {(answer.constraints?.length ?? 0) > 0 && (
-        <p className="asked-for">
-          <span className="muted">{t('guide.askedFor')}</span>
-          {answer.constraints!.map((c) => <span key={c} className="asked-chip">{c}</span>)}
-        </p>
-      )}
+      {(answer.notices ?? []).filter((n) => n.code === 'GUIDE_SUBJECT_NOT_FOUND').map((n) => (
+        <p key={n.message} className="notice notice-warn"><Icon name="info" /> {n.message}</p>
+      ))}
+
+      <Understood answer={answer} onRefine={onRefine} />
+
+      {answer.explanation && answer.explanation.sentences.length > 0 && <ExplanationBlock explanation={answer.explanation} />}
+      {answer.comparison && answer.comparison.rows.length > 0 && <ComparisonTable comparison={answer.comparison} />}
 
       <ol className="plain-list guide-recs">
         {answer.recommendations.map((r, i) => (
@@ -102,6 +110,123 @@ export function GuideAnswer({ answer }: { answer: GuideResponse }) {
           {t('guide.answeredBy', { reasoning: answer.model.reasoningModel, fast: answer.model.fastModel, provider: answer.model.provider })}
         </p>
       )}
+    </section>
+  );
+}
+
+/**
+ * How the guide read the question, as chips: the kind of answer, the named subjects, the period and the
+ * requirements. ✕ re-asks without that part (sent as a structured removal, never as text to the model).
+ */
+function Understood({ answer, onRefine }: { answer: GuideResponse; onRefine?: ((r: Refinement) => void) | undefined }) {
+  const { t } = useTranslation();
+  const intent = answer.intent ?? 'SUGGEST';
+  const parts: { key: string; label: string; drop?: string | undefined }[] = [];
+  // A period alone reads as "newest" on the server, so removing that intent would come straight back: the period's ✕ is the way out.
+  const intentFromWindow = intent === 'NEWEST' && answer.window != null;
+  if (intent !== 'SUGGEST') parts.push({ key: 'intent', label: t(`guide.intent.${intent}`), drop: intentFromWindow ? undefined : 'intent' });
+  for (const s of answer.subjects ?? []) parts.push({ key: `s:${s}`, label: s });
+  if (answer.window) {
+    const next = answer.window.from >= answer.generatedAt.slice(0, 10);
+    parts.push({
+      key: 'window',
+      label: t(next ? 'guide.windowNext' : 'guide.window', { from: answer.window.from, to: answer.window.to }),
+      drop: 'window',
+    });
+  }
+  for (const c of answer.constraints ?? []) parts.push({ key: `c:${c}`, label: c, drop: `constraint:${c}` });
+  if (parts.length === 0) return null;
+  return (
+    <p className="understood">
+      <span className="muted">{t('guide.understood')}</span>
+      {parts.map((p) => (
+        <span key={p.key} className="understood-chip">
+          {p.label}
+          {p.drop && onRefine && (
+            <button type="button" aria-label={t('guide.remove', { part: p.label })} onClick={() => onRefine({ drop: [p.drop!] })}>×</button>
+          )}
+        </span>
+      ))}
+    </p>
+  );
+}
+
+/** The guide's question back when the need was too vague: one click on an option, free text, or search anyway. */
+function Clarify({ clarification, onRefine }: { clarification: NonNullable<GuideResponse['clarification']>; onRefine?: ((r: Refinement) => void) | undefined }) {
+  const { t } = useTranslation();
+  const [other, setOther] = useState('');
+  return (
+    <section className="guide-answer clarify" aria-labelledby="guide-clarify-h">
+      <h3 id="guide-clarify-h">{clarification.question}</h3>
+      <p className="muted small">{t('guide.clarify.label')}</p>
+      <div className="clarify-options">
+        {clarification.options.map((o) => (
+          <button key={o} type="button" className="btn" onClick={() => onRefine?.({ clarification: o })}>{o}</button>
+        ))}
+      </div>
+      <form className="clarify-other" onSubmit={(e) => { e.preventDefault(); if (other.trim()) onRefine?.({ clarification: other.trim() }); }}>
+        <label className="sr-only" htmlFor="guide-clarify-other">{t('guide.clarify.other')}</label>
+        <input id="guide-clarify-other" type="text" maxLength={300} placeholder={t('guide.clarify.other')} value={other} onChange={(e) => setOther(e.target.value)} />
+        <button type="submit" className="btn btn-primary">{t('guide.clarify.send')}</button>
+        <button type="button" className="btn" onClick={() => onRefine?.({ clarification: '' })}>{t('guide.clarify.anyway')}</button>
+      </form>
+    </section>
+  );
+}
+
+/** One column per subject; each AI-written cell shows the quote from that subject's own text, or says it is not stated. */
+function ComparisonTable({ comparison }: { comparison: NonNullable<GuideResponse['comparison']> }) {
+  const { t } = useTranslation();
+  return (
+    <section className="guide-compare" aria-labelledby="guide-compare-h">
+      <h3 id="guide-compare-h">{t('guide.comparison.title')} <span className="badge">{t('guide.promptAi')}</span></h3>
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">{t('guide.comparison.aspect')}</th>
+            {comparison.subjects.map((s) => (
+              <th key={s.key} scope="col">
+                {s.resourceId ? <Link to={`/resource/${s.resourceId}`}>{s.title ?? s.name}</Link> : <>{s.name} <span className="muted small">({t('guide.comparison.notFound')})</span></>}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {comparison.rows.map((r) => (
+            <tr key={r.aspect}>
+              <th scope="row">{r.aspect}</th>
+              {comparison.subjects.map((s) => {
+                const cell = r.cells.find((c) => c.subjectKey === s.key);
+                return (
+                  <td key={s.key}>
+                    {cell?.text ? <>{cell.text}{cell.quote && <q>{cell.quote}</q>}</> : <span className="muted small">{t('guide.comparison.notStated')}</span>}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="muted small">{t('guide.comparison.aiNote')}</p>
+    </section>
+  );
+}
+
+/** A short AI-written explanation; each sentence links the resource whose text it quotes. */
+function ExplanationBlock({ explanation }: { explanation: NonNullable<GuideResponse['explanation']> }) {
+  const { t } = useTranslation();
+  return (
+    <section className="guide-explain" aria-labelledby="guide-explain-h">
+      <h3 id="guide-explain-h">{t('guide.explanation.title')} <span className="badge">{t('guide.promptAi')}</span></h3>
+      <ol className="plain-list">
+        {explanation.sentences.map((x, i) => (
+          <li key={i}>
+            {x.text} <Link to={`/resource/${x.resourceId}`} className="small">{x.title}</Link>
+            <q>{x.quote}</q>
+          </li>
+        ))}
+      </ol>
+      <p className="muted small">{t('guide.explanation.aiNote')}</p>
     </section>
   );
 }

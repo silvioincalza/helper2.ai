@@ -157,14 +157,14 @@ class GuideApiIT extends ApiTestBase {
     @Test
     void anAnswerIsKeptInRedisSoARestartDoesNotLoseIt() throws Exception {
         String question = "translate a rental agreement to Portuguese";
-        java.util.Set<String> before = redis.keys("h2:v1:guide-answer:*");
+        java.util.Set<String> before = redis.keys("h2:v2:guide-answer:*");
 
         mvc.perform(post("/api/v1/guide").with(csrf()).with(from("10.0.0.7"))
                 .contentType(MediaType.APPLICATION_JSON).content(body(question)))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.recommendations[0].aiReasoned").value(true));
 
-        java.util.Set<String> added = new java.util.HashSet<>(redis.keys("h2:v1:guide-answer:*"));
+        java.util.Set<String> added = new java.util.HashSet<>(redis.keys("h2:v2:guide-answer:*"));
         added.removeAll(before);
         assertThat(added).hasSize(1);
         String key = added.iterator().next();
@@ -245,8 +245,9 @@ class GuideApiIT extends ApiTestBase {
         String stream = stream("10.0.1.1", "translate a brochure to Italian");
 
         assertThat(Pattern.compile("event:(\\w+)").matcher(stream).results().map(r -> r.group(1)).toList())
-            .containsExactly("planned", "retrieved", "chosen", "validated", "checked", "answer");
+            .containsExactly("planned", "understood", "retrieved", "chosen", "validated", "checked", "answer");
         ContractValidator.assertMatches("GuideStreamPlanned", data(stream, "planned"));
+        ContractValidator.assertMatches("GuideStreamUnderstood", data(stream, "understood"));
         ContractValidator.assertMatches("GuideStreamRetrieved", data(stream, "retrieved"));
         ContractValidator.assertMatches("GuideStreamChosen", data(stream, "chosen"));
         ContractValidator.assertMatches("GuideStreamValidated", data(stream, "validated"));
@@ -287,7 +288,7 @@ class GuideApiIT extends ApiTestBase {
         assertThat(stream.indexOf(":keep-alive\n\n")).as(stream).isNotNegative()
             .isLessThan(stream.indexOf("event:planned"));
         assertThat(stream.split(":keep-alive", -1).length - 1).isGreaterThanOrEqualTo(3);
-        assertThat(events(stream)).containsExactly("planned", "retrieved", "chosen", "validated", "checked", "answer");
+        assertThat(events(stream)).containsExactly("planned", "understood", "retrieved", "chosen", "validated", "checked", "answer");
         // No comment after the last event: the heartbeat stops with the question.
         assertThat(stream.substring(stream.indexOf("event:answer"))).doesNotContain(":keep-alive");
     }
@@ -306,7 +307,7 @@ class GuideApiIT extends ApiTestBase {
         String joinedStream = finish(joined);
         String firstStream = finish(first);
 
-        assertThat(events(firstStream)).containsExactly("planned", "retrieved", "chosen", "validated", "checked", "answer");
+        assertThat(events(firstStream)).containsExactly("planned", "understood", "retrieved", "chosen", "validated", "checked", "answer");
         assertThat(events(joinedStream)).as("no step ran for the joined asker").containsExactly("answer");
         assertThat(joinedStream).contains(":keep-alive\n\n");
         assertThat(MODELS_CALLED).containsExactly("fake-nano", "fake-super", "fake-super");

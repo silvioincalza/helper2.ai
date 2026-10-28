@@ -627,10 +627,12 @@
       "OK": "All AI suggestions passed the evidence check.",
       "PARTIAL": "Some AI suggestions were removed because the evidence did not support them.",
       "LLM_UNAVAILABLE": "The AI model is not available right now. Showing the best search results instead.",
-      "NO_CANDIDATES": "Nothing in the catalog matched. Try different words or the normal search."
+      "NO_CANDIDATES": "Nothing in the catalog matched. Try different words or the normal search.",
+      "NEEDS_CLARIFICATION": "The question needs one more detail."
     },
     "notice": {
-      "GUIDE_DAILY_QUOTA": "You have used today's AI answers, so this answer shows the top search results without AI picks. AI answers are available again after midnight UTC."
+      "GUIDE_DAILY_QUOTA": "You have used today's AI answers, so this answer shows the top search results without AI picks. AI answers are available again after midnight UTC.",
+      "GUIDE_SUBJECT_NOT_FOUND": "Something you named is not in our sources."
     },
     "error": "The guide could not answer. Please try again.",
     "streamFailure": {
@@ -684,7 +686,40 @@
     "kept_other": "{{count}} picks kept",
     "noneRejected": "No pick rejected",
     "askedFor": "You asked for:",
-    "best": "Best match"
+    "best": "Best match",
+    "understood": "Understood as",
+    "remove": "Remove “{{part}}” and ask again",
+    "intent": {
+      "SUGGEST": "Suggestions",
+      "NEWEST": "New resources",
+      "ALTERNATIVES": "Alternatives",
+      "COMPARE": "Comparison",
+      "HOW_TO": "How to",
+      "WHAT_IS": "What it is",
+      "WHEN": "Dates",
+      "LEARN": "Courses and certifications"
+    },
+    "window": "Created {{from}} – {{to}}",
+    "windowNext": "From {{from}} to {{to}}",
+    "newestFirst": "newest first",
+    "clarify": {
+      "label": "Pick one, or answer in your own words",
+      "other": "Your answer",
+      "send": "Ask",
+      "anyway": "Search anyway"
+    },
+    "comparison": {
+      "title": "Side by side",
+      "aspect": "Aspect",
+      "notStated": "Not stated by the source",
+      "notFound": "Not found in our sources",
+      "aiNote": "Each cell is AI-written and quotes that resource's own text; hover or open a cell for the quote."
+    },
+    "explanation": {
+      "title": "What it is",
+      "aiNote": "AI-written. Each sentence quotes the resource it links to.",
+      "source": "Source"
+    }
   },
   "events": {
     "title": "Next events",

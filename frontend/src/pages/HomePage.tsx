@@ -3,8 +3,8 @@ import { useSearchParams } from 'react-router';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { api, ApiError } from '@/api/client';
-import type { GuideResponse, GuideStep } from '@/api/types';
-import { GuideAnswer } from '@/components/GuideAnswer';
+import type { GuideRequest, GuideResponse, GuideStep } from '@/api/types';
+import { GuideAnswer, type Refinement } from '@/components/GuideAnswer';
 import { GuideProgress } from '@/components/GuideProgress';
 import { Icon } from '@/components/Icon';
 import { OneBox } from '@/components/OneBox';
@@ -187,10 +187,25 @@ function GuideSection({ question, onClose, onRetry }: { question: string; onClos
   const [steps, setSteps] = useState<GuideStep[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(true);
+  // A reply to the guide's question, or parts of its reading the user removed: the same question, asked again.
+  const [refinement, setRefinement] = useState<Refinement>({});
+  const refine = (r: Refinement) => {
+    setAnswer(null);
+    setSteps([]);
+    setError(null);
+    setBusy(true);
+    setRefinement((prev) => ({
+      clarification: r.clarification ?? prev.clarification,
+      drop: [...new Set([...(prev.drop ?? []), ...(r.drop ?? [])])],
+    }));
+  };
 
   useEffect(() => {
     const ctrl = new AbortController();
-    api.askGuideStream({ request: question }, (step) => { if (!ctrl.signal.aborted) setSteps((s) => [...s, step]); }, ctrl.signal)
+    const body: GuideRequest = { request: question };
+    if (refinement.clarification !== undefined) body.clarification = refinement.clarification;
+    if (refinement.drop?.length) body.drop = refinement.drop;
+    api.askGuideStream(body, (step) => { if (!ctrl.signal.aborted) setSteps((s) => [...s, step]); }, ctrl.signal)
       .then((a) => { if (!ctrl.signal.aborted) setAnswer(a); })
       .catch((err: unknown) => {
         if (ctrl.signal.aborted) return;
@@ -200,7 +215,7 @@ function GuideSection({ question, onClose, onRetry }: { question: string; onClos
     // Closing the panel, asking something else or retrying unmounts this section: the old stream is aborted.
     // The backend shares identical in-flight questions, so replacing a running question costs nothing extra.
     return () => ctrl.abort();
-  }, [question, t]);
+  }, [question, refinement, t]);
 
   return (
     <section aria-labelledby="guide-h" className="guide-panel">
@@ -218,7 +233,7 @@ function GuideSection({ question, onClose, onRetry }: { question: string; onClos
             <button type="button" className="btn btn-primary" onClick={onRetry}><Icon name="refresh" /> {t('common.retry')}</button>
           </div>
         )}
-        {answer && <GuideAnswer answer={answer} />}
+        {answer && <GuideAnswer answer={answer} onRefine={refine} />}
       </div>
     </section>
   );

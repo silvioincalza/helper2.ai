@@ -127,40 +127,100 @@ data class Drops(val intent: Boolean = false, val window: Boolean = false, val c
  * last month" is the newest tools. Narrow on purpose: a false hit changes the whole answer.
  */
 object IntentRules {
-    private const val UNITS = "(days?|weeks?|months?|years?|giorn[oi]|settiman[ae]|mes[ei]|ann[oi])"
+    private val UNITS: Map<String, WindowUnit> = WindowUnit.entries
+        .flatMap { u -> IntentWords.phrases("unit.${u.name.lowercase()}").map { it.lowercase() to u } }.toMap()
+    private val UNIT = alternation(UNITS.keys)
 
     /** "last month", "past 2 weeks", "in the last 30 days", "ultimo mese", "ultime 2 settimane". */
-    private val PAST = Regex("(?i)\\b(?:last|past|previous|ultim[oaie]|scors[oaie])\\s+(?:(\\d{1,3})\\s+)?$UNITS\\b")
+    private val PAST = Regex("(?i)\\b(?:${alternation("period.past")})\\s+(?:(\\d{1,3})\\s+)?($UNIT)\\b")
 
     /** "this week", "this month", "questa settimana", "questo mese". */
-    private val THIS = Regex("(?i)\\b(?:this|quest[oa])\\s+(week|month|year|settimana|mese|anno)\\b")
+    private val THIS = Regex("(?i)\\b(?:${alternation("period.this")})\\s+($UNIT)\\b")
 
     /** "next month", "next 2 weeks", "prossimo mese". */
-    private val NEXT = Regex("(?i)\\b(?:next|upcoming|coming|prossim[oaie])\\s+(?:(\\d{1,3})\\s+)?$UNITS\\b")
+    private val NEXT = Regex("(?i)\\b(?:${alternation("period.next")})\\s+(?:(\\d{1,3})\\s+)?($UNIT)\\b")
 
     /** "today", "oggi": the last day. */
-    private val TODAY = Regex("(?i)\\b(today|oggi)\\b")
+    private val TODAY = anywhere("period.today")
 
-    private val NEWEST = Regex("(?i)\\b(latest|newest|recent(ly)?|just (released|launched)|ultim[ie] uscit[ie]|più recenti|novità)\\b")
-    private val ALTERNATIVES = Regex("(?i)\\b(alternatives?\\s+(to|for)|instead\\s+of|similar\\s+to|replacement\\s+for|alternativ[ae]\\s+a)\\b")
-    private val COMPARE = Regex("(?i)(\\bvs\\.?(?=\\s)|\\bversus\\b|\\bcompared?\\s+(to|with)\\b|\\bcompare\\b|\\bdifference\\s+between\\b|\\bconfront[ao]\\b)")
-    private val WHAT_IS = Regex("(?i)^\\s*(what\\s+(is|are)\\b|what's\\b|cos'?\\s*è\\b|che\\s+cos'?\\s*è\\b)")
-    private val WHEN = Regex("(?i)^\\s*(when\\s+(is|was|does|did|will)\\b|quando\\b)")
-    private val HOW_TO = Regex("(?i)^\\s*(how\\s+(do|can|to|should)\\b|come\\s+(posso|faccio|si)\\b)")
-    private val LEARN = Regex("(?i)\\b(certificat(e|es|ion|ions)|certificazion[ei]|courses?|cors[oi]|coursera|udemy|edx|o'reilly)\\b")
+    private val NEWEST = anywhere("intent.newest")
+    private val ALTERNATIVES = anywhere("intent.alternatives")
+    private val COMPARE = anywhere("intent.compare")
+    private val WHAT_IS = atStart("intent.what-is")
+    private val WHEN = atStart("intent.when")
+    private val HOW_TO = atStart("intent.how-to")
+    private val LEARN = anywhere("intent.learn")
 
-    /** The intent the user's words state, or null. Order: the more specific shape first. */
+    /** Words that name no subject ("AI tools", "new models", "what are the…"); see `query.generic` in the bundle. */
+    private val GENERIC: Set<String> = IntentWords.phrases("query.generic").map { it.lowercase() }.toSet()
+
+    private fun anywhere(key: String) = Regex("(?i)\\b(?:${alternation(key)})\\b")
+    private fun atStart(key: String) = Regex("(?i)^\\s*(?:${alternation(key)})\\b")
+    private fun alternation(key: String) = alternation(IntentWords.phrases(key))
+
+    /** Longest phrase first; each word quoted, spaces between words matching any run of whitespace. */
+    private fun alternation(phrases: Collection<String>): String =
+        phrases.sortedByDescending { it.length }.joinToString("|") { p -> p.split(' ').joinToString("\\s+") { Regex.escape(it) } }
+
+    /**
+     * The intent the user's words state, or null. Order: the more specific shape first; a period or "latest" before
+     * the question words, because "what is the latest…" asks for new things, not an explanation. WHEN keeps its
+     * period ("when are the AI events next month") and is checked first.
+     */
     @JvmStatic
     fun intentOf(request: String): GuideIntent? = when {
         COMPARE.containsMatchIn(request) -> GuideIntent.COMPARE
         ALTERNATIVES.containsMatchIn(request) -> GuideIntent.ALTERNATIVES
         LEARN.containsMatchIn(request) -> GuideIntent.LEARN
         WHEN.containsMatchIn(request) -> GuideIntent.WHEN
+        windowOf(request) != null || NEWEST.containsMatchIn(request) -> GuideIntent.NEWEST
         WHAT_IS.containsMatchIn(request) -> GuideIntent.WHAT_IS
         HOW_TO.containsMatchIn(request) -> GuideIntent.HOW_TO
-        windowOf(request) != null || NEWEST.containsMatchIn(request) -> GuideIntent.NEWEST
         else -> null
     }
+
+    /** A unit of time, a year or a day word: what any stated period contains. */
+    private val TIME_WORDS = Regex(
+        "(?i)\\b(days?|weeks?|months?|years?|today|yesterday|tonight|weekend|since|20\\d\\d|" +
+            "january|february|march|april|may|june|july|august|september|october|november|december|" +
+            "giorn[oi]|settiman[ae]|mes[ei]|ann[oi]|oggi|ieri|da quando)\\b",
+    )
+
+    /** "new", "latest", "recent", "upcoming" and the like: a question about what is new, with or without a period. */
+    private val NEW_WORDS = Regex("(?i)\\b(new|newest|latest|recent(ly)?|upcoming|launched|released|born|nuov[oaie]|recent[ei])\\b")
+
+    /**
+     * Grounding for the planner (ADR 0032): the fast model copies periods from its examples ("an open source MCP
+     * server" came back with "last month"), so a model window is kept only when the user's words name a time.
+     */
+    @JvmStatic
+    fun mentionsTime(request: String): Boolean = TIME_WORDS.containsMatchIn(request)
+
+    /** A model's NEWEST is kept only when the user's words are about time or newness. */
+    @JvmStatic
+    fun mentionsNewness(request: String): Boolean = mentionsTime(request) || NEW_WORDS.containsMatchIn(request)
+
+    /**
+     * Words that state a requirement, per kind of requirement. A model constraint is kept only when the user's words
+     * contain one of its kind's words, or one of its own words: the fast model copies "self-hosted" and "works offline"
+     * from its examples. Fixed list on purpose, like the qualifiers in Guide.kt.
+     */
+    private val REQUIREMENT_WORDS = listOf(
+        Regex("(?i)\\b(free|gratis|gratuit\\w*|no cost|without paying|kostenlos)\\b"),
+        Regex("(?i)\\b(self[- ]?host\\w*|on[- ]?prem\\w*|local(ly)?|my own server|in locale)\\b"),
+        Regex("(?i)\\b(offline|without internet|no internet|air[- ]?gapped|local(ly)?)\\b"),
+        Regex("(?i)\\b(open[- ]?source|oss|mit|apache|bsd|gpl|licen[cs]e\\w*|permissive)\\b"),
+    )
+
+    /** Whether [constraint] restates something in [request]. */
+    @JvmStatic
+    fun constraintStated(constraint: String, request: String): Boolean {
+        val words = constraint.lowercase().split(Regex("[^\\p{L}\\p{N}]+")).filter { it.length >= 3 && it !in STOP }
+        if (words.any { Regex("(?i)\\b${Regex.escape(it)}").containsMatchIn(request) }) return true
+        return REQUIREMENT_WORDS.any { it.containsMatchIn(constraint) && it.containsMatchIn(request) }
+    }
+
+    private val STOP = setOf("works", "runs", "the", "and", "with", "must", "has", "have", "licence", "license", "support", "supports")
 
     /** A window only from an explicit time expression; "latest" alone sorts by date but sets none. */
     @JvmStatic
@@ -173,26 +233,9 @@ object IntentRules {
     }
 
     private fun window(amount: String, unit: String, direction: WindowDirection): PlannedWindow? {
-        val u = when (unit.lowercase().take(3)) {
-            "day", "gio" -> WindowUnit.DAY
-            "wee", "set" -> WindowUnit.WEEK
-            "mon", "mes" -> WindowUnit.MONTH
-            "yea", "ann" -> WindowUnit.YEAR
-            else -> return null
-        }
+        val u = UNITS[unit.lowercase()] ?: return null
         return PlannedWindow(amount.toIntOrNull()?.takeIf { it > 0 } ?: 1, u, direction)
     }
-
-    /**
-     * Words that name no subject in a question about new resources ("AI tools", "new models", "latest stuff").
-     * With a window, a query made only of these browses by date and type instead of matching words.
-     */
-    private val GENERIC = setOf(
-        "ai", "a.i", "artificial", "intelligence", "tool", "tools", "new", "latest", "newest", "recent", "best", "top",
-        "resource", "resources", "thing", "things", "stuff", "project", "projects", "app", "apps", "application",
-        "applications", "software", "launch", "launched", "launches", "release", "released", "releases", "born",
-        "created", "list", "month", "week", "year", "day", "days", "last", "past", "this", "today", "the", "of", "in",
-    )
 
     /** The query without generic words; empty when nothing names a subject. */
     @JvmStatic
@@ -215,9 +258,29 @@ fun isSubject(result: MergedResult, subject: String): Boolean {
     }
 }
 
-private val TYPE_SUFFIX = listOf("app", "ai", "cli", "desktop", "model", "models", "framework", "sdk", "server", "studio")
+private val TYPE_SUFFIX: List<String> = IntentWords.phrases("subject.type-suffix").map { it.lowercase() }
 
 private fun normalizedName(s: String): String =
     Normalizer.normalize(s, Normalizer.Form.NFKC).lowercase()
         .substringAfterLast('/')
         .replace(Regex("[^\\p{L}\\p{N}]+"), " ").trim()
+
+/**
+ * The words the backup rules read, from `i18n/intent-words_<lang>.properties` (UTF-8, comma-separated phrases).
+ * Every language is merged: the question's language is not known before planning, so the rules match all of them.
+ * A missing file or key fails at startup, never as a silent empty rule.
+ */
+internal object IntentWords {
+    private val LANGUAGES = listOf("en", "it")
+
+    private val bundles: List<java.util.Properties> = LANGUAGES.map { lang ->
+        val path = "i18n/intent-words_$lang.properties"
+        val stream = IntentWords::class.java.classLoader.getResourceAsStream(path) ?: error("missing $path")
+        java.util.Properties().apply { stream.reader(Charsets.UTF_8).use { load(it) } }
+    }
+
+    fun phrases(key: String): List<String> {
+        require(bundles.any { it.containsKey(key) }) { "no language defines $key" }
+        return bundles.flatMap { b -> b.getProperty(key).orEmpty().split(',').map { it.trim() }.filter { it.isNotEmpty() } }.distinct()
+    }
+}

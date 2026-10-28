@@ -103,8 +103,9 @@ class RedisGuideAnswerStoreTest {
         val store = RedisGuideAnswerStore(StringRedisTemplate(), json, clock, Duration.ofSeconds(30))
         val encoded = store.encode(answer())
 
-        assertNull(store.decode(encoded.replaceFirst("\"v\":1", "\"v\":2")))
-        assertNull(store.decode("{\"v\":1,\"answer\":{\"status\":\"OK\"}}"))
+        val v = RedisGuideAnswerStore.VERSION
+        assertNull(store.decode(encoded.replaceFirst("\"v\":$v", "\"v\":${v + 1}")))
+        assertNull(store.decode("{\"v\":$v,\"answer\":{\"status\":\"OK\"}}"))
         assertNull(store.decode("not json"))
     }
 
@@ -127,7 +128,7 @@ class RedisGuideAnswerStoreTest {
     fun `Redis sees only a hash of the question`() {
         val key = RedisGuideAnswerStore.redisKey("speech to text i can self-host|-|fast|reasoning")
 
-        assertTrue(key.startsWith("h2:v1:guide-answer:"))
+        assertTrue(key.startsWith("h2:v${RedisGuideAnswerStore.VERSION}:guide-answer:"))
         assertTrue(!key.contains("speech"))
         assertEquals(key, RedisGuideAnswerStore.redisKey("speech to text i can self-host|-|fast|reasoning"))
     }

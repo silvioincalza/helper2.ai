@@ -19,8 +19,8 @@ Only one JSON object with exactly these fields:
 - "constraints": a list of 0 to 4 short English phrases.
 - "wantsReading": true or false.
 - "webQuery": one English query for a web news search engine, 3 to {{maxWebQueryWords}} words.
-- "window": null, or {"amount": 1, "unit": "MONTH", "direction": "PAST"}.
-- "clarify": null, or {"question": "...", "options": ["...", "..."]}.
+- "window": null, or {"amount": <number>, "unit": "DAY|WEEK|MONTH|YEAR", "direction": "PAST|NEXT"}. Usually null.
+- "clarify": null, or {"question": "...", "options": ["...", "..."]}. Usually null.
 
 RULES FOR "intent"
 - SUGGEST: find resources for a task or subject ("a free tool to chat with PDFs"). The default.
@@ -96,6 +96,8 @@ RULES FOR "wantsReading"
 - false when they want a tool, model, library, agent, prompt or MCP server. When unsure: false.
 
 EXAMPLES
+The examples show the format only. Never copy a value from them: a period, a subject or a
+requirement goes into the output only when the need itself states it.
 Need: "un server MCP gratuito per interrogare Postgres"
 {"intent": "SUGGEST", "subjects": [], "searchQuery": "MCP server postgres", "constraints": ["free"],
  "wantsReading": false, "webQuery": "MCP server for querying Postgres databases", "window": null, "clarify": null}
