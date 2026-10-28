@@ -20,7 +20,7 @@ const FAMILY_TOOLS = new Set(['openai', 'anthropic', 'google', 'xai', 'mistral',
 
 const TYPE_TERM: Record<ResultCard['type'], GlossaryKey> = {
   MCP_SERVER: 'mcp_server', MODEL: 'model', AGENT: 'agent', PROMPT: 'prompt', SKILL: 'skill', LIBRARY: 'library', DATASET: 'dataset',
-  PRODUCT: 'product', ARTICLE: 'article', PAPER: 'paper', NEWS: 'news', EVENT: 'event', OTHER: 'other',
+  PRODUCT: 'product', ARTICLE: 'article', PAPER: 'paper', NEWS: 'news', EVENT: 'event', COURSE: 'course', OTHER: 'other',
 };
 
 interface Fact {

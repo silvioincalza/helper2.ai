@@ -6,6 +6,11 @@ enum class ResourceType {
     PRODUCT, MODEL, AGENT, PROMPT, SKILL, MCP_SERVER, LIBRARY, DATASET,
     /** Knowledge about AI rather than tools. */
     ARTICLE, PAPER, NEWS, EVENT,
+    /**
+     * A course or a certification (ADR 0032 §8): neither a tool type nor a reading type. Its platform is a
+     * PLATFORM label; credential and format are tags (see R__courses.sql).
+     */
+    COURSE,
     OTHER;
 
     /** Lower number = more specific. Used when sources classify the same resource differently. */
@@ -19,11 +24,12 @@ enum class ResourceType {
             DATASET -> 5
             PRODUCT -> 6
             LIBRARY -> 7
-            EVENT -> 8
-            PAPER -> 9
-            NEWS -> 10
-            ARTICLE -> 11
-            OTHER -> 12
+            COURSE -> 8
+            EVENT -> 9
+            PAPER -> 10
+            NEWS -> 11
+            ARTICLE -> 12
+            OTHER -> 13
         }
 }
 

@@ -56,7 +56,8 @@ class CuratedSeedTest {
             """;
         String before = jdbc.sql(counts).query(String.class).single();
 
-        for (String seed : List.of("R__curated_seed.sql", "R__industry_events.sql", "R__community_events.sql", "R__model_families.sql")) {
+        for (String seed : List.of("R__curated_seed.sql", "R__industry_events.sql", "R__community_events.sql", "R__model_families.sql",
+            "R__courses.sql")) {
             String sql = new String(new ClassPathResource("db/migration/" + seed).getInputStream().readAllBytes(), StandardCharsets.UTF_8);
             tx.executeWithoutResult(status -> template.execute(sql));
         }
@@ -111,12 +112,42 @@ class CuratedSeedTest {
         return jdbc.sql("SELECT count(*) FROM resource WHERE data_origin = 'CURATED'").query(Long.class).single();
     }
 
+    /** Courses state a price only where their page does (an exam fee, "free"); no other seed asserts one. */
     @Test
     void seedAssertsNoDatesAndNoPricing() {
         long withDates = jdbc.sql("""
                 SELECT count(*) FROM resource WHERE data_origin = 'CURATED'
-                AND (published_at IS NOT NULL OR updated_at IS NOT NULL OR pricing IS NOT NULL)
+                AND (published_at IS NOT NULL OR updated_at IS NOT NULL OR (pricing IS NOT NULL AND type <> 'COURSE'))
                 """).query(Long.class).single();
         assertThat(withDates).isZero();
+    }
+
+    /** ADR 0032 §8: every course card has its platform, and credential and format come from a fixed tag vocabulary. */
+    @Test
+    void coursesSeedFillsTheCardFromExistingFields() {
+        assertThat(jdbc.sql("SELECT count(*) FROM resource WHERE type = 'COURSE' AND data_origin = 'CURATED'").query(Long.class).single())
+            .isBetween(25L, 40L);
+        assertThat(jdbc.sql("""
+                SELECT count(*) FROM resource r WHERE r.type = 'COURSE'
+                AND NOT EXISTS (SELECT 1 FROM resource_label l WHERE l.resource_id = r.id AND l.kind = 'PLATFORM')
+                """).query(Long.class).single()).isZero();
+        assertThat(jdbc.sql("""
+                SELECT DISTINCT l.value FROM resource_label l JOIN resource r ON r.id = l.resource_id
+                WHERE r.type = 'COURSE' AND l.kind = 'TAG'
+                """).query(String.class).list())
+            .isSubsetOf("certification", "certificate", "exam-only", "self-paced", "instructor-led", "live-event")
+            .contains("certification", "certificate", "exam-only", "self-paced", "live-event");
+        // A certification is a proctored exam with a fee: exam-only and paid, every one of them.
+        assertThat(jdbc.sql("""
+                SELECT count(*) FROM resource r JOIN source_record s ON s.resource_id = r.id AND s.source_id = 'curated'
+                WHERE r.type = 'COURSE' AND s.extra->>'credential' = 'certification'
+                AND (s.extra->>'courseFormat' <> 'exam-only' OR r.pricing IS DISTINCT FROM 'PAID')
+                """).query(Long.class).single()).isZero();
+        // Labels are rebuilt from the source record's extra on every upsert, so both must say the same.
+        assertThat(jdbc.sql("""
+                SELECT count(*) FROM resource r JOIN source_record s ON s.resource_id = r.id AND s.source_id = 'curated'
+                WHERE r.type = 'COURSE' AND (s.extra->'platforms'->>0) IS DISTINCT FROM
+                    (SELECT l.value FROM resource_label l WHERE l.resource_id = r.id AND l.kind = 'PLATFORM')
+                """).query(Long.class).single()).isZero();
     }
 }
