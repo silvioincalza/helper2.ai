@@ -325,7 +325,11 @@ class AskGuide(
             GuideIntent.WHEN -> dates(q, r, progress)
             GuideIntent.ALTERNATIVES -> alternatives(q, r, progress, asked, usable)
             GuideIntent.NEWEST -> newest(q, r, progress, asked, usable)
-            GuideIntent.LEARN -> picks(q, r, progress, asked, usable, Retrieval(r.query, SearchFilters(types = LEARN_TYPES)))
+            GuideIntent.LEARN -> picks(
+                q, r, progress, asked, usable,
+                // A stated period ("courses from last month") filters like it does for newest: undated courses drop out.
+                Retrieval(r.query, SearchFilters(types = LEARN_TYPES, publishedAfter = r.window?.from, publishedBefore = r.window?.to)),
+            )
             GuideIntent.HOW_TO, GuideIntent.SUGGEST -> picks(q, r, progress, asked, usable, Retrieval(r.query, readingFilter(r)))
         }
         return answer.copy(intent = r.intent, subjects = r.subjects, window = r.window)

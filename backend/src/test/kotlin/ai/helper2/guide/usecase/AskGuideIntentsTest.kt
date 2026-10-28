@@ -275,4 +275,16 @@ class AskGuideIntentsTest {
         assertEquals(emptySet(), queries.single().types - setOf(ResourceType.COURSE))
         assertTrue(queries.single().types.contains(ResourceType.COURSE))
     }
+
+    @Test
+    fun `a learning question with a period searches only courses created in it`() {
+        val model = Model(
+            GuideSearchPlan("LangChain course", intent = GuideIntent.LEARN, window = PlannedWindow(1, WindowUnit.MONTH)),
+            choose = ::pickAll,
+        )
+        val a = guide(model).ask("LangChain courses released last month", null)
+        assertEquals(GuideIntent.LEARN, a.intent)
+        assertEquals(LocalDate.of(2026, 9, 22), queries.single().publishedAfter)
+        assertTrue(a.recommendations.all { it.result.published.value != null })
+    }
 }
