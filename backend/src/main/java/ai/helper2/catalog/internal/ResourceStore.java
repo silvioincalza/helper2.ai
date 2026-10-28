@@ -474,6 +474,7 @@ public class ResourceStore {
               FROM resource r, q
               WHERE r.data_origin = ANY(:origins)
                 AND %3$s
+                AND (CAST(:after AS timestamptz) IS NULL OR r.published_at >= CAST(:after AS timestamptz))
             ), pre AS (
               SELECT m.*, r.popularity AS pop
               FROM matched m JOIN resource r ON r.id = m.id
@@ -499,6 +500,13 @@ public class ResourceStore {
      */
     public List<ResourceRow> search(String query, List<String> requiredVariants, List<String> extraTerms,
                                     List<String> synonyms, String language, Set<DataOrigin> origins, int limit) {
+        return search(query, requiredVariants, extraTerms, synonyms, language, origins, limit, null);
+    }
+
+    /** As {@link #search}, keeping only rows created on or after [publishedAfter] (by the source's date); null = any. */
+    public List<ResourceRow> search(String query, List<String> requiredVariants, List<String> extraTerms,
+                                    List<String> synonyms, String language, Set<DataOrigin> origins, int limit,
+                                    Instant publishedAfter) {
         List<String> variants = requiredVariants.stream().map(String::trim).filter(v -> !v.isEmpty()).distinct()
             .limit(MAX_VARIANTS).toList();
         if (variants.isEmpty()) {
@@ -513,7 +521,8 @@ public class ResourceStore {
             .param("origins", origins.stream().map(Enum::name).toArray(String[]::new))
             .param("similarity", TITLE_SIMILARITY)
             .param("preselect", Math.max(PRESELECT, limit))
-            .param("limit", limit);
+            .param("limit", limit)
+            .param("after", publishedAfter == null ? null : Timestamp.from(publishedAfter), java.sql.Types.TIMESTAMP_WITH_TIMEZONE);
         for (int i = 0; i < variants.size(); i++) {
             spec = spec.param("v" + i, plainWords(variants.get(i) + " " + expansions));
         }
@@ -607,6 +616,28 @@ public class ResourceStore {
             sb.append(v[i]);
         }
         return sb.append(']').toString();
+    }
+
+    /**
+     * Resources created on or after [publishedAfter] (the source's date, never Helper2's discovery date) and not in
+     * the future, of [types] (empty = any), most popular first: what "new AI tools" means when no subject was given.
+     * Popularity, not date, orders them, so the slots go to new resources people use rather than empty ones.
+     */
+    public List<ResourceRow> browse(Instant publishedAfter, Instant now, Set<String> types, Set<DataOrigin> origins, int limit) {
+        return withFacts(jdbc.sql("""
+                SELECT r.*, r.popularity AS score FROM resource r
+                WHERE r.published_at IS NOT NULL AND r.published_at >= :after AND r.published_at <= :now
+                  AND r.data_origin = ANY(:origins)
+                  AND (cardinality(:types) = 0 OR r.type = ANY(:types))
+                ORDER BY r.popularity DESC, r.published_at DESC, r.title
+                LIMIT :limit
+                """)
+            .param("after", Timestamp.from(publishedAfter)).param("now", Timestamp.from(now))
+            .param("origins", origins.stream().map(Enum::name).toArray(String[]::new))
+            .param("types", types.toArray(String[]::new))
+            .param("limit", limit)
+            .query(this::mapResource)
+            .list());
     }
 
     /**

@@ -1,5 +1,11 @@
 package ai.helper2.guide.web;
 
+import ai.helper2.api.generated.model.GuideIntentDto;
+import ai.helper2.api.generated.model.GuideStreamUnderstoodDto;
+import ai.helper2.guide.Clarification;
+import ai.helper2.guide.DateWindow;
+import ai.helper2.guide.Drops;
+import ai.helper2.guide.GuideIntent;
 import ai.helper2.api.generated.model.GuideRequestDto;
 import ai.helper2.api.generated.model.GuideStreamCheckedDto;
 import ai.helper2.api.generated.model.GuideStreamChosenDto;
@@ -85,7 +91,9 @@ class GuideStreamController implements DisposableBean {
         AudiencePath path = GuideController.path(body);
         String client = ClientKey.of(http.getRemoteAddr());
         Events events = new Events(new SseEmitter(limits.deadline().plus(EMITTER_GRACE).toMillis()));
-        boolean started = limits.tryStart(() -> run(events, request, path, client),
+        String clarification = GuideController.clarification(body);
+        Drops drops = GuideController.drops(body);
+        boolean started = limits.tryStart(() -> run(events, request, path, client, clarification, drops),
             () -> events.fail(504, "Guide timed out", GuideLimits.TIMED_OUT));
         if (started) {
             events.keepAlive();
@@ -99,9 +107,9 @@ class GuideStreamController implements DisposableBean {
             .body(events.emitter);
     }
 
-    private void run(Events events, String request, AudiencePath path, String client) {
+    private void run(Events events, String request, AudiencePath path, String client, String clarification, Drops drops) {
         try {
-            var answer = guide.ask(request, path, events, client);
+            var answer = guide.ask(request, path, events, client, clarification, drops);
             events.finish("answer", mapper.toDto(answer));
         } catch (Throwable e) {
             // Throwable, not only RuntimeException: the emitter must complete whatever happened (an interrupt, an Error).
@@ -130,6 +138,17 @@ class GuideStreamController implements DisposableBean {
         @Override
         public void planned(String searchQuery, List<String> constraints) {
             send("planned", new GuideStreamPlannedDto(searchQuery, constraints).model(mapper.fastModel()));
+        }
+
+        @Override
+        public void understood(GuideIntent intent, List<String> subjects, DateWindow window) {
+            send("understood", new GuideStreamUnderstoodDto(GuideIntentDto.fromValue(intent.name()), subjects)
+                .window(GuideDtoMapper.window(window)));
+        }
+
+        @Override
+        public void clarify(Clarification clarification) {
+            send("clarify", GuideDtoMapper.clarification(clarification));
         }
 
         @Override

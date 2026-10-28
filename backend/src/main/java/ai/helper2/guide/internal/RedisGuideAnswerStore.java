@@ -31,7 +31,7 @@ import tools.jackson.module.kotlin.KotlinModule;
  */
 class RedisGuideAnswerStore implements GuideAnswerStore {
 
-    static final int VERSION = 1;
+    static final int VERSION = 2;
     private static final Logger log = LoggerFactory.getLogger(RedisGuideAnswerStore.class);
 
     private final StringRedisTemplate redis;

@@ -35,7 +35,7 @@ public class HuggingFaceSpacesSource implements SearchSource {
         this.descriptor = new SourceDescriptor("hf-spaces", "Hugging Face Spaces", SourceMode.LIVE,
             URI.create("https://huggingface.co/spaces"), URI.create("https://huggingface.co/terms-of-service"),
             "AI app and demo metadata from the Hugging Face Hub API", EnumSet.of(ResourceType.PRODUCT),
-            settings.timeout(), settings.cacheTtl(), settings.enabled(), 35);
+            settings.timeout(), settings.cacheTtl(), settings.enabled(), 35, false, true, true, true);
     }
 
     @Override
@@ -47,7 +47,7 @@ public class HuggingFaceSpacesSource implements SearchSource {
     public List<SourceHit> search(SourceQuery query) {
         String text = HttpClients.queryText(query);
         JsonNode root = HttpClients.getJson(() -> http.get()
-            .uri(u -> u.path("/api/spaces").queryParam("search", text).queryParam("limit", Math.min(query.getLimit(), 50)).build())
+            .uri(u -> HttpClients.hubListing(u.path("/api/spaces"), query, text).queryParam("limit", Math.min(query.getLimit(), 50)).build())
             .retrieve().body(String.class), clock);
         return HttpClients.hits(root, clock.instant(), HuggingFaceSpacesSource::toHit);
     }

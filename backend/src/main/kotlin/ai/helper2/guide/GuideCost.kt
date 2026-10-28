@@ -110,7 +110,7 @@ class GuideAnswerCache @JvmOverloads constructor(
         }
         // Outside the lock: a slow store must not queue every caller behind it.
         val durable = store?.let { runCatching { it.get(key) }.getOrNull() } ?: return null
-        val expiresAt = durable.generatedAt.plus(ttl)
+        val expiresAt = durable.generatedAt.plus(ttlOf(durable))
         if (!now.isBefore(expiresAt) || !isCacheable(durable)) return null
         synchronized(this) { entries[key] = Entry(durable, expiresAt) }
         return durable
@@ -118,9 +118,16 @@ class GuideAnswerCache @JvmOverloads constructor(
 
     fun put(key: String, answer: GuideAnswer) {
         if (!isCacheable(answer)) return
+        val ttl = ttlOf(answer)
         synchronized(this) { entries[key] = Entry(answer, clock.instant().plus(ttl)) }
         store?.let { runCatching { it.put(key, answer, ttl) } }
     }
+
+    /**
+     * The cache is read before the plan, so its key cannot hold the resolved window of "last month". An answer with a
+     * window lives at most [WINDOWED_TTL] instead, which bounds how far its window drifts from today's.
+     */
+    private fun ttlOf(answer: GuideAnswer): Duration = if (answer.window != null) minOf(ttl, WINDOWED_TTL) else ttl
 
     companion object {
         /**
@@ -128,12 +135,35 @@ class GuideAnswerCache @JvmOverloads constructor(
          * NOT_CHECKED (the check failed or the budget ran out) would otherwise be served unchecked for a day.
          */
         @JvmStatic
-        fun isCacheable(a: GuideAnswer) = a.modelUsed && a.recommendations.any { it.aiReasoned } &&
-            a.recommendations.none { it.aiReasoned && it.reasonCheck == ReasonCheck.NOT_CHECKED }
+        fun isCacheable(a: GuideAnswer): Boolean {
+            if (!a.modelUsed || a.status == GuideStatus.NEEDS_CLARIFICATION) return false
+            val picksChecked = a.recommendations.none { it.aiReasoned && it.reasonCheck == ReasonCheck.NOT_CHECKED }
+            val comparisonChecked = a.comparison?.rows.orEmpty().flatMap { it.cells }
+                .none { it.text != null && it.reasonCheck == ReasonCheck.NOT_CHECKED }
+            val explanationChecked = a.explanation?.sentences.orEmpty().none { it.reasonCheck == ReasonCheck.NOT_CHECKED }
+            val answered = a.recommendations.any { it.aiReasoned } || a.comparison != null || a.explanation?.sentences?.isNotEmpty() == true
+            return answered && picksChecked && comparisonChecked && explanationChecked
+        }
 
-        /** Same question, different casing or spacing, same [config] (models, prompts, limits) → same key. */
+        /** Longest life of an answer with a window ("last month"): see [ttlOf]. */
+        @JvmField
+        val WINDOWED_TTL: Duration = Duration.ofHours(6)
+
+        /** Bumped when the answer's shape changes, so answers cached in the old shape are not served after a deploy. */
+        private const val SHAPE = "v2"
+
+        /**
+         * Same question, different casing or spacing, same [config] (models, prompts, limits) → same key. A
+         * clarification answer and removed parts of the reading ([drops]) are part of the question.
+         */
         @JvmStatic
-        fun key(request: String, path: AudiencePath?, config: String): String =
-            listOf(request.trim().lowercase().replace(Regex("\\s+"), " "), path?.name ?: "-", config).joinToString("|")
+        @JvmOverloads
+        fun key(request: String, path: AudiencePath?, config: String, clarification: String? = null, drops: Drops = Drops.NONE): String =
+            listOf(
+                SHAPE, normalized(request), path?.name ?: "-", config,
+                clarification?.let { "c:" + normalized(it) } ?: "-", drops.key.ifEmpty { "-" },
+            ).joinToString("|")
+
+        private fun normalized(text: String) = text.trim().lowercase().replace(Regex("\\s+"), " ")
     }
 }

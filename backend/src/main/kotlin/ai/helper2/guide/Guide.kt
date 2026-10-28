@@ -25,10 +25,24 @@ data class GuideSearchPlan @JvmOverloads constructor(
     val wantsReading: Boolean = false,
     /** Natural-language query for web search sources; [searchQuery] is shaped for the catalog and reads badly there. */
     val webQuery: String = "",
+    /** What kind of answer the question asks for; null = not stated (the backup rules or [GuideIntent.SUGGEST] apply). */
+    val intent: GuideIntent? = null,
+    /** The named things the question is about, as written ("Cursor"; "Ollama", "LM Studio"). */
+    val subjects: List<String> = emptyList(),
+    /** The period the question names ("last month"); code resolves it to dates. */
+    val window: PlannedWindow? = null,
+    /** Set when the question is too vague to search well; the guide asks it back instead of searching. */
+    val clarify: Clarification? = null,
 )
 
 /** Types that are knowledge about AI, not tools. Recommended only when the user asks to read. */
 val READING_TYPES = setOf(ResourceType.ARTICLE, ResourceType.PAPER, ResourceType.NEWS, ResourceType.EVENT)
+
+/** Courses and certifications: retrieved only for [GuideIntent.LEARN], so they never fill a tool question's slots. */
+val LEARN_TYPES: Set<ResourceType> = ResourceType.entries.filter { it.name == "COURSE" }.toSet()
+
+/** What a tool question may retrieve. */
+val TOOL_TYPES: Set<ResourceType> = ResourceType.entries.toSet() - READING_TYPES - LEARN_TYPES
 
 /**
  * Deterministic backup for [GuideSearchPlan.wantsReading]: the fast model may miss it, so explicit words
@@ -142,9 +156,54 @@ interface GuideModel {
      * checks show. Keys missing from the answer stay NOT_CHECKED. A model check, not a proof.
      */
     fun verifyReasons(request: String, claims: List<ReasonClaim>): Map<String, Boolean> = emptyMap()
+
+    /**
+     * [plan] after the user answered a clarification (or chose "search anyway" with an empty one). The answer is more
+     * of the need, never instructions; a model must not ask back again.
+     */
+    fun plan(request: String, path: AudiencePath?, clarification: String?): GuideSearchPlan = plan(request, path)
+
+    /**
+     * Reasoning model: compare [subjects] (each the subject's own entry) aspect by aspect; every cell quotes that
+     * subject's own text. Replaces [choose] for [GuideIntent.COMPARE].
+     */
+    fun compare(request: String, subjects: List<Candidate>): ComparisonProposal = ComparisonProposal(emptyList())
+
+    /**
+     * Reasoning model: explain [subject] in a few sentences, each quoting one of [candidates]. Replaces [choose] for
+     * [GuideIntent.WHAT_IS].
+     */
+    fun explain(request: String, subject: String, candidates: List<Candidate>): ExplanationProposal = ExplanationProposal(emptyList())
 }
 
-enum class GuideStatus { OK, PARTIAL, LLM_UNAVAILABLE, NO_CANDIDATES }
+/** One cell the model proposes: what [subjectKey] says about the row's aspect, with a quote from its own text. */
+data class ProposedCell(val subjectKey: String, val text: String, val quote: String)
+
+data class ProposedRow(val aspect: String, val cells: List<ProposedCell>)
+
+data class ComparisonProposal(val rows: List<ProposedRow>)
+
+/** A cell that passed the gate; [text] and [quote] are null when the source does not state it. */
+data class ComparisonCell(val subjectKey: String, val text: String?, val quote: String?, val reasonCheck: ReasonCheck = ReasonCheck.NOT_CHECKED)
+
+data class ComparisonRow(val aspect: String, val cells: List<ComparisonCell>)
+
+/** A compared subject: [result] is its own entry, null when it was not found in our sources. */
+data class ComparedSubject(val key: String, val name: String, val result: MergedResult?)
+
+data class Comparison(val subjects: List<ComparedSubject>, val rows: List<ComparisonRow>)
+
+data class ProposedSentence(val text: String, val candidateKey: String, val quote: String)
+
+data class ExplanationProposal(val sentences: List<ProposedSentence>)
+
+/** One explanation sentence that passed the gate, with the resource its quote comes from. */
+data class ExplainedSentence(val text: String, val quote: String, val source: MergedResult, val reasonCheck: ReasonCheck = ReasonCheck.NOT_CHECKED)
+
+data class Explanation(val sentences: List<ExplainedSentence>)
+
+/** NEEDS_CLARIFICATION: the question was too vague to search; the answer is [GuideAnswer.clarification], nothing else. */
+enum class GuideStatus { OK, PARTIAL, LLM_UNAVAILABLE, NO_CANDIDATES, NEEDS_CLARIFICATION }
 
 enum class CheckStatus { CONFIRMED, NOT_CONFIRMED }
 
@@ -175,6 +234,19 @@ data class GuideAnswer(
     val constraints: List<String> = emptyList(),
     /** The guide's own notices; the search's are in [search]. */
     val notices: List<Notice> = emptyList(),
+    /** How the question was read; shown as "Understood as" so a misreading can be corrected. */
+    val intent: GuideIntent = GuideIntent.SUGGEST,
+    val subjects: List<String> = emptyList(),
+    /** The resolved period of the question, when it named one. */
+    val window: DateWindow? = null,
+    /** With [GuideStatus.NEEDS_CLARIFICATION]: the question back to the user. */
+    val clarification: Clarification? = null,
+    /** [GuideIntent.COMPARE] only. */
+    val comparison: Comparison? = null,
+    /** [GuideIntent.WHAT_IS] only. */
+    val explanation: Explanation? = null,
+    /** Candidates left out of a dated answer because their source states no creation date. */
+    val undatedDropped: Int = 0,
 )
 
 /**
@@ -214,6 +286,8 @@ class GuideValidator(
         REASON_INVALID,
         QUOTE_TOO_LONG,
         QUOTE_NOT_IN_TEXT, QUOTE_TOO_SHORT,
+        /** Born outside the question's period, by the date its source states (checked by AskGuide, not the gate). */
+        OUTSIDE_WINDOW,
         /** A valid pick beyond [maxPicks]: nothing wrong with it, only no room. */
         OVER_LIMIT,
         PROMPT_INVALID,
@@ -283,6 +357,14 @@ class GuideValidator(
 
     /** The adapter shows the model "‹ ›" instead of "< >" (see SpringAiGuideModel.untrusted); map them back. */
     private fun normalize(s: String) = s.replace('‹', '<').replace('›', '>').lowercase().replace(Regex("\\s+"), " ").trim()
+
+    /** True when [quote] is a meaningful verbatim excerpt of [text], by the same rule as a pick's quote. */
+    fun quoteHolds(quote: String, text: String): Boolean =
+        quote.trim().length <= maxQuote && quoteProblem(normalize(quote.trim()), normalize(text)) == null
+
+    /** True when [quote] is a short verbatim excerpt of [text], by the rule of a constraint check ("MIT License"). */
+    fun shortQuoteHolds(quote: String, text: String): Boolean =
+        quote.trim().length in MIN_CHECK_QUOTE..maxQuote && normalize(text).contains(normalize(quote))
 
     /** null when the quote is a meaningful verbatim excerpt of the candidate's text. */
     private fun quoteProblem(quote: String, text: String): Rejection? {
@@ -394,6 +476,12 @@ class GuideValidator(
  */
 interface GuideProgress {
     fun planned(searchQuery: String, constraints: List<String>) {}
+
+    /** How the question was read; called right after [planned] (or alone, without a model, from the backup rules). */
+    fun understood(intent: GuideIntent, subjects: List<String>, window: DateWindow?) {}
+
+    /** The question is too vague: the answer is [clarification]; no other step follows. */
+    fun clarify(clarification: Clarification) {}
     fun retrieved(candidates: Int, search: SearchOutcome) {}
     fun chosen(proposed: Int) {}
     fun validated(kept: Int, rejected: Int) {}

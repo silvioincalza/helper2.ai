@@ -16,6 +16,7 @@ import ai.helper2.shared.ValueOrigin
 import java.net.URI
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalDate
 
 /** Static description of a configured source. Disclosed to users on the Sources page. */
 data class SourceDescriptor @JvmOverloads constructor(
@@ -38,6 +39,13 @@ data class SourceDescriptor @JvmOverloads constructor(
      * text as typed, e.g. by meaning): it then starts at once instead of waiting for the translation.
      */
     val usesTranslation: Boolean = true,
+    /**
+     * True when the source restricts its own results to [SourceQuery.publishedAfter] (by creation date); only
+     * then is the window part of the cache key. Other sources return relevant hits and the search filters them.
+     */
+    val filtersByDate: Boolean = false,
+    /** True when the source can list resources without any subject words ([SourceQuery.browse]); others are skipped. */
+    val browses: Boolean = false,
 )
 
 enum class PopularityKind { GITHUB_STARS, HF_LIKES, HF_DOWNLOADS, NPM_DOWNLOADS_WEEKLY }
@@ -99,6 +107,15 @@ data class SourceQuery @JvmOverloads constructor(
     val language: String? = null,
     /** Natural-language query for web search engines when the guide planned one; else null. */
     val webQuery: String? = null,
+    /** Only resources created on or after this day are wanted; sources with [SourceDescriptor.filtersByDate] apply it. */
+    val publishedAfter: LocalDate? = null,
+    /**
+     * No subject words: list resources by [publishedAfter] and [types] alone, most popular first. Only sources with
+     * [SourceDescriptor.browses] are called.
+     */
+    val browse: Boolean = false,
+    /** The types the search keeps; a browsing source may use them to fill its limit with useful rows. Empty = any. */
+    val types: Set<ResourceType> = emptySet(),
 )
 
 /** Raised by source adapters; anything else thrown is treated as FAILED. */
