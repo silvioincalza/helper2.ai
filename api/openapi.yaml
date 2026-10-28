@@ -252,6 +252,8 @@ paths:
         | event | data | when |
         |---|---|---|
         | `planned` | `GuideStreamPlanned` | the fast model turned the need into search terms |
+        | `understood` | `GuideStreamUnderstood` | how the question was read: intent, subjects, period (also without a model, from fixed rules) |
+        | `clarify` | `GuideClarification` | the question is too vague; it is followed only by `answer` (status NEEDS_CLARIFICATION) |
         | `retrieved` | `GuideStreamRetrieved` | federated search returned the candidates |
         | `chosen` | `GuideStreamChosen` | the reasoning model proposed its picks |
         | `validated` | `GuideStreamValidated` | the validator kept or rejected each pick |
@@ -439,9 +441,10 @@ components:
     ResourceType:
       type: string
       description: |
-        Tools (PRODUCT…DATASET) and knowledge about AI (ARTICLE, PAPER, NEWS, EVENT).
+        Tools (PRODUCT…DATASET), knowledge about AI (ARTICLE, PAPER, NEWS, EVENT) and learning (COURSE: a course or
+        a certification, its platform in `platforms`, its credential and format in `tags`).
         Helper2.ai only covers the AI world; non-AI content is filtered out.
-      enum: [PRODUCT, MODEL, AGENT, PROMPT, SKILL, MCP_SERVER, LIBRARY, DATASET, ARTICLE, PAPER, NEWS, EVENT, OTHER]
+      enum: [PRODUCT, MODEL, AGENT, PROMPT, SKILL, MCP_SERVER, LIBRARY, DATASET, ARTICLE, PAPER, NEWS, EVENT, COURSE, OTHER]
     TechLevel:
       type: string
       enum: [BEGINNER, INTERMEDIATE, ADVANCED]
@@ -690,8 +693,10 @@ components:
       properties:
         code:
           type: string
-          description: GUIDE_DAILY_QUOTA (guide only) = this client's AI answers for the UTC day are used up; the answer is search results only.
-          enum: [CACHE_UNAVAILABLE, INDEX_UNAVAILABLE, QUERY_EXPANDED, ALL_SOURCES_FAILED, GUIDE_DAILY_QUOTA]
+          description: |
+            GUIDE_DAILY_QUOTA (guide only) = this client's AI answers for the UTC day are used up; the answer is search results only.
+            GUIDE_SUBJECT_NOT_FOUND (guide only) = a thing the question names (to compare, to find alternatives to, to date) is not in our sources.
+          enum: [CACHE_UNAVAILABLE, INDEX_UNAVAILABLE, QUERY_EXPANDED, ALL_SOURCES_FAILED, GUIDE_DAILY_QUOTA, GUIDE_SUBJECT_NOT_FOUND]
         message: { type: string }
 
     QueryInterpretation:
@@ -955,6 +960,19 @@ components:
       properties:
         request: { type: string, minLength: 3, maxLength: 500, description: The need in plain words, any language. }
         path: { oneOf: [{ $ref: '#/components/schemas/AudiencePath' }, { type: 'null' }] }
+        clarification:
+          type: [string, 'null']
+          maxLength: 300
+          description: |
+            The user's answer to a NEEDS_CLARIFICATION answer (a chosen option or free text); "" means "search
+            anyway". A request with this field is never asked back again.
+        drop:
+          type: array
+          maxItems: 8
+          description: |
+            Parts of the reading the user removed from "Understood as": "intent" (answer as a plain suggestion),
+            "window" (ignore the period) or "constraint:<text>". Applied by code; never sent to a model.
+          items: { type: string, maxLength: 80 }
 
     GuideRecommendation:
       type: object
@@ -1025,7 +1043,10 @@ components:
       type: object
       required: [status, searchQuery, recommendations, candidatesConsidered, sources, notices, generatedAt]
       properties:
-        status: { type: string, enum: [OK, PARTIAL, LLM_UNAVAILABLE, NO_CANDIDATES] }
+        status:
+          type: string
+          enum: [OK, PARTIAL, LLM_UNAVAILABLE, NO_CANDIDATES, NEEDS_CLARIFICATION]
+          description: NEEDS_CLARIFICATION = the question was too vague to search; see `clarification`. No search ran.
         searchQuery: { type: string, description: Search terms actually used to retrieve candidates. }
         recommendations: { type: array, items: { $ref: '#/components/schemas/GuideRecommendation' } }
         prompt: { oneOf: [{ $ref: '#/components/schemas/GuidePrompt' }, { type: 'null' }] }
@@ -1039,6 +1060,91 @@ components:
         sources: { type: array, items: { $ref: '#/components/schemas/SourceStatus' } }
         notices: { type: array, items: { $ref: '#/components/schemas/Notice' } }
         generatedAt: { type: string, format: date-time }
+        intent: { $ref: '#/components/schemas/GuideIntent' }
+        subjects: { type: array, items: { type: string }, description: Named things the question is about, as written. }
+        window: { oneOf: [{ $ref: '#/components/schemas/GuideWindow' }, { type: 'null' }] }
+        clarification: { oneOf: [{ $ref: '#/components/schemas/GuideClarification' }, { type: 'null' }] }
+        comparison: { oneOf: [{ $ref: '#/components/schemas/GuideComparison' }, { type: 'null' }] }
+        explanation: { oneOf: [{ $ref: '#/components/schemas/GuideExplanation' }, { type: 'null' }] }
+
+    GuideIntent:
+      type: string
+      enum: [SUGGEST, NEWEST, ALTERNATIVES, COMPARE, HOW_TO, WHAT_IS, WHEN, LEARN]
+      description: What kind of answer the question asks for (ADR 0032). SUGGEST is the default.
+
+    GuideWindow:
+      type: object
+      required: [from, to]
+      description: The period the question names, resolved from today (UTC, inclusive). A month is 30 days.
+      properties:
+        from: { type: string, format: date }
+        to: { type: string, format: date }
+
+    GuideClarification:
+      type: object
+      required: [question, options]
+      properties:
+        question: { type: string, maxLength: 120 }
+        options: { type: array, minItems: 2, maxItems: 4, items: { type: string, maxLength: 40 } }
+
+    GuideComparison:
+      type: object
+      required: [subjects, rows]
+      properties:
+        subjects:
+          type: array
+          items:
+            type: object
+            required: [key, name]
+            properties:
+              key: { type: string }
+              name: { type: string, description: The name as the user wrote it. }
+              resourceId: { type: [string, 'null'], format: uuid, description: The subject's own entry; null when not found in our sources. }
+              title: { type: [string, 'null'] }
+              url: { type: [string, 'null'], format: uri }
+        rows:
+          type: array
+          items:
+            type: object
+            required: [aspect, cells]
+            properties:
+              aspect: { type: string }
+              cells:
+                type: array
+                description: One per subject, in the order of `subjects`.
+                items:
+                  type: object
+                  required: [subjectKey]
+                  properties:
+                    subjectKey: { type: string }
+                    text: { type: [string, 'null'], description: AI-written; null when the subject's own text does not state it. }
+                    quote: { type: [string, 'null'], description: Exact text from that subject's own description. }
+                    reasonCheck: { type: string, enum: [SUPPORTED, REMOVED, NOT_CHECKED], default: NOT_CHECKED }
+
+    GuideExplanation:
+      type: object
+      required: [sentences]
+      properties:
+        sentences:
+          type: array
+          items:
+            type: object
+            required: [text, quote, resourceId, title, url]
+            properties:
+              text: { type: string, description: AI-written sentence. }
+              quote: { type: string, description: Exact text from the resource below that supports the sentence. }
+              resourceId: { type: string, format: uuid }
+              title: { type: string }
+              url: { type: string, format: uri }
+              reasonCheck: { type: string, enum: [SUPPORTED, REMOVED, NOT_CHECKED], default: NOT_CHECKED }
+
+    GuideStreamUnderstood:
+      type: object
+      required: [intent, subjects]
+      properties:
+        intent: { $ref: '#/components/schemas/GuideIntent' }
+        subjects: { type: array, items: { type: string } }
+        window: { oneOf: [{ $ref: '#/components/schemas/GuideWindow' }, { type: 'null' }] }
 
     GuideStreamPlanned:
       type: object
@@ -1137,7 +1243,10 @@ components:
       required: [id, kind, status, reason, createdAt]
       properties:
         id: { type: string, format: uuid }
-        kind: { type: string, enum: [ENRICHMENT_VALIDATION, SOURCE_CONFLICT, RELATIONSHIP_CANDIDATE, USER_REPORT] }
+        kind:
+          type: string
+          description: COURSE_CANDIDATE is a course page found by Scout and not yet in the catalog (no resource; URL in details).
+          enum: [ENRICHMENT_VALIDATION, SOURCE_CONFLICT, RELATIONSHIP_CANDIDATE, USER_REPORT, COURSE_CANDIDATE]
         status: { $ref: '#/components/schemas/ReviewStatus' }
         resourceId: { type: [string, 'null'], format: uuid }
         resourceTitle: { type: [string, 'null'] }

@@ -1,5 +1,6 @@
 package ai.helper2.guide.web;
 
+import ai.helper2.guide.Drops;
 import ai.helper2.api.generated.GuideApi;
 import ai.helper2.api.generated.model.GuideRequestDto;
 import ai.helper2.api.generated.model.GuideResponseDto;
@@ -49,7 +50,7 @@ class GuideController implements GuideApi {
         CompletableFuture<GuideAnswer> answer = new CompletableFuture<>();
         boolean started = limits.tryStart(() -> {
             try {
-                answer.complete(guide.ask(request, path, GuideProgress.NONE, client));
+                answer.complete(guide.ask(request, path, GuideProgress.NONE, client, clarification(body), drops(body)));
             } catch (Throwable e) {
                 answer.completeExceptionally(e);
             }
@@ -72,6 +73,15 @@ class GuideController implements GuideApi {
             throw new BadRequestException("request too short");
         }
         return request;
+    }
+
+    /** The answer to a clarification, trimmed; null when the request is not one ("" = "search anyway"). */
+    static String clarification(GuideRequestDto body) {
+        return body.getClarification() == null ? null : body.getClarification().strip();
+    }
+
+    static Drops drops(GuideRequestDto body) {
+        return Drops.of(body.getDrop());
     }
 
     static AudiencePath path(GuideRequestDto body) {

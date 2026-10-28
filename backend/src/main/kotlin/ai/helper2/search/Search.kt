@@ -27,10 +27,13 @@ data class SearchRequest @JvmOverloads constructor(
     val size: Int = 20,
     /** Natural-language query for web search sources, written by the guide's planner; null outside the guide. */
     val webQuery: String? = null,
+    /** No subject words to search: sources that can list by date and type do, the others are skipped. */
+    val browse: Boolean = false,
 )
 
 /** GUIDE_DAILY_QUOTA is the guide's own: the asker's daily AI answers are used up, so the answer is search only. */
-enum class NoticeCode { CACHE_UNAVAILABLE, INDEX_UNAVAILABLE, QUERY_EXPANDED, ALL_SOURCES_FAILED, GUIDE_DAILY_QUOTA }
+/** GUIDE_SUBJECT_NOT_FOUND: the thing the question names (to compare, to find alternatives to, to date) is not in our sources. */
+enum class NoticeCode { CACHE_UNAVAILABLE, INDEX_UNAVAILABLE, QUERY_EXPANDED, ALL_SOURCES_FAILED, GUIDE_DAILY_QUOTA, GUIDE_SUBJECT_NOT_FOUND }
 
 data class Notice(val code: NoticeCode, val message: String)
 
@@ -51,5 +54,14 @@ data class SearchOutcome(
     val facets: Map<String, List<FacetCount>>,
     val coverage: Coverage,
     val notices: List<Notice>,
-)
+) {
+    companion object {
+        /** No search ran (the guide asked a question back, or compared entries it looked up one by one). */
+        @JvmStatic
+        fun empty(at: Instant): SearchOutcome = SearchOutcome(
+            SearchRequest(""), QueryAnalyzer().analyze(""), at, emptyList(), emptyList(), 0, emptyMap(),
+            Coverage(false, 0, 0, 0), emptyList(),
+        )
+    }
+}
 

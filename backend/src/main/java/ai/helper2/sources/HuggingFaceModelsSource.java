@@ -37,7 +37,7 @@ public class HuggingFaceModelsSource implements SearchSource {
         this.descriptor = new SourceDescriptor("hf-models", "Hugging Face models", SourceMode.LIVE,
             URI.create("https://huggingface.co/models"), URI.create("https://huggingface.co/terms-of-service"),
             "Model metadata from the Hugging Face Hub API", EnumSet.of(ResourceType.MODEL),
-            settings.timeout(), settings.cacheTtl(), settings.enabled(), 30);
+            settings.timeout(), settings.cacheTtl(), settings.enabled(), 30, false, true, true, true);
     }
 
     @Override
@@ -49,7 +49,7 @@ public class HuggingFaceModelsSource implements SearchSource {
     public List<SourceHit> search(SourceQuery query) {
         String text = HttpClients.queryText(query);
         JsonNode root = HttpClients.getJson(() -> http.get()
-            .uri(u -> u.path("/api/models").queryParam("search", text).queryParam("limit", Math.min(query.getLimit(), 50)).build())
+            .uri(u -> HttpClients.hubListing(u.path("/api/models"), query, text).queryParam("limit", Math.min(query.getLimit(), 50)).build())
             .retrieve().body(String.class), clock);
         return HttpClients.hits(root, clock.instant(), (item, now, rank) -> toHit(item, "hf-models", now, rank));
     }

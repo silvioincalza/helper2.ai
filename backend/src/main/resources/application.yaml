@@ -229,6 +229,23 @@ helper2:
         new model released OpenAI Anthropic Google Gemini,
         new model released xAI Grok Meta Llama Mistral,
         new model released NVIDIA Nemotron DeepSeek Qwen
+    courses:
+      # New AI course and certification pages (ADR 0032 section 8), sent to the admin review list, never straight to
+      # the catalog. One Tavily credit per platform and pass (search_depth basic): 10 platforms weekly ~ 43 credits/month.
+      interval: ${H2_SCOUT_COURSES_INTERVAL:P7D}
+      query: new artificial intelligence course or certification
+      # host[/path]=Platform: the search is restricted to the host; results must also be under the path.
+      platforms: >-
+        coursera.org=Coursera,
+        oreilly.com=O'Reilly,
+        edx.org=edX,
+        udemy.com=Udemy,
+        deeplearning.ai=DeepLearning.AI,
+        huggingface.co/learn=Hugging Face Learn,
+        cloud.google.com/learn=Google Cloud,
+        aws.amazon.com/certification=AWS,
+        learn.microsoft.com/en-us/credentials=Microsoft Learn,
+        nvidia.com=NVIDIA
     hf-provider-orgs:
       # Newest models of providers' official Hub organisations (one Hub call per org).
       interval: ${H2_SCOUT_HF_ORGS_INTERVAL:P1D}
@@ -293,6 +310,12 @@ helper2:
     tavily-scout:
       # Disabled (reported as SKIPPED) until H2_TAVILY_API_KEY is set.
       enabled: ${H2_SOURCE_TAVILY_SCOUT_ENABLED:true}
+      base-url: https://api.tavily.com
+      token: ${H2_TAVILY_API_KEY:}
+      timeout: 10s
+    course-scout:
+      # Disabled (reported as SKIPPED) until H2_TAVILY_API_KEY is set.
+      enabled: ${H2_SOURCE_COURSE_SCOUT_ENABLED:true}
       base-url: https://api.tavily.com
       token: ${H2_TAVILY_API_KEY:}
       timeout: 10s

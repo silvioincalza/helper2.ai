@@ -52,7 +52,7 @@ public class ArxivSource implements SearchSource {
         this.descriptor = new SourceDescriptor("arxiv", "arXiv", SourceMode.LIVE, URI.create("https://arxiv.org"),
             URI.create("https://info.arxiv.org/help/api/tou.html"),
             "Thank you to arXiv for use of its open access interoperability.", EnumSet.of(ResourceType.PAPER),
-            settings.timeout(), settings.cacheTtl(), settings.enabled(), 45);
+            settings.timeout(), settings.cacheTtl(), settings.enabled(), 45, false, true, true, true);
     }
 
     @Override
@@ -67,13 +67,24 @@ public class ArxivSource implements SearchSource {
         if (Duration.between(previous, now).compareTo(MIN_INTERVAL) < 0 || !lastCall.compareAndSet(previous, now)) {
             throw new SourceFailure.RateLimited(MIN_INTERVAL);
         }
-        String terms = HttpClients.queryText(query)
-            .replaceAll("[^\\p{L}\\p{N} -]", " ").trim().replaceAll("\\s+", " ");
-        String searchQuery = "all:(" + terms + ") AND " + AI_CATEGORIES;
+        String searchQuery = searchQuery(query);
+        // Browsing has no words to rank by relevance: newest submissions first.
+        String sortBy = query.getBrowse() ? "submittedDate" : "relevance";
         String xml = HttpClients.getText(() -> http.get().uri(u -> u.path("/api/query").queryParam("search_query", searchQuery)
-                .queryParam("max_results", Math.min(query.getLimit(), 20)).queryParam("sortBy", "relevance").build())
+                .queryParam("max_results", Math.min(query.getLimit(), 20)).queryParam("sortBy", sortBy).build())
             .retrieve().body(String.class), clock);
         return parse(xml, now);
+    }
+
+    /** Words AND the AI categories; a window adds arXiv's documented {@code submittedDate:[from TO to]} range. */
+    static String searchQuery(SourceQuery query) {
+        String terms = HttpClients.queryText(query)
+            .replaceAll("[^\\p{L}\\p{N} -]", " ").trim().replaceAll("\\s+", " ");
+        String q = query.getBrowse() || terms.isEmpty() ? AI_CATEGORIES : "all:(" + terms + ") AND " + AI_CATEGORIES;
+        if (query.getPublishedAfter() != null) {
+            q += " AND submittedDate:[" + query.getPublishedAfter().toString().replace("-", "") + "0000 TO 299912312359]";
+        }
+        return q;
     }
 
     List<SourceHit> parse(String xml, Instant now) {

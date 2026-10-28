@@ -14,9 +14,11 @@ import ai.helper2.shared.DatePrecision;
 import java.net.URI;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.springframework.dao.DataAccessException;
 
 /**
@@ -45,9 +47,13 @@ public class CatalogSearchSource implements SearchSource {
     @Override
     public List<SourceHit> search(SourceQuery query) {
         List<ResourceRow> rows;
+        Instant after = query.getPublishedAfter() == null ? null : query.getPublishedAfter().atStartOfDay(ZoneOffset.UTC).toInstant();
         try {
-            rows = store.search(query.getText(), query.getRequiredVariants(), query.getExpandedTerms(), query.getSynonyms(),
-                query.getLanguage(), origins, query.getLimit());
+            rows = query.getBrowse() && after != null
+                ? store.browse(after, clock.instant(), query.getTypes().stream().map(Enum::name).collect(Collectors.toSet()), origins, query.getLimit())
+                : query.getBrowse() ? List.of()
+                : store.search(query.getText(), query.getRequiredVariants(), query.getExpandedTerms(), query.getSynonyms(),
+                    query.getLanguage(), origins, query.getLimit(), after);
         } catch (DataAccessException e) {
             throw new SourceFailure.Unavailable("catalog unavailable");
         }

@@ -16,6 +16,7 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.EnumSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -46,7 +47,7 @@ public class TavilySource implements SearchSource {
             URI.create("https://tavily.com"), URI.create("https://tavily.com/terms"),
             "Web results via the Tavily Search API; each links to the original publisher.",
             EnumSet.of(ResourceType.NEWS, ResourceType.ARTICLE, ResourceType.EVENT),
-            settings.timeout(), settings.cacheTtl(), settings.enabled() && settings.hasToken(), 48, true);
+            settings.timeout(), settings.cacheTtl(), settings.enabled() && settings.hasToken(), 48, true, true, true, true);
     }
 
     @Override
@@ -56,13 +57,25 @@ public class TavilySource implements SearchSource {
 
     @Override
     public List<SourceHit> search(SourceQuery query) {
-        Map<String, Object> body = Map.of(
+        Map<String, Object> body = new LinkedHashMap<>(Map.of(
             "query", queryText(query),
-            "topic", "news",
+            "topic", topic(query),
             "search_depth", "basic",
-            "max_results", Math.min(query.getLimit(), 20));
+            "max_results", Math.min(query.getLimit(), 20)));
+        if (query.getPublishedAfter() != null) {
+            // Tavily's documented window: results published on or after this day (YYYY-MM-DD).
+            body.put("start_date", query.getPublishedAfter().toString());
+        }
         JsonNode root = HttpClients.getJson(() -> http.post().uri("/search").body(body).retrieve().body(String.class), clock);
         return HttpClients.hits(root.path("results"), clock.instant(), (item, now, rank) -> toHit(item, "tavily", now, rank));
+    }
+
+    /**
+     * News, except for a guide question without a period ("what is RAG?"): there the general web finds explainers and
+     * product pages, which news search does not. Non-AI pages are still dropped by the gate in {@link #toHit}.
+     */
+    static String topic(SourceQuery query) {
+        return query.getWebQuery() != null && query.getPublishedAfter() == null ? "general" : "news";
     }
 
     /**

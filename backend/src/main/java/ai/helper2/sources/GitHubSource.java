@@ -40,7 +40,7 @@ public class GitHubSource implements SearchSource {
             URI.create("https://docs.github.com/en/site-policy/github-terms/github-terms-of-service"),
             "Repository metadata from the GitHub REST API",
             EnumSet.of(ResourceType.LIBRARY, ResourceType.MCP_SERVER, ResourceType.AGENT, ResourceType.PROMPT, ResourceType.SKILL),
-            settings.timeout(), settings.cacheTtl(), settings.enabled(), 20);
+            settings.timeout(), settings.cacheTtl(), settings.enabled(), 20, false, true, true, true);
     }
 
     @Override
@@ -50,14 +50,36 @@ public class GitHubSource implements SearchSource {
 
     @Override
     public List<SourceHit> search(SourceQuery query) {
-        String q = query.getText()
-            + (query.getExpandedTerms().isEmpty() ? "" : " OR " + String.join(" OR ", query.getExpandedTerms()))
-            + " fork:false archived:false";
+        String q = searchText(query);
+        // In a window, most-starred first: best match among new repositories favours empty ones named after the words.
+        boolean windowed = query.getPublishedAfter() != null;
         JsonNode root = HttpClients.getJson(() -> http.get()
-            .uri(u -> u.path("/search/repositories").queryParam("q", q).queryParam("per_page", Math.min(query.getLimit(), 50)).build())
+            .uri(u -> {
+                u.path("/search/repositories").queryParam("q", q).queryParam("per_page", Math.min(query.getLimit(), 50));
+                if (windowed) {
+                    u.queryParam("sort", "stars").queryParam("order", "desc");
+                }
+                return u.build();
+            })
             .retrieve().body(String.class), clock);
         return HttpClients.hits(root.path("items"), clock.instant(), GitHubSource::toHit);
     }
+
+    /**
+     * The repository search text. A window becomes the documented {@code created:>=} qualifier (creation date, the
+     * same date the hit reports as published). Browsing has no subject words, so it keeps an AI scope: GitHub is
+     * not an AI-only source, and a date alone returns any new repository.
+     */
+    static String searchText(SourceQuery query) {
+        String words = query.getBrowse()
+            ? BROWSE_SCOPE
+            : query.getText() + (query.getExpandedTerms().isEmpty() ? "" : " OR " + String.join(" OR ", query.getExpandedTerms()));
+        String created = query.getPublishedAfter() == null ? "" : " created:>=" + query.getPublishedAfter();
+        return words + " fork:false archived:false" + created;
+    }
+
+    /** Words that put a repository in the AI world when no subject was given; at most 5 ORs, GitHub's limit. */
+    static final String BROWSE_SCOPE = "llm OR ai-agent OR mcp OR generative-ai OR rag";
 
     private static SourceHit toHit(JsonNode item, Instant now, int position) {
         String name = HttpClients.text(item, "full_name");

@@ -5,6 +5,7 @@ import ai.helper2.platform.llm.CallCounter;
 import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.LlmSettings;
 import ai.helper2.platform.llm.ModelCallMetrics;
+import ai.helper2.scout.CandidateReview;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
@@ -95,6 +96,17 @@ class SourcesConfiguration {
         SourceSettings s = p.get("tavily-scout");
         return new TavilyCollector(s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock, new RunInterval(interval),
             queries.stream().map(String::trim).filter(q -> !q.isEmpty()).toList());
+    }
+
+    /** Weekly Tavily searches on learning platforms; what it finds goes to the admin review list (ADR 0032 §8). */
+    @Bean
+    CourseCollector courseCollector(SourcesProperties p, Clock clock, ObservationRegistry observations, CandidateReview review,
+            @Value("${helper2.scout.courses.interval:P7D}") Duration interval,
+            @Value("${helper2.scout.courses.query:new artificial intelligence course or certification}") String query,
+            @Value("${helper2.scout.courses.platforms:}") List<String> platforms) {
+        SourceSettings s = p.get("course-scout");
+        return new CourseCollector(s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock, new RunInterval(interval), query,
+            platforms.stream().map(String::trim).filter(x -> !x.isEmpty()).toList(), review);
     }
 
     /**

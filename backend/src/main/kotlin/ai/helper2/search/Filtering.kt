@@ -10,7 +10,7 @@ const val UNKNOWN = "unknown"
 
 enum class SortOrder { RELEVANCE, NEWEST, RECENTLY_UPDATED }
 
-data class SearchFilters(
+data class SearchFilters @JvmOverloads constructor(
     val types: Set<ResourceType> = emptySet(),
     val sources: Set<String> = emptySet(),
     val licenses: Set<String> = emptySet(),
@@ -21,6 +21,13 @@ data class SearchFilters(
     val techLevels: Set<String> = emptySet(),
     val audiences: Set<Audience> = emptySet(),
     val updatedAfter: LocalDate? = null,
+    /**
+     * Born on or after this day, by the date the source states for creation ([MergedResult.published]). Strict:
+     * a result whose creation date is unknown is dropped, because it cannot be called new.
+     */
+    val publishedAfter: LocalDate? = null,
+    /** Born on or before this day; strict like [publishedAfter]. */
+    val publishedBefore: LocalDate? = null,
 )
 
 /** A facet: how to read the values of a result, and which filter selection applies to it. */
@@ -70,6 +77,11 @@ object Filtering {
         if (after != null) {
             val updated = r.updated.value ?: return false
             if (updated.isBefore(after.atStartOfDay(ZoneOffset.UTC).toInstant())) return false
+        }
+        if (filters.publishedAfter != null || filters.publishedBefore != null) {
+            val published = r.published.value ?: return false
+            if (filters.publishedAfter != null && published.isBefore(filters.publishedAfter.atStartOfDay(ZoneOffset.UTC).toInstant())) return false
+            if (filters.publishedBefore != null && !published.isBefore(filters.publishedBefore.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant())) return false
         }
         return true
     }

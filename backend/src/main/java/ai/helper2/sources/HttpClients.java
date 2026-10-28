@@ -17,6 +17,7 @@ import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
+import org.springframework.web.util.UriBuilder;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -66,6 +67,21 @@ final class HttpClients {
 
     static String queryText(SourceQuery query) {
         return String.join(" ", query.getText(), String.join(" ", query.getExpandedTerms())).trim();
+    }
+
+    /**
+     * Hugging Face Hub listing parameters (models and Spaces). With a window, trending first: the Hub sorts by
+     * creation date too, but its newest entries are mostly test checkpoints; trending ones are new and used. The
+     * search then keeps only those created inside the window. Browsing sends no search words: the Hub is AI-only.
+     */
+    static UriBuilder hubListing(UriBuilder u, SourceQuery query, String text) {
+        if (!query.getBrowse()) {
+            u.queryParam("search", text);
+        }
+        if (query.getPublishedAfter() != null) {
+            u.queryParam("sort", "trendingScore");
+        }
+        return u;
     }
 
     /** Runs a call that returns plain text (e.g. a raw README) with the same failure mapping as {@link #getJson}. */

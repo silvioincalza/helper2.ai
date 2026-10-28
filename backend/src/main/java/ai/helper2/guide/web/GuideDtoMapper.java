@@ -1,6 +1,15 @@
 package ai.helper2.guide.web;
 
 import ai.helper2.api.generated.model.GuideCheckDto;
+import ai.helper2.api.generated.model.GuideClarificationDto;
+import ai.helper2.api.generated.model.GuideComparisonDto;
+import ai.helper2.api.generated.model.GuideComparisonRowsInnerCellsInnerDto;
+import ai.helper2.api.generated.model.GuideComparisonRowsInnerDto;
+import ai.helper2.api.generated.model.GuideComparisonSubjectsInnerDto;
+import ai.helper2.api.generated.model.GuideExplanationDto;
+import ai.helper2.api.generated.model.GuideExplanationSentencesInnerDto;
+import ai.helper2.api.generated.model.GuideIntentDto;
+import ai.helper2.api.generated.model.GuideWindowDto;
 import ai.helper2.api.generated.model.GuideModelInfoDto;
 import ai.helper2.api.generated.model.GuidePromptBasedOnInnerDto;
 import ai.helper2.api.generated.model.GuidePromptDto;
@@ -13,6 +22,10 @@ import ai.helper2.api.generated.model.SourceModeDto;
 import ai.helper2.api.generated.model.SourceOutcomeDto;
 import ai.helper2.api.generated.model.SourceStatusDto;
 import ai.helper2.guide.ConstraintCheck;
+import ai.helper2.guide.Clarification;
+import ai.helper2.guide.Comparison;
+import ai.helper2.guide.DateWindow;
+import ai.helper2.guide.Explanation;
 import ai.helper2.guide.GuideAnswer;
 import ai.helper2.platform.llm.LlmSettings;
 import ai.helper2.search.web.CardMapper;
@@ -64,7 +77,45 @@ class GuideDtoMapper {
             .sources(statuses(a.getSearch()))
             .notices(Stream.concat(a.getSearch().getNotices().stream(), a.getNotices().stream())
                 .map(n -> new NoticeDto(NoticeDto.CodeEnum.fromValue(n.getCode().name()), n.getMessage())).toList())
-            .generatedAt(CardMapper.odt(a.getGeneratedAt()));
+            .generatedAt(CardMapper.odt(a.getGeneratedAt()))
+            .intent(GuideIntentDto.fromValue(a.getIntent().name()))
+            .subjects(a.getSubjects())
+            .window(window(a.getWindow()))
+            .clarification(clarification(a.getClarification()))
+            .comparison(comparison(a.getComparison()))
+            .explanation(explanation(a.getExplanation()));
+    }
+
+    static GuideWindowDto window(DateWindow w) {
+        return w == null ? null : new GuideWindowDto(w.getFrom(), w.getTo());
+    }
+
+    static GuideClarificationDto clarification(Clarification c) {
+        return c == null ? null : new GuideClarificationDto(c.getQuestion(), c.getOptions());
+    }
+
+    private static GuideComparisonDto comparison(Comparison c) {
+        if (c == null) {
+            return null;
+        }
+        return new GuideComparisonDto(
+            c.getSubjects().stream().map(s -> new GuideComparisonSubjectsInnerDto(s.getKey(), s.getName())
+                .resourceId(s.getResult() == null ? null : s.getResult().getId().getValue())
+                .title(s.getResult() == null ? null : s.getResult().getTitle())
+                .url(s.getResult() == null ? null : s.getResult().getUrl())).toList(),
+            c.getRows().stream().map(r -> new GuideComparisonRowsInnerDto(r.getAspect(), r.getCells().stream()
+                .map(cell -> new GuideComparisonRowsInnerCellsInnerDto(cell.getSubjectKey()).text(cell.getText()).quote(cell.getQuote())
+                    .reasonCheck(GuideComparisonRowsInnerCellsInnerDto.ReasonCheckEnum.fromValue(cell.getReasonCheck().name())))
+                .toList())).toList());
+    }
+
+    private static GuideExplanationDto explanation(Explanation e) {
+        if (e == null) {
+            return null;
+        }
+        return new GuideExplanationDto(e.getSentences().stream().map(x -> new GuideExplanationSentencesInnerDto(
+                x.getText(), x.getQuote(), x.getSource().getId().getValue(), x.getSource().getTitle(), x.getSource().getUrl())
+            .reasonCheck(GuideExplanationSentencesInnerDto.ReasonCheckEnum.fromValue(x.getReasonCheck().name()))).toList());
     }
 
     static List<SourceStatusDto> statuses(SearchOutcome outcome) {

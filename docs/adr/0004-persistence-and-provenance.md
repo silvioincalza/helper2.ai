@@ -30,7 +30,10 @@ the search down.
    days for the same date; the merge rules are in [0010](0010-filters-facets-dates-timeline.md). Date columns are nullable;
    `published_precision = 'UNKNOWN'` exactly when `published_at` is null (a table check).
    `first_discovered_at` is Helper2's own observation, labeled as such.
-5. **One schema migration and repeatable seeds.** Flyway runs `V1__schema.sql`, then `R__curated_seed.sql`,
+5. **One base schema, additive changes, repeatable seeds.** `V1__schema.sql` is the schema production started from;
+   it is never edited again, because production has applied it and an edit changes its checksum (Flyway then refuses
+   to start). Every later change is a new versioned migration (`V2__npm_dates_are_updates.sql`,
+   `V3__course_type.sql`, [0032](0032-guide-intents.md)). Flyway runs them, then `R__curated_seed.sql`,
    `R__industry_events.sql` and `R__model_families.sql`. The seeds upsert, so Flyway re-runs one whenever
    it changes. The events seed also removes the curated events that are no longer in its research file ([0022](0022-next-events.md)).
 6. **Catalog writes off the request path.** `SearchResources` reads first-discovery dates in one batched
@@ -72,7 +75,7 @@ the search down.
 - `backend/src/main/java/ai/helper2/catalog/internal/ResourceStore.java` — upserts, origin rank, labels, moved
   reports, orphan deletion.
 - `backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — read dates, then `record`.
-- `backend/src/main/resources/db/migration/V1__schema.sql`, `R__*.sql` — schema and seeds.
+- `backend/src/main/resources/db/migration/V1__schema.sql`, `V2__…`, `V3__…`, `R__*.sql` — schema, its changes and seeds.
 - `deploy/postgres/Dockerfile` — PostgreSQL with pgvector, pinned by commit and checksum.
 
 ## Diagrams

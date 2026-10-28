@@ -148,6 +148,11 @@ Open items:
   redisplay first, must state the days and the format (online, in person) in a form code can read, and Meetup's
   API needs a paid plan.
 - An admin UI for the curated list.
+- Source requests: anyone can ask for a new source of information (a registry, an e-learning platform, a vendor's
+  catalog, a newsletter) from the Sources page. A request names the site and what it lists; it goes to the admin
+  review list, and an accepted request becomes a collector or a curated entry after a terms review for public
+  redisplay. Rate-limited like issue reports; no sign-in needed. Courses and certifications (Coursera, O'Reilly,
+  edX, Udemy, vendor programmes) are the first case ([ADR 0032](adr/0032-guide-intents.md)).
 
 ## 7. Frontend
 

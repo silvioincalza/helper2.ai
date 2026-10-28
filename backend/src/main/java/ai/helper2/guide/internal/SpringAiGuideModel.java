@@ -11,6 +11,16 @@ import ai.helper2.guide.GuideUnavailable;
 import ai.helper2.guide.GuideValidator;
 import ai.helper2.guide.ProposedPick;
 import ai.helper2.guide.ReasonClaim;
+import ai.helper2.guide.Clarification;
+import ai.helper2.guide.ComparisonProposal;
+import ai.helper2.guide.ExplanationProposal;
+import ai.helper2.guide.GuideIntent;
+import ai.helper2.guide.PlannedWindow;
+import ai.helper2.guide.ProposedCell;
+import ai.helper2.guide.ProposedRow;
+import ai.helper2.guide.ProposedSentence;
+import ai.helper2.guide.WindowDirection;
+import ai.helper2.guide.WindowUnit;
 import ai.helper2.platform.llm.CallOptions;
 import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.ModelAnswers;
@@ -61,6 +71,21 @@ class SpringAiGuideModel implements GuideModel {
             "reasonTargetChars", REASON_TARGET_CHARS));
     }
 
+    /** The comparer's instructions (ADR 0032), with the limits AskGuide enforces. */
+    static String compareSystem() {
+        return PromptTemplate.fromClasspath("guide/compare.txt").render(Map.of(
+            "maxRows", 8, "maxAspectChars", 40, "maxCellChars", 200));
+    }
+
+    /** The explainer's instructions (ADR 0032), with the limits AskGuide and GuideValidator enforce. */
+    static String explainSystem() {
+        return PromptTemplate.fromClasspath("guide/explain.txt").render(Map.of(
+            "maxSentences", 4, "maxSentenceChars", 300,
+            "minQuoteChars", GuideValidator.MIN_QUOTE_CHARS,
+            "minQuoteWords", GuideValidator.MIN_QUOTE_WORDS,
+            "maxQuoteChars", GuideValidator.MAX_QUOTE_CHARS));
+    }
+
     /** The reason checker's instructions. */
     static String verifySystem() {
         return PromptTemplate.fromClasspath("guide/verify-reasons.txt").render(Map.of());
@@ -71,7 +96,26 @@ class SpringAiGuideModel implements GuideModel {
         }
     }
 
-    record Plan(String searchQuery, List<String> constraints, Boolean wantsReading, String webQuery) {
+    record Plan(String intent, List<String> subjects, String searchQuery, List<String> constraints, Boolean wantsReading,
+                String webQuery, Window window, Clarify clarify) {
+        record Window(Integer amount, String unit, String direction) {
+        }
+
+        record Clarify(String question, List<String> options) {
+        }
+    }
+
+    record Compared(List<Row> rows) {
+        record Row(String aspect, List<Cell> cells) {
+        }
+
+        record Cell(String subjectKey, String text, String quote) {
+        }
+    }
+
+    record Explained(List<Sentence> sentences) {
+        record Sentence(String text, String candidateKey, String quote) {
+        }
     }
 
     record Choice(List<Pick> picks, String prompt, List<String> promptBasedOn) {
@@ -89,6 +133,8 @@ class SpringAiGuideModel implements GuideModel {
     private final String planSystem;
     private final String chooseSystem;
     private final String verifySystem;
+    private final String compareSystem;
+    private final String explainSystem;
     private final String provider;
     private final String fastModel;
     private final String reasoningModel;
@@ -128,6 +174,8 @@ class SpringAiGuideModel implements GuideModel {
         this.planSystem = planSystem();
         this.chooseSystem = chooseSystem();
         this.verifySystem = verifySystem();
+        this.compareSystem = compareSystem();
+        this.explainSystem = explainSystem();
         this.thinking = thinking;
         this.provider = provider;
         this.fastModel = fastModel;
@@ -154,30 +202,113 @@ class SpringAiGuideModel implements GuideModel {
     /** The rendered prompts and the settings that shape an answer; the cache key changes when any of them does. */
     @Override
     public String getConfigFingerprint() {
-        return String.join("\u0000", planSystem, chooseSystem, verifySystem, thinking.toString(),
+        return String.join("\u0000", planSystem, chooseSystem, verifySystem, compareSystem, explainSystem, thinking.toString(),
             "nativeSchema=" + nativeSchemaForChoose, "chooseMaxTokens=" + chooseMaxTokens, "verifyMaxTokens=" + VERIFY_MAX_TOKENS,
             "maxCandidateChars=" + MAX_CANDIDATE_CHARS);
     }
 
     @Override
     public GuideSearchPlan plan(String request, AudiencePath path) {
+        return plan(request, path, null);
+    }
+
+    /** Longest clarification answer sent to the model: the API's own limit (openapi.yaml, GuideRequest.clarification). */
+    static final int MAX_ANSWER_CHARS = 300;
+
+    @Override
+    public GuideSearchPlan plan(String request, AudiencePath path, String clarification) {
+        String answer = clarification == null ? "" : "\n<answer>\n" + untrusted(clarification, MAX_ANSWER_CHARS) + "\n</answer>";
         Plan plan = call(fastModel, planSystem,
-            "Audience: " + (path == null ? "any" : path.name()) + "\n" + need(request), Plan.class, false, null,
+            "Audience: " + (path == null ? "any" : path.name()) + "\n" + need(request) + answer, Plan.class, false, null,
             "plan", thinking.plan());
         if (plan == null) {
             return new GuideSearchPlan("");
         }
         List<String> constraints = plan.constraints() == null ? List.of()
             : plan.constraints().stream().filter(c -> c != null && !c.isBlank()).toList();
+        List<String> subjects = plan.subjects() == null ? List.of()
+            : plan.subjects().stream().filter(c -> c != null && !c.isBlank()).toList();
+        Clarification clarify = plan.clarify() == null || clarification != null ? null
+            : Clarification.of(plan.clarify().question(), plan.clarify().options());
         return new GuideSearchPlan(plan.searchQuery() == null ? "" : plan.searchQuery(), constraints,
-            Boolean.TRUE.equals(plan.wantsReading()), plan.webQuery() == null ? "" : plan.webQuery());
+            Boolean.TRUE.equals(plan.wantsReading()), plan.webQuery() == null ? "" : plan.webQuery(),
+            enumOf(GuideIntent.class, plan.intent()), subjects, window(plan.window()), clarify);
+    }
+
+    /** The model's period, or null when any part is missing or unknown: a wrong window drops every result. */
+    private static PlannedWindow window(Plan.Window w) {
+        if (w == null || w.amount() == null || w.amount() < 1) {
+            return null;
+        }
+        WindowUnit unit = enumOf(WindowUnit.class, w.unit());
+        if (unit == null) {
+            return null;
+        }
+        WindowDirection direction = enumOf(WindowDirection.class, w.direction());
+        return new PlannedWindow(w.amount(), unit, direction == null ? WindowDirection.PAST : direction);
+    }
+
+    private static <E extends Enum<E>> E enumOf(Class<E> type, String name) {
+        if (name == null || name.isBlank()) {
+            return null;
+        }
+        try {
+            return Enum.valueOf(type, name.strip().toUpperCase(java.util.Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    @Override
+    public ComparisonProposal compare(String request, List<Candidate> subjects) {
+        String list = subjects.stream()
+            .map(c -> "<subject key=\"" + c.getKey() + "\" type=\"" + c.getResult().getType() + "\""
+                + (c.getResult().getLicense() == null ? "" : " license=\"" + untrusted(c.getResult().getLicense()).replace("\"", "'") + "\"")
+                + ">\n" + untrusted(c.getText()) + "\n</subject>")
+            .collect(Collectors.joining("\n"));
+        Compared answer = call(reasoningModel, compareSystem, need(request) + "\n\nSUBJECTS:\n" + list, Compared.class,
+            nativeSchemaForChoose, chooseMaxTokens, "compare", thinking.choose());
+        if (answer == null || answer.rows() == null) {
+            return new ComparisonProposal(List.of());
+        }
+        return new ComparisonProposal(answer.rows().stream()
+            .filter(r -> r != null && r.aspect() != null)
+            .map(r -> new ProposedRow(r.aspect(), r.cells() == null ? List.of() : r.cells().stream()
+                .filter(c -> c != null && c.subjectKey() != null)
+                .map(c -> new ProposedCell(c.subjectKey(), nz(c.text()), nz(c.quote())))
+                .toList()))
+            .toList());
+    }
+
+    @Override
+    public ExplanationProposal explain(String request, String subject, List<Candidate> candidates) {
+        String list = candidates.stream()
+            .map(c -> "<candidate key=\"" + c.getKey() + "\" type=\"" + c.getResult().getType() + "\">\n"
+                + untrusted(c.getText()) + "\n</candidate>")
+            .collect(Collectors.joining("\n"));
+        Explained answer = call(reasoningModel, explainSystem,
+            need(request) + "\n\nSUBJECT: " + untrusted(subject, MAX_NEED_CHARS) + "\n\nCANDIDATES:\n" + list, Explained.class,
+            nativeSchemaForChoose, chooseMaxTokens, "explain", thinking.choose());
+        if (answer == null || answer.sentences() == null) {
+            return new ExplanationProposal(List.of());
+        }
+        return new ExplanationProposal(answer.sentences().stream()
+            .filter(x -> x != null && x.candidateKey() != null)
+            .map(x -> new ProposedSentence(nz(x.text()), x.candidateKey(), nz(x.quote())))
+            .toList());
     }
 
     @Override
     public GuideProposal choose(String request, List<Candidate> candidates, List<String> constraints) {
+        return choose(request, candidates, constraints, false);
+    }
+
+    @Override
+    public GuideProposal choose(String request, List<Candidate> candidates, List<String> constraints, boolean think) {
         String list = candidates.stream()
             .map(c -> "<candidate key=\"" + c.getKey() + "\" type=\"" + c.getResult().getType() + "\""
                 + (c.getResult().getLicense() == null ? "" : " license=\"" + untrusted(c.getResult().getLicense()).replace("\"", "'") + "\"")
+                + created(c)
                 + ">\n"
                 + untrusted(c.getText()) + "\n</candidate>")
             .collect(Collectors.joining("\n"));
@@ -185,7 +316,7 @@ class SpringAiGuideModel implements GuideModel {
             : constraints.stream().map(c -> untrusted(c, MAX_NEED_CHARS)).collect(Collectors.joining("; "));
         Choice choice = call(reasoningModel, chooseSystem,
             need(request) + "\n\nCONSTRAINTS:\n" + constraintList + "\n\nCANDIDATES:\n" + list, Choice.class,
-            nativeSchemaForChoose, chooseMaxTokens, "choose", thinking.choose());
+            nativeSchemaForChoose, chooseMaxTokens, "choose", thinking.choose() || think);
         if (choice == null) {
             return new GuideProposal(List.of(), null, List.of());
         }
@@ -256,6 +387,8 @@ class SpringAiGuideModel implements GuideModel {
                 return metrics.observe(step, model, () -> {
                     var response = spec.responseEntity(converter);
                     metrics.tokens(step, response.response());
+                    // Model output only (no user text); off unless this logger is set to DEBUG.
+                    log.debug("guide {} answer: {}", step, response.entity());
                     return response.entity();
                 });
             } catch (RuntimeException e) {
@@ -268,6 +401,12 @@ class SpringAiGuideModel implements GuideModel {
             }
         }
         throw new GuideUnavailable("model call failed: " + last.getClass().getSimpleName(), ModelErrors.category(last));
+    }
+
+    /** The creation date its source states, as a day; code's fact, not candidate text. Empty when unknown. */
+    private static String created(Candidate c) {
+        var published = c.getResult().getPublished().getValue();
+        return published == null ? "" : " created=\"" + published.toString().substring(0, 10) + "\"";
     }
 
     private static List<ConstraintQuote> checks(List<Choice.Check> checks) {

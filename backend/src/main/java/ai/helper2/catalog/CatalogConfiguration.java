@@ -43,7 +43,7 @@ class CatalogConfiguration {
         SourceDescriptor d = new SourceDescriptor(
             "helper2-index", "Helper2 index", SourceMode.INDEXED, URI.create("https://helper2.ai/sources"), null,
             "Resources collected by the Helper2 AI Resource Scout or seen in earlier searches",
-            EnumSet.allOf(ResourceType.class), timeout, Duration.ZERO, true, 50);
+            EnumSet.allOf(ResourceType.class), timeout, Duration.ZERO, true, 50, false, true, true, true);
         return new CatalogSearchSource(d, store, Set.of(DataOrigin.INDEXED, DataOrigin.OBSERVED), clock);
     }
 
@@ -54,7 +54,7 @@ class CatalogConfiguration {
         SourceDescriptor d = new SourceDescriptor(
             "curated", "Helper2 curated list", SourceMode.CURATED, URI.create("https://helper2.ai/sources"), null,
             "Editorial seed written by the Helper2 team; not live data. Dates are unknown unless sourced.",
-            EnumSet.of(ResourceType.PRODUCT), timeout, Duration.ZERO, enabled, 10);
+            EnumSet.of(ResourceType.PRODUCT), timeout, Duration.ZERO, enabled, 10, false, true, true, true);
         return new CatalogSearchSource(d, store, Set.of(DataOrigin.CURATED), clock);
     }
 

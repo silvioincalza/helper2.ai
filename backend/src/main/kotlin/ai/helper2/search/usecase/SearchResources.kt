@@ -99,6 +99,10 @@ class SearchResources(
                 attempts += skipped(d, startedAt, "Disabled in configuration")
                 return
             }
+            if (query.browse && !d.browses) {
+                attempts += skipped(d, startedAt, "No subject to search")
+                return
+            }
             val cooldown = cooldownUntil[d.id]
             if (cooldown != null && startedAt.isBefore(cooldown)) {
                 attempts += stale(d, startedAt, null, SourceOutcome.SKIPPED, "Paused after a rate limit until $cooldown",
@@ -242,7 +246,8 @@ class SearchResources(
 
     private fun sourceQuery(request: SearchRequest, analyzed: AnalyzedQuery, language: String?) =
         SourceQuery(request.text.trim(), analyzed.expandedTerms, request.path, perSourceLimit,
-            analyzed.requiredVariants, analyzed.synonyms, language, request.webQuery?.trim()?.ifBlank { null })
+            analyzed.requiredVariants, analyzed.synonyms, language, request.webQuery?.trim()?.ifBlank { null },
+            request.filters.publishedAfter, request.browse, request.filters.types)
 
     /** Hands the catalog only what was fetched live now: hits replayed from the cache were recorded when fetched. */
     private fun record(merged: List<MergedResult>, statuses: List<SourceStatus>) {
@@ -340,13 +345,19 @@ class SearchResources(
         private val NON_WORD = Regex("[^\\p{L}\\p{N}\\s-]+")
         private val SPACES = Regex("\\s+")
 
-        /** `h2:v1:src:{sourceId}:{sha256(normalized query|expansions|limit[|web query, sources that use it])}` — no raw query text in keys. */
+        /**
+         * `h2:v1:src:{sourceId}:{sha256(normalized query|expansions|limit[|web query][|after][|browse, types])}` — no raw
+         * query text in keys. Each optional part only for sources whose results it changes, so plain searches keep
+         * sharing entries; without the window a windowed query would be served the cached unwindowed hits.
+         */
         @JvmStatic
         fun cacheKey(d: SourceDescriptor, q: SourceQuery): String {
             val normalized = QueryAnalyzer().analyze(q.text).normalized
             // webQuery only for sources that read it, so other sources and plain searches keep sharing entries.
             val web = q.webQuery?.takeIf { d.usesWebQuery }?.let { "|web:$it" } ?: ""
-            val material = "$normalized|${q.expandedTerms.joinToString(",")}|${q.limit}$web"
+            val after = q.publishedAfter?.takeIf { d.filtersByDate }?.let { "|after:$it" } ?: ""
+            val browse = if (q.browse) "|browse:${q.types.map { it.name }.sorted().joinToString(",")}" else ""
+            val material = "$normalized|${q.expandedTerms.joinToString(",")}|${q.limit}$web$after$browse"
             val digest = MessageDigest.getInstance("SHA-256").digest(material.toByteArray())
             return "h2:v1:src:${d.id}:${HexFormat.of().formatHex(digest, 0, 16)}"
         }
