@@ -16,7 +16,11 @@ import org.springframework.stereotype.Service;
 @Service
 public class ReviewQueue {
 
-    public enum Kind { ENRICHMENT_VALIDATION, SOURCE_CONFLICT, RELATIONSHIP_CANDIDATE, USER_REPORT }
+    public enum Kind {
+        ENRICHMENT_VALIDATION, SOURCE_CONFLICT, RELATIONSHIP_CANDIDATE, USER_REPORT,
+        /** A page a collector proposes for the catalog (ADR 0032 §8): no resource yet, only its URL. */
+        COURSE_CANDIDATE
+    }
 
     public enum Status { OPEN, ACCEPTED, REJECTED }
 
@@ -45,6 +49,22 @@ public class ReviewQueue {
             .param("reason", reason).param("details", details)
             .update();
         return id;
+    }
+
+    /**
+     * Opens a candidate item for [canonicalUrl] unless the catalog already has that resource or the URL was ever
+     * proposed before (whatever was decided). Returns whether an item was opened.
+     */
+    public boolean proposeCandidate(Kind kind, String canonicalUrl, String reason, String details) {
+        return jdbc.sql("""
+                INSERT INTO review_item (id, kind, candidate_url, reason, details)
+                SELECT :id, :kind, :url, :reason, :details
+                WHERE NOT EXISTS (SELECT 1 FROM resource WHERE canonical_url = :url)
+                ON CONFLICT (kind, candidate_url) WHERE candidate_url IS NOT NULL DO NOTHING
+                """)
+            .param("id", UUID.randomUUID()).param("kind", kind.name()).param("url", canonicalUrl)
+            .param("reason", reason).param("details", details)
+            .update() == 1;
     }
 
     private static final String SELECT_ITEMS =

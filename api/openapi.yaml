@@ -439,9 +439,10 @@ components:
     ResourceType:
       type: string
       description: |
-        Tools (PRODUCT…DATASET) and knowledge about AI (ARTICLE, PAPER, NEWS, EVENT).
+        Tools (PRODUCT…DATASET), knowledge about AI (ARTICLE, PAPER, NEWS, EVENT) and learning (COURSE: a course or
+        a certification, its platform in `platforms`, its credential and format in `tags`).
         Helper2.ai only covers the AI world; non-AI content is filtered out.
-      enum: [PRODUCT, MODEL, AGENT, PROMPT, SKILL, MCP_SERVER, LIBRARY, DATASET, ARTICLE, PAPER, NEWS, EVENT, OTHER]
+      enum: [PRODUCT, MODEL, AGENT, PROMPT, SKILL, MCP_SERVER, LIBRARY, DATASET, ARTICLE, PAPER, NEWS, EVENT, COURSE, OTHER]
     TechLevel:
       type: string
       enum: [BEGINNER, INTERMEDIATE, ADVANCED]
@@ -1137,7 +1138,10 @@ components:
       required: [id, kind, status, reason, createdAt]
       properties:
         id: { type: string, format: uuid }
-        kind: { type: string, enum: [ENRICHMENT_VALIDATION, SOURCE_CONFLICT, RELATIONSHIP_CANDIDATE, USER_REPORT] }
+        kind:
+          type: string
+          description: COURSE_CANDIDATE is a course page found by Scout and not yet in the catalog (no resource; URL in details).
+          enum: [ENRICHMENT_VALIDATION, SOURCE_CONFLICT, RELATIONSHIP_CANDIDATE, USER_REPORT, COURSE_CANDIDATE]
         status: { $ref: '#/components/schemas/ReviewStatus' }
         resourceId: { type: [string, 'null'], format: uuid }
         resourceTitle: { type: [string, 'null'] }

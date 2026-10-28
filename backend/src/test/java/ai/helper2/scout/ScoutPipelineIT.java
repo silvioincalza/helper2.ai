@@ -50,7 +50,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @SpringBootTest(properties = {
     "helper2.sources.github.enabled=false", "helper2.sources.huggingface.enabled=false",
     "helper2.sources.npm.enabled=false", "helper2.sources.mcp-registry.enabled=true", "helper2.sources.arxiv.enabled=false", "helper2.sources.tavily.enabled=false",
-    "helper2.sources.hf-trending.enabled=false", "helper2.sources.tavily-scout.enabled=false",
+    "helper2.sources.hf-trending.enabled=false", "helper2.sources.tavily-scout.enabled=false", "helper2.sources.course-scout.enabled=false",
     "helper2.sources.hf-provider-orgs.enabled=false", "helper2.sources.ai-deadlines.enabled=false",
     "spring.ai.model.chat=fake", "helper2.llm.reasoning-model=fake-super", "logging.structured.format.console=",
     // One enrichment per run, so the backlog test can see resources left over by the budget.

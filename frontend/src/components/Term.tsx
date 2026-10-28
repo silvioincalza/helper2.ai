@@ -4,7 +4,7 @@ import { Icon } from './Icon';
 
 export type GlossaryKey =
   | 'mcp_server' | 'model' | 'agent' | 'prompt' | 'skill' | 'library' | 'dataset'
-  | 'product' | 'article' | 'paper' | 'news' | 'event' | 'other'
+  | 'product' | 'article' | 'paper' | 'news' | 'event' | 'course' | 'other'
   | 'license' | 'open_source' | 'tech_level' | 'platform' | 'popularity' | 'provenance';
 
 /**

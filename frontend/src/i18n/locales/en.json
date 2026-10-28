@@ -244,6 +244,7 @@
     "PAPER": "Paper",
     "NEWS": "News",
     "EVENT": "Event",
+    "COURSE": "Course",
     "OTHER": "Other"
   },
   "audience": {
@@ -488,7 +489,8 @@
       "ENRICHMENT_VALIDATION": "Enrichment validation",
       "SOURCE_CONFLICT": "Source conflict",
       "RELATIONSHIP_CANDIDATE": "Relationship candidate",
-      "USER_REPORT": "User report"
+      "USER_REPORT": "User report",
+      "COURSE_CANDIDATE": "Course candidate"
     },
     "runStatus": {
       "RUNNING": "Running",
@@ -543,7 +545,7 @@
     },
     "article": {
       "term": "Article",
-      "def": "Writing about AI: a guide, tutorial, course or blog post."
+      "def": "Writing about AI: a guide, tutorial or blog post."
     },
     "paper": {
       "term": "Paper",
@@ -556,6 +558,10 @@
     "event": {
       "term": "Event",
       "def": "A conference, meetup, webinar or hackathon."
+    },
+    "course": {
+      "term": "Course",
+      "def": "A course or a certification about AI. Its platform is listed under Platforms; tags say whether it gives a certification (a proctored exam) or a certificate of completion, and whether it is self-paced, instructor-led, a live event or an exam only."
     },
     "other": {
       "term": "Other",
