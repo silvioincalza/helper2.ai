@@ -13,12 +13,20 @@ What they do today:
 
 Helper2.ai gives one answer from all those sources at once, and every recommendation carries a quote from the resource's own text that code has checked word for word. You can verify each pick in seconds instead of trusting it.
 
+## Why it matters
+
+- **A wrong pick costs more than a slow search.** An MCP server runs with the agent's permissions, often with API keys and file access. Choosing an abandoned project, one with no license, or one that does not do what a chatbot said, costs hours of integration work and can put real data at risk.
+- **The choice now happens every week, not once a year.** Teams that build agents add tools, models and prompts all the time, and the catalog keeps growing. Nobody can read every README, so people pick whatever is popular or whatever a chatbot names first.
+- **Agents will choose for themselves.** Soon an agent will look for its own tools. An agent cannot check a chatbot's answer, but it can check a quote and a source link. A search that returns only proven claims is the kind of search an agent can trust.
+
 ## What it does
 
-**Helper2.ai** is a metasearch engine only for the AI world. One search covers trusted AI sources at once, and every result shows **where it came from, when, and the evidence behind it**.
+**Helper2.ai** is a metasearch engine for the AI ecosystem: tools, models, MCP servers, agents, libraries, papers and news. One search covers trusted AI sources at once, and every result shows **where it came from, when, and the evidence behind it**.
 
 - **One page, one box.** Typing searches every source at once: tools, models, MCP servers, agents, libraries, papers and news. **Ask the guide** answers the same text on the same page, above the results, so you never lose your search.
 - **AI guide, powered by NVIDIA Nemotron on Nebius Token Factory.** Describe your need in your own words ("an MCP server that lets an agent browse the web with a headless browser"). The guide recommends up to three resources from the catalog, explains why with a quote from each one, and can adapt a matching prompt from the catalog. **It can only recommend things it actually found.** The page shows which Nemotron model planned the search and which one chose the results.
+- **From "found it" to "using it": Guide me.** On an MCP server or tool card, **Guide me** shows how to install and start it. Config snippets for 19 AI clients (Claude Code, Cursor, VS Code, Codex, Gemini CLI and others) come from the Official MCP Registry record or the project's README; secrets are never filled in. For other tools, a fast Nemotron model picks and orders passages from the project's own documentation, and code keeps a command only if it appears whole in the README.
+- **Next events:** upcoming AI conferences, hackathons and meetups. An event appears only when a source states its dates.
 - **Simple to use:** one search box, plain language, every technical term explained with one click. It works for everyone, whether you are a developer or not. The interface is in English; questions can be written in any language (we tested Italian in every evaluation run).
 - **Honest by design:** every search reports which sources answered, failed or timed out. Missing data shows as **Unknown**, never guessed. When sources disagree, both answers are shown.
 
@@ -38,6 +46,7 @@ Helper2.ai gives one answer from all those sources at once, and every recommenda
 - **Sources:** GitHub, Hugging Face, npm, arXiv (AI categories) and the Official MCP Registry, plus **Tavily** as a live source for fresh AI news and articles. Tavily results go through the same merge, ranking and source-status reporting as every other source.
 - **PostgreSQL** full-text search in the language of each query and resource (27 languages), plus vector search with NVIDIA `nemotron-3.5-embed-1b` embeddings in pgvector; **Redis** cache with a circuit breaker.
 - **React 19 + Vite**; the whole search state lives in the URL.
+- **Run as a real product:** a Helm chart with three replicas on Kubernetes behind a Cloudflare tunnel, with egress network policy; GitHub Actions deploys to staging first, then to prod after approval; structured logs, OpenTelemetry traces and a Grafana dashboard with alerts.
 - **Cost guard for a free public demo:** a global daily cap on model calls and a 24-hour cache of AI-reasoned answers, so a repeated question costs nothing and is answered at once.
 
 ## Challenges we ran into
@@ -60,7 +69,7 @@ Helper2.ai gives one answer from all those sources at once, and every recommenda
 - **Hallucinations blocked in practice.** In our tests, a model's invented tool, made-up quote and fake "trusted by 10,000 companies" claim never reached the page. Only the claims backed by real quotes were shown, and the page says how many suggestions were removed.
 - **Live, not a mockup.** Real federated search across GitHub, Hugging Face, npm and arXiv. The Scout indexed **1,000+ MCP servers** from the Official MCP Registry, and re-running it on unchanged data produces **zero** changes.
 - **Resilient.** A slow source, a failed source, a cache outage, or no model at all still returns results, and the page says honestly what happened.
-- **Tested end to end:** 372 backend tests, unit and integration, run against real PostgreSQL and Redis (Testcontainers), with API responses checked against the OpenAPI contract; the guide is tested end to end with a scripted model; module boundaries are verified by Spring Modulith and ArchUnit; plus 148 frontend unit and accessibility tests (27 Oct 2026, all passing).
+- **Tested end to end:** 544 backend tests, unit and integration, run against real PostgreSQL and Redis (Testcontainers), with API responses checked against the OpenAPI contract; the guide is tested end to end with a scripted model; module boundaries are verified by Spring Modulith and ArchUnit; plus 167 frontend unit and accessibility tests (28 Oct 2026, none failing).
 
 ## Known limitations
 
@@ -77,10 +86,30 @@ Helper2.ai gives one answer from all those sources at once, and every recommenda
 - **Use the right Nemotron for each step.** A small model for understanding the request and a larger one for choosing and writing keep answers quick and keep credits in check.
 - **"Unknown" builds trust.** Showing missing data as missing made the product more credible and the code simpler.
 
+## Business potential
+
+Helper2.ai is **open source (Apache-2.0)** and free to use, with no account and no ads. It is a product, not a one-off demo: it runs on helper2.ai today and is built to keep running. Trust is the product, so nothing is for sale that could change an answer.
+
+**How it is funded:**
+- **Donations** from the people and teams who use it: developers who save hours on every component they choose. We plan to use GitHub Sponsors or Open Collective, so that money in and money spent are both public.
+- **Partnerships** with AI infrastructure and model providers that want an honest, open discovery layer for the ecosystem: compute and model credits (such as Nebius Token Factory), sponsorship of the hosting, or of a specific feature like Scout coverage of a new source. Partners get visibility on the project page, **never a better place in the results**.
+- **Crowdfunding** for big steps that the community asks for: Helper2 as an MCP server that agents can call, a self-hosted edition for teams, more sources and languages.
+
+**Why a small budget is enough:**
+- The infrastructure is small: PostgreSQL, Redis and one JVM app. Our estimate is about €6–10 a month self-run on one server, or $45–70 a month fully managed ([cost analysis](../cost-analysis.md)).
+- Model calls are the main variable cost, and they are capped. Nemotron Nano does the cheap steps (planning, setup guides), Super does only the choosing and the reason check, thinking is off, a repeated question is answered from a 24-hour cache, and a daily cap stops spending at a fixed limit.
+- Open NVIDIA models on Token Factory mean we can switch to a cheaper or self-hosted model without rewriting the product.
+
+**Why open source fits the idea:**
+- **Anyone can check how an answer was made.** The validator, the prompts and the ranking are in the repository, so "it only shows what it can prove" is something you can read, not a promise.
+- **Anyone can run it.** A company can host its own copy over its own list of approved tools; a contributor can add a source in one connector.
+- **The evidence is the value.** Every fact the Scout or our curation adds to the catalog keeps its source, the date it was read and the exact excerpt. That history of checked claims grows with every run and every report from users.
+
+**Risks we know about:** donations and sponsors may not cover growth, so the daily caps stay in place; every source's terms must allow our use (we already dropped sources whose terms do not); consumer tools are poorly covered because no consumer AI-tool catalog allows reuse; and the guide is only as good as the descriptions it can quote.
+
 ## What's next for helper2.ai
 
-- **From "found it" to "using it":** step-by-step guides to install, configure and start using each result, adapted to the kind of resource (a beginner walkthrough for a ready-made tool; the install command and config snippet for a library or MCP server), built only from each project's own documentation and checked by the same evidence gate.
-- **A guide that learns:** improve which results it ranks first, based on anonymous signals, such as what people save, open and report as wrong.
-- **Events with real dates:** add event sources that publish structured start dates.
+- **A guide that understands time and intent:** questions like "the newest open-source agent frameworks" or "alternatives to X" should use the sources' own date filters and a different search plan per intent, instead of one plan for every question.
+- **A guide that learns:** improve which results it ranks first, based on anonymous signals, such as what people open and report as wrong.
+- **More events with real dates:** add more event sources that publish structured start dates.
 - **Scale on Nebius:** run the Scout over the whole catalog with Nebius Serverless Jobs, and extend vector search from our own index to the live sources.
-- Launch on **helper2.ai**.

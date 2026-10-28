@@ -12,7 +12,7 @@ cd backend && ./gradlew test            # unit + integration (Postgres 18, Redis
 cd frontend && npm test -- --run && npm run lint && npm run typecheck
 ```
 
-27 Oct 2026 at `a706a52`: backend 462 tests, 0 failed, 0 skipped; frontend 148 tests in 19 files (`ci.yml`).
+28 Oct 2026 at `feeb02dd` (local run): backend 544 tests, 0 failed, 0 skipped; frontend 167 passed, 12 skipped, in 20 files.
 
 ## What exists
 
@@ -32,7 +32,7 @@ cd frontend && npm test -- --run && npm run lint && npm run typecheck
 | Platform | InMemoryRateLimiterTest, RedisRateLimiterIT | limit, wait time, window reset, independent keys, IPv6 by /64; one count shared by replicas in Redis, in-memory fallback while Redis is down |
 | Identity | AdminAllowListTest | GitHub sign-in through the real user service: `github:<numeric id>` grants ADMIN, `github:<login>` does not |
 | Live smoke | GitHubAwesomeLiveTest | real GitHub + Nemotron classification; runs only with `./gradlew liveTest` |
-| Frontend | 148 Vitest + RTL tests | pages, client, bookmarks, i18n, layout; axe smoke checks in jsdom |
+| Frontend | 167 Vitest + RTL tests | pages, client, bookmarks, i18n, layout; axe smoke checks in jsdom |
 
 ## Known gaps (not covered by automated tests)
 
