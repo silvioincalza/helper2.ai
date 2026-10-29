@@ -76,8 +76,9 @@ Helper2.ai gives one answer from all those sources at once, and every recommenda
 I'd rather list these myself than have you find them:
 
 - **Code proves the quote, not the reason.** Every quote is checked word for word. The reason next to it is checked by a second Nemotron call, and that is a judgment, so a claim can still slip through.
-- **A new question is slow.** About 11 seconds on the live demo (median 10.9 s, p90 17.4 s). A broad "what's new" question takes about 10 s more, because that one choose call runs with thinking on. Ask the same thing again and it comes back at once from the 24-hour cache.
-- **Sometimes it says "nothing fits" when something does.** In my last full evaluation, 13 of 19 real questions got an AI pick, and the top pick was relevant on 12 of those 13. The other 6 got plain search results. That's a trade I chose: an honest empty answer beats a weak pick. The run was before the intent work, so comparisons, explanations and "newest" questions aren't in those numbers yet.
+- **A new question takes a few seconds.** About 6 seconds on the live demo (median 5.6 s, p90 7.6 s, 29 Oct 2026). A broad "what's new" question takes about 10 s more, because that one choose call runs with thinking on. Ask the same thing again and it comes back at once from the 24-hour cache.
+- **Sometimes it says "nothing fits" when something does.** In my last full evaluation ([29 Oct 2026](../evaluation.md), after the intent work), 11 of 19 real questions got an AI pick. The other 8 got plain search results. That's a trade I chose: an honest empty answer beats a weak pick. The question set predates the intents, so comparisons, explanations and "newest" questions aren't in those numbers.
+- **Hostile questions don't get through.** All 8 questions in my [adversarial set](../evaluation-adversarial.md) (prompt injection, fake candidates, requests for credentials) were handled safely.
 - **"Newest" only shows what has a real date.** npm doesn't publish a creation date, so npm results are left out of "newest" answers, and the answer doesn't say how many were dropped.
 - **Vector search only covers my own index**, which is still growing. Live sources are searched by keyword only.
 - **Developer questions work much better than everyday ones.** I couldn't find a consumer AI-tool catalog whose terms allow reuse, so that coverage is thin.
@@ -101,7 +102,7 @@ Helper2.ai is **open source (Apache-2.0)** and free to use, with no account and 
 
 **Why a small budget is enough:**
 - The infrastructure is small: PostgreSQL, Redis and one JVM app. My estimate is about €6–10 a month self-run on one server, or $45–70 a month fully managed ([cost analysis](../cost-analysis.md)).
-- Model calls are the main variable cost, and they're capped. Nemotron Nano does the cheap steps (planning, setup guides), Super does only the choosing and the reason check, thinking is off, a repeated question is answered from a 24-hour cache, and a daily cap stops spending at a fixed limit.
+- Model calls are the main variable cost, and they're capped. Nemotron Nano does the cheap steps (planning, setup guides), Super does only the choosing and the reason check, thinking is off, a repeated question is answered from a 24-hour cache, and a daily cap stops spending at a fixed limit. My estimate is about $0.002–0.0035 per new question, and the daily cap on model calls keeps even the worst case at roughly $5.50 a day ([cost analysis](../cost-analysis.md)).
 - Open NVIDIA models on Token Factory mean I can switch to a cheaper or self-hosted model without rewriting the product.
 
 **Why open source fits the idea:**
