@@ -1,12 +1,14 @@
 Hi! I'm Silvio Incalza, a software engineer from Zurich, and I'm really excited to show you Helper2.ai: a metasearch engine for the whole AI ecosystem, that only tells you what it can prove!
 
-Every day there are new AI tools, models and MCP servers. Ask a chatbot, and it might name a tool that doesn't even exist! So: what if an AI search could only tell you what it can prove? Let me show you.
+Now, my AI avatar will show you how it works.
+
+Every day there are new AI tools, models and MCP servers, scattered across dozens of sites. Checking them one by one takes hours. Helper2.ai puts them all in one box.
 
 One box. One search across the whole AI ecosystem: GitHub, Hugging Face, npm, arXiv, the Official MCP Registry and live AI news, all at once! Every result tells you where it came from and when. A source fails? The page tells you. It never, ever guesses.
 
 Open any result, and every single fact shows its source, when it was checked, and the evidence link. No AI summary yet? It says so!
 
-Now the fun part: I just describe what I need, in my own words, and ask the guide. This is where NVIDIA Nemotron on Nebius Token Factory shines! Nemotron Nano turns my words, in any language, into a search plan. We find real candidates. Then Nemotron 3 Super picks the best ones, and for each one it must quote the project's own text. And here's the magic: code checks every quote, word for word. If the model invents a tool or a quote, it never reaches the page!
+Now the fun part: you describe what you need, in your own words, and ask the guide. This is where NVIDIA Nemotron on Nebius Token Factory shines! Nemotron Nano turns your words, in any language, into a search plan. We find real candidates. Then Nemotron 3 Super picks the best ones, and for each one it must quote the project's own text. And here's the magic: code checks every quote, word for word. If the model invents a tool or a quote, it never reaches the page!
 
 But finding a tool is only half the job! Hit Guide me, and you get a ready-to-paste setup for nineteen AI clients, straight from the MCP Registry or the project's README. No secrets filled in, and every command checked against the README. Copy, paste, done!
 

@@ -43,3 +43,7 @@ deploy/k8s/terraform/*_override.tf
 
 # Local notes, not published
 .private/
+!/demo-videos
+
+# Demo-video tooling and recordings stay local
+/demo-video/

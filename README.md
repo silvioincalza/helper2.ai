@@ -9,7 +9,7 @@ Helper2.ai searches a **disclosed set of sources** ([docs/sources.md](docs/sourc
 happened to each one on every search, and never fills in dates, popularity or facts that no source stated.
 
 Helper2.ai is a product, built and run by Silvio Incalza. The only instance is **https://helper2.ai**
-(no account needed). Video: _to be added_
+(no account needed). Video: https://youtu.be/4r0Zg2YUaEs
 
 | | |
 |---|---|
