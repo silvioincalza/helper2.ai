@@ -41,9 +41,10 @@ Feedback on Token Factory and Nemotron: [docs/hackathon/feedback.md](docs/hackat
 
 Nebius x NVIDIA Global AI Hackathon (Devpost), track **Best Apps and Agents**. First commit 22 Oct 2026.
 
-Latest evaluation ([docs/evaluation.md](docs/evaluation.md), 27 Oct 2026, live demo, cache bypassed):
-20 of 20 questions answered; an AI pick on 13 of 19 real questions and none on the nonsense question;
-top pick relevant on 12 of 13 (judged by hand); 30 of 31 reasons supported by the check; p50 10.9 s, p90 17.4 s.
+Latest evaluation ([docs/evaluation.md](docs/evaluation.md), 29 Oct 2026, live demo, cache bypassed):
+20 of 20 questions answered; an AI pick on 11 of 19 real questions and none on the nonsense question;
+21 of 24 reasons supported by the check; p50 5.6 s, p90 7.6 s. Adversarial set
+([docs/evaluation-adversarial.md](docs/evaluation-adversarial.md)): 8 of 8 hostile questions handled safely.
 
 ## Known limitations
 
@@ -53,8 +54,8 @@ top pick relevant on 12 of 13 (judged by hand); 30 of 31 reasons supported by th
 - **Vector search covers only what Helper2 has indexed**, and the index is still being built. Live sources are keyword-only.
 - **Everyday-tool coverage is thin.** No consumer AI-tool catalog allows reuse; developer resources are much better covered.
 - **Short descriptions** (common on npm and GitHub) give the guide little to quote, so good candidates can be rejected.
-- **A new question takes about 11 s** on the live demo (median 10.9 s, p90 17.4 s: three model calls plus a federated search). A repeated question is instant from the cache.
-- **The guide says "nothing fits" more often with thinking off** (a pick on 13 of 19 questions instead of 17); `H2_GUIDE_THINK_CHOOSE=true` turns thinking back on for the choice.
+- **A new question takes about 6 s** on the live demo (median 5.6 s, p90 7.6 s: three model calls plus a federated search). A repeated question is instant from the cache.
+- **The guide says "nothing fits" more often with thinking off** (a pick on 11–12 of 19 questions instead of 17); `H2_GUIDE_THINK_CHOOSE=true` turns thinking back on for the choice.
 - **Live sources have rate limits** (GitHub, Hugging Face, arXiv 1 request per 3 s); results can be cached or partial, and the source panel says so.
 - **English UI.** Queries work in any language ([ADR 0011](docs/adr/0011-language-aware-search.md)).
 

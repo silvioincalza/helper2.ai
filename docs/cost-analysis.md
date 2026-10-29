@@ -41,6 +41,30 @@ Exchange rates and taxes are not applied. "UNKNOWN" means no official figure was
 | Tavily (optional, `H2_TAVILY_API_KEY`) | Free tier 1,000 credits/month; 1 credit per basic search | Live news search (30 min cache) plus the Scout's discovery queries (~24 credits/month). Public redisplay needs Tavily's written OK ([sources.md](sources.md)) |
 | Other web search APIs | Not used | Paid; terms to verify |
 
+### Guide questions: cost per question (estimate, not yet measured)
+
+A fresh guide question makes 3 model calls: plan (Nano), choose (Super), reason check (Super); a retry adds one.
+A repeated question is answered from the 24-hour cache and costs nothing. Thinking is off for all three steps.
+
+| Step | Model | Input (estimate) | Output cap | Cost at the estimate | Cost at the output cap |
+|---|---|---|---|---|---|
+| Plan | Nano $0.06 / $0.24 | ≈ 2.5k tokens (prompt 9.6 KB) | 2,048 | ≈ $0.0002 | ≈ $0.0006 |
+| Choose | Super $0.30 / $0.90 | ≈ 3–5k tokens (prompt 4.5 KB + candidates) | 8,192 | ≈ $0.0015–0.0025 | ≈ $0.009 |
+| Reason check | Super $0.30 / $0.90 | ≈ 1.5k tokens (prompt 2 KB + picks) | 2,048 | ≈ $0.0006 | ≈ $0.0023 |
+| **Per question** | | | | **≈ $0.002–0.0035** | **≈ $0.012** |
+
+Input tokens are prompt size / 4 plus an assumed candidate list; outputs at the estimate are 200–800 tokens. One measured choose call with thinking off returned
+97 completion tokens (1,772 with thinking on; [hackathon/feedback.md](hackathon/feedback.md)), so the estimate is on the high side.
+**Upper bound that holds whatever the token counts:** the global cap `H2_GUIDE_DAILY_MODEL_CALLS` (600 calls/day,
+so ≤ 200 fresh questions/day). At the output-cap cost that is ≤ ≈ $2.4/day, ≈ $72/month; at the estimate,
+≈ $0.5/day, ≈ $15/month.
+
+**Measuring it:** every call counts its tokens in `helper2_guide_tokens_total{step,type}` (Prometheus, on the
+management port, scraped into Grafana). The evaluation runs of 29 Oct 2026, 00:07–00:28 UTC
+([evaluation.md](evaluation.md), [evaluation-adversarial.md](evaluation-adversarial.md)) are the window to read: 28 fresh
+questions (19 + 8, plus one first attempt whose answer was cached), so the per-question figure is the increase over
+that window divided by 28. Not read yet: this session had no metrics access.
+
 ## 3. Ongoing maintenance (people time, estimates)
 
 | Activity | Effort (estimate) |

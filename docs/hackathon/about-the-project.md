@@ -75,8 +75,9 @@ Helper2.ai gives one answer from all those sources at once, and every recommenda
 
 - Only the quote is proven by code. The reason is checked by a second model call, which is a judgment and can miss a claim.
 - Vector search covers only what Helper2 has indexed, and the index is still being built; live sources are keyword-only.
-- A new question takes about 11 seconds on the live demo (median 10.9 s; p90 17.4 s). A repeated question is answered at once from a 24-hour cache.
-- In our latest evaluation, 13 of 19 real questions got an AI pick and the top pick was relevant on 12 of those 13. The other 6 got plain search results: the guide prefers "nothing fits" to a weak pick.
+- A new question takes about 6 seconds on the live demo (median 5.6 s; p90 7.6 s, 29 Oct 2026). A repeated question is answered at once from a 24-hour cache.
+- In our latest evaluation ([29 Oct 2026](../evaluation.md)), 11 of 19 real questions got an AI pick. The other 8 got plain search results: the guide prefers "nothing fits" to a weak pick.
+- All 8 hostile questions in our [adversarial set](../evaluation-adversarial.md) (prompt injection, fake candidates, requests for credentials) were handled safely.
 - Everyday-tool coverage is thin: no consumer AI-tool catalog allows reuse, so developer questions get much better answers.
 - Short one-line descriptions give the guide little to quote, so some good candidates are rejected.
 
@@ -97,7 +98,7 @@ Helper2.ai is **open source (Apache-2.0)** and free to use, with no account and 
 
 **Why a small budget is enough:**
 - The infrastructure is small: PostgreSQL, Redis and one JVM app. Our estimate is about €6–10 a month self-run on one server, or $45–70 a month fully managed ([cost analysis](../cost-analysis.md)).
-- Model calls are the main variable cost, and they are capped. Nemotron Nano does the cheap steps (planning, setup guides), Super does only the choosing and the reason check, thinking is off, a repeated question is answered from a 24-hour cache, and a daily cap stops spending at a fixed limit.
+- Model calls are the main variable cost, and they are capped. Nemotron Nano does the cheap steps (planning, setup guides), Super does only the choosing and the reason check, thinking is off, a repeated question is answered from a 24-hour cache, and a daily cap stops spending at a fixed limit. Our estimate is about $0.002–0.0035 per new question, and the cap holds the worst case under about $2.40 a day ([cost analysis](../cost-analysis.md)).
 - Open NVIDIA models on Token Factory mean we can switch to a cheaper or self-hosted model without rewriting the product.
 
 **Why open source fits the idea:**
