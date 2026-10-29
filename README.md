@@ -40,6 +40,7 @@ Feedback on Token Factory and Nemotron: [docs/hackathon/feedback.md](docs/hackat
 ## Hackathon submission
 
 Nebius x NVIDIA Global AI Hackathon (Devpost), track **Best Apps and Agents**. First commit 22 Oct 2026.
+Dates, rules and links: [docs/hackathon/](docs/hackathon/README.md).
 
 Latest evaluation ([docs/evaluation.md](docs/evaluation.md), 29 Oct 2026, live demo, cache bypassed):
 20 of 20 questions answered; an AI pick on 11 of 19 real questions and none on the nonsense question;
