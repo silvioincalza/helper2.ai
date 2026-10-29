@@ -7,6 +7,25 @@ feature, in the order a reader should learn them. Open work is in the [roadmap](
 
 ## Software architecture
 
+### Hexagonal: logic inside, adapters outside
+
+![Hexagonal architecture](diagrams/hexagonal-architecture.svg)
+
+The Kotlin domain (search, guide, scout) holds the rules and depends only on its ports, the Kotlin interfaces on its
+edge. Java adapters implement those ports and talk to the outside: REST controllers on the driving side; sources,
+Redis, PostgreSQL and the NVIDIA models on the driven side.
+
+### The same system, one view at a time
+
+| View | Shows |
+|---|---|
+| [Context](diagrams/architecture-context.svg) | The modules as boxes, who calls helper2, and what it calls. |
+| [One search](diagrams/architecture-search.svg) | The search ports and every source, cache and translator adapter behind them. |
+| [One guide question](diagrams/architecture-guide.svg) | AskGuide, the search it reuses, the evidence gate and the LLM layer's guards. |
+| [How the index grows](diagrams/architecture-index.svg) | Scout, its collectors and enrichment, and how the catalog stores and embeds. |
+
+### Everything in one diagram
+
 ![Software architecture](diagrams/software-architecture.svg)
 
 - Module boundaries are checked by `ModularityTest` (Spring Modulith + ArchUnit): [ADR 0002](adr/0002-modular-monolith-hexagonal.md).

@@ -1,0 +1,60 @@
+# Architecture, view 1 of 4: context. helper2 as one box of modules, what calls it, and what it calls.
+# The internals of each module are in the other views; the whole picture is software-architecture.d2.
+# Source of truth: backend/src/main/java/ai/helper2/*/package-info.java (modules),
+#   backend/src/main/resources/application.yaml (base URLs, llm-nebius profile, helper2.embedding).
+# Render: cd docs/diagrams && d2 fmt architecture-context.d2 && d2 architecture-context.d2 architecture-context.svg
+
+...@style
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+browser: "Browser\nReact SPA" {class: person}
+admin: "Admin\n(GitHub sign-in)" {class: person}
+
+app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
+  class: group
+  search: "search\nfederated search, ranking" {class: app}
+  guide: "guide\nAI guide, evidence gate" {class: app}
+  scout: "scout\nindex growth, enrichment" {class: app}
+  catalog: "catalog\nindex, resource pages, events" {class: app}
+  sources: "sources\nlive adapters, collectors" {class: app}
+  identity: "identity\nsign-in, bookmarks" {class: app}
+  platform: "platform\nLLM layer, HTTP, edge" {class: app}
+
+  guide -> search: "retrieve candidates" {class: hot}
+  search -> sources: "SearchSource" {class: config}
+  search -> catalog: "SearchSource, ResultObserver" {class: config}
+  scout -> sources: "Collector" {class: config}
+  scout -> catalog: "CatalogIndex" {class: config}
+  guide -> platform: "model calls" {class: ai-call}
+  scout -> platform: "model calls" {class: ai-call}
+}
+
+pg: "PostgreSQL 18 + pgvector\nsystem of record" {shape: cylinder; class: data}
+redis: "Redis 8\ndisposable cache" {shape: cylinder; class: data}
+nebius: "Nebius Token Factory\nNemotron 3 Super · Nano" {class: ai}
+nvapi: "NVIDIA API catalog\nnemotron-3.5-embed-1b" {class: ai}
+hosts: "Public sources\nGitHub · Hugging Face · npm · arXiv\nMCP Registry · Tavily" {class: ext}
+oauth: "github.com OAuth" {class: ext}
+
+browser -> app.search: "search" {class: hot}
+browser -> app.guide: "ask (SSE)" {class: hot}
+browser -> app.catalog: "resource, events"
+admin -> app.identity: "/admin"
+
+app.catalog -> pg: JDBC
+app.scout -> pg: JDBC
+app.identity -> pg: "bookmarks, users"
+app.search -> redis: "source cache"
+app.guide -> redis: "answers"
+app.platform -> redis: "daily budget"
+app.platform -> nebius: "plan, choose, check,\nenrich, translate" {class: ai-call}
+app.catalog -> nvapi: "/embeddings" {class: ai-call}
+app.sources -> hosts: HTTPS
+app.identity -> oauth: "sign-in" {class: config}

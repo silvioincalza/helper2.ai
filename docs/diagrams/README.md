@@ -8,6 +8,11 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 
 | Diagram | Shows |
 |---|---|
+| [hexagonal-architecture](hexagonal-architecture.svg) | The classic hexagon: business logic (Kotlin domain) inside, ports on its edge, adapters around it, driving side left and driven side right. Hand-drawn SVG: edit the file itself. |
+| [architecture-context](architecture-context.svg) | Context view: the modules as boxes, who calls helper2 and what it calls. |
+| [architecture-search](architecture-search.svg) | One search: the search ports and the adapters behind them. |
+| [architecture-guide](architecture-guide.svg) | One guide question: AskGuide, the search it reuses, the evidence gate, the LLM layer. |
+| [architecture-index](architecture-index.svg) | How the index grows: Scout, collectors, enrichment, catalog storage and embeddings. |
 | [software-architecture](software-architecture.svg) | Software architecture of helper2: the Spring Modulith modules, their ports (pink hexagons) and the adapters that implement them, the two stores, and every external service the code calls. |
 | [infrastructure](infrastructure.svg) | Runtime infrastructure of the hosted helper2 on Kubernetes: the Cloudflare tunnel, the two namespaces and their workloads, what the network policy lets each workload reach (egress), Redis auth, OpenBao and Harbor for delivery, Alloy -> Prometheus / Tempo for observability, and the prod backup with its optional off-site copy to Cloudflare R2 (off today). |
 

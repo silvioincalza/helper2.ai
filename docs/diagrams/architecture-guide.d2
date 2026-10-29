@@ -1,0 +1,56 @@
+# Architecture, view 3 of 4: one guide question. The guide module, the search it reuses, the LLM layer and its guards.
+# Source of truth: backend/src/main/kotlin/ai/helper2/guide/Guide.kt, guide/GuideCost.kt,
+#   backend/src/main/java/ai/helper2/guide/internal/*, backend/src/main/java/ai/helper2/platform/llm/*.
+# Render: cd docs/diagrams && d2 fmt architecture-guide.d2 && d2 architecture-guide.d2 architecture-guide.svg
+
+...@style
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+browser: "Browser" {class: person}
+
+guide: "guide (Kotlin domain)" {
+  class: group
+  ctl: "GuideController (JSON)\nGuideStreamController (SSE)" {class: app}
+  core: "AskGuide\nplan → retrieve → choose → check" {class: app}
+  gate: "GuideValidator\nverbatim quote, candidate keys" {class: app}
+  quota: "ClientQuota · GuideAnswerCache" {class: app}
+  p_model: GuideModel {class: port}
+  p_store: GuideAnswerStore {class: port}
+  model: "SpringAiGuideModel" {class: app}
+  store: "RedisGuideAnswerStore" {class: app}
+  ctl -> quota
+  quota -> core: {class: hot}
+  core -> p_model: {class: ai-call}
+  core -> gate
+  core -> p_store
+  model -> p_model: implements {class: config}
+  store -> p_store: implements {class: config}
+}
+
+search: "search\nSearchResources" {class: app}
+
+platform: "platform.llm" {
+  class: group
+  settings: "LlmSettings\nmodel per step" {class: app}
+  budget: "DailyBudget\nRedisCallCounter" {class: app}
+  metrics: "ModelCallMetrics" {class: app}
+}
+
+redis: "Redis\nh2:v1:guide-answer:*\nh2:v1:budget:*" {shape: cylinder; class: data}
+nebius: "Nebius Token Factory\nNano: plan\nSuper: choose, reason check" {class: ai}
+
+browser -> guide.ctl: "ask (SSE)" {class: hot}
+guide.core -> search: "retrieve up to 24 candidates" {class: hot}
+guide.core -> platform.settings
+guide.core -> platform.budget: "check before each call"
+guide.core -> platform.metrics
+guide.model -> nebius: "plan, choose,\nreason check" {class: ai-call}
+guide.store -> redis
+platform.budget -> redis

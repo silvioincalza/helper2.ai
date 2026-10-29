@@ -47,3 +47,7 @@ deploy/k8s/terraform/*_override.tf
 
 # Demo-video tooling and recordings stay local
 /demo-video/
+
+# AI assistant memory and notes, never published
+.claude/
+CLAUDE.md

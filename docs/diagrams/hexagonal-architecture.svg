@@ -1,0 +1,142 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1980 1290" width="1980" height="1290" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a22D3EE" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#22D3EE"/></marker><marker id="aF472B6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#F472B6"/></marker><marker id="a76B900" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#76B900"/></marker><marker id="aA78BFA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#A78BFA"/></marker><marker id="aF59E0B" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#F59E0B"/></marker><marker id="a64748B" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#64748B"/></marker></defs>
+<rect width="1980" height="1290" fill="#070B14"/>
+<text x="40" y="52" font-size="26" fill="#E2E8F0" text-anchor="start" font-weight="700">Hexagonal architecture of helper2</text>
+<text x="40" y="80" font-size="15" fill="#64748B" text-anchor="start" font-weight="400">Logic inside, adapters outside;</text>
+<text x="40" y="100" font-size="15" fill="#64748B" text-anchor="start" font-weight="400">dependencies point inward.</text>
+<polygon points="1680,650 1340,1239 660,1239 320,650 660,61 1340,61" fill="#0B1222" stroke="#1E293B" stroke-width="2.5"/>
+<text x="1000" y="101.12" font-size="15" fill="#64748B" text-anchor="middle" font-weight="700" letter-spacing="2">ADAPTERS · Java · Spring Boot</text>
+<text x="1000" y="121.12" font-size="12.5" fill="#64748B" text-anchor="middle" font-weight="400">web, cache, internal, config packages · sources and catalog modules</text>
+<polygon points="1330,650 1165,936 835,936 670,650 835,364 1165,364" fill="#0E1729" stroke="#22D3EE" stroke-width="2.5"/>
+<text x="1000" y="398.22" font-size="14" fill="#22D3EE" text-anchor="middle" font-weight="700" letter-spacing="1.5">BUSINESS LOGIC · Kotlin domain</text>
+<text x="1000" y="418.22" font-size="12" fill="#64748B" text-anchor="middle" font-weight="400">no Spring, Jackson or SQL (ModularityTest)</text>
+<rect x="795" y="475" width="250" height="92" rx="8" fill="#0B1E2D" stroke="#22D3EE" stroke-width="1.6"/>
+<text x="920.0" y="507.225" font-size="13.5" fill="#CFFAFE" text-anchor="middle" font-weight="700">search</text>
+<text x="920.0" y="525.725" font-size="13.5" fill="#CFFAFE" text-anchor="middle" font-weight="400">SearchResources · QueryAnalyzer</text>
+<text x="920.0" y="544.225" font-size="13.5" fill="#CFFAFE" text-anchor="middle" font-weight="400">ResultMerger · Ranking · Facets</text>
+<rect x="795" y="588" width="250" height="92" rx="8" fill="#0B1E2D" stroke="#22D3EE" stroke-width="1.6"/>
+<text x="920.0" y="620.225" font-size="13.5" fill="#CFFAFE" text-anchor="middle" font-weight="700">guide</text>
+<text x="920.0" y="638.725" font-size="13.5" fill="#CFFAFE" text-anchor="middle" font-weight="400">AskGuide · GuideValidator</text>
+<text x="920.0" y="657.225" font-size="13.5" fill="#CFFAFE" text-anchor="middle" font-weight="400">evidence gate · ClientQuota</text>
+<rect x="795" y="701" width="250" height="92" rx="8" fill="#0B1E2D" stroke="#22D3EE" stroke-width="1.6"/>
+<text x="920.0" y="733.225" font-size="13.5" fill="#CFFAFE" text-anchor="middle" font-weight="700">scout</text>
+<text x="920.0" y="751.725" font-size="13.5" fill="#CFFAFE" text-anchor="middle" font-weight="400">RunScout · EnrichResource</text>
+<text x="920.0" y="770.225" font-size="13.5" fill="#CFFAFE" text-anchor="middle" font-weight="400">EvidenceValidator</text>
+<text x="920.0" y="822" font-size="12" fill="#64748B" text-anchor="middle" font-weight="400">shared: CanonicalUrl · ResourceId · DateFact</text>
+<path d="M920.0,618 C920.0,618 920.0,567 920.0,567" fill="none" stroke="#22D3EE" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#a22D3EE)"/>
+<text x="928.0" y="579" font-size="11.5" fill="#22D3EE" font-style="italic">retrieves candidates</text>
+<polygon points="1139.5299461620748,450 1149.5299461620748,437.0 1279.5299461620748,437.0 1289.5299461620748,450 1279.5299461620748,463.0 1149.5299461620748,463.0" fill="#2A0B1E" stroke="#F472B6" stroke-width="1.4"/>
+<text x="1214.5299461620748" y="454.5" font-size="12.5" fill="#FCE7F3" text-anchor="middle" font-weight="700">SearchSource</text>
+<path d="M1045,521 C1092.2649730810374,521 1092.2649730810374,450 1139.5299461620748,450" fill="none" stroke="#F472B6" stroke-width="1.1" marker-end="url(#aF472B6)"/>
+<path d="M1306.5299461620748,450 C1298.0299461620748,450 1298.0299461620748,450 1289.5299461620748,450" fill="none" stroke="#64748B" stroke-width="1.1" stroke-dasharray="5 4" marker-end="url(#a64748B)"/>
+<text x="1314.5299461620748" y="449" font-size="13" fill="#CFFAFE" font-weight="700">GitHub · Hugging Face · npm · arXiv</text>
+<text x="1314.5299461620748" y="464" font-size="11.5" fill="#CFFAFE">Tavily · index · semantic sources</text>
+<path d="M1549.5299461620748,450 C1634.7649730810374,450 1634.7649730810374,410 1720,410" fill="none" stroke="#F59E0B" stroke-width="1.1" marker-end="url(#aF59E0B)"/>
+<polygon points="1164.9333580064183,494 1174.9333580064183,481.0 1304.9333580064183,481.0 1314.9333580064183,494 1304.9333580064183,507.0 1174.9333580064183,507.0" fill="#2A0B1E" stroke="#F472B6" stroke-width="1.4"/>
+<text x="1239.9333580064183" y="498.5" font-size="12.5" fill="#FCE7F3" text-anchor="middle" font-weight="700">SearchCache</text>
+<path d="M1045,521 C1104.9666790032093,521 1104.9666790032093,494 1164.9333580064183,494" fill="none" stroke="#F472B6" stroke-width="1.1" marker-end="url(#aF472B6)"/>
+<path d="M1331.9333580064183,494 C1323.4333580064183,494 1323.4333580064183,494 1314.9333580064183,494" fill="none" stroke="#64748B" stroke-width="1.1" stroke-dasharray="5 4" marker-end="url(#a64748B)"/>
+<text x="1339.9333580064183" y="498.5" font-size="13" fill="#CFFAFE" font-weight="700">RedisSearchCache</text>
+<path d="M1473.5333580064182,494 C1596.766679003209,494 1596.766679003209,750 1720,750" fill="none" stroke="#A78BFA" stroke-width="1.1" marker-end="url(#aA78BFA)"/>
+<polygon points="1190.3367698507618,538 1200.3367698507618,525.0 1330.3367698507618,525.0 1340.3367698507618,538 1330.3367698507618,551.0 1200.3367698507618,551.0" fill="#2A0B1E" stroke="#F472B6" stroke-width="1.4"/>
+<text x="1265.3367698507618" y="542.5" font-size="12.5" fill="#FCE7F3" text-anchor="middle" font-weight="700">QueryTranslator</text>
+<path d="M1045,521 C1117.668384925381,521 1117.668384925381,538 1190.3367698507618,538" fill="none" stroke="#F472B6" stroke-width="1.1" marker-end="url(#aF472B6)"/>
+<path d="M1357.3367698507618,538 C1348.8367698507618,538 1348.8367698507618,538 1340.3367698507618,538" fill="none" stroke="#64748B" stroke-width="1.1" stroke-dasharray="5 4" marker-end="url(#a64748B)"/>
+<text x="1365.3367698507618" y="542.5" font-size="13" fill="#CFFAFE" font-weight="700">SpringAiQueryTranslator</text>
+<path d="M1552.1367698507618,538 C1636.068384925381,538 1636.068384925381,580 1720,580" fill="none" stroke="#76B900" stroke-width="1.1" marker-end="url(#a76B900)"/>
+<polygon points="1215.7401816951055,582 1225.7401816951055,569.0 1355.7401816951055,569.0 1365.7401816951055,582 1355.7401816951055,595.0 1225.7401816951055,595.0" fill="#2A0B1E" stroke="#F472B6" stroke-width="1.4"/>
+<text x="1290.7401816951055" y="586.5" font-size="12.5" fill="#FCE7F3" text-anchor="middle" font-weight="700">ResultObserver</text>
+<path d="M1045,521 C1130.3700908475528,521 1130.3700908475528,582 1215.7401816951055,582" fill="none" stroke="#F472B6" stroke-width="1.1" marker-end="url(#aF472B6)"/>
+<path d="M1382.7401816951055,582 C1374.2401816951055,582 1374.2401816951055,582 1365.7401816951055,582" fill="none" stroke="#64748B" stroke-width="1.1" stroke-dasharray="5 4" marker-end="url(#a64748B)"/>
+<text x="1390.7401816951055" y="581" font-size="13" fill="#CFFAFE" font-weight="700">ResourceCatalog</text>
+<text x="1390.7401816951055" y="596" font-size="11.5" fill="#CFFAFE">(what each search saw)</text>
+<path d="M1625.7401816951055,582 C1672.8700908475528,582 1672.8700908475528,910 1720,910" fill="none" stroke="#A78BFA" stroke-width="1.1" marker-end="url(#aA78BFA)"/>
+<polygon points="1241.143593539449,626 1251.143593539449,613.0 1381.143593539449,613.0 1391.143593539449,626 1381.143593539449,639.0 1251.143593539449,639.0" fill="#2A0B1E" stroke="#F472B6" stroke-width="1.4"/>
+<text x="1316.143593539449" y="630.5" font-size="12.5" fill="#FCE7F3" text-anchor="middle" font-weight="700">GuideModel</text>
+<path d="M1045,634 C1143.0717967697246,634 1143.0717967697246,626 1241.143593539449,626" fill="none" stroke="#F472B6" stroke-width="1.1" marker-end="url(#aF472B6)"/>
+<path d="M1408.143593539449,626 C1399.643593539449,626 1399.643593539449,626 1391.143593539449,626" fill="none" stroke="#64748B" stroke-width="1.1" stroke-dasharray="5 4" marker-end="url(#a64748B)"/>
+<text x="1416.143593539449" y="630.5" font-size="13" fill="#CFFAFE" font-weight="700">SpringAiGuideModel</text>
+<path d="M1564.943593539449,626 C1642.4717967697245,626 1642.4717967697245,580 1720,580" fill="none" stroke="#76B900" stroke-width="1.1" marker-end="url(#a76B900)"/>
+<polygon points="1243.4529946162074,670 1253.4529946162074,657.0 1383.4529946162074,657.0 1393.4529946162074,670 1383.4529946162074,683.0 1253.4529946162074,683.0" fill="#2A0B1E" stroke="#F472B6" stroke-width="1.4"/>
+<text x="1318.4529946162074" y="674.5" font-size="12.5" fill="#FCE7F3" text-anchor="middle" font-weight="700">GuideAnswerStore</text>
+<path d="M1045,634 C1144.2264973081037,634 1144.2264973081037,670 1243.4529946162074,670" fill="none" stroke="#F472B6" stroke-width="1.1" marker-end="url(#aF472B6)"/>
+<path d="M1410.4529946162074,670 C1401.9529946162074,670 1401.9529946162074,670 1393.4529946162074,670" fill="none" stroke="#64748B" stroke-width="1.1" stroke-dasharray="5 4" marker-end="url(#a64748B)"/>
+<text x="1418.4529946162074" y="674.5" font-size="13" fill="#CFFAFE" font-weight="700">RedisGuideAnswerStore</text>
+<path d="M1590.0529946162073,670 C1655.0264973081037,670 1655.0264973081037,750 1720,750" fill="none" stroke="#A78BFA" stroke-width="1.1" marker-end="url(#aA78BFA)"/>
+<polygon points="1218.049582771864,714 1228.049582771864,701.0 1358.049582771864,701.0 1368.049582771864,714 1358.049582771864,727.0 1228.049582771864,727.0" fill="#2A0B1E" stroke="#F472B6" stroke-width="1.4"/>
+<text x="1293.049582771864" y="718.5" font-size="12.5" fill="#FCE7F3" text-anchor="middle" font-weight="700">Collector</text>
+<path d="M1045,747 C1131.524791385932,747 1131.524791385932,714 1218.049582771864,714" fill="none" stroke="#F472B6" stroke-width="1.1" marker-end="url(#aF472B6)"/>
+<path d="M1385.049582771864,714 C1376.549582771864,714 1376.549582771864,714 1368.049582771864,714" fill="none" stroke="#64748B" stroke-width="1.1" stroke-dasharray="5 4" marker-end="url(#a64748B)"/>
+<text x="1393.049582771864" y="713" font-size="13" fill="#CFFAFE" font-weight="700">MCP Registry · Hugging Face</text>
+<text x="1393.049582771864" y="728" font-size="11.5" fill="#CFFAFE">GitHub awesome · Tavily collectors</text>
+<path d="M1628.049582771864,714 C1674.024791385932,714 1674.024791385932,410 1720,410" fill="none" stroke="#F59E0B" stroke-width="1.1" marker-end="url(#aF59E0B)"/>
+<polygon points="1192.6461709275204,758 1202.6461709275204,745.0 1332.6461709275204,745.0 1342.6461709275204,758 1332.6461709275204,771.0 1202.6461709275204,771.0" fill="#2A0B1E" stroke="#F472B6" stroke-width="1.4"/>
+<text x="1267.6461709275204" y="762.5" font-size="12.5" fill="#FCE7F3" text-anchor="middle" font-weight="700">CatalogIndex</text>
+<path d="M1045,747 C1118.8230854637602,747 1118.8230854637602,758 1192.6461709275204,758" fill="none" stroke="#F472B6" stroke-width="1.1" marker-end="url(#aF472B6)"/>
+<path d="M1359.6461709275204,758 C1351.1461709275204,758 1351.1461709275204,758 1342.6461709275204,758" fill="none" stroke="#64748B" stroke-width="1.1" stroke-dasharray="5 4" marker-end="url(#a64748B)"/>
+<text x="1367.6461709275204" y="762.5" font-size="13" fill="#CFFAFE" font-weight="700">ResourceCatalog</text>
+<path d="M1493.6461709275204,758 C1606.8230854637602,758 1606.8230854637602,910 1720,910" fill="none" stroke="#A78BFA" stroke-width="1.1" marker-end="url(#aA78BFA)"/>
+<polygon points="1167.242759083177,802 1177.242759083177,789.0 1307.242759083177,789.0 1317.242759083177,802 1307.242759083177,815.0 1177.242759083177,815.0" fill="#2A0B1E" stroke="#F472B6" stroke-width="1.4"/>
+<text x="1242.242759083177" y="806.5" font-size="12.5" fill="#FCE7F3" text-anchor="middle" font-weight="700">EnrichmentModel</text>
+<path d="M1045,747 C1106.1213795415883,747 1106.1213795415883,802 1167.242759083177,802" fill="none" stroke="#F472B6" stroke-width="1.1" marker-end="url(#aF472B6)"/>
+<path d="M1334.242759083177,802 C1325.742759083177,802 1325.742759083177,802 1317.242759083177,802" fill="none" stroke="#64748B" stroke-width="1.1" stroke-dasharray="5 4" marker-end="url(#a64748B)"/>
+<text x="1342.242759083177" y="806.5" font-size="13" fill="#CFFAFE" font-weight="700">SpringAiEnrichmentModel</text>
+<path d="M1529.0427590831769,802 C1624.5213795415884,802 1624.5213795415884,580 1720,580" fill="none" stroke="#76B900" stroke-width="1.1" marker-end="url(#a76B900)"/>
+<polygon points="1141.8393472388334,846 1151.8393472388334,833.0 1281.8393472388334,833.0 1291.8393472388334,846 1281.8393472388334,859.0 1151.8393472388334,859.0" fill="#2A0B1E" stroke="#F472B6" stroke-width="1.4"/>
+<text x="1216.8393472388334" y="850.5" font-size="12.5" fill="#FCE7F3" text-anchor="middle" font-weight="700">ScoutStore …</text>
+<path d="M1045,747 C1093.4196736194167,747 1093.4196736194167,846 1141.8393472388334,846" fill="none" stroke="#F472B6" stroke-width="1.1" marker-end="url(#aF472B6)"/>
+<path d="M1308.8393472388334,846 C1300.3393472388334,846 1300.3393472388334,846 1291.8393472388334,846" fill="none" stroke="#64748B" stroke-width="1.1" stroke-dasharray="5 4" marker-end="url(#a64748B)"/>
+<text x="1316.8393472388334" y="845" font-size="13" fill="#CFFAFE" font-weight="700">JdbcScoutStore</text>
+<text x="1316.8393472388334" y="860" font-size="11.5" fill="#CFFAFE">JdbcEnrichmentStore</text>
+<path d="M1551.8393472388334,846 C1635.9196736194167,846 1635.9196736194167,910 1720,910" fill="none" stroke="#A78BFA" stroke-width="1.1" marker-end="url(#aA78BFA)"/>
+<text x="1244.5299461620748" y="398" font-size="12.5" fill="#F472B6" text-anchor="middle" font-weight="700" letter-spacing="1">PORTS · Kotlin interfaces</text>
+<text x="1344.5299461620748" y="416" font-size="12.5" fill="#64748B" text-anchor="start" font-weight="400" font-style="italic">adapter that implements it</text>
+<rect x="1720" y="370" width="220" height="80" rx="8" fill="#1F1406" stroke="#F59E0B" stroke-width="1.6"/>
+<text x="1830.0" y="396.55" font-size="13" fill="#FEF3C7" text-anchor="middle" font-weight="700">Public sources (HTTPS)</text>
+<text x="1830.0" y="414.55" font-size="13" fill="#FEF3C7" text-anchor="middle" font-weight="400">GitHub · Hugging Face · npm</text>
+<text x="1830.0" y="432.55" font-size="13" fill="#FEF3C7" text-anchor="middle" font-weight="400">arXiv · MCP Registry · Tavily</text>
+<rect x="1720" y="540" width="220" height="80" rx="8" fill="#0F1F05" stroke="#76B900" stroke-width="1.6"/>
+<text x="1830.0" y="566.55" font-size="13" fill="#D9F99D" text-anchor="middle" font-weight="700">NVIDIA Nemotron</text>
+<text x="1830.0" y="584.55" font-size="13" fill="#D9F99D" text-anchor="middle" font-weight="400">on Nebius Token Factory</text>
+<text x="1830.0" y="602.55" font-size="13" fill="#D9F99D" text-anchor="middle" font-weight="400">Nano · 3 Super</text>
+<rect x="1720" y="710" width="220" height="80" rx="8" fill="#170F2E" stroke="#A78BFA" stroke-width="1.6"/>
+<text x="1830.0" y="745.55" font-size="13" fill="#EDE9FE" text-anchor="middle" font-weight="700">Redis 8</text>
+<text x="1830.0" y="763.55" font-size="13" fill="#EDE9FE" text-anchor="middle" font-weight="400">disposable cache</text>
+<rect x="1720" y="870" width="220" height="80" rx="8" fill="#170F2E" stroke="#A78BFA" stroke-width="1.6"/>
+<text x="1830.0" y="905.55" font-size="13" fill="#EDE9FE" text-anchor="middle" font-weight="700">PostgreSQL 18 + pgvector</text>
+<text x="1830.0" y="923.55" font-size="13" fill="#EDE9FE" text-anchor="middle" font-weight="400">system of record</text>
+<text x="1830" y="1010" font-size="14" fill="#64748B" text-anchor="middle" font-weight="700" letter-spacing="2">DRIVEN SIDE</text>
+<text x="1830" y="1030" font-size="12.5" fill="#64748B" text-anchor="middle" font-weight="400">what the logic calls</text>
+<rect x="360" y="500" width="260" height="150" rx="8" fill="#0B1E2D" stroke="#22D3EE" stroke-width="1.6"/>
+<text x="490.0" y="544.375" font-size="12.5" fill="#CFFAFE" text-anchor="middle" font-weight="700">web adapters</text>
+<text x="490.0" y="561.875" font-size="12.5" fill="#CFFAFE" text-anchor="middle" font-weight="400">SearchController</text>
+<text x="490.0" y="579.375" font-size="12.5" fill="#CFFAFE" text-anchor="middle" font-weight="400">GuideController · Stream (SSE)</text>
+<text x="490.0" y="596.875" font-size="12.5" fill="#CFFAFE" text-anchor="middle" font-weight="400">ResourcesController</text>
+<text x="490.0" y="614.375" font-size="12.5" fill="#CFFAFE" text-anchor="middle" font-weight="400">AdminController · MeController</text>
+<rect x="380" y="690" width="240" height="60" rx="8" fill="#0B1E2D" stroke="#22D3EE" stroke-width="1.6"/>
+<text x="500.0" y="715.625" font-size="12.5" fill="#CFFAFE" text-anchor="middle" font-weight="700">scheduler</text>
+<text x="500.0" y="733.125" font-size="12.5" fill="#CFFAFE" text-anchor="middle" font-weight="400">Scout run trigger</text>
+<path d="M620,540 C707.5,540 707.5,521 795,521" fill="none" stroke="#22D3EE" stroke-width="1.3" marker-end="url(#a22D3EE)"/>
+<path d="M620,565 C707.5,565 707.5,634 795,634" fill="none" stroke="#22D3EE" stroke-width="1.3" marker-end="url(#a22D3EE)"/>
+<path d="M620,620 C707.5,620 707.5,747 795,747" fill="none" stroke="#22D3EE" stroke-width="1.3" marker-end="url(#a22D3EE)"/>
+<path d="M620,720 C707.5,720 707.5,747 795,747" fill="none" stroke="#22D3EE" stroke-width="1.3" marker-end="url(#a22D3EE)"/>
+<circle cx="150" cy="490" r="17" fill="#0B1222" stroke="#E2E8F0" stroke-width="1.6"/>
+<path d="M120,546 Q120,512 150,512 Q180,512 180,546 Z" fill="#0B1222" stroke="#E2E8F0" stroke-width="1.6"/>
+<text x="150" y="566" font-size="13" fill="#E2E8F0" text-anchor="middle" font-weight="700">Browser</text>
+<text x="150" y="583" font-size="11.5" fill="#64748B" text-anchor="middle" font-weight="400">React SPA · /api/v1</text>
+<circle cx="150" cy="700" r="17" fill="#0B1222" stroke="#E2E8F0" stroke-width="1.6"/>
+<path d="M120,756 Q120,722 150,722 Q180,722 180,756 Z" fill="#0B1222" stroke="#E2E8F0" stroke-width="1.6"/>
+<text x="150" y="776" font-size="13" fill="#E2E8F0" text-anchor="middle" font-weight="700">Admin</text>
+<text x="150" y="793" font-size="11.5" fill="#64748B" text-anchor="middle" font-weight="400">GitHub sign-in</text>
+<path d="M185,540 C272.5,540 272.5,560 360,560" fill="none" stroke="#22D3EE" stroke-width="1.6" marker-end="url(#a22D3EE)"/>
+<path d="M185,750 C272.5,750 272.5,620 360,620" fill="none" stroke="#22D3EE" stroke-width="1.6" marker-end="url(#a22D3EE)"/>
+<text x="150" y="1010" font-size="14" fill="#64748B" text-anchor="middle" font-weight="700" letter-spacing="2">DRIVING SIDE</text>
+<text x="150" y="1030" font-size="12.5" fill="#64748B" text-anchor="middle" font-weight="400">who calls the logic</text>
+<path d="M40,1250 L80,1250" stroke="#22D3EE" stroke-width="2"/>
+<text x="90" y="1255" font-size="13" fill="#64748B" text-anchor="start" font-weight="400">call</text>
+<path d="M230,1250 L270,1250" stroke="#F472B6" stroke-width="2"/>
+<text x="280" y="1255" font-size="13" fill="#64748B" text-anchor="start" font-weight="400">uses port</text>
+<path d="M420,1250 L460,1250" stroke="#64748B" stroke-width="2" stroke-dasharray="5 4"/>
+<text x="470" y="1255" font-size="13" fill="#64748B" text-anchor="start" font-weight="400">implements</text>
+<text x="1940" y="1255" font-size="13" fill="#64748B" text-anchor="end" font-weight="400">Rules: ADR 0002 · checked by ModularityTest (Spring Modulith + ArchUnit)</text>
+</svg>

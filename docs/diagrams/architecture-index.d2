@@ -1,0 +1,67 @@
+# Architecture, view 4 of 4: how the index grows. Scout runs collectors, enriches with evidence, and the catalog stores and embeds.
+# Source of truth: backend/src/main/kotlin/ai/helper2/scout/Ports.kt, scout/Scout.kt, scout/Enrichment.kt,
+#   backend/src/main/java/ai/helper2/sources/SourcesConfiguration.java (collectors),
+#   backend/src/main/java/ai/helper2/catalog/CatalogConfiguration.java (index, embedder).
+# Render: cd docs/diagrams && d2 fmt architecture-index.d2 && d2 architecture-index.d2 architecture-index.svg
+
+...@style
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+admin: "Admin" {class: person}
+
+scout: "scout (Kotlin domain)" {
+  class: group
+  ctl: "AdminController\nPOST /admin/scout-runs\nreview items" {class: app}
+  core: "RunScout · EnrichResource\nEvidenceValidator" {class: app}
+  p_collector: Collector {class: port}
+  p_index: CatalogIndex {class: port}
+  p_enrich: EnrichmentModel {class: port}
+  p_stores: "ScoutStore\nEnrichmentStore\nEnrichmentBacklog" {class: port}
+  model: "SpringAiEnrichmentModel" {class: app}
+  jdbc: "JdbcScoutStore\nJdbcEnrichmentStore" {class: app}
+  ctl -> core
+  core -> p_collector
+  core -> p_index
+  core -> p_enrich: {class: ai-call}
+  core -> p_stores
+  model -> p_enrich: implements {class: config}
+  jdbc -> p_stores: implements {class: config}
+}
+
+sources: "sources (collectors)" {
+  class: group
+  collectors: "McpRegistryCollector · TavilyCollector\nHuggingFaceTrendingCollector\nHuggingFaceProviderOrgsCollector\nGitHubAwesomeCollector · AiDeadlinesCollector" {class: app}
+  classifier: "SpringAiRepoClassifier\n(or Heuristic)" {class: app}
+  collectors -> classifier: "awesome-list entries" {class: ai-call}
+}
+
+catalog: "catalog (Java)" {
+  class: group
+  catalog: "ResourceCatalog · ReviewQueue" {class: app}
+  store: ResourceStore {class: app}
+  embed: "EmbeddingIndexer\nNvidiaEmbedder" {class: app}
+  catalog -> store
+  embed -> store: "pending texts, vectors"
+}
+
+pg: "PostgreSQL\nresources, facts with evidence,\nreview items, embeddings" {shape: cylinder; class: data}
+nebius: "Nebius Token Factory\nNemotron 3 Super" {class: ai}
+nvapi: "NVIDIA API catalog\nnemotron-3.5-embed-1b" {class: ai}
+hosts: "registry.modelcontextprotocol.io\nhuggingface.co · api.github.com\nraw.githubusercontent.com · api.tavily.com" {class: ext}
+
+admin -> scout.ctl: "trigger run, review"
+sources.collectors -> scout.p_collector: implements {class: config}
+catalog.catalog -> scout.p_index: implements {class: config}
+sources.collectors -> hosts: HTTPS
+sources.classifier -> nebius: "classify repos" {class: ai-call}
+scout.model -> nebius: "enrich" {class: ai-call}
+scout.jdbc -> pg: JDBC
+catalog.store -> pg: JDBC
+catalog.embed -> nvapi: "/embeddings" {class: ai-call}

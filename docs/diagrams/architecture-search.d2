@@ -1,0 +1,74 @@
+# Architecture, view 2 of 4: one search. The search module's ports and every adapter that answers them.
+# Source of truth: backend/src/main/kotlin/ai/helper2/search/Ports.kt,
+#   backend/src/main/java/ai/helper2/sources/SourcesConfiguration.java,
+#   backend/src/main/java/ai/helper2/catalog/CatalogConfiguration.java,
+#   backend/src/main/java/ai/helper2/platform/http/ObservedHttp.java.
+# Render: cd docs/diagrams && d2 fmt architecture-search.d2 && d2 architecture-search.d2 architecture-search.svg
+
+...@style
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+browser: "Browser" {class: person}
+
+search: "search (Kotlin domain)" {
+  class: group
+  ctl: "SearchController\nGET /search, /sources" {class: app}
+  core: "SearchResources\nQueryAnalyzer · ResultMerger\nRanking · Filtering · Facets" {class: app}
+  p_source: SearchSource {class: port}
+  p_cache: SearchCache {class: port}
+  p_observer: "ResultObserver\nRecordedOutcomes" {class: port}
+  p_translate: QueryTranslator {class: port}
+  cache: "RedisSearchCache" {class: app}
+  ctl -> core: {class: hot}
+  core -> p_source: {class: hot}
+  core -> p_cache
+  core -> p_observer
+  core -> p_translate
+  cache -> p_cache: implements {class: config}
+}
+
+sources: "sources (Java adapters)" {
+  class: group
+  live: "GitHubSource · NpmSource · ArxivSource\nHuggingFaceModelsSource\nHuggingFaceSpacesSource · TavilySource" {class: app}
+}
+
+catalog: "catalog (Java)" {
+  class: group
+  index: "CatalogSearchSource\nhelper2-index · curated" {class: app}
+  semantic: "SemanticSearchSource\nhelper2-semantic" {class: app}
+  catalog: "ResourceCatalog\nObservationQueue" {class: app}
+}
+
+platform: "platform" {
+  class: group
+  llm: "SpringAiQueryTranslator\n(Nemotron Nano)" {class: app}
+  http: "ObservedHttp\npooled, observed RestClient" {class: app}
+}
+
+pg: "PostgreSQL\nfull-text + pgvector" {shape: cylinder; class: data}
+redis: "Redis\nh2:v1:src:*" {shape: cylinder; class: data}
+nebius: "Nebius Token Factory" {class: ai}
+nvapi: "NVIDIA embeddings" {class: ai}
+hosts: "api.github.com · huggingface.co\nregistry.npmjs.org · export.arxiv.org\napi.tavily.com" {class: ext}
+
+browser -> search.ctl: "GET /search" {class: hot}
+sources.live -> search.p_source: implements {class: config}
+catalog.index -> search.p_source: implements {class: config}
+catalog.semantic -> search.p_source: implements {class: config}
+catalog.catalog -> search.p_observer: implements {class: config}
+platform.llm -> search.p_translate: implements {class: config}
+sources.live -> platform.http: "HTTP client" {class: config}
+platform.http -> hosts: HTTPS
+search.cache -> redis
+catalog.index -> pg: "full-text"
+catalog.semantic -> pg: "vector search"
+catalog.semantic -> nvapi: "query vector" {class: ai-call}
+catalog.catalog -> pg: "what each search saw"
+platform.llm -> nebius: "translate query" {class: ai-call}
