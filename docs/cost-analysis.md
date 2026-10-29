@@ -50,13 +50,16 @@ A repeated question is answered from the 24-hour cache and costs nothing. Thinki
 |---|---|---|---|---|---|
 | Plan | Nano $0.06 / $0.24 | ≈ 2.5k tokens (prompt 9.6 KB) | 2,048 | ≈ $0.0002 | ≈ $0.0006 |
 | Choose | Super $0.30 / $0.90 | ≈ 3–5k tokens (prompt 4.5 KB + candidates) | 8,192 | ≈ $0.0015–0.0025 | ≈ $0.009 |
-| Reason check | Super $0.30 / $0.90 | ≈ 1.5k tokens (prompt 2 KB + picks) | 2,048 | ≈ $0.0006 | ≈ $0.0023 |
-| **Per question** | | | | **≈ $0.002–0.0035** | **≈ $0.012** |
+| Reason check | Super $0.30 / $0.90 | ≈ 1.5k tokens (prompt 2 KB + picks) | 4,096 | ≈ $0.0006 | ≈ $0.004 |
+| **Per question, no retries** | | | | **≈ $0.002–0.0035** | **≈ $0.014** |
 
 Input tokens are prompt size / 4 plus an assumed candidate list; outputs at the estimate are 200–800 tokens. One measured choose call with thinking off returned
 97 completion tokens (1,772 with thinking on; [hackathon/feedback.md](hackathon/feedback.md)), so the estimate is on the high side.
-**Upper bound that holds whatever the token counts:** the global cap `H2_GUIDE_DAILY_MODEL_CALLS` (600 calls/day,
-so ≤ 200 fresh questions/day). At the output-cap cost that is ≤ ≈ $2.4/day, ≈ $72/month; at the estimate,
+**Daily ceiling:** the global cap `H2_GUIDE_DAILY_MODEL_CALLS` counts calls, not questions (600 calls/day). Each step
+may retry once and every attempt takes a call, so the call mix is not fixed at one plan, one choose and one reason check.
+The conservative ceiling prices all 600 calls as the most expensive one, a Super choose at its 8,192-token output cap
+(≈ $0.009 per call with ≈ 5k input tokens): **≈ $5.5/day, ≈ $165/month**. Output tokens are bounded by the caps;
+input tokens are still an estimate, so this ceiling is too. At the per-question estimate, 200 questions/day cost
 ≈ $0.5/day, ≈ $15/month.
 
 **Measuring it:** every call counts its tokens in `helper2_guide_tokens_total{step,type}` (Prometheus, on the

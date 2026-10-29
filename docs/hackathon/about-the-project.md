@@ -102,7 +102,7 @@ Helper2.ai is **open source (Apache-2.0)** and free to use, with no account and 
 
 **Why a small budget is enough:**
 - The infrastructure is small: PostgreSQL, Redis and one JVM app. My estimate is about €6–10 a month self-run on one server, or $45–70 a month fully managed ([cost analysis](../cost-analysis.md)).
-- Model calls are the main variable cost, and they're capped. Nemotron Nano does the cheap steps (planning, setup guides), Super does only the choosing and the reason check, thinking is off, a repeated question is answered from a 24-hour cache, and a daily cap stops spending at a fixed limit. My estimate is about $0.002–0.0035 per new question, and the cap keeps the worst case under about $2.40 a day ([cost analysis](../cost-analysis.md)).
+- Model calls are the main variable cost, and they're capped. Nemotron Nano does the cheap steps (planning, setup guides), Super does only the choosing and the reason check, thinking is off, a repeated question is answered from a 24-hour cache, and a daily cap stops spending at a fixed limit. My estimate is about $0.002–0.0035 per new question, and the daily cap on model calls keeps even the worst case at roughly $5.50 a day ([cost analysis](../cost-analysis.md)).
 - Open NVIDIA models on Token Factory mean I can switch to a cheaper or self-hosted model without rewriting the product.
 
 **Why open source fits the idea:**
