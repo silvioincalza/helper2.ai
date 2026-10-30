@@ -57,6 +57,8 @@ the search down.
 - On shutdown the queue gets 5 seconds to finish; later writes are lost.
 - The index can be rebuilt by the Scout and the embedding indexer. Bookmarks and reports are user data; the
   backup ([0027](0027-runtime-topology.md)) is the only copy.
+- How long each table keeps its rows, and the daily purges that enforce it, are in
+  [0034](0034-data-retention.md); the foreign keys and indexes those purges use are part of `V1__schema.sql`.
 - A merge of two resources never loses a user report. A resource whose records were split over several resources
   stays, without records, until a reviewer handles its reports. `ResourceStoreIT` covers both cases.
 - `ObservationQueueTest` covers the queue (background write, a full queue drops the new write, shutdown). `SearchApiIT` checks the result: unknown
