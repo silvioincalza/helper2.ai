@@ -60,7 +60,8 @@ Six collectors implement the `Collector` port in `ai.helper2.sources`. All use `
   `github/AwesomeListParser.java`, `aideadlines/AiDeadlinesCollector.java`.
 - `classifier/RepoClassifier.java`, `classifier/SpringAiRepoClassifier.java` — the awesome-list classifier.
 - `support/RunInterval.java`, `support/HttpClients.java` — shared by every collector.
-- `config/SourcesConfiguration.java` — beans, intervals, limits.
+- `config/SourcesConfiguration.java` — beans; `config/CollectorProperties.java` — each collector's validated settings
+  (`helper2.scout.<collector>`): intervals, queries, limits. An invalid value stops startup.
 - `backend/src/main/resources/application.yaml` — `helper2.scout.*`, `helper2.sources.*`.
 
 ## Diagrams
