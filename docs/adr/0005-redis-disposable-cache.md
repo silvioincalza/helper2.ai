@@ -4,13 +4,18 @@
 
 ## Context
 Live sources are slow (seconds) and rate-limited. A guide answer costs three model calls. The daily
-model budgets must survive a restart. All of this is short-lived data: losing it costs time or money,
-never correctness. PostgreSQL ([0004](0004-persistence-and-provenance.md)) stays the only store of truth,
+model budgets must survive a restart. Guide answers are the most expensive entries, and a cold cache after
+every Redis restart would pay for them again. All of this is short-lived data: losing it costs time or money,
+never correctness. PostgreSQL ([0004](0004-persistence-and-provenance.md)) stays the only system of record,
 so the cache must be optional: when Redis is down, the app still works, only slower.
 
 ## Decision
-1. **Redis 8.10.2 as a cache only.** No persistence (`--save ""`, `--appendonly no`), bounded memory
-   (`maxmemory 128mb`, `allkeys-lru` in the Helm chart). Connection: `H2_REDIS_HOST`, `H2_REDIS_PORT`
+1. **Redis 8.10.2 as a cache with AOF persistence.** Bounded memory (`maxmemory 128mb`, `allkeys-lru` in the
+   Helm chart): entries are evicted under pressure, as in any cache. The append-only file keeps the cache across
+   restarts: `--appendonly yes`, `--appendfsync everysec`, no RDB snapshots (`--save ""`). In the chart Redis is a
+   single-replica StatefulSet with `/data` on a ReadWriteOnce PersistentVolumeClaim (`redis.storage`, 1 Gi;
+   `redis.storageClassName`, empty = the cluster default). Redis is never a system of record: losing the volume
+   only costs cache misses. Connection: `H2_REDIS_HOST`, `H2_REDIS_PORT`
    (6379), `H2_REDIS_PASSWORD`; command timeout 250 ms, connect timeout 500 ms. The Redis health
    indicator is off, so a Redis outage never takes the app out of the readiness rotation.
 2. **Source responses.** `RedisSearchCache` implements the `SearchCache` port for sources in `LIVE` mode.
@@ -42,7 +47,9 @@ so the cache must be optional: when Redis is down, the app still works, only slo
 - During an outage, budgets count in memory, in each replica on its own. They can only allow more calls, never
   block the model by mistake: with 3 replicas, up to three times what was left of the day. A restart during an
   outage resets that replica's count.
-- Answers and counters survive app restarts and deploys, but not a Redis restart; that is accepted.
+- Answers, counters, sessions and rate-limit windows survive app restarts, deploys and Redis restarts. With
+  `everysec`, a Redis crash loses at most the last second of writes; a lost volume starts Redis empty.
+- Redis is not ready while it loads the AOF at start; the app treats that like a short outage (circuit breaker).
 - Source cooldowns, the guide's in-memory answer cache and its single-flight map stay in each replica's memory, on
   purpose: a replica that misses them costs one more call, not a wrong answer ([roadmap](../roadmap.md#4-more-than-one-replica)).
 - Redis holds sessions and rate-limit windows next to cache entries, in the same 128 MB with `allkeys-lru`.
@@ -54,7 +61,11 @@ so the cache must be optional: when Redis is down, the app still works, only slo
 - Caffeine (in-process cache) only — lost on every deploy, and budgets would reset with each restart.
 - Cache in PostgreSQL — writes on the hot path to the system of record, and eviction by hand.
 - Resilience4j circuit breaker — a full library for one rule (open for 30 seconds, then retry).
-- Redis with persistence — the data is disposable; persistence adds disk and recovery work for nothing.
+- Redis without persistence — every Redis restart drops all guide answers, budgets, sessions and rate-limit
+  windows; refilling the answers costs three model calls each.
+- RDB snapshots instead of AOF — a restart loses everything since the last snapshot, minutes of answers and counts.
+- Guide answers in PostgreSQL — writes on the hot path to the system of record and eviction by hand, for data that
+  is a cache.
 
 ## Code
 - `backend/src/main/java/ai/helper2/search/cache/RedisSearchCache.java`, `SourceHitCodec.java` — source cache.
@@ -63,7 +74,8 @@ so the cache must be optional: when Redis is down, the app still works, only slo
 - `backend/src/main/java/ai/helper2/platform/llm/RedisCallCounter.java`, `DailyBudget.java` — counters.
 - `backend/src/main/kotlin/ai/helper2/guide/GuideCost.kt` (`GuideAnswerCache`, `ClientQuota`) and
   `backend/src/main/java/ai/helper2/guide/internal/RedisGuideAnswerStore.java` — guide answers.
-- `deploy/helm/helper2/templates/redis.yaml`, `compose.yaml` — Redis settings.
+- `deploy/helm/helper2/templates/redis.yaml` (StatefulSet, AOF, PVC), `compose.yaml` — Redis settings;
+  `deploy/k8s/Makefile` (`chart-check`) fails when the rendered Redis has no AOF or no PVC.
 
 ## Diagrams
 [flow](../diagrams/flow-0005-redis-disposable-cache.svg) · [sequence](../diagrams/sequence-0005-redis-disposable-cache.svg)
