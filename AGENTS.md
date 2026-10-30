@@ -116,6 +116,7 @@ deferred (safe for now, say why).
   (never through a tool that adds an AI footer). Silvio reviews and merges it himself: never
   merge to `main`, never push to `main` directly, never deploy to prod.
 - AI-tool setup and settings are committed (`AGENTS.md`, `CLAUDE.md`, `.claude/settings.json`,
-  `.claude/agents/`, `.claude/commands/`). AI notes, reviews, memory and machine-local settings
-  never are: they go in the git-ignored `.private/` folder (or `CLAUDE.local.md`,
-  `.claude/settings.local.json`).
+  `.claude/agents/`, `.claude/commands/`). AI notes, reviews, plans, memory and machine-local
+  settings never are: they go in the git-ignored `.private/` folder (or `CLAUDE.local.md`,
+  `.claude/settings.local.json`). Plans, including the refactor plan and the AI scaffold map,
+  live in `.private/plans/`.
