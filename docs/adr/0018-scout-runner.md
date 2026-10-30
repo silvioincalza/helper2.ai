@@ -43,7 +43,11 @@ at the same time. Prod runs 3 replicas ([0027](0027-runtime-topology.md)), each 
    - not due (its `RunInterval` has not passed and no pass is unfinished) → `SKIPPED` "Not due yet (run interval)";
    - otherwise the hits are merged and written with `CatalogIndex.index`, which returns the resources whose source
      records changed;
-   - any exception → `FAILED` "Collection failed: <class>", the cursor is not moved, and the next collector runs.
+   - the batch's candidates (pages a person must accept first, such as `CourseCollector`'s course pages) go to the
+     port `CandidateReview.propose(sourceId, candidates)`; the adapter `ReviewQueueCandidateReview` opens one
+     `COURSE_CANDIDATE` review item per page not proposed before. Collectors never call the review list themselves;
+   - any exception, including a failing review list → `FAILED` "Collection failed: <class>", the cursor is not moved,
+     and the next collector runs. The next pass proposes the same pages again; the review list opens none twice.
 4. **Cursor and checkpoint** (`ScoutCursor`, table `source_cursor`). The checkpoint is the start time of the last
    complete pass; collectors use it as `updated_since` or `start_date`. When a pass stops at the item limit, the
    collector returns `nextCursor`: it is saved with the pass start, and the checkpoint stays. When the pass completes,
@@ -109,7 +113,8 @@ at the same time. Prod runs 3 replicas ([0027](0027-runtime-topology.md)), each 
 - `backend/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt` — `RunScout` (`tryStart`, `tryRunScheduled`,
   `closeInterruptedRuns`), `EnrichmentBudget`,
   `ScoutCursor`, `ScheduledRun`, ports (`ScheduledRunStore`).
-- `backend/src/main/kotlin/ai/helper2/scout/Ports.kt` — `Collector`, `CollectedBatch`.
+- `backend/src/main/kotlin/ai/helper2/scout/Ports.kt` — `Collector`, `CollectedBatch` (hits and candidates), `CandidateReview`.
+- `backend/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java` — candidates as review items.
 - `backend/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java` — `ScoutSchedule`, `scoutRunLock`, `ClusterRunLock`,
   `RUN_THREADS`, `closeInterruptedScoutRuns`.
 - `backend/src/main/java/ai/helper2/platform/ClusterLock.java`, `ClusterLocks.java`, `ClusterLockConfiguration.java`; tables `shedlock` and

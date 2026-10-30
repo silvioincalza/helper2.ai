@@ -2,7 +2,6 @@ package ai.helper2.sources;
 
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.Candidate;
-import ai.helper2.scout.CandidateReview;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.scout.Collector;
 import ai.helper2.search.SourceDescriptor;
@@ -12,7 +11,6 @@ import ai.helper2.shared.SourceMode;
 import java.net.URI;
 import java.time.Clock;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -27,8 +25,8 @@ import tools.jackson.databind.JsonNode;
  * New AI courses and certifications (ADR 0032 §8, Source 3): one Tavily search per learning platform, restricted to
  * its domain with include_domains, on a weekly interval (one API credit per platform and pass, search_depth basic).
  * A result is kept only when it is on the platform's host and path, about AI, and reads like a course or
- * certification page. Kept pages go to the admin review list through {@link CandidateReview}; the batch handed back
- * to the Scout is always empty, so nothing this collector finds reaches the catalog without a person accepting it.
+ * certification page. Kept pages are the batch's candidates, which the Scout sends to the admin review list; the
+ * batch has no hits, so nothing this collector finds reaches the catalog without a person accepting it.
  * A pass asks only for pages published since the previous complete pass (start_date), or the last month on the first.
  * Docs: https://docs.tavily.com/documentation/api-reference/endpoint/search
  */
@@ -75,11 +73,10 @@ public class CourseCollector implements Collector {
     private final RunInterval interval;
     private final String query;
     private final List<Platform> platforms;
-    private final CandidateReview review;
     private final SourceDescriptor descriptor;
 
     public CourseCollector(SourceSettings settings, RestClient.Builder builder, Clock clock, Resilience resilience, RunInterval interval,
-                           String query, List<String> platformSpecs, CandidateReview review) {
+                           String query, List<String> platformSpecs) {
         this.clock = clock;
         this.resilience = resilience;
         if (settings.enabled()) {
@@ -88,7 +85,6 @@ public class CourseCollector implements Collector {
         this.interval = interval;
         this.query = query == null ? "" : query.strip();
         this.platforms = platformSpecs.stream().map(Platform::parse).filter(java.util.Objects::nonNull).toList();
-        this.review = review;
         this.http = HttpClients.client(builder, settings);
         this.descriptor = new SourceDescriptor(ID, "Tavily course discovery (sent to review)", SourceMode.INDEXED,
             URI.create("https://tavily.com"), URI.create("https://tavily.com/terms"),
@@ -131,9 +127,7 @@ public class CourseCollector implements Collector {
                 }
             }
         }
-        review.propose(ID, new ArrayList<>(byUrl.values()));
-        // Proposals only: the Scout indexes nothing from this collector.
-        return new CollectedBatch(List.of(), null, startedAt.toString());
+        return new CollectedBatch(List.of(), null, startedAt.toString(), false, List.copyOf(byUrl.values()));
     }
 
     /** One Tavily result as a candidate; null when it is off the platform, not about AI or not a course page. */

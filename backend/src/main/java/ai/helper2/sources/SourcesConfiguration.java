@@ -7,7 +7,6 @@ import ai.helper2.platform.llm.LlmSettings;
 import ai.helper2.platform.llm.ModelCallMetrics;
 import ai.helper2.platform.resilience.OutboundThrottle;
 import ai.helper2.platform.resilience.Resilience;
-import ai.helper2.scout.CandidateReview;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
@@ -102,13 +101,13 @@ class SourcesConfiguration {
 
     /** Weekly Tavily searches on learning platforms; what it finds goes to the admin review list (ADR 0032 §8). */
     @Bean
-    CourseCollector courseCollector(SourcesProperties p, Clock clock, Resilience resilience, ObservationRegistry observations, CandidateReview review,
+    CourseCollector courseCollector(SourcesProperties p, Clock clock, Resilience resilience, ObservationRegistry observations,
             @Value("${helper2.scout.courses.interval:P7D}") Duration interval,
             @Value("${helper2.scout.courses.query:new artificial intelligence course or certification}") String query,
             @Value("${helper2.scout.courses.platforms:}") List<String> platforms) {
         SourceSettings s = p.get("course-scout");
         return new CourseCollector(s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock, resilience, new RunInterval(interval), query,
-            platforms.stream().map(String::trim).filter(x -> !x.isEmpty()).toList(), review);
+            platforms.stream().map(String::trim).filter(x -> !x.isEmpty()).toList());
     }
 
     /**

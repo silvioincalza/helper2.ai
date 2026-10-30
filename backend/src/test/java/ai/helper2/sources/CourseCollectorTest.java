@@ -4,14 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.platform.http.ObservedHttp;
 import ai.helper2.platform.resilience.Resilience;
-import ai.helper2.scout.Candidate;
-import ai.helper2.scout.CandidateReview;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.testing.FixtureServer;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -30,11 +27,6 @@ class CourseCollectorTest {
         ]}""";
 
     final FixtureServer server = new FixtureServer();
-    final List<Candidate> proposed = new ArrayList<>();
-    final CandidateReview review = (sourceId, candidates) -> {
-        proposed.addAll(candidates);
-        return candidates.size();
-    };
 
     @AfterEach
     void stop() {
@@ -44,11 +36,11 @@ class CourseCollectorTest {
     CourseCollector collector(String token, List<String> platforms) {
         return new CourseCollector(new SourceSettings(true, server.baseUrl(), token, Duration.ofSeconds(2), Duration.ZERO),
             ObservedHttp.restClientBuilder(Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP), GitHubSourceTest.CLOCK, Resilience.NONE,
-            new RunInterval(Duration.ofDays(7)), "new artificial intelligence course or certification", platforms, review);
+            new RunInterval(Duration.ofDays(7)), "new artificial intelligence course or certification", platforms);
     }
 
     @Test
-    void searchesEachPlatformOnItsDomainAndSendsCoursePagesToReviewNotToTheCatalog() {
+    void searchesEachPlatformOnItsDomainAndProposesCoursePagesAsCandidatesNotHits() {
         server.route("/search", FixtureServer.Reply.ok(RESULTS));
         CollectedBatch batch = collector("tvly-test", List.of("huggingface.co/learn=Hugging Face Learn", "coursera.org=Coursera"))
             .collect(null, null, 500);
@@ -63,10 +55,10 @@ class CourseCollectorTest {
         // Kept: on huggingface.co/learn, about AI, reads like a course. Dropped: the blog (wrong path), the cooking
         // course (not AI), the overview (not a course page) and the other host. Coursera's run returns the same
         // fixture, all off its domain.
-        assertThat(proposed).extracting(c -> c.getUrl().getValue())
+        assertThat(batch.getCandidates()).extracting(c -> c.getUrl().getValue())
             .containsExactly("https://huggingface.co/learn/agents-course/unit0/introduction");
-        assertThat(proposed.getFirst().getPlatform()).isEqualTo("Hugging Face Learn");
-        assertThat(proposed.getFirst().getSnippet()).contains("certificate");
+        assertThat(batch.getCandidates().getFirst().getPlatform()).isEqualTo("Hugging Face Learn");
+        assertThat(batch.getCandidates().getFirst().getSnippet()).contains("certificate");
     }
 
     @Test
@@ -81,7 +73,7 @@ class CourseCollectorTest {
         CollectedBatch batch = collector("tvly-test", List.of("edx.org=edX")).collect("2026-10-20T09:00:00Z", null, 500);
         assertThat(batch.getNotDue()).isTrue();
         assertThat(server.requests).isEmpty();
-        assertThat(proposed).isEmpty();
+        assertThat(batch.getCandidates()).isEmpty();
     }
 
     @Test

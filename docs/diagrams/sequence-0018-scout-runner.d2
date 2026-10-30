@@ -8,7 +8,8 @@
 #   ClusterRunLock, catalogIndex),
 #   backend/src/main/java/ai/helper2/platform/ClusterLock.java, ClusterLocks.java (KeepAliveLockProvider),
 #   ClusterLockConfiguration.java (ShedLock, db time),
-#   backend/src/main/java/ai/helper2/scout/internal/JdbcScoutStore.java, JdbcEnrichmentStore.java.
+#   backend/src/main/java/ai/helper2/scout/internal/JdbcScoutStore.java, JdbcEnrichmentStore.java,
+#   ReviewQueueCandidateReview.java (CandidateReview port in scout/Ports.kt).
 # Render: cd docs/diagrams && d2 fmt sequence-0018-scout-runner.d2 && d2 sequence-0018-scout-runner.d2 sequence-0018-scout-runner.svg
 
 ...@style
@@ -23,6 +24,7 @@ store: JdbcScoutStore {class: app}
 col: "Collector\n(e.g. McpRegistryCollector)" {class: app}
 ext: "Source API" {class: ext}
 index: "CatalogIndex\n(ResourceCatalog)" {class: app}
+review: "CandidateReview\n(ReviewQueueCandidateReview)" {class: app}
 backlog: JdbcEnrichmentStore {class: app}
 enrich: EnrichResource {class: app}
 
@@ -44,9 +46,11 @@ runner -> col: "collect(checkpoint, resumeCursor, 500)"
 col -> col: "RunInterval.allowsPass?"
 col -> ext: "GET …?updated_since=checkpoint" {class: hot}
 ext -> col: "items + nextCursor"
-col -> runner: "CollectedBatch(hits, nextCursor, checkpoint)"
+col -> runner: "CollectedBatch(hits, nextCursor,\ncheckpoint, candidates)"
 runner -> index: "index(merged hits, sourceId)"
 index -> runner: "changed resource ids"
+runner -> review: "propose(sourceId, candidates)\n(only when the batch has some)"
+review -> runner: "review items opened"
 runner -> store: "saveCursor(new checkpoint\nor resumeCursor)"
 runner -> backlog: "eligible(changed ids)"
 backlog -> runner: "ids with description ≥ 40 chars"
