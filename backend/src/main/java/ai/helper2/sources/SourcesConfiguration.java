@@ -5,6 +5,7 @@ import ai.helper2.platform.llm.CallCounter;
 import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.LlmSettings;
 import ai.helper2.platform.llm.ModelCallMetrics;
+import ai.helper2.platform.resilience.OutboundThrottle;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CandidateReview;
 import io.micrometer.core.instrument.Gauge;
@@ -70,9 +71,9 @@ class SourcesConfiguration {
     }
 
     @Bean
-    ArxivSource arxivSource(SourcesProperties p, Clock clock, ObservationRegistry observations) {
+    ArxivSource arxivSource(SourcesProperties p, Clock clock, ObservationRegistry observations, OutboundThrottle throttle) {
         SourceSettings s = p.get("arxiv");
-        return new ArxivSource(s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock);
+        return new ArxivSource(s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock, throttle);
     }
 
     @Bean
