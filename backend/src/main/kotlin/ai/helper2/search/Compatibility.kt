@@ -40,7 +40,7 @@ object Compatibility {
         Tool("xai", "xAI Grok", setOf("grok", "xai", "x-ai", "grok-api")),
         Tool("mistral", "Mistral", setOf("mistral", "mistralai", "mistral-ai")),
         Tool("deepseek", "DeepSeek", setOf("deepseek", "deepseek-api")),
-        Tool("nvidia", "NVIDIA NIM", setOf("nvidia-nim", "nim", "nvidia-ai")),
+        Tool("nvidia", "NVIDIA NIM", setOf("nvidia-nim", "nvidia-ai")),
         // Local runtimes.
         Tool("ollama", "Ollama", setOf("ollama"), formats = setOf("gguf")),
         Tool("llama-cpp", "llama.cpp", setOf("llama-cpp", "llamacpp", "llama.cpp"), formats = setOf("gguf")),
