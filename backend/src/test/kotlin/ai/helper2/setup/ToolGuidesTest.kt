@@ -75,4 +75,25 @@ class ToolGuidesTest {
         assertEquals("org/model", ToolRef.of("m", "MODEL", listOf("https://huggingface.co/org/model"), emptyList()).hfModel)
         assertNull(ToolRef.of("t", "LIBRARY", listOf("https://github.com/topics/mcp"), emptyList()).githubRepo)
     }
+
+    @Test
+    fun `dot segments and names outside the GitHub and Hugging Face rules never become a document path`() {
+        fun repo(url: String) = ToolRef.of("t", "LIBRARY", listOf(url), emptyList()).githubRepo
+        fun hf(url: String) = ToolRef.of("t", "MODEL", listOf(url), emptyList())
+        assertNull(repo("https://github.com/../orgs"))
+        assertNull(repo("https://github.com/acme/.."))
+        assertNull(repo("https://github.com/acme/."))
+        assertNull(repo("https://github.com/-acme/x"))
+        assertNull(repo("https://github.com/ac--me/x"))
+        assertNull(repo("https://github.com/acme_co/x"))
+        assertNull(repo("https://github.com/" + "a".repeat(40) + "/x"))
+        assertEquals("acme-co/x.y_z", repo("https://github.com/acme-co/x.y_z"))
+        assertEquals("acme/.github", repo("https://github.com/acme/.github"))
+        assertNull(hf("https://huggingface.co/../model").hfModel)
+        assertNull(hf("https://huggingface.co/org/..").hfModel)
+        assertNull(hf("https://huggingface.co/spaces/org/..").hfSpace)
+        assertNull(hf("https://huggingface.co/org/-model").hfModel)
+        assertNull(hf("https://huggingface.co/org/a..b").hfModel)
+        assertEquals("org/Model-7B.v1", hf("https://huggingface.co/org/Model-7B.v1").hfModel)
+    }
 }
