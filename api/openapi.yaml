@@ -171,22 +171,6 @@ paths:
         '404': { $ref: '#/components/responses/Problem' }
         '429': { $ref: '#/components/responses/Problem' }
 
-  /model-families:
-    get:
-      tags: [resources]
-      operationId: listModelFamilies
-      summary: AI model families (OpenAI GPT, Anthropic Claude, xAI Grok, Google Gemini, Meta Llama...) for side-by-side comparison.
-      description: >-
-        Official specs are curated from the provider's own pages, each with its URL, a verbatim excerpt and the
-        date it was read. Listed models are the provider's newest models found by Scout on its official Hugging Face
-        organisation. Nothing is combined across sources.
-      responses:
-        '200':
-          description: Every family, in display order.
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/ModelFamiliesResponse' }
-
   /resources/{id}/reports:
     post:
       tags: [resources]
@@ -599,46 +583,11 @@ components:
         eventKind: { oneOf: [{ $ref: '#/components/schemas/EventKind' }, { type: 'null' }], description: "EVENT only: what kind of event the source calls it; null when it does not say." }
         eventFormat: { oneOf: [{ $ref: '#/components/schemas/EventFormat' }, { type: 'null' }], description: "EVENT only: online, in person or both, as the source states it; null when it does not say." }
 
-    ModelFamiliesResponse:
-      type: object
-      required: [families]
-      properties:
-        families: { type: array, items: { $ref: '#/components/schemas/ModelFamily' } }
-
-    ModelFamily:
-      type: object
-      required: [id, provider, name, openWeights, card, specs, listedModels]
-      properties:
-        id: { type: string, description: "Stable id; matches CompatibilityFlag.tool for providers (openai, anthropic, xai, google...)." }
-        provider: { type: string }
-        name: { type: string }
-        openWeights: { type: [boolean, 'null'], description: null when no official page states it. }
-        card: { $ref: '#/components/schemas/ResultCard' }
-        specs:
-          type: array
-          description: "Official specs of the family's flagship. Fields: flagship, contextTokens, maxOutputTokens, inputUsdPerMTok, outputUsdPerMTok, inputModalities, outputModalities, license, knowledgeCutoff, released, and benchmark:<name>."
-          items: { $ref: '#/components/schemas/Assertion' }
-        listedModels:
-          type: array
-          description: Newest models of this provider in the Helper2 index, newest first.
-          items: { $ref: '#/components/schemas/ListedModel' }
-
-    ListedModel:
-      type: object
-      required: [resourceId, title, url, sourceId, retrievedAt]
-      properties:
-        resourceId: { type: string, format: uuid }
-        title: { type: string }
-        url: { type: string, format: uri }
-        sourceId: { type: string }
-        retrievedAt: { type: string, format: date-time }
-        published: { type: [string, 'null'], format: date-time, description: As the source stated it; null = unknown. }
-
     CompatibilityFlag:
       type: object
       required: [tool, label, basis, evidence]
       properties:
-        tool: { type: string, description: "Stable id, e.g. openai, anthropic, xai, ollama, mcp. Provider ids match model-family ids." }
+        tool: { type: string, description: "Stable id, e.g. openai, anthropic, xai, ollama, mcp." }
         label: { type: string }
         basis: { type: string, enum: [TAG, TYPE, FORMAT], description: "TAG = a source listed the tag; TYPE = implied by resource type (MCP server); FORMAT = implied by published file format (GGUF)." }
         evidence: { type: string, description: The tag, type or format that was seen. }

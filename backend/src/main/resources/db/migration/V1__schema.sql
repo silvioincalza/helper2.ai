@@ -293,18 +293,6 @@ CREATE TABLE summary_claim_evidence (
     PRIMARY KEY (claim_id, evidence_id)
 );
 
--- AI model families for the comparison page (ADR 0021). Rows come from R__model_families.sql.
-CREATE TABLE model_family (
-    id            text PRIMARY KEY CHECK (id ~ '^[a-z0-9-]{2,40}$'),
-    position      int     NOT NULL,
-    provider      text    NOT NULL,
-    name          text    NOT NULL,
-    open_weights  boolean,
-    resource_id   uuid    NOT NULL REFERENCES resource (id) ON DELETE CASCADE,
-    -- Tags Scout sources put on this provider's models, to list its newest ones.
-    provider_tags text[]  NOT NULL DEFAULT '{}'
-);
-
 -- Users who signed in via OAuth2. Anonymous use needs no row.
 CREATE TABLE app_user (
     id           uuid PRIMARY KEY,

@@ -19,8 +19,7 @@ Six collectors implement the `Collector` port in `ai.helper2.sources`. All use `
    incremental: each pass reads the current list; unchanged models are a no-op in the catalog. The list API returns
    no description, so these models do not reach enrichment.
 3. **Hugging Face provider organizations** (`hf-provider-orgs`, 1 day). The 20 newest models of each official org:
-   `meta-llama`, `nvidia`, `mistralai`, `deepseek-ai`, `Qwen`, `google`, `openai`, `xai-org`. The org is added as a tag,
-   which the model-family page uses ([0021](0021-model-families.md)).
+   `meta-llama`, `nvidia`, `mistralai`, `deepseek-ai`, `Qwen`, `google`, `openai`, `xai-org`. The org is added as a tag.
 4. **Tavily discovery** (`tavily-scout`, every `H2_SCOUT_TAVILY_INTERVAL`, 5 days). 7 fixed news queries ("new AI tool
    launched", "new MCP server released"…), `search_depth basic`, up to 20 results each, published since the day of the
    last complete pass (first run: the last week). Each query costs one credit; the config comment estimates about 42
