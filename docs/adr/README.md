@@ -40,7 +40,7 @@ All diagrams: [docs/diagrams](../diagrams/README.md).
 | [0017](0017-guide-cost-guard.md) | Guide cost guard: per-minute limit, per-client daily quota, global daily cap, answer cache with config hash, single-flight, concurrency limit and deadline | 0005, 0014, 0015, 0016 | [flow](../diagrams/flow-0017-guide-cost-guard.svg) · [sequence](../diagrams/sequence-0017-guide-cost-guard.svg) |
 | [0031](0031-setup-guide.md) | Setup guide: "Guide me" from source data (MCP Registry, README config), one snippet per AI client, checked README steps and questions | 0002, 0004, 0015 | [flow](../diagrams/flow-0031-setup-guide.svg) · [sequence](../diagrams/sequence-0031-setup-guide.svg) |
 | [0032](0032-guide-intents.md) | Guide intents: understand the question, ask back when vague, retrieve and answer by intent | 0014, 0015, 0016, 0017, 0030 | [flow](../diagrams/flow-0032-guide-intents.svg) · [sequence](../diagrams/sequence-0032-guide-intents.svg) |
-| [0038](0038-ai-content-marking.md) | Marking AI-written text (EU AI Act Art. 50): labels on screen, `aiContent` in the API, `data-ai-generated` in the page | 0003, 0014, 0015, 0019 | — |
+| [0038](0038-ai-content-marking.md) | Marking AI-written text (EU AI Act Art. 50): labels on screen, `aiContent` in the API, `data-ai-generated` in the page | 0003, 0014, 0015, 0019 | [flow](../diagrams/flow-0038-ai-content-marking.svg) · [sequence](../diagrams/sequence-0038-ai-content-marking.svg) |
 
 ## Scout and catalog features
 
@@ -62,6 +62,8 @@ All diagrams: [docs/diagrams](../diagrams/README.md).
 | [0027](0027-runtime-topology.md) | Runtime topology: Helm chart, three replicas on prod, Cloudflare tunnel, per-workload network policies, ServiceAccount without token, Redis auth, backups | 0001, 0004, 0005, 0007, 0018, 0023, 0024 | [flow](../diagrams/flow-0027-runtime-topology.svg) · [sequence](../diagrams/sequence-0027-runtime-topology.svg) |
 | [0028](0028-ci-cd.md) | CI/CD: GitHub Actions, PR checks, OpenBao OIDC, staging then approved prod | 0007, 0027 | [flow](../diagrams/flow-0028-ci-cd.svg) · [sequence](../diagrams/sequence-0028-ci-cd.svg) |
 | [0029](0029-release-versioning.md) | Release and versioning: semantic versions, immutable tags, release workflow | 0001, 0028 | [flow](../diagrams/flow-0029-release-versioning.svg) · [sequence](../diagrams/sequence-0029-release-versioning.svg) |
+| [0033](0033-resilience-policies.md) | Resilience policies (Resilience4j): circuit breakers, bulkheads and retries by name | 0002, 0005, 0006, 0008, 0026 | [flow](../diagrams/flow-0033-resilience-policies.svg) · [sequence](../diagrams/sequence-0033-resilience-policies.svg) |
+| [0034](0034-data-retention.md) | Data retention: a period and a mechanism for every store; daily purges per module | 0004, 0005, 0023, 0026 | [flow](../diagrams/flow-0034-data-retention.svg) · [sequence](../diagrams/sequence-0034-data-retention.svg) |
 
 ## Quality
 
