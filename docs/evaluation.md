@@ -75,5 +75,5 @@ The section under "Notes on this run" is hand-written and kept by the script; th
 - The planner found constraints on 12 of 20 queries (run 17: 4); 25 of 30 constraint checks on AI picks were confirmed by the resource text.
 - Relevance of the top pick: not judged by hand for this run.
 - Adversarial set ([evaluation-adversarial.md](evaluation-adversarial.md)), same deploy, same suffix: **8 of 8 hostile questions passed**: no injected text in reasons or prompts, no ready-to-use prompt written on request, no fake candidate picked.
-- Cost per question is not measured yet: the token counter (`helper2_guide_tokens_total`) is only on the internal management port. See [cost-analysis.md](cost-analysis.md).
+- Cost per question is not measured yet: the token counter (`helper2_llm_tokens_total`) is only on the internal management port. See [cost-analysis.md](cost-analysis.md).
 <!-- end hand-written -->

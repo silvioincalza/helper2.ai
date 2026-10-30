@@ -63,7 +63,7 @@ The conservative ceiling prices all 600 calls as the most expensive one, a Super
 input tokens are still an estimate, so this ceiling is too. At the per-question estimate, 200 questions/day cost
 ≈ $0.5/day, ≈ $15/month.
 
-**Measuring it:** every call counts its tokens in `helper2_guide_tokens_total{step,type}` (Prometheus, on the
+**Measuring it:** every call counts its tokens in `helper2_llm_tokens_total{step,prompt,type}` (Prometheus, on the
 management port, scraped into Grafana). The evaluation runs of 29 Oct 2026, 00:07–00:28 UTC
 ([evaluation.md](evaluation.md), [evaluation-adversarial.md](evaluation-adversarial.md)) are the window to read: 28 fresh
 questions (19 + 8, plus one first attempt whose answer was cached), so the per-question figure is the increase over
