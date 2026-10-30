@@ -32,7 +32,10 @@ screen reader, and in light and dark mode.
 5. **Radar design system.** The Helper2.ai design system in `docs/design/system`, named after its radar mark:
    warm paper, indigo ink, one saffron accent; `tokens.css` mirrors `tokens.json`. Unknown values read "Unknown".
 6. **Accessibility.** Skip link; `RouteFocus` moves focus to the new page's `h1` (or `#main`) and names the page in a
-   live region; paging moves focus to the results heading. Vitest runs axe-core smoke tests (`a11y.test.tsx`,
+   live region; paging moves focus to the results heading. The focus ring is a 3px indigo outline 2px off the control
+   (`--focus`): at least 10.4:1 on every light surface and 8.8:1 (light indigo) on every dark one, above the 3:1 of
+   WCAG 1.4.11. The home feeds' `Carousel` moves by itself only with a visible Pause/Play button (WCAG 2.2.2, also on
+   touch screens), holds still while the pointer or focus is inside, and never moves with reduced motion. Vitest runs axe-core smoke tests (`a11y.test.tsx`,
    color contrast excluded because jsdom cannot compute it).
 7. **Theme: system, light, dark.** One button cycles system → light → dark. A fixed choice is saved as `h2.theme`;
    "system" removes it. `public/theme.js` sets `data-theme` before the first paint and follows the device while no choice is saved.

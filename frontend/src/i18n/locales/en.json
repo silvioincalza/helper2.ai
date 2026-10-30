@@ -708,6 +708,10 @@
     "empty": "Nothing with a stated publication date in the last 7 days.",
     "error": "Could not load what’s new right now."
   },
+  "carousel": {
+    "pause": "Pause {{label}}",
+    "play": "Play {{label}}"
+  },
   "mission": {
     "title": "Our mission",
     "lede": "Help people find the right AI resource for their need, and show the proof behind every answer.",
