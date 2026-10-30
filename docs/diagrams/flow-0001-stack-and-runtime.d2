@@ -1,0 +1,51 @@
+# Flowchart: the one artifact, from the three-stage image build to how the running app answers one request.
+# Shows the Dockerfile stages, the JVM flags, and the SinglePageApp rules for every path no controller claims.
+# Source of truth: deploy/Dockerfile, backend/src/main/java/ai/helper2/platform/SinglePageApp.java,
+#   backend/src/main/resources/application.yaml (spring.threads.virtual, spring.web.resources.add-mappings).
+# Render: cd docs/diagrams && d2 fmt flow-0001-stack-and-runtime.d2 && d2 flow-0001-stack-and-runtime.d2 flow-0001-stack-and-runtime.svg
+
+...@style
+
+direction: down
+
+build: deploy/Dockerfile (one image) {
+  class: group
+  direction: down
+  web: "Stage web (node:26-alpine):\nnpm ci, npm run build\n→ frontend/dist" {class: app}
+  app: "Stage app (temurin:25-jdk):\ndist → resources/static,\ngradlew bootJar" {class: app}
+  run: "Runtime (temurin:25-jre, user 10001):\njava -XX:MaxRAMPercentage=60\n-XX:+ExitOnOutOfMemoryError" {class: app}
+  web -> app -> run
+}
+
+serve: One request on port 8080 (virtual thread, blocking code) {
+  class: group
+  direction: down
+  req: "GET <path>" {class: end}
+  ctrl: "A controller matches?\n(/api/v1/**, /oauth2, /login,\n/logout, /actuator)" {class: decision}
+  api: "Controller answers\n(same origin, no CORS)" {class: end}
+  root: "Path is / ?" {class: decision}
+  assets: "/assets/** ?" {class: decision}
+  hashed: "Hashed file, max-age 365 days,\npublic, immutable" {class: end}
+  file: "File exists in static/?" {class: decision}
+  plain: "File served, no-cache\n(favicon, robots.txt)" {class: end}
+  route: "isClientRoute: no extension,\nnot api/ oauth2/ login/\nactuator/ or logout?" {class: decision}
+  built: "index.html readable?\n(no in development:\nVite serves the UI)" {class: decision}
+  index: "index.html, no-cache\n(client router takes over)" {class: end}
+  nf: "404" {class: fail}
+
+  req -> ctrl
+  ctrl -> api: yes
+  ctrl -> root: no
+  root -> built: "yes (forward:/index.html)"
+  root -> assets: no
+  assets -> hashed: yes
+  assets -> file: no
+  file -> plain: yes
+  file -> route: no
+  route -> built: yes {class: hot}
+  route -> nf: no
+  built -> index: yes {class: hot}
+  built -> nf: no
+}
+
+build.run -> serve.req: "pod starts\n(Spring Boot 4.1, Java 25 + Kotlin)" {class: hot}

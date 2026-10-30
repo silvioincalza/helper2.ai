@@ -11,9 +11,9 @@ All diagrams: [docs/diagrams](../diagrams/README.md).
 
 | # | Decision | Builds on | Diagrams |
 |---|---|---|---|
-| [0001](0001-stack-and-runtime.md) | Stack and runtime: Java 25 + Kotlin, Spring Boot 4.1, Spring AI 2.0, React SPA served by Spring, JVM image | — | — |
-| [0002](0002-modular-monolith-hexagonal.md) | Modular monolith with Spring Modulith; hexagonal where business rules live; Kotlin domain, Java adapters | 0001 | — |
-| [0003](0003-contract-first-rest-api.md) | Contract-first REST with OpenAPI 3.1; generated server interfaces and TypeScript types; problem+json | 0001, 0002 | — |
+| [0001](0001-stack-and-runtime.md) | Stack and runtime: Java 25 + Kotlin, Spring Boot 4.1, Spring AI 2.0, React SPA served by Spring, JVM image | — | [flow](../diagrams/flow-0001-stack-and-runtime.svg) · [sequence](../diagrams/sequence-0001-stack-and-runtime.svg) |
+| [0002](0002-modular-monolith-hexagonal.md) | Modular monolith with Spring Modulith; hexagonal where business rules live; Kotlin domain, Java adapters | 0001 | [flow](../diagrams/flow-0002-modular-monolith-hexagonal.svg) · [sequence](../diagrams/sequence-0002-modular-monolith-hexagonal.svg) |
+| [0003](0003-contract-first-rest-api.md) | Contract-first REST with OpenAPI 3.1; generated server interfaces and TypeScript types; problem+json | 0001, 0002 | [flow](../diagrams/flow-0003-contract-first-rest-api.svg) · [sequence](../diagrams/sequence-0003-contract-first-rest-api.svg) |
 | [0004](0004-persistence-and-provenance.md) | PostgreSQL as system of record; ids from canonical URLs; source records; dates never invented; one schema migration + repeatable seeds; catalog writes off the request path | 0001, 0002 | [flow](../diagrams/flow-0004-persistence-and-provenance.svg) · [sequence](../diagrams/sequence-0004-persistence-and-provenance.svg) |
 | [0005](0005-redis-disposable-cache.md) | Redis as a disposable cache: source responses, fresh/stale windows, circuit breaker, counters, guide answers | 0002, 0004 | [flow](../diagrams/flow-0005-redis-disposable-cache.svg) · [sequence](../diagrams/sequence-0005-redis-disposable-cache.svg) |
 | [0006](0006-outbound-http.md) | Outbound HTTP: Apache HttpClient 5 behind RestClient; timeouts; no HTTPS→HTTP; error mapping | 0002, 0005 | [flow](../diagrams/flow-0006-outbound-http.svg) · [sequence](../diagrams/sequence-0006-outbound-http.svg) |

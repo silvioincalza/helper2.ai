@@ -20,6 +20,9 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 
 | ADR | Flowchart | Sequence | Shows |
 |---|---|---|---|
+| [0001](../adr/0001-stack-and-runtime.md) | [flow](flow-0001-stack-and-runtime.svg) | [sequence](sequence-0001-stack-and-runtime.svg) | the one image, from the three Dockerfile stages to how SinglePageApp and the controllers answer a request, hosted and in local development. |
+| [0002](../adr/0002-modular-monolith-hexagonal.md) | [flow](flow-0002-modular-monolith-hexagonal.svg) | [sequence](sequence-0002-modular-monolith-hexagonal.svg) | the dependency rules ModularityTest checks, the module dependencies that pass them, and one search through the ports. |
+| [0003](../adr/0003-contract-first-rest-api.md) | [flow](flow-0003-contract-first-rest-api.svg) | [sequence](sequence-0003-contract-first-rest-api.svg) | a contract change through the generated Java and TypeScript types to the contract tests, and one request answered with problem+json. |
 | [0004](../adr/0004-persistence-and-provenance.md) | [flow](flow-0004-persistence-and-provenance.svg) | [sequence](sequence-0004-persistence-and-provenance.svg) | how one search reads discovery dates and records what it saw, off the request path. |
 | [0005](../adr/0005-redis-disposable-cache.md) | [flow](flow-0005-redis-disposable-cache.svg) | [sequence](sequence-0005-redis-disposable-cache.svg) | how one LIVE source is answered with the Redis cache: circuit breaker, fresh window, live call, stale window and the CACHE_UNAVAILABLE notice. |
 | [0006](../adr/0006-outbound-http.md) | [flow](flow-0006-outbound-http.svg) | [sequence](sequence-0006-outbound-http.svg) | one outbound source call, from the pooled Apache client to the outcome the search reports. |

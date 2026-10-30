@@ -51,7 +51,7 @@ every source has a status), and these rules must be visible in one place that bo
 - `frontend/package.json` (script `gen:api`), `frontend/src/api/client.ts` — generated types and `ApiError`.
 
 ## Diagrams
-None: no runtime flow.
+[flow](../diagrams/flow-0003-contract-first-rest-api.svg) · [sequence](../diagrams/sequence-0003-contract-first-rest-api.svg)
 
 ## Roadmap
 Nothing open.
