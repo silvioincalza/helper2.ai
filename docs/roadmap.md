@@ -36,11 +36,10 @@ Items are grouped by the order in which they matter. Inside a group, the first i
   ([ADR 0023](adr/0023-identity-and-admin.md)).
 
 ### Quality gates
-- **Browser end-to-end tests (skipped for now, owner decision 27 Oct 2026).** No Playwright journey is automated.
+- **Browser end-to-end tests (skipped for now, owner decision 27 Oct 2026).** No browser journey is automated.
   Later, on the `demo` profile:
   search with a partial result and the source status panel; ask the guide, follow the streamed steps, close the
   answer and keep the search; back and forward; the theme switch. Then run them in CI.
-  The local Chromium version must match the Playwright version.
   See [user-journeys.md](user-journeys.md) (SC-1 to SC-3).
 - Manual accessibility pass on real browsers: keyboard, screen reader, contrast, mobile.
   - After a route change, the focused heading and the live region can both be read out.

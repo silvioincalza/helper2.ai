@@ -36,5 +36,5 @@ cd frontend && npm test -- --run && npm run lint && npm run typecheck
 
 ## Known gaps (not covered by automated tests)
 
-- **Browser end-to-end tests.** Playwright is configured but has no journeys yet (on the [roadmap](roadmap.md)). The guide journey is covered by `GuideApiIT` (API) and `HomeGuide.test.tsx` (UI).
+- **Browser end-to-end tests.** None yet (on the [roadmap](roadmap.md)). The guide journey is covered by `GuideApiIT` (API) and `HomeGuide.test.tsx` (UI).
 - **Live source smoke tests.** Search connectors are tested against recorded real responses only; the one live test covers the awesome-list collector.
