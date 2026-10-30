@@ -1,12 +1,15 @@
-# Cache only: no persistence on purpose (never the source of truth, ADR 0005).
+# Cache with AOF persistence (ADR 0005): a restart comes back warm; PostgreSQL stays the system of
+# record, so losing the volume costs only cache misses. StatefulSet: at most one pod ever holds the
+# ReadWriteOnce volume, like Postgres.
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: redis
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "helper2.labels" . | nindent 4 }}
 spec:
+  serviceName: redis
   replicas: 1
   selector: { matchLabels: { app: redis } }
   template:
@@ -20,32 +23,43 @@ spec:
     spec:
       serviceAccountName: helper2
       automountServiceAccountToken: false
-      securityContext: { runAsNonRoot: true, runAsUser: 999, runAsGroup: 999, seccompProfile: { type: RuntimeDefault } }
+      # fsGroup: the volume is writable by the redis user.
+      securityContext: { runAsNonRoot: true, runAsUser: 999, runAsGroup: 999, fsGroup: 999, seccompProfile: { type: RuntimeDefault } }
       containers:
         - name: redis
           image: {{ .Values.redis.image }}
-          {{- if .Values.redis.auth.enabled }}
-          # requirepass comes in as config on stdin (`redis-server -`), not in argv. REDISCLI_AUTH also
-          # lets the probe's redis-cli authenticate.
+          # AOF only (no RDB snapshots), fsync every second; still a bounded LRU cache. requirepass comes
+          # in as config on stdin (`redis-server -`), not in argv; REDISCLI_AUTH also lets the probe's
+          # redis-cli authenticate.
           command: ["/bin/sh", "-ec"]
           args:
             - |
-              exec redis-server - --save "" --appendonly no --maxmemory {{ .Values.redis.maxMemory }} --maxmemory-policy allkeys-lru <<EOF
+              exec redis-server - --dir /data --save "" --appendonly yes --appendfsync everysec --maxmemory {{ .Values.redis.maxMemory }} --maxmemory-policy allkeys-lru <<EOF
+              {{- if .Values.redis.auth.enabled }}
               requirepass $REDISCLI_AUTH
+              {{- end }}
               EOF
+          {{- if .Values.redis.auth.enabled }}
           env:
             - name: REDISCLI_AUTH
               valueFrom: { {{ include "helper2.redisPasswordFrom" . }} }
-          {{- else }}
-          args: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", {{ .Values.redis.maxMemory | quote }}, "--maxmemory-policy", "allkeys-lru"]
           {{- end }}
           ports: [{ containerPort: 6379, name: redis }]
+          # Not ready while the AOF loads (PING answers LOADING).
           readinessProbe: { exec: { command: ["sh", "-c", "redis-cli ping | grep -qx PONG"] }, periodSeconds: 5 }
           resources:
             {{- toYaml .Values.redis.resources | nindent 12 }}
           securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }
-          volumeMounts: [{ name: tmp, mountPath: /data }]
-      volumes: [{ name: tmp, emptyDir: {} }]
+          volumeMounts: [{ name: data, mountPath: /data }]
+  # Immutable after creation: a new size or storage class needs a new StatefulSet (the cache refills).
+  volumeClaimTemplates:
+    - metadata: { name: data }
+      spec:
+        accessModes: [ReadWriteOnce]
+        {{- with .Values.redis.storageClassName }}
+        storageClassName: {{ . }}
+        {{- end }}
+        resources: { requests: { storage: {{ .Values.redis.storage }} } }
 ---
 apiVersion: v1
 kind: Service

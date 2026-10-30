@@ -77,6 +77,10 @@ postgres:
 redis:
   image: docker.io/library/redis:8.10.2-alpine
   maxMemory: 128mb
+  # The AOF volume (append-only file, fsync every second). volumeClaimTemplates are immutable: changing
+  # these needs a new StatefulSet. Empty storageClassName = the cluster's default storage class.
+  storageClassName: ""
+  storage: 1Gi
   # requirepass, from a Secret. Default: the key H2_REDIS_PASSWORD of helper2-env, i.e. a line
   # H2_REDIS_PASSWORD=<openssl rand -hex 32> in <env>/app.env (letters and digits only: it goes into the
   # Redis config as is). Or existingSecret: a Secret managed outside the chart. The app gets the same

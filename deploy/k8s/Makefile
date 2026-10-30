@@ -135,8 +135,9 @@ HELM_ARGS = helper2 $(CHART) -n $(NS) -f $(CHART)/values-$(ENV).yaml \
 	--set image.repository=$(IMAGE) --set image.tag=$(TAG) --set-file envFile=$(ENV)/app.env
 
 # CI runs this on every pull request; no cluster needed. Each environment's values (and prod with the
-# off-site backup on) with a fixture app.env, linted and checked against the Kubernetes schemas.
-chart-check: ## helm lint + helm template | kubeconform, for staging and prod; an envFile key without H2_ fails
+# off-site backup on) with a fixture app.env, linted and checked against the Kubernetes schemas, and
+# Redis rendered with AOF (no RDB snapshots) on its own PersistentVolumeClaim (ADR 0005).
+chart-check: ## helm lint + helm template | kubeconform, for staging and prod; Redis AOF + PVC; an envFile key without H2_ fails
 	@set -euo pipefail; \
 	env=$$(mktemp); bad=$$(mktemp); trap 'rm -f "$$env" "$$bad"' EXIT; \
 	printf 'H2_DATABASE_PASSWORD=ci\nH2_REDIS_PASSWORD=00000000000000000000000000000000\n' > "$$env"; \
@@ -153,6 +154,10 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; a
 		args=(-f $(CHART)/values-$$e.yaml --set image.tag=000000000000 --set-file envFile=$$env "$$@"); \
 		helm lint --strict $(CHART) "$${args[@]}"; \
 		helm template helper2 $(CHART) -n helper2-$$e "$${args[@]}" | kubeconform -strict -summary; \
+		redis=$$(helm template helper2 $(CHART) -n helper2-$$e "$${args[@]}" --show-only templates/redis.yaml); \
+		grep -qF -- '--save "" --appendonly yes --appendfsync everysec' <<<"$$redis" \
+			|| { echo "Redis must run with AOF and no RDB snapshots (--save \"\" --appendonly yes --appendfsync everysec)"; exit 1; }; \
+		grep -q '^  volumeClaimTemplates:' <<<"$$redis" || { echo "Redis must keep /data on a PersistentVolumeClaim"; exit 1; }; \
 	done
 
 check-env:
