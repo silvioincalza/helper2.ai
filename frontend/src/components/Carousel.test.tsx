@@ -28,12 +28,12 @@ describe('carousel', () => {
 
     await user.click(screen.getByRole('button', { name: 'Pause Radar' }));
     await user.unhover(screen.getByRole('button', { name: 'Play Radar' }));
-    (document.activeElement as HTMLElement | null)?.blur();
+    act(() => (document.activeElement as HTMLElement | null)?.blur());
     act(() => vi.advanceTimersByTime(18000));
     expect(scrollTo).toHaveBeenCalledTimes(1);
 
     await user.click(screen.getByRole('button', { name: 'Play Radar' }));
-    (document.activeElement as HTMLElement | null)?.blur();
+    act(() => (document.activeElement as HTMLElement | null)?.blur());
     await user.unhover(screen.getByRole('button', { name: 'Pause Radar' }));
     act(() => vi.advanceTimersByTime(6000));
     expect(scrollTo).toHaveBeenCalledTimes(2);
