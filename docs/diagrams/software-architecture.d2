@@ -80,8 +80,8 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
 
   catalog: "catalog (Java)" {
     class: group
-    ctl: "ResourcesController\nresources, recent, events,\nmodel families, reports" {class: app}
-    catalog: "ResourceCatalog · ReviewQueue\nusecase: GetResourceDetail · ListModelFamilies\nReportIssue · ResolveReviewItem" {class: app}
+    ctl: "ResourcesController\nresources, recent,\nevents, reports" {class: app}
+    catalog: "ResourceCatalog · ReviewQueue\nusecase: GetResourceDetail · ReportIssue\nResolveReviewItem" {class: app}
     queue: "ObservationQueue\n(one writer thread)" {class: app}
     store: ResourceStore {class: app}
     index: "CatalogSearchSource\nhelper2-index · curated" {class: app}

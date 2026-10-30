@@ -1,20 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { api } from '@/api/client';
-import type { Bookmark, ResourceType } from '@/api/types';
-import { readLocalBookmarks, writeLocalBookmarks, type LocalBookmark } from '@/lib/bookmarks';
+import type { Bookmark, BookmarkRequest } from '@/api/types';
+import { readLocalBookmarks, writeLocalBookmarks } from '@/lib/bookmarks';
 import { useMe } from './MeContext';
-
-export interface BookmarkInput {
-  resourceId: string;
-  title: string;
-  url: string;
-  type: ResourceType | null;
-}
 
 interface BookmarksValue {
   items: Bookmark[];
   isSaved: (id: string) => boolean;
-  toggle: (b: BookmarkInput) => void;
+  toggle: (b: BookmarkRequest) => void;
   remove: (id: string) => void;
   /** 'local' = browser storage, 'server' = signed-in account list. */
   mode: 'local' | 'server';
@@ -24,12 +17,10 @@ interface BookmarksValue {
 
 const Ctx = createContext<BookmarksValue | null>(null);
 
-const toBookmark = (b: LocalBookmark): Bookmark => ({ ...b, type: b.type });
-
 export function BookmarksProvider({ children }: { children: ReactNode }) {
   const { me, loaded } = useMe();
   const server = loaded && me.authenticated;
-  const [local, setLocal] = useState<LocalBookmark[]>(() => readLocalBookmarks());
+  const [local, setLocal] = useState<Bookmark[]>(() => readLocalBookmarks());
   const [remote, setRemote] = useState<Bookmark[]>([]);
   const [storageFailed, setStorageFailed] = useState(false);
   const [serverError, setServerError] = useState(false);
@@ -41,7 +32,7 @@ export function BookmarksProvider({ children }: { children: ReactNode }) {
     const localList = readLocalBookmarks();
     const run = localList.length
       ? api
-          .addBookmarks(localList.map((b) => ({ resourceId: b.resourceId, title: b.title, url: b.url, type: b.type })))
+          .addBookmarks(localList.map(({ savedAt: _savedAt, ...request }) => request))
           .then((list) => {
             // merged once: the server list is now the source of truth
             if (writeLocalBookmarks([])) setLocal([]);
@@ -57,12 +48,12 @@ export function BookmarksProvider({ children }: { children: ReactNode }) {
     );
   }, [server]);
 
-  const persistLocal = useCallback((list: LocalBookmark[]) => {
+  const persistLocal = useCallback((list: Bookmark[]) => {
     setLocal(list);
     setStorageFailed(!writeLocalBookmarks(list));
   }, []);
 
-  const items = useMemo(() => (server ? remote : local.map(toBookmark)), [server, remote, local]);
+  const items = useMemo(() => (server ? remote : local), [server, remote, local]);
 
   const remove = useCallback(
     (id: string) => {
@@ -77,7 +68,7 @@ export function BookmarksProvider({ children }: { children: ReactNode }) {
   );
 
   const toggle = useCallback(
-    (b: BookmarkInput) => {
+    (b: BookmarkRequest) => {
       const saved = items.some((i) => i.resourceId === b.resourceId);
       if (saved) return remove(b.resourceId);
       if (server) {

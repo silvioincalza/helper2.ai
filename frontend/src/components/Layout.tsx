@@ -1,11 +1,11 @@
 import { useEffect, useRef, useSyncExternalStore, type ReactNode } from 'react';
-import { NavLink, Outlet, Link, useLocation } from 'react-router';
+import { NavLink, Outlet, Link, ScrollRestoration, useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { signOut } from '@/api/client';
 import { useMe } from '@/context/MeContext';
 import { LANGUAGES, setLanguage } from '@/i18n';
 import { chooseTheme, currentChoice, nextChoice, subscribeTheme, type ThemeChoice } from '@/lib/theme';
-import { MODELS_ENABLED, SAVED_ENABLED } from '@/lib/features';
+import { SAVED_ENABLED } from '@/lib/features';
 import { Logo } from './Logo';
 import { OneBox } from './OneBox';
 
@@ -42,10 +42,9 @@ export function Header() {
       <div className="container header-row">
         <Link to="/" className="logo-link" aria-label={t('nav.home')}><Logo /></Link>
         {/* Search is the home page (the logo goes there); the menu only lists the pages that are on. */}
-        {(MODELS_ENABLED || SAVED_ENABLED || isAdmin) && (
+        {(SAVED_ENABLED || isAdmin) && (
           <nav aria-label={t('nav.main')} className="main-nav">
             <ul className="plain-list">
-              {MODELS_ENABLED && <li><NavLink to="/models">{t('nav.models')}</NavLink></li>}
               {SAVED_ENABLED && <li><NavLink to="/saved">{t('nav.saved')}</NavLink></li>}
               {isAdmin && <li><NavLink to="/admin">{t('nav.admin')}</NavLink></li>}
             </ul>
@@ -104,6 +103,7 @@ export function Footer() {
           <ul className="plain-list">
             <li><Link to="/mission">{t('footer.mission')}</Link></li>
             <li><Link to="/privacy">{t('footer.privacy')}</Link></li>
+            <li><Link to="/terms">{t('footer.terms')}</Link></li>
           </ul>
         </div>
         <div className="footer-col">
@@ -159,6 +159,8 @@ export function Layout() {
   return (
     <>
       <a className="skip-link" href="#main">{t('nav.skip')}</a>
+      {/* A new page starts at the top; back and forward return to where the reader was. */}
+      <ScrollRestoration />
       <RouteFocus />
       <Header />
       <main id="main" tabIndex={-1} className="container main">

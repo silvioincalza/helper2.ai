@@ -1,5 +1,6 @@
 package ai.helper2.guide.web;
 
+import ai.helper2.api.generated.model.AiContentMarkerDto;
 import ai.helper2.api.generated.model.GuideCheckDto;
 import ai.helper2.api.generated.model.GuideClarificationDto;
 import ai.helper2.api.generated.model.GuideComparisonDto;
@@ -39,6 +40,15 @@ import org.springframework.stereotype.Component;
 @Component
 class GuideDtoMapper {
 
+    /** Fields a model may write in a guide answer (ADR 0038). Quotes, titles and URLs come from the sources. */
+    static final List<String> AI_WRITTEN_FIELDS = List.of(
+        "searchQuery", "constraints[]", "recommendations[].reason", "prompt.text",
+        "clarification.question", "clarification.options[]", "comparison.rows[].cells[].text",
+        "explanation.sentences[].text");
+
+    /** The public page that explains the marking. A path, so the same build works on any host. */
+    static final String AI_MARKING_POLICY = "/mission";
+
     private final String provider;
     private final String fastModel;
     private final String reasoningModel;
@@ -72,6 +82,7 @@ class GuideDtoMapper {
             .prompt(a.getPrompt() == null ? null : new GuidePromptDto(a.getPrompt().getText(),
                 a.getPrompt().getBasedOn().stream().map(GuideDtoMapper::basedOn).toList()))
             .model(a.getModelUsed() ? new GuideModelInfoDto(provider, fastModel, reasoningModel) : null)
+            .aiContent(a.getModelUsed() ? aiContent() : null)
             .candidatesConsidered(a.getCandidatesConsidered())
             .rejected(a.getRejected())
             .sources(statuses(a.getSearch()))
@@ -84,6 +95,11 @@ class GuideDtoMapper {
             .clarification(clarification(a.getClarification()))
             .comparison(comparison(a.getComparison()))
             .explanation(explanation(a.getExplanation()));
+    }
+
+    private AiContentMarkerDto aiContent() {
+        return new AiContentMarkerDto(true, provider, Stream.of(fastModel, reasoningModel).distinct().toList(),
+            AI_WRITTEN_FIELDS, AI_MARKING_POLICY);
     }
 
     static GuideWindowDto window(DateWindow w) {

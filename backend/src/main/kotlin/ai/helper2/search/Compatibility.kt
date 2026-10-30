@@ -25,8 +25,7 @@ data class CompatibilityFlag(
 /**
  * Deterministic "compatible with" flags derived only from source data: tags/topics/keywords the
  * sources returned, the resource type and published formats. No model call, nothing guessed; the
- * rules are disclosed. Provider tool ids match the model-family ids of the catalog so a flag can
- * link to its family and the comparison page.
+ * rules are disclosed.
  */
 object Compatibility {
 

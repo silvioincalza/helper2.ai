@@ -106,4 +106,22 @@ class OtherSourcesTest {
         assertThat(src.search(q("agent")).getFirst().getRepositoryUrl().getValue())
             .isEqualTo("https://github.com/acme/mono/tree/main/packages/player");
     }
+
+    @Test
+    void aHubIdThatIsNoValidUrlPathIsSkippedAndTheOtherModelsAreKept() {
+        server.route("/api/models", FixtureServer.Reply.ok("""
+            [{"id":"acme/bad id","likes":1},{"id":"acme/good-model","likes":2}]"""));
+        HuggingFaceModelsSource src = new HuggingFaceModelsSource(settings(), ObservedHttp.restClientBuilder(Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP), GitHubSourceTest.CLOCK);
+
+        assertThat(src.search(q("model"))).extracting(SourceHit::getExternalId).containsExactly("acme/good-model");
+    }
+
+    /** A minimal hit, for tests of the plumbing around the mappers. */
+    static SourceHit hit(String id, int rank) {
+        String url = "https://example.org/" + id;
+        return new SourceHit("test-source", id, java.net.URI.create(url), ai.helper2.shared.CanonicalUrl.of(url), null, id, null,
+            ai.helper2.shared.ValueOrigin.SOURCE_PROVIDED, ResourceType.LIBRARY, Audience.BUILD_WITH_AI, null, java.util.Set.of(),
+            java.util.Set.of(), null, null, java.util.Set.of(), null, ai.helper2.shared.DateFact.unknown(),
+            ai.helper2.shared.DateFact.unknown(), List.of(), GitHubSourceTest.CLOCK.instant(), rank);
+    }
 }

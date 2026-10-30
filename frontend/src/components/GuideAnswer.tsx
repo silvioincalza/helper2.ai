@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import type { GuideResponse } from '@/api/types';
+import type { GuideRequest, GuideResponse } from '@/api/types';
 import { ExternalLink } from '@/components/ExternalLink';
 import { Icon } from '@/components/Icon';
+import { aiMark } from '@/lib/aiMark';
 import { typeTagClass } from '@/lib/typeTag';
 
 type Recommendation = GuideResponse['recommendations'][number];
 
 /** A follow-up the user asks from the answer: their reply to our question, or parts of the reading to remove. */
-export type Refinement = { clarification?: string | undefined; drop?: string[] | undefined };
+export type Refinement = Pick<GuideRequest, 'clarification' | 'drop'>;
 
 /**
  * Where [quote] sits inside [text], matched like the validator does (case and runs of whitespace ignored).
@@ -45,14 +46,19 @@ export function GuideAnswer({ answer, onRefine }: { answer: GuideResponse; onRef
   const dailyQuota = answer.notices.some((n) => n.code === 'GUIDE_DAILY_QUOTA');
   const showStatus = !(dailyQuota && answer.status === 'LLM_UNAVAILABLE');
   return (
-    <section aria-labelledby="guide-answer-h" className="guide-answer">
+    <section
+      aria-labelledby="guide-answer-h"
+      className="guide-answer"
+      data-ai-provider={answer.aiContent?.provider}
+      data-ai-models={answer.aiContent?.models.join(' ')}
+    >
       <h2 id="guide-answer-h" className="sr-only">{t('guide.title')}</h2>
 
       {answer.model ? (
         <ol className="plain-list proof-strip" aria-label={t('guide.howMade')}>
           <li>
             <span className="proof-n">{t('guide.strip.planned')}</span>
-            <strong>{t('guide.searchedFor', { q: answer.searchQuery })}</strong>
+            <strong {...aiMark(answer.model.fastModel)}>{t('guide.searchedFor', { q: answer.searchQuery })}</strong>
             <span className="proof-sub">{answer.model.fastModel}</span>
           </li>
           <li>
@@ -199,7 +205,7 @@ function ComparisonTable({ comparison }: { comparison: NonNullable<GuideResponse
                 const cell = r.cells.find((c) => c.subjectKey === s.key);
                 return (
                   <td key={s.key}>
-                    {cell?.text ? <>{cell.text}{cell.quote && <q>{cell.quote}</q>}</> : <span className="muted small">{t('guide.comparison.notStated')}</span>}
+                    {cell?.text ? <><span {...aiMark()}>{cell.text}</span>{cell.quote && <q>{cell.quote}</q>}</> : <span className="muted small">{t('guide.comparison.notStated')}</span>}
                   </td>
                 );
               })}
@@ -221,7 +227,7 @@ function ExplanationBlock({ explanation }: { explanation: NonNullable<GuideRespo
       <ol className="plain-list">
         {explanation.sentences.map((x, i) => (
           <li key={i}>
-            {x.text} <Link to={`/resource/${x.resourceId}`} className="small">{x.title}</Link>
+            <span {...aiMark()}>{x.text}</span> <Link to={`/resource/${x.resourceId}`} className="small">{x.title}</Link>
             <q>{x.quote}</q>
           </li>
         ))}
@@ -276,7 +282,7 @@ function Pick({ r, best }: { r: Recommendation; best: boolean }) {
       {r.aiReasoned && r.reasonCheck !== 'REMOVED' && r.reason && (
         <details className="guide-reason" open>
           <summary>{t(r.reasonCheck === 'SUPPORTED' ? 'guide.reasonSupported' : 'guide.reasonLabel')}</summary>
-          <p>{r.reason}</p>
+          <p {...aiMark()}>{r.reason}</p>
         </details>
       )}
       <div className="card-actions">
@@ -305,7 +311,7 @@ export function PromptBox({ text, basedOn }: { text: string; basedOn: { resource
         <h3 id="guide-prompt-h">{t('guide.promptTitle')} <span className="badge">{t('guide.promptAi')}</span></h3>
         <button type="button" className="btn btn-primary" onClick={() => void copy()}>{copied ? t('guide.copied') : t('guide.copy')}</button>
       </div>
-      <pre className="guide-prompt-text">{text}</pre>
+      <pre className="guide-prompt-text" {...aiMark()}>{text}</pre>
       {basedOn.length > 0 && (
         <p className="small guide-prompt-based">
           {t('guide.basedOn')}{' '}

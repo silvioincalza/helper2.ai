@@ -50,7 +50,7 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
   });
 
   it('sources, admin', async () => {
-    mockApi({ 'GET /me': () => ADMIN, 'GET /admin/review-items': () => [], 'GET /admin/scout-runs': () => [], 'GET /me/bookmarks': () => [] });
+    mockApi({ 'GET /me': () => ADMIN, 'GET /admin/review-items': () => ({ items: [], total: 0 }), 'GET /admin/scout-runs': () => [], 'GET /me/bookmarks': () => [] });
     const s = renderApp('/sources');
     await screen.findByRole('table');
     expect(await axeViolations(s.container)).toEqual([]);

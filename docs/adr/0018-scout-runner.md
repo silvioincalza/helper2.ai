@@ -4,7 +4,7 @@
 
 ## Context
 Live search only shows what sources return for one query. To answer from its own index (keyword and vector search,
-"Today", "Next events", model families) Helper2 must collect resources in the background. Sources differ: some must be
+"Today", "Next events") Helper2 must collect resources in the background. Sources differ: some must be
 polled hourly, some cost credits per call, some are large and must be read in pages over several runs. A failing
 source must not stop the others, a crash must not lose or skip items, and two runs must never work on the same items
 at the same time. Prod runs 3 replicas ([0027](0027-runtime-topology.md)), each with its own timer.

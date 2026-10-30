@@ -1,4 +1,4 @@
-import type { ModelFamiliesResponse, UpcomingEventsResponse, Bookmark, BookmarkRequest, GuideRequest, GuideResponse, GuideStep, IssueReportAccepted, IssueReportRequest, Me, Problem, RecentResponse, ResourceDetail, ReviewItem, SetupGuide, ToolGuide, ToolGuideRequest, ReviewResolution, ReviewStatus, ScoutRun, SearchResponse, SourceInfo } from './types';
+import type { UpcomingEventsResponse, Bookmark, BookmarkRequest, GuideRequest, GuideResponse, GuideStep, IssueReportAccepted, IssueReportRequest, Me, Problem, RecentResponse, ResourceDetail, ReviewItem, ReviewItemPage, SetupGuide, ToolGuide, ToolGuideRequest, ReviewResolution, ReviewStatus, ScoutRun, SearchResponse, SourceInfo } from './types';
 
 import { SseParser } from '@/lib/sse';
 
@@ -184,16 +184,15 @@ export const api = {
     request<IssueReportAccepted>('POST', `/resources/${encodeURIComponent(id)}/reports`, { body }),
   askGuide: (body: GuideRequest, signal?: AbortSignal) => request<GuideResponse>('POST', '/guide', { body, signal }),
   askGuideStream,
-  listModelFamilies: (signal?: AbortSignal) => request<ModelFamiliesResponse>('GET', '/model-families', { signal }),
   listSources: (signal?: AbortSignal) => request<SourceInfo[]>('GET', '/sources', { signal }),
   getMe: (signal?: AbortSignal) => request<Me>('GET', '/me', { signal }),
   listBookmarks: (signal?: AbortSignal) => request<Bookmark[]>('GET', '/me/bookmarks', { signal }),
   addBookmarks: (body: BookmarkRequest[]) => request<Bookmark[]>('POST', '/me/bookmarks', { body }),
   deleteBookmark: (resourceId: string) =>
     request<void>('DELETE', `/me/bookmarks/${encodeURIComponent(resourceId)}`),
-  listReviewItems: (status?: ReviewStatus, signal?: AbortSignal) =>
-    request<ReviewItem[]>('GET', '/admin/review-items', {
-      query: new URLSearchParams(status ? { status } : {}),
+  listReviewItems: (status: ReviewStatus | undefined, page: number, size: number, signal?: AbortSignal) =>
+    request<ReviewItemPage>('GET', '/admin/review-items', {
+      query: new URLSearchParams({ ...(status ? { status } : {}), page: String(page), size: String(size) }),
       signal,
     }),
   resolveReviewItem: (id: string, body: ReviewResolution) =>

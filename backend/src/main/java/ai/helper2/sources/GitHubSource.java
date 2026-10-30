@@ -62,7 +62,7 @@ public class GitHubSource implements SearchSource {
                 return u.build();
             })
             .retrieve().body(String.class), clock);
-        return HttpClients.hits(root.path("items"), clock.instant(), GitHubSource::toHit);
+        return HttpClients.hits("github", root.path("items"), clock.instant(), GitHubSource::toHit);
     }
 
     /**

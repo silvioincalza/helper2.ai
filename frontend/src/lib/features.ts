@@ -4,5 +4,3 @@
  */
 /** Saved (bookmarks): the menu item, the Save buttons and /saved. */
 export const SAVED_ENABLED = false;
-/** AI models comparison: the menu item, the "works with" links to it and /models. */
-export const MODELS_ENABLED = false;

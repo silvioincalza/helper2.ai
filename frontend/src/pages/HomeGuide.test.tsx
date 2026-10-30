@@ -22,6 +22,10 @@ function makeGuide(over: Partial<GuideResponse> = {}): GuideResponse {
     }],
     prompt: null,
     model: { provider: 'nebius-token-factory', fastModel: 'nvidia/nemotron-nano', reasoningModel: 'nvidia/nemotron-3-super' },
+    aiContent: {
+      aiGenerated: true, provider: 'nebius-token-factory', models: ['nvidia/nemotron-nano', 'nvidia/nemotron-3-super'],
+      fields: ['searchQuery', 'recommendations[].reason'], policy: '/mission',
+    },
     candidatesConsidered: 12,
     rejected: 0,
     sources: [makeStatus()],
@@ -53,6 +57,19 @@ describe('guide on the one page', () => {
     expect(screen.getByText('Lets an agent run read-only SQL against Postgres.').closest('details')).toHaveAttribute('open');
     expect(screen.getByText(/Evidence, checked word for word/)).toBeInTheDocument();
     expect(screen.getByText(/read-only access to a PostgreSQL database/)).toBeInTheDocument();
+  });
+
+  it('marks AI-written text machine-readable, and never the quote from the source (EU AI Act Art. 50(2))', async () => {
+    mockApi({ 'POST /guide/stream': () => sse(makeGuide()) });
+    renderApp('/');
+    await ask('an MCP server for Postgres');
+
+    const reason = await screen.findByText('Lets an agent run read-only SQL against Postgres.');
+    expect(reason).toHaveAttribute('data-ai-generated', 'true');
+    const answer = reason.closest('section.guide-answer');
+    expect(answer).toHaveAttribute('data-ai-provider', 'nebius-token-factory');
+    expect(answer).toHaveAttribute('data-ai-models', 'nvidia/nemotron-nano nvidia/nemotron-3-super');
+    expect(screen.getByText(/read-only access to a PostgreSQL database/).closest('[data-ai-generated]')).toBeNull();
   });
 
   it('shows each requirement as confirmed with its quote or as not confirmed, in words', async () => {
@@ -112,7 +129,7 @@ describe('guide on the one page', () => {
 
   it('LLM_UNAVAILABLE shows the degraded notice and no-AI badges, without model explanation or prompt', async () => {
     const fallback = { ...makeGuide().recommendations[0]!, aiReasoned: false };
-    mockApi({ 'POST /guide/stream': () => sse(makeGuide({ status: 'LLM_UNAVAILABLE', model: null, prompt: null, recommendations: [fallback] })) });
+    mockApi({ 'POST /guide/stream': () => sse(makeGuide({ status: 'LLM_UNAVAILABLE', model: null, aiContent: null, prompt: null, recommendations: [fallback] })) });
     renderApp('/');
     await ask('an MCP server for Postgres');
     expect(await screen.findByText(/The AI model is not available right now/)).toBeInTheDocument();
@@ -122,6 +139,7 @@ describe('guide on the one page', () => {
     expect(screen.queryByText(/Model's explanation/)).not.toBeInTheDocument();
     expect(screen.queryByText('Ready-to-use prompt')).not.toBeInTheDocument();
     expect(screen.queryByText(/^Planning:/)).not.toBeInTheDocument();
+    expect(document.querySelector('[data-ai-generated]')).toBeNull();
   });
 
   it('over the daily quota says so instead of calling the model unavailable', async () => {

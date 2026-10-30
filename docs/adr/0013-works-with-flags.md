@@ -25,9 +25,9 @@ must also remove the flag.
    these rows from the current `source_record.extra` on every upsert, so a dropped tag drops the flag. At most 20 tags
    per resource are kept (alphabetical), each cut to 60 characters.
 5. **On every card.** `CardMapper.card` (named interface `cards` of the search module) adds `compatibleWith`, so
-   search results, resource pages, the "new" list, upcoming events and model families show the same flags.
+   search results, resource pages, the "new" list and upcoming events show the same flags.
    Guide recommendations (`GuideRecommendation`) do not carry flags. The contract states they are never
-   model-generated. Provider ids match model-family ids, so the frontend links those flags to `/models?compare=<id>`.
+   model-generated.
 
 ## Consequences
 - Good: every flag can be traced to a tag, a type or a format; the rules are public.

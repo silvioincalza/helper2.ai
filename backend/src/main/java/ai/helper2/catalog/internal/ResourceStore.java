@@ -553,9 +553,15 @@ public class ResourceStore {
             .list();
     }
 
-    /** Stores [vectors] (same order as [tasks]) under [model], replacing older ones. */
+    /**
+     * Stores [vectors] (same order as [tasks]) under [model], replacing older ones, and removes these resources'
+     * vectors of any other model: the table holds one model's vectors, so the HNSW index serves one vector space.
+     */
     @Transactional
     public void saveEmbeddings(String model, List<EmbeddingTask> tasks, List<float[]> vectors) {
+        jdbc.sql("DELETE FROM resource_embedding WHERE resource_id = ANY(:ids) AND model <> :model")
+            .param("ids", tasks.stream().map(EmbeddingTask::resourceId).toArray(UUID[]::new)).param("model", model)
+            .update();
         for (int i = 0; i < tasks.size(); i++) {
             EmbeddingTask t = tasks.get(i);
             jdbc.sql("""
@@ -586,16 +592,25 @@ public class ResourceStore {
 
     /**
      * Nearest resources to [query] by cosine distance, closest first, at most [maxDistance] away (2 = no
-     * limit). Ordered by distance alone so the HNSW index serves it. The vector may be stale for a row whose text changed since; the indexer refreshes it.
+     * limit). Ordered by distance alone so the HNSW index serves it. The filters (model, origin, distance) apply
+     * to the index's candidates, so the scan is iterative (pgvector 0.8, `relaxed_order`): it keeps reading the
+     * index until [limit] rows pass them instead of stopping after one candidate list. Relaxed order may return
+     * neighbours slightly out of order, so the outer query sorts them again. The vector may be stale for a row
+     * whose text changed since; the indexer refreshes it.
      */
+    @Transactional
     public List<ResourceRow> semanticSearch(float[] query, String model, Set<DataOrigin> origins, int limit, double maxDistance) {
+        jdbc.sql("SET LOCAL hnsw.iterative_scan = relaxed_order").update();
         return withFacts(jdbc.sql("""
-                SELECT r.*, 1 - (e.embedding <=> CAST(:v AS vector)) AS score
-                FROM resource_embedding e JOIN resource r ON r.id = e.resource_id
-                WHERE e.model = :model AND r.data_origin = ANY(:origins)
-                  AND (e.embedding <=> CAST(:v AS vector)) <= :maxDistance
-                ORDER BY e.embedding <=> CAST(:v AS vector)
-                LIMIT :limit
+                SELECT * FROM (
+                    SELECT r.*, 1 - (e.embedding <=> CAST(:v AS vector)) AS score
+                    FROM resource_embedding e JOIN resource r ON r.id = e.resource_id
+                    WHERE e.model = :model AND r.data_origin = ANY(:origins)
+                      AND (e.embedding <=> CAST(:v AS vector)) <= :maxDistance
+                    ORDER BY e.embedding <=> CAST(:v AS vector)
+                    LIMIT :limit
+                ) nearest
+                ORDER BY score DESC
                 """)
             .param("v", vectorLiteral(query)).param("model", model)
             .param("origins", origins.stream().map(Enum::name).toArray(String[]::new))

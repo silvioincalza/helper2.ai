@@ -18,7 +18,7 @@ services:
 
   redis:
     image: docker.io/library/redis:8.10.2-alpine
-    # Cache only: no persistence on purpose. Bounded memory with LRU eviction.
+    # Local cache: bounded memory with LRU eviction, no volume (the Helm chart adds AOF on a PVC, ADR 0005).
     command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
     ports: ["6379:6379"]
     healthcheck:
