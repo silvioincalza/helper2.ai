@@ -15,7 +15,11 @@ screen reader, and in light and dark mode.
    All state is in the page address (URL): `q` (at most 200 characters), `ask` (at most 500), filters, sort, page, view.
 2. **Search results** (`SearchResults`, `useApi`). A new query aborts the old request. While it loads, the previous
    results stay on screen, dimmed, with `aria-busy`. Only the first load shows skeletons and one "querying" line per
-   enabled source.
+   enabled source. `useApi` keeps the last 20 settled responses of the page load in memory, by request key: a key seen
+   less than 60 s ago renders at once with no request; an older one renders at once and is refreshed in the background
+   (a failed refresh keeps it); Retry always asks the server. Nothing is written to browser storage.
+   `<ScrollRestoration/>` puts a new page at the top and back/forward at the saved position; a change of filter, sort or
+   page keeps the position. So back from a result shows the same results, at the same place, without a new federated search.
 3. **Guide stream as the browser sees it** (`api.askGuideStream`). `POST /api/v1/guide/stream` with the cross-site request forgery (CSRF) header.
    Server-Sent Events (SSE) are read with `fetch` and `SseParser`, not `EventSource`, so there is no automatic reconnect
    (each question costs model calls). An idle timer of 45 s (`GUIDE_IDLE_TIMEOUT_MS`) is re-armed on every chunk.

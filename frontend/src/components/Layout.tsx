@@ -1,5 +1,5 @@
 import { useEffect, useRef, useSyncExternalStore, type ReactNode } from 'react';
-import { NavLink, Outlet, Link, useLocation } from 'react-router';
+import { NavLink, Outlet, Link, ScrollRestoration, useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { signOut } from '@/api/client';
 import { useMe } from '@/context/MeContext';
@@ -158,6 +158,8 @@ export function Layout() {
   return (
     <>
       <a className="skip-link" href="#main">{t('nav.skip')}</a>
+      {/* A new page starts at the top; back and forward return to where the reader was. */}
+      <ScrollRestoration />
       <RouteFocus />
       <Header />
       <main id="main" tabIndex={-1} className="container main">

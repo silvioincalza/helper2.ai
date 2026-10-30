@@ -30,7 +30,8 @@ export default function HomePage() {
   const asked = askedQuestion(sp);
   useTitle(state.q);
 
-  const go = (next: SearchState, ask: string) => setSp(homeParams(next, ask));
+  // A filter, sort or page change keeps the reader where they are; only a new page starts at the top.
+  const go = (next: SearchState, ask: string) => setSp(homeParams(next, ask), { preventScrollReset: true });
   const update = (next: SearchState) => go(next, asked);
   const ask = (question: string) => {
     const q = clampQuestion(question);
