@@ -83,6 +83,11 @@ public final class ObservedHttp {
             .observationRegistry(registry).observationConvention(BoundedUriConvention.INSTANCE);
     }
 
+    /**
+     * Follows redirects except https to http. The inherited {@link DefaultRedirectStrategy#isRedirectAllowed}
+     * refuses a redirect to another scheme, host or port while the request carries {@code Authorization}, so a
+     * source token never reaches a host other than the configured one (TokenRedirectTest).
+     */
     static final class NoDowngradeRedirects extends DefaultRedirectStrategy {
         static final NoDowngradeRedirects INSTANCE = new NoDowngradeRedirects();
 
