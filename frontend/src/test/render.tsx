@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react';
+import { act, render } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider, type RouteObject } from 'react-router';
 import { clearApiCache } from '@/hooks/useApi';
 import { routes } from '@/routes';
@@ -19,4 +19,12 @@ export function renderApp(entry = '/') {
   const router = createMemoryRouter(eagerRoutes, { initialEntries: [entry] });
   const utils = render(<RouterProvider router={router} />);
   return { router, ...utils, params: () => new URLSearchParams(router.state.location.search) };
+}
+
+/**
+ * Lets every request the page started answer and React render the answers, for a test that checks something else
+ * (header, footer, a static page) and would otherwise end while the home feeds, /me or /sources are still loading.
+ */
+export async function settled() {
+  await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
 }

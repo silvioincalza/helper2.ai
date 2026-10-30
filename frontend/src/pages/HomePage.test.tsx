@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockApi } from '@/test/mockApi';
 import { renderApp } from '@/test/render';
@@ -154,7 +154,7 @@ describe('home: one page, one box', () => {
     await userEvent.clear(screen.getByRole('searchbox'));
     await userEvent.type(screen.getByRole('searchbox'), 'second{Enter}');
     await waitFor(() => expect(router.state.location.search).toBe('?q=second'));
-    await router.navigate(-1);
+    await act(() => router.navigate(-1));
     await waitFor(() => expect(screen.getByRole('searchbox')).toHaveValue('first'));
   });
 
@@ -172,9 +172,9 @@ describe('home: one page, one box', () => {
     const m = mockApi();
     const { router } = renderApp('/');
     await screen.findByRole('link', { name: /^Searches 2 disclosed sources$/ });
-    await router.navigate('/?q=translate');
+    await act(() => router.navigate('/?q=translate'));
     await screen.findByText('Acme Translator');
-    await router.navigate('/sources');
+    await act(() => router.navigate('/sources'));
     await screen.findByRole('table');
     expect(m.callsTo('GET', '/sources')).toHaveLength(1);
   });

@@ -2,7 +2,6 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { BookmarksProvider } from '@/context/BookmarksContext';
-import { MeProvider } from '@/context/MeContext';
 import { makeCard, known, unknownDate } from '@/test/fixtures';
 import { mockApi } from '@/test/mockApi';
 import { BookmarkButton } from './BookmarkButton';
@@ -13,7 +12,7 @@ function view(card: ResultCard, detailed = false) {
   mockApi();
   return render(
     <MemoryRouter>
-      <MeProvider><BookmarksProvider><ResultCardView card={card} detailed={detailed} /></BookmarksProvider></MeProvider>
+      <BookmarksProvider><ResultCardView card={card} detailed={detailed} /></BookmarksProvider>
     </MemoryRouter>,
   );
 }
@@ -144,7 +143,7 @@ describe('ResultCardView', () => {
   });
 
   it('the bookmark toggle (hidden for now) is a pressed button', async () => {
-    render(<MeProvider><BookmarksProvider><BookmarkButton card={makeCard()} /></BookmarksProvider></MeProvider>);
+    render(<BookmarksProvider><BookmarkButton card={makeCard()} /></BookmarksProvider>);
     const btn = screen.getByRole('button', { name: /Save Acme Translator/ });
     expect(btn).toHaveAttribute('aria-pressed', 'false');
     await userEvent.click(btn);

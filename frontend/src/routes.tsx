@@ -26,6 +26,8 @@ function GuideRedirect() {
 export const routes: RouteObject[] = [
   {
     element: <AppProviders><Layout /></AppProviders>,
+    // A first visit straight to a lazy page renders nothing until its chunk (a few kB) arrives.
+    HydrateFallback: () => null,
     children: [
       { index: true, element: <HomePage /> },
       { path: 'search', element: <SearchRedirect /> },

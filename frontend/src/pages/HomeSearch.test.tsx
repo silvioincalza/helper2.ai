@@ -147,6 +147,7 @@ describe('search on the one page', () => {
     expect(screen.getByRole('group', { name: /License/ })).toBeInTheDocument();
     expect(within(screen.getByRole('group', { name: /Type/ })).getByRole('checkbox', { name: /Product/ })).toBeInTheDocument();
     release();
+    await waitFor(() => expect(screen.queryByText('Searching the listed sources…')).not.toBeInTheDocument());
   });
 
   it('error state offers retry and recovers', async () => {
@@ -322,7 +323,7 @@ describe('search on the one page', () => {
     }));
     const { router } = renderApp('/?q=one');
     await waitFor(() => expect(signals).toHaveLength(1));
-    await router.navigate('/?q=two');
+    await act(() => router.navigate('/?q=two'));
     await waitFor(() => expect(signals[0]?.aborted).toBe(true));
   });
 
