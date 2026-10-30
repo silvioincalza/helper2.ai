@@ -52,18 +52,23 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 
 ## Colors
 
-Shared dark theme in [style.d2](style.d2), imported by every diagram with `...@style`:
-cyan = our components, green = NVIDIA Nemotron and calls to it, violet = data stores and caches,
-amber = external services, pink hexagon = port (hexagonal architecture). An animated line marks the main path.
-Flowcharts use diamonds for decisions, white ovals for normal ends and pink ovals for error ends.
+Shared light theme in [style.d2](style.d2), imported by every diagram with `...@style`. It uses the website's
+light colours (`frontend/src/styles/tokens.css`): warm paper background, indigo ink, one saffron accent.
+Indigo on paper = our components, green = NVIDIA Nemotron, lavender = data stores and caches,
+amber = external services, saffron hexagon = port (hexagonal architecture).
+Animated lines: saffron for the main path, green for calls to the model.
+Flowcharts use saffron diamonds for decisions, paper ovals for normal ends and red ovals for error ends.
 
 ## Render
 
-CI re-renders every diagram with d2 v0.9.0 built with Go 1.27.3, and fails if a committed SVG differs. Use the same
-Go version: the embedded fonts change from one Go release to the next.
+CI re-renders every diagram with d2 v0.9.0 and fails if a committed SVG differs.
+Another d2 version draws different SVGs, so render only with v0.9.0:
 
 ```bash
-go install github.com/d2lang/d2@v0.9.0
-cd docs/diagrams
-for f in *.d2; do [ "$f" = style.d2 ] && continue; d2 fmt "$f" && d2 "$f" "${f%.d2}.svg"; done
+brew install d2   # macOS, when Homebrew has v0.9.0; `d2 --version` must print v0.9.0
+# or, anywhere with Go 1.27+ (d2 moved to github.com/d2lang/d2; the version must be stamped):
+go install -ldflags "-X github.com/d2lang/d2/lib/version.Version=v0.9.0" github.com/d2lang/d2@v0.9.0
+docs/diagrams/render.sh
 ```
+
+`render.sh` stops if `d2` is another version. CI runs the same script.
