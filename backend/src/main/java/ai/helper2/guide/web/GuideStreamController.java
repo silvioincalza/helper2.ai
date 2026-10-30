@@ -9,6 +9,7 @@ import ai.helper2.guide.GuideIntent;
 import ai.helper2.api.generated.model.GuideRequestDto;
 import ai.helper2.api.generated.model.GuideStreamCheckedDto;
 import ai.helper2.api.generated.model.GuideStreamChosenDto;
+import ai.helper2.api.generated.model.GuideStreamEventDto;
 import ai.helper2.api.generated.model.GuideStreamPlannedDto;
 import ai.helper2.api.generated.model.GuideStreamRetrievedDto;
 import ai.helper2.api.generated.model.GuideStreamValidatedDto;
@@ -44,8 +45,8 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
  * {@code POST /api/v1/guide/stream} (contract: tag guide-stream). Hand-written because the generator has no
- * SseEmitter return type. Each step of the guide becomes one event; the last event is always {@code answer}
- * or {@code error}. The work runs on a virtual thread so the servlet thread is released at once.
+ * SseEmitter return type. Each step of the guide becomes one event, named by the contract's {@code GuideStreamEvent};
+ * the last event is always {@code answer} or {@code error}. The work runs on a virtual thread so the servlet thread is released at once.
  *
  * <p>Under the same {@link GuideLimits} as {@code POST /guide}: when every slot is taken the client gets an
  * {@code error} event "busy" at once (status 503), and past the deadline the worker is cancelled and the
@@ -115,7 +116,7 @@ class GuideStreamController implements DisposableBean {
     private void run(Events events, String request, AudiencePath path, String client, UUID userId, String clarification, Drops drops) {
         try {
             var answer = guide.ask(request, path, events, client, clarification, drops, userId);
-            events.finish("answer", mapper.toDto(answer));
+            events.finish(GuideStreamEventDto.ANSWER, mapper.toDto(answer));
         } catch (Throwable e) {
             // Throwable, not only RuntimeException: the emitter must complete whatever happened (an interrupt, an Error).
             log.warn("guide stream failed: {}", e.getClass().getSimpleName());
@@ -142,38 +143,38 @@ class GuideStreamController implements DisposableBean {
 
         @Override
         public void planned(String searchQuery, List<String> constraints) {
-            send("planned", new GuideStreamPlannedDto(searchQuery, constraints).model(mapper.fastModel()));
+            send(GuideStreamEventDto.PLANNED, new GuideStreamPlannedDto(searchQuery, constraints).model(mapper.fastModel()));
         }
 
         @Override
         public void understood(GuideIntent intent, List<String> subjects, DateWindow window) {
-            send("understood", new GuideStreamUnderstoodDto(GuideIntentDto.fromValue(intent.name()), subjects)
+            send(GuideStreamEventDto.UNDERSTOOD, new GuideStreamUnderstoodDto(GuideIntentDto.fromValue(intent.name()), subjects)
                 .window(GuideDtoMapper.window(window)));
         }
 
         @Override
         public void clarify(Clarification clarification) {
-            send("clarify", GuideDtoMapper.clarification(clarification));
+            send(GuideStreamEventDto.CLARIFY, GuideDtoMapper.clarification(clarification));
         }
 
         @Override
         public void retrieved(int candidates, SearchOutcome search) {
-            send("retrieved", new GuideStreamRetrievedDto(candidates, GuideDtoMapper.statuses(search)));
+            send(GuideStreamEventDto.RETRIEVED, new GuideStreamRetrievedDto(candidates, GuideDtoMapper.statuses(search)));
         }
 
         @Override
         public void chosen(int proposed) {
-            send("chosen", new GuideStreamChosenDto(proposed).model(mapper.reasoningModel()));
+            send(GuideStreamEventDto.CHOSEN, new GuideStreamChosenDto(proposed).model(mapper.reasoningModel()));
         }
 
         @Override
         public void validated(int kept, int rejected) {
-            send("validated", new GuideStreamValidatedDto(kept, rejected));
+            send(GuideStreamEventDto.VALIDATED, new GuideStreamValidatedDto(kept, rejected));
         }
 
         @Override
         public void reasonsChecked(int supported, int removed, int notChecked) {
-            send("checked", new GuideStreamCheckedDto(supported, removed, notChecked));
+            send(GuideStreamEventDto.CHECKED, new GuideStreamCheckedDto(supported, removed, notChecked));
         }
 
         /** Sends a comment every heartbeat until the last event (or the client is gone). */
@@ -197,10 +198,10 @@ class GuideStreamController implements DisposableBean {
         }
 
         void fail(int status, String title, String detail) {
-            finish("error", new ProblemDto().type("about:blank").title(title).status(status).detail(detail));
+            finish(GuideStreamEventDto.ERROR, new ProblemDto().type("about:blank").title(title).status(status).detail(detail));
         }
 
-        synchronized void finish(String name, Object data) {
+        synchronized void finish(GuideStreamEventDto name, Object data) {
             if (finished) {
                 return;
             }
@@ -216,12 +217,12 @@ class GuideStreamController implements DisposableBean {
             }
         }
 
-        synchronized void send(String name, Object data) {
+        synchronized void send(GuideStreamEventDto name, Object data) {
             if (!open || finished) {
                 return;
             }
             try {
-                emitter.send(SseEmitter.event().name(name).data(data, MediaType.APPLICATION_JSON));
+                emitter.send(SseEmitter.event().name(name.getValue()).data(data, MediaType.APPLICATION_JSON));
             } catch (IOException | IllegalStateException e) {
                 open = false;
             }

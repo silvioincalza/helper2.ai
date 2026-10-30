@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { GuideStep, GuideStreamChecked, SourceStatus } from '@/api/types';
 
-type StepKind = GuideStep['kind'];
+/** The steps that do the work, one row each. How the question was read and a clarifying question are not rows. */
+type StepKind = Exclude<GuideStep['kind'], 'understood' | 'clarify'>;
 const ORDER: StepKind[] = ['planned', 'retrieved', 'chosen', 'validated', 'checked'];
 
-type Found = { [K in StepKind]?: Extract<GuideStep, { kind: K }>['data'] };
+type Found = { [K in GuideStep['kind']]?: Extract<GuideStep, { kind: K }>['data'] };
 
 /** The step the guide is working on: the first one with no event yet. A step the server skipped is never shown as running. */
 export function currentStep(found: Found): StepKind | null {

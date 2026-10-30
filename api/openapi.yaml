@@ -232,7 +232,8 @@ paths:
       summary: Ask the AI guide and receive each step as a server-sent event while it works.
       description: |
         Same answer as `POST /guide`, sent as `text/event-stream` so the client can show real progress.
-        Events, in this order (a step that does not happen is skipped; nothing is invented):
+        Events, in this order (a step that does not happen is skipped; nothing is invented). The event
+        names are the values of `GuideStreamEvent`:
 
         | event | data | when |
         |---|---|---|
@@ -1176,6 +1177,11 @@ components:
               title: { type: string }
               url: { type: string, format: uri }
               reasonCheck: { type: string, enum: [SUPPORTED, REMOVED, NOT_CHECKED], default: NOT_CHECKED }
+
+    GuideStreamEvent:
+      type: string
+      description: The name of each server-sent event of `POST /guide/stream`; its data schema is in that operation's table.
+      enum: [planned, understood, clarify, retrieved, chosen, validated, checked, answer, error]
 
     GuideStreamUnderstood:
       type: object

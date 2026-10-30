@@ -47,17 +47,20 @@ export type ScoutRun = S['ScoutRun'];
 export type Problem = S['Problem'];
 export type Notice = S['Notice'];
 export type GuideRequest = S['GuideRequest'];
-export type GuideStreamPlanned = S['GuideStreamPlanned'];
-export type GuideStreamRetrieved = S['GuideStreamRetrieved'];
-export type GuideStreamChosen = S['GuideStreamChosen'];
-export type GuideStreamValidated = S['GuideStreamValidated'];
-export type GuideStreamChecked = S['GuideStreamChecked'];
+/** The data each step event of POST /guide/stream carries (the event table of that operation). */
+interface GuideStepData {
+  planned: S['GuideStreamPlanned'];
+  understood: S['GuideStreamUnderstood'];
+  clarify: S['GuideClarification'];
+  retrieved: S['GuideStreamRetrieved'];
+  chosen: S['GuideStreamChosen'];
+  validated: S['GuideStreamValidated'];
+  checked: S['GuideStreamChecked'];
+}
+/** Every event of the contract but the last one (`answer` or `error`) is a step. */
+export type GuideStepEvent = Exclude<S['GuideStreamEvent'], 'answer' | 'error'>;
 /** One real step of the guide, as streamed by POST /guide/stream. */
-export type GuideStep =
-  | { kind: 'planned'; data: GuideStreamPlanned }
-  | { kind: 'retrieved'; data: GuideStreamRetrieved }
-  | { kind: 'chosen'; data: GuideStreamChosen }
-  | { kind: 'validated'; data: GuideStreamValidated }
-  | { kind: 'checked'; data: GuideStreamChecked };
+export type GuideStep = { [K in GuideStepEvent]: { kind: K; data: GuideStepData[K] } }[GuideStepEvent];
+export type GuideStreamChecked = S['GuideStreamChecked'];
 export type GuideResponse = S['GuideResponse'];
 export type GuideRecommendation = S['GuideRecommendation'];

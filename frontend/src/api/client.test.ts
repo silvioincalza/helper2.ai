@@ -96,6 +96,32 @@ describe('guide answer stream', () => {
     await vi.waitFor(() => expect(s.state.cancelled).toBe(true));
   });
 
+  it('reports how the question was read and the clarifying question as steps', async () => {
+    const s = liveStream();
+    mockApi({ 'POST /guide/stream': () => s.response() });
+    const steps: GuideStep[] = [];
+    const answer = ask((st) => steps.push(st));
+    s.push('event:understood\ndata:{"intent":"SUGGEST","subjects":["mcp"],"window":null}\n\n');
+    s.push('event:clarify\ndata:{"question":"Which database?","options":["Postgres","MySQL"]}\n\n');
+    s.push(`event:answer\ndata:${JSON.stringify({ ...ANSWER, status: 'NEEDS_CLARIFICATION' })}\n\n`);
+    await expect(answer).resolves.toMatchObject({ status: 'NEEDS_CLARIFICATION' });
+    expect(steps).toEqual([
+      { kind: 'understood', data: { intent: 'SUGGEST', subjects: ['mcp'], window: null } },
+      { kind: 'clarify', data: { question: 'Which database?', options: ['Postgres', 'MySQL'] } },
+    ]);
+  });
+
+  it('ignores an event name the contract does not define', async () => {
+    const s = liveStream();
+    mockApi({ 'POST /guide/stream': () => s.response() });
+    const steps: GuideStep[] = [];
+    const answer = ask((st) => steps.push(st));
+    s.push('event:gossip\ndata:{}\n\n');
+    s.push(`event:answer\ndata:${JSON.stringify(ANSWER)}\n\n`);
+    await expect(answer).resolves.toMatchObject({ status: 'OK' });
+    expect(steps).toEqual([]);
+  });
+
   it('gives up after 45 s without data, the timer starting over on every chunk', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     const s = liveStream();

@@ -2,7 +2,8 @@
 # DTOs, the generated TypeScript types, and the response checks in the API integration tests.
 # Source of truth: api/openapi.yaml, backend/build.gradle.kts (openApiGenerate, compileJava/compileKotlin dependsOn,
 #   Test systemProperty openapi.spec), frontend/package.json (gen:api, prebuild, pretypecheck, prelint, pretest),
-#   backend/src/test/java/ai/helper2/api/ContractValidator.java, GuideApiIT.java.
+#   backend/src/test/java/ai/helper2/api/ContractValidator.java, GuideApiIT.java,
+#   backend/src/main/java/ai/helper2/guide/web/GuideStreamController.java.
 # Render: cd docs/diagrams && d2 fmt flow-0003-contract-first-rest-api.d2 && d2 flow-0003-contract-first-rest-api.d2 flow-0003-contract-first-rest-api.svg
 
 ...@style
@@ -26,7 +27,7 @@ frontend: Frontend (npm) {
   class: group
   direction: down
   pre: "prebuild, pretypecheck,\nprelint, pretest" {class: app}
-  ts: "gen:api: openapi-typescript\n→ src/api/schema.d.ts\n(not committed)" {class: data}
+  ts: "gen:api: openapi-typescript --enum-values\n→ src/api/schema.ts\n(types + enum values, not committed)" {class: data}
   tsc: "tsc --noEmit:\nclient.ts and pages fit the types?" {class: decision}
   e_tsc: "Type error" {class: fail}
   pre -> ts -> tsc
@@ -37,7 +38,7 @@ tests: API integration tests (*ApiIT) {
   class: group
   direction: down
   call: "Real request to the running app" {class: app}
-  sse: "POST /guide/stream?\n(hand-written SseEmitter)" {class: decision}
+  sse: "POST /guide/stream?\n(hand-written SseEmitter,\nevent names from GuideStreamEventDto)" {class: decision}
   body: "ContractValidator.assertMatches:\nbody vs components/schemas\n(JSON Schema 2020-12)" {class: app}
   events: "GuideApiIT: each event's\ndata vs its schema" {class: app}
   valid: "Valid?" {class: decision}
