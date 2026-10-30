@@ -35,8 +35,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
  * Anonymous use is the default: search, details, sources and reports need no account.
- * Sign-in (OAuth2/OIDC, any configured provider) adds server-side bookmarks; ADMIN comes from an
- * explicit allow-list: "registrationId:subject" (GitHub: numeric id, never the login), or
+ * Sign-in (OAuth2/OIDC, any configured provider) adds server-side bookmarks and lets the user delete the account;
+ * ADMIN comes from an explicit allow-list: "registrationId:subject" (GitHub: numeric id, never the login), or
  * "registrationId:email" for OIDC providers when the email is verified.
  */
 @Configuration(proxyBeanMethods = false)
@@ -62,6 +62,7 @@ class SecurityConfiguration {
                 a.requestMatchers("/actuator/**").hasRole("ADMIN")
                     .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                     .requestMatchers("/api/v1/me/bookmarks", "/api/v1/me/bookmarks/**").authenticated()
+                    .requestMatchers(HttpMethod.DELETE, "/api/v1/me").authenticated()
                     .requestMatchers(HttpMethod.GET, "/api/v1/search", "/api/v1/recent", "/api/v1/events/upcoming", "/api/v1/resources/**", "/api/v1/sources", "/api/v1/me").permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/v1/resources/*/reports", "/api/v1/resources/*/guide", "/api/v1/guide", "/api/v1/guide/stream").permitAll()
                     .requestMatchers("/api/**").denyAll()

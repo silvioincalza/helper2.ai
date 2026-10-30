@@ -1,6 +1,7 @@
 package ai.helper2.scout.internal;
 
 import ai.helper2.catalog.ResourceCatalog;
+import ai.helper2.identity.AuditTrail;
 import ai.helper2.platform.ClusterLock;
 import ai.helper2.platform.ClusterLocks;
 import ai.helper2.platform.llm.CallCounter;
@@ -21,6 +22,7 @@ import ai.helper2.scout.RunLock;
 import ai.helper2.scout.ScheduledRun;
 import ai.helper2.scout.ScheduledRunStore;
 import ai.helper2.scout.usecase.RunScout;
+import ai.helper2.scout.usecase.StartScoutRun;
 import ai.helper2.scout.ScoutStore;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -105,6 +107,11 @@ class ScoutConfiguration {
         return new RunScout(collectors, store, index, new EnrichResource(model, enrichmentStore, clock,
             new EvidenceValidator(), meters), clock, new ClusterRunLock(scoutRunLock), maxItemsPerRun, maxEnrichmentsPerRun,
             backlog, meters, RUN_THREADS, observations);
+    }
+
+    @Bean
+    StartScoutRun startScoutRun(RunScout scoutRunner, AuditTrail audit) {
+        return new StartScoutRun(scoutRunner, audit);
     }
 
     /** A run started from the admin page collects on its own virtual thread; the request answers at once. */

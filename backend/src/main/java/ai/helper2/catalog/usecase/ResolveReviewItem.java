@@ -1,6 +1,7 @@
 package ai.helper2.catalog.usecase;
 
 import ai.helper2.catalog.ReviewQueue;
+import ai.helper2.identity.AuditTrail;
 import ai.helper2.platform.BadRequestException;
 import java.util.Optional;
 import java.util.UUID;
@@ -8,21 +9,24 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** An administrator decides an open review item. */
+/** An administrator decides an open review item; the decision is recorded in the audit trail. */
 @Service
 public class ResolveReviewItem {
 
     private final JdbcClient jdbc;
     private final ReviewQueue queue;
+    private final AuditTrail audit;
 
-    public ResolveReviewItem(JdbcClient jdbc, ReviewQueue queue) {
+    public ResolveReviewItem(JdbcClient jdbc, ReviewQueue queue, AuditTrail audit) {
         this.jdbc = jdbc;
         this.queue = queue;
+        this.audit = audit;
     }
 
     /**
      * Resolving a relationship candidate is the ONLY way an AI-proposed relationship becomes VERIFIED;
-     * rejecting it marks it REJECTED. Other kinds just record the decision.
+     * rejecting it marks it REJECTED. Other kinds just record the decision. [by] is the administrator's provider
+     * subject; the audit entry's outcome is the decision, NOT_OPEN for an item already decided, NOT_FOUND for none.
      */
     @Transactional
     public Optional<ReviewQueue.Item> resolve(UUID id, ReviewQueue.Status decision, String by, String note) {
@@ -41,6 +45,9 @@ public class ResolveReviewItem {
                     """)
                 .param("v", decision == ReviewQueue.Status.ACCEPTED ? "VERIFIED" : "REJECTED").param("id", id).update();
         }
-        return queue.find(id);
+        Optional<ReviewQueue.Item> item = queue.find(id);
+        String outcome = updated == 1 ? decision.name() : item.isPresent() ? "NOT_OPEN" : "NOT_FOUND";
+        audit.record(by, AuditTrail.Action.RESOLVE_REVIEW_ITEM, id.toString(), outcome);
+        return item;
     }
 }
