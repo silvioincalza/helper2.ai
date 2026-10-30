@@ -1,7 +1,7 @@
 # Diagrams
 
 D2 sources and their rendered SVGs. The SVG is committed, so GitHub shows it without a build step.
-Each feature ADR has a flowchart (the decisions in the code) and, where there is a real call path, a sequence diagram.
+Each ADR has a flowchart (the decisions in the code) and a sequence diagram (the call path).
 Every `.d2` file names the code it describes in its first lines. When that code changes, update the diagram in the same pull request.
 
 ## Overview
@@ -24,7 +24,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0002](../adr/0002-modular-monolith-hexagonal.md) | [flow](flow-0002-modular-monolith-hexagonal.svg) | [sequence](sequence-0002-modular-monolith-hexagonal.svg) | the dependency rules ModularityTest checks, the module dependencies that pass them, and one search through the ports. |
 | [0003](../adr/0003-contract-first-rest-api.md) | [flow](flow-0003-contract-first-rest-api.svg) | [sequence](sequence-0003-contract-first-rest-api.svg) | a contract change through the generated Java and TypeScript types to the contract tests, and one request answered with problem+json. |
 | [0004](../adr/0004-persistence-and-provenance.md) | [flow](flow-0004-persistence-and-provenance.svg) | [sequence](sequence-0004-persistence-and-provenance.svg) | how one search reads discovery dates and records what it saw, off the request path. |
-| [0005](../adr/0005-redis-disposable-cache.md) | [flow](flow-0005-redis-disposable-cache.svg) | [sequence](sequence-0005-redis-disposable-cache.svg) | how one LIVE source is answered with the Redis cache: circuit breaker, fresh window, live call, stale window and the CACHE_UNAVAILABLE notice. |
+| [0005](../adr/0005-redis-disposable-cache.md) | [flow](flow-0005-redis-disposable-cache.svg) | [sequence](sequence-0005-redis-disposable-cache.svg) | how one LIVE source is answered with the Redis cache: the redis circuit, fresh window, live call under the source's policy, stale window and the CACHE_UNAVAILABLE notice; a Redis outage and its recovery. |
 | [0006](../adr/0006-outbound-http.md) | [flow](flow-0006-outbound-http.svg) | [sequence](sequence-0006-outbound-http.svg) | one outbound source call, from the pooled Apache client to the outcome the search reports. |
 | [0007](../adr/0007-configuration-and-secrets.md) | [flow](flow-0007-configuration-and-secrets.svg) | [sequence](sequence-0007-configuration-and-secrets.svg) | how a secret travels from OpenBao to the app's environment, and how the app reads it. |
 | [0008](../adr/0008-federated-search.md) | [flow](flow-0008-federated-search.svg) | [sequence](sequence-0008-federated-search.svg) | what SearchResources does with each source in one search, then merge and coverage. |
@@ -37,14 +37,14 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0015](../adr/0015-ai-guide-evidence-gate.md) | [flow](flow-0015-ai-guide-evidence-gate.svg) | [sequence](sequence-0015-ai-guide-evidence-gate.svg) | one fresh guide question in AskGuide.answer, from the request to the final status. |
 | [0016](../adr/0016-guide-reason-check.md) | [flow](flow-0016-guide-reason-check.svg) | [sequence](sequence-0016-guide-reason-check.svg) | the reason check that runs after GuideValidator, and the verdict each kept pick gets. |
 | [0017](../adr/0017-guide-cost-guard.md) | [flow](flow-0017-guide-cost-guard.svg) | [sequence](sequence-0017-guide-cost-guard.svg) | every guard a guide question passes before it may spend model calls, in code order. |
-| [0018](../adr/0018-scout-runner.md) | [flow](flow-0018-scout-runner.svg) | [sequence](sequence-0018-scout-runner.svg) | one Scout run (RunScout.tryRunAll), from the trigger to the run summaries. |
+| [0018](../adr/0018-scout-runner.md) | [flow](flow-0018-scout-runner.svg) | [sequence](sequence-0018-scout-runner.svg) | one Scout run (RunScout.tryRunScheduled or RunScout.tryStart), from the trigger to the run summaries. |
 | [0019](../adr/0019-evidence-gated-enrichment.md) | [flow](flow-0019-evidence-gated-enrichment.svg) | [sequence](sequence-0019-evidence-gated-enrichment.svg) | EnrichResource.enrich for one resource, from loading its source text to stored assertions and review items. |
 | [0020](../adr/0020-scout-collectors.md) | [flow](flow-0020-scout-collectors.svg) | [sequence](sequence-0020-scout-collectors.svg) | what each Scout collector does in collect(), after RunScout has called it. |
 | [0022](../adr/0022-next-events.md) | [flow](flow-0022-next-events.svg) | [sequence](sequence-0022-next-events.svg) | where an event's dates come from and which events GET /api/v1/events/upcoming lists. |
-| [0023](../adr/0023-identity-and-admin.md) | [flow](flow-0023-identity-and-admin.svg) | [sequence](sequence-0023-identity-and-admin.svg) | who may call what, how a sign-in becomes ADMIN, and where bookmarks are kept. |
+| [0023](../adr/0023-identity-and-admin.md) | [flow](flow-0023-identity-and-admin.svg) | [sequence](sequence-0023-identity-and-admin.svg) | who may call what, how a sign-in becomes ADMIN, the bookmark use cases, account deletion (DELETE /me) and the admin audit trail. |
 | [0024](../adr/0024-http-edge-protection.md) | [flow](flow-0024-http-edge-protection.svg) | [sequence](sequence-0024-http-edge-protection.svg) | the checks a request meets at the HTTP edge of the app, in order. |
 | [0025](../adr/0025-frontend-one-box.md) | [flow](flow-0025-frontend-one-box.svg) | [sequence](sequence-0025-frontend-one-box.svg) | the one box. |
-| [0026](../adr/0026-observability.md) | [flow](flow-0026-observability.svg) | [sequence](sequence-0026-observability.svg) | where each kind of telemetry goes, and the switches that decide it. |
+| [0026](../adr/0026-observability.md) | [flow](flow-0026-observability.svg) | [sequence](sequence-0026-observability.svg) | where each kind of telemetry goes, the switches that decide it, the Grafana dashboard and the alert rules. |
 | [0027](../adr/0027-runtime-topology.md) | [flow](flow-0027-runtime-topology.svg) | [sequence](sequence-0027-runtime-topology.svg) | what one Helm render decides from its values, and the runtime paths: a request through the tunnel, probes and scrape on 8081, the nightly backup. |
 | [0028](../adr/0028-ci-cd.md) | [flow](flow-0028-ci-cd.svg) | [sequence](sequence-0028-ci-cd.svg) | from a pull request to prod. |
 | [0029](../adr/0029-release-versioning.md) | [flow](flow-0029-release-versioning.svg) | [sequence](sequence-0029-release-versioning.svg) | the release workflow, from a pushed v* tag to the published GitHub release. |
@@ -54,6 +54,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0033](../adr/0033-resilience-policies.md) | [flow](flow-0033-resilience-policies.svg) | [sequence](sequence-0033-resilience-policies.svg) | one Resilience.call through retry, bulkhead and circuit breaker; a collector riding out a 503 and a source circuit opening. |
 | [0034](../adr/0034-data-retention.md) | [flow](flow-0034-data-retention.svg) | [sequence](sequence-0034-data-retention.svg) | the daily purges per module under their cluster locks, and the catalog rules in order. |
 | [0036](../adr/0036-search-evaluation-harness.md) | [flow](flow-0036-search-evaluation-harness.svg) | [sequence](sequence-0036-search-evaluation-harness.svg) | the search evaluation harness: snapshots recorded once, offline replay, report and the nDCG@10 gate. |
+| [0037](../adr/0037-tavily-store-and-daily-quota.md) | [flow](flow-0037-tavily-store-and-quota.svg) | [sequence](sequence-0037-tavily-store-and-quota.svg) | what one search does with Tavily: the stored answer first, a live call only inside the asker's daily web searches, and the same search from another visitor answered from the store. |
 | [0038](../adr/0038-ai-content-marking.md) | [flow](flow-0038-ai-content-marking.svg) | [sequence](sequence-0038-ai-content-marking.svg) | the aiContent marker of a guide answer and the data-ai-* attributes in the page. |
 
 ## Colors
