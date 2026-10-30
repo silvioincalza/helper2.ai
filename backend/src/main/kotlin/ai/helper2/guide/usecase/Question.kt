@@ -1,12 +1,15 @@
 package ai.helper2.guide.usecase
 
+import ai.helper2.guide.AmbiguousSubject
 import ai.helper2.guide.Candidate
 import ai.helper2.guide.CheckStatus
+import ai.helper2.guide.Clarification
 import ai.helper2.guide.ConstraintCheck
 import ai.helper2.guide.DateWindow
 import ai.helper2.guide.Drops
 import ai.helper2.guide.GuideAnswer
 import ai.helper2.guide.GuideIntent
+import ai.helper2.guide.GuideProgress
 import ai.helper2.guide.GuideSearchPlan
 import ai.helper2.guide.GuideStatus
 import ai.helper2.guide.GuideUnavailable
@@ -68,6 +71,10 @@ internal class Reading(
     val query: String,
     val webQuery: String?,
     val allowReading: Boolean,
+    /** WHEN about an event (a conference, a hackathon, a start, a deadline): its search covers events only. */
+    val aboutEvent: Boolean = false,
+    /** The one subject whose namesakes are checked after the question's own search; null: never asked back for it. */
+    val askBackSubject: String? = null,
 )
 
 /** What every step of a question shares: its span and timing, and its searches. */
@@ -115,6 +122,22 @@ internal const val SUBJECT_SEARCH_SIZE = 5
 
 /** Why a model call failed, for the log: the adapter's category, or the exception's class. */
 internal fun failure(e: RuntimeException) = (e as? GuideUnavailable)?.category ?: e.javaClass.simpleName
+
+/**
+ * The question back (ADR 0032 §3), after the plan call and at most the question's own search: no other model call,
+ * no choose, no reason check. AI-written like every clarification: the plan call ran.
+ */
+internal fun askBack(clock: Clock, r: Reading, c: Clarification, outcome: SearchOutcome, progress: GuideProgress): GuideAnswer {
+    progress.clarify(c)
+    return GuideAnswer(
+        GuideStatus.NEEDS_CLARIFICATION, r.query, emptyList(), null, true, 0, 0, outcome, clock.instant(), r.constraints,
+        clarification = c,
+    )
+}
+
+/** The question back when the subject's own search found namesakes of different kinds; null to answer. */
+internal fun namesakes(r: Reading, outcome: SearchOutcome): Clarification? =
+    r.askBackSubject?.let { AmbiguousSubject.clarification(it, outcome.results, r.plan?.clarify) }
 
 internal fun GuideAnswer.withNotices(extra: List<Notice>) = if (extra.isEmpty()) this else copy(notices = notices + extra)
 

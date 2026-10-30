@@ -46,6 +46,8 @@ internal data class Retrieval(
     val allowReading: Boolean = false,
     /** The chooser thinks before answering: only for a broad browse, where it has no subject to match. */
     val think: Boolean = false,
+    /** This search is the question's subject search: namesakes of different kinds are asked back ([namesakes]). */
+    val askBack: Boolean = false,
 )
 
 /**
@@ -90,9 +92,11 @@ internal class PickAnswer(
     fun alternatives(q: Question, r: Reading, progress: GuideProgress, asked: Asked, model: GuideModel?): GuideAnswer {
         val name = r.subjects.firstOrNull()
             ?: return picks(q, r, progress, asked, model, Retrieval(r.query, readingFilter(r)))
-        val own = steps.step(q, "search") {
+        val found = steps.step(q, "search") {
             steps.find(q, r, SearchRequest(text = name, path = q.path, filters = SearchFilters(types = TOOL_TYPES), size = SUBJECT_SEARCH_SIZE))
-        }.results.firstOrNull { isSubject(it, name) }
+        }
+        namesakes(r, found)?.let { return askBack(clock, r, it, found, progress) }
+        val own = found.results.firstOrNull { isSubject(it, name) }
         val category = own?.let { listOfNotNull(it.useCases.joinToString(" ").ifBlank { null }, it.type.name.lowercase().replace('_', ' ')).joinToString(" ") }
         val notices = if (own == null) listOf(Notice(NoticeCode.GUIDE_SUBJECT_NOT_FOUND, "$name was not found in our sources; showing tools for: ${r.query}")) else emptyList()
         val text = category?.takeIf { IntentRules.subjectWords(it).isNotBlank() } ?: r.query
@@ -114,6 +118,7 @@ internal class PickAnswer(
                 ),
             )
         }
+        if (retrieval.askBack) namesakes(r, outcome)?.let { return askBack(clock, r, it, outcome, progress) }
         val candidates = outcome.results.filterNot(retrieval.exclude).take(maxCandidates).mapIndexed { i, res -> Candidate("c${i + 1}", res) }
         // Defence in depth: the search filter already removed reading types; keep the model and the
         // validator on the same rule in case a source mislabels a type after filtering.

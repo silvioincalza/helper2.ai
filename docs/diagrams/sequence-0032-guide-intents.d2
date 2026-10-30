@@ -1,8 +1,10 @@
-# Sequence: a vague question asked back, the user's chip, and the second request answered as NEWEST, over the
-# guide's event stream. At most one round trip: a request with a clarification is never asked back.
+# Sequence: a vague question asked back, the user's chip, and the second request answered as NEWEST; an ambiguous
+# name asked back after its own search and the reply dated from the record; a WHEN question about an event searched
+# over events only. At most one round trip: a request with a clarification is never asked back.
 # Source of truth: frontend/src/components/GuideAnswer.tsx (Clarify, "Understood as" chips),
 #   backend/src/main/java/ai/helper2/guide/web/GuideStreamController.java (events planned, understood, clarify, answer),
-#   backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt, QuestionReader.kt (read, clarificationOf), PickAnswer.kt (newest, picks),
+#   backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt, QuestionReader.kt (read, clarificationOf, askBackSubject),
+#   Question.kt (askBack, namesakes), PickAnswer.kt (newest, picks), DateAnswer.kt, Intents.kt (AmbiguousSubject),
 #   backend/src/main/kotlin/ai/helper2/guide/GuideCost.kt (GuideAnswerCache.isCacheable).
 # Render: cd docs/diagrams && d2 fmt sequence-0032-guide-intents.d2 && d2 sequence-0032-guide-intents.d2 sequence-0032-guide-intents.svg
 
@@ -52,4 +54,38 @@ second: Answer with the chosen option {
   guide -> stream: "GuideAnswer, intent NEWEST"
   stream -> page: "events retrieved, chosen, validated,\nchecked; answer: picks newest first,\n\"Understood as\" chips"
   page -> user: "✕ on a chip re-asks with drop[]"
+}
+
+ambiguous: Ambiguous name, then the reply {
+  user -> page: "\"when was Gemini released?\""
+  page -> stream: "{request}" {class: hot}
+  stream -> guide: "ask(request)"
+  guide -> model: "plan(text)" {class: ai-call}
+  model -> guide: "WHEN, subjects [Gemini]"
+  guide -> search: "the subject, every type\n(web search 1 of the day)"
+  search -> guide: "own entries: a MODEL\nand a LIBRARY named Gemini"
+  guide -> guide: "AmbiguousSubject: 2 kinds\n→ ask back, no other call"
+  guide -> stream: "clarify; answer NEEDS_CLARIFICATION\n(not cached)"
+  stream -> page: "events clarify, answer"
+  user -> page: "chip \"gemini cli (tool)\""
+  page -> stream: "{request, clarification}" {class: hot}
+  stream -> guide: "ask(request, clarification)"
+  guide -> model: "plan(text, path, clarification)" {class: ai-call}
+  model -> guide: "WHEN, subjects [gemini cli]"
+  guide -> search: "\"gemini cli\" (a new web search\nunless the store holds it)"
+  search -> guide: "its own entry"
+  guide -> stream: "answer: created 2025-06-25,\nas stated by the source"
+  stream -> page: "event answer"
+}
+
+event: Event dates {
+  user -> page: "\"when is the next AI hackathon?\""
+  page -> stream: "{request}" {class: hot}
+  stream -> guide: "ask(request)"
+  guide -> model: "plan(text)" {class: ai-call}
+  model -> guide: "WHEN, searchQuery \"AI hackathon\""
+  guide -> search: "types [EVENT], web query"
+  search -> guide: "events with start dates"
+  guide -> stream: "answer: events not over,\nsoonest first, no model call"
+  stream -> page: "event answer"
 }

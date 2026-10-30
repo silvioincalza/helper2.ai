@@ -32,7 +32,7 @@ data class GuideSearchPlan @JvmOverloads constructor(
     val subjects: List<String> = emptyList(),
     /** The period the question names ("last month"); code resolves it to dates. */
     val window: PlannedWindow? = null,
-    /** Set when the question is too vague to search well; the guide asks it back instead of searching. */
+    /** The planner's question back; code keeps it only for a vague question or an ambiguous subject (ADR 0032 §3). */
     val clarify: Clarification? = null,
 )
 
@@ -210,7 +210,7 @@ data class ExplainedSentence(val text: String, val quote: String, val source: Me
 
 data class Explanation(val sentences: List<ExplainedSentence>)
 
-/** NEEDS_CLARIFICATION: the question was too vague to search; the answer is [GuideAnswer.clarification], nothing else. */
+/** NEEDS_CLARIFICATION: the question was too vague to search, or its subject is ambiguous; the answer is [GuideAnswer.clarification]. */
 enum class GuideStatus { OK, PARTIAL, LLM_UNAVAILABLE, NO_CANDIDATES, NEEDS_CLARIFICATION }
 
 enum class CheckStatus { CONFIRMED, NOT_CONFIRMED }

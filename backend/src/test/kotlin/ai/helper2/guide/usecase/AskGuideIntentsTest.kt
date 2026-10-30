@@ -28,6 +28,7 @@ import ai.helper2.search.descriptor
 import ai.helper2.search.hit
 import ai.helper2.search.usecase.SearchResources
 import ai.helper2.shared.AudiencePath
+import ai.helper2.shared.DateFact
 import ai.helper2.shared.ResourceType
 import java.time.Clock
 import java.time.Duration
@@ -44,6 +45,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -59,7 +61,7 @@ class AskGuideIntentsTest {
 
     private val queries = ConcurrentLinkedQueue<SourceQuery>()
 
-    private val hits = listOf(
+    private var hits = listOf(
         hit("s", "https://github.com/acme/agent-kit", title = "agent-kit", published = "2026-10-20T00:00:00Z",
             description = "Agent framework for building tool-using assistants in Python, released this autumn"),
         hit("s", "https://github.com/acme/rag-box", title = "rag-box", rank = 1, published = "2026-10-01T00:00:00Z",
@@ -121,7 +123,11 @@ class AskGuideIntentsTest {
             return choose(candidates)
         }
         override fun compare(request: String, subjects: List<Candidate>) = compare(subjects)
-        override fun explain(request: String, subject: String, candidates: List<Candidate>) = explain(candidates)
+        var explained = 0
+        override fun explain(request: String, subject: String, candidates: List<Candidate>): ExplanationProposal {
+            explained++
+            return explain(candidates)
+        }
         override fun verifyReasons(request: String, claims: List<ReasonClaim>) = claims.associate { it.key to true }
     }
 
@@ -189,6 +195,97 @@ class AskGuideIntentsTest {
         assertEquals("agents", model.clarificationSeen)
         assertTrue(second.status != GuideStatus.NEEDS_CLARIFICATION)
         assertTrue(queries.isNotEmpty())
+    }
+
+    /** Two own entries of different kinds for one name: the model and the command-line tool. */
+    private val gemini = listOf(
+        hit("s", "https://ai.google.dev/gemini", title = "Gemini", rank = 8, type = ResourceType.MODEL, published = "2023-12-06T00:00:00Z",
+            description = "Gemini is a family of multimodal large language models developed by Google"),
+        hit("s", "https://github.com/google-gemini/gemini-cli", title = "google-gemini/gemini-cli", rank = 9, published = "2025-06-25T00:00:00Z",
+            description = "An open-source AI agent that brings the power of Gemini directly into your terminal"),
+    )
+
+    @Test
+    fun `a name with own entries of two kinds is asked back after its own search and the reply goes straight to an answer`() {
+        hits = hits + gemini
+        val model = Model(GuideSearchPlan("Gemini", intent = GuideIntent.WHAT_IS, subjects = listOf("Gemini")))
+        val first = guide(model).ask("what is Gemini?", null)
+        assertEquals(GuideStatus.NEEDS_CLARIFICATION, first.status)
+        assertEquals(Clarification("Which Gemini do you mean?", listOf("Gemini (model)", "gemini cli (tool)")), first.clarification)
+        assertEquals(1, queries.size, "one search, the one the explanation needs anyway")
+        assertEquals(0, model.explained)
+
+        val chosen = guide(model).ask("what is Gemini?", null, clarification = "gemini cli (tool)")
+        assertNotEquals(GuideStatus.NEEDS_CLARIFICATION, chosen.status)
+        assertEquals(1, model.explained)
+        val anyway = guide(model).ask("what is Gemini?", null, clarification = "")
+        assertNotEquals(GuideStatus.NEEDS_CLARIFICATION, anyway.status)
+    }
+
+    @Test
+    fun `alternatives, release dates and a bare name are checked for namesakes but a name inside a task is not`() {
+        hits = hits + gemini
+        fun ask(plan: GuideSearchPlan, text: String) = guide(Model(plan, choose = ::pickAll)).ask(text, null).status
+        val asked = GuideStatus.NEEDS_CLARIFICATION
+        assertEquals(asked, ask(GuideSearchPlan("AI assistant", intent = GuideIntent.ALTERNATIVES, subjects = listOf("Gemini")), "alternatives to Gemini"))
+        assertEquals(asked, ask(GuideSearchPlan("Gemini", intent = GuideIntent.WHEN, subjects = listOf("Gemini")), "when was Gemini released?"))
+        assertEquals(asked, ask(GuideSearchPlan("Gemini", subjects = listOf("Gemini")), "Gemini?"))
+        assertNotEquals(asked, ask(GuideSearchPlan("chat UI Gemini", subjects = listOf("Gemini")), "a chat UI for Gemini"))
+        assertNotEquals(asked, ask(GuideSearchPlan("Gemini", intent = GuideIntent.NEWEST, subjects = listOf("Gemini")), "latest Gemini tools"))
+    }
+
+    @Test
+    fun `a question that already names the kind of thing is not asked back`() {
+        hits = hits + gemini
+        fun ask(plan: GuideSearchPlan, text: String) = guide(Model(plan, choose = ::pickAll)).ask(text, null).status
+        val asked = GuideStatus.NEEDS_CLARIFICATION
+        assertNotEquals(asked, ask(GuideSearchPlan("Gemini", intent = GuideIntent.WHAT_IS, subjects = listOf("Gemini")), "what is the Gemini model?"))
+        assertNotEquals(asked, ask(GuideSearchPlan("Gemini", intent = GuideIntent.ALTERNATIVES, subjects = listOf("Gemini")), "alternatives to the Gemini CLI tool"))
+        assertNotEquals(asked, ask(GuideSearchPlan("Gemini", intent = GuideIntent.WHAT_IS, subjects = listOf("Gemini")), "cos'è il modello Gemini?"))
+    }
+
+    @Test
+    fun `a planner's question back on a name with one kind of own entry is dropped, and without a planner nothing is asked`() {
+        val clarify = Clarification("Which Ollama?", listOf("the app", "the library"))
+        val model = Model(GuideSearchPlan("Ollama", intent = GuideIntent.WHAT_IS, subjects = listOf("Ollama"), clarify = clarify))
+        assertNotEquals(GuideStatus.NEEDS_CLARIFICATION, guide(model).ask("what is Ollama?", null).status)
+        hits = hits + gemini
+        assertEquals(GuideStatus.LLM_UNAVAILABLE, guide(null).ask("what is Gemini?", null).status)
+    }
+
+    private fun event(url: String, title: String, start: String, rank: Int) =
+        hit("s", url, title = title, rank = rank, type = ResourceType.EVENT, description = "$title, a two-day event")
+            .copy(eventStart = DateFact.scheduledDay(LocalDate.parse(start), "s"), location = "Zurich")
+
+    @Test
+    fun `a when question about an event searches only events and answers soonest first`() {
+        hits = hits + listOf(
+            hit("s", "https://github.com/acme/hackathon", title = "hackathon", rank = 8, description = "A hackathon starter kit"),
+            event("https://example.com/hack-zurich", "AI Hackathon Zurich", "2026-11-20", 9),
+            event("https://example.com/hack-milan", "AI Hackathon Milan", "2026-11-05", 10),
+        )
+        val model = Model(GuideSearchPlan("AI hackathon", intent = GuideIntent.WHEN, webQuery = "upcoming AI hackathons"))
+        val a = guide(model).ask("when is the next AI hackathon?", null)
+        assertEquals(setOf(ResourceType.EVENT), queries.single().types)
+        assertEquals("upcoming AI hackathons", queries.single().webQuery)
+        assertEquals(listOf("AI Hackathon Milan", "AI Hackathon Zurich"), a.recommendations.map { it.result.title })
+        assertTrue(a.recommendations.first().reason.startsWith("On 2026-11-05, Zurich"))
+    }
+
+    @Test
+    fun `an event named only by the planner's query is searched as an event`() {
+        hits = hits + event("https://neurips.cc/2026", "NeurIPS 2026", "2026-12-06", 8)
+        val model = Model(GuideSearchPlan("NeurIPS conference", intent = GuideIntent.WHEN, subjects = listOf("NeurIPS")))
+        val a = guide(model).ask("when is NeurIPS?", null)
+        assertEquals(setOf(ResourceType.EVENT), queries.single().types)
+        assertEquals("NeurIPS 2026", a.recommendations.single().result.title)
+    }
+
+    @Test
+    fun `when a product started is a release date, not an event`() {
+        val model = Model(GuideSearchPlan("Ollama release date", intent = GuideIntent.WHEN, subjects = listOf("Ollama")))
+        guide(model).ask("when did Ollama start?", null)
+        assertNotEquals(setOf(ResourceType.EVENT), queries.first().types)
     }
 
     @Test
@@ -286,6 +383,7 @@ class AskGuideIntentsTest {
     fun `when a release happened comes from the source's creation date, without a model call`() {
         val model = Model(GuideSearchPlan("agent-kit", intent = GuideIntent.WHEN, subjects = listOf("agent-kit")))
         val a = guide(model).ask("when was agent-kit released?", null)
+        assertEquals(emptySet(), queries.single().types, "a release is searched over every type")
         assertEquals(GuideStatus.OK, a.status)
         assertTrue(a.recommendations.single().reason.startsWith("Created 2026-10-20"))
     }

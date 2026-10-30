@@ -45,6 +45,7 @@ internal class ExplainAnswer(
     fun answer(q: Question, r: Reading, progress: GuideProgress, asked: Asked, model: GuideModel?): GuideAnswer {
         val subject = r.subjects.firstOrNull() ?: r.query
         val outcome = steps.step(q, "search") { steps.find(q, r, SearchRequest(text = subject, path = q.path, size = maxCandidates, webQuery = r.webQuery)) }
+        namesakes(r, outcome)?.let { return askBack(clock, r, it, outcome, progress) }
         // Only what can be quoted: an entry without a description cannot support a sentence. The subject's own entry
         // first, then web explainers (articles, news), which say what a thing is better than projects named after it.
         val ordered = outcome.results.filterNot { it.description.isNullOrBlank() }

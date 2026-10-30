@@ -1,6 +1,7 @@
 package ai.helper2.guide
 
 import ai.helper2.search.MergedResult
+import ai.helper2.shared.ResourceType
 import java.text.Normalizer
 import java.time.LocalDate
 
@@ -65,7 +66,7 @@ data class PlannedWindow @JvmOverloads constructor(
 /** Inclusive days, UTC. */
 data class DateWindow(val from: LocalDate, val to: LocalDate)
 
-/** A question back to the user when the question is too vague to search well (ADR 0032 §3). */
+/** A question back to the user when the question is too vague to search well, or names an ambiguous subject (ADR 0032 §3). */
 data class Clarification(val question: String, val options: List<String>) {
     companion object {
         const val MAX_OPTIONS = 4
@@ -86,6 +87,55 @@ data class Clarification(val question: String, val options: List<String>) {
             if (GuideValidator.containsLink(q) || opts.size < 2) return null
             return Clarification(q, opts)
         }
+    }
+}
+
+/**
+ * What kind of thing an entry is, to tell namesakes apart (ADR 0032 §3). A model and a command-line tool both called
+ * "Gemini" are different things; an npm package and a GitHub repository of the same tool are not.
+ */
+enum class SubjectKind(val label: String) {
+    MODEL("model"),
+    DATASET("dataset"),
+    TOOL("tool");
+
+    companion object {
+        /** Null for reading types, events, courses and OTHER: they are about a thing or unknown, never a namesake. */
+        @JvmStatic
+        fun of(type: ResourceType): SubjectKind? = when (type) {
+            ResourceType.MODEL -> MODEL
+            ResourceType.DATASET -> DATASET
+            ResourceType.PRODUCT, ResourceType.AGENT, ResourceType.PROMPT, ResourceType.SKILL, ResourceType.MCP_SERVER,
+            ResourceType.LIBRARY -> TOOL
+            else -> null
+        }
+    }
+}
+
+/**
+ * A single named subject is ambiguous when its search finds the subject's own entries ([isSubject]) of two or more
+ * [SubjectKind]s. Decided by code on results the question searches anyway: no model call, no extra search.
+ */
+object AmbiguousSubject {
+    /**
+     * The question back for [subject], or null when [results] hold its own entries of fewer than two kinds. The
+     * planner's [planned] question and options win (in the user's language); otherwise one option per kind, from the
+     * first own entry of that kind in search order.
+     */
+    @JvmStatic
+    fun clarification(subject: String, results: List<MergedResult>, planned: Clarification?): Clarification? {
+        val firstOfEachKind = results.filter { isSubject(it, subject) }
+            .mapNotNull { r -> SubjectKind.of(r.type)?.let { it to r } }
+            .distinctBy { it.first }
+        if (firstOfEachKind.size < 2) return null
+        return planned ?: Clarification.of("Which $subject do you mean?", firstOfEachKind.map { (kind, r) -> option(subject, kind, r) })
+    }
+
+    /** "gemini cli (tool)": the entry's name without owner, so the reply grounds as a subject; too long, "Gemini (tool)". */
+    private fun option(subject: String, kind: SubjectKind, r: MergedResult): String {
+        val name = r.title.substringAfterLast('/').replace(Regex("[-_\\s]+"), " ").trim()
+        val option = "$name (${kind.label})"
+        return if (name.isEmpty() || option.length > Clarification.MAX_OPTION_CHARS) "$subject (${kind.label})" else option
     }
 }
 
@@ -236,6 +286,23 @@ object IntentRules {
         val u = UNITS[unit.lowercase()] ?: return null
         return PlannedWindow(amount.toIntOrNull()?.takeIf { it > 0 } ?: 1, u, direction)
     }
+
+    private val EVENT_KINDS = anywhere("when.event")
+    private val STARTS = anywhere("when.start")
+
+    /**
+     * Whether [text] names a kind of event: a conference, a hackathon, a meetup, a deadline, or a course's start. A
+     * WHEN question whose words or planned query do so asks for an event's dates, not a release date.
+     */
+    @JvmStatic
+    fun namesEvent(text: String): Boolean =
+        EVENT_KINDS.containsMatchIn(text) || (STARTS.containsMatchIn(text) && LEARN.containsMatchIn(text))
+
+    private val KINDS = anywhere("subject.kind")
+
+    /** Whether [text] names the kind of thing its subject is ("the Gemini model", "the Gemini CLI tool"). */
+    @JvmStatic
+    fun namesKind(text: String): Boolean = KINDS.containsMatchIn(text)
 
     /** The query without generic words; empty when nothing names a subject. */
     @JvmStatic

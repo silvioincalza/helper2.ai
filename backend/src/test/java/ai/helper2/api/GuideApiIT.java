@@ -9,8 +9,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ai.helper2.search.SourceHit;
+import ai.helper2.search.SourceQuery;
+import ai.helper2.shared.Audience;
+import ai.helper2.shared.CanonicalUrl;
+import ai.helper2.shared.DateFact;
 import ai.helper2.shared.ResourceType;
+import ai.helper2.shared.ValueOrigin;
+import java.net.URI;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -32,7 +43,7 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 /**
  * POST /api/v1/guide end to end with a scripted ChatModel (no network): plan → federated search →
- * choose → validator, against real PostgreSQL and Redis.
+ * choose → validator, against real PostgreSQL and Redis; and the questions back and event dates of ADR 0032.
  */
 @TestPropertySource(properties = {
     "spring.ai.model.chat=fake",
@@ -394,5 +405,95 @@ class GuideApiIT extends ApiTestBase {
         mvc.perform(post("/api/v1/guide").with(csrf()).with(from("10.0.0.6"))
                 .contentType(MediaType.APPLICATION_JSON).content(body("another client")))
             .andExpect(status().isOk());
+    }
+
+    // ADR 0032 §3 and §5: an ambiguous name asked back once, and a WHEN question about an event over events only.
+    // Dates come from records, so the plan call is the only model call.
+
+    private static final Pattern NEED = Pattern.compile("<need>\\n(.*?)\\n</need>", Pattern.DOTALL);
+    private static final Pattern ANSWER = Pattern.compile("<answer>\\n(.*?)\\n</answer>", Pattern.DOTALL);
+
+    /** The planner of a date question: a reply to our question back names the chosen thing. */
+    private static String datePlan(String prompt) {
+        Matcher need = NEED.matcher(prompt);
+        assertThat(need.find()).as("only the plan call is expected").isTrue();
+        if (need.group(1).contains("hackathon")) {
+            return """
+                {"intent":"WHEN","subjects":[],"searchQuery":"AI hackathon","constraints":[],"wantsReading":true,
+                 "webQuery":"upcoming AI hackathons","window":null,"clarify":null}""";
+        }
+        String subject = ANSWER.matcher(prompt).find() ? "gemini cli" : "Gemini";
+        return """
+            {"intent":"WHEN","subjects":["%1$s"],"searchQuery":"%1$s","constraints":[],"wantsReading":false,
+             "webQuery":"%1$s release date","window":null,"clarify":null}""".formatted(subject);
+    }
+
+    private static SourceHit dated(String url, String title, ResourceType type, DateFact published, DateFact eventStart, int rank) {
+        return new SourceHit("fake-live", url, URI.create(url), CanonicalUrl.of(url), null, title, title + " for developers",
+            ValueOrigin.SOURCE_PROVIDED, type, Audience.BUILD_WITH_AI, null, Set.of(), Set.of("ai"), null, null, Set.of(), null,
+            published, DateFact.unknown(), List.of(), Instant.now(), rank, eventStart, DateFact.unknown(), "Zurich");
+    }
+
+    private static SourceHit created(String url, String title, ResourceType type, String published, int rank) {
+        return dated(url, title, type, DateFact.fromSource(Instant.parse(published), "fake-live", Instant.now()), DateFact.unknown(), rank);
+    }
+
+    private static SourceHit event(String url, String title, LocalDate start, int rank) {
+        return dated(url, title, ResourceType.EVENT, DateFact.unknown(), DateFact.scheduledDay(start, "fake-live"), rank);
+    }
+
+    private String askJson(String ip, String json) throws Exception {
+        return mvc.perform(post("/api/v1/guide").with(csrf()).with(from(ip)).contentType(MediaType.APPLICATION_JSON).content(json))
+            .andExpect(status().isOk())
+            .andReturn().getResponse().getContentAsString();
+    }
+
+    @Test
+    void anAmbiguousNameIsAskedBackOnceAndTheReplyIsAnsweredFromTheChosenEntry() throws Exception {
+        REPLY.set(prompt -> datePlan(prompt.getContents()));
+        FAKE.set(q -> List.of(
+            created("https://ai.google.dev/gemini", "Gemini", ResourceType.MODEL, "2023-12-06T00:00:00Z", 0),
+            created("https://github.com/google-gemini/gemini-cli", "google-gemini/gemini-cli", ResourceType.LIBRARY, "2025-06-25T00:00:00Z", 1)));
+        String question = "{\"request\":\"when was Gemini released?\",\"path\":\"USE_AI\"}";
+
+        String asked = askJson("10.0.9.1", question);
+        ContractValidator.assertMatches("GuideResponse", asked);
+        // One option per kind: the model, and the first tool named Gemini (the curated seed holds one too).
+        assertThat(asked).contains("\"status\":\"NEEDS_CLARIFICATION\"", "\"question\":\"Which Gemini do you mean?\"",
+            "\"Gemini (model)\"", " (tool)\"");
+        mvc.perform(post("/api/v1/guide").with(csrf()).with(from("10.0.9.2")).contentType(MediaType.APPLICATION_JSON).content(question))
+            .andExpect(jsonPath("$.aiContent.fields").value(org.hamcrest.Matchers.hasItems("clarification.question", "clarification.options[]")))
+            .andExpect(jsonPath("$.aiContent.models[0]").value("fake-nano"));
+        assertThat(MODELS_CALLED).as("a plan call each, nothing else").containsExactly("fake-nano", "fake-nano");
+
+        MODELS_CALLED.clear();
+        String answered = askJson("10.0.9.1",
+            "{\"request\":\"when was Gemini released?\",\"path\":\"USE_AI\",\"clarification\":\"gemini cli (tool)\"}");
+        ContractValidator.assertMatches("GuideResponse", answered);
+        assertThat(answered).contains("\"status\":\"OK\"", "\"title\":\"google-gemini/gemini-cli\"", "Created 2025-06-25")
+            .doesNotContain("NEEDS_CLARIFICATION");
+        assertThat(MODELS_CALLED).containsExactly("fake-nano");
+    }
+
+    @Test
+    void aWhenQuestionAboutAnEventSearchesEventsOnlyAndAnswersSoonestFirst() throws Exception {
+        REPLY.set(prompt -> datePlan(prompt.getContents()));
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        List<SourceQuery> queries = new CopyOnWriteArrayList<>();
+        FAKE.set(q -> {
+            queries.add(q);
+            return List.of(
+                created("https://github.com/acme/ai-hackathon", "ai-hackathon", ResourceType.LIBRARY, "2025-01-01T00:00:00Z", 0),
+                event("https://example.com/hack-zurich", "AI Hackathon Zurich", today.plusDays(30), 1),
+                event("https://example.com/hack-milan", "AI Hackathon Milan", today.plusDays(10), 2));
+        });
+
+        String json = askJson("10.0.9.3", "{\"request\":\"when is the next AI hackathon?\",\"path\":\"USE_AI\"}");
+
+        ContractValidator.assertMatches("GuideResponse", json);
+        assertThat(queries).isNotEmpty().allSatisfy(q -> assertThat(q.getTypes()).containsExactly(ResourceType.EVENT));
+        assertThat(json).contains("\"status\":\"OK\"", "\"intent\":\"WHEN\"").doesNotContain("\"title\":\"ai-hackathon\"");
+        assertThat(json.indexOf("AI Hackathon Milan")).isLessThan(json.indexOf("AI Hackathon Zurich"));
+        assertThat(MODELS_CALLED).containsExactly("fake-nano");
     }
 }

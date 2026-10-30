@@ -53,6 +53,7 @@ internal class QuestionReader(private val clock: Clock) {
         val constraints = GuideValidator.normalizedConstraints(plan?.constraints.orEmpty())
             .filter { it.lowercase() !in q.drops.constraints && IntentRules.constraintStated(it, text) }
         val query = plan?.let { PlannedQueries.searchQueryOf(it.searchQuery) }?.ifBlank { null } ?: text
+        val aboutEvent = effective == GuideIntent.WHEN && (IntentRules.namesEvent(text) || IntentRules.namesEvent(query))
         if (!modelFailed) progress.planned(query, constraints)
         progress.understood(effective, subjects, window)
         q.intentTag = effective.name.lowercase()
@@ -67,7 +68,27 @@ internal class QuestionReader(private val clock: Clock) {
             query = query,
             webQuery = plan?.let { PlannedQueries.webQueryOf(it.webQuery) },
             allowReading = wantsReading(text, plan),
+            aboutEvent = aboutEvent,
+            askBackSubject = askBackSubject(q, modelFailed, effective, subjects, aboutEvent),
         )
+    }
+
+    /**
+     * The subject checked for namesakes (ADR 0032 §3): the one grounded subject of a question about that thing itself,
+     * read by the planner (its question back is AI-written), and never once the user answered a question back or
+     * named the kind of thing they mean ("the Gemini model").
+     */
+    private fun askBackSubject(q: Question, modelFailed: Boolean, intent: GuideIntent, subjects: List<String>, aboutEvent: Boolean): String? {
+        if (q.clarification != null || modelFailed || IntentRules.namesKind(q.text)) return null
+        val subject = subjects.singleOrNull() ?: return null
+        val aboutTheSubject = when (intent) {
+            GuideIntent.WHAT_IS, GuideIntent.ALTERNATIVES -> true
+            GuideIntent.WHEN -> !aboutEvent
+            // "Gemini" alone, not "a chat UI for Gemini": there the name is context, the task is the subject.
+            GuideIntent.SUGGEST -> IntentRules.subjectWords(q.text.replace(subject, " ", ignoreCase = true)).none { it.isLetterOrDigit() }
+            else -> false
+        }
+        return subject.takeIf { aboutTheSubject }
     }
 
     /** A model intent the user's words support: newness for NEWEST, the named subjects for the subject intents. */
