@@ -1,4 +1,4 @@
-import { askedQuestion, askParams, clearFilters, filterValue, homeParams, MAX_QUERY, parseSearchParams, patchState, toApiParams, toggleFilter, toSearchParams } from './searchState';
+import { askedQuestion, askedRefinement, askParams, clearFilters, filterValue, homeParams, MAX_QUERY, parseSearchParams, patchState, refinedParams, toApiParams, toggleFilter, toSearchParams } from './searchState';
 
 describe('searchState', () => {
   const sp = new URLSearchParams('q=agents&type=MCP_SERVER&type=MODEL&license=unknown&openSource=true&updatedAfter=2026-01-01&sort=NEWEST&page=2');
@@ -65,5 +65,40 @@ describe('searchState', () => {
     expect(askParams('ab').get('q')).toBe('ab');
     expect(homeParams(parseSearchParams(new URLSearchParams('q=x&type=MODEL')), '  why?  ').toString()).toBe('q=x&type=MODEL&ask=why%3F');
     expect(askedQuestion(new URLSearchParams('ask=%20hi%20'))).toBe('');
+  });
+});
+
+describe('the guide refinement in the URL', () => {
+  const asked = new URLSearchParams('q=mcp&ask=new+mcp+servers&clar=agents&drop=window&drop=constraint%3Afree');
+
+  it('reads the reply to the guide and the removed parts', () => {
+    expect(askedRefinement(asked)).toEqual({ clarification: 'agents', drop: ['window', 'constraint:free'] });
+    expect(askedRefinement(new URLSearchParams('ask=x+y+z&clar='))).toEqual({ clarification: '', drop: [] });
+    expect(askedRefinement(new URLSearchParams('ask=x+y+z'))).toEqual({ drop: [] });
+  });
+  it('has no refinement without a question', () => {
+    expect(askedRefinement(new URLSearchParams('clar=agents&drop=window'))).toEqual({ drop: [] });
+  });
+  it('keeps to the bounds the guide accepts: 300 characters of reply, 8 parts of 80 characters, no repeats', () => {
+    const sp = new URLSearchParams({ ask: 'new mcp servers', clar: 'c'.repeat(400) });
+    for (let i = 0; i < 10; i++) sp.append('drop', `constraint:${i}`);
+    sp.append('drop', 'constraint:0');
+    sp.append('drop', 'x'.repeat(81));
+    sp.append('drop', '');
+    const r = askedRefinement(sp);
+    expect(r.clarification).toHaveLength(300);
+    expect(r.drop).toEqual(['constraint:0', 'constraint:1', 'constraint:2', 'constraint:3', 'constraint:4', 'constraint:5', 'constraint:6', 'constraint:7']);
+  });
+  it('a refinement adds to the one in the URL: a new reply replaces the old, removed parts add up', () => {
+    const next = refinedParams(asked, { clarification: 'coding', drop: ['intent', 'window'] });
+    expect(next.get('q')).toBe('mcp');
+    expect(askedRefinement(next)).toEqual({ clarification: 'coding', drop: ['window', 'constraint:free', 'intent'] });
+    expect(askedRefinement(refinedParams(asked, { drop: ['intent'] })).clarification).toBe('agents');
+  });
+  it('a search change keeps the refinement of the same question, a new question starts without one', () => {
+    const state = patchState(parseSearchParams(asked), { sort: 'NEWEST' });
+    expect(askedRefinement(homeParams(state, 'new mcp servers', asked))).toEqual({ clarification: 'agents', drop: ['window', 'constraint:free'] });
+    expect(askedRefinement(homeParams(state, 'old mcp servers', asked))).toEqual({ drop: [] });
+    expect(homeParams(state, '', asked).has('clar')).toBe(false);
   });
 });

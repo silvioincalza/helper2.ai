@@ -1,8 +1,9 @@
 # Sequence: the guide stream as the browser sees it, with the 45 s idle timeout and the retry.
 # Shows fetch + SseParser (no EventSource, no automatic reconnect), the idle timer re-armed on every chunk
-# (keep-alive comments included), the five progress steps, a stream that goes quiet, and the retry that
-# remounts GuideSection.
-# Source of truth: frontend/src/pages/HomePage.tsx (GuideSection, guideError), frontend/src/api/client.ts (askGuideStream),
+# (keep-alive comments included), the progress steps, a stream that goes quiet, the retry and the refinement,
+# both asked again by useGuideStream from the URL.
+# Source of truth: frontend/src/pages/HomePage.tsx (GuideSection, guideError), frontend/src/hooks/useGuideStream.ts,
+#   frontend/src/lib/searchState.ts (askedRefinement, refinedParams), frontend/src/api/client.ts (askGuideStream),
 #   frontend/src/lib/sse.ts, frontend/src/components/GuideProgress.tsx,
 #   backend/src/main/java/ai/helper2/guide/web/GuideStreamController.java.
 # Render: cd docs/diagrams && d2 fmt sequence-0025-frontend-one-box.d2 && d2 sequence-0025-frontend-one-box.d2 sequence-0025-frontend-one-box.svg
@@ -13,13 +14,15 @@ shape: sequence_diagram
 
 user: User {class: person}
 gs: "GuideSection\n(HomePage)" {class: app}
+hook: useGuideStream {class: app}
 gp: GuideProgress {class: app}
 client: "api.askGuideStream\n(client.ts)" {class: app}
 parser: SseParser {class: app}
 server: "POST /api/v1/guide/stream\n(GuideStreamController)" {class: app}
 
-user -> gs: "?q=…&ask=… (mount, key = attempt:question)" {class: hot}
-gs -> client: "askGuideStream({request}, onStep, signal)" {class: hot}
+user -> gs: "?q=…&ask=…[&clar=…&drop=…]" {class: hot}
+gs -> hook: "useGuideStream()"
+hook -> client: "askGuideStream({request, clarification?, drop?},\nonStep, signal) (one per request + attempt)" {class: hot}
 client -> client: "arm idle timer (45 s)"
 client -> server: "fetch POST, X-XSRF-TOKEN,\nAccept: text/event-stream" {class: hot}
 
@@ -28,38 +31,49 @@ normal: Normal stream {
   client -> client: "re-arm idle timer"
   client -> parser: "push(text)"
   parser -> client: "{event: planned, data}"
-  client -> gs: "onStep(planned)"
-  gs -> gp: "steps = [planned]"
+  client -> hook: "onStep(planned)"
+  hook -> gs: "steps = [planned]"
+  gs -> gp: "steps"
   gp -> user: "role=status: current step title"
-  server -> client: "retrieved" {class: ai-call}
+  server -> client: "understood, retrieved\n(steps; understood is no progress row)" {class: ai-call}
   server -> client: "chunk: \":keep-alive\" comment\n(every 15 s while the question runs)"
   client -> client: "re-arm idle timer"
   client -> parser: "push(text)"
   parser -> client: "nothing (comments are ignored)"
   server -> client: "chosen, validated, checked" {class: ai-call}
-  client -> gs: "onStep(…) for each"
+  client -> hook: "onStep(…) for each"
   server -> client: "event answer" {class: ai-call}
-  client -> gs: "resolve(GuideResponse)"
+  client -> hook: "resolve(GuideResponse)"
+  hook -> gs: "answer"
   gs -> user: "GuideAnswer (aria-live polite)"
 }
 
 quiet: Stream goes quiet {
   server -> client: "event planned, then nothing\n(not even a keep-alive comment)"
   client -> client: "45 s without a byte:\nidle = true, abort, cancel reader"
-  client -> gs: "ApiError(stream = IDLE_TIMEOUT)"
+  client -> hook: "ApiError(stream = IDLE_TIMEOUT)"
+  hook -> gs: "error"
   gs -> user: "role=alert: \"The guide sent nothing for\n45 seconds…\" + Retry button"
 }
 
 other: Other failures {
   server -> client: "event error {status 503 busy | 504 deadline}"
-  client -> gs: "ApiError(status, problem)"
+  client -> hook: "ApiError(status, problem)"
+  hook -> gs: "error"
   gs -> user: "problem.detail"
-  client -> gs: "MALFORMED (bad JSON) or\nENDED_EARLY (closed, no answer)"
+  client -> hook: "MALFORMED (bad JSON) or\nENDED_EARLY (closed, no answer)"
 }
 
 retry: Retry (no automatic reconnect) {
   user -> gs: "click Retry"
-  gs -> gs: "attempt + 1 → new key: unmount\n(abort old stream), mount fresh"
-  gs -> client: "askGuideStream(…) again" {class: hot}
+  gs -> hook: "retry(): attempt + 1"
+  hook -> client: "askGuideStream(same request) again" {class: hot}
   client -> server: "new POST (rate limit: 10/min,\nshared with POST /guide)" {class: hot}
+}
+
+refine: Refine (reply to the question back, or remove a part) {
+  user -> gs: "click an option, or × on a part"
+  gs -> hook: "refine({clarification} | {drop})"
+  hook -> user: "URL: clar=… / drop=… added (refinedParams)"
+  hook -> client: "abort the old stream;\naskGuideStream(refined request)" {class: hot}
 }

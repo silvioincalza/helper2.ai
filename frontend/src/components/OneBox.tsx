@@ -39,8 +39,8 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
     if (clampQuery(text) !== state.q) setText(fromUrl);
   }
 
-  const go = (next: SearchState, ask: string, replace = false) => {
-    const params = homeParams(next, ask);
+  const go = (next: SearchState, ask: string, current: URLSearchParams, replace = false) => {
+    const params = homeParams(next, ask, current);
     if (onHome) setSp(params, { replace, preventScrollReset: true });
     else void navigate({ pathname: '/', search: params.toString() });
   };
@@ -48,8 +48,8 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
   // Live search runs only from typing, and reads the URL as it is when the timer fires. Not an effect on
   // `text`: the router applies a navigation after the render that caused it, so an effect saw a stale URL
   // and, 700 ms after "Ask the guide", replaced the URL without `ask` (the guide answer vanished).
-  const latest = useRef({ state, asked, onHome });
-  useEffect(() => { latest.current = { state, asked, onHome }; });
+  const latest = useRef({ state, asked, onHome, sp });
+  useEffect(() => { latest.current = { state, asked, onHome, sp }; });
   const timer = useRef<number | undefined>(undefined);
   const cancelLive = () => window.clearTimeout(timer.current);
   useEffect(() => cancelLive, []);
@@ -60,25 +60,25 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
     if (q.length < MIN_LIVE_CHARS) return;
     timer.current = window.setTimeout(() => {
       const now = latest.current;
-      if (now.onHome && q !== now.state.q) go(patchState(now.state, { q }), now.asked, true);
+      if (now.onHome && q !== now.state.q) go(patchState(now.state, { q }), now.asked, now.sp, true);
     }, LIVE_SEARCH_MS);
   };
 
   const runSearch = () => {
     cancelLive();
     const q = clampQuery(text);
-    if (q) go(patchState(state, { q }), asked);
+    if (q) go(patchState(state, { q }), asked, sp);
   };
   /** Enter in an empty box: back to the empty home page. */
   const clear = () => {
     cancelLive();
-    if (onHome && (state.q || asked)) go(parseSearchParams(new URLSearchParams()), '');
+    if (onHome && (state.q || asked)) go(parseSearchParams(new URLSearchParams()), '', sp);
   };
   const ask = () => {
     const q = clampQuestion(text);
     if (!q) return;
     cancelLive();
-    go(patchState(state, { q }), q);
+    go(patchState(state, { q }), q, sp);
   };
   const action = actionFor(text);
   const submit = (e: FormEvent) => {

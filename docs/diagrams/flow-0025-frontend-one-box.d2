@@ -17,7 +17,7 @@ live: Live search (onType) {
   min: "At least 3 characters\n(after trim, ≤ 200)?" {class: decision}
   wait: "Wait 700 ms after\nthe last key" {class: app}
   home: "On the home page and\nq differs from the URL?" {class: decision}
-  replace: "Replace URL ?q=…\n(keeps ask and filters)" {class: app}
+  replace: "Replace URL ?q=…\n(keeps ask, clar, drop and filters)" {class: app}
   nothing: "Nothing yet" {class: end}
   min -> nothing: no
   min -> wait: yes
@@ -32,7 +32,7 @@ clear: "Back to the empty home page" {class: end}
 shift: "Shift+Enter?" {class: decision}
 words: "4 words or more?\n(the button label follows)" {class: decision}
 search: "Search: ?q=… (cancel live timer)" {class: app}
-ask: "Ask the guide: ?q=…&ask=…\n(question ≤ 500 chars)" {class: app}
+ask: "Ask the guide: ?q=…&ask=…\n(question ≤ 500 chars;\na new question drops clar and drop)" {class: app}
 
 page: HomePage {
   class: group

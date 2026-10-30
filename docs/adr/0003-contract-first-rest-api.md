@@ -14,8 +14,10 @@ every source has a status), and these rules must be visible in one place that bo
    `useSpringBoot4`, `useJackson3`, `useTags`) writes controller interfaces to `ai.helper2.api.generated` and
    Data Transfer Objects (DTOs, suffix `Dto`) to `ai.helper2.api.generated.model`. It runs before every
    Java and Kotlin compile. Controllers implement these interfaces (for example `MeController implements MeApi`).
-3. **Client side generated.** `npm run gen:api` runs `openapi-typescript` and writes `frontend/src/api/schema.d.ts`
-   (not committed). Lint, typecheck, test and build regenerate it first.
+3. **Client side generated.** `npm run gen:api` runs `openapi-typescript --enum-values` and writes
+   `frontend/src/api/schema.ts` (not committed): the types, plus one array of values per enum, so client code that
+   needs an enum's values at run time reads them from the contract too. Lint, typecheck, test and build regenerate
+   it first.
 4. **Responses checked against the contract.** API integration tests validate real response bodies against
    the component schemas with a JavaScript Object Notation (JSON) Schema 2020-12 validator (`ContractValidator`).
 5. **Errors as problem+json.** `platform.ApiExceptionHandler` answers with Request for Comments (RFC) 9457 problem details
@@ -24,16 +26,17 @@ every source has a status), and these rules must be visible in one place that bo
 6. **Enums by wire value.** `ContractEnumConverters` binds query parameters to generated enums by their
    value (for example `unknown`), using the generated `fromValue`.
 7. **One exception: the event stream.** `POST /guide/stream` is in the contract (tag `guide-stream`,
-   `text/event-stream`, event names and payload schemas), but its handler is hand-written with
-   `SseEmitter`, because the generator produces JSON-only interfaces.
+   `text/event-stream`, payload schemas, and the event names as the enum `GuideStreamEvent`), but its handler is
+   hand-written with `SseEmitter`, because the generator produces JSON-only interfaces. The handler names each event
+   with the generated `GuideStreamEventDto`; the client takes its step events from `guideStreamEventValues`.
 
 ## Consequences
 - A field rename breaks the compile on both sides in the same pull request.
 - The contract documents the honesty rules (`DateFact`, source status, field origin) next to the schemas.
 - Generated code is not committed. After a fresh checkout, run Gradle or npm once before the editor can
   resolve the generated types.
-- The Server-Sent Events (SSE) handler is not generated, so the compiler does not tie it to the contract.
-  `GuideApiIT` validates each event's data against its schema instead.
+- The Server-Sent Events (SSE) handler is not generated, so the compiler ties only its event names to the contract.
+  `GuideApiIT` validates each event's data against its schema.
 
 ## Alternatives considered
 - Code-first (springdoc generates the spec) — the spec then follows the Java types, and the frontend
@@ -48,7 +51,8 @@ every source has a status), and these rules must be visible in one place that bo
 - `backend/src/main/java/ai/helper2/platform/ApiExceptionHandler.java` — problem details.
 - `backend/src/main/java/ai/helper2/platform/ContractEnumConverters.java` — enum binding.
 - `backend/src/test/java/ai/helper2/api/ContractValidator.java` — response validation in tests.
-- `frontend/package.json` (script `gen:api`), `frontend/src/api/client.ts` — generated types and `ApiError`.
+- `backend/src/main/java/ai/helper2/guide/web/GuideStreamController.java` — the stream, events named by `GuideStreamEventDto`.
+- `frontend/package.json` (script `gen:api`), `frontend/src/api/client.ts` — generated types, `ApiError`, step events from the contract.
 
 ## Diagrams
 [flow](../diagrams/flow-0003-contract-first-rest-api.svg) · [sequence](../diagrams/sequence-0003-contract-first-rest-api.svg)

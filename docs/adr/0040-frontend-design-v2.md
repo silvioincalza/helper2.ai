@@ -73,14 +73,23 @@ not a migration of something users already know.
 - **Big-bang branch** without a flag — one review instead of seven, but a long-lived branch and one large merge.
 
 ## Code
-Planned. None of it is written yet.
-- `frontend/src/styles/tokens.css` — semantic tokens from `tokens.json` v3.
-- `frontend/src/lib/features.ts` — `NEW_DESIGN_ENABLED`.
+Built (step 1, shared parts; no page uses them while the flag is off):
+- `frontend/src/lib/features.ts` — `NEW_DESIGN_ENABLED`, off.
+- `frontend/src/styles/tokens.css` — the semantic tokens of `tokens.json` v3, each an alias of its base token.
+- `frontend/src/components/ui/` — `TypeTag`, `StatusPill`, `ProofQuote`, `SourceTiles`, `SelectableRow` (the
+  selected-row outline) and `PicksBar` (reserved height, waiting line, no-pick line, AI-written picks slot), with
+  `ui.css` imported by the components, so a page without them loads none of it.
+- `frontend/src/hooks/useGuideStream.ts` — the guide stream for the question and refinement in the URL, shared by
+  both designs.
+
+Planned:
 - `frontend/src/routes.tsx` — `/search`; `/` home only, `/?q=` shows results with a canonical link.
 - `frontend/src/pages/HomePage.tsx`, `components/Radar.tsx`, `components/NextEvents.tsx` — hero and the two boards.
 - `frontend/src/components/SearchResults.tsx`, `ResultCardView.tsx` — list, preview, inline preview, `id` in the URL.
-- `frontend/src/components/GuideAnswer.tsx` — the picks bar and the badges.
+- `frontend/src/components/GuideAnswer.tsx` — the picks in `PicksBar` and the badges.
 - `frontend/src/components/SourceStatusPanel.tsx`, `Layout.tsx` — sources at the bottom, header, footer.
+- `tokens.css` — the sizes (`content-wide`, `board-height`, `list-max`) and motion (`board-loop`, `radar-sweep`) of
+  `tokens.json` v3, with the pages that use them.
 
 ## Diagrams
 [flow](../diagrams/flow-0040-frontend-design-v2.svg) · [sequence](../diagrams/sequence-0040-frontend-design-v2.svg)

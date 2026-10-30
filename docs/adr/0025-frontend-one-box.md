@@ -12,20 +12,25 @@ screen reader, and in light and dark mode.
 1. **One page, one box** (`OneBox`, `HomePage`). The box is the hero on `/` and sits in the header on other pages.
    Typing searches live: from 3 characters, 700 ms after the last key. One button follows the text: fewer than 4 words
    search, 4 or more ask the guide; Shift+Enter always asks; Enter in an empty box goes back to the empty home page.
-   All state is in the page address (URL): `q` (at most 200 characters), `ask` (at most 500), filters, sort, page, view.
+   All state is in the page address (URL): `q` (at most 200 characters), `ask` (at most 500), the refinement of the
+   question (`clar`, the reply to the guide's question back, at most 300; `drop`, the parts of the reading the user
+   removed, at most 8), filters, sort, page, view. A search change keeps the refinement; a new question starts without one.
 2. **Search results** (`SearchResults`, `useApi`). A new query aborts the old request. While it loads, the previous
    results stay on screen, dimmed, with `aria-busy`. Only the first load shows skeletons and one "querying" line per
    enabled source. A change of filter, sort or page keeps the scroll position.
    Back and forward show a recent answer at once, at the old scroll position: [0039](0039-frontend-recent-answers-cache.md).
-3. **Guide stream as the browser sees it** (`api.askGuideStream`). `POST /api/v1/guide/stream` with the cross-site request forgery (CSRF) header.
+3. **Guide stream as the browser sees it** (`useGuideStream`, `api.askGuideStream`). `POST /api/v1/guide/stream` with the cross-site request forgery (CSRF) header.
+   The hook reads the question and its refinement from the URL and sends one request per distinct question, refinement
+   and attempt; the step events are the contract's `GuideStreamEvent` values other than `answer` and `error`.
    Server-Sent Events (SSE) are read with `fetch` and `SseParser`, not `EventSource`, so there is no automatic reconnect
    (each question costs model calls). An idle timer of 45 s (`GUIDE_IDLE_TIMEOUT_MS`) is re-armed on every chunk.
    The server sends a `:keep-alive` comment every 15 s while a question runs ([0015](0015-ai-guide-evidence-gate.md)),
    so any bytes, a comment included, keep the stream alive. `SseParser` ignores comments.
    Failures: `IDLE_TIMEOUT`, `MALFORMED`, `ENDED_EARLY`, or the server's `error` event (its problem detail is shown).
-   The user retries with a button; closing the panel or asking again aborts the stream.
+   The user retries with a button, which asks the same question with the same refinement; a reload does too.
+   Closing the panel, asking again or refining aborts the running stream. A language change does not ask again.
 4. **Guide progress** (`GuideProgress`): five steps from real events — `planned`, `retrieved`, `chosen`, `validated`,
-   `checked`. Only the current step's title is in a `role="status"` region; the seconds counter is hidden from screen readers.
+   `checked`. `understood` and `clarify` reach the hook as steps too; they are not progress rows. Only the current step's title is in a `role="status"` region; the seconds counter is hidden from screen readers.
 5. **Radar design system.** The Helper2.ai design system in `docs/design/system`, named after its radar mark:
    warm paper, indigo ink, one saffron accent; `tokens.css` mirrors `tokens.json`. Unknown values read "Unknown".
 6. **Accessibility.** Skip link; `RouteFocus` moves focus to the new page's `h1` (or `#main`, without scrolling) and
@@ -66,6 +71,7 @@ screen reader, and in light and dark mode.
 
 ## Code
 - `frontend/src/components/OneBox.tsx`, `frontend/src/pages/HomePage.tsx` — box, live search, guide section.
+- `frontend/src/hooks/useGuideStream.ts`, `frontend/src/lib/searchState.ts` — the guide stream for the URL's question and refinement.
 - `frontend/src/components/SearchResults.tsx`, `frontend/src/hooks/useApi.ts` — previous results while loading.
 - `frontend/src/api/client.ts`, `frontend/src/lib/sse.ts` — guide stream, idle timeout, error codes.
 - `frontend/src/components/GuideProgress.tsx` — five steps.

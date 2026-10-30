@@ -42,6 +42,24 @@
   --ring: #e2d6c2;
   --header-bg: rgba(255, 253, 248, 0.94);
 
+  /* Semantic tokens of design system v3 (tokens.json, `alias`): each follows its base token, in both themes. */
+  --proof-bg: var(--quote-bg);
+  --proof-mark: var(--mark);
+  --pill-ok-bg: var(--checked-bg);
+  --pill-ok-ink: var(--checked-ink);
+  --pill-warn-bg: var(--tag-model-bg);
+  --pill-warn-ink: var(--not-stated);
+  --pill-next-bg: var(--quote-bg);
+  --pill-next-ink: var(--accent-ink);
+  --pill-next-line: var(--accent);
+  --pill-later-bg: var(--surface-tint);
+  --pill-later-ink: var(--ink-2);
+  --pill-later-line: var(--border-strong);
+  --tag-other-bg: var(--surface-tint);
+  --source-tile-bg: var(--surface);
+  --source-tile-line: var(--border);
+  --row-selected-line: var(--accent);
+
   /* Older names used across app.css, mapped onto the design system. */
   --text: var(--ink);
   --text-muted: var(--muted);

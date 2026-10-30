@@ -1015,5 +1015,17 @@
       "BUDGET": "The AI guide has used today's budget. Try again tomorrow.",
       "OK": ""
     }
+  },
+  "picks": {
+    "title": "Guide picks",
+    "aiWritten": "AI-written",
+    "reading_one": "Guide is reading {{count}} candidate… picks will appear here",
+    "reading_other": "Guide is reading {{count}} candidates… picks will appear here",
+    "readingResults": "Guide is reading the results… picks will appear here",
+    "none": "No pick: no result had a sentence that proves it"
+  },
+  "sourceTile": {
+    "label": "Sources searched",
+    "cached": "cached {{age}}"
   }
 }

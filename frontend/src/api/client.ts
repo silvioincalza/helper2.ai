@@ -1,5 +1,6 @@
-import type { UpcomingEventsResponse, Bookmark, BookmarkRequest, GuideRequest, GuideResponse, GuideStep, IssueReportAccepted, IssueReportRequest, Me, Problem, RecentResponse, ResourceDetail, ReviewItem, ReviewItemPage, SetupGuide, ToolGuide, ToolGuideRequest, ReviewResolution, ReviewStatus, ScoutRun, SearchResponse, SourceInfo } from './types';
+import type { UpcomingEventsResponse, Bookmark, BookmarkRequest, GuideRequest, GuideResponse, GuideStep, GuideStepEvent, IssueReportAccepted, IssueReportRequest, Me, Problem, RecentResponse, ResourceDetail, ReviewItem, ReviewItemPage, SetupGuide, ToolGuide, ToolGuideRequest, ReviewResolution, ReviewStatus, ScoutRun, SearchResponse, SourceInfo } from './types';
 
+import { guideStreamEventValues } from './schema';
 import { SseParser } from '@/lib/sse';
 
 export const API_BASE = '/api/v1';
@@ -85,7 +86,10 @@ async function request<T>(method: string, path: string, opts: RequestOptions = {
   return (await res.json()) as T;
 }
 
-const STEP_EVENTS = new Set(['planned', 'retrieved', 'chosen', 'validated', 'checked']);
+/** The step events of the stream: every event the contract names except the last one, `answer` or `error`. */
+const STEP_EVENTS: ReadonlySet<string> = new Set(
+  guideStreamEventValues.filter((e): e is GuideStepEvent => e !== 'answer' && e !== 'error'),
+);
 
 /**
  * The server sends a ":keep-alive" comment every 15 s while a question runs (a model step can be silent for

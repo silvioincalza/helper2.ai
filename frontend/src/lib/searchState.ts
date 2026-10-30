@@ -1,4 +1,4 @@
-import type { SearchQuery, SortOrder, TriState } from '@/api/types';
+import type { GuideRequest, SearchQuery, SortOrder, TriState } from '@/api/types';
 
 export const MULTI_KEYS = [
   'type',
@@ -140,11 +140,58 @@ export function askedQuestion(sp: URLSearchParams): string {
   return clampQuestion(sp.get('ask') ?? '');
 }
 
-/** The home URL for [state] plus, optionally, the question the guide should answer. */
-export function homeParams(state: SearchState, ask = ''): URLSearchParams {
+/**
+ * The user's refinement of the question in the URL, sent with it again: the reply to the guide's question back
+ * (`clar`; "" means "search anyway") and the parts of the reading they removed (`drop`). In the URL, so a retry and
+ * a reload ask the same thing.
+ */
+export type Refinement = Pick<GuideRequest, 'clarification'> & { drop: string[] };
+
+/** GuideRequest bounds: a reply of at most 300 characters, at most 8 removed parts of at most 80 characters. */
+const MAX_CLARIFICATION = 300;
+const MAX_DROPS = 8;
+const MAX_DROP = 80;
+
+function drops(list: string[]): string[] {
+  return [...new Set(list.filter((d) => d && d.length <= MAX_DROP))].slice(0, MAX_DROPS);
+}
+
+/** The refinement of the asked question in [sp]; none without a question. The URL is untrusted: cut to the bounds. */
+export function askedRefinement(sp: URLSearchParams): Refinement {
+  if (!askedQuestion(sp)) return { drop: [] };
+  const clar = sp.get('clar');
+  const drop = drops(sp.getAll('drop'));
+  return clar === null ? { drop } : { clarification: clar.slice(0, MAX_CLARIFICATION), drop };
+}
+
+function setRefinement(params: URLSearchParams, r: Refinement) {
+  params.delete('clar');
+  params.delete('drop');
+  if (r.clarification !== undefined && r.clarification !== null) params.set('clar', r.clarification);
+  for (const d of r.drop) params.append('drop', d);
+}
+
+/** [sp] with [r] added to its refinement: a new reply replaces the old one, removed parts add up. */
+export function refinedParams(sp: URLSearchParams, r: Partial<Refinement>): URLSearchParams {
+  const prev = askedRefinement(sp);
+  const params = new URLSearchParams(sp);
+  const clarification = r.clarification ?? prev.clarification;
+  const drop = drops([...prev.drop, ...(r.drop ?? [])]);
+  setRefinement(params, clarification === undefined ? { drop } : { clarification, drop });
+  return params;
+}
+
+/**
+ * The home URL for [state] plus, optionally, the question the guide should answer. When that is the question
+ * [current] already asks, its refinement stays; a new question starts without one.
+ */
+export function homeParams(state: SearchState, ask = '', current?: URLSearchParams): URLSearchParams {
   const params = toSearchParams(state);
   const question = clampQuestion(ask);
-  if (question) params.set('ask', question);
+  if (question) {
+    params.set('ask', question);
+    if (current && askedQuestion(current) === question) setRefinement(params, askedRefinement(current));
+  }
   return params;
 }
 
