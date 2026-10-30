@@ -238,7 +238,7 @@ paths:
         |---|---|---|
         | `planned` | `GuideStreamPlanned` | the fast model turned the need into search terms |
         | `understood` | `GuideStreamUnderstood` | how the question was read: intent, subjects, period (also without a model, from fixed rules) |
-        | `clarify` | `GuideClarification` | the question is too vague; it is followed only by `answer` (status NEEDS_CLARIFICATION) |
+        | `clarify` | `GuideClarification` | the question is too vague, or its one subject names different kinds of resource; it is followed only by `answer` (status NEEDS_CLARIFICATION) |
         | `retrieved` | `GuideStreamRetrieved` | federated search returned the candidates |
         | `chosen` | `GuideStreamChosen` | the reasoning model proposed its picks |
         | `validated` | `GuideStreamValidated` | the validator kept or rejected each pick |
@@ -1083,7 +1083,7 @@ components:
         status:
           type: string
           enum: [OK, PARTIAL, LLM_UNAVAILABLE, NO_CANDIDATES, NEEDS_CLARIFICATION]
-          description: NEEDS_CLARIFICATION = the question was too vague to search; see `clarification`. No search ran.
+          description: NEEDS_CLARIFICATION = the question was too vague to search (no search ran), or its one subject matches different kinds of resource (a search ran); see `clarification`.
         searchQuery: { type: string, description: Search terms actually used to retrieve candidates. }
         recommendations: { type: array, items: { $ref: '#/components/schemas/GuideRecommendation' } }
         prompt: { oneOf: [{ $ref: '#/components/schemas/GuidePrompt' }, { type: 'null' }] }
