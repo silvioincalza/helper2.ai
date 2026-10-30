@@ -90,6 +90,23 @@ class JdbcScoutStore implements ScoutStore, ScheduledRunStore {
             .list();
     }
 
+    /** Like save(FAILED) for each record: the source's last outcome becomes FAILED too. */
+    @Override
+    public int markInterrupted(Instant at) {
+        return jdbc.sql("""
+                WITH closed AS (
+                    UPDATE scout_run SET status = 'FAILED', finished_at = :at,
+                        message = 'Interrupted: the replica running it stopped'
+                    WHERE status = 'RUNNING'
+                    RETURNING source_id
+                ), sources AS (
+                    UPDATE source SET last_outcome = 'FAILED', last_checked_at = now()
+                    WHERE id IN (SELECT source_id FROM closed)
+                )
+                SELECT count(*) FROM closed
+                """).param("at", Timestamp.from(at)).query(Integer.class).single();
+    }
+
     @Override
     public Instant lastScheduledRunEnd() {
         return jdbc.sql("SELECT last_ended_at FROM scout_schedule").query(Timestamp.class).optional()

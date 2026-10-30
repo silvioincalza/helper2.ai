@@ -2,6 +2,7 @@ package ai.helper2.scout.internal
 
 import ai.helper2.TestcontainersConfiguration
 import ai.helper2.platform.ClusterLock
+import ai.helper2.platform.ClusterLocks
 import ai.helper2.scout.CatalogIndex
 import ai.helper2.scout.CollectedBatch
 import ai.helper2.scout.Collector
@@ -25,13 +26,21 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import javax.sql.DataSource
 import net.javacrumbs.shedlock.core.DefaultLockingTaskExecutor
+import net.javacrumbs.shedlock.core.LockConfiguration
+import net.javacrumbs.shedlock.core.LockProvider
 import net.javacrumbs.shedlock.provider.jdbctemplate.JdbcTemplateLockProvider
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.SpringApplication
+import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.context.ConfigurableApplicationContext
 import org.springframework.context.annotation.Import
 import org.springframework.jdbc.core.JdbcTemplate
+import kotlin.jvm.optionals.getOrNull
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
@@ -43,6 +52,10 @@ class ScoutRunLockIT {
     @Autowired lateinit var dataSource: DataSource
     @Autowired lateinit var scoutRunLock: ClusterLock
     @Autowired lateinit var schedule: ScheduledRunStore
+    @Autowired lateinit var locks: ClusterLocks
+    @Autowired lateinit var lockProvider: LockProvider
+    @Autowired lateinit var scoutRunner: RunScout
+    @Autowired lateinit var context: ConfigurableApplicationContext
 
     private fun replica(pod: String) = DefaultLockingTaskExecutor(JdbcTemplateLockProvider(
         JdbcTemplateLockProvider.Configuration.builder().withJdbcTemplate(JdbcTemplate(dataSource))
@@ -53,6 +66,7 @@ class ScoutRunLockIT {
         override fun saveCursor(sourceId: String, cursor: ScoutCursor) {}
         override fun save(run: RunSummary) {}
         override fun recent(limit: Int) = emptyList<RunSummary>()
+        override fun markInterrupted(at: Instant) = 0
     }
 
     private fun runner(pod: String, lockName: String, collector: Collector, clock: Clock = Clock.systemUTC()) = RunScout(
@@ -76,7 +90,7 @@ class ScoutRunLockIT {
         val start = CyclicBarrier(2)
         Executors.newVirtualThreadPerTaskExecutor().use { threads ->
             val attempts = replicas.map { r ->
-                CompletableFuture.supplyAsync({ start.await(); r.tryRunAll() }, threads)
+                CompletableFuture.supplyAsync({ start.await(); r.tryStart() }, threads)
             }
             // The run that got the lock waits in its collector, so the first attempt to end is the refused one.
             assertNull(CompletableFuture.anyOf(*attempts.toTypedArray()).get(10, TimeUnit.SECONDS))
@@ -87,17 +101,17 @@ class ScoutRunLockIT {
         }
 
         // Released when the run ends: the other replica can run next.
-        assertNotNull(replicas[1].tryRunAll())
+        assertNotNull(replicas[1].tryStart())
         assertEquals(2, collections.get())
     }
 
     /** Counts collections; while [hold] is closed, a collection waits for it (a run in progress). */
-    private class CountingCollector(val hold: CountDownLatch = CountDownLatch(0)) : Collector {
+    private class CountingCollector(val hold: CountDownLatch = CountDownLatch(0), val maxHold: Duration = Duration.ofSeconds(10)) : Collector {
         val collections = AtomicInteger()
         override val descriptor = descriptor("mcp")
         override fun collect(checkpoint: String?, resumeCursor: String?, maxItems: Int): CollectedBatch {
             collections.incrementAndGet()
-            hold.await(10, TimeUnit.SECONDS)
+            hold.await(maxHold.toMillis(), TimeUnit.MILLISECONDS)
             return CollectedBatch(emptyList(), null, "cp")
         }
     }
@@ -154,7 +168,7 @@ class ScoutRunLockIT {
         val scheduled = runner("pod-b", lockName, scheduledCollector, clock)
 
         Executors.newVirtualThreadPerTaskExecutor().use { threads ->
-            val adminRun = CompletableFuture.supplyAsync({ admin.tryRunAll() }, threads)
+            val adminRun = CompletableFuture.supplyAsync({ admin.tryStart() }, threads)
             while (adminCollector.collections.get() == 0) Thread.sleep(10)
 
             assertEquals(ScheduledRun.BUSY, scheduled.tryRunScheduled(Duration.ofDays(1), schedule))
@@ -171,10 +185,62 @@ class ScoutRunLockIT {
     }
 
     @Test
-    fun `the run lock outlasts the collectors plus every enrichment of a run timing out`() {
-        // Test defaults: 20 enrichments per run, 40 s model timeout, no SDK retry.
+    fun `the run lock is a short lease, renewed while the run lives`() {
+        val lease = Duration.ofSeconds(30)
+        val lockName = "scout-run-it-" + UUID.randomUUID()
+        val release = CountDownLatch(1)
+        val collector = CountingCollector(release, Duration.ofMinutes(1))
+        val runner = RunScout(listOf(collector), NoStore(), CatalogIndex { _, _ -> emptyList() }, null, Clock.systemUTC(),
+            ScoutConfiguration.ClusterRunLock(locks.keptAlive(lockName, lease)), launcher = ScoutConfiguration.RUN_THREADS)
+        val jdbc = JdbcTemplate(dataSource)
+        fun lockedFor() = Duration.ofMillis(jdbc.queryForObject(
+            "SELECT (extract(epoch FROM lock_until - timezone('utc', now())) * 1000)::bigint FROM shedlock WHERE name = ?",
+            Long::class.java, lockName)!!)
+
+        assertNotNull(runner.tryStart())
+        assertTrue(lockedFor() <= lease)
+        // Renewed every half lease: past the first half, the lock again ends about one lease from now.
+        Thread.sleep(lease.dividedBy(2).plusSeconds(2).toMillis())
+        assertTrue(lockedFor() > lease.dividedBy(2).plusSeconds(5), "lock renewed: ${lockedFor()}")
+        release.countDown()
+        val deadline = Instant.now().plusSeconds(10)
+        while (lockedFor() > Duration.ZERO && Instant.now().isBefore(deadline)) Thread.sleep(50)
+        assertTrue(lockedFor() <= Duration.ZERO, "lock released when the run ends")
+    }
+
+    @Test
+    fun `the scout run lock is a two-minute lease`() {
         assertEquals("scout-run", scoutRunLock.name())
-        assertEquals(Duration.ofHours(1).plus(Duration.ofSeconds(20L * 40)), scoutRunLock.atMostFor())
+        assertEquals(Duration.ofMinutes(2), scoutRunLock.atMostFor())
         assertEquals(Duration.ZERO, scoutRunLock.atLeastFor())
+    }
+
+    @Test
+    fun `at startup, runs left RUNNING by a stopped replica are closed as failed`() {
+        val jdbc = JdbcTemplate(dataSource)
+        val crashed = UUID.randomUUID()
+        jdbc.update("INSERT INTO scout_run (id, source_id, status, started_at) VALUES (?, 'mcp-registry', 'RUNNING', now() - interval '1 hour')", crashed)
+
+        context.publishEvent(ApplicationReadyEvent(SpringApplication(), emptyArray(), context, Duration.ZERO))
+
+        assertEquals("FAILED", jdbc.queryForObject("SELECT status FROM scout_run WHERE id = ?", String::class.java, crashed))
+        assertNotNull(jdbc.queryForObject("SELECT finished_at FROM scout_run WHERE id = ?", java.sql.Timestamp::class.java, crashed))
+        assertEquals("FAILED", jdbc.queryForObject("SELECT last_outcome FROM source WHERE id = 'mcp-registry'", String::class.java))
+    }
+
+    @Test
+    fun `a run in progress on another replica is not closed`() {
+        val jdbc = JdbcTemplate(dataSource)
+        val running = UUID.randomUUID()
+        jdbc.update("INSERT INTO scout_run (id, source_id, status, started_at) VALUES (?, 'mcp-registry', 'RUNNING', now())", running)
+        val otherReplica = assertNotNull(lockProvider.lock(LockConfiguration(Instant.now(), "scout-run", Duration.ofMinutes(1), Duration.ZERO)).getOrNull())
+        try {
+            assertFalse(scoutRunner.closeInterruptedRuns())
+            assertEquals("RUNNING", jdbc.queryForObject("SELECT status FROM scout_run WHERE id = ?", String::class.java, running))
+        } finally {
+            otherReplica.unlock()
+        }
+        assertTrue(scoutRunner.closeInterruptedRuns())
+        assertEquals("FAILED", jdbc.queryForObject("SELECT status FROM scout_run WHERE id = ?", String::class.java, running))
     }
 }

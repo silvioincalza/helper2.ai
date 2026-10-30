@@ -134,12 +134,10 @@ class ScoutPipelineIT {
              ]}""");
 
         var admin = oauth2Login().authorities(new SimpleGrantedAuthority("ROLE_ADMIN"));
-        String runs = mvc.perform(post("/api/v1/admin/scout-runs").with(admin).with(csrf())
-                .contentType(MediaType.APPLICATION_JSON).content("{\"sourceId\":\"mcp-registry\"}"))
-            .andExpect(status().isAccepted()).andReturn().getResponse().getContentAsString();
-        assertThat(JsonPath.<Integer>read(runs, "$[0].itemsSeen")).isEqualTo(1);
-        assertThat(JsonPath.<String>read(runs, "$[0].status")).isEqualTo("SUCCEEDED");
-        assertThat(JsonPath.<Integer>read(runs, "$[0].enrichmentsQueued")).isEqualTo(1);
+        String runs = runMcpRegistry();
+        assertThat(JsonPath.<Integer>read(runs, "$.itemsSeen")).isEqualTo(1);
+        assertThat(JsonPath.<String>read(runs, "$.status")).isEqualTo("SUCCEEDED");
+        assertThat(JsonPath.<Integer>read(runs, "$.enrichmentsQueued")).isEqualTo(1);
         // Boot's observation registry records the run and the registry call as meters.
         assertThat(succeededRuns()).isEqualTo(runsBefore + 1);
         assertThat(meters.get("http.client.requests").tag("uri", "/v0.1/servers").timer().count()).isPositive();
@@ -171,10 +169,8 @@ class ScoutPipelineIT {
             .contains("ENRICHMENT_VALIDATION", "RELATIONSHIP_CANDIDATE");
 
         // Re-running is idempotent: same fingerprint, nothing changed, no new enrichment.
-        String again = mvc.perform(post("/api/v1/admin/scout-runs").with(admin).with(csrf())
-                .contentType(MediaType.APPLICATION_JSON).content("{\"sourceId\":\"mcp-registry\"}"))
-            .andReturn().getResponse().getContentAsString();
-        assertThat(JsonPath.<Integer>read(again, "$[0].itemsChanged")).isZero();
+        String again = runMcpRegistry();
+        assertThat(JsonPath.<Integer>read(again, "$.itemsChanged")).isZero();
         assertThat(REGISTRY.requests.getLast()).contains("updated_since=");
     }
 
@@ -193,11 +189,37 @@ class ScoutPipelineIT {
              "metadata":{"count":1}}""".formatted(description, version, updatedAt);
     }
 
+    /**
+     * Starts an admin run of the MCP Registry collector: answered with 202 and the run RUNNING, then polled on the
+     * run listing, like the admin page does, until it ends. Returns the ended run once the whole run (backlog
+     * included) has released the run lock.
+     */
     private String runMcpRegistry() throws Exception {
         var admin = oauth2Login().authorities(new SimpleGrantedAuthority("ROLE_ADMIN"));
-        return mvc.perform(post("/api/v1/admin/scout-runs").with(admin).with(csrf())
+        String started = mvc.perform(post("/api/v1/admin/scout-runs").with(admin).with(csrf())
                 .contentType(MediaType.APPLICATION_JSON).content("{\"sourceId\":\"mcp-registry\"}"))
-            .andExpect(status().isAccepted()).andReturn().getResponse().getContentAsString();
+            .andExpect(status().isAccepted())
+            .andExpect(jsonPath("$[0].sourceId").value("mcp-registry"))
+            .andExpect(jsonPath("$[0].status").value("RUNNING"))
+            .andReturn().getResponse().getContentAsString();
+        String id = JsonPath.read(started, "$[0].id");
+        Instant deadline = Instant.now().plusSeconds(30);
+        while (Instant.now().isBefore(deadline)) {
+            String listed = mvc.perform(get("/api/v1/admin/scout-runs").with(admin)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+            List<Map<String, Object>> run = JsonPath.read(listed, "$[?(@.id=='" + id + "')]");
+            assertThat(run).hasSize(1);
+            if (!"RUNNING".equals(run.getFirst().get("status")) && runLockReleased()) {
+                return JsonPath.parse(run.getFirst()).jsonString();
+            }
+            Thread.sleep(50);
+        }
+        throw new AssertionError("Scout run " + id + " still RUNNING after 30 s");
+    }
+
+    private boolean runLockReleased() {
+        return jdbc.sql("SELECT lock_until <= timezone('utc', now()) FROM shedlock WHERE name = 'scout-run'")
+            .query(Boolean.class).single();
     }
 
     private List<String> aiFields(String id) throws Exception {
@@ -240,7 +262,7 @@ class ScoutPipelineIT {
         // enrichment slot then goes to the backlog other tests left, so the model may still be called.)
         long runs = enrichmentRuns(id);
         REGISTRY.route("/v0.1/servers", FixtureServer.Reply.ok(rerunServer("1.0.1", desktop, "2026-10-02T00:00:00Z")));
-        assertThat(JsonPath.<Integer>read(runMcpRegistry(), "$[0].enrichmentsQueued")).isZero();
+        assertThat(JsonPath.<Integer>read(runMcpRegistry(), "$.enrichmentsQueued")).isZero();
         assertThat(enrichmentRuns(id)).isEqualTo(runs);
 
         // New text: enriched again, and only the latest run's fields are shown.
@@ -248,7 +270,7 @@ class ScoutPipelineIT {
         REGISTRY.route("/v0.1/servers", FixtureServer.Reply.ok(rerunServer("1.1.0", cli, "2026-10-03T00:00:00Z")));
         LLM_REPLY.set("""
             {"fields":[{"field":"platforms","value":"cli","citations":[{"evidenceId":"EVID","excerpt":"a command-line tool that reruns"}]}]}""");
-        assertThat(JsonPath.<Integer>read(runMcpRegistry(), "$[0].enrichmentsQueued")).isEqualTo(1);
+        assertThat(JsonPath.<Integer>read(runMcpRegistry(), "$.enrichmentsQueued")).isEqualTo(1);
         assertThat(aiFields(id)).containsExactly("cli");
         // The replaced field's evidence goes with it.
         assertThat(jdbc.sql("SELECT count(*) FROM evidence WHERE excerpt = 'lets Claude Desktop rerun'").query(Long.class).single()).isZero();
@@ -268,21 +290,16 @@ class ScoutPipelineIT {
         LLM_REPLY.set("{\"fields\":[],\"relationships\":[],\"summary\":[]}");
         List<UUID> ids = java.util.stream.IntStream.range(0, 3)
             .mapToObj(i -> ResourceId.of(CanonicalUrl.of("https://github.com/helper2-test/backlog-" + i)).getValue()).toList();
-        var admin = oauth2Login().authorities(new SimpleGrantedAuthority("ROLE_ADMIN"));
 
-        mvc.perform(post("/api/v1/admin/scout-runs").with(admin).with(csrf())
-                .contentType(MediaType.APPLICATION_JSON).content("{\"sourceId\":\"mcp-registry\"}"))
-            .andExpect(status().isAccepted())
-            .andExpect(jsonPath("$[0].itemsChanged").value(3))
-            .andExpect(jsonPath("$[0].enrichmentsQueued").value(1));
+        String first = runMcpRegistry();
+        assertThat(JsonPath.<Integer>read(first, "$.itemsChanged")).isEqualTo(3);
+        assertThat(JsonPath.<Integer>read(first, "$.enrichmentsQueued")).isEqualTo(1);
         List<UUID> stranded = backlog.pending(100).stream().filter(ids::contains).toList();
         assertThat(stranded).hasSize(2);
 
         // Nothing changes at the source, yet the next run spends its budget on the backlog.
         REGISTRY.route("/v0.1/servers", FixtureServer.Reply.ok("{\"servers\":[],\"metadata\":{\"count\":0}}"));
-        mvc.perform(post("/api/v1/admin/scout-runs").with(admin).with(csrf())
-                .contentType(MediaType.APPLICATION_JSON).content("{\"sourceId\":\"mcp-registry\"}"))
-            .andExpect(jsonPath("$[0].itemsChanged").value(0));
+        assertThat(JsonPath.<Integer>read(runMcpRegistry(), "$.itemsChanged")).isZero();
         assertThat(backlog.pending(100).stream().filter(ids::contains).toList()).hasSize(1);
 
         // A bare title (no description) is never worth an LLM call.
