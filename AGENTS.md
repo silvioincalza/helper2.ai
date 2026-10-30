@@ -96,6 +96,8 @@ deferred (safe for now, say why).
 - No backward compatibility with removed code or migrations unless asked.
 - Never add AI attribution, "Generated with" footers or Co-Authored-By to commits, PRs,
   comments, docs or code.
+- Every change reaches `main` through a pull request. Open and merge it with `gh` from Silvio's
+  machine (never through a tool that adds an AI footer), then delete the branch.
 - AI-tool setup and settings are committed (`AGENTS.md`, `CLAUDE.md`, `.claude/settings.json`,
   `.claude/agents/`, `.claude/commands/`). AI notes, reviews, memory and machine-local settings
   never are: they go in the git-ignored `.private/` folder (or `CLAUDE.local.md`,
