@@ -1,6 +1,9 @@
-import type { components } from './schema';
+import type { components, operations } from './schema';
 
 type S = components['schemas'];
+
+/** Query parameters of GET /search, from the contract. */
+export type SearchQuery = NonNullable<operations['search']['parameters']['query']>;
 
 export type AudiencePath = S['AudiencePath'];
 export type Audience = S['Audience'];
