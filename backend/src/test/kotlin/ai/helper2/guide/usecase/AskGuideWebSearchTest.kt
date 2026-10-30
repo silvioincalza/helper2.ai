@@ -6,6 +6,7 @@ import ai.helper2.guide.GuideIntent
 import ai.helper2.guide.GuideModel
 import ai.helper2.guide.GuideProposal
 import ai.helper2.guide.GuideSearchPlan
+import ai.helper2.guide.GuideStatus
 import ai.helper2.guide.ProposedPick
 import ai.helper2.guide.ReasonClaim
 import ai.helper2.platform.quota.QuotaCounter
@@ -57,6 +58,10 @@ class AskGuideWebSearchTest {
                     description = "Get up and running with large language models locally. MIT License"),
                 hit("tavily", "https://lmstudio.ai", title = "LM Studio", rank = 1, type = ResourceType.PRODUCT,
                     description = "Discover, download and run local LLMs on your computer with a desktop app"),
+                hit("tavily", "https://ai.google.dev/gemini", title = "Gemini", rank = 2, type = ResourceType.MODEL,
+                    published = "2023-12-06T00:00:00Z", description = "Gemini is a family of multimodal models developed by Google"),
+                hit("tavily", "https://github.com/google-gemini/gemini-cli", title = "gemini-cli", rank = 3,
+                    published = "2025-06-25T00:00:00Z", description = "An open-source AI agent that brings Gemini into your terminal"),
             )
         }
     }
@@ -97,6 +102,30 @@ class AskGuideWebSearchTest {
         override fun choose(request: String, candidates: List<Candidate>, constraints: List<String>) =
             GuideProposal(candidates.map { ProposedPick(it.key, "Runs models locally.", it.result.description!!) }, null, emptyList())
         override fun verifyReasons(request: String, claims: List<ReasonClaim>) = claims.associate { it.key to true }
+    }
+
+    @Test
+    fun `an ask-back round trip is two questions, the reply searching anew and takes its own web search`() {
+        val released = object : GuideModel {
+            override val provider = "fake"
+            override val fastModel = "fast"
+            override val reasoningModel = "reasoning"
+            override fun plan(request: String, path: AudiencePath?) =
+                GuideSearchPlan("Gemini", intent = GuideIntent.WHEN, subjects = listOf("Gemini"))
+            override fun plan(request: String, path: AudiencePath?, clarification: String?) =
+                GuideSearchPlan("gemini cli", intent = GuideIntent.WHEN, subjects = listOf("gemini cli"))
+            override fun choose(request: String, candidates: List<Candidate>, constraints: List<String>) = error("no choose for a date")
+        }
+        val guide = AskGuide(search, released, clock)
+
+        val asked = guide.ask("when was Gemini released?", null, client = "192.0.2.9")
+        assertEquals(GuideStatus.NEEDS_CLARIFICATION, asked.status)
+        assertEquals(2, asked.webSearches!!.remaining)
+
+        val answered = guide.ask("when was Gemini released?", null, client = "192.0.2.9", clarification = "gemini cli (tool)")
+        assertEquals(GuideStatus.OK, answered.status)
+        assertEquals(1, answered.webSearches!!.remaining)
+        assertEquals(2, webCalls.get())
     }
 
     private val alternatives = Model(GuideSearchPlan("local LLM runner", intent = GuideIntent.ALTERNATIVES, subjects = listOf("Ollama")))

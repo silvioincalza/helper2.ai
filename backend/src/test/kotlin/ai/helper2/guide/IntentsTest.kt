@@ -4,10 +4,12 @@ import ai.helper2.search.MergedResult
 import ai.helper2.search.ResultMerger
 import ai.helper2.search.contexts
 import ai.helper2.search.hit
+import ai.helper2.shared.ResourceType
 import java.time.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -106,6 +108,64 @@ class IntentsTest {
         assertFalse(isSubject(result("https://cursor.com", "Cursor"), ""))
     }
 
-    private fun result(url: String, title: String): MergedResult =
-        ResultMerger().merge(listOf(hit("s", url, title = title)), contexts("s")).single()
+    @Test
+    fun `a name whose own entries are of two kinds is ambiguous, with one option per kind`() {
+        val results = listOf(
+            result("https://ai.google.dev/gemini", "Gemini", ResourceType.MODEL),
+            result("https://github.com/google-gemini/gemini-cli", "google-gemini/gemini-cli", ResourceType.LIBRARY),
+            result("https://www.npmjs.com/package/gemini", "gemini", ResourceType.LIBRARY),
+            result("https://example.com/gemini-news", "Gemini", ResourceType.NEWS),
+        )
+        val c = assertNotNull(AmbiguousSubject.clarification("Gemini", results, planned = null))
+        assertEquals("Which Gemini do you mean?", c.question)
+        assertEquals(listOf("Gemini (model)", "gemini cli (tool)"), c.options)
+    }
+
+    @Test
+    fun `the planner's own question back wins over the one built from the entries`() {
+        val results = listOf(
+            result("https://ai.google.dev/gemini", "Gemini", ResourceType.MODEL),
+            result("https://github.com/google-gemini/gemini-cli", "gemini-cli", ResourceType.PRODUCT),
+        )
+        val planned = Clarification("Il modello o la CLI?", listOf("il modello", "la CLI"))
+        assertEquals(planned, AmbiguousSubject.clarification("Gemini", results, planned))
+    }
+
+    @Test
+    fun `entries of one kind, namesakes of other types and things named after the subject are not ambiguous`() {
+        val oneKind = listOf(
+            result("https://github.com/ollama/ollama", "ollama", ResourceType.PRODUCT),
+            result("https://www.npmjs.com/package/ollama", "ollama", ResourceType.LIBRARY),
+        )
+        assertNull(AmbiguousSubject.clarification("Ollama", oneKind, planned = null))
+        val notTheThing = listOf(
+            result("https://github.com/ollama/ollama", "ollama", ResourceType.PRODUCT),
+            result("https://huggingface.co/acme/ollama-finetune", "acme/ollama-finetune", ResourceType.MODEL),
+            result("https://example.com/ollama-meetup", "Ollama", ResourceType.EVENT),
+            result("https://example.com/ollama-course", "Ollama", ResourceType.COURSE),
+        )
+        assertNull(AmbiguousSubject.clarification("Ollama", notTheThing, planned = null))
+    }
+
+    @Test
+    fun `an option too long for a chip names the subject and its kind`() {
+        val results = listOf(
+            result("https://ai.google.dev/gemini", "Gemini", ResourceType.MODEL),
+            result("https://example.com/gemini-cli", "gemini command line interface for developers at scale cli", ResourceType.PRODUCT),
+        )
+        assertEquals(listOf("Gemini (model)", "Gemini (tool)"), AmbiguousSubject.clarification("Gemini", results, null)?.options)
+    }
+
+    @Test
+    fun `a question names an event by its kind, in English and Italian`() {
+        assertTrue(IntentRules.namesEvent("when is the next AI hackathon?"))
+        assertTrue(IntentRules.namesEvent("NeurIPS conference"))
+        assertTrue(IntentRules.namesEvent("when does the fast.ai course start?"))
+        assertTrue(IntentRules.namesEvent("quando è la prossima conferenza sull'AI?"))
+        assertFalse(IntentRules.namesEvent("when was Llama 4 released?"))
+        assertFalse(IntentRules.namesEvent("Llama 4 release"))
+    }
+
+    private fun result(url: String, title: String, type: ResourceType = ResourceType.LIBRARY): MergedResult =
+        ResultMerger().merge(listOf(hit("s", url, title = title, type = type)), contexts("s")).single()
 }

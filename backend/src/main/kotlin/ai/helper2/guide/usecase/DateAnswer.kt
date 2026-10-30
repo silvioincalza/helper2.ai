@@ -10,6 +10,7 @@ import ai.helper2.guide.isSubject
 import ai.helper2.search.MergedResult
 import ai.helper2.search.Notice
 import ai.helper2.search.NoticeCode
+import ai.helper2.search.SearchFilters
 import ai.helper2.search.SearchRequest
 import ai.helper2.shared.ResourceType
 import java.time.Clock
@@ -22,16 +23,24 @@ internal class DateAnswer(private val steps: GuideSteps, private val maxCandidat
 
     private companion object {
         const val MAX_EVENTS = 5
+        val EVENTS = setOf(ResourceType.EVENT)
     }
 
     /**
      * "when is NeurIPS?", "AI events next month", "when was Llama 4 released?": dates come from records, never from a
      * model. Events: their stated days, soonest first. Otherwise the subject's creation date and the source stating it.
+     * A question about an event searches events only, so projects named like the event never crowd them out.
      */
     fun answer(q: Question, r: Reading, progress: GuideProgress): GuideAnswer {
         val subject = r.subjects.firstOrNull()
         val text = subject ?: IntentRules.subjectWords(r.query).ifBlank { "AI" }
-        val outcome = steps.step(q, "search") { steps.find(q, r, SearchRequest(text = text, path = q.path, size = maxCandidates)) }
+        val request = if (r.aboutEvent) {
+            SearchRequest(text = text, path = q.path, filters = SearchFilters(types = EVENTS), size = maxCandidates, webQuery = r.webQuery)
+        } else {
+            SearchRequest(text = text, path = q.path, size = maxCandidates)
+        }
+        val outcome = steps.step(q, "search") { steps.find(q, r, request) }
+        namesakes(r, outcome)?.let { return askBack(clock, r, it, outcome, progress) }
         progress.retrieved(outcome.results.size, outcome)
         val window = r.window
         val events = outcome.results.filter { it.type == ResourceType.EVENT && it.eventStart.value != null }

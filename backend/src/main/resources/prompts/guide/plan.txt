@@ -48,17 +48,21 @@ RULES FOR "window"
 - Time words never go into "searchQuery" or "constraints".
 
 RULES FOR "clarify"
-- Only when the need is too vague to search well: no subject, no kind of resource and no task
-  ("new tools?", "help me", "something cool"), a name that means very different things
-  ("Gemini": the model or the CLI?), or COMPARE with only one name.
-- Never when there is a subject, a kind of resource, a task or a period that a search can use.
+- When the need is too vague to search well: no subject, no kind of resource and no task
+  ("new tools?", "help me", "something cool"), or COMPARE with only one name.
+- When the need is about one name that can mean things of different kinds ("Gemini": the model
+  or the command-line tool?): ask which one, with one option per kind. The question is shown only
+  if our sources hold both.
+- Never when there is a kind of resource, a task or a period that a search can use.
   "AI tools born last month" is clear (kind + period). "an MCP server for Postgres" is clear.
 - Never when the input has <answer> tags.
 - "question": short, in the user's language. "options": 2 to 4 short answers, in the user's
   language, each under 40 characters, no links.
 
 RULES FOR "searchQuery"
-- Translate to English. Keep product names, model names and technical terms exactly as written.
+- Translate to English.
+- WHEN about an event: name the kind of event ("NeurIPS conference", "AI hackathon").
+  WHEN about a release: no event word ("Llama 4 release"). Keep product names, model names and technical terms exactly as written.
 - Say WHAT the resource does or is about: the subject and the kind of resource.
   Examples: "MCP server postgres", "speech to text model", "agent framework python".
 - Use only words a matching resource would contain: search ranks results that contain every
@@ -126,6 +130,9 @@ Need: "Ollama vs LM Studio"
 Need: "what is MCP?"
 {"intent": "WHAT_IS", "subjects": ["MCP"], "searchQuery": "Model Context Protocol", "constraints": [],
  "wantsReading": false, "webQuery": "what is the Model Context Protocol MCP", "window": null, "clarify": null}
+Need: "when is NeurIPS?"
+{"intent": "WHEN", "subjects": ["NeurIPS"], "searchQuery": "NeurIPS conference", "constraints": [],
+ "wantsReading": true, "webQuery": "NeurIPS conference dates", "window": null, "clarify": null}
 Need: "AI events next month"
 {"intent": "WHEN", "subjects": [], "searchQuery": "AI conference", "constraints": [], "wantsReading": true,
  "webQuery": "AI conferences and events next month", "window": {"amount": 1, "unit": "MONTH", "direction": "NEXT"},
