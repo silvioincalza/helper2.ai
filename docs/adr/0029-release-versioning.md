@@ -50,7 +50,7 @@ and the Helm chart. A published version must always mean the same code, so it ca
 
 ## Code
 - `.github/workflows/release.yml` — tag checks and GitHub release.
-- `backend/build.gradle.kts`, `frontend/package.json`, `deploy/helm/helper2/Chart.yaml` — the version.
+- `backend/build.gradle.kts`, `frontend/package.json`, `deploy/helm/helper2/Chart.yaml`, `api/openapi.yaml` (`info.version`) — the version.
 - `frontend/vite.config.ts`, `frontend/src/components/Layout.tsx` — version in the footer.
 - `deploy/k8s/Makefile` (`image`) — commit tags never rebuilt.
 - `deploy/k8s/CI.md` (Releases) — how to tag a release.

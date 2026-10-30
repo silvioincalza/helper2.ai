@@ -19,7 +19,7 @@ every source has a status), and these rules must be visible in one place that bo
 4. **Responses checked against the contract.** API integration tests validate real response bodies against
    the component schemas with a JavaScript Object Notation (JSON) Schema 2020-12 validator (`ContractValidator`).
 5. **Errors as problem+json.** `platform.ApiExceptionHandler` answers with Request for Comments (RFC) 9457 problem details
-   (`application/problem+json`). Only client mistakes are 400; anything else is 500 with a fixed text,
+   (`application/problem+json`). Client mistakes are 400 and an unknown resource is 404 (`NotFoundException`); anything else is 500 with a fixed text,
    and the cause is logged, never echoed.
 6. **Enums by wire value.** `ContractEnumConverters` binds query parameters to generated enums by their
    value (for example `unknown`), using the generated `fromValue`.

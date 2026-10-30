@@ -109,4 +109,3 @@ The domain (Kotlin) must not depend on the library that implements them ([0002](
 
 ## Roadmap
 - The guide's concurrency slots and the model calls as `llm-chat` and `llm-embed` policies: [roadmap](../roadmap.md#5-ai-quality-and-cost).
-- The session store's read guard on the `redis` policy ([0023](0023-identity-and-admin.md)): [roadmap](../roadmap.md#3-operations).
