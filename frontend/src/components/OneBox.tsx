@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { askedQuestion, clampQuery, clampQuestion, homeParams, MAX_QUESTION, parseSearchParams, patchState, type SearchState } from '@/lib/searchState';
+import { askedQuestion, clampQuery, clampQuestion, homeParams, MAX_QUESTION, parseSearchParams, patchState, RESULTS_PATH, type SearchState } from '@/lib/searchState';
 
 /** Waits this long after the last keystroke before searching: live, but not one request per letter. */
 const LIVE_SEARCH_MS = 700;
@@ -25,7 +25,8 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [sp, setSp] = useSearchParams();
-  const onHome = pathname === '/';
+  // The page that shows results (/, or /search in design v2) reads the box's state from the URL.
+  const onHome = pathname === '/' || pathname === RESULTS_PATH;
   const state = parseSearchParams(onHome ? sp : new URLSearchParams());
   const asked = onHome ? askedQuestion(sp) : '';
   // What the URL puts in the box: the question when the search is that question (cut to MAX_QUERY), else the search.
@@ -41,15 +42,17 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
 
   const go = (next: SearchState, ask: string, current: URLSearchParams, replace = false) => {
     const params = homeParams(next, ask, current);
-    if (onHome) setSp(params, { replace, preventScrollReset: true });
-    else void navigate({ pathname: '/', search: params.toString() });
+    // Results go to RESULTS_PATH; an empty box goes to the home page.
+    const target = params.toString() ? RESULTS_PATH : '/';
+    if (pathname === target) setSp(params, { replace, preventScrollReset: true });
+    else void navigate({ pathname: target, search: params.toString() });
   };
 
   // Live search runs only from typing, and reads the URL as it is when the timer fires. Not an effect on
   // `text`: the router applies a navigation after the render that caused it, so an effect saw a stale URL
   // and, 700 ms after "Ask the guide", replaced the URL without `ask` (the guide answer vanished).
-  const latest = useRef({ state, asked, onHome, sp });
-  useEffect(() => { latest.current = { state, asked, onHome, sp }; });
+  const latest = useRef({ state, asked, pathname, sp });
+  useEffect(() => { latest.current = { state, asked, pathname, sp }; });
   const timer = useRef<number | undefined>(undefined);
   const cancelLive = () => window.clearTimeout(timer.current);
   useEffect(() => cancelLive, []);
@@ -60,7 +63,8 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
     if (q.length < MIN_LIVE_CHARS) return;
     timer.current = window.setTimeout(() => {
       const now = latest.current;
-      if (now.onHome && q !== now.state.q) go(patchState(now.state, { q }), now.asked, now.sp, true);
+      // Only on the results page: on the design v2 home page a search moves to /search, so it waits for Enter.
+      if (now.pathname === RESULTS_PATH && q !== now.state.q) go(patchState(now.state, { q }), now.asked, now.sp, true);
     }, LIVE_SEARCH_MS);
   };
 

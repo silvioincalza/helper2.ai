@@ -12,18 +12,18 @@ import { Icon } from './Icon';
  * Tools and research only: news and events come from a web-search API whose terms do not clearly allow
  * public redisplay (docs/sources.md), so the home page does not show them. Search still finds them.
  */
-const ALL_TYPES: ResultCard['type'][] = ['MCP_SERVER', 'MODEL', 'LIBRARY', 'PAPER', 'AGENT', 'DATASET', 'PROMPT', 'SKILL', 'PRODUCT'];
+export const ALL_TYPES: ResultCard['type'][] = ['MCP_SERVER', 'MODEL', 'LIBRARY', 'PAPER', 'AGENT', 'DATASET', 'PROMPT', 'SKILL', 'PRODUCT'];
 
 /**
  * Data comes from GET /recent: Helper2's own index, newest by the date the SOURCE states, so the home page makes
  * no live source calls (GitHub and arXiv are rate-limited) and "new" really means newly published, not "matched a
  * keyword, then sorted". Everything from the last week, as many as the API gives (24), two rows in view.
  */
-const SHOWN = 24;
-const DAYS = 7;
+export const SHOWN = 24;
+export const DAYS = 7;
 
 /** The date a source stated (published, else updated); otherwise when Helper2.ai first saw it, labelled as such. */
-function cardDate(card: ResultCard): { key: 'published' | 'updated' | 'firstSeen'; value: string; precision: 'INSTANT' | 'DAY' | 'UNKNOWN' } | null {
+export function cardDate(card: ResultCard): { key: 'published' | 'updated' | 'firstSeen'; value: string; precision: 'INSTANT' | 'DAY' | 'UNKNOWN' } | null {
   const { published, updated, discovered } = card.timeline;
   if (published.status !== 'UNKNOWN' && published.value) return { key: 'published', value: published.value, precision: published.precision };
   if (updated.status !== 'UNKNOWN' && updated.value) return { key: 'updated', value: updated.value, precision: updated.precision };
