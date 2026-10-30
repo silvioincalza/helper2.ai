@@ -56,7 +56,8 @@ at the same time. Prod runs 3 replicas ([0027](0027-runtime-topology.md)), each 
 5. **Intervals per collector** (`RunInterval`): Model Context Protocol (MCP) Registry `H2_SCOUT_MCP_INTERVAL` (1 h), Hugging Face trending
    `H2_SCOUT_HF_INTERVAL` (1 day), Hugging Face provider orgs `H2_SCOUT_HF_ORGS_INTERVAL` (1 day), awesome lists
    `H2_SCOUT_AWESOME_INTERVAL` (1 day), ai-deadlines `H2_SCOUT_AI_DEADLINES_INTERVAL` (1 day), Tavily
-   `H2_SCOUT_TAVILY_INTERVAL` (5 days). Details in [0020](0020-scout-collectors.md).
+   `H2_SCOUT_TAVILY_INTERVAL` (5 days), courses `H2_SCOUT_COURSES_INTERVAL` (7 days). Details in
+   [0020](0020-scout-collectors.md).
 6. **Enrichment budget per run.** One `EnrichmentBudget` of `H2_SCOUT_MAX_ENRICHMENTS` (20) is shared by all
    collectors and the backlog. Changed resources with a source description of at least 40 characters are enriched
    while the budget lasts ([0019](0019-evidence-gated-enrichment.md)). The budget counts model calls: an `UNCHANGED`
