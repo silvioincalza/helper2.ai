@@ -24,10 +24,10 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
     expect(await axeViolations(container)).toEqual([]);
   });
 
-  it('search results with expanded source table and partial banner', async () => {
+  it('search results with the preview, the sources and the partial banner', async () => {
     mockApi({ 'GET /search': () => makeSearch({ sources: [makeStatus(), makeStatus({ sourceId: 'x', name: 'X', outcome: 'TIMED_OUT', servedFrom: 'NONE' })], coverage: { partial: true, sourcesConfigured: 2, sourcesQueried: 2, sourcesSucceeded: 1, note: 'n' } }) });
     const { container } = renderApp('/search?q=translate&type=MODEL');
-    await userEvent.click(await screen.findByRole('button', { name: /sources responded/ }));
+    await screen.findByRole('region', { name: 'Sources' });
     expect(await axeViolations(container)).toEqual([]);
   });
 

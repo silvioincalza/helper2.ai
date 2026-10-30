@@ -1,29 +1,36 @@
-import { Navigate, useLocation, type RouteObject } from 'react-router';
+import { Navigate, useLocation, useSearchParams, type RouteObject } from 'react-router';
 import { Layout } from '@/components/Layout';
 import { AppProviders } from '@/AppProviders';
-import { askParams } from '@/lib/searchState';
+import { askParams, hasResults, RESULTS_PATH } from '@/lib/searchState';
 import AccountPage from '@/pages/AccountPage';
 import AdminPage from '@/pages/AdminPage';
 import HomePage from '@/pages/HomePage';
 import MissionPage from '@/pages/MissionPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 import PrivacyPage from '@/pages/PrivacyPage';
+import ResultsPage from '@/pages/ResultsPage';
 import ResourcePage from '@/pages/ResourcePage';
 import { SAVED_ENABLED } from '@/lib/features';
 import SavedPage from '@/pages/SavedPage';
 import SourcesPage from '@/pages/SourcesPage';
 import TermsPage from '@/pages/TermsPage';
 
-/** Old /search links keep working: same parameters, one page. */
-function SearchRedirect() {
-  const { search } = useLocation();
-  return <Navigate replace to={{ pathname: '/', search }} />;
+/** `/` is the home page; with a search or a question it shows the results page, which names /search canonical. */
+function HomeOrResults() {
+  const [sp] = useSearchParams();
+  return hasResults(sp) ? <ResultsPage /> : <HomePage />;
 }
 
-/** Old /guide?q=… links keep working: the question goes to the guide and to search on the one page. */
+/** /search with nothing to search is the home page. */
+function SearchRoute() {
+  const [sp] = useSearchParams();
+  return hasResults(sp) ? <ResultsPage /> : <Navigate replace to="/" />;
+}
+
+/** /guide?q=… links: the question goes to the guide and to search on the results page. */
 function GuideRedirect() {
   const q = new URLSearchParams(useLocation().search).get('q') ?? '';
-  return <Navigate replace to={{ pathname: '/', search: askParams(q).toString() }} />;
+  return <Navigate replace to={{ pathname: RESULTS_PATH, search: askParams(q).toString() }} />;
 }
 
 /** Kept separate from the router so tests can mount it in createMemoryRouter. */
@@ -31,8 +38,8 @@ export const routes: RouteObject[] = [
   {
     element: <AppProviders><Layout /></AppProviders>,
     children: [
-      { index: true, element: <HomePage /> },
-      { path: 'search', element: <SearchRedirect /> },
+      { index: true, element: <HomeOrResults /> },
+      { path: 'search', element: <SearchRoute /> },
       { path: 'guide', element: <GuideRedirect /> },
       { path: 'resource/:id', element: <ResourcePage /> },
       { path: 'saved', element: SAVED_ENABLED ? <SavedPage /> : <Navigate replace to="/" /> },

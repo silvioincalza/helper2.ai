@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { askedQuestion, clampQuery, clampQuestion, homeParams, MAX_QUESTION, parseSearchParams, patchState, type SearchState } from '@/lib/searchState';
+import { askedQuestion, clampQuery, clampQuestion, hasResults, MAX_QUESTION, parseSearchParams, patchState, RESULTS_PATH, resultsParams, type SearchState } from '@/lib/searchState';
 
 /** Waits this long after the last keystroke before searching: live, but not one request per letter. */
 const LIVE_SEARCH_MS = 700;
@@ -15,19 +15,20 @@ export function actionFor(text: string): 'search' | 'ask' {
 }
 
 /**
- * The one entry point, in the header of every page. Typing searches every source live on the home page;
- * "Ask the guide" (or Shift+Enter) also asks the AI guide. On any other page it takes you home with the query.
- * Everything lives in the URL: `q` = search, `ask` = the question the guide answered, plus the search filters.
- * `hero`: the large box at the top of the home page; elsewhere it sits in the header.
+ * The one entry point: the hero of the home page, in the header everywhere else. On the results page typing searches
+ * every source live; "Ask the guide" (or Shift+Enter) also asks the AI guide. On any other page it opens the results
+ * page (`/search`, ADR 0040) with the query. Everything lives in the URL: `q` = search, `ask` = the question the guide
+ * answered, plus the search filters. `hero`: the large box at the top of the home page.
  */
 export function OneBox({ hero = false }: { hero?: boolean }) {
   const { t } = useTranslation();
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [sp, setSp] = useSearchParams();
-  const onHome = pathname === '/';
-  const state = parseSearchParams(onHome ? sp : new URLSearchParams());
-  const asked = onHome ? askedQuestion(sp) : '';
+  // `/?q=…` shows the results page too (ADR 0040, 3).
+  const onResults = pathname === RESULTS_PATH || (pathname === '/' && hasResults(sp));
+  const state = parseSearchParams(onResults ? sp : new URLSearchParams());
+  const asked = onResults ? askedQuestion(sp) : '';
   // What the URL puts in the box: the question when the search is that question (cut to MAX_QUERY), else the search.
   const fromUrl = asked && clampQuery(asked) === state.q ? asked : state.q;
   const [text, setText] = useState(fromUrl);
@@ -40,16 +41,16 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
   }
 
   const go = (next: SearchState, ask: string, current: URLSearchParams, replace = false) => {
-    const params = homeParams(next, ask, current);
-    if (onHome) setSp(params, { replace, preventScrollReset: true });
-    else void navigate({ pathname: '/', search: params.toString() });
+    const params = resultsParams(next, ask, current);
+    if (onResults) setSp(params, { replace, preventScrollReset: true });
+    else void navigate({ pathname: RESULTS_PATH, search: params.toString() });
   };
 
-  // Live search runs only from typing, and reads the URL as it is when the timer fires. Not an effect on
+  // Live search runs only from typing on the results page (elsewhere the page would change under the typing), and reads the URL as it is when the timer fires. Not an effect on
   // `text`: the router applies a navigation after the render that caused it, so an effect saw a stale URL
   // and, 700 ms after "Ask the guide", replaced the URL without `ask` (the guide answer vanished).
-  const latest = useRef({ state, asked, onHome, sp });
-  useEffect(() => { latest.current = { state, asked, onHome, sp }; });
+  const latest = useRef({ state, asked, onResults, sp });
+  useEffect(() => { latest.current = { state, asked, onResults, sp }; });
   const timer = useRef<number | undefined>(undefined);
   const cancelLive = () => window.clearTimeout(timer.current);
   useEffect(() => cancelLive, []);
@@ -60,7 +61,7 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
     if (q.length < MIN_LIVE_CHARS) return;
     timer.current = window.setTimeout(() => {
       const now = latest.current;
-      if (now.onHome && q !== now.state.q) go(patchState(now.state, { q }), now.asked, now.sp, true);
+      if (now.onResults && q !== now.state.q) go(patchState(now.state, { q }), now.asked, now.sp, true);
     }, LIVE_SEARCH_MS);
   };
 
@@ -69,10 +70,10 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
     const q = clampQuery(text);
     if (q) go(patchState(state, { q }), asked, sp);
   };
-  /** Enter in an empty box: back to the empty home page. */
+  /** Enter in an empty box: back to the home page. */
   const clear = () => {
     cancelLive();
-    if (onHome && (state.q || asked)) go(parseSearchParams(new URLSearchParams()), '', sp);
+    if (onResults) void navigate('/');
   };
   const ask = () => {
     const q = clampQuestion(text);

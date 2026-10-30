@@ -9,16 +9,16 @@ import { ResultCardView } from './ResultCardView';
 import type { ResultCard } from '@/api/types';
 import { settle } from '@/test/render';
 
-function view(card: ResultCard, detailed = false) {
+function view(card: ResultCard) {
   mockApi();
   return render(
     <MemoryRouter>
-      <BookmarksProvider><ResultCardView card={card} detailed={detailed} /></BookmarksProvider>
+      <BookmarksProvider><ResultCardView card={card} /></BookmarksProvider>
     </MemoryRouter>,
   );
 }
 
-describe('ResultCardView', () => {
+describe('the resource page card', () => {
   it('external link has safe attributes and shows hostname', async () => {
     view(makeCard());
     const link = screen.getByRole('link', { name: /Open original/ });
@@ -35,14 +35,8 @@ describe('ResultCardView', () => {
     await settle();
   });
 
-  it('links the title to the detail page', async () => {
-    view(makeCard());
-    expect(screen.getByRole('link', { name: 'Acme Translator' })).toHaveAttribute('href', '/resource/11111111-1111-5111-8111-111111111111');
-    await settle();
-  });
-
-  it('detail: renders three distinct dates; UNKNOWN is the word Unknown, never blank', async () => {
-    view(makeCard({ timeline: { published: unknownDate, updated: known('2026-09-01T00:00:00Z'), discovered: unknownDate } }), true);
+  it('renders three distinct dates; UNKNOWN is the word Unknown, never blank', async () => {
+    view(makeCard({ timeline: { published: unknownDate, updated: known('2026-09-01T00:00:00Z'), discovered: unknownDate } }));
     const tl = screen.getByRole('group', { name: 'Dates' });
     const rows = within(tl).getAllByText(/Published|Last updated|Discovered by Helper2/);
     expect(rows).toHaveLength(3);
@@ -53,7 +47,7 @@ describe('ResultCardView', () => {
   });
 
   it('KNOWN status without value still says Unknown (no guessed date)', async () => {
-    view(makeCard({ timeline: { published: { status: 'KNOWN', precision: 'DAY', value: null }, updated: unknownDate, discovered: unknownDate } }), true);
+    view(makeCard({ timeline: { published: { status: 'KNOWN', precision: 'DAY', value: null }, updated: unknownDate, discovered: unknownDate } }));
     expect(within(screen.getByRole('group', { name: 'Dates' })).getAllByText('Unknown')).toHaveLength(3);
     await settle();
   });
@@ -64,7 +58,7 @@ describe('ResultCardView', () => {
         published: { status: 'CONFLICTING', precision: 'INSTANT', value: '2025-01-01T00:00:00Z', sourceId: 'github', alternatives: [{ value: '2025-02-02T00:00:00Z', sourceId: 'hf' }] },
         updated: unknownDate, discovered: unknownDate,
       },
-    }), true);
+    }));
     const pub = screen.getByText('Published').nextElementSibling as HTMLElement;
     expect(pub).toHaveTextContent('Sources disagree');
     expect(pub).toHaveTextContent('Jan 1, 2025');
@@ -80,7 +74,7 @@ describe('ResultCardView', () => {
     await settle();
   });
 
-  it('shows description origin when it is not the source itself', async () => {
+  it('says where the description comes from', async () => {
     view(makeCard({ descriptionOrigin: 'CURATED' }));
     expect(screen.getByText('Curated by Helper2')).toBeInTheDocument();
     await settle();
@@ -108,37 +102,17 @@ describe('ResultCardView', () => {
     await settle();
   });
 
-  it('result card shows only known facts, a count of unknown ones and a link to all facts', async () => {
-    view(makeCard({ license: null, openSource: null, pricing: null, platforms: [] }));
-    expect(screen.queryByText('License')).not.toBeInTheDocument();
-    expect(screen.queryByText('Pricing')).not.toBeInTheDocument();
-    expect(screen.queryByText('Unknown')).not.toBeInTheDocument();
-    expect(screen.getByText('Technical level')).toBeInTheDocument();
-    expect(screen.getByText(/4 facts not stated by any source/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'All facts' })).toHaveAttribute('href', '/resource/11111111-1111-5111-8111-111111111111');
-    await settle();
-  });
-
-  it('result card shows only the last-updated date; detail shows all dates', async () => {
-    const { unmount } = view(makeCard());
-    const tl = screen.getByRole('group', { name: 'Dates' });
-    expect(within(tl).getByText('Last updated')).toBeInTheDocument();
-    expect(within(tl).queryByText('Published')).not.toBeInTheDocument();
-    unmount();
-    view(makeCard(), true);
-    expect(within(screen.getByRole('group', { name: 'Dates' })).getByText('Published')).toBeInTheDocument();
-    await settle();
-  });
-
-  it('detail shows every fact, Unknown included, plus audience and source records', async () => {
-    view(makeCard({ license: null }), true);
+  it('shows every fact in two groups, Use and Build, Unknown included, plus audience and source records', async () => {
+    view(makeCard({ license: null }));
     expect(screen.getByText('License').closest('div')).toHaveTextContent('Unknown');
+    expect(screen.getByText('Use')).toBeInTheDocument();
+    expect(screen.getByText('Build')).toBeInTheDocument();
     expect(screen.getByText('Audience')).toBeInTheDocument();
     expect(screen.getByText('Source records')).toBeInTheDocument();
     await settle();
   });
 
-  it('the type badge has an inline definition on every card, not only on detail', async () => {
+  it('the type badge has an inline definition', async () => {
     view(makeCard({ type: 'MCP_SERVER' }));
     expect(screen.getByRole('button', { name: /MCP server/ })).toBeInTheDocument();
     await settle();
@@ -171,7 +145,7 @@ describe('ResultCardView', () => {
   });
 
   it('technical terms have keyboard-accessible definitions', async () => {
-    view(makeCard({ type: 'MCP_SERVER' }), true);
+    view(makeCard({ type: 'MCP_SERVER' }));
     const btn = screen.getByRole('button', { name: /MCP server/ });
     expect(btn).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByText(/Model Context Protocol/)).not.toBeInTheDocument();
@@ -185,7 +159,7 @@ describe('ResultCardView', () => {
   });
 });
 
-describe('ResultCardView compatibility flags', () => {
+describe('compatibility flags on the card', () => {
   it('shows each flag with the reason it was derived', async () => {
     view(makeCard({ compatibleWith: [
       { tool: 'openai', label: 'OpenAI', basis: 'TAG', evidence: 'openai', sourceId: 'npm' },

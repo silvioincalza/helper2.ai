@@ -1,43 +1,24 @@
 import { useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
-import { useSearchParams } from 'react-router';
-import type { TFunction } from 'i18next';
+import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { ApiError } from '@/api/client';
-import { GuideAnswer } from '@/components/GuideAnswer';
-import { GuideProgress } from '@/components/GuideProgress';
-import { Icon } from '@/components/Icon';
 import { OneBox } from '@/components/OneBox';
 import { HomeBoards } from '@/components/HomeBoards';
 import { RadarRings } from '@/components/RadarRings';
-import { SearchResults } from '@/components/SearchResults';
-import { useGuideStream } from '@/hooks/useGuideStream';
 import { useTitle } from '@/hooks/useTitle';
-import { askedQuestion, clampQuestion, homeParams, parseSearchParams, patchState, type SearchState } from '@/lib/searchState';
+import { askParams, RESULTS_PATH } from '@/lib/searchState';
 
 /** Example needs (`home.example.<id>`): a short label, and the full need it sends, which both searches AND asks the guide. */
 const EXAMPLES = ['postgres', 'embeddings', 'translation'] as const;
 
 /**
- * One page under the header's one box: the guide's answer, then search results; with an empty box, the radar hero,
- * example needs and the News and Events boards (ADR 0040); how the guide works lives on /mission. Everything lives
- * in the URL (see OneBox).
+ * The home page (ADR 0040, 2): the radar hero with the one box and example needs, then the News and Events boards.
+ * The box and the examples open the results page; how the guide works lives on /mission.
  */
 export default function HomePage() {
   const { t } = useTranslation();
-  const [sp, setSp] = useSearchParams();
-  const state = parseSearchParams(sp);
-  const asked = askedQuestion(sp);
-  useTitle(state.q);
-
-  // A filter, sort or page change keeps the reader where they are; only a new page starts at the top.
-  const go = (next: SearchState, ask: string) => setSp(homeParams(next, ask, sp), { preventScrollReset: true });
-  const update = (next: SearchState) => go(next, asked);
-  const ask = (question: string) => {
-    const q = clampQuestion(question);
-    if (q) go(patchState(state, { q }), q);
-  };
-  const words = state.q.split(/\s+/).filter(Boolean).length;
-  const empty = !state.q && !asked;
+  const navigate = useNavigate();
+  useTitle('');
+  const ask = (need: string) => void navigate({ pathname: RESULTS_PATH, search: askParams(need).toString() });
   const slot = useRef<HTMLDivElement>(null);
   const pin = usePinnedBox(slot);
   const hero = useRef<HTMLElement>(null);
@@ -45,52 +26,39 @@ export default function HomePage() {
 
   return (
     <div className="one-page">
-      {/* The box keeps its place in the tree whether the page is empty or not, so typing never loses focus. */}
-      <section ref={hero} className={`home-hero${empty ? '' : ' is-compact'}`} aria-labelledby="home-h">
-        {empty && <RadarRings />}
+      <section ref={hero} className="home-hero" aria-labelledby="home-h">
+        <RadarRings />
         <div className="home-hero-inner">
-          <h1 id="home-h" className={empty ? undefined : 'sr-only'}>
+          <h1 id="home-h">
             {t('home.title')} <span className="title-accent">{t('home.titleAccent')}</span>
           </h1>
-          {empty && <p className="lede">{t('home.lede')}</p>}
+          <p className="lede">{t('home.lede')}</p>
           <div ref={slot} className={`hero-box-slot${pin ? ' is-pinned' : ''}`}
             style={pin ? { height: pin.height, '--pin-top': `${pin.top}px` } as CSSProperties : undefined}>
             <div className="hero-box-pin">
               {/* The tagline above the box, the hint and the examples under it pin with it, so they are always in view. */}
-              {(empty || pin) && <p className="eyebrow">{t('home.eyebrow')}</p>}
+              <p className="eyebrow">{t('home.eyebrow')}</p>
               <OneBox hero />
-              {empty && <p className="muted small box-hint">{t('home.hint')}</p>}
-              {empty && (
-                <section aria-labelledby="examples-h" className="examples">
-                  <h2 id="examples-h" className="sr-only">{t('home.examples')}</h2>
-                  <ul className="plain-list inline-list">
-                    {EXAMPLES.map((id) => {
-                      const need = t(`home.example.${id}.need`);
-                      return (
-                        <li key={id}>
-                          <button type="button" className="chip chip-ghost" title={need} onClick={() => ask(need)}>{t(`home.example.${id}.label`)}</button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </section>
-              )}
+              <p className="muted small box-hint">{t('home.hint')}</p>
+              <section aria-labelledby="examples-h" className="examples">
+                <h2 id="examples-h" className="sr-only">{t('home.examples')}</h2>
+                <ul className="plain-list inline-list">
+                  {EXAMPLES.map((id) => {
+                    const need = t(`home.example.${id}.need`);
+                    return (
+                      <li key={id}>
+                        <button type="button" className="chip chip-ghost" title={need} onClick={() => ask(need)}>{t(`home.example.${id}.label`)}</button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
             </div>
           </div>
         </div>
       </section>
 
-      {asked && <GuideSection onClose={() => go(state, '')} />}
-
-      {!asked && words >= 4 && (
-        <button type="button" className="btn suggest-guide" onClick={() => ask(state.q)}>
-          {t('home.suggestGuide', { q: state.q })}
-        </button>
-      )}
-
-      <SearchResults state={state} update={update} />
-
-      {empty && <HomeBoards />}
+      <HomeBoards />
     </div>
   );
 }
@@ -155,41 +123,4 @@ function usePinnedBox(slot: RefObject<HTMLDivElement | null>): { top: number; he
     };
   }, [slot]);
   return pin;
-}
-
-/** What went wrong, in words: the server's explanation, else why the stream failed, else a generic line. */
-function guideError(err: unknown, t: TFunction): string {
-  if (!(err instanceof ApiError)) return t('guide.error');
-  if (err.stream) return t(`guide.streamFailure.${err.stream}`);
-  return err.problem?.detail ?? t('guide.error');
-}
-
-/**
- * The guide's answer to the question in the URL, with each real step from the event stream while it works.
- * Closing the panel or asking something else unmounts or restarts the stream (see useGuideStream).
- */
-function GuideSection({ onClose }: { onClose: () => void }) {
-  const { t } = useTranslation();
-  const { question, id, steps, answer, error, busy, refine, retry } = useGuideStream();
-
-  return (
-    <section aria-labelledby="guide-h" className="guide-panel">
-      <div className="guide-panel-head">
-        <p className="eyebrow">{t('guide.title')}</p>
-        <button type="button" className="btn btn-icon" onClick={onClose} aria-label={t('guide.close')}>×</button>
-      </div>
-      <h2 id="guide-h" className="guide-question"><q>{question}</q></h2>
-      {/* The status sits outside the busy region: screen readers hold a busy region's announcements back. */}
-      {busy && <GuideProgress key={id} steps={steps} />}
-      <div aria-live="polite" aria-busy={busy}>
-        {error !== null && (
-          <div className="state-box state-error">
-            <p role="alert"><Icon name="warn" /> {guideError(error, t)}</p>
-            <button type="button" className="btn btn-primary" onClick={retry}><Icon name="refresh" /> {t('common.retry')}</button>
-          </div>
-        )}
-        {answer && <GuideAnswer answer={answer} onRefine={refine} />}
-      </div>
-    </section>
-  );
 }

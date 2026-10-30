@@ -1,11 +1,12 @@
 import { useEffect, useRef, useSyncExternalStore, type ReactNode } from 'react';
-import { NavLink, Outlet, Link, ScrollRestoration, useLocation } from 'react-router';
+import { NavLink, Outlet, Link, ScrollRestoration, useLocation, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { signOut } from '@/api/client';
 import { useMe } from '@/context/MeContext';
 import { LANGUAGES, setLanguage } from '@/i18n';
 import { chooseTheme, currentChoice, nextChoice, subscribeTheme, type ThemeChoice } from '@/lib/theme';
 import { SAVED_ENABLED } from '@/lib/features';
+import { hasResults } from '@/lib/searchState';
 import { Logo } from './Logo';
 import { OneBox } from './OneBox';
 
@@ -35,8 +36,9 @@ function ThemeToggle() {
 export function Header() {
   const { t, i18n } = useTranslation();
   const { me, isAdmin } = useMe();
-  // The home page has the box as its hero; every other page keeps it in the header.
-  const onHome = useLocation().pathname === '/';
+  // The home page has the box as its hero; every other page, the results on `/?q=…` too, keeps it in the header.
+  const [sp] = useSearchParams();
+  const onHome = useLocation().pathname === '/' && !hasResults(sp);
   return (
     <header className="site-header">
       <div className="container header-row">

@@ -135,7 +135,7 @@ export function activeFilterCount(s: SearchState): number {
   return MULTI_KEYS.reduce((n, k) => n + s.filters[k].length, 0) + (s.openSource ? 1 : 0) + (s.updatedAfter ? 1 : 0);
 }
 
-/** The question in a home URL (`ask`), or '' when there is none worth asking. */
+/** The question in a results URL (`ask`), or '' when there is none worth asking. */
 export function askedQuestion(sp: URLSearchParams): string {
   return clampQuestion(sp.get('ask') ?? '');
 }
@@ -181,11 +181,34 @@ export function refinedParams(sp: URLSearchParams, r: Partial<Refinement>): URLS
   return params;
 }
 
+/** The path of the results page (ADR 0040, 3). `/?q=…` shows the same page and names this one canonical. */
+export const RESULTS_PATH = '/search';
+
+/** A URL that asks for results: a search, a question for the guide, or both. Without either, `/` is the home page. */
+export function hasResults(sp: URLSearchParams): boolean {
+  return Boolean(clampQuery(sp.get('q') ?? '') || askedQuestion(sp));
+}
+
 /**
- * The home URL for [state] plus, optionally, the question the guide should answer. When that is the question
- * [current] already asks, its refinement stays; a new question starts without one.
+ * The result selected in the URL (`id`), or '' when there is none. Untrusted: the page only compares it with the ids
+ * of the results it shows, and an id that matches none selects the first row.
  */
-export function homeParams(state: SearchState, ask = '', current?: URLSearchParams): URLSearchParams {
+export function selectedId(sp: URLSearchParams): string {
+  return (sp.get('id') ?? '').slice(0, 64);
+}
+
+/** [sp] with [id] as the selected result. */
+export function withSelected(sp: URLSearchParams, id: string): URLSearchParams {
+  const params = new URLSearchParams(sp);
+  params.set('id', id);
+  return params;
+}
+
+/**
+ * The results URL for [state] plus, optionally, the question the guide should answer. When that is the question
+ * [current] already asks, its refinement stays; a new question starts without one. A new search selects no result.
+ */
+export function resultsParams(state: SearchState, ask = '', current?: URLSearchParams): URLSearchParams {
   const params = toSearchParams(state);
   const question = clampQuestion(ask);
   if (question) {
@@ -195,7 +218,7 @@ export function homeParams(state: SearchState, ask = '', current?: URLSearchPara
   return params;
 }
 
-/** The home URL that searches [question] and asks the guide about it, from any page. */
+/** The results URL that searches [question] and asks the guide about it, from any page. */
 export function askParams(question: string): URLSearchParams {
-  return homeParams(patchState(parseSearchParams(new URLSearchParams()), { q: question }), question);
+  return resultsParams(patchState(parseSearchParams(new URLSearchParams()), { q: question }), question);
 }

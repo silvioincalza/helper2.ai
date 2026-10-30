@@ -91,6 +91,8 @@
   --target-min: 44px;
   --box-height: 56px;
   --maxw: 1120px;
+  --content-wide: 1240px; /* the results page column */
+  --list-max: 460px; /* the result list next to the preview */
   --board-height: 380px; /* a News or Events board; 340px on a phone (ui.css) */
   --motion: 160ms;
 }

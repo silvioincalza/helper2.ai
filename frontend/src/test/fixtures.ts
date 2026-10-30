@@ -1,4 +1,4 @@
-import type { DateFact, Me, RecentResponse, ResourceDetail, ResultCard, SearchResponse, SourceInfo, SourceStatus } from '@/api/types';
+import type { DateFact, GuideResponse, Me, RecentResponse, ResourceDetail, ResultCard, SearchResponse, SourceInfo, SourceStatus } from '@/api/types';
 
 export const known = (value: string, sourceId = 'github'): DateFact => ({ value, precision: 'DAY', status: 'KNOWN', sourceId });
 export const unknownDate: DateFact = { value: null, precision: 'UNKNOWN', status: 'UNKNOWN', alternatives: [] };
@@ -84,3 +84,35 @@ export function makeRecent(over: Partial<RecentResponse> = {}): RecentResponse {
     ...over,
   };
 }
+
+/** A guide answer with one AI pick, Postgres MCP (id …2222), chosen by the reasoning model. */
+export function makeGuide(over: Partial<GuideResponse> = {}): GuideResponse {
+  return {
+    status: 'OK',
+    searchQuery: 'mcp server postgres',
+    recommendations: [{
+      resourceId: '22222222-2222-5222-8222-222222222222',
+      title: 'Postgres MCP',
+      url: 'https://github.com/acme/postgres-mcp',
+      type: 'MCP_SERVER',
+      reason: 'Lets an agent run read-only SQL against Postgres.',
+      quote: 'MCP server that gives agents read-only access to a PostgreSQL database',
+      sourceIds: ['github'],
+      aiReasoned: true,
+      reasonCheck: 'NOT_CHECKED',
+    }],
+    prompt: null,
+    model: { provider: 'nebius-token-factory', fastModel: 'nvidia/nemotron-nano', reasoningModel: 'nvidia/nemotron-3-super' },
+    aiContent: {
+      aiGenerated: true, provider: 'nebius-token-factory', models: ['nvidia/nemotron-nano', 'nvidia/nemotron-3-super'],
+      fields: ['searchQuery', 'recommendations[].reason'], policy: '/mission',
+    },
+    candidatesConsidered: 12,
+    rejected: 0,
+    sources: [makeStatus()],
+    notices: [],
+    generatedAt: '2026-10-25T10:00:00Z',
+    ...over,
+  };
+}
+

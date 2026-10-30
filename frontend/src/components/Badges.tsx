@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import type { Freshness, ServedFrom, SourceMode, SourceOutcome, ValueOrigin, Verification } from '@/api/types';
+import type { Freshness, SourceMode, SourceOutcome, ValueOrigin, Verification } from '@/api/types';
 import { Icon } from './Icon';
 
 const OUTCOME_ICON: Record<SourceOutcome, string> = {
@@ -21,17 +21,6 @@ export function ModeBadge({ mode }: { mode: SourceMode }) {
   return (
     <span className={`badge mode mode-${mode.toLowerCase()}`} title={t(`mode.${mode}.hint`)}>
       {t(`mode.${mode}.label`)}
-    </span>
-  );
-}
-
-export function ServedFromBadge({ servedFrom }: { servedFrom: ServedFrom }) {
-  const { t } = useTranslation();
-  const stale = servedFrom === 'STALE_CACHE';
-  return (
-    <span className={`badge served served-${servedFrom.toLowerCase()}`}>
-      {stale && <Icon name="warn" />}
-      {t(`servedFrom.${servedFrom}`)}
     </span>
   );
 }

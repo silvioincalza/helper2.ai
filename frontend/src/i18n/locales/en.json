@@ -10,8 +10,7 @@
   },
   "guideMe": {
     "label": "Guide me",
-    "aria": "Guide me: {{title}}",
-    "question": "What is {{title}}, and what can I use it for?"
+    "aria": "Guide me: {{title}}"
   },
   "logo": {
     "tagline": "AI on your radar"
@@ -19,7 +18,6 @@
   "nav": {
     "main": "Main",
     "home": "Helper2.ai home",
-    "search": "Search",
     "saved": "Saved",
     "sources": "Sources",
     "admin": "Admin",
@@ -78,7 +76,6 @@
     "label": "Search AI resources",
     "placeholder": "Search tools, models, MCP servers… or ask in plain words",
     "submit": "Search",
-    "enterQuery": "Type what you are looking for to search the listed sources.",
     "heroPlaceholder": "Describe what you need, or type a name"
   },
   "results": {
@@ -106,7 +103,11 @@
       "CACHE_UNAVAILABLE": "Cache unavailable: every source was queried live for this search.",
       "INDEX_UNAVAILABLE": "Helper2 index unavailable: discovery dates are unknown for this search.",
       "ALL_SOURCES_FAILED": "No source could be reached."
-    }
+    },
+    "heading": "Results for “{{q}}”",
+    "listLabel": "Results",
+    "partialSources": "See which sources",
+    "emptyAsk": "Ask the guide in plain words"
   },
   "timeline": {
     "viewLabel": "Show results as",
@@ -147,10 +148,7 @@
     "openSource": "Open source"
   },
   "sources": {
-    "panelTitle": "Source status",
     "summary": "{{ok}} of {{total}} sources responded",
-    "show": "Show details",
-    "hide": "Hide details",
     "count": {
       "FAILED_one": "{{count}} failed",
       "FAILED_other": "{{count}} failed",
@@ -166,14 +164,11 @@
     "col": {
       "source": "Source",
       "mode": "Mode",
-      "outcome": "Outcome",
-      "servedFrom": "Served from",
-      "results": "Results",
-      "latency": "Latency",
-      "checkedAt": "Checked at",
-      "cachedAt": "Cached at"
+      "checkedAt": "Checked at"
     },
-    "latencyMs": "{{ms}} ms"
+    "latencyMs": "{{ms}} ms",
+    "title": "Sources",
+    "fanout": "fan-out · {{sources}} sources · {{hits}} hits → {{merged}} after merge"
   },
   "outcome": {
     "SUCCEEDED": "Succeeded",
@@ -183,10 +178,7 @@
     "SKIPPED": "Skipped"
   },
   "servedFrom": {
-    "LIVE": "Live",
-    "CACHE": "From cache",
-    "STALE_CACHE": "Stale cache",
-    "NONE": "No data"
+    "STALE_CACHE": "Stale cache"
   },
   "freshness": {
     "LIVE": "Live",
@@ -306,16 +298,17 @@
     "openSource": "Open source",
     "techLevel": "Technical level",
     "sourceRecords": "Source records",
-    "unknownFacts_one": "{{count}} fact not stated by any source",
-    "unknownFacts_other": "{{count}} facts not stated by any source",
-    "allFacts": "All facts",
     "tags": "Tags",
     "compatibleWith": "Works with",
     "sources": "Sources",
     "timeline": "Dates",
     "popularity": "Popularity metrics",
     "conflicts": "Conflicts between sources",
-    "conflictOn": "Sources disagree on {{field}}"
+    "conflictOn": "Sources disagree on {{field}}",
+    "facts": {
+      "use": "Use",
+      "build": "Build"
+    }
   },
   "compat": {
     "basis": {
@@ -567,28 +560,17 @@
     }
   },
   "guide": {
-    "title": "Ask the AI guide",
-    "lede": "Describe what you need in your own words. The guide searches the catalog, picks what fits and explains why, quoting each resource. It can only recommend things it actually found.",
-    "label": "What do you need?",
-    "placeholder": "e.g. an open-source MCP server so my agent can query a Postgres database",
     "ask": "Ask the guide",
-    "asking": "Searching and thinking…",
-    "askingHint": "This usually takes about 15 seconds.",
     "searchedFor": "Searched the catalog for: {{q}}",
     "considered": "{{n}} candidates considered",
     "rejected_one": "{{count}} AI suggestion removed: no supporting evidence",
     "rejected_other": "{{count}} AI suggestions removed: no supporting evidence",
-    "aiReason": "AI reasoning",
     "reasonLabel": "Model's explanation (not checked)",
     "reasonSupported": "Model's explanation (checked against the quote by a second model call)",
     "reasonRemoved": "The model's explanation claimed more than the quote shows, so it is not shown.",
-    "evidence": "Evidence, checked word for word in the resource's own text",
-    "fromDescription": "From the resource's own description",
     "checksLabel": "Your requirements, checked against the source",
     "checkConfirmed": "confirmed by the source:",
     "checkNotConfirmed": "not confirmed by the source (it may still be true; check before you rely on it)",
-    "noAi": "Top search result, no AI reasoning",
-    "noFit": "The AI found nothing in the results that clearly fits your need. Showing the best search results instead.",
     "promptTitle": "Ready-to-use prompt",
     "promptAi": "Written by AI",
     "basedOn": "Adapted from catalog prompts:",
@@ -604,8 +586,7 @@
       "NEEDS_CLARIFICATION": "The question needs one more detail."
     },
     "notice": {
-      "GUIDE_DAILY_QUOTA": "You have used today's AI answers, so this answer shows the top search results without AI picks. AI answers are available again after midnight UTC.",
-      "GUIDE_SUBJECT_NOT_FOUND": "Something you named is not in our sources."
+      "GUIDE_DAILY_QUOTA": "You have used today's AI answers, so this answer shows the top search results without AI picks. AI answers are available again after midnight UTC."
     },
     "error": "The guide could not answer. Please try again.",
     "streamFailure": {
@@ -613,53 +594,8 @@
       "MALFORMED": "The guide sent a reply this page could not read. Please try again.",
       "ENDED_EARLY": "The connection closed before the answer arrived. Please try again."
     },
-    "sources": "Sources searched",
     "close": "Close the guide answer",
     "quoteChecked": "Quote checked",
-    "step": {
-      "plannedTitle": "Understanding your need",
-      "plannedRun": "Turning your words into search terms",
-      "plannedDone": "Search terms: “{{q}}”",
-      "retrievedTitle": "Searching the sources",
-      "retrievedRun": "Waiting for every source to answer",
-      "retrievedDone": "{{n}} real candidates · {{ok}} of {{all}} sources answered",
-      "chosenTitle": "Nemotron is choosing",
-      "chosenRun": "Reading the candidates",
-      "chosenDone_one": "{{count}} pick proposed",
-      "chosenDone_other": "{{count}} picks proposed",
-      "validatedTitle": "Checking each quote against the source",
-      "validatedRun": "Matching each quote with the resource’s own text",
-      "validatedDone": "{{kept}} kept · {{rejected}} rejected",
-      "checkedTitle": "Checking each reason against its quote",
-      "checkedRun": "A second model call checks that each explanation stays within its quote",
-      "checkedDone": "Checked the reasons: {{supported}} supported, {{removed}} removed",
-      "checkedNotChecked_one": "{{count}} not checked",
-      "checkedNotChecked_other": "{{count}} not checked",
-      "finishing": "Preparing the answer"
-    },
-    "stepState": {
-      "done": "done",
-      "active": "in progress",
-      "waiting": "not started"
-    },
-    "elapsed": "{{s}} s",
-    "progressLabel": "How the guide is answering",
-    "sourcesLabel": "Sources and their outcome",
-    "howMade": "How this answer was made",
-    "strip": {
-      "planned": "1 · Planned",
-      "found": "2 · Found",
-      "chose": "3 · Chose",
-      "checked": "4 · Checked"
-    },
-    "sourcesAnswered": "{{ok}} of {{all}} sources answered",
-    "proposed_one": "{{count}} pick proposed",
-    "proposed_other": "{{count}} picks proposed",
-    "kept_one": "{{count}} pick kept",
-    "kept_other": "{{count}} picks kept",
-    "noneRejected": "No pick rejected",
-    "askedFor": "You asked for:",
-    "best": "Best match",
     "understood": "Understood as",
     "remove": "Remove “{{part}}” and ask again",
     "intent": {
@@ -674,7 +610,6 @@
     },
     "window": "Created {{from}} – {{to}}",
     "windowNext": "From {{from}} to {{to}}",
-    "newestFirst": "newest first",
     "clarify": {
       "label": "Pick one, or answer in your own words",
       "other": "Your answer",
@@ -690,8 +625,7 @@
     },
     "explanation": {
       "title": "What it is",
-      "aiNote": "AI-written. Each sentence quotes the resource it links to.",
-      "source": "Source"
+      "aiNote": "AI-written. Each sentence quotes the resource it links to."
     }
   },
   "board": {
@@ -953,7 +887,6 @@
   "setup": {
     "title": "Set up {{title}}",
     "loading": "Reading how to set it up…",
-    "error": "The setup data could not be read now.",
     "howToRun": "How to run it",
     "yourTool": "Your AI tool",
     "remote": "Hosted server, nothing to install. Endpoint:",
@@ -1018,10 +951,34 @@
     "reading_one": "Guide is reading {{count}} candidate… picks will appear here",
     "reading_other": "Guide is reading {{count}} candidates… picks will appear here",
     "readingResults": "Guide is reading the results… picks will appear here",
-    "none": "No pick: no result had a sentence that proves it"
+    "none": "No pick: no result had a sentence that proves it",
+    "chips": "The guide's picks, best first",
+    "badge": "Pick #{{n}}",
+    "reason": "Why the guide picked it (AI-written):",
+    "compared": "No picks: the guide compared them. Open “How the guide answered” below.",
+    "explained": "No picks: the guide explained it. Open “How the guide answered” below.",
+    "details": "How the guide answered",
+    "detailsWith": "How the guide answered: {{parts}}"
   },
   "sourceTile": {
     "label": "Sources searched",
     "cached": "cached {{age}}"
+  },
+  "preview": {
+    "label": "Preview of {{title}}",
+    "open": "Open on source",
+    "details": "Full details",
+    "why": "Why it matches",
+    "description": "Description",
+    "facts": "Facts",
+    "listedBy": "Listed by",
+    "timeline": "Timeline"
+  },
+  "webSearches": {
+    "label": "Web searches today",
+    "search": "search",
+    "guide": "the guide",
+    "left": "{{remaining}} of {{limit}} left for {{feature}}",
+    "limitReached": "daily limit reached for {{feature}}; stored web results still answer, new ones after 00:00 UTC"
   }
 }

@@ -56,7 +56,7 @@ export default function ResourcePage() {
   return (
     <div className="detail">
       <p><Link to="/">{t('detail.backToSearch')}</Link></p>
-      <ResultCardView card={d.card} detailed />
+      <ResultCardView card={d.card} />
       {canGuide(d.card) && <SetupGuidePanel id={id} title={d.card.title} />}
 
       <section aria-labelledby="sum-h" className="panel">

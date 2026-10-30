@@ -33,32 +33,29 @@ function mock() {
   });
 }
 
-describe('Guide me on result cards', () => {
-  it('opens the guide under the card, one at a time, focus on its heading; papers get none', async () => {
+describe('Guide me in the result preview', () => {
+  it('opens under the preview\'s actions, focus on its heading, loads only when opened; closing returns focus; papers get none', async () => {
     const m = mock();
-    renderApp('/?q=agents');
+    renderApp('/search?q=agents');
     const alpha = await screen.findByRole('button', { name: 'Guide me: alpha-mcp' });
-    expect(screen.getByRole('button', { name: 'Guide me: beta-lib' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Guide me: A survey of agents' })).not.toBeInTheDocument();
     expect(m.callsTo('POST', `/resources/${A}/guide`)).toHaveLength(0);
 
     await userEvent.click(alpha);
     expect(alpha).toHaveAttribute('aria-expanded', 'true');
     const heading = await screen.findByRole('heading', { name: 'Set up alpha-mcp' });
-    expect(heading.tagName).toBe('H4');
+    expect(heading.tagName).toBe('H3');
     await waitFor(() => expect(heading).toHaveFocus());
     expect(await screen.findByText('npm install alpha-mcp')).toBeInTheDocument();
-    const card = alpha.closest('article') as HTMLElement;
-    expect(within(card).getByRole('heading', { name: 'Set up alpha-mcp' })).toBeInTheDocument();
+    expect(within(screen.getByRole('region', { name: 'alpha-mcp' })).getByRole('heading', { name: 'Set up alpha-mcp' })).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Guide me: beta-lib' }));
-    expect(await screen.findByRole('heading', { name: 'Set up beta-lib' })).toBeInTheDocument();
+    await userEvent.click(alpha);
     expect(screen.queryByRole('heading', { name: 'Set up alpha-mcp' })).not.toBeInTheDocument();
-    expect(alpha).toHaveAttribute('aria-expanded', 'false');
+    expect(alpha).toHaveFocus();
 
-    const beta = screen.getByRole('button', { name: 'Guide me: beta-lib' });
-    await userEvent.click(beta);
-    expect(screen.queryByRole('heading', { name: 'Set up beta-lib' })).not.toBeInTheDocument();
-    expect(beta).toHaveFocus();
+    // Another result starts with its guide closed.
+    await userEvent.click(screen.getByRole('button', { name: /^beta-lib / }));
+    expect(screen.getByRole('button', { name: 'Guide me: beta-lib' })).toHaveAttribute('aria-expanded', 'false');
+    await userEvent.click(screen.getByRole('button', { name: /^A survey of agents / }));
+    expect(screen.queryByRole('button', { name: /Guide me/ })).not.toBeInTheDocument();
   });
 });

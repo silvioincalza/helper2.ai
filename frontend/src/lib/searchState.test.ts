@@ -1,4 +1,4 @@
-import { askedQuestion, askedRefinement, askParams, clearFilters, filterValue, homeParams, MAX_QUERY, parseSearchParams, patchState, refinedParams, toApiParams, toggleFilter, toSearchParams } from './searchState';
+import { askedQuestion, askedRefinement, askParams, clearFilters, hasResults, selectedId, withSelected, filterValue, resultsParams, MAX_QUERY, parseSearchParams, patchState, refinedParams, toApiParams, toggleFilter, toSearchParams } from './searchState';
 
 describe('searchState', () => {
   const sp = new URLSearchParams('q=agents&type=MCP_SERVER&type=MODEL&license=unknown&openSource=true&updatedAfter=2026-01-01&sort=NEWEST&page=2');
@@ -63,7 +63,7 @@ describe('searchState', () => {
     expect(params.get('q')).toHaveLength(200);
     expect(askParams('ab').get('ask')).toBeNull();
     expect(askParams('ab').get('q')).toBe('ab');
-    expect(homeParams(parseSearchParams(new URLSearchParams('q=x&type=MODEL')), '  why?  ').toString()).toBe('q=x&type=MODEL&ask=why%3F');
+    expect(resultsParams(parseSearchParams(new URLSearchParams('q=x&type=MODEL')), '  why?  ').toString()).toBe('q=x&type=MODEL&ask=why%3F');
     expect(askedQuestion(new URLSearchParams('ask=%20hi%20'))).toBe('');
   });
 });
@@ -97,8 +97,29 @@ describe('the guide refinement in the URL', () => {
   });
   it('a search change keeps the refinement of the same question, a new question starts without one', () => {
     const state = patchState(parseSearchParams(asked), { sort: 'NEWEST' });
-    expect(askedRefinement(homeParams(state, 'new mcp servers', asked))).toEqual({ clarification: 'agents', drop: ['window', 'constraint:free'] });
-    expect(askedRefinement(homeParams(state, 'old mcp servers', asked))).toEqual({ drop: [] });
-    expect(homeParams(state, '', asked).has('clar')).toBe(false);
+    expect(askedRefinement(resultsParams(state, 'new mcp servers', asked))).toEqual({ clarification: 'agents', drop: ['window', 'constraint:free'] });
+    expect(askedRefinement(resultsParams(state, 'old mcp servers', asked))).toEqual({ drop: [] });
+    expect(resultsParams(state, '', asked).has('clar')).toBe(false);
+  });
+});
+
+describe('the results URL', () => {
+  it('asks for results with a search or a question; without either it is the home page', () => {
+    expect(hasResults(new URLSearchParams('q=mcp'))).toBe(true);
+    expect(hasResults(new URLSearchParams('ask=an+mcp+server'))).toBe(true);
+    expect(hasResults(new URLSearchParams('q=++&type=MODEL'))).toBe(false);
+    expect(hasResults(new URLSearchParams())).toBe(false);
+  });
+
+  it('keeps the selected result next to the search; a new search selects none', () => {
+    const sp = withSelected(new URLSearchParams('q=mcp&ask=an+mcp+server'), 'r2');
+    expect(sp.toString()).toBe('q=mcp&ask=an+mcp+server&id=r2');
+    expect(selectedId(sp)).toBe('r2');
+    expect(resultsParams(parseSearchParams(sp), 'an mcp server', sp).has('id')).toBe(false);
+  });
+
+  it('reads an untrusted id as text of at most 64 characters, never more', () => {
+    expect(selectedId(new URLSearchParams())).toBe('');
+    expect(selectedId(new URLSearchParams(`id=${'x'.repeat(500)}`))).toHaveLength(64);
   });
 });

@@ -1,4 +1,4 @@
-import { createContext, type FormEvent, type HTMLAttributes, type Ref, useContext, useEffect, useId, useRef, useState } from 'react';
+import { type FormEvent, type HTMLAttributes, type Ref, useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '@/api/client';
 import type { SetupClient, SetupGuide as Guide, SetupOption, ToolGuide } from '@/api/types';
@@ -45,22 +45,16 @@ function CopyButton({ text, primary = false }: { text: string; primary?: boolean
   );
 }
 
-/** A heading at a level that fits where the panel sits (h2 on the detail page, h4 inside a result card). */
+/** A heading at a level that fits where the panel sits (h2 on the resource page, h3 in the result preview). */
 function H({ level, ...props }: { level: number } & HTMLAttributes<HTMLHeadingElement> & { ref?: Ref<HTMLHeadingElement> }) {
   const Tag = `h${Math.min(Math.max(level, 2), 6)}` as 'h2';
   return <Tag {...props} />;
 }
 
-/** One open guide per list: opening a card's guide closes the one that was open. */
-export const OpenGuideContext = createContext<{ openId: string | null; setOpenId: (id: string | null) => void } | null>(null);
-
-/** Open state of one tool's guide: shared through [OpenGuideContext] in a list, local elsewhere. */
-export function useGuideToggle(id: string) {
-  const shared = useContext(OpenGuideContext);
-  const [local, setLocal] = useState(false);
-  const open = shared ? shared.openId === id : local;
-  const toggle = () => (shared ? shared.setOpenId(open ? null : id) : setLocal(!open));
-  return { open, toggle };
+/** Open state of one tool's guide. */
+export function useGuideToggle() {
+  const [open, setOpen] = useState(false);
+  return { open, toggle: () => setOpen((o) => !o) };
 }
 
 /** The "Guide me" button; [bodyId] is the panel it opens. */
@@ -102,7 +96,7 @@ export function GuideBody({ id, title, level }: { id: string; title: string; lev
 /** The detail page's Guide me: a primary button, the panel under it. */
 export function SetupGuidePanel({ id, title }: { id: string; title: string }) {
   const { t } = useTranslation();
-  const { open, toggle } = useGuideToggle(id);
+  const { open, toggle } = useGuideToggle();
   const bodyId = `setup-${useId()}`;
   return (
     <section className="setup" aria-label={t('setup.title', { title, interpolation: { escapeValue: false } })}>

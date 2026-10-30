@@ -97,7 +97,7 @@ describe('layout', () => {
     expect(screen.getByRole('button', { name: 'Theme: dark. Change to follow system' })).toBeInTheDocument();
   });
 
-  it('moving to another page focuses its heading and announces it; new search params do not move focus', async () => {
+  it('moving to another page focuses its heading and announces it; a new search on the results page does not move focus', async () => {
     mockApi();
     const { router } = renderApp('/');
     // Sources lives in the footer, not the header.
@@ -110,7 +110,10 @@ describe('layout', () => {
     await act(() => router.navigate('/'));
     await screen.findByRole('heading', { level: 1, name: /Describe what you need/ });
     await userEvent.type(screen.getByRole('searchbox'), 'rag{Enter}');
-    await waitFor(() => expect(router.state.location.search).toBe('?q=rag'));
+    // The home box opens the results page: a new page, so focus goes to its heading.
+    await waitFor(() => expect(screen.getByRole('heading', { level: 1, name: 'Results for “rag”' })).toHaveFocus());
+    await userEvent.type(screen.getByRole('searchbox'), ' library{Enter}');
+    await waitFor(() => expect(router.state.location.search).toBe('?q=rag+library'));
     expect(screen.getByRole('searchbox')).toHaveFocus();
     await settle();
   });
