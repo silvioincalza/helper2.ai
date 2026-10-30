@@ -54,6 +54,17 @@ describe('mission, privacy and terms pages', () => {
     expect(screen.getByRole('region', { name: 'How long we keep data' })).toHaveTextContent('Technical logs: up to 3 months.');
   });
 
+  it('privacy page states the account data, how long it is kept and how to delete the account', async () => {
+    mockApi();
+    renderApp('/privacy');
+    await settled();
+    expect(screen.getByRole('region', { name: 'What we process and why' })).toHaveTextContent('when you last signed in');
+    const keep = screen.getByRole('region', { name: 'How long we keep data' });
+    expect(keep).toHaveTextContent('24 months after you last signed in');
+    expect(keep).toHaveTextContent('Reports: 12 months after they were handled.');
+    expect(screen.getByRole('region', { name: 'Deleting your account' })).toHaveTextContent('Delete my account');
+  });
+
   it('terms page states the disclaimer, the liability limit and links to privacy', async () => {
     mockApi();
     const { router } = renderApp('/terms');

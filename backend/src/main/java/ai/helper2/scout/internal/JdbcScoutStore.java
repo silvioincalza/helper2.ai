@@ -1,5 +1,6 @@
 package ai.helper2.scout.internal;
 
+import ai.helper2.scout.RunHistoryRetention;
 import ai.helper2.scout.RunStatus;
 import ai.helper2.scout.ScoutCursor;
 import ai.helper2.scout.RunSummary;
@@ -16,7 +17,7 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
 
 @Component
-class JdbcScoutStore implements ScoutStore, ScheduledRunStore {
+class JdbcScoutStore implements ScoutStore, ScheduledRunStore, RunHistoryRetention {
 
     private final JdbcClient jdbc;
     private final ObjectMapper json;
@@ -105,6 +106,12 @@ class JdbcScoutStore implements ScoutStore, ScheduledRunStore {
                 )
                 SELECT count(*) FROM closed
                 """).param("at", Timestamp.from(at)).query(Integer.class).single();
+    }
+
+    @Override
+    public int deleteRunsStartedBefore(Instant cutoff) {
+        return jdbc.sql("DELETE FROM scout_run WHERE started_at < :cutoff AND status <> 'RUNNING'")
+            .param("cutoff", Timestamp.from(cutoff)).update();
     }
 
     @Override

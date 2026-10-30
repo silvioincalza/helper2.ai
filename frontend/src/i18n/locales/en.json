@@ -37,7 +37,8 @@
       "light": "light",
       "dark": "dark"
     },
-    "terms": "Terms"
+    "terms": "Terms",
+    "account": "Your account"
   },
   "footer": {
     "coverage": "Helper2.ai searches the sources listed on the Sources page, not the whole web.",
@@ -410,6 +411,20 @@
     "storageFailed": "Your browser blocked storage, so saved items will be lost when you leave this page.",
     "serverError": "Could not sync with your account. Please try again later."
   },
+  "account": {
+    "title": "Your account",
+    "signedInAs": "Signed in with GitHub as {{name}}.",
+    "signedOut": "You are not signed in, so there is no account to delete.",
+    "deleteTitle": "Delete your account",
+    "deleteText": "This deletes your account and everything saved on it. Reports you sent stay, without your name.",
+    "privacyLink": "What we keep and for how long",
+    "delete": "Delete my account",
+    "confirmTitle": "Delete your account?",
+    "confirmText": "Your account and your saved items are deleted now and cannot be restored. You will be signed out.",
+    "cancel": "Cancel",
+    "confirm": "Delete account",
+    "failed": "Your account could not be deleted. Please try again later."
+  },
   "sourcesPage": {
     "title": "Sources",
     "lede": "These are all the sources Helper2.ai can search. Anything not listed here is not covered.",
@@ -766,8 +781,8 @@
         "title": "What we process and why",
         "items": [
           "Your searches and guide questions: the text you type, used only to answer you. It is not linked to your account. Search results are cached for up to 30 minutes and guide answers for up to 24 hours, keyed by the question. Please do not type personal or secret information.",
-          "Your account, if you sign in with GitHub: your GitHub user ID (a number), your display name and the date you first signed in. We ask GitHub only for basic profile access. We never see your GitHub password.",
-          "Saved items: if you are signed in, they are stored on our server with your account. If you are not signed in, they stay only in your browser.",
+          "Your account, if you sign in with GitHub: your GitHub user ID (a number), your display name and when you last signed in. We ask GitHub only for basic profile access. We never see your GitHub password or your e-mail address.",
+          "Saved items: if you are signed in, each saved resource (its link, title and type) and when you saved it, stored on our server with your account. If you are not signed in, they stay only in your browser; when you sign in, they move to your account.",
           "Reports you send about a resource: the text you write, linked to your account if you are signed in.",
           "Technical data: your IP address is kept in memory for a short time to limit abuse (rate limits). Our servers and our web gateway also write technical logs, which can include your IP address and the pages you request. We keep these logs for up to 3 months to keep the service running and secure, then delete them."
         ]
@@ -804,8 +819,16 @@
         "items": [
           "Cached searches and guide answers: up to 30 minutes and 24 hours.",
           "Technical logs: up to 3 months.",
-          "Your account and saved items: until you remove them or ask us to delete them.",
-          "Reports: until they are handled. If your account is deleted, your reports stay without your name."
+          "Your account and saved items: until you delete them, or 24 months after you last signed in. Then we delete the account and its saved items.",
+          "Reports: 12 months after they were handled. If your account is deleted, your reports stay without your name until then.",
+          "Database backups: 7 days. Anything deleted above is gone from the backups within 7 days."
+        ]
+      },
+      {
+        "title": "Deleting your account",
+        "paragraphs": [
+          "When you are signed in, select your name at the top of the page, then \"Delete my account\". We delete your account and your saved items at once and sign you out. Reports you sent stay, without your name. Signing in again later creates a new, empty account.",
+          "You can also write to the address above and we will delete it for you."
         ]
       },
       {

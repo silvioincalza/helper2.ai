@@ -37,6 +37,7 @@ export const routes: RouteObject[] = [
         ? { path: 'saved', lazy: page(() => import('@/pages/SavedPage')) }
         : { path: 'saved', element: <Navigate replace to="/" /> },
       { path: 'sources', lazy: page(() => import('@/pages/SourcesPage')) },
+      { path: 'account', lazy: page(() => import('@/pages/AccountPage')) },
       { path: 'admin', lazy: page(() => import('@/pages/AdminPage')) },
       { path: 'mission', lazy: page(() => import('@/pages/MissionPage')) },
       { path: 'privacy', lazy: page(() => import('@/pages/PrivacyPage')) },

@@ -107,6 +107,8 @@ CREATE INDEX resource_updated_idx ON resource (updated_at DESC NULLS LAST);
 CREATE INDEX resource_published_idx ON resource (published_at DESC) WHERE published_at IS NOT NULL;
 CREATE INDEX resource_origin_idx ON resource (data_origin);
 CREATE INDEX resource_event_idx ON resource (event_starts_at) WHERE type = 'EVENT' AND event_starts_at IS NOT NULL;
+-- Retention (ADR 0034): observed resources nobody has seen for a while.
+CREATE INDEX resource_observed_seen_idx ON resource (last_seen_at) WHERE data_origin = 'OBSERVED';
 
 -- Tags, use cases and platforms: one normalized table keyed by kind. Rebuilt from the resource's source
 -- records on every catalog upsert, so labels never outlive the source data that stated them.
@@ -222,7 +224,7 @@ CREATE TABLE evidence (
     created_at       timestamptz NOT NULL DEFAULT now()
 );
 
--- Enrichment runs (AI Resource Scout). Kept forever for audit / reprocessing.
+-- Enrichment runs (AI Resource Scout). Kept while current rows cite them, plus the latest per resource (ADR 0034).
 CREATE TABLE enrichment_run (
     id                uuid PRIMARY KEY,
     resource_id       uuid        NOT NULL REFERENCES resource (id) ON DELETE CASCADE,
@@ -234,7 +236,7 @@ CREATE TABLE enrichment_run (
     finished_at       timestamptz,
     outcome           text        NOT NULL CHECK (outcome IN ('VALIDATED','PARTIAL','REJECTED','LLM_UNAVAILABLE','FAILED')),
     validation_errors jsonb       NOT NULL DEFAULT '[]'::jsonb,
-    reprocess_of      uuid REFERENCES enrichment_run (id)
+    reprocess_of      uuid REFERENCES enrichment_run (id) ON DELETE SET NULL
 );
 CREATE INDEX enrichment_run_resource_idx ON enrichment_run (resource_id, started_at DESC);
 
@@ -250,6 +252,7 @@ CREATE TABLE field_assertion (
     created_at        timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX field_assertion_resource_idx ON field_assertion (resource_id);
+CREATE INDEX field_assertion_run_idx ON field_assertion (enrichment_run_id) WHERE enrichment_run_id IS NOT NULL;
 
 CREATE TABLE field_assertion_evidence (
     assertion_id uuid NOT NULL REFERENCES field_assertion (id) ON DELETE CASCADE,
@@ -270,6 +273,7 @@ CREATE TABLE relationship (
     created_at        timestamptz NOT NULL DEFAULT now(),
     UNIQUE (from_resource_id, kind, to_title)
 );
+CREATE INDEX relationship_run_idx ON relationship (enrichment_run_id) WHERE enrichment_run_id IS NOT NULL;
 
 CREATE TABLE relationship_evidence (
     relationship_id uuid NOT NULL REFERENCES relationship (id) ON DELETE CASCADE,
@@ -293,15 +297,17 @@ CREATE TABLE summary_claim_evidence (
     PRIMARY KEY (claim_id, evidence_id)
 );
 
--- Users who signed in via OAuth2. Anonymous use needs no row.
+-- Users who signed in via OAuth2. Anonymous use needs no row. Only what sign-in needs: the provider's immutable
+-- subject (GitHub: the numeric id), a name to show, and the last sign-in, which retention reads (ADR 0034).
 CREATE TABLE app_user (
-    id           uuid PRIMARY KEY,
-    provider     text        NOT NULL,
-    subject      text        NOT NULL,
-    display_name text,
-    created_at   timestamptz NOT NULL DEFAULT now(),
+    id                uuid PRIMARY KEY,
+    provider          text        NOT NULL,
+    subject           text        NOT NULL,
+    display_name      text,
+    last_signed_in_at timestamptz NOT NULL DEFAULT now(),
     UNIQUE (provider, subject)
 );
+CREATE INDEX app_user_last_signed_in_idx ON app_user (last_signed_in_at);
 
 -- Bookmarks keep a small snapshot so they render even if a live result was never indexed.
 CREATE TABLE bookmark (
@@ -347,6 +353,32 @@ CREATE TABLE review_item (
 );
 CREATE INDEX review_item_open_idx ON review_item (status, created_at);
 CREATE INDEX review_item_resource_idx ON review_item (resource_id);
+CREATE INDEX review_item_run_idx ON review_item (enrichment_run_id) WHERE enrichment_run_id IS NOT NULL;
+CREATE INDEX review_item_report_idx ON review_item (report_id) WHERE report_id IS NOT NULL;
+CREATE INDEX review_item_resolved_idx ON review_item (resolved_at) WHERE status <> 'OPEN';
+
+-- What administrators did, one row per admin action (ADR 0023): append-only, deleted only by retention (ADR 0034).
+-- admin_id is the provider subject (GitHub: the numeric id), never an app_user reference, so the trail outlives
+-- the account.
+CREATE TABLE admin_audit (
+    id        uuid PRIMARY KEY,
+    admin_id  text        NOT NULL,
+    action    text        NOT NULL CHECK (action IN ('RESOLVE_REVIEW_ITEM', 'START_SCOUT_RUN')),
+    target_id text,
+    at        timestamptz NOT NULL DEFAULT now(),
+    outcome   text        NOT NULL
+);
+CREATE INDEX admin_audit_at_idx ON admin_audit (at DESC);
+
+CREATE FUNCTION h2_append_only() RETURNS trigger
+    LANGUAGE plpgsql AS $$
+BEGIN
+    RAISE EXCEPTION '% is append-only', TG_TABLE_NAME;
+END;
+$$;
+
+CREATE TRIGGER admin_audit_append_only BEFORE UPDATE ON admin_audit
+    FOR EACH ROW EXECUTE FUNCTION h2_append_only();
 
 -- Scout collection checkpoints and run history.
 CREATE TABLE source_cursor (

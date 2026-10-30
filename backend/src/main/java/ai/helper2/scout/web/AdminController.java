@@ -12,7 +12,7 @@ import ai.helper2.catalog.usecase.ListReviewItems;
 import ai.helper2.catalog.usecase.ResolveReviewItem;
 import ai.helper2.platform.NotFoundException;
 import ai.helper2.scout.RunSummary;
-import ai.helper2.scout.usecase.RunScout;
+import ai.helper2.scout.usecase.StartScoutRun;
 import ai.helper2.scout.ScoutStore;
 import ai.helper2.search.web.CardMapper;
 import java.util.List;
@@ -31,13 +31,13 @@ class AdminController implements AdminApi {
 
     private final ListReviewItems items;
     private final ResolveReviewItem resolve;
-    private final RunScout runner;
+    private final StartScoutRun startRun;
     private final ScoutStore store;
 
-    AdminController(ListReviewItems items, ResolveReviewItem resolve, RunScout runner, ScoutStore store) {
+    AdminController(ListReviewItems items, ResolveReviewItem resolve, StartScoutRun startRun, ScoutStore store) {
         this.items = items;
         this.resolve = resolve;
-        this.runner = runner;
+        this.startRun = startRun;
         this.store = store;
     }
 
@@ -50,8 +50,7 @@ class AdminController implements AdminApi {
 
     @Override
     public ResponseEntity<ReviewItemDto> resolveReviewItem(UUID id, ReviewResolutionDto body) {
-        String by = SecurityContextHolder.getContext().getAuthentication().getName();
-        return resolve.resolve(id, ReviewQueue.Status.valueOf(body.getStatus().getValue()), by, body.getNote())
+        return resolve.resolve(id, ReviewQueue.Status.valueOf(body.getStatus().getValue()), adminId(), body.getNote())
             .map(i -> ResponseEntity.ok(dto(i)))
             .orElseThrow(() -> new NotFoundException("Review item not found."));
     }
@@ -63,11 +62,16 @@ class AdminController implements AdminApi {
 
     @Override
     public ResponseEntity<List<ScoutRunDto>> startScoutRun(@Nullable ScoutRunRequestDto body) {
-        List<RunSummary> runs = runner.tryStart(body == null ? null : body.getSourceId());
+        List<RunSummary> runs = startRun.start(adminId(), body == null ? null : body.getSourceId());
         if (runs == null) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "A Scout run is already in progress. Try again when it ends.");
         }
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(runs.stream().map(AdminController::dto).toList());
+    }
+
+    /** The signed-in administrator's provider subject (GitHub: the numeric user id). */
+    private static String adminId() {
+        return SecurityContextHolder.getContext().getAuthentication().getName();
     }
 
     private static ReviewItemDto dto(ReviewQueue.Item i) {

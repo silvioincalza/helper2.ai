@@ -437,3 +437,28 @@ spring:
 helper2:
   scout:
     enabled: false
+
+---
+# Data retention (ADR 0034): what the daily purges delete, and when. Every period can be changed without a release.
+helper2:
+  retention:
+    # When the purges run (UTC); each module's purge runs on one replica (cluster lock).
+    cron: ${H2_RETENTION_CRON:0 17 3 * * *}
+    # OBSERVED resources (seen only in searches) no search has seen for this long.
+    observed-unseen: ${H2_RETENTION_OBSERVED_UNSEEN:P180D}
+    # Enrichment runs; each resource's latest run and any run current rows cite stay.
+    enrichment-runs: ${H2_RETENTION_ENRICHMENT_RUNS:P90D}
+    # Review items after they were decided or superseded.
+    resolved-review-items: ${H2_RETENTION_RESOLVED_REVIEW_ITEMS:P180D}
+    # Issue reports after their review was resolved (12 months).
+    resolved-issue-reports: ${H2_RETENTION_RESOLVED_ISSUE_REPORTS:P365D}
+    # Tavily NEWS and ARTICLE records after they were last retrieved.
+    web-news: ${H2_RETENTION_WEB_NEWS:P180D}
+    # Scout run records.
+    scout-runs: ${H2_RETENTION_SCOUT_RUNS:P90D}
+    # Observed and indexed events after they ended (1 year).
+    past-events: ${H2_RETENTION_PAST_EVENTS:P365D}
+    # Accounts nobody signed in to for this long, with their bookmarks (24 months).
+    inactive-accounts: ${H2_RETENTION_INACTIVE_ACCOUNTS:P730D}
+    # Admin audit entries (24 months).
+    admin-audit: ${H2_RETENTION_ADMIN_AUDIT:P730D}

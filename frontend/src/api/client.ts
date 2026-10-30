@@ -187,7 +187,10 @@ export const api = {
   listSources: (signal?: AbortSignal) => request<SourceInfo[]>('GET', '/sources', { signal }),
   getMe: (signal?: AbortSignal) => request<Me>('GET', '/me', { signal }),
   listBookmarks: (signal?: AbortSignal) => request<Bookmark[]>('GET', '/me/bookmarks', { signal }),
-  addBookmarks: (body: BookmarkRequest[]) => request<Bookmark[]>('POST', '/me/bookmarks', { body }),
+  /** Right after sign-in: the browser's bookmarks join the account's; answers with the full list. */
+  mergeLocalBookmarks: (body: BookmarkRequest[]) => request<Bookmark[]>('POST', '/me/bookmarks', { body }),
+  addBookmark: (body: BookmarkRequest) =>
+    request<Bookmark>('PUT', `/me/bookmarks/${encodeURIComponent(body.resourceId)}`, { body }),
   deleteBookmark: (resourceId: string) =>
     request<void>('DELETE', `/me/bookmarks/${encodeURIComponent(resourceId)}`),
   listReviewItems: (status: ReviewStatus | undefined, page: number, size: number, signal?: AbortSignal) =>
@@ -210,6 +213,12 @@ export async function signOut(reload: () => void = () => window.location.reload(
   } finally {
     reload();
   }
+}
+
+/** Deletes the signed-in user's account and bookmarks; the server ends the session, so the page starts over. */
+export async function deleteMyAccount(reload: () => void = () => window.location.reload()): Promise<void> {
+  await request<void>('DELETE', '/me');
+  reload();
 }
 
 export function loginUrl(providerId: string): string {

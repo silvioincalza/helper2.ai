@@ -32,7 +32,7 @@ export function BookmarksProvider({ children }: { children: ReactNode }) {
     const localList = readLocalBookmarks();
     const run = localList.length
       ? api
-          .addBookmarks(localList.map(({ savedAt: _savedAt, ...request }) => request))
+          .mergeLocalBookmarks(localList.map(({ savedAt: _savedAt, ...request }) => request))
           .then((list) => {
             // merged once: the server list is now the source of truth
             if (writeLocalBookmarks([])) setLocal([]);
@@ -72,7 +72,7 @@ export function BookmarksProvider({ children }: { children: ReactNode }) {
       const saved = items.some((i) => i.resourceId === b.resourceId);
       if (saved) return remove(b.resourceId);
       if (server) {
-        api.addBookmarks([b]).then(setRemote, () => setServerError(true));
+        api.addBookmark(b).then((saved) => setRemote((r) => [saved, ...r]), () => setServerError(true));
       } else {
         persistLocal([...local, { ...b, savedAt: new Date().toISOString() }]);
       }
