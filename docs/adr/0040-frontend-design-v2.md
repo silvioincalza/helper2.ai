@@ -1,4 +1,4 @@
-# 0040 — Frontend design v2: home page, results with preview, guide picks bar, design system v3
+# 0040 — Frontend design: home page, results with preview, guide picks bar, design system v3
 
 **Status.** Accepted (2026-10-30). **Builds on:** [0025](0025-frontend-one-box.md),
 [0015](0015-ai-guide-evidence-gate.md), [0038](0038-ai-content-marking.md), [0039](0039-frontend-recent-answers-cache.md)
@@ -16,14 +16,14 @@ We drew the design as clickable prototypes (Home, Results, Resource, States, Sav
 and chose between options for each part.
 
 ## Decision
-1. **Same palette and fonts, design system v3.** Paper, indigo ink, one saffron accent. Space Grotesk, Inter,
-   JetBrains Mono. `docs/design/system/tokens.json` v3 adds semantic tokens only (type tags, status pills, proof
-   quote, sources tile, selected row) and the breakpoints 560, 640, 860 and 1000 px. No colour value changes.
+1. **Palette and fonts: design system v3.** Paper, indigo ink, one saffron accent. Space Grotesk, Inter,
+   JetBrains Mono. `docs/design/system/tokens.json` v3 names semantic tokens on top of the base palette (type tags,
+   status pills, proof quote, sources tile, selected row) and the breakpoints 560, 640, 860 and 1000 px.
 2. **Home is only the home page.** Radar hero, the one box and example searches. Below: **News** (last 7 days) and
    **Events** (next 3 months), two boards that scroll slowly on their own. Each row: date, type tag, source or place,
-   status pill (Updated, Published, First seen, In 13 days…), name. A board moves up one row every few seconds and
-   back to the top at the end. It pauses on hover, on keyboard focus and on tap (tap again to play), and a visible
-   Pause/Play button does the same for everyone (WCAG 2.2.2). Under `prefers-reduced-motion` it does not move and
+   status pill (Updated, Published, First seen, in 13 days, On now), name. The name links to the resource page.
+   A board moves up one row every 4 seconds and back to the top at the end. It pauses on hover, on keyboard focus
+   and on tap (tap again to play), and a visible Pause/Play button does the same for everyone (WCAG 2.2.2). Under `prefers-reduced-motion` it does not move and
    scrolls by hand. Each row is in the list once and the list is not a live region, so a screen reader reads a normal
    list. Loading shows skeleton rows; empty and error say so, and an error offers to try again.
 3. **Results on `/search`.** The box and the examples open `/search?q=…`. `/?q=…` shows the same page and declares
@@ -58,8 +58,8 @@ and chose between options for each part.
 - Bad: the picks bar takes about 110 px above the list, also when the guide has nothing to say (then one line).
 - Bad: two layouts for results (desktop preview, inline preview on a phone) to build and test.
 - Bad: the boards move. Hover, focus, tap and the Pause button stop them. A screen reader user gets a normal list.
-- Trade-off: until the last step, some pages have the new look and some do not. Small pull requests per page keep
-  that short.
+- Trade-off: until the last step, the pages not built yet keep the layout of [0025](0025-frontend-one-box.md).
+  Small pull requests per page keep that short.
 
 ## Alternatives considered
 - **Look: minimal search page, editorial news front page, or developer console** — each drawn on its own. Minimal

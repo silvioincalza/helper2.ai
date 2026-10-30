@@ -1,9 +1,11 @@
-# Flowchart: where an event's dates come from and which events GET /api/v1/events/upcoming lists.
+# Flowchart: where an event's dates come from, which events GET /api/v1/events/upcoming lists, and which of them
+# the home page's Events board shows.
 # Source of truth: backend/src/main/java/ai/helper2/sources/aideadlines/AiDeadlinesCollector.java (nextEdition, toHit),
 #   backend/src/main/kotlin/ai/helper2/shared/DateFact.kt (scheduledDay),
 #   backend/src/main/java/ai/helper2/catalog/internal/ResourceStore.java (refreshEventDates, upcomingEvents),
 #   scripts/industry-events-seed.mjs, backend/src/main/resources/db/migration/R__industry_events.sql,
-#   backend/src/main/java/ai/helper2/catalog/web/ResourcesController.java (listUpcomingEvents).
+#   backend/src/main/java/ai/helper2/catalog/web/ResourcesController.java (listUpcomingEvents),
+#   frontend/src/components/HomeBoards.tsx (EVENTS_SIZE, EVENTS_DAYS).
 # Render: cd docs/diagrams && d2 fmt flow-0022-next-events.d2 && d2 flow-0022-next-events.d2 flow-0022-next-events.svg
 
 ...@style
@@ -26,10 +28,13 @@ noDate: "No stated dates" {class: app}
 
 resource: "resource.event_starts_at =\nearliest record start;\nevent_ends_at = latest end" {class: data}
 
-get: "GET /api/v1/events/upcoming\n?size=6 (1–24)" {class: person}
+get: "GET /api/v1/events/upcoming\n?size= (1–60, default 6)" {class: person}
 listed: "type EVENT, start stated,\nend (or start) ≥ today 00:00 UTC?" {class: decision}
 hidden: "Not listed" {class: end}
-out: "Soonest first;\nCache-Control max-age 5 min" {class: end}
+out: "Soonest first;\nCache-Control max-age 5 min" {class: app}
+window: "Events board (size=60):\nstarts within 90 days\nof generatedAt?" {class: decision}
+row: "Row: days, kind, place,\nwhen it starts" {class: end}
+later: "Not on the board" {class: end}
 
 conf -> edition
 edition -> noEdition: no
@@ -46,3 +51,6 @@ get -> listed
 resource -> listed: {class: config}
 listed -> hidden: no
 listed -> out: yes {class: hot}
+out -> window
+window -> row: yes {class: hot}
+window -> later: no

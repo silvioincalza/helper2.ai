@@ -1,13 +1,39 @@
-# Flowchart: what the results page does from the search to the guide picks, in design v2.
-# Shows the list shown at once, the reserved picks bar, the guide answer arriving over SSE (picks or no pick),
-# badges in place with no re-order, and the selected result kept in the URL with replaceState.
-# Source of truth: docs/adr/0040-frontend-design-v2.md (built: frontend/src/components/ui/PicksBar.tsx,
+# Flowchart: when a home board moves, and what the results page does from the search to the guide picks.
+# Shows the News and Events boards (move one row at a time, hold still on hover, focus, tap or Pause, never with
+# reduced motion), the list shown at once, the reserved picks bar, the guide answer arriving over SSE (picks or
+# no pick), badges in place with no re-order, and the selected result kept in the URL with replaceState.
+# Source of truth: docs/adr/0040-frontend-design-v2.md (built: frontend/src/components/ui/NewsBoard.tsx,
+#   frontend/src/components/HomeBoards.tsx, frontend/src/components/ui/PicksBar.tsx,
 #   frontend/src/hooks/useGuideStream.ts; planned: SearchResults.tsx, GuideAnswer.tsx, routes.tsx).
 # Render: cd docs/diagrams && d2 fmt flow-0040-frontend-design-v2.d2 && d2 flow-0040-frontend-design-v2.d2 flow-0040-frontend-design-v2.svg
 
 ...@style
 
 direction: down
+
+home: Home boards {
+  class: group
+  direction: down
+  load: "GET /api/v1/recent (7 days)\nGET /api/v1/events/upcoming\n(starts within 90 days)" {class: ext}
+  state: "Rows?" {class: decision}
+  skeleton: "Loading: skeleton rows" {class: app}
+  empty: "Empty: says so" {class: end}
+  error: "Error: says so, Try again" {class: fail}
+  fits: "More rows than fit,\nno reduced motion?" {class: decision}
+  still: "Normal list, scrolls by hand,\nno Pause button" {class: end}
+  hold: "Hover, focus inside,\ntap or Pause?" {class: decision}
+  step: "Up one row every 4 s;\nback to the top at the end" {class: app}
+  wait: "Holds still" {class: end}
+  load -> skeleton -> state
+  state -> empty: none
+  state -> error: failed
+  state -> fits: some {class: hot}
+  fits -> still: no
+  fits -> hold: yes
+  hold -> wait: yes
+  hold -> step: no {class: hot}
+  step -> hold
+}
 
 start: "Search from the box or an example:\n/search?q=…  (/?q=… is the same page)" {class: app}
 results: "GET /api/v1/search" {class: ext}

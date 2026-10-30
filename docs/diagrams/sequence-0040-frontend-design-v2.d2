@@ -1,7 +1,8 @@
-# Sequence: a search on the v2 results page, from the box to the guide picks and a shared link.
-# Shows results shown before the guide answers, the reserved picks bar, the SSE answer that adds badges without
+# Sequence: the home boards, then a search on the results page, from the box to the guide picks and a shared link.
+# Shows the boards reading the index and holding still for the user, results shown before the guide answers, the reserved picks bar, the SSE answer that adds badges without
 # re-ordering, the selected result written to the URL with replaceState, and a shared link that opens the same result.
 # Source of truth: docs/adr/0040-frontend-design-v2.md, docs/adr/0015-ai-guide-evidence-gate.md (guide stream),
+#   frontend/src/components/HomeBoards.tsx, frontend/src/components/ui/NewsBoard.tsx,
 #   frontend/src/hooks/useGuideStream.ts, frontend/src/components/ui/PicksBar.tsx.
 # Render: cd docs/diagrams && d2 fmt sequence-0040-frontend-design-v2.d2 && d2 sequence-0040-frontend-design-v2.d2 sequence-0040-frontend-design-v2.svg
 
@@ -10,10 +11,28 @@
 shape: sequence_diagram
 
 user: User {class: person}
+home: "Home page\n(News and Events boards)" {class: app}
+recent: "GET /api/v1/recent" {class: ext}
+events: "GET /api/v1/events/upcoming" {class: ext}
 page: "Results page\n(list, preview, picks bar)" {class: app}
 history: "Browser history" {class: data}
 search: "GET /api/v1/search" {class: ext}
 guide: "POST /api/v1/guide/stream\n(SSE)" {class: ext}
+
+boards: Home boards {
+  user -> home: "opens /"
+  home -> user: "hero, box, examples;\nskeleton rows in both boards"
+  home -> recent: "?days=7&size=24&type=…"
+  home -> events: "?size=60"
+  recent -> home: "items, newest first"
+  events -> home: "items, generatedAt"
+  home -> user: "News rows; Events rows starting\nwithin 90 days of generatedAt" {class: hot}
+  home -> user: "every 4 s: up one row"
+  user -> home: "hover, focus, tap or Pause"
+  home -> user: "holds still until Play,\nor pointer and focus leave"
+  user -> home: "click a row name"
+  home -> user: "/resource/:id"
+}
 
 search_first: Results first {
   user -> page: "/search?q=postgres mcp server"

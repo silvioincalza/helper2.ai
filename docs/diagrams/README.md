@@ -40,7 +40,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0018](../adr/0018-scout-runner.md) | [flow](flow-0018-scout-runner.svg) | [sequence](sequence-0018-scout-runner.svg) | one Scout run (RunScout.tryRunScheduled or RunScout.tryStart), from the trigger to the run summaries. |
 | [0019](../adr/0019-evidence-gated-enrichment.md) | [flow](flow-0019-evidence-gated-enrichment.svg) | [sequence](sequence-0019-evidence-gated-enrichment.svg) | EnrichResource.enrich for one resource, from loading its source text to stored assertions and review items. |
 | [0020](../adr/0020-scout-collectors.md) | [flow](flow-0020-scout-collectors.svg) | [sequence](sequence-0020-scout-collectors.svg) | what each Scout collector does in collect(), after RunScout has called it. |
-| [0022](../adr/0022-next-events.md) | [flow](flow-0022-next-events.svg) | [sequence](sequence-0022-next-events.svg) | where an event's dates come from and which events GET /api/v1/events/upcoming lists. |
+| [0022](../adr/0022-next-events.md) | [flow](flow-0022-next-events.svg) | [sequence](sequence-0022-next-events.svg) | where an event's dates come from, which events GET /api/v1/events/upcoming lists, and which of them the home Events board shows. |
 | [0023](../adr/0023-identity-and-admin.md) | [flow](flow-0023-identity-and-admin.svg) | [sequence](sequence-0023-identity-and-admin.svg) | who may call what, how a sign-in becomes ADMIN, the bookmark use cases, account deletion (DELETE /me) and the admin audit trail. |
 | [0024](../adr/0024-http-edge-protection.md) | [flow](flow-0024-http-edge-protection.svg) | [sequence](sequence-0024-http-edge-protection.svg) | the checks a request meets at the HTTP edge of the app, in order. |
 | [0025](../adr/0025-frontend-one-box.md) | [flow](flow-0025-frontend-one-box.svg) | [sequence](sequence-0025-frontend-one-box.svg) | the one box. |
@@ -57,7 +57,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0037](../adr/0037-tavily-store-and-daily-quota.md) | [flow](flow-0037-tavily-store-and-quota.svg) | [sequence](sequence-0037-tavily-store-and-quota.svg) | what one search does with Tavily: the stored answer first, a live call only inside the asker's daily web searches, and the same search from another visitor answered from the store. |
 | [0038](../adr/0038-ai-content-marking.md) | [flow](flow-0038-ai-content-marking.svg) | [sequence](sequence-0038-ai-content-marking.svg) | the aiContent marker of a guide answer and the data-ai-* attributes in the page. |
 | [0039](../adr/0039-frontend-recent-answers-cache.md) | [flow](flow-0039-frontend-recent-answers-cache.svg) | [sequence](sequence-0039-frontend-recent-answers-cache.svg) | when useApi shows a recent answer and when it asks the server, and a back move without a request. |
-| [0040](../adr/0040-frontend-design-v2.md) | [flow](flow-0040-frontend-design-v2.svg) | [sequence](sequence-0040-frontend-design-v2.svg) | the v2 results page: the list at once, the reserved picks bar, badges in place with no re-order, and the selected result in the URL. |
+| [0040](../adr/0040-frontend-design-v2.md) | [flow](flow-0040-frontend-design-v2.svg) | [sequence](sequence-0040-frontend-design-v2.svg) | when a home board moves and holds still; the results page: the list at once, the reserved picks bar, badges in place with no re-order, and the selected result in the URL. |
 
 ## Colors
 
