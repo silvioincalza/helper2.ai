@@ -36,11 +36,10 @@ Items are grouped by the order in which they matter. Inside a group, the first i
   ([ADR 0023](adr/0023-identity-and-admin.md)).
 
 ### Quality gates
-- **Browser end-to-end tests (skipped for now, owner decision 27 Oct 2026).** No Playwright journey is automated.
-  Later, on the `demo` profile:
+- **Browser end-to-end tests (skipped for now, owner decision 27 Oct 2026).** No browser journey is automated,
+  and no tool is installed (the unused Playwright setup was removed). Later, choose the tool, then on the `demo` profile:
   search with a partial result and the source status panel; ask the guide, follow the streamed steps, close the
   answer and keep the search; back and forward; the theme switch. Then run them in CI.
-  The local Chromium version must match the Playwright version.
   See [user-journeys.md](user-journeys.md) (SC-1 to SC-3).
 - Manual accessibility pass on real browsers: keyboard, screen reader, contrast, mobile.
   - After a route change, the focused heading and the live region can both be read out.
@@ -165,8 +164,6 @@ Open items:
 - **Saved** (bookmarks) is hidden until it is finished: the menu item, the Save buttons and `/saved` (which goes
   home). The bookmark code, its tests and the `/me/bookmarks` API stay; `SAVED_ENABLED` in
   `frontend/src/lib/features.ts` brings it back.
-- **AI models** (the model-family comparison, [ADR 0021](adr/0021-model-families.md)) is hidden the same way: the
-  menu item, the "works with" links to it and `/models`. `MODELS_ENABLED` brings it back.
 - The shared `/sources` data is fetched once per page load, so the Sources page can show an old last outcome
   during a long visit.
 - If browser storage is blocked, a fixed theme choice can be overridden when the device theme changes.

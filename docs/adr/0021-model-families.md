@@ -28,8 +28,8 @@ source application programming interface (API) gives these specs for every provi
    order with its card, its specs (only `CURATED` assertions with no source id) and up to 5 "listed models": the newest
    MODEL records of `hf-provider-orgs` tagged with the family's Hub org ([0020](0020-scout-collectors.md)). Specs and
    listed models are never merged. A family whose resource is missing is left out. `Cache-Control: public, max-age=300`.
-6. **Page.** `/models` (`ModelsPage`) shows one column per family. A missing field shows "Not stated"; each value links
-   to its source page with the excerpt and the read date. Anthropic has no Hub organization, so it lists no models.
+6. **No page of its own.** The frontend has no comparison page; the families are curated MODEL resources in search and
+   resource pages, and `/model-families` stays in the API. Anthropic has no Hub organization, so it lists no models.
 
 ## Consequences
 - Every number on the page can be traced to a provider page and a date.
@@ -51,7 +51,6 @@ source application programming interface (API) gives these specs for every provi
 - `backend/src/main/java/ai/helper2/catalog/usecase/ListModelFamilies.java`, `usecase/GetResourceDetail.java`.
 - `backend/src/main/java/ai/helper2/catalog/web/ResourcesController.java` — `listModelFamilies`.
 - `api/openapi.yaml` — `/model-families`, `ModelFamiliesResponse`, `ModelFamily`.
-- `frontend/src/pages/ModelsPage.tsx`.
 
 ## Diagrams
 [flow](../diagrams/flow-0021-model-families.svg) · [sequence](../diagrams/sequence-0021-model-families.svg)
