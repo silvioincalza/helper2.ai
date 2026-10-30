@@ -8,7 +8,7 @@ frontend/src/api/schema.d.ts
 frontend/test-results/
 frontend/playwright-report/
 .DS_Store
-.remember/
+.remember
 
 # Gradle wrapper must be versioned (overrides global *.jar ignore)
 !backend/gradle/wrapper/gradle-wrapper.jar
@@ -48,6 +48,8 @@ deploy/k8s/terraform/*_override.tf
 # Demo-video tooling and recordings stay local
 /demo-video/
 
-# AI assistant memory and notes, never published
-.claude/
-CLAUDE.md
+# AI tools: setup is committed; notes, reviews, memory and local settings are not
+.claude/settings.local.json
+.claude/launch.json
+.claude/worktrees/
+CLAUDE.local.md
