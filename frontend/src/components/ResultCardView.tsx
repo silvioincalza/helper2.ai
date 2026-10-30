@@ -13,6 +13,7 @@ import { Popularity } from './Popularity';
 import { Term, type GlossaryKey } from './Term';
 import { Timeline } from './Timeline';
 import { typeTagClass } from '@/lib/typeTag';
+import { aiMark, isAiOrigin } from '@/lib/aiMark';
 
 /** Every type has a definition, so every card can say where its type comes from. */
 /** Compatibility tool ids that are also model families: their chip opens the comparison page. */
@@ -65,7 +66,9 @@ export function ResultCardView({ card, sourceStatuses = [], detailed = false }: 
 
   const description = (
     <div className="card-desc" key="desc">
-      {card.description ? <p>{card.description}</p> : <p className="muted">{t('card.noDescription')}</p>}
+      {card.description
+        ? <p {...(isAiOrigin(card.descriptionOrigin) ? aiMark() : {})}>{card.description}</p>
+        : <p className="muted">{t('card.noDescription')}</p>}
       {(detailed || card.descriptionOrigin !== 'SOURCE_PROVIDED') && (
         <p className="muted small">
           {t('card.descriptionOrigin')}: <OriginLabel origin={card.descriptionOrigin} />

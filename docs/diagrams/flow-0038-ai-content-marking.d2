@@ -1,0 +1,56 @@
+# Flowchart: how one piece of text is marked as AI-written, in the API and in the page.
+# Shows the guide answer marker (aiContent only when a model wrote text), the catalog origins that already say
+# AI_SUMMARY or AI_EXTRACTED, and the page attributes that follow from them. Quotes, titles and links stay unmarked.
+# Source of truth: backend/src/main/java/ai/helper2/guide/web/GuideDtoMapper.java (aiContent, AI_WRITTEN_FIELDS),
+#   api/openapi.yaml (AiContentMarker, GuideResponse.aiContent, ValueOrigin),
+#   frontend/src/lib/aiMark.ts, frontend/src/components/GuideAnswer.tsx, ResultCardView.tsx,
+#   frontend/src/pages/ResourcePage.tsx.
+# Render: cd docs/diagrams && d2 fmt flow-0038-ai-content-marking.d2 && d2 flow-0038-ai-content-marking.d2 flow-0038-ai-content-marking.svg
+
+...@style
+
+direction: down
+
+text: "Text shown to the user" {class: app}
+kind: "Where does it come from?" {class: decision}
+
+guide: Guide answer (GuideDtoMapper.toDto) {
+  class: group
+  direction: down
+  used: "Did a model write text?\n(modelUsed or planned)" {class: decision}
+  marker: "aiContent = provider, models that wrote,\nAI_WRITTEN_FIELDS, policy /mission" {class: app}
+  nomarker: "aiContent absent:\nno AI-written text" {class: end}
+  used -> marker: yes {class: hot}
+  used -> nomarker: no
+}
+
+catalog: Catalog value (card, assertion, summary) {
+  class: group
+  direction: down
+  origin: "origin AI_SUMMARY\nor AI_EXTRACTED?" {class: decision}
+  ai: "origin and model name\nalready in the API" {class: app}
+  plain: "source text:\nnot marked" {class: end}
+  origin -> ai: yes
+  origin -> plain: no
+}
+
+source: "Quote, title, link,\nsource URL" {class: ext}
+unmarked: "Never marked:\nit comes from the source" {class: end}
+
+page: Page (aiMark) {
+  class: group
+  direction: down
+  field: "Field written by AI?" {class: decision}
+  attr: "data-ai-generated=\"true\"\n+ data-ai-model when known" {class: app}
+  badge: "Visible label stays:\n\"AI\", \"AI summary\", …" {class: end}
+  field -> attr: yes {class: hot}
+  attr -> badge
+}
+
+text -> kind
+kind -> guide.used: "guide"
+kind -> catalog.origin: "catalog"
+kind -> source: "source"
+source -> unmarked
+guide.marker -> page.field: {class: hot}
+catalog.ai -> page.field

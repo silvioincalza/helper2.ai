@@ -12,6 +12,7 @@ import ResourcePage from '@/pages/ResourcePage';
 import { MODELS_ENABLED, SAVED_ENABLED } from '@/lib/features';
 import SavedPage from '@/pages/SavedPage';
 import SourcesPage from '@/pages/SourcesPage';
+import TermsPage from '@/pages/TermsPage';
 
 /** Old /search links keep working: same parameters, one page. */
 function SearchRedirect() {
@@ -40,6 +41,7 @@ export const routes: RouteObject[] = [
       { path: 'admin', element: <AdminPage /> },
       { path: 'mission', element: <MissionPage /> },
       { path: 'privacy', element: <PrivacyPage /> },
+      { path: 'terms', element: <TermsPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

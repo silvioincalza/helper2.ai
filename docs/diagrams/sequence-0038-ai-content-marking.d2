@@ -1,0 +1,36 @@
+# Sequence: one guide question, and how its answer reaches the page marked as AI-written.
+# Shows the streamed answer event carrying aiContent and the attributes the browser adds per AI-written element.
+# Source of truth: backend/src/main/java/ai/helper2/guide/web/GuideStreamController.java, GuideDtoMapper.java,
+#   frontend/src/api/client.ts (askGuideStream), frontend/src/components/GuideAnswer.tsx, frontend/src/lib/aiMark.ts.
+# Render: cd docs/diagrams && d2 fmt sequence-0038-ai-content-marking.d2 && d2 sequence-0038-ai-content-marking.d2 sequence-0038-ai-content-marking.svg
+
+...@style
+
+shape: sequence_diagram
+
+user: "User" {class: person}
+spa: "GuideAnswer\n(browser)" {class: app}
+ctl: GuideStreamController {class: app}
+guide: AskGuide {class: app}
+llm: "Nemotron\n(Nebius)" {class: ai}
+map: GuideDtoMapper {class: app}
+
+ask: One guide question {
+  user -> spa: "asks the guide"
+  spa -> ctl: "POST /api/v1/guide/stream"
+  ctl -> guide: "answer(request)"
+  guide -> llm: "plan, choose, check" {class: ai-call}
+  llm -> guide: "picks and reasons"
+  guide -> ctl: "GuideAnswer (modelUsed = true)"
+  ctl -> map: "toDto(answer)" {class: hot}
+  map -> map: "aiContent: provider, models,\nAI-written fields, policy /mission"
+  map -> ctl: "GuideResponse with aiContent"
+  ctl -> spa: "event: answer" {class: hot}
+}
+
+show: The page {
+  spa -> spa: "section: data-ai-provider, data-ai-models"
+  spa -> spa: "each reason, cell, sentence, prompt:\ndata-ai-generated=\"true\""
+  spa -> spa: "quotes, titles, links: no attribute"
+  spa -> user: "answer with visible AI labels"
+}

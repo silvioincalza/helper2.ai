@@ -316,6 +316,7 @@ class AskGuide(
             return GuideAnswer(
                 GuideStatus.NEEDS_CLARIFICATION, r.query, emptyList(), null, true, 0, 0, SearchOutcome.empty(clock.instant()),
                 clock.instant(), r.constraints, intent = r.intent, subjects = r.subjects, window = r.window, clarification = c,
+                planned = true,
             )
         }
         val usable = if (r.modelFailed) null else model
@@ -332,7 +333,7 @@ class AskGuide(
             )
             GuideIntent.HOW_TO, GuideIntent.SUGGEST -> picks(q, r, progress, asked, usable, Retrieval(r.query, readingFilter(r)))
         }
-        return answer.copy(intent = r.intent, subjects = r.subjects, window = r.window)
+        return answer.copy(intent = r.intent, subjects = r.subjects, window = r.window, planned = r.plan != null && !r.modelFailed)
     }
 
     /** Tools only, unless the user asked for something to read (seen in evaluation run 4: papers filled the slots). */

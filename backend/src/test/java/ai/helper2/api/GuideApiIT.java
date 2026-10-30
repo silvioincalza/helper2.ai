@@ -136,6 +136,13 @@ class GuideApiIT extends ApiTestBase {
             .andExpect(jsonPath("$.model.provider").value("nebius-token-factory"))
             .andExpect(jsonPath("$.model.fastModel").value("fake-nano"))
             .andExpect(jsonPath("$.model.reasoningModel").value("fake-super"))
+            .andExpect(jsonPath("$.aiContent.aiGenerated").value(true))
+            .andExpect(jsonPath("$.aiContent.provider").value("nebius-token-factory"))
+            .andExpect(jsonPath("$.aiContent.models[0]").value("fake-nano"))
+            .andExpect(jsonPath("$.aiContent.models[1]").value("fake-super"))
+            .andExpect(jsonPath("$.aiContent.fields").value(org.hamcrest.Matchers.hasItems(
+                "recommendations[].reason", "recommendations[].checks[].constraint", "comparison.rows[].aspect")))
+            .andExpect(jsonPath("$.aiContent.policy").value("/mission"))
             .andReturn().getResponse().getContentAsString();
 
         ContractValidator.assertMatches("GuideResponse", json);
