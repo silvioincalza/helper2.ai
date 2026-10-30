@@ -70,7 +70,8 @@ internals. Microservices would add network calls and deploys without a scaling n
   `.../scout/{web,internal}` — adapters.
 
 ## Diagrams
-None: no runtime flow. Modules, ports and adapters: [software architecture](../diagrams/software-architecture.svg).
+[flow](../diagrams/flow-0002-modular-monolith-hexagonal.svg) · [sequence](../diagrams/sequence-0002-modular-monolith-hexagonal.svg)
+Modules, ports and adapters: [software architecture](../diagrams/software-architecture.svg).
 
 ## Roadmap
 - One owner per table, so the schema has no hidden coupling: [roadmap](../roadmap.md#8-architecture).

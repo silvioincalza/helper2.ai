@@ -1,0 +1,70 @@
+# Flowchart: may a class depend on another class? The rules ModularityTest checks on every build, in the order a
+# dependency meets them, and the module dependencies that pass them today (open modules left out: everyone may use them).
+# Source of truth: backend/src/test/java/ai/helper2/architecture/ModularityTest.java,
+#   backend/src/main/java/ai/helper2/*/package-info.java, .../search/usecase/package-info.java,
+#   .../catalog/usecase/package-info.java, .../search/web/CardMapper.java (@NamedInterface("cards")).
+# Render: cd docs/diagrams && d2 fmt flow-0002-modular-monolith-hexagonal.d2 && d2 flow-0002-modular-monolith-hexagonal.d2 flow-0002-modular-monolith-hexagonal.svg
+
+...@style
+
+direction: down
+
+rules: "Class A depends on class B: ModularityTest" {
+  class: group
+  direction: down
+  dep: "A → B" {class: end}
+  domain: "A in a domain package?\n(shared, search, scout, guide,\nsetup and the Kotlin\nsearch/scout/guide .usecase)" {class: decision}
+  fw: "B in org.springframework..,\ntools.jackson.. or java.sql..?" {class: decision}
+  adapter: "B in a web, cache,\nconfig or internal package?" {class: decision}
+  same: "B in A's own module?" {class: decision}
+  open: "B's module is open?\n(shared, platform, api)" {class: decision}
+  public: "B in the module's base package\nor a named interface?\n(search.usecase, catalog.usecase,\nsearch.web cards)" {class: decision}
+  cycle: "Creates a cycle\nbetween modules?" {class: decision}
+  ok: "Allowed" {class: end}
+  e_fw: "Build fails:\ndomainIsFrameworkFree" {class: fail}
+  e_ad: "Build fails:\ndomainDoesNotDependOnItsAdapters" {class: fail}
+  e_mod: "Build fails:\nApplicationModules.verify()" {class: fail}
+
+  dep -> domain
+  domain -> fw: yes
+  domain -> same: no
+  fw -> e_fw: yes
+  fw -> adapter: no
+  adapter -> e_ad: yes
+  adapter -> same: no
+  same -> ok: yes {class: hot}
+  same -> open: no
+  open -> ok: yes
+  open -> public: no
+  public -> e_mod: no
+  public -> cycle: yes
+  cycle -> e_mod: yes
+  cycle -> ok: no {class: hot}
+}
+
+today: "Module dependencies that pass today" {
+  class: group
+  direction: down
+  sources: "sources\n(SearchSource, Collector\nadapters)" {class: app}
+  scout: "scout\n(Kotlin rules)" {class: app}
+  setup: "setup\n(Kotlin rules)" {class: app}
+  guide: "guide\n(Kotlin rules)" {class: app}
+  catalog: "catalog\n(Spring services over SQL)" {class: app}
+  platform: "platform (open)\nSpringAiQueryTranslator" {class: app}
+  identity: "identity" {class: app}
+  search: "search\n(Kotlin rules, ports)" {class: port}
+
+  sources -> scout: "Collector, ports"
+  sources -> search: "SearchSource"
+  scout -> catalog: "catalog.usecase"
+  scout -> identity: "AuditTrail"
+  setup -> catalog: "catalog.usecase"
+  guide -> search: "usecase, cards"
+  catalog -> search: "ports, cards"
+  catalog -> identity: "CurrentUser,\nAuditTrail"
+  scout -> search: "cards, models"
+  setup -> search: "cards"
+  platform -> search: "QueryTranslator"
+}
+
+rules.ok -> today: "checked over every class" {class: config}

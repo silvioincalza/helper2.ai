@@ -1,0 +1,42 @@
+# Sequence: recording the snapshots once against the live sources (evalRecord), then the offline replay, the report
+# and the nDCG@10 gate (evalTest).
+# Source of truth: backend/src/test/kotlin/ai/helper2/eval/SearchSnapshotRecorder.kt, SearchSnapshot.kt (SnapshotTaker,
+#   SearchReplay), SearchRelevanceEvalTest.kt, SearchEvaluation.kt, CutoffSweep.kt, EvalFiles.kt, backend/build.gradle.kts.
+# Render: cd docs/diagrams && d2 fmt sequence-0036-search-evaluation-harness.d2 && d2 sequence-0036-search-evaluation-harness.d2 sequence-0036-search-evaluation-harness.svg
+
+...@style
+
+shape: sequence_diagram
+
+owner: Owner {class: person}
+test: "JUnit test\n(SearchSnapshotRecorder,\nSearchRelevanceEvalTest)" {class: app}
+search: "SnapshotTaker →\nSearchResources\n(no cache, no observer)" {class: app}
+sources: "Live sources\n(GitHub, npm, HF,\narXiv, Tavily, catalog)" {class: ext}
+pg: "Postgres\n(resource_embedding)" {class: data}
+replay: "SearchReplay\n(ResultMerger.merge,\nRanking.rank)" {class: app}
+files: "docs/eval/ (queries, qrels,\nbaseline) and\nbackend/eval-data/" {class: data}
+
+record: "./gradlew evalRecord (tag eval-record, repo-root .env)" {
+  owner -> test: "run" {class: hot}
+  test -> files: "queries without a snapshot file"
+  test -> search: "take(queryId, text)\n(H2_EVAL_PAUSE, 4 s apart)"
+  search -> sources: "search(SourceQuery), one per source" {class: hot}
+  sources -> search: "ranked hits (RecordingSource keeps them)"
+  search -> test: "SearchSnapshot: hits, outcome, latency"
+  test -> pg: "50 nearest vectors, no cutoff"
+  pg -> test: "canonical_url, distance"
+  test -> files: "writeSnapshot(<queryId>.json)"
+}
+
+evaluate: "./gradlew evalTest (tag eval)" {
+  owner -> test: "run" {class: hot}
+  test -> files: "read snapshots and search-qrels.tsv"
+  files -> test: "none? test skipped (assumption)"
+  test -> replay: "rank(snapshot), then rank(snapshot,\nwithout = {source}) per source" {class: hot}
+  replay -> test: "List<MergedResult>"
+  test -> test: "nDCG@10, MRR, Recall@20, bootstrap CI,\ncutoff sweep 0.40–0.90"
+  test -> files: "search-report.md, search-pool.tsv,\nTREC run and qrels files"
+  test -> files: "read search-baseline.json"
+  test -> test: "same fingerprints? else skipped;\nnDCG@10 ≥ baseline − 0.005? else fail"
+  test -> owner: "pass, skip or fail" {class: hot}
+}

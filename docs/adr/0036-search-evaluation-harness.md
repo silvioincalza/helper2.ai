@@ -87,4 +87,4 @@ absence costs no measurable quality for a group is not called for that group.
   `docs/eval/README.md` (how to record, judge and compare).
 
 ## Diagrams
-[flow](../diagrams/flow-0036-search-evaluation-harness.svg) · Sequence: none, the replay is one function call per query.
+[flow](../diagrams/flow-0036-search-evaluation-harness.svg) · [sequence](../diagrams/sequence-0036-search-evaluation-harness.svg)
