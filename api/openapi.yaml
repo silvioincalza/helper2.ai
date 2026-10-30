@@ -352,13 +352,16 @@ paths:
       tags: [admin]
       operationId: listReviewItems
       parameters:
-        - { name: status, in: query, schema: { $ref: '#/components/schemas/ReviewStatus' } }
+        - { name: status, in: query, description: Omit for every status., schema: { $ref: '#/components/schemas/ReviewStatus' } }
+        - { name: page, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
       responses:
         '200':
-          description: Human review queue.
+          description: One page of the human review queue, newest first.
           content:
             application/json:
-              schema: { type: array, items: { $ref: '#/components/schemas/ReviewItem' } }
+              schema: { $ref: '#/components/schemas/ReviewItemPage' }
+        '400': { $ref: '#/components/responses/Problem' }
         '401': { $ref: '#/components/responses/Problem' }
         '403': { $ref: '#/components/responses/Problem' }
 
@@ -1236,7 +1239,15 @@ components:
 
     ReviewStatus:
       type: string
-      enum: [OPEN, ACCEPTED, REJECTED]
+      description: SUPERSEDED is set by a newer enrichment run of the same resource, never by a person.
+      enum: [OPEN, ACCEPTED, REJECTED, SUPERSEDED]
+
+    ReviewItemPage:
+      type: object
+      required: [items, total]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/ReviewItem' } }
+        total: { type: integer, description: Items with the requested status, across all pages. }
 
     ReviewItem:
       type: object

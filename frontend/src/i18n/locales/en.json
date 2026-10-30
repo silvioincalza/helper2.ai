@@ -483,7 +483,8 @@
     "reviewStatus": {
       "OPEN": "Open",
       "ACCEPTED": "Accepted",
-      "REJECTED": "Rejected"
+      "REJECTED": "Rejected",
+      "SUPERSEDED": "Superseded"
     },
     "kind": {
       "ENRICHMENT_VALIDATION": "Enrichment validation",

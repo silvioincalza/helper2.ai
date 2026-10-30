@@ -85,14 +85,24 @@ public class ReviewQueue {
     private static final String SELECT_ITEMS =
         "SELECT i.*, r.title AS resource_title FROM review_item i LEFT JOIN resource r ON r.id = i.resource_id";
 
-    public List<Item> list(Status status) {
-        return jdbc.sql(SELECT_ITEMS + """
+    /** One page of items: [items] in the page, [total] across every page. */
+    public record Page(List<Item> items, long total) {
+    }
+
+    /** Newest first; all statuses when [status] is null. */
+    public Page list(Status status, int page, int size) {
+        String wanted = status == null ? null : status.name();
+        List<Item> items = jdbc.sql(SELECT_ITEMS + """
                  WHERE (CAST(:status AS text) IS NULL OR i.status = :status)
-                ORDER BY i.created_at DESC LIMIT 200
+                ORDER BY i.created_at DESC, i.id
+                LIMIT :size OFFSET :offset
                 """)
-            .param("status", status == null ? null : status.name())
+            .param("status", wanted).param("size", size).param("offset", (long) page * size)
             .query(ReviewQueue::item)
             .list();
+        long total = jdbc.sql("SELECT count(*) FROM review_item WHERE (CAST(:status AS text) IS NULL OR status = :status)")
+            .param("status", wanted).query(Long.class).single();
+        return new Page(items, total);
     }
 
     public Optional<Item> find(UUID id) {

@@ -41,6 +41,7 @@ export type Me = S['Me'];
 export type Bookmark = S['Bookmark'];
 export type BookmarkRequest = S['BookmarkRequest'];
 export type ReviewItem = S['ReviewItem'];
+export type ReviewItemPage = S['ReviewItemPage'];
 export type ReviewStatus = S['ReviewStatus'];
 export type ReviewResolution = S['ReviewResolution'];
 export type ScoutRun = S['ScoutRun'];
