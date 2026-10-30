@@ -49,6 +49,8 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0028](../adr/0028-ci-cd.md) | [flow](flow-0028-ci-cd.svg) | [sequence](sequence-0028-ci-cd.svg) | from a pull request to prod. |
 | [0029](../adr/0029-release-versioning.md) | [flow](flow-0029-release-versioning.svg) | [sequence](sequence-0029-release-versioning.svg) | the release workflow, from a pushed v* tag to the published GitHub release. |
 | [0030](../adr/0030-guide-evaluation.md) | [flow](flow-0030-guide-evaluation.svg) | [sequence](sequence-0030-guide-evaluation.svg) | scripts/eval-guide.mjs, from the fixed query set to docs/evaluation.md. |
+| [0031](../adr/0031-setup-guide.md) | [flow](flow-0031-setup-guide.svg) | [sequence](sequence-0031-setup-guide.svg) | "Guide me" on a resource page: setup options and client snippets from source data, and the step-by-step guide checked against the documents. |
+| [0032](../adr/0032-guide-intents.md) | [flow](flow-0032-guide-intents.svg) | [sequence](sequence-0032-guide-intents.svg) | how AskGuide reads a question and answers by intent, and the clarification round trip. |
 | [0036](../adr/0036-search-evaluation-harness.md) | [flow](flow-0036-search-evaluation-harness.svg) | [sequence](sequence-0036-search-evaluation-harness.svg) | the search evaluation harness: snapshots recorded once, offline replay, report and the nDCG@10 gate. |
 
 ## Colors

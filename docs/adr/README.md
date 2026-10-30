@@ -38,7 +38,8 @@ All diagrams: [docs/diagrams](../diagrams/README.md).
 | [0015](0015-ai-guide-evidence-gate.md) | AI guide: plan → retrieve → choose → deterministic evidence gate; streamed over SSE | 0008, 0009, 0012, 0014 | [flow](../diagrams/flow-0015-ai-guide-evidence-gate.svg) · [sequence](../diagrams/sequence-0015-ai-guide-evidence-gate.svg) |
 | [0016](0016-guide-reason-check.md) | Guide reason check: a second model call checks each reason; `checked` event | 0014, 0015 | [flow](../diagrams/flow-0016-guide-reason-check.svg) · [sequence](../diagrams/sequence-0016-guide-reason-check.svg) |
 | [0017](0017-guide-cost-guard.md) | Guide cost guard: per-minute limit, per-client daily quota, global daily cap, answer cache with config hash, single-flight, concurrency limit and deadline | 0005, 0014, 0015, 0016 | [flow](../diagrams/flow-0017-guide-cost-guard.svg) · [sequence](../diagrams/sequence-0017-guide-cost-guard.svg) |
-| [0031](0031-setup-guide.md) | Setup guide: "Guide me" from source data (MCP Registry, README config), one snippet per AI client, checked README steps and questions | 0002, 0004, 0015 | — |
+| [0031](0031-setup-guide.md) | Setup guide: "Guide me" from source data (MCP Registry, README config), one snippet per AI client, checked README steps and questions | 0002, 0004, 0015 | [flow](../diagrams/flow-0031-setup-guide.svg) · [sequence](../diagrams/sequence-0031-setup-guide.svg) |
+| [0032](0032-guide-intents.md) | Guide intents: understand the question, ask back when vague, retrieve and answer by intent | 0014, 0015, 0016, 0017, 0030 | [flow](../diagrams/flow-0032-guide-intents.svg) · [sequence](../diagrams/sequence-0032-guide-intents.svg) |
 | [0038](0038-ai-content-marking.md) | Marking AI-written text (EU AI Act Art. 50): labels on screen, `aiContent` in the API, `data-ai-generated` in the page | 0003, 0014, 0015, 0019 | — |
 
 ## Scout and catalog features

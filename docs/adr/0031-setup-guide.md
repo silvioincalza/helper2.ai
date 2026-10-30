@@ -101,6 +101,9 @@ and a snippet copied into 19 clients' config files runs on the user's machine.
 `RunOptionRules.kt`, `Formats.kt`, `Materials.kt`, `ToolGuide.kt`), `backend/src/main/resources/prompts/setup/tool-guide.txt`,
 `backend/src/main/java/ai/helper2/setup/` (registry adapter, endpoint), `frontend/src/components/SetupGuide.tsx`.
 
+## Diagrams
+[flow](../diagrams/flow-0031-setup-guide.svg) · [sequence](../diagrams/sequence-0031-setup-guide.svg)
+
 ## Roadmap
 - Guide me on every result card (same panel, inline).
 - PyPI package pages as a document source (no PyPI source in the catalog yet).
