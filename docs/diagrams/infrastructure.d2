@@ -1,6 +1,6 @@
 # Runtime infrastructure of the hosted helper2 on Kubernetes: the Cloudflare tunnel, the two
 # namespaces and their workloads (3 app pods on prod, 1 on staging, rolling updates, disruption budget),
-# what the per-workload network policies let each workload reach and accept, Redis auth,
+# what the per-workload network policies let each workload reach and accept, Redis auth and its AOF volume,
 # OpenBao and Harbor for delivery, Alloy -> Prometheus / Tempo for observability, and the prod backup
 # with its optional off-site copy to Cloudflare R2 (off today).
 # Not drawn because it does not exist yet: the admin back office on admin.helper2.ai (roadmap).
@@ -40,7 +40,7 @@ cluster: "KUBERNETES (no public ingress)" {
       shape: cylinder
       class: data
     }
-    redis: "redis 8.10.2\nrequirepass (H2_REDIS_PASSWORD)\nno persistence · 128mb LRU\ncache, sessions, rate limits" {
+    redis: "redis StatefulSet\nRedis 8.10.2 · requirepass (H2_REDIS_PASSWORD)\nAOF everysec, no RDB · 128mb LRU\nPVC 1Gi local-path\ncache, sessions, rate limits" {
       shape: cylinder
       class: data
     }
