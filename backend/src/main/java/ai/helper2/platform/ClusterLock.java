@@ -13,8 +13,10 @@ import org.jspecify.annotations.Nullable;
  * the lock; elsewhere it is skipped, never queued.
  *
  * <p>{@code atMostFor} must exceed the longest run: after it the lock expires even if the task is still running
- * (that is what frees the lock when a pod dies mid-task). {@code atLeastFor} keeps the lock after a short task
- * ends, so replicas whose schedules fire a little later skip that round instead of repeating it.
+ * (that is what frees the lock when a pod dies mid-task). A lock from {@link ClusterLocks#keptAlive} is extended
+ * while its task runs, so there {@code atMostFor} is only the lease that a dead pod leaves behind.
+ * {@code atLeastFor} keeps the lock after a short task ends, so replicas whose schedules fire a little later skip
+ * that round instead of repeating it.
  */
 public final class ClusterLock {
 
