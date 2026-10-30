@@ -81,7 +81,7 @@ describe('resource detail', () => {
     expect(await screen.findByRole('heading', { name: 'Install' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'What you need first' })).toBeInTheDocument();
     expect(screen.getByText('npm install -g @acme/pg-mcp')).toBeInTheDocument();
-    expect(screen.getByText(/checked word for word/)).toBeInTheDocument();
+    expect(screen.getByText(/copied exactly from it; commands are not reviewed for safety/)).toBeInTheDocument();
     expect(m.callsTo('POST', `/resources/${ID}/guide`)[0]?.body).toEqual({});
 
     await userEvent.type(screen.getByLabelText('Ask about pg-mcp-server'), 'Does it need an API key?');
