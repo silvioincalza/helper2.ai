@@ -62,7 +62,7 @@ export function Header() {
           )}
           {me.authenticated && (
             <span className="auth">
-              <span className="muted small">{me.displayName ?? t('nav.signedIn')}</span>
+              <Link to="/account" className="small" title={t('nav.account')}>{me.displayName ?? t('nav.signedIn')}</Link>
               <button type="button" className="btn" onClick={() => void signOut()}>{t('nav.signOut')}</button>
             </span>
           )}
