@@ -15,7 +15,7 @@ image:
   pullPolicy: IfNotPresent
 
 # Content of <env>/app.env (git-ignored), passed with --set-file envFile=... It becomes the Secret
-# helper2-env. Must contain H2_DATABASE_PASSWORD.
+# helper2-env. Must contain H2_DATABASE_PASSWORD; every key matches ^H2_[A-Z0-9_]+$.
 envFile: ""
 
 app:

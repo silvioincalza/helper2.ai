@@ -7,7 +7,8 @@ helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 
 {{/*
 envFile (KEY=value lines, # comments) as a dict, like kustomize's secretGenerator `envs`:
-the value is everything after the first "=", kept as written.
+the value is everything after the first "=", kept as written. Every key matches ^H2_[A-Z0-9_]+$,
+the only names the app reads, so a misspelt or unprefixed key fails the render.
 */}}
 {{- define "helper2.env" -}}
 {{- $out := dict -}}
@@ -15,7 +16,11 @@ the value is everything after the first "=", kept as written.
 {{- $l := trim $line -}}
 {{- if and $l (not (hasPrefix "#" $l)) (contains "=" $l) -}}
 {{- $kv := regexSplit "=" $l 2 -}}
-{{- $_ := set $out (trim (index $kv 0)) (index $kv 1) -}}
+{{- $key := trim (index $kv 0) -}}
+{{- if not (regexMatch "^H2_[A-Z0-9_]+$" $key) -}}
+{{- fail (printf "envFile key %q must match ^H2_[A-Z0-9_]+$" $key) -}}
+{{- end -}}
+{{- $_ := set $out $key (index $kv 1) -}}
 {{- end -}}
 {{- end -}}
 {{- if not (hasKey $out "H2_DATABASE_PASSWORD") -}}
