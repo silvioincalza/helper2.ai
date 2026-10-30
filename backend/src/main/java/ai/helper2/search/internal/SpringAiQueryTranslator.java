@@ -1,5 +1,10 @@
-package ai.helper2.platform.llm;
+package ai.helper2.search.internal;
 
+import ai.helper2.platform.llm.CallOptions;
+import ai.helper2.platform.llm.DailyBudget;
+import ai.helper2.platform.llm.LlmPolicies;
+import ai.helper2.platform.llm.ModelAnswers;
+import ai.helper2.platform.llm.ModelCallMetrics;
 import ai.helper2.platform.prompt.PromptTemplate;
 import ai.helper2.platform.resilience.CallRefused;
 import ai.helper2.platform.resilience.Resilience;
@@ -26,7 +31,7 @@ class SpringAiQueryTranslator implements QueryTranslator {
     private static final Logger log = LoggerFactory.getLogger(SpringAiQueryTranslator.class);
 
     static String systemPrompt() {
-        return PromptTemplate.fromClasspath("guide/translate-query.txt").render(Map.of("maxWords", QueryTranslator.MAX_WORDS));
+        return PromptTemplate.fromClasspath("search/translate-query.txt").render(Map.of("maxWords", QueryTranslator.MAX_WORDS));
     }
 
     private record Entry(String english, Instant at) {
