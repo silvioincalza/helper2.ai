@@ -14,8 +14,12 @@ the search down.
    pool size `H2_DATABASE_POOL_SIZE` (default 10), connection timeout 3000 ms.
 2. **Ids from canonical web addresses (URLs).** `CanonicalUrl` forces `https`, lower-cases the host, drops `www.`, the
    default port, the fragment, `utm_*` and other tracking parameters and the trailing slash, and sorts the
-   query. GitHub URLs become `https://github.com/{owner}/{repo}` in lower case. `ResourceId` is a universally
+   query. GitHub URLs become `https://github.com/{owner}/{repo}` in lower case; a sub-directory
+   (`/tree/{ref}/{path}`) is kept, so each package of a monorepo has its own URL. `ResourceId` is a universally
    unique identifier (UUID) version 5 (RFC 9562) of that URL in a fixed namespace; Structured Query Language (SQL) computes the same id with `uuid_generate_v5`.
+   A resource is named by the canonical URL of one of its own hits (a GitHub URL first), never by a repository link
+   alone: two npm packages of one repository are two resources with two ids, and an npm package becomes part of its
+   repository's resource only when the merge joins them ([0008](0008-federated-search.md)).
 3. **Source records.** `source_record` keeps one row per (`source_id`, `external_id`): exactly what the
    source said, `retrieved_at` and a content `fingerprint`. `resource` is the merged view. A write never
    overwrites the fields of a resource from a stronger origin (`DEMO` > `CURATED` > `INDEXED` > `OBSERVED`). Labels and

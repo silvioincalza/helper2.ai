@@ -12,7 +12,10 @@ must also remove the flag.
 1. **Rules, no model** (`Compatibility.of(MergedResult)`). A fixed list of 18 tools (`Compatibility.TOOLS`):
    model providers (OpenAI, Anthropic, Google, xAI, Mistral, DeepSeek, NVIDIA), local runtimes (Ollama, llama.cpp,
    Apple MLX, Transformers, vLLM), frameworks (LangChain, LlamaIndex), clients and editors (any MCP client, Claude Code,
-   Cursor, VS Code). Each tool has a set of tags and, for some, file formats.
+   Cursor, VS Code). Each tool has a set of tags and, for some, file formats. A tag that names something else too
+   is left out: NVIDIA NIM matches `nvidia-nim` and `nvidia-ai`, not `nim`, which is also the Nim language.
+   `cursor` stays: it is the editor's only tag, and in search results it comes with AI tags (`mcp`, `claude`,
+   `codex`) far more often than with terminal or pagination tags.
 2. **Three bases.** `TYPE`: an `MCP_SERVER` works with any MCP client. `TAG`: a source tag is in the tool's tag set.
    `FORMAT`: the tag `gguf` gives Ollama and llama.cpp. Tags are compared in a normalized form (trimmed, lower case,
    `_` and spaces become `-`).

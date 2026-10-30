@@ -46,7 +46,7 @@ each: For each source (in parallel) {
   stale -> none: no
 }
 
-merge: "ResultMerger.merge:\ngroup by canonical or repo URL;\nconflicts kept, value null;\ndates: earliest / latest,\nCONFLICTING if days differ" {class: app}
+merge: "ResultMerger.merge:\ngroup by canonical URL;\nrepo link joins only if unique\n(monorepo packages stay apart);\nconflicts kept, value null;\ndates: earliest / latest,\nCONFLICTING if days differ" {class: app}
 discovered: "observer.firstDiscovered\n(one read)" {class: data}
 idxdown: "INDEX_UNAVAILABLE\nnotice" {class: fail}
 record: "record(LIVE hits only)\n→ background queue" {class: data}
