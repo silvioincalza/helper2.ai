@@ -52,16 +52,11 @@ code { font-family: var(--font-mono); font-size: 0.85em; }
 .menu-list a { display: block; padding: var(--space-2); }
 /* At the end of the page (the bottom of the window on a short page), always under the content, with room above it. */
 .site-footer { margin-top: var(--space-5); border-top: 1px solid var(--border); padding: var(--space-5) 0 var(--space-4); color: var(--text-muted); background: var(--surface-1); }
-.footer-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-5) var(--space-6); align-items: start; }
-.footer-brand { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-3); max-width: 28rem; }
-.footer-coverage { margin: 0; line-height: 1.5; }
-.footer-h { margin: 0 0 var(--space-3); font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); }
-.footer-col ul { display: flex; flex-direction: column; gap: var(--space-2); }
-.site-footer a:not(.logo-link) { color: var(--text-muted); display: inline-flex; align-items: center; gap: var(--space-1); text-decoration: none; text-underline-offset: 3px; }
-.site-footer a:not(.logo-link):hover, .site-footer a:not(.logo-link):focus-visible { color: var(--cyan); text-decoration: underline; }
-/* The Sources link sits inside a sentence, so it keeps its underline there. */
-.site-footer .footer-coverage a { display: inline; text-decoration: underline; }
-.footer-bottom { margin-top: var(--space-5); padding-top: var(--space-3); border-top: 1px solid var(--divider); }
+.footer-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-5); }
+.footer-claim { margin: 0; font-weight: 600; color: var(--ink-2); }
+.footer-links { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); }
+.site-footer a { min-height: var(--target-min); color: var(--text-muted); display: inline-flex; align-items: center; gap: var(--space-1); text-decoration: none; text-underline-offset: 3px; }
+.site-footer a:hover, .site-footer a:focus-visible { color: var(--cyan); text-decoration: underline; }
 
 /* text pages (mission, privacy) */
 .text-page { max-width: 68ch; }
@@ -121,32 +116,9 @@ textarea { width: 100%; resize: vertical; }
 .examples .inline-list { justify-content: flex-start; }
 .examples h2 { margin-bottom: var(--space-2); }
 
-/* radar: what is new, by topic */
-.radar { display: flex; flex-direction: column; gap: var(--space-4); }
-.radar-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2) var(--space-4); }
-.radar-head h2, .radar-head p { margin: 0; }
-.radar-head h2 { font-size: 2.25rem; }
-.radar-date.is-first-seen { color: var(--not-stated); }
-.radar-lede { margin: 0; }
-.radar-list { border-top: 1px solid var(--border); }
-/* Feed rows (What's new, Next events): a meta line (tag, date, source), the title, then the description. */
-.radar-row { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-3) var(--space-2); border-bottom: 1px solid var(--border); border-radius: var(--radius-sm); transition: background var(--motion); }
-.radar-row:hover { background: var(--surface-tint); }
-.feed-meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2); font-size: 0.8rem; color: var(--text-muted); }
-.feed-meta .type-tag { flex: none; }
-.feed-source { margin-left: auto; font-size: 0.75rem; }
-.radar-title { font-family: var(--font-display); font-weight: 400; font-size: 1.15rem; line-height: 1.25; color: var(--ink); text-decoration: none; overflow-wrap: anywhere;
-  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
-.radar-title:hover { text-decoration: underline; }
-.event-row .event-days { font-family: var(--font-mono); font-size: 0.8rem; font-weight: 600; color: var(--accent-ink); }
-.event-place { margin: 0; font-size: 0.85rem; color: var(--ink-2); }
-/* A short description, cut at two lines; the resource page has the whole text. */
-.radar-desc { margin: 0; font-size: 0.9rem; line-height: 1.45; color: var(--ink-2); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; }
-/* Home feeds: news and next events in two columns on a wide screen. */
-.home-feeds { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-6) calc(var(--space-7) * 2); align-items: start; position: relative; }
-/* A thin line down the middle keeps the two columns apart; gone when they stack. */
-.home-feeds::before { content: ''; position: absolute; top: 0; bottom: 0; left: 50%; border-left: 1px solid var(--border); }
-.home-feeds .radar-head h2 { font-size: 1.75rem; }
+/* Home boards: News and Events side by side, one column below bp-two-col. */
+.home-boards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-6); align-items: start; }
+@media (max-width: 999px) { .home-boards { grid-template-columns: 1fr; } }
 .guide-me { text-decoration: none; }
 .card-actions .guide-me { display: inline-flex; align-items: center; gap: var(--space-1); min-height: var(--target-min); }
 .card-guide { margin-top: var(--space-3); }
@@ -193,12 +165,6 @@ textarea { width: 100%; resize: vertical; }
   .setup-step-code { flex-direction: column; }
   .setup-ask-row { flex-direction: column; }
 }
-/* Carousel: a window two rows tall over the whole list; it scrolls by itself two at a time, and by hand row by row. */
-.carousel-track { position: relative; overflow-y: auto; scroll-snap-type: y mandatory; scrollbar-width: thin; transition: height calc(var(--motion) * 2) ease-out; }
-.carousel-track > li { scroll-snap-align: start; }
-.carousel-toggle { margin-top: var(--space-2); min-height: var(--target-min); font-size: 0.85rem; }
-/* The track scrolls, so a ring outside a row would be cut off: draw it inside. */
-.carousel-track :focus-visible { outline-offset: -3px; }
 .skeleton-row { height: 3rem; border-bottom: 1px solid var(--border);
   background: linear-gradient(90deg, var(--surface-1), var(--surface-2), var(--surface-1)); background-size: 200% 100%; animation: shimmer 1.6s linear infinite; }
 .type-tag { display: inline-block; padding: 3px 9px; border-radius: var(--radius-pill); font-size: 0.75rem; font-weight: 600; line-height: 1.33; background: var(--surface-tint); color: var(--ink-2); }
@@ -301,8 +267,6 @@ tbody th { font-weight: 600; }
   .filter-groups { display: none; margin-top: var(--space-3); }
   .filter-groups.is-open { display: block; }
   .card { padding: var(--space-4); }
-  .home-feeds { grid-template-columns: 1fr; }
-  .home-feeds::before { display: none; }
 }
 @media (max-width: 520px) {
   .searchbox { flex-direction: column; }
@@ -362,7 +326,7 @@ input[type='checkbox'], input[type='radio'] { accent-color: var(--accent); }
 
 /* ===== Redesign 2026-10: warm paper, saffron accent, Space Grotesk headings ===== */
 h1, h2 { font-weight: 500; letter-spacing: -0.03em; }
-.radar-title, .logo-word { font-weight: 500; letter-spacing: -0.02em; }
+.logo-word { font-weight: 500; letter-spacing: -0.02em; }
 .logo-word { font-size: 1.6rem; }
 .eyebrow { margin: 0; font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-ink); }
 .main-nav a.active { border-bottom-color: var(--accent); }
@@ -405,15 +369,10 @@ h1, h2 { font-weight: 500; letter-spacing: -0.03em; }
 }
 /* Everything but the tagline and the box goes as the page scrolls (HomePage sets --hero-out from 0 to 1); hidden once fully out. */
 .home-hero:not(.is-compact) :is(h1, .lede) { opacity: calc(1 - var(--hero-out, 0)); }
-.home-hero .source-strip { transition: opacity 0.25s ease, visibility 0.25s ease; }
-.home-hero.is-scrolled .source-strip { opacity: 0; visibility: hidden; }
 @media (prefers-reduced-motion: no-preference) {
   .home-hero:not(.is-compact) :is(h1, .lede) { transform: translateY(calc(var(--hero-out, 0) * -3rem)); }
 }
 .home-hero.is-out:not(.is-compact) :is(h1, .lede) { visibility: hidden; }
-/* Scrolled past the hero, the feeds keep their headings and drop their explanations, so the lists sit right under the box. */
-.home-feeds .radar-lede { max-height: 6em; overflow: hidden; transition: max-height 0.3s ease, opacity 0.2s ease; }
-.one-page:has(.home-hero.is-out) .home-feeds .radar-lede { max-height: 0; opacity: 0; }
 @keyframes hero-rings { to { opacity: 0; transform: scale(1.25); } }
 @media (prefers-reduced-motion: reduce) { .radar-sweep, .radar-blip::after, .radar-blip.blip-b { animation: none; } }
 
@@ -440,13 +399,9 @@ h1, h2 { font-weight: 500; letter-spacing: -0.03em; }
 @keyframes pin-in { from { transform: translateY(-12px); opacity: 0.4; } }
 @media (prefers-reduced-motion: reduce) {
   .hero-box-slot.is-pinned .hero-box-pin { animation: none; }
-  .home-feeds .radar-lede, .home-hero .source-strip { transition: none; }
 }
 
 .box-hint { margin: 0; text-align: center; }
-.source-strip { margin: var(--space-4) 0 0; text-align: center; font-family: var(--font-mono); font-size: 0.8rem; }
-.source-strip a { color: var(--muted); text-underline-offset: 3px; }
-.source-strip a:hover { color: var(--accent-ink); }
 
 /* guide panel and live progress */
 .guide-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 22px; padding: var(--space-5) var(--space-6); }
@@ -544,9 +499,6 @@ details.guide-reason p { margin: 0 0 var(--space-2); color: var(--ink-2); }
   .searchbox.large input { padding-left: var(--space-3); }
   .searchbox.large .btn { flex-basis: 100%; justify-content: center; }
   .result-list .card-actions { margin-left: 0; }
-  /* On a phone the brand takes the full width; the two link columns sit side by side under it. */
-  .footer-grid { grid-template-columns: 1fr 1fr; }
-  .footer-brand { grid-column: 1 / -1; }
   /* Pinned on a phone, the group stays short: the button beside the input, the examples in one swipeable row. */
   .hero-box-slot.is-pinned .one-box.is-hero .searchbox.large { flex-wrap: nowrap; }
   .hero-box-slot.is-pinned .searchbox.large input { flex-basis: auto; min-width: 0; }

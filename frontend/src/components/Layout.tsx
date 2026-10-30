@@ -88,46 +88,33 @@ function GitHubMark() {
   );
 }
 
+/**
+ * One row: the only claim, "No ads." (ADR 0040, 9), then the pages and the code. It says nothing about tracking, so it
+ * does not change when tracking cookies come.
+ */
 export function Footer() {
   const { t } = useTranslation();
   return (
     <footer className="site-footer">
-      {/* Columns: what Helper2.ai is (and where its results come from), its pages, its code; then the fine print. */}
-      <div className="container footer-grid">
-        <div className="footer-brand">
-          <Link to="/" className="logo-link" aria-label={t('nav.home')}><Logo /></Link>
-          <p className="footer-coverage small">{t('footer.coverage')} <Link to="/sources">{t('nav.sources')}</Link></p>
-        </div>
-        <div className="footer-col">
-          <h2 className="footer-h">{t('footer.colSite')}</h2>
-          <ul className="plain-list">
-            <li><Link to="/mission">{t('footer.mission')}</Link></li>
-            <li><Link to="/privacy">{t('footer.privacy')}</Link></li>
-            <li><Link to="/terms">{t('footer.terms')}</Link></li>
-          </ul>
-        </div>
-        <div className="footer-col">
-          <h2 className="footer-h">{t('footer.colCode')}</h2>
-          <ul className="plain-list">
-            <li>
-              <a href={REPO_URL} target="_blank" rel="noopener noreferrer" aria-label={t('footer.githubLabel')}>
-                <GitHubMark />{t('footer.github')}
-              </a>
-            </li>
-            <li>
-              <a href={`${REPO_URL}/blob/main/LICENSE`} target="_blank" rel="noopener noreferrer" aria-label={t('footer.licenseLabel')}>
-                {t('footer.license')}
-              </a>
-            </li>
-            <li>
-              <a href={`${REPO_URL}/releases/tag/v${__APP_VERSION__}`} target="_blank" rel="noopener noreferrer" aria-label={t('footer.versionLabel', { version: __APP_VERSION__ })}>
-                v{__APP_VERSION__}
-              </a>
-            </li>
-          </ul>
-        </div>
+      <div className="container footer-row small">
+        <p className="footer-claim">{t('footer.noAds')}</p>
+        <ul className="plain-list footer-links">
+          <li><Link to="/mission">{t('footer.mission')}</Link></li>
+          <li><Link to="/sources">{t('nav.sources')}</Link></li>
+          <li><Link to="/privacy">{t('footer.privacy')}</Link></li>
+          <li><Link to="/terms">{t('footer.terms')}</Link></li>
+          <li>
+            <a href={REPO_URL} target="_blank" rel="noopener noreferrer" aria-label={t('footer.githubLabel')}>
+              <GitHubMark />{t('footer.github')}
+            </a>
+          </li>
+          <li>
+            <a href={`${REPO_URL}/releases/tag/v${__APP_VERSION__}`} target="_blank" rel="noopener noreferrer" aria-label={t('footer.versionLabel', { version: __APP_VERSION__ })}>
+              v{__APP_VERSION__}
+            </a>
+          </li>
+        </ul>
       </div>
-      <div className="container footer-bottom small">{t('footer.copyright', { year: new Date().getFullYear() })}</div>
     </footer>
   );
 }

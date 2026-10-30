@@ -34,39 +34,37 @@ describe('layout', () => {
     expect(await screen.findByRole('link', { name: 'Admin' })).toBeInTheDocument();
   });
 
-  it('has skip link, landmarks and the coverage disclaimer', async () => {
+  it('has skip link and landmarks', async () => {
     mockApi();
     renderApp('/');
     await settle();
     expect(screen.getByRole('link', { name: 'Skip to main content' })).toHaveAttribute('href', '#main');
     expect(screen.getByRole('banner')).toBeInTheDocument();
     expect(screen.getByRole('main')).toBeInTheDocument();
-    expect(screen.getByRole('contentinfo')).toHaveTextContent('searches the sources listed on the Sources page, not the whole web');
+    expect(screen.getByRole('contentinfo')).toBeInTheDocument();
   });
 
-  it('footer shows the release version and links to its notes in a new tab', async () => {
+  it('the footer makes one claim, "No ads.", and nothing about tracking (ADR 0040)', async () => {
     mockApi();
     renderApp('/');
     await settle();
     const footer = screen.getByRole('contentinfo');
-    const version = within(footer).getByRole('link', { name: /Release notes for version/ });
-    expect(version).toHaveTextContent(`v${pkg.version}`);
-    expect(version).toHaveAttribute('href', `https://github.com/silvioincalza/helper2.ai/releases/tag/v${pkg.version}`);
-    expect(version).toHaveAttribute('target', '_blank');
+    expect(within(footer).getByText('No ads.')).toBeInTheDocument();
+    expect(footer).not.toHaveTextContent(/track|cookie/i);
+    expect(within(footer).getAllByRole('link').map((l) => l.textContent)).toEqual(['Mission', 'Sources', 'Privacy', 'Terms', 'GitHub', `v${pkg.version}`]);
   });
 
-  it('footer shows the copyright year and links to the repo and license in a new tab', async () => {
+  it('the footer links the code and the release notes in a new tab', async () => {
     mockApi();
     renderApp('/');
     await settle();
     const footer = screen.getByRole('contentinfo');
-    expect(footer).toHaveTextContent(`© ${new Date().getFullYear()} Silvio Incalza`);
     const repo = within(footer).getByRole('link', { name: /GitHub/ });
     expect(repo).toHaveAttribute('href', 'https://github.com/silvioincalza/helper2.ai');
     expect(repo).toHaveAccessibleName('Helper2.ai source code on GitHub (opens in a new tab)');
-    const license = within(footer).getByRole('link', { name: /Apache-2.0/ });
-    expect(license).toHaveAttribute('href', 'https://github.com/silvioincalza/helper2.ai/blob/main/LICENSE');
-    for (const link of [repo, license]) {
+    const version = within(footer).getByRole('link', { name: /Release notes for version/ });
+    expect(version).toHaveAttribute('href', `https://github.com/silvioincalza/helper2.ai/releases/tag/v${pkg.version}`);
+    for (const link of [repo, version]) {
       expect(link).toHaveAttribute('target', '_blank');
       expect(link).toHaveAttribute('rel', 'noopener noreferrer');
     }

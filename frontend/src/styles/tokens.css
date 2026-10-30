@@ -91,6 +91,7 @@
   --target-min: 44px;
   --box-height: 56px;
   --maxw: 1120px;
+  --board-height: 380px; /* a News or Events board; 340px on a phone (ui.css) */
   --motion: 160ms;
 }
 

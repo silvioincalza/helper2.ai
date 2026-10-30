@@ -7,10 +7,8 @@ import { GuideAnswer } from '@/components/GuideAnswer';
 import { GuideProgress } from '@/components/GuideProgress';
 import { Icon } from '@/components/Icon';
 import { OneBox } from '@/components/OneBox';
+import { HomeBoards } from '@/components/HomeBoards';
 import { RadarRings } from '@/components/RadarRings';
-import { SourceStrip } from '@/components/SourceStrip';
-import { NextEvents } from '@/components/NextEvents';
-import { Radar } from '@/components/Radar';
 import { SearchResults } from '@/components/SearchResults';
 import { useGuideStream } from '@/hooks/useGuideStream';
 import { useTitle } from '@/hooks/useTitle';
@@ -20,8 +18,9 @@ import { askedQuestion, clampQuestion, homeParams, parseSearchParams, patchState
 const EXAMPLES = ['postgres', 'embeddings', 'translation'] as const;
 
 /**
- * One page under the header's one box: the guide's answer, then search results; with an empty box,
- * the hero, example needs and a short list of what is new; how the guide works lives on /mission. Everything lives in the URL (see OneBox).
+ * One page under the header's one box: the guide's answer, then search results; with an empty box, the radar hero,
+ * example needs and the News and Events boards (ADR 0040); how the guide works lives on /mission. Everything lives
+ * in the URL (see OneBox).
  */
 export default function HomePage() {
   const { t } = useTranslation();
@@ -78,7 +77,6 @@ export default function HomePage() {
               )}
             </div>
           </div>
-          {empty && <SourceStrip />}
         </div>
       </section>
 
@@ -92,13 +90,7 @@ export default function HomePage() {
 
       <SearchResults state={state} update={update} />
 
-      {/* What is new and what comes next, side by side on a wide screen, stacked on a narrow one. */}
-      {empty && (
-        <div className="home-feeds">
-          <Radar />
-          <NextEvents />
-        </div>
-      )}
+      {empty && <HomeBoards />}
     </div>
   );
 }
@@ -108,7 +100,6 @@ const HERO_FADE_PX = 220;
 
 /**
  * Sets `--hero-out` on the hero, 0 at the top to 1 once scrolled HERO_FADE_PX: the CSS fades the title and lede by it.
- * `is-scrolled` hides the sources line under the box as soon as the page moves.
  * Done here rather than with a CSS scroll timeline, which Firefox and older Safari do not run.
  */
 function useHeroFade(hero: RefObject<HTMLElement | null>) {
@@ -121,7 +112,6 @@ function useHeroFade(hero: RefObject<HTMLElement | null>) {
       const out = Math.min(1, Math.max(0, window.scrollY / HERO_FADE_PX));
       el.style.setProperty('--hero-out', String(out));
       el.classList.toggle('is-out', out >= 1);
-      el.classList.toggle('is-scrolled', window.scrollY > 8);
     };
     const onScroll = () => { if (!frame) frame = requestAnimationFrame(update); };
     update();

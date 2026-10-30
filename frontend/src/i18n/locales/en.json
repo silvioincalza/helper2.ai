@@ -41,17 +41,12 @@
     "account": "Your account"
   },
   "footer": {
-    "coverage": "Helper2.ai searches the sources listed on the Sources page, not the whole web.",
-    "colSite": "Helper2.ai",
-    "colCode": "Open source",
-    "copyright": "© {{year}} Silvio Incalza",
-    "github": "GitHub",
-    "githubLabel": "Helper2.ai source code on GitHub (opens in a new tab)",
-    "license": "Apache-2.0",
-    "licenseLabel": "Apache-2.0 license (opens in a new tab)",
+    "noAds": "No ads.",
     "mission": "Mission",
     "privacy": "Privacy",
     "terms": "Terms",
+    "github": "GitHub",
+    "githubLabel": "Helper2.ai source code on GitHub (opens in a new tab)",
     "versionLabel": "Release notes for version {{version}} (opens in a new tab)"
   },
   "home": {
@@ -61,8 +56,6 @@
     "examples": "Try an example",
     "eyebrow": "AI on your radar",
     "titleAccent": "Get picks you can verify.",
-    "sourcesLine_one": "Searches {{count}} disclosed source",
-    "sourcesLine_other": "Searches {{count}} disclosed sources",
     "hint": "A few words search every source. A sentence, or Shift+Enter, asks the guide.",
     "example": {
       "postgres": {
@@ -699,37 +692,38 @@
       "source": "Source"
     }
   },
-  "events": {
-    "title": "Next events",
-    "lede": "AI conferences, hackathons, meetups, talks and workshops in the next three months, online or in person, soonest first. Only events whose source states the dates are listed.",
-    "error": "Could not load the next events.",
-    "empty": "No events with stated dates in the next three months.",
-    "kind": {
-      "CONFERENCE": "Conference",
-      "HACKATHON": "Hackathon",
-      "MEETUP": "Meetup",
-      "TALK": "Talk",
-      "WORKSHOP": "Workshop"
-    },
-    "format": {
-      "IN_PERSON": "In person",
-      "ONLINE": "Online",
-      "HYBRID": "Hybrid"
-    }
-  },
-  "radar": {
-    "title": "What’s new",
-    "lede": "The newest resources in the Helper2 index from the last 7 days, by the date each source states. Nothing is called live.",
-    "published": "Published",
-    "updated": "Updated",
-    "firstSeen": "First seen",
-    "noDate": "Date unknown",
-    "empty": "Nothing with a stated publication date in the last 7 days.",
-    "error": "Could not load what’s new right now."
-  },
-  "carousel": {
+  "board": {
     "pause": "Pause {{label}}",
-    "play": "Play {{label}}"
+    "play": "Play {{label}}",
+    "news": {
+      "title": "News",
+      "lede": "New in the Helper2 index in the last 7 days, by the date each source states.",
+      "published": "Published",
+      "updated": "Updated",
+      "firstSeen": "First seen",
+      "noDate": "Date unknown",
+      "empty": "Nothing with a stated publication date in the last 7 days.",
+      "error": "Could not load the news right now."
+    },
+    "events": {
+      "title": "Events",
+      "lede": "AI events in the next three months, soonest first. Only events whose source states the dates.",
+      "now": "On now",
+      "empty": "No events with stated dates in the next three months.",
+      "error": "Could not load the next events.",
+      "kind": {
+        "CONFERENCE": "Conference",
+        "HACKATHON": "Hackathon",
+        "MEETUP": "Meetup",
+        "TALK": "Talk",
+        "WORKSHOP": "Workshop"
+      },
+      "format": {
+        "IN_PERSON": "In person",
+        "ONLINE": "Online",
+        "HYBRID": "Hybrid"
+      }
+    }
   },
   "mission": {
     "title": "Our mission",

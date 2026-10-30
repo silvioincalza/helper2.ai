@@ -302,7 +302,7 @@ describe('search on the one page', () => {
     await waitFor(() => expect(params().getAll('useCase')).toEqual(['translation']));
   });
 
-  it('without a query it shows examples and makes no search call at all (the Radar reads /recent)', async () => {
+  it('without a query it shows examples and makes no search call at all (the News board reads /recent)', async () => {
     const m = mockApi();
     renderApp('/');
     expect(await screen.findByRole('heading', { name: 'Try an example' })).toBeInTheDocument();
