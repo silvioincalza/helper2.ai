@@ -1,0 +1,22 @@
+[
+  {"id": "sem01", "group": "paraphrase", "text": "a program that answers questions about my company's internal documents", "lang": "en"},
+  {"id": "sem02", "group": "paraphrase", "text": "let a chatbot look things up in my SQL tables", "lang": "en"},
+  {"id": "sem03", "group": "paraphrase", "text": "turn a recorded interview into written text on my own computer", "lang": "en"},
+  {"id": "sem04", "group": "paraphrase", "text": "make my assistant able to open and read pages on the internet", "lang": "en"},
+  {"id": "sem05", "group": "paraphrase", "text": "tool that checks whether model answers are made up", "lang": "en"},
+  {"id": "sem06", "group": "paraphrase", "text": "give an agent memory that lasts between conversations", "lang": "en"},
+  {"id": "sem07", "group": "paraphrase", "text": "draw pictures from a sentence without paying", "lang": "en"},
+  {"id": "sem08", "group": "paraphrase", "text": "shrink a big language model so it fits on a small graphics card", "lang": "en"},
+  {"id": "sem09", "group": "paraphrase", "text": "connect the coding assistant in my editor to my issue tracker", "lang": "en"},
+  {"id": "sem10", "group": "paraphrase", "text": "keep an eye on how much my model calls cost", "lang": "en"},
+  {"id": "sem11", "group": "paraphrase", "text": "teach an existing model my own writing style with few examples", "lang": "en"},
+  {"id": "sem12", "group": "paraphrase", "text": "find which part of a photo is a cat", "lang": "en"},
+  {"id": "sem13", "group": "paraphrase", "text": "spot spam and toxic comments automatically", "lang": "en"},
+  {"id": "sem14", "group": "paraphrase", "text": "let several assistants split a job between them", "lang": "en"},
+  {"id": "sem15", "group": "paraphrase", "text": "read numbers out of scanned invoices", "lang": "en"},
+  {"id": "sem16", "group": "paraphrase", "text": "un programma che riassume le riunioni", "lang": "it"},
+  {"id": "sem17", "group": "paraphrase", "text": "far parlare il computer con una voce naturale", "lang": "it"},
+  {"id": "sem18", "group": "paraphrase", "text": "cercare documenti per significato e non per parole", "lang": "it"},
+  {"id": "sem19", "group": "paraphrase", "text": "ein Assistent, der Code in meinem Terminal schreibt", "lang": "de"},
+  {"id": "sem20", "group": "paraphrase", "text": "convertir una foto en un modelo 3d", "lang": "es"}
+]
