@@ -52,15 +52,23 @@ import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.micrometer.observation.Observation
 import io.micrometer.observation.ObservationRegistry
+import io.micrometer.context.ContextExecutorService
+import io.micrometer.context.ContextSnapshotFactory
 import java.time.Clock
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.Callable
+import java.util.concurrent.CancellationException
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutionException
+import java.util.concurrent.Executors
+import java.util.concurrent.Future
+import java.util.concurrent.TimeUnit
 import org.slf4j.LoggerFactory
 
 /**
@@ -80,6 +88,8 @@ class AskGuide(
     private val observations: ObservationRegistry = ObservationRegistry.NOOP,
     private val meters: MeterRegistry = SimpleMeterRegistry(),
     private val quota: ClientQuota? = null,
+    /** How long the subject searches of a comparison may take together; a subject not found by then is not found. */
+    private val subjectSearchDeadline: Duration = SUBJECT_SEARCH_DEADLINE,
 ) {
     private val log = LoggerFactory.getLogger(AskGuide::class.java)
 
@@ -112,6 +122,10 @@ class AskGuide(
 
         /** Web pages that can announce a new resource. */
         private val WEB_ANNOUNCEMENTS = setOf(ResourceType.NEWS, ResourceType.ARTICLE)
+
+        /** Above the slowest source's timeout plus the query translation: a subject still searching by then is lost. */
+        @JvmField
+        val SUBJECT_SEARCH_DEADLINE: Duration = Duration.ofSeconds(10)
 
         private const val MAX_SUBJECTS = 3
         private const val MAX_SUBJECT_CHARS = 60
@@ -220,6 +234,35 @@ class AskGuide(
 
         /** When the earliest web results this question's searches used stop being fresh. */
         var webFreshUntil: Instant? = null
+            private set
+
+        /** The comparison searches its subjects at the same time, so two searches can report at once. */
+        @Synchronized
+        fun webResultsFreshUntil(until: Instant) {
+            webFreshUntil = webFreshUntil?.let { minOf(it, until) } ?: until
+        }
+
+        /** Milliseconds per step, in the order the steps ran, for the question's log line. */
+        val timings = LinkedHashMap<String, Long>()
+    }
+
+    /**
+     * One step of a question: a child span and timer `helper2.guide.step{step,intent}`, and its time in the
+     * question's log line. The intent is read when the step ends, so the plan step carries the intent it found.
+     */
+    private fun <T> step(q: Question, name: String, work: () -> T): T {
+        val observation = Observation.createNotStarted("helper2.guide.step", observations).lowCardinalityKeyValue("step", name).start()
+        val started = System.nanoTime()
+        try {
+            return observation.openScope().use { work() }
+        } catch (e: Throwable) {
+            observation.error(e)
+            throw e
+        } finally {
+            q.timings.merge(name, (System.nanoTime() - started) / 1_000_000, Long::plus)
+            observation.lowCardinalityKeyValue("intent", q.intentTag)
+            observation.stop()
+        }
     }
 
     /** The answer with [asker]'s web searches left; read for each asker, so a cached answer never shows another's. */
@@ -235,7 +278,7 @@ class AskGuide(
             else -> IntentClass.GENERAL
         }
         val outcome = search.search(request.copy(asker = q.asker, intentClass = intentClass))
-        outcome.webFreshUntil?.let { until -> q.webFreshUntil = q.webFreshUntil?.let { minOf(it, until) } ?: until }
+        outcome.webFreshUntil?.let(q::webResultsFreshUntil)
         return outcome
     }
 
@@ -341,7 +384,17 @@ class AskGuide(
     }
 
     private fun answer(q: Question, progress: GuideProgress, asked: Asked, model: GuideModel?): GuideAnswer {
-        val r = read(q, progress, asked, model)
+        try {
+            return answerByIntent(q, progress, asked, model)
+        } finally {
+            // Timings feed the evaluation and the provider feedback; no user text is logged.
+            log.info("guide steps: intent=${q.intentTag} ${q.timings.entries.joinToString(" ") { (step, ms) -> "$step=${ms}ms" }}" +
+                (model?.let { " fast=${it.fastModel} reasoning=${it.reasoningModel}" } ?: ""))
+        }
+    }
+
+    private fun answerByIntent(q: Question, progress: GuideProgress, asked: Asked, model: GuideModel?): GuideAnswer {
+        val r = step(q, "plan") { read(q, progress, asked, model) }
         clarificationOf(q, r)?.let { c ->
             progress.clarify(c)
             return GuideAnswer(
@@ -412,8 +465,9 @@ class AskGuide(
     private fun alternatives(q: Question, r: Reading, progress: GuideProgress, asked: Asked, model: GuideModel?): GuideAnswer {
         val name = r.subjects.firstOrNull()
             ?: return picks(q, r, progress, asked, model, Retrieval(r.query, readingFilter(r)))
-        val own = find(q, r, SearchRequest(text = name, path = q.path, filters = SearchFilters(types = TOOL_TYPES), size = SUBJECT_SEARCH_SIZE))
-            .results.firstOrNull { isSubject(it, name) }
+        val own = step(q, "search") {
+            find(q, r, SearchRequest(text = name, path = q.path, filters = SearchFilters(types = TOOL_TYPES), size = SUBJECT_SEARCH_SIZE))
+        }.results.firstOrNull { isSubject(it, name) }
         val category = own?.let { listOfNotNull(it.useCases.joinToString(" ").ifBlank { null }, it.type.name.lowercase().replace('_', ' ')).joinToString(" ") }
         val notices = if (own == null) listOf(Notice(NoticeCode.GUIDE_SUBJECT_NOT_FOUND, "$name was not found in our sources; showing tools for: ${r.query}")) else emptyList()
         val text = category?.takeIf { IntentRules.subjectWords(it).isNotBlank() } ?: r.query
@@ -426,16 +480,15 @@ class AskGuide(
      */
     private fun picks(q: Question, r: Reading, progress: GuideProgress, asked: Asked, model: GuideModel?, retrieval: Retrieval): GuideAnswer {
         val text = q.fullText
-        val planStart = System.nanoTime()
-        val searchStart = System.nanoTime()
-        val outcome = find(
-            q, r,
-            SearchRequest(
-                text = retrieval.text, path = q.path, filters = retrieval.filters, sort = retrieval.sort, size = maxCandidates,
-                webQuery = r.webQuery, browse = retrieval.browse,
-            ),
-        )
-        val searchEnd = System.nanoTime()
+        val outcome = step(q, "search") {
+            find(
+                q, r,
+                SearchRequest(
+                    text = retrieval.text, path = q.path, filters = retrieval.filters, sort = retrieval.sort, size = maxCandidates,
+                    webQuery = r.webQuery, browse = retrieval.browse,
+                ),
+            )
+        }
         val candidates = outcome.results.filterNot(retrieval.exclude).take(maxCandidates).mapIndexed { i, res -> Candidate("c${i + 1}", res) }
         // Defence in depth: the search filter already removed reading types; keep the model and the
         // validator on the same rule in case a source mislabels a type after filtering.
@@ -456,29 +509,24 @@ class AskGuide(
             if (choosable.isEmpty()) {
                 return degraded(GuideStatus.PARTIAL, query, candidates, outcome, 0, modelUsed = true, constraints).withNotices(retrieval.notices)
             }
-            if (retrieval.think) model.choose(text, choosable, constraints, true) else model.choose(text, choosable, constraints)
+            step(q, "choose") {
+                if (retrieval.think) model.choose(text, choosable, constraints, true) else model.choose(text, choosable, constraints)
+            }
         } catch (e: RuntimeException) {
             log.warn("guide choose failed: ${failure(e)}")
             asked.budgetExhausted = e is GuideBudgetExhausted
             return degraded(GuideStatus.LLM_UNAVAILABLE, query, candidates, outcome, 0, modelUsed = false, constraints).withNotices(retrieval.notices)
         }
-        val chooseEnd = System.nanoTime()
         progress.chosen(proposal.picks.size)
-        val checked = validator.validate(proposal, choosable, constraints, allowReading).insideWindow(retrieval.filters)
+        val checked = step(q, "validate") { validator.validate(proposal, choosable, constraints, allowReading).insideWindow(retrieval.filters) }
         progress.validated(checked.picks.size, checked.rejected)
         // Search rank of each kept pick. A pick far down the list is the first sign of text written to be chosen
         // (content poisoning): its quote is genuine, so the gate cannot catch it.
         val keptRanks = checked.picks.map { candidates.indexOf(it.candidate) + 1 }
         keptRanks.forEach { meters.counter("helper2.guide.picks", "rank", rankBand(it)).increment() }
-        val verifyStart = System.nanoTime()
-        val verdicts = if (checked.picks.isEmpty()) emptyMap() else verdicts(model, text, claimsOf(checked), progress)
-        val verifyEnd = System.nanoTime()
-        // Timings feed the evaluation and the provider feedback; no user text is logged.
+        val verdicts = if (checked.picks.isEmpty()) emptyMap() else verdicts(q, model, claimsOf(checked), progress)
         log.info(
-            "guide timings: intent=${r.intent} plan(${model.fastModel})=${ms(planStart, searchStart)}ms " +
-                "search=${ms(searchStart, searchEnd)}ms choose(${model.reasoningModel})=${ms(searchEnd, chooseEnd)}ms " +
-                "verify=${ms(verifyStart, verifyEnd)}ms " +
-                "candidates=${candidates.size} kept=${checked.picks.size} keptRanks=$keptRanks rejected=${checked.rejected} " +
+            "guide picks: candidates=${candidates.size} kept=${checked.picks.size} keptRanks=$keptRanks rejected=${checked.rejected} " +
                 "rejectedBy=${checked.rejectedBy} reasons=${verdicts.values.groupingBy { it }.eachCount()}",
         )
         if (checked.picks.isEmpty()) {
@@ -531,10 +579,8 @@ class AskGuide(
      * with a quote from that subject's own text. Fewer than two subjects found: the picks of the one found.
      */
     private fun compare(q: Question, r: Reading, progress: GuideProgress, asked: Asked, model: GuideModel?): GuideAnswer {
-        val found = r.subjects.map { name ->
-            name to find(q, r, SearchRequest(text = name, path = q.path, size = SUBJECT_SEARCH_SIZE)).results.firstOrNull { isSubject(it, name) }
-        }
-        val subjects = found.mapIndexed { i, (name, res) -> ComparedSubject("s${i + 1}", name, res) }
+        val found = step(q, "search") { subjectsFound(q, r) }
+        val subjects = r.subjects.zip(found).mapIndexed { i, (name, res) -> ComparedSubject("s${i + 1}", name, res) }
         val present = subjects.mapNotNull { s -> s.result?.let { Candidate(s.key, it) } }
         progress.retrieved(present.size, SearchOutcome.empty(clock.instant()))
         if (present.size < 2) {
@@ -545,7 +591,7 @@ class AskGuide(
         val empty = Comparison(subjects, emptyList())
         if (model == null) return subjectsOnly(GuideStatus.LLM_UNAVAILABLE, r, present, empty, modelUsed = false)
         val proposal = try {
-            model.compare(q.fullText, present)
+            step(q, "compare") { model.compare(q.fullText, present) }
         } catch (e: RuntimeException) {
             log.warn("guide compare failed: ${failure(e)}")
             asked.budgetExhausted = e is GuideBudgetExhausted
@@ -554,29 +600,31 @@ class AskGuide(
         progress.chosen(proposal.rows.size)
         val byKey = present.associateBy { it.key }
         var rejected = 0
-        val rows = proposal.rows.asSequence()
-            .map { it.aspect.trim() }.zip(proposal.rows.asSequence())
-            .filter { (aspect, _) -> aspect.isNotEmpty() && aspect.length <= MAX_ASPECT_CHARS && !GuideValidator.containsLink(aspect) }
-            .distinctBy { (aspect, _) -> aspect.lowercase() }
-            .take(MAX_ROWS)
-            .map { (aspect, row) ->
-                ComparisonRow(aspect, subjects.map { s ->
-                    val cell = row.cells.firstOrNull { it.subjectKey.trim() == s.key }
-                    val c = byKey[s.key]
-                    val ok = cell != null && c != null && cell.text.isNotBlank() && cell.text.length <= MAX_CELL_CHARS &&
-                        !GuideValidator.containsLink(cell.text) && validator.shortQuoteHolds(cell.quote, c.text)
-                    if (cell != null && !ok) rejected++
-                    if (ok) ComparisonCell(s.key, cell!!.text.trim(), cell.quote.trim()) else ComparisonCell(s.key, null, null)
-                })
-            }
-            .filter { row -> row.cells.any { it.text != null } }
-            .toList()
+        val rows = step(q, "validate") {
+            proposal.rows.asSequence()
+                .map { it.aspect.trim() }.zip(proposal.rows.asSequence())
+                .filter { (aspect, _) -> aspect.isNotEmpty() && aspect.length <= MAX_ASPECT_CHARS && !GuideValidator.containsLink(aspect) }
+                .distinctBy { (aspect, _) -> aspect.lowercase() }
+                .take(MAX_ROWS)
+                .map { (aspect, row) ->
+                    ComparisonRow(aspect, subjects.map { s ->
+                        val cell = row.cells.firstOrNull { it.subjectKey.trim() == s.key }
+                        val c = byKey[s.key]
+                        val ok = cell != null && c != null && cell.text.isNotBlank() && cell.text.length <= MAX_CELL_CHARS &&
+                            !GuideValidator.containsLink(cell.text) && validator.shortQuoteHolds(cell.quote, c.text)
+                        if (cell != null && !ok) rejected++
+                        if (ok) ComparisonCell(s.key, cell!!.text.trim(), cell.quote.trim()) else ComparisonCell(s.key, null, null)
+                    })
+                }
+                .filter { row -> row.cells.any { it.text != null } }
+                .toList()
+        }
         progress.validated(rows.sumOf { row -> row.cells.count { it.text != null } }, rejected)
         log.info("guide compare: subjects=${present.size} rows=${proposal.rows.size} keptRows=${rows.size} rejectedCells=$rejected")
         val claims = rows.flatMapIndexed { i, row ->
             row.cells.filter { it.text != null }.map { cell -> ReasonClaim("r${i + 1}-${cell.subjectKey}", cell.text!!, cell.quote!!, byKey.getValue(cell.subjectKey).text, emptyList()) }
         }
-        val verdicts = if (claims.isEmpty()) emptyMap() else verdicts(model, q.fullText, claims, progress)
+        val verdicts = if (claims.isEmpty()) emptyMap() else verdicts(q, model, claims, progress)
         val checkedRows = rows.mapIndexed { i, row ->
             row.copy(cells = row.cells.map { cell ->
                 when (val v = verdicts["r${i + 1}-${cell.subjectKey}"]) {
@@ -588,6 +636,32 @@ class AskGuide(
         }
         val status = if (checkedRows.isEmpty()) GuideStatus.PARTIAL else if (rejected == 0) GuideStatus.OK else GuideStatus.PARTIAL
         return subjectsOnly(status, r, present, Comparison(subjects, checkedRows), modelUsed = true, rejected = rejected)
+    }
+
+    /**
+     * Each subject's own entry, or null when its search found none, failed or missed [subjectSearchDeadline]. The
+     * searches run at the same time, one virtual thread each, carrying the question's trace.
+     */
+    private fun subjectsFound(q: Question, r: Reading): List<MergedResult?> {
+        val searches = r.subjects.map { name ->
+            Callable { find(q, r, SearchRequest(text = name, path = q.path, size = SUBJECT_SEARCH_SIZE)).results.firstOrNull { isSubject(it, name) } }
+        }
+        val threads = ContextExecutorService.wrap(Executors.newVirtualThreadPerTaskExecutor(), ContextSnapshotFactory.builder().build())
+        try {
+            return threads.invokeAll(searches, subjectSearchDeadline.toNanos(), TimeUnit.NANOSECONDS).map(::foundOrNull)
+        } finally {
+            threads.shutdownNow()
+        }
+    }
+
+    private fun foundOrNull(search: Future<MergedResult?>): MergedResult? = try {
+        search.get()
+    } catch (e: CancellationException) {
+        log.warn("guide compare: a subject search missed the deadline of $subjectSearchDeadline")
+        null
+    } catch (e: ExecutionException) {
+        log.warn("guide compare: a subject search failed: ${e.cause?.javaClass?.simpleName}")
+        null
     }
 
     private fun subjectsOnly(status: GuideStatus, r: Reading, present: List<Candidate>, comparison: Comparison, modelUsed: Boolean, rejected: Int = 0) =
@@ -604,7 +678,7 @@ class AskGuide(
      */
     private fun explain(q: Question, r: Reading, progress: GuideProgress, asked: Asked, model: GuideModel?): GuideAnswer {
         val subject = r.subjects.firstOrNull() ?: r.query
-        val outcome = find(q, r, SearchRequest(text = subject, path = q.path, size = maxCandidates, webQuery = r.webQuery))
+        val outcome = step(q, "search") { find(q, r, SearchRequest(text = subject, path = q.path, size = maxCandidates, webQuery = r.webQuery)) }
         // Only what can be quoted: an entry without a description cannot support a sentence. The subject's own entry
         // first, then web explainers (articles, news), which say what a thing is better than projects named after it.
         val ordered = outcome.results.filterNot { it.description.isNullOrBlank() }
@@ -629,7 +703,7 @@ class AskGuide(
         )
         if (model == null) return cardsAnswer(GuideStatus.LLM_UNAVAILABLE, false, null, 0)
         val proposal = try {
-            model.explain(q.fullText, subject, candidates)
+            step(q, "explain") { model.explain(q.fullText, subject, candidates) }
         } catch (e: RuntimeException) {
             log.warn("guide explain failed: ${failure(e)}")
             asked.budgetExhausted = e is GuideBudgetExhausted
@@ -638,17 +712,19 @@ class AskGuide(
         progress.chosen(proposal.sentences.size)
         val byKey = candidates.associateBy { it.key }
         var rejected = 0
-        val kept = proposal.sentences.mapNotNull { p ->
-            val c = byKey[p.candidateKey.trim()]
-            val ok = c != null && p.text.isNotBlank() && p.text.length <= MAX_SENTENCE_CHARS && !GuideValidator.containsLink(p.text) &&
-                validator.quoteHolds(p.quote, c.text)
-            if (!ok) rejected++
-            if (ok) c!!.key to p else null
-        }.take(MAX_SENTENCES)
+        val kept = step(q, "validate") {
+            proposal.sentences.mapNotNull { p ->
+                val c = byKey[p.candidateKey.trim()]
+                val ok = c != null && p.text.isNotBlank() && p.text.length <= MAX_SENTENCE_CHARS && !GuideValidator.containsLink(p.text) &&
+                    validator.quoteHolds(p.quote, c.text)
+                if (!ok) rejected++
+                if (ok) c!!.key to p else null
+            }.take(MAX_SENTENCES)
+        }
         progress.validated(kept.size, rejected)
         log.info("guide explain: candidates=${candidates.size} proposed=${proposal.sentences.size} kept=${kept.size} rejected=$rejected")
         val claims = kept.mapIndexed { i, (key, p) -> ReasonClaim("e${i + 1}", p.text.trim(), p.quote.trim(), byKey.getValue(key).text, emptyList()) }
-        val verdicts = if (claims.isEmpty()) emptyMap() else verdicts(model, q.fullText, claims, progress)
+        val verdicts = if (claims.isEmpty()) emptyMap() else verdicts(q, model, claims, progress)
         val sentences = kept.mapIndexedNotNull { i, (key, p) ->
             when (val v = verdicts["e${i + 1}"] ?: ReasonCheck.NOT_CHECKED) {
                 ReasonCheck.REMOVED -> null
@@ -670,7 +746,7 @@ class AskGuide(
     private fun dates(q: Question, r: Reading, progress: GuideProgress): GuideAnswer {
         val subject = r.subjects.firstOrNull()
         val text = subject ?: IntentRules.subjectWords(r.query).ifBlank { "AI" }
-        val outcome = find(q, r, SearchRequest(text = text, path = q.path, size = maxCandidates))
+        val outcome = step(q, "search") { find(q, r, SearchRequest(text = text, path = q.path, size = maxCandidates)) }
         progress.retrieved(outcome.results.size, outcome)
         val window = r.window
         val events = outcome.results.filter { it.type == ResourceType.EVENT && it.eventStart.value != null }
@@ -725,12 +801,10 @@ class AskGuide(
 
     private fun GuideAnswer.withNotices(extra: List<Notice>) = if (extra.isEmpty()) this else copy(notices = notices + extra)
 
-    private fun ms(from: Long, to: Long) = (to - from) / 1_000_000
-
     /** The reason check; any failure leaves every claim NOT_CHECKED, never removes one. */
-    private fun verdicts(model: GuideModel, request: String, claims: List<ReasonClaim>, progress: GuideProgress): Map<String, ReasonCheck> {
+    private fun verdicts(q: Question, model: GuideModel, claims: List<ReasonClaim>, progress: GuideProgress): Map<String, ReasonCheck> {
         val raw = try {
-            model.verifyReasons(request, claims)
+            step(q, "verify") { model.verifyReasons(q.fullText, claims) }
         } catch (e: RuntimeException) {
             log.warn("guide reason check failed: ${failure(e)}")
             emptyMap()

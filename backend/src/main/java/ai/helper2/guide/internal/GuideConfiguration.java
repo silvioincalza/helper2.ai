@@ -81,6 +81,6 @@ class GuideConfiguration {
             maxCandidates, clientDailyQuestions);
         return new AskGuide(search, guideModel, clock, maxCandidates, new GuideValidator(),
             new GuideAnswerCache(cacheTtl, cacheMaxEntries, clock, answerStore), observations, meters,
-            new ClientQuota(clientDailyQuestions, clock, budgetCounter));
+            new ClientQuota(clientDailyQuestions, clock, budgetCounter), AskGuide.SUBJECT_SEARCH_DEADLINE);
     }
 }

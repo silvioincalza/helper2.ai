@@ -43,6 +43,7 @@ import java.time.ZoneOffset
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -489,6 +490,30 @@ class AskGuideTest {
         observed(whisperPick()).ask(need, null)
 
         assertEquals(1.0, meters.find("helper2.guide.picks").counters().sumOf { it.count() })
+    }
+
+    private fun step(name: String, intent: String = "suggest") =
+        meters.get("helper2.guide.step").tag("step", name).tag("intent", intent).timer()
+
+    @Test
+    fun `each step of a question is its own span, tagged with the step and the intent`() {
+        observed(whisperPick()).ask(need, null)
+
+        listOf("plan", "search", "choose", "validate", "verify").forEach { assertEquals(1, step(it).count(), it) }
+    }
+
+    @Test
+    fun `the plan step lasts as long as the planner takes`() {
+        val slowPlanner = object : GuideModel by whisperPick() {
+            override fun plan(request: String, path: AudiencePath?): GuideSearchPlan {
+                Thread.sleep(60)
+                return GuideSearchPlan("speech recognition")
+            }
+        }
+
+        observed(slowPlanner).ask(need, null)
+
+        assertTrue(step("plan").totalTime(TimeUnit.MILLISECONDS) >= 60.0)
     }
 
     @Test
