@@ -13,6 +13,7 @@ import { ResultCardView } from '@/components/ResultCardView';
 import { useApi } from '@/hooks/useApi';
 import { useTitle } from '@/hooks/useTitle';
 import { formatDate } from '@/lib/format';
+import { aiMark } from '@/lib/aiMark';
 
 function RelList({ items }: { items: Relationship[] }) {
   const { t } = useTranslation();
@@ -66,7 +67,7 @@ export default function ResourcePage() {
             <ul className="plain-list claims">
               {d.summary.claims.map((c, i) => (
                 <li key={i}>
-                  <p>{c.text}</p>
+                  <p {...aiMark(d.summary?.model)}>{c.text}</p>
                   <details>
                     <summary>{t('detail.citations', { count: c.evidence.length })}</summary>
                     <EvidenceList evidence={c.evidence} />

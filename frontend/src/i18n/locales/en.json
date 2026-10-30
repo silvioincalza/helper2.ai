@@ -773,6 +773,15 @@
         ]
       },
       {
+        "title": "How we mark AI text",
+        "items": [
+          "On the screen, every text written by an AI model has a label, such as “AI”, “AI reasoning”, “AI summary” or “Extracted by AI”.",
+          "In the page, the same text carries the HTML attribute data-ai-generated=\"true\", and data-ai-model with the model name when we know it.",
+          "In our API, a guide answer has an aiContent object that names the provider, the models and the fields they wrote. Catalog values carry an origin such as AI_SUMMARY or AI_EXTRACTED.",
+          "Quotes, titles and links are never written by AI. They come from the sources."
+        ]
+      },
+      {
         "title": "Who is behind it",
         "paragraphs": [
           "Helper2.ai is an independent project by Silvio Incalza, a software engineer based in Switzerland. The AI guide runs on NVIDIA Nemotron models served by Nebius Token Factory."
