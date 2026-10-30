@@ -85,6 +85,29 @@ class OtherSourcesTest {
     }
 
     @Test
+    void npmPackageWithAnUnusableLinkFallsBackToItsRegistryPage() {
+        server.route("/-/v1/search", FixtureServer.Reply.ok("""
+            {"objects":[{"package":{"name":"llm-kit","description":"LLM toolkit",
+              "links":{"npm":"npm:llm-kit","repository":"git+https://github.com/acme/tools.git"}}}]}"""));
+        NpmSource src = new NpmSource(settings(), ObservedHttp.restClientBuilder(Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP), GitHubSourceTest.CLOCK);
+        SourceHit h = src.search(q("llm")).getFirst();
+        assertThat(h.getUrl().toString()).isEqualTo("https://www.npmjs.com/package/llm-kit");
+        assertThat(h.getCanonicalUrl().getValue()).isEqualTo("https://npmjs.com/package/llm-kit");
+        assertThat(h.getRepositoryUrl().getValue()).isEqualTo("https://github.com/acme/tools");
+    }
+
+    @Test
+    void npmRepositoryLinkKeepsItsMonorepoSubDirectory() {
+        server.route("/-/v1/search", FixtureServer.Reply.ok("""
+            {"objects":[{"package":{"name":"@acme/agent-player","description":"Agent player",
+              "links":{"npm":"https://www.npmjs.com/package/@acme/agent-player",
+                       "repository":"https://github.com/acme/mono/tree/main/packages/player"}}}]}"""));
+        NpmSource src = new NpmSource(settings(), ObservedHttp.restClientBuilder(Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP), GitHubSourceTest.CLOCK);
+        assertThat(src.search(q("agent")).getFirst().getRepositoryUrl().getValue())
+            .isEqualTo("https://github.com/acme/mono/tree/main/packages/player");
+    }
+
+    @Test
     void aHubIdThatIsNoValidUrlPathIsSkippedAndTheOtherModelsAreKept() {
         server.route("/api/models", FixtureServer.Reply.ok("""
             [{"id":"acme/bad id","likes":1},{"id":"acme/good-model","likes":2}]"""));

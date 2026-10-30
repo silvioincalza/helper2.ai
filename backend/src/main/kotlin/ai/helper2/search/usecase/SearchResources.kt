@@ -19,6 +19,7 @@ import ai.helper2.search.SearchOutcome
 import ai.helper2.search.SearchRequest
 import ai.helper2.search.SearchSource
 import ai.helper2.search.ServedFrom
+import ai.helper2.search.SkipReason
 import ai.helper2.search.Sorting
 import ai.helper2.search.SourceContext
 import ai.helper2.search.SourceDescriptor
@@ -96,17 +97,17 @@ class SearchResources(
         fun start(source: SearchSource, query: SourceQuery) {
             val d = source.descriptor
             if (!d.enabled) {
-                attempts += skipped(d, startedAt, "Disabled in configuration")
+                attempts += skipped(d, startedAt, SkipReason.DISABLED, "Disabled in configuration")
                 return
             }
             if (query.browse && !d.browses) {
-                attempts += skipped(d, startedAt, "No subject to search")
+                attempts += skipped(d, startedAt, SkipReason.NOT_BROWSABLE, "No subject to search")
                 return
             }
             val cooldown = cooldownUntil[d.id]
             if (cooldown != null && startedAt.isBefore(cooldown)) {
                 attempts += stale(d, startedAt, null, SourceOutcome.SKIPPED, "Paused after a rate limit until $cooldown",
-                    cachedLookup(d, query) { cacheDown = true })
+                    cachedLookup(d, query) { cacheDown = true }, SkipReason.RATE_LIMIT_PAUSE)
                 return
             }
             if (d.mode == SourceMode.LIVE) {
@@ -303,8 +304,8 @@ class SearchResources(
             requiredVariants = (listOf(english) + analyzed.requiredVariants).distinct(),
         )
 
-    private fun skipped(d: SourceDescriptor, at: Instant, message: String) =
-        Attempt(SourceStatus(d, SourceOutcome.SKIPPED, ServedFrom.NONE, 0, null, at, null, message), emptyList())
+    private fun skipped(d: SourceDescriptor, at: Instant, reason: SkipReason, message: String) =
+        Attempt(SourceStatus(d, SourceOutcome.SKIPPED, ServedFrom.NONE, 0, null, at, null, message, reason), emptyList())
 
     /** A failed attempt, rescued by a stale cache entry when one exists within [staleFor]. */
     private fun stale(
@@ -314,16 +315,17 @@ class SearchResources(
         outcome: SourceOutcome,
         message: String,
         cached: CachedHits?,
+        skipReason: SkipReason? = null,
     ): Attempt {
         val usable = cached?.takeIf { Duration.between(it.fetchedAt, at) < staleFor }
         return if (usable != null) {
             metrics.cacheEvent("stale_served")
             Attempt(
-                SourceStatus(d, outcome, ServedFrom.STALE_CACHE, usable.hits.size, latency, at, usable.fetchedAt, "$message; showing cached results"),
+                SourceStatus(d, outcome, ServedFrom.STALE_CACHE, usable.hits.size, latency, at, usable.fetchedAt, "$message; showing cached results", skipReason),
                 usable.hits,
             )
         } else {
-            Attempt(SourceStatus(d, outcome, ServedFrom.NONE, 0, latency, at, null, message), emptyList())
+            Attempt(SourceStatus(d, outcome, ServedFrom.NONE, 0, latency, at, null, message, skipReason), emptyList())
         }
     }
 

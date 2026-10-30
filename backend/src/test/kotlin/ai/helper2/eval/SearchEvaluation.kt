@@ -62,16 +62,19 @@ class SearchEvaluation(
         appendLine("query_id\turl\tgrade\tquery\ttitle\tsources")
         for (q in recorded) {
             val variants = listOf(emptySet<String>()) + sourceIds.map { setOf(it) }
-            val seen = LinkedHashMap<String, MergedResult>()
-            variants.forEach { v -> ranked(q.id, v).take(20).forEach { seen.putIfAbsent(it.canonicalUrl.value, it) } }
+            // A result an ablation splits off (a package without its repository) is listed once, under the baseline's result.
+            val seen = mutableListOf<MergedResult>()
+            val covered = HashSet<String>()
+            variants.forEach { v ->
+                ranked(q.id, v).take(20).forEach { r -> urlsOf(r).let { urls -> if (covered.none(urls::contains)) seen += r; covered += urls } }
+            }
             val judged = qrels.of(q.id)
-            seen.values.filter { grade(q.id, it) == null }.forEach { r ->
+            seen.filter { grade(q.id, it) == null }.forEach { r ->
                 appendLine(listOf(q.id, r.canonicalUrl.value, "", q.text, r.title.replace('\t', ' '),
                     r.sources.joinToString(",") { it.sourceId }).joinToString("\t"))
             }
-            val pooled = seen.values.flatMap(::urlsOf).toSet()
             snapshots.getValue(q.id).semantic.orEmpty().take(10)
-                .filter { it.canonicalUrl !in pooled && it.canonicalUrl !in judged }
+                .filter { it.canonicalUrl !in covered && it.canonicalUrl !in judged }
                 .forEach { appendLine(listOf(q.id, it.canonicalUrl, "", q.text, "", "vector distance ${fmt(it.distance)}").joinToString("\t")) }
         }
     }

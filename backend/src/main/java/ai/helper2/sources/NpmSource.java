@@ -59,9 +59,15 @@ public class NpmSource implements SearchSource {
         if (name == null) {
             return null;
         }
+        // The package's own page: the stated link when it is a web URL, else the registry page built from the name.
         String url = HttpClients.text(p.path("links"), "npm");
-        if (url == null) {
+        CanonicalUrl canonical = CanonicalUrl.of(url);
+        if (canonical == null) {
             url = "https://www.npmjs.com/package/" + name;
+            canonical = CanonicalUrl.of(url);
+        }
+        if (canonical == null) {
+            return null;
         }
         String description = HttpClients.text(p, "description");
         Set<String> keywords = new LinkedHashSet<>();
@@ -73,7 +79,9 @@ public class NpmSource implements SearchSource {
         List<PopularityMetric> pop = o.path("downloads").has("weekly")
             ? List.of(new PopularityMetric(PopularityKind.NPM_DOWNLOADS_WEEKLY, o.path("downloads").path("weekly").asLong(), "npm", now))
             : List.of();
-        return new SourceHit("npm", name, URI.create(url), CanonicalUrl.of(url),
+        // The search API gives the repository URL only, never package.json's `repository.directory`. A URL that
+        // names a sub-directory keeps it (CanonicalUrl); ResultMerger keeps packages of one repository apart.
+        return new SourceHit("npm", name, HttpClients.link(url, canonical), canonical,
             CanonicalUrl.of(HttpClients.text(p.path("links"), "repository")), name, description,
             ValueOrigin.SOURCE_PROVIDED, Classification.typeOf(name, description, keywords, ResourceType.LIBRARY),
             Audience.BUILD_WITH_AI, null, Set.of(), keywords, license, null, Set.of("node"),

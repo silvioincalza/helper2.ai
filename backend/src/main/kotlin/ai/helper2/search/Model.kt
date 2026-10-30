@@ -59,7 +59,7 @@ data class SourceHit @JvmOverloads constructor(
     val externalId: String,
     val url: URI,
     val canonicalUrl: CanonicalUrl,
-    /** e.g. the GitHub repository of an npm package; used to merge records of the same resource. */
+    /** e.g. the GitHub repository of an npm package; joins the repository's own hit when no other resource links to it. */
     val repositoryUrl: CanonicalUrl? = null,
     val title: String,
     val description: String? = null,
@@ -87,10 +87,7 @@ data class SourceHit @JvmOverloads constructor(
     /** EVENT only: kind and format as the source states them (null when it does not say; never inferred). */
     val eventKind: EventKind? = null,
     val eventFormat: EventFormat? = null,
-) {
-    /** Identity used for dedup: repository URL wins when present so ids are stable across sources. */
-    val identityUrl: CanonicalUrl get() = repositoryUrl ?: canonicalUrl
-}
+)
 
 /**
  * [requiredVariants] and [synonyms] are for the Helper2 index (see [AnalyzedQuery]); live sources
@@ -126,6 +123,9 @@ sealed class SourceFailure(message: String) : RuntimeException(message) {
 
 enum class SourceOutcome { SUCCEEDED, FAILED, TIMED_OUT, RATE_LIMITED, SKIPPED }
 
+/** Why a source was SKIPPED in a search. */
+enum class SkipReason { DISABLED, NOT_BROWSABLE, RATE_LIMIT_PAUSE }
+
 enum class ServedFrom { LIVE, CACHE, STALE_CACHE, NONE }
 
 data class SourceStatus(
@@ -137,6 +137,8 @@ data class SourceStatus(
     val checkedAt: Instant,
     val cachedAt: Instant? = null,
     val message: String? = null,
+    /** SKIPPED only. */
+    val skipReason: SkipReason? = null,
 )
 
 enum class Freshness { LIVE, CACHED, STALE, INDEXED, CURATED, DEMO }

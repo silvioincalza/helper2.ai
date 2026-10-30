@@ -50,4 +50,11 @@ class CompatibilityTest {
         ))
         assertEquals(1, flags.size)
     }
+
+    @Test
+    fun `the Nim language tag is not NVIDIA NIM`() {
+        val flags = Compatibility.of(merged(hit("github", "https://github.com/a/nim-llm", tags = setOf("nim", "llm"))))
+        assertEquals(emptyList(), flags.map { it.tool })
+        assertEquals(listOf("nvidia"), Compatibility.of(merged(hit("github", "https://github.com/a/n", tags = setOf("nvidia-nim")))).map { it.tool })
+    }
 }
