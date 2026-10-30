@@ -68,7 +68,46 @@ class RedisToolGuideCacheIT {
             new GuideStep("Install it.", "readme", "Install with:", new Code("bash", "npm install acme-x"), false))));
     }
 
+    @Test
+    void theNextAskIsServedFromRedisWithoutAModelCall() {
+        Model model = new Model();
+        RecordingCache cache = new RecordingCache(new RedisToolGuideCache(redis, JsonMapper.builder().build(), Resilience.NONE, Duration.ofDays(7)));
+        ToolGuides guides = new ToolGuides(ref -> List.of(readme()), model, cache, CLOCK);
+        String resourceId = UUID.randomUUID().toString();
+
+        ToolGuideAnswer first = guides.answer(resourceId, REF, null);
+        ToolGuideAnswer second = guides.answer(resourceId, REF, null);
+
+        assertThat(model.calls).isEqualTo(1);
+        assertThat(second).isEqualTo(first);
+    }
+
+    @Test
+    void anUnreadableEntryCostsOneModelCall_thenTheRewrittenEntryServes() {
+        Model model = new Model();
+        RecordingCache cache = new RecordingCache(new RedisToolGuideCache(redis, JsonMapper.builder().build(), Resilience.NONE, Duration.ofDays(7)));
+        ToolGuides guides = new ToolGuides(ref -> List.of(readme()), model, cache, CLOCK);
+        String resourceId = UUID.randomUUID().toString();
+        guides.answer(resourceId, REF, null);
+        redis.opsForValue().set(RedisToolGuideCache.redisKey(cache.key), "{\"v\":2,\"answer\":{\"status\":\"NOT_A_STATUS\"}}");
+
+        guides.answer(resourceId, REF, null);
+        guides.answer(resourceId, REF, null);
+        guides.answer(resourceId, REF, null);
+
+        assertThat(model.calls).isEqualTo(2);
+    }
+
+    private static Material readme() {
+        return new Material("readme", MaterialKind.README, URI.create("https://github.com/acme/x"), CLOCK.instant(),
+            "Install with:\n\n```bash\nnpm install acme-x\n```\n\n" + README_ONLY + "\n");
+    }
+
+    private static final ToolRef REF = ToolRef.Companion.of("acme-x", "LIBRARY", List.of("https://github.com/acme/x"), List.of());
+
     private static final class Model implements ToolGuideModel {
+        int calls;
+
         @Override
         public String getModel() {
             return "fake";
@@ -81,6 +120,7 @@ class RedisToolGuideCacheIT {
 
         @Override
         public ProposedGuide write(ToolRef ref, List<Material> materials, String question) {
+            calls++;
             return new ProposedGuide(List.of(new ProposedSection("INSTALL",
                 List.of(new ProposedStep("Install it.", "readme", "Install with:", "npm install acme-x", null)))));
         }

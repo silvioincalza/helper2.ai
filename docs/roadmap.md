@@ -88,14 +88,13 @@ on purpose:
 - **Guide answers: in-memory LRU and single-flight map.** Answers are also in Redis, so a replica only misses a
   question it has not seen; two replicas may answer the same new question once each.
 - **Query-vector cache** (`SemanticSearchSource`). A miss costs one embedding call (about 0.3 s) on that replica.
-- **Source-health cooldowns** (`SearchResources`) and the Sources page's last outcomes (`SourceHealth`). Each
-  replica finds a source's rate limit on its own, at the cost of one more refused call.
+- **Source cooldowns after a rate limit** (`SearchResources`), **circuit breakers and bulkheads** (`source-<id>`
+  policies, [ADR 0033](adr/0033-resilience-policies.md)) and the Sources page's last outcomes (`SourceHealth`).
+  Each replica finds a limited or failing source on its own, at the cost of a few more refused calls.
 - **Query-translation cache** (`SpringAiQueryTranslator`). A miss costs one model call, inside the daily
   translation cap, which is counted in Redis.
 - **Guide concurrency limit** (`H2_GUIDE_MAX_CONCURRENT`, 8 per replica, 24 on prod). The daily model-call cap
   in Redis still bounds the cost.
-- **arXiv minimum interval** (1 request per 3 s) is kept per replica, so the cluster can send up to 3 requests
-  in that window. Share it in Redis if arXiv starts refusing.
 - **Embedding indexer pause after a rate limit.** Only the replica that got the 429 pauses; the lock already
   keeps the cluster at one batch per period.
 
@@ -103,10 +102,6 @@ Open items:
 
 - **preStop delay.** A pod gets SIGTERM while it is still being removed from the Service endpoints; a few
   seconds of `preStop` sleep would stop the last requests from reaching it during a rolling update.
-- **Scout run lock after a crash.** `scout-run` is held for at most the derived worst case (prod: 1 h of
-  collectors + 200 enrichments x 40 s x 1 attempt, about 3 h 13 min). A pod killed mid-run blocks the Scout,
-  run now included, until then. ShedLock's `KeepAliveLockProvider` would allow a short lock that is extended while the
-  run is alive.
 - **Redis memory.** Sign-in sessions and rate-limit windows now share the 128 MB `allkeys-lru` cache: under
   pressure an admin is signed out, or a client gets a fresh window early. Alert on Redis evictions (with the
   Redis exporter, section 3).
@@ -117,7 +112,8 @@ Open items:
   ([ADR 0016](adr/0016-guide-reason-check.md)).
 - Watch whether the source `type`, now a source fact in enrichment, sends many proposals to CONFLICTING review
   (for example GitHub LIBRARY versus MCP_SERVER) ([ADR 0019](adr/0019-evidence-gated-enrichment.md)).
-- Resilience4j for outbound calls (rate limit, retry with backoff).
+- The guide's concurrency slots and the model calls as `llm-chat` and `llm-embed` resilience policies
+  ([ADR 0033](adr/0033-resilience-policies.md)).
 - Cross-language retrieval in vector search.
 - Alert when the share of kept picks ranked 9+ grows (`helper2.guide.picks{rank="9+"}`): text written to be picked
   passes the quote gate ([ADR 0015](adr/0015-ai-guide-evidence-gate.md)). The counter exists; the alert and the

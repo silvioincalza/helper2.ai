@@ -100,4 +100,4 @@ The periods are a product decision the owner may change; changing one must not n
 - `frontend/src/i18n/locales/en.json` — the privacy page's periods.
 
 ## Diagrams
-None of its own: the table above is the reference.
+[flow](../diagrams/flow-0034-data-retention.svg) · [sequence](../diagrams/sequence-0034-data-retention.svg)

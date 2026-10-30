@@ -105,6 +105,11 @@ public class ReviewQueue {
         return new Page(items, total);
     }
 
+    /** Items waiting for a person; for the review backlog gauge. */
+    public long openCount() {
+        return jdbc.sql("SELECT count(*) FROM review_item WHERE status = 'OPEN'").query(Long.class).single();
+    }
+
     public Optional<Item> find(UUID id) {
         return jdbc.sql(SELECT_ITEMS + " WHERE i.id = :id").param("id", id).query(ReviewQueue::item).optional();
     }

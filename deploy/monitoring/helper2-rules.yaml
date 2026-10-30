@@ -158,7 +158,7 @@ groups:
         annotations:
           summary: "Daily budget {{ $labels.budget }} is below 20% ({{ $labels.environment }})."
           description: "Only {{ $value | humanizePercentage }} of today's model calls are left. When it reaches 0 the feature degrades until 00:00 UTC (guide: search-only answers; enrichment and classifier: skipped; translation: query sent as typed)."
-          runbook: "Dashboard panels 'Questions by outcome' (AI guide) or 'Enrichment outcomes' (Scout): normal traffic or one loop/abuser? Caps: H2_GUIDE_DAILY_MODEL_CALLS (guide), H2_SEARCH_DAILY_TRANSLATIONS (search_translation), H2_SCOUT_DAILY_ENRICHMENT_CALLS (scout_enrichment), H2_SCOUT_AWESOME_CLASSIFIER_DAILY_CALLS (scout_classifier), helper2.setup.guide.daily-model-calls (tool_guide)."
+          runbook: "Dashboard panels 'Questions by outcome' (AI guide) or 'Enrichment outcomes' (Scout): normal traffic or one loop/abuser? Caps: H2_GUIDE_DAILY_MODEL_CALLS (guide), H2_SEARCH_DAILY_TRANSLATIONS (search_translation), H2_SCOUT_DAILY_ENRICHMENT_CALLS (scout_enrichment), H2_SCOUT_AWESOME_CLASSIFIER_DAILY_CALLS (scout_classifier), H2_SETUP_GUIDE_DAILY_MODEL_CALLS (tool_guide)."
 
       - alert: Helper2TavilyCreditsHigh
         # ADR 0037: live Tavily calls of searches and the guide (one credit each), every feature and tier. The free plan
@@ -202,6 +202,17 @@ groups:
           summary: "Resources have waited for an embedding for 3 hours ({{ $labels.environment }})."
           description: "The embedding backlog has stayed above 0 for 3 hours ({{ $value }} resources now); a full reindex of the catalog takes about 2 hours."
           runbook: "If Helper2EmbeddingIndexerStalled fires too, fix that first. Otherwise resources arrive faster than the indexer embeds them (helper2.embedding.batch 50 every 15 s = 200 a minute)."
+
+      - alert: Helper2ReviewBacklog
+        # Every replica reports the same count from Postgres; max picks one.
+        expr: max by (environment) (helper2_review_open_items{application="helper2"}) > 50
+        for: 1d
+        labels:
+          severity: warning
+        annotations:
+          summary: "More than 50 review items have waited for a decision for a day ({{ $labels.environment }})."
+          description: "{{ $value }} review items are OPEN. Until someone decides them, AI-proposed relationships stay unverified and user reports go unanswered."
+          runbook: "Admin page, Review: decide or reject in bulk by kind. A sudden rise of one kind (ENRICHMENT_VALIDATION, RELATIONSHIP_CANDIDATE) points to an enrichment prompt or model change."
 
   - name: helper2-scout
     # Ages over days: evaluated every 5 minutes.

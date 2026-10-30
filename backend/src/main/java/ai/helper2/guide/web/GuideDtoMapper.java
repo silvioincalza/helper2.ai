@@ -29,9 +29,10 @@ import ai.helper2.guide.DateWindow;
 import ai.helper2.guide.Explanation;
 import ai.helper2.guide.GuideAnswer;
 import ai.helper2.platform.llm.LlmSettings;
-import ai.helper2.search.web.CardMapper;
 import ai.helper2.search.MergedResult;
 import ai.helper2.search.SearchOutcome;
+import ai.helper2.search.web.CardMapper;
+import ai.helper2.shared.UtcTimes;
 import java.util.List;
 import java.util.stream.Stream;
 import org.springframework.stereotype.Component;
@@ -88,7 +89,7 @@ class GuideDtoMapper {
             .sources(statuses(a.getSearch()))
             .notices(Stream.concat(a.getSearch().getNotices().stream(), a.getNotices().stream())
                 .map(n -> new NoticeDto(NoticeDto.CodeEnum.fromValue(n.getCode().name()), n.getMessage())).toList())
-            .generatedAt(CardMapper.odt(a.getGeneratedAt()))
+            .generatedAt(UtcTimes.odt(a.getGeneratedAt()))
             .intent(GuideIntentDto.fromValue(a.getIntent().name()))
             .subjects(a.getSubjects())
             .window(window(a.getWindow()))
@@ -139,9 +140,9 @@ class GuideDtoMapper {
         return outcome.getStatuses().stream().map(s -> new SourceStatusDto(s.getSource().getId(),
                 s.getSource().getName(), SourceModeDto.fromValue(s.getSource().getMode().name()),
                 SourceOutcomeDto.fromValue(s.getOutcome().name()), ServedFromDto.fromValue(s.getServedFrom().name()),
-                s.getResultCount(), CardMapper.odt(s.getCheckedAt()))
+                s.getResultCount(), UtcTimes.odt(s.getCheckedAt()))
             .latencyMs(s.getLatency() == null ? null : s.getLatency().toMillis())
-            .cachedAt(CardMapper.odt(s.getCachedAt())).message(s.getMessage())).toList();
+            .cachedAt(UtcTimes.odt(s.getCachedAt())).message(s.getMessage())).toList();
     }
 
     private static GuideCheckDto check(ConstraintCheck c) {

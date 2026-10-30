@@ -3,7 +3,7 @@
 # Source of truth: backend/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt (EnrichResource),
 #   backend/src/main/kotlin/ai/helper2/scout/Enrichment.kt (EvidenceValidator, EnrichmentMaterial.fingerprintFor),
 #   backend/src/main/java/ai/helper2/scout/internal/SpringAiEnrichmentModel.java, JdbcEnrichmentStore.java,
-#   backend/src/main/java/ai/helper2/catalog/ReviewQueue.java.
+#   backend/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java, catalog/ReviewQueue.java.
 # Render: cd docs/diagrams && d2 fmt flow-0019-evidence-gated-enrichment.d2 && d2 flow-0019-evidence-gated-enrichment.d2 flow-0019-evidence-gated-enrichment.svg
 
 ...@style
@@ -45,8 +45,8 @@ rules: EvidenceValidator, per proposed item {
 }
 
 outcome: "Run outcome:\nREJECTED (nothing accepted),\nVALIDATED (no error) or PARTIAL" {class: app}
-save: "Save run; supersede older OPEN items;\ndelete older AI_EXTRACTED fields and\nunreviewed AI relationships;\ninsert non-rejected items" {class: data}
-review: "Errors or CONFLICTING → ENRICHMENT_VALIDATION;\nUNVERIFIED relationship → RELATIONSHIP_CANDIDATE\n(ReviewQueue)" {class: data}
+save: "Catalog (EnrichmentResults) saves run;\nsupersedes older OPEN items;\ndeletes older AI_EXTRACTED fields and\nunreviewed AI relationships;\ninserts non-rejected items" {class: data}
+review: "Errors or CONFLICTING → ENRICHMENT_VALIDATION;\nUNVERIFIED relationship → RELATIONSHIP_CANDIDATE\n(ReviewQueue; OPEN items counted by\nhelper2.review.open_items)" {class: data}
 
 start -> load
 load -> noMat: no

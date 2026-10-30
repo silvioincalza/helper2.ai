@@ -39,6 +39,7 @@ import ai.helper2.search.SourceStatus;
 import ai.helper2.shared.Audience;
 import ai.helper2.shared.AudiencePath;
 import ai.helper2.shared.ResourceType;
+import ai.helper2.shared.UtcTimes;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDate;
 import java.util.Collection;
@@ -124,7 +125,7 @@ class SearchController implements SearchApi, SourcesApi {
                     .termsUrl(d.getTermsUrl()).attribution(d.getAttribution());
                 SourceHealth.Entry e = health.lastFor(d.getId(), fromScout.get(d.getId()));
                 if (e != null) {
-                    dto.lastOutcome(SourceOutcomeDto.fromValue(e.getOutcome().name())).lastCheckedAt(CardMapper.odt(e.getCheckedAt()));
+                    dto.lastOutcome(SourceOutcomeDto.fromValue(e.getOutcome().name())).lastCheckedAt(UtcTimes.odt(e.getCheckedAt()));
                 }
                 return dto;
             }).toList());
@@ -145,7 +146,7 @@ class SearchController implements SearchApi, SourcesApi {
             .query(out.getRequest().getText())
             .path(out.getRequest().getPath() == null ? null : AudiencePathDto.fromValue(out.getRequest().getPath().name()))
             .sort(SortOrderDto.fromValue(out.getRequest().getSort().name()))
-            .executedAt(CardMapper.odt(out.getExecutedAt()))
+            .executedAt(UtcTimes.odt(out.getExecutedAt()))
             .coverage(new CoverageDto()
                 .partial(out.getCoverage().getPartial())
                 .sourcesConfigured(out.getCoverage().getSourcesConfigured())
@@ -169,9 +170,9 @@ class SearchController implements SearchApi, SourcesApi {
     private static SourceStatusDto status(SourceStatus s) {
         return new SourceStatusDto(s.getSource().getId(), s.getSource().getName(),
             SourceModeDto.fromValue(s.getSource().getMode().name()), SourceOutcomeDto.fromValue(s.getOutcome().name()),
-            ServedFromDto.fromValue(s.getServedFrom().name()), s.getResultCount(), CardMapper.odt(s.getCheckedAt()))
+            ServedFromDto.fromValue(s.getServedFrom().name()), s.getResultCount(), UtcTimes.odt(s.getCheckedAt()))
             .latencyMs(s.getLatency() == null ? null : s.getLatency().toMillis())
-            .cachedAt(CardMapper.odt(s.getCachedAt()))
+            .cachedAt(UtcTimes.odt(s.getCachedAt()))
             .message(s.getMessage());
     }
 

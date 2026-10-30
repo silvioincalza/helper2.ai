@@ -576,6 +576,27 @@ helper2:
     admin-audit: ${H2_RETENTION_ADMIN_AUDIT:P730D}
 
 ---
+# Setup guide (ADR 0031): documents read at request time, their caches and budgets.
+helper2:
+  setup:
+    # Per document fetch (GitHub, jsDelivr, Hugging Face).
+    document-timeout: ${H2_SETUP_DOCUMENT_TIMEOUT:10s}
+    npm-readme-base-url: ${H2_SETUP_NPM_README_BASE_URL:https://cdn.jsdelivr.net}
+    # Registry entries and documents kept in memory per replica; the registry asks to be read infrequently.
+    cache-ttl: ${H2_SETUP_CACHE_TTL:PT1H}
+    # The most document text kept in memory per replica.
+    document-cache-mb: ${H2_SETUP_DOCUMENT_CACHE_MB:32}
+    # Documents fetched per UTC hour across replicas. GitHub fetches spend the Scout's token (5,000 calls an hour).
+    hourly-fetches: ${H2_SETUP_HOURLY_FETCHES:1000}
+    guide:
+      # The step-by-step guide's own daily model-call cap, apart from the guide's and the Scout's.
+      daily-model-calls: ${H2_SETUP_GUIDE_DAILY_MODEL_CALLS:300}
+      # Use the reasoning model instead of the fast one.
+      reasoning: ${H2_SETUP_GUIDE_REASONING:false}
+      # How long checked answers stay in Redis.
+      cache-ttl: ${H2_SETUP_GUIDE_CACHE_TTL:P7D}
+
+---
 # Tavily (ADR 0037): store first, then a live call inside the visitor's daily web searches, per feature.
 helper2:
   tavily:

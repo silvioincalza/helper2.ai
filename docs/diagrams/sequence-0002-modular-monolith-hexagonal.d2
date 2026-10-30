@@ -1,0 +1,34 @@
+# Sequence: one search request through the hexagon: a Java web adapter drives a Kotlin use case, which reaches the
+# outside only through ports implemented by Java adapters in other modules.
+# Source of truth: backend/src/main/java/ai/helper2/search/web/SearchController.java,
+#   backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt, .../search/Ports.kt,
+#   backend/src/main/java/ai/helper2/sources/GitHubSource.java, .../catalog/ResourceCatalog.java,
+#   .../search/cache/RedisSearchCache.java, .../platform/llm/SpringAiQueryTranslator.java.
+# Render: cd docs/diagrams && d2 fmt sequence-0002-modular-monolith-hexagonal.d2 && d2 sequence-0002-modular-monolith-hexagonal.d2 sequence-0002-modular-monolith-hexagonal.svg
+
+...@style
+
+shape: sequence_diagram
+
+ctrl: "SearchController\n(search.web, Java,\nimplements SearchApi)" {class: app}
+uc: "SearchResources\n(search.usecase, Kotlin)" {class: app}
+rules: "QueryAnalyzer, ResultMerger,\nRanking (search, Kotlin)" {class: app}
+cache: "SearchCache port\n← RedisSearchCache\n(search.cache)" {class: port}
+tr: "QueryTranslator port\n← SpringAiQueryTranslator\n(platform.llm)" {class: port}
+src: "SearchSource port\n← GitHubSource, NpmSource …\n(sources)" {class: port}
+obs: "ResultObserver port\n← ResourceCatalog\n(catalog)" {class: port}
+
+ctrl -> uc: "search(SearchRequest)" {class: hot}
+uc -> rules: "analyze the query"
+uc -> tr: "toEnglish(text, language)\n(only for a non-English query)"
+uc -> cache: "get(key)"
+cache -> uc: "CachedHits or miss"
+uc -> src: "search(SourceQuery)\n(one virtual thread per source)" {class: hot}
+src -> uc: "List<SourceHit>"
+uc -> cache: "put(key, hits, ttl)"
+uc -> rules: "merge and rank"
+uc -> obs: "firstDiscovered(results)"
+obs -> uc: "Map<ResourceId, Instant>"
+uc -> obs: "record(live results only);\nthe catalog writes them\noff the request path"
+uc -> ctrl: "SearchOutcome (Kotlin model)" {class: hot}
+ctrl -> ctrl: "map to SearchResponseDto\n(generated, api module)"

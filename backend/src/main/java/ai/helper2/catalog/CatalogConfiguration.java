@@ -9,7 +9,9 @@ import ai.helper2.platform.ClusterLock;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.SourceMode;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.binder.MeterBinder;
 import io.micrometer.observation.ObservationRegistry;
 import java.net.URI;
 import java.time.Clock;
@@ -35,6 +37,14 @@ class CatalogConfiguration {
     ObservationQueue observationQueue(MeterRegistry registry,
                                       @Value("${helper2.catalog.observation-queue:256}") int capacity) {
         return new ObservationQueue(capacity, registry);
+    }
+
+    /** The review backlog: items waiting for a person (one count query per scrape). */
+    @Bean
+    MeterBinder reviewBacklogGauge(ReviewQueue queue) {
+        return meters -> Gauge.builder("helper2.review.open_items", queue, ReviewQueue::openCount)
+            .description("Review items waiting for a decision (status OPEN)")
+            .register(meters);
     }
 
     @Bean

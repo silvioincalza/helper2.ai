@@ -127,7 +127,7 @@ export function GuideAnswer({ answer, onRefine }: { answer: GuideResponse; onRef
 function Understood({ answer, onRefine }: { answer: GuideResponse; onRefine?: ((r: Refinement) => void) | undefined }) {
   const { t } = useTranslation();
   const intent = answer.intent ?? 'SUGGEST';
-  const parts: { key: string; label: string; drop?: string | undefined }[] = [];
+  const parts: { key: string; label: string; drop?: string | undefined; ai?: boolean }[] = [];
   // A period alone reads as "newest" on the server, so removing that intent would come straight back: the period's ✕ is the way out.
   const intentFromWindow = intent === 'NEWEST' && answer.window != null;
   if (intent !== 'SUGGEST') parts.push({ key: 'intent', label: t(`guide.intent.${intent}`), drop: intentFromWindow ? undefined : 'intent' });
@@ -140,14 +140,14 @@ function Understood({ answer, onRefine }: { answer: GuideResponse; onRefine?: ((
       drop: 'window',
     });
   }
-  for (const c of answer.constraints ?? []) parts.push({ key: `c:${c}`, label: c, drop: `constraint:${c}` });
+  for (const c of answer.constraints ?? []) parts.push({ key: `c:${c}`, label: c, drop: `constraint:${c}`, ai: true });
   if (parts.length === 0) return null;
   return (
     <p className="understood">
       <span className="muted">{t('guide.understood')}</span>
       {parts.map((p) => (
         <span key={p.key} className="understood-chip">
-          {p.label}
+          {p.ai ? <span {...aiMark()}>{p.label}</span> : p.label}
           {p.drop && onRefine && (
             <button type="button" aria-label={t('guide.remove', { part: p.label })} onClick={() => onRefine({ drop: [p.drop!] })}>×</button>
           )}
@@ -163,11 +163,11 @@ function Clarify({ clarification, onRefine }: { clarification: NonNullable<Guide
   const [other, setOther] = useState('');
   return (
     <section className="guide-answer clarify" aria-labelledby="guide-clarify-h">
-      <h3 id="guide-clarify-h">{clarification.question}</h3>
+      <h3 id="guide-clarify-h" {...aiMark()}>{clarification.question}</h3>
       <p className="muted small">{t('guide.clarify.label')}</p>
       <div className="clarify-options">
         {clarification.options.map((o) => (
-          <button key={o} type="button" className="btn" onClick={() => onRefine?.({ clarification: o })}>{o}</button>
+          <button key={o} type="button" className="btn" onClick={() => onRefine?.({ clarification: o })} {...aiMark()}>{o}</button>
         ))}
       </div>
       <form className="clarify-other" onSubmit={(e) => { e.preventDefault(); if (other.trim()) onRefine?.({ clarification: other.trim() }); }}>

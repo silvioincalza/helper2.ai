@@ -1,0 +1,72 @@
+# Flowchart: what one Helm render of deploy/helm/helper2 decides from its values: the checks that fail the render,
+# then which workloads, PodDisruptionBudget and network policy rules it adds. Hosted values: values-staging.yaml,
+# values-prod.yaml. The resulting topology is drawn in infrastructure.d2.
+# Source of truth: deploy/helm/helper2/templates/_helpers.tpl, app.yaml, redis.yaml, cloudflared.yaml, ingress.yaml,
+#   backup.yaml, networkpolicy.yaml, values.yaml, values-staging.yaml, values-prod.yaml.
+# Render: cd docs/diagrams && d2 fmt flow-0027-runtime-topology.d2 && d2 flow-0027-runtime-topology.d2 flow-0027-runtime-topology.svg
+
+...@style
+
+direction: down
+
+render: "make ENV=<env> deploy:\nhelm upgrade --install\n--set-file envFile=<env>/app.env" {class: person}
+
+checks: Render checks (_helpers.tpl) {
+  class: group
+  direction: down
+  keys: "Every envFile key\nmatches ^H2_[A-Z0-9_]+\$\nand H2_DATABASE_PASSWORD set?" {class: decision}
+  redis: "redis.auth.enabled: existingSecret,\nor H2_REDIS_PASSWORD of\n16+ letters and digits?" {class: decision}
+  fail: "Render fails,\nnothing applied" {class: fail}
+  keys -> redis: yes {class: hot}
+  keys -> fail: no
+  redis -> fail: no
+}
+
+always: "Always: helper2 Deployment (RollingUpdate maxSurge 1, maxUnavailable 0,\nspread by hostname), postgres and redis StatefulSets (one replica, RWO volume),\nServiceAccount helper2 without token, ingress-postgres, ingress-redis" {class: app}
+
+options: Per-environment values {
+  class: group
+  direction: down
+  replicas: "app.replicas > 1?\n(prod 3, staging 1)" {class: decision}
+  pdb: "PodDisruptionBudget\nminAvailable = replicas − 1" {class: app}
+  edge: "cloudflared.enabled?\n(hosted: yes)" {class: decision}
+  tunnel: "cloudflared Deployment;\ningress-app allows it on 8080" {class: app}
+  ing: "ingress.enabled?\n(other clusters)" {class: decision}
+  ingress: "Ingress; ingress-app allows\nthe controller namespace on 8080" {class: app}
+  metrics: "networkPolicy.metricsNamespace?\n(hosted: observability)" {class: decision}
+  scrape: "ingress-app allows it on 8081" {class: app}
+  egress: "networkPolicy.egress.enabled?\n(default yes)" {class: decision}
+  out: "Egress per workload: app DNS, 5432, 6379,\nOTLP 4318, 443 without private ranges;\ncloudflared DNS, app 8080, 7844" {class: app}
+  backup: "backup.enabled?\n(prod only)" {class: decision}
+  cron: "pg-backup CronJob 02:30 Europe/Zurich,\nPVC kept on uninstall, 7 days;\npostgres accepts pg-backup" {class: app}
+  offsite: "backup.offsite.enabled?\n(off today)" {class: decision}
+  rclone: "rclone copy to R2 after the dump;\npg-backup egress 443" {class: app}
+
+  replicas -> pdb: yes
+  replicas -> edge: no
+  pdb -> edge
+  edge -> tunnel: yes
+  edge -> ing: no
+  tunnel -> ing
+  ing -> ingress: yes
+  ing -> metrics: no
+  ingress -> metrics
+  metrics -> scrape: yes
+  metrics -> egress: no
+  scrape -> egress
+  egress -> out: yes
+  egress -> backup: no
+  out -> backup
+  backup -> cron: yes
+  cron -> offsite
+  offsite -> rclone: yes
+}
+
+done: "helm --wait (12 min):\nnew pods ready one at a time" {class: end}
+
+render -> checks.keys: {class: hot}
+checks.redis -> always: yes {class: hot}
+always -> options.replicas: {class: hot}
+options.rclone -> done
+options.offsite -> done: no
+options.backup -> done: no

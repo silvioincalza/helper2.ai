@@ -66,6 +66,8 @@ dependencies {
     implementation("io.github.resilience4j:resilience4j-bulkhead")
     implementation("io.github.resilience4j:resilience4j-retry")
     implementation("io.github.resilience4j:resilience4j-micrometer")
+    // Size-bounded in-memory caches with expiry (setup guide: registry entries, tool documents weighed by length).
+    implementation("com.github.ben-manes.caffeine:caffeine:3.2.3")
     runtimeOnly("org.postgresql:postgresql")
     developmentOnly("org.springframework.boot:spring-boot-docker-compose")
 
