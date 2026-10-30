@@ -59,9 +59,11 @@ Flowcharts use diamonds for decisions, white ovals for normal ends and pink oval
 ## Render
 
 CI re-renders every diagram with d2 v0.7.1 and fails if a committed SVG differs.
+Another d2 version draws different SVGs, so render only with v0.7.1. A newer d2 from Homebrew is not it:
 
 ```bash
 go install oss.terrastruct.com/d2@v0.7.1
-cd docs/diagrams
-for f in *.d2; do [ "$f" = style.d2 ] && continue; d2 fmt "$f" && d2 "$f" "${f%.d2}.svg"; done
+docs/diagrams/render.sh
 ```
+
+`render.sh` stops if `d2` is another version. CI runs the same script.
