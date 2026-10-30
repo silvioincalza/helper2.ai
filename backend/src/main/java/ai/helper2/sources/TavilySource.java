@@ -67,7 +67,7 @@ public class TavilySource implements SearchSource {
             body.put("start_date", query.getPublishedAfter().toString());
         }
         JsonNode root = HttpClients.getJson(() -> http.post().uri("/search").body(body).retrieve().body(String.class), clock);
-        return HttpClients.hits(root.path("results"), clock.instant(), (item, now, rank) -> toHit(item, "tavily", now, rank));
+        return HttpClients.hits("tavily", root.path("results"), clock.instant(), (item, now, rank) -> toHit(item, "tavily", now, rank));
     }
 
     /**
