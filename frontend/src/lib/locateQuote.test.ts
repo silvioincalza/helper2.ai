@@ -1,4 +1,4 @@
-import { locateQuote } from './GuideAnswer';
+import { locateQuote } from './locateQuote';
 
 describe('locateQuote', () => {
   it('finds the quote like the validator does: any case, any run of whitespace', () => {
