@@ -48,6 +48,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0030](../adr/0030-guide-evaluation.md) | [flow](flow-0030-guide-evaluation.svg) | — | scripts/eval-guide.mjs, from the fixed query set to docs/evaluation.md. |
 | [0038](../adr/0038-ai-content-marking.md) | [flow](flow-0038-ai-content-marking.svg) | [sequence](sequence-0038-ai-content-marking.svg) | which text is marked as AI-written, and how a guide answer reaches the page with its marks. |
 | [0039](../adr/0039-frontend-recent-answers-cache.md) | [flow](flow-0039-frontend-recent-answers-cache.svg) | [sequence](sequence-0039-frontend-recent-answers-cache.svg) | when useApi shows a recent answer and when it asks the server, and a back move without a request. |
+| [0040](../adr/0040-frontend-design-v2.md) | [flow](flow-0040-frontend-design-v2.svg) | [sequence](sequence-0040-frontend-design-v2.svg) | the v2 results page: the list at once, the reserved picks bar, badges in place with no re-order, and the selected result in the URL. |
 
 ## Colors
 

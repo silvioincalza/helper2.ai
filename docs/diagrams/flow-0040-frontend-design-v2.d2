@@ -1,0 +1,52 @@
+# Flowchart: what the results page does from the search to the guide picks, in design v2.
+# Shows the list shown at once, the reserved picks bar, the guide answer arriving over SSE (picks or no pick),
+# badges in place with no re-order, and the selected result kept in the URL with replaceState.
+# Source of truth: docs/adr/0040-frontend-design-v2.md (planned: SearchResults.tsx, GuideAnswer.tsx, routes.tsx).
+# Render: cd docs/diagrams && d2 fmt flow-0040-frontend-design-v2.d2 && d2 flow-0040-frontend-design-v2.d2 flow-0040-frontend-design-v2.svg
+
+...@style
+
+direction: down
+
+start: "Search from the box or an example:\n/search?q=…  (/?q=… is the same page)" {class: app}
+results: "GET /api/v1/search" {class: ext}
+show: "Show the list at once.\nReserve the picks bar:\n\"Guide is reading N candidates…\"" {class: app}
+wide: "Screen wider than 860 px?" {class: decision}
+preview: "Preview on the right" {class: app}
+inline: "Preview inside the list,\nlink to /resource/:id" {class: app}
+guide: "POST /api/v1/guide/stream (SSE)" {class: ext}
+picks: "Guide found picks?" {class: decision}
+
+answer: Picks {
+  class: group
+  direction: down
+  bar: "Bar shows #1 #2 #3,\nlabelled AI-written" {class: app}
+  badge: "Each pick gets \"Pick #n\"\nand its reason in its row" {class: app}
+  still: "List order unchanged" {class: end}
+  bar -> badge -> still
+}
+
+none: "Bar shrinks to one line:\n\"No pick: no result had a sentence that proves it\"" {class: end}
+
+select: Selecting a result {
+  class: group
+  direction: down
+  tap: "Click a row or a pick chip" {class: app}
+  url: "replaceState ?q=…&id=…\n(no new Back step)" {class: app}
+  known: "id in the results?" {class: decision}
+  sel: "Select that row" {class: end}
+  first: "Select the first row" {class: end}
+  tap -> url -> known
+  known -> sel: yes
+  known -> first: no
+}
+
+start -> results -> show
+show -> wide
+wide -> preview: yes
+wide -> inline: no
+show -> guide {class: hot}
+guide -> picks
+picks -> answer.bar: yes {class: hot}
+picks -> none: no
+show -> select.tap
