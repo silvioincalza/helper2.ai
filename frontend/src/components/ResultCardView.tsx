@@ -2,7 +2,7 @@ import { useId, useRef } from 'react';
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import type { ResultCard, SourceStatus } from '@/api/types';
-import { MODELS_ENABLED, SAVED_ENABLED } from '@/lib/features';
+import { SAVED_ENABLED } from '@/lib/features';
 import { BookmarkButton } from './BookmarkButton';
 import { canGuide } from './GuideMe';
 import { GuideBody, GuideMeButton, useGuideToggle } from './SetupGuide';
@@ -16,8 +16,6 @@ import { typeTagClass } from '@/lib/typeTag';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
 
 /** Every type has a definition, so every card can say where its type comes from. */
-/** Compatibility tool ids that are also model families: their chip opens the comparison page. */
-const FAMILY_TOOLS = new Set(['openai', 'anthropic', 'google', 'xai', 'mistral', 'deepseek', 'nvidia']);
 
 const TYPE_TERM: Record<ResultCard['type'], GlossaryKey> = {
   MCP_SERVER: 'mcp_server', MODEL: 'model', AGENT: 'agent', PROMPT: 'prompt', SKILL: 'skill', LIBRARY: 'library', DATASET: 'dataset',
@@ -110,9 +108,7 @@ export function ResultCardView({ card, sourceStatuses = [], detailed = false }: 
           const label = <>{f.label}<span className="sr-only"> ({why})</span></>;
           return (
             <li key={f.tool} data-tool={f.tool}>
-              {MODELS_ENABLED && FAMILY_TOOLS.has(f.tool)
-                ? <Link className="compat-chip" to={`/models?compare=${f.tool}`} title={why}>{label}</Link>
-                : <span className="compat-chip" title={why}>{label}</span>}
+              <span className="compat-chip" title={why}>{label}</span>
             </li>
           );
         })}

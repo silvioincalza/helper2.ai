@@ -1,4 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Icon } from './Icon';
 
 const ROTATE_MS = 6000;
 
@@ -21,8 +23,9 @@ function prefersReducedMotion(): boolean {
 
 /**
  * A list `size` rows tall that scrolls through the rest: by itself one page every few seconds, by hand (wheel,
- * touch, keyboard) at any time. It holds still while the pointer or focus is inside, and never moves by itself for
- * anyone who asked for reduced motion. It is not a live region, so screen readers are not read every page.
+ * touch, keyboard) at any time. A visible Pause/Play button stops and restarts it (WCAG 2.2.2, also on touch, where
+ * there is no hover). It holds still while the pointer or focus is inside, and never moves by itself for anyone who
+ * asked for reduced motion. It is not a live region, so screen readers are not read every page.
  */
 export function Carousel<T>({ items, size = 2, label, render }: {
   items: T[];
@@ -34,7 +37,10 @@ export function Carousel<T>({ items, size = 2, label, render }: {
   const [height, setHeight] = useState<number>();
   const [inside, setInside] = useState(false);
   const [reduced] = useState(prefersReducedMotion);
+  const [paused, setPaused] = useState(false);
+  const { t } = useTranslation();
   const scrolls = items.length > size;
+  const rotates = scrolls && !reduced;
 
   // The window is as tall as the `size` rows in view, so a taller row is never cut off: measured for the first
   // rows, again when they change size (fonts, width), after a scroll by hand settles, and before each move.
@@ -52,7 +58,7 @@ export function Carousel<T>({ items, size = 2, label, render }: {
   }, [items, size, scrolls]);
 
   useEffect(() => {
-    if (!scrolls || inside || reduced) return;
+    if (!rotates || inside || paused) return;
     const id = window.setInterval(() => {
       const el = track.current;
       if (!el) return;
@@ -63,7 +69,7 @@ export function Carousel<T>({ items, size = 2, label, render }: {
       el.scrollTo?.({ top: rows[next]?.offsetTop ?? 0, behavior: 'smooth' });
     }, ROTATE_MS);
     return () => window.clearInterval(id);
-  }, [scrolls, inside, reduced, size]);
+  }, [rotates, inside, paused, size]);
 
   return (
     <div className="carousel" onMouseEnter={() => setInside(true)} onMouseLeave={() => setInside(false)}
@@ -72,6 +78,11 @@ export function Carousel<T>({ items, size = 2, label, render }: {
         aria-live="off" style={height ? { height } : undefined}>
         {items.map(render)}
       </ul>
+      {rotates && (
+        <button type="button" className="btn carousel-toggle" onClick={() => setPaused((p) => !p)}>
+          <Icon name={paused ? 'play' : 'pause'} /> {t(paused ? 'carousel.play' : 'carousel.pause', { label })}
+        </button>
+      )}
     </div>
   );
 }

@@ -35,8 +35,8 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npx vitest run
+      # postbuild runs scripts/bundle-budget.mjs: the build fails when the first visit's JS outgrows its budget.
       - run: npm run build
-      # Playwright e2e needs a running backend; not part of CI yet.
 
   backend:
     runs-on: ubuntu-latest

@@ -3,6 +3,7 @@ const PATHS: Record<string, string> = {
   cross: 'M6 6l12 12M18 6L6 18',
   clock: 'M12 7v5l3 2M12 3a9 9 0 100 18 9 9 0 000-18z',
   pause: 'M9 6v12M15 6v12',
+  play: 'M8 5l11 7-11 7V5z',
   minus: 'M6 12h12',
   info: 'M12 8h.01M11 12h1v5h1M12 3a9 9 0 100 18 9 9 0 000-18z',
   warn: 'M12 4l9 16H3L12 4zM12 10v4M12 17h.01',

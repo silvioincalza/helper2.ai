@@ -2,7 +2,7 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axeViolations } from '@/test/a11y';
 import { mockApi } from '@/test/mockApi';
-import { renderApp } from '@/test/render';
+import { renderApp, settled } from '@/test/render';
 
 describe('mission, privacy and terms pages', () => {
   it('footer links open the mission, privacy and terms pages inside the app', async () => {
@@ -23,9 +23,10 @@ describe('mission, privacy and terms pages', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Terms of use' })).toBeInTheDocument();
   });
 
-  it('mission page states the promises and links to GitHub issues in a new tab', () => {
+  it('mission page states the promises and links to GitHub issues in a new tab', async () => {
     mockApi();
     renderApp('/mission');
+    await settled();
     expect(document.title).toBe('Mission · Helper2.ai');
     expect(screen.getByRole('region', { name: 'What we promise' })).toHaveTextContent('Proof before opinion');
     expect(screen.getByRole('region', { name: 'How the guide answers' })).toHaveTextContent('A validator checks');
@@ -37,9 +38,10 @@ describe('mission, privacy and terms pages', () => {
     expect(issues).toHaveAttribute('rel', 'noopener noreferrer');
   });
 
-  it('privacy page names the contact, the cookies and the data recipients', () => {
+  it('privacy page names the contact, the cookies and the data recipients', async () => {
     mockApi();
     renderApp('/privacy');
+    await settled();
     expect(document.title).toBe('Privacy · Helper2.ai');
     expect(screen.getByRole('link', { name: 'helper2ai@incalza.me' })).toHaveAttribute('href', 'mailto:helper2ai@incalza.me');
     expect(screen.getByRole('region', { name: 'Cookies and browser storage' })).toHaveTextContent('XSRF-TOKEN');

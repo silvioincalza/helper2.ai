@@ -20,7 +20,6 @@
     "main": "Main",
     "home": "Helper2.ai home",
     "search": "Search",
-    "models": "AI models",
     "saved": "Saved",
     "sources": "Sources",
     "admin": "Admin",
@@ -321,46 +320,6 @@
     "popularity": "Popularity metrics",
     "conflicts": "Conflicts between sources",
     "conflictOn": "Sources disagree on {{field}}"
-  },
-  "models": {
-    "title": "Compare AI models",
-    "about": "About this comparison",
-    "lede": "Model families side by side. Every official spec links to the provider page it was read from, with the exact words and the date. Newest models come from the providers' official Hugging Face organisations.",
-    "error": "Could not load the model families.",
-    "pick": "Compare up to {{max}}",
-    "pickSome": "Pick at least one family to compare.",
-    "caption": "Official specs of each family's flagship model",
-    "spec": "Spec",
-    "notStated": "Not stated",
-    "source": "source",
-    "readOn": "read on {{date}}",
-    "best": "best among those stated",
-    "benchmarkNote": "Highlighted: best among the values stated. Benchmark scores are published by each provider on its own setup and are not strictly comparable.",
-    "newest": "Newest {{family}} models found by Scout",
-    "noneListed": "No models from this provider's Hugging Face organisation in the index yet (closed-model providers publish none there).",
-    "via": "via {{source}}",
-    "officialPage": "Official models page",
-    "field": {
-      "flagship": "Flagship model",
-      "openWeights": "Open weights",
-      "contextTokens": "Context window (tokens)",
-      "maxOutputTokens": "Max output (tokens)",
-      "inputUsdPerMTok": "Input price / 1M tokens",
-      "outputUsdPerMTok": "Output price / 1M tokens",
-      "inputModalities": "Input",
-      "outputModalities": "Output",
-      "license": "License",
-      "knowledgeCutoff": "Knowledge cutoff",
-      "released": "Released"
-    }
-  },
-  "askGuide": {
-    "title": "Not sure which model fits? Ask the guide",
-    "lede": "Type your question in the box above, or start from one of these. The guide searches every source and only recommends what it can back with a quote.",
-    "examples": "Example questions",
-    "compareExample": "{{a}} or {{b}} for coding agents?",
-    "example1": "An open-weight model I can run on my own GPU",
-    "example2": "A model for long documents in Italian"
   },
   "compat": {
     "basis": {
@@ -751,6 +710,10 @@
     "noDate": "Date unknown",
     "empty": "Nothing with a stated publication date in the last 7 days.",
     "error": "Could not load what’s new right now."
+  },
+  "carousel": {
+    "pause": "Pause {{label}}",
+    "play": "Play {{label}}"
   },
   "mission": {
     "title": "Our mission",
