@@ -5,6 +5,7 @@
 #   backend/src/main/java/ai/helper2/identity/usecase/MergeLocalBookmarks.java, DeleteMyAccount.java,
 #   backend/src/main/java/ai/helper2/identity/internal/Users.java, Bookmarks.java, AuditLog.java,
 #   backend/src/main/java/ai/helper2/catalog/usecase/ResolveReviewItem.java,
+#   backend/src/main/java/ai/helper2/platform/quota/QuotaKeys.java, RedisQuotaCounter.java,
 #   frontend/src/pages/AdminPage.tsx, frontend/src/pages/AccountPage.tsx, frontend/src/components/SignIn.tsx,
 #   frontend/src/context/MeContext.tsx, BookmarksContext.tsx, frontend/src/api/client.ts.
 # Render: cd docs/diagrams && d2 fmt sequence-0023-identity-and-admin.d2 && d2 sequence-0023-identity-and-admin.d2 sequence-0023-identity-and-admin.svg
@@ -22,6 +23,7 @@ users: Users {class: app}
 me: MeController {class: app}
 uc: "MergeLocalBookmarks /\nDeleteMyAccount" {class: app}
 db: "PostgreSQL\n(app_user, bookmark,\nadmin_audit)" {class: data}
+redis: "Redis\n(h2:v1:quota:*)" {class: data}
 admin: "AdminController →\nResolveReviewItem" {class: app}
 
 owner -> spa: "open /admin"
@@ -54,5 +56,6 @@ owner -> spa: "/account: Delete my account, confirm"
 spa -> me: "DELETE /api/v1/me\nX-XSRF-TOKEN" {class: hot}
 me -> uc: "delete(user)"
 uc -> db: "DELETE app_user: bookmarks cascade,\nissue_report.reporter_user_id = NULL"
+uc -> redis: "delete the user's daily web-search counters\n(Redis down: left to expire within 24 h)"
 me -> spa: "204, session ended"
 spa -> spa: "reload: signed out"

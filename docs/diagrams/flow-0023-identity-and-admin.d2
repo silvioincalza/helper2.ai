@@ -5,6 +5,7 @@
 #   backend/src/main/java/ai/helper2/identity/usecase/*.java, identity/internal/Users.java, Bookmarks.java, AuditLog.java,
 #   backend/src/main/java/ai/helper2/catalog/usecase/ResolveReviewItem.java, scout/usecase/StartScoutRun.kt,
 #   frontend/src/context/BookmarksContext.tsx, frontend/src/pages/AccountPage.tsx, frontend/src/pages/AdminPage.tsx,
+#   backend/src/main/java/ai/helper2/platform/quota/QuotaKeys.java, RedisQuotaCounter.java (counters deleted with the account),
 #   deploy/k8s/terraform/variables.tf.
 # Render: cd docs/diagrams && d2 fmt flow-0023-identity-and-admin.d2 && d2 flow-0023-identity-and-admin.d2 flow-0023-identity-and-admin.svg
 
@@ -84,8 +85,9 @@ account: Delete my account {
   page: "/account: Delete my account,\nthen confirm" {class: app}
   call: "DELETE /api/v1/me\n(X-XSRF-TOKEN)" {class: app}
   del: "DeleteMyAccount: delete app_user;\nbookmarks cascade, reports keep\nreporter = NULL" {class: data}
+  quota: "Delete the user's daily\nweb-search counters (Redis);\nRedis down: they expire in 24 h" {class: data}
   out: "Session ended, page reloads\nsigned out" {class: end}
-  page -> call -> del -> out
+  page -> call -> del -> quota -> out
 }
 
 audit: Admin audit trail {
