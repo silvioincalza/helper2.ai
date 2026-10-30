@@ -1,4 +1,4 @@
-# 0032 — Guide intents: understand the question, ask back when vague, retrieve and answer by intent
+# 0032 — Guide intents: understand the question, ask back when vague or ambiguous, retrieve and answer by intent
 
 **Status.** Accepted (2026-10-28). **Builds on:** [0014](0014-llm-integration.md), [0015](0015-ai-guide-evidence-gate.md),
 [0016](0016-guide-reason-check.md), [0017](0017-guide-cost-guard.md), [0030](0030-guide-evaluation.md)
@@ -12,7 +12,9 @@ answer Cursor. "Ollama vs LM Studio" wants a comparison, "what is MCP?" an expla
 One pipeline for all of them (search the words by relevance, choose picks with a quote) answers them badly. For the
 "born in the last month" question it searches "AI tools last month" with no date filter, so the candidates contain
 "tool" and "month", the chooser rejects them all, and the answer is three old packages. A vague question ("new
-tools?") would be searched as typed.
+tools?") would be searched as typed. A name can mean things of different kinds: "Gemini" is a model family and a
+command-line tool, and an answer about the wrong one is worse than a short question. An event shares its name with
+projects ("NeurIPS", "AI hackathon"), so a date question searched over every type can lose the event among them.
 
 What the data supports:
 - Search has `SortOrder.NEWEST` (on `published`) and the filters `publishedAfter` and `publishedBefore`.
@@ -36,7 +38,7 @@ The planner puts each question into exactly one intent. One question, one intent
 | `COMPARE` | "Ollama vs LM Studio" | each named subject's own entry (2–3) | one column per subject, cells backed by quotes |
 | `HOW_TO` | "how do I run Llama locally" | the planned query, tool types | picks |
 | `WHAT_IS` | "what is MCP?" | the subject's own entry, then web explainers | 2–4 quoted sentences, the subject's card, related cards |
-| `WHEN` | "when is NeurIPS?", "when was Llama 4 released?" | the subject's name | an event's dates, or the subject's creation date, with their source |
+| `WHEN` | "when is NeurIPS?", "when was Llama 4 released?" | events only for an event; else the subject's name | an event's dates, or the subject's creation date, with their source |
 | `LEARN` | "AI certifications for beginners", "a course on RAG" | the `COURSE` type (§8) | picks |
 
 An unknown or missing intent is `SUGGEST`.
@@ -82,33 +84,57 @@ A period with intent `SUGGEST` becomes `NEWEST`. The user's removals (§9) apply
 dropped window or constraint is gone. When the plan call succeeded the stream sends `planned` (search query,
 constraints, model); then, always, `understood` (intent, subjects, window).
 
-### 3. Ask back only when there is nothing to search
+### 3. Ask back when there is nothing to search, or the subject is ambiguous
 The planner may return `clarify`: a question and 2–4 short options in the user's language. `Clarification.of` keeps a
 question of at most 120 characters and options of at most 40, without links; with fewer than 2 options left there is
-no clarification.
+no clarification. Code decides whether a question is asked back; the planner only words it.
 
-`QuestionReader.clarificationOf` keeps it only when the question cannot be searched:
-- `COMPARE` with fewer than 2 grounded subjects, or
-- nothing to search: no subject, no window, and no subject words left in the query once generic words ("AI", "tools",
-  "latest") are removed (`IntentRules.subjectWords`).
+**Nothing to search** (`QuestionReader.clarificationOf`, before any search). The planner's `clarify` is kept when:
+- `COMPARE` has fewer than 2 grounded subjects, or
+- there is nothing to search: no subject, no window, and no subject words left in the query once generic words
+  ("AI", "tools", "latest") are removed (`IntentRules.subjectWords`).
 
-A question with a subject, a window or subject words is answered directly. A clarification is never kept when the
-request already carries one.
+**Ambiguous subject** (`AmbiguousSubject`, after the question's own search). The question is asked back when all hold:
+- the plan call succeeded and the request carries no clarification;
+- exactly one grounded subject, and the question is about that thing itself: `WHAT_IS`, `ALTERNATIVES`, `WHEN` not
+  about an event (§5), or `SUGGEST` whose text is only the name and generic words ("Gemini", not "a chat UI for
+  Gemini") (`QuestionReader.askBackSubject`);
+- the search the intent runs anyway finds the subject's own entries (`isSubject`, §5) of at least two kinds
+  (`SubjectKind`): `MODEL`, `DATASET`, or a tool (`PRODUCT`, `AGENT`, `PROMPT`, `SKILL`, `MCP_SERVER`, `LIBRARY`).
+  Reading types, events, courses and `OTHER` are about a thing or unknown, so they never make a name ambiguous; an
+  npm package and a repository of the same tool are one kind.
+
+The question and options are the planner's `clarify` when it gave one (in the user's language). Otherwise the
+question is "Which Gemini do you mean?" and the options are one per kind, from the first own entry of that kind in
+search order: its name without owner prefix and its kind, "Gemini (model)", "gemini cli (tool)"; a name too long for
+an option becomes "Gemini (tool)". The reply names the entry, so the planner grounds it as the subject. No model call
+decides the ambiguity, and the check reads results the question searched anyway: a subject that is not ambiguous
+costs nothing.
+
+Any other question is answered directly.
 
 Flow:
-1. `AskGuide` returns status `NEEDS_CLARIFICATION` with the question and options, after the plan call only: no
-   search, no choose, no reason check. One model call.
+1. `AskGuide` returns status `NEEDS_CLARIFICATION` with the question and options: no choose, compare, explain or
+   reason check. A vague question runs no search; an ambiguous subject runs only the intent's own search. One model
+   call (plan).
 2. The stream sends `planned`, `understood`, `clarify`, then `answer` with that status; the JSON endpoint returns the
-   same answer.
+   same answer. The question and options are AI-written and marked as such
+   ([0038](0038-ai-content-marking.md)): the plan call ran.
 3. The page shows the question, the options as chips and "Search anyway". A chip sends the original text plus
    `clarification` with the option; a free-text reply works the same way; "Search anyway" sends `clarification = ""`.
    `clarification` is user text like `request`: at most 300 characters, wrapped by `UntrustedText` in the plan prompt,
    and treated as more of the need, never as instructions.
-4. With a `clarification` the planner is told the user already answered, and code ignores a `clarify` it returns:
-   at most one round trip per question.
+4. With a `clarification` (an option, free text, or "" for "Search anyway") the planner is told the user already
+   answered; code ignores a `clarify` it returns and checks no subject for namesakes: at most one round trip per
+   question, and the reply goes straight to an answer.
 5. `NEEDS_CLARIFICATION` answers are never cached; the final answer is cached under the key of text + clarification.
-6. The clarification and the follow-up are two guide requests: 2 units of the per-client quota of
-   [0017](0017-guide-cost-guard.md) and 1 + 3 model calls of the daily budget.
+6. Cost of one round trip: two guide requests, so 2 units of the per-client quota of
+   [0017](0017-guide-cost-guard.md) and 1 + the intent's model calls (§7) of the daily budget: 2 plan calls for a
+   date, 4 for picks, a comparison or an explanation. Daily web searches
+   ([0037](0037-tavily-store-and-daily-quota.md)): a vague question takes none before the reply; an ambiguous subject
+   takes 1 for its own search and the reply takes 1 more, because 0037 counts one per request and the reply's search
+   carries the chosen name, a different query. The reply takes none when its search equals a stored one (the same
+   name searched by anyone in the last 48 h, 24 h for dates).
 
 ### 4. Time window
 - Resolved in code with the injected `Clock`: `PAST` → `[today − period, today]`, `NEXT` → `[today, today + period]`.
@@ -132,8 +158,15 @@ Flow:
 | `ALTERNATIVES` | tool types | relevance | the subject's use cases and type, from its own entry | the subject never a candidate |
 | `COMPARE` | all | relevance | each subject's name, size 5 | the searches run at the same time |
 | `WHAT_IS` | all | relevance | the subject (or the query) | candidates with a description: the subject's own entry, then web explainers, at most 12 |
-| `WHEN` | all | relevance | the subject, else the subject words, else "AI" | no model call |
+| `WHEN`, about an event | `EVENT` | relevance; soonest first in the answer | the subject, else the subject words, else "AI" | planned web query; no model call |
+| `WHEN`, other | all | relevance | the subject, else the subject words, else "AI" | no model call |
 | `LEARN` | `COURSE` | relevance | planned query | window if stated |
+
+**About an event.** A `WHEN` question is about an event when the user's words or the planned search query name a
+kind of event (`IntentRules.namesEvent`, `when.event` in the word bundles: conference, hackathon, meetup, summit,
+webinar, workshop, deadline, start, and their Italian forms). The planner names the kind of event in `searchQuery`
+for "when is NeurIPS?" ("NeurIPS conference") and never for a release ("Llama 4 release"). Its search keeps only
+`EVENT` results, so a repository named like the event never takes an event's place in the result list.
 
 **Tool types** are every type but the reading types (`ARTICLE`, `PAPER`, `NEWS`, `EVENT`) and `COURSE`, so courses
 never fill the candidates of a tool question.
@@ -184,7 +217,8 @@ apply to every sentence the model writes, in every intent. The comparison and ex
   sentence left, the cards alone (`PARTIAL`).
 - `WHEN`: dates come from records, never from a model. Events among the results (type `EVENT` with a start date,
   the subject in the title when there is one) inside the window, or not yet over without a window: up to 5, soonest
-  first, each with start, end, place and the source of the date. Else the subject's own non-event entry with its
+  first, each with start, end, place and the source of the date. The window applies to the event's days, not to
+  its creation date. Else, for a question that is not about an event, the subject's own non-event entry with its
   creation date and that date's source, or "No release date found in our sources." (`PARTIAL`). Else the top
   results with the notice "No date found in our sources; showing the closest search results." (`PARTIAL`), or
   `NO_CANDIDATES`.
@@ -192,7 +226,7 @@ apply to every sentence the model writes, in every intent. The comparison and ex
 ### 7. Cost and latency
 | Intent | Model calls (fresh question) |
 |---|---|
-| clarification | 1 (plan) |
+| clarification (vague or ambiguous) | 1 (plan) |
 | `SUGGEST`, `NEWEST`, `ALTERNATIVES`, `HOW_TO`, `LEARN` | 3 (plan, choose, verify) |
 | `COMPARE`, `WHAT_IS` | 3 (plan, compare or explain, verify) |
 | `WHEN` | 1 (plan) |
@@ -245,8 +279,9 @@ either, and most platform courses end with a certificate.
 ### 10. Evaluation
 [0030](0030-guide-evaluation.md) runs the guide question set. Pass criteria per intent: `NEWEST` — every pick created
 inside the window, newest first; `ALTERNATIVES` — the subject is not a pick; `COMPARE` — one column per subject, no
-cell without a gated quote; `WHAT_IS` — every sentence quoted; `WHEN` — the date equals the event record; `LEARN` —
-every pick has type `COURSE`.
+cell without a gated quote; `WHAT_IS` — every sentence quoted; `WHEN` — the date equals the event record, and a
+question about an event shows events only; `LEARN` — every pick has type `COURSE`; ask-back cases — asked back
+exactly when expected ("new tools?", "Gemini", "what is Gemini?" are; "what is Ollama?" is not).
 
 Live check on 2026-10-28 (Nemotron 3 Nano plans, Nemotron 3 Super chooses): "what are the last ai tools born in the
 last month?" is answered `OK` with three AI picks created inside the window, newest first, every reason SUPPORTED;
@@ -255,13 +290,19 @@ to learn LangChain" picks the O'Reilly course.
 
 ## Consequences
 - The guide answers the kind of question asked and shows how it read it, so a misreading is visible and correctable.
-- A question is asked back only when it has nothing to search; one extra round trip and one model call.
-- An ambiguous subject ("Gemini": the model or the command-line tool?) is not asked back: it is searched as written.
+- A question is asked back only when it has nothing to search or its one subject has own entries of different kinds;
+  one extra round trip, one model call, and for an ambiguous subject one more daily web search for the reply.
+- Ambiguity depends on our sources: a name is asked back only when they hold own entries of two kinds, and an
+  unrelated project that happens to carry the exact name of a model also triggers the question. The evaluation set
+  carries ask-back cases both ways.
 - A broad "what is new" question takes about 10 s longer (thinking on for its choose call).
 - `NEWEST` is honest but smaller: npm and other undated results are dropped silently; the answer does not count them.
 - A comparison costs one search per subject, run at the same time; a subject slower than 10 s is reported as not found.
-- `WHEN` finds an event only when it is among the top results of one search over every type; a release with no
-  creation date in our sources has no date, even when news reported it.
+- An event is found only when a source returns it among its own top hits for the text: the `EVENT` filter runs
+  after merging, like every filter (§4). A release with no creation date in our sources has no date, even when news
+  reported it.
+- The event words are a fixed list; an event question without them, and a planner that does not name the kind of
+  event, is answered like a release question over every type, events still included.
 - Two prompts (`compare`, `explain`) and their schemas to maintain and evaluate.
 - The course list needs editorial review; the collector proposes, an admin accepts. Coursera, edX and Udemy are covered
   only through the collector and the seed.
@@ -275,6 +316,13 @@ to learn LangChain" picks the O'Reilly course.
   birth date is a claim the guide cannot back.
 - **Always confirm the reading before searching** — slower for every clear question; the "Understood as" chips give
   the same control after the answer.
+- **Let the planner decide that a name is ambiguous** — it does not know our sources and copies examples, so it would
+  ask about names we hold only one kind of; a second model call to judge it costs a call on every subject question.
+  Code decides on the entries, the planner only words the question.
+- **A separate lookup search for the ambiguity check** — one more search, and one more web credit, on every subject
+  question; the intent's own search already holds the subject's entries.
+- **Search every type for an event and filter afterwards** — repositories named like the event fill the result list
+  before the events.
 - **One model call that classifies and answers** — mixes untrusted candidate text into the planning step and loses
   the evidence gate per sentence.
 - **Courses from web search only** — no stable type or card, and every answer depends on one web source.
@@ -282,12 +330,14 @@ to learn LangChain" picks the O'Reilly course.
 ## Code
 - `backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt` — dispatch by intent, clarification answer.
 - `backend/src/main/kotlin/ai/helper2/guide/usecase/QuestionReader.kt` — plan, grounding, backup rules, window,
-  `clarificationOf`.
+  `clarificationOf`, `askBackSubject`, about an event.
 - `backend/src/main/kotlin/ai/helper2/guide/usecase/PickAnswer.kt`, `CompareAnswer.kt`, `ExplainAnswer.kt`,
-  `DateAnswer.kt` — retrieval and answer per intent; `Question.kt` — step spans and searches.
-- `backend/src/main/kotlin/ai/helper2/guide/Intents.kt` — `GuideIntent`, `IntentRules`, `Clarification`, `isSubject`;
+  `DateAnswer.kt` — retrieval and answer per intent; `Question.kt` — step spans, searches, `askBack`, `namesakes`.
+- `backend/src/main/kotlin/ai/helper2/guide/Intents.kt` — `GuideIntent`, `IntentRules` (with `namesEvent`),
+  `Clarification`, `SubjectKind`, `AmbiguousSubject`, `isSubject`;
   `Guide.kt` — `GuideSearchPlan`, `GuideAnswer` blocks, type sets; `AnswerLimits.kt`; `GuideCost.kt` — `WINDOWED_TTL`.
-- `backend/src/main/resources/i18n/intent-words_en.properties`, `intent-words_it.properties` — backup rule words.
+- `backend/src/main/resources/i18n/intent-words_en.properties`, `intent-words_it.properties` — backup rule words and
+  the event words (`when.event`).
 - `backend/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java` — plan, compare, explain calls.
 - `backend/src/main/java/ai/helper2/guide/web/GuideStreamController.java` — `planned`, `understood`, `clarify` events.
 - `backend/src/main/resources/prompts/guide/plan.txt`, `choose.txt`, `compare.txt`, `explain.txt`.

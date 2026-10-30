@@ -1,9 +1,9 @@
-# Flowchart: how the guide reads a question (plan, grounding, backup rules, window), when it asks back, and how each
-# intent retrieves and answers. The pick pipeline (choose, evidence gate, reason check) is drawn in flow-0015 and flow-0016.
+# Flowchart: how the guide reads a question (plan, grounding, backup rules, window), when it asks back (a vague
+# question, or a subject with namesakes of different kinds), and how each intent retrieves and answers. The pick pipeline (choose, evidence gate, reason check) is drawn in flow-0015 and flow-0016.
 # Source of truth: backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (answerByIntent),
-#   QuestionReader.kt (read, grounded, clarificationOf), PickAnswer.kt (newest, alternatives, picks),
-#   CompareAnswer.kt (answer, subjectsFound), ExplainAnswer.kt, DateAnswer.kt,
-#   backend/src/main/kotlin/ai/helper2/guide/Intents.kt (IntentRules, Clarification, isSubject),
+#   QuestionReader.kt (read, grounded, clarificationOf, askBackSubject), Question.kt (askBack, namesakes),
+#   PickAnswer.kt (newest, alternatives, picks), CompareAnswer.kt (answer, subjectsFound), ExplainAnswer.kt, DateAnswer.kt,
+#   backend/src/main/kotlin/ai/helper2/guide/Intents.kt (IntentRules, Clarification, SubjectKind, AmbiguousSubject, isSubject),
 #   backend/src/main/kotlin/ai/helper2/guide/Guide.kt, GuideCost.kt (GuideAnswerCache.isCacheable, WINDOWED_TTL).
 # Render: cd docs/diagrams && d2 fmt flow-0032-guide-intents.d2 && d2 flow-0032-guide-intents.d2 flow-0032-guide-intents.svg
 
@@ -24,7 +24,8 @@ read: QuestionReader.read {
 }
 
 clarify: "clarify set, no clarification yet, and\nCOMPARE with < 2 subjects or nothing to\nsearch (no subject, window or subject words)?" {class: decision}
-ask: "NEEDS_CLARIFICATION:\nevent clarify, then answer with\nquestion + 2–4 options\n(one model call, never cached)" {class: end}
+ask: "NEEDS_CLARIFICATION:\nevent clarify, then answer with\nquestion + 2–4 options\n(plan call only, at most the intent's\nown search; never cached)" {class: end}
+namesakes: "Namesakes: one grounded subject, planned,\nno clarification yet, a question about the\nthing itself; its own entries in the intent's\nown search are of ≥ 2 kinds (model,\ndataset, tool). Options: the planner's,\nelse one per kind" {class: decision}
 
 route: "Intent?" {class: decision}
 
@@ -39,7 +40,9 @@ intents: Retrieval and answer by intent {
   cmp: "COMPARE: one search per subject\n(size 5), at the same time,\n10 s for all; 2 found?" {class: decision}
   compare: "compare call: one column per subject,\ncells gated by quote" {class: ai}
   explain: "WHAT_IS: subject's own entry, then\nweb explainers; explain call,\nsentences without a quote dropped" {class: ai}
-  when: "WHEN: no model call; one search,\nno type filter; events among the\nresults by name and window, else the\nsubject's creation date, else\nclosest results" {class: app}
+  when: "WHEN about an event?\n(event words in the text\nor the planned query)" {class: decision}
+  event: "events only (EVENT type,\nweb query); in the window or\nnot over; soonest first;\nno model call" {class: app}
+  release: "every type; events by name\nand window, else the subject's\ncreation date, else closest\nresults; no model call" {class: app}
 
   suggest -> picks
   learn -> picks
@@ -47,6 +50,8 @@ intents: Retrieval and answer by intent {
   alt -> picks
   cmp -> compare: yes
   cmp -> picks: "no: picks on the\nfound subject"
+  when -> event: yes
+  when -> release: no
 }
 
 done: "GuideAnswer with intent, subjects, window;\ncached when model-checked\n(windowed: at most 6 h)" {class: end}
@@ -65,4 +70,10 @@ route -> intents.when: WHEN
 intents.picks -> done
 intents.compare -> done
 intents.explain -> done
-intents.when -> done
+intents.event -> done
+intents.release -> done
+intents.suggest -> namesakes: "a bare name"
+intents.alt -> namesakes
+intents.explain -> namesakes
+intents.release -> namesakes
+namesakes -> ask: yes
