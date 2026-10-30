@@ -26,6 +26,7 @@ repositories {
 extra["springAiVersion"] = "2.0.2"
 extra["springModulithVersion"] = "2.1.2"
 extra["httpclient5.version"] = "5.6.5"
+extra["resilience4jVersion"] = "2.4.0"
 // Keep the Kotlin stdlib/reflect managed by the BOM in line with the Kotlin plugin.
 extra["kotlin.version"] = "2.4.21"
 
@@ -58,6 +59,15 @@ dependencies {
     implementation("com.github.pemistahl:lingua:1.2.2")
     // Parses the YAML conference files of huggingface/ai-deadlines (version from the Spring Boot BOM).
     implementation("org.yaml:snakeyaml")
+    // Circuit breakers, bulkheads and retries as named policies (ADR 0033), built from the registries in code.
+    // The 2.4.0 BOM shipped without the Spring Boot 4 module at first: its version is pinned here.
+    implementation("io.github.resilience4j:resilience4j-spring-boot4:${property("resilience4jVersion")}")
+    implementation("io.github.resilience4j:resilience4j-circuitbreaker")
+    implementation("io.github.resilience4j:resilience4j-bulkhead")
+    implementation("io.github.resilience4j:resilience4j-retry")
+    implementation("io.github.resilience4j:resilience4j-micrometer")
+    // Size-bounded in-memory caches with expiry (setup guide: registry entries, tool documents weighed by length).
+    implementation("com.github.ben-manes.caffeine:caffeine:3.2.3")
     runtimeOnly("org.postgresql:postgresql")
     developmentOnly("org.springframework.boot:spring-boot-docker-compose")
 
@@ -71,6 +81,9 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation("com.tngtech.archunit:archunit-junit5:1.5.1")
     testImplementation("com.networknt:json-schema-validator:3.0.8")
+    // Parse-back tests of the setup snippets (TOML for Codex, YAML for Continue and Goose).
+    testImplementation("tools.jackson.dataformat:jackson-dataformat-toml")
+    testImplementation("tools.jackson.dataformat:jackson-dataformat-yaml")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
@@ -78,6 +91,7 @@ dependencyManagement {
     imports {
         mavenBom("org.springframework.modulith:spring-modulith-bom:${property("springModulithVersion")}")
         mavenBom("org.springframework.ai:spring-ai-bom:${property("springAiVersion")}")
+        mavenBom("io.github.resilience4j:resilience4j-bom:${property("resilience4jVersion")}")
     }
 }
 
@@ -154,8 +168,32 @@ tasks.withType<Test>().configureEach {
 
 tasks.named<Test>("test") {
     useJUnitPlatform {
-        excludeTags("live")
+        excludeTags("live", "eval", "eval-record")
     }
+}
+
+// Search relevance and cutoff evaluation on recorded snapshots (ADR 0036): ./gradlew evalTest
+// Reads backend/eval-data (git-ignored) and docs/eval; skips with a message when either is missing.
+tasks.register<Test>("evalTest") {
+    description = "Runs @Tag(\"eval\") tests: offline replay and metrics over recorded search snapshots."
+    group = "verification"
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    useJUnitPlatform { includeTags("eval") }
+    outputs.upToDateWhen { false }
+}
+
+// Records search snapshots against the live sources through the real adapters (ADR 0036): ./gradlew evalRecord
+// Uses the repo-root .env and the embedding key, unlike the hermetic test tasks.
+tasks.register<Test>("evalRecord") {
+    description = "Runs @Tag(\"eval-record\"): one live search per query, saved to backend/eval-data."
+    group = "verification"
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    useJUnitPlatform { includeTags("eval-record") }
+    systemProperty("helper2.dotenv-import", "optional:file:../.env[.properties]")
+    systemProperty("helper2.embedding.api-key", System.getenv("H2_NVIDIA_API_KEY") ?: "")
+    outputs.upToDateWhen { false }
 }
 
 // Opt-in smoke tests that hit real external APIs: ./gradlew liveTest

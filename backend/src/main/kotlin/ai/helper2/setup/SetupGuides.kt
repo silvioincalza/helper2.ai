@@ -28,9 +28,9 @@ data class SetupGuide(
 }
 
 /**
- * Builds the setup guide of a resource from its source data only: today, an MCP server's latest entry in the
- * Official MCP Registry. A package whose launcher cannot be stated, and a package not run over stdio, are left
- * out rather than guessed.
+ * Builds the setup guide of a resource from its source data only: an MCP server's latest entry in the Official MCP
+ * Registry, else the config example in its README. An option that [RunOptionRules] does not accept, a package whose
+ * launcher cannot be stated, and a package not run over stdio are left out rather than guessed.
  */
 class SetupGuides @JvmOverloads constructor(
     private val specs: McpServerSpecs,
@@ -43,18 +43,26 @@ class SetupGuides @JvmOverloads constructor(
 
     /**
      * The registry entry first; without one (or one with no usable option), the config example in the README of
-     * [ref], when the resource is an MCP server.
+     * [ref], when the resource is an MCP server. When the registry cannot be read, the README example answers;
+     * without one, [SetupUnavailable] is thrown, since the registry may well have an entry.
      */
     fun build(title: String, registryName: String?, ref: ToolRef?): SetupGuide {
-        val fromRegistry = registryName?.let(specs::latest)?.takeIf { it.options.isNotEmpty() }
+        var registryDown: SetupUnavailable? = null
+        val fromRegistry = try {
+            registryName?.let(specs::latest)?.takeIf { it.options.any(RunOptionRules::accepts) }
+        } catch (e: SetupUnavailable) {
+            registryDown = e
+            null
+        }
         val spec = fromRegistry
             ?: ref?.takeIf { it.type == "MCP_SERVER" && (it.githubRepo != null || it.npmPackage != null) }?.let(readme::of)
+            ?: registryDown?.let { throw it }
             ?: return SetupGuide.none(title)
-        val shown = spec.options.mapNotNull { o ->
+        val shown = spec.options.filter(RunOptionRules::accepts).mapNotNull { o ->
             when (o) {
                 is RunOption.Remote -> o to null
                 is RunOption.Package -> if (o.transport == Transport.STDIO) Launches.of(o)?.let { o to it } else null
-                is RunOption.Command -> o to Launches.of(o)
+                is RunOption.Command -> Launches.of(o)?.let { o to it }
             }
         }.mapIndexed { i, (o, launch) -> ShownOption("o${i + 1}", o, label(o), launch) }
         val key = key(title, spec.name)

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.helper2.search.CachedHits;
 import ai.helper2.testing.MovableClock;
+import ai.helper2.testing.TestPolicies;
 import java.lang.reflect.Proxy;
 import java.time.Duration;
 import java.time.Instant;
@@ -17,7 +18,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import tools.jackson.databind.json.JsonMapper;
 
-/** The search cache is optional: a Redis error fails fast for a while instead of slowing every search. */
+/** The search cache is optional: while the redis circuit is open, calls fail at once instead of slowing every search. */
 class RedisSearchCacheTest {
 
     private static final Instant NOW = Instant.parse("2026-10-27T10:00:00Z");
@@ -51,7 +52,7 @@ class RedisSearchCacheTest {
 
     private final FakeRedis redis = new FakeRedis();
     private final MovableClock clock = new MovableClock(NOW);
-    private final RedisSearchCache cache = new RedisSearchCache(redis, JsonMapper.builder().build(), clock, Duration.ofSeconds(30));
+    private final RedisSearchCache cache = new RedisSearchCache(redis, JsonMapper.builder().build(), TestPolicies.redis(clock));
 
     @Test
     void storesWithTheTtlAndReadsBack() {
@@ -69,11 +70,11 @@ class RedisSearchCacheTest {
     }
 
     @Test
-    void afterAFailureRedisIsLeftAloneUntilTheCircuitCloses() {
+    void afterAFailureRedisIsLeftAloneUntilTheCircuitLetsATrialCallThrough() {
         redis.down = true;
         assertThatThrownBy(() -> cache.get("k")).isInstanceOf(IllegalStateException.class).hasMessage("cache unavailable");
         assertThatThrownBy(() -> cache.put("k", new CachedHits(List.of(), NOW), Duration.ofMinutes(1)))
-            .isInstanceOf(IllegalStateException.class).hasMessage("cache circuit open");
+            .isInstanceOf(IllegalStateException.class).hasMessage("cache unavailable");
         assertThat(redis.calls).isEqualTo(1);
 
         redis.down = false;

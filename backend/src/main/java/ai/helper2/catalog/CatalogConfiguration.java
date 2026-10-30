@@ -6,10 +6,13 @@ import ai.helper2.catalog.internal.ObservationQueue;
 import ai.helper2.catalog.internal.ResourceStore;
 import ai.helper2.catalog.internal.ResourceStore.DataOrigin;
 import ai.helper2.platform.ClusterLock;
+import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.SourceMode;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.binder.MeterBinder;
 import io.micrometer.observation.ObservationRegistry;
 import java.net.URI;
 import java.time.Clock;
@@ -35,6 +38,14 @@ class CatalogConfiguration {
     ObservationQueue observationQueue(MeterRegistry registry,
                                       @Value("${helper2.catalog.observation-queue:256}") int capacity) {
         return new ObservationQueue(capacity, registry);
+    }
+
+    /** The review backlog: items waiting for a person (one count query per scrape). */
+    @Bean
+    MeterBinder reviewBacklogGauge(ReviewQueue queue) {
+        return meters -> Gauge.builder("helper2.review.open_items", queue, ReviewQueue::openCount)
+            .description("Review items waiting for a decision (status OPEN)")
+            .register(meters);
     }
 
     @Bean
@@ -74,9 +85,9 @@ class CatalogConfiguration {
                           @Value("${helper2.embedding.model}") String model,
                           @Value("${helper2.embedding.dimensions:1024}") int dimensions,
                           @Value("${helper2.embedding.timeout:3s}") Duration timeout,
-                          ObservationRegistry observations) {
+                          ObservationRegistry observations, Resilience resilience) {
             log.info("Vector search on: model={}, dimensions={}", model, dimensions);
-            return new NvidiaEmbedder(baseUrl, apiKey, model, dimensions, timeout, observations);
+            return new NvidiaEmbedder(baseUrl, apiKey, model, dimensions, timeout, observations, resilience);
         }
 
         @Bean
@@ -98,12 +109,13 @@ class CatalogConfiguration {
          */
         @Bean
         EmbeddingIndexer embeddingIndexer(ResourceStore store, Embedder embedder, Clock clock, MeterRegistry registry,
-                                          ObservationRegistry observations,
+                                          ObservationRegistry observations, Resilience resilience,
                                           @Value("${helper2.embedding.base-url}") String baseUrl,
                                           @Value("${helper2.embedding.api-key}") String apiKey,
                                           @Value("${helper2.embedding.index-timeout:30s}") Duration indexTimeout,
                                           @Value("${helper2.embedding.batch:50}") int batch) {
-            Embedder indexing = new NvidiaEmbedder(baseUrl, apiKey, embedder.model(), embedder.dimensions(), indexTimeout, observations);
+            Embedder indexing = new NvidiaEmbedder(baseUrl, apiKey, embedder.model(), embedder.dimensions(), indexTimeout, observations,
+                resilience);
             return new EmbeddingIndexer(store, indexing, batch, Duration.ofMinutes(2), clock, registry);
         }
 

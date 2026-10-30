@@ -31,8 +31,9 @@ to the text.
 3. **Page: an attribute on every AI-written element.** `data-ai-generated="true"`, plus `data-ai-model` when the
    model is known (`src/lib/aiMark.ts`). The guide answer and the question back carry `data-ai-provider` and
    `data-ai-models`. Marked: reasons, requirements (chips and checks), the question back and its options, comparison
-   aspects and cells, explanation sentences, the prompt and the planned search query. Quotes, titles and links are
-   never marked: they come from the sources. Our own labels and the subjects (the user's own words) are not marked.
+   aspects and cells, explanation sentences, the prompt, the planned search query, AI summaries and values extracted
+   by AI on the resource page. Quotes, titles and links are never marked: they come from the sources. Our own
+   labels and the subjects (the user's own words) are not marked.
 4. **Explained in public.** The Mission page has a section "How we mark AI text".
 5. **No hidden characters in the text.** We do not add zero-width or other invisible characters.
 

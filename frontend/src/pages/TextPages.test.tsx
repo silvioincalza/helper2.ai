@@ -26,6 +26,7 @@ describe('mission, privacy and terms pages', () => {
   it('mission page states the promises and links to GitHub issues in a new tab', async () => {
     mockApi();
     renderApp('/mission');
+    await settle();
     expect(document.title).toBe('Mission · Helper2.ai');
     expect(screen.getByRole('region', { name: 'What we promise' })).toHaveTextContent('Proof before opinion');
     expect(screen.getByRole('region', { name: 'How the guide answers' })).toHaveTextContent('A validator checks');
@@ -35,12 +36,12 @@ describe('mission, privacy and terms pages', () => {
     expect(issues).toHaveAttribute('href', 'https://github.com/silvioincalza/helper2.ai/issues');
     expect(issues).toHaveAttribute('target', '_blank');
     expect(issues).toHaveAttribute('rel', 'noopener noreferrer');
-    await settle();
   });
 
   it('privacy page names the contact, the cookies and the data recipients', async () => {
     mockApi();
     renderApp('/privacy');
+    await settle();
     expect(document.title).toBe('Privacy · Helper2.ai');
     expect(screen.getByRole('link', { name: 'helper2ai@incalza.me' })).toHaveAttribute('href', 'mailto:helper2ai@incalza.me');
     expect(screen.getByRole('region', { name: 'Cookies and browser storage' })).toHaveTextContent('XSRF-TOKEN');
@@ -51,7 +52,17 @@ describe('mission, privacy and terms pages', () => {
     expect(screen.getByRole('region', { name: 'Legal basis' })).toHaveTextContent('Art. 6(1)(f) GDPR');
     expect(recipients).toHaveTextContent('Data Privacy Framework');
     expect(screen.getByRole('region', { name: 'How long we keep data' })).toHaveTextContent('Technical logs: up to 3 months.');
+  });
+
+  it('privacy page states the account data, how long it is kept and how to delete the account', async () => {
+    mockApi();
+    renderApp('/privacy');
     await settle();
+    expect(screen.getByRole('region', { name: 'What we process and why' })).toHaveTextContent('when you last signed in');
+    const keep = screen.getByRole('region', { name: 'How long we keep data' });
+    expect(keep).toHaveTextContent('24 months after you last signed in');
+    expect(keep).toHaveTextContent('Reports: 12 months after they were handled.');
+    expect(screen.getByRole('region', { name: 'Deleting your account' })).toHaveTextContent('Delete my account');
   });
 
   it('terms page states the disclaimer, the liability limit and links to privacy', async () => {

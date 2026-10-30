@@ -1,22 +1,7 @@
 package ai.helper2.search
 
 import ai.helper2.shared.AudiencePath
-import ai.helper2.shared.DateFact
-import ai.helper2.shared.LanguageDetector
-import ai.helper2.shared.SourceMode
-import java.security.MessageDigest
-import java.time.Clock
-import java.time.Duration
 import java.time.Instant
-import java.util.HexFormat
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ExecutionException
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Future
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
-import java.util.concurrent.atomic.AtomicLong
-import org.slf4j.LoggerFactory
 
 data class SearchRequest @JvmOverloads constructor(
     val text: String,
@@ -29,6 +14,10 @@ data class SearchRequest @JvmOverloads constructor(
     val webQuery: String? = null,
     /** No subject words to search: sources that can list by date and type do, the others are skipped. */
     val browse: Boolean = false,
+    /** Who asks, for the daily web-search quota; null for internal callers, who have none. */
+    val asker: Asker? = null,
+    /** How fast web results for this request age; null = read from the request ([IntentClass.of]). */
+    val intentClass: IntentClass? = null,
 )
 
 /** GUIDE_DAILY_QUOTA is the guide's own: the asker's daily AI answers are used up, so the answer is search only. */
@@ -54,6 +43,10 @@ data class SearchOutcome(
     val facets: Map<String, List<FacetCount>>,
     val coverage: Coverage,
     val notices: List<Notice>,
+    /** Web searches the asker's feature has left today; null without an asker, a metered source or a readable quota. */
+    val webSearches: WebSearchesLeft? = null,
+    /** When the metered web results in this outcome stop being fresh; null when it holds none. */
+    val webFreshUntil: Instant? = null,
 ) {
     companion object {
         /** No search ran (the guide asked a question back, or compared entries it looked up one by one). */

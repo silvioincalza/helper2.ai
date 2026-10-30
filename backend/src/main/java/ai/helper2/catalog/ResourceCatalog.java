@@ -9,10 +9,12 @@ import ai.helper2.search.RecordedOutcomes;
 import ai.helper2.search.ResultObserver;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.SourceHealth;
+import ai.helper2.search.SourceHit;
 import ai.helper2.search.SourceOutcome;
 import ai.helper2.shared.ResourceId;
 import ai.helper2.shared.SourceMode;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +27,8 @@ import org.springframework.stereotype.Service;
 /**
  * Catalog entry point. Implements the search module's {@link ResultObserver}: every resource seen in
  * a live search is recorded so Helper2 can state when it was first discovered, and detail pages
- * work for live results. Also {@link RecordedOutcomes}: the Scout's last run outcome per source.
+ * work for live results, and the hits a source gave can be read back for a stored web result set (ADR 0037). Also
+ * {@link RecordedOutcomes}: the Scout's last run outcome per source.
  *
  * Recording is asynchronous ({@link ObservationQueue}), so a search costs one batched read of discovery
  * dates and no writes. The trade-off: a resource seen for the first time has no discovery date in that
@@ -73,6 +76,24 @@ public class ResourceCatalog implements ResultObserver, RecordedOutcomes, SmartI
         if (!results.isEmpty()) {
             observations.offer(() -> persistObserved(results));
         }
+    }
+
+    /**
+     * Two short reads per id: the resource that owns the record of that URL (it may have moved to a repository's
+     * resource), then that resource's records, read once per owner.
+     */
+    @Override
+    public List<SourceHit> recordedHits(String sourceId, List<ResourceId> ids) {
+        Map<UUID, List<ResourceStore.RecordRow>> recordsByOwner = new HashMap<>();
+        List<SourceHit> hits = new ArrayList<>(ids.size());
+        for (ResourceId id : ids) {
+            store.ownerOfRecordUrl(id.getValue())
+                .flatMap(owner -> recordsByOwner.computeIfAbsent(owner, store::recordsOf).stream()
+                    .filter(r -> r.sourceId().equals(sourceId) && ResourceId.of(r.hit().getCanonicalUrl()).equals(id))
+                    .findFirst())
+                .ifPresent(r -> hits.add(r.hit()));
+        }
+        return hits;
     }
 
     private void persistObserved(List<MergedResult> results) {

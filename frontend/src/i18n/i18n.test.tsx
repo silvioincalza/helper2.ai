@@ -8,11 +8,11 @@ describe('i18n', () => {
   it('ships English only and hides the language switcher while there is one language', async () => {
     mockApi();
     renderApp('/');
+    await settle();
     expect(LANGUAGES.map((l) => l.code)).toEqual(['en']);
     expect(screen.queryByLabelText('Language')).not.toBeInTheDocument();
     expect(document.documentElement.lang).toBe('en');
     expect(screen.getByRole('heading', { name: /Describe what you need/ })).toBeInTheDocument();
-    await settle();
   });
 
   it('falls back to the raw slug for unknown use cases', async () => {

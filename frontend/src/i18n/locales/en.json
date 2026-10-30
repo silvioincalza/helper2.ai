@@ -8,10 +8,6 @@
     "optional": "optional",
     "opensNewTab": "(opens in a new tab)"
   },
-  "carousel": {
-    "pause": "Pause {{label}}",
-    "play": "Play {{label}}"
-  },
   "guideMe": {
     "label": "Guide me",
     "aria": "Guide me: {{title}}",
@@ -41,7 +37,8 @@
       "light": "light",
       "dark": "dark"
     },
-    "terms": "Terms"
+    "terms": "Terms",
+    "account": "Your account"
   },
   "footer": {
     "coverage": "Helper2.ai searches the sources listed on the Sources page, not the whole web.",
@@ -325,14 +322,6 @@
     "conflicts": "Conflicts between sources",
     "conflictOn": "Sources disagree on {{field}}"
   },
-  "askGuide": {
-    "title": "Not sure which model fits? Ask the guide",
-    "lede": "Type your question in the box above, or start from one of these. The guide searches every source and only recommends what it can back with a quote.",
-    "examples": "Example questions",
-    "compareExample": "{{a}} or {{b}} for coding agents?",
-    "example1": "An open-weight model I can run on my own GPU",
-    "example2": "A model for long documents in Italian"
-  },
   "compat": {
     "basis": {
       "TAG": "{{source}} lists the tag “{{evidence}}”",
@@ -422,6 +411,20 @@
     "storageFailed": "Your browser blocked storage, so saved items will be lost when you leave this page.",
     "serverError": "Could not sync with your account. Please try again later."
   },
+  "account": {
+    "title": "Your account",
+    "signedInAs": "Signed in with GitHub as {{name}}.",
+    "signedOut": "You are not signed in, so there is no account to delete.",
+    "deleteTitle": "Delete your account",
+    "deleteText": "This deletes your account and everything saved on it. Reports you sent stay, without your name.",
+    "privacyLink": "What we keep and for how long",
+    "delete": "Delete my account",
+    "confirmTitle": "Delete your account?",
+    "confirmText": "Your account and your saved items are deleted now and cannot be restored. You will be signed out.",
+    "cancel": "Cancel",
+    "confirm": "Delete account",
+    "failed": "Your account could not be deleted. Please try again later."
+  },
   "sourcesPage": {
     "title": "Sources",
     "lede": "These are all the sources Helper2.ai can search. Anything not listed here is not covered.",
@@ -453,10 +456,12 @@
     "scoutRuns": "Scout runs",
     "runNow": "Run now",
     "noRuns": "No runs yet.",
+    "runInProgress": "A Scout run is already in progress. Try again when it ends.",
     "reviewStatus": {
       "OPEN": "Open",
       "ACCEPTED": "Accepted",
-      "REJECTED": "Rejected"
+      "REJECTED": "Rejected",
+      "SUPERSEDED": "Superseded"
     },
     "kind": {
       "ENRICHMENT_VALIDATION": "Enrichment validation",
@@ -722,6 +727,10 @@
     "empty": "Nothing with a stated publication date in the last 7 days.",
     "error": "Could not load what’s new right now."
   },
+  "carousel": {
+    "pause": "Pause {{label}}",
+    "play": "Play {{label}}"
+  },
   "mission": {
     "title": "Our mission",
     "lede": "Help people find the right AI resource for their need, and show the proof behind every answer.",
@@ -772,9 +781,11 @@
         "title": "What we process and why",
         "items": [
           "Your searches and guide questions: the text you type, used only to answer you. It is not linked to your account. Search results are cached for up to 30 minutes and guide answers for up to 24 hours, keyed by the question. Please do not type personal or secret information.",
-          "Your account, if you sign in with GitHub: your GitHub user ID (a number), your display name and the date you first signed in. We ask GitHub only for basic profile access. We never see your GitHub password.",
-          "Saved items: if you are signed in, they are stored on our server with your account. If you are not signed in, they stay only in your browser.",
+          "Your account, if you sign in with GitHub: your GitHub user ID (a number), your display name and when you last signed in. We ask GitHub only for basic profile access. We never see your GitHub password or your e-mail address.",
+          "Saved items: if you are signed in, each saved resource (its link, title and type) and when you saved it, stored on our server with your account. If you are not signed in, they stay only in your browser; when you sign in, they move to your account.",
           "Reports you send about a resource: the text you write, linked to your account if you are signed in.",
+          "Web search counters: Tavily searches per day and feature, under a keyed hash of your IP address and the date (no address stored; days cannot be linked), or your account ID once account limits are on.",
+          "Stored Tavily results, under a keyed hash of the question, not its text.",
           "Technical data: your IP address is kept in memory for a short time to limit abuse (rate limits). Our servers and our web gateway also write technical logs, which can include your IP address and the pages you request. We keep these logs for up to 3 months to keep the service running and secure, then delete them."
         ]
       },
@@ -783,6 +794,7 @@
         "items": [
           "Answering your searches and guide questions, your account and your saved items: to provide the service you ask for (Art. 6(1)(b) GDPR).",
           "Rate limits, technical logs and the security cookie: our legitimate interest in keeping the service secure and available (Art. 6(1)(f) GDPR).",
+          "Web search counters and stored results: legitimate interest in a free service at bounded cost (Art. 6(1)(f) GDPR).",
           "Reports you send: our legitimate interest in keeping the information on Helper2.ai correct (Art. 6(1)(f) GDPR)."
         ]
       },
@@ -799,6 +811,7 @@
         "title": "Who receives data",
         "items": [
           "Search sources: to find results, your search text is sent to the sources that answer live, such as GitHub, Hugging Face, npm, arXiv and Tavily. The Sources page lists them all. Each provider handles the request under its own privacy policy, and some of them are in the United States.",
+          "Tavily (United States): your search text or the guide's web query, unless a stored result answers.",
           "AI models: guide questions, and searches written in a language other than English, are sent to NVIDIA Nemotron models on Nebius Token Factory, processed in the European Union. We send only the text, never your account data.",
           "GitHub, when you choose to sign in with it.",
           "Transfers abroad: some search sources, and GitHub, are in the United States. Where a provider is certified under the Swiss-US and EU-US Data Privacy Framework, the transfer relies on that certification. Otherwise, we send your search text abroad only because it is needed to give you the results you asked for (Art. 17(1)(b) FADP, Art. 49(1)(b) GDPR).",
@@ -810,8 +823,17 @@
         "items": [
           "Cached searches and guide answers: up to 30 minutes and 24 hours.",
           "Technical logs: up to 3 months.",
-          "Your account and saved items: until you remove them or ask us to delete them.",
-          "Reports: until they are handled. If your account is deleted, your reports stay without your name."
+          "Web search counters: 24 hours. Stored results: 7 days.",
+          "Your account and saved items: until you delete them, or 24 months after you last signed in. Then we delete the account and its saved items.",
+          "Reports: 12 months after they were handled. If your account is deleted, your reports stay without your name until then.",
+          "Database backups: 7 days. Anything deleted above is gone from the backups within 7 days."
+        ]
+      },
+      {
+        "title": "Deleting your account",
+        "paragraphs": [
+          "When you are signed in, select your name at the top of the page, then \"Delete my account\". We delete your account and your saved items at once and sign you out. Reports you sent stay, without your name. Signing in again later creates a new, empty account.",
+          "You can also write to the address above and we will delete it for you."
         ]
       },
       {
@@ -839,6 +861,7 @@
         "items": [
           "Helper2.ai is a free search over public sources about the AI ecosystem, with an AI guide that answers questions from those results.",
           "We may change, limit or stop the service, or parts of it, at any time and without notice.",
+          "Tavily web searches: 3 a day each for search and the guide; stored results are free. Limits reset at 00:00 UTC.",
           "You can use Helper2.ai without an account. If you sign in with GitHub, you can delete your account at any time by writing to us."
         ]
       },
@@ -955,7 +978,7 @@
     "copy": "Copy",
     "copied": "Copied",
     "connectTitle": "Connect it to your AI tool",
-    "command": "Runs locally with {{cmd}}, as its README shows",
+    "command": "Runs locally with {{cmd}}, copied from its README; not reviewed for safety, so read it before you run it",
     "fromReadme": "From the config example in its README, read {{date}}.",
     "readme": "README",
     "stepsTitle": "Step by step",
@@ -964,11 +987,11 @@
     "reading": "Reading its documentation… (up to half a minute)",
     "answering": "Looking for the answer in its documentation…",
     "stepsError": "The guide could not be loaded now.",
-    "stepsNote": "Steps written by AI from the tool's own documentation. Every quote and command below was checked word for word against it.",
+    "stepsNote": "Steps chosen by AI from the tool's own documentation. Every quote and command below is copied exactly from it; commands are not reviewed for safety, so read each one before you run it.",
     "askLabel": "Ask about {{title}}",
     "askPlaceholder": "e.g. How do I use it with Cursor? Does it need an API key?",
     "ask": "Ask",
-    "caution": "This command runs a script from the internet, uses sudo or deletes files. Read it before you run it.",
+    "caution": "This command runs a downloaded script, uses sudo, opens permissions to everyone or deletes files. Read it before you run it.",
     "quoteLabel": "Where the {{doc}} says this",
     "readOn": "read {{date}}",
     "writtenBy": "steps chosen by {{model}}",
@@ -987,7 +1010,7 @@
     },
     "status": {
       "NO_MATERIAL": "{{title}} has no README or model card Helper2 can read.",
-      "NO_STEPS": "Nothing in its documentation could be checked word for word for this. Open the original for its own instructions.",
+      "NO_STEPS": "No step could be copied exactly from its documentation for this. Open the original for its own instructions.",
       "LLM_UNAVAILABLE": "The AI guide is not available right now. Try again later.",
       "BUDGET": "The AI guide has used today's budget. Try again tomorrow.",
       "OK": ""

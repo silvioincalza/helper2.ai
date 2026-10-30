@@ -2,6 +2,7 @@ import { Navigate, useLocation, type RouteObject } from 'react-router';
 import { Layout } from '@/components/Layout';
 import { AppProviders } from '@/AppProviders';
 import { askParams } from '@/lib/searchState';
+import AccountPage from '@/pages/AccountPage';
 import AdminPage from '@/pages/AdminPage';
 import HomePage from '@/pages/HomePage';
 import MissionPage from '@/pages/MissionPage';
@@ -36,6 +37,7 @@ export const routes: RouteObject[] = [
       { path: 'resource/:id', element: <ResourcePage /> },
       { path: 'saved', element: SAVED_ENABLED ? <SavedPage /> : <Navigate replace to="/" /> },
       { path: 'sources', element: <SourcesPage /> },
+      { path: 'account', element: <AccountPage /> },
       { path: 'admin', element: <AdminPage /> },
       { path: 'mission', element: <MissionPage /> },
       { path: 'privacy', element: <PrivacyPage /> },

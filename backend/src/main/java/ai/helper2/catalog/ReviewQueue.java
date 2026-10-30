@@ -22,7 +22,8 @@ public class ReviewQueue {
         COURSE_CANDIDATE
     }
 
-    public enum Status { OPEN, ACCEPTED, REJECTED }
+    /** SUPERSEDED: a newer enrichment run of the same resource replaced the run the item was about. */
+    public enum Status { OPEN, ACCEPTED, REJECTED, SUPERSEDED }
 
     public record Item(UUID id, Kind kind, Status status, UUID resourceId, String resourceTitle, String reason,
                        String details, Instant createdAt, Instant resolvedAt, String resolvedBy) {
@@ -52,6 +53,20 @@ public class ReviewQueue {
     }
 
     /**
+     * Closes the resource's OPEN items about earlier enrichment runs as SUPERSEDED by [runId]: a person decides
+     * only what the newest run says.
+     */
+    public void supersedeEnrichmentItems(UUID resourceId, UUID runId) {
+        jdbc.sql("""
+                UPDATE review_item SET status = 'SUPERSEDED', resolved_at = now(), resolution_note = :note
+                WHERE resource_id = :rid AND status = 'OPEN' AND enrichment_run_id IS NOT NULL
+                  AND enrichment_run_id <> :run
+                """)
+            .param("rid", resourceId).param("run", runId).param("note", "Superseded by enrichment run " + runId)
+            .update();
+    }
+
+    /**
      * Opens a candidate item for [canonicalUrl] unless the catalog already has that resource or the URL was ever
      * proposed before (whatever was decided). Returns whether an item was opened.
      */
@@ -70,14 +85,29 @@ public class ReviewQueue {
     private static final String SELECT_ITEMS =
         "SELECT i.*, r.title AS resource_title FROM review_item i LEFT JOIN resource r ON r.id = i.resource_id";
 
-    public List<Item> list(Status status) {
-        return jdbc.sql(SELECT_ITEMS + """
+    /** One page of items: [items] in the page, [total] across every page. */
+    public record Page(List<Item> items, long total) {
+    }
+
+    /** Newest first; all statuses when [status] is null. */
+    public Page list(Status status, int page, int size) {
+        String wanted = status == null ? null : status.name();
+        List<Item> items = jdbc.sql(SELECT_ITEMS + """
                  WHERE (CAST(:status AS text) IS NULL OR i.status = :status)
-                ORDER BY i.created_at DESC LIMIT 200
+                ORDER BY i.created_at DESC, i.id
+                LIMIT :size OFFSET :offset
                 """)
-            .param("status", status == null ? null : status.name())
+            .param("status", wanted).param("size", size).param("offset", (long) page * size)
             .query(ReviewQueue::item)
             .list();
+        long total = jdbc.sql("SELECT count(*) FROM review_item WHERE (CAST(:status AS text) IS NULL OR status = :status)")
+            .param("status", wanted).query(Long.class).single();
+        return new Page(items, total);
+    }
+
+    /** Items waiting for a person; for the review backlog gauge. */
+    public long openCount() {
+        return jdbc.sql("SELECT count(*) FROM review_item WHERE status = 'OPEN'").query(Long.class).single();
     }
 
     public Optional<Item> find(UUID id) {

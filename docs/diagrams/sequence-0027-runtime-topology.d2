@@ -1,0 +1,45 @@
+# Sequence: the runtime paths of the hosted chart: a visitor's request through Cloudflare and the tunnel, the probes
+# and the metrics scrape on the management port, and the nightly backup on prod.
+# Source of truth: deploy/helm/helper2/templates/cloudflared.yaml, app.yaml, redis.yaml, backup.yaml, networkpolicy.yaml,
+#   deploy/k8s/terraform/main.tf (tunnel, DNS), values-prod.yaml.
+# Render: cd docs/diagrams && d2 fmt sequence-0027-runtime-topology.d2 && d2 sequence-0027-runtime-topology.d2 sequence-0027-runtime-topology.svg
+
+...@style
+
+shape: sequence_diagram
+
+user: Visitor {class: person}
+cf: "Cloudflare edge\n(TLS)" {class: ext}
+cfd: "cloudflared\n(Deployment)" {class: app}
+app: "helper2 pod\n(:8080 site and API,\n:8081 Actuator)" {class: app}
+pg: "postgres\n(StatefulSet)" {class: data}
+redis: "redis\n(StatefulSet, AOF)" {class: data}
+obs: "kubelet probes;\nAlloy scrape\n(ns observability)" {class: ext}
+backup: "pg-backup\n(CronJob, prod)" {class: app}
+
+tunnel: Tunnel up {
+  cfd -> cf: "dial out, --protocol http2,\nTCP 7844 (no inbound port)"
+}
+
+request: One request {
+  user -> cf: "HTTPS helper2.ai" {class: hot}
+  cf -> cfd: "through the tunnel"
+  cfd -> app: "plain HTTP to Service helper2:80\n→ pod 8080 (ingress-app)" {class: hot}
+  app -> redis: "AUTH requirepass, then\ncache, limits, sessions (6379)"
+  app -> pg: "JDBC 5432 (pool 10)"
+  pg -> app: "rows"
+  app -> cfd: "response"
+  cfd -> cf: "response"
+  cf -> user: "HTTPS response" {class: hot}
+}
+
+management: Management port, never through the tunnel {
+  obs -> app: "startup (≤ 300 s), readiness 5 s,\nliveness 10 s: /actuator/health on 8081"
+  obs -> app: "GET /actuator/prometheus on 8081\n(Alloy, namespace observability)"
+}
+
+nightly: 02:30 Europe/Zurich, prod {
+  backup -> pg: "pg_dump --no-owner | gzip"
+  pg -> backup: "dump"
+  backup -> backup: "write to the pg-backup volume (NFS),\ndelete dumps older than 7 days"
+}

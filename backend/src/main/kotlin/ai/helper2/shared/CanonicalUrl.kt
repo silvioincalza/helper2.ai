@@ -8,8 +8,9 @@ import java.net.URISyntaxException
  *
  * Rules: http(s) only; scheme forced to https; host lower-cased without `www.`; default port,
  * fragment and tracking parameters removed; remaining query parameters sorted; trailing slash
- * removed. GitHub repository URLs collapse to `https://github.com/{owner}/{repo}` in lower case,
- * because GitHub treats owner/repo case-insensitively. Other hosts keep path case.
+ * removed. GitHub URLs collapse to `https://github.com/{owner}/{repo}` in lower case, because GitHub
+ * treats owner/repo case-insensitively. A sub-directory (`/tree/{ref}/{path}`) is kept, with its ref and
+ * path case, so each package of a monorepo has its own identity. Other hosts keep path case.
  */
 class CanonicalUrl private constructor(val value: String) {
 
@@ -44,7 +45,8 @@ class CanonicalUrl private constructor(val value: String) {
                 if (segments.size >= 2) {
                     val owner = segments[0].lowercase()
                     val repo = segments[1].lowercase().removeSuffix(".git")
-                    return CanonicalUrl("https://github.com/$owner/$repo")
+                    val subDirectory = if (segments.size > 4 && segments[2] == "tree") "/" + segments.drop(2).joinToString("/") else ""
+                    return CanonicalUrl("https://github.com/$owner/$repo$subDirectory")
                 }
             }
 

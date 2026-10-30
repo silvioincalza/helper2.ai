@@ -6,6 +6,8 @@ postgres:
   image:
     repository: harbor-i.infra.incalza.me/helper2/apps/postgres
   storageClassName: local-path
+redis:
+  storageClassName: local-path
 cloudflared:
   enabled: true
 networkPolicy:

@@ -9,12 +9,14 @@ must stay testable without Spring, a database or a model, and features must not 
 internals. Microservices would add network calls and deploys without a scaling need.
 
 ## Decision
-1. **One Spring Boot app, nine top-level packages.** Each is a Spring Modulith application module
+1. **One Spring Boot app, ten top-level packages.** Each is a Spring Modulith application module
    (`@ApplicationModule` in `package-info.java`):
-   `search`, `catalog`, `guide`, `scout`, `identity`, `sources`, and three open modules that every module
-   may use: `shared` (value types), `platform` (errors, rate limits, circuit breaker, the Large Language Model (LLM) layer, prompts) and
-   `api` (generated contract types, see [0003](0003-contract-first-rest-api.md)).
-2. **Hexagonal where the business rules are.** The top-level packages `search`, `scout`, `guide` and
+   `search`, `catalog`, `guide`, `scout`, `setup`, `identity`, `sources`, and three open modules that every module
+   may use: `shared` (value types), `platform` (errors, rate limits, resilience policies, the Large Language Model (LLM) layer, prompts) and
+   `api` (generated contract types, see [0003](0003-contract-first-rest-api.md)). The open modules depend on no feature module: an adapter
+   of a feature's port lives in that feature (the query translator, an LLM adapter of `search.QueryTranslator`, is
+   in `search.internal`).
+2. **Hexagonal where the business rules are.** The top-level packages `search`, `scout`, `guide`, `setup` and
    `shared` hold the rules in Kotlin. They talk to the outside only through ports (Kotlin interfaces), for
    example `SearchSource`, `SearchCache`, `ResultObserver`, `QueryTranslator` (search), `Collector`,
    `EnrichmentModel`, `ScoutStore`, `CatalogIndex` (scout), `GuideModel`, `GuideAnswerStore` (guide).
@@ -23,9 +25,13 @@ internals. Microservices would add network calls and deploys without a scaling n
    public application programming interface (API). The `catalog` module implements `ResultObserver`, `RecordedOutcomes` and two
    `SearchSource`s over PostgreSQL.
 4. **One class per use case.** What a caller can ask a module to do lives in its `usecase` sub-package, one
-   class per entry point: `SearchResources` (search), `AskGuide` (guide), `RunScout` and `EnrichResource`
-   (scout), `GetResourceDetail`, `ListRecentResources`, `ListUpcomingEvents`, `ListModelFamilies`, `ReportIssue`,
-   `ListReviewItems` and `ResolveReviewItem` (catalog). Controllers and schedulers call use cases for what a module does;
+   class per entry point: `SearchResources` (search), `AskGuide` (guide), `RunScout`, `StartScoutRun`,
+   `EnrichResource` and `PurgeExpiredData` (scout), `GetResourceDetail`, `ListRecentResources`,
+   `ListUpcomingEvents`, `ReportIssue`, `ListReviewItems`, `ResolveReviewItem` and `PurgeExpiredData` (catalog),
+   `AddBookmark`, `RemoveBookmark`, `ListBookmarks`, `MergeLocalBookmarks`, `DeleteMyAccount`, `ListAuditEntries`
+   and `PurgeExpiredData` (identity). A use case may delegate its steps to internal classes of its own package:
+   `AskGuide` keeps the guards and the dispatch by intent, and `QuestionReader`, `PickAnswer`, `CompareAnswer`,
+   `ExplainAnswer`, `DateAnswer` and `ReasonCheckStep` do the work; no other module sees them. Controllers and schedulers call use cases for what a module does;
    a read-only lookup of a store or port (run history, source health) may stay direct. Models, ports and rules (for
    example `GuideValidator`, `PlannedQueries`, `EvidenceValidator`) stay at the module root, so adapters never
    depend on a use case. A use case another module calls is exposed with `@NamedInterface("usecase")`
@@ -70,7 +76,8 @@ internals. Microservices would add network calls and deploys without a scaling n
   `.../scout/{web,internal}` — adapters.
 
 ## Diagrams
-None: no runtime flow. Modules, ports and adapters: [software architecture](../diagrams/software-architecture.svg).
+[flow](../diagrams/flow-0002-modular-monolith-hexagonal.svg) · [sequence](../diagrams/sequence-0002-modular-monolith-hexagonal.svg)
+Modules, ports and adapters: [software architecture](../diagrams/software-architecture.svg).
 
 ## Roadmap
 - One owner per table, so the schema has no hidden coupling: [roadmap](../roadmap.md#8-architecture).

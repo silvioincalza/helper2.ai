@@ -27,6 +27,7 @@ tags:
   - name: sources
   - name: me
   - name: admin
+  - name: audit
 
 paths:
   /search:
@@ -171,22 +172,6 @@ paths:
         '404': { $ref: '#/components/responses/Problem' }
         '429': { $ref: '#/components/responses/Problem' }
 
-  /model-families:
-    get:
-      tags: [resources]
-      operationId: listModelFamilies
-      summary: AI model families (OpenAI GPT, Anthropic Claude, xAI Grok, Google Gemini, Meta Llama...) for side-by-side comparison.
-      description: >-
-        Official specs are curated from the provider's own pages, each with its URL, a verbatim excerpt and the
-        date it was read. Listed models are the provider's newest models found by Scout on its official Hugging Face
-        organisation. Nothing is combined across sources.
-      responses:
-        '200':
-          description: Every family, in display order.
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/ModelFamiliesResponse' }
-
   /resources/{id}/reports:
     post:
       tags: [resources]
@@ -303,6 +288,17 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Me' }
+    delete:
+      tags: [me]
+      operationId: deleteMyAccount
+      summary: Delete the signed-in user's account and bookmarks, and end the session.
+      description: >-
+        Needs the X-XSRF-TOKEN header. Issue reports the user sent stay, without the reporter. Signing in again
+        creates a new, empty account.
+      responses:
+        '204': { description: Account deleted and signed out. }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
 
   /me/bookmarks:
     get:
@@ -317,9 +313,11 @@ paths:
         '401': { $ref: '#/components/responses/Problem' }
     post:
       tags: [me]
-      operationId: addBookmarks
-      summary: Add one or more bookmarks (also used to merge local bookmarks after sign-in).
-      description: An account keeps at most 500 bookmarks; a request that would exceed that is refused with 400.
+      operationId: mergeLocalBookmarks
+      summary: Merge the bookmarks kept in the browser into the account, right after sign-in.
+      description: >-
+        Idempotent: a resource already saved keeps its first savedAt. All or nothing: an invalid URL, or more than 500
+        bookmarks in the account afterwards, refuses the whole request with 400.
       requestBody:
         required: true
         content:
@@ -338,6 +336,26 @@ paths:
         '401': { $ref: '#/components/responses/Problem' }
 
   /me/bookmarks/{resourceId}:
+    put:
+      tags: [me]
+      operationId: addBookmark
+      summary: Save one resource. Saving it again changes nothing (the first savedAt stays).
+      description: An account keeps at most 500 bookmarks; one more is refused with 400.
+      parameters:
+        - { name: resourceId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BookmarkRequest' }
+      responses:
+        '200':
+          description: The saved bookmark.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Bookmark' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '401': { $ref: '#/components/responses/Problem' }
     delete:
       tags: [me]
       operationId: deleteBookmark
@@ -352,13 +370,16 @@ paths:
       tags: [admin]
       operationId: listReviewItems
       parameters:
-        - { name: status, in: query, schema: { $ref: '#/components/schemas/ReviewStatus' } }
+        - { name: status, in: query, description: Omit for every status., schema: { $ref: '#/components/schemas/ReviewStatus' } }
+        - { name: page, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
       responses:
         '200':
-          description: Human review queue.
+          description: One page of the human review queue, newest first.
           content:
             application/json:
-              schema: { type: array, items: { $ref: '#/components/schemas/ReviewItem' } }
+              schema: { $ref: '#/components/schemas/ReviewItemPage' }
+        '400': { $ref: '#/components/responses/Problem' }
         '401': { $ref: '#/components/responses/Problem' }
         '403': { $ref: '#/components/responses/Problem' }
 
@@ -398,20 +419,43 @@ paths:
     post:
       tags: [admin]
       operationId: startScoutRun
-      summary: Run collection for one source (or all) now.
+      summary: Start collection for one source (or all) now.
+      description: >-
+        Answers as soon as the run holds the cluster-wide Scout run lock; the run then collects in the background.
+        Poll GET /admin/scout-runs for its progress.
       requestBody:
         content:
           application/json:
             schema: { $ref: '#/components/schemas/ScoutRunRequest' }
       responses:
         '202':
-          description: Run finished or started; see status.
+          description: >-
+            Run started: one record per selected collector, RUNNING (SKIPPED when the collector is disabled). The ids
+            match the records listed by GET /admin/scout-runs.
           content:
             application/json:
               schema: { type: array, items: { $ref: '#/components/schemas/ScoutRun' } }
         '401': { $ref: '#/components/responses/Problem' }
         '403': { $ref: '#/components/responses/Problem' }
         '409': { $ref: '#/components/responses/Problem' }
+
+  /admin/audit:
+    get:
+      tags: [audit]
+      operationId: listAuditEntries
+      summary: What administrators did, newest first.
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        '200':
+          description: One page of the admin audit trail.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuditEntryPage' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
 
 components:
   responses:
@@ -596,46 +640,11 @@ components:
         eventKind: { oneOf: [{ $ref: '#/components/schemas/EventKind' }, { type: 'null' }], description: "EVENT only: what kind of event the source calls it; null when it does not say." }
         eventFormat: { oneOf: [{ $ref: '#/components/schemas/EventFormat' }, { type: 'null' }], description: "EVENT only: online, in person or both, as the source states it; null when it does not say." }
 
-    ModelFamiliesResponse:
-      type: object
-      required: [families]
-      properties:
-        families: { type: array, items: { $ref: '#/components/schemas/ModelFamily' } }
-
-    ModelFamily:
-      type: object
-      required: [id, provider, name, openWeights, card, specs, listedModels]
-      properties:
-        id: { type: string, description: "Stable id; matches CompatibilityFlag.tool for providers (openai, anthropic, xai, google...)." }
-        provider: { type: string }
-        name: { type: string }
-        openWeights: { type: [boolean, 'null'], description: null when no official page states it. }
-        card: { $ref: '#/components/schemas/ResultCard' }
-        specs:
-          type: array
-          description: "Official specs of the family's flagship. Fields: flagship, contextTokens, maxOutputTokens, inputUsdPerMTok, outputUsdPerMTok, inputModalities, outputModalities, license, knowledgeCutoff, released, and benchmark:<name>."
-          items: { $ref: '#/components/schemas/Assertion' }
-        listedModels:
-          type: array
-          description: Newest models of this provider in the Helper2 index, newest first.
-          items: { $ref: '#/components/schemas/ListedModel' }
-
-    ListedModel:
-      type: object
-      required: [resourceId, title, url, sourceId, retrievedAt]
-      properties:
-        resourceId: { type: string, format: uuid }
-        title: { type: string }
-        url: { type: string, format: uri }
-        sourceId: { type: string }
-        retrievedAt: { type: string, format: date-time }
-        published: { type: [string, 'null'], format: date-time, description: As the source stated it; null = unknown. }
-
     CompatibilityFlag:
       type: object
       required: [tool, label, basis, evidence]
       properties:
-        tool: { type: string, description: "Stable id, e.g. openai, anthropic, xai, ollama, mcp. Provider ids match model-family ids." }
+        tool: { type: string, description: "Stable id, e.g. openai, anthropic, xai, ollama, mcp." }
         label: { type: string }
         basis: { type: string, enum: [TAG, TYPE, FORMAT], description: "TAG = a source listed the tag; TYPE = implied by resource type (MCP server); FORMAT = implied by published file format (GGUF)." }
         evidence: { type: string, description: The tag, type or format that was seen. }
@@ -726,6 +735,18 @@ components:
         total: { type: integer, description: Matches after filters, across all pages. }
         page: { type: integer }
         size: { type: integer }
+        webSearches: { oneOf: [{ $ref: '#/components/schemas/WebSearches' }, { type: 'null' }] }
+
+    WebSearches:
+      type: object
+      description: |
+        Live web searches (Tavily) this visitor has left today for this feature; search and the guide count apart
+        (ADR 0037). Resets at 00:00 UTC. Results already stored cost none. Null when no web source is enabled or the
+        count cannot be read.
+      required: [limit, remaining]
+      properties:
+        limit: { type: integer, minimum: 0 }
+        remaining: { type: integer, minimum: 0 }
 
     Evidence:
       type: object
@@ -1083,6 +1104,7 @@ components:
         clarification: { oneOf: [{ $ref: '#/components/schemas/GuideClarification' }, { type: 'null' }] }
         comparison: { oneOf: [{ $ref: '#/components/schemas/GuideComparison' }, { type: 'null' }] }
         explanation: { oneOf: [{ $ref: '#/components/schemas/GuideExplanation' }, { type: 'null' }] }
+        webSearches: { oneOf: [{ $ref: '#/components/schemas/WebSearches' }, { type: 'null' }] }
 
     GuideIntent:
       type: string
@@ -1253,7 +1275,15 @@ components:
 
     ReviewStatus:
       type: string
-      enum: [OPEN, ACCEPTED, REJECTED]
+      description: SUPERSEDED is set by a newer enrichment run of the same resource, never by a person.
+      enum: [OPEN, ACCEPTED, REJECTED, SUPERSEDED]
+
+    ReviewItemPage:
+      type: object
+      required: [items, total]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/ReviewItem' } }
+        total: { type: integer, description: Items with the requested status, across all pages. }
 
     ReviewItem:
       type: object
@@ -1279,6 +1309,24 @@ components:
       properties:
         status: { type: string, enum: [ACCEPTED, REJECTED] }
         note: { type: [string, 'null'], maxLength: 1000 }
+
+    AuditEntryPage:
+      type: object
+      required: [items, total]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/AuditEntry' } }
+        total: { type: integer, description: Entries across all pages. }
+
+    AuditEntry:
+      type: object
+      required: [id, adminId, action, at, outcome]
+      properties:
+        id: { type: string, format: uuid }
+        adminId: { type: string, description: "The administrator's provider subject (GitHub: the numeric user id)." }
+        action: { type: string, enum: [RESOLVE_REVIEW_ITEM, START_SCOUT_RUN] }
+        targetId: { type: [string, 'null'], description: "The review item id or the source id; null when a run covered every source." }
+        at: { type: string, format: date-time }
+        outcome: { type: string, description: "ACCEPTED, REJECTED, NOT_OPEN or NOT_FOUND for a review item; STARTED or BUSY for a Scout run." }
 
     ScoutRunRequest:
       type: object

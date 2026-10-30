@@ -101,8 +101,8 @@ there is more than one replica. The Scout and the embedding indexer run on one r
 table `shedlock` in Postgres); rate limits and sign-in sessions are in Redis. What is still per replica:
 [docs/roadmap.md](../../docs/roadmap.md), "More than one replica".
 
-**Never `helm uninstall`:** it deletes the Postgres StatefulSet and the Secret. The data PVC
-(`data-postgres-0`) is not owned by the release and stays; the backup PVC has `helm.sh/resource-policy: keep`.
+**Never `helm uninstall`:** it deletes the Postgres and Redis StatefulSets and the Secret. Their PVCs
+(`data-postgres-0`, and `data-redis-0` with Redis's append-only file) are not owned by the release and stay; the backup PVC has `helm.sh/resource-policy: keep`.
 To go back, use `helm -n helper2 rollback helper2`.
 
 ## Backups

@@ -1,8 +1,8 @@
 # Sequence: a GitHub search call that hits the rate limit, and the next search during the pause.
 # Shows the observed RestClient on Apache HttpClient 5, the status mapping to RateLimited and the
 # per-source cooldown in SearchResources.
-# Source of truth: backend/src/main/java/ai/helper2/sources/GitHubSource.java (search),
-#   backend/src/main/java/ai/helper2/sources/HttpClients.java (getJson, mapStatus),
+# Source of truth: backend/src/main/java/ai/helper2/sources/github/GitHubSource.java (search),
+#   backend/src/main/java/ai/helper2/sources/support/HttpClients.java (getJson, mapStatus),
 #   backend/src/main/java/ai/helper2/platform/http/ObservedHttp.java (restClientBuilder, USER_AGENT, BoundedUriConvention),
 #   backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt (Run.start, Run.collect).
 # Render: cd docs/diagrams && d2 fmt sequence-0006-outbound-http.d2 && d2 sequence-0006-outbound-http.d2 sequence-0006-outbound-http.svg

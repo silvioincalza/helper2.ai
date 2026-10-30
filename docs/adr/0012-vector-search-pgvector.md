@@ -11,7 +11,8 @@ never break keyword search.
 ## Decision
 1. **Store vectors in PostgreSQL** (pgvector). Table `resource_embedding` (resource id, model, `text_hash`,
    `vector(1024)`), primary key (resource, model), Hierarchical Navigable Small World (HNSW) index with cosine distance. The vector belongs to one model,
-   so a model change re-embeds everything instead of mixing spaces.
+   so a model change re-embeds everything instead of mixing spaces: storing a resource's vector under the configured
+   model deletes its vectors of every other model, so the table and the index hold one vector space.
 2. **NVIDIA embeddings** (`NvidiaEmbedder`, port `Embedder`). `POST {base}/embeddings` with `input_type` `query` or
    `passage`, `truncate=END`, 1024 dimensions. Settings: `H2_NVIDIA_API_KEY`, `H2_NVIDIA_EMBEDDING_BASE_URL`
    (`https://integrate.api.nvidia.com/v1`), `H2_NVIDIA_EMBEDDING_MODEL` (`nvidia/nemotron-3.5-embed-1b`).
@@ -34,6 +35,10 @@ never break keyword search.
    in memory, and returns the nearest rows of the index, curated list and observed resources with cosine distance at most
    `H2_SOURCE_SEMANTIC_MAX_DISTANCE` (0.65), within `H2_SOURCE_SEMANTIC_TIMEOUT` (3 s).
    Rows carry labels and stored popularity like keyword rows ([0009](0009-ranking.md)).
+   The model, origin and distance filters apply to the HNSW candidates, so the query runs in its own transaction with
+   `SET LOCAL hnsw.iterative_scan = relaxed_order` (pgvector 0.8): the scan reads on until the limit is met instead of
+   stopping after one candidate list. The rows are sorted by distance again, since relaxed order may return them
+   slightly out of order.
 6. **Fused by rank.** `SearchResources` treats it like any source, so `Ranking` adds `1 / (k + rank + 1)` for it.
    Distances and keyword scores are never compared directly. Embedding 429 → `SourceFailure.RateLimited` (1 min cooldown).
 
@@ -52,6 +57,8 @@ never break keyword search.
 - A second Redis instance for vectors — one more stateful workload with its own persistence and sync.
 - A separate vector database — more operational work for a catalog of this size.
 - One Structured Query Language (SQL) query that mixes text and vector scores — the two scales do not compare, and one failure would remove both.
+- `hnsw.iterative_scan = strict_order` — exact order is not needed (Ranking uses the rank only) and costs more index reads.
+- A partial HNSW index per model — one index per model id, created at deploy; one model at a time is simpler.
 - Re-ranking with a model — cost and latency per search.
 
 ## Code
@@ -60,7 +67,7 @@ never break keyword search.
 - `backend/src/main/java/ai/helper2/catalog/internal/NvidiaEmbedder.java`, `catalog/Embedder.java` — API client and port.
 - `backend/src/main/java/ai/helper2/catalog/CatalogConfiguration.java` — conditional beans, `IndexerSchedule`, indexer lock.
 - `backend/src/main/java/ai/helper2/platform/ClusterLock.java` — lock shared by every replica.
-- `backend/src/main/java/ai/helper2/catalog/internal/ResourceStore.java` — `pendingEmbeddings`, `saveEmbeddings`, `semanticSearch`.
+- `backend/src/main/java/ai/helper2/catalog/internal/ResourceStore.java` — `pendingEmbeddings`, `saveEmbeddings` (drops other models' vectors), `semanticSearch` (iterative scan).
 - `backend/src/main/resources/db/migration/V1__schema.sql` — `resource_embedding`, HNSW index.
 
 ## Diagrams

@@ -124,6 +124,27 @@ jobs:
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
       - run: make -C deploy/k8s chart-check
 
+  # Alert rules: syntax and the unit tests in deploy/monitoring/tests. promtool from the release tarball, checked
+  # against its SHA-256: `go install` cannot build it (the Prometheus module has replace directives).
+  monitoring:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PROMETHEUS_VERSION: 3.15.1
+      PROMETHEUS_SHA256: 6a726885328ad9efebbf36e876ce2fb6225468a71fd1e7ce3ba666d5f4d97a84
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install promtool
+        run: |
+          set -euo pipefail
+          dir="prometheus-${PROMETHEUS_VERSION}.linux-amd64"
+          curl -fsSLo prometheus.tar.gz "https://github.com/prometheus/prometheus/releases/download/v${PROMETHEUS_VERSION}/${dir}.tar.gz"
+          echo "${PROMETHEUS_SHA256}  prometheus.tar.gz" | sha256sum -c -
+          tar -xzf prometheus.tar.gz --strip-components=1 -C "$RUNNER_TEMP" "${dir}/promtool"
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+      - run: promtool check rules deploy/monitoring/helper2-rules.yaml
+      - run: promtool test rules deploy/monitoring/tests/*.yaml
+
   # fmt and validate, without the R2 state backend (no credentials in CI). Pull requests only, like
   # diagrams: CD does not apply Terraform, so neither may block a deploy.
   terraform:

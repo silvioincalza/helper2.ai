@@ -14,6 +14,8 @@ spec:
   template:
     metadata: { labels: { app: cloudflared } }
     spec:
+      serviceAccountName: helper2
+      automountServiceAccountToken: false
       securityContext: { runAsNonRoot: true, runAsUser: 65532, seccompProfile: { type: RuntimeDefault } }
       containers:
         - name: cloudflared

@@ -5,7 +5,9 @@ import ai.helper2.guide.GuideModel
 import ai.helper2.guide.GuideProposal
 import ai.helper2.guide.GuideSearchPlan
 import ai.helper2.guide.usecase.AskGuide
+import ai.helper2.platform.SignedInUser
 import ai.helper2.platform.llm.LlmSettings
+import ai.helper2.platform.resilience.Resilience4jPolicies
 import ai.helper2.search.CachedHits
 import ai.helper2.search.usecase.SearchResources
 import ai.helper2.search.NOW
@@ -17,6 +19,10 @@ import ai.helper2.search.SourceQuery
 import ai.helper2.search.descriptor
 import ai.helper2.search.hit
 import ai.helper2.shared.AudiencePath
+import io.github.resilience4j.bulkhead.BulkheadConfig
+import io.github.resilience4j.bulkhead.BulkheadRegistry
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry
+import io.github.resilience4j.retry.RetryRegistry
 import java.time.Clock
 import java.time.Duration
 import java.time.ZoneOffset
@@ -34,8 +40,8 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
 
 /**
- * The guide's bounds, the same on both endpoints: concurrent questions and a deadline per question. The full
- * pipeline runs in GuideApiIT.
+ * The guide's bounds, the same on both endpoints: concurrent questions (the `guide` bulkhead) and a deadline per
+ * question. The full pipeline runs in GuideApiIT.
  */
 class GuideLimitsTest {
 
@@ -79,10 +85,13 @@ class GuideLimitsTest {
     private fun mvc(maxConcurrent: Int, deadline: Duration): MockMvc {
         val guide = AskGuide(SearchResources(listOf(source), noCache, ResultObserver { emptyMap() }, executor, clock), stuck, clock)
         val mapper = GuideDtoMapper(LlmSettings("fake", "", "fast", "reasoning"))
-        val shared = GuideLimits(maxConcurrent, deadline).also { limits += it }
+        val bulkheads = BulkheadRegistry.of(BulkheadConfig.custom().maxConcurrentCalls(maxConcurrent).maxWaitDuration(Duration.ZERO).build())
+        bulkheads.bulkhead("guide")
+        val policies = Resilience4jPolicies(CircuitBreakerRegistry.ofDefaults(), bulkheads, RetryRegistry.ofDefaults())
+        val shared = GuideLimits(policies, deadline).also { limits += it }
         return MockMvcBuilders.standaloneSetup(
-            GuideStreamController(guide, mapper, shared, Duration.ofMillis(50)).also { streams += it },
-            GuideController(guide, mapper, shared, MockHttpServletRequest()),
+            GuideStreamController(guide, mapper, shared, SignedInUser.ANONYMOUS, Duration.ofMillis(50)).also { streams += it },
+            GuideController(guide, mapper, shared, MockHttpServletRequest(), SignedInUser.ANONYMOUS),
         ).build()
     }
 

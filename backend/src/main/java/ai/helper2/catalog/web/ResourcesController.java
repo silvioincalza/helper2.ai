@@ -6,9 +6,6 @@ import ai.helper2.api.generated.model.AssertionDto;
 import ai.helper2.api.generated.model.EvidenceDto;
 import ai.helper2.api.generated.model.IssueReportAcceptedDto;
 import ai.helper2.api.generated.model.IssueReportRequestDto;
-import ai.helper2.api.generated.model.ListedModelDto;
-import ai.helper2.api.generated.model.ModelFamiliesResponseDto;
-import ai.helper2.api.generated.model.ModelFamilyDto;
 import ai.helper2.api.generated.model.RecentResponseDto;
 import ai.helper2.api.generated.model.RelationshipDto;
 import ai.helper2.api.generated.model.ResourceDetailDto;
@@ -21,7 +18,6 @@ import ai.helper2.api.generated.model.ValueOriginDto;
 import ai.helper2.api.generated.model.VerificationDto;
 import ai.helper2.catalog.ResourceDetail;
 import ai.helper2.catalog.usecase.GetResourceDetail;
-import ai.helper2.catalog.usecase.ListModelFamilies;
 import ai.helper2.catalog.usecase.ListRecentResources;
 import ai.helper2.catalog.usecase.ListUpcomingEvents;
 import ai.helper2.catalog.usecase.ReportIssue;
@@ -29,6 +25,7 @@ import ai.helper2.identity.CurrentUser;
 import ai.helper2.platform.BadRequestException;
 import ai.helper2.platform.NotFoundException;
 import ai.helper2.search.web.CardMapper;
+import ai.helper2.shared.UtcTimes;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -51,16 +48,14 @@ class ResourcesController implements ResourcesApi {
     private final ListRecentResources recent;
     private final ListUpcomingEvents upcoming;
     private final ReportIssue reports;
-    private final ListModelFamilies families;
     private final CurrentUser currentUser;
     private final Clock clock;
 
     ResourcesController(GetResourceDetail details, ListRecentResources recent, ListUpcomingEvents upcoming, ReportIssue reports,
-                        ListModelFamilies families, CurrentUser currentUser, Clock clock) {
+                        CurrentUser currentUser, Clock clock) {
         this.details = details;
         this.recent = recent;
         this.upcoming = upcoming;
-        this.families = families;
         this.clock = clock;
         this.reports = reports;
         this.currentUser = currentUser;
@@ -78,9 +73,9 @@ class ResourcesController implements ResourcesApi {
                 r.targetTitle(), VerificationDto.fromValue(r.verification().name()), evidence(r.evidence())).targetId(r.targetId())).toList())
             .summary(d.summary() == null ? null : new AiSummaryDto(
                 d.summary().claims().stream().map(c -> new SummaryClaimDto(c.text(), evidence(c.evidence()))).toList(),
-                d.summary().model(), d.summary().promptVersion(), CardMapper.odt(d.summary().generatedAt())))
+                d.summary().model(), d.summary().promptVersion(), UtcTimes.odt(d.summary().generatedAt())))
             .sourceRecords(d.sourceRecords().stream().map(s -> new SourceRecordInfoDto(s.sourceId(), s.externalId(), s.url(),
-                CardMapper.odt(s.retrievedAt()), s.fingerprint())).toList())
+                UtcTimes.odt(s.retrievedAt()), s.fingerprint())).toList())
             .enrichmentStatus(ResourceDetailDto.EnrichmentStatusEnum.fromValue(d.enrichmentStatus()));
         return ResponseEntity.ok().cacheControl(CacheControl.noCache()).body(dto);
     }
@@ -93,7 +88,7 @@ class ResourcesController implements ResourcesApi {
         List<ResultCardDto> items = recent.list(since, now, types, size == null ? 12 : size).stream().map(CardMapper::card).toList();
         // Short cache: the index changes at most every Scout run (15 min); the page asks on every visit.
         return ResponseEntity.ok().cacheControl(CacheControl.maxAge(Duration.ofMinutes(2)).cachePublic())
-            .body(new RecentResponseDto(items, CardMapper.odt(since), CardMapper.odt(now)));
+            .body(new RecentResponseDto(items, UtcTimes.odt(since), UtcTimes.odt(now)));
     }
 
     @Override
@@ -103,7 +98,7 @@ class ResourcesController implements ResourcesApi {
         Instant today = now.truncatedTo(java.time.temporal.ChronoUnit.DAYS);
         List<ResultCardDto> items = upcoming.list(today, size == null ? 6 : size).stream().map(CardMapper::card).toList();
         return ResponseEntity.ok().cacheControl(CacheControl.maxAge(Duration.ofMinutes(5)).cachePublic())
-            .body(new UpcomingEventsResponseDto(items, CardMapper.odt(now)));
+            .body(new UpcomingEventsResponseDto(items, UtcTimes.odt(now)));
     }
 
     @Override
@@ -119,22 +114,7 @@ class ResourcesController implements ResourcesApi {
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(new IssueReportAcceptedDto(reportId));
     }
 
-    @Override
-    public ResponseEntity<ModelFamiliesResponseDto> listModelFamilies() {
-        List<ModelFamilyDto> out = families.list(5).stream().map(f -> new ModelFamilyDto(f.id(), f.provider(), f.name(), f.openWeights(),
-                CardMapper.card(f.detail().card()),
-                // Only the curated official specs: the card's own source facts (title, description) are not specs.
-                f.detail().assertions().stream().filter(a -> a.origin() == ai.helper2.shared.ValueOrigin.CURATED && a.sourceId() == null)
-                    .map(a -> new AssertionDto(a.field(), a.value(), ValueOriginDto.fromValue(a.origin().name()),
-                        VerificationDto.fromValue(a.verification().name()), evidence(a.evidence()))).toList(),
-                f.listed().stream().map(m -> new ListedModelDto(m.resourceId(), m.title(), m.url(), m.sourceId(),
-                    CardMapper.odt(m.retrievedAt())).published(CardMapper.odt(m.published()))).toList()))
-            .toList();
-        return ResponseEntity.ok().cacheControl(CacheControl.maxAge(Duration.ofMinutes(5)).cachePublic())
-            .body(new ModelFamiliesResponseDto(out));
-    }
-
     private static List<EvidenceDto> evidence(List<ResourceDetail.Evidence> list) {
-        return list.stream().map(e -> new EvidenceDto(e.id(), e.sourceUrl(), CardMapper.odt(e.retrievedAt())).excerpt(e.excerpt())).toList();
+        return list.stream().map(e -> new EvidenceDto(e.id(), e.sourceUrl(), UtcTimes.odt(e.retrievedAt())).excerpt(e.excerpt())).toList();
     }
 }

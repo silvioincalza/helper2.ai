@@ -42,4 +42,22 @@ class SourceHealthTest {
         assertEquals(SourceHealth.Entry(SourceOutcome.TIMED_OUT, later),
             health.lastFor("github", SourceHealth.Entry(SourceOutcome.SUCCEEDED, earlier)))
     }
+
+    @Test
+    fun `a source disabled in configuration leaves no outcome, whatever its message says`() {
+        val health = SourceHealth()
+        health.sourceCompleted(SourceStatus(descriptor("tavily"), SourceOutcome.SKIPPED, ServedFrom.NONE, 0, null, later,
+            message = "Turned off", skipReason = SkipReason.DISABLED))
+
+        assertNull(health.lastFor("tavily", null))
+    }
+
+    @Test
+    fun `a source paused after a rate limit keeps its skipped outcome`() {
+        val health = SourceHealth()
+        health.sourceCompleted(SourceStatus(descriptor("github"), SourceOutcome.SKIPPED, ServedFrom.NONE, 0, null, later,
+            message = "Paused", skipReason = SkipReason.RATE_LIMIT_PAUSE))
+
+        assertEquals(SourceHealth.Entry(SourceOutcome.SKIPPED, later), health.lastFor("github", null))
+    }
 }

@@ -49,6 +49,19 @@ class ToolGuidesTest {
     }
 
     @Test
+    fun `the kept answer holds neither the question nor the document text, a hit still answers with the question`() {
+        val cache = MemoryCache()
+        val guides = ToolGuides({ listOf(doc) }, Model { good }, cache, clock)
+        val asked = guides.answer("id", ref, "How do I install it?")
+        assertEquals("How do I install it?", asked.question)
+        val kept = cache.map.values.single()
+        assertNull(kept.question)
+        assertEquals(listOf(MaterialRef("readme", MaterialKind.README, URI("https://github.com/acme/x"), clock.instant())), kept.materials)
+        assertEquals("how do I install it?", guides.answer("id", ref, "how do I install it?").question)
+        assertEquals(1, cache.map.size)
+    }
+
+    @Test
     fun `no documents, no model, budget and nothing kept are told apart`() {
         assertEquals(ToolGuideStatus.NO_MATERIAL, ToolGuides({ emptyList() }, Model { good }, ToolGuideCache.NONE, clock).answer("id", ref, null).status)
         val noRef = ToolRef.of("x", "PRODUCT", listOf("https://example.com"), emptyList())
@@ -74,5 +87,26 @@ class ToolGuidesTest {
         assertNull(r.hfModel)
         assertEquals("org/model", ToolRef.of("m", "MODEL", listOf("https://huggingface.co/org/model"), emptyList()).hfModel)
         assertNull(ToolRef.of("t", "LIBRARY", listOf("https://github.com/topics/mcp"), emptyList()).githubRepo)
+    }
+
+    @Test
+    fun `dot segments and names outside the GitHub and Hugging Face rules never become a document path`() {
+        fun repo(url: String) = ToolRef.of("t", "LIBRARY", listOf(url), emptyList()).githubRepo
+        fun hf(url: String) = ToolRef.of("t", "MODEL", listOf(url), emptyList())
+        assertNull(repo("https://github.com/../orgs"))
+        assertNull(repo("https://github.com/acme/.."))
+        assertNull(repo("https://github.com/acme/."))
+        assertNull(repo("https://github.com/-acme/x"))
+        assertNull(repo("https://github.com/ac--me/x"))
+        assertNull(repo("https://github.com/acme_co/x"))
+        assertNull(repo("https://github.com/" + "a".repeat(40) + "/x"))
+        assertEquals("acme-co/x.y_z", repo("https://github.com/acme-co/x.y_z"))
+        assertEquals("acme/.github", repo("https://github.com/acme/.github"))
+        assertNull(hf("https://huggingface.co/../model").hfModel)
+        assertNull(hf("https://huggingface.co/org/..").hfModel)
+        assertNull(hf("https://huggingface.co/spaces/org/..").hfSpace)
+        assertNull(hf("https://huggingface.co/org/-model").hfModel)
+        assertNull(hf("https://huggingface.co/org/a..b").hfModel)
+        assertEquals("org/Model-7B.v1", hf("https://huggingface.co/org/Model-7B.v1").hfModel)
     }
 }

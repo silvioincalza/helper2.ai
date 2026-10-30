@@ -13,7 +13,7 @@ class SourceHealth : SearchMetrics {
     private val last = ConcurrentHashMap<String, Entry>()
 
     override fun sourceCompleted(status: SourceStatus) {
-        if (status.outcome == SourceOutcome.SKIPPED && status.servedFrom == ServedFrom.NONE && status.message == "Disabled in configuration") return
+        if (status.skipReason == SkipReason.DISABLED) return
         last[status.source.id] = Entry(status.outcome, status.checkedAt)
     }
 

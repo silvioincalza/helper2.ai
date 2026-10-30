@@ -37,6 +37,39 @@ fun interface ResultObserver {
      * search: implementations write in the background and may drop work under load.
      */
     fun record(results: List<MergedResult>) {}
+
+    /**
+     * The hits [sourceId] gave for the resources [ids] (each the [ResourceId] of a hit's own URL), as recorded, in
+     * the order of [ids]; ids without such a record are left out. May throw.
+     */
+    fun recordedHits(sourceId: String, ids: List<ResourceId>): List<SourceHit> = emptyList()
+}
+
+/**
+ * Outbound port: the result set a metered web source returned for a query (ADR 0037), by source, query and
+ * [IntentClass]. The adapter keys it by an HMAC of [query]; the text itself is never stored. A set whose hits are no
+ * longer all in the catalog is not found. May throw.
+ */
+interface WebResultStore {
+    fun find(sourceId: String, query: String, intentClass: IntentClass): CachedHits?
+
+    /** Replaces the stored set of this query with [hits], fetched at [fetchedAt]. */
+    fun replace(sourceId: String, query: String, intentClass: IntentClass, fetchedAt: Instant, hits: List<SourceHit>)
+
+    companion object {
+        /** Nothing stored: every search of a metered source is a live call. */
+        @JvmField
+        val NONE: WebResultStore = object : WebResultStore {
+            override fun find(sourceId: String, query: String, intentClass: IntentClass): CachedHits? = null
+            override fun replace(sourceId: String, query: String, intentClass: IntentClass, fetchedAt: Instant, hits: List<SourceHit>) {}
+        }
+    }
+}
+
+/** Outbound port: stored web result sets past their retention (ADR 0034). */
+fun interface WebResultRetention {
+    /** Deletes the result sets fetched before [cutoff]; returns how many. */
+    fun deleteFetchedBefore(cutoff: Instant): Int
 }
 
 /**
@@ -53,6 +86,9 @@ interface SearchMetrics {
     fun sourceCompleted(status: SourceStatus) {}
     fun cacheEvent(event: String) {}
     fun searchCompleted(partial: Boolean, latency: Duration) {}
+
+    /** One live call of the metered source [sourceId], for [asker] (null: an internal caller) in [tier]. */
+    fun creditSpent(sourceId: String, asker: Asker?, tier: QuotaTier?) {}
 
     companion object {
         @JvmField

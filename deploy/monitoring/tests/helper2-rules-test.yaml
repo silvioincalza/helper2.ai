@@ -1,0 +1,436 @@
+# Unit tests of deploy/monitoring/helper2-rules.yaml: promtool test rules deploy/monitoring/tests/*.yaml
+# promtool compares annotations exactly, so each firing alert lists all three.
+rule_files:
+  - ../helper2-rules.yaml
+
+evaluation_interval: 1m
+
+tests:
+  # 5xx ratio: 10% server errors at 2 requests/s fire after the 10 minutes of `for`; actuator paths do not count.
+  - interval: 1m
+    input_series:
+      - series: 'http_server_requests_seconds_count{application="helper2", environment="prod", uri="/api/search", status="200"}'
+        values: '0+108x30'
+      - series: 'http_server_requests_seconds_count{application="helper2", environment="prod", uri="/api/search", status="500"}'
+        values: '0+12x30'
+      - series: 'http_server_requests_seconds_count{application="helper2", environment="prod", uri="/actuator/health", status="503"}'
+        values: '0+600x30'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: Helper2HighServerErrorRatio
+        exp_alerts: []
+      - eval_time: 20m
+        alertname: Helper2HighServerErrorRatio
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              environment: prod
+            exp_annotations:
+              summary: "More than 5% of requests to helper2 (prod) fail with a 5xx status."
+              description: "10% of the requests of the last 5 minutes ended with a server error, for 10 minutes."
+              runbook: "Dashboard row 'HTTP (app port)' (Requests by status, p95 by route), then row Logs filtered on ERROR. 503 on the guide = all slots busy, 504 = question deadline; other 5xx: check Postgres and Redis pods and the last deploy (make ENV=<env> rollback)."
+
+  # 5xx ratio: a single error among less than one request a minute stays quiet.
+  - interval: 1m
+    input_series:
+      - series: 'http_server_requests_seconds_count{application="helper2", environment="prod", uri="/api/search", status="500"}'
+        values: '0 1x29'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: Helper2HighServerErrorRatio
+        exp_alerts: []
+
+  # Daily budget: guide cap 600 with 100 left (16.67%, the lowest pod) fires; translation at 50% does not.
+  - interval: 5m
+    input_series:
+      - series: 'helper2_guide_budget_remaining{application="helper2", environment="prod", instance="a"}'
+        values: '600 600 500 300 100 100 100'
+      - series: 'helper2_guide_budget_remaining{application="helper2", environment="prod", instance="b"}'
+        values: '600 600 500 300 110 110 110'
+      - series: 'helper2_search_translation_budget_remaining{application="helper2", environment="prod", instance="a"}'
+        values: '300 300 200 150 150 150 150'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: Helper2DailyBudgetLow
+        exp_alerts: []
+      - eval_time: 25m
+        alertname: Helper2DailyBudgetLow
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              environment: prod
+              budget: guide
+            exp_annotations:
+              summary: "Daily budget guide is below 20% (prod)."
+              description: "Only 16.67% of today's model calls are left. When it reaches 0 the feature degrades until 00:00 UTC (guide: search-only answers; enrichment and classifier: skipped; translation: query sent as typed)."
+              runbook: "Dashboard panels 'Questions by outcome' (AI guide) or 'Enrichment outcomes' (Scout): normal traffic or one loop/abuser? Caps: H2_GUIDE_DAILY_MODEL_CALLS (guide), H2_SEARCH_DAILY_TRANSLATIONS (search_translation), H2_SCOUT_DAILY_ENRICHMENT_CALLS (scout_enrichment), H2_SCOUT_AWESOME_CLASSIFIER_DAILY_CALLS (scout_classifier), H2_SETUP_GUIDE_DAILY_MODEL_CALLS (tool_guide)."
+
+  # Daily budget: the budget label comes from the gauge name (Scout enrichment, spent).
+  - interval: 5m
+    input_series:
+      - series: 'helper2_scout_enrichment_budget_remaining{application="helper2", environment="prod", instance="a"}'
+        values: '300 300 0 0 0'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: Helper2DailyBudgetLow
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              environment: prod
+              budget: scout_enrichment
+            exp_annotations:
+              summary: "Daily budget scout_enrichment is below 20% (prod)."
+              description: "Only 0% of today's model calls are left. When it reaches 0 the feature degrades until 00:00 UTC (guide: search-only answers; enrichment and classifier: skipped; translation: query sent as typed)."
+              runbook: "Dashboard panels 'Questions by outcome' (AI guide) or 'Enrichment outcomes' (Scout): normal traffic or one loop/abuser? Caps: H2_GUIDE_DAILY_MODEL_CALLS (guide), H2_SEARCH_DAILY_TRANSLATIONS (search_translation), H2_SCOUT_DAILY_ENRICHMENT_CALLS (scout_enrichment), H2_SCOUT_AWESOME_CLASSIFIER_DAILY_CALLS (scout_classifier), H2_SETUP_GUIDE_DAILY_MODEL_CALLS (tool_guide)."
+
+  # Tavily credits: 2 live calls an hour on prod (48 a day) fire once a day of them is in; staging at 1 an hour (24 a
+  # day) stays quiet. Search and guide add up.
+  - interval: 1h
+    input_series:
+      - series: 'helper2_tavily_credits_total{application="helper2", environment="prod", instance="a", feature="search", tier="guest"}'
+        values: '0+1x30'
+      - series: 'helper2_tavily_credits_total{application="helper2", environment="prod", instance="b", feature="guide", tier="guest"}'
+        values: '0+1x30'
+      - series: 'helper2_tavily_credits_total{application="helper2", environment="staging", instance="a", feature="search", tier="guest"}'
+        values: '0+1x30'
+    alert_rule_test:
+      - eval_time: 12h
+        alertname: Helper2TavilyCreditsHigh
+        exp_alerts: []
+      - eval_time: 25h
+        alertname: Helper2TavilyCreditsHigh
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              environment: prod
+            exp_annotations:
+              summary: "Tavily used more than 30 credits in the last 24 hours (prod)."
+              description: "48 live Tavily calls in the last 24 hours. At this pace the monthly credits run out before the plan resets; then Tavily fails for everyone and searches answer from stored results and the other sources."
+              runbook: "Dashboard: helper2_tavily_credits_total by feature and tier. Many guest addresses at the limit = rotating IPs: set H2_TAVILY_GLOBAL_DAILY_CREDITS to cap all live calls a day (no release). Few stored-set hits (helper2_cache_events_total, event=store_hit): check the freshness settings."
+
+  # Scout age (the gauge holds epoch seconds; test time starts at epoch 0). hf-trending (daily) last succeeded at
+  # 1h: quiet at 49h (48 h old), fires at 73h. tavily-scout (every 5 days) is as old and stays quiet; mcp-registry
+  # keeps succeeding.
+  - interval: 1h
+    input_series:
+      - series: 'helper2_scout_last_success{application="helper2", environment="prod", source="hf-trending"}'
+        values: '3600x96'
+      - series: 'helper2_scout_last_success{application="helper2", environment="prod", source="tavily-scout"}'
+        values: '3600x96'
+      - series: 'helper2_scout_last_success{application="helper2", environment="prod", source="mcp-registry"}'
+        values: '0+3600x96'
+    alert_rule_test:
+      - eval_time: 49h
+        alertname: Helper2ScoutCollectorStale
+        exp_alerts: []
+      - eval_time: 73h
+        alertname: Helper2ScoutCollectorStale
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              environment: prod
+              source: hf-trending
+            exp_annotations:
+              summary: "Scout collector hf-trending: no successful run for 3d 0h 0m 0s (prod)."
+              description: "The catalog misses new resources from hf-trending since its last successful run."
+              runbook: "Dashboard row Scout, 'Run failures by error'; the admin back office lists the runs. A collector disabled on purpose keeps firing until its last value is 9 days old."
+
+  # Scout age: the gauge vanishes after a deploy (new pods have not run the collector yet); the age still counts.
+  - interval: 1h
+    input_series:
+      - series: 'helper2_scout_last_success{application="helper2", environment="prod", source="hf-trending", instance="old"}'
+        values: '3600x10'
+    alert_rule_test:
+      - eval_time: 50h
+        alertname: Helper2ScoutCollectorStale
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              environment: prod
+              source: hf-trending
+            exp_annotations:
+              summary: "Scout collector hf-trending: no successful run for 2d 1h 0m 0s (prod)."
+              description: "The catalog misses new resources from hf-trending since its last successful run."
+              runbook: "Dashboard row Scout, 'Run failures by error'; the admin back office lists the runs. A collector disabled on purpose keeps firing until its last value is 9 days old."
+
+  # Picks from rank 9+: 2 of 10 (20%, not above) is quiet, 4 of 12 fires. Staging: 2 of 2 is under the floor of 3.
+  - interval: 1h
+    input_series:
+      - series: 'helper2_guide_picks_total{application="helper2", environment="prod", rank="1-3"}'
+        values: '0+1x8 8x16'
+      - series: 'helper2_guide_picks_total{application="helper2", environment="prod", rank="9+"}'
+        values: '0x6 1 2x7 4x10'
+      - series: 'helper2_guide_picks_total{application="helper2", environment="staging", rank="9+"}'
+        values: '0 1 2x22'
+    alert_rule_test:
+      - eval_time: 10h
+        alertname: Helper2GuidePicksFromLowRanks
+        exp_alerts: []
+      - eval_time: 20h
+        alertname: Helper2GuidePicksFromLowRanks
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              environment: prod
+            exp_annotations:
+              summary: "More than 20% of the guide's picks come from search rank 9 or lower (prod)."
+              description: "33.33% of the picks kept in the last day were ranked 9+ in search. A page may be written to be chosen by the model (content poisoning)."
+              runbook: "Logs: 'guide timings' lines with keptRanks containing 9 or more, then ask the same question and read the low-ranked pick's page for instructions aimed at a model. Report the resource from the back office; rerun scripts/eval-guide.mjs --adversarial."
+
+  # Rate-limit fallback: any decision made in memory fires at once.
+  - interval: 1m
+    input_series:
+      - series: 'helper2_rate_limit_fallback_total{application="helper2", environment="prod", limiter="search"}'
+        values: '0 0 0 3 5'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: Helper2RateLimitInMemory
+        exp_alerts: []
+      - eval_time: 4m
+        alertname: Helper2RateLimitInMemory
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              environment: prod
+              limiter: search
+            exp_annotations:
+              summary: "Rate limiter search decides in one replica's memory (prod)."
+              description: "Redis was unavailable to the rate limiter, so each replica counted on its own: a client could make up to replicas x the limit. The daily budgets count in memory too."
+              runbook: "Check the redis-0 pod and its logs; the counter stops growing once Redis answers again (the circuit closes after 30 s)."
+
+  # Embedding indexer: last batch at 1m; quiet at 30m, fires at 40m.
+  - interval: 1m
+    input_series:
+      - series: 'helper2_embedding_last_success_seconds{application="helper2", environment="prod", instance="a"}'
+        values: '60x60'
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: Helper2EmbeddingIndexerStalled
+        exp_alerts: []
+      - eval_time: 40m
+        alertname: Helper2EmbeddingIndexerStalled
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              environment: prod
+            exp_annotations:
+              summary: "The embedding indexer has not finished a batch for 30 minutes (prod)."
+              description: "The last successful batch was 39m 0s ago (one runs every 15 s). New resources are found by keyword search only until it recovers."
+              runbook: "Dashboard row 'Embeddings (vector search)', 'Embedding failures by reason': rate_limited = NVIDIA API catalog limit (the indexer pauses 2 min); embedding = the API; database = Postgres. Logs: 'Embedding batch failed'."
+
+  # Embedding backlog: the indexer runs (pod a) but 120 resources stay waiting for 3 hours. Pod b's stale value
+  # (it lost the lock) is ignored.
+  - interval: 1m
+    input_series:
+      - series: 'helper2_embedding_last_success_seconds{application="helper2", environment="prod", instance="a"}'
+        values: '0+60x240'
+      - series: 'helper2_embedding_backlog{application="helper2", environment="prod", instance="a"}'
+        values: '120x240'
+      - series: 'helper2_embedding_last_success_seconds{application="helper2", environment="prod", instance="b"}'
+        values: '0x240'
+      - series: 'helper2_embedding_backlog{application="helper2", environment="prod", instance="b"}'
+        values: '9000x240'
+    alert_rule_test:
+      - eval_time: 2h
+        alertname: Helper2EmbeddingBacklogStuck
+        exp_alerts: []
+      - eval_time: 3h10m
+        alertname: Helper2EmbeddingBacklogStuck
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              environment: prod
+            exp_annotations:
+              summary: "Resources have waited for an embedding for 3 hours (prod)."
+              description: "The embedding backlog has stayed above 0 for 3 hours (120 resources now); a full reindex of the catalog takes about 2 hours."
+              runbook: "If Helper2EmbeddingIndexerStalled fires too, fix that first. Otherwise resources arrive faster than the indexer embeds them (helper2.embedding.batch 50 every 15 s = 200 a minute)."
+
+  # Review backlog: 60 OPEN items for a day fire; 40 stay quiet. Two replicas report the same count.
+  - interval: 1m
+    input_series:
+      - series: 'helper2_review_open_items{application="helper2", environment="prod", instance="a"}'
+        values: '60x1560'
+      - series: 'helper2_review_open_items{application="helper2", environment="prod", instance="b"}'
+        values: '60x1560'
+      - series: 'helper2_review_open_items{application="helper2", environment="staging", instance="a"}'
+        values: '40x1560'
+    alert_rule_test:
+      - eval_time: 12h
+        alertname: Helper2ReviewBacklog
+        exp_alerts: []
+      - eval_time: 25h
+        alertname: Helper2ReviewBacklog
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              environment: prod
+            exp_annotations:
+              summary: "More than 50 review items have waited for a decision for a day (prod)."
+              description: "60 review items are OPEN. Until someone decides them, AI-proposed relationships stay unverified and user reports go unanswered."
+              runbook: "Admin page, Review: decide or reject in bulk by kind. A sudden rise of one kind (ENRICHMENT_VALIDATION, RELATIONSHIP_CANDIDATE) points to an enrichment prompt or model change."
+
+  # Backup: tonight's failed pg-backup Job fires; it clears once the Job is a day old. A Job that succeeded is quiet.
+  - interval: 1h
+    input_series:
+      - series: 'kube_job_failed{namespace="helper2-prod", job_name="pg-backup-29001", condition="true"}'
+        values: '1x60'
+      - series: 'kube_job_status_start_time{namespace="helper2-prod", job_name="pg-backup-29001"}'
+        values: '0x60'
+      - series: 'kube_job_failed{namespace="helper2-prod", job_name="pg-backup-29002", condition="true"}'
+        values: '0x60'
+      - series: 'kube_job_status_start_time{namespace="helper2-prod", job_name="pg-backup-29002"}'
+        values: '86400x60'
+    alert_rule_test:
+      - eval_time: 2h
+        alertname: Helper2BackupFailed
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              namespace: helper2-prod
+              job_name: pg-backup-29001
+            exp_annotations:
+              summary: "The Postgres backup Job pg-backup-29001 failed (helper2-prod)."
+              description: "Tonight's pg_dump (or its off-site upload) failed after its retries. Dumps are kept 7 days, so each failed night shortens the history."
+              runbook: "kubectl -n helper2-prod logs job/pg-backup-29001 -c dump (and -c upload with the off-site copy). Rerun: kubectl -n helper2-prod create job --from=cronjob/pg-backup pg-backup-now (deploy/k8s/README.md, Backups)."
+      - eval_time: 48h
+        alertname: Helper2BackupFailed
+        exp_alerts: []
+
+  # Pod restarts: 3 restarts within an hour fire.
+  - interval: 10m
+    input_series:
+      - series: 'kube_pod_container_status_restarts_total{namespace="helper2-prod", pod="helper2-abc", container="app"}'
+        values: '0 0 1 2 3 3 3'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: Helper2PodRestarting
+        exp_alerts: []
+      - eval_time: 40m
+        alertname: Helper2PodRestarting
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: helper2-prod
+              pod: helper2-abc
+              container: app
+            exp_annotations:
+              summary: "Container app of pod helper2-abc restarted more than twice in an hour (helper2-prod)."
+              description: "3 restarts in the last hour. A crash loop or an out-of-memory kill."
+              runbook: "kubectl -n helper2-prod describe pod helper2-abc (Last State: OOMKilled or Error), then kubectl logs --previous. Dashboard row 'Pod (infra)', 'Container memory vs limit'."
+
+  # Sources: 1 of 3 arxiv calls times out (33%) and fires; github's SKIPPED calls do not count as failures.
+  # Partial searches at exactly half stay quiet.
+  - interval: 1m
+    input_series:
+      - series: 'helper2_source_requests_total{application="helper2", environment="prod", source="arxiv", outcome="SUCCEEDED", served_from="LIVE"}'
+        values: '0+2x60'
+      - series: 'helper2_source_requests_total{application="helper2", environment="prod", source="arxiv", outcome="TIMED_OUT", served_from="NONE"}'
+        values: '0+1x60'
+      - series: 'helper2_source_requests_total{application="helper2", environment="prod", source="github", outcome="SUCCEEDED", served_from="LIVE"}'
+        values: '0+3x60'
+      - series: 'helper2_source_requests_total{application="helper2", environment="prod", source="github", outcome="SKIPPED", served_from="NONE"}'
+        values: '0+30x60'
+      - series: 'helper2_search_requests_total{application="helper2", environment="prod", partial="true"}'
+        values: '0+1x60'
+      - series: 'helper2_search_requests_total{application="helper2", environment="prod", partial="false"}'
+        values: '0+1x60'
+    alert_rule_test:
+      - eval_time: 40m
+        alertname: Helper2SourceFailing
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              environment: prod
+              source: arxiv
+            exp_annotations:
+              summary: "Source arxiv fails on more than 20% of searches (prod)."
+              description: "33.33% of the calls to arxiv failed, timed out or were rate limited over the last 15 minutes. Searches still answer, without that source or from its stale cache."
+              runbook: "Dashboard panels 'Source failures (FAILED, TIMED_OUT, RATE_LIMITED)' and 'Outbound HTTP errors by host'. TIMED_OUT: the provider is slow; RATE_LIMITED: check the token or quota of that provider; FAILED: row Logs, search for the source id."
+      - eval_time: 60m
+        alertname: Helper2PartialSearches
+        exp_alerts: []
+
+  # Partial searches: 3 of 4 searches partial for 30 minutes fire.
+  - interval: 1m
+    input_series:
+      - series: 'helper2_search_requests_total{application="helper2", environment="prod", partial="true"}'
+        values: '0+3x90'
+      - series: 'helper2_search_requests_total{application="helper2", environment="prod", partial="false"}'
+        values: '0+1x90'
+    alert_rule_test:
+      - eval_time: 70m
+        alertname: Helper2PartialSearches
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              environment: prod
+            exp_annotations:
+              summary: "More than half of the searches on helper2 (prod) return partial results."
+              description: "75% of the searches of the last 30 minutes missed at least one source, for 30 minutes."
+              runbook: "Find the source with Helper2SourceFailing or the panel 'Source outcomes'; a source SKIPPED on every search (cooldown, daily limit, missing token) also makes every search partial."
+
+  # Search cache errors for 10 minutes fire.
+  - interval: 1m
+    input_series:
+      - series: 'helper2_cache_events_total{application="helper2", environment="prod", event="error"}'
+        values: '0+1x30'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: Helper2SearchCacheErrors
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              environment: prod
+            exp_annotations:
+              summary: "The search cache in Redis fails on helper2 (prod)."
+              description: "Search cache reads or writes have failed for 10 minutes. Searches still answer, but every search calls the sources live."
+              runbook: "Check the redis-0 pod (kubectl -n helper2-<env> get pod redis-0, logs) and its PersistentVolumeClaim; the rate-limit alert Helper2RateLimitInMemory fires too when Redis is down."
+
+  # Circuit: a source circuit that cycles open and half_open (never closed) for 10 minutes fires; one that closes
+  # again within 3 minutes does not. Two pods: one open circuit is enough.
+  - interval: 1m
+    input_series:
+      - series: 'resilience4j_circuitbreaker_state{application="helper2", environment="prod", instance="a", name="source-npm", state="closed"}'
+        values: '1 1 0 0 0 0 0 0 0 0 0 0 0 0'
+      - series: 'resilience4j_circuitbreaker_state{application="helper2", environment="prod", instance="b", name="source-npm", state="closed"}'
+        values: '1 1 1 1 1 1 1 1 1 1 1 1 1 1'
+      - series: 'resilience4j_circuitbreaker_state{application="helper2", environment="prod", instance="a", name="redis", state="closed"}'
+        values: '1 0 0 0 1 1 1 1 1 1 1 1 1 1'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: Helper2CircuitOpen
+        exp_alerts: []
+      - eval_time: 9m
+        alertname: Helper2CircuitOpen
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              environment: prod
+              name: source-npm
+            exp_annotations:
+              summary: "Circuit source-npm has not closed for 5 minutes (prod)."
+              description: "The resilience policy source-npm keeps refusing calls (ADR 0033): source-* is SKIPPED in searches, collector-* fails its Scout runs, redis means the cache, budgets and rate limits run without Redis, llm-chat means guide answers are top search results and queries run untranslated, llm-embed means search runs without the meaning-based index."
+              runbook: "Dashboard row 'Search and sources' (source outcomes) or the Redis pod for name=redis. A source-* circuit: check the provider's status and its outbound HTTP errors; it closes by itself once a trial call succeeds (every 30 s)."
+
+  # Not permitted: 2 refused calls a minute for 15 minutes fire; one refused call now and then does not.
+  - interval: 1m
+    input_series:
+      - series: 'resilience4j_circuitbreaker_not_permitted_calls_total{application="helper2", environment="prod", instance="a", name="source-tavily", kind="not_permitted"}'
+        values: '0+2x30'
+      - series: 'resilience4j_circuitbreaker_not_permitted_calls_total{application="helper2", environment="prod", instance="a", name="redis", kind="not_permitted"}'
+        values: '0 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: Helper2CallsNotPermitted
+        exp_alerts: []
+      - eval_time: 20m
+        alertname: Helper2CallsNotPermitted
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              environment: prod
+              name: source-tavily
+            exp_annotations:
+              summary: "Policy source-tavily refuses calls (prod)."
+              description: "2 calls a minute were refused by the open circuit of source-tavily over the last 5 minutes, for 10 minutes."
+              runbook: "Same cause as Helper2CircuitOpen for source-tavily; the rate shows how much traffic the outage costs. Searches still answer from the other sources and the stale cache."

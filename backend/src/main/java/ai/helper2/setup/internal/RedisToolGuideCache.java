@@ -1,12 +1,11 @@
 package ai.helper2.setup.internal;
 
-import ai.helper2.platform.CircuitBreaker;
+import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.setup.ToolGuideAnswer;
 import ai.helper2.setup.ToolGuideCache;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.Clock;
 import java.time.Duration;
 import java.util.HexFormat;
 import org.slf4j.Logger;
@@ -19,30 +18,31 @@ import tools.jackson.databind.node.ObjectNode;
 import tools.jackson.module.kotlin.KotlinModule;
 
 /**
- * Tool guide answers in Redis, shared by every replica and kept across deploys (same envelope and circuit breaker
- * as the guide's answer store). Any Redis error opens the circuit; while open, get misses and put does nothing.
+ * Tool guide answers in Redis, shared by every replica and kept across deploys (same envelope and {@code redis} policy
+ * as the guide's answer store, ADR 0033). An answer holds the checked steps and links to the documents, never the
+ * question or a document's text. A Redis error, or the open circuit refusing the call, makes get miss and put do nothing.
  */
 class RedisToolGuideCache implements ToolGuideCache {
 
-    static final int VERSION = 1;
+    static final int VERSION = 2;
     private static final Logger log = LoggerFactory.getLogger(RedisToolGuideCache.class);
 
     private final StringRedisTemplate redis;
     private final ObjectMapper json;
-    private final CircuitBreaker circuit;
+    private final Resilience resilience;
     private final Duration ttl;
 
-    RedisToolGuideCache(StringRedisTemplate redis, ObjectMapper json, Clock clock, Duration ttl) {
+    RedisToolGuideCache(StringRedisTemplate redis, ObjectMapper json, Resilience resilience, Duration ttl) {
         this.redis = redis;
         this.ttl = ttl;
         this.json = json.rebuild()
             .addModule(new KotlinModule.Builder().build())
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
             .build();
-        this.circuit = new CircuitBreaker("tool guide cache", clock, Duration.ofSeconds(30));
+        this.resilience = resilience;
     }
 
-    /** The key holds the user's question, so Redis sees only its hash. */
+    /** A fixed-length Redis key under this cache's prefix, whatever the length of the domain's key. */
     static String redisKey(String key) {
         try {
             byte[] digest = MessageDigest.getInstance("SHA-256").digest(key.getBytes(StandardCharsets.UTF_8));
@@ -54,14 +54,11 @@ class RedisToolGuideCache implements ToolGuideCache {
 
     @Override
     public ToolGuideAnswer get(String key) {
-        if (circuit.isOpen()) {
-            return null;
-        }
         String raw;
         try {
-            raw = redis.opsForValue().get(redisKey(key));
+            raw = resilience.call("redis", () -> redis.opsForValue().get(redisKey(key)));
         } catch (RuntimeException e) {
-            circuit.trip(e);
+            log.debug("tool guide cache unavailable: {}", e.getClass().getSimpleName());
             return null;
         }
         return raw == null ? null : decode(raw);
@@ -69,9 +66,6 @@ class RedisToolGuideCache implements ToolGuideCache {
 
     @Override
     public void put(String key, ToolGuideAnswer answer) {
-        if (circuit.isOpen()) {
-            return;
-        }
         String encoded;
         try {
             ObjectNode root = json.createObjectNode();
@@ -83,13 +77,16 @@ class RedisToolGuideCache implements ToolGuideCache {
             return;
         }
         try {
-            redis.opsForValue().set(redisKey(key), encoded, ttl);
+            resilience.run("redis", () -> redis.opsForValue().set(redisKey(key), encoded, ttl));
         } catch (RuntimeException e) {
-            circuit.trip(e);
+            log.debug("tool guide not stored, Redis unavailable: {}", e.getClass().getSimpleName());
         }
     }
 
-    /** Null for another version or an entry that no longer reads: both are a miss. */
+    /**
+     * Null for another version or an entry that no longer reads: both are a miss, and the answer the model writes
+     * next replaces the entry. An entry that does not read is logged, since each one costs a model call.
+     */
     ToolGuideAnswer decode(String raw) {
         try {
             JsonNode root = json.readTree(raw);
@@ -98,7 +95,7 @@ class RedisToolGuideCache implements ToolGuideCache {
             }
             return json.treeToValue(root.get("answer"), ToolGuideAnswer.class);
         } catch (RuntimeException e) {
-            log.debug("unreadable tool guide in Redis, treated as a miss: {}", e.getClass().getSimpleName());
+            log.warn("unreadable tool guide in Redis, treated as a miss: {}", e.getClass().getSimpleName());
             return null;
         }
     }

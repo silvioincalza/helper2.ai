@@ -1,7 +1,6 @@
 package ai.helper2.platform.llm;
 
-import ai.helper2.platform.CircuitBreaker;
-import java.time.Clock;
+import ai.helper2.platform.resilience.Resilience;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.List;
@@ -11,9 +10,9 @@ import org.springframework.data.redis.core.script.RedisScript;
 /**
  * Redis adapter for the daily budgets: one counter per budget name and UTC day, kept two days so the
  * key outlives its day in every time zone. INCR and PEXPIRE run in one script, so a key is never left without
- * an expiry (as RedisRateLimiter). Any Redis error answers null and DailyBudget counts in memory;
- * after an error a {@link CircuitBreaker} leaves Redis alone for {@code openFor}, so an outage does not add a
- * timeout to every call.
+ * an expiry (as RedisRateLimiter). The script runs under the {@code redis} policy (ADR 0033): a Redis error, or the open
+ * circuit refusing the call, answers null and DailyBudget counts in memory, so an outage does not add a timeout to
+ * every call.
  */
 public final class RedisCallCounter implements CallCounter {
 
@@ -28,11 +27,11 @@ public final class RedisCallCounter implements CallCounter {
         """, Long.class);
 
     private final StringRedisTemplate redis;
-    private final CircuitBreaker circuit;
+    private final Resilience resilience;
 
-    public RedisCallCounter(StringRedisTemplate redis, Clock clock, Duration openFor) {
+    public RedisCallCounter(StringRedisTemplate redis, Resilience resilience) {
         this.redis = redis;
-        this.circuit = new CircuitBreaker("budget counter", clock, openFor);
+        this.resilience = resilience;
     }
 
     static String key(String name, LocalDate day) {
@@ -41,13 +40,9 @@ public final class RedisCallCounter implements CallCounter {
 
     @Override
     public Long increment(String name, LocalDate day) {
-        if (circuit.isOpen()) {
-            return null;
-        }
         try {
-            return redis.execute(INCREMENT, List.of(key(name, day)), Long.toString(KEEP.toMillis()));
+            return resilience.call("redis", () -> redis.execute(INCREMENT, List.of(key(name, day)), Long.toString(KEEP.toMillis())));
         } catch (RuntimeException e) {
-            circuit.trip(e);
             return null;
         }
     }

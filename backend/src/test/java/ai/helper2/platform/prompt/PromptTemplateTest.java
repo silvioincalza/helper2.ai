@@ -49,7 +49,7 @@ class PromptTemplateTest {
 
     @Test
     void readsAPromptFromTheClasspath() {
-        assertThat(PromptTemplate.fromClasspath("guide/translate-query.txt").render(Map.of("maxWords", 12)))
+        assertThat(PromptTemplate.fromClasspath("search/translate-query.txt").render(Map.of("maxWords", 12)))
             .startsWith("Translate the user's search query")
             .contains("at most 12 words");
     }

@@ -99,7 +99,7 @@ management:
         http.server.requests: true
         http.client.requests: true
         helper2.scout.run: true
-        helper2.guide.model.call: true
+        helper2.llm.call: true
         helper2.search.latency: true
         helper2.source.latency: true
     tags:
@@ -132,6 +132,126 @@ management:
           # OTLP over HTTP/protobuf; in the cluster: http://alloy.observability.svc:4318/v1/traces
           endpoint: ${H2_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
 
+# Resilience policies (ADR 0033), applied in code by platform.resilience.Resilience: no annotations. One policy per
+# name; an enabled source or collector without its policy stops startup. Instances are created at startup, so each
+# has its meters (resilience4j_circuitbreaker_state, ..._not_permitted_calls) before its first call.
+#   source-<id>     circuit breaker + bulkhead, never a retry: the search deadline is the budget (SearchResources).
+#   collector-<id>  circuit breaker + retry with exponential backoff and jitter, only on 429, 503, network error or
+#                   timeout (TransientSourceFailure); Scout runs are background work and can wait.
+#   redis           circuit breaker shared by every Redis adapter: cache, guide answers, budgets, rate limits.
+#   llm-chat        circuit breaker on every chat-model call of the guide and the query translation; only provider
+#                   errors count (no connection, timeout, 429, 5xx, a rejected call), never an answer we could not parse.
+#   llm-embed       circuit breaker on every embedding call (search queries and the background indexer).
+#   guide           bulkhead: guide questions at once in this replica, held per question (GuideLimits), not per call.
+resilience4j:
+  circuitbreaker:
+    configs:
+      source:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 20
+        minimum-number-of-calls: 10
+        failure-rate-threshold: ${H2_RESILIENCE_SOURCE_FAILURE_RATE:50}
+        # A call slower than this counts as slow; half of the window slow opens the circuit like failures do.
+        slow-call-duration-threshold: 2s
+        slow-call-rate-threshold: 50
+        wait-duration-in-open-state: ${H2_RESILIENCE_SOURCE_OPEN_FOR:30s}
+        permitted-number-of-calls-in-half-open-state: 2
+        # A rate limit is not an outage: SearchResources pauses the source until Retry-After instead.
+        ignore-exceptions: ai.helper2.search.SourceFailure$RateLimited
+      collector:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: ${H2_RESILIENCE_COLLECTOR_OPEN_FOR:1m}
+        permitted-number-of-calls-in-half-open-state: 1
+        ignore-exceptions: ai.helper2.search.SourceFailure$RateLimited
+      store:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        # Redis answers in a millisecond or fails at its 250 ms command timeout: three failures are enough to stop
+        # waiting on it for the open window.
+        minimum-number-of-calls: 3
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: ${H2_RESILIENCE_REDIS_OPEN_FOR:30s}
+        permitted-number-of-calls-in-half-open-state: 2
+      model:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: ${H2_RESILIENCE_LLM_OPEN_FOR:30s}
+        permitted-number-of-calls-in-half-open-state: 2
+    instances:
+      source-github: {base-config: source}
+      source-hf-models: {base-config: source}
+      source-hf-spaces: {base-config: source}
+      source-npm: {base-config: source}
+      source-arxiv: {base-config: source}
+      source-tavily:
+        base-config: source
+        # Tavily answers in 2-4 s (timeout 6 s).
+        slow-call-duration-threshold: 5s
+      source-helper2-index: {base-config: source}
+      source-helper2-semantic: {base-config: source}
+      source-curated: {base-config: source}
+      collector-hf-trending: {base-config: collector}
+      collector-tavily-scout: {base-config: collector}
+      collector-course-scout: {base-config: collector}
+      collector-github-awesome: {base-config: collector}
+      collector-hf-provider-orgs: {base-config: collector}
+      collector-ai-deadlines: {base-config: collector}
+      collector-mcp-registry: {base-config: collector}
+      redis: {base-config: store}
+      llm-chat:
+        base-config: model
+        # Malformed JSON or a spent daily budget is not an outage of the provider: neither success nor failure.
+        ignore-exception-predicate: ai.helper2.platform.llm.ModelErrors$NotFromProvider
+      llm-embed: {base-config: model}
+  bulkhead:
+    configs:
+      source:
+        # Calls to one source at once in this replica; one more is SKIPPED as busy, it never waits.
+        max-concurrent-calls: ${H2_RESILIENCE_SOURCE_MAX_CONCURRENT:20}
+        max-wait-duration: 0
+      catalog:
+        # The catalog sources query Postgres: below the connection pool (H2_DATABASE_POOL_SIZE, 10), so searches
+        # never take every connection from the Scout and the admin.
+        max-concurrent-calls: ${H2_RESILIENCE_CATALOG_MAX_CONCURRENT:6}
+        max-wait-duration: 0
+    instances:
+      source-github: {base-config: source}
+      source-hf-models: {base-config: source}
+      source-hf-spaces: {base-config: source}
+      source-npm: {base-config: source}
+      source-arxiv: {base-config: source}
+      source-tavily: {base-config: source}
+      source-helper2-index: {base-config: catalog}
+      source-helper2-semantic: {base-config: catalog}
+      source-curated: {base-config: catalog}
+      guide:
+        # Questions running at once, JSON and streamed together; one more is refused at once as busy (503).
+        max-concurrent-calls: ${H2_GUIDE_MAX_CONCURRENT:8}
+        max-wait-duration: 0
+  retry:
+    configs:
+      collector:
+        max-attempts: ${H2_RESILIENCE_COLLECTOR_MAX_ATTEMPTS:3}
+        wait-duration: 1s
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        enable-randomized-wait: true
+        randomized-wait-factor: 0.5
+        retry-exception-predicate: ai.helper2.sources.support.TransientSourceFailure
+    instances:
+      collector-hf-trending: {base-config: collector}
+      collector-tavily-scout: {base-config: collector}
+      collector-course-scout: {base-config: collector}
+      collector-github-awesome: {base-config: collector}
+      collector-hf-provider-orgs: {base-config: collector}
+      collector-ai-deadlines: {base-config: collector}
+      collector-mcp-registry: {base-config: collector}
+
 logging:
   structured:
     format:
@@ -160,8 +280,6 @@ helper2:
     daily-model-calls: ${H2_GUIDE_DAILY_MODEL_CALLS:600}
     # Fresh (not cached) questions per client (IP; IPv6 by /64) per UTC day; past it the answer is search results only.
     client-daily-questions: ${H2_GUIDE_CLIENT_DAILY_QUESTIONS:30}
-    # Questions running at once, JSON and streamed together; one more is refused at once as busy (503).
-    max-concurrent: ${H2_GUIDE_MAX_CONCURRENT:8}
     # A question is cancelled after this long and the client gets a timeout (504).
     question-deadline: ${H2_GUIDE_QUESTION_DEADLINE:PT90S}
     # The streamed guide sends a keep-alive comment this often while a question runs (the client gives up after 45 s).
@@ -301,7 +419,6 @@ helper2:
       token: ${H2_TAVILY_API_KEY:}
       # Measured 2.0-4.2 s per call (26 Oct 2026); 3 s cut off real answers on prod.
       timeout: ${H2_SOURCE_TAVILY_TIMEOUT:6s}
-      cache-ttl: 30m
     hf-trending:
       enabled: ${H2_SOURCE_HF_TRENDING_ENABLED:true}
       base-url: https://huggingface.co
@@ -437,3 +554,87 @@ spring:
 helper2:
   scout:
     enabled: false
+resilience4j:
+  circuitbreaker:
+    instances:
+      source-demo-catalog: {base-config: source}
+      source-demo-mirror: {base-config: source}
+      source-demo-slow: {base-config: source}
+      source-demo-down: {base-config: source}
+  bulkhead:
+    instances:
+      source-demo-catalog: {base-config: source}
+      source-demo-mirror: {base-config: source}
+      source-demo-slow: {base-config: source}
+      source-demo-down: {base-config: source}
+
+---
+# Data retention (ADR 0034): what the daily purges delete, and when. Every period can be changed without a release.
+helper2:
+  retention:
+    # When the purges run (UTC); each module's purge runs on one replica (cluster lock).
+    cron: ${H2_RETENTION_CRON:0 17 3 * * *}
+    # OBSERVED resources (seen only in searches) no search has seen for this long.
+    observed-unseen: ${H2_RETENTION_OBSERVED_UNSEEN:P180D}
+    # Enrichment runs; each resource's latest run and any run current rows cite stay.
+    enrichment-runs: ${H2_RETENTION_ENRICHMENT_RUNS:P90D}
+    # Review items after they were decided or superseded.
+    resolved-review-items: ${H2_RETENTION_RESOLVED_REVIEW_ITEMS:P180D}
+    # Issue reports after their review was resolved (12 months).
+    resolved-issue-reports: ${H2_RETENTION_RESOLVED_ISSUE_REPORTS:P365D}
+    # Tavily NEWS and ARTICLE records after they were last retrieved.
+    web-news: ${H2_RETENTION_WEB_NEWS:P180D}
+    # Scout run records.
+    scout-runs: ${H2_RETENTION_SCOUT_RUNS:P90D}
+    # Observed and indexed events after they ended (1 year).
+    past-events: ${H2_RETENTION_PAST_EVENTS:P365D}
+    # Accounts nobody signed in to for this long, with their bookmarks (24 months).
+    inactive-accounts: ${H2_RETENTION_INACTIVE_ACCOUNTS:P730D}
+    # Admin audit entries (24 months).
+    admin-audit: ${H2_RETENTION_ADMIN_AUDIT:P730D}
+
+---
+# Setup guide (ADR 0031): documents read at request time, their caches and budgets.
+helper2:
+  setup:
+    # Per document fetch (GitHub, jsDelivr, Hugging Face).
+    document-timeout: ${H2_SETUP_DOCUMENT_TIMEOUT:10s}
+    npm-readme-base-url: ${H2_SETUP_NPM_README_BASE_URL:https://cdn.jsdelivr.net}
+    # Registry entries and documents kept in memory per replica; the registry asks to be read infrequently.
+    cache-ttl: ${H2_SETUP_CACHE_TTL:PT1H}
+    # The most document text kept in memory per replica.
+    document-cache-mb: ${H2_SETUP_DOCUMENT_CACHE_MB:32}
+    # Documents fetched per UTC hour across replicas. GitHub fetches spend the Scout's token (5,000 calls an hour).
+    hourly-fetches: ${H2_SETUP_HOURLY_FETCHES:1000}
+    guide:
+      # The step-by-step guide's own daily model-call cap, apart from the guide's and the Scout's.
+      daily-model-calls: ${H2_SETUP_GUIDE_DAILY_MODEL_CALLS:300}
+      # Use the reasoning model instead of the fast one.
+      reasoning: ${H2_SETUP_GUIDE_REASONING:false}
+      # How long checked answers stay in Redis.
+      cache-ttl: ${H2_SETUP_GUIDE_CACHE_TTL:P7D}
+
+---
+# Tavily (ADR 0037): store first, then a live call inside the visitor's daily web searches, per feature.
+helper2:
+  tavily:
+    # Stored result sets answer without a live call while fresh: news, courses, hackathons, conferences and events
+    # for 24 h, anything else for 48 h.
+    fresh-time-bound: ${H2_TAVILY_FRESH_TIMEBOUND:PT24H}
+    fresh-general: ${H2_TAVILY_FRESH_GENERAL:PT48H}
+    quota:
+      # HMAC key of the guest counters and of the stored query keys (OpenBao). Required while Tavily is enabled.
+      key-secret: ${H2_QUOTA_KEY_SECRET:}
+      guest:
+        search: 3
+        guide: 3
+      registered:
+        search: 10
+        guide: 10
+      # Signed-in users get the registered limits only with this on (after end-user sign-in goes live).
+      registered-tier-enabled: ${H2_TAVILY_REGISTERED_TIER_ENABLED:false}
+      # Live calls a day for all of Helper2; empty = no cap.
+      global-daily-credits: ${H2_TAVILY_GLOBAL_DAILY_CREDITS:}
+  retention:
+    # Stored Tavily result sets after they were fetched.
+    tavily-results: ${H2_RETENTION_TAVILY_RESULTS:P7D}

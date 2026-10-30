@@ -21,6 +21,10 @@ import ai.helper2.api.generated.model.SourceStatusDto;
 import ai.helper2.api.generated.model.TechLevelFilterDto;
 import ai.helper2.api.generated.model.TriStateDto;
 import ai.helper2.platform.BadRequestException;
+import ai.helper2.platform.ClientKey;
+import ai.helper2.platform.SignedInUser;
+import ai.helper2.search.Asker;
+import ai.helper2.search.Feature;
 import ai.helper2.search.DescribedSource;
 import ai.helper2.search.FacetCount;
 import ai.helper2.search.usecase.SearchResources;
@@ -35,6 +39,8 @@ import ai.helper2.search.SourceStatus;
 import ai.helper2.shared.Audience;
 import ai.helper2.shared.AudiencePath;
 import ai.helper2.shared.ResourceType;
+import ai.helper2.shared.UtcTimes;
+import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Comparator;
@@ -64,12 +70,18 @@ class SearchController implements SearchApi, SourcesApi {
     private final List<DescribedSource> sources;
     private final SourceHealth health;
     private final RecordedOutcomes recorded;
+    private final SignedInUser signedInUser;
+    /** A proxy to the current request: the generated interface does not pass it. */
+    private final HttpServletRequest http;
 
-    SearchController(SearchResources search, List<DescribedSource> sources, SourceHealth health, RecordedOutcomes recorded) {
+    SearchController(SearchResources search, List<DescribedSource> sources, SourceHealth health, RecordedOutcomes recorded,
+                     SignedInUser signedInUser, HttpServletRequest http) {
         this.search = search;
         this.sources = sources;
         this.health = health;
         this.recorded = recorded;
+        this.signedInUser = signedInUser;
+        this.http = http;
     }
 
     @Override
@@ -94,9 +106,10 @@ class SearchController implements SearchApi, SourcesApi {
             set(techLevel, t -> t == TechLevelFilterDto.UNKNOWN ? "unknown" : t.getValue()),
             set(audience, a -> Audience.valueOf(a.getValue())),
             updatedAfter);
+        Asker asker = new Asker(Feature.SEARCH, ClientKey.of(http.getRemoteAddr()), signedInUser.id().orElse(null));
         SearchOutcome out = search.search(new SearchRequest(
             q, path == null ? null : AudiencePath.valueOf(path.getValue()), filters,
-            sort == null ? SortOrder.RELEVANCE : SortOrder.valueOf(sort.getValue()), page, size));
+            sort == null ? SortOrder.RELEVANCE : SortOrder.valueOf(sort.getValue()), page, size, null, false, asker, null));
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(toDto(out));
     }
 
@@ -112,7 +125,7 @@ class SearchController implements SearchApi, SourcesApi {
                     .termsUrl(d.getTermsUrl()).attribution(d.getAttribution());
                 SourceHealth.Entry e = health.lastFor(d.getId(), fromScout.get(d.getId()));
                 if (e != null) {
-                    dto.lastOutcome(SourceOutcomeDto.fromValue(e.getOutcome().name())).lastCheckedAt(CardMapper.odt(e.getCheckedAt()));
+                    dto.lastOutcome(SourceOutcomeDto.fromValue(e.getOutcome().name())).lastCheckedAt(UtcTimes.odt(e.getCheckedAt()));
                 }
                 return dto;
             }).toList());
@@ -133,7 +146,7 @@ class SearchController implements SearchApi, SourcesApi {
             .query(out.getRequest().getText())
             .path(out.getRequest().getPath() == null ? null : AudiencePathDto.fromValue(out.getRequest().getPath().name()))
             .sort(SortOrderDto.fromValue(out.getRequest().getSort().name()))
-            .executedAt(CardMapper.odt(out.getExecutedAt()))
+            .executedAt(UtcTimes.odt(out.getExecutedAt()))
             .coverage(new CoverageDto()
                 .partial(out.getCoverage().getPartial())
                 .sourcesConfigured(out.getCoverage().getSourcesConfigured())
@@ -149,16 +162,17 @@ class SearchController implements SearchApi, SourcesApi {
             .notices(out.getNotices().stream()
                 .map(n -> new NoticeDto(NoticeDto.CodeEnum.fromValue(n.getCode().name()), n.getMessage())).toList())
             .interpretation(new QueryInterpretationDto(out.getInterpretation().getExpandedTerms(),
-                List.copyOf(out.getInterpretation().getUseCases())));
+                List.copyOf(out.getInterpretation().getUseCases())))
+            .webSearches(CardMapper.webSearches(out.getWebSearches()));
         return dto;
     }
 
     private static SourceStatusDto status(SourceStatus s) {
         return new SourceStatusDto(s.getSource().getId(), s.getSource().getName(),
             SourceModeDto.fromValue(s.getSource().getMode().name()), SourceOutcomeDto.fromValue(s.getOutcome().name()),
-            ServedFromDto.fromValue(s.getServedFrom().name()), s.getResultCount(), CardMapper.odt(s.getCheckedAt()))
+            ServedFromDto.fromValue(s.getServedFrom().name()), s.getResultCount(), UtcTimes.odt(s.getCheckedAt()))
             .latencyMs(s.getLatency() == null ? null : s.getLatency().toMillis())
-            .cachedAt(CardMapper.odt(s.getCachedAt()))
+            .cachedAt(UtcTimes.odt(s.getCachedAt()))
             .message(s.getMessage());
     }
 

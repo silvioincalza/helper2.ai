@@ -81,13 +81,31 @@ describe('resource detail', () => {
     expect(await screen.findByRole('heading', { name: 'Install' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'What you need first' })).toBeInTheDocument();
     expect(screen.getByText('npm install -g @acme/pg-mcp')).toBeInTheDocument();
-    expect(screen.getByText(/checked word for word/)).toBeInTheDocument();
+    expect(screen.getByText(/copied exactly from it; commands are not reviewed for safety/)).toBeInTheDocument();
     expect(m.callsTo('POST', `/resources/${ID}/guide`)[0]?.body).toEqual({});
 
     await userEvent.type(screen.getByLabelText('Ask about pg-mcp-server'), 'Does it need an API key?');
     await userEvent.click(screen.getByRole('button', { name: 'Ask' }));
     expect(await screen.findByText('No key; it needs a database URL.')).toBeInTheDocument();
     expect(m.callsTo('POST', `/resources/${ID}/guide`)[1]?.body).toEqual({ question: 'Does it need an API key?' });
+  });
+
+  it('a run command copied from the README says it is not reviewed for safety', async () => {
+    mockApi({
+      [`GET /resources/${ID}`]: () => makeDetail({ card: makeCard({ type: 'MCP_SERVER', title: 'pg-mcp-server' }) }),
+      [`GET /resources/${ID}/setup`]: () => ({
+        ...SETUP,
+        options: [{ id: 'o1', kind: 'COMMAND', transport: 'STDIO', label: 'npx @acme/pg-mcp', runtime: 'npx', requires: 'Node.js (npx)', settings: [] }],
+        clients: [{ id: 'claude-code', name: 'Claude Code', docsUrl: 'https://code.claude.com/docs/en/mcp', snippets: [
+          { optionId: 'o1', supported: true, where: 'Terminal', language: 'shell', text: 'claude mcp add --transport stdio pg-mcp-server -- npx -y @acme/pg-mcp' },
+        ] }],
+        sources: [{ sourceId: 'readme', url: 'https://github.com/acme/pg-mcp', retrievedAt: '2026-10-27T20:00:00Z' }],
+      }),
+      [`POST /resources/${ID}/guide`]: () => STEPS,
+    });
+    renderApp(`/resource/${ID}`);
+    await userEvent.click(await screen.findByRole('button', { name: 'Guide me' }));
+    expect(await screen.findByText(/Runs locally with npx, copied from its README; not reviewed for safety/)).toBeInTheDocument();
   });
 
   it('without setup data or documents it says why, and the follow-up box stays', async () => {
@@ -116,6 +134,18 @@ describe('resource detail', () => {
     await screen.findByRole('heading', { name: 'Verified relationships' });
     expect(screen.queryByRole('heading', { name: /Unverified candidates/ })).not.toBeInTheDocument();
     expect(screen.getByText('No verified relationships.')).toBeInTheDocument();
+  });
+
+  it('marks values extracted by AI as AI-generated and values stated by the source not (ADR 0038)', async () => {
+    mockApi({ [`GET /resources/${ID}`]: () => makeDetail({ assertions: [
+      { field: 'license', value: 'MIT', origin: 'AI_EXTRACTED', verification: 'VERIFIED', sourceId: 'github', evidence: [ev] },
+      { field: 'stars', value: '120', origin: 'SOURCE_PROVIDED', verification: 'VERIFIED', sourceId: 'github', evidence: [] },
+    ] }) });
+    renderApp(`/resource/${ID}`);
+    const license = await screen.findByRole('rowheader', { name: 'license' });
+    const stars = screen.getByRole('rowheader', { name: 'stars' });
+    expect(within(license.closest('tr') as HTMLElement).getByText('MIT')).toHaveAttribute('data-ai-generated', 'true');
+    expect(within(stars.closest('tr') as HTMLElement).getByText('120')).not.toHaveAttribute('data-ai-generated');
   });
 
   it('renders assertions with origin, verification and evidence excerpt', async () => {

@@ -1,5 +1,6 @@
 package ai.helper2.guide.internal;
 
+import ai.helper2.guide.AnswerLimits;
 import ai.helper2.guide.PlannedQueries;
 import ai.helper2.guide.Candidate;
 import ai.helper2.guide.ConstraintQuote;
@@ -23,11 +24,14 @@ import ai.helper2.guide.WindowDirection;
 import ai.helper2.guide.WindowUnit;
 import ai.helper2.platform.llm.CallOptions;
 import ai.helper2.platform.llm.DailyBudget;
+import ai.helper2.platform.llm.LlmPolicies;
 import ai.helper2.platform.llm.ModelAnswers;
 import ai.helper2.platform.llm.ModelCallMetrics;
 import ai.helper2.platform.llm.ModelErrors;
 import ai.helper2.platform.llm.UntrustedText;
 import ai.helper2.platform.prompt.PromptTemplate;
+import ai.helper2.platform.resilience.CallRefused;
+import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.shared.AudiencePath;
 import java.time.Clock;
 import java.util.List;
@@ -42,7 +46,7 @@ import org.springframework.ai.converter.BeanOutputConverter;
  * Spring AI adapter for the guide. Three calls per question: a fast model (e.g. Nemotron Nano) plans the
  * search; a reasoning model (e.g. Nemotron 3 Super) chooses among real candidates, then checks each kept
  * reason. All use structured output; GuideValidator still decides what is shown. Every attempt, retries
- * included, takes one call from the daily budget (ADR 0017).
+ * included, takes one call from the daily budget (ADR 0017), and runs under the {@code llm-chat} circuit (ADR 0033).
  */
 class SpringAiGuideModel implements GuideModel {
 
@@ -73,14 +77,16 @@ class SpringAiGuideModel implements GuideModel {
 
     /** The comparer's instructions (ADR 0032), with the limits AskGuide enforces. */
     static String compareSystem() {
+        AnswerLimits limits = AnswerLimits.DEFAULT;
         return PromptTemplate.fromClasspath("guide/compare.txt").render(Map.of(
-            "maxRows", 8, "maxAspectChars", 40, "maxCellChars", 200));
+            "maxRows", limits.getMaxRows(), "maxAspectChars", limits.getMaxAspectChars(), "maxCellChars", limits.getMaxCellChars()));
     }
 
     /** The explainer's instructions (ADR 0032), with the limits AskGuide and GuideValidator enforce. */
     static String explainSystem() {
+        AnswerLimits limits = AnswerLimits.DEFAULT;
         return PromptTemplate.fromClasspath("guide/explain.txt").render(Map.of(
-            "maxSentences", 4, "maxSentenceChars", 300,
+            "maxSentences", limits.getMaxSentences(), "maxSentenceChars", limits.getMaxSentenceChars(),
             "minQuoteChars", GuideValidator.MIN_QUOTE_CHARS,
             "minQuoteWords", GuideValidator.MIN_QUOTE_WORDS,
             "maxQuoteChars", GuideValidator.MAX_QUOTE_CHARS));
@@ -143,6 +149,7 @@ class SpringAiGuideModel implements GuideModel {
     private final ModelCallMetrics metrics;
     private final Thinking thinking;
     private final DailyBudget budget;
+    private final Resilience resilience;
 
     /**
      * Which calls may think before answering (see CallOptions). Plan and reason check are short,
@@ -152,10 +159,10 @@ class SpringAiGuideModel implements GuideModel {
         static final Thinking DEFAULT = new Thinking(false, false, false);
     }
 
-    /** No daily cap, no meters: for tests of the calls themselves. */
+    /** No daily cap, no meters, no circuit: for tests of the calls themselves. */
     SpringAiGuideModel(ChatModel chatModel, String provider, String fastModel, String reasoningModel) {
         this(chatModel, provider, fastModel, reasoningModel, true, DEFAULT_CHOOSE_MAX_TOKENS, Thinking.DEFAULT,
-            new DailyBudget(Integer.MAX_VALUE, Clock.systemUTC(), "guide"), ModelCallMetrics.none());
+            new DailyBudget(Integer.MAX_VALUE, Clock.systemUTC(), "guide"), ModelCallMetrics.none(), Resilience.NONE);
     }
 
     /**
@@ -167,9 +174,11 @@ class SpringAiGuideModel implements GuideModel {
 
     SpringAiGuideModel(ChatModel chatModel, String provider, String fastModel, String reasoningModel,
                        boolean nativeSchemaForChoose, int chooseMaxTokens, Thinking thinking,
-                       DailyBudget budget, ModelCallMetrics metrics) {
+                       DailyBudget budget, ModelCallMetrics metrics, Resilience resilience) {
+        resilience.require(LlmPolicies.CHAT);
         this.metrics = metrics;
         this.budget = budget;
+        this.resilience = resilience;
         this.chat = ChatClient.builder(chatModel).build();
         this.planSystem = planSystem();
         this.chooseSystem = chooseSystem();
@@ -360,7 +369,8 @@ class SpringAiGuideModel implements GuideModel {
      * malformed structured answer should not lose the question. Provider errors are not retried: the SDK's own
      * retry is off by default (spring.ai.openai.chat.max-retries, H2_LLM_MAX_RETRIES=0) so no call escapes the
      * budget, and a rejected call (400, 401) will not change. Each attempt takes one call from the daily budget
-     * before it is sent.
+     * before it is sent, inside the {@code llm-chat} circuit: while the circuit is open, the call fails at once as
+     * {@code circuit_open}, without reaching the provider or taking a call from the budget.
      * Reasoning in {@code <think>} blocks is removed before the JSON is read (ModelAnswers).
      * [nativeSchema] sends the JSON schema as {@code response_format: json_schema} (guided decoding) instead of
      * only describing it in the prompt. Measured on Token Factory (2026-10-26): Nemotron 3 Super returns clean
@@ -370,27 +380,35 @@ class SpringAiGuideModel implements GuideModel {
                        String step, boolean think) {
         RuntimeException last = null;
         BeanOutputConverter<T> converter = new BeanOutputConverter<>(type, null, text -> ModelAnswers.jsonObject(text).orElse(""));
+        String version = ModelCallMetrics.promptVersion(system);
         for (int attempt = 1; attempt <= 2; attempt++) {
-            if (!budget.tryAcquire()) {
-                throw new GuideBudgetExhausted();
-            }
             try {
-                var prompt = chat.prompt()
-                    .options(CallOptions.of(model, maxTokens, think))
-                    .system(system)
-                    .user(user);
-                if (nativeSchema) {
-                    prompt = prompt.advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT);
-                }
-                // One observation per attempt: a retry is a second call to the provider, with its own latency.
-                var spec = prompt.call();
-                return metrics.observe(step, model, () -> {
-                    var response = spec.responseEntity(converter);
-                    metrics.tokens(step, response.response());
-                    // Model output only (no user text); off unless this logger is set to DEBUG.
-                    log.debug("guide {} answer: {}", step, response.entity());
-                    return response.entity();
+                return resilience.call(LlmPolicies.CHAT, () -> {
+                    if (!budget.tryAcquire()) {
+                        throw new GuideBudgetExhausted();
+                    }
+                    var prompt = chat.prompt()
+                        .options(CallOptions.of(model, maxTokens, think))
+                        .system(system)
+                        .user(user);
+                    if (nativeSchema) {
+                        prompt = prompt.advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT);
+                    }
+                    // One observation per attempt: a retry is a second call to the provider, with its own latency.
+                    var spec = prompt.call();
+                    return metrics.observe(step, model, version, () -> {
+                        var response = spec.responseEntity(converter);
+                        metrics.tokens(step, version, response.response());
+                        // Model output only (no user text); off unless this logger is set to DEBUG.
+                        log.debug("guide {} answer: {}", step, response.entity());
+                        return response.entity();
+                    });
                 });
+            } catch (GuideBudgetExhausted e) {
+                throw e;
+            } catch (CallRefused e) {
+                log.info("guide model call refused: {} is {}", e.policy(), e.reason());
+                throw new GuideUnavailable("model call refused: " + e.reason(), "circuit_open");
             } catch (RuntimeException e) {
                 last = e;
                 log.warn("guide model call failed (attempt {} of 2, model {}): {} ({})", attempt, model, ModelErrors.category(e),

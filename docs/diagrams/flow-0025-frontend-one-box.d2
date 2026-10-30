@@ -2,7 +2,7 @@
 # Shows the 3-character minimum and the 700 ms pause for live search, the four-word rule of the one button,
 # Shift+Enter, Enter in an empty box, and what each choice writes to the URL.
 # Source of truth: frontend/src/components/OneBox.tsx, frontend/src/pages/HomePage.tsx,
-#   frontend/src/lib/searchState.ts, frontend/src/components/SearchResults.tsx.
+#   frontend/src/lib/searchState.ts, frontend/src/components/SearchResults.tsx, frontend/src/hooks/useApi.ts.
 # Render: cd docs/diagrams && d2 fmt flow-0025-frontend-one-box.d2 && d2 flow-0025-frontend-one-box.d2 flow-0025-frontend-one-box.svg
 
 ...@style
@@ -37,7 +37,7 @@ ask: "Ask the guide: ?q=…&ask=…\n(question ≤ 500 chars)" {class: app}
 page: HomePage {
   class: group
   direction: down
-  results: "SearchResults: GET /api/v1/search\n(old request aborted; previous results\nstay, dimmed, aria-busy)" {class: app}
+  results: "SearchResults: GET /api/v1/search\n(old request aborted; previous results\nstay, dimmed, aria-busy; a key answered\n< 5 min ago renders from memory, no request)" {class: app}
   guide: "GuideSection: POST /api/v1/guide/stream\n(GuideProgress, five steps)" {class: app}
   suggest: "q has 4+ words and no ask:\n\"Ask the guide\" suggestion" {class: app}
 }

@@ -1,12 +1,13 @@
-# Flowchart: scripts/eval-guide.mjs, from the fixed query set to docs/evaluation.md.
-# Source of truth: scripts/eval-guide.mjs, docs/eval/guide-queries.json.
+# Flowchart: scripts/eval-guide.mjs, from a fixed question set to its report (default set shown;
+# --intents and --adversarial differ only in the set, the pass rules and the report file).
+# Source of truth: scripts/eval-guide.mjs, scripts/eval-lib.mjs, docs/eval/guide-queries.json, docs/eval/guide-qrels.tsv.
 # Render: cd docs/diagrams && d2 fmt flow-0030-guide-evaluation.d2 && d2 flow-0030-guide-evaluation.d2 flow-0030-guide-evaluation.svg
 
 ...@style
 
 direction: down
 
-start: "node scripts/eval-guide.mjs\n[baseUrl] [--fresh[=TEXT]]" {class: person}
+start: "node scripts/eval-guide.mjs\n[baseUrl] [--intents | --adversarial]\n(backend: H2_GUIDE_CACHE_TTL=PT1S)" {class: person}
 queries: "Read docs/eval/guide-queries.json\n(20 fixed queries)" {class: data}
 csrf: "GET /api/v1/me →\nXSRF-TOKEN cookie?" {class: decision}
 noBackend: "Stop: \"is the\nbackend running?\"" {class: fail}
@@ -15,9 +16,7 @@ loop: For each query, in order {
   class: group
   direction: down
   pause: "Wait 7 s after the first\n(guide limit: 10 per minute)" {class: config}
-  fresh: "--fresh given?" {class: decision}
-  suffix: "Append \" TEXT\"\n(new cache key)" {class: app}
-  post: "POST /api/v1/guide\n(JSON endpoint, no path)" {class: app}
+  post: "POST /api/v1/guide\n(JSON endpoint, no path,\nquestion as written)" {class: app}
   ok: "HTTP 200?" {class: decision}
   err: "Row: HTTP <status>" {class: fail}
   quota: "Notice GUIDE_DAILY_QUOTA?" {class: decision}
@@ -25,10 +24,7 @@ loop: For each query, in order {
   fromCache: "Mark (cache);\nleave out of latency" {class: end}
   row: "Keep status, AI picks,\nrejected, reason checks,\nconstraint checks, latency" {class: end}
 
-  pause -> fresh
-  fresh -> suffix: yes
-  fresh -> post: no
-  suffix -> post
+  pause -> post
   post -> ok
   ok -> err: no
   ok -> quota: yes
@@ -39,9 +35,12 @@ loop: For each query, in order {
 
 stopQuota: "Stop with an error;\ndocs/evaluation.md unchanged\n(run again after 00:00 UTC)" {class: fail}
 summary: "Totals: statuses, kept / rejected,\nreason check, checks confirmed,\np50 / p90 / max latency" {class: app}
+qrels: "docs/eval/guide-qrels.tsv\nhas grades?" {class: decision}
+rel: "P@3 and nDCG@3\nof the AI picks" {class: app}
+pool: "Ungraded picks →\nbackend/eval-data/guide-pool.tsv" {class: data}
 keep: "Read the hand-written notes\nbetween the markers\n(placeholder if none)" {class: app}
 write: "Rewrite docs/evaluation.md\n(summary, per-query table,\nhow to run, notes kept)" {class: data}
-manual: "By hand: relevance of top picks,\nupdate the notes, move the\nold run to docs/eval/" {class: person}
+manual: "By hand: grade the pool into\nguide-qrels.tsv, update the notes,\nmove the old run to docs/eval/" {class: person}
 
 start -> queries -> csrf
 csrf -> noBackend: no
@@ -50,6 +49,10 @@ loop.row -> summary
 loop.fromCache -> summary
 loop.err -> summary
 loop.quota -> stopQuota: yes
-summary -> keep: {class: hot}
+summary -> qrels
+qrels -> rel: yes
+qrels -> pool: no
+rel -> pool
+pool -> keep: {class: hot}
 keep -> write: {class: hot}
 write -> manual

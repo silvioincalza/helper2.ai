@@ -1,4 +1,4 @@
-import { api, ApiError, signOut } from './client';
+import { api, ApiError, deleteMyAccount, signOut } from './client';
 import { json, mockApi, problem } from '@/test/mockApi';
 import type { GuideStep } from './types';
 
@@ -7,7 +7,7 @@ describe('api client', () => {
     document.cookie = 'XSRF-TOKEN=abc%3D123';
     const m = mockApi({ 'POST /me/bookmarks': () => [] });
     await api.getMe();
-    await api.addBookmarks([]);
+    await api.mergeLocalBookmarks([]);
     expect(m.calls[0]?.headers.get('X-XSRF-TOKEN')).toBeNull();
     expect(m.calls[1]?.headers.get('X-XSRF-TOKEN')).toBe('abc=123');
     expect(m.fetchMock.mock.calls[1]?.[1]).toMatchObject({ credentials: 'same-origin', method: 'POST' });
@@ -32,6 +32,21 @@ describe('api client', () => {
   it('handles 204 on delete', async () => {
     mockApi({ 'DELETE /me/bookmarks/*': () => new Response(null, { status: 204 }) });
     await expect(api.deleteBookmark('x')).resolves.toBeUndefined();
+  });
+  it('deleteMyAccount sends DELETE /me with the CSRF header, then reloads', async () => {
+    document.cookie = 'XSRF-TOKEN=tok';
+    const m = mockApi({ 'DELETE /me': () => new Response(null, { status: 204 }) });
+    const reload = vi.fn();
+    await deleteMyAccount(reload);
+    expect(m.callsTo('DELETE', '/me')[0]?.headers.get('X-XSRF-TOKEN')).toBe('tok');
+    expect(reload).toHaveBeenCalled();
+    document.cookie = 'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+  });
+  it('deleteMyAccount does not reload when the server refuses', async () => {
+    mockApi({ 'DELETE /me': () => problem(401, 'Unauthorized') });
+    const reload = vi.fn();
+    await expect(deleteMyAccount(reload)).rejects.toMatchObject({ status: 401 });
+    expect(reload).not.toHaveBeenCalled();
   });
   it('signOut POSTs /logout then reloads', async () => {
     document.cookie = 'XSRF-TOKEN=tok';

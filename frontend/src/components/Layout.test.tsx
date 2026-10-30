@@ -37,27 +37,28 @@ describe('layout', () => {
   it('has skip link, landmarks and the coverage disclaimer', async () => {
     mockApi();
     renderApp('/');
+    await settle();
     expect(screen.getByRole('link', { name: 'Skip to main content' })).toHaveAttribute('href', '#main');
     expect(screen.getByRole('banner')).toBeInTheDocument();
     expect(screen.getByRole('main')).toBeInTheDocument();
     expect(screen.getByRole('contentinfo')).toHaveTextContent('searches the sources listed on the Sources page, not the whole web');
-    await settle();
   });
 
   it('footer shows the release version and links to its notes in a new tab', async () => {
     mockApi();
     renderApp('/');
+    await settle();
     const footer = screen.getByRole('contentinfo');
     const version = within(footer).getByRole('link', { name: /Release notes for version/ });
     expect(version).toHaveTextContent(`v${pkg.version}`);
     expect(version).toHaveAttribute('href', `https://github.com/silvioincalza/helper2.ai/releases/tag/v${pkg.version}`);
     expect(version).toHaveAttribute('target', '_blank');
-    await settle();
   });
 
   it('footer shows the copyright year and links to the repo and license in a new tab', async () => {
     mockApi();
     renderApp('/');
+    await settle();
     const footer = screen.getByRole('contentinfo');
     expect(footer).toHaveTextContent(`© ${new Date().getFullYear()} Silvio Incalza`);
     const repo = within(footer).getByRole('link', { name: /GitHub/ });
@@ -69,7 +70,6 @@ describe('layout', () => {
       expect(link).toHaveAttribute('target', '_blank');
       expect(link).toHaveAttribute('rel', 'noopener noreferrer');
     }
-    await settle();
   });
 
   it('the theme button cycles follow system, light and dark, and remembers a fixed choice', async () => {
@@ -93,8 +93,8 @@ describe('layout', () => {
     mockApi();
     window.localStorage.setItem(THEME_KEY, 'dark');
     renderApp('/');
-    expect(screen.getByRole('button', { name: 'Theme: dark. Change to follow system' })).toBeInTheDocument();
     await settle();
+    expect(screen.getByRole('button', { name: 'Theme: dark. Change to follow system' })).toBeInTheDocument();
   });
 
   it('moving to another page focuses its heading and announces it; new search params do not move focus', async () => {

@@ -5,6 +5,7 @@ import ai.helper2.shared.ResourceType
 import ai.helper2.shared.SourceMode
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -39,15 +40,12 @@ class ResultMergerTest {
     }
 
     @Test
-    fun `id is the same whichever sources responded`() {
-        val alone = merger.merge(
-            listOf(hit("npm", "https://www.npmjs.com/package/x", repo = "https://github.com/a/x")), contexts("npm"),
-        )
-        val both = merger.merge(
-            listOf(hit("github", "https://github.com/a/x"), hit("npm", "https://www.npmjs.com/package/x", repo = "https://github.com/a/x")),
-            contexts("github", "npm"),
-        )
-        assertEquals(alone[0].id, both[0].id)
+    fun `a package found without its repository keeps its own id, so monorepo packages never share one`() {
+        val repo = "https://github.com/acme/monorepo"
+        val a = merger.merge(listOf(hit("npm", "https://www.npmjs.com/package/@acme/a", repo = repo)), contexts("npm")).single()
+        val b = merger.merge(listOf(hit("npm", "https://www.npmjs.com/package/@acme/b", repo = repo)), contexts("npm")).single()
+        assertEquals("https://npmjs.com/package/@acme/a", a.canonicalUrl.value)
+        assertNotEquals(a.id, b.id)
     }
 
     @Test
@@ -201,5 +199,62 @@ class ResultMergerTest {
             contexts("github"),
         ).single()
         assertEquals(setOf("translation"), merged.useCases)
+    }
+
+    @Test
+    fun `two npm packages naming the same repository stay two results, each keeping its repository link`() {
+        val repo = "git+https://github.com/modelcontextprotocol/servers.git"
+        val merged = merger.merge(
+            listOf(
+                hit("npm", "https://www.npmjs.com/package/@modelcontextprotocol/server-memory", repo = repo),
+                hit("npm", "https://www.npmjs.com/package/@modelcontextprotocol/server-filesystem", repo = repo),
+            ),
+            contexts("npm"),
+        )
+        assertEquals(2, merged.size)
+        assertEquals(2, merged.map { it.id }.toSet().size)
+        assertEquals(
+            setOf("https://npmjs.com/package/@modelcontextprotocol/server-memory", "https://npmjs.com/package/@modelcontextprotocol/server-filesystem"),
+            merged.map { it.canonicalUrl.value }.toSet(),
+        )
+        assertTrue(merged.all { r -> r.hits.single().repositoryUrl?.value == "https://github.com/modelcontextprotocol/servers" })
+    }
+
+    @Test
+    fun `a repository shared by several packages stays its own result`() {
+        val repo = "https://github.com/acme/monorepo"
+        val merged = merger.merge(
+            listOf(
+                hit("github", repo),
+                hit("npm", "https://www.npmjs.com/package/@acme/a", repo = repo),
+                hit("npm", "https://www.npmjs.com/package/@acme/b", repo = repo),
+            ),
+            contexts("github", "npm"),
+        )
+        assertEquals(3, merged.size)
+        assertEquals(listOf("github"), merged.single { it.canonicalUrl.value == repo }.sources.map { it.sourceId })
+    }
+
+    @Test
+    fun `a package in a repository sub-directory does not merge with the repository`() {
+        val merged = merger.merge(
+            listOf(
+                hit("github", "https://github.com/remotion-dev/remotion"),
+                hit("npm", "https://www.npmjs.com/package/@remotion/player", repo = "https://github.com/remotion-dev/remotion/tree/main/packages/player"),
+            ),
+            contexts("github", "npm"),
+        )
+        assertEquals(2, merged.size)
+        val pkg = merged.single { it.sources.single().sourceId == "npm" }
+        assertEquals("https://npmjs.com/package/@remotion/player", pkg.canonicalUrl.value)
+        assertEquals("https://github.com/remotion-dev/remotion/tree/main/packages/player", pkg.hits.single().repositoryUrl?.value)
+    }
+
+    @Test
+    fun `the same package listed twice still joins its repository`() {
+        val pkg = hit("npm", "https://www.npmjs.com/package/acme-mcp", repo = "https://github.com/acme/acme-mcp")
+        val merged = merger.merge(listOf(pkg, pkg, hit("github", "https://github.com/acme/acme-mcp")), contexts("github", "npm"))
+        assertEquals(1, merged.size)
+        assertEquals("https://github.com/acme/acme-mcp", merged.single().canonicalUrl.value)
     }
 }

@@ -1,5 +1,6 @@
 package ai.helper2.platform;
 
+import ai.helper2.platform.resilience.Resilience;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,17 +32,17 @@ class RateLimitInterceptor implements HandlerInterceptor, WebMvcConfigurer {
     private final Map<String, RateLimiter> limiters;
 
     private final StringRedisTemplate redis;
-    private final CircuitBreaker breaker;
+    private final Resilience resilience;
     private final Clock clock;
     private final MeterRegistry meters;
 
-    RateLimitInterceptor(Clock clock, ObjectProvider<StringRedisTemplate> redis, MeterRegistry meters,
+    RateLimitInterceptor(Clock clock, ObjectProvider<StringRedisTemplate> redis, Resilience resilience, MeterRegistry meters,
                          @Value("${helper2.rate-limit.search-per-minute:60}") int searchPerMinute,
                          @Value("${helper2.rate-limit.report-per-hour:20}") int reportsPerHour,
                          @Value("${helper2.rate-limit.guide-per-minute:10}") int guidePerMinute,
                          @Value("${helper2.rate-limit.recent-per-minute:60}") int recentPerMinute) {
         this.redis = redis.getIfAvailable();
-        this.breaker = new CircuitBreaker("rate limiter", clock, Duration.ofSeconds(30));
+        this.resilience = resilience;
         this.clock = clock;
         this.meters = meters;
         // Each guide question costs three LLM calls: keep it tighter than search. The JSON and the streamed
@@ -62,7 +63,7 @@ class RateLimitInterceptor implements HandlerInterceptor, WebMvcConfigurer {
 
     private RateLimiter limiter(String name, int limit, Duration window) {
         RateLimiter inMemory = new InMemoryRateLimiter(limit, window, clock);
-        return redis == null ? inMemory : new RedisRateLimiter(name, limit, window, redis, breaker, inMemory, meters);
+        return redis == null ? inMemory : new RedisRateLimiter(name, limit, window, redis, resilience, inMemory, meters);
     }
 
     @Override

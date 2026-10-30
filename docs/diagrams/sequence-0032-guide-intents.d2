@@ -1,0 +1,55 @@
+# Sequence: a vague question asked back, the user's chip, and the second request answered as NEWEST, over the
+# guide's event stream. At most one round trip: a request with a clarification is never asked back.
+# Source of truth: frontend/src/components/GuideAnswer.tsx (Clarify, "Understood as" chips),
+#   backend/src/main/java/ai/helper2/guide/web/GuideStreamController.java (events planned, understood, clarify, answer),
+#   backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt, QuestionReader.kt (read, clarificationOf), PickAnswer.kt (newest, picks),
+#   backend/src/main/kotlin/ai/helper2/guide/GuideCost.kt (GuideAnswerCache.isCacheable).
+# Render: cd docs/diagrams && d2 fmt sequence-0032-guide-intents.d2 && d2 sequence-0032-guide-intents.d2 sequence-0032-guide-intents.svg
+
+...@style
+
+shape: sequence_diagram
+
+user: User {class: person}
+page: "GuideAnswer.tsx\n(page)" {class: app}
+stream: "GuideStreamController\nPOST /guide/stream" {class: app}
+guide: AskGuide {class: app}
+cache: "GuideAnswerCache\n(Redis)" {class: data}
+model: "Nemotron\n(plan: fast, choose:\nreasoning)" {class: ai}
+search: "SearchResources" {class: app}
+
+vague: Vague question {
+  user -> page: "\"new tools?\""
+  page -> stream: "{request: \"new tools?\"}" {class: hot}
+  stream -> guide: "ask(request)"
+  guide -> cache: "get(key of text + clarification)"
+  cache -> guide: "miss"
+  guide -> model: "plan(text)" {class: ai-call}
+  model -> guide: "no subject, no window,\nclarify: \"New tools for what?\""
+  guide -> guide: "clarificationOf: nothing to search\n→ keep the question"
+  guide -> stream: "planned, understood, clarify"
+  stream -> page: "events planned, understood, clarify"
+  guide -> stream: "GuideAnswer NEEDS_CLARIFICATION\n(not cached, no search)"
+  stream -> page: "event answer"
+  page -> user: "question, option chips,\n\"Search anyway\""
+}
+
+second: Answer with the chosen option {
+  user -> page: "chip \"agents\""
+  page -> stream: "{request: \"new tools?\",\nclarification: \"agents\"}" {class: hot}
+  stream -> guide: "ask(request, clarification)"
+  guide -> cache: "get(key of text + clarification)"
+  cache -> guide: "miss"
+  guide -> model: "plan(text, path, clarification):\nthe user already answered" {class: ai-call}
+  model -> guide: "NEWEST, searchQuery \"agents\""
+  guide -> guide: "a clarify returned now is ignored"
+  guide -> stream: "planned, understood (NEWEST)"
+  stream -> page: "events planned, understood"
+  guide -> search: "tools + web announcements,\nsort NEWEST"
+  search -> guide: "candidates"
+  guide -> model: "choose, then verify" {class: ai-call}
+  guide -> cache: "put (checked answer)"
+  guide -> stream: "GuideAnswer, intent NEWEST"
+  stream -> page: "events retrieved, chosen, validated,\nchecked; answer: picks newest first,\n\"Understood as\" chips"
+  page -> user: "✕ on a chip re-asks with drop[]"
+}

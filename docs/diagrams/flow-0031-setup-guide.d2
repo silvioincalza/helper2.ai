@@ -1,0 +1,78 @@
+# Flowchart: the two answers of a resource page's "Guide me": the setup options and client snippets from source data
+# (no model), and the step-by-step guide picked by the model and checked against the tool's own documents.
+# Source of truth: backend/src/main/java/ai/helper2/setup/usecase/GetResourceSetup.java, AskAboutResource.java,
+#   backend/src/main/kotlin/ai/helper2/setup/SetupGuides.kt, RunOptionRules.kt, Launch.kt, Clients.kt, ToolGuides.kt,
+#   ToolGuideValidator.kt, backend/src/main/java/ai/helper2/setup/internal/RegistryMcpServerSpecs.java,
+#   ReadmeMcpConfigs.java, HttpToolMaterials.java, HourlyFetchBudget.java, SpringAiToolGuideModel.java,
+#   RedisToolGuideCache.java, platform/RateLimitInterceptor.java.
+# Render: cd docs/diagrams && d2 fmt flow-0031-setup-guide.d2 && d2 flow-0031-setup-guide.d2 flow-0031-setup-guide.svg
+
+...@style
+
+direction: down
+
+setup: "GET /api/v1/resources/{id}/setup (limiter setup, GetResourceSetup)" {
+  class: group
+  direction: down
+  reg: "Source record from\nmcp-registry?" {class: decision}
+  latest: "RegistryMcpServerSpecs.latest(name):\nin memory H2_SETUP_CACHE_TTL (1 h), else\nGET /v0.1/servers/{name}/versions/latest" {class: ext}
+  usable: "Entry found with an option\nRunOptionRules.accepts?" {class: decision}
+  mcp: "MCP_SERVER with a GitHub repo\nor npm package?" {class: decision}
+  readme: "ReadmeMcpConfigs.of(ref):\nREADME config example,\nonly the entry naming this resource" {class: ext}
+  down: "Registry was down?" {class: decision}
+  none: "SetupGuide.none:\nno setup data, no invention" {class: end}
+  shown: "Keep options RunOptionRules accepts;\nRemote, or stdio package / command\nwith a known launcher (Launches.of)" {class: app}
+  snippets: "Clients.ALL (19): one snippet per client\nand option, secrets as <placeholder>,\nor \"not configurable here\"" {class: app}
+  answer: "200 SetupGuide\n(sources with read time)" {class: end}
+  e503: "503 SetupUnavailable\n(registry down, no README example;\nnot cached)" {class: fail}
+
+  reg -> latest: yes {class: hot}
+  reg -> mcp: no
+  latest -> usable
+  latest -> mcp: "error"
+  usable -> shown: yes {class: hot}
+  usable -> mcp: no
+  mcp -> readme: yes
+  mcp -> down: no
+  readme -> shown: "example found"
+  readme -> down: "nothing usable"
+  down -> e503: yes
+  down -> none: no
+  shown -> snippets -> answer
+}
+
+guide: "POST /api/v1/resources/{id}/guide (limiter guide, AskAboutResource)" {
+  class: group
+  direction: down
+  docs: "ToolMaterials.load(ref): GitHub,\njsDelivr, Hugging Face documents\nfrom checked identifiers" {class: ext}
+  docCache: "Documents in memory?\n(H2_SETUP_CACHE_TTL,\nH2_SETUP_DOCUMENT_CACHE_MB)" {class: decision}
+  budget: "Hourly fetch unit left?\n(H2_SETUP_HOURLY_FETCHES,\ncounted in Redis)" {class: decision}
+  skipped: "Document skipped;\nanswer not cached" {class: fail}
+  hasDocs: "Any document?" {class: decision}
+  noMat: "NO_MATERIAL" {class: end}
+  cached: "Readable Redis tool-guide answer\n(resource, documents, question,\nprompt hash; 7 days)?" {class: decision}
+  hit: "Cached answer,\nquestion added back" {class: end}
+  write: "ToolGuideModel.write: pick and order\npassages (fast model,\ntool-guide daily budget)" {class: ai}
+  unav: "LLM_UNAVAILABLE\n(no model, budget, error)" {class: fail}
+  check: "ToolGuideValidator: whole command lines\nor a found quote; risky commands\nmarked caution; ≤ 8 per section" {class: app}
+  ok: "OK, cached" {class: end}
+  nosteps: "NO_STEPS, cached" {class: end}
+
+  docCache -> hasDocs: yes
+  docCache -> budget: no
+  budget -> docs: yes {class: hot}
+  budget -> skipped: no
+  skipped -> hasDocs
+  docs -> hasDocs
+  hasDocs -> noMat: no
+  hasDocs -> cached: yes {class: hot}
+  cached -> hit: yes
+  cached -> write: no {class: hot}
+  write -> unav: "fails"
+  write -> check: {class: ai-call}
+  check -> anyKept
+  anyKept -> ok: yes {class: hot}
+  anyKept -> nosteps: no
+
+  anyKept: "Any step kept?" {class: decision}
+}

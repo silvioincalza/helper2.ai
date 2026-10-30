@@ -56,7 +56,7 @@ class CourseCandidateReviewTest {
         assertThat(queue.proposeCandidate(ReviewQueue.Kind.COURSE_CANDIDATE, URL, "New course", "URL: " + URL)).isTrue();
         assertThat(queue.proposeCandidate(ReviewQueue.Kind.COURSE_CANDIDATE, URL, "New course", "URL: " + URL)).isFalse();
 
-        ReviewQueue.Item item = queue.list(ReviewQueue.Status.OPEN).stream()
+        ReviewQueue.Item item = queue.list(ReviewQueue.Status.OPEN, 0, 100).items().stream()
             .filter(i -> i.kind() == ReviewQueue.Kind.COURSE_CANDIDATE && i.details().contains(URL)).findFirst().orElseThrow();
         assertThat(item.resourceId()).isNull();
         resolve.resolve(item.id(), ReviewQueue.Status.REJECTED, "admin", "not a course");

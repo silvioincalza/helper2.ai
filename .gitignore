@@ -2,11 +2,12 @@
 *.local
 backend/build/
 backend/.gradle/
+# Search evaluation snapshots and judging pools: third-party data, local only (ADR 0036)
+backend/eval-data/
 frontend/node_modules/
 frontend/dist/
 frontend/src/api/schema.d.ts
 frontend/test-results/
-frontend/playwright-report/
 .DS_Store
 .remember
 

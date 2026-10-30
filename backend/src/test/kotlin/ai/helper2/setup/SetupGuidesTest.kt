@@ -4,6 +4,7 @@ import java.net.URI
 import java.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -39,6 +40,26 @@ class SetupGuidesTest {
     }
 
     @Test
+    fun `registry down falls back to the README config example`() {
+        val readmeSrc = URI("https://github.com/acme/pg-mcp")
+        val readme = ReadmeConfigs { McpServerSpec("pg-mcp", null, listOf(remote), readmeSrc, at) }
+        val ref = ToolRef("PG", "MCP_SERVER", "acme/pg-mcp", null, null, null)
+
+        val g = SetupGuides({ throw SetupUnavailable("down") }, readme).build("PG", "io.acme/pg", ref)
+
+        assertEquals(listOf(readmeSrc), g.sources.map { it.url })
+        assertEquals(1, g.options.size)
+    }
+
+    @Test
+    fun `registry down and no README example is still unavailable`() {
+        val ref = ToolRef("PG", "MCP_SERVER", "acme/pg-mcp", null, null, null)
+        assertFailsWith<SetupUnavailable> {
+            SetupGuides({ throw SetupUnavailable("down") }, ReadmeConfigs.NONE).build("PG", "io.acme/pg", ref)
+        }
+    }
+
+    @Test
     fun `npm launch uses npx at the stated version, secrets as placeholders, optional unset values left out`() {
         val l = Launches.of(npm)!!
         assertEquals("npx", l.command)
@@ -63,6 +84,25 @@ class SetupGuidesTest {
         val p = npm.copy(runtimeHint = "npx", runtimeArgs = listOf(Argument(null, "--stdio", null, null, true, false)),
             packageArgs = emptyList())
         assertEquals(listOf("--stdio", "@kaiva/postgres-mcp@0.1.1"), Launches.of(p)!!.args)
+    }
+
+    @Test
+    fun `a registry package with an option-like identifier, a bad version or launcher flags that reach the host is dropped`() {
+        val hostile = listOf(
+            npm.copy(identifier = "-c"),
+            npm.copy(identifier = "@acme/x", version = "1 --call rm"),
+            npm.copy(runtimeHint = "node"),
+            npm.copy(runtimeHint = "npx", runtimeArgs = listOf(Argument(null, "-c", null, null, true, false))),
+            npm.copy(registryType = "oci", identifier = "acme/x", runtimeArgs = listOf(Argument(null, "run", null, null, true, false),
+                Argument("-v", "/:/host", null, null, true, false))),
+            npm.copy(registryType = "oci", identifier = "acme/x", runtimeArgs = listOf(Argument(null, "run", null, null, true, false),
+                Argument(null, "--privileged", null, null, true, false))),
+            npm.copy(registryType = "cargo", runtimeHint = "npx"),
+            npm.copy(settings = listOf(Setting("API-KEY", SettingKind.ENV, null, true, true))),
+            sse.copy(settings = listOf(Setting("X Api", SettingKind.HEADER, null, true, true))),
+        )
+        val g = guide(*(hostile + remote).toTypedArray())
+        assertEquals(listOf(remote), g.options.map { it.option })
     }
 
     @Test

@@ -15,7 +15,7 @@ screen reader, and in light and dark mode.
    All state is in the page address (URL): `q` (at most 200 characters), `ask` (at most 500), filters, sort, page, view.
 2. **Search results** (`SearchResults`, `useApi`). A new query aborts the old request. While it loads, the previous
    results stay on screen, dimmed, with `aria-busy`. Only the first load shows skeletons and one "querying" line per
-   enabled source.
+   enabled source. A change of filter, sort or page keeps the scroll position.
    Back and forward show a recent answer at once, at the old scroll position: [0039](0039-frontend-recent-answers-cache.md).
 3. **Guide stream as the browser sees it** (`api.askGuideStream`). `POST /api/v1/guide/stream` with the cross-site request forgery (CSRF) header.
    Server-Sent Events (SSE) are read with `fetch` and `SseParser`, not `EventSource`, so there is no automatic reconnect
@@ -28,16 +28,27 @@ screen reader, and in light and dark mode.
    `checked`. Only the current step's title is in a `role="status"` region; the seconds counter is hidden from screen readers.
 5. **Radar design system.** The Helper2.ai design system in `docs/design/system`, named after its radar mark:
    warm paper, indigo ink, one saffron accent; `tokens.css` mirrors `tokens.json`. Unknown values read "Unknown".
-6. **Accessibility.** Skip link; `RouteFocus` moves focus to the new page's `h1` (or `#main`, without scrolling) and names the page in a
-   live region; paging moves focus to the results heading. Vitest runs axe-core smoke tests (`a11y.test.tsx`,
+6. **Accessibility.** Skip link; `RouteFocus` moves focus to the new page's `h1` (or `#main`, without scrolling) and
+   names the page in a live region; paging moves focus to the results heading. The focus ring is a 3px indigo outline 2px off the control
+   (`--focus`): at least 10.4:1 on every light surface and 8.8:1 (light indigo) on every dark one, above the 3:1 of
+   WCAG 1.4.11. The home feeds' `Carousel` moves by itself only with a visible Pause/Play button (WCAG 2.2.2, also on
+   touch screens), holds still while the pointer or focus is inside, and never moves with reduced motion. Vitest runs axe-core smoke tests (`a11y.test.tsx`,
    color contrast excluded because jsdom cannot compute it).
 7. **Theme: system, light, dark.** One button cycles system → light → dark. A fixed choice is saved as `h2.theme`;
    "system" removes it. `public/theme.js` sets `data-theme` before the first paint and follows the device while no choice is saved.
-8. **Shared data.** `SourcesContext` fetches `GET /api/v1/sources` once per page load for all pages. `PrivacyPage` names the contact `helper2ai@incalza.me`.
+8. **Shared data.** `SourcesContext` fetches `GET /api/v1/sources` once per page load for all pages. `PrivacyPage` names
+   the contact `helper2ai@incalza.me`.
+9. **Bundle.** `routes.tsx` imports every page eagerly: the first visit loads one entry chunk, with no blank first
+   paint on a deep link and no extra request per page. Lazy pages were measured and are larger without a
+   bundler-specific chunk group (see Alternatives). `npm run check:bundle` (`scripts/check-bundle.mjs`) runs in CI
+   after the build and fails it when the first visit's JavaScript (the entry and the modules it preloads) passes
+   160 KiB gzipped, or any other chunk passes 30 KiB (152.4 KiB measured). It runs in CI only, so a few bytes
+   never block an image build or a deploy.
 
 ## Consequences
 - Good: one place to type; the guide and search share the same URL and can be bookmarked or shared.
 - Good: progress shows what the server did, not a timer that guesses.
+- Good: growth of the first visit's JavaScript fails CI, with room for a few more pages.
 - Good: a slow model step does not look like a dead connection, thanks to the keep-alive comments. 45 s without any
   byte means the stream is stuck, and the user must retry.
 - Bad: there are no browser end-to-end tests. Tests run in jsdom only.
@@ -49,6 +60,9 @@ screen reader, and in light and dark mode.
 - `EventSource` for the stream — it only supports GET and reconnects by itself, which would ask the question again.
 - A spinner with a fixed estimate — not true to what the server is doing.
 - Only light and dark — users who follow the device setting would lose that.
+- Lazy pages (react-router `lazy`) — about 1.9 kB gzipped less on the home page, but only with a rolldown-specific
+  chunk group in `vite.config.ts`; without it the first visit is larger than with eager pages. It also needs a
+  hydrate fallback (a blank page until the chunk arrives) and one more request on a page's first visit.
 
 ## Code
 - `frontend/src/components/OneBox.tsx`, `frontend/src/pages/HomePage.tsx` — box, live search, guide section.
@@ -57,6 +71,7 @@ screen reader, and in light and dark mode.
 - `frontend/src/components/GuideProgress.tsx` — five steps.
 - `frontend/src/components/Layout.tsx`, `frontend/src/lib/theme.ts`, `frontend/public/theme.js` — `RouteFocus`, theme.
 - `frontend/src/context/SourcesContext.tsx`, `frontend/src/pages/PrivacyPage.tsx`.
+- `frontend/src/routes.tsx`, `frontend/scripts/check-bundle.mjs` — eager pages, bundle budget.
 - `docs/design/system/` — design tokens and components.
 
 ## Diagrams

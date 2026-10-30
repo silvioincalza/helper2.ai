@@ -5,6 +5,7 @@ import ai.helper2.setup.Material;
 import ai.helper2.setup.McpServerSpec;
 import ai.helper2.setup.ReadmeConfigs;
 import ai.helper2.setup.RunOption;
+import ai.helper2.setup.RunOptionRules;
 import ai.helper2.setup.Setting;
 import ai.helper2.setup.SettingKind;
 import ai.helper2.setup.ToolMaterials;
@@ -23,9 +24,11 @@ import tools.jackson.databind.ObjectMapper;
 /**
  * Run options from the MCP config example in a server's own README: a JSON block with `mcpServers`, `servers`,
  * `context_servers` or `mcp`, whose entries have `command` / `args` / `env` or a `url`. No model is involved: the
- * values are the README's own. A variable whose name says it holds a secret (key, token, password) becomes a
- * placeholder whatever the README's example value is. Only known launchers ({@link #LAUNCHERS}) are kept, never a
- * shell or a path to a program.
+ * values are the README's own. Only the entry of this resource is kept ({@link RunOptionRules#matches}), never
+ * another server shown in the same example, and only an option {@link RunOptionRules} accepts: a package runner
+ * that fetches one named package, never an interpreter, a shell, a path or flags that evaluate code or reach the
+ * host. A variable whose name says it holds a secret (key, token, password) becomes a placeholder whatever the
+ * README's example value is.
  */
 class ReadmeMcpConfigs implements ReadmeConfigs {
 
@@ -33,8 +36,6 @@ class ReadmeMcpConfigs implements ReadmeConfigs {
     private static final Pattern SECRET = Pattern.compile("(?i)(key|token|secret|passw|pat\\b|credential|auth)");
     private static final Pattern LINE_COMMENT = Pattern.compile("(?m)^\\s*//.*$");
     private static final List<String> ROOTS = List.of("mcpServers", "servers", "context_servers", "mcp");
-    static final java.util.Set<String> LAUNCHERS = java.util.Set.of("npx", "uvx", "uv", "docker", "podman", "node", "python",
-        "python3", "bunx", "bun", "deno", "pipx", "dnx", "pnpm", "java", "go");
 
     private final ToolMaterials materials;
     private final ObjectMapper json;
@@ -47,7 +48,7 @@ class ReadmeMcpConfigs implements ReadmeConfigs {
     @Override
     public @Nullable McpServerSpec of(ToolRef ref) {
         for (Material m : materials.load(ref)) {
-            List<RunOption> options = options(m.getText(), json);
+            List<RunOption> options = options(ref, m.getText(), json);
             if (!options.isEmpty()) {
                 return new McpServerSpec(ref.getTitle(), null, options, m.getUrl(), m.getRetrievedAt(), "readme");
             }
@@ -55,7 +56,7 @@ class ReadmeMcpConfigs implements ReadmeConfigs {
         return null;
     }
 
-    static List<RunOption> options(String readme, ObjectMapper json) {
+    static List<RunOption> options(ToolRef ref, String readme, ObjectMapper json) {
         List<RunOption> out = new ArrayList<>();
         for (Markdown.Block b : Markdown.INSTANCE.blocks(readme)) {
             String lang = b.getLanguage() == null ? "" : b.getLanguage().toLowerCase();
@@ -79,7 +80,8 @@ class ReadmeMcpConfigs implements ReadmeConfigs {
                 }
                 for (Map.Entry<String, JsonNode> e : servers.properties()) {
                     RunOption o = option(e.getValue());
-                    if (o != null && !out.contains(o)) {
+                    if (o != null && RunOptionRules.INSTANCE.accepts(o) && RunOptionRules.INSTANCE.matches(ref, e.getKey(), o)
+                        && !out.contains(o)) {
                         out.add(o);
                     }
                     if (out.size() >= MAX_OPTIONS) {
@@ -124,8 +126,7 @@ class ReadmeMcpConfigs implements ReadmeConfigs {
             program = text(s, "command");
             args.addAll(strings(s.path("args")));
         }
-        // Only a known launcher, never a shell: the snippet is meant to be pasted as it is.
-        if (program == null || !LAUNCHERS.contains(program)) {
+        if (program == null) {
             return null;
         }
         JsonNode env = s.has("env") ? s.path("env") : s.path("environment");

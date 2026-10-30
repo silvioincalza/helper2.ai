@@ -1,8 +1,12 @@
-# Sequence: the owner signs in on /admin with GitHub, gets ADMIN by numeric id, and local bookmarks move to the account.
+# Sequence: the owner signs in on /admin with GitHub, gets ADMIN by numeric id, local bookmarks move to the account,
+# a review decision is audited, and a signed-in user deletes their account.
 # Only possible where profile oauth-github is active (not on staging or prod today).
 # Source of truth: backend/src/main/java/ai/helper2/identity/SecurityConfiguration.java, CurrentUser.java, MeController.java,
-#   backend/src/main/java/ai/helper2/identity/internal/Users.java, Bookmarks.java,
-#   frontend/src/pages/AdminPage.tsx, frontend/src/components/SignIn.tsx,
+#   backend/src/main/java/ai/helper2/identity/usecase/MergeLocalBookmarks.java, DeleteMyAccount.java,
+#   backend/src/main/java/ai/helper2/identity/internal/Users.java, Bookmarks.java, AuditLog.java,
+#   backend/src/main/java/ai/helper2/catalog/usecase/ResolveReviewItem.java,
+#   backend/src/main/java/ai/helper2/platform/quota/QuotaKeys.java, RedisQuotaCounter.java,
+#   frontend/src/pages/AdminPage.tsx, frontend/src/pages/AccountPage.tsx, frontend/src/components/SignIn.tsx,
 #   frontend/src/context/MeContext.tsx, BookmarksContext.tsx, frontend/src/api/client.ts.
 # Render: cd docs/diagrams && d2 fmt sequence-0023-identity-and-admin.d2 && d2 sequence-0023-identity-and-admin.d2 sequence-0023-identity-and-admin.svg
 
@@ -17,7 +21,10 @@ gh: GitHub {class: ext}
 cu: CurrentUser {class: app}
 users: Users {class: app}
 me: MeController {class: app}
-bm: Bookmarks {class: app}
+uc: "MergeLocalBookmarks /\nDeleteMyAccount" {class: app}
+db: "PostgreSQL\n(app_user, bookmark,\nadmin_audit)" {class: data}
+redis: "Redis\n(h2:v1:quota:*)" {class: data}
+admin: "AdminController →\nResolveReviewItem" {class: app}
 
 owner -> spa: "open /admin"
 spa -> me: "GET /api/v1/me"
@@ -30,8 +37,8 @@ sec -> gh: "token + user info"
 gh -> sec: "id 1234567, login, name"
 sec -> sec: "oauthUsers: \"github:1234567\" in H2_ADMINS\n→ ROLE_USER + ROLE_ADMIN"
 sec -> cu: "AuthenticationSuccessEvent"
-cu -> users: "ensure(github, 1234567, name)"
-users -> cu: "app_user id (upsert)"
+cu -> users: "signedIn(github, 1234567, name)"
+users -> cu: "app_user id (upsert,\nlast_signed_in_at = now)"
 sec -> owner: "302 to /admin (session cookie:\nHttpOnly, Secure, SameSite=Lax)"
 owner -> spa: "load /admin"
 spa -> me: "GET /api/v1/me"
@@ -39,7 +46,16 @@ me -> spa: "authenticated, roles [USER, ADMIN]"
 spa -> me: "POST /api/v1/me/bookmarks (local list)\nX-XSRF-TOKEN" {class: hot}
 me -> cu: "id()"
 cu -> users: "find(github, 1234567)"
-me -> bm: "add(user, items)"
-bm -> bm: "INSERT … ON CONFLICT DO NOTHING;\ncount ≤ 500 or 400 + rollback"
+me -> uc: "merge(user, items)"
+uc -> db: "http(s) links; INSERT … ON CONFLICT DO NOTHING;\ncount ≤ 500 or 400 + rollback"
 me -> spa: "200 account list"
 spa -> spa: "clear h2.bookmarks.v1"
+owner -> admin: "PUT /api/v1/admin/review-items/{id}/resolution" {class: hot}
+admin -> db: "one transaction: decide item +\nadmin_audit (1234567, RESOLVE_REVIEW_ITEM,\nitem id, ACCEPTED)"
+owner -> spa: "/account: Delete my account, confirm"
+spa -> me: "DELETE /api/v1/me\nX-XSRF-TOKEN" {class: hot}
+me -> uc: "delete(user)"
+uc -> db: "DELETE app_user: bookmarks cascade,\nissue_report.reporter_user_id = NULL"
+uc -> redis: "delete the user's daily web-search counters\n(Redis down: left to expire within 24 h)"
+me -> spa: "204, session ended"
+spa -> spa: "reload: signed out"

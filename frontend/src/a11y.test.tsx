@@ -1,7 +1,7 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axeViolations } from '@/test/a11y';
-import { ADMIN, makeDetail, makeSearch, makeStatus } from '@/test/fixtures';
+import { ADMIN, USER, makeDetail, makeSearch, makeStatus } from '@/test/fixtures';
 import { mockApi } from '@/test/mockApi';
 import { renderApp } from '@/test/render';
 import { clearApiCache } from '@/hooks/useApi';
@@ -52,7 +52,7 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
   });
 
   it('sources, admin', async () => {
-    mockApi({ 'GET /me': () => ADMIN, 'GET /admin/review-items': () => [], 'GET /admin/scout-runs': () => [], 'GET /me/bookmarks': () => [] });
+    mockApi({ 'GET /me': () => ADMIN, 'GET /admin/review-items': () => ({ items: [], total: 0 }), 'GET /admin/scout-runs': () => [], 'GET /me/bookmarks': () => [] });
     const s = renderApp('/sources');
     await screen.findByRole('table');
     expect(await axeViolations(s.container)).toEqual([]);
@@ -60,5 +60,13 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
     const ad = renderApp('/admin');
     await within(await screen.findByRole('main')).findByText('Nothing in this queue.');
     expect(await axeViolations(ad.container)).toEqual([]);
+  });
+
+  it('account, with the delete confirmation open', async () => {
+    mockApi({ 'GET /me': () => USER });
+    const { container } = renderApp('/account');
+    await userEvent.click(await screen.findByRole('button', { name: 'Delete my account' }));
+    await screen.findByRole('alertdialog');
+    expect(await axeViolations(container)).toEqual([]);
   });
 });

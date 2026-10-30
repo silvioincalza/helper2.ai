@@ -1,5 +1,6 @@
 package ai.helper2.scout.usecase
 
+import ai.helper2.scout.CandidateReview
 import ai.helper2.scout.CatalogIndex
 import ai.helper2.scout.Collector
 import ai.helper2.scout.EnrichmentBacklog
@@ -23,7 +24,10 @@ import io.micrometer.observation.ObservationRegistry
 import java.time.Clock
 import java.time.Duration
 import java.util.UUID
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionException
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executor
 import java.util.concurrent.atomic.AtomicLong
 import java.util.function.Supplier
 import org.slf4j.LoggerFactory
@@ -57,10 +61,14 @@ private class EnrichmentBudget(private var remaining: Int) {
     val left: Int get() = remaining
 }
 
+/** A collector of a run and its record as saved when the run started. */
+private class Planned(val collector: Collector, val summary: RunSummary)
+
 /**
  * Scheduled, deterministic collection. Each collector runs in isolation: one failure never stops
- * the others. Checkpoints advance only after a complete pass, so runs are incremental and
- * idempotent (re-running a pass re-upserts the same records with the same fingerprints).
+ * the others. Hits are indexed; candidates go to the review list. Checkpoints advance only after a
+ * complete pass, so runs are incremental and idempotent (re-running a pass re-upserts the same
+ * records with the same fingerprints, and the review list opens nothing it has seen before).
  */
 class RunScout(
     private val collectors: List<Collector>,
@@ -73,10 +81,14 @@ class RunScout(
     private val maxEnrichmentsPerRun: Int = 20,
     private val backlog: EnrichmentBacklog? = null,
     private val meters: MeterRegistry = SimpleMeterRegistry(),
+    /** Where a started run collects; the default runs it on the caller's thread. */
+    private val launcher: Executor = Executor { it.run() },
     // The observation's timer is the helper2.scout.run metric, so the default registry records into [meters].
     private val observations: ObservationRegistry = ObservationRegistry.create().also {
         it.observationConfig().observationHandler(DefaultMeterObservationHandler(meters))
     },
+    /** The admin review list for the candidates a collector proposes; required as soon as one does. */
+    private val review: CandidateReview? = null,
 ) {
     private val log = LoggerFactory.getLogger(RunScout::class.java)
     // Strong references: a gauge only holds its source object weakly.
@@ -84,14 +96,46 @@ class RunScout(
     private val merger = ResultMerger()
 
     /**
-     * Runs the collectors, then spends what is left of the enrichment budget on the backlog, so
-     * resources that missed earlier runs (budget, LLM outage, transient failure) are not stranded.
-     * Returns null, without doing anything, while a run holds the [RunLock] on any replica.
+     * Starts a run of every collector (or only [onlySourceId]) on the [launcher] and answers as soon as the run holds
+     * the [RunLock]: with one record per collector, RUNNING (or SKIPPED when disabled), saved before collection begins.
+     * The run then collects, then spends what is left of the enrichment budget on the backlog, so resources that
+     * missed earlier runs (budget, LLM outage, transient failure) are not stranded. The lock is held until the run
+     * ends. Returns null, without doing anything, while a run holds the lock on any replica.
      */
-    fun tryRunAll(onlySourceId: String? = null): List<RunSummary>? {
-        val summaries = lock.runExclusively(Supplier { runAll(onlySourceId) })
-        if (summaries == null) log.info("scout run skipped: a run is already in progress")
-        return summaries
+    fun tryStart(onlySourceId: String? = null): List<RunSummary>? {
+        val started = CompletableFuture<List<RunSummary>?>()
+        launcher.execute {
+            try {
+                lock.runExclusively(Supplier {
+                    closeInterrupted()
+                    val runs = plan(onlySourceId)
+                    started.complete(runs.map { it.summary })
+                    runAll(runs)
+                })
+                started.complete(null)
+            } catch (e: Throwable) {
+                log.warn("scout run failed: ${e.javaClass.simpleName}: ${e.message.orEmpty().take(300)}")
+                started.completeExceptionally(e)
+            }
+        }
+        val runs = try {
+            started.join()
+        } catch (e: CompletionException) {
+            throw e.cause ?: e
+        }
+        if (runs == null) log.info("scout run refused: a run is already in progress")
+        return runs
+    }
+
+    /**
+     * Closes as FAILED the run records still RUNNING: taken under the [RunLock], so no run is in progress and those
+     * records belong to a replica that stopped mid-run. Returns false, changing nothing, while a run holds the lock.
+     */
+    fun closeInterruptedRuns(): Boolean = lock.runExclusively(Supplier { closeInterrupted(); true }) ?: false
+
+    private fun closeInterrupted() {
+        val closed = store.markInterrupted(clock.instant())
+        if (closed > 0) log.warn("closed $closed scout run record(s) left RUNNING by a stopped replica")
     }
 
     /**
@@ -105,16 +149,29 @@ class RunScout(
             if (last != null && last.plus(every).isAfter(clock.instant())) {
                 ScheduledRun.NOT_DUE
             } else {
-                runAll(null)
+                closeInterrupted()
+                runAll(plan(null))
                 schedule.scheduledRunEnded(clock.instant())
                 ScheduledRun.RAN
             }
         }) ?: ScheduledRun.BUSY
 
-    private fun runAll(onlySourceId: String?): List<RunSummary> =
+    /** One record per selected collector: SKIPPED when disabled, otherwise RUNNING until its collection ends. */
+    private fun plan(onlySourceId: String?): List<Planned> {
+        val started = clock.instant()
+        return collectors.filter { onlySourceId == null || it.descriptor.id == onlySourceId }.map { collector ->
+            val d = collector.descriptor
+            val summary = if (d.enabled) RunSummary(UUID.randomUUID(), d.id, RunStatus.RUNNING, started, null, 0, 0, 0, null)
+            else RunSummary(UUID.randomUUID(), d.id, RunStatus.SKIPPED, started, started, 0, 0, 0, "Disabled in configuration")
+            saveQuietly(summary)
+            Planned(collector, summary)
+        }
+    }
+
+    private fun runAll(planned: List<Planned>): List<RunSummary> =
         Observation.createNotStarted("helper2.scout.cycle", observations).observe(Supplier {
             val budget = EnrichmentBudget(maxEnrichmentsPerRun)
-            val summaries = collectors.filter { onlySourceId == null || it.descriptor.id == onlySourceId }.map { run(it, budget) }
+            val summaries = planned.map { run(it, budget) }
             drainBacklog(budget)
             summaries
         })
@@ -136,11 +193,12 @@ class RunScout(
         }
     }
 
-    private fun run(collector: Collector, budget: EnrichmentBudget): RunSummary {
+    private fun run(planned: Planned, budget: EnrichmentBudget): RunSummary {
         val observation = Observation.createNotStarted("helper2.scout.run", observations)
-            .lowCardinalityKeyValue("source", collector.descriptor.id)
+            .lowCardinalityKeyValue("source", planned.collector.descriptor.id)
         return observation.observe(Supplier {
-            val summary = runCollector(collector, budget, observation)
+            val summary = if (planned.summary.status == RunStatus.SKIPPED) planned.summary
+            else runCollector(planned.collector, planned.summary, budget, observation)
             observation.lowCardinalityKeyValue("status", summary.status.name.lowercase())
             record(summary)
             summary
@@ -187,14 +245,10 @@ class RunScout(
         }.set(finished)
     }
 
-    private fun runCollector(collector: Collector, budget: EnrichmentBudget, observation: Observation): RunSummary {
+    private fun runCollector(collector: Collector, running: RunSummary, budget: EnrichmentBudget, observation: Observation): RunSummary {
         val d = collector.descriptor
-        val id = UUID.randomUUID()
-        val started = clock.instant()
-        if (!d.enabled) {
-            return RunSummary(id, d.id, RunStatus.SKIPPED, started, started, 0, 0, 0, "Disabled in configuration").also(::saveQuietly)
-        }
-        saveQuietly(RunSummary(id, d.id, RunStatus.RUNNING, started, null, 0, 0, 0, null))
+        val id = running.id
+        val started = running.startedAt
         val summary = try {
             val cursor = store.cursor(d.id) ?: ScoutCursor(null, null, null)
             val passStartedAt = cursor.passStartedAt ?: started.toString()
@@ -205,6 +259,9 @@ class RunScout(
             }
             val merged = merger.merge(batch.hits, mapOf(d.id to SourceContext(d, ServedFrom.LIVE)))
             val changed = catalog.index(merged, d.id).distinct()
+            if (batch.candidates.isNotEmpty()) {
+                checkNotNull(review) { "${d.id} proposed candidates but no review list is configured" }.propose(d.id, batch.candidates)
+            }
             store.saveCursor(
                 d.id,
                 if (batch.nextCursor != null) ScoutCursor(cursor.checkpoint, batch.nextCursor, passStartedAt)

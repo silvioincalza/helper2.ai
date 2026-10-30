@@ -1,11 +1,14 @@
 package ai.helper2.scout.internal;
 
 import ai.helper2.catalog.ResourceCatalog;
+import ai.helper2.identity.AuditTrail;
 import ai.helper2.platform.ClusterLock;
+import ai.helper2.platform.ClusterLocks;
 import ai.helper2.platform.llm.CallCounter;
 import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.LlmSettings;
 import ai.helper2.platform.llm.ModelCallMetrics;
+import ai.helper2.scout.CandidateReview;
 import ai.helper2.scout.CatalogIndex;
 import ai.helper2.scout.Collector;
 import ai.helper2.scout.EnrichmentBacklog;
@@ -20,6 +23,7 @@ import ai.helper2.scout.RunLock;
 import ai.helper2.scout.ScheduledRun;
 import ai.helper2.scout.ScheduledRunStore;
 import ai.helper2.scout.usecase.RunScout;
+import ai.helper2.scout.usecase.StartScoutRun;
 import ai.helper2.scout.ScoutStore;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -28,8 +32,8 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Executor;
 import java.util.function.Supplier;
-import net.javacrumbs.shedlock.core.LockingTaskExecutor;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +41,8 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -80,34 +86,53 @@ class ScoutConfiguration {
         };
     }
 
-    /** Collectors in one run, worst case: HTTP timeouts of 10-15 s and a few classifier calls; measured in minutes. */
-    static final Duration COLLECTORS_WORST_CASE = Duration.ofHours(1);
-
     /**
-     * Held by every Scout run, scheduled or from the admin button, on whichever replica. At most: the collectors plus
-     * every enrichment of the run timing out on every attempt (prod: 1 h + 200 x 40 s x 1 = about 3 h 15 min); a
-     * longer lock only matters when a pod dies mid-run. At least: zero, so the admin button works right after a run.
+     * Held by every Scout run, scheduled or from the admin button, on whichever replica, for as long as the run lives:
+     * a lease of {@link #RUN_LOCK_LEASE}, extended every half lease. A pod that dies mid-run frees it within one
+     * lease. Not held after a run ends, so the admin button works right after a run.
      */
     @Bean
-    ClusterLock scoutRunLock(LockingTaskExecutor locks,
-                             @Value("${helper2.scout.max-enrichments-per-run:20}") int maxEnrichmentsPerRun,
-                             @Value("${spring.ai.openai.chat.timeout:40s}") Duration modelTimeout,
-                             @Value("${spring.ai.openai.chat.max-retries:0}") int modelRetries) {
-        Duration enrichments = modelTimeout.multipliedBy((long) maxEnrichmentsPerRun * (modelRetries + 1));
-        ClusterLock lock = new ClusterLock(locks, "scout-run", COLLECTORS_WORST_CASE.plus(enrichments), Duration.ZERO);
-        log.info("Scout run lock '{}' held at most {}", lock.name(), lock.atMostFor());
-        return lock;
+    ClusterLock scoutRunLock(ClusterLocks locks) {
+        return locks.keptAlive("scout-run", RUN_LOCK_LEASE);
     }
+
+    /** Long enough that a pause of the renewal thread (GC, a slow database) does not let the lease lapse. */
+    static final Duration RUN_LOCK_LEASE = Duration.ofMinutes(2);
 
     @Bean
     RunScout scoutRunner(List<Collector> collectors, ScoutStore store, CatalogIndex index, EnrichmentModel model,
                             EnrichmentStore enrichmentStore, EnrichmentBacklog backlog, Clock clock, ClusterLock scoutRunLock,
-                            MeterRegistry meters, ObservationRegistry observations,
+                            CandidateReview review, MeterRegistry meters, ObservationRegistry observations,
                             @Value("${helper2.scout.max-items-per-run:500}") int maxItemsPerRun,
                             @Value("${helper2.scout.max-enrichments-per-run:20}") int maxEnrichmentsPerRun) {
         return new RunScout(collectors, store, index, new EnrichResource(model, enrichmentStore, clock,
             new EvidenceValidator(), meters), clock, new ClusterRunLock(scoutRunLock), maxItemsPerRun, maxEnrichmentsPerRun,
-            backlog, meters, observations);
+            backlog, meters, RUN_THREADS, observations, review);
+    }
+
+    @Bean
+    StartScoutRun startScoutRun(RunScout scoutRunner, AuditTrail audit) {
+        return new StartScoutRun(scoutRunner, audit);
+    }
+
+    /** A run started from the admin page collects on its own virtual thread; the request answers at once. */
+    static final Executor RUN_THREADS = task -> Thread.ofVirtual().name("scout-run").start(task);
+
+    /**
+     * At startup, run records still RUNNING belong to a replica that stopped mid-run (a crash, a deploy): closed as
+     * FAILED unless a run holds the lock, in which case the next run's start closes them.
+     */
+    @Bean
+    ApplicationListener<ApplicationReadyEvent> closeInterruptedScoutRuns(RunScout runner) {
+        return event -> {
+            try {
+                if (!runner.closeInterruptedRuns()) {
+                    log.info("interrupted scout runs not checked at startup: a run is in progress");
+                }
+            } catch (RuntimeException e) {
+                log.warn("closing interrupted scout runs at startup failed: {}", e.getClass().getSimpleName());
+            }
+        };
     }
 
     /** The RunLock port over a lock shared by every replica. */

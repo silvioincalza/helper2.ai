@@ -25,8 +25,7 @@ data class CompatibilityFlag(
 /**
  * Deterministic "compatible with" flags derived only from source data: tags/topics/keywords the
  * sources returned, the resource type and published formats. No model call, nothing guessed; the
- * rules are disclosed. Provider tool ids match the model-family ids of the catalog so a flag can
- * link to its family and the comparison page.
+ * rules are disclosed.
  */
 object Compatibility {
 
@@ -40,7 +39,7 @@ object Compatibility {
         Tool("xai", "xAI Grok", setOf("grok", "xai", "x-ai", "grok-api")),
         Tool("mistral", "Mistral", setOf("mistral", "mistralai", "mistral-ai")),
         Tool("deepseek", "DeepSeek", setOf("deepseek", "deepseek-api")),
-        Tool("nvidia", "NVIDIA NIM", setOf("nvidia-nim", "nim", "nvidia-ai")),
+        Tool("nvidia", "NVIDIA NIM", setOf("nvidia-nim", "nvidia-ai")),
         // Local runtimes.
         Tool("ollama", "Ollama", setOf("ollama"), formats = setOf("gguf")),
         Tool("llama-cpp", "llama.cpp", setOf("llama-cpp", "llamacpp", "llama.cpp"), formats = setOf("gguf")),

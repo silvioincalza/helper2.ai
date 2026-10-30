@@ -4,9 +4,6 @@ import { afterEach, beforeEach } from 'vitest';
 import { clearApiCache } from '@/hooks/useApi';
 import i18n from '@/i18n';
 
-// jsdom has no scrolling; ScrollRestoration calls it on every navigation.
-window.scrollTo = () => undefined;
-
 // A state update outside act() means a test checked the screen before React finished: fail it, do not just warn.
 const realError = console.error;
 let actWarnings: string[] = [];
@@ -19,6 +16,9 @@ beforeEach(async () => {
     realError(...args);
   };
   window.localStorage.clear();
+  clearApiCache();
+  // jsdom has no layout: <ScrollRestoration/> scrolls through this spy.
+  vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
   await i18n.changeLanguage('en');
 });
 

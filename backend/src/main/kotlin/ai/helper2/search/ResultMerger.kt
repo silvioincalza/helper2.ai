@@ -13,18 +13,38 @@ data class SourceContext(val descriptor: SourceDescriptor, val servedFrom: Serve
 /**
  * Deterministic deduplication and merging. No LLM involved.
  *
- * Hits are grouped when they share a canonical URL or a repository URL (union-find), so an npm
- * package and its GitHub repository become one result. Display text comes from the preferred
+ * Hits are grouped when they share a canonical URL or a repository link (union-find), so an npm
+ * package and its GitHub repository become one result. A repository link joins only when no other
+ * resource of the same source links to that repository: packages of one monorepo stay separate results,
+ * each keeping its repository link (see [joiningRepositories]). Display text comes from the preferred
  * source; categorical facts that disagree (license, pricing, open source) are NOT resolved — the
  * merged value is null and every competing assertion is kept in [MergedResult.conflicts]. Dates keep the
  * earliest (or latest) value and are marked CONFLICTING when two sources state different days (DateFact).
  */
 class ResultMerger(private val analyzer: QueryAnalyzer = QueryAnalyzer()) {
 
-    fun merge(hits: List<SourceHit>, contexts: Map<String, SourceContext>): List<MergedResult> =
-        group(hits).map { mergeGroup(it, contexts) }
+    fun merge(hits: List<SourceHit>, contexts: Map<String, SourceContext>): List<MergedResult> {
+        val joining = joiningRepositories(hits)
+        return group(hits, joining).map { mergeGroup(it, contexts) }
+    }
 
-    private fun group(hits: List<SourceHit>): Collection<List<SourceHit>> {
+    /**
+     * Resource URL to repository URL, for the repository links that join their repository. A link joins only
+     * when it is the only resource of its source in [hits] linking to that repository: the packages of one
+     * monorepo all link to it, so none joins and each stays its own result with its repository link. A
+     * sub-directory link is its own identity ([CanonicalUrl]) and never reaches the repository root.
+     */
+    private fun joiningRepositories(hits: List<SourceHit>): Map<CanonicalUrl, CanonicalUrl> {
+        val links = hits.mapNotNull { h ->
+            h.repositoryUrl?.takeIf { it != h.canonicalUrl }?.let { RepositoryLink(h.sourceId, h.canonicalUrl, it) }
+        }.distinct()
+        val shared = links.groupBy { it.sourceId to it.repository }.filterValues { it.size > 1 }.keys
+        return links.filterNot { (it.sourceId to it.repository) in shared }.associate { it.resource to it.repository }
+    }
+
+    private data class RepositoryLink(val sourceId: String, val resource: CanonicalUrl, val repository: CanonicalUrl)
+
+    private fun group(hits: List<SourceHit>, joining: Map<CanonicalUrl, CanonicalUrl>): Collection<List<SourceHit>> {
         val parent = HashMap<CanonicalUrl, CanonicalUrl>()
         fun find(x: CanonicalUrl): CanonicalUrl {
             var root = x
@@ -37,10 +57,8 @@ class ResultMerger(private val analyzer: QueryAnalyzer = QueryAnalyzer()) {
             val ra = find(a); val rb = find(b)
             if (ra != rb) parent[ra] = rb
         }
-        hits.forEach { h ->
-            parent.putIfAbsent(h.canonicalUrl, h.canonicalUrl)
-            h.repositoryUrl?.let { union(h.canonicalUrl, it) }
-        }
+        hits.forEach { parent.putIfAbsent(it.canonicalUrl, it.canonicalUrl) }
+        joining.forEach { (resource, repository) -> union(resource, repository) }
         return hits.groupBy { find(it.canonicalUrl) }.values
     }
 
@@ -49,8 +67,9 @@ class ResultMerger(private val analyzer: QueryAnalyzer = QueryAnalyzer()) {
             compareBy<SourceHit>({ contexts[it.sourceId]?.descriptor?.priority ?: Int.MAX_VALUE }, { it.sourceId }, { it.rank }),
         )
         val primary = ordered.first()
-        // Stable identity: prefer a repository-style URL any hit points to, then lexical order.
-        val identity = group.map { it.identityUrl }.minWith(compareBy({ if (it.host == "github.com") 0 else 1 }, { it.value }))
+        // Identity from the hits' own URLs, a GitHub URL first, then lexical order. A repository link alone never
+        // names a result: monorepo packages found in separate searches keep separate ids.
+        val identity = group.map { it.canonicalUrl }.minWith(compareBy({ if (it.host == "github.com") 0 else 1 }, { it.value }))
         val conflicts = mutableListOf<FieldConflict>()
 
         val license = categorical("license", group, conflicts) { it.license?.let(::normalizeLicense) }

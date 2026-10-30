@@ -11,6 +11,12 @@ import ai.helper2.guide.GuideValidator;
 import ai.helper2.guide.GuideBudgetExhausted;
 import ai.helper2.guide.PlannedQueries;
 import ai.helper2.platform.llm.DailyBudget;
+import ai.helper2.platform.llm.LlmPolicies;
+import ai.helper2.platform.resilience.Resilience;
+import ai.helper2.platform.resilience.Resilience4jPolicies;
+import io.github.resilience4j.bulkhead.BulkheadRegistry;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
+import io.github.resilience4j.retry.RetryRegistry;
 import ai.helper2.platform.llm.ModelCallMetrics;
 import java.time.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -27,6 +33,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -159,7 +167,7 @@ class SpringAiGuideModelTest {
             }
         };
         return new SpringAiGuideModel(chat, "fake", "fast", "reasoning", true, 100, SpringAiGuideModel.Thinking.DEFAULT,
-            new DailyBudget(100, Clock.systemUTC(), "guide"), new ModelCallMetrics(observations, meters));
+            new DailyBudget(100, Clock.systemUTC(), "guide"), new ModelCallMetrics(observations, meters), Resilience.NONE);
     }
 
     private SpringAiGuideModel budgeted(DailyBudget budget, Supplier<String> reply) {
@@ -171,7 +179,7 @@ class SpringAiGuideModelTest {
             }
         };
         return new SpringAiGuideModel(chat, "fake", "fast", "reasoning", true, 100, SpringAiGuideModel.Thinking.DEFAULT,
-            budget, ModelCallMetrics.none());
+            budget, ModelCallMetrics.none(), Resilience.NONE);
     }
 
     /** A retry is a real provider call: it costs the credits the budget protects. */
@@ -191,6 +199,26 @@ class SpringAiGuideModelTest {
 
         assertThatThrownBy(() -> budgeted(budget, () -> "not json").plan("q", null)).isInstanceOf(GuideBudgetExhausted.class);
         assertThat(calls).hasValue(1);
+    }
+
+    /** An open llm-chat circuit degrades the answer at once: no provider call, no unit of the daily budget. */
+    @Test
+    void anOpenCircuitFailsTheCallAtOnceWithoutTheProviderOrTheBudget() {
+        CircuitBreakerRegistry circuits = CircuitBreakerRegistry.ofDefaults();
+        circuits.circuitBreaker(LlmPolicies.CHAT).transitionToForcedOpenState();
+        Resilience resilience = new Resilience4jPolicies(circuits, BulkheadRegistry.ofDefaults(), RetryRegistry.ofDefaults());
+        DailyBudget budget = new DailyBudget(10, Clock.systemUTC(), "guide");
+        ChatModel chat = prompt -> {
+            calls.incrementAndGet();
+            return new ChatResponse(List.of(new Generation(new AssistantMessage(PLAN))));
+        };
+        SpringAiGuideModel model = new SpringAiGuideModel(chat, "fake", "fast", "reasoning", true, 100,
+            SpringAiGuideModel.Thinking.DEFAULT, budget, ModelCallMetrics.none(), resilience);
+
+        assertThatThrownBy(() -> model.plan("q", null))
+            .isInstanceOfSatisfying(GuideUnavailable.class, e -> assertThat(e.getCategory()).isEqualTo("circuit_open"));
+        assertThat(calls).hasValue(0);
+        assertThat(budget.usedToday()).isZero();
     }
 
     @Test
@@ -215,9 +243,9 @@ class SpringAiGuideModelTest {
         ChatModel chat = prompt -> null;
         DailyBudget budget = new DailyBudget(1, Clock.systemUTC(), "guide");
         String off = new SpringAiGuideModel(chat, "p", "f", "r", true, 100, SpringAiGuideModel.Thinking.DEFAULT, budget,
-            ModelCallMetrics.none()).getConfigFingerprint();
+            ModelCallMetrics.none(), Resilience.NONE).getConfigFingerprint();
         String thinking = new SpringAiGuideModel(chat, "p", "f", "r", true, 100, new SpringAiGuideModel.Thinking(false, true, false),
-            budget, ModelCallMetrics.none()).getConfigFingerprint();
+            budget, ModelCallMetrics.none(), Resilience.NONE).getConfigFingerprint();
 
         assertThat(off).contains(SpringAiGuideModel.chooseSystem()).isNotEqualTo(thinking);
     }
@@ -228,8 +256,27 @@ class SpringAiGuideModelTest {
 
         observed(meters, () -> PLAN).plan("server MCP per Postgres", null);
 
-        assertThat(meters.get("helper2.guide.model.call")
+        assertThat(meters.get("helper2.llm.call")
             .tags("step", "plan", "model", "fast", "outcome", "ok").timer().count()).isEqualTo(1);
+    }
+
+    /** The prompt tag tells two prompt versions apart in the latency, outcome and token series. */
+    @Test
+    void everyCallAndItsTokensAreTaggedWithTheVersionOfItsPrompt() {
+        MeterRegistry meters = new SimpleMeterRegistry();
+        ObservationRegistry observations = ObservationRegistry.create();
+        observations.observationConfig().observationHandler(new DefaultMeterObservationHandler(meters));
+        ChatModel chat = prompt -> new ChatResponse(List.of(new Generation(new AssistantMessage(PLAN))),
+            ChatResponseMetadata.builder().usage(new DefaultUsage(120, 30)).build());
+        new SpringAiGuideModel(chat, "fake", "fast", "reasoning", true, 100, SpringAiGuideModel.Thinking.DEFAULT,
+            new DailyBudget(10, Clock.systemUTC(), "guide"), new ModelCallMetrics(observations, meters), Resilience.NONE)
+            .plan("q", null);
+
+        String version = ModelCallMetrics.promptVersion(SpringAiGuideModel.planSystem());
+        assertThat(version).hasSize(8).isNotEqualTo(ModelCallMetrics.promptVersion(SpringAiGuideModel.chooseSystem()));
+        assertThat(meters.get("helper2.llm.call").tags("step", "plan", "prompt", version).timer().count()).isEqualTo(1);
+        assertThat(meters.get("helper2.llm.tokens").tags("step", "plan", "prompt", version, "type", "prompt").counter().count())
+            .isEqualTo(120);
     }
 
     @Test
@@ -244,10 +291,10 @@ class SpringAiGuideModelTest {
         }).plan("q", null)).isInstanceOf(GuideUnavailable.class);
         assertThatThrownBy(() -> observed(meters, () -> "not json").plan("q", null)).isInstanceOf(GuideUnavailable.class);
 
-        assertThat(meters.get("helper2.guide.model.call").tags("outcome", "rate_limited").timer().count()).isEqualTo(1);
-        assertThat(meters.get("helper2.guide.model.call").tags("outcome", "unavailable").timer().count()).isEqualTo(1);
+        assertThat(meters.get("helper2.llm.call").tags("outcome", "rate_limited").timer().count()).isEqualTo(1);
+        assertThat(meters.get("helper2.llm.call").tags("outcome", "unavailable").timer().count()).isEqualTo(1);
         // A malformed answer is retried once, so two failed attempts.
-        assertThat(meters.get("helper2.guide.model.call").tags("outcome", "parse_error").timer().count()).isEqualTo(2);
+        assertThat(meters.get("helper2.llm.call").tags("outcome", "parse_error").timer().count()).isEqualTo(2);
     }
 
     @Test
@@ -261,7 +308,7 @@ class SpringAiGuideModelTest {
         }).plan("q", null)).isInstanceOf(GuideUnavailable.class);
         assertThatThrownBy(() -> observed(meters, () -> "not json").plan("q", null)).isInstanceOf(GuideUnavailable.class);
 
-        List<String> calls = meters.scrape().lines().filter(l -> l.startsWith("helper2_guide_model_call_seconds_count{")).toList();
+        List<String> calls = meters.scrape().lines().filter(l -> l.startsWith("helper2_llm_call_seconds_count{")).toList();
         assertThat(calls).hasSize(3);
         assertThat(calls).anyMatch(l -> l.contains("outcome=\"ok\"") && l.contains("error=\"none\""));
         assertThat(calls).anyMatch(l -> l.contains("outcome=\"rate_limited\""));

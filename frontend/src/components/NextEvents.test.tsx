@@ -6,10 +6,13 @@ import type { ResultCard } from '@/api/types';
 
 const day = (value: string) => ({ value, precision: 'DAY' as const, status: 'KNOWN' as const, sourceId: 'ai-deadlines', alternatives: [] });
 
+let nextId = 0;
+
 function event(title: string, start: string, end: string | null, location: string | null): ResultCard {
   const base = makeCard();
+  nextId += 1;
   return makeCard({
-    id: `9999999${title.length}-9999-5999-8999-999999999999`.slice(0, 36), title, type: 'EVENT', location,
+    id: `99999999-9999-5999-8999-${String(nextId).padStart(12, '0')}`, title, type: 'EVENT', location,
     timeline: { ...base.timeline, eventStart: day(start), eventEnd: end ? day(end) : null },
     sources: [{ sourceId: 'ai-deadlines', sourceName: 'AI conference dates (huggingface/ai-deadlines)', url: 'https://neurips.cc', mode: 'INDEXED', retrievedAt: '2026-10-27T09:00:00Z' }],
   });

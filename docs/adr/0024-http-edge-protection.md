@@ -1,6 +1,6 @@
 # 0024 — HTTP edge: rate limits (IPv6 /64), CSRF, CSP, forwarded headers, management port, SPA fallback and caching
 
-**Status.** Accepted (2026-10-27). **Builds on:** [0001](0001-stack-and-runtime.md), [0005](0005-redis-disposable-cache.md), [0007](0007-configuration-and-secrets.md), [0023](0023-identity-and-admin.md)
+**Status.** Accepted (2026-10-27). **Builds on:** [0001](0001-stack-and-runtime.md), [0005](0005-redis-disposable-cache.md), [0007](0007-configuration-and-secrets.md), [0023](0023-identity-and-admin.md), [0033](0033-resilience-policies.md)
 
 ## Context
 The app is public and anonymous. Search calls paid or rate-limited APIs, and each guide question costs model calls,
@@ -21,12 +21,14 @@ must load the app on a direct visit, and a new release must reach browsers at on
    The client is `platform.ClientKey.of(remote address)`: Internet Protocol version 4 (IPv4) as is, Internet Protocol
    version 6 (IPv6) by its /64 prefix, a zone id (`%eth0`) dropped, IPv4-mapped addresses as IPv4, a missing address
    as `unknown`. Both limiters and the guide's daily quota ([0017](0017-guide-cost-guard.md)) use this one key.
-3. **In-memory fallback.** On a Redis error the platform `CircuitBreaker` opens for 30 s, and each replica counts in
-   its own `InMemoryRateLimiter` with the same limits (windows in start order, at most 50,000 clients, oldest
+3. **In-memory fallback.** The script runs under the `redis` policy ([0033](0033-resilience-policies.md)). On a Redis
+   error, or while that circuit is open (30 s after repeated errors), each replica counts in its own
+   `InMemoryRateLimiter` with the same limits (windows in start order, at most 50,000 clients, oldest
    evicted). Every such decision increments `helper2.rate-limit.fallback{limiter}`. Without Redis configured, only the
    in-memory limiter is used.
 4. **Client address.** `H2_FORWARD_HEADERS_STRATEGY` defaults to `none`, so `X-Forwarded-For` is ignored. The cluster
-   sets `native`: only `cloudflared` can reach the pod (NetworkPolicy), and Cloudflare sets the header.
+   sets `native`: only `cloudflared` can reach the app's port 8080 (NetworkPolicy `ingress-app`), and Cloudflare sets
+   the header.
 5. **CSRF** (cross-site request forgery). `CookieCsrfTokenRepository.withHttpOnlyFalse()` with the SPA setup:
    cookie `XSRF-TOKEN`; `api/client.ts` sends it back as `X-XSRF-TOKEN` on every non-GET call. `CsrfCookieFilter` makes
    sure the cookie exists before the first POST.
@@ -36,7 +38,7 @@ must load the app on a direct visit, and a new release must reach browsers at on
 7. **Session cookie**: `SameSite=Lax`, `HttpOnly`, `Secure` by default (`H2_COOKIE_SECURE`, true; the `dev` profile sets false).
    The session itself is in Redis ([0023](0023-identity-and-admin.md)).
 8. **Management port.** `H2_MANAGEMENT_PORT` (empty = app port). The chart sets 8081; the Service and the tunnel route
-   only 8080. The NetworkPolicy opens 8081 only to the `observability` namespace, so `H2_METRICS_PUBLIC=true` exposes
+   only 8080. The NetworkPolicy `ingress-app` opens 8081 only to the `observability` namespace, so `H2_METRICS_PUBLIC=true` exposes
    `/actuator/prometheus` only there; the other actuator endpoints, except health and info, stay ADMIN only. Health shows no details; Redis is left out of health.
 9. **SPA fallback and caching** (`SinglePageApp`, rules in [0001](0001-stack-and-runtime.md)): hashed assets are cached
    for one year, `index.html` and other files are `no-cache`, so a new release reaches browsers at once. Search and guide
@@ -57,6 +59,11 @@ must load the app on a direct visit, and a new release must reach browsers at on
 - In-memory limiter only — with 3 replicas a client gets up to 3 times the limit.
 - Fail closed (refuse while Redis is down) — a cache outage would take search and the guide down.
 - A token bucket or sliding window — smoother, but more state per key; a fixed window is enough here.
+- Resilience4j's rate limiter ([0033](0033-resilience-policies.md)) — it counts in one Java virtual machine (JVM) and for
+  the whole app, not per client: 3 replicas would allow 3 times the limit, and one client per limiter would mean an
+  unbounded registry keyed by address. Resilience4j guards the calls to Redis here; the count stays in Redis.
+- Bucket4j or another distributed limiter library — the same Redis round trip and key as the short Lua script, with
+  one more dependency.
 - Trusting `X-Forwarded-For` by default — any client could choose its own address and skip the limit.
 - Spring Boot's default static resource handling — no control over cache headers per path.
 
@@ -67,7 +74,7 @@ must load the app on a direct visit, and a new release must reach browsers at on
 - `backend/src/main/java/ai/helper2/identity/SecurityConfiguration.java` — CSRF, CSP, referrer policy, access rules.
 - `backend/src/main/java/ai/helper2/platform/SinglePageApp.java` — SPA fallback and cache headers.
 - `backend/src/main/resources/application.yaml` — forward headers, cookie, management port, rate limits.
-- `deploy/helm/helper2/templates/app.yaml`, `networkpolicy.yaml` — port 8081, forwarded headers, ingress rules.
+- `deploy/helm/helper2/templates/app.yaml`, `networkpolicy.yaml` — port 8081, forwarded headers, the app's ingress policy.
 - `frontend/src/api/client.ts`, `frontend/public/theme.js` — CSRF header, CSP-safe theme script.
 
 ## Diagrams

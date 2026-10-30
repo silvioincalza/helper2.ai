@@ -1,0 +1,59 @@
+# Flowchart: the search evaluation harness, from the fixed query sets to the gate on nDCG@10.
+# Shows recording once against the live sources, offline replay of merge and ranking, the judging pool, the metrics,
+# the per-source ablation, the cutoff sweep and the gate.
+# Source of truth: backend/src/test/kotlin/ai/helper2/eval/ (SearchSnapshot.kt, SearchEvaluation.kt,
+#   RelevanceMetrics.kt, CutoffSweep.kt, SearchSnapshotRecorder.kt, SearchRelevanceEvalTest.kt), backend/build.gradle.kts,
+#   docs/eval/search-queries.json, docs/eval/semantic-gold.json, docs/eval/search-qrels.tsv.
+# Render: cd docs/diagrams && d2 fmt flow-0036-search-evaluation-harness.d2 && d2 flow-0036-search-evaluation-harness.d2 flow-0036-search-evaluation-harness.svg
+
+...@style
+
+direction: down
+
+sets: "docs/eval/search-queries.json (80)\n+ semantic-gold.json (20)\nfixed before any run" {class: data}
+
+record: ./gradlew evalRecord (tag eval-record, never in CI) {
+  class: group
+  direction: down
+  has: "Snapshot of this query\nalready recorded?" {class: decision}
+  skip: "Skip: the set stays frozen" {class: end}
+  search: "SearchResources.search\nevery configured source,\nno cache, no catalog writes" {class: app}
+  keep: "Keep each source's ranked hits,\noutcome and latency" {class: app}
+  vectors: "50 nearest catalog vectors,\nno distance cutoff" {class: app}
+  has -> skip: yes
+  has -> search: no
+  search -> keep -> vectors
+}
+
+snapshots: "backend/eval-data/search-snapshots/*.json\n(git-ignored: third-party data)" {class: data}
+
+eval: ./gradlew evalTest (tag eval) {
+  class: group
+  direction: down
+  any: "Snapshots present?" {class: decision}
+  skipped: "Skipped with a message\n(not failed)" {class: end}
+  replay: "Replay ResultMerger.merge +\nRanking.rank offline:\nbaseline and each source left out" {class: app}
+  metrics: "nDCG@10, MRR, Recall@20,\ndup@10, unjudged@10;\nmarginal Recall@20 and ΔnDCG@10\nwith paired bootstrap 95 % CI" {class: app}
+  sweep: "Cutoff sweep 0.40–0.90\non the recorded vectors" {class: app}
+  out: "search-report.md, search-pool.tsv,\nTREC run and qrels files" {class: data}
+  gate: "Judgements and a baseline\nfor these snapshots and labels?" {class: decision}
+  check: "nDCG@10 ≥ baseline − 0.005?" {class: decision}
+  pass: "Pass" {class: end}
+  fail: "Fail: report names the drop" {class: fail}
+  any -> skipped: no
+  any -> replay: yes
+  replay -> metrics -> sweep -> out
+  out -> gate
+  gate -> skipped: no
+  gate -> check: yes
+  check -> pass: yes
+  check -> fail: no
+}
+
+judge: "People grade the pool 0–3 into\ndocs/eval/search-qrels.tsv;\nsecond judge on 20 % (kappa)" {class: person}
+
+sets -> record.has
+record.vectors -> snapshots
+snapshots -> eval.any: {class: hot}
+eval.out -> judge
+judge -> eval.replay: next run

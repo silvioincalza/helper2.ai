@@ -2,7 +2,7 @@ import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { json, mockApi, problem } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
-import { known, makeCard, makeSearch, makeStatus, unknownDate } from '@/test/fixtures';
+import { known, makeCard, makeDetail, makeSearch, makeStatus, unknownDate } from '@/test/fixtures';
 
 const url = '/?q=translate&type=MODEL&license=unknown';
 
@@ -147,7 +147,7 @@ describe('search on the one page', () => {
     expect(screen.getByRole('group', { name: /License/ })).toBeInTheDocument();
     expect(within(screen.getByRole('group', { name: /Type/ })).getByRole('checkbox', { name: /Product/ })).toBeInTheDocument();
     release();
-    await settle();
+    await waitFor(() => expect(screen.queryByText('Searching the listed sources…')).not.toBeInTheDocument());
   });
 
   it('error state offers retry and recovers', async () => {
@@ -326,5 +326,21 @@ describe('search on the one page', () => {
     await act(() => router.navigate('/?q=two'));
     await waitFor(() => expect(signals[0]?.aborted).toBe(true));
     await settle();
+  });
+
+  it('back from a result shows the same results at once and keeps the scroll position', async () => {
+    const m = mockApi({ 'GET /resources/11111111-1111-5111-8111-111111111111': () => makeDetail() });
+    const { router } = renderApp('/?q=translate');
+    const title = await screen.findByRole('link', { name: 'Acme Translator' });
+    vi.spyOn(window, 'scrollY', 'get').mockReturnValue(840);
+    await userEvent.click(title);
+    await screen.findByRole('heading', { level: 1, name: 'Acme Translator' });
+    expect(window.scrollTo).toHaveBeenLastCalledWith(0, 0);
+
+    await act(() => router.navigate(-1));
+    expect(screen.getByRole('link', { name: 'Acme Translator' })).toBeInTheDocument();
+    expect(screen.queryByText('Searching the listed sources…')).not.toBeInTheDocument();
+    expect(window.scrollTo).toHaveBeenLastCalledWith(0, 840);
+    expect(m.callsTo('GET', '/search')).toHaveLength(1);
   });
 });

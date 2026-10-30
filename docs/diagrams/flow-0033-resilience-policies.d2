@@ -1,0 +1,79 @@
+# Flowchart: one Resilience.call(policy, work) through Resilience4jPolicies: the retry, bulkhead and circuit breaker
+# instances that share the policy's name, outermost first, and what each caller does with a refused call; and
+# Resilience.trySlot(guide), the bulkhead place a guide question holds until it ends or reaches its deadline.
+# Source of truth: backend/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java, CallRefused.java,
+#   backend/src/main/resources/application.yaml (resilience4j.*), backend/src/main/java/ai/helper2/sources/support/TransientSourceFailure.java,
+#   backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt, backend/src/main/java/ai/helper2/sources/*/*Collector.java,
+#   backend/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java, search/internal/SpringAiQueryTranslator.java (llm-chat),
+#   backend/src/main/java/ai/helper2/catalog/internal/NvidiaEmbedder.java (llm-embed), guide/web/GuideLimits.java (trySlot),
+#   backend/src/main/java/ai/helper2/platform/llm/ModelErrors.java (NotFromProvider).
+# Render: cd docs/diagrams && d2 fmt flow-0033-resilience-policies.d2 && d2 flow-0033-resilience-policies.d2 flow-0033-resilience-policies.svg
+
+...@style
+
+direction: down
+
+call: "Resilience.call(policy, work)\nsource-<id>, collector-<id>, redis,\nllm-chat or llm-embed" {class: end}
+named: "An instance with\nthis name exists?" {class: decision}
+unknown: "IllegalStateException\n(require at startup: no start)" {class: fail}
+
+policy: Decorators, outermost first {
+  class: group
+  direction: down
+  bulk: "Bulkhead (source-*):\na free slot? (20, catalog 6,\nno wait)" {class: decision}
+  state: "Circuit breaker state?" {class: decision}
+  run: "Run the work\n(one HTTP request, Apache retries off,\nor one Redis command)" {class: app}
+  result: "Outcome?" {class: decision}
+  count: "Counted in the window\n(source 20, collector, redis, llm-* 10 calls):\n≥ 50 % failed or slow (> 2 s, Tavily 5 s)\nafter the minimum calls → OPEN" {class: app}
+  retry: "Retry (collector-* only):\nTransientSourceFailure and\nattempts < 3?" {class: decision}
+  wait: "Wait 1 s, then × 2,\n± 50 % jitter" {class: config}
+
+  bulk -> state: yes {class: hot}
+  state -> run: "CLOSED, or HALF_OPEN\ntrial call (source, redis,\nllm-* 2; collector 1)" {class: hot}
+  run -> result
+  result -> count: "failure or slow"
+  limited: "SourceFailure.RateLimited, or for\nllm-chat not the provider's failure\n(parse error, spent budget):\nnot counted by the circuit" {class: app}
+  count -> retry
+  limited -> retry: "≤ 10 s pause\nis transient"
+  wait -> bulk: "next attempt"
+  retry -> wait: yes
+}
+
+ok: "Result returned\n(success counted; trials\nsucceed → CLOSED)" {class: end}
+busy: "CallRefused BUSY\n(not counted, not retried)" {class: fail}
+open: "CallRefused CIRCUIT_OPEN\n(open 30 s; collectors 1 min)" {class: fail}
+thrown: "The work's own exception" {class: fail}
+
+callers: What the caller does {
+  class: group
+  direction: down
+  search: "SearchResources: refused → SKIPPED\n(CIRCUIT_OPEN \"Paused after repeated\nfailures\", BUSY \"Too many searches\nat once\"), stale cache entry if any;\nrate limited → paused until Retry-After" {class: app}
+  redis: "Redis adapters: miss or\nin-memory fallback, no wait" {class: app}
+  collector: "Collector: this run fails,\nthe next run tries again" {class: app}
+  llm: "Guide: circuit_open → degraded answer\n(top search results), no budget unit;\ntranslator: untranslated search;\nembedder: EmbeddingFailure (keyword search,\nindexer retries next period)" {class: app}
+}
+
+slot: "Resilience.trySlot(guide)\n(GuideLimits, per question)" {class: end}
+place: "A free place in the guide\nbulkhead? (H2_GUIDE_MAX_CONCURRENT 8)" {class: decision}
+held: "Question runs; the place is\nreleased once: at its end or\nat its deadline (90 s)" {class: app}
+refused: "Empty: 503 Guide busy\nat once" {class: fail}
+slot -> place
+place -> held: yes {class: hot}
+place -> refused: no
+
+call -> named: {class: hot}
+named -> unknown: no
+named -> policy.bulk: yes {class: hot}
+policy.bulk -> busy: no
+policy.state -> open: OPEN
+policy.result -> ok: success {class: hot}
+policy.result -> policy.limited: "rate limited"
+policy.retry -> thrown: no
+busy -> callers.search
+open -> callers.search
+open -> callers.redis
+thrown -> callers.collector
+thrown -> callers.search
+open -> callers.collector
+open -> callers.llm
+thrown -> callers.llm

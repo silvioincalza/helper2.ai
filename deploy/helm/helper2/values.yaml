@@ -15,7 +15,7 @@ image:
   pullPolicy: IfNotPresent
 
 # Content of <env>/app.env (git-ignored), passed with --set-file envFile=... It becomes the Secret
-# helper2-env. Must contain H2_DATABASE_PASSWORD.
+# helper2-env. Must contain H2_DATABASE_PASSWORD; every key matches ^H2_[A-Z0-9_]+$.
 envFile: ""
 
 app:
@@ -77,6 +77,10 @@ postgres:
 redis:
   image: docker.io/library/redis:8.10.2-alpine
   maxMemory: 128mb
+  # The AOF volume (append-only file, fsync every second). volumeClaimTemplates are immutable: changing
+  # these needs a new StatefulSet. Empty storageClassName = the cluster's default storage class.
+  storageClassName: ""
+  storage: 1Gi
   # requirepass, from a Secret. Default: the key H2_REDIS_PASSWORD of helper2-env, i.e. a line
   # H2_REDIS_PASSWORD=<openssl rand -hex 32> in <env>/app.env (letters and digits only: it goes into the
   # Redis config as is). Or existingSecret: a Secret managed outside the chart. The app gets the same
@@ -111,10 +115,11 @@ cloudflared:
     requests: { cpu: 10m, memory: 32Mi }
     limits: { memory: 128Mi }
 
-# Egress (templates/networkpolicy.yaml): denied for every pod in the namespace, then allowed per
-# workload. app: DNS, postgres, redis, the OTLP collector, HTTPS to `external`. cloudflared: DNS, the
-# app, the Cloudflare edge. pg-backup: DNS, postgres, HTTPS to `external` when backup.offsite is on.
-# postgres and redis: nothing.
+# templates/networkpolicy.yaml: ingress and egress denied for every pod in the namespace, then allowed
+# per workload. Ingress: app <- the edge on 8080 and the metrics scraper on 8081; postgres <- app and
+# pg-backup; redis <- app; cloudflared and pg-backup: nothing. Egress: app -> DNS, postgres, redis, the
+# OTLP collector, HTTPS to `external`; cloudflared -> DNS, the app, the Cloudflare edge; pg-backup ->
+# DNS, postgres, HTTPS to `external` when backup.offsite is on; postgres and redis: nothing.
 networkPolicy:
   # Namespace of the metrics scraper allowed on the management port 8081. Empty = no scraper access.
   metricsNamespace: ""
@@ -159,3 +164,12 @@ backup:
     # Secret with access_key_id and secret_access_key (a token with Object Read & Write on this bucket
     # only), created outside the chart.
     secret: pg-backup-offsite
+
+# Alert rules (deploy/monitoring/helper2-rules.yaml, ADR 0026) as a PrometheusRule for the Prometheus
+# Operator. Off by default: the CRD exists only where the operator runs. Without it, load the rule file into
+# Prometheus directly (rule_files).
+monitoring:
+  prometheusRule:
+    enabled: false
+    # Extra labels, e.g. the operator's ruleSelector: { release: kube-prometheus-stack }.
+    labels: {}

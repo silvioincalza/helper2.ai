@@ -196,9 +196,9 @@ textarea { width: 100%; resize: vertical; }
 /* Carousel: a window two rows tall over the whole list; it scrolls by itself two at a time, and by hand row by row. */
 .carousel-track { position: relative; overflow-y: auto; scroll-snap-type: y mandatory; scrollbar-width: thin; transition: height calc(var(--motion) * 2) ease-out; }
 .carousel-track > li { scroll-snap-align: start; }
+.carousel-toggle { margin-top: var(--space-2); min-height: var(--target-min); font-size: 0.85rem; }
 /* The track scrolls, so a ring outside a row would be cut off: draw it inside. */
 .carousel-track :focus-visible { outline-offset: -3px; }
-.carousel-toggle { margin-top: var(--space-2); }
 .skeleton-row { height: 3rem; border-bottom: 1px solid var(--border);
   background: linear-gradient(90deg, var(--surface-1), var(--surface-2), var(--surface-1)); background-size: 200% 100%; animation: shimmer 1.6s linear infinite; }
 .type-tag { display: inline-block; padding: 3px 9px; border-radius: var(--radius-pill); font-size: 0.75rem; font-weight: 600; line-height: 1.33; background: var(--surface-tint); color: var(--ink-2); }
@@ -580,7 +580,6 @@ input[type='search']::-webkit-search-cancel-button { filter: grayscale(1); }
 .compat-list { display: flex; flex-wrap: wrap; gap: var(--space-1); }
 .compat-chip { font-size: 0.8rem; padding: 0 0.5rem; border-radius: var(--radius-pill); border: 1px solid var(--accent); color: var(--accent-ink); cursor: help; }
 
-
 /* InfoTip: explanation on hover/focus/tap instead of a paragraph under a title. */
 .title-with-tip { display: flex; align-items: center; gap: var(--space-2); }
 .infotip { position: relative; display: inline-flex; font-size: 1rem; font-family: var(--font-sans); font-weight: 400; letter-spacing: normal; }
@@ -588,9 +587,6 @@ input[type='search']::-webkit-search-cancel-button { filter: grayscale(1); }
 .infotip-btn:hover, .infotip-btn[aria-expanded='true'] { border-color: var(--accent); color: var(--accent-ink); }
 .infotip-pop { position: absolute; top: calc(100% + var(--space-2)); left: 0; z-index: 20; width: min(26rem, calc(100vw - 2rem)); padding: var(--space-3) var(--space-4); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-1); color: var(--ink); font-size: 0.875rem; line-height: 1.45; box-shadow: 0 8px 24px rgb(0 0 0 / 0.18); }
 
-/* Example questions for the guide, on the models page */
-.ask-guide { display: flex; flex-direction: column; gap: var(--space-3); }
-.ask-guide h2, .ask-guide p { margin: 0; }
 /* Next events: the date range leads each row, in the slot the Radar uses for the type tag. */
 /* A search reloading: the last results stay, dimmed, until the new ones arrive. */
 .results-body.is-stale { opacity: 0.55; transition: opacity var(--motion); }

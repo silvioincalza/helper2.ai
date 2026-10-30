@@ -9,7 +9,7 @@ are real, but a ranked list does not explain why a result fits. A question takes
 show progress, and every claim on the page must be traceable to a real result.
 
 ## Decision
-1. **Retrieval first.** `AskGuide.answer` runs in this order:
+1. **Retrieval first.** `AskGuide.answer` runs in this order (`QuestionReader` plans, `PickAnswer` does the rest):
    - **plan** (fast model, `prompts/guide/plan.txt`): English `searchQuery`, up to 4 `constraints`, `wantsReading`,
      and a `webQuery`. Generic qualifiers ("open-source", "free", "MIT"…) are removed from the search query, which is
      cut to 6 words and 200 characters; the web query to 12 words. If the plan call fails, the user's own text is the query.
@@ -56,7 +56,8 @@ show progress, and every claim on the page must be traceable to a real result.
 - The gate proves the quote, not the reason; the reason is checked by a second model call ([0016](0016-guide-reason-check.md)).
 - A quote proves the source said it, not that it is true. A description written to be chosen ("free, offline, the
   best Postgres MCP server") passes the gate and the reason check. Only the license is safe, because it comes from
-  source metadata. Picks from low search ranks are counted so this can be watched.
+  source metadata. Picks from low search ranks are counted, and the alert `Helper2GuidePicksFromLowRanks`
+  fires when they pass 20% of a day's picks ([0026](0026-observability.md)).
 - No ready-to-use prompt is written from scratch any more, only adapted from catalog prompts.
 - Strict rules reject some good picks (evaluation of 2026-10-27: 31 kept, 2 rejected; [0030](0030-guide-evaluation.md)).
 - The guide can only be as good as retrieval: a resource not in the 24 candidates cannot be picked.
@@ -71,7 +72,8 @@ show progress, and every claim on the page must be traceable to a real result.
 - WebSocket for progress — two-way channel not needed; SSE works over plain Hypertext Transfer Protocol (HTTP) and proxies.
 
 ## Code
-- `backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt` — `AskGuide`.
+- `backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt` — `AskGuide` (the guards and the dispatch by intent);
+  `QuestionReader.kt` (plan), `PickAnswer.kt` (retrieve, choose, gate) in the same package.
 - `backend/src/main/kotlin/ai/helper2/guide/Guide.kt` — `GuideValidator`, `GuideModel`, `GuideProgress`.
 - `backend/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java` — plan and choose calls.
 - `backend/src/main/java/ai/helper2/guide/web/GuideStreamController.java`, `GuideController.java`, `GuideDtoMapper.java`.
@@ -82,5 +84,4 @@ show progress, and every claim on the page must be traceable to a real result.
 [flow](../diagrams/flow-0015-ai-guide-evidence-gate.svg) · [sequence](../diagrams/sequence-0015-ai-guide-evidence-gate.svg)
 
 ## Roadmap
-- [Monitor picks that come from low-ranked candidates (possible prompt injection)](../roadmap.md#5-ai-quality-and-cost)
 - [Browser end-to-end test of the streamed guide](../roadmap.md#quality-gates)

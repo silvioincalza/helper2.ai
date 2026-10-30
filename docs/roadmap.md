@@ -18,10 +18,12 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 - Imprint and contact (EU). The Privacy and Terms pages exist; the Sources page lists attributions.
 - Lawyer review of the Privacy and Terms pages and of the AI Act reading in
   [ADR 0038](adr/0038-ai-content-marking.md): provider role, metadata-only marking, deadline.
+- Lawyer review of the web-search quota ([ADR 0037](adr/0037-tavily-store-and-daily-quota.md)): whether an HMAC of
+  the address or of the query is personal data, legitimate interest as the basis, and the wording on the transfer of
+  queries to Tavily in the US.
 - Check each US source and GitHub for Data Privacy Framework certification, as the Privacy page states.
 - Make server and Traefik logs delete after 3 months, as the Privacy page states.
 - Review each source's terms again for commercial use.
-- Tavily: get a written OK for public display of results, or unset `H2_TAVILY_API_KEY`.
 - SEO: `robots.txt`, `sitemap.xml`, metadata and JSON-LD for detail pages. Detail pages are not crawlable
   today, because the frontend is a single-page app ([ADR 0025](adr/0025-frontend-one-box.md)).
 
@@ -31,13 +33,18 @@ Items are grouped by the order in which they matter. Inside a group, the first i
   `H2_GITHUB_OAUTH_CLIENT_SECRET` and `H2_ADMINS=github:<numeric id>` ([ADR 0023](adr/0023-identity-and-admin.md)).
 - ADMIN is decided at sign-in, so a change to `H2_ADMINS` needs a new sign-in.
 - Optional `H2_HF_TOKEN` on prod.
+- **Sign-in for everyone.** Sign-in is offered only on `/admin`, so server-side bookmarks and account deletion
+  (`DELETE /me`) reach only admins today. Add a public sign-in entry point in the page; it needs the
+  `oauth-github` profile on prod ([ADR 0023](adr/0023-identity-and-admin.md)).
+- Turn on the registered Tavily tier (more web searches per day for signed-in users) once that sign-in is live
+  ([ADR 0037](adr/0037-tavily-store-and-daily-quota.md)).
 - Admin back office on `admin.helper2.ai`, reachable only through WireGuard via Traefik, with no app-level
   network filter. Not built yet: today `/admin` is served on the public hosts and protected only by sign-in
   ([ADR 0023](adr/0023-identity-and-admin.md)).
 
 ### Quality gates
 - **Browser end-to-end tests (skipped for now, owner decision 27 Oct 2026).** No browser journey is automated,
-  and no tool is installed (the unused Playwright setup was removed). Later, choose the tool, then on the `demo` profile:
+  and no tool is installed. Later, choose the tool, then on the `demo` profile:
   search with a partial result and the source status panel; ask the guide, follow the streamed steps, close the
   answer and keep the search; back and forward; the theme switch. Then run them in CI.
   See [user-journeys.md](user-journeys.md) (SC-1 to SC-3).
@@ -45,20 +52,15 @@ Items are grouped by the order in which they matter. Inside a group, the first i
   - After a route change, the focused heading and the live region can both be read out.
 - Load test of search at the expected peak: confirm p95 and that the rate limits do not trip for normal use.
 - Run `./gradlew liveTest` against production egress.
-- Ranking measured on a labeled query set ([ADR 0009](adr/0009-ranking.md)).
+- Ranking measured on a labeled query set ([ADR 0009](adr/0009-ranking.md)). The harness and the queries exist
+  ([ADR 0036](adr/0036-search-evaluation-harness.md)); the grades do not. Label them as
+  [docs/eval](eval/README.md) describes, then record the baseline.
 - Guide relevance judged by a second person, not only by the owner ([ADR 0030](adr/0030-guide-evaluation.md)).
 
 ## 3. Operations
 
-- **Alerting.** Write alert rules for:
-  - source failure rate and partial-result rate;
-  - cache errors;
-  - review backlog;
-  - 5xx responses;
-  - guide budget below 20%, Scout enrichment budget, embedding backlog.
-
-  Today the metrics are exposed, but no rule exists ([ADR 0026](adr/0026-observability.md)).
-- **Exporters.** Postgres and Redis exporters in the Helm chart.
+- **Exporters.** Postgres and Redis exporters in the Helm chart, and an alert on Redis evicted keys
+  (`allkeys-lru` can drop sessions, rate-limit windows and web-search counters under memory pressure).
 - **Backups:**
   - test a restore;
   - add a periodic restore-check job;
@@ -77,7 +79,6 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 - Remove the unused duplicate `deploy/.dockerignore`.
 - The Cloudflare tunnel token lives in Terraform state and a Kubernetes Secret, not in OpenBao. Move it.
 - Confirm that trace and span ids appear in every log line (only a configuration comment says so today).
-- Make the admin "run Scout now" call asynchronous: return 202 with a run id. Today it is synchronous.
 
 ## 4. More than one replica
 
@@ -88,14 +89,13 @@ on purpose:
 - **Guide answers: in-memory LRU and single-flight map.** Answers are also in Redis, so a replica only misses a
   question it has not seen; two replicas may answer the same new question once each.
 - **Query-vector cache** (`SemanticSearchSource`). A miss costs one embedding call (about 0.3 s) on that replica.
-- **Source-health cooldowns** (`SearchResources`) and the Sources page's last outcomes (`SourceHealth`). Each
-  replica finds a source's rate limit on its own, at the cost of one more refused call.
+- **Source cooldowns after a rate limit** (`SearchResources`), **circuit breakers and bulkheads** (`source-<id>`
+  policies, [ADR 0033](adr/0033-resilience-policies.md)) and the Sources page's last outcomes (`SourceHealth`).
+  Each replica finds a limited or failing source on its own, at the cost of a few more refused calls.
 - **Query-translation cache** (`SpringAiQueryTranslator`). A miss costs one model call, inside the daily
   translation cap, which is counted in Redis.
 - **Guide concurrency limit** (`H2_GUIDE_MAX_CONCURRENT`, 8 per replica, 24 on prod). The daily model-call cap
   in Redis still bounds the cost.
-- **arXiv minimum interval** (1 request per 3 s) is kept per replica, so the cluster can send up to 3 requests
-  in that window. Share it in Redis if arXiv starts refusing.
 - **Embedding indexer pause after a rate limit.** Only the replica that got the 429 pauses; the lock already
   keeps the cluster at one batch per period.
 
@@ -103,13 +103,9 @@ Open items:
 
 - **preStop delay.** A pod gets SIGTERM while it is still being removed from the Service endpoints; a few
   seconds of `preStop` sleep would stop the last requests from reaching it during a rolling update.
-- **Scout run lock after a crash.** `scout-run` is held for at most the derived worst case (prod: 1 h of
-  collectors + 200 enrichments x 40 s x 1 attempt, about 3 h 13 min). A pod killed mid-run blocks the Scout,
-  run now included, until then. ShedLock's `KeepAliveLockProvider` would allow a short lock that is extended while the
-  run is alive.
-- **Redis memory.** Sign-in sessions and rate-limit windows now share the 128 MB `allkeys-lru` cache: under
-  pressure an admin is signed out, or a client gets a fresh window early. Alert on Redis evictions (with the
-  Redis exporter, section 3).
+- **Redis memory.** Sign-in sessions, rate-limit windows and web-search counters share the 128 MB `allkeys-lru`
+  cache: under pressure an admin is signed out, or a client gets a fresh window or a fresh day early. Alert on
+  Redis evictions (with the Redis exporter, section 3).
 
 ## 5. AI quality and cost
 
@@ -117,15 +113,25 @@ Open items:
   ([ADR 0016](adr/0016-guide-reason-check.md)).
 - Watch whether the source `type`, now a source fact in enrichment, sends many proposals to CONFLICTING review
   (for example GitHub LIBRARY versus MCP_SERVER) ([ADR 0019](adr/0019-evidence-gated-enrichment.md)).
-- Resilience4j for outbound calls (rate limit, retry with backoff).
 - Cross-language retrieval in vector search.
-- Alert when the share of kept picks ranked 9+ grows (`helper2.guide.picks{rank="9+"}`): text written to be picked
-  passes the quote gate ([ADR 0015](adr/0015-ai-guide-evidence-gate.md)). The counter exists; the alert and the
-  Grafana panel do not.
+- A Grafana panel for the share of kept picks ranked 9+ (`helper2.guide.picks{rank="9+"}`), next to the alert
+  `Helper2GuidePicksFromLowRanks` ([ADR 0015](adr/0015-ai-guide-evidence-gate.md)).
+- Show the web searches left today on the page, and say when the daily limit is reached (FE-2,
+  [ADR 0037](adr/0037-tavily-store-and-daily-quota.md)). The API already returns them (`webSearches`).
+- Write the Scout's Tavily news and events to the same stored sets as searches, with their own share of credits
+  ([ADR 0037](adr/0037-tavily-store-and-daily-quota.md)).
+- Setup guide: a model answer that stays unreadable after two attempts is not cached, so the same resource and
+  question cost two model calls on every request until the daily cap. Give it its own reason and a short negative
+  cache ([ADR 0031](adr/0031-setup-guide.md)).
 - **Signed provenance manifest for AI-written text** (C2PA-style): sign each guide answer with its model, time and
   AI-written fields, so the origin survives outside our page and API. Today the marking is metadata only and is
   lost on copy ([ADR 0038](adr/0038-ai-content-marking.md)). Do it when a standard and tooling for text exist, or
   if a regulator finds metadata alone too weak.
+- Pass a prompt version from `SpringAiEnrichmentModel`, `SpringAiToolGuideModel` and `SpringAiRepoClassifier`, and
+  put them under the `llm-chat` circuit; then delete the "unversioned" methods of `ModelCallMetrics`
+  ([ADR 0014](adr/0014-llm-integration.md)).
+- Guide `WHEN` for a release: when our sources have no creation date, take the date quoted in a Tavily news item,
+  through the evidence gate. Measure after the `WHEN` event filter ([ADR 0032](adr/0032-guide-intents.md)).
 - Run `scripts/eval-guide.mjs --adversarial` in a scheduled job after each deploy; today it is run by hand.
 - A question from a shared `?ask=` link is asked on page load. Asking only after a click would stop a link from
   spending model calls for its visitors (one cached answer per question limits it today).
@@ -139,7 +145,7 @@ Open items:
   ([ADR 0006](adr/0006-outbound-http.md)).
 - The embedding backlog gauge does not count rows whose text changed after they were embedded.
 - Conference files that the ai-deadlines collector skips are logged, not counted in a metric.
-- On a resource's first search, the discovery date is unknown, because catalog writes now run off the request path
+- On a resource's first search, the discovery date is unknown, because catalog writes run off the request path
   ([ADR 0004](adr/0004-persistence-and-provenance.md)).
 - "Works with" flags on index hits name `helper2-index` as their source, not the source that set the tag, and only
   the first 20 tags (alphabetical) are kept, which can drop a flag ([ADR 0013](adr/0013-works-with-flags.md)).
@@ -184,8 +190,9 @@ Open items:
 
 ## 8. Architecture
 
-- One owner per table: the Scout writes enrichment tables that the catalog reads. Spring Modulith cannot
-  see coupling through the schema ([ADR 0002](adr/0002-modular-monolith-hexagonal.md)).
+- The Scout reads catalog tables (`resource`, `source_record`) for its enrichment backlog in
+  `JdbcEnrichmentStore`. Spring Modulith cannot see coupling through the schema; read them through a catalog port
+  ([ADR 0002](adr/0002-modular-monolith-hexagonal.md)).
 - `platform` is an open module and holds the LLM layer. Consider a closed `llm` module with a named interface.
 - Move the source and catalog adapters into `internal` packages.
 

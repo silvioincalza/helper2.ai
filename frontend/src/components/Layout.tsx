@@ -62,7 +62,7 @@ export function Header() {
           )}
           {me.authenticated && (
             <span className="auth">
-              <span className="muted small">{me.displayName ?? t('nav.signedIn')}</span>
+              <Link to="/account" className="small" title={t('nav.account')}>{me.displayName ?? t('nav.signedIn')}</Link>
               <button type="button" className="btn" onClick={() => void signOut()}>{t('nav.signOut')}</button>
             </span>
           )}
@@ -160,6 +160,7 @@ export function Layout() {
   return (
     <>
       <a className="skip-link" href="#main">{t('nav.skip')}</a>
+      {/* A new page starts at the top; back and forward return to where the reader was. */}
       <ScrollRestoration />
       <RouteFocus />
       <Header />

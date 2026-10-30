@@ -46,6 +46,11 @@ data class SourceDescriptor @JvmOverloads constructor(
     val filtersByDate: Boolean = false,
     /** True when the source can list resources without any subject words ([SourceQuery.browse]); others are skipped. */
     val browses: Boolean = false,
+    /**
+     * True when each live call costs provider credits (Tavily, ADR 0037): its results are kept in a [WebResultStore]
+     * instead of the [SearchCache], and a live call goes out only inside the asker's daily [WebSearchQuota].
+     */
+    val metered: Boolean = false,
 )
 
 enum class PopularityKind { GITHUB_STARS, HF_LIKES, HF_DOWNLOADS, NPM_DOWNLOADS_WEEKLY }
@@ -59,7 +64,7 @@ data class SourceHit @JvmOverloads constructor(
     val externalId: String,
     val url: URI,
     val canonicalUrl: CanonicalUrl,
-    /** e.g. the GitHub repository of an npm package; used to merge records of the same resource. */
+    /** e.g. the GitHub repository of an npm package; joins the repository's own hit when no other resource links to it. */
     val repositoryUrl: CanonicalUrl? = null,
     val title: String,
     val description: String? = null,
@@ -88,8 +93,8 @@ data class SourceHit @JvmOverloads constructor(
     val eventKind: EventKind? = null,
     val eventFormat: EventFormat? = null,
 ) {
-    /** Identity used for dedup: repository URL wins when present so ids are stable across sources. */
-    val identityUrl: CanonicalUrl get() = repositoryUrl ?: canonicalUrl
+    /** The same hit at [rank] in its source's ranking. */
+    fun withRank(rank: Int): SourceHit = copy(rank = rank)
 }
 
 /**
@@ -121,10 +126,19 @@ data class SourceQuery @JvmOverloads constructor(
 /** Raised by source adapters; anything else thrown is treated as FAILED. */
 sealed class SourceFailure(message: String) : RuntimeException(message) {
     class RateLimited(val retryAfter: Duration?) : SourceFailure("rate limited")
-    class Unavailable(message: String) : SourceFailure(message)
+
+    /** [transient]: the same call may succeed soon (503, network error or timeout), so a background caller may retry it. */
+    class Unavailable @JvmOverloads constructor(message: String, val transient: Boolean = false) : SourceFailure(message)
 }
 
 enum class SourceOutcome { SUCCEEDED, FAILED, TIMED_OUT, RATE_LIMITED, SKIPPED }
+
+/**
+ * Why a source was SKIPPED in a search: turned off, nothing to browse, paused after a rate limit, its circuit open
+ * after repeated failures, already running as many calls as its bulkhead allows, the asker's daily web searches (or
+ * the global daily credits) used up, or the daily quota unreadable.
+ */
+enum class SkipReason { DISABLED, NOT_BROWSABLE, RATE_LIMIT_PAUSE, CIRCUIT_OPEN, BUSY, DAILY_LIMIT, QUOTA_UNAVAILABLE }
 
 enum class ServedFrom { LIVE, CACHE, STALE_CACHE, NONE }
 
@@ -137,6 +151,8 @@ data class SourceStatus(
     val checkedAt: Instant,
     val cachedAt: Instant? = null,
     val message: String? = null,
+    /** SKIPPED only. */
+    val skipReason: SkipReason? = null,
 )
 
 enum class Freshness { LIVE, CACHED, STALE, INDEXED, CURATED, DEMO }

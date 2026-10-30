@@ -19,7 +19,9 @@ import ai.helper2.search.descriptor
 import ai.helper2.search.hit
 import ai.helper2.shared.AudiencePath
 import ai.helper2.shared.ResourceType
+import ai.helper2.platform.resilience.Resilience
 import ai.helper2.testing.MovableClock
+import ai.helper2.testing.TestPolicies
 import java.time.Duration
 import java.util.concurrent.Executors
 import kotlin.test.AfterTest
@@ -91,7 +93,7 @@ class RedisGuideAnswerStoreTest {
 
     @Test
     fun `an answer reads back equal to the one that was stored`() {
-        val store = RedisGuideAnswerStore(StringRedisTemplate(), json, clock, Duration.ofSeconds(30))
+        val store = RedisGuideAnswerStore(StringRedisTemplate(), json, Resilience.NONE)
         val original = answer()
         assertTrue(original.recommendations.any { it.aiReasoned }, "fixture must be a cacheable answer")
 
@@ -100,7 +102,7 @@ class RedisGuideAnswerStoreTest {
 
     @Test
     fun `an entry of another version or a corrupt entry is a miss`() {
-        val store = RedisGuideAnswerStore(StringRedisTemplate(), json, clock, Duration.ofSeconds(30))
+        val store = RedisGuideAnswerStore(StringRedisTemplate(), json, Resilience.NONE)
         val encoded = store.encode(answer())
 
         val v = RedisGuideAnswerStore.VERSION
@@ -112,7 +114,7 @@ class RedisGuideAnswerStoreTest {
     @Test
     fun `after a Redis failure the store is left alone for a while`() {
         val redis = DownRedis()
-        val store = RedisGuideAnswerStore(redis, json, clock, Duration.ofSeconds(30))
+        val store = RedisGuideAnswerStore(redis, json, TestPolicies.redis(clock))
 
         assertNull(store.get("k"))
         store.put("k", answer(), Duration.ofHours(24))

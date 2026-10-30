@@ -1,5 +1,6 @@
 package ai.helper2.guide.usecase
 
+import ai.helper2.guide.AnswerLimits
 import ai.helper2.guide.Candidate
 import ai.helper2.guide.CheckStatus
 import ai.helper2.guide.ClientQuota
@@ -43,6 +44,7 @@ import java.time.ZoneOffset
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -385,6 +387,17 @@ class AskGuideTest {
         assertEquals(2, after.calls)
     }
 
+    @Test
+    fun `new answer limits do not serve answers cached under the old ones`() {
+        val cache = GuideAnswerCache(Duration.ofHours(24), 10, clock)
+        val model = CountingModel(whisperPick())
+
+        AskGuide(search, model, clock, cache = cache).ask(need, null)
+        AskGuide(search, model, clock, cache = cache, limits = AnswerLimits(maxRows = 5)).ask(need, null)
+
+        assertEquals(4, model.calls)
+    }
+
     private fun reasoned() = AskGuide(search, whisperPick(), clock).ask(need, null)
 
     @Test
@@ -400,6 +413,26 @@ class AskGuideTest {
     }
 
     @Test
+    fun `an answer built on web results lives no longer than they are fresh`() {
+        val t = MovableClock(ai.helper2.search.NOW)
+        val cache = GuideAnswerCache(Duration.ofHours(24), 10, t)
+        cache.put("k", reasoned().copy(webFreshUntil = ai.helper2.search.NOW.plus(Duration.ofHours(5))))
+
+        t.now = ai.helper2.search.NOW.plus(Duration.ofHours(4))
+        assertTrue(cache.get("k") != null)
+        t.now = ai.helper2.search.NOW.plus(Duration.ofHours(5))
+        assertEquals(null, cache.get("k"))
+    }
+
+    @Test
+    fun `an answer built on stale web results is not cached`() {
+        val cache = GuideAnswerCache(Duration.ofHours(24), 10, clock)
+        cache.put("k", reasoned().copy(webFreshUntil = ai.helper2.search.NOW.minus(Duration.ofHours(1))))
+
+        assertEquals(null, cache.get("k"))
+    }
+
+        @Test
     fun `cache drops the least recently used entry when full`() {
         val cache = GuideAnswerCache(Duration.ofHours(24), 2, clock)
         val a = reasoned()
@@ -487,6 +520,30 @@ class AskGuideTest {
         observed(whisperPick()).ask(need, null)
 
         assertEquals(1.0, meters.find("helper2.guide.picks").counters().sumOf { it.count() })
+    }
+
+    private fun step(name: String, intent: String = "suggest") =
+        meters.get("helper2.guide.step").tag("step", name).tag("intent", intent).timer()
+
+    @Test
+    fun `each step of a question is its own span, tagged with the step and the intent`() {
+        observed(whisperPick()).ask(need, null)
+
+        listOf("plan", "search", "choose", "validate", "verify").forEach { assertEquals(1, step(it).count(), it) }
+    }
+
+    @Test
+    fun `the plan step lasts as long as the planner takes`() {
+        val slowPlanner = object : GuideModel by whisperPick() {
+            override fun plan(request: String, path: AudiencePath?): GuideSearchPlan {
+                Thread.sleep(60)
+                return GuideSearchPlan("speech recognition")
+            }
+        }
+
+        observed(slowPlanner).ask(need, null)
+
+        assertTrue(step("plan").totalTime(TimeUnit.MILLISECONDS) >= 60.0)
     }
 
     @Test

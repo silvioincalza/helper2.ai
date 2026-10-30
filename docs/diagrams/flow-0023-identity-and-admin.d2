@@ -1,8 +1,12 @@
-# Flowchart: who may call what, how a sign-in becomes ADMIN, and where bookmarks are kept.
+# Flowchart: who may call what, how a sign-in becomes ADMIN, where bookmarks are kept, how an account is deleted and
+# what the admin audit trail records.
 # The admin host (admin.helper2.ai via WireGuard and Traefik) is drawn as planned: it is not in deploy/ yet.
 # Source of truth: backend/src/main/java/ai/helper2/identity/SecurityConfiguration.java, CurrentUser.java, MeController.java,
-#   backend/src/main/java/ai/helper2/identity/internal/Users.java, Bookmarks.java,
-#   frontend/src/context/BookmarksContext.tsx, frontend/src/pages/AdminPage.tsx, deploy/k8s/terraform/variables.tf.
+#   backend/src/main/java/ai/helper2/identity/usecase/*.java, identity/internal/Users.java, Bookmarks.java, AuditLog.java,
+#   backend/src/main/java/ai/helper2/catalog/usecase/ResolveReviewItem.java, scout/usecase/StartScoutRun.kt,
+#   frontend/src/context/BookmarksContext.tsx, frontend/src/pages/AccountPage.tsx, frontend/src/pages/AdminPage.tsx,
+#   backend/src/main/java/ai/helper2/platform/quota/QuotaKeys.java, RedisQuotaCounter.java (counters deleted with the account),
+#   deploy/k8s/terraform/variables.tf.
 # Render: cd docs/diagrams && d2 fmt flow-0023-identity-and-admin.d2 && d2 flow-0023-identity-and-admin.d2 flow-0023-identity-and-admin.svg
 
 ...@style
@@ -14,14 +18,14 @@ req: "Request to /api/**" {class: end}
 access: SecurityConfiguration rules {
   class: group
   direction: down
-  open: "Public GET (search, recent, sources,\nresources, model families, events, me)\nor POST reports / guide?" {class: decision}
+  open: "Public GET (search, recent, sources,\nresources, events, me)\nor POST reports / guide?" {class: decision}
   anon: "Allowed, no account" {class: end}
   admin: "/api/v1/admin/** or /actuator/**\n(not health, info)?" {class: decision}
   isadmin: "Session has ROLE_ADMIN?" {class: decision}
-  bm: "/api/v1/me/bookmarks?" {class: decision}
+  bm: "/api/v1/me/bookmarks\nor DELETE /api/v1/me?" {class: decision}
   signed: "Signed in?" {class: decision}
   okadmin: "Allowed (admin)" {class: end}
-  ok: "Allowed (own bookmarks)" {class: end}
+  ok: "Allowed (own bookmarks,\nown account)" {class: end}
   e401: "401 (no redirect)" {class: fail}
   deny: "Any other /api/**: denied" {class: fail}
   e403: "403" {class: fail}
@@ -47,7 +51,7 @@ signin: Sign-in (only from /admin) {
   roles: "\"github:<numeric id>\"\nin H2_ADMINS?" {class: decision}
   user: "ROLE_USER" {class: app}
   adm: "ROLE_USER + ROLE_ADMIN" {class: app}
-  ensure: "AuthenticationSuccessEvent →\nUsers.ensure: upsert app_user\n(provider, subject, name; no e-mail)" {class: data}
+  ensure: "AuthenticationSuccessEvent →\nUsers.signedIn: upsert app_user\n(provider, subject, name,\nlast sign-in; no e-mail)" {class: data}
   back: "Redirect to /admin\n(failure: /admin?signin=failed)" {class: end}
   profile -> nosign: no
   profile -> github: yes
@@ -59,20 +63,41 @@ signin: Sign-in (only from /admin) {
   ensure -> back
 }
 
-bookmarks: Bookmarks {
+bookmarks: Bookmarks (one use case per action) {
   class: group
   direction: down
   who: "Signed in?" {class: decision}
   local: "Browser storage\nh2.bookmarks.v1" {class: app}
-  merge: "Once after sign-in: POST local list,\nthen clear local" {class: app}
-  cap: "Account would hold\nmore than 500?" {class: decision}
+  merge: "MergeLocalBookmarks once after sign-in\n(POST local list), then clear local;\nAddBookmark (PUT one)" {class: app}
+  cap: "http(s) link ≤ 2000 chars and\naccount ≤ 500 afterwards?" {class: decision}
   saved: "Saved (idempotent,\nfirst savedAt kept)" {class: end}
   refused: "400, whole request\nrolled back" {class: fail}
   who -> local: no
   who -> merge: yes
   merge -> cap
-  cap -> refused: yes
-  cap -> saved: no
+  cap -> saved: yes
+  cap -> refused: no
+}
+
+account: Delete my account {
+  class: group
+  direction: down
+  page: "/account: Delete my account,\nthen confirm" {class: app}
+  call: "DELETE /api/v1/me\n(X-XSRF-TOKEN)" {class: app}
+  del: "DeleteMyAccount: delete app_user;\nbookmarks cascade, reports keep\nreporter = NULL" {class: data}
+  quota: "Delete the user's daily\nweb-search counters (Redis);\nRedis down: they expire in 24 h" {class: data}
+  out: "Session ended, page reloads\nsigned out" {class: end}
+  page -> call -> del -> quota -> out
+}
+
+audit: Admin audit trail {
+  class: group
+  direction: down
+  write: "ResolveReviewItem / StartScoutRun" {class: app}
+  row: "admin_audit row: admin id, action,\ntarget, at, outcome (append-only)" {class: data}
+  read: "GET /api/v1/admin/audit\n(paged, newest first)" {class: end}
+  write -> row: "AuditTrail port"
+  row -> read
 }
 
 planned: "Planned, not in deploy/:\nadmin.helper2.ai only via WireGuard\nthrough Traefik (no app-level filter)" {class: config}
@@ -80,4 +105,6 @@ planned: "Planned, not in deploy/:\nadmin.helper2.ai only via WireGuard\nthrough
 req -> access.open: {class: hot}
 access.e401 -> signin.profile: "admin page\nshows SignIn"
 signin.back -> bookmarks.who
+access.ok -> account.page: "signed-in user\nopens own account"
+access.okadmin -> audit.write
 planned -> access.admin: "would front" {class: config}

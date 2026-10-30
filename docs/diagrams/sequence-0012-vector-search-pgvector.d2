@@ -36,7 +36,7 @@ tick: Indexer tick {
   nv -> emb: "50 vectors" {class: ai-call}
   emb -> idxr: "vectors (count and size checked)"
   idxr -> store: "saveEmbeddings(model, tasks, vectors)"
-  store -> pg: "upsert resource_embedding"
+  store -> pg: "delete other models' vectors;\nupsert resource_embedding"
   idxr -> store: "embeddingCoverage(model)"
   idxr -> idxr: "backlog = total − embedded;\nlast.success = now"
   idxr -> lock: "done"
@@ -51,6 +51,7 @@ query: One search {
   nv -> emb: "1 vector" {class: ai-call}
   emb -> sem: "vector (cached, max 1000)"
   sem -> store: "semanticSearch(vector, model,\norigins, 30, 0.65)" {class: hot}
+  store -> pg: "SET LOCAL hnsw.iterative_scan\n= relaxed_order" {class: hot}
   store -> pg: "ORDER BY embedding <=> :v\n(HNSW), distance ≤ 0.65" {class: hot}
   pg -> store: "nearest rows"
   store -> pg: "labels + popularity (2 queries)"

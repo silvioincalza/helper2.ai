@@ -1,0 +1,53 @@
+# Sequence: a guest's search that misses the store, takes one web search and calls Tavily; then the same search
+# from another visitor, answered from the store.
+# Source of truth: backend/src/main/java/ai/helper2/search/web/SearchController.java (Asker),
+#   backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt, search/WebSearch.kt (WebSearchQuota),
+#   backend/src/main/java/ai/helper2/search/internal/JdbcWebResultStore.java, catalog/ResourceCatalog.java (recordedHits, record),
+#   backend/src/main/java/ai/helper2/platform/quota/RedisQuotaCounter.java, QuotaKeys.java,
+#   backend/src/main/java/ai/helper2/sources/tavily/TavilySource.java.
+# Render: cd docs/diagrams && d2 fmt sequence-0037-tavily-store-and-quota.d2 && d2 sequence-0037-tavily-store-and-quota.d2 sequence-0037-tavily-store-and-quota.svg
+
+...@style
+
+shape: sequence_diagram
+
+browser: Browser {class: person}
+ctrl: SearchController {class: app}
+svc: SearchResources {class: app}
+store: JdbcWebResultStore {class: app}
+pg: PostgreSQL {class: data}
+catalog: ResourceCatalog {class: app}
+quota: WebSearchQuota {class: app}
+redis: Redis {class: data}
+tavily: "TavilySource →\napi.tavily.com (US)" {class: ext}
+
+browser -> ctrl: "GET /api/v1/search?q=…"
+ctrl -> svc: "search(request + Asker(SEARCH,\nClientKey, user id))"
+svc -> store: "find(tavily, query, GENERAL)"
+store -> pg: "SELECT … FROM tavily_query_result\nWHERE query_key = HMAC(secret, query)"
+pg -> store: "no row"
+store -> svc: "miss"
+svc -> quota: "take(asker)"
+quota -> redis: "EVAL: HGET guest key 'search' < 3 ?\nHINCRBY + PEXPIRE 24 h\n(key = HMAC(day key, client))"
+redis -> quota: "TAKEN, used 1"
+quota -> svc: "Allowed(2 left)"
+svc -> tavily: "POST /search under source-tavily\n(credits counter +1)"
+tavily -> svc: "hits"
+svc -> store: "replace(tavily, query, GENERAL, now, hits)"
+store -> pg: "UPSERT result_ids = resource ids\nof the hits' URLs"
+svc -> catalog: "record(LIVE hits) → background upsert\nof the Tavily source records"
+svc -> ctrl: "outcome + webSearches {3, 2}"
+ctrl -> browser: "200 SearchResponse"
+
+browser -> ctrl: "same search, another visitor"
+ctrl -> svc: "search(…)"
+svc -> store: "find(tavily, query, GENERAL)"
+store -> pg: "SELECT … (row 1 h old)"
+store -> catalog: "recordedHits(tavily, ids)"
+catalog -> pg: "owner of each record URL,\nthen its records"
+catalog -> store: "every hit, in order"
+store -> svc: "CachedHits (fresh for 48 h)"
+svc -> quota: "left(asker): HGET, no count"
+quota -> redis: "HGET guest key 'search'"
+svc -> ctrl: "tavily served CACHE; webSearches {3, 3}"
+ctrl -> browser: "200 SearchResponse"

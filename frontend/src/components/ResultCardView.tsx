@@ -16,7 +16,6 @@ import { typeTagClass } from '@/lib/typeTag';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
 
 /** Every type has a definition, so every card can say where its type comes from. */
-/** Compatibility tool ids that are also model families: their chip opens the comparison page. */
 
 const TYPE_TERM: Record<ResultCard['type'], GlossaryKey> = {
   MCP_SERVER: 'mcp_server', MODEL: 'model', AGENT: 'agent', PROMPT: 'prompt', SKILL: 'skill', LIBRARY: 'library', DATASET: 'dataset',

@@ -1,13 +1,18 @@
 package ai.helper2.search.usecase
 
+import ai.helper2.platform.resilience.CallRefused
+import ai.helper2.platform.resilience.Resilience
 import ai.helper2.search.AnalyzedQuery
+import ai.helper2.search.Asker
 import ai.helper2.search.CachedHits
 import ai.helper2.search.Coverage
 import ai.helper2.search.Facets
 import ai.helper2.search.Filtering
+import ai.helper2.search.IntentClass
 import ai.helper2.search.MergedResult
 import ai.helper2.search.Notice
 import ai.helper2.search.NoticeCode
+import ai.helper2.search.QuotaDecision
 import ai.helper2.search.QueryAnalyzer
 import ai.helper2.search.QueryTranslator
 import ai.helper2.search.Ranking
@@ -19,6 +24,7 @@ import ai.helper2.search.SearchOutcome
 import ai.helper2.search.SearchRequest
 import ai.helper2.search.SearchSource
 import ai.helper2.search.ServedFrom
+import ai.helper2.search.SkipReason
 import ai.helper2.search.Sorting
 import ai.helper2.search.SourceContext
 import ai.helper2.search.SourceDescriptor
@@ -27,6 +33,10 @@ import ai.helper2.search.SourceHit
 import ai.helper2.search.SourceOutcome
 import ai.helper2.search.SourceQuery
 import ai.helper2.search.SourceStatus
+import ai.helper2.search.WebFreshness
+import ai.helper2.search.WebResultStore
+import ai.helper2.search.WebSearchQuota
+import ai.helper2.search.WebSearchesLeft
 import ai.helper2.shared.AudiencePath
 import ai.helper2.shared.DateFact
 import ai.helper2.shared.LanguageDetector
@@ -54,8 +64,19 @@ import org.slf4j.LoggerFactory
  * A non-English query is translated in parallel with the sources that never read the translation
  * ([SourceDescriptor.usesTranslation]); the other sources start when it is in, and each source's timeout
  * and reported latency count from its own start, so translation never eats into a source's budget.
+ *
+ * Each call runs under the source's policy `source-<id>` ([Resilience], ADR 0033): a circuit breaker and a bulkhead,
+ * never a retry (the deadline is the budget). A call the policy refuses does not reach the source and is SKIPPED
+ * ([SkipReason.CIRCUIT_OPEN], [SkipReason.BUSY]), with a stale cache entry when one exists. Every enabled source must
+ * have a policy: a missing one fails at construction, so at startup.
+ *
+ * A metered source (Tavily, ADR 0037) answers store first: a result set in [webResults] that is fresh for the request's
+ * [IntentClass] ([webFreshness]) is served with no live call and no quota used. Otherwise one web search is taken from
+ * the asker's daily [quota] before the live call; over the limit, or when the quota cannot be read, the source is
+ * SKIPPED ([SkipReason.DAILY_LIMIT], [SkipReason.QUOTA_UNAVAILABLE]) with the stored set when it is not older than
+ * [WebFreshness.keep]. A live answer replaces the stored set.
  */
-class SearchResources(
+class SearchResources @JvmOverloads constructor(
     private val sources: List<SearchSource>,
     private val cache: SearchCache,
     private val observer: ResultObserver,
@@ -70,9 +91,18 @@ class SearchResources(
     private val languages: LanguageDetector? = null,
     private val translator: QueryTranslator = QueryTranslator.NONE,
     private val translateTimeout: Duration = Duration.ofMillis(2500),
+    private val resilience: Resilience = Resilience.NONE,
+    private val webResults: WebResultStore = WebResultStore.NONE,
+    /** Null: no daily quota (tests and tools); the application always has one. */
+    private val quota: WebSearchQuota? = null,
+    private val webFreshness: WebFreshness = WebFreshness(),
 ) {
     private val log = LoggerFactory.getLogger(SearchResources::class.java)
     private val cooldownUntil = ConcurrentHashMap<String, Instant>()
+
+    init {
+        sources.filter { it.descriptor.enabled }.forEach { resilience.require(policy(it.descriptor)) }
+    }
 
     private class Attempt(val status: SourceStatus, val hits: List<SourceHit>)
 
@@ -86,7 +116,7 @@ class SearchResources(
     )
 
     /** What happened to each source in one search. */
-    private inner class Run(val startedAt: Instant) {
+    private inner class Run(val startedAt: Instant, val asker: Asker?, val intentClass: IntentClass) {
         val attempts = mutableListOf<Attempt>()
         private val pending = mutableListOf<Pending>()
         private val cachedFor = mutableMapOf<String, CachedHits?>()
@@ -96,44 +126,96 @@ class SearchResources(
         fun start(source: SearchSource, query: SourceQuery) {
             val d = source.descriptor
             if (!d.enabled) {
-                attempts += skipped(d, startedAt, "Disabled in configuration")
+                attempts += skipped(d, startedAt, SkipReason.DISABLED, "Disabled in configuration")
                 return
             }
             if (query.browse && !d.browses) {
-                attempts += skipped(d, startedAt, "No subject to search")
+                attempts += skipped(d, startedAt, SkipReason.NOT_BROWSABLE, "No subject to search")
                 return
             }
             val cooldown = cooldownUntil[d.id]
             if (cooldown != null && startedAt.isBefore(cooldown)) {
                 attempts += stale(d, startedAt, null, SourceOutcome.SKIPPED, "Paused after a rate limit until $cooldown",
-                    cachedLookup(d, query) { cacheDown = true })
+                    lookup(d, query), SkipReason.RATE_LIMIT_PAUSE)
                 return
             }
             if (d.mode == SourceMode.LIVE) {
-                val cached = cachedLookup(d, query) { cacheDown = true }
+                val cached = lookup(d, query)
                 cachedFor[d.id] = cached
-                if (cached != null && Duration.between(cached.fetchedAt, startedAt) < d.cacheTtl) {
+                val event = if (d.metered) "store_" else ""
+                if (cached != null && Duration.between(cached.fetchedAt, startedAt) < freshFor(d)) {
                     attempts += Attempt(
                         SourceStatus(d, SourceOutcome.SUCCEEDED, ServedFrom.CACHE, cached.hits.size, Duration.ZERO, startedAt, cached.fetchedAt),
                         cached.hits,
                     )
-                    metrics.cacheEvent("hit")
+                    metrics.cacheEvent(event + "hit")
                     return
                 }
-                metrics.cacheEvent(if (cached == null) "miss" else "expired")
+                metrics.cacheEvent(event + if (cached == null) "miss" else "expired")
             }
+            if (d.metered && !quotaAllows(d)) return
             // Each task records its own completion time so latency is per source, not per collection order.
             val finished = AtomicLong(0)
             val started = System.nanoTime()
             val future = executor.submit<List<SourceHit>> {
                 try {
-                    source.search(query)
+                    resilience.call(policy(d)) {
+                        if (d.metered) metrics.creditSpent(d.id, asker, asker?.let { quota?.tierOf(it) })
+                        source.search(query)
+                    }
                 } finally {
                     finished.set(System.nanoTime())
                 }
             }
             pending += Pending(source, query, future, started, finished)
         }
+
+        /** Takes one web search for [d]'s live call; false (and the source SKIPPED) when the quota refuses. */
+        private fun quotaAllows(d: SourceDescriptor): Boolean {
+            val (reason, message) = when (quota?.take(asker) ?: QuotaDecision.Allowed(null)) {
+                is QuotaDecision.Allowed -> return true
+                is QuotaDecision.OverLimit -> SkipReason.DAILY_LIMIT to "Daily limit of web searches reached; back at 00:00 UTC"
+                QuotaDecision.Unavailable -> SkipReason.QUOTA_UNAVAILABLE to "Web search paused: the daily limit cannot be checked"
+            }
+            attempts += stale(d, startedAt, null, SourceOutcome.SKIPPED, message, cachedFor[d.id], reason)
+            return false
+        }
+
+        /** The stored set of a metered source, the cached entry of another LIVE source; a failing store is a miss. */
+        private fun lookup(d: SourceDescriptor, q: SourceQuery): CachedHits? {
+            if (!d.metered) return cachedLookup(d, q) { cacheDown = true }
+            return try {
+                webResults.find(d.id, cacheMaterial(d, q), intentClass)
+            } catch (e: RuntimeException) {
+                metrics.cacheEvent("store_error")
+                log.warn("web result store unavailable: ${e.javaClass.simpleName}")
+                null
+            }
+        }
+
+        private fun freshFor(d: SourceDescriptor): Duration = if (d.metered) webFreshness.of(intentClass) else d.cacheTtl
+
+        private fun save(d: SourceDescriptor, q: SourceQuery, hits: List<SourceHit>) {
+            if (d.metered) {
+                try {
+                    webResults.replace(d.id, cacheMaterial(d, q), intentClass, startedAt, hits)
+                } catch (e: RuntimeException) {
+                    log.warn("web result store write failed: ${e.javaClass.simpleName}")
+                }
+                return
+            }
+            try {
+                cache.put(cacheKey(d, q), CachedHits(hits, startedAt), staleFor)
+            } catch (e: RuntimeException) {
+                cacheDown = true
+                log.debug("cache put failed", e)
+            }
+        }
+
+        /** When the metered results this search used stop being fresh; null when it used none. */
+        fun webFreshUntil(): Instant? = attempts
+            .filter { it.status.source.metered && it.hits.isNotEmpty() }
+            .minOfOrNull { (it.status.cachedAt ?: startedAt).plus(webFreshness.of(intentClass)) }
 
         fun collectAll() {
             pending.forEach { attempts += collect(it) }
@@ -146,14 +228,7 @@ class SearchResources(
             return try {
                 val hits = p.future.get(maxOf(0, deadlineNanos - System.nanoTime()), TimeUnit.NANOSECONDS)
                 val latency = latency()
-                if (d.mode == SourceMode.LIVE) {
-                    try {
-                        cache.put(cacheKey(d, p.query), CachedHits(hits, startedAt), staleFor)
-                    } catch (e: RuntimeException) {
-                        cacheDown = true
-                        log.debug("cache put failed", e)
-                    }
-                }
+                if (d.mode == SourceMode.LIVE) save(d, p.query, hits)
                 Attempt(SourceStatus(d, SourceOutcome.SUCCEEDED, ServedFrom.LIVE, hits.size, latency, startedAt), hits)
             } catch (_: TimeoutException) {
                 p.future.cancel(true)
@@ -161,6 +236,12 @@ class SearchResources(
             } catch (e: ExecutionException) {
                 val latency = latency()
                 when (val cause = e.cause) {
+                    is CallRefused -> when (cause.reason()) {
+                        CallRefused.Reason.CIRCUIT_OPEN -> stale(d, startedAt, null, SourceOutcome.SKIPPED,
+                            "Paused after repeated failures", cachedFor[d.id], SkipReason.CIRCUIT_OPEN)
+                        CallRefused.Reason.BUSY -> stale(d, startedAt, null, SourceOutcome.SKIPPED,
+                            "Too many searches at once", cachedFor[d.id], SkipReason.BUSY)
+                    }
                     is SourceFailure.RateLimited -> {
                         cooldownUntil[d.id] = startedAt.plus(cause.retryAfter ?: Duration.ofMinutes(1))
                         stale(d, startedAt, latency, SourceOutcome.RATE_LIMITED, "Source rate limit reached", cachedFor[d.id])
@@ -185,7 +266,7 @@ class SearchResources(
         val language = languages?.detect(request.text)?.takeIf { it != "en" }
         val untranslated = analyzer.analyze(request.text)
         val translation = language?.let { startTranslation(request.text, it) }
-        val run = Run(startedAt)
+        val run = Run(startedAt, request.asker, IntentClass.of(request, untranslated))
         val (early, late) = sources.partition { translation == null || !it.descriptor.usesTranslation }
         val untranslatedQuery = sourceQuery(request, untranslated, language)
         early.forEach { run.start(it, untranslatedQuery) }
@@ -241,8 +322,14 @@ class SearchResources(
             facets = Facets.compute(ranked, request.filters),
             coverage = Coverage(partial, sources.size, queried, succeeded),
             notices = notices,
+            webSearches = request.asker?.let(::webSearchesLeft),
+            webFreshUntil = run.webFreshUntil(),
         )
     }
+
+    /** What [asker]'s feature has left today; null without an enabled metered source, a quota, or a readable count. */
+    fun webSearchesLeft(asker: Asker): WebSearchesLeft? =
+        if (quota == null || sources.none { it.descriptor.metered && it.descriptor.enabled }) null else quota.left(asker)
 
     private fun sourceQuery(request: SearchRequest, analyzed: AnalyzedQuery, language: String?) =
         SourceQuery(request.text.trim(), analyzed.expandedTerms, request.path, perSourceLimit,
@@ -303,10 +390,10 @@ class SearchResources(
             requiredVariants = (listOf(english) + analyzed.requiredVariants).distinct(),
         )
 
-    private fun skipped(d: SourceDescriptor, at: Instant, message: String) =
-        Attempt(SourceStatus(d, SourceOutcome.SKIPPED, ServedFrom.NONE, 0, null, at, null, message), emptyList())
+    private fun skipped(d: SourceDescriptor, at: Instant, reason: SkipReason, message: String) =
+        Attempt(SourceStatus(d, SourceOutcome.SKIPPED, ServedFrom.NONE, 0, null, at, null, message, reason), emptyList())
 
-    /** A failed attempt, rescued by a stale cache entry when one exists within [staleFor]. */
+    /** A failed attempt, rescued by a stale entry when one exists within [staleFor] ([WebFreshness.keep] when metered). */
     private fun stale(
         d: SourceDescriptor,
         at: Instant,
@@ -314,16 +401,17 @@ class SearchResources(
         outcome: SourceOutcome,
         message: String,
         cached: CachedHits?,
+        skipReason: SkipReason? = null,
     ): Attempt {
-        val usable = cached?.takeIf { Duration.between(it.fetchedAt, at) < staleFor }
+        val usable = cached?.takeIf { Duration.between(it.fetchedAt, at) < if (d.metered) webFreshness.keep else staleFor }
         return if (usable != null) {
             metrics.cacheEvent("stale_served")
             Attempt(
-                SourceStatus(d, outcome, ServedFrom.STALE_CACHE, usable.hits.size, latency, at, usable.fetchedAt, "$message; showing cached results"),
+                SourceStatus(d, outcome, ServedFrom.STALE_CACHE, usable.hits.size, latency, at, usable.fetchedAt, "$message; showing cached results", skipReason),
                 usable.hits,
             )
         } else {
-            Attempt(SourceStatus(d, outcome, ServedFrom.NONE, 0, latency, at, null, message), emptyList())
+            Attempt(SourceStatus(d, outcome, ServedFrom.NONE, 0, latency, at, null, message, skipReason), emptyList())
         }
     }
 
@@ -341,25 +429,33 @@ class SearchResources(
 
     companion object {
         private const val MAX_TRANSLATION_CHARS = 120
+
+        /** The resilience policy of a search source. */
+        @JvmStatic
+        fun policy(d: SourceDescriptor) = "source-${d.id}"
         private val URL_LIKE = Regex("(?i)https?:|www\\.|://")
         private val NON_WORD = Regex("[^\\p{L}\\p{N}\\s-]+")
         private val SPACES = Regex("\\s+")
 
-        /**
-         * `h2:v1:src:{sourceId}:{sha256(normalized query|expansions|limit[|web query][|after][|browse, types])}` — no raw
-         * query text in keys. Each optional part only for sources whose results it changes, so plain searches keep
-         * sharing entries; without the window a windowed query would be served the cached unwindowed hits.
-         */
+        /** `h2:v1:src:{sourceId}:{sha256(cacheMaterial)}` — no raw query text in keys. */
         @JvmStatic
         fun cacheKey(d: SourceDescriptor, q: SourceQuery): String {
+            val digest = MessageDigest.getInstance("SHA-256").digest(cacheMaterial(d, q).toByteArray())
+            return "h2:v1:src:${d.id}:${HexFormat.of().formatHex(digest, 0, 16)}"
+        }
+
+        /**
+         * What a source's answer depends on: `normalized query|expansions|limit[|web query][|after][|browse, types]`.
+         * Each optional part only for sources whose results it changes, so plain searches keep sharing entries; without
+         * the window a windowed query would be served the cached unwindowed hits. Hashed before it is stored anywhere.
+         */
+        private fun cacheMaterial(d: SourceDescriptor, q: SourceQuery): String {
             val normalized = QueryAnalyzer().analyze(q.text).normalized
             // webQuery only for sources that read it, so other sources and plain searches keep sharing entries.
             val web = q.webQuery?.takeIf { d.usesWebQuery }?.let { "|web:$it" } ?: ""
             val after = q.publishedAfter?.takeIf { d.filtersByDate }?.let { "|after:$it" } ?: ""
             val browse = if (q.browse) "|browse:${q.types.map { it.name }.sorted().joinToString(",")}" else ""
-            val material = "$normalized|${q.expandedTerms.joinToString(",")}|${q.limit}$web$after$browse"
-            val digest = MessageDigest.getInstance("SHA-256").digest(material.toByteArray())
-            return "h2:v1:src:${d.id}:${HexFormat.of().formatHex(digest, 0, 16)}"
+            return "$normalized|${q.expandedTerms.joinToString(",")}|${q.limit}$web$after$browse"
         }
     }
 }

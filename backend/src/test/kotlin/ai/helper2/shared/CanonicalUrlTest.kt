@@ -25,8 +25,22 @@ class CanonicalUrlTest {
     @Test
     fun `github urls collapse to lowercase owner and repo`() {
         assertEquals("https://github.com/owner/repo", canon("https://github.com/Owner/Repo.git"))
-        assertEquals("https://github.com/owner/repo", canon("git+https://github.com/Owner/Repo/tree/main/src"))
+        assertEquals("https://github.com/owner/repo", canon("https://github.com/Owner/Repo/blob/main/README.md"))
+        assertEquals("https://github.com/owner/repo", canon("https://github.com/Owner/Repo/tree/main/"))
         assertEquals("https://github.com/owner/repo", canon("git://github.com/owner/repo.git"))
+    }
+
+    @Test
+    fun `a github sub-directory keeps its ref and path, so each monorepo package has its own identity`() {
+        assertEquals(
+            "https://github.com/owner/repo/tree/main/packages/Player",
+            canon("git+https://github.com/Owner/Repo/tree/main/packages/Player/"),
+        )
+        assertNotEquals(
+            canon("https://github.com/owner/repo/tree/main/packages/a"),
+            canon("https://github.com/owner/repo/tree/main/packages/b"),
+        )
+        assertNotEquals(canon("https://github.com/owner/repo"), canon("https://github.com/owner/repo/tree/main/packages/a"))
     }
 
     @Test
