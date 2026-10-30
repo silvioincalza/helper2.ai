@@ -79,6 +79,30 @@ groups:
           description: "Search cache reads or writes have failed for 10 minutes. Searches still answer, but every search calls the sources live."
           runbook: "Check the redis-0 pod (kubectl -n helper2-<env> get pod redis-0, logs) and its PersistentVolumeClaim; the rate-limit alert Helper2RateLimitInMemory fires too when Redis is down."
 
+  - name: helper2-resilience
+    rules:
+      - alert: Helper2CircuitOpen
+        # resilience4j-micrometer: state gauge per circuit (policy name) and pod, 1 for the current state. An outage
+        # cycles open -> half_open -> open, so "not closed" is what lasts; max across pods: one pod is enough.
+        expr: max by (environment, name) (1 - resilience4j_circuitbreaker_state{application="helper2", state="closed"}) == 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Circuit {{ $labels.name }} has not closed for 5 minutes ({{ $labels.environment }})."
+          description: "The resilience policy {{ $labels.name }} keeps refusing calls (ADR 0033): source-* is SKIPPED in searches, collector-* fails its Scout runs, redis means the cache, budgets and rate limits run without Redis."
+          runbook: "Dashboard row 'Search and sources' (source outcomes) or the Redis pod for name=redis. A source-* circuit: check the provider's status and its outbound HTTP errors; it closes by itself once a trial call succeeds (every 30 s)."
+      - alert: Helper2CallsNotPermitted
+        # Calls an open circuit refused, per policy: the cost of the outage in calls, above one a minute for 10 minutes.
+        expr: sum by (environment, name) (rate(resilience4j_circuitbreaker_not_permitted_calls_total{application="helper2"}[5m])) * 60 > 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Policy {{ $labels.name }} refuses calls ({{ $labels.environment }})."
+          description: "{{ $value | humanize }} calls a minute were refused by the open circuit of {{ $labels.name }} over the last 5 minutes, for 10 minutes."
+          runbook: "Same cause as Helper2CircuitOpen for {{ $labels.name }}; the rate shows how much traffic the outage costs. Searches still answer from the other sources and the stale cache."
+
   - name: helper2-platform
     rules:
       - alert: Helper2RateLimitInMemory
