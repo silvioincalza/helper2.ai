@@ -163,9 +163,9 @@ class ScoutPipelineIT {
         assertThat(JsonPath.<List<String>>read(detail, "$.relationships[*].verification")).containsExactly("UNVERIFIED");
         assertThat(detail).doesNotContain("10,000 companies").doesNotContain("free for commercial use");
 
-        String review = mvc.perform(get("/api/v1/admin/review-items").param("status", "OPEN").with(admin))
+        String review = mvc.perform(get("/api/v1/admin/review-items").param("status", "OPEN").param("size", "100").with(admin))
             .andReturn().getResponse().getContentAsString();
-        assertThat(JsonPath.<List<String>>read(review, "$[?(@.resourceId=='" + id + "')].kind"))
+        assertThat(JsonPath.<List<String>>read(review, "$.items[?(@.resourceId=='" + id + "')].kind"))
             .contains("ENRICHMENT_VALIDATION", "RELATIONSHIP_CANDIDATE");
 
         // Re-running is idempotent: same fingerprint, nothing changed, no new enrichment.

@@ -24,7 +24,7 @@ internals. Microservices would add network calls and deploys without a scaling n
    `SearchSource`s over PostgreSQL.
 4. **One class per use case.** What a caller can ask a module to do lives in its `usecase` sub-package, one
    class per entry point: `SearchResources` (search), `AskGuide` (guide), `RunScout` and `EnrichResource`
-   (scout), `GetResourceDetail`, `ListRecentResources`, `ListUpcomingEvents`, `ListModelFamilies`, `ReportIssue`,
+   (scout), `GetResourceDetail`, `ListRecentResources`, `ListUpcomingEvents`, `ReportIssue`,
    `ListReviewItems` and `ResolveReviewItem` (catalog). Controllers and schedulers call use cases for what a module does;
    a read-only lookup of a store or port (run history, source health) may stay direct. Models, ports and rules (for
    example `GuideValidator`, `PlannedQueries`, `EvidenceValidator`) stay at the module root, so adapters never

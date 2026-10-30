@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { api, ApiError } from '@/api/client';
 import type { ReviewStatus } from '@/api/types';
+import { Pagination } from '@/components/Pagination';
 import { SignIn } from '@/components/SignIn';
 import { useMe } from '@/context/MeContext';
 import { useApi } from '@/hooks/useApi';
@@ -11,6 +12,7 @@ import { formatDate } from '@/lib/format';
 
 /** How often the run listing is reloaded while a Scout run is RUNNING. */
 export const RUN_POLL_MS = 3000;
+const REVIEW_PAGE_SIZE = 20;
 
 export default function AdminPage() {
   const { t, i18n } = useTranslation();
@@ -18,8 +20,10 @@ export default function AdminPage() {
   const [params] = useSearchParams();
   const [status, setStatus] = useState<ReviewStatus>('OPEN');
   const [actionError, setActionError] = useState<'failed' | 'runInProgress' | null>(null);
+  const [page, setPage] = useState(0);
   const [busy, setBusy] = useState(false);
-  const items = useApi(`review/${status}/${isAdmin}`, (s) => (isAdmin ? api.listReviewItems(status, s) : Promise.resolve([])));
+  const items = useApi(`review/${status}/${page}/${isAdmin}`, (s) =>
+    (isAdmin ? api.listReviewItems(status, page, REVIEW_PAGE_SIZE, s) : Promise.resolve({ items: [], total: 0 })));
   const runs = useApi(`runs/${isAdmin}`, (s) => (isAdmin ? api.listScoutRuns(s) : Promise.resolve([])));
   useTitle(t('nav.admin'));
 
@@ -77,15 +81,15 @@ export default function AdminPage() {
         <h2 id="rq-h">{t('admin.reviewQueue')}</h2>
         <label>
           {t('admin.status')}{' '}
-          <select value={status} onChange={(e) => setStatus(e.target.value as ReviewStatus)}>
-            {(['OPEN', 'ACCEPTED', 'REJECTED'] as const).map((s) => <option key={s} value={s}>{t(`admin.reviewStatus.${s}`)}</option>)}
+          <select value={status} onChange={(e) => { setStatus(e.target.value as ReviewStatus); setPage(0); }}>
+            {(['OPEN', 'ACCEPTED', 'REJECTED', 'SUPERSEDED'] as const).map((s) => <option key={s} value={s}>{t(`admin.reviewStatus.${s}`)}</option>)}
           </select>
         </label>
         {items.loading ? <p role="status">{t('common.loading')}</p> : items.error !== undefined ? (
           <p role="alert">{t('admin.loadError')} <button type="button" className="btn" onClick={items.reload}>{t('common.retry')}</button></p>
-        ) : (items.data ?? []).length === 0 ? <p className="muted">{t('admin.queueEmpty')}</p> : (
+        ) : (items.data?.items ?? []).length === 0 ? <p className="muted">{t('admin.queueEmpty')}</p> : (
           <ul className="plain-list review-list">
-            {(items.data ?? []).map((it) => (
+            {(items.data?.items ?? []).map((it) => (
               <li key={it.id} className="card">
                 <p><span className="badge">{t(`admin.kind.${it.kind}`)}</span>{' '}
                   {it.resourceId ? <Link to={`/resource/${it.resourceId}`}>{it.resourceTitle ?? it.resourceId}</Link> : null}
@@ -103,6 +107,7 @@ export default function AdminPage() {
             ))}
           </ul>
         )}
+        {items.data && <Pagination page={page} size={REVIEW_PAGE_SIZE} total={items.data.total} onPage={setPage} />}
       </section>
 
       <section aria-labelledby="sr-h" className="panel">

@@ -20,7 +20,6 @@
     "main": "Main",
     "home": "Helper2.ai home",
     "search": "Search",
-    "models": "AI models",
     "saved": "Saved",
     "sources": "Sources",
     "admin": "Admin",
@@ -37,7 +36,8 @@
       "system": "follow system",
       "light": "light",
       "dark": "dark"
-    }
+    },
+    "terms": "Terms"
   },
   "footer": {
     "coverage": "Helper2.ai searches the sources listed on the Sources page, not the whole web.",
@@ -50,6 +50,7 @@
     "licenseLabel": "Apache-2.0 license (opens in a new tab)",
     "mission": "Mission",
     "privacy": "Privacy",
+    "terms": "Terms",
     "versionLabel": "Release notes for version {{version}} (opens in a new tab)"
   },
   "home": {
@@ -320,46 +321,6 @@
     "conflicts": "Conflicts between sources",
     "conflictOn": "Sources disagree on {{field}}"
   },
-  "models": {
-    "title": "Compare AI models",
-    "about": "About this comparison",
-    "lede": "Model families side by side. Every official spec links to the provider page it was read from, with the exact words and the date. Newest models come from the providers' official Hugging Face organisations.",
-    "error": "Could not load the model families.",
-    "pick": "Compare up to {{max}}",
-    "pickSome": "Pick at least one family to compare.",
-    "caption": "Official specs of each family's flagship model",
-    "spec": "Spec",
-    "notStated": "Not stated",
-    "source": "source",
-    "readOn": "read on {{date}}",
-    "best": "best among those stated",
-    "benchmarkNote": "Highlighted: best among the values stated. Benchmark scores are published by each provider on its own setup and are not strictly comparable.",
-    "newest": "Newest {{family}} models found by Scout",
-    "noneListed": "No models from this provider's Hugging Face organisation in the index yet (closed-model providers publish none there).",
-    "via": "via {{source}}",
-    "officialPage": "Official models page",
-    "field": {
-      "flagship": "Flagship model",
-      "openWeights": "Open weights",
-      "contextTokens": "Context window (tokens)",
-      "maxOutputTokens": "Max output (tokens)",
-      "inputUsdPerMTok": "Input price / 1M tokens",
-      "outputUsdPerMTok": "Output price / 1M tokens",
-      "inputModalities": "Input",
-      "outputModalities": "Output",
-      "license": "License",
-      "knowledgeCutoff": "Knowledge cutoff",
-      "released": "Released"
-    }
-  },
-  "askGuide": {
-    "title": "Not sure which model fits? Ask the guide",
-    "lede": "Type your question in the box above, or start from one of these. The guide searches every source and only recommends what it can back with a quote.",
-    "examples": "Example questions",
-    "compareExample": "{{a}} or {{b}} for coding agents?",
-    "example1": "An open-weight model I can run on my own GPU",
-    "example2": "A model for long documents in Italian"
-  },
   "compat": {
     "basis": {
       "TAG": "{{source}} lists the tag “{{evidence}}”",
@@ -484,7 +445,8 @@
     "reviewStatus": {
       "OPEN": "Open",
       "ACCEPTED": "Accepted",
-      "REJECTED": "Rejected"
+      "REJECTED": "Rejected",
+      "SUPERSEDED": "Superseded"
     },
     "kind": {
       "ENRICHMENT_VALIDATION": "Enrichment validation",
@@ -750,6 +712,10 @@
     "empty": "Nothing with a stated publication date in the last 7 days.",
     "error": "Could not load what’s new right now."
   },
+  "carousel": {
+    "pause": "Pause {{label}}",
+    "play": "Play {{label}}"
+  },
   "mission": {
     "title": "Our mission",
     "lede": "Help people find the right AI resource for their need, and show the proof behind every answer.",
@@ -772,6 +738,15 @@
         ]
       },
       {
+        "title": "How we mark AI text",
+        "items": [
+          "On the screen, every text written by an AI model has a label, such as “AI”, “AI reasoning”, “AI summary” or “Extracted by AI”.",
+          "In the page, the same text carries the HTML attribute data-ai-generated=\"true\", and data-ai-model with the model name when we know it.",
+          "In our API, a guide answer has an aiContent object that names the provider, the models and the fields they wrote. Catalog values carry an origin such as AI_SUMMARY or AI_EXTRACTED.",
+          "Quotes, titles and links are never written by AI. They come from the sources."
+        ]
+      },
+      {
         "title": "Who is behind it",
         "paragraphs": [
           "Helper2.ai is an independent project by Silvio Incalza, a software engineer based in Switzerland. The AI guide runs on NVIDIA Nemotron models served by Nebius Token Factory."
@@ -783,7 +758,7 @@
   },
   "privacy": {
     "title": "Privacy",
-    "updated": "Last updated: 26 October 2026",
+    "updated": "Last updated: 30 October 2026",
     "lede": "Helper2.ai collects as little as possible. You can search and ask the guide without an account. There are no ads, no analytics and no tracking cookies, and we never sell data.",
     "contactIntro": "Silvio Incalza, Switzerland, is responsible for this website. For any privacy question or request, write to",
     "sections": [
@@ -794,7 +769,15 @@
           "Your account, if you sign in with GitHub: your GitHub user ID (a number), your display name and the date you first signed in. We ask GitHub only for basic profile access. We never see your GitHub password.",
           "Saved items: if you are signed in, they are stored on our server with your account. If you are not signed in, they stay only in your browser.",
           "Reports you send about a resource: the text you write, linked to your account if you are signed in.",
-          "Technical data: your IP address is kept in memory for a short time to limit abuse (rate limits). Our servers also write technical logs to keep the service running and secure."
+          "Technical data: your IP address is kept in memory for a short time to limit abuse (rate limits). Our servers and our web gateway also write technical logs, which can include your IP address and the pages you request. We keep these logs for up to 3 months to keep the service running and secure, then delete them."
+        ]
+      },
+      {
+        "title": "Legal basis",
+        "items": [
+          "Answering your searches and guide questions, your account and your saved items: to provide the service you ask for (Art. 6(1)(b) GDPR).",
+          "Rate limits, technical logs and the security cookie: our legitimate interest in keeping the service secure and available (Art. 6(1)(f) GDPR).",
+          "Reports you send: our legitimate interest in keeping the information on Helper2.ai correct (Art. 6(1)(f) GDPR)."
         ]
       },
       {
@@ -802,7 +785,7 @@
         "items": [
           "A session cookie, only when you sign in, so you stay signed in.",
           "A security cookie (XSRF-TOKEN) that protects forms against cross-site request forgery.",
-          "Browser storage for your language choice and, if you are not signed in, your saved items.",
+          "Browser storage for your language, your light or dark theme, the AI tool you chose in the setup guide and, if you are not signed in, your saved items. This data stays in your browser and is not sent to us.",
           "All of these are strictly necessary for the site to work. We use no advertising, analytics or third-party cookies."
         ]
       },
@@ -810,8 +793,9 @@
         "title": "Who receives data",
         "items": [
           "Search sources: to find results, your search text is sent to the sources that answer live, such as GitHub, Hugging Face, npm, arXiv and Tavily. The Sources page lists them all. Each provider handles the request under its own privacy policy, and some of them are in the United States.",
-          "AI models: guide questions, and searches written in a language other than English, are sent to NVIDIA Nemotron models on Nebius Token Factory. We send only the text, never your account data.",
+          "AI models: guide questions, and searches written in a language other than English, are sent to NVIDIA Nemotron models on Nebius Token Factory, processed in the European Union. We send only the text, never your account data.",
           "GitHub, when you choose to sign in with it.",
+          "Transfers abroad: some search sources, and GitHub, are in the United States. Where a provider is certified under the Swiss-US and EU-US Data Privacy Framework, the transfer relies on that certification. Otherwise, we send your search text abroad only because it is needed to give you the results you asked for (Art. 17(1)(b) FADP, Art. 49(1)(b) GDPR).",
           "Hosting: our servers are in Germany (European Union)."
         ]
       },
@@ -819,6 +803,7 @@
         "title": "How long we keep data",
         "items": [
           "Cached searches and guide answers: up to 30 minutes and 24 hours.",
+          "Technical logs: up to 3 months.",
           "Your account and saved items: until you remove them or ask us to delete them.",
           "Reports: until they are handled. If your account is deleted, your reports stay without your name."
         ]
@@ -836,6 +821,72 @@
         ]
       }
     ]
+  },
+  "terms": {
+    "title": "Terms of use",
+    "updated": "Last updated: 30 October 2026",
+    "lede": "These terms apply when you use the Helper2.ai website. By using it, you accept them. If you do not accept them, please do not use the site.",
+    "contactIntro": "Helper2.ai is run by Silvio Incalza, Switzerland. For any question about these terms, write to",
+    "sections": [
+      {
+        "title": "The service",
+        "items": [
+          "Helper2.ai is a free search over public sources about the AI ecosystem, with an AI guide that answers questions from those results.",
+          "We may change, limit or stop the service, or parts of it, at any time and without notice.",
+          "You can use Helper2.ai without an account. If you sign in with GitHub, you can delete your account at any time by writing to us."
+        ]
+      },
+      {
+        "title": "No guarantee on results and answers",
+        "items": [
+          "Results come from third-party sources, and guide answers are written by AI models. Both can be wrong, incomplete or out of date.",
+          "Nothing on Helper2.ai is professional, legal, financial, security or other advice. Check important information at the original source before you rely on it.",
+          "The service is provided as it is and as available. We do not promise that it is always available or free of errors."
+        ]
+      },
+      {
+        "title": "Third-party content and links",
+        "items": [
+          "Helper2.ai links to websites, code, models and tools owned by others. We do not control them and are not responsible for their content, availability, licences or security.",
+          "Your use of a linked resource is governed by its owner's terms and licence. Check the licence before you use any code or model."
+        ]
+      },
+      {
+        "title": "Acceptable use",
+        "items": [
+          "Do not overload, attack or try to break into the service, and do not try to get around rate limits or other protections.",
+          "Do not scrape or copy the service in bulk with automated tools.",
+          "Do not use Helper2.ai for anything illegal, and do not send reports that are abusive or deliberately false.",
+          "We may block access for anyone who breaks these rules."
+        ]
+      },
+      {
+        "title": "Liability",
+        "paragraphs": [
+          "To the extent the law allows, we exclude all liability for damage that results from using Helper2.ai, from relying on results or guide answers, or from the service being unavailable. This does not limit liability for intent or gross negligence (Art. 100 Swiss Code of Obligations) or any other liability that cannot be excluded by law."
+        ]
+      },
+      {
+        "title": "Intellectual property",
+        "paragraphs": [
+          "Results, titles and descriptions belong to their owners and are shown to help you find them. The Helper2.ai name and logo belong to Silvio Incalza. The source code has its own licence, linked in the footer."
+        ]
+      },
+      {
+        "title": "Law and place of jurisdiction",
+        "paragraphs": [
+          "These terms are governed by Swiss law. The courts at the seat of the operator in Switzerland are competent, unless mandatory law gives you the right to go to court elsewhere."
+        ]
+      },
+      {
+        "title": "Changes",
+        "paragraphs": [
+          "We may update these terms. If they change, we update this page and the date at the top. Using the site after a change means you accept the new terms."
+        ]
+      }
+    ],
+    "privacyIntro": "How we handle personal data is explained on the",
+    "privacyLink": "Privacy page"
   },
   "how": {
     "title": "How the guide answers",

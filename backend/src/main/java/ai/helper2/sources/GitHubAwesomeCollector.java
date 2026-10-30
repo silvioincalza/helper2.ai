@@ -1,5 +1,6 @@
 package ai.helper2.sources;
 
+import ai.helper2.platform.http.ObservedHttp;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.scout.Collector;
 import ai.helper2.search.PopularityKind;
@@ -154,11 +155,15 @@ public class GitHubAwesomeCollector implements Collector {
         return new ArrayList<>(unique.values()).subList(0, Math.min(unique.size(), limits.maxEntriesPerPass()));
     }
 
+    /** Big awesome lists are long Markdown files; anything past this is not a list worth parsing. */
+    static final int README_MAX_BYTES = 5 * 1024 * 1024;
+
     private String readme(String list) {
         String[] parts = list.split("/", 2);
         return HttpClients.getText(() -> http.get()
             .uri("/repos/{owner}/{repo}/readme", parts[0], parts[1])
             .header("Accept", "application/vnd.github.raw+json")
+            .attributes(ObservedHttp.maxResponseBytes(README_MAX_BYTES))
             .retrieve().body(String.class), clock);
     }
 

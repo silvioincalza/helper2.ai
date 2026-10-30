@@ -15,9 +15,11 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 ## 2. Launch hardening
 
 ### Product and legal
-- Privacy policy and cookie notice: what is stored (session, optional account id and name, bookmarks,
-  reports; no query logs).
-- Imprint and contact (EU), terms of use. The Sources page already lists attributions.
+- Imprint and contact (EU). The Privacy and Terms pages exist; the Sources page lists attributions.
+- Lawyer review of the Privacy and Terms pages and of the AI Act reading in
+  [ADR 0038](adr/0038-ai-content-marking.md): provider role, metadata-only marking, deadline.
+- Check each US source and GitHub for Data Privacy Framework certification, as the Privacy page states.
+- Make server and Traefik logs delete after 3 months, as the Privacy page states.
 - Review each source's terms again for commercial use.
 - Tavily: get a written OK for public display of results, or unset `H2_TAVILY_API_KEY`.
 - SEO: `robots.txt`, `sitemap.xml`, metadata and JSON-LD for detail pages. Detail pages are not crawlable
@@ -121,6 +123,10 @@ Open items:
 - Alert when the share of kept picks ranked 9+ grows (`helper2.guide.picks{rank="9+"}`): text written to be picked
   passes the quote gate ([ADR 0015](adr/0015-ai-guide-evidence-gate.md)). The counter exists; the alert and the
   Grafana panel do not.
+- **Signed provenance manifest for AI-written text** (C2PA-style): sign each guide answer with its model, time and
+  AI-written fields, so the origin survives outside our page and API. Today the marking is metadata only and is
+  lost on copy ([ADR 0038](adr/0038-ai-content-marking.md)). Do it when a standard and tooling for text exist, or
+  if a regulator finds metadata alone too weak.
 - Run `scripts/eval-guide.mjs --adversarial` in a scheduled job after each deploy; today it is run by hand.
 - A question from a shared `?ask=` link is asked on page load. Asking only after a click would stop a link from
   spending model calls for its visitors (one cached answer per question limits it today).

@@ -30,7 +30,8 @@ export default function HomePage() {
   const asked = askedQuestion(sp);
   useTitle(state.q);
 
-  const go = (next: SearchState, ask: string) => setSp(homeParams(next, ask));
+  // A filter, sort or page change keeps the reader where they are; only a new page starts at the top.
+  const go = (next: SearchState, ask: string) => setSp(homeParams(next, ask), { preventScrollReset: true });
   const update = (next: SearchState) => go(next, asked);
   const ask = (question: string) => {
     const q = clampQuestion(question);
@@ -194,10 +195,11 @@ function GuideSection({ question, onClose, onRetry }: { question: string; onClos
     setSteps([]);
     setError(null);
     setBusy(true);
-    setRefinement((prev) => ({
-      clarification: r.clarification ?? prev.clarification,
-      drop: [...new Set([...(prev.drop ?? []), ...(r.drop ?? [])])],
-    }));
+    setRefinement((prev) => {
+      const clarification = r.clarification ?? prev.clarification;
+      const drop = [...new Set([...(prev.drop ?? []), ...(r.drop ?? [])])];
+      return clarification === undefined ? { drop } : { clarification, drop };
+    });
   };
 
   useEffect(() => {

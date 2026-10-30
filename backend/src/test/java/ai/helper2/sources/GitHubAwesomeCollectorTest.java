@@ -121,6 +121,17 @@ class GitHubAwesomeCollectorTest {
     }
 
     @Test
+    void aReadmeLargerThanTheDefaultResponseCapIsStillRead() {
+        routes();
+        String padded = README + "\n<!-- " + "x".repeat(3 * 1024 * 1024) + " -->\n";
+        server.route("/repos/acme/awesome-llm/readme", FixtureServer.Reply.ok(padded));
+
+        CollectedBatch batch = collector(new FakeModel(), 200, "t").collect(null, null, 500);
+
+        assertThat(batch.getHits()).extracting(SourceHit::getExternalId).containsExactly("openinterpreter/openinterpreter");
+    }
+
+    @Test
     void readsOnlyListsNamedAwesomeAndAsksGraphQlForAllEntriesInOneCall() {
         routes();
         collector(new FakeModel(), 200, "t").collect(null, null, 500);

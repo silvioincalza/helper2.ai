@@ -135,19 +135,39 @@ HELM_ARGS = helper2 $(CHART) -n $(NS) -f $(CHART)/values-$(ENV).yaml \
 	--set image.repository=$(IMAGE) --set image.tag=$(TAG) --set-file envFile=$(ENV)/app.env
 
 # CI runs this on every pull request; no cluster needed. Each environment's values (and prod with the
-# off-site backup on) with a fixture app.env, linted and checked against the Kubernetes schemas.
-chart-check: ## helm lint + helm template | kubeconform, for staging and prod
+# off-site backup and the PrometheusRule on) with a fixture app.env, linted and checked against the Kubernetes
+# schemas, and Redis rendered with AOF (no RDB snapshots) on its own PersistentVolumeClaim (ADR 0005). The
+# PrometheusRule is checked against its CRD schema from the CRDs-catalog, pinned to a commit, and must hold the
+# alerts of deploy/monitoring/helper2-rules.yaml (read through the chart's files/ symlink).
+CRD_SCHEMAS := https://raw.githubusercontent.com/datreeio/CRDs-catalog/3eb90d47aba8d61919d4419dd38301536e32a94b/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json
+chart-check: ## helm lint + helm template | kubeconform, for staging and prod; Redis AOF + PVC; PrometheusRule = rule file; an envFile key without H2_ fails
 	@set -euo pipefail; \
-	env=$$(mktemp); trap 'rm -f "$$env"' EXIT; \
+	env=$$(mktemp); bad=$$(mktemp); trap 'rm -f "$$env" "$$bad"' EXIT; \
 	printf 'H2_DATABASE_PASSWORD=ci\nH2_REDIS_PASSWORD=00000000000000000000000000000000\n' > "$$env"; \
+	echo "== envFile with a key outside ^H2_[A-Z0-9_]+$$ must not render"; \
+	{ cat "$$env"; echo 'NEBIUS_API_KEY=stale'; } > "$$bad"; \
+	if out=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --set-file envFile="$$bad" 2>&1); then \
+		echo "chart rendered an envFile with the key NEBIUS_API_KEY"; exit 1; \
+	fi; \
+	grep -q 'NEBIUS_API_KEY' <<<"$$out" || { echo "$$out"; echo "render failed without naming the key"; exit 1; }; \
 	offsite=(--set backup.offsite.enabled=true --set backup.offsite.endpoint=https://example.r2.cloudflarestorage.com --set backup.offsite.bucket=ci); \
-	for v in "staging" "prod" "prod $${offsite[*]}"; do \
+	for v in "staging" "prod" "prod $${offsite[*]} --set monitoring.prometheusRule.enabled=true"; do \
 		set -- $$v; e=$$1; shift; \
 		echo "== $$e $$*"; \
 		args=(-f $(CHART)/values-$$e.yaml --set image.tag=000000000000 --set-file envFile=$$env "$$@"); \
 		helm lint --strict $(CHART) "$${args[@]}"; \
-		helm template helper2 $(CHART) -n helper2-$$e "$${args[@]}" | kubeconform -strict -summary; \
-	done
+		helm template helper2 $(CHART) -n helper2-$$e "$${args[@]}" \
+			| kubeconform -strict -summary -schema-location default -schema-location '$(CRD_SCHEMAS)'; \
+		redis=$$(helm template helper2 $(CHART) -n helper2-$$e "$${args[@]}" --show-only templates/redis.yaml); \
+		grep -qF -- '--save "" --appendonly yes --appendfsync everysec' <<<"$$redis" \
+			|| { echo "Redis must run with AOF and no RDB snapshots (--save \"\" --appendonly yes --appendfsync everysec)"; exit 1; }; \
+		grep -q '^  volumeClaimTemplates:' <<<"$$redis" || { echo "Redis must keep /data on a PersistentVolumeClaim"; exit 1; }; \
+	done; \
+	echo "== PrometheusRule holds deploy/monitoring/helper2-rules.yaml"; \
+	rule=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --set-file envFile=$$env \
+		--set monitoring.prometheusRule.enabled=true --show-only templates/prometheusrule.yaml); \
+	diff <(grep -oE 'alert: [A-Za-z0-9]+' <<<"$$rule") <(grep -oE 'alert: [A-Za-z0-9]+' $(ROOT)/deploy/monitoring/helper2-rules.yaml) \
+		|| { echo "the PrometheusRule must hold the alerts of deploy/monitoring/helper2-rules.yaml"; exit 1; }
 
 check-env:
 	@test -f $(ENV)/app.env || { echo "$(ENV)/app.env missing: copy app.env.example and fill it"; exit 1; }

@@ -1,7 +1,7 @@
 # Flowchart: EnrichResource.enrich for one resource, from loading its source text to stored assertions and review items.
-# Shows the UNCHANGED skip, the daily cap, the error outcomes, EvidenceValidator's rules and what is written.
+# Shows the UNCHANGED skip (fingerprint of text, prompt version and model), the daily cap, the error outcomes, EvidenceValidator's rules and what is written.
 # Source of truth: backend/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt (EnrichResource),
-#   backend/src/main/kotlin/ai/helper2/scout/Enrichment.kt (EvidenceValidator),
+#   backend/src/main/kotlin/ai/helper2/scout/Enrichment.kt (EvidenceValidator, EnrichmentMaterial.fingerprintFor),
 #   backend/src/main/java/ai/helper2/scout/internal/SpringAiEnrichmentModel.java, JdbcEnrichmentStore.java,
 #   backend/src/main/java/ai/helper2/catalog/ReviewQueue.java.
 # Render: cd docs/diagrams && d2 fmt flow-0019-evidence-gated-enrichment.d2 && d2 flow-0019-evidence-gated-enrichment.d2 flow-0019-evidence-gated-enrichment.svg
@@ -13,7 +13,7 @@ direction: down
 start: "enrich(resourceId)" {class: app}
 load: "Source records loaded?\n(title + description)" {class: decision}
 noMat: "REJECTED\n(nothing to cite)" {class: fail}
-same: "Same input fingerprint as\nthe last VALIDATED/PARTIAL run?" {class: decision}
+same: "Same fingerprint (text, prompt\nversion, model) as the last run\nthat judged an answer?" {class: decision}
 unchanged: "UNCHANGED: no model call,\nnothing recorded;\nrun slot given back" {class: end}
 budget: "Enrichment daily budget\nunit left? (300)" {class: decision}
 call: "Reasoning model, enrich-v3,\nthinking off, 8192 max tokens" {class: ai}
@@ -45,7 +45,7 @@ rules: EvidenceValidator, per proposed item {
 }
 
 outcome: "Run outcome:\nREJECTED (nothing accepted),\nVALIDATED (no error) or PARTIAL" {class: app}
-save: "Save run; delete older\nAI_EXTRACTED field assertions;\ninsert non-rejected items" {class: data}
+save: "Save run; supersede older OPEN items;\ndelete older AI_EXTRACTED fields and\nunreviewed AI relationships;\ninsert non-rejected items" {class: data}
 review: "Errors or CONFLICTING → ENRICHMENT_VALIDATION;\nUNVERIFIED relationship → RELATIONSHIP_CANDIDATE\n(ReviewQueue)" {class: data}
 
 start -> load

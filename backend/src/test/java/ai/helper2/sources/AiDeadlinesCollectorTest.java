@@ -134,4 +134,17 @@ class AiDeadlinesCollectorTest {
         assertThat(AiDeadlinesCollector.nextEdition("conf", running, today, Instant.now(), 0)).isPresent();
         assertThat(AiDeadlinesCollector.nextEdition("conf", running, LocalDate.parse("2026-10-31"), Instant.now(), 0)).isEmpty();
     }
+
+    @Test
+    void aConferenceLinkThatIsNoWebLinkIsShownInItsCanonicalForm() {
+        String gitLink = """
+            - title: Conf
+              year: 2026
+              link: git+https://github.com/acme/conf.git
+              start: '2026-12-01'
+            """;
+
+        assertThat(AiDeadlinesCollector.nextEdition("conf", gitLink, LocalDate.parse("2026-10-27"), Instant.now(), 0))
+            .hasValueSatisfying(h -> assertThat(h.getUrl()).isEqualTo(URI.create("https://github.com/acme/conf")));
+    }
 }

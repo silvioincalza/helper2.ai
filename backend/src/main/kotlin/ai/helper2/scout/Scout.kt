@@ -87,8 +87,11 @@ interface EnrichmentStore {
     /** null when the resource has no retrievable material. */
     fun load(resourceId: UUID): EnrichmentMaterial?
 
-    /** Input fingerprint of the resource's latest run when that run succeeded (VALIDATED or PARTIAL); else null. */
-    fun lastSuccessfulFingerprint(resourceId: UUID): String?
+    /**
+     * Input fingerprint of the resource's latest finished run that judged the model's answer (any outcome but
+     * LLM_UNAVAILABLE and FAILED); null when there is none.
+     */
+    fun lastFingerprint(resourceId: UUID): String?
 
     /** Resources other than [resourceId] titled exactly one of [titles] (case-insensitive), by lower-case title. */
     fun resourcesTitled(titles: Collection<String>, resourceId: UUID): Map<String, UUID>

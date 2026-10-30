@@ -77,4 +77,3 @@ The guards run in this order. Values are defaults; each has an `H2_` variable.
 
 ## Roadmap
 - [In-memory answer cache, single-flight and concurrency limit stay per replica, on purpose](../roadmap.md#4-more-than-one-replica)
-- [Alert when the guide budget falls below 20%](../roadmap.md#3-operations)

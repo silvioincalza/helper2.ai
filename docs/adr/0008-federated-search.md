@@ -67,5 +67,4 @@ so the list of sources must be disclosed. Two sources can describe the same reso
 
 ## Roadmap
 - [Source cooldowns and source health stay per replica, on purpose](../roadmap.md#4-more-than-one-replica).
-- [Alert rules for source failure rate and partial-result rate](../roadmap.md#3-operations).
 - [Resilience4j for outbound calls (rate limit, retry with backoff)](../roadmap.md#5-ai-quality-and-cost).

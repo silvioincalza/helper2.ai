@@ -20,9 +20,9 @@ redis: Redis {class: data}
 spa: SinglePageApp {class: app}
 ctl: Controllers {class: app}
 
-visit: Direct visit to /models {
-  browser -> cf: "GET https://helper2.ai/models" {class: hot}
-  cf -> tomcat: "GET /models, X-Forwarded-For: client" {class: hot}
+visit: Direct visit to /sources {
+  browser -> cf: "GET https://helper2.ai/sources" {class: hot}
+  cf -> tomcat: "GET /sources, X-Forwarded-For: client" {class: hot}
   tomcat -> sec: "remoteAddr = client address"
   sec -> spa: "no controller matched"
   spa -> browser: "index.html, Cache-Control: no-cache,\nCSP, Set-Cookie XSRF-TOKEN" {class: hot}

@@ -2,6 +2,7 @@ package ai.helper2.scout.web;
 
 import ai.helper2.api.generated.AdminApi;
 import ai.helper2.api.generated.model.ReviewItemDto;
+import ai.helper2.api.generated.model.ReviewItemPageDto;
 import ai.helper2.api.generated.model.ReviewResolutionDto;
 import ai.helper2.api.generated.model.ReviewStatusDto;
 import ai.helper2.api.generated.model.ScoutRunDto;
@@ -41,9 +42,10 @@ class AdminController implements AdminApi {
     }
 
     @Override
-    public ResponseEntity<List<ReviewItemDto>> listReviewItems(@Nullable ReviewStatusDto status) {
-        return ResponseEntity.ok(items.list(status == null ? null : ReviewQueue.Status.valueOf(status.getValue()))
-            .stream().map(AdminController::dto).toList());
+    public ResponseEntity<ReviewItemPageDto> listReviewItems(@Nullable ReviewStatusDto status, Integer page, Integer size) {
+        ReviewQueue.Page found = items.list(status == null ? null : ReviewQueue.Status.valueOf(status.getValue()), page, size);
+        return ResponseEntity.ok(new ReviewItemPageDto(found.items().stream().map(AdminController::dto).toList(),
+            Math.toIntExact(found.total())));
     }
 
     @Override

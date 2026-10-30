@@ -1,4 +1,4 @@
-# 0027 — Runtime topology: Helm chart, three replicas on prod, Cloudflare tunnel, network policy (egress), Redis auth, backups
+# 0027 — Runtime topology: Helm chart, three replicas on prod, Cloudflare tunnel, per-workload network policies, Redis auth, backups
 
 **Status.** Accepted (2026-10-27). **Builds on:** [0001](0001-stack-and-runtime.md), [0004](0004-persistence-and-provenance.md), [0005](0005-redis-disposable-cache.md), [0007](0007-configuration-and-secrets.md), [0018](0018-scout-runner.md), [0023](0023-identity-and-admin.md), [0024](0024-http-edge-protection.md)
 
@@ -14,9 +14,12 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
    `deployer` ServiceAccount, and in prod the `www` → apex 301 redirect. The Helm chart `deploy/helm/helper2`
    owns the workloads: one release `helper2` per namespace, values `values-staging.yaml` / `values-prod.yaml`.
 2. **Workloads.** `helper2` Deployment, `postgres` StatefulSet
-   (5 Gi `local-path` volume), `redis` Deployment, `cloudflared` Deployment, and in prod the `pg-backup`
-   CronJob. Every container runs as non-root with a read-only root file system, no capabilities and the
-   `RuntimeDefault` seccomp profile.
+   (5 Gi `local-path` volume), `redis` StatefulSet (1 Gi `local-path` volume for its append-only file),
+   `cloudflared` Deployment, and in prod the `pg-backup`
+   CronJob. Both stateful workloads run one replica on a ReadWriteOnce volume from `volumeClaimTemplates`, with
+   `fsGroup` so the non-root user can write it. Every container runs as non-root with a read-only root file system, no capabilities and the
+   `RuntimeDefault` seccomp profile. Every pod runs as the ServiceAccount `helper2`, which has no RoleBinding,
+   with `automountServiceAccountToken: false`: no workload calls the Kubernetes API, so no pod holds a token.
 3. **App replicas.** `app.replicas`: 3 on prod, 1 on staging. `RollingUpdate` with `maxUnavailable: 0` and
    `maxSurge: 1`: one new pod at a time, and an old pod goes only when the new one is ready. Topology spread over
    `kubernetes.io/hostname` (`ScheduleAnyway`). Above 1 replica a PodDisruptionBudget keeps `replicas - 1` available
@@ -37,8 +40,15 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
    (`H2_MANAGEMENT_PORT`). Probes and the Prometheus scrape use 8081, which the tunnel never reaches.
    Startup probe: every 5 s, up to `app.startupSeconds` (300 s); then readiness every 5 s and liveness
    every 10 s.
-6. **Network policy.** Ingress: app ← `cloudflared` on 8080; app ← namespace `observability` on 8081;
-   Postgres and Redis ← app; Postgres ← `pg-backup`. Egress is denied by default, then allowed per workload:
+6. **Network policy.** One policy per workload and direction, each naming only the peers that workload needs.
+   Ingress is denied by default, then allowed per workload:
+   - app (`ingress-app`): `cloudflared` (or the Ingress controller's namespace) on 8080, namespace
+     `observability` on 8081;
+   - Postgres (`ingress-postgres`): the app and `pg-backup` on 5432;
+   - Redis (`ingress-redis`): the app on 6379;
+   - `cloudflared` and `pg-backup`: nothing.
+
+   Egress is denied by default, then allowed per workload:
    - app: DNS, Postgres 5432, Redis 6379, the OpenTelemetry collector (`observability`, 4318), and the
      internet on 443 only, with the private ranges excluded;
    - `cloudflared`: DNS, the app on 8080, the internet on 7844;
@@ -46,8 +56,9 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
    - Postgres and Redis: nothing.
 7. **Redis auth.** `redis.auth.enabled: true`. The password is `H2_REDIS_PASSWORD` from `helper2-env` (or
    `existingSecret`); it reaches `redis-server` as `requirepass` on standard input, never in the command line.
-   Redis has no data on disk ([0005](0005-redis-disposable-cache.md)); a Redis restart signs the admin out and
-   resets rate-limit windows.
+   Redis is a single-replica StatefulSet with an append-only file on its own PersistentVolumeClaim
+   ([0005](0005-redis-disposable-cache.md)): a Redis restart keeps sessions, rate-limit windows and cached
+   answers. The volume holds only cache data and is not backed up.
 8. **Backups (prod).** `pg-backup` runs at 02:30 Europe/Zurich: `pg_dump --no-owner | gzip` to the Network File System (NFS)
    volume `pg-backup` (kept on `helm uninstall`), 7 days kept. With `backup.offsite.enabled`, rclone then
    copies new dumps to Cloudflare R2 (it never deletes there; the bucket's lifecycle rule sets retention).
@@ -58,19 +69,23 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
 
 ## Consequences
 - No inbound port is open on the cluster; Cloudflare is the only way in.
-- A compromised app pod can reach only the internet on 443, its own database and cache, and the trace collector.
+- A compromised app pod can reach only the internet on 443, its own database and cache, and the trace collector,
+  and holds no Kubernetes API credential.
 - A deploy or a node drain keeps the site up on prod, and one pod failing leaves two serving. Staging (1 replica)
   still has no failover, but a deploy there also starts the new pod before the old one stops.
 - A deploy takes longer (pods start one after another, startup up to 300 s each).
 - Postgres connections: (replicas + 1 during a deploy) × `H2_DATABASE_POOL_SIZE` (10) = 40 on prod, under the default
   `max_connections` of 100.
-- Never run `helm uninstall`: it deletes the Postgres StatefulSet. The data volume is not owned by the release.
+- Never run `helm uninstall`: it deletes the Postgres and Redis StatefulSets. Their volumes are not owned by the
+  release and stay.
 - The dumps stay in the same cluster until the off-site copy is turned on, and no restore has been tested.
 - Plain HTTP inside the cluster is acceptable while both sites are anonymous; sign-in changes that.
 
 ## Alternatives considered
 - Ingress controller with a public Internet Protocol (IP) address — opens a port on the cluster and needs certificate management.
 - One replica with `Recreate` — a short outage on every deploy and no failover.
+- Redis as a Deployment with `Recreate` and a separate PersistentVolumeClaim — same single pod, but the claim is one
+  more template to keep in step, and a StatefulSet already guarantees that two pods never share the volume.
 - Horizontal Pod Autoscaler — the load is small and steady; a fixed count keeps the connection budget known.
 - Managed PostgreSQL — monthly cost and data outside the owner's cluster for a small database.
 - Kustomize — no release history, no `--rollback-on-failure` and no value checks; Helm has all three.
@@ -78,7 +93,7 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
 ## Code
 - `deploy/helm/helper2/values.yaml`, `values-staging.yaml`, `values-prod.yaml` — settings.
 - `deploy/helm/helper2/templates/app.yaml`, `postgres.yaml`, `redis.yaml`, `cloudflared.yaml`, `backup.yaml`,
-  `networkpolicy.yaml`, `secret.yaml`, `_helpers.tpl` — workloads and policies.
+  `networkpolicy.yaml`, `serviceaccount.yaml`, `secret.yaml`, `_helpers.tpl` — workloads and policies.
 - `deploy/k8s/terraform/main.tf`, `rbac.tf` — namespace, tunnel, DNS, redirect, deployer.
 - `deploy/k8s/Makefile`, `deploy/k8s/README.md` — deploy, rollback, backup and restore steps.
 

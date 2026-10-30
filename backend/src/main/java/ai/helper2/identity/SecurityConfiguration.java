@@ -62,7 +62,7 @@ class SecurityConfiguration {
                 a.requestMatchers("/actuator/**").hasRole("ADMIN")
                     .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                     .requestMatchers("/api/v1/me/bookmarks", "/api/v1/me/bookmarks/**").authenticated()
-                    .requestMatchers(HttpMethod.GET, "/api/v1/search", "/api/v1/recent", "/api/v1/model-families", "/api/v1/events/upcoming", "/api/v1/resources/**", "/api/v1/sources", "/api/v1/me").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/v1/search", "/api/v1/recent", "/api/v1/events/upcoming", "/api/v1/resources/**", "/api/v1/sources", "/api/v1/me").permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/v1/resources/*/reports", "/api/v1/resources/*/guide", "/api/v1/guide", "/api/v1/guide/stream").permitAll()
                     .requestMatchers("/api/**").denyAll()
                     .anyRequest().permitAll();

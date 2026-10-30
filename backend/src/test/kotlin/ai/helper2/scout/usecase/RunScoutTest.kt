@@ -88,7 +88,7 @@ class RunScoutTest {
     /** Material with some text, never enriched before, no known relationship targets; nothing is stored. */
     private open class FakeEnrichmentStore : EnrichmentStore {
         override fun load(resourceId: UUID): EnrichmentMaterial? = material()
-        override fun lastSuccessfulFingerprint(resourceId: UUID): String? = null
+        override fun lastFingerprint(resourceId: UUID): String? = null
         override fun resourcesTitled(titles: Collection<String>, resourceId: UUID): Map<String, UUID> = emptyMap()
         override fun save(resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: java.time.Instant,
                           result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?) {}
@@ -228,7 +228,7 @@ class RunScoutTest {
         var calls = 0
         val saved = mutableListOf<EnrichmentOutcome>()
         val store = object : FakeEnrichmentStore() {
-            override fun lastSuccessfulFingerprint(resourceId: UUID) = "fp"
+            override fun lastFingerprint(resourceId: UUID) = material().fingerprintFor(model(true))
             override fun save(resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: java.time.Instant,
                               result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?) {
                 saved += outcome
@@ -257,7 +257,7 @@ class RunScoutTest {
         val unchanged = mutableSetOf<UUID>()
         val store = object : FakeEnrichmentStore() {
             val enriched = mutableListOf<UUID>()
-            override fun lastSuccessfulFingerprint(resourceId: UUID) = if (resourceId in unchanged) "fp" else null
+            override fun lastFingerprint(resourceId: UUID) = if (resourceId in unchanged) material().fingerprintFor(model(true)) else null
             override fun save(resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: java.time.Instant,
                               result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?) {
                 enriched += resourceId
