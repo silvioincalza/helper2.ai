@@ -129,14 +129,32 @@ class ResourceStoreIT {
         store.upsert(merge(hit("npm", pkg, null, Set.of(), List.of())), DataOrigin.OBSERVED, LIVE);
         assertThat(store.findResource(oldId)).isPresent();
 
-        // Later the package states its repository: the record now belongs to the repository's resource.
-        store.upsert(merge(hit("npm", pkg, repo, Set.of(), List.of())), DataOrigin.OBSERVED, LIVE);
+        // Later the package is found with its repository: the record now belongs to the repository's resource.
+        store.upsert(merge(hit("npm", pkg, repo, Set.of(), List.of()), hit("github", repo, null, Set.of(), List.of())),
+            DataOrigin.OBSERVED, LIVE);
 
         assertThat(store.findResource(oldId)).as("orphaned observed row").isEmpty();
         assertThat(store.ownerOfRecordUrl(oldId)).contains(newId);
         var detail = details.find(oldId).orElseThrow();
         assertThat(detail.card().getId().getValue()).isEqualTo(newId);
         assertThat(details.find(newId).orElseThrow().card().getId().getValue()).isEqualTo(newId);
+    }
+
+    @Test
+    void twoPackagesOfOneMonorepoAreTwoResources() {
+        String repo = "https://github.com/acme/mono-" + run;
+        String first = "https://npmjs.com/package/@acme/first-" + run;
+        String second = "https://npmjs.com/package/@acme/second-" + run;
+
+        store.upsert(merge(hit("npm", first, repo, Set.of(), List.of()), hit("npm", second, repo, Set.of(), List.of()),
+            hit("github", repo, null, Set.of(), List.of())), DataOrigin.OBSERVED, LIVE);
+
+        UUID firstId = ResourceId.of(CanonicalUrl.of(first)).getValue();
+        UUID secondId = ResourceId.of(CanonicalUrl.of(second)).getValue();
+        assertThat(store.recordsOf(firstId)).singleElement().satisfies(r -> assertThat(r.sourceId()).isEqualTo("npm"));
+        assertThat(store.recordsOf(secondId)).hasSize(1);
+        assertThat(store.ownerOfRecordUrl(firstId)).contains(firstId);
+        assertThat(store.ownerOfRecordUrl(secondId)).contains(secondId);
     }
 
     private UUID report(UUID resourceId) {
@@ -168,7 +186,8 @@ class ResourceStoreIT {
         store.upsert(merge(hit("npm", pkg, null, Set.of(), List.of())), DataOrigin.OBSERVED, LIVE);
         UUID report = report(oldId);
 
-        store.upsert(merge(hit("npm", pkg, repo, Set.of(), List.of())), DataOrigin.OBSERVED, LIVE);
+        store.upsert(merge(hit("npm", pkg, repo, Set.of(), List.of()), hit("github", repo, null, Set.of(), List.of())),
+            DataOrigin.OBSERVED, LIVE);
 
         assertThat(store.findResource(oldId)).as("merged observed row").isEmpty();
         assertThat(reportOwner(report)).isEqualTo(newId);
@@ -188,8 +207,8 @@ class ResourceStoreIT {
         UUID report = report(oldId);
 
         // One record now names a repository, the other a different page: no single resource took this one's place.
-        store.upsert(merge(hit("npm", pkg, repo, Set.of(), List.of()), hit("npm", secondId, other, null, Set.of(), List.of())),
-            DataOrigin.OBSERVED, LIVE);
+        store.upsert(merge(hit("npm", pkg, repo, Set.of(), List.of()), hit("github", repo, null, Set.of(), List.of()),
+            hit("npm", secondId, other, null, Set.of(), List.of())), DataOrigin.OBSERVED, LIVE);
 
         assertThat(store.recordsOf(oldId)).isEmpty();
         assertThat(store.findResource(oldId)).as("kept for its report").isPresent();
