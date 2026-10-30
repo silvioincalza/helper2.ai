@@ -61,7 +61,11 @@ export function useGuideStream(): GuideStream {
     api.askGuideStream(JSON.parse(request) as GuideRequest, (step) => update((r) => ({ ...r, steps: [...r.steps, step] })), ctrl.signal)
       .then((answer) => update((r) => ({ ...r, answer, done: true })))
       .catch((error: unknown) => update((r) => ({ ...r, error, done: true })));
-    return () => ctrl.abort();
+    // Forget this run when it is replaced: coming back to the same request (Back) starts clean, not done.
+    return () => {
+      ctrl.abort();
+      setRun((r) => (r.id === runId ? fresh('') : r));
+    };
   }, [request, attempt]);
 
   // Until the new request reports anything, the last one's steps and answer are not shown.
