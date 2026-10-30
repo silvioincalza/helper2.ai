@@ -164,3 +164,12 @@ backup:
     # Secret with access_key_id and secret_access_key (a token with Object Read & Write on this bucket
     # only), created outside the chart.
     secret: pg-backup-offsite
+
+# Alert rules (deploy/monitoring/helper2-rules.yaml, ADR 0026) as a PrometheusRule for the Prometheus
+# Operator. Off by default: the CRD exists only where the operator runs. Without it, load the rule file into
+# Prometheus directly (rule_files).
+monitoring:
+  prometheusRule:
+    enabled: false
+    # Extra labels, e.g. the operator's ruleSelector: { release: kube-prometheus-stack }.
+    labels: {}
