@@ -34,10 +34,16 @@ screen reader, and in light and dark mode.
    "system" removes it. `public/theme.js` sets `data-theme` before the first paint and follows the device while no choice is saved.
 8. **Shared data.** `SourcesContext` fetches `GET /api/v1/sources` once per page load for all pages. `PrivacyPage` names
    the contact `helper2ai@incalza.me`.
+9. **Bundle.** The home page ships in one entry chunk; every other page (resource, sources, mission, privacy, saved,
+   admin, not found) is a react-router `lazy` route in its own chunk, loaded on its first visit. `vite.config.ts` keeps
+   all shared modules in the entry, so the first visit loads one script, not a set of small preloaded fragments.
+   `scripts/bundle-budget.mjs` runs after every `vite build` (local, CI, image) and fails it when the entry and the
+   modules it preloads pass 152 kB gzipped.
 
 ## Consequences
 - Good: one place to type; the guide and search share the same URL and can be bookmarked or shared.
 - Good: progress shows what the server did, not a timer that guesses.
+- Good: a page added later cannot grow the first visit, and growth of the home page itself fails the build.
 - Good: a slow model step does not look like a dead connection, thanks to the keep-alive comments. 45 s without any
   byte means the stream is stuck, and the user must retry.
 - Bad: there are no browser end-to-end tests. Tests run in jsdom only.
@@ -57,6 +63,7 @@ screen reader, and in light and dark mode.
 - `frontend/src/components/GuideProgress.tsx` — five steps.
 - `frontend/src/components/Layout.tsx`, `frontend/src/lib/theme.ts`, `frontend/public/theme.js` — `RouteFocus`, theme.
 - `frontend/src/context/SourcesContext.tsx`, `frontend/src/pages/PrivacyPage.tsx`.
+- `frontend/src/routes.tsx`, `frontend/vite.config.ts`, `frontend/scripts/bundle-budget.mjs` — lazy pages, entry chunk, budget.
 - `docs/design/system/` — design tokens and components.
 
 ## Diagrams

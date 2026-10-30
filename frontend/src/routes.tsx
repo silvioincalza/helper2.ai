@@ -1,16 +1,14 @@
+import type { ComponentType } from 'react';
 import { Navigate, useLocation, type RouteObject } from 'react-router';
 import { Layout } from '@/components/Layout';
 import { AppProviders } from '@/AppProviders';
 import { askParams } from '@/lib/searchState';
-import AdminPage from '@/pages/AdminPage';
-import HomePage from '@/pages/HomePage';
-import MissionPage from '@/pages/MissionPage';
-import NotFoundPage from '@/pages/NotFoundPage';
-import PrivacyPage from '@/pages/PrivacyPage';
-import ResourcePage from '@/pages/ResourcePage';
 import { SAVED_ENABLED } from '@/lib/features';
-import SavedPage from '@/pages/SavedPage';
-import SourcesPage from '@/pages/SourcesPage';
+import HomePage from '@/pages/HomePage';
+
+/** A page in its own chunk, loaded on the first visit to its path: the home page's bundle carries none of them. */
+const page = (load: () => Promise<{ default: ComponentType }>): NonNullable<RouteObject['lazy']> =>
+  async () => ({ Component: (await load()).default });
 
 /** Old /search links keep working: same parameters, one page. */
 function SearchRedirect() {
@@ -32,13 +30,15 @@ export const routes: RouteObject[] = [
       { index: true, element: <HomePage /> },
       { path: 'search', element: <SearchRedirect /> },
       { path: 'guide', element: <GuideRedirect /> },
-      { path: 'resource/:id', element: <ResourcePage /> },
-      { path: 'saved', element: SAVED_ENABLED ? <SavedPage /> : <Navigate replace to="/" /> },
-      { path: 'sources', element: <SourcesPage /> },
-      { path: 'admin', element: <AdminPage /> },
-      { path: 'mission', element: <MissionPage /> },
-      { path: 'privacy', element: <PrivacyPage /> },
-      { path: '*', element: <NotFoundPage /> },
+      { path: 'resource/:id', lazy: page(() => import('@/pages/ResourcePage')) },
+      SAVED_ENABLED
+        ? { path: 'saved', lazy: page(() => import('@/pages/SavedPage')) }
+        : { path: 'saved', element: <Navigate replace to="/" /> },
+      { path: 'sources', lazy: page(() => import('@/pages/SourcesPage')) },
+      { path: 'admin', lazy: page(() => import('@/pages/AdminPage')) },
+      { path: 'mission', lazy: page(() => import('@/pages/MissionPage')) },
+      { path: 'privacy', lazy: page(() => import('@/pages/PrivacyPage')) },
+      { path: '*', lazy: page(() => import('@/pages/NotFoundPage')) },
     ],
   },
 ];
