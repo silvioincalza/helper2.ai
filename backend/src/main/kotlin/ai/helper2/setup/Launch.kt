@@ -28,11 +28,8 @@ object Launches {
         return Launch(command, args, p.settings, requires)
     }
 
-    /** A README's own command: launched as written; what it needs is named after the program. */
-    fun of(c: RunOption.Command): Launch {
-        val program = c.command.substringAfterLast('/')
-        return Launch(c.command, c.args, c.settings, REQUIRES[program] ?: REQUIRES_BY_PROGRAM[program] ?: "the program \"$program\"")
-    }
+    /** A README's own command: launched as written, or null when its program is not a package runner we know. */
+    fun of(c: RunOption.Command): Launch? = REQUIRES[c.command]?.let { Launch(c.command, c.args, c.settings, it) }
 
     /** `<hint>` stands for a value the user supplies. */
     fun placeholder(name: String): String = "<" + name + ">"
@@ -65,15 +62,11 @@ object Launches {
     }
 
     private val DEFAULT_RUNTIME = mapOf("npm" to "npx", "pypi" to "uvx", "oci" to "docker", "nuget" to "dnx")
-    private val REQUIRES_BY_PROGRAM = mapOf(
-        "node" to "Node.js", "npm" to "Node.js (npm)", "pnpm" to "pnpm", "bunx" to "Bun (bunx)", "bun" to "Bun",
-        "python" to "Python", "python3" to "Python", "uv" to "uv", "pipx" to "pipx", "deno" to "Deno", "go" to "Go",
-        "java" to "Java", "dotnet" to ".NET SDK",
-    )
     private val REQUIRES = mapOf(
         "npx" to "Node.js (npx)",
         "uvx" to "uv (uvx)",
         "docker" to "Docker",
         "dnx" to ".NET 10 SDK (dnx)",
+        "bunx" to "Bun (bunx)",
     )
 }

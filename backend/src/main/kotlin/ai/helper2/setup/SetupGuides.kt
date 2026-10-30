@@ -28,9 +28,9 @@ data class SetupGuide(
 }
 
 /**
- * Builds the setup guide of a resource from its source data only: today, an MCP server's latest entry in the
- * Official MCP Registry. A package whose launcher cannot be stated, and a package not run over stdio, are left
- * out rather than guessed.
+ * Builds the setup guide of a resource from its source data only: an MCP server's latest entry in the Official MCP
+ * Registry, else the config example in its README. An option that [RunOptionRules] does not accept, a package whose
+ * launcher cannot be stated, and a package not run over stdio are left out rather than guessed.
  */
 class SetupGuides @JvmOverloads constructor(
     private val specs: McpServerSpecs,
@@ -46,15 +46,15 @@ class SetupGuides @JvmOverloads constructor(
      * [ref], when the resource is an MCP server.
      */
     fun build(title: String, registryName: String?, ref: ToolRef?): SetupGuide {
-        val fromRegistry = registryName?.let(specs::latest)?.takeIf { it.options.isNotEmpty() }
+        val fromRegistry = registryName?.let(specs::latest)?.takeIf { it.options.any(RunOptionRules::accepts) }
         val spec = fromRegistry
             ?: ref?.takeIf { it.type == "MCP_SERVER" && (it.githubRepo != null || it.npmPackage != null) }?.let(readme::of)
             ?: return SetupGuide.none(title)
-        val shown = spec.options.mapNotNull { o ->
+        val shown = spec.options.filter(RunOptionRules::accepts).mapNotNull { o ->
             when (o) {
                 is RunOption.Remote -> o to null
                 is RunOption.Package -> if (o.transport == Transport.STDIO) Launches.of(o)?.let { o to it } else null
-                is RunOption.Command -> o to Launches.of(o)
+                is RunOption.Command -> Launches.of(o)?.let { o to it }
             }
         }.mapIndexed { i, (o, launch) -> ShownOption("o${i + 1}", o, label(o), launch) }
         val key = key(title, spec.name)
