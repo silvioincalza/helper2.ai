@@ -56,6 +56,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0036](../adr/0036-search-evaluation-harness.md) | [flow](flow-0036-search-evaluation-harness.svg) | [sequence](sequence-0036-search-evaluation-harness.svg) | the search evaluation harness: snapshots recorded once, offline replay, report and the nDCG@10 gate. |
 | [0037](../adr/0037-tavily-store-and-daily-quota.md) | [flow](flow-0037-tavily-store-and-quota.svg) | [sequence](sequence-0037-tavily-store-and-quota.svg) | what one search does with Tavily: the stored answer first, a live call only inside the asker's daily web searches, and the same search from another visitor answered from the store. |
 | [0038](../adr/0038-ai-content-marking.md) | [flow](flow-0038-ai-content-marking.svg) | [sequence](sequence-0038-ai-content-marking.svg) | the aiContent marker of a guide answer and the data-ai-* attributes in the page. |
+| [0039](../adr/0039-frontend-recent-answers-cache.md) | [flow](flow-0039-frontend-recent-answers-cache.svg) | [sequence](sequence-0039-frontend-recent-answers-cache.svg) | when useApi shows a recent answer and when it asks the server, and a back move without a request. |
 
 ## Colors
 

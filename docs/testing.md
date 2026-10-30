@@ -47,5 +47,5 @@ in 23 files. The 16 alert rules have promtool unit tests; CI runs them in the `m
 
 ## Known gaps (not covered by automated tests)
 
-- **Browser end-to-end tests.** None yet (on the [roadmap](roadmap.md)). The guide journey is covered by `GuideApiIT` (API) and `HomeGuide.test.tsx` (UI).
+- **Browser end-to-end tests.** None yet; no tool is installed until the journeys are written (on the [roadmap](roadmap.md)). The guide journey is covered by `GuideApiIT` (API) and `HomeGuide.test.tsx` (UI).
 - **Live source smoke tests.** Search connectors are tested against recorded real responses only; the one live test covers the awesome-list collector.

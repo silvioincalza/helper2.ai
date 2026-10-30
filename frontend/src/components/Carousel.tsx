@@ -35,15 +35,16 @@ export function Carousel<T>({ items, size = 2, label, render }: {
 }) {
   const track = useRef<HTMLUListElement>(null);
   const [height, setHeight] = useState<number>();
-  const [inside, setInside] = useState(false);
-  const [reduced] = useState(prefersReducedMotion);
-  const [paused, setPaused] = useState(false);
   const { t } = useTranslation();
+  const [inside, setInside] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [reduced] = useState(prefersReducedMotion);
   const scrolls = items.length > size;
   const rotates = scrolls && !reduced;
 
   // The window is as tall as the `size` rows in view, so a taller row is never cut off: measured for the first
-  // rows, again when they change size (fonts, width), after a scroll by hand settles, and before each move.
+  // rows, again when they change size (fonts, width; at most once a frame), after a scroll by hand settles, and
+  // before each move.
   useLayoutEffect(() => {
     const el = track.current;
     if (!el || !scrolls) { setHeight(undefined); return; }
@@ -52,9 +53,17 @@ export function Carousel<T>({ items, size = 2, label, render }: {
     let settle = 0;
     const onScroll = () => { window.clearTimeout(settle); settle = window.setTimeout(measure, 150); };
     el.addEventListener('scroll', onScroll, { passive: true });
-    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
+    // A resize reports every row at once, and again on each frame while the width changes: one measure per frame.
+    let frame = 0;
+    const onResize = () => { if (!frame) frame = requestAnimationFrame(() => { frame = 0; measure(); }); };
+    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(onResize);
     Array.from(el.children).forEach((r) => ro?.observe(r));
-    return () => { el.removeEventListener('scroll', onScroll); window.clearTimeout(settle); ro?.disconnect(); };
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      window.clearTimeout(settle);
+      cancelAnimationFrame(frame);
+      ro?.disconnect();
+    };
   }, [items, size, scrolls]);
 
   useEffect(() => {

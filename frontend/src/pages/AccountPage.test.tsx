@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ANON, USER } from '@/test/fixtures';
 import { mockApi, problem } from '@/test/mockApi';
-import { renderApp, settled } from '@/test/render';
+import { renderApp, settle } from '@/test/render';
 
 describe('Feature: delete my account', () => {
   it('Scenario: a signed-in user opens their account from their name in the header', async () => {
@@ -64,7 +64,7 @@ describe('Feature: delete my account', () => {
   it('Scenario: a visitor who is not signed in has no account to delete', async () => {
     mockApi({ 'GET /me': () => ANON });
     renderApp('/account');
-    await settled();
+    await settle();
     expect(screen.queryByRole('button', { name: 'Delete my account' })).not.toBeInTheDocument();
     expect(screen.getByText('You are not signed in, so there is no account to delete.')).toBeInTheDocument();
   });

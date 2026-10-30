@@ -22,9 +22,12 @@ export default function AdminPage() {
   const [actionError, setActionError] = useState<'failed' | 'runInProgress' | null>(null);
   const [page, setPage] = useState(0);
   const [busy, setBusy] = useState(false);
-  const items = useApi(`review/${status}/${page}/${isAdmin}`, (s) =>
-    (isAdmin ? api.listReviewItems(status, page, REVIEW_PAGE_SIZE, s) : Promise.resolve({ items: [], total: 0 })));
-  const runs = useApi(`runs/${isAdmin}`, (s) => (isAdmin ? api.listScoutRuns(s) : Promise.resolve([])));
+  const items = useApi(
+    `review/${status}/${page}/${isAdmin}`,
+    (s) => (isAdmin ? api.listReviewItems(status, page, REVIEW_PAGE_SIZE, s) : Promise.resolve({ items: [], total: 0 })),
+    { cache: false },
+  );
+  const runs = useApi(`runs/${isAdmin}`, (s) => (isAdmin ? api.listScoutRuns(s) : Promise.resolve([])), { cache: false });
   useTitle(t('nav.admin'));
 
   // A run collects in the background after its start is accepted: follow it on the listing until no run is RUNNING.

@@ -4,6 +4,7 @@ import { axeViolations } from '@/test/a11y';
 import { ADMIN, USER, makeDetail, makeSearch, makeStatus } from '@/test/fixtures';
 import { mockApi } from '@/test/mockApi';
 import { renderApp } from '@/test/render';
+import { clearApiCache } from '@/hooks/useApi';
 
 const ID = '11111111-1111-5111-8111-111111111111';
 
@@ -36,6 +37,7 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
     await screen.findByText('No results from the sources searched');
     expect(await axeViolations(a.container)).toEqual([]);
     a.unmount();
+    clearApiCache(); // a fresh page load: the empty answer above is not remembered
     mockApi({ 'GET /search': () => new Response('{}', { status: 500, headers: { 'content-type': 'application/json' } }) });
     const b = renderApp('/search?q=zzz');
     await screen.findByRole('alert');

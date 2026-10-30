@@ -2,7 +2,7 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axeViolations } from '@/test/a11y';
 import { mockApi } from '@/test/mockApi';
-import { renderApp, settled } from '@/test/render';
+import { renderApp, settle } from '@/test/render';
 
 describe('mission, privacy and terms pages', () => {
   it('footer links open the mission, privacy and terms pages inside the app', async () => {
@@ -26,7 +26,7 @@ describe('mission, privacy and terms pages', () => {
   it('mission page states the promises and links to GitHub issues in a new tab', async () => {
     mockApi();
     renderApp('/mission');
-    await settled();
+    await settle();
     expect(document.title).toBe('Mission · Helper2.ai');
     expect(screen.getByRole('region', { name: 'What we promise' })).toHaveTextContent('Proof before opinion');
     expect(screen.getByRole('region', { name: 'How the guide answers' })).toHaveTextContent('A validator checks');
@@ -41,7 +41,7 @@ describe('mission, privacy and terms pages', () => {
   it('privacy page names the contact, the cookies and the data recipients', async () => {
     mockApi();
     renderApp('/privacy');
-    await settled();
+    await settle();
     expect(document.title).toBe('Privacy · Helper2.ai');
     expect(screen.getByRole('link', { name: 'helper2ai@incalza.me' })).toHaveAttribute('href', 'mailto:helper2ai@incalza.me');
     expect(screen.getByRole('region', { name: 'Cookies and browser storage' })).toHaveTextContent('XSRF-TOKEN');
@@ -57,7 +57,7 @@ describe('mission, privacy and terms pages', () => {
   it('privacy page states the account data, how long it is kept and how to delete the account', async () => {
     mockApi();
     renderApp('/privacy');
-    await settled();
+    await settle();
     expect(screen.getByRole('region', { name: 'What we process and why' })).toHaveTextContent('when you last signed in');
     const keep = screen.getByRole('region', { name: 'How long we keep data' });
     expect(keep).toHaveTextContent('24 months after you last signed in');

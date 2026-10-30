@@ -1,7 +1,7 @@
 import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockApi } from '@/test/mockApi';
-import { renderApp } from '@/test/render';
+import { renderApp, settle } from '@/test/render';
 import { makeRecent } from '@/test/fixtures';
 
 describe('home: one page, one box', () => {
@@ -156,6 +156,7 @@ describe('home: one page, one box', () => {
     await waitFor(() => expect(router.state.location.search).toBe('?q=second'));
     await act(() => router.navigate(-1));
     await waitFor(() => expect(screen.getByRole('searchbox')).toHaveValue('first'));
+    await settle();
   });
 
   it('clearing the box and pressing Enter returns to the empty home', async () => {
@@ -177,6 +178,7 @@ describe('home: one page, one box', () => {
     await act(() => router.navigate('/sources'));
     await screen.findByRole('table');
     expect(m.callsTo('GET', '/sources')).toHaveLength(1);
+    await settle();
   });
 
   it('the loading feeds nest no status role inside their live regions', async () => {

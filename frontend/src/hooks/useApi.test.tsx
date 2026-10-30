@@ -1,85 +1,113 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { API_CACHE_SIZE, API_FRESH_MS, useApi } from './useApi';
+import { CACHE_MAX, CACHE_TTL_MS, useApi } from './useApi';
 
-/** A fetcher that answers `<key>:<n>` with a call counter per key. */
-function counting() {
-  const calls: Record<string, number> = {};
-  const fetcher = (key: string) => () => {
-    calls[key] = (calls[key] ?? 0) + 1;
-    return Promise.resolve(`${key}:${calls[key]}`);
-  };
-  return { calls, fetcher };
+function fetcher(value: string) {
+  return vi.fn((_signal: AbortSignal) => Promise.resolve(value));
 }
 
-function mount(key: string, fetcher: (key: string) => () => Promise<string>) {
-  return renderHook(({ k }) => useApi(k, fetcher(k)), { initialProps: { k: key } });
-}
+describe('useApi recent-answers cache', () => {
+  it('a second mount with the same key shows the answer at once, without a request', async () => {
+    const f = fetcher('first');
+    const a = renderHook(() => useApi('k', f));
+    await waitFor(() => expect(a.result.current.data).toBe('first'));
+    a.unmount();
 
-describe('useApi response cache', () => {
-  it('a key seen moments ago renders its response at once, without a request', async () => {
-    const { calls, fetcher } = counting();
-    const first = mount('search?q=a', fetcher);
-    await waitFor(() => expect(first.result.current.data).toBe('search?q=a:1'));
-    first.unmount();
-
-    const again = mount('search?q=a', fetcher);
-    expect(again.result.current).toMatchObject({ data: 'search?q=a:1', loading: false });
-    await act(() => Promise.resolve());
-    expect(calls['search?q=a']).toBe(1);
+    const g = fetcher('second');
+    const b = renderHook(() => useApi('k', g));
+    expect(b.result.current).toMatchObject({ data: 'first', loading: false });
+    expect(g).not.toHaveBeenCalled();
   });
 
-  it('an older response renders at once and is replaced by a fresh one in the background', async () => {
-    const now = vi.spyOn(Date, 'now').mockReturnValue(1_000_000);
-    const { calls, fetcher } = counting();
-    const first = mount('resource/1', fetcher);
-    await waitFor(() => expect(first.result.current.data).toBe('resource/1:1'));
-    first.unmount();
+  it('reload always asks again and keeps the new answer', async () => {
+    const f = vi.fn().mockResolvedValueOnce('old').mockResolvedValueOnce('new');
+    const a = renderHook(() => useApi('k', f));
+    await waitFor(() => expect(a.result.current.data).toBe('old'));
+    act(() => a.result.current.reload());
+    await waitFor(() => expect(a.result.current.data).toBe('new'));
+    expect(f).toHaveBeenCalledTimes(2);
+    a.unmount();
 
-    now.mockReturnValue(1_000_000 + API_FRESH_MS + 1);
-    const again = mount('resource/1', fetcher);
-    expect(again.result.current).toMatchObject({ data: 'resource/1:1', loading: false });
-    await waitFor(() => expect(again.result.current.data).toBe('resource/1:2'));
-    expect(calls['resource/1']).toBe(2);
+    const b = renderHook(() => useApi('k', fetcher('unused')));
+    expect(b.result.current.data).toBe('new');
   });
 
-  it('keeps the older response on screen when the background request fails', async () => {
-    const now = vi.spyOn(Date, 'now').mockReturnValue(1_000_000);
-    let fail = false;
-    const fetcher = () => () => (fail ? Promise.reject(new Error('down')) : Promise.resolve('ok'));
-    const first = mount('k', fetcher);
-    await waitFor(() => expect(first.result.current.data).toBe('ok'));
-    first.unmount();
-
-    now.mockReturnValue(1_000_000 + API_FRESH_MS + 1);
-    fail = true;
-    const again = mount('k', fetcher);
-    await act(() => Promise.resolve());
-    expect(again.result.current).toMatchObject({ data: 'ok', error: undefined, loading: false });
+  it('cache: false always asks', async () => {
+    const f = fetcher('x');
+    renderHook(() => useApi('k', f, { cache: false })).unmount();
+    await waitFor(() => expect(f).toHaveBeenCalledTimes(1));
+    const b = renderHook(() => useApi('k', f, { cache: false }));
+    expect(b.result.current.loading).toBe(true);
+    await waitFor(() => expect(f).toHaveBeenCalledTimes(2));
   });
 
-  it('reload asks the server again instead of reusing the cached response', async () => {
-    const { calls, fetcher } = counting();
-    const view = mount('runs', fetcher);
-    await waitFor(() => expect(view.result.current.data).toBe('runs:1'));
-    act(() => view.result.current.reload());
-    expect(view.result.current.loading).toBe(true);
-    await waitFor(() => expect(view.result.current.data).toBe('runs:2'));
-    expect(calls['runs']).toBe(2);
+  it('an answer older than the time limit is asked again', async () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(1_000);
+    const a = renderHook(() => useApi('k', fetcher('old')));
+    await waitFor(() => expect(a.result.current.data).toBe('old'));
+    a.unmount();
+
+    now.mockReturnValue(1_000 + CACHE_TTL_MS + 1);
+    const g = fetcher('fresh');
+    const b = renderHook(() => useApi('k', g));
+    expect(b.result.current.loading).toBe(true);
+    await waitFor(() => expect(b.result.current.data).toBe('fresh'));
   });
 
-  it(`keeps the ${API_CACHE_SIZE} most recently used responses and drops the oldest`, async () => {
-    const { calls, fetcher } = counting();
-    const view = mount('k0', fetcher);
-    await waitFor(() => expect(view.result.current.data).toBe('k0:1'));
-    for (let i = 1; i <= API_CACHE_SIZE; i++) {
-      view.rerender({ k: `k${i}` });
-      await waitFor(() => expect(view.result.current.data).toBe(`k${i}:1`));
+  it('an answer shown from the cache stays shown after its cache entry expires', async () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(1_000);
+    const a = renderHook(() => useApi('k', fetcher('cached')));
+    await waitFor(() => expect(a.result.current.data).toBe('cached'));
+    a.unmount();
+
+    const g = fetcher('unused');
+    const b = renderHook(() => useApi('k', g));
+    expect(b.result.current.data).toBe('cached');
+    now.mockReturnValue(1_000 + CACHE_TTL_MS + 1);
+    b.rerender();
+    expect(b.result.current).toMatchObject({ data: 'cached', loading: false });
+    expect(g).not.toHaveBeenCalled();
+    now.mockRestore();
+  });
+
+  it('a cache hit does not make the answer younger: it is asked again 5 minutes after it was fetched', async () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(1_000);
+    const a = renderHook(() => useApi('k', fetcher('old')));
+    await waitFor(() => expect(a.result.current.data).toBe('old'));
+    a.unmount();
+
+    now.mockReturnValue(1_000 + CACHE_TTL_MS - 1);
+    renderHook(() => useApi('k', fetcher('unused'))).unmount();
+
+    now.mockReturnValue(1_000 + CACHE_TTL_MS + 1);
+    const g = fetcher('fresh');
+    const c = renderHook(() => useApi('k', g));
+    await waitFor(() => expect(c.result.current.data).toBe('fresh'));
+    expect(g).toHaveBeenCalledTimes(1);
+    now.mockRestore();
+  });
+
+  it('keeps only the most recent answers', async () => {
+    for (let i = 0; i <= CACHE_MAX; i++) {
+      const h = renderHook(() => useApi(`k${i}`, fetcher(`v${i}`)));
+      await waitFor(() => expect(h.result.current.data).toBe(`v${i}`));
+      h.unmount();
     }
-    view.rerender({ k: 'k1' });
-    expect(view.result.current.data).toBe('k1:1');
-    view.rerender({ k: 'k0' });
-    expect(view.result.current.loading).toBe(true);
-    await waitFor(() => expect(view.result.current.data).toBe('k0:2'));
-    expect(calls['k1']).toBe(1);
+    const oldest = fetcher('again');
+    renderHook(() => useApi('k0', oldest));
+    await waitFor(() => expect(oldest).toHaveBeenCalledTimes(1));
+    const newest = fetcher('unused');
+    expect(renderHook(() => useApi(`k${CACHE_MAX}`, newest)).result.current.data).toBe(`v${CACHE_MAX}`);
+    expect(newest).not.toHaveBeenCalled();
+  });
+
+  it('errors are not kept', async () => {
+    const f = vi.fn((_s: AbortSignal) => Promise.reject(new Error('down')));
+    const a = renderHook(() => useApi('k', f));
+    await waitFor(() => expect(a.result.current.error).toBeInstanceOf(Error));
+    a.unmount();
+    const g = fetcher('up');
+    const b = renderHook(() => useApi('k', g));
+    await waitFor(() => expect(b.result.current.data).toBe('up'));
+    expect(g).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,30 +1,22 @@
 import { act, render } from '@testing-library/react';
-import { createMemoryRouter, RouterProvider, type RouteObject } from 'react-router';
+import { createMemoryRouter, RouterProvider } from 'react-router';
 import { clearApiCache } from '@/hooks/useApi';
 import { routes } from '@/routes';
-
-/** The app's routes with every `lazy` page already loaded, so a test sees the page in the first render. */
-async function loaded(list: RouteObject[]): Promise<RouteObject[]> {
-  return Promise.all(list.map(async (route) => {
-    const { lazy, children, ...rest } = route;
-    const page = typeof lazy === 'function' ? await lazy() : {};
-    return { ...rest, ...page, ...(children ? { children: await loaded(children) } : {}) } as RouteObject;
-  }));
-}
-const eagerRoutes = await loaded(routes);
 
 /** A fresh page load: its own router and an empty response cache. */
 export function renderApp(entry = '/') {
   clearApiCache();
-  const router = createMemoryRouter(eagerRoutes, { initialEntries: [entry] });
+  const router = createMemoryRouter(routes, { initialEntries: [entry] });
   const utils = render(<RouterProvider router={router} />);
   return { router, ...utils, params: () => new URLSearchParams(router.state.location.search) };
 }
 
 /**
- * Lets every request the page started answer and React render the answers, for a test that checks something else
- * (header, footer, a static page) and would otherwise end while the home feeds, /me or /sources are still loading.
+ * Lets the answers a test did not wait for (the sources list, /me, a list in the background) arrive inside act(),
+ * so they update the screen as in the browser instead of after the test.
  */
-export async function settled() {
-  await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+export async function settle() {
+  await act(async () => {
+    for (let i = 0; i < 3; i++) await new Promise((resolve) => setTimeout(resolve, 0));
+  });
 }

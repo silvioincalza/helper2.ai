@@ -1,7 +1,7 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { json, mockApi, problem } from '@/test/mockApi';
-import { renderApp } from '@/test/render';
+import { renderApp, settle } from '@/test/render';
 import { known, makeCard, makeDetail, makeSearch, makeStatus, unknownDate } from '@/test/fixtures';
 
 const url = '/?q=translate&type=MODEL&license=unknown';
@@ -325,6 +325,7 @@ describe('search on the one page', () => {
     await waitFor(() => expect(signals).toHaveLength(1));
     await act(() => router.navigate('/?q=two'));
     await waitFor(() => expect(signals[0]?.aborted).toBe(true));
+    await settle();
   });
 
   it('back from a result shows the same results at once and keeps the scroll position', async () => {
