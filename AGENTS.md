@@ -66,6 +66,22 @@ Run the relevant tests before calling a change done.
 - Write documentation as Silvio would write it: his voice, plain short sentences, the style and
   structure of the existing docs.
 
+## Branches and worktrees
+
+- Every session works in its own git worktree, on its own branch from the latest `origin/main`:
+  `git worktree add .claude/worktrees/<branch> -b <branch> origin/main` (git-ignored folder).
+  The main checkout stays on `main` and clean: no session edits or switches branches there.
+- A branch that needs another unmerged branch is stacked on it. Say so in the PR description:
+  `Depends on #N`.
+- After a PR merges, update every open worktree that depends on it, direct dependents first:
+  - clean worktree: rebase onto `origin/main` (a stacked branch after a squash merge:
+    `git rebase --onto origin/main <old-base>`), run its tests, push with `--force-with-lease`,
+    and retarget its PR to `main`;
+  - worktree with uncommitted work, or owned by a running session: do not touch it; add a line
+    to `.private/notes/worktrees.md` so its owner rebases at a safe point.
+- When a branch is merged, remove its worktree (`git worktree remove`) and delete the branch.
+- `/sync-worktrees` does the update steps above.
+
 ## AI architecture check
 
 For architecture, design or review work, report each layer as covered, gap (must fix) or
