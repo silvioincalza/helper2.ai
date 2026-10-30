@@ -23,6 +23,7 @@ class GuideWithoutModelApiIT extends ApiTestBase {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.status").value("LLM_UNAVAILABLE"))
             .andExpect(jsonPath("$.model").doesNotExist())
+            .andExpect(jsonPath("$.aiContent").doesNotExist())
             .andExpect(jsonPath("$.prompt").doesNotExist())
             .andExpect(jsonPath("$.recommendations[0].aiReasoned").value(false))
             .andExpect(jsonPath("$.recommendations[0].reason").value(org.hamcrest.Matchers.containsString("no AI reasoning")))
