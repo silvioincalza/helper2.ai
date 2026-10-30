@@ -288,13 +288,21 @@ object IntentRules {
     }
 
     private val EVENT_KINDS = anywhere("when.event")
+    private val STARTS = anywhere("when.start")
 
     /**
-     * Whether [text] names a kind of event: a conference, a hackathon, a meetup, a deadline, a start. A WHEN question
-     * whose words or planned query do so asks for an event's dates, not a release date.
+     * Whether [text] names a kind of event: a conference, a hackathon, a meetup, a deadline, or a course's start. A
+     * WHEN question whose words or planned query do so asks for an event's dates, not a release date.
      */
     @JvmStatic
-    fun namesEvent(text: String): Boolean = EVENT_KINDS.containsMatchIn(text)
+    fun namesEvent(text: String): Boolean =
+        EVENT_KINDS.containsMatchIn(text) || (STARTS.containsMatchIn(text) && LEARN.containsMatchIn(text))
+
+    private val KINDS = anywhere("subject.kind")
+
+    /** Whether [text] names the kind of thing its subject is ("the Gemini model", "the Gemini CLI tool"). */
+    @JvmStatic
+    fun namesKind(text: String): Boolean = KINDS.containsMatchIn(text)
 
     /** The query without generic words; empty when nothing names a subject. */
     @JvmStatic

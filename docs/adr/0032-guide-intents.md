@@ -96,6 +96,8 @@ no clarification. Code decides whether a question is asked back; the planner onl
 
 **Ambiguous subject** (`AmbiguousSubject`, after the question's own search). The question is asked back when all hold:
 - the plan call succeeded and the request carries no clarification;
+- the question does not name the kind of thing it means ("the Gemini model", "the Gemini CLI tool";
+  `IntentRules.namesKind`, `subject.kind` in the word bundles);
 - exactly one grounded subject, and the question is about that thing itself: `WHAT_IS`, `ALTERNATIVES`, `WHEN` not
   about an event (§5), or `SUGGEST` whose text is only the name and generic words ("Gemini", not "a chat UI for
   Gemini") (`QuestionReader.askBackSubject`);
@@ -164,7 +166,8 @@ Flow:
 
 **About an event.** A `WHEN` question is about an event when the user's words or the planned search query name a
 kind of event (`IntentRules.namesEvent`, `when.event` in the word bundles: conference, hackathon, meetup, summit,
-webinar, workshop, deadline, start, and their Italian forms). The planner names the kind of event in `searchQuery`
+webinar, workshop, deadline, and their Italian forms). A start ("start", "begins", `when.start`) names an event only
+next to a course word ("when does the fast.ai course start?"): "when did Ollama start?" asks for a release date. The planner names the kind of event in `searchQuery`
 for "when is NeurIPS?" ("NeurIPS conference") and never for a release ("Llama 4 release"). Its search keeps only
 `EVENT` results, so a repository named like the event never takes an event's place in the result list.
 

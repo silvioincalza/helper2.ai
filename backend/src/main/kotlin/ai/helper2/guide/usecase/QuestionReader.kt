@@ -75,10 +75,11 @@ internal class QuestionReader(private val clock: Clock) {
 
     /**
      * The subject checked for namesakes (ADR 0032 §3): the one grounded subject of a question about that thing itself,
-     * read by the planner (its question back is AI-written), and never once the user answered a question back.
+     * read by the planner (its question back is AI-written), and never once the user answered a question back or
+     * named the kind of thing they mean ("the Gemini model").
      */
     private fun askBackSubject(q: Question, modelFailed: Boolean, intent: GuideIntent, subjects: List<String>, aboutEvent: Boolean): String? {
-        if (q.clarification != null || modelFailed) return null
+        if (q.clarification != null || modelFailed || IntentRules.namesKind(q.text)) return null
         val subject = subjects.singleOrNull() ?: return null
         val aboutTheSubject = when (intent) {
             GuideIntent.WHAT_IS, GuideIntent.ALTERNATIVES -> true

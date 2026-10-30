@@ -235,6 +235,16 @@ class AskGuideIntentsTest {
     }
 
     @Test
+    fun `a question that already names the kind of thing is not asked back`() {
+        hits = hits + gemini
+        fun ask(plan: GuideSearchPlan, text: String) = guide(Model(plan, choose = ::pickAll)).ask(text, null).status
+        val asked = GuideStatus.NEEDS_CLARIFICATION
+        assertNotEquals(asked, ask(GuideSearchPlan("Gemini", intent = GuideIntent.WHAT_IS, subjects = listOf("Gemini")), "what is the Gemini model?"))
+        assertNotEquals(asked, ask(GuideSearchPlan("Gemini", intent = GuideIntent.ALTERNATIVES, subjects = listOf("Gemini")), "alternatives to the Gemini CLI tool"))
+        assertNotEquals(asked, ask(GuideSearchPlan("Gemini", intent = GuideIntent.WHAT_IS, subjects = listOf("Gemini")), "cos'è il modello Gemini?"))
+    }
+
+    @Test
     fun `a planner's question back on a name with one kind of own entry is dropped, and without a planner nothing is asked`() {
         val clarify = Clarification("Which Ollama?", listOf("the app", "the library"))
         val model = Model(GuideSearchPlan("Ollama", intent = GuideIntent.WHAT_IS, subjects = listOf("Ollama"), clarify = clarify))
@@ -269,6 +279,13 @@ class AskGuideIntentsTest {
         val a = guide(model).ask("when is NeurIPS?", null)
         assertEquals(setOf(ResourceType.EVENT), queries.single().types)
         assertEquals("NeurIPS 2026", a.recommendations.single().result.title)
+    }
+
+    @Test
+    fun `when a product started is a release date, not an event`() {
+        val model = Model(GuideSearchPlan("Ollama release date", intent = GuideIntent.WHEN, subjects = listOf("Ollama")))
+        guide(model).ask("when did Ollama start?", null)
+        assertNotEquals(setOf(ResourceType.EVENT), queries.first().types)
     }
 
     @Test

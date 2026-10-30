@@ -25,7 +25,7 @@ read: QuestionReader.read {
 
 clarify: "clarify set, no clarification yet, and\nCOMPARE with < 2 subjects or nothing to\nsearch (no subject, window or subject words)?" {class: decision}
 ask: "NEEDS_CLARIFICATION:\nevent clarify, then answer with\nquestion + 2–4 options\n(plan call only, at most the intent's\nown search; never cached)" {class: end}
-namesakes: "Namesakes: one grounded subject, planned,\nno clarification yet, a question about the\nthing itself; its own entries in the intent's\nown search are of ≥ 2 kinds (model,\ndataset, tool). Options: the planner's,\nelse one per kind" {class: decision}
+namesakes: "Namesakes: one grounded subject, planned,\nno clarification yet, no kind named (\"the\nGemini model\"), a question about the\nthing itself; its own entries in the intent's\nown search are of ≥ 2 kinds (model,\ndataset, tool). Options: the planner's,\nelse one per kind" {class: decision}
 
 route: "Intent?" {class: decision}
 

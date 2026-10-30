@@ -164,6 +164,9 @@ class IntentsTest {
         assertTrue(IntentRules.namesEvent("quando è la prossima conferenza sull'AI?"))
         assertFalse(IntentRules.namesEvent("when was Llama 4 released?"))
         assertFalse(IntentRules.namesEvent("Llama 4 release"))
+        assertFalse(IntentRules.namesEvent("when did Ollama start?"))
+        assertFalse(IntentRules.namesEvent("quando è iniziato Ollama?"))
+        assertTrue(IntentRules.namesEvent("quando inizia il corso di fast.ai?"))
     }
 
     private fun result(url: String, title: String, type: ResourceType = ResourceType.LIBRARY): MergedResult =
