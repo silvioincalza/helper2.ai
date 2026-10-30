@@ -2,8 +2,8 @@
 # instances that share the policy's name, outermost first, and what each caller does with a refused call; and
 # Resilience.trySlot(guide), the bulkhead place a guide question holds until it ends or reaches its deadline.
 # Source of truth: backend/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java, CallRefused.java,
-#   backend/src/main/resources/application.yaml (resilience4j.*), backend/src/main/java/ai/helper2/sources/TransientSourceFailure.java,
-#   backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt, backend/src/main/java/ai/helper2/sources/*Collector.java,
+#   backend/src/main/resources/application.yaml (resilience4j.*), backend/src/main/java/ai/helper2/sources/support/TransientSourceFailure.java,
+#   backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt, backend/src/main/java/ai/helper2/sources/*/*Collector.java,
 #   backend/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java, search/internal/SpringAiQueryTranslator.java (llm-chat),
 #   backend/src/main/java/ai/helper2/catalog/internal/NvidiaEmbedder.java (llm-embed), guide/web/GuideLimits.java (trySlot),
 #   backend/src/main/java/ai/helper2/platform/llm/ModelErrors.java (NotFromProvider).

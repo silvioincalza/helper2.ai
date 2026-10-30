@@ -242,7 +242,7 @@ resilience4j:
         exponential-backoff-multiplier: 2
         enable-randomized-wait: true
         randomized-wait-factor: 0.5
-        retry-exception-predicate: ai.helper2.sources.TransientSourceFailure
+        retry-exception-predicate: ai.helper2.sources.support.TransientSourceFailure
     instances:
       collector-hf-trending: {base-config: collector}
       collector-tavily-scout: {base-config: collector}

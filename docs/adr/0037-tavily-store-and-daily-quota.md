@@ -104,7 +104,7 @@ used up. The counts must hold across 3 replicas, store no address and no query t
 - `backend/src/main/java/ai/helper2/search/internal/JdbcWebResultStore.java`, `catalog/ResourceCatalog.java` (`recordedHits`).
 - `backend/src/main/kotlin/ai/helper2/search/usecase/PurgeExpiredData.kt`, `search/config/SearchRetentionSchedule.java`.
 - `backend/src/main/java/ai/helper2/platform/quota/` — `QuotaCounter`, `RedisQuotaCounter` (Lua), `QuotaKeys` (HMAC).
-- `backend/src/main/java/ai/helper2/sources/TavilySource.java` — the metered descriptor.
+- `backend/src/main/java/ai/helper2/sources/tavily/TavilySource.java` — the metered descriptor.
 - `backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt` (`find`, `forAsker`), `guide/GuideCost.kt` (`ttlOf`).
 - `backend/src/main/java/ai/helper2/identity/usecase/DeleteMyAccount.java` — counters deleted with the account.
 - `backend/src/main/resources/application.yaml` (`helper2.tavily.*`), `db/migration/V1__schema.sql`, `api/openapi.yaml` (`WebSearches`).

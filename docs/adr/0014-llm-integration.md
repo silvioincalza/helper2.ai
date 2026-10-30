@@ -95,7 +95,7 @@ Without a configured model the application must still work.
   `setup/tool-guide.txt`.
 - `backend/src/main/resources/application.yaml` — profile `llm-nebius`, timeout, retries, budgets.
 - `backend/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java`, `search/internal/SpringAiQueryTranslator.java`,
-  `scout/internal/SpringAiEnrichmentModel.java`, `sources/SpringAiRepoClassifier.java` — the adapters.
+  `scout/internal/SpringAiEnrichmentModel.java`, `sources/classifier/SpringAiRepoClassifier.java` — the adapters.
 
 ## Diagrams
 [flow](../diagrams/flow-0014-llm-integration.svg) · [sequence](../diagrams/sequence-0014-llm-integration.svg)

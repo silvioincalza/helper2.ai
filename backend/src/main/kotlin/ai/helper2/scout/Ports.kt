@@ -7,7 +7,8 @@ import ai.helper2.shared.CanonicalUrl
 /**
  * One deterministic collection pass. [checkpoint] is what to pass next time for an incremental run
  * (null = this pass did not finish, keep the previous checkpoint). [nextCursor] is set when the
- * pass stopped early because of the item budget.
+ * pass stopped early because of the item budget. [hits] go to the catalog; [candidates] go to the
+ * admin review list and reach the catalog only when a person accepts them.
  */
 data class CollectedBatch @JvmOverloads constructor(
     val hits: List<SourceHit>,
@@ -15,6 +16,8 @@ data class CollectedBatch @JvmOverloads constructor(
     val checkpoint: String?,
     /** true when the collector chose not to call its source this time (e.g. its run interval has not passed). */
     val notDue: Boolean = false,
+    /** Pages proposed for review, not indexed. */
+    val candidates: List<Candidate> = emptyList(),
 ) {
     companion object {
         /** Nothing collected and nothing advanced: the previous checkpoint stays. */

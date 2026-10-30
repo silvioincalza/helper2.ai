@@ -1,5 +1,7 @@
 package ai.helper2.scout.usecase
 
+import ai.helper2.scout.Candidate
+import ai.helper2.scout.CandidateReview
 import ai.helper2.scout.CatalogIndex
 import ai.helper2.scout.Citation
 import ai.helper2.scout.CollectedBatch
@@ -26,6 +28,7 @@ import ai.helper2.search.SourceDescriptor
 import ai.helper2.search.SourceFailure
 import ai.helper2.search.descriptor
 import ai.helper2.search.hit
+import ai.helper2.shared.CanonicalUrl
 import ai.helper2.shared.ResourceType
 import ai.helper2.testing.MovableClock
 import ch.qos.logback.classic.Logger
@@ -578,5 +581,42 @@ class RunScoutTest {
 
         assertEquals(true, RunScout(emptyList(), store, catalog, null, clock, NO_LOCK).closeInterruptedRuns())
         assertEquals(RunStatus.FAILED, store.runs.values.single().status)
+    }
+    private fun candidate(url: String) = Candidate(CanonicalUrl.of(url)!!, "AI agents course", "A course on agents.", "Hugging Face Learn")
+
+    @Test
+    fun `candidates a collector returns are proposed for review under its source id and never indexed`() {
+        val proposed = mutableListOf<Pair<String, List<Candidate>>>()
+        val review = CandidateReview { sourceId, candidates -> proposed += sourceId to candidates; candidates.size }
+        val found = listOf(candidate("https://huggingface.co/learn/agents-course"))
+        val c = FakeCollector(descriptor("course-scout")) { CollectedBatch(emptyList(), null, "cp", candidates = found) }
+
+        val run = RunScout(listOf(c), history, catalog, null, clock, NO_LOCK, review = review).runNow()!!.single()
+
+        assertEquals(RunStatus.SUCCEEDED, run.status)
+        assertEquals(listOf("course-scout" to found), proposed)
+        assertEquals(emptyList(), changedIds)
+        assertEquals(NOW.toString(), history.cursors["course-scout"]!!.checkpoint)
+    }
+
+    @Test
+    fun `a batch without candidates opens no review`() {
+        val review = CandidateReview { _, _ -> error("must not be called") }
+        val c = FakeCollector(descriptor("mcp")) { CollectedBatch(emptyList(), null, "cp") }
+        assertEquals(RunStatus.SUCCEEDED, RunScout(listOf(c), history, catalog, null, clock, NO_LOCK, review = review).runNow()!!.single().status)
+    }
+
+    @Test
+    fun `a review list that fails fails the run and keeps the checkpoint, so the next pass proposes again`() {
+        history.cursors["course-scout"] = ScoutCursor("2026-10-20T00:00:00Z", null, null)
+        val review = CandidateReview { _, _ -> throw IllegalStateException("database down") }
+        val c = FakeCollector(descriptor("course-scout")) {
+            CollectedBatch(emptyList(), null, "cp", candidates = listOf(candidate("https://www.coursera.org/learn/ai")))
+        }
+
+        val run = RunScout(listOf(c), history, catalog, null, clock, NO_LOCK, review = review).runNow()!!.single()
+
+        assertEquals(RunStatus.FAILED, run.status)
+        assertEquals("2026-10-20T00:00:00Z", history.cursors["course-scout"]!!.checkpoint)
     }
 }

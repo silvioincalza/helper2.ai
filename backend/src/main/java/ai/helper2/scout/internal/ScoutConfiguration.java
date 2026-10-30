@@ -8,6 +8,7 @@ import ai.helper2.platform.llm.CallCounter;
 import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.LlmSettings;
 import ai.helper2.platform.llm.ModelCallMetrics;
+import ai.helper2.scout.CandidateReview;
 import ai.helper2.scout.CatalogIndex;
 import ai.helper2.scout.Collector;
 import ai.helper2.scout.EnrichmentBacklog;
@@ -101,12 +102,12 @@ class ScoutConfiguration {
     @Bean
     RunScout scoutRunner(List<Collector> collectors, ScoutStore store, CatalogIndex index, EnrichmentModel model,
                             EnrichmentStore enrichmentStore, EnrichmentBacklog backlog, Clock clock, ClusterLock scoutRunLock,
-                            MeterRegistry meters, ObservationRegistry observations,
+                            CandidateReview review, MeterRegistry meters, ObservationRegistry observations,
                             @Value("${helper2.scout.max-items-per-run:500}") int maxItemsPerRun,
                             @Value("${helper2.scout.max-enrichments-per-run:20}") int maxEnrichmentsPerRun) {
         return new RunScout(collectors, store, index, new EnrichResource(model, enrichmentStore, clock,
             new EvidenceValidator(), meters), clock, new ClusterRunLock(scoutRunLock), maxItemsPerRun, maxEnrichmentsPerRun,
-            backlog, meters, RUN_THREADS, observations);
+            backlog, meters, RUN_THREADS, observations, review);
     }
 
     @Bean

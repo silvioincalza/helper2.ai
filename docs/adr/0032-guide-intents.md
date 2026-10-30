@@ -293,8 +293,8 @@ to learn LangChain" picks the O'Reilly course.
 - `backend/src/main/resources/prompts/guide/plan.txt`, `choose.txt`, `compare.txt`, `explain.txt`.
 - `backend/src/main/kotlin/ai/helper2/search/Filtering.kt`, `Model.kt`, `usecase/SearchResources.kt` — window filter,
   `SourceQuery.publishedAfter`, `browse`, cache key.
-- `backend/src/main/java/ai/helper2/sources/GitHubSource.java`, `TavilySource.java`, `NpmSource.java`,
-  `CourseCollector.java`; `catalog/internal/ResourceStore.java` — date pushdown, npm dates, courses.
+- `backend/src/main/java/ai/helper2/sources/github/GitHubSource.java`, `sources/tavily/TavilySource.java`,
+  `sources/npm/NpmSource.java`, `sources/tavily/CourseCollector.java`; `catalog/internal/ResourceStore.java` — date pushdown, npm dates, courses.
 - `backend/src/main/resources/db/migration/V2__npm_dates_are_updates.sql`, `V3__course_type.sql`, `R__courses.sql`.
 - `api/openapi.yaml` — request, response, status, stream events.
 - `frontend/src/components/GuideAnswer.tsx` — clarification chips, "Understood as", comparison table, explanation.

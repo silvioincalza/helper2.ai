@@ -5,11 +5,12 @@
 # checkpoint rules, the shared enrichment budget, and the backlog drain at the end. Enrichment itself is in flow-0019.
 # Source of truth: backend/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt (RunScout), scout/Scout.kt (ScheduledRun, ScheduledRunStore),
 #   backend/src/main/java/ai/helper2/scout/internal/JdbcScoutStore.java (scout_schedule),
-#   backend/src/main/kotlin/ai/helper2/scout/Ports.kt (CollectedBatch),
+#   backend/src/main/kotlin/ai/helper2/scout/Ports.kt (CollectedBatch, CandidateReview),
+#   backend/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java,
 #   backend/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java (ScoutSchedule, scoutRunLock,
 #   ClusterRunLock, RUN_THREADS), backend/src/main/java/ai/helper2/platform/ClusterLock.java, ClusterLocks.java,
 #   backend/src/main/java/ai/helper2/scout/web/AdminController.java (startScoutRun),
-#   backend/src/main/java/ai/helper2/sources/RunInterval.java.
+#   backend/src/main/java/ai/helper2/sources/support/RunInterval.java.
 # Render: cd docs/diagrams && d2 fmt flow-0018-scout-runner.d2 && d2 flow-0018-scout-runner.d2 flow-0018-scout-runner.svg
 
 ...@style
@@ -38,6 +39,8 @@ each: For each collector (isolated) {
   due: "Interval passed or\npass unfinished?" {class: decision}
   notdue: "SKIPPED\n\"Not due yet (run interval)\"" {class: end}
   index: "Merge hits, CatalogIndex.index\n→ changed resource ids" {class: app}
+  cands: "Batch has candidates?" {class: decision}
+  propose: "CandidateReview.propose(sourceId,\ncandidates): one review item per\npage not proposed before" {class: data}
   cursor: "nextCursor set?" {class: decision}
   resume: "Save resumeCursor;\ncheckpoint unchanged" {class: data}
   done: "Pass complete:\ncheckpoint = pass start" {class: data}
@@ -52,7 +55,10 @@ each: For each collector (isolated) {
   collect -> due
   due -> notdue: no
   due -> index: yes
-  index -> cursor
+  index -> cands
+  cands -> propose: yes
+  cands -> cursor: no
+  propose -> cursor
   cursor -> resume: yes
   cursor -> done: no
   resume -> enrich
@@ -64,6 +70,7 @@ each: For each collector (isolated) {
   enrich -> ok: "no id or\nbudget left"
   collect -> failed: "exception" {class: config}
   index -> failed: "exception" {class: config}
+  propose -> failed: "exception" {class: config}
 }
 
 drain: "Drain backlog one at a time:\npending(budget left + attempted)" {class: ai}

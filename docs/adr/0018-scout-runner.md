@@ -43,7 +43,11 @@ at the same time. Prod runs 3 replicas ([0027](0027-runtime-topology.md)), each 
    - not due (its `RunInterval` has not passed and no pass is unfinished) → `SKIPPED` "Not due yet (run interval)";
    - otherwise the hits are merged and written with `CatalogIndex.index`, which returns the resources whose source
      records changed;
-   - any exception → `FAILED` "Collection failed: <class>", the cursor is not moved, and the next collector runs.
+   - the batch's candidates (pages a person must accept first, such as `CourseCollector`'s course pages) go to the
+     port `CandidateReview.propose(sourceId, candidates)`; the adapter `ReviewQueueCandidateReview` opens one
+     `COURSE_CANDIDATE` review item per page not proposed before. Collectors never call the review list themselves;
+   - any exception, including a failing review list → `FAILED` "Collection failed: <class>", the cursor is not moved,
+     and the next collector runs. The next pass proposes the same pages again; the review list opens none twice.
 4. **Cursor and checkpoint** (`ScoutCursor`, table `source_cursor`). The checkpoint is the start time of the last
    complete pass; collectors use it as `updated_since` or `start_date`. When a pass stops at the item limit, the
    collector returns `nextCursor`: it is saved with the pass start, and the checkpoint stays. When the pass completes,
@@ -52,7 +56,8 @@ at the same time. Prod runs 3 replicas ([0027](0027-runtime-topology.md)), each 
 5. **Intervals per collector** (`RunInterval`): Model Context Protocol (MCP) Registry `H2_SCOUT_MCP_INTERVAL` (1 h), Hugging Face trending
    `H2_SCOUT_HF_INTERVAL` (1 day), Hugging Face provider orgs `H2_SCOUT_HF_ORGS_INTERVAL` (1 day), awesome lists
    `H2_SCOUT_AWESOME_INTERVAL` (1 day), ai-deadlines `H2_SCOUT_AI_DEADLINES_INTERVAL` (1 day), Tavily
-   `H2_SCOUT_TAVILY_INTERVAL` (5 days). Details in [0020](0020-scout-collectors.md).
+   `H2_SCOUT_TAVILY_INTERVAL` (5 days), courses `H2_SCOUT_COURSES_INTERVAL` (7 days). Details in
+   [0020](0020-scout-collectors.md).
 6. **Enrichment budget per run.** One `EnrichmentBudget` of `H2_SCOUT_MAX_ENRICHMENTS` (20) is shared by all
    collectors and the backlog. Changed resources with a source description of at least 40 characters are enriched
    while the budget lasts ([0019](0019-evidence-gated-enrichment.md)). The budget counts model calls: an `UNCHANGED`
@@ -109,7 +114,8 @@ at the same time. Prod runs 3 replicas ([0027](0027-runtime-topology.md)), each 
 - `backend/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt` — `RunScout` (`tryStart`, `tryRunScheduled`,
   `closeInterruptedRuns`), `EnrichmentBudget`,
   `ScoutCursor`, `ScheduledRun`, ports (`ScheduledRunStore`).
-- `backend/src/main/kotlin/ai/helper2/scout/Ports.kt` — `Collector`, `CollectedBatch`.
+- `backend/src/main/kotlin/ai/helper2/scout/Ports.kt` — `Collector`, `CollectedBatch` (hits and candidates), `CandidateReview`.
+- `backend/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java` — candidates as review items.
 - `backend/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java` — `ScoutSchedule`, `scoutRunLock`, `ClusterRunLock`,
   `RUN_THREADS`, `closeInterruptedScoutRuns`.
 - `backend/src/main/java/ai/helper2/platform/ClusterLock.java`, `ClusterLocks.java`, `ClusterLockConfiguration.java`; tables `shedlock` and
@@ -122,7 +128,7 @@ at the same time. Prod runs 3 replicas ([0027](0027-runtime-topology.md)), each 
 - `frontend/src/pages/AdminPage.tsx` — "Run now", polling of the run listing.
 - `backend/src/main/java/ai/helper2/scout/internal/JdbcScoutStore.java` — `source_cursor`, `scout_run`, `scout_schedule`.
 - `backend/src/main/java/ai/helper2/scout/web/AdminController.java` — `startScoutRun`, `listScoutRuns`.
-- `backend/src/main/java/ai/helper2/sources/RunInterval.java`.
+- `backend/src/main/java/ai/helper2/sources/support/RunInterval.java`.
 
 ## Diagrams
 [flow](../diagrams/flow-0018-scout-runner.svg) · [sequence](../diagrams/sequence-0018-scout-runner.svg)

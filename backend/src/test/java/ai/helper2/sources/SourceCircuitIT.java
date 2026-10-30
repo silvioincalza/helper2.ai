@@ -11,6 +11,8 @@ import ai.helper2.search.SkipReason;
 import ai.helper2.search.SourceOutcome;
 import ai.helper2.search.SourceStatus;
 import ai.helper2.search.usecase.SearchResources;
+import ai.helper2.sources.npm.NpmSource;
+import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.testing.FixtureServer;
 import ai.helper2.testing.MovableClock;
 import io.github.resilience4j.bulkhead.BulkheadRegistry;
