@@ -1,36 +1,38 @@
 # Shared look for every Helper2 diagram. Import with `...@style` at the top of a diagram.
-# The theme overrides make every default dark with cyan lines; classes add meaning by colour:
-# app = cyan, NVIDIA / Nemotron = green, data = violet, external = amber, ports = pink.
+# The colours are the website's light theme (frontend/src/styles/tokens.css): warm paper, indigo ink,
+# one saffron accent. Classes add meaning by colour:
+# app = indigo on paper, NVIDIA / Nemotron = green, data = lavender, external = amber, port = saffron hexagon.
+# The main path and the model calls are animated lines.
 
 vars: {
   d2-config: {
     pad: 60
     theme-overrides: {
-      # Neutrals: N1 text … N7 canvas background.
-      N1: "#E2E8F0"
-      N2: "#CBD5E1"
-      N3: "#94A3B8"
-      N4: "#64748B"
-      N5: "#334155"
-      N6: "#1E293B"
-      N7: "#070B14"
-      # Base: B1 strokes and lines, B4–B6 fills from outer container to leaf shape.
-      B1: "#22D3EE"
-      B2: "#22D3EE"
-      B3: "#0E7490"
-      B4: "#0B1222"
-      B5: "#0D1528"
-      B6: "#0F1B2E"
-      AA2: "#A78BFA"
-      AA4: "#1E1B4B"
-      AA5: "#170F2E"
-      AB4: "#0F1F05"
-      AB5: "#1F1406"
+      # Neutrals: N1 text … N7 canvas background (--ink … --bg).
+      N1: "#1B1C3F"
+      N2: "#35344F"
+      N3: "#4F4B63"
+      N4: "#8A8499"
+      N5: "#D3C7B2"
+      N6: "#E7DFD0"
+      N7: "#F7F2E9"
+      # Base: B1 strokes and lines (--accent-deep), B4–B6 fills from outer container to leaf shape.
+      B1: "#2D2E60"
+      B2: "#2D2E60"
+      B3: "#4F4B63"
+      B4: "#EFE9DD"
+      B5: "#F4EDE1"
+      B6: "#FFFDF8"
+      AA2: "#A8420A"
+      AA4: "#FDEBD3"
+      AA5: "#FBEFE2"
+      AB4: "#E3F3EE"
+      AB5: "#E6F0FB"
     }
   }
 }
 
-# Monospace everywhere (shapes and connections, four levels deep).
+# Monospace everywhere (shapes and connections, four levels deep), like source names on the site.
 *.style.font: mono
 *.*.style.font: mono
 *.*.*.style.font: mono
@@ -44,110 +46,119 @@ classes: {
     # Title outside the frame, top left: edges that enter a group at the top never cross it.
     label.near: outside-top-left
     style: {
-      fill: "#0B1222"
-      stroke: "#1E293B"
+      fill: "#F4EDE1"
+      stroke: "#D3C7B2"
       stroke-width: 2
-      font-color: "#64748B"
+      font-color: "#4F4B63"
       border-radius: 16
       bold: true
     }
   }
+  # Our components: --surface, --accent-deep, --ink.
   app: {
     style: {
-      fill: "#0B1E2D"
-      stroke: "#22D3EE"
-      font-color: "#CFFAFE"
+      fill: "#FFFDF8"
+      stroke: "#2D2E60"
+      font-color: "#1B1C3F"
       border-radius: 10
       shadow: true
     }
   }
+  # NVIDIA Nemotron: --checked-bg, --status-ok, --checked-ink.
   ai: {
     style: {
-      fill: "#0F1F05"
-      stroke: "#76B900"
-      font-color: "#D9F99D"
+      fill: "#E3F3EE"
+      stroke: "#2F8F5B"
+      font-color: "#0F4D3C"
       border-radius: 10
       shadow: true
     }
   }
+  # Data stores and caches: --tag-paper-bg, --accent-deep.
   data: {
     style: {
-      fill: "#170F2E"
-      stroke: "#A78BFA"
-      font-color: "#EDE9FE"
+      fill: "#E6E7F5"
+      stroke: "#2D2E60"
+      font-color: "#1B1C3F"
       shadow: true
     }
   }
+  # External services: --tag-model-bg, --status-warn, --tag-model-ink.
   ext: {
     style: {
-      fill: "#1F1406"
-      stroke: "#F59E0B"
-      font-color: "#FEF3C7"
+      fill: "#FDEBD3"
+      stroke: "#C98A0B"
+      font-color: "#7A3E00"
       border-radius: 10
     }
   }
+  # Ports of the hexagon: --quote-bg, --accent (saffron), --accent-ink.
   port: {
     shape: hexagon
     style: {
-      fill: "#2A0B1E"
-      stroke: "#F472B6"
-      font-color: "#FCE7F3"
+      fill: "#FBEFE2"
+      stroke: "#E06A1D"
+      font-color: "#A8420A"
     }
   }
   person: {
     shape: person
     style: {
-      fill: "#0F172A"
-      stroke: "#E2E8F0"
-      font-color: "#E2E8F0"
+      fill: "#EFE9DD"
+      stroke: "#1B1C3F"
+      font-color: "#1B1C3F"
     }
   }
+  # The main path: saffron, animated.
   hot: {
     style: {
-      stroke: "#22D3EE"
-      font-color: "#67E8F9"
+      stroke: "#E06A1D"
+      font-color: "#A8420A"
       stroke-width: 3
       animated: true
     }
   }
+  # A call to the model: green, animated.
   ai-call: {
     style: {
-      stroke: "#76B900"
-      font-color: "#BEF264"
+      stroke: "#2F8F5B"
+      font-color: "#0F4D3C"
       stroke-width: 3
+      animated: true
     }
   }
   config: {
     style: {
-      stroke: "#64748B"
+      stroke: "#8A8499"
       stroke-dash: 4
-      font-color: "#94A3B8"
+      font-color: "#4F4B63"
     }
   }
   # Flowcharts: a branch in the code, and an end state the caller sees.
   decision: {
     shape: diamond
     style: {
-      fill: "#0B1222"
-      stroke: "#22D3EE"
-      font-color: "#CFFAFE"
+      fill: "#FFFDF8"
+      stroke: "#E06A1D"
+      font-color: "#1B1C3F"
     }
   }
   end: {
     shape: oval
     style: {
-      fill: "#0F172A"
-      stroke: "#E2E8F0"
-      font-color: "#E2E8F0"
+      fill: "#FFFDF8"
+      stroke: "#1B1C3F"
+      font-color: "#1B1C3F"
       bold: true
     }
   }
+  # An error end: --danger.
   fail: {
     shape: oval
     style: {
-      fill: "#2A0B1E"
-      stroke: "#F472B6"
-      font-color: "#FCE7F3"
+      fill: "#FDECEA"
+      stroke: "#B42318"
+      font-color: "#B42318"
       bold: true
     }
   }

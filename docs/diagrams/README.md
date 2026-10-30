@@ -57,20 +57,27 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0037](../adr/0037-tavily-store-and-daily-quota.md) | [flow](flow-0037-tavily-store-and-quota.svg) | [sequence](sequence-0037-tavily-store-and-quota.svg) | what one search does with Tavily: the stored answer first, a live call only inside the asker's daily web searches, and the same search from another visitor answered from the store. |
 | [0038](../adr/0038-ai-content-marking.md) | [flow](flow-0038-ai-content-marking.svg) | [sequence](sequence-0038-ai-content-marking.svg) | the aiContent marker of a guide answer and the data-ai-* attributes in the page. |
 | [0039](../adr/0039-frontend-recent-answers-cache.md) | [flow](flow-0039-frontend-recent-answers-cache.svg) | [sequence](sequence-0039-frontend-recent-answers-cache.svg) | when useApi shows a recent answer and when it asks the server, and a back move without a request. |
+| [0040](../adr/0040-frontend-design-v2.md) | [flow](flow-0040-frontend-design-v2.svg) | [sequence](sequence-0040-frontend-design-v2.svg) | the v2 results page: the list at once, the reserved picks bar, badges in place with no re-order, and the selected result in the URL. |
 
 ## Colors
 
-Shared dark theme in [style.d2](style.d2), imported by every diagram with `...@style`:
-cyan = our components, green = NVIDIA Nemotron and calls to it, violet = data stores and caches,
-amber = external services, pink hexagon = port (hexagonal architecture). An animated line marks the main path.
-Flowcharts use diamonds for decisions, white ovals for normal ends and pink ovals for error ends.
+Shared light theme in [style.d2](style.d2), imported by every diagram with `...@style`. It uses the website's
+light colours (`frontend/src/styles/tokens.css`): warm paper background, indigo ink, one saffron accent.
+Indigo on paper = our components, green = NVIDIA Nemotron, lavender = data stores and caches,
+amber = external services, saffron hexagon = port (hexagonal architecture).
+Animated lines: saffron for the main path, green for calls to the model.
+Flowcharts use saffron diamonds for decisions, paper ovals for normal ends and red ovals for error ends.
 
 ## Render
 
-CI re-renders every diagram with d2 v0.7.1 and fails if a committed SVG differs.
+CI re-renders every diagram with d2 v0.9.0 and fails if a committed SVG differs.
+Another d2 version draws different SVGs, so render only with v0.9.0:
 
 ```bash
-go install oss.terrastruct.com/d2@v0.7.1
-cd docs/diagrams
-for f in *.d2; do [ "$f" = style.d2 ] && continue; d2 fmt "$f" && d2 "$f" "${f%.d2}.svg"; done
+brew install d2   # macOS, when Homebrew has v0.9.0; `d2 --version` must print v0.9.0
+# or, anywhere with Go 1.27+ (d2 moved to github.com/d2lang/d2; the version must be stamped):
+go install -ldflags "-X github.com/d2lang/d2/lib/version.Version=v0.9.0" github.com/d2lang/d2@v0.9.0
+docs/diagrams/render.sh
 ```
+
+`render.sh` stops if `d2` is another version. CI runs the same script.

@@ -4,7 +4,7 @@ Snapshot of the design work, saved next to the code. The live, editable version 
 
 ## `system/` — the Helper2.ai design system
 
-One system for every feature. Start with [system/README.md](system/README.md) (principles, content rules, color roles, type tags, logo, components).
+One system for every feature. Start with [system/README.md](system/README.md) (principles, content rules, color roles, type tags, logo, pages, breakpoints, accessibility, components).
 
 | Path | What |
 |---|---|
