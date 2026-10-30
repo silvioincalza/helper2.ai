@@ -33,6 +33,13 @@ Run the relevant tests before calling a change done.
 - Before adding a library or tool: compare 2-3 candidates (fit, maintenance, licence, lock-in,
   operational cost), recommend one, state the trade-off.
 - Lasting decision → new ADR in `docs/adr/` (next number), linked from `docs/adr/README.md`.
+- Every ADR has a flowchart (the decisions in the code) and a sequence diagram (the call path),
+  as D2 sources in `docs/diagrams/` (`flow-NNNN-<slug>.d2`, `sequence-NNNN-<slug>.d2`) with the
+  rendered SVG committed next to them, linked from the ADR and both README indexes. When the
+  decision changes the module structure or the runtime, also update `software-architecture` and/or
+  `infrastructure`. A decision with no runtime path (e.g. versioning) says so in one line instead
+  of a sequence diagram. Each `.d2` names the code it describes; update it in the same change as
+  that code.
 - Architecture or design work → run the AI architecture check below.
 - Orchestration for multi-step flows with compensation; choreography for loose side effects.
   SSE for server streaming; WebSocket only for real two-way interaction.
