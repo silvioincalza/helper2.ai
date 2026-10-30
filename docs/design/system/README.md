@@ -97,9 +97,9 @@ Layout is flex and grid with `gap`. No fixed heights except the boards.
 
 ## Accessibility
 
-- **Moving content.** The News and Events boards scroll by themselves. They pause on hover and on keyboard focus. Under `prefers-reduced-motion` nothing moves and the board is a normal scrollable list. The radar sweep stops too. There is no Pause button. Open point: touch users cannot pause the boards (WCAG 2.2.2). See the rollout plan.
+- **Moving content.** The News and Events boards scroll by themselves, one row at a time. They pause on hover, on keyboard focus and on tap (tap again to play), and a visible Pause/Play button under each board does the same (WCAG 2.2.2). Under `prefers-reduced-motion` nothing moves, there is no button, and the board is a normal scrollable list. The radar sweep stops too.
 - **Targets:** every control is at least `target-min` (44px). Calendar days are 40px; they sit in a grid with 2px gaps.
-- **One copy for assistive tech.** The board repeats its rows to loop; the copy is `aria-hidden` and its links are out of the tab order.
+- **One copy for assistive tech.** Each board row is in the list once, and the list is not a live region: a screen reader reads a normal list.
 - **Headings:** one `h1` per page. On the results page it is "Results for …" (visually hidden); the preview title is an `h2`.
 - **AI-written text is labelled** (EU AI Act Art. 50). The guide's reason sits next to a **Quote checked** badge or the "Model's explanation (not checked)" label, never alone. The HTML marks it machine-readable, as ADR 0038 says.
 - **Colour is never alone.** Every pill has a word.
@@ -111,7 +111,7 @@ Components are plain HTML plus the classes in `components/bundle.css` (prefix `h
 | Component | Used for |
 |---|---|
 | **Header** *(changed)* | Logo with tagline, the search box, theme and Saved buttons. Type tabs under it on the results page. 72px min height. |
-| **Footer** | One row: place and servers, Mission, Sources, Privacy, Terms. |
+| **Footer** | One row: the one claim "No ads.", then Mission, Sources, Privacy, Terms, GitHub and the release version. |
 | **Omnibox** *(changed)* | The search box. A 999px pill, 52px (58px in the hero), search icon, input, saffron **Search** button. No keyboard-shortcut hint unless the shortcut works. |
 | **TypeTabs** *new* | All, MCP servers, Libraries, Models, Articles, each with a mono count. Active tab: ink text, 3px `accent` underline. Scrolls sideways on phones. |
 | **Button** *(changed)* | 44px high, 999px corners, label on one line. Primary in `accent`. An external link ends with `↗`. |
@@ -124,7 +124,7 @@ Components are plain HTML plus the classes in `components/bundle.css` (prefix `h
 | **ProofQuote** *(was in GuidePick)* | The source text on `proof-bg`, with the checked sentence on `proof-mark`, and a mono caption naming the source. |
 | **FactList** *(changed)* | Two groups, Use and Build, as a `dl`. A value no source stated reads **Not stated** in `not-stated`, italic. |
 | **GuidePick** | One of the guide's picks with its checked quote. |
-| **NewsBoard** *new* | News or Events on the home page. 2px `ink` rule on top, `display` heading, a short subtitle, "All … →" on the right. No Pause button. Each row: date in mono `accent-ink`, type tag, source or place, a StatusPill on the right; the name under it in `display`, two lines at most. The rows scroll up in a `board-loop` loop. |
+| **NewsBoard** *new* | News or Events on the home page. 2px `ink` rule on top, `display` heading, a short subtitle, "All … →" on the right. Each row: date in mono `accent-ink`, type tag, source or place, a StatusPill on the right; the name under it in `display`, two lines at most. The rows scroll up one at a time, back to the top at the end, with a Pause/Play button under the board. |
 | **SourcesGrid** *(was SourceStatus)* | Under the results: one mono line "fan-out · N sources · N hits → N after merge", then a tile per source with a status dot, the name and the time or cache age. |
 | **Banner** | Notices, partial results, empty and error states. |
 

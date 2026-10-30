@@ -1,20 +1,19 @@
 # 0040 — Frontend design v2: home page, results with preview, guide picks bar, design system v3
 
-**Status.** Accepted (2026-10-30). First decision for this design: it has never been deployed. Until it ships, the
-code still follows [0025](0025-frontend-one-box.md). **Builds on:** [0025](0025-frontend-one-box.md),
+**Status.** Accepted (2026-10-30). **Builds on:** [0025](0025-frontend-one-box.md),
 [0015](0015-ai-guide-evidence-gate.md), [0038](0038-ai-content-marking.md), [0039](0039-frontend-recent-answers-cache.md)
 
 ## Context
-The first frontend ([0025](0025-frontend-one-box.md)) puts the box, the guide answer and the results on one long page.
-It works, but three things are hard for a user:
+The one box ([0025](0025-frontend-one-box.md)) searches and asks the guide. Three things decide how the pages around it
+work for a user:
 - The guide answer arrives after about 15 seconds. Results are ready much sooner, and the user starts reading them.
   Anything that moves the list at that moment makes them lose their place.
-- To check a result, the user must open the resource page and come back. Comparing three results means six page loads.
-- On a phone, the home feeds and the results compete for the same narrow column.
+- To check a result, the user should not have to open the resource page and come back. Comparing three results
+  would mean six page loads.
+- On a phone, what is new and the results cannot share one narrow column.
 
-We drew the new design as clickable prototypes (Home, Results, Resource, States, Saved, Sources, Mission, Privacy)
-and chose between options for each part. The design was never deployed, so this record is a first decision,
-not a migration of something users already know.
+We drew the design as clickable prototypes (Home, Results, Resource, States, Saved, Sources, Mission, Privacy)
+and chose between options for each part.
 
 ## Decision
 1. **Same palette and fonts, design system v3.** Paper, indigo ink, one saffron accent. Space Grotesk, Inter,
@@ -22,8 +21,11 @@ not a migration of something users already know.
    quote, sources tile, selected row) and the breakpoints 560, 640, 860 and 1000 px. No colour value changes.
 2. **Home is only the home page.** Radar hero, the one box and example searches. Below: **News** (last 7 days) and
    **Events** (next 3 months), two boards that scroll slowly on their own. Each row: date, type tag, source or place,
-   status pill (Updated, Published, First seen, In 13 days…), name. A board pauses on hover, on keyboard focus and
-   on tap (tap again to play). Under `prefers-reduced-motion` it does not move and scrolls by hand.
+   status pill (Updated, Published, First seen, In 13 days…), name. A board moves up one row every few seconds and
+   back to the top at the end. It pauses on hover, on keyboard focus and on tap (tap again to play), and a visible
+   Pause/Play button does the same for everyone (WCAG 2.2.2). Under `prefers-reduced-motion` it does not move and
+   scrolls by hand. Each row is in the list once and the list is not a live region, so a screen reader reads a normal
+   list. Loading shows skeleton rows; empty and error say so, and an error offers to try again.
 3. **Results on `/search`.** The box and the examples open `/search?q=…`. `/?q=…` shows the same page and declares
    `/search` as the canonical URL, so search engines see one page.
 4. **List and preview.** From 861 px: the result list on the left, a preview of the selected result on the right
@@ -42,12 +44,11 @@ not a migration of something users already know.
    under the results, not in the header.
 8. **States are designed, not left to chance.** Loading (skeleton rows), guide answering, no results, some sources
    failed, all sources failed, 404. Each has a next step.
-9. **Footer says only "No ads."** Tracking cookies are planned later. The footer makes no claim about tracking, so it
-   does not need to change when they come. Mission and Privacy keep their text until then.
-10. **Built behind `NEW_DESIGN_ENABLED`** in `frontend/src/lib/features.ts`, page by page: shared components and
-    tokens, Home, Results, Resource, States, Saved and Sources, Mission and Privacy. Nobody uses the old design yet,
-    so the flag does not protect users. It keeps `main` releasable while the pages are half done. When the last page
-    is done, the flag and the old components go in the same pull request.
+9. **The footer makes one claim: "No ads."** Next to it, in one row, the links: Mission, Sources, Privacy, Terms,
+   the code on GitHub and the release notes. Tracking cookies are planned later. The footer makes no claim about
+   tracking, so it does not need to change when they come. Mission and Privacy keep their text until then.
+10. **Built page by page**, one pull request each: shared components and tokens, Home, Results, Resource, States,
+    Saved and Sources, Mission and Privacy. Each step builds its page in place, so the code holds one design.
 
 ## Consequences
 - Good: the user reads results at once and is never moved. The guide adds to the list, it does not reorder it.
@@ -56,8 +57,9 @@ not a migration of something users already know.
 - Good: search ranking and the guide's opinion stay visibly separate: the list is ranking, the badges are the guide.
 - Bad: the picks bar takes about 110 px above the list, also when the guide has nothing to say (then one line).
 - Bad: two layouts for results (desktop preview, inline preview on a phone) to build and test.
-- Bad: the boards move. Hover, focus and tap pause them. A screen reader user gets a normal list.
-- Trade-off: while the flag lives, two designs sit in the code. Small pull requests per page keep that short.
+- Bad: the boards move. Hover, focus, tap and the Pause button stop them. A screen reader user gets a normal list.
+- Trade-off: until the last step, some pages have the new look and some do not. Small pull requests per page keep
+  that short.
 
 ## Alternatives considered
 - **Look: minimal search page, editorial news front page, or developer console** — each drawn on its own. Minimal
@@ -70,30 +72,36 @@ not a migration of something users already know.
 - **Guide answer: move the picks to the top** — the best answer comes first, but the list jumps while the user reads.
 - **Guide answer: badges only** — nothing moves, but the best answer can sit at row 5, under the fold.
 - **Results only on `/`** — keeps one route, but home and results share a URL and a page component.
-- **Big-bang branch** without a flag — one review instead of seven, but a long-lived branch and one large merge.
+- **Big-bang branch** — one review instead of seven, but a long-lived branch and one large merge.
+- **A flag per page** — keeps two designs in the code while it lives; no user knows another design, so it protects
+  no one.
+- **Boards as a seamless loop** (the rows repeated, the copy hidden from assistive tech) — smooth, but twice the
+  rows in the page and a copy to keep out of the tab order; one row at a time reads as well.
 
 ## Code
-Built (step 1, shared parts; no page uses them while the flag is off):
-- `frontend/src/lib/features.ts` — `NEW_DESIGN_ENABLED`, off.
-- `frontend/src/styles/tokens.css` — the semantic tokens of `tokens.json` v3, each an alias of its base token.
+Built:
+- `frontend/src/styles/tokens.css` — the semantic tokens of `tokens.json` v3, each an alias of its base token, and
+  `board-height`.
 - `frontend/src/components/ui/` — `TypeTag`, `StatusPill`, `ProofQuote`, `SourceTiles`, `SelectableRow` (the
-  selected-row outline) and `PicksBar` (reserved height, waiting line, no-pick line, AI-written picks slot), with
-  `ui.css` imported by the components, so a page without them loads none of it.
-- `frontend/src/hooks/useGuideStream.ts` — the guide stream for the question and refinement in the URL, shared by
-  both designs.
+  selected-row outline), `PicksBar` (reserved height, waiting line, no-pick line, AI-written picks slot) and
+  `NewsBoard` (heading, states, the moving list and its Pause/Play button), with `ui.css` imported by the components.
+- `frontend/src/pages/HomePage.tsx`, `components/HomeBoards.tsx` — the radar hero, the box, the examples, and the News
+  (`GET /api/v1/recent`, 7 days) and Events (`GET /api/v1/events/upcoming`, [0022](0022-next-events.md), 90 days)
+  boards.
+- `frontend/src/components/Layout.tsx` — the one-row footer.
+- `frontend/src/hooks/useGuideStream.ts` — the guide stream for the question and refinement in the URL.
 
 Planned:
-- `frontend/src/routes.tsx` — `/search`; `/` home only, `/?q=` shows results with a canonical link.
-- `frontend/src/pages/HomePage.tsx`, `components/Radar.tsx`, `components/NextEvents.tsx` — hero and the two boards.
+- `frontend/src/routes.tsx` — `/search`; `/` home only, `/?q=` shows results with a canonical link. Until then the box
+  and the examples show the results on `/` under the hero.
 - `frontend/src/components/SearchResults.tsx`, `ResultCardView.tsx` — list, preview, inline preview, `id` in the URL.
 - `frontend/src/components/GuideAnswer.tsx` — the picks in `PicksBar` and the badges.
-- `frontend/src/components/SourceStatusPanel.tsx`, `Layout.tsx` — sources at the bottom, header, footer.
-- `tokens.css` — the sizes (`content-wide`, `board-height`, `list-max`) and motion (`board-loop`, `radar-sweep`) of
-  `tokens.json` v3, with the pages that use them.
+- `frontend/src/components/SourceStatusPanel.tsx`, `Layout.tsx` — sources at the bottom, header.
+- `tokens.css` — `content-wide`, `list-max` and `radar-sweep` of `tokens.json` v3, with the pages that use them.
 
 ## Diagrams
 [flow](../diagrams/flow-0040-frontend-design-v2.svg) · [sequence](../diagrams/sequence-0040-frontend-design-v2.svg)
 
 ## Roadmap
-[Frontend](../roadmap.md#7-frontend): build steps behind `NEW_DESIGN_ENABLED`; pause for touch users on the boards to
-review against WCAG 2.2.2; consent banner and Privacy update before any tracking cookie.
+[Frontend](../roadmap.md#7-frontend): the boards' pause on touch and with a screen reader checked against WCAG 2.2.2
+on real devices; consent banner and Privacy update before any tracking cookie.

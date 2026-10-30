@@ -1,6 +1,6 @@
 # 0025 — Frontend: one page, one box, Radar design system, guide progress, accessibility, theme (system/light/dark)
 
-**Status.** Accepted (2026-10-27). Look and layout will be superseded by [0040](0040-frontend-design-v2.md) when it ships. **Builds on:** [0001](0001-stack-and-runtime.md), [0003](0003-contract-first-rest-api.md), [0008](0008-federated-search.md), [0015](0015-ai-guide-evidence-gate.md)
+**Status.** Accepted (2026-10-27). **Builds on:** [0001](0001-stack-and-runtime.md), [0003](0003-contract-first-rest-api.md), [0008](0008-federated-search.md), [0015](0015-ai-guide-evidence-gate.md)
 
 ## Context
 Users come with a need, not with a choice between "search" and "ask an artificial intelligence (AI)". Two boxes or a mode switch make them
@@ -10,6 +10,8 @@ screen reader, and in light and dark mode.
 
 ## Decision
 1. **One page, one box** (`OneBox`, `HomePage`). The box is the hero on `/` and sits in the header on other pages.
+   The home page around it (hero, examples, News and Events boards) and the look of every page are in
+   [0040](0040-frontend-design-v2.md).
    Typing searches live: from 3 characters, 700 ms after the last key. One button follows the text: fewer than 4 words
    search, 4 or more ask the guide; Shift+Enter always asks; Enter in an empty box goes back to the empty home page.
    All state is in the page address (URL): `q` (at most 200 characters), `ask` (at most 500), the refinement of the
@@ -36,8 +38,7 @@ screen reader, and in light and dark mode.
 6. **Accessibility.** Skip link; `RouteFocus` moves focus to the new page's `h1` (or `#main`, without scrolling) and
    names the page in a live region; paging moves focus to the results heading. The focus ring is a 3px indigo outline 2px off the control
    (`--focus`): at least 10.4:1 on every light surface and 8.8:1 (light indigo) on every dark one, above the 3:1 of
-   WCAG 1.4.11. The home feeds' `Carousel` moves by itself only with a visible Pause/Play button (WCAG 2.2.2, also on
-   touch screens), holds still while the pointer or focus is inside, and never moves with reduced motion. Vitest runs axe-core smoke tests (`a11y.test.tsx`,
+   WCAG 1.4.11. Moving content on the home page follows WCAG 2.2.2 ([0040](0040-frontend-design-v2.md)). Vitest runs axe-core smoke tests (`a11y.test.tsx`,
    color contrast excluded because jsdom cannot compute it).
 7. **Theme: system, light, dark.** One button cycles system → light → dark. A fixed choice is saved as `h2.theme`;
    "system" removes it. `public/theme.js` sets `data-theme` before the first paint and follows the device while no choice is saved.
@@ -47,7 +48,7 @@ screen reader, and in light and dark mode.
    paint on a deep link and no extra request per page. Lazy pages were measured and are larger without a
    bundler-specific chunk group (see Alternatives). `npm run check:bundle` (`scripts/check-bundle.mjs`) runs in CI
    after the build and fails it when the first visit's JavaScript (the entry and the modules it preloads) passes
-   160 KiB gzipped, or any other chunk passes 30 KiB (152.4 KiB measured). It runs in CI only, so a few bytes
+   160 KiB gzipped, or any other chunk passes 30 KiB (152.6 KiB measured). It runs in CI only, so a few bytes
    never block an image build or a deploy.
 
 ## Consequences

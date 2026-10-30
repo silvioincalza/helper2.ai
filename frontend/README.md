@@ -21,7 +21,8 @@ src/lib        searchState.ts (URL <-> state, guide refinement), locateQuote.ts,
 src/context    MeContext (GET /me), BookmarksContext (local, merged once to server on sign-in)
 src/hooks      useApi (keyed fetch with AbortController, recent-answers cache, ADR 0039), useGuideStream (guide SSE for the URL's question), useTitle
 src/components cards, badges, filter panel, source status panel, glossary Term, ...
-  ui/          design v2 shared components (ADR 0040, behind NEW_DESIGN_ENABLED): TypeTag, StatusPill, ProofQuote, SourceTiles, SelectableRow, PicksBar; own ui.css
+  HomeBoards   the home page's News (GET /recent) and Events (GET /events/upcoming) boards
+  ui/          design system components (ADR 0040): TypeTag, StatusPill, ProofQuote, SourceTiles, SelectableRow, PicksBar, NewsBoard; own ui.css
 src/pages      Home, Resource, Saved, Sources, Account, Admin, Mission, Privacy, Terms, NotFound (one entry chunk)
 src/i18n       index.ts + locales/{en,it}.json
 src/test       fixtures, fetch mock, render helper, axe helper

@@ -2,7 +2,7 @@
 # Source of truth: backend/src/main/java/ai/helper2/sources/aideadlines/AiDeadlinesCollector.java,
 #   backend/src/main/java/ai/helper2/catalog/internal/ResourceStore.java (refreshEventDates, upcomingEvents),
 #   backend/src/main/java/ai/helper2/catalog/ResourceCatalog.java (index), usecase/ListUpcomingEvents.java,
-#   backend/src/main/java/ai/helper2/catalog/web/ResourcesController.java, frontend/src/components/NextEvents.tsx.
+#   backend/src/main/java/ai/helper2/catalog/web/ResourcesController.java, frontend/src/components/HomeBoards.tsx.
 # Render: cd docs/diagrams && d2 fmt sequence-0022-next-events.d2 && d2 sequence-0022-next-events.d2 sequence-0022-next-events.svg
 
 ...@style
@@ -14,7 +14,7 @@ col: AiDeadlinesCollector {class: app}
 gh: "GitHub contents API" {class: ext}
 raw: "raw.githubusercontent.com" {class: ext}
 cat: ResourceCatalog {class: app}
-home: "NextEvents\n(home page)" {class: person}
+home: "Events board\n(home page)" {class: person}
 ctrl: ResourcesController {class: app}
 details: ListUpcomingEvents {class: app}
 rs: ResourceStore {class: app}
@@ -31,9 +31,9 @@ col -> runner: "EVENT hits with scheduled days"
 runner -> cat: "index(hits, ai-deadlines)"
 cat -> rs: "upsert(hits, INDEXED)"
 rs -> db: "upsert source_record;\nrefreshEventDates(resource ids)"
-home -> ctrl: "GET /api/v1/events/upcoming?size=6"
-ctrl -> details: "list(today 00:00 UTC, 6)"
-details -> rs: "upcomingEvents(today, 6)"
+home -> ctrl: "GET /api/v1/events/upcoming?size=60"
+ctrl -> details: "list(today 00:00 UTC, 60)"
+details -> rs: "upcomingEvents(today, 60)"
 rs -> db: "type EVENT, start stated,\nend (or start) on or after today"
 db -> rs: "ids, soonest first"
 rs -> details: "ids"
