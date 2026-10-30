@@ -480,6 +480,7 @@
     "scoutRuns": "Scout runs",
     "runNow": "Run now",
     "noRuns": "No runs yet.",
+    "runInProgress": "A Scout run is already in progress. Try again when it ends.",
     "reviewStatus": {
       "OPEN": "Open",
       "ACCEPTED": "Accepted",

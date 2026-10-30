@@ -1,9 +1,10 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ADMIN, ANON, USER } from '@/test/fixtures';
-import { mockApi } from '@/test/mockApi';
+import { mockApi, problem } from '@/test/mockApi';
 import { renderApp } from '@/test/render';
-import type { ReviewItem } from '@/api/types';
+import type { ReviewItem, ScoutRun } from '@/api/types';
+import { RUN_POLL_MS } from '@/pages/AdminPage';
 
 describe('sources page', () => {
   it('lists the disclosed registry with mode, terms, attribution and last outcome', async () => {
@@ -83,6 +84,44 @@ describe('admin page', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Run now' }));
     await waitFor(() => expect(m.callsTo('POST', '/admin/scout-runs')).toHaveLength(1));
     await waitFor(() => expect(m.callsTo('GET', '/admin/scout-runs').length).toBeGreaterThan(1));
+  });
+
+  it('follows a started run on the listing until it ends', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'], shouldAdvanceTime: true });
+    try {
+      const run = { id: '88888888-8888-5888-8888-888888888888', sourceId: 'mcp-registry', startedAt: '2026-10-21T10:00:00Z', finishedAt: null, itemsSeen: 0, itemsChanged: 0 };
+      let listed: (typeof run & { status: ScoutRun['status'] })[] = [];
+      const m = mockApi({
+        'GET /me': () => ADMIN,
+        'GET /admin/review-items': () => [],
+        'GET /admin/scout-runs': () => listed,
+        'POST /admin/scout-runs': () => { listed = [{ ...run, status: 'RUNNING' }]; return listed; },
+      });
+      renderApp('/admin');
+      await userEvent.click(await screen.findByRole('button', { name: 'Run now' }));
+      expect(await screen.findByText('Running')).toBeInTheDocument();
+
+      listed = [{ ...run, status: 'SUCCEEDED', itemsSeen: 4 }];
+      await vi.advanceTimersByTimeAsync(RUN_POLL_MS);
+      expect(await screen.findByText('Succeeded')).toBeInTheDocument();
+      const polls = m.callsTo('GET', '/admin/scout-runs').length;
+      await vi.advanceTimersByTimeAsync(RUN_POLL_MS * 2);
+      expect(m.callsTo('GET', '/admin/scout-runs')).toHaveLength(polls);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('says a run is in progress when the start is refused', async () => {
+    mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/review-items': () => [],
+      'GET /admin/scout-runs': () => [],
+      'POST /admin/scout-runs': () => problem(409, 'Conflict'),
+    });
+    renderApp('/admin');
+    await userEvent.click(await screen.findByRole('button', { name: 'Run now' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('A Scout run is already in progress');
   });
 
   it('runs one action at a time: a second click while a request is pending does nothing', async () => {
