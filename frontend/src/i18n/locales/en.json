@@ -897,7 +897,7 @@
     "copy": "Copy",
     "copied": "Copied",
     "connectTitle": "Connect it to your AI tool",
-    "command": "Runs locally with {{cmd}}, as its README shows",
+    "command": "Runs locally with {{cmd}}, copied from its README; not reviewed for safety, so read it before you run it",
     "fromReadme": "From the config example in its README, read {{date}}.",
     "readme": "README",
     "stepsTitle": "Step by step",
