@@ -1039,6 +1039,22 @@ components:
         fastModel: { type: string }
         reasoningModel: { type: string }
 
+    AiContentMarker:
+      type: object
+      required: [aiGenerated, provider, models, fields, policy]
+      description: |
+        Machine-readable marking of AI-written text (EU AI Act Art. 50(2), ADR 0038). Present only when a model wrote
+        text in this response. `fields` lists the fields a model wrote; every other field is source text or computed.
+      properties:
+        aiGenerated: { type: boolean, description: Always true. }
+        provider: { type: string }
+        models: { type: array, items: { type: string } }
+        fields:
+          type: array
+          description: JSON paths of the AI-written fields, with [] for every item of an array (e.g. recommendations[].reason).
+          items: { type: string }
+        policy: { type: string, description: Path of the page that explains how Helper2.ai marks AI text. }
+
     GuideResponse:
       type: object
       required: [status, searchQuery, recommendations, candidatesConsidered, sources, notices, generatedAt]
@@ -1051,6 +1067,7 @@ components:
         recommendations: { type: array, items: { $ref: '#/components/schemas/GuideRecommendation' } }
         prompt: { oneOf: [{ $ref: '#/components/schemas/GuidePrompt' }, { type: 'null' }] }
         model: { oneOf: [{ $ref: '#/components/schemas/GuideModelInfo' }, { type: 'null' }] }
+        aiContent: { oneOf: [{ $ref: '#/components/schemas/AiContentMarker' }, { type: 'null' }] }
         candidatesConsidered: { type: integer }
         rejected: { type: integer, description: AI suggestions dropped by the validator. }
         constraints:
