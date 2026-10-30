@@ -1,5 +1,6 @@
 package ai.helper2.sources;
 
+import ai.helper2.platform.http.ObservedHttp;
 import ai.helper2.search.SourceFailure;
 import ai.helper2.search.SourceHit;
 import ai.helper2.search.SourceQuery;
@@ -95,10 +96,11 @@ final class HttpClients {
             return body == null ? "" : body;
         } catch (RestClientResponseException e) {
             throw mapStatus(e, clock);
-        } catch (ResourceAccessException e) {
-            throw new SourceFailure.Unavailable("network error or timeout");
         } catch (RestClientException e) {
-            throw new SourceFailure.Unavailable("http error");
+            if (ObservedHttp.isTooLarge(e)) {
+                throw new SourceFailure.Unavailable("response too large");
+            }
+            throw new SourceFailure.Unavailable(e instanceof ResourceAccessException ? "network error or timeout" : "http error");
         }
     }
 

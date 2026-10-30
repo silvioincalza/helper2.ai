@@ -87,4 +87,29 @@ class HttpClientsMappingTest {
         assertThat(meters.get("helper2.source.items.dropped").tag("source", "test-source")
             .tag("reason", "IllegalArgumentException").counter().count()).isEqualTo(1.0);
     }
+
+    @Test
+    void aResponseOverTheDefaultCapIsUnavailableAsTooLarge() {
+        server.route("/huge", FixtureServer.Reply.ok("x".repeat(ObservedHttp.MAX_RESPONSE_BYTES + 1)));
+        server.route("/fits", FixtureServer.Reply.ok("x".repeat(ObservedHttp.MAX_RESPONSE_BYTES)));
+        RestClient http = client();
+
+        assertThatThrownBy(() -> HttpClients.getText(() -> http.get().uri("/huge").retrieve().body(String.class), GitHubSourceTest.CLOCK))
+            .isInstanceOf(SourceFailure.Unavailable.class).hasMessage("response too large");
+        assertThat(HttpClients.getText(() -> http.get().uri("/fits").retrieve().body(String.class), GitHubSourceTest.CLOCK))
+            .hasSize(ObservedHttp.MAX_RESPONSE_BYTES);
+    }
+
+    @Test
+    void aCallCanAllowALargerResponseUpToItsOwnCap() {
+        server.route("/readme", FixtureServer.Reply.ok("x".repeat(3 * 1024 * 1024)));
+        server.route("/huge-readme", FixtureServer.Reply.ok("x".repeat(5 * 1024 * 1024 + 1)));
+        RestClient http = client();
+
+        assertThat(HttpClients.getText(() -> http.get().uri("/readme").attributes(ObservedHttp.maxResponseBytes(5 * 1024 * 1024))
+            .retrieve().body(String.class), GitHubSourceTest.CLOCK)).hasSize(3 * 1024 * 1024);
+        assertThatThrownBy(() -> HttpClients.getText(() -> http.get().uri("/huge-readme").attributes(ObservedHttp.maxResponseBytes(5 * 1024 * 1024))
+            .retrieve().body(String.class), GitHubSourceTest.CLOCK))
+            .isInstanceOf(SourceFailure.Unavailable.class).hasMessage("response too large");
+    }
 }
