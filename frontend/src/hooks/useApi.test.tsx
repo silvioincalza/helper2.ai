@@ -53,6 +53,22 @@ describe('useApi recent-answers cache', () => {
     await waitFor(() => expect(b.result.current.data).toBe('fresh'));
   });
 
+  it('an answer shown from the cache stays shown after its cache entry expires', async () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(1_000);
+    const a = renderHook(() => useApi('k', fetcher('cached')));
+    await waitFor(() => expect(a.result.current.data).toBe('cached'));
+    a.unmount();
+
+    const g = fetcher('unused');
+    const b = renderHook(() => useApi('k', g));
+    expect(b.result.current.data).toBe('cached');
+    now.mockReturnValue(1_000 + CACHE_TTL_MS + 1);
+    b.rerender();
+    expect(b.result.current).toMatchObject({ data: 'cached', loading: false });
+    expect(g).not.toHaveBeenCalled();
+    now.mockRestore();
+  });
+
   it('keeps only the most recent answers', async () => {
     for (let i = 0; i <= CACHE_MAX; i++) {
       const h = renderHook(() => useApi(`k${i}`, fetcher(`v${i}`)));

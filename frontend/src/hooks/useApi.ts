@@ -59,6 +59,12 @@ export function useApi<T>(key: string, fetcher: (signal: AbortSignal) => Promise
   const [settled, setSettled] = useState<Settled<T> | null>(null);
   const [lastData, setLastData] = useState<T | undefined>(undefined);
   const hit = useCache && nonce === 0 ? (peek(key) as { data: T } | undefined) : undefined;
+  // Keep a cache hit as our own answer: the shared entry may expire or be evicted while this page is still open,
+  // and the effect does not run again for the same key. Set during render, so the hit is never shown as loading.
+  if (hit && settled?.key !== fullKey) {
+    setSettled({ key: fullKey, data: hit.data });
+    setLastData(hit.data);
+  }
 
   useEffect(() => {
     if (hit) {
