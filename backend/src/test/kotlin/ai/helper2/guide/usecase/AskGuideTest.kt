@@ -147,6 +147,24 @@ class AskGuideTest {
     }
 
     @Test
+    fun `when only the answering call fails the planner's reading is still marked as AI-written, and not cached`() {
+        val model = ScriptedModel(GuideSearchPlan("speech recognition", listOf("free"))) { _, _ -> throw IllegalStateException("down") }
+        val answer = AskGuide(search, model, clock).ask(need, null)
+
+        assertEquals(listOf("free"), answer.constraints)
+        assertTrue(answer.planned)
+        assertTrue(!answer.modelUsed)
+        assertTrue(!GuideAnswerCache.isCacheable(answer))
+    }
+
+    @Test
+    fun `without a model nothing is marked as planned`() {
+        val answer = AskGuide(search, null, clock).ask(need, null)
+
+        assertTrue(!answer.planned)
+    }
+
+    @Test
     fun `a pick steered by injected text still needs a real quote and gets no unearned checks`() {
         // Simulates a model that obeyed the instruction hidden in the "promo" description.
         val model = ScriptedModel(GuideSearchPlan("speech recognition", listOf("MIT licence"))) { c, _ ->

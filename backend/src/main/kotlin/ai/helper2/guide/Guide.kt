@@ -252,6 +252,11 @@ data class GuideAnswer(
     val comparison: Comparison? = null,
     /** [GuideIntent.WHAT_IS] only. */
     val explanation: Explanation? = null,
+    /**
+     * The planner's reading is in this answer (search query, requirements, question back), even when the answering
+     * call then failed and [modelUsed] is false. Drives the AI-content marker (ADR 0038), not the cache.
+     */
+    val planned: Boolean = false,
 )
 
 /**

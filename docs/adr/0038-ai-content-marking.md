@@ -22,11 +22,17 @@ to the text.
    text in the answer, and absent otherwise. It names the provider, the models, the AI-written fields as JSON paths
    (`GuideDtoMapper.AI_WRITTEN_FIELDS`) and the page that explains the marking (`/mission`, a path, so any host
    works). The streamed `answer` event carries the same object.
+   "A model wrote text" means the answering call ran (`GuideAnswer.modelUsed`) or only the planner did
+   (`GuideAnswer.planned`). When the planner read the question but the answering call then failed, the answer still
+   holds the planner's search query and requirements: the marker is present and names the fast model only.
+   `modelUsed` keeps its meaning for the cache and the "answered by" line.
 2. **API: catalog values keep their origin.** `ResultCard.descriptionOrigin` and `Assertion.origin` already say
    `AI_SUMMARY` or `AI_EXTRACTED`, and `AiSummary.model` names the model. No change.
 3. **Page: an attribute on every AI-written element.** `data-ai-generated="true"`, plus `data-ai-model` when the
-   model is known (`src/lib/aiMark.ts`). The guide answer carries `data-ai-provider` and `data-ai-models`.
-   Quotes, titles and links are never marked: they come from the sources.
+   model is known (`src/lib/aiMark.ts`). The guide answer and the question back carry `data-ai-provider` and
+   `data-ai-models`. Marked: reasons, requirements (chips and checks), the question back and its options, comparison
+   aspects and cells, explanation sentences, the prompt and the planned search query. Quotes, titles and links are
+   never marked: they come from the sources. Our own labels and the subjects (the user's own words) are not marked.
 4. **Explained in public.** The Mission page has a section "How we mark AI text".
 5. **No hidden characters in the text.** We do not add zero-width or other invisible characters.
 

@@ -17,8 +17,8 @@ kind: "Where does it come from?" {class: decision}
 guide: Guide answer (GuideDtoMapper.toDto) {
   class: group
   direction: down
-  used: "Did a model run\n(answer.modelUsed)?" {class: decision}
-  marker: "aiContent = provider, models,\nAI_WRITTEN_FIELDS, policy /mission" {class: app}
+  used: "Did a model write text?\n(modelUsed or planned)" {class: decision}
+  marker: "aiContent = provider, models that wrote,\nAI_WRITTEN_FIELDS, policy /mission" {class: app}
   nomarker: "aiContent absent:\nno AI-written text" {class: end}
   used -> marker: yes {class: hot}
   used -> nomarker: no
