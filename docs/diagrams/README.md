@@ -45,9 +45,11 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0024](../adr/0024-http-edge-protection.md) | [flow](flow-0024-http-edge-protection.svg) | [sequence](sequence-0024-http-edge-protection.svg) | the checks a request meets at the HTTP edge of the app, in order. |
 | [0025](../adr/0025-frontend-one-box.md) | [flow](flow-0025-frontend-one-box.svg) | [sequence](sequence-0025-frontend-one-box.svg) | the one box. |
 | [0026](../adr/0026-observability.md) | [flow](flow-0026-observability.svg) | [sequence](sequence-0026-observability.svg) | where each kind of telemetry goes, and the switches that decide it. |
+| [0027](../adr/0027-runtime-topology.md) | [flow](flow-0027-runtime-topology.svg) | [sequence](sequence-0027-runtime-topology.svg) | what one Helm render decides from its values, and the runtime paths: a request through the tunnel, probes and scrape on 8081, the nightly backup. |
 | [0028](../adr/0028-ci-cd.md) | [flow](flow-0028-ci-cd.svg) | [sequence](sequence-0028-ci-cd.svg) | from a pull request to prod. |
-| [0029](../adr/0029-release-versioning.md) | [flow](flow-0029-release-versioning.svg) | — | the release workflow, from a pushed v* tag to the published GitHub release. |
-| [0030](../adr/0030-guide-evaluation.md) | [flow](flow-0030-guide-evaluation.svg) | — | scripts/eval-guide.mjs, from the fixed query set to docs/evaluation.md. |
+| [0029](../adr/0029-release-versioning.md) | [flow](flow-0029-release-versioning.svg) | [sequence](sequence-0029-release-versioning.svg) | the release workflow, from a pushed v* tag to the published GitHub release. |
+| [0030](../adr/0030-guide-evaluation.md) | [flow](flow-0030-guide-evaluation.svg) | [sequence](sequence-0030-guide-evaluation.svg) | scripts/eval-guide.mjs, from the fixed query set to docs/evaluation.md. |
+| [0036](../adr/0036-search-evaluation-harness.md) | [flow](flow-0036-search-evaluation-harness.svg) | [sequence](sequence-0036-search-evaluation-harness.svg) | the search evaluation harness: snapshots recorded once, offline replay, report and the nDCG@10 gate. |
 
 ## Colors
 

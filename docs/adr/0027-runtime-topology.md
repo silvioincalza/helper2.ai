@@ -98,7 +98,8 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
 - `deploy/k8s/Makefile`, `deploy/k8s/README.md` — deploy, rollback, backup and restore steps.
 
 ## Diagrams
-None of its own: the [infrastructure](../diagrams/infrastructure.svg) diagram shows the topology.
+[flow](../diagrams/flow-0027-runtime-topology.svg) · [sequence](../diagrams/sequence-0027-runtime-topology.svg)
+The topology itself is in the [infrastructure](../diagrams/infrastructure.svg) diagram.
 
 ## Roadmap
 - Check that the DNS pods carry `k8s-app=kube-dns` in `kube-system`: [roadmap](../roadmap.md#1-release-v100-before-the-hackathon-deadline-30-oct-2026-1800-zurich).

@@ -84,7 +84,7 @@ numbers measured the same way each time. The numbers must be public and reproduc
   the latest runs; `docs/eval/run-*.md` — earlier runs.
 
 ## Diagrams
-[flow](../diagrams/flow-0030-guide-evaluation.svg) · Sequence: none, because the script is one loop of Hypertext Transfer Protocol (HTTP) calls.
+[flow](../diagrams/flow-0030-guide-evaluation.svg) · [sequence](../diagrams/sequence-0030-guide-evaluation.svg)
 
 ## Roadmap
 - [Guide relevance judged by a second person](../roadmap.md#quality-gates)
