@@ -44,7 +44,7 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 
 ### Quality gates
 - **Browser end-to-end tests (skipped for now, owner decision 27 Oct 2026).** No browser journey is automated,
-  and no tool is installed (the unused Playwright setup was removed). Later, choose the tool, then on the `demo` profile:
+  and no tool is installed. Later, choose the tool, then on the `demo` profile:
   search with a partial result and the source status panel; ask the guide, follow the streamed steps, close the
   answer and keep the search; back and forward; the theme switch. Then run them in CI.
   See [user-journeys.md](user-journeys.md) (SC-1 to SC-3).
@@ -113,8 +113,6 @@ Open items:
   ([ADR 0016](adr/0016-guide-reason-check.md)).
 - Watch whether the source `type`, now a source fact in enrichment, sends many proposals to CONFLICTING review
   (for example GitHub LIBRARY versus MCP_SERVER) ([ADR 0019](adr/0019-evidence-gated-enrichment.md)).
-- The guide's concurrency slots and the model calls as `llm-chat` and `llm-embed` resilience policies
-  ([ADR 0033](adr/0033-resilience-policies.md)).
 - Cross-language retrieval in vector search.
 - A Grafana panel for the share of kept picks ranked 9+ (`helper2.guide.picks{rank="9+"}`), next to the alert
   `Helper2GuidePicksFromLowRanks` ([ADR 0015](adr/0015-ai-guide-evidence-gate.md)).
@@ -129,6 +127,11 @@ Open items:
   AI-written fields, so the origin survives outside our page and API. Today the marking is metadata only and is
   lost on copy ([ADR 0038](adr/0038-ai-content-marking.md)). Do it when a standard and tooling for text exist, or
   if a regulator finds metadata alone too weak.
+- Pass a prompt version from `SpringAiEnrichmentModel`, `SpringAiToolGuideModel` and `SpringAiRepoClassifier`, and
+  put them under the `llm-chat` circuit; then delete the "unversioned" methods of `ModelCallMetrics`
+  ([ADR 0014](adr/0014-llm-integration.md)).
+- Guide `WHEN` for a release: when our sources have no creation date, take the date quoted in a Tavily news item,
+  through the evidence gate. Measure after the `WHEN` event filter ([ADR 0032](adr/0032-guide-intents.md)).
 - Run `scripts/eval-guide.mjs --adversarial` in a scheduled job after each deploy; today it is run by hand.
 - A question from a shared `?ask=` link is asked on page load. Asking only after a click would stop a link from
   spending model calls for its visitors (one cached answer per question limits it today).

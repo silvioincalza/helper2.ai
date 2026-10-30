@@ -20,18 +20,18 @@ retention limit.
    in the request's trace. Source and embedding clients share `ObservedHttp` ([0006](0006-outbound-http.md)):
    `http.client.requests`, a client span and trace headers, with a bounded Uniform Resource Identifier (URI) tag
    and no query string. Every model call (guide steps, translation, enrichment, classifier with step `classify`) is
-   observed by `ModelCallMetrics` (span and timer `helper2.guide.model.call`).
+   observed by `ModelCallMetrics` (span and timer `helper2.llm.call`).
    `ObservabilityConfiguration` drops observations of `/actuator/**` (probes and scrapes).
 4. **Meters** (Prometheus, pulled from `/actuator/prometheus` on the management port, [0024](0024-http-edge-protection.md);
    OTLP metric push is off). Common tags `application=helper2`, `environment`. Histogram buckets for
-   `http.server.requests`, `http.client.requests`, `helper2.scout.run`, `helper2.guide.model.call`,
+   `http.server.requests`, `http.client.requests`, `helper2.scout.run`, `helper2.llm.call`,
    `helper2.search.latency`, `helper2.source.latency`. Our meters:
    - search: `helper2.search.requests{partial}`, `helper2.search.latency`, `helper2.source.requests{source,outcome,served_from}`,
      `helper2.source.latency{source}`, `helper2.cache.events{event}`;
    - catalog: `helper2.catalog.observations{outcome}`, `helper2.catalog.observations.queued`,
      `helper2.embedding.backlog`, `helper2.embedding.failures{reason}`, `helper2.embedding.last.success`;
    - guide and models: `helper2.guide.ask{outcome}`, `helper2.guide.questions{outcome}`, `helper2.guide.cache{result}`,
-     `helper2.guide.model.call{step,model,outcome}`, `helper2.guide.tokens{step,type}`, `helper2.guide.budget.remaining`,
+     `helper2.llm.call{step,model,prompt,outcome}`, `helper2.llm.tokens{step,prompt,type}`, `helper2.guide.budget.remaining`,
      `helper2.search.translation.budget.remaining`;
    - Scout: `helper2.scout.run`, `helper2.scout.cycle`, `helper2.scout.items{source,kind}`, `helper2.scout.last.success{source}`,
      `helper2.scout.enrichment{outcome}`, `helper2.scout.enrichment.budget.remaining`,
