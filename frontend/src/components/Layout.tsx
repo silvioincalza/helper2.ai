@@ -109,6 +109,11 @@ export function Footer() {
             </a>
           </li>
           <li>
+            <a href={`${REPO_URL}/blob/main/LICENSE`} target="_blank" rel="noopener noreferrer" aria-label={t('footer.licenseLabel')}>
+              {t('footer.license')}
+            </a>
+          </li>
+          <li>
             <a href={`${REPO_URL}/releases/tag/v${__APP_VERSION__}`} target="_blank" rel="noopener noreferrer" aria-label={t('footer.versionLabel', { version: __APP_VERSION__ })}>
               v{__APP_VERSION__}
             </a>

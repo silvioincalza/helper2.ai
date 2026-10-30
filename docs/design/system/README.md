@@ -111,7 +111,7 @@ Components are plain HTML plus the classes in `components/bundle.css` (prefix `h
 | Component | Used for |
 |---|---|
 | **Header** *(changed)* | Logo with tagline, the search box, theme and Saved buttons. Type tabs under it on the results page. 72px min height. |
-| **Footer** | One row: the one claim "No ads.", then Mission, Sources, Privacy, Terms, GitHub and the release version. |
+| **Footer** | One row: the one claim "No ads.", then Mission, Sources, Privacy, Terms, GitHub, the licence and the release version. |
 | **Omnibox** *(changed)* | The search box. A 999px pill, 52px (58px in the hero), search icon, input, saffron **Search** button. No keyboard-shortcut hint unless the shortcut works. |
 | **TypeTabs** *new* | All, MCP servers, Libraries, Models, Articles, each with a mono count. Active tab: ink text, 3px `accent` underline. Scrolls sideways on phones. |
 | **Button** *(changed)* | 44px high, 999px corners, label on one line. Primary in `accent`. An external link ends with `↗`. |

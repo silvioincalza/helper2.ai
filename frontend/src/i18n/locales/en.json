@@ -47,6 +47,8 @@
     "terms": "Terms",
     "github": "GitHub",
     "githubLabel": "Helper2.ai source code on GitHub (opens in a new tab)",
+    "license": "Apache-2.0",
+    "licenseLabel": "Apache-2.0 license (opens in a new tab)",
     "versionLabel": "Release notes for version {{version}} (opens in a new tab)"
   },
   "home": {

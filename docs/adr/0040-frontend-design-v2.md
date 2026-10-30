@@ -45,7 +45,7 @@ and chose between options for each part.
 8. **States are designed, not left to chance.** Loading (skeleton rows), guide answering, no results, some sources
    failed, all sources failed, 404. Each has a next step.
 9. **The footer makes one claim: "No ads."** Next to it, in one row, the links: Mission, Sources, Privacy, Terms,
-   the code on GitHub and the release notes. Tracking cookies are planned later. The footer makes no claim about
+   the code on GitHub, its licence and the release notes. Tracking cookies are planned later. The footer makes no claim about
    tracking, so it does not need to change when they come. Mission and Privacy keep their text until then.
 10. **Built page by page**, one pull request each: shared components and tokens, Home, Results, Resource, States,
     Saved and Sources, Mission and Privacy. Each step builds its page in place, so the code holds one design.
