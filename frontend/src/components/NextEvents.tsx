@@ -7,11 +7,11 @@ import { Carousel } from './Carousel';
 import { Icon } from './Icon';
 
 /** As many as the API gives (60, enough for three months); only those starting in the next three months are listed, two rows in view. */
-const SHOWN = 60;
+export const EVENTS_SHOWN = 60;
 const WINDOW_DAYS = 90;
 
 /** Starts within WINDOW_DAYS of `now` (the server's `generatedAt`, so the window follows the server's clock). */
-function startsSoon(card: ResultCard, now: number): boolean {
+export function startsSoon(card: ResultCard, now: number): boolean {
   const start = Date.parse(card.timeline.eventStart?.value ?? '');
   return Number.isNaN(now) || Number.isNaN(start) || start <= now + WINDOW_DAYS * 86_400_000;
 }
@@ -35,7 +35,7 @@ export function eventDays(card: ResultCard, lang: string): string | null {
 export function NextEvents() {
   const { t, i18n } = useTranslation();
   const feed = useApi<UpcomingEventsResponse>('next-events', (signal) =>
-    api.listUpcomingEvents(new URLSearchParams({ size: String(SHOWN) }), signal));
+    api.listUpcomingEvents(new URLSearchParams({ size: String(EVENTS_SHOWN) }), signal));
   const now = Date.parse(feed.data?.generatedAt ?? '');
   const cards = (feed.data?.items ?? []).filter((card) => startsSoon(card, now));
 

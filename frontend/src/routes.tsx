@@ -9,7 +9,7 @@ import MissionPage from '@/pages/MissionPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 import PrivacyPage from '@/pages/PrivacyPage';
 import ResourcePage from '@/pages/ResourcePage';
-import { SAVED_ENABLED } from '@/lib/features';
+import { NEW_DESIGN_ENABLED, SAVED_ENABLED } from '@/lib/features';
 import SavedPage from '@/pages/SavedPage';
 import SourcesPage from '@/pages/SourcesPage';
 import TermsPage from '@/pages/TermsPage';
@@ -32,7 +32,8 @@ export const routes: RouteObject[] = [
     element: <AppProviders><Layout /></AppProviders>,
     children: [
       { index: true, element: <HomePage /> },
-      { path: 'search', element: <SearchRedirect /> },
+      // Design v2 (ADR 0040, 3): results live on /search. Before it, old /search links go to /.
+      { path: 'search', element: NEW_DESIGN_ENABLED ? <HomePage /> : <SearchRedirect /> },
       { path: 'guide', element: <GuideRedirect /> },
       { path: 'resource/:id', element: <ResourcePage /> },
       { path: 'saved', element: SAVED_ENABLED ? <SavedPage /> : <Navigate replace to="/" /> },

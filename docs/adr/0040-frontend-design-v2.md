@@ -82,14 +82,26 @@ Built (step 1, shared parts; no page uses them while the flag is off):
 - `frontend/src/hooks/useGuideStream.ts` — the guide stream for the question and refinement in the URL, shared by
   both designs.
 
+Built (step 2, Home; only while the flag is on):
+- `frontend/src/pages/HomeV2.tsx` — the home page: radar hero, the one box, the examples, the two boards.
+- `frontend/src/components/home/` — `HomeBoard` (the loop, the copy hidden from assistive tech and from Tab, pause
+  on hover, focus and tap, still under reduced motion), `NewsBoard` (`GET /recent`) and `EventsBoard`
+  (`GET /events/upcoming`), with `home-v2.css`.
+- `frontend/src/lib/countdown.ts` — Today, Tomorrow, In N days, weeks or months.
+- `frontend/src/lib/searchState.ts` — `RESULTS_PATH`: `/search` with the flag on, `/` with it off. `OneBox` sends
+  results there and searches live only on that page.
+- `frontend/src/pages/HomePage.tsx`, `routes.tsx` — `/` empty is the home page; `/search` shows results (the current
+  results page until step 3) and goes home with no query; `/?q=` still shows results with a canonical link to
+  `/search`.
+- `frontend/src/components/Layout.tsx` — Sources and Mission in the menu, "No ads." in the footer.
+- `tokens.css` — `board-height` and `board-loop`.
+
 Planned:
-- `frontend/src/routes.tsx` — `/search`; `/` home only, `/?q=` shows results with a canonical link.
-- `frontend/src/pages/HomePage.tsx`, `components/Radar.tsx`, `components/NextEvents.tsx` — hero and the two boards.
 - `frontend/src/components/SearchResults.tsx`, `ResultCardView.tsx` — list, preview, inline preview, `id` in the URL.
 - `frontend/src/components/GuideAnswer.tsx` — the picks in `PicksBar` and the badges.
 - `frontend/src/components/SourceStatusPanel.tsx`, `Layout.tsx` — sources at the bottom, header, footer.
-- `tokens.css` — the sizes (`content-wide`, `board-height`, `list-max`) and motion (`board-loop`, `radar-sweep`) of
-  `tokens.json` v3, with the pages that use them.
+- `tokens.css` — the sizes (`content-wide`, `list-max`) and motion (`radar-sweep`) of `tokens.json` v3, with the
+  pages that use them.
 
 ## Diagrams
 [flow](../diagrams/flow-0040-frontend-design-v2.svg) · [sequence](../diagrams/sequence-0040-frontend-design-v2.svg)
