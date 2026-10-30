@@ -197,6 +197,8 @@ textarea { width: 100%; resize: vertical; }
 .carousel-track { position: relative; overflow-y: auto; scroll-snap-type: y mandatory; scrollbar-width: thin; transition: height calc(var(--motion) * 2) ease-out; }
 .carousel-track > li { scroll-snap-align: start; }
 .carousel-toggle { margin-top: var(--space-2); min-height: var(--target-min); font-size: 0.85rem; }
+/* The track scrolls, so a ring outside a row would be cut off: draw it inside. */
+.carousel-track :focus-visible { outline-offset: -3px; }
 .skeleton-row { height: 3rem; border-bottom: 1px solid var(--border);
   background: linear-gradient(90deg, var(--surface-1), var(--surface-2), var(--surface-1)); background-size: 200% 100%; animation: shimmer 1.6s linear infinite; }
 .type-tag { display: inline-block; padding: 3px 9px; border-radius: var(--radius-pill); font-size: 0.75rem; font-weight: 600; line-height: 1.33; background: var(--surface-tint); color: var(--ink-2); }

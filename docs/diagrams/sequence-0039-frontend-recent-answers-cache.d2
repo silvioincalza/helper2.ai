@@ -1,0 +1,51 @@
+# Sequence: from the results to a resource and back, with the recent-answers cache and scroll restoration.
+# Shows the first search that asks the server and fills the cache, the resource page, the back move that shows the
+# results from the cache at the old scroll place with no request, and reload that always asks again.
+# Source of truth: frontend/src/hooks/useApi.ts, frontend/src/components/SearchResults.tsx,
+#   frontend/src/pages/ResourcePage.tsx, frontend/src/components/Layout.tsx (ScrollRestoration, RouteFocus).
+# Render: cd docs/diagrams && d2 fmt sequence-0039-frontend-recent-answers-cache.d2 && d2 sequence-0039-frontend-recent-answers-cache.d2 sequence-0039-frontend-recent-answers-cache.svg
+
+...@style
+
+shape: sequence_diagram
+
+user: User {class: person}
+router: "Router\n(ScrollRestoration, RouteFocus)" {class: app}
+page: "SearchResults /\nResourcePage" {class: app}
+hook: useApi {class: app}
+cache: "Recent answers\n(memory, 50, 5 min)" {class: data}
+api: "GET /api/v1/…" {class: ext}
+
+first: First visit {
+  user -> router: "/?q=mcp postgres"
+  router -> page: "mount SearchResults"
+  page -> hook: "useApi('search?q=…')"
+  hook -> cache: "peek(key)"
+  cache -> hook: "miss"
+  hook -> api: "GET /search?q=…" {class: hot}
+  api -> hook: "200 results"
+  hook -> cache: "remember(key, answer)"
+  hook -> page: "data"
+  user -> router: "scrolls, opens a resource"
+  router -> page: "mount ResourcePage (top of page)"
+  page -> hook: "useApi('resource/:id')"
+  hook -> api: "GET /resources/:id"
+}
+
+back: Back {
+  user -> router: "browser back"
+  router -> page: "mount SearchResults"
+  page -> hook: "useApi('search?q=…')"
+  hook -> cache: "peek(key)"
+  cache -> hook: "hit, 40 s old" {class: hot}
+  hook -> page: "data at once, kept as own answer\n(no request, no skeleton)" {class: hot}
+  router -> user: "old scroll place;\nfocus on h1 without scrolling"
+}
+
+again: Reload {
+  user -> page: "Retry button"
+  page -> hook: "reload()"
+  hook -> api: "GET /search?q=… (cache skipped)" {class: hot}
+  api -> hook: "200 results"
+  hook -> cache: "remember(key, fresh answer)"
+}

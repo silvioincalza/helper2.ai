@@ -1,14 +1,18 @@
-import type { ComponentType } from 'react';
 import { Navigate, useLocation, type RouteObject } from 'react-router';
 import { Layout } from '@/components/Layout';
 import { AppProviders } from '@/AppProviders';
 import { askParams } from '@/lib/searchState';
-import { SAVED_ENABLED } from '@/lib/features';
+import AccountPage from '@/pages/AccountPage';
+import AdminPage from '@/pages/AdminPage';
 import HomePage from '@/pages/HomePage';
-
-/** A page in its own chunk, loaded on the first visit to its path: the home page's bundle carries none of them. */
-const page = (load: () => Promise<{ default: ComponentType }>): NonNullable<RouteObject['lazy']> =>
-  async () => ({ Component: (await load()).default });
+import MissionPage from '@/pages/MissionPage';
+import NotFoundPage from '@/pages/NotFoundPage';
+import PrivacyPage from '@/pages/PrivacyPage';
+import ResourcePage from '@/pages/ResourcePage';
+import { SAVED_ENABLED } from '@/lib/features';
+import SavedPage from '@/pages/SavedPage';
+import SourcesPage from '@/pages/SourcesPage';
+import TermsPage from '@/pages/TermsPage';
 
 /** Old /search links keep working: same parameters, one page. */
 function SearchRedirect() {
@@ -26,23 +30,19 @@ function GuideRedirect() {
 export const routes: RouteObject[] = [
   {
     element: <AppProviders><Layout /></AppProviders>,
-    // A first visit straight to a lazy page renders nothing until its chunk (a few kB) arrives.
-    HydrateFallback: () => null,
     children: [
       { index: true, element: <HomePage /> },
       { path: 'search', element: <SearchRedirect /> },
       { path: 'guide', element: <GuideRedirect /> },
-      { path: 'resource/:id', lazy: page(() => import('@/pages/ResourcePage')) },
-      SAVED_ENABLED
-        ? { path: 'saved', lazy: page(() => import('@/pages/SavedPage')) }
-        : { path: 'saved', element: <Navigate replace to="/" /> },
-      { path: 'sources', lazy: page(() => import('@/pages/SourcesPage')) },
-      { path: 'account', lazy: page(() => import('@/pages/AccountPage')) },
-      { path: 'admin', lazy: page(() => import('@/pages/AdminPage')) },
-      { path: 'mission', lazy: page(() => import('@/pages/MissionPage')) },
-      { path: 'privacy', lazy: page(() => import('@/pages/PrivacyPage')) },
-      { path: 'terms', lazy: page(() => import('@/pages/TermsPage')) },
-      { path: '*', lazy: page(() => import('@/pages/NotFoundPage')) },
+      { path: 'resource/:id', element: <ResourcePage /> },
+      { path: 'saved', element: SAVED_ENABLED ? <SavedPage /> : <Navigate replace to="/" /> },
+      { path: 'sources', element: <SourcesPage /> },
+      { path: 'account', element: <AccountPage /> },
+      { path: 'admin', element: <AdminPage /> },
+      { path: 'mission', element: <MissionPage /> },
+      { path: 'privacy', element: <PrivacyPage /> },
+      { path: 'terms', element: <TermsPage /> },
+      { path: '*', element: <NotFoundPage /> },
     ],
   },
 ];

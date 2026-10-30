@@ -17,8 +17,8 @@ promtool test rules deploy/monitoring/tests/*.yaml
 cd frontend && npm test -- --run && npm run lint && npm run typecheck
 ```
 
-30 Oct 2026 at `8b9322b` (local run): backend 796 tests, 0 failed, 1 skipped by design; frontend 198 passed, 7 skipped,
-in 23 files. The 16 alert rules have promtool unit tests; CI runs them in the `monitoring` job.
+30 Oct 2026 at `a311827` (local run): backend 808 tests, 0 failed, 1 skipped by design; frontend 206 passed, 7 skipped,
+in 22 files. The 16 alert rules have promtool unit tests; CI runs them in the `monitoring` job.
 `evalTest` and `evalRecord` are not part of `test`: see [docs/eval](eval/README.md).
 
 ## What exists
@@ -42,10 +42,10 @@ in 23 files. The 16 alert rules have promtool unit tests; CI runs them in the `m
 | Setup guide | RunOptionRulesTest, SnippetParseBackTest, RedisToolGuideCacheIT | only safe run commands (package runners, one Docker image, no shells or inline code), every client snippet parses back to the same values, guide answers cached in Redis without the question or document text |
 | Search evaluation | RelevanceMetricsTest, SearchEvaluationTest, CutoffSweepTest, SnapshotTakerTest | nDCG@10, reciprocal rank and recall on known cases; the vector cutoff sweep; offline replay of recorded snapshots and the nDCG@10 gate (`evalTest`) |
 | Live smoke | GitHubAwesomeLiveTest | real GitHub + Nemotron classification; runs only with `./gradlew liveTest` |
-| Frontend | 198 Vitest + RTL tests (AccountPage.test.tsx and others) | pages, client, bookmarks, account deletion, i18n, layout; axe smoke checks in jsdom |
+| Frontend | 206 Vitest + RTL tests (AccountPage.test.tsx and others) | pages, client, bookmarks, account deletion, i18n, layout; axe smoke checks in jsdom |
 | Alert rules | deploy/monitoring/tests | promtool unit tests: each of the 16 rules fires on its condition and stays quiet otherwise |
 
 ## Known gaps (not covered by automated tests)
 
-- **Browser end-to-end tests.** None yet (on the [roadmap](roadmap.md)). The guide journey is covered by `GuideApiIT` (API) and `HomeGuide.test.tsx` (UI).
+- **Browser end-to-end tests.** None yet; no tool is installed until the journeys are written (on the [roadmap](roadmap.md)). The guide journey is covered by `GuideApiIT` (API) and `HomeGuide.test.tsx` (UI).
 - **Live source smoke tests.** Search connectors are tested against recorded real responses only; the one live test covers the awesome-list collector.

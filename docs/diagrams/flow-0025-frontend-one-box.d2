@@ -37,7 +37,7 @@ ask: "Ask the guide: ?q=…&ask=…\n(question ≤ 500 chars)" {class: app}
 page: HomePage {
   class: group
   direction: down
-  results: "SearchResults: GET /api/v1/search\n(old request aborted; previous results\nstay, dimmed, aria-busy; a key answered\n< 60 s ago renders from memory, no request)" {class: app}
+  results: "SearchResults: GET /api/v1/search\n(old request aborted; previous results\nstay, dimmed, aria-busy; a key answered\n< 5 min ago renders from memory, no request)" {class: app}
   guide: "GuideSection: POST /api/v1/guide/stream\n(GuideProgress, five steps)" {class: app}
   suggest: "q has 4+ words and no ask:\n\"Ask the guide\" suggestion" {class: app}
 }

@@ -2,7 +2,7 @@ import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ADMIN, ANON, USER } from '@/test/fixtures';
 import { mockApi } from '@/test/mockApi';
-import { renderApp, settled } from '@/test/render';
+import { renderApp, settle } from '@/test/render';
 import { THEME_KEY } from '@/lib/theme';
 import pkg from '../../package.json';
 
@@ -15,6 +15,12 @@ describe('layout', () => {
     // Search is the home page and Saved is on the roadmap (lib/features.ts): no menu for visitors.
     expect(screen.queryByRole('navigation', { name: 'Main' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Admin' })).not.toBeInTheDocument();
+  });
+
+  it('the removed models page is not a route any more', async () => {
+    mockApi();
+    renderApp('/models');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Page not found' })).toBeInTheDocument();
   });
 
   it('hides Admin for signed-in non-admins and shows it for admins', async () => {
@@ -31,7 +37,7 @@ describe('layout', () => {
   it('has skip link, landmarks and the coverage disclaimer', async () => {
     mockApi();
     renderApp('/');
-    await settled();
+    await settle();
     expect(screen.getByRole('link', { name: 'Skip to main content' })).toHaveAttribute('href', '#main');
     expect(screen.getByRole('banner')).toBeInTheDocument();
     expect(screen.getByRole('main')).toBeInTheDocument();
@@ -41,7 +47,7 @@ describe('layout', () => {
   it('footer shows the release version and links to its notes in a new tab', async () => {
     mockApi();
     renderApp('/');
-    await settled();
+    await settle();
     const footer = screen.getByRole('contentinfo');
     const version = within(footer).getByRole('link', { name: /Release notes for version/ });
     expect(version).toHaveTextContent(`v${pkg.version}`);
@@ -52,7 +58,7 @@ describe('layout', () => {
   it('footer shows the copyright year and links to the repo and license in a new tab', async () => {
     mockApi();
     renderApp('/');
-    await settled();
+    await settle();
     const footer = screen.getByRole('contentinfo');
     expect(footer).toHaveTextContent(`© ${new Date().getFullYear()} Silvio Incalza`);
     const repo = within(footer).getByRole('link', { name: /GitHub/ });
@@ -87,7 +93,7 @@ describe('layout', () => {
     mockApi();
     window.localStorage.setItem(THEME_KEY, 'dark');
     renderApp('/');
-    await settled();
+    await settle();
     expect(screen.getByRole('button', { name: 'Theme: dark. Change to follow system' })).toBeInTheDocument();
   });
 
@@ -106,5 +112,6 @@ describe('layout', () => {
     await userEvent.type(screen.getByRole('searchbox'), 'rag{Enter}');
     await waitFor(() => expect(router.state.location.search).toBe('?q=rag'));
     expect(screen.getByRole('searchbox')).toHaveFocus();
+    await settle();
   });
 });

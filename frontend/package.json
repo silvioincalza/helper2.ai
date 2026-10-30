@@ -11,7 +11,7 @@
     "dev": "vite",
     "prebuild": "npm run gen:api",
     "build": "tsc --noEmit && vite build",
-    "postbuild": "node scripts/bundle-budget.mjs",
+    "check:bundle": "node scripts/check-bundle.mjs",
     "preview": "vite preview",
     "pretypecheck": "npm run gen:api",
     "typecheck": "tsc --noEmit",
