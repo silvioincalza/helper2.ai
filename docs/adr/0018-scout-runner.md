@@ -127,7 +127,7 @@ at the same time. Prod runs 3 replicas ([0027](0027-runtime-topology.md)), each 
 - `frontend/src/pages/AdminPage.tsx` — "Run now", polling of the run listing.
 - `backend/src/main/java/ai/helper2/scout/internal/JdbcScoutStore.java` — `source_cursor`, `scout_run`, `scout_schedule`.
 - `backend/src/main/java/ai/helper2/scout/web/AdminController.java` — `startScoutRun`, `listScoutRuns`.
-- `backend/src/main/java/ai/helper2/sources/RunInterval.java`.
+- `backend/src/main/java/ai/helper2/sources/support/RunInterval.java`.
 
 ## Diagrams
 [flow](../diagrams/flow-0018-scout-runner.svg) · [sequence](../diagrams/sequence-0018-scout-runner.svg)

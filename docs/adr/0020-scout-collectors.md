@@ -54,10 +54,13 @@ Six collectors implement the `Collector` port in `ai.helper2.sources`. All use `
 - Scrape conference websites — ai-deadlines already keeps the dates, under MIT, in one format.
 
 ## Code
-- `backend/src/main/java/ai/helper2/sources/McpRegistryCollector.java`, `HuggingFaceTrendingCollector.java`,
-  `HuggingFaceProviderOrgsCollector.java`, `TavilyCollector.java`, `GitHubAwesomeCollector.java`, `AiDeadlinesCollector.java`.
-- `backend/src/main/java/ai/helper2/sources/AwesomeListParser.java`, `RepoClassifier.java`, `SpringAiRepoClassifier.java`.
-- `backend/src/main/java/ai/helper2/sources/SourcesConfiguration.java` — beans, intervals, limits.
+- `backend/src/main/java/ai/helper2/sources/` — one package per provider: `mcp/McpRegistryCollector.java`,
+  `huggingface/HuggingFaceTrendingCollector.java`, `huggingface/HuggingFaceProviderOrgsCollector.java`,
+  `tavily/TavilyCollector.java`, `tavily/CourseCollector.java`, `github/GitHubAwesomeCollector.java`,
+  `github/AwesomeListParser.java`, `aideadlines/AiDeadlinesCollector.java`.
+- `classifier/RepoClassifier.java`, `classifier/SpringAiRepoClassifier.java` — the awesome-list classifier.
+- `support/RunInterval.java`, `support/HttpClients.java` — shared by every collector.
+- `config/SourcesConfiguration.java` — beans, intervals, limits.
 - `backend/src/main/resources/application.yaml` — `helper2.scout.*`, `helper2.sources.*`.
 
 ## Diagrams

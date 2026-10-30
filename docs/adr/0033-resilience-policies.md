@@ -94,8 +94,8 @@ The domain (Kotlin) must not depend on the library that implements them ([0002](
   shared pace of one host.
 - `backend/src/main/resources/application.yaml` (`resilience4j.*`) — the policies.
 - `backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — `source-<id>`, `CIRCUIT_OPEN` and `BUSY`.
-- `backend/src/main/java/ai/helper2/sources/*Collector.java`, `TransientSourceFailure.java` — `collector-<id>` and what
-  it retries; `HttpClients.java` — transient failures.
+- `backend/src/main/java/ai/helper2/sources/*/*Collector.java`, `support/TransientSourceFailure.java` — `collector-<id>` and what
+  it retries; `support/HttpClients.java` — transient failures.
 - `backend/src/main/java/ai/helper2/search/cache/RedisSearchCache.java`, `guide/internal/RedisGuideAnswerStore.java`,
   `setup/internal/RedisToolGuideCache.java`, `platform/llm/RedisCallCounter.java`, `platform/RedisRateLimiter.java` — `redis`.
 - `backend/src/main/java/ai/helper2/platform/http/ObservedHttp.java` — one request per attempt.

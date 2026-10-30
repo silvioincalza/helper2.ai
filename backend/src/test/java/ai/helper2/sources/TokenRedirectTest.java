@@ -7,6 +7,10 @@ import ai.helper2.platform.http.ObservedHttp;
 import ai.helper2.search.SearchSource;
 import ai.helper2.search.SourceFailure;
 import ai.helper2.search.SourceQuery;
+import ai.helper2.sources.github.GitHubSource;
+import ai.helper2.sources.huggingface.HuggingFaceModelsSource;
+import ai.helper2.sources.support.SourceSettings;
+import ai.helper2.sources.tavily.TavilySource;
 import ai.helper2.testing.FixtureServer;
 import io.micrometer.observation.ObservationRegistry;
 import java.time.Duration;
@@ -46,9 +50,9 @@ class TokenRedirectTest {
 
     static Stream<TokenSource> tokenSources() {
         return Stream.of(
-            new TokenSource("github", true, "/search/repositories", (s, b) -> new GitHubSource(s, b, GitHubSourceTest.CLOCK)),
-            new TokenSource("hf-models", true, "/api/models", (s, b) -> new HuggingFaceModelsSource(s, b, GitHubSourceTest.CLOCK)),
-            new TokenSource("tavily", false, "/search", (s, b) -> new TavilySource(s, b, GitHubSourceTest.CLOCK)));
+            new TokenSource("github", true, "/search/repositories", (s, b) -> new GitHubSource(s, b, SourceFixtures.CLOCK)),
+            new TokenSource("hf-models", true, "/api/models", (s, b) -> new HuggingFaceModelsSource(s, b, SourceFixtures.CLOCK)),
+            new TokenSource("tavily", false, "/search", (s, b) -> new TavilySource(s, b, SourceFixtures.CLOCK)));
     }
 
     private SearchSource source(TokenSource t) {

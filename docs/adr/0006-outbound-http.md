@@ -92,9 +92,9 @@ state what happened.
 ## Code
 - `backend/src/main/java/ai/helper2/platform/http/ObservedHttp.java` — pooled client, timeouts, redirects,
   body cap, User-Agent, observation and `uri` tag.
-- `backend/src/main/java/ai/helper2/sources/HttpClients.java` — base URL, token, error mapping, per-item guard.
-- `backend/src/main/java/ai/helper2/sources/SourcesConfiguration.java` — one builder per source and collector.
-- `backend/src/main/java/ai/helper2/sources/ArxivSource.java`, `platform/resilience/RedisOutboundThrottle.java` —
+- `backend/src/main/java/ai/helper2/sources/support/HttpClients.java` — base URL, token, error mapping, per-item guard.
+- `backend/src/main/java/ai/helper2/sources/config/SourcesConfiguration.java` — one builder per source and collector.
+- `backend/src/main/java/ai/helper2/sources/arxiv/ArxivSource.java`, `platform/resilience/RedisOutboundThrottle.java` —
   one arXiv call every 3 seconds across replicas.
 - `backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` (`Run.collect`) — deadlines and outcomes.
 - `backend/src/main/kotlin/ai/helper2/search/Model.kt` (`SourceFailure`) — failure types.

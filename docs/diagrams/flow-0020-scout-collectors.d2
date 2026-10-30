@@ -1,9 +1,10 @@
 # Flowchart: what each Scout collector does in collect(), after RunScout has called it.
 # Shows the shared gates (enabled, token, run interval) and the decisions inside each collector,
 # with the awesome-list classifier in detail.
-# Source of truth: backend/src/main/java/ai/helper2/sources/ (McpRegistryCollector, HuggingFaceTrendingCollector,
-#   HuggingFaceProviderOrgsCollector, TavilyCollector, GitHubAwesomeCollector, SpringAiRepoClassifier,
-#   RepoClassifier, AiDeadlinesCollector, RunInterval, SourcesConfiguration),
+# Source of truth: backend/src/main/java/ai/helper2/sources/ (mcp/McpRegistryCollector,
+#   huggingface/HuggingFaceTrendingCollector, huggingface/HuggingFaceProviderOrgsCollector, tavily/TavilyCollector,
+#   github/GitHubAwesomeCollector, classifier/SpringAiRepoClassifier, classifier/RepoClassifier,
+#   aideadlines/AiDeadlinesCollector, support/RunInterval, config/SourcesConfiguration),
 #   backend/src/main/resources/application.yaml (helper2.scout.*, helper2.sources.*).
 # Render: cd docs/diagrams && d2 fmt flow-0020-scout-collectors.d2 && d2 flow-0020-scout-collectors.d2 flow-0020-scout-collectors.svg
 

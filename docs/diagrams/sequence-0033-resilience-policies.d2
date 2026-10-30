@@ -1,6 +1,6 @@
 # Sequence: a Scout collector riding out a short 503 under collector-<id> (retry outside, circuit inside), then a
 # search source whose circuit has opened, answered as SKIPPED without a call. The redis circuit is in sequence-0005.
-# Source of truth: backend/src/main/java/ai/helper2/sources/McpRegistryCollector.java, TransientSourceFailure.java,
+# Source of truth: backend/src/main/java/ai/helper2/sources/mcp/McpRegistryCollector.java, support/TransientSourceFailure.java,
 #   HttpClients.java, backend/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java,
 #   backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt, scout/usecase/RunScout.kt, application.yaml (resilience4j.*).
 # Render: cd docs/diagrams && d2 fmt sequence-0033-resilience-policies.d2 && d2 sequence-0033-resilience-policies.d2 sequence-0033-resilience-policies.svg

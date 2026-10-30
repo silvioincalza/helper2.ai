@@ -57,7 +57,7 @@ not instants. Helper2 never invents a date ([0004](0004-persistence-and-provenan
 - Call ai-deadlines live per page view — slower and dependent on GitHub; the Scout reads it once a day.
 
 ## Code
-- `backend/src/main/java/ai/helper2/sources/AiDeadlinesCollector.java` — `nextEdition`, `toHit`.
+- `backend/src/main/java/ai/helper2/sources/aideadlines/AiDeadlinesCollector.java` — `nextEdition`, `toHit`.
 - `backend/src/main/kotlin/ai/helper2/shared/DateFact.kt` — `scheduledDay`.
 - `backend/src/main/java/ai/helper2/catalog/internal/ResourceStore.java` — `refreshEventDates`, `upcomingEvents`.
 - `backend/src/main/java/ai/helper2/catalog/usecase/ListUpcomingEvents.java`, `catalog/web/ResourcesController.java` — `listUpcomingEvents`.
