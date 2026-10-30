@@ -22,7 +22,8 @@ public class ReviewQueue {
         COURSE_CANDIDATE
     }
 
-    public enum Status { OPEN, ACCEPTED, REJECTED }
+    /** SUPERSEDED: a newer enrichment run of the same resource replaced the run the item was about. */
+    public enum Status { OPEN, ACCEPTED, REJECTED, SUPERSEDED }
 
     public record Item(UUID id, Kind kind, Status status, UUID resourceId, String resourceTitle, String reason,
                        String details, Instant createdAt, Instant resolvedAt, String resolvedBy) {
@@ -49,6 +50,20 @@ public class ReviewQueue {
             .param("reason", reason).param("details", details)
             .update();
         return id;
+    }
+
+    /**
+     * Closes the resource's OPEN items about earlier enrichment runs as SUPERSEDED by [runId]: a person decides
+     * only what the newest run says.
+     */
+    public void supersedeEnrichmentItems(UUID resourceId, UUID runId) {
+        jdbc.sql("""
+                UPDATE review_item SET status = 'SUPERSEDED', resolved_at = now(), resolution_note = :note
+                WHERE resource_id = :rid AND status = 'OPEN' AND enrichment_run_id IS NOT NULL
+                  AND enrichment_run_id <> :run
+                """)
+            .param("rid", resourceId).param("run", runId).param("note", "Superseded by enrichment run " + runId)
+            .update();
     }
 
     /**
