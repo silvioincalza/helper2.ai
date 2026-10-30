@@ -39,7 +39,9 @@ traceable to that administrator.
 6. **Delete my account.** The signed-in user's name in the header opens `/account`, where "Delete my account" asks
    for confirmation, then calls `DELETE /api/v1/me` (CSRF token required). `DeleteMyAccount` deletes the `app_user`
    row; its bookmarks go by `ON DELETE CASCADE`, and the user's issue reports stay with `reporter_user_id` set to null
-   (`ON DELETE SET NULL`). The controller ends the session, so the next request does not recreate the account; the page
+   (`ON DELETE SET NULL`). It then deletes the user's daily web-search counters in Redis
+   ([0037](0037-tavily-store-and-daily-quota.md)); while Redis is down they stay until their 24 h expiry. The
+   controller ends the session, so the next request does not recreate the account; the page
    reloads signed out. Accounts with no sign-in for 24 months are deleted the same way by the identity purge
    ([0034](0034-data-retention.md)).
 7. **Admin audit trail.** `admin_audit` holds one row per admin write: the administrator's provider subject, the
@@ -62,7 +64,7 @@ traceable to that administrator.
 
 ## Consequences
 - Good: an anonymous visitor leaves no account data; a signed-in user's account holds two fields and the bookmarks,
-  and its owner deletes it in two clicks.
+  and its owner deletes it, with its web-search counters, in two clicks.
 - Good: every admin decision names the administrator, and the trail cannot be edited.
 - Good: renaming a GitHub account cannot grant or remove ADMIN.
 - Bad: the public pages offer no sign-in, so visitors keep bookmarks only in their own browser.
@@ -108,4 +110,5 @@ traceable to that administrator.
 ## Roadmap
 - [Serve the back office on admin.helper2.ai, reachable only through WireGuard via Traefik](../roadmap.md#domain-and-identity).
 - [Register a production GitHub OAuth App, enable `oauth-github`, set `H2_ADMINS`](../roadmap.md#domain-and-identity).
+- [Sign-in for everyone: a public sign-in entry point for bookmarks and account deletion](../roadmap.md#domain-and-identity).
 - [Redis memory shared by sessions, rate limits and cache; alert on evictions](../roadmap.md#4-more-than-one-replica).

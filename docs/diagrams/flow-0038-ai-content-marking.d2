@@ -1,57 +1,56 @@
-# Flowchart: how AI-written text is marked for machines (EU AI Act Art. 50(2)): the aiContent marker of a guide answer
-# in the API, and the data-ai-* attributes the page puts on the elements that render AI-written text.
-# Source of truth: backend/src/main/java/ai/helper2/guide/web/GuideDtoMapper.java (AI_WRITTEN_FIELDS, aiContent),
-#   api/openapi.yaml (AiContentMarker, ValueOrigin), frontend/src/lib/aiMark.ts,
-#   frontend/src/components/GuideAnswer.tsx, ResultCardView.tsx, frontend/src/pages/ResourcePage.tsx.
+# Flowchart: how one piece of text is marked as AI-written, in the API and in the page.
+# Shows the guide answer marker (aiContent only when a model wrote text), the catalog origins that already say
+# AI_SUMMARY or AI_EXTRACTED, and the page attributes that follow from them. Quotes, titles and links stay unmarked.
+# Source of truth: backend/src/main/java/ai/helper2/guide/web/GuideDtoMapper.java (aiContent, AI_WRITTEN_FIELDS),
+#   api/openapi.yaml (AiContentMarker, GuideResponse.aiContent, ValueOrigin),
+#   frontend/src/lib/aiMark.ts, frontend/src/components/GuideAnswer.tsx, ResultCardView.tsx,
+#   frontend/src/pages/ResourcePage.tsx.
 # Render: cd docs/diagrams && d2 fmt flow-0038-ai-content-marking.d2 && d2 flow-0038-ai-content-marking.d2 flow-0038-ai-content-marking.svg
 
 ...@style
 
 direction: down
 
-api: "API: GuideDtoMapper.toDto(answer)" {
+text: "Text shown to the user" {class: app}
+kind: "Where does it come from?" {class: decision}
+
+guide: Guide answer (GuideDtoMapper.toDto) {
   class: group
   direction: down
-  used: "answer.modelUsed?" {class: decision}
-  marker: "aiContent: aiGenerated true, provider,\nmodels (fast + reasoning), fields =\nAI_WRITTEN_FIELDS, policy /mission" {class: app}
-  none: "No aiContent:\nsearch-only answer" {class: end}
-  out: "JSON response, or the\nstreamed answer event" {class: end}
+  used: "Did a model write text?\n(modelUsed or planned)" {class: decision}
+  marker: "aiContent = provider, models that wrote,\nAI_WRITTEN_FIELDS, policy /mission" {class: app}
+  nomarker: "aiContent absent:\nno AI-written text" {class: end}
   used -> marker: yes {class: hot}
-  used -> none: no
-  marker -> out
+  used -> nomarker: no
 }
 
-catalog: "API: catalog values" {
+catalog: Catalog value (card, assertion, summary) {
   class: group
   direction: down
-  origin: "descriptionOrigin, Assertion.origin:\nAI_SUMMARY or AI_EXTRACTED;\nAiSummary.model" {class: app}
+  origin: "origin AI_SUMMARY\nor AI_EXTRACTED?" {class: decision}
+  ai: "origin and model name\nalready in the API" {class: app}
+  plain: "source text:\nnot marked" {class: end}
+  origin -> ai: yes
+  origin -> plain: no
 }
 
-page: "Page: one element of text" {
+source: "Quote, title, link,\nsource URL" {class: ext}
+unmarked: "Never marked:\nit comes from the source" {class: end}
+
+page: Page (aiMark) {
   class: group
   direction: down
-  what: "Where does the text\ncome from?" {class: decision}
-  source: "Quote, title, link,\nsource-stated value" {class: app}
-  plain: "Not marked" {class: end}
-  guide: "Guide answer: reason, searched-for\nquery (fast model), comparison cell,\nexplanation sentence, prompt text" {class: app}
-  card: "Card description with\nAI origin (isAiOrigin)" {class: app}
-  summary: "AI summary claims\non the resource page" {class: app}
-  mark: "aiMark(model?):\ndata-ai-generated=\"true\"\n(+ data-ai-model when known)" {class: end}
-  section: "Guide answer section:\ndata-ai-provider,\ndata-ai-models" {class: end}
-
-  what -> source: "the source"
-  source -> plain
-  what -> guide: "the guide's model" {class: hot}
-  what -> card: "catalog, AI origin"
-  what -> summary: "catalog summary"
-  guide -> mark: {class: hot}
-  card -> mark
-  summary -> mark
-  guide -> section
+  field: "Field written by AI?" {class: decision}
+  attr: "data-ai-generated=\"true\"\n+ data-ai-model when known" {class: app}
+  badge: "Visible label stays:\n\"AI\", \"AI summary\", …" {class: end}
+  field -> attr: yes {class: hot}
+  attr -> badge
 }
 
-rule: "No hidden characters in the text;\n/mission explains the marking" {class: config}
-
-api.out -> page.what: {class: hot}
-catalog.origin -> page.what
-page.mark -> rule
+text -> kind
+kind -> guide.used: "guide"
+kind -> catalog.origin: "catalog"
+kind -> source: "source"
+source -> unmarked
+guide.marker -> page.field: {class: hot}
+catalog.ai -> page.field

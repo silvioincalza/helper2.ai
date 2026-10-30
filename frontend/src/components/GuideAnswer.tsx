@@ -34,7 +34,7 @@ export function locateQuote(text: string, quote: string): { before: string; matc
 export function GuideAnswer({ answer, onRefine }: { answer: GuideResponse; onRefine?: ((r: Refinement) => void) | undefined }) {
   const { t } = useTranslation();
   if (answer.status === 'NEEDS_CLARIFICATION' && answer.clarification) {
-    return <Clarify clarification={answer.clarification} onRefine={onRefine} />;
+    return <Clarify clarification={answer.clarification} aiContent={answer.aiContent} onRefine={onRefine} />;
   }
   const ok = answer.status === 'OK';
   // The model ran but no pick survived (it chose none, or all were rejected): say so plainly.
@@ -78,7 +78,11 @@ export function GuideAnswer({ answer, onRefine }: { answer: GuideResponse; onRef
           </li>
         </ol>
       ) : (
-        <p className="muted small">{t('guide.searchedFor', { q: answer.searchQuery })} · {t('guide.considered', { n: answer.candidatesConsidered })}</p>
+        <p className="muted small">
+          {/* The planner may have written the query even when the answering model failed (aiContent says so). */}
+          <span {...(answer.aiContent ? aiMark(answer.aiContent.models[0]) : {})}>{t('guide.searchedFor', { q: answer.searchQuery })}</span>
+          {' · '}{t('guide.considered', { n: answer.candidatesConsidered })}
+        </p>
       )}
 
       {dailyQuota && (
@@ -127,6 +131,7 @@ export function GuideAnswer({ answer, onRefine }: { answer: GuideResponse; onRef
 function Understood({ answer, onRefine }: { answer: GuideResponse; onRefine?: ((r: Refinement) => void) | undefined }) {
   const { t } = useTranslation();
   const intent = answer.intent ?? 'SUGGEST';
+  // `ai`: the planner wrote the label. Intent and period labels are our own text; subjects are the user's own words.
   const parts: { key: string; label: string; drop?: string | undefined; ai?: boolean }[] = [];
   // A period alone reads as "newest" on the server, so removing that intent would come straight back: the period's ✕ is the way out.
   const intentFromWindow = intent === 'NEWEST' && answer.window != null;
@@ -158,16 +163,27 @@ function Understood({ answer, onRefine }: { answer: GuideResponse; onRefine?: ((
 }
 
 /** The guide's question back when the need was too vague: one click on an option, free text, or search anyway. */
-function Clarify({ clarification, onRefine }: { clarification: NonNullable<GuideResponse['clarification']>; onRefine?: ((r: Refinement) => void) | undefined }) {
+function Clarify({ clarification, aiContent, onRefine }: {
+  clarification: NonNullable<GuideResponse['clarification']>;
+  aiContent?: GuideResponse['aiContent'];
+  onRefine?: ((r: Refinement) => void) | undefined;
+}) {
   const { t } = useTranslation();
   const [other, setOther] = useState('');
+  // The planner wrote the question and the options; the label, the free-text field and its buttons are ours.
+  const model = aiContent?.models[0];
   return (
-    <section className="guide-answer clarify" aria-labelledby="guide-clarify-h">
-      <h3 id="guide-clarify-h" {...aiMark()}>{clarification.question}</h3>
+    <section
+      className="guide-answer clarify"
+      aria-labelledby="guide-clarify-h"
+      data-ai-provider={aiContent?.provider}
+      data-ai-models={aiContent?.models.join(' ')}
+    >
+      <h3 id="guide-clarify-h" {...aiMark(model)}>{clarification.question}</h3>
       <p className="muted small">{t('guide.clarify.label')}</p>
       <div className="clarify-options">
         {clarification.options.map((o) => (
-          <button key={o} type="button" className="btn" onClick={() => onRefine?.({ clarification: o })} {...aiMark()}>{o}</button>
+          <button key={o} type="button" className="btn" onClick={() => onRefine?.({ clarification: o })} {...aiMark(model)}>{o}</button>
         ))}
       </div>
       <form className="clarify-other" onSubmit={(e) => { e.preventDefault(); if (other.trim()) onRefine?.({ clarification: other.trim() }); }}>
@@ -200,7 +216,7 @@ function ComparisonTable({ comparison }: { comparison: NonNullable<GuideResponse
         <tbody>
           {comparison.rows.map((r) => (
             <tr key={r.aspect}>
-              <th scope="row">{r.aspect}</th>
+              <th scope="row"><span {...aiMark()}>{r.aspect}</span></th>
               {comparison.subjects.map((s) => {
                 const cell = r.cells.find((c) => c.subjectKey === s.key);
                 return (
@@ -267,7 +283,7 @@ function Pick({ r, best }: { r: Recommendation; best: boolean }) {
             <li key={c.constraint} className={c.status === 'CONFIRMED' ? 'check-ok' : 'check-unknown'}>
               {/* Status in words, never colour alone (WCAG 1.4.1). */}
               <Icon name={c.status === 'CONFIRMED' ? 'check' : 'info'} />{' '}
-              <strong>{c.constraint}</strong>:{' '}
+              <strong {...aiMark()}>{c.constraint}</strong>:{' '}
               {c.status === 'CONFIRMED'
                 ? <>{t('guide.checkConfirmed')} <q>{c.quote}</q></>
                 : t('guide.checkNotConfirmed')}
