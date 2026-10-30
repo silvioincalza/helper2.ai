@@ -87,7 +87,7 @@ class SearchEvaluationTest {
             q1	https://github.com/o/a	1
         """).pool().lines().filter { it.isNotBlank() }
         assertEquals("query_id\turl\tgrade\tquery\ttitle\tsources", pool.first())
-        // b and c are one resource (c's repository is b), listed under its identity
+        // b and c are one resource (c's repository is b): listed once, under its identity, also when an ablation splits them
         assertEquals(listOf("https://github.com/o/b"), pool.drop(1).map { it.split('\t')[1] })
     }
 
