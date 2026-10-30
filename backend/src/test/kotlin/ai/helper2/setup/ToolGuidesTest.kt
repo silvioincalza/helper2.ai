@@ -49,6 +49,19 @@ class ToolGuidesTest {
     }
 
     @Test
+    fun `the kept answer holds neither the question nor the document text, a hit still answers with the question`() {
+        val cache = MemoryCache()
+        val guides = ToolGuides({ listOf(doc) }, Model { good }, cache, clock)
+        val asked = guides.answer("id", ref, "How do I install it?")
+        assertEquals("How do I install it?", asked.question)
+        val kept = cache.map.values.single()
+        assertNull(kept.question)
+        assertEquals(listOf(MaterialRef("readme", MaterialKind.README, URI("https://github.com/acme/x"), clock.instant())), kept.materials)
+        assertEquals("how do I install it?", guides.answer("id", ref, "how do I install it?").question)
+        assertEquals(1, cache.map.size)
+    }
+
+    @Test
     fun `no documents, no model, budget and nothing kept are told apart`() {
         assertEquals(ToolGuideStatus.NO_MATERIAL, ToolGuides({ emptyList() }, Model { good }, ToolGuideCache.NONE, clock).answer("id", ref, null).status)
         val noRef = ToolRef.of("x", "PRODUCT", listOf("https://example.com"), emptyList())

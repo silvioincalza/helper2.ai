@@ -12,7 +12,12 @@ data class Material(
     val url: URI,
     val retrievedAt: Instant,
     val text: String,
-)
+) {
+    val ref: MaterialRef get() = MaterialRef(key, kind, url, retrievedAt)
+}
+
+/** Which document a step cites, without its text: what an answer keeps and shows. */
+data class MaterialRef(val key: String, val kind: MaterialKind, val url: URI, val retrievedAt: Instant)
 
 /**
  * Where a resource's own documentation lives, parsed from its source records and links. Only identifiers are
