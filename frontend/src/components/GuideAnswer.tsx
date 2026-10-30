@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import type { GuideResponse } from '@/api/types';
+import type { GuideRequest, GuideResponse } from '@/api/types';
 import { ExternalLink } from '@/components/ExternalLink';
 import { Icon } from '@/components/Icon';
 import { typeTagClass } from '@/lib/typeTag';
@@ -9,7 +9,7 @@ import { typeTagClass } from '@/lib/typeTag';
 type Recommendation = GuideResponse['recommendations'][number];
 
 /** A follow-up the user asks from the answer: their reply to our question, or parts of the reading to remove. */
-export type Refinement = { clarification?: string | undefined; drop?: string[] | undefined };
+export type Refinement = Pick<GuideRequest, 'clarification' | 'drop'>;
 
 /**
  * Where [quote] sits inside [text], matched like the validator does (case and runs of whitespace ignored).

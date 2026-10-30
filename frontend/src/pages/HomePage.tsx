@@ -195,10 +195,11 @@ function GuideSection({ question, onClose, onRetry }: { question: string; onClos
     setSteps([]);
     setError(null);
     setBusy(true);
-    setRefinement((prev) => ({
-      clarification: r.clarification ?? prev.clarification,
-      drop: [...new Set([...(prev.drop ?? []), ...(r.drop ?? [])])],
-    }));
+    setRefinement((prev) => {
+      const clarification = r.clarification ?? prev.clarification;
+      const drop = [...new Set([...(prev.drop ?? []), ...(r.drop ?? [])])];
+      return clarification === undefined ? { drop } : { clarification, drop };
+    });
   };
 
   useEffect(() => {
