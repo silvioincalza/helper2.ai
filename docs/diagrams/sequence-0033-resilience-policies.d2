@@ -1,8 +1,10 @@
 # Sequence: a Scout collector riding out a short 503 under collector-<id> (retry outside, circuit inside), then a
-# search source whose circuit has opened, answered as SKIPPED without a call. The redis circuit is in sequence-0005.
+# search source whose circuit has opened, answered as SKIPPED without a call; then the guide's model calls under
+# llm-chat while the provider is down. The redis circuit is in sequence-0005.
 # Source of truth: backend/src/main/java/ai/helper2/sources/McpRegistryCollector.java, TransientSourceFailure.java,
 #   HttpClients.java, backend/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java,
-#   backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt, scout/usecase/RunScout.kt, application.yaml (resilience4j.*).
+#   backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt, scout/usecase/RunScout.kt, application.yaml (resilience4j.*),
+#   backend/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java (call), guide/usecase/QuestionReader.kt.
 # Render: cd docs/diagrams && d2 fmt sequence-0033-resilience-policies.d2 && d2 sequence-0033-resilience-policies.d2 sequence-0033-resilience-policies.svg
 
 ...@style
@@ -15,6 +17,8 @@ search: SearchResources {class: app}
 res: "Resilience4jPolicies" {class: app}
 api: "MCP Registry" {class: ext}
 gh: "GitHub search" {class: ext}
+guide: "SpringAiGuideModel" {class: app}
+tf: "Token Factory" {class: ai}
 
 transient: "Collector: a short 503 (policy collector-mcp-registry)" {
   scout -> coll: "collect(checkpoint, cursor, max)"
@@ -45,4 +49,15 @@ recover: After 30 s {
   gh -> res: "200"
   res -> res: "trials succeed: CLOSED"
   res -> search: "hits"
+}
+
+llm: "Guide: Token Factory down (policy llm-chat)" {
+  guide -> res: "call(llm-chat, plan attempt)"
+  res -> tf: "budget unit, then the request"
+  tf -> res: "timeout after 40 s (provider error: counted)"
+  res -> guide: "failure → GuideUnavailable(timeout):\ndegraded answer"
+  res -> res: "5 of the last 10 calls failed:\ncircuit OPEN for 30 s"
+  guide -> res: "call(llm-chat, plan attempt)"
+  res -> guide: "CallRefused CIRCUIT_OPEN:\nno request, no budget unit"
+  guide -> guide: "GuideUnavailable(circuit_open):\ndegraded answer at once"
 }

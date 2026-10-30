@@ -3,7 +3,7 @@
 # translation, the checks on the untrusted answer, and how the English words are disclosed.
 # Source of truth: backend/src/main/kotlin/ai/helper2/shared/LanguageDetector.kt,
 #   backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt (search, startTranslation, awaitTranslation, withTranslation),
-#   backend/src/main/java/ai/helper2/platform/llm/SpringAiQueryTranslator.java, LlmConfiguration.java.
+#   backend/src/main/java/ai/helper2/search/internal/SpringAiQueryTranslator.java, TranslationConfiguration.java.
 # Render: cd docs/diagrams && d2 fmt flow-0011-language-aware-search.d2 && d2 flow-0011-language-aware-search.d2 flow-0011-language-aware-search.svg
 
 ...@style
@@ -39,7 +39,7 @@ detect: LanguageDetector.detect {
 all: "Start every source with the\nquery as typed" {class: app}
 model: "Translator configured?" {class: decision}
 start: "Start model call (fast model)\nand sources with usesTranslation = false\n(helper2-semantic)" {class: ai}
-budget: "Cached answer (24 h) or\ndaily translation budget left (300)?" {class: decision}
+budget: "Cached answer (24 h), or llm-chat\ncircuit closed and daily\ntranslation budget left (300)?" {class: decision}
 wait: "Wait for the answer,\nat most 2500 ms" {class: app}
 check: "Answer arrived, no link,\nnot equal to the query?" {class: decision}
 clean: "Keep letters, digits, spaces, hyphens;\n≤ 12 words, ≤ 120 chars" {class: app}

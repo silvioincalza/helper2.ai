@@ -1,8 +1,9 @@
 # Flowchart: one model call through the shared LLM layer, from the caller to a usable answer or a fallback.
-# Shows the "model configured?" check, the daily budget taken before each attempt, the bounded provider call
+# Shows the "model configured?" check, the llm-chat circuit, the daily budget taken before each attempt, the bounded provider call
 # (timeout, SDK retry off by default), the error categories and the clean-up of the answer before the validators see it.
 # Source of truth: backend/src/main/java/ai/helper2/platform/llm/ (LlmSettings, DailyBudget, RedisCallCounter,
-#   CallOptions, ModelCallMetrics, ModelErrors, ModelAnswers, UntrustedText),
+#   CallOptions, ModelCallMetrics, ModelErrors, ModelAnswers, UntrustedText, LlmPolicies),
+#   backend/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java (llm-chat circuit),
 #   backend/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java (call),
 #   backend/src/main/resources/application.yaml (spring.ai.openai.chat.timeout / max-retries).
 # Render: cd docs/diagrams && d2 fmt flow-0014-llm-integration.d2 && d2 flow-0014-llm-integration.d2 flow-0014-llm-integration.svg
@@ -14,13 +15,15 @@ direction: down
 caller: "Port call\n(GuideModel, EnrichmentModel,\nQueryTranslator, RepoClassifier)" {class: app}
 usable: "ChatModel bean and\nreasoning model set?" {class: decision}
 fallback: "Fallback without a model:\ntop search results, LLM_UNAVAILABLE,\nuntranslated query, heuristic" {class: end}
+circuit: "llm-chat circuit closed?\n(guide and translation)" {class: decision}
+refused: "Refused at once:\ncircuit_open, no unit taken" {class: fail}
 budget: "DailyBudget.tryAcquire()\n(Redis counter, else memory)" {class: data}
 spent: "Budget spent for today\n(per use: guide, translation,\nenrichment, classifier)" {class: fail}
 options: "CallOptions: temperature 0,\nmodel id, max tokens,\nenable_thinking=false" {class: app}
 untrusted: "Third-party text through\nUntrustedText (< > become ‹ ›)" {class: app}
 call: "ChatClient → OpenAI client\n→ Token Factory\ntimeout 40 s, no SDK retry\n(H2_LLM_MAX_RETRIES 0)" {class: ai}
 ok: "Answer received?" {class: decision}
-category: "ModelErrors.category:\ntimeout, rate_limited,\nunavailable, parse_error, error" {class: fail}
+category: "ModelErrors.category:\ntimeout, rate_limited,\nunavailable, parse_error, error\n(provider errors count\nfor the circuit)" {class: fail}
 again: "Guide only: unusable answer\nand attempt 1?" {class: decision}
 strip: "ModelAnswers: drop <think>,\ntake the JSON object" {class: app}
 gate: "Deterministic validator\ndecides what is shown" {class: end}
@@ -28,15 +31,18 @@ gate: "Deterministic validator\ndecides what is shown" {class: end}
 caller -> usable
 usable -> fallback: no
 usable -> untrusted: yes {class: hot}
-untrusted -> budget: {class: hot}
+untrusted -> circuit: {class: hot}
+circuit -> budget: "closed or\nhalf-open trial" {class: hot}
+circuit -> refused: open
+refused -> fallback
 budget -> spent: no unit left
 spent -> fallback
 budget -> options: unit taken {class: hot}
 options -> call: {class: ai-call}
-call -> ok: "observed: helper2.guide.model.call"
+call -> ok: "observed: helper2.llm.call\n{step, model, prompt, outcome}"
 ok -> strip: yes {class: hot}
 ok -> category: no
 category -> again
-again -> budget: "yes: new attempt,\nnew unit"
+again -> circuit: "yes: new attempt,\nnew unit"
 again -> fallback: no
 strip -> gate: {class: hot}

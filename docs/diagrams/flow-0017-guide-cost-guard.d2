@@ -2,7 +2,8 @@
 # Rate limit (interceptor) → slot and deadline (GuideLimits) → answer cache → single-flight → client quota
 # → global daily budget (taken before each model attempt).
 # Source of truth: backend/src/main/java/ai/helper2/platform/RateLimitInterceptor.java, ClientKey.java,
-#   backend/src/main/java/ai/helper2/guide/web/GuideLimits.java, GuideStreamController.java (keep-alive),
+#   backend/src/main/java/ai/helper2/guide/web/GuideLimits.java (guide bulkhead), GuideStreamController.java (keep-alive),
+#   backend/src/main/resources/application.yaml (resilience4j.bulkhead.instances.guide, llm-chat circuit),
 #   backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (AskGuide.ask),
 #   backend/src/main/kotlin/ai/helper2/guide/GuideCost.kt (ClientQuota, GuideAnswerCache),
 #   backend/src/main/java/ai/helper2/guide/internal/RedisGuideAnswerStore.java, GuideConfiguration.java.
@@ -16,7 +17,7 @@ direction: down
 ask: "POST /api/v1/guide\nor /api/v1/guide/stream" {class: person}
 rate: "Rate limit: 10 per minute\nper client (IPv6 by /64),\nshared by both endpoints" {class: decision}
 r429: "429 Too Many Requests\n+ Retry-After" {class: fail}
-slot: "GuideLimits: free slot?\n(H2_GUIDE_MAX_CONCURRENT 8)" {class: decision}
+slot: "GuideLimits: free slot in\nthe guide bulkhead?\n(H2_GUIDE_MAX_CONCURRENT 8)" {class: decision}
 busy: "503 Guide busy\n(error event on the stream)" {class: fail}
 key: "Cache key: normalised text |\npath | config hash" {class: app}
 cache: "Answer cache hit?\nmemory, then Redis" {class: decision}
@@ -26,6 +27,7 @@ shared: "Wait for that answer\n(single-flight; the stream\ngets only :keep-alive
 quota: "ClientQuota: fresh question\nleft today for this ClientKey?\n(H2_GUIDE_CLIENT_DAILY_QUESTIONS 30)" {class: decision}
 searchOnly: "Search-only answer\n+ notice GUIDE_DAILY_QUOTA" {class: end}
 run: "Plan → search → choose →\nvalidate → reason check" {class: ai}
+circuit: "llm-chat circuit closed?\n(each model attempt)" {class: decision}
 budget: "Global daily budget unit\nbefore each model attempt?\n(H2_GUIDE_DAILY_MODEL_CALLS 600)" {class: decision}
 degraded: "Degraded answer\n(top search results)" {class: fail}
 deadline: "Deadline passed?\n(H2_GUIDE_QUESTION_DEADLINE 90 s)" {class: decision}
@@ -46,7 +48,9 @@ flight -> shared: yes
 flight -> quota: no {class: hot}
 quota -> searchOnly: no
 quota -> run: yes {class: hot}
-run -> budget
+run -> circuit
+circuit -> degraded: "open: circuit_open"
+circuit -> budget: closed {class: hot}
 budget -> degraded: no
 budget -> deadline: yes {class: hot}
 deadline -> timeout: yes

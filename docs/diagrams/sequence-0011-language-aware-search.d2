@@ -3,7 +3,8 @@
 # and each source's deadline starts at its own start.
 # Source of truth: backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt,
 #   backend/src/main/kotlin/ai/helper2/shared/LanguageDetector.kt,
-#   backend/src/main/java/ai/helper2/platform/llm/SpringAiQueryTranslator.java, DailyBudget.java,
+#   backend/src/main/java/ai/helper2/search/internal/SpringAiQueryTranslator.java, .../platform/llm/DailyBudget.java,
+#   .../platform/resilience/Resilience4jPolicies.java (llm-chat),
 #   backend/src/main/java/ai/helper2/catalog/SemanticSearchSource.java, CatalogSearchSource.java.
 # Render: cd docs/diagrams && d2 fmt sequence-0011-language-aware-search.d2 && d2 sequence-0011-language-aware-search.d2 sequence-0011-language-aware-search.svg
 
@@ -14,6 +15,7 @@ shape: sequence_diagram
 fs: SearchResources {class: app}
 ld: LanguageDetector {class: app}
 tr: SpringAiQueryTranslator {class: app}
+cb: "llm-chat circuit\n(Resilience)" {class: app}
 budget: "DailyBudget\n(translation)" {class: app}
 llm: "Nebius Token Factory\n(fast Nemotron model)" {class: ai}
 sem: "SemanticSearchSource\n(usesTranslation = false)" {class: app}
@@ -27,10 +29,12 @@ fs -> sem: "search(query as typed), deadline 3 s\nfrom now" {class: hot}
 
 model: Translation (bounded by 2500 ms) {
   tr -> tr: "in-memory cache: miss"
-  tr -> budget: "tryAcquire()"
-  budget -> tr: "true (under 300 today)"
-  tr -> llm: "translate-query prompt,\n400 tokens, thinking off" {class: ai-call}
-  llm -> tr: "\"translation app text\"" {class: ai-call}
+  tr -> cb: "call(llm-chat): closed"
+  cb -> budget: "tryAcquire()"
+  budget -> cb: "true (under 300 today)"
+  cb -> llm: "translate-query prompt,\n400 tokens, thinking off" {class: ai-call}
+  llm -> cb: "\"translation app text\"" {class: ai-call}
+  cb -> tr: "answer"
   tr -> fs: "English words"
 }
 

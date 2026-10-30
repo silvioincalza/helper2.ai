@@ -12,13 +12,17 @@ Without a configured model the application must still work.
 ## Decision
 1. **Spring AI 2.0.2 behind ports.** Only `spring-ai-starter-model-openai` is on the classpath. Each feature has its
    own port: `GuideModel`, `EnrichmentModel`, `QueryTranslator`, `RepoClassifier`. The Spring AI adapters
-   (`SpringAiGuideModel`, `SpringAiEnrichmentModel`, `SpringAiQueryTranslator`, `SpringAiRepoClassifier`) share the
-   helpers in `ai.helper2.platform.llm`.
+   (`SpringAiGuideModel`, `SpringAiEnrichmentModel`, `SpringAiQueryTranslator`, `SpringAiRepoClassifier`) live in the
+   module that owns their port (the translator in `search.internal`) and share the helpers in `ai.helper2.platform.llm`,
+   which depends on no feature module.
 2. **One provider.** Profile `llm-nebius`: Nebius Token Factory (`https://api.tokenfactory.nebius.com/v1`) serving
    NVIDIA Nemotron models only. `H2_NEBIUS_API_KEY`, `H2_NEBIUS_REASONING_MODEL` (default
    `nvidia/nemotron-3-super-120b-a12b`), `H2_NEBIUS_FAST_MODEL` (default `nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B`; it
    plans the guide's search, translates queries and classifies awesome lists). `LlmSettings` holds the fallbacks:
-   an empty fast model means the reasoning model does these calls too.
+   an empty fast model means the reasoning model does these calls too. NVIDIA-only is checked at startup
+   (`NvidiaOnly`): the application does not start when a chat model id sent through the OpenAI-compatible client
+   (`spring.ai.openai.chat.model`, `helper2.llm.fast-model`, `helper2.llm.reasoning-model`) or the embedding model id
+   ([0012](0012-vector-search-pgvector.md)) does not start with `nvidia/`; the error names the property.
 3. **Prompts on the classpath.** `backend/src/main/resources/prompts/**.txt`, rendered by `PromptTemplate` with
    `{{name}}` placeholders. Rendering is strict: a missing value or an unused value is an error. Limits the code
    enforces (quote length, allowed values) are passed in, so prompt and validator use the same numbers.
@@ -38,17 +42,28 @@ Without a configured model the application must still work.
    `H2_SCOUT_AWESOME_CLASSIFIER_DAILY_CALLS` (300). The counts live in Redis, with a fallback to memory
    ([0005](0005-redis-disposable-cache.md)): `RedisCallCounter` runs `INCR` and `PEXPIRE` in one Lua script, so a
    counter key always has its expiry.
-7. **Untrusted input and output.** `UntrustedText` turns `<` `>` in third-party text into `‹` `›` and cuts it, so
+7. **A circuit on the provider** ([0033](0033-resilience-policies.md)). The guide's and the translator's calls run
+   under the `llm-chat` circuit breaker; the budget unit is taken inside it. Only provider errors count (no
+   connection, timeout, 429, 5xx, a rejected call); a malformed answer or a spent budget counts as neither success nor
+   failure (`ModelErrors.NotFromProvider`). When at least half of the last 10 counted calls failed (5 calls at least), the circuit opens for 30 s
+   (`H2_RESILIENCE_LLM_OPEN_FOR`): each call fails at once with category `circuit_open`, without reaching the provider
+   or taking a unit, and the caller's degraded mode starts without waiting for a timeout. Embedding calls have their
+   own `llm-embed` circuit.
+8. **Untrusted input and output.** `UntrustedText` turns `<` `>` in third-party text into `‹` `›` and cuts it, so
    the text cannot close our tags. `ModelAnswers` removes `<think>` blocks (closed or cut off) and takes the outermost
    JSON object. A deterministic validator then decides what is shown (ADR [0015](0015-ai-guide-evidence-gate.md),
    [0019](0019-evidence-gated-enrichment.md)).
-8. **Errors and metrics.** `ModelErrors.category` maps a failure to `timeout`, `rate_limited`, `unavailable`,
-   `parse_error` or `error`. `ModelCallMetrics` records one observation per attempt (`helper2.guide.model.call`, tags
-   step, model, outcome) and the token counter `helper2.guide.tokens`, for every adapter (the classifier uses
-   step `classify`). Gauges show the calls left under each daily cap ([0026](0026-observability.md)).
-9. **Degraded mode.** `spring.ai.model.chat=none` is the default. Without a model, or with the budget spent, each
+9. **Errors and metrics.** `ModelErrors.category` maps a failure to `timeout`, `rate_limited`, `unavailable`,
+   `parse_error` or `error`; a call the open circuit refused is `circuit_open`. `ModelCallMetrics` records one
+   observation per attempt (span and timer `helper2.llm.call`, tags step, model, prompt, outcome) and the token
+   counter `helper2.llm.tokens` (tags step, prompt, type), for every adapter (the classifier uses step `classify`).
+   The prompt tag is the prompt's version: the first 8 hex characters of the SHA-256 of the rendered system prompt
+   (`ModelCallMetrics.promptVersion`), so an edited prompt or limit shows as a new series with no number to keep by
+   hand. Gauges show the calls left under each daily cap ([0026](0026-observability.md)).
+10. **Degraded mode.** `spring.ai.model.chat=none` is the default. Without a model, or with the budget spent, each
    feature falls back: the guide shows top search results (`LLM_UNAVAILABLE`), enrichment records `LLM_UNAVAILABLE`
-   and retries later, search runs untranslated, the classifier uses keyword rules.
+   and retries later, search runs untranslated, the classifier uses keyword rules. An open `llm-chat` circuit gives
+   the guide and search the same fallback at once.
 
 ## Consequences
 - The daily spend has a ceiling per feature, and a restart does not reset it while Redis is up.
@@ -57,6 +72,9 @@ Without a configured model the application must still work.
   `H2_LLM_MAX_RETRIES` above 0 would add attempts that no budget counts.
 - A short provider error (timeout, 429, 5xx) is not retried at once: the guide falls back to search results and
   enrichment stays in the backlog for a later run.
+- During a provider outage the guide degrades after at most a few timed-out calls per replica, then at once until a
+  trial call succeeds; the circuit lives in each replica's memory.
+- A model id of another vendor stops the deploy at startup instead of reaching that vendor.
 - Thinking off makes calls faster and repeatable, but the chooser returns fewer picks (see [0030](0030-guide-evaluation.md)).
 - One provider keeps setup and image small. A second provider needs a dependency and a profile; the ports do not change.
 
@@ -68,19 +86,19 @@ Without a configured model the application must still work.
 - Spring AI's `PromptTemplate` — its `{name}` syntax collides with the JSON examples in the prompts.
 
 ## Code
-- `backend/src/main/java/ai/helper2/platform/llm/` — `LlmSettings`, `LlmConfiguration`, `CallOptions`, `DailyBudget`,
-  `CallCounter`, `RedisCallCounter`, `ModelCallMetrics`, `ModelErrors`, `ModelAnswers`, `UntrustedText`,
-  `SpringAiQueryTranslator`.
+- `backend/src/main/java/ai/helper2/platform/llm/` — `LlmSettings`, `LlmConfiguration`, `NvidiaOnly`, `LlmPolicies`,
+  `CallOptions`, `DailyBudget`, `CallCounter`, `RedisCallCounter`, `ModelCallMetrics`, `ModelErrors`, `ModelAnswers`,
+  `UntrustedText`.
 - `backend/src/main/java/ai/helper2/platform/prompt/PromptTemplate.java` — strict prompt rendering.
-- `backend/src/main/resources/prompts/` — `guide/plan.txt`, `guide/choose.txt`, `guide/verify-reasons.txt`,
-  `guide/translate-query.txt`, `scout/enrich-v3.txt`, `sources/classify-repos.txt`.
+- `backend/src/main/resources/prompts/` — `guide/plan.txt`, `guide/choose.txt`, `guide/compare.txt`, `guide/explain.txt`,
+  `guide/verify-reasons.txt`, `search/translate-query.txt`, `scout/enrich-v3.txt`, `sources/classify-repos.txt`,
+  `setup/tool-guide.txt`.
 - `backend/src/main/resources/application.yaml` — profile `llm-nebius`, timeout, retries, budgets.
-- `backend/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java`, `scout/internal/SpringAiEnrichmentModel.java`,
-  `sources/SpringAiRepoClassifier.java` — the adapters.
+- `backend/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java`, `search/internal/SpringAiQueryTranslator.java`,
+  `scout/internal/SpringAiEnrichmentModel.java`, `sources/SpringAiRepoClassifier.java` — the adapters.
 
 ## Diagrams
 [flow](../diagrams/flow-0014-llm-integration.svg) · [sequence](../diagrams/sequence-0014-llm-integration.svg)
 
 ## Roadmap
-- [Resilience4j for outbound calls](../roadmap.md#5-ai-quality-and-cost)
 - [A closed `llm` module instead of the open `platform` module](../roadmap.md#8-architecture)

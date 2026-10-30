@@ -3,7 +3,7 @@
 # Source of truth: backend/src/main/java/ai/helper2/search/web/SearchController.java,
 #   backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt, .../search/Ports.kt,
 #   backend/src/main/java/ai/helper2/sources/GitHubSource.java, .../catalog/ResourceCatalog.java,
-#   .../search/cache/RedisSearchCache.java, .../platform/llm/SpringAiQueryTranslator.java.
+#   .../search/cache/RedisSearchCache.java, .../search/internal/SpringAiQueryTranslator.java.
 # Render: cd docs/diagrams && d2 fmt sequence-0002-modular-monolith-hexagonal.d2 && d2 sequence-0002-modular-monolith-hexagonal.d2 sequence-0002-modular-monolith-hexagonal.svg
 
 ...@style
@@ -14,7 +14,7 @@ ctrl: "SearchController\n(search.web, Java,\nimplements SearchApi)" {class: app}
 uc: "SearchResources\n(search.usecase, Kotlin)" {class: app}
 rules: "QueryAnalyzer, ResultMerger,\nRanking (search, Kotlin)" {class: app}
 cache: "SearchCache port\n← RedisSearchCache\n(search.cache)" {class: port}
-tr: "QueryTranslator port\n← SpringAiQueryTranslator\n(platform.llm)" {class: port}
+tr: "QueryTranslator port\n← SpringAiQueryTranslator\n(search.internal)" {class: port}
 src: "SearchSource port\n← GitHubSource, NpmSource …\n(sources)" {class: port}
 obs: "ResultObserver port\n← ResourceCatalog\n(catalog)" {class: port}
 

@@ -1,14 +1,16 @@
 # 0033 — Resilience policies (Resilience4j): circuit breakers, bulkheads and retries by name
 
 **Status.** Accepted (2026-10-30). **Builds on:** [0002](0002-modular-monolith-hexagonal.md), [0005](0005-redis-disposable-cache.md),
-[0006](0006-outbound-http.md), [0008](0008-federated-search.md), [0026](0026-observability.md)
+[0006](0006-outbound-http.md), [0008](0008-federated-search.md), [0014](0014-llm-integration.md), [0017](0017-guide-cost-guard.md), [0026](0026-observability.md)
 
 ## Context
 Every search calls up to six public application programming interfaces (APIs) plus the catalog, the Scout calls seven
-more in the background, and Redis sits on the path of every request (cache, budgets, rate limits, guide answers).
+more in the background, Redis sits on the path of every request (cache, budgets, rate limits, guide answers), and the
+guide and the query translation call the model provider, search queries and the indexer the embedding API.
 Each of them fails in its own way: a provider is down for an hour, answers slowly, or sends a 503 for a few seconds;
 Redis restarts and loads its append-only file. Without a guard, a provider that is down costs every search its full
-deadline (2.5–6 s), and a Redis outage adds a 250 ms timeout to every call. The guards must be the same everywhere,
+deadline (2.5–6 s), a Redis outage adds a 250 ms timeout to every call, and a model provider that is down costs every
+guide step its 40 s timeout before the answer degrades. The guards must be the same everywhere,
 configurable per dependency without a release, measured (state, refused calls), and testable without a running app.
 The domain (Kotlin) must not depend on the library that implements them ([0002](0002-modular-monolith-hexagonal.md)).
 
@@ -22,7 +24,9 @@ The domain (Kotlin) must not depend on the library that implements them ([0002](
    passes `Resilience.NONE` or its own registries. A policy is the circuit breaker, bulkhead and retry instances that
    share its name; order, outermost first: retry, bulkhead, circuit breaker. A call the policy does not let through
    throws `CallRefused` (reason `CIRCUIT_OPEN` or `BUSY`) without running; any other exception is the work's own.
-   `require(policy)` fails when no instance has that name.
+   `require(policy)` fails when no instance has that name. `trySlot(policy)` takes one place in the policy's bulkhead
+   for work that outlives one call and gives it back once, on `release()`; it is empty at once when the bulkhead is
+   full.
 3. **Named policies** in `application.yaml` (`resilience4j.*`), every instance created at startup:
 
    | Policy | Circuit breaker | Bulkhead (semaphore) | Retry |
@@ -30,6 +34,12 @@ The domain (Kotlin) must not depend on the library that implements them ([0002](
    | `source-<id>` (github, hf-models, hf-spaces, npm, arxiv, tavily, helper2-index, helper2-semantic, curated) | count window 20, at least 10 calls, opens at 50% failed or slow (over 2 s; Tavily 5 s), open 30 s, 2 trial calls | 20 calls per replica, no wait; catalog sources 6 (below the database pool of 10) | none: the search deadline is the budget |
    | `collector-<id>` (the seven Scout collectors) | count window 10, at least 5 calls, 50%, open 1 min, 1 trial call | none: the Scout runs one collector at a time | 3 attempts, 1 s then ×2 with ±50% jitter, only on a transient failure |
    | `redis` (search cache, guide answers, tool guide answers, budget counters, rate limits, outbound throttle, session reads) | count window 10, at least 3 calls, 50%, open 30 s, 2 trial calls | none | none |
+   | `llm-chat` (every chat-model call of the guide and the query translation) | count window 10, at least 5 calls, 50%, open 30 s, 2 trial calls; only provider errors count (`ModelErrors.NotFromProvider` ignores a malformed answer and a spent budget) | none | none: every attempt is charged to a daily budget ([0014](0014-llm-integration.md)) |
+   | `llm-embed` (every embedding call: search queries and the indexer) | as `llm-chat`, every failure counts | none | none |
+   | `guide` (guide questions) | none | 8 questions per replica, no wait, held per question with `trySlot` by `GuideLimits` from start to end or deadline ([0017](0017-guide-cost-guard.md)) | none |
+
+   The guide's bulkhead is its own policy, not part of `llm-chat`: `call` applies every instance of a name, so a
+   bulkhead on `llm-chat` held by a question would refuse that question's own model calls.
 
    A rate limit (`SourceFailure.RateLimited`) is not a failure for a circuit: the source pauses until `Retry-After`
    instead ([0008](0008-federated-search.md)). A transient failure (`TransientSourceFailure`) is a 503, a network error
@@ -38,10 +48,11 @@ The domain (Kotlin) must not depend on the library that implements them ([0002](
 4. **Owner overrides without a release**, all optional: `H2_RESILIENCE_SOURCE_FAILURE_RATE` (50),
    `H2_RESILIENCE_SOURCE_OPEN_FOR` (30s), `H2_RESILIENCE_SOURCE_MAX_CONCURRENT` (20),
    `H2_RESILIENCE_CATALOG_MAX_CONCURRENT` (6), `H2_RESILIENCE_COLLECTOR_OPEN_FOR` (1m),
-   `H2_RESILIENCE_COLLECTOR_MAX_ATTEMPTS` (3), `H2_RESILIENCE_REDIS_OPEN_FOR` (30s).
+   `H2_RESILIENCE_COLLECTOR_MAX_ATTEMPTS` (3), `H2_RESILIENCE_REDIS_OPEN_FOR` (30s), `H2_RESILIENCE_LLM_OPEN_FOR` (30s),
+   `H2_GUIDE_MAX_CONCURRENT` (8).
 5. **No policy, no start.** `SearchResources` requires `source-<id>` for every enabled source and each collector
-   requires `collector-<id>` when it is enabled, so a source added without its policy stops startup instead of running
-   unguarded. The `demo` profile adds the policies of its fixture sources.
+   requires `collector-<id>` when it is enabled, the model adapters require `llm-chat` or `llm-embed` and `GuideLimits`
+   requires `guide`, so a call site added without its policy stops startup instead of running unguarded. The `demo` profile adds the policies of its fixture sources.
 6. **Each outbound request is sent once.** The Apache client's own retries are off (`ObservedHttp`), so every attempt
    is one the circuit counts and the retry bounds.
 7. **Global limits stay in Redis.** Resilience4j's rate limiter counts in one Java virtual machine (JVM), so it cannot
@@ -64,6 +75,10 @@ The domain (Kotlin) must not depend on the library that implements them ([0002](
 - Good: one source cannot hold every virtual thread or every database connection; one search too many for a source
   is `SKIPPED` ("Too many searches at once", `SkipReason.BUSY`) at once.
 - Good: a Scout collector rides out a short 503 without losing its run; a permanent error fails at once.
+- Good: while the model provider is down, the guide answers with top search results at once and search runs
+  untranslated, without spending the daily budget on calls that cannot succeed; while the embedding API is down,
+  search is keyword-only without waiting for the embedding timeout.
+- Good: the guide's concurrency limit is one more named, metered bulkhead (`resilience4j.bulkhead.available.concurrent.calls{name="guide"}`).
 - Good: the state of every circuit and every refused call is a meter and an alert (`Helper2CircuitOpen`,
   `Helper2CallsNotPermitted`, [0026](0026-observability.md)).
 - Trade-off: circuits live in each replica's memory; each replica finds an outage on its own (10 calls at most).
@@ -71,7 +86,8 @@ The domain (Kotlin) must not depend on the library that implements them ([0002](
   background work.
 - Bad: one more library (Apache-2.0, maintained by the Resilience4j project) and its configuration model to keep
   current with Spring Boot.
-- `Resilience4jPoliciesTest`, `ResiliencePoliciesConfigIT`, `SearchResourcesTest`, `SourceCircuitIT`,
+- `Resilience4jPoliciesTest`, `ResiliencePoliciesConfigIT`, `SearchResourcesTest`, `SourceCircuitIT`, `GuideLimitsTest`,
+  `SpringAiGuideModelTest`, `SpringAiQueryTranslatorTest`, `NvidiaEmbedderTest`,
   `CollectorRetryIT`, `TransientSourceFailureTest`, `ObservedHttpRetryTest` and the Redis adapter tests cover the rules.
 
 ## Alternatives considered
@@ -99,6 +115,9 @@ The domain (Kotlin) must not depend on the library that implements them ([0002](
 - `backend/src/main/java/ai/helper2/search/cache/RedisSearchCache.java`, `guide/internal/RedisGuideAnswerStore.java`,
   `setup/internal/RedisToolGuideCache.java`, `platform/llm/RedisCallCounter.java`, `platform/RedisRateLimiter.java` — `redis`.
 - `backend/src/main/java/ai/helper2/platform/http/ObservedHttp.java` — one request per attempt.
+- `backend/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java`, `search/internal/SpringAiQueryTranslator.java`
+  — `llm-chat`; `platform/llm/ModelErrors.java` — what counts for it; `catalog/internal/NvidiaEmbedder.java` — `llm-embed`.
+- `backend/src/main/java/ai/helper2/guide/web/GuideLimits.java` — `guide`, held with `trySlot`.
 - `deploy/monitoring/helper2-rules.yaml` — `Helper2CircuitOpen`, `Helper2CallsNotPermitted`.
 
 ## Diagrams
@@ -106,6 +125,3 @@ The domain (Kotlin) must not depend on the library that implements them ([0002](
 
 [flow 0008](../diagrams/flow-0008-federated-search.svg) (source policy in the fan-out) ·
 [sequence 0005](../diagrams/sequence-0005-redis-disposable-cache.svg) (the `redis` circuit)
-
-## Roadmap
-- The guide's concurrency slots and the model calls as `llm-chat` and `llm-embed` policies: [roadmap](../roadmap.md#5-ai-quality-and-cost).
