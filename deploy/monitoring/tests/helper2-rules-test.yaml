@@ -409,7 +409,7 @@ tests:
               name: source-npm
             exp_annotations:
               summary: "Circuit source-npm has not closed for 5 minutes (prod)."
-              description: "The resilience policy source-npm keeps refusing calls (ADR 0033): source-* is SKIPPED in searches, collector-* fails its Scout runs, redis means the cache, budgets and rate limits run without Redis."
+              description: "The resilience policy source-npm keeps refusing calls (ADR 0033): source-* is SKIPPED in searches, collector-* fails its Scout runs, redis means the cache, budgets and rate limits run without Redis, llm-chat means guide answers are top search results and queries run untranslated, llm-embed means search runs without the meaning-based index."
               runbook: "Dashboard row 'Search and sources' (source outcomes) or the Redis pod for name=redis. A source-* circuit: check the provider's status and its outbound HTTP errors; it closes by itself once a trial call succeeds (every 30 s)."
 
   # Not permitted: 2 refused calls a minute for 15 minutes fire; one refused call now and then does not.

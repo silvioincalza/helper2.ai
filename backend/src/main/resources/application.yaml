@@ -99,7 +99,7 @@ management:
         http.server.requests: true
         http.client.requests: true
         helper2.scout.run: true
-        helper2.guide.model.call: true
+        helper2.llm.call: true
         helper2.search.latency: true
         helper2.source.latency: true
     tags:

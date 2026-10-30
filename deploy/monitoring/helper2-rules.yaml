@@ -90,7 +90,7 @@ groups:
           severity: warning
         annotations:
           summary: "Circuit {{ $labels.name }} has not closed for 5 minutes ({{ $labels.environment }})."
-          description: "The resilience policy {{ $labels.name }} keeps refusing calls (ADR 0033): source-* is SKIPPED in searches, collector-* fails its Scout runs, redis means the cache, budgets and rate limits run without Redis."
+          description: "The resilience policy {{ $labels.name }} keeps refusing calls (ADR 0033): source-* is SKIPPED in searches, collector-* fails its Scout runs, redis means the cache, budgets and rate limits run without Redis, llm-chat means guide answers are top search results and queries run untranslated, llm-embed means search runs without the meaning-based index."
           runbook: "Dashboard row 'Search and sources' (source outcomes) or the Redis pod for name=redis. A source-* circuit: check the provider's status and its outbound HTTP errors; it closes by itself once a trial call succeeds (every 30 s)."
       - alert: Helper2CallsNotPermitted
         # Calls an open circuit refused, per policy: the cost of the outage in calls, above one a minute for 10 minutes.

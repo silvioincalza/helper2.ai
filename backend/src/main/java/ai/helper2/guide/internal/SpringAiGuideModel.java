@@ -380,6 +380,7 @@ class SpringAiGuideModel implements GuideModel {
                        String step, boolean think) {
         RuntimeException last = null;
         BeanOutputConverter<T> converter = new BeanOutputConverter<>(type, null, text -> ModelAnswers.jsonObject(text).orElse(""));
+        String version = ModelCallMetrics.promptVersion(system);
         for (int attempt = 1; attempt <= 2; attempt++) {
             try {
                 return resilience.call(LlmPolicies.CHAT, () -> {
@@ -395,9 +396,9 @@ class SpringAiGuideModel implements GuideModel {
                     }
                     // One observation per attempt: a retry is a second call to the provider, with its own latency.
                     var spec = prompt.call();
-                    return metrics.observe(step, model, () -> {
+                    return metrics.observe(step, model, version, () -> {
                         var response = spec.responseEntity(converter);
-                        metrics.tokens(step, response.response());
+                        metrics.tokens(step, version, response.response());
                         // Model output only (no user text); off unless this logger is set to DEBUG.
                         log.debug("guide {} answer: {}", step, response.entity());
                         return response.entity();

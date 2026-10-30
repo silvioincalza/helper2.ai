@@ -34,6 +34,7 @@ class SpringAiQueryTranslator implements QueryTranslator {
 
     private final ChatClient chat;
     private final String system;
+    private final String version;
     private final String model;
     private final DailyBudget budget;
     private final Clock clock;
@@ -56,6 +57,7 @@ class SpringAiQueryTranslator implements QueryTranslator {
         this.resilience = resilience;
         this.chat = ChatClient.builder(chatModel).build();
         this.system = systemPrompt();
+        this.version = ModelCallMetrics.promptVersion(system);
         this.model = model;
         this.budget = budget;
         this.clock = clock;
@@ -83,14 +85,14 @@ class SpringAiQueryTranslator implements QueryTranslator {
                 if (!budget.tryAcquire()) {
                     throw new BudgetSpent();
                 }
-                return metrics.observe("translate", model, () -> {
+                return metrics.observe("translate", model, version, () -> {
                     var response = chat.prompt()
                         .options(CallOptions.of(model, 400, false))
                         .system(system)
                         .user("Language: " + language + "\nQuery: " + text)
                         .call()
                         .chatResponse();
-                    metrics.tokens("translate", response);
+                    metrics.tokens("translate", version, response);
                     return response == null || response.getResult() == null ? null : response.getResult().getOutput().getText();
                 });
             });
