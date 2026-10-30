@@ -1,0 +1,54 @@
+# Flowchart: what useApi does when a page asks for data, with the recent-answers cache.
+# Shows the opt-out (cache: false), reload that always asks, a hit inside the time limit shown at once and kept as the
+# hook's own answer, a miss or an expired entry that asks the server, and what is stored: successful answers only,
+# the least recently used dropped past 50.
+# Source of truth: frontend/src/hooks/useApi.ts (useApi, peek, remember, CACHE_MAX, CACHE_TTL_MS),
+#   frontend/src/pages/AdminPage.tsx (cache: false).
+# Render: cd docs/diagrams && d2 fmt flow-0039-frontend-recent-answers-cache.d2 && d2 flow-0039-frontend-recent-answers-cache.d2 flow-0039-frontend-recent-answers-cache.svg
+
+...@style
+
+direction: down
+
+mount: "Page mounts or the key changes:\nuseApi(key, fetcher, options)" {class: app}
+optout: "cache: false?" {class: decision}
+reload: "reload() pressed?" {class: decision}
+cached: "Answer for this key,\nat most 5 min old?" {class: decision}
+
+hit: Cache hit {
+  class: group
+  direction: down
+  show: "Show it at once\n(no loading, no request)" {class: app}
+  own: "Kept as the hook's own answer:\nstays shown if the entry expires" {class: app}
+  touch: "Entry moves to most recently used" {class: end}
+  show -> own -> touch
+}
+
+ask: "Ask the server\n(the previous request is aborted)" {class: ext}
+ok: "Answer OK?" {class: decision}
+
+store: Store {
+  class: group
+  direction: down
+  put: "Keep it by key (unless cache: false)" {class: app}
+  full: "More than 50 entries?" {class: decision}
+  drop: "Drop the least recently used" {class: end}
+  show: "Show the answer" {class: end}
+  put -> full
+  full -> drop: yes
+  full -> show: no
+  drop -> show
+}
+
+err: "Show the error;\nnothing kept" {class: fail}
+
+mount -> optout
+optout -> ask: "yes (admin page)"
+optout -> reload: no
+reload -> ask: yes
+reload -> cached: no
+cached -> hit.show: yes {class: hot}
+cached -> ask: "no, or expired"
+ask -> ok
+ok -> store.put: yes {class: hot}
+ok -> err: no
