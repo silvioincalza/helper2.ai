@@ -1,5 +1,6 @@
 package ai.helper2.guide.internal;
 
+import ai.helper2.guide.AnswerLimits;
 import ai.helper2.guide.PlannedQueries;
 import ai.helper2.guide.Candidate;
 import ai.helper2.guide.ConstraintQuote;
@@ -73,14 +74,16 @@ class SpringAiGuideModel implements GuideModel {
 
     /** The comparer's instructions (ADR 0032), with the limits AskGuide enforces. */
     static String compareSystem() {
+        AnswerLimits limits = AnswerLimits.DEFAULT;
         return PromptTemplate.fromClasspath("guide/compare.txt").render(Map.of(
-            "maxRows", 8, "maxAspectChars", 40, "maxCellChars", 200));
+            "maxRows", limits.getMaxRows(), "maxAspectChars", limits.getMaxAspectChars(), "maxCellChars", limits.getMaxCellChars()));
     }
 
     /** The explainer's instructions (ADR 0032), with the limits AskGuide and GuideValidator enforce. */
     static String explainSystem() {
+        AnswerLimits limits = AnswerLimits.DEFAULT;
         return PromptTemplate.fromClasspath("guide/explain.txt").render(Map.of(
-            "maxSentences", 4, "maxSentenceChars", 300,
+            "maxSentences", limits.getMaxSentences(), "maxSentenceChars", limits.getMaxSentenceChars(),
             "minQuoteChars", GuideValidator.MIN_QUOTE_CHARS,
             "minQuoteWords", GuideValidator.MIN_QUOTE_WORDS,
             "maxQuoteChars", GuideValidator.MAX_QUOTE_CHARS));

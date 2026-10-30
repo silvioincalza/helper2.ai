@@ -1,5 +1,6 @@
 package ai.helper2.guide.usecase
 
+import ai.helper2.guide.AnswerLimits
 import ai.helper2.guide.Candidate
 import ai.helper2.guide.CheckStatus
 import ai.helper2.guide.ClientQuota
@@ -366,6 +367,17 @@ class AskGuideTest {
 
         assertEquals(2, before.calls)
         assertEquals(2, after.calls)
+    }
+
+    @Test
+    fun `new answer limits do not serve answers cached under the old ones`() {
+        val cache = GuideAnswerCache(Duration.ofHours(24), 10, clock)
+        val model = CountingModel(whisperPick())
+
+        AskGuide(search, model, clock, cache = cache).ask(need, null)
+        AskGuide(search, model, clock, cache = cache, limits = AnswerLimits(maxRows = 5)).ask(need, null)
+
+        assertEquals(4, model.calls)
     }
 
     private fun reasoned() = AskGuide(search, whisperPick(), clock).ask(need, null)

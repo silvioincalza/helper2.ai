@@ -1,5 +1,6 @@
 package ai.helper2.guide.internal;
 
+import ai.helper2.guide.AnswerLimits;
 import ai.helper2.guide.ClientQuota;
 import ai.helper2.guide.GuideAnswerCache;
 import ai.helper2.guide.GuideAnswerStore;
@@ -81,6 +82,6 @@ class GuideConfiguration {
             maxCandidates, clientDailyQuestions);
         return new AskGuide(search, guideModel, clock, maxCandidates, new GuideValidator(),
             new GuideAnswerCache(cacheTtl, cacheMaxEntries, clock, answerStore), observations, meters,
-            new ClientQuota(clientDailyQuestions, clock, budgetCounter), AskGuide.SUBJECT_SEARCH_DEADLINE);
+            new ClientQuota(clientDailyQuestions, clock, budgetCounter), AskGuide.SUBJECT_SEARCH_DEADLINE, AnswerLimits.DEFAULT);
     }
 }

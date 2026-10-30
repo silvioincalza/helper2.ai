@@ -1,5 +1,6 @@
 package ai.helper2.guide.usecase
 
+import ai.helper2.guide.AnswerLimits
 import ai.helper2.guide.Candidate
 import ai.helper2.guide.CheckStatus
 import ai.helper2.guide.Clarification
@@ -90,12 +91,13 @@ class AskGuide(
     private val quota: ClientQuota? = null,
     /** How long the subject searches of a comparison may take together; a subject not found by then is not found. */
     private val subjectSearchDeadline: Duration = SUBJECT_SEARCH_DEADLINE,
+    private val limits: AnswerLimits = AnswerLimits.DEFAULT,
 ) {
     private val log = LoggerFactory.getLogger(AskGuide::class.java)
 
     /** Everything that changes an answer besides the question: a change gives new cache keys. */
     private val configHash: String = sha256Hex(
-        listOf(model?.provider, model?.fastModel, model?.reasoningModel, model?.configFingerprint, validator.fingerprint, maxCandidates)
+        listOf(model?.provider, model?.fastModel, model?.reasoningModel, model?.configFingerprint, validator.fingerprint, limits.fingerprint, maxCandidates)
             .joinToString("\u0000"),
     ).take(16)
 
@@ -132,11 +134,6 @@ class AskGuide(
 
         /** A subject's own entry is among the first hits for its name, or not found. */
         private const val SUBJECT_SEARCH_SIZE = 5
-        private const val MAX_ROWS = 8
-        private const val MAX_ASPECT_CHARS = 40
-        private const val MAX_CELL_CHARS = 200
-        private const val MAX_SENTENCES = 4
-        private const val MAX_SENTENCE_CHARS = 300
         private const val EXPLAIN_CANDIDATES = 12
         private const val RELATED_CARDS = 4
         private const val MAX_EVENTS = 5
@@ -603,14 +600,14 @@ class AskGuide(
         val rows = step(q, "validate") {
             proposal.rows.asSequence()
                 .map { it.aspect.trim() }.zip(proposal.rows.asSequence())
-                .filter { (aspect, _) -> aspect.isNotEmpty() && aspect.length <= MAX_ASPECT_CHARS && !GuideValidator.containsLink(aspect) }
+                .filter { (aspect, _) -> aspect.isNotEmpty() && aspect.length <= limits.maxAspectChars && !GuideValidator.containsLink(aspect) }
                 .distinctBy { (aspect, _) -> aspect.lowercase() }
-                .take(MAX_ROWS)
+                .take(limits.maxRows)
                 .map { (aspect, row) ->
                     ComparisonRow(aspect, subjects.map { s ->
                         val cell = row.cells.firstOrNull { it.subjectKey.trim() == s.key }
                         val c = byKey[s.key]
-                        val ok = cell != null && c != null && cell.text.isNotBlank() && cell.text.length <= MAX_CELL_CHARS &&
+                        val ok = cell != null && c != null && cell.text.isNotBlank() && cell.text.length <= limits.maxCellChars &&
                             !GuideValidator.containsLink(cell.text) && validator.shortQuoteHolds(cell.quote, c.text)
                         if (cell != null && !ok) rejected++
                         if (ok) ComparisonCell(s.key, cell!!.text.trim(), cell.quote.trim()) else ComparisonCell(s.key, null, null)
@@ -715,11 +712,11 @@ class AskGuide(
         val kept = step(q, "validate") {
             proposal.sentences.mapNotNull { p ->
                 val c = byKey[p.candidateKey.trim()]
-                val ok = c != null && p.text.isNotBlank() && p.text.length <= MAX_SENTENCE_CHARS && !GuideValidator.containsLink(p.text) &&
+                val ok = c != null && p.text.isNotBlank() && p.text.length <= limits.maxSentenceChars && !GuideValidator.containsLink(p.text) &&
                     validator.quoteHolds(p.quote, c.text)
                 if (!ok) rejected++
                 if (ok) c!!.key to p else null
-            }.take(MAX_SENTENCES)
+            }.take(limits.maxSentences)
         }
         progress.validated(kept.size, rejected)
         log.info("guide explain: candidates=${candidates.size} proposed=${proposal.sentences.size} kept=${kept.size} rejected=$rejected")
