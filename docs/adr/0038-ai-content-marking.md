@@ -51,5 +51,8 @@ to the text.
 - `backend/.../guide/web/GuideDtoMapper.java` — builds the marker.
 - `frontend/src/lib/aiMark.ts` — the page attributes; used in `GuideAnswer.tsx`, `ResultCardView.tsx`, `ResourcePage.tsx`.
 
+## Diagrams
+[flow](../diagrams/flow-0038-ai-content-marking.svg) · [sequence](../diagrams/sequence-0038-ai-content-marking.svg)
+
 ## Roadmap
 - [Signed provenance manifest for AI-written text](../roadmap.md#5-ai-quality-and-cost)

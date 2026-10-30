@@ -46,6 +46,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0028](../adr/0028-ci-cd.md) | [flow](flow-0028-ci-cd.svg) | [sequence](sequence-0028-ci-cd.svg) | from a pull request to prod. |
 | [0029](../adr/0029-release-versioning.md) | [flow](flow-0029-release-versioning.svg) | — | the release workflow, from a pushed v* tag to the published GitHub release. |
 | [0030](../adr/0030-guide-evaluation.md) | [flow](flow-0030-guide-evaluation.svg) | — | scripts/eval-guide.mjs, from the fixed query set to docs/evaluation.md. |
+| [0038](../adr/0038-ai-content-marking.md) | [flow](flow-0038-ai-content-marking.svg) | [sequence](sequence-0038-ai-content-marking.svg) | which text is marked as AI-written, and how a guide answer reaches the page with its marks. |
 
 ## Colors
 
