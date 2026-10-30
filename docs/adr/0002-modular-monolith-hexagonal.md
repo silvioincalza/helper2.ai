@@ -12,7 +12,7 @@ internals. Microservices would add network calls and deploys without a scaling n
 1. **One Spring Boot app, nine top-level packages.** Each is a Spring Modulith application module
    (`@ApplicationModule` in `package-info.java`):
    `search`, `catalog`, `guide`, `scout`, `identity`, `sources`, and three open modules that every module
-   may use: `shared` (value types), `platform` (errors, rate limits, circuit breaker, the Large Language Model (LLM) layer, prompts) and
+   may use: `shared` (value types), `platform` (errors, rate limits, resilience policies, the Large Language Model (LLM) layer, prompts) and
    `api` (generated contract types, see [0003](0003-contract-first-rest-api.md)).
 2. **Hexagonal where the business rules are.** The top-level packages `search`, `scout`, `guide` and
    `shared` hold the rules in Kotlin. They talk to the outside only through ports (Kotlin interfaces), for

@@ -57,8 +57,8 @@ traceable to that administrator.
 9. **Sessions in Redis** (Spring Session Data Redis, namespace `helper2:session`), so every replica knows a signed-in
    admin. Timeout and cookie stay under `server.servlet.session`. Only sign-in creates a session: the saved-request
    cache is off (`NullRequestCache`), so an anonymous request never writes one. While Redis is down
-   (`SessionConfiguration`): a request with a session cookie is served as anonymous (session reads go through a
-   30 s circuit breaker), and sign-in redirects to `/admin?signin=failed`; any other request that fails on the session store gets 503.
+   (`SessionConfiguration`): a request with a session cookie is served as anonymous (session reads run under the
+   `redis` policy, [0033](0033-resilience-policies.md)), and sign-in redirects to `/admin?signin=failed`; any other request that fails on the session store gets 503.
 
 ## Consequences
 - Good: an anonymous visitor leaves no account data; a signed-in user's account holds two fields and the bookmarks,

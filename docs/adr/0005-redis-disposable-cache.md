@@ -27,11 +27,11 @@ so the cache must be optional: when Redis is down, the app still works, only slo
    When the live call fails, times out, is rate-limited, is in cooldown or is refused by the source's open circuit,
    an entry inside that window is served as `STALE_CACHE`, with the failure stated in the source status.
 4. **Circuit breaker.** Every Redis call of the search cache, the guide and tool guide answer stores, the budget
-   counter, the rate limiter and the outbound throttle runs under the one `redis` policy ([0033](0033-resilience-policies.md)):
+   counter, the rate limiter, the outbound throttle and the session reads runs under the one `redis` policy ([0033](0033-resilience-policies.md)):
    once half of the last calls (at least 3) failed, the circuit opens for 30 seconds (`H2_RESILIENCE_REDIS_OPEN_FOR`)
    and callers get their fallback at once, without a Redis call. Then 2 trial calls decide whether it closes again.
-   A search cache error or refusal adds the notice `CACHE_UNAVAILABLE`, and the sources are called live. The session
-   store has its own read guard, 30 seconds after any error (`platform.CircuitBreaker`, [0023](0023-identity-and-admin.md)).
+   A search cache error or refusal adds the notice `CACHE_UNAVAILABLE`, and the sources are called live. A session
+   read that fails or is refused finds no session ([0023](0023-identity-and-admin.md)).
 5. **Daily counters.** `RedisCallCounter` counts model calls per budget and day in Coordinated Universal Time (UTC):
    `h2:v1:budget:{name}:{day}`, kept 2 days. One Lua script runs `INCR` and, on the first count, `PEXPIRE`, so a
    counter key is never left without an expiry. Names: `guide`, `translation`, `enrichment`, `classifier`,

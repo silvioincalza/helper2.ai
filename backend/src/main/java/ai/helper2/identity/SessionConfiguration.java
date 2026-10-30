@@ -1,13 +1,11 @@
 package ai.helper2.identity;
 
-import ai.helper2.platform.CircuitBreaker;
+import ai.helper2.platform.resilience.Resilience;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.time.Clock;
-import java.time.Duration;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,12 +41,12 @@ import org.springframework.web.filter.OncePerRequestFilter;
 class SessionConfiguration {
 
     @Bean
-    static BeanPostProcessor failSoftSessionReads(ObjectProvider<Clock> clock) {
+    static BeanPostProcessor failSoftSessionReads(ObjectProvider<Resilience> resilience) {
         return new BeanPostProcessor() {
             @Override
             public Object postProcessAfterInitialization(Object bean, String beanName) {
                 if (bean instanceof RedisSessionRepository redis) {
-                    return new FailSoftSessionRepository<>(redis, new CircuitBreaker("session store", clock.getObject(), Duration.ofSeconds(30)));
+                    return new FailSoftSessionRepository<>(redis, resilience.getObject());
                 }
                 return bean;
             }
@@ -63,15 +61,18 @@ class SessionConfiguration {
         return registration;
     }
 
-    /** Reads answer "no session" while the store fails, and skip it for a while after a failure; writes still fail. */
+    /**
+     * Reads run under the {@code redis} policy (ADR 0033) and answer "no session" while the store fails or its
+     * circuit is open; writes still fail.
+     */
     static final class FailSoftSessionRepository<S extends Session> implements SessionRepository<S> {
 
         private final SessionRepository<S> delegate;
-        private final CircuitBreaker breaker;
+        private final Resilience resilience;
 
-        FailSoftSessionRepository(SessionRepository<S> delegate, CircuitBreaker breaker) {
+        FailSoftSessionRepository(SessionRepository<S> delegate, Resilience resilience) {
             this.delegate = delegate;
-            this.breaker = breaker;
+            this.resilience = resilience;
         }
 
         @Override
@@ -86,13 +87,9 @@ class SessionConfiguration {
 
         @Override
         public @Nullable S findById(String id) {
-            if (breaker.isOpen()) {
-                return null;
-            }
             try {
-                return delegate.findById(id);
+                return resilience.call("redis", () -> delegate.findById(id));
             } catch (RuntimeException e) {
-                breaker.trip(e);
                 return null;
             }
         }

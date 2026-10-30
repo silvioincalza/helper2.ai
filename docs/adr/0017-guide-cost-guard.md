@@ -27,7 +27,7 @@ The guards run in this order. Values are defaults; each has an `H2_` variable.
    or limit therefore never serves old answers. Memory first (500 entries, least recently used out), then Redis
    (`RedisGuideAnswerStore`, key `h2:v1:guide-answer:<sha256 of the key>`, versioned JSON). Time to live (TTL) `H2_GUIDE_CACHE_TTL`
    (24 h), counted from the answer's `generatedAt`, which the page shows. Only complete artificial intelligence (AI) answers are cached: model
-   used, at least one AI pick, and no AI pick with reason `NOT_CHECKED`. Any Redis error opens a circuit breaker for 30 s.
+   used, at least one AI pick, and no AI pick with reason `NOT_CHECKED`. Redis calls run under the `redis` policy ([0033](0033-resilience-policies.md)).
 4. **Single-flight**: questions in progress are tracked by cache key. A second asker of the same question waits for the
    first answer (outcome `shared`) and shares its failure. On the stream it gets no step events, only the
    keep-alive comments, so its connection does not look dead.
