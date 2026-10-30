@@ -1,4 +1,4 @@
-# 0027 — Runtime topology: Helm chart, three replicas on prod, Cloudflare tunnel, network policy (egress), Redis auth, backups
+# 0027 — Runtime topology: Helm chart, three replicas on prod, Cloudflare tunnel, per-workload network policies, Redis auth, backups
 
 **Status.** Accepted (2026-10-27). **Builds on:** [0001](0001-stack-and-runtime.md), [0004](0004-persistence-and-provenance.md), [0005](0005-redis-disposable-cache.md), [0007](0007-configuration-and-secrets.md), [0018](0018-scout-runner.md), [0023](0023-identity-and-admin.md), [0024](0024-http-edge-protection.md)
 
@@ -38,8 +38,15 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
    (`H2_MANAGEMENT_PORT`). Probes and the Prometheus scrape use 8081, which the tunnel never reaches.
    Startup probe: every 5 s, up to `app.startupSeconds` (300 s); then readiness every 5 s and liveness
    every 10 s.
-6. **Network policy.** Ingress: app ← `cloudflared` on 8080; app ← namespace `observability` on 8081;
-   Postgres and Redis ← app; Postgres ← `pg-backup`. Egress is denied by default, then allowed per workload:
+6. **Network policy.** One policy per workload and direction, each naming only the peers that workload needs.
+   Ingress is denied by default, then allowed per workload:
+   - app (`ingress-app`): `cloudflared` (or the Ingress controller's namespace) on 8080, namespace
+     `observability` on 8081;
+   - Postgres (`ingress-postgres`): the app and `pg-backup` on 5432;
+   - Redis (`ingress-redis`): the app on 6379;
+   - `cloudflared` and `pg-backup`: nothing.
+
+   Egress is denied by default, then allowed per workload:
    - app: DNS, Postgres 5432, Redis 6379, the OpenTelemetry collector (`observability`, 4318), and the
      internet on 443 only, with the private ranges excluded;
    - `cloudflared`: DNS, the app on 8080, the internet on 7844;
