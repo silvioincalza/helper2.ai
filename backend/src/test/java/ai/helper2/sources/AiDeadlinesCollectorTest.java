@@ -3,6 +3,7 @@ package ai.helper2.sources;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.platform.http.ObservedHttp;
+import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.search.SourceHit;
 import ai.helper2.shared.EventKind;
@@ -66,7 +67,7 @@ class AiDeadlinesCollectorTest {
         AiDeadlinesCollector collector = new AiDeadlinesCollector(
             new SourceSettings(true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ZERO),
             ObservedHttp.restClientBuilder(Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
-            GitHubSourceTest.CLOCK, new RunInterval(Duration.ofDays(1)), URI.create(server.baseUrl()));
+            GitHubSourceTest.CLOCK, Resilience.NONE, new RunInterval(Duration.ofDays(1)), URI.create(server.baseUrl()));
 
         CollectedBatch batch = collector.collect(null, null, 500);
 
@@ -97,7 +98,7 @@ class AiDeadlinesCollectorTest {
         AiDeadlinesCollector collector = new AiDeadlinesCollector(
             new SourceSettings(true, server.baseUrl(), "secret-token", Duration.ofSeconds(2), Duration.ZERO),
             ObservedHttp.restClientBuilder(Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
-            GitHubSourceTest.CLOCK, new RunInterval(Duration.ofDays(1)), URI.create(server.baseUrl()));
+            GitHubSourceTest.CLOCK, Resilience.NONE, new RunInterval(Duration.ofDays(1)), URI.create(server.baseUrl()));
 
         CollectedBatch batch = collector.collect(null, null, 500);
 
@@ -114,7 +115,7 @@ class AiDeadlinesCollectorTest {
         AiDeadlinesCollector collector = new AiDeadlinesCollector(
             new SourceSettings(true, "https://api.github.com", "", Duration.ofSeconds(2), Duration.ZERO),
             ObservedHttp.restClientBuilder(Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
-            GitHubSourceTest.CLOCK, new RunInterval(Duration.ofDays(1)));
+            GitHubSourceTest.CLOCK, Resilience.NONE, new RunInterval(Duration.ofDays(1)));
         assertThat(collector.allowed("https://raw.githubusercontent.com/huggingface/ai-deadlines/main/x.yml")).isPresent();
         assertThat(collector.allowed("https://evil.example/x.yml")).isEmpty();
         assertThat(collector.allowed("http://raw.githubusercontent.com/x.yml")).isEmpty();

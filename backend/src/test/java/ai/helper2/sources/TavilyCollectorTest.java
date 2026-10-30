@@ -3,6 +3,7 @@ package ai.helper2.sources;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.platform.http.ObservedHttp;
+import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.search.SourceHit;
 import ai.helper2.shared.ResourceType;
@@ -30,7 +31,7 @@ class TavilyCollectorTest {
 
     TavilyCollector collector(String token, List<String> queries) {
         return new TavilyCollector(new SourceSettings(true, server.baseUrl(), token, Duration.ofSeconds(2), Duration.ZERO),
-            ObservedHttp.restClientBuilder(Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP), GitHubSourceTest.CLOCK, new RunInterval(Duration.ofDays(5)), queries);
+            ObservedHttp.restClientBuilder(Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP), GitHubSourceTest.CLOCK, Resilience.NONE, new RunInterval(Duration.ofDays(5)), queries);
     }
 
     @Test

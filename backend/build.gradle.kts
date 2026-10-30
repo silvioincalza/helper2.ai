@@ -26,6 +26,7 @@ repositories {
 extra["springAiVersion"] = "2.0.2"
 extra["springModulithVersion"] = "2.1.2"
 extra["httpclient5.version"] = "5.6.5"
+extra["resilience4jVersion"] = "2.4.0"
 // Keep the Kotlin stdlib/reflect managed by the BOM in line with the Kotlin plugin.
 extra["kotlin.version"] = "2.4.21"
 
@@ -58,6 +59,13 @@ dependencies {
     implementation("com.github.pemistahl:lingua:1.2.2")
     // Parses the YAML conference files of huggingface/ai-deadlines (version from the Spring Boot BOM).
     implementation("org.yaml:snakeyaml")
+    // Circuit breakers, bulkheads and retries as named policies (ADR 0033), built from the registries in code.
+    // The 2.4.0 BOM shipped without the Spring Boot 4 module at first: its version is pinned here.
+    implementation("io.github.resilience4j:resilience4j-spring-boot4:${property("resilience4jVersion")}")
+    implementation("io.github.resilience4j:resilience4j-circuitbreaker")
+    implementation("io.github.resilience4j:resilience4j-bulkhead")
+    implementation("io.github.resilience4j:resilience4j-retry")
+    implementation("io.github.resilience4j:resilience4j-micrometer")
     runtimeOnly("org.postgresql:postgresql")
     developmentOnly("org.springframework.boot:spring-boot-docker-compose")
 
@@ -81,6 +89,7 @@ dependencyManagement {
     imports {
         mavenBom("org.springframework.modulith:spring-modulith-bom:${property("springModulithVersion")}")
         mavenBom("org.springframework.ai:spring-ai-bom:${property("springAiVersion")}")
+        mavenBom("io.github.resilience4j:resilience4j-bom:${property("resilience4jVersion")}")
     }
 }
 

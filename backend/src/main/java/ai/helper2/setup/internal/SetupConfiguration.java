@@ -5,6 +5,7 @@ import ai.helper2.platform.llm.CallCounter;
 import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.LlmSettings;
 import ai.helper2.platform.llm.ModelCallMetrics;
+import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.setup.McpServerSpecs;
 import ai.helper2.setup.ReadmeConfigs;
 import ai.helper2.setup.SetupGuides;
@@ -75,7 +76,7 @@ class SetupConfiguration {
 
     @Bean
     ToolGuides toolGuides(ToolMaterials materials, ObjectProvider<ChatModel> chatModel, LlmSettings llm, DailyBudget toolGuideBudget,
-                          ModelCallMetrics metrics, ObjectProvider<StringRedisTemplate> redis, ObjectMapper json, Clock clock,
+                          ModelCallMetrics metrics, ObjectProvider<StringRedisTemplate> redis, ObjectMapper json, Clock clock, Resilience resilience,
                           @Value("${helper2.llm.native-schema:true}") boolean nativeSchema,
                           @Value("${helper2.setup.guide.reasoning:false}") boolean reasoning,
                           @Value("${helper2.setup.guide.cache-ttl:P7D}") Duration cacheTtl) {
@@ -89,7 +90,7 @@ class SetupConfiguration {
             log.info("Tool guide without a model: Guide me shows registry and README config examples only");
         }
         StringRedisTemplate template = redis.getIfAvailable();
-        ToolGuideCache cache = template == null ? ToolGuideCache.Companion.getNONE() : new RedisToolGuideCache(template, json, clock, cacheTtl);
+        ToolGuideCache cache = template == null ? ToolGuideCache.Companion.getNONE() : new RedisToolGuideCache(template, json, resilience, cacheTtl);
         return new ToolGuides(materials, guideModel, cache, clock);
     }
 }

@@ -1,5 +1,6 @@
 package ai.helper2.sources;
 
+import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.Candidate;
 import ai.helper2.scout.CandidateReview;
 import ai.helper2.scout.CollectedBatch;
@@ -34,6 +35,8 @@ import tools.jackson.databind.JsonNode;
 public class CourseCollector implements Collector {
 
     static final String ID = "course-scout";
+    /** Circuit breaker and retry of this collector\'s calls (ADR 0033). */
+    static final String POLICY = "collector-" + ID;
     private static final int MAX_RESULTS_PER_PLATFORM = 10;
     private static final Pattern COURSE_WORDS = Pattern.compile(
         "\\b(courses?|certifications?|certificates?|certified|specializations?|training|bootcamp|exam|class|learning path|"
@@ -68,15 +71,20 @@ public class CourseCollector implements Collector {
 
     private final RestClient http;
     private final Clock clock;
+    private final Resilience resilience;
     private final RunInterval interval;
     private final String query;
     private final List<Platform> platforms;
     private final CandidateReview review;
     private final SourceDescriptor descriptor;
 
-    public CourseCollector(SourceSettings settings, RestClient.Builder builder, Clock clock, RunInterval interval,
+    public CourseCollector(SourceSettings settings, RestClient.Builder builder, Clock clock, Resilience resilience, RunInterval interval,
                            String query, List<String> platformSpecs, CandidateReview review) {
         this.clock = clock;
+        this.resilience = resilience;
+        if (settings.enabled()) {
+            resilience.require(POLICY);
+        }
         this.interval = interval;
         this.query = query == null ? "" : query.strip();
         this.platforms = platformSpecs.stream().map(Platform::parse).filter(java.util.Objects::nonNull).toList();
@@ -115,7 +123,7 @@ public class CourseCollector implements Collector {
             } else {
                 body.put("time_range", "month");
             }
-            JsonNode root = HttpClients.getJson(() -> http.post().uri("/search").body(body).retrieve().body(String.class), clock);
+            JsonNode root = resilience.call(POLICY, () -> HttpClients.getJson(() -> http.post().uri("/search").body(body).retrieve().body(String.class), clock));
             for (JsonNode r : root.path("results")) {
                 Candidate c = candidate(r, p);
                 if (c != null) {

@@ -1,5 +1,6 @@
 package ai.helper2.sources;
 
+import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.scout.Collector;
 import ai.helper2.search.SourceDescriptor;
@@ -28,17 +29,24 @@ import tools.jackson.databind.JsonNode;
 public class TavilyCollector implements Collector {
 
     static final String ID = "tavily-scout";
+    /** Circuit breaker and retry of this collector\'s calls (ADR 0033). */
+    static final String POLICY = "collector-" + ID;
     private static final int MAX_RESULTS_PER_QUERY = 20;
 
     private final RestClient http;
     private final Clock clock;
+    private final Resilience resilience;
     private final RunInterval interval;
     private final List<String> queries;
     private final SourceDescriptor descriptor;
 
-    public TavilyCollector(SourceSettings settings, RestClient.Builder builder, Clock clock,
+    public TavilyCollector(SourceSettings settings, RestClient.Builder builder, Clock clock, Resilience resilience,
                            RunInterval interval, List<String> queries) {
         this.clock = clock;
+        this.resilience = resilience;
+        if (settings.enabled()) {
+            resilience.require(POLICY);
+        }
         this.interval = interval;
         this.queries = List.copyOf(queries);
         this.http = HttpClients.client(builder, settings);
@@ -77,7 +85,7 @@ public class TavilyCollector implements Collector {
             } else {
                 body.put("time_range", "week");
             }
-            JsonNode root = HttpClients.getJson(() -> http.post().uri("/search").body(body).retrieve().body(String.class), clock);
+            JsonNode root = resilience.call(POLICY, () -> HttpClients.getJson(() -> http.post().uri("/search").body(body).retrieve().body(String.class), clock));
             for (JsonNode r : root.path("results")) {
                 SourceHit hit = TavilySource.toHit(r, ID, startedAt, byUrl.size());
                 if (hit != null) {

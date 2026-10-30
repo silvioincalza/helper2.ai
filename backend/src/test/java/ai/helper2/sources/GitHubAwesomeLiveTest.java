@@ -3,6 +3,7 @@ package ai.helper2.sources;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.platform.http.ObservedHttp;
+import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.scout.CollectedBatch;
 import java.time.Clock;
@@ -40,7 +41,7 @@ class GitHubAwesomeLiveTest {
             ai.helper2.platform.llm.ModelCallMetrics.none());
         GitHubAwesomeCollector collector = new GitHubAwesomeCollector(
             new SourceSettings(true, "https://api.github.com", System.getenv("H2_GITHUB_TOKEN"), Duration.ofSeconds(30), Duration.ZERO),
-            ObservedHttp.restClientBuilder(Duration.ofSeconds(30), io.micrometer.observation.ObservationRegistry.NOOP), Clock.systemUTC(), new RunInterval(Duration.ofDays(1)),
+            ObservedHttp.restClientBuilder(Duration.ofSeconds(30), io.micrometer.observation.ObservationRegistry.NOOP), Clock.systemUTC(), Resilience.NONE, new RunInterval(Duration.ofDays(1)),
             List.of("topic:awesome-list topic:llm"), new GitHubAwesomeCollector.Limits(1, 1000, 80, 50, 50, 25), nano);
 
         List<String> lists = collector.discoverLists();

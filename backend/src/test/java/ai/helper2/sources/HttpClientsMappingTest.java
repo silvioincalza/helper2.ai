@@ -49,7 +49,25 @@ class HttpClientsMappingTest {
         assertThatThrownBy(() -> HttpClients.getText(() -> http.get().uri("/busy").retrieve().body(String.class), GitHubSourceTest.CLOCK))
             .isInstanceOfSatisfying(SourceFailure.RateLimited.class, e -> assertThat(e.getRetryAfter()).isEqualTo(Duration.ofSeconds(30)));
         assertThatThrownBy(() -> HttpClients.getText(() -> http.get().uri("/down").retrieve().body(String.class), GitHubSourceTest.CLOCK))
-            .isInstanceOf(SourceFailure.Unavailable.class);
+            .isInstanceOfSatisfying(SourceFailure.Unavailable.class, e -> assertThat(e.getTransient()).as("503 is transient").isTrue());
+    }
+
+    /** What the Scout's collector policies retry: 503 and network errors or timeouts, never another status or a bad body. */
+    @Test
+    void onlyA503OrANetworkFailureIsTransient() {
+        server.route("/gone", new FixtureServer.Reply(404, "{}", Map.of(), 0));
+        server.route("/broken", new FixtureServer.Reply(500, "{}", Map.of(), 0));
+        server.route("/garbage", FixtureServer.Reply.ok("not json"));
+        server.route("/slow", new FixtureServer.Reply(200, "{}", Map.of(), 1_500));
+        RestClient http = client();
+        RestClient impatient = ObservedHttp.restClientBuilder(Duration.ofMillis(300), ObservationRegistry.NOOP).baseUrl(server.baseUrl()).build();
+
+        for (String path : List.of("/gone", "/broken", "/garbage")) {
+            assertThatThrownBy(() -> HttpClients.getJson(() -> http.get().uri(path).retrieve().body(String.class), GitHubSourceTest.CLOCK))
+                .as(path).isInstanceOfSatisfying(SourceFailure.Unavailable.class, e -> assertThat(e.getTransient()).isFalse());
+        }
+        assertThatThrownBy(() -> HttpClients.getJson(() -> impatient.get().uri("/slow").retrieve().body(String.class), GitHubSourceTest.CLOCK))
+            .isInstanceOfSatisfying(SourceFailure.Unavailable.class, e -> assertThat(e.getTransient()).as("timeout").isTrue());
     }
 
     @Test

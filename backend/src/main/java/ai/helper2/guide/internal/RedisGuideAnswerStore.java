@@ -2,11 +2,10 @@ package ai.helper2.guide.internal;
 
 import ai.helper2.guide.GuideAnswer;
 import ai.helper2.guide.GuideAnswerStore;
-import ai.helper2.platform.CircuitBreaker;
+import ai.helper2.platform.resilience.Resilience;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.Clock;
 import java.time.Duration;
 import java.util.HexFormat;
 import org.slf4j.Logger;
@@ -26,8 +25,9 @@ import tools.jackson.module.kotlin.KotlinModule;
  * outcome, and an entry that no longer reads (new field types after a deploy) is only a cache miss.
  * {@link #VERSION} is bumped when the answer model changes shape in a way old entries would misread.
  *
- * Failure behaviour: any Redis error opens a {@link CircuitBreaker} for {@code openFor}; while open, get
- * answers null and put does nothing, so an outage never adds latency to a guide question.
+ * Failure behaviour: every Redis call runs under the {@code redis} policy (ADR 0033). A Redis error, or the open
+ * circuit refusing the call, makes get answer null and put do nothing, so an outage never adds latency to a guide
+ * question.
  */
 class RedisGuideAnswerStore implements GuideAnswerStore {
 
@@ -36,15 +36,15 @@ class RedisGuideAnswerStore implements GuideAnswerStore {
 
     private final StringRedisTemplate redis;
     private final ObjectMapper json;
-    private final CircuitBreaker circuit;
+    private final Resilience resilience;
 
-    RedisGuideAnswerStore(StringRedisTemplate redis, ObjectMapper json, Clock clock, Duration openFor) {
+    RedisGuideAnswerStore(StringRedisTemplate redis, ObjectMapper json, Resilience resilience) {
         this.redis = redis;
         this.json = json.rebuild()
             .addModule(new KotlinModule.Builder().build())
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
             .build();
-        this.circuit = new CircuitBreaker("guide answer store", clock, openFor);
+        this.resilience = resilience;
     }
 
     /** The cache key holds the user's question, so Redis sees only its hash. */
@@ -59,14 +59,11 @@ class RedisGuideAnswerStore implements GuideAnswerStore {
 
     @Override
     public GuideAnswer get(String key) {
-        if (circuit.isOpen()) {
-            return null;
-        }
         String raw;
         try {
-            raw = redis.opsForValue().get(redisKey(key));
+            raw = resilience.call("redis", () -> redis.opsForValue().get(redisKey(key)));
         } catch (RuntimeException e) {
-            circuit.trip(e);
+            log.debug("guide answer store unavailable: {}", e.getClass().getSimpleName());
             return null;
         }
         return raw == null ? null : decode(raw);
@@ -74,9 +71,6 @@ class RedisGuideAnswerStore implements GuideAnswerStore {
 
     @Override
     public void put(String key, GuideAnswer answer, Duration ttl) {
-        if (circuit.isOpen()) {
-            return;
-        }
         String encoded;
         try {
             encoded = encode(answer);
@@ -85,9 +79,9 @@ class RedisGuideAnswerStore implements GuideAnswerStore {
             return;
         }
         try {
-            redis.opsForValue().set(redisKey(key), encoded, ttl);
+            resilience.run("redis", () -> redis.opsForValue().set(redisKey(key), encoded, ttl));
         } catch (RuntimeException e) {
-            circuit.trip(e);
+            log.debug("guide answer not stored, Redis unavailable: {}", e.getClass().getSimpleName());
         }
     }
 

@@ -3,6 +3,7 @@ package ai.helper2.setup.internal;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.TestcontainersConfiguration;
+import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.setup.Code;
 import ai.helper2.setup.GuideSection;
 import ai.helper2.setup.GuideSectionKind;
@@ -48,7 +49,7 @@ class RedisToolGuideCacheIT {
     void storesTheAnswerWithoutTheQuestionOrTheDocumentText_andReadsItBack() {
         Material readme = new Material("readme", MaterialKind.README, URI.create("https://github.com/acme/x"), CLOCK.instant(),
             "Install with:\n\n```bash\nnpm install acme-x\n```\n\n" + README_ONLY + "\n");
-        RedisToolGuideCache store = new RedisToolGuideCache(redis, JsonMapper.builder().build(), CLOCK, Duration.ofDays(7));
+        RedisToolGuideCache store = new RedisToolGuideCache(redis, JsonMapper.builder().build(), Resilience.NONE, Duration.ofDays(7));
         RecordingCache recording = new RecordingCache(store);
         ToolGuides guides = new ToolGuides(ref -> List.of(readme), new Model(), recording, CLOCK);
         String resourceId = UUID.randomUUID().toString();

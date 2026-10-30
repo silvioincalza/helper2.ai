@@ -1,12 +1,11 @@
 package ai.helper2.setup.internal;
 
-import ai.helper2.platform.CircuitBreaker;
+import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.setup.ToolGuideAnswer;
 import ai.helper2.setup.ToolGuideCache;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.Clock;
 import java.time.Duration;
 import java.util.HexFormat;
 import org.slf4j.Logger;
@@ -19,9 +18,9 @@ import tools.jackson.databind.node.ObjectNode;
 import tools.jackson.module.kotlin.KotlinModule;
 
 /**
- * Tool guide answers in Redis, shared by every replica and kept across deploys (same envelope and circuit breaker
- * as the guide's answer store). An answer holds the checked steps and links to the documents, never the question
- * or a document's text. Any Redis error opens the circuit; while open, get misses and put does nothing.
+ * Tool guide answers in Redis, shared by every replica and kept across deploys (same envelope and {@code redis} policy
+ * as the guide's answer store, ADR 0033). An answer holds the checked steps and links to the documents, never the
+ * question or a document's text. A Redis error, or the open circuit refusing the call, makes get miss and put do nothing.
  */
 class RedisToolGuideCache implements ToolGuideCache {
 
@@ -30,17 +29,17 @@ class RedisToolGuideCache implements ToolGuideCache {
 
     private final StringRedisTemplate redis;
     private final ObjectMapper json;
-    private final CircuitBreaker circuit;
+    private final Resilience resilience;
     private final Duration ttl;
 
-    RedisToolGuideCache(StringRedisTemplate redis, ObjectMapper json, Clock clock, Duration ttl) {
+    RedisToolGuideCache(StringRedisTemplate redis, ObjectMapper json, Resilience resilience, Duration ttl) {
         this.redis = redis;
         this.ttl = ttl;
         this.json = json.rebuild()
             .addModule(new KotlinModule.Builder().build())
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
             .build();
-        this.circuit = new CircuitBreaker("tool guide cache", clock, Duration.ofSeconds(30));
+        this.resilience = resilience;
     }
 
     /** A fixed-length Redis key under this cache's prefix, whatever the length of the domain's key. */
@@ -55,14 +54,11 @@ class RedisToolGuideCache implements ToolGuideCache {
 
     @Override
     public ToolGuideAnswer get(String key) {
-        if (circuit.isOpen()) {
-            return null;
-        }
         String raw;
         try {
-            raw = redis.opsForValue().get(redisKey(key));
+            raw = resilience.call("redis", () -> redis.opsForValue().get(redisKey(key)));
         } catch (RuntimeException e) {
-            circuit.trip(e);
+            log.debug("tool guide cache unavailable: {}", e.getClass().getSimpleName());
             return null;
         }
         return raw == null ? null : decode(raw);
@@ -70,9 +66,6 @@ class RedisToolGuideCache implements ToolGuideCache {
 
     @Override
     public void put(String key, ToolGuideAnswer answer) {
-        if (circuit.isOpen()) {
-            return;
-        }
         String encoded;
         try {
             ObjectNode root = json.createObjectNode();
@@ -84,9 +77,9 @@ class RedisToolGuideCache implements ToolGuideCache {
             return;
         }
         try {
-            redis.opsForValue().set(redisKey(key), encoded, ttl);
+            resilience.run("redis", () -> redis.opsForValue().set(redisKey(key), encoded, ttl));
         } catch (RuntimeException e) {
-            circuit.trip(e);
+            log.debug("tool guide not stored, Redis unavailable: {}", e.getClass().getSimpleName());
         }
     }
 

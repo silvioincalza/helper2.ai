@@ -3,7 +3,7 @@ package ai.helper2.platform.llm;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.TestcontainersConfiguration;
-import java.time.Clock;
+import ai.helper2.platform.resilience.Resilience;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -24,10 +24,13 @@ class RedisCallCounterIT {
     @Autowired
     StringRedisTemplate redis;
 
+    @Autowired
+    Resilience resilience;
+
     @Test
     void theFirstCallOfADayCreatesTheCounterWithItsExpiry() {
         String name = "test-" + UUID.randomUUID();
-        RedisCallCounter counter = new RedisCallCounter(redis, Clock.systemUTC(), Duration.ofSeconds(30));
+        RedisCallCounter counter = new RedisCallCounter(redis, resilience);
 
         assertThat(counter.increment(name, DAY)).isEqualTo(1);
         assertThat(counter.increment(name, DAY)).isEqualTo(2);

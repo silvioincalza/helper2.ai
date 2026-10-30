@@ -1,5 +1,6 @@
 package ai.helper2.sources;
 
+import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.scout.Collector;
 import ai.helper2.search.SourceDescriptor;
@@ -26,17 +27,24 @@ import tools.jackson.databind.JsonNode;
 public class HuggingFaceTrendingCollector implements Collector {
 
     static final String ID = "hf-trending";
+    /** Circuit breaker and retry of this collector\'s calls (ADR 0033). */
+    static final String POLICY = "collector-" + ID;
     private static final int MAX_PAGE = 100;
 
     private final RestClient http;
     private final Clock clock;
+    private final Resilience resilience;
     private final RunInterval interval;
     private final int minLikes;
     private final SourceDescriptor descriptor;
 
-    public HuggingFaceTrendingCollector(SourceSettings settings, RestClient.Builder builder, Clock clock,
+    public HuggingFaceTrendingCollector(SourceSettings settings, RestClient.Builder builder, Clock clock, Resilience resilience,
                                         RunInterval interval, int minLikes) {
         this.clock = clock;
+        this.resilience = resilience;
+        if (settings.enabled()) {
+            resilience.require(POLICY);
+        }
         this.interval = interval;
         this.minLikes = minLikes;
         this.http = HttpClients.client(builder, settings);
@@ -58,10 +66,10 @@ public class HuggingFaceTrendingCollector implements Collector {
             return CollectedBatch.notDue();
         }
         int limit = Math.max(1, Math.min(maxItems, MAX_PAGE));
-        JsonNode root = HttpClients.getJson(() -> http.get()
+        JsonNode root = resilience.call(POLICY, () -> HttpClients.getJson(() -> http.get()
             .uri(u -> u.path("/api/models").queryParam("sort", "trendingScore").queryParam("direction", -1)
                 .queryParam("limit", limit).build())
-            .retrieve().body(String.class), clock);
+            .retrieve().body(String.class), clock));
         List<SourceHit> hits = new ArrayList<>();
         int rank = 0;
         for (JsonNode m : root) {

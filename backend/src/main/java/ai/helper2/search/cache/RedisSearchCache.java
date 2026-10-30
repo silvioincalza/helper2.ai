@@ -1,9 +1,8 @@
 package ai.helper2.search.cache;
 
-import ai.helper2.platform.CircuitBreaker;
+import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.search.CachedHits;
 import ai.helper2.search.SearchCache;
-import java.time.Clock;
 import java.time.Duration;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import tools.jackson.databind.ObjectMapper;
@@ -11,51 +10,40 @@ import tools.jackson.databind.ObjectMapper;
 /**
  * Redis adapter for the search cache port.
  *
- * Failure behaviour: any error opens a {@link CircuitBreaker} for {@code openFor}; while open, calls fail
- * fast so a cache outage never adds per-source latency. The orchestrator turns failures into a
- * CACHE_UNAVAILABLE notice and queries sources live.
+ * Failure behaviour: every Redis call runs under the {@code redis} policy (ADR 0033); a Redis error, or the circuit
+ * refusing the call while it is open, fails at once with "cache unavailable", so a cache outage never adds per-source
+ * latency. The orchestrator turns failures into a CACHE_UNAVAILABLE notice and queries sources live.
  */
 public class RedisSearchCache implements SearchCache {
 
     private final StringRedisTemplate redis;
     private final SourceHitCodec codec;
-    private final CircuitBreaker circuit;
+    private final Resilience resilience;
 
-    public RedisSearchCache(StringRedisTemplate redis, ObjectMapper json, Clock clock, Duration openFor) {
+    public RedisSearchCache(StringRedisTemplate redis, ObjectMapper json, Resilience resilience) {
         this.redis = redis;
         this.codec = new SourceHitCodec(json);
-        this.circuit = new CircuitBreaker("search cache", clock, openFor);
+        this.resilience = resilience;
     }
 
     @Override
     public CachedHits get(String key) {
-        guard();
+        String raw;
         try {
-            String raw = redis.opsForValue().get(key);
-            return raw == null ? null : codec.decode(raw);
+            raw = resilience.call("redis", () -> redis.opsForValue().get(key));
         } catch (RuntimeException e) {
-            throw trip(e);
+            throw new IllegalStateException("cache unavailable", e);
         }
+        return raw == null ? null : codec.decode(raw);
     }
 
     @Override
     public void put(String key, CachedHits value, Duration ttl) {
-        guard();
+        String encoded = codec.encode(value);
         try {
-            redis.opsForValue().set(key, codec.encode(value), ttl);
+            resilience.run("redis", () -> redis.opsForValue().set(key, encoded, ttl));
         } catch (RuntimeException e) {
-            throw trip(e);
+            throw new IllegalStateException("cache unavailable", e);
         }
-    }
-
-    private void guard() {
-        if (circuit.isOpen()) {
-            throw new IllegalStateException("cache circuit open");
-        }
-    }
-
-    private RuntimeException trip(RuntimeException e) {
-        circuit.trip(e);
-        return new IllegalStateException("cache unavailable", e);
     }
 }

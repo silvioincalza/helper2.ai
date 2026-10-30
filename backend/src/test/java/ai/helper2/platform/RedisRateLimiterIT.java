@@ -3,7 +3,9 @@ package ai.helper2.platform;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.TestcontainersConfiguration;
+import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.testing.MovableClock;
+import ai.helper2.testing.TestPolicies;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
@@ -29,11 +31,11 @@ class RedisRateLimiterIT {
 
     private final MovableClock clock = new MovableClock(Instant.parse("2026-10-27T10:00:00Z"));
     private final SimpleMeterRegistry meters = new SimpleMeterRegistry();
-    private final CircuitBreaker breaker = new CircuitBreaker("rate limiter", clock, Duration.ofSeconds(30));
+    private final Resilience resilience = TestPolicies.redis(clock);
     private final String name = "test-" + UUID.randomUUID();
 
     private RedisRateLimiter replica(StringRedisTemplate template) {
-        return new RedisRateLimiter(name, 3, MINUTE, template, breaker, new InMemoryRateLimiter(3, MINUTE, clock), meters);
+        return new RedisRateLimiter(name, 3, MINUTE, template, resilience, new InMemoryRateLimiter(3, MINUTE, clock), meters);
     }
 
     private double fallbacks() {
@@ -81,7 +83,7 @@ class RedisRateLimiterIT {
 
         clock.now = clock.now.plusSeconds(31);
         a.acquire("198.51.100.2");
-        assertThat(down.calls).as("tried again once the circuit closes").isEqualTo(2);
+        assertThat(down.calls).as("one trial call once the open window ends").isEqualTo(2);
     }
 
     private static final class DownRedis extends StringRedisTemplate {

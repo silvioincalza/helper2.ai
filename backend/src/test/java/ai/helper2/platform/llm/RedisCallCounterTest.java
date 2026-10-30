@@ -3,7 +3,7 @@ package ai.helper2.platform.llm;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.testing.MovableClock;
-import java.time.Duration;
+import ai.helper2.testing.TestPolicies;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -31,7 +31,7 @@ class RedisCallCounterTest {
     void afterAFailureRedisIsLeftAloneForAWhile() {
         DownRedis redis = new DownRedis();
         MovableClock clock = new MovableClock(Instant.parse("2026-10-26T10:00:00Z"));
-        RedisCallCounter counter = new RedisCallCounter(redis, clock, Duration.ofSeconds(30));
+        RedisCallCounter counter = new RedisCallCounter(redis, TestPolicies.redis(clock));
 
         assertThat(counter.increment("guide", DAY)).isNull();
         assertThat(counter.increment("guide", DAY)).isNull();

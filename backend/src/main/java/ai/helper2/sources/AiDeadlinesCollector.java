@@ -1,5 +1,6 @@
 package ai.helper2.sources;
 
+import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.scout.Collector;
 import ai.helper2.search.SourceDescriptor;
@@ -52,6 +53,8 @@ import tools.jackson.databind.JsonNode;
 public class AiDeadlinesCollector implements Collector {
 
     static final String ID = "ai-deadlines";
+    /** Circuit breaker and retry of this collector\'s calls (ADR 0033). */
+    static final String POLICY = "collector-" + ID;
     static final String CONFERENCES_PATH = "/repos/huggingface/ai-deadlines/contents/src/data/conferences";
     static final URI RAW_HOST = URI.create("https://raw.githubusercontent.com");
 
@@ -61,16 +64,21 @@ public class AiDeadlinesCollector implements Collector {
     private final RestClient raw;
     private final URI rawHost;
     private final Clock clock;
+    private final Resilience resilience;
     private final RunInterval interval;
     private final SourceDescriptor descriptor;
 
-    public AiDeadlinesCollector(SourceSettings settings, RestClient.Builder builder, Clock clock, RunInterval interval) {
-        this(settings, builder, clock, interval, RAW_HOST);
+    public AiDeadlinesCollector(SourceSettings settings, RestClient.Builder builder, Clock clock, Resilience resilience, RunInterval interval) {
+        this(settings, builder, clock, resilience, interval, RAW_HOST);
     }
 
     /** [rawHost]: scheme, host and port download URLs must have (tests point it at a fixture server). */
-    AiDeadlinesCollector(SourceSettings settings, RestClient.Builder builder, Clock clock, RunInterval interval, URI rawHost) {
+    AiDeadlinesCollector(SourceSettings settings, RestClient.Builder builder, Clock clock, Resilience resilience, RunInterval interval, URI rawHost) {
         this.clock = clock;
+        this.resilience = resilience;
+        if (settings.enabled()) {
+            resilience.require(POLICY);
+        }
         this.interval = interval;
         this.rawHost = rawHost;
         // Cloned before the GitHub client adds its base URL and Authorization header to the builder.
@@ -94,7 +102,7 @@ public class AiDeadlinesCollector implements Collector {
             return CollectedBatch.notDue();
         }
         LocalDate today = LocalDate.ofInstant(startedAt, ZoneOffset.UTC);
-        JsonNode files = HttpClients.getJson(() -> http.get().uri(CONFERENCES_PATH).retrieve().body(String.class), clock);
+        JsonNode files = resilience.call(POLICY, () -> HttpClients.getJson(() -> http.get().uri(CONFERENCES_PATH).retrieve().body(String.class), clock));
         List<SourceHit> hits = new ArrayList<>();
         int rank = 0;
         int skipped = 0;
@@ -111,7 +119,7 @@ public class AiDeadlinesCollector implements Collector {
                 continue;
             }
             try {
-                String yaml = HttpClients.getText(() -> raw.get().uri(url.get()).retrieve().body(String.class), clock);
+                String yaml = resilience.call(POLICY, () -> HttpClients.getText(() -> raw.get().uri(url.get()).retrieve().body(String.class), clock));
                 Optional<SourceHit> hit = nextEdition(name.substring(0, name.length() - 4), yaml, today, startedAt, rank);
                 if (hit.isPresent()) {
                     hits.add(hit.get());

@@ -1,5 +1,6 @@
 package ai.helper2.sources;
 
+import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.scout.Collector;
 import ai.helper2.search.SourceDescriptor;
@@ -27,17 +28,24 @@ import tools.jackson.databind.JsonNode;
 public class HuggingFaceProviderOrgsCollector implements Collector {
 
     static final String ID = "hf-provider-orgs";
+    /** Circuit breaker and retry of this collector\'s calls (ADR 0033). */
+    static final String POLICY = "collector-" + ID;
 
     private final RestClient http;
     private final Clock clock;
+    private final Resilience resilience;
     private final RunInterval interval;
     private final List<String> orgs;
     private final int perOrg;
     private final SourceDescriptor descriptor;
 
-    public HuggingFaceProviderOrgsCollector(SourceSettings settings, RestClient.Builder builder, Clock clock,
+    public HuggingFaceProviderOrgsCollector(SourceSettings settings, RestClient.Builder builder, Clock clock, Resilience resilience,
                                             RunInterval interval, List<String> orgs, int perOrg) {
         this.clock = clock;
+        this.resilience = resilience;
+        if (settings.enabled()) {
+            resilience.require(POLICY);
+        }
         this.interval = interval;
         this.orgs = List.copyOf(orgs);
         this.perOrg = Math.max(1, Math.min(perOrg, 100));
@@ -65,10 +73,10 @@ public class HuggingFaceProviderOrgsCollector implements Collector {
             if (hits.size() >= maxItems) {
                 break;
             }
-            JsonNode root = HttpClients.getJson(() -> http.get()
+            JsonNode root = resilience.call(POLICY, () -> HttpClients.getJson(() -> http.get()
                 .uri(u -> u.path("/api/models").queryParam("author", org).queryParam("sort", "createdAt")
                     .queryParam("direction", -1).queryParam("limit", perOrg).build())
-                .retrieve().body(String.class), clock);
+                .retrieve().body(String.class), clock));
             for (JsonNode m : root) {
                 SourceHit hit = HuggingFaceModelsSource.toHit(m, ID, startedAt, rank++, Set.of(org.toLowerCase()));
                 if (hit != null && hits.size() < maxItems) {

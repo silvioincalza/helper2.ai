@@ -1,5 +1,6 @@
 package ai.helper2.search.config;
 
+import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.search.usecase.SearchResources;
 import ai.helper2.search.QueryTranslator;
 import ai.helper2.search.ResultObserver;
@@ -45,15 +46,15 @@ class SearchConfiguration {
     }
 
     @Bean
-    SearchCache searchCache(StringRedisTemplate redis, ObjectMapper json, Clock clock) {
-        return new RedisSearchCache(redis, json, clock, Duration.ofSeconds(30));
+    SearchCache searchCache(StringRedisTemplate redis, ObjectMapper json, Resilience resilience) {
+        return new RedisSearchCache(redis, json, resilience);
     }
 
     @Bean
     SearchResources federatedSearch(List<SearchSource> sources, SearchCache cache, ResultObserver observer,
                                     ExecutorService searchExecutor, Clock clock, MeterRegistry registry,
                                     SourceHealth health, LanguageDetector languages,
-                                    ObjectProvider<QueryTranslator> translator,
+                                    ObjectProvider<QueryTranslator> translator, Resilience resilience,
                                     @Value("${helper2.search.stale-for:24h}") Duration staleFor,
                                     @Value("${helper2.search.per-source-limit:30}") int perSourceLimit,
                                     @Value("${helper2.search.translate-timeout-ms:2500}") long translateTimeoutMillis) {
@@ -64,6 +65,6 @@ class SearchConfiguration {
         return new SearchResources(ordered, cache, observer, searchExecutor, clock, staleFor, perSourceLimit,
             new MicrometerSearchMetrics(registry, List.of(health)),
             new ai.helper2.search.QueryAnalyzer(), new ai.helper2.search.ResultMerger(), new ai.helper2.search.Ranking(60),
-            languages, translator.getIfAvailable(() -> QueryTranslator.NONE), Duration.ofMillis(translateTimeoutMillis));
+            languages, translator.getIfAvailable(() -> QueryTranslator.NONE), Duration.ofMillis(translateTimeoutMillis), resilience);
     }
 }

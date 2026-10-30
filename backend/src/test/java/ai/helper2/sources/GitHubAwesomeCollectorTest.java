@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.helper2.platform.http.ObservedHttp;
+import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.search.PopularityKind;
 import ai.helper2.search.SourceFailure;
@@ -82,7 +83,7 @@ class GitHubAwesomeCollectorTest {
 
     GitHubAwesomeCollector collector(RepoClassifier classifier, int perRun, String token) {
         return new GitHubAwesomeCollector(new SourceSettings(true, server.baseUrl(), token, Duration.ofSeconds(2), Duration.ZERO),
-            ObservedHttp.restClientBuilder(Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP), GitHubSourceTest.CLOCK, new RunInterval(Duration.ofDays(1)),
+            ObservedHttp.restClientBuilder(Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP), GitHubSourceTest.CLOCK, Resilience.NONE, new RunInterval(Duration.ofDays(1)),
             List.of("topic:awesome-list topic:llm"), new GitHubAwesomeCollector.Limits(10, 1000, 1000, perRun, 50, 25),
             classifier);
     }
