@@ -1,5 +1,7 @@
 package ai.helper2.search.config;
 
+import ai.helper2.search.Asker;
+import ai.helper2.search.QuotaTier;
 import ai.helper2.search.SearchMetrics;
 import ai.helper2.search.SourceStatus;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -38,5 +40,13 @@ class MicrometerSearchMetrics implements SearchMetrics {
     public void searchCompleted(boolean partial, Duration latency) {
         registry.counter("helper2.search.requests", "partial", Boolean.toString(partial)).increment();
         Timer.builder("helper2.search.latency").publishPercentiles(0.5, 0.95).register(registry).record(latency);
+    }
+
+    /** {@code helper2.tavily.credits{feature,tier}}: one per live call of the metered source; internal calls are {@code none}. */
+    @Override
+    public void creditSpent(String sourceId, Asker asker, QuotaTier tier) {
+        registry.counter("helper2." + sourceId + ".credits",
+            "feature", asker == null ? "none" : asker.getFeature().name().toLowerCase(java.util.Locale.ROOT),
+            "tier", tier == null ? "none" : tier.name().toLowerCase(java.util.Locale.ROOT)).increment();
     }
 }

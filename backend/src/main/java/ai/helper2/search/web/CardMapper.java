@@ -1,5 +1,8 @@
 package ai.helper2.search.web;
 
+import ai.helper2.api.generated.model.WebSearchesDto;
+import ai.helper2.search.WebSearchesLeft;
+
 import ai.helper2.api.generated.model.AudienceDto;
 import ai.helper2.api.generated.model.CompatibilityFlagDto;
 import ai.helper2.api.generated.model.DateFactDto;
@@ -85,7 +88,12 @@ public final class CardMapper {
         return dto;
     }
 
-    public static OffsetDateTime odt(Instant i) {
+    /** Web searches left today; null when unknown. */
+    public static WebSearchesDto webSearches(WebSearchesLeft left) {
+        return left == null ? null : new WebSearchesDto(left.getLimit(), left.getRemaining());
+    }
+
+        public static OffsetDateTime odt(Instant i) {
         return i == null ? null : i.atOffset(ZoneOffset.UTC);
     }
 }

@@ -401,7 +401,6 @@ helper2:
       token: ${H2_TAVILY_API_KEY:}
       # Measured 2.0-4.2 s per call (26 Oct 2026); 3 s cut off real answers on prod.
       timeout: ${H2_SOURCE_TAVILY_TIMEOUT:6s}
-      cache-ttl: 30m
     hf-trending:
       enabled: ${H2_SOURCE_HF_TRENDING_ENABLED:true}
       base-url: https://huggingface.co
@@ -575,3 +574,28 @@ helper2:
     inactive-accounts: ${H2_RETENTION_INACTIVE_ACCOUNTS:P730D}
     # Admin audit entries (24 months).
     admin-audit: ${H2_RETENTION_ADMIN_AUDIT:P730D}
+
+---
+# Tavily (ADR 0037): store first, then a live call inside the visitor's daily web searches, per feature.
+helper2:
+  tavily:
+    # Stored result sets answer without a live call while fresh: news, courses, hackathons, conferences and events
+    # for 24 h, anything else for 48 h.
+    fresh-time-bound: ${H2_TAVILY_FRESH_TIMEBOUND:PT24H}
+    fresh-general: ${H2_TAVILY_FRESH_GENERAL:PT48H}
+    quota:
+      # HMAC key of the guest counters and of the stored query keys (OpenBao). Required while Tavily is enabled.
+      key-secret: ${H2_QUOTA_KEY_SECRET:}
+      guest:
+        search: 3
+        guide: 3
+      registered:
+        search: 10
+        guide: 10
+      # Signed-in users get the registered limits only with this on (after end-user sign-in goes live).
+      registered-tier-enabled: ${H2_TAVILY_REGISTERED_TIER_ENABLED:false}
+      # Live calls a day for all of Helper2; empty = no cap.
+      global-daily-credits: ${H2_TAVILY_GLOBAL_DAILY_CREDITS:}
+  retention:
+    # Stored Tavily result sets after they were fetched.
+    tavily-results: ${H2_RETENTION_TAVILY_RESULTS:P7D}

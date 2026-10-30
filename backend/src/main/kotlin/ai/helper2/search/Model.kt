@@ -46,6 +46,11 @@ data class SourceDescriptor @JvmOverloads constructor(
     val filtersByDate: Boolean = false,
     /** True when the source can list resources without any subject words ([SourceQuery.browse]); others are skipped. */
     val browses: Boolean = false,
+    /**
+     * True when each live call costs provider credits (Tavily, ADR 0037): its results are kept in a [WebResultStore]
+     * instead of the [SearchCache], and a live call goes out only inside the asker's daily [WebSearchQuota].
+     */
+    val metered: Boolean = false,
 )
 
 enum class PopularityKind { GITHUB_STARS, HF_LIKES, HF_DOWNLOADS, NPM_DOWNLOADS_WEEKLY }
@@ -87,7 +92,10 @@ data class SourceHit @JvmOverloads constructor(
     /** EVENT only: kind and format as the source states them (null when it does not say; never inferred). */
     val eventKind: EventKind? = null,
     val eventFormat: EventFormat? = null,
-)
+) {
+    /** The same hit at [rank] in its source's ranking. */
+    fun withRank(rank: Int): SourceHit = copy(rank = rank)
+}
 
 /**
  * [requiredVariants] and [synonyms] are for the Helper2 index (see [AnalyzedQuery]); live sources
@@ -127,9 +135,10 @@ enum class SourceOutcome { SUCCEEDED, FAILED, TIMED_OUT, RATE_LIMITED, SKIPPED }
 
 /**
  * Why a source was SKIPPED in a search: turned off, nothing to browse, paused after a rate limit, its circuit open
- * after repeated failures, or already running as many calls as its bulkhead allows.
+ * after repeated failures, already running as many calls as its bulkhead allows, the asker's daily web searches (or
+ * the global daily credits) used up, or the daily quota unreadable.
  */
-enum class SkipReason { DISABLED, NOT_BROWSABLE, RATE_LIMIT_PAUSE, CIRCUIT_OPEN, BUSY }
+enum class SkipReason { DISABLED, NOT_BROWSABLE, RATE_LIMIT_PAUSE, CIRCUIT_OPEN, BUSY, DAILY_LIMIT, QUOTA_UNAVAILABLE }
 
 enum class ServedFrom { LIVE, CACHE, STALE_CACHE, NONE }
 

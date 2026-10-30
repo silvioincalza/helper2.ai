@@ -12,6 +12,7 @@ import ai.helper2.shared.SourceMode;
 import ai.helper2.shared.ValueOrigin;
 import java.net.URI;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -28,7 +29,7 @@ import tools.jackson.databind.JsonNode;
 /**
  * Tavily web search (topic "news") for AI news, articles and events. Docs:
  * https://docs.tavily.com/documentation/api-reference/endpoint/search — needs H2_TAVILY_API_KEY; without a
- * key the source is disabled and reported as SKIPPED. published_date is Tavily's own estimate and stays
+ * key the source is disabled and reported as SKIPPED. One credit per call: the source is metered (ADR 0037). published_date is Tavily's own estimate and stays
  * unknown when Tavily has none. Event dates are never inferred.
  */
 public class TavilySource implements SearchSource {
@@ -47,7 +48,9 @@ public class TavilySource implements SearchSource {
             URI.create("https://tavily.com"), URI.create("https://tavily.com/terms"),
             "Web results via the Tavily Search API; each links to the original publisher.",
             EnumSet.of(ResourceType.NEWS, ResourceType.ARTICLE, ResourceType.EVENT),
-            settings.timeout(), settings.cacheTtl(), settings.enabled() && settings.hasToken(), 48, true, true, true, true);
+            // Metered: each call costs a credit, so searches read stored result sets first, with their own freshness,
+            // and call live only inside the daily quota (ADR 0037); the per-source cache TTL does not apply.
+            settings.timeout(), Duration.ZERO, settings.enabled() && settings.hasToken(), 48, true, true, true, true, true);
     }
 
     @Override

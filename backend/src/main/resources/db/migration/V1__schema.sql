@@ -380,6 +380,19 @@ $$;
 CREATE TRIGGER admin_audit_append_only BEFORE UPDATE ON admin_audit
     FOR EACH ROW EXECUTE FUNCTION h2_append_only();
 
+-- Tavily result sets by query (ADR 0037): a search answers from here while the set is fresh (24 h time-bound, 48 h
+-- general), without a live call. query_key is an HMAC-SHA256 of the normalised query (H2_QUOTA_KEY_SECRET); the text is
+-- never stored. result_ids are the resource ids of the hits' own URLs, in Tavily's order; the hits themselves are the
+-- catalog's source records. Deleted 7 days after fetched_at (search purge, ADR 0034).
+CREATE TABLE tavily_query_result (
+    query_key    bytea       NOT NULL,
+    intent_class text        NOT NULL CHECK (intent_class IN ('TIME_BOUND','GENERAL')),
+    fetched_at   timestamptz NOT NULL,
+    result_ids   uuid[]      NOT NULL,
+    PRIMARY KEY (query_key, intent_class)
+);
+CREATE INDEX tavily_query_result_fetched_idx ON tavily_query_result (fetched_at);
+
 -- Scout collection checkpoints and run history.
 CREATE TABLE source_cursor (
     source_id  text PRIMARY KEY REFERENCES source (id),
