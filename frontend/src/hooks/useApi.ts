@@ -42,6 +42,14 @@ function remember(key: string, data: unknown) {
   }
 }
 
+/** Marks an entry as recently used, keeping the time it was fetched: only a new answer from the server makes it younger. */
+function touch(key: string) {
+  const entry = recent.get(key);
+  if (!entry) return;
+  recent.delete(key);
+  recent.set(key, entry);
+}
+
 /** Empties the recent-answers cache (between tests). */
 export function clearApiCache() {
   recent.clear();
@@ -68,7 +76,7 @@ export function useApi<T>(key: string, fetcher: (signal: AbortSignal) => Promise
 
   useEffect(() => {
     if (hit) {
-      remember(key, hit.data);
+      touch(key);
       return;
     }
     const ac = new AbortController();

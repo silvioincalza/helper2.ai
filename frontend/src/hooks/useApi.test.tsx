@@ -69,6 +69,23 @@ describe('useApi recent-answers cache', () => {
     now.mockRestore();
   });
 
+  it('a cache hit does not make the answer younger: it is asked again 5 minutes after it was fetched', async () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(1_000);
+    const a = renderHook(() => useApi('k', fetcher('old')));
+    await waitFor(() => expect(a.result.current.data).toBe('old'));
+    a.unmount();
+
+    now.mockReturnValue(1_000 + CACHE_TTL_MS - 1);
+    renderHook(() => useApi('k', fetcher('unused'))).unmount();
+
+    now.mockReturnValue(1_000 + CACHE_TTL_MS + 1);
+    const g = fetcher('fresh');
+    const c = renderHook(() => useApi('k', g));
+    await waitFor(() => expect(c.result.current.data).toBe('fresh'));
+    expect(g).toHaveBeenCalledTimes(1);
+    now.mockRestore();
+  });
+
   it('keeps only the most recent answers', async () => {
     for (let i = 0; i <= CACHE_MAX; i++) {
       const h = renderHook(() => useApi(`k${i}`, fetcher(`v${i}`)));
