@@ -1,11 +1,11 @@
 import { useEffect, useRef, useSyncExternalStore, type ReactNode } from 'react';
-import { NavLink, Outlet, Link, useLocation } from 'react-router';
+import { NavLink, Outlet, Link, ScrollRestoration, useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { signOut } from '@/api/client';
 import { useMe } from '@/context/MeContext';
 import { LANGUAGES, setLanguage } from '@/i18n';
 import { chooseTheme, currentChoice, nextChoice, subscribeTheme, type ThemeChoice } from '@/lib/theme';
-import { MODELS_ENABLED, SAVED_ENABLED } from '@/lib/features';
+import { SAVED_ENABLED } from '@/lib/features';
 import { Logo } from './Logo';
 import { OneBox } from './OneBox';
 
@@ -42,10 +42,9 @@ export function Header() {
       <div className="container header-row">
         <Link to="/" className="logo-link" aria-label={t('nav.home')}><Logo /></Link>
         {/* Search is the home page (the logo goes there); the menu only lists the pages that are on. */}
-        {(MODELS_ENABLED || SAVED_ENABLED || isAdmin) && (
+        {(SAVED_ENABLED || isAdmin) && (
           <nav aria-label={t('nav.main')} className="main-nav">
             <ul className="plain-list">
-              {MODELS_ENABLED && <li><NavLink to="/models">{t('nav.models')}</NavLink></li>}
               {SAVED_ENABLED && <li><NavLink to="/saved">{t('nav.saved')}</NavLink></li>}
               {isAdmin && <li><NavLink to="/admin">{t('nav.admin')}</NavLink></li>}
             </ul>
@@ -149,7 +148,8 @@ function RouteFocus() {
     const main = document.getElementById('main');
     const h1 = main?.querySelector('h1');
     if (h1) h1.tabIndex = -1;
-    (h1 ?? main)?.focus();
+    // ScrollRestoration owns the scroll position (top for a new page, the old place on back and forward).
+    (h1 ?? main)?.focus({ preventScroll: true });
     if (live.current) live.current.textContent = h1?.textContent?.trim() || document.title;
   }, [pathname]);
   return <p ref={live} className="sr-only" aria-live="polite" aria-atomic="true" />;
@@ -160,6 +160,7 @@ export function Layout() {
   return (
     <>
       <a className="skip-link" href="#main">{t('nav.skip')}</a>
+      <ScrollRestoration />
       <RouteFocus />
       <Header />
       <main id="main" tabIndex={-1} className="container main">

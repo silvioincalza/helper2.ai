@@ -36,7 +36,7 @@ jobs:
       - run: npm run typecheck
       - run: npx vitest run
       - run: npm run build
-      # Playwright e2e needs a running backend; not part of CI yet.
+      - run: npm run check:bundle
 
   backend:
     runs-on: ubuntu-latest

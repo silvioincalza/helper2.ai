@@ -5,7 +5,7 @@
 ## Context
 The app is public and anonymous. Search calls paid or rate-limited APIs, and each guide question costs model calls,
 so one client must not use up shared budgets. The single-page app (SPA) and the application programming interface (API) share one origin, which must be
-safe against cross-site requests and injected scripts. Metrics must not be public. Client routes such as `/models`
+safe against cross-site requests and injected scripts. Metrics must not be public. Client routes such as `/sources`
 must load the app on a direct visit, and a new release must reach browsers at once.
 
 ## Decision

@@ -47,6 +47,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0029](../adr/0029-release-versioning.md) | [flow](flow-0029-release-versioning.svg) | — | the release workflow, from a pushed v* tag to the published GitHub release. |
 | [0030](../adr/0030-guide-evaluation.md) | [flow](flow-0030-guide-evaluation.svg) | — | scripts/eval-guide.mjs, from the fixed query set to docs/evaluation.md. |
 | [0038](../adr/0038-ai-content-marking.md) | [flow](flow-0038-ai-content-marking.svg) | [sequence](sequence-0038-ai-content-marking.svg) | which text is marked as AI-written, and how a guide answer reaches the page with its marks. |
+| [0039](../adr/0039-frontend-recent-answers-cache.md) | [flow](flow-0039-frontend-recent-answers-cache.svg) | [sequence](sequence-0039-frontend-recent-answers-cache.svg) | when useApi shows a recent answer and when it asks the server, and a back move without a request. |
 
 ## Colors
 

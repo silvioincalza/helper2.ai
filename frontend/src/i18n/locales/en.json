@@ -8,6 +8,10 @@
     "optional": "optional",
     "opensNewTab": "(opens in a new tab)"
   },
+  "carousel": {
+    "pause": "Pause {{label}}",
+    "play": "Play {{label}}"
+  },
   "guideMe": {
     "label": "Guide me",
     "aria": "Guide me: {{title}}",
@@ -20,7 +24,6 @@
     "main": "Main",
     "home": "Helper2.ai home",
     "search": "Search",
-    "models": "AI models",
     "saved": "Saved",
     "sources": "Sources",
     "admin": "Admin",
@@ -321,38 +324,6 @@
     "popularity": "Popularity metrics",
     "conflicts": "Conflicts between sources",
     "conflictOn": "Sources disagree on {{field}}"
-  },
-  "models": {
-    "title": "Compare AI models",
-    "about": "About this comparison",
-    "lede": "Model families side by side. Every official spec links to the provider page it was read from, with the exact words and the date. Newest models come from the providers' official Hugging Face organisations.",
-    "error": "Could not load the model families.",
-    "pick": "Compare up to {{max}}",
-    "pickSome": "Pick at least one family to compare.",
-    "caption": "Official specs of each family's flagship model",
-    "spec": "Spec",
-    "notStated": "Not stated",
-    "source": "source",
-    "readOn": "read on {{date}}",
-    "best": "best among those stated",
-    "benchmarkNote": "Highlighted: best among the values stated. Benchmark scores are published by each provider on its own setup and are not strictly comparable.",
-    "newest": "Newest {{family}} models found by Scout",
-    "noneListed": "No models from this provider's Hugging Face organisation in the index yet (closed-model providers publish none there).",
-    "via": "via {{source}}",
-    "officialPage": "Official models page",
-    "field": {
-      "flagship": "Flagship model",
-      "openWeights": "Open weights",
-      "contextTokens": "Context window (tokens)",
-      "maxOutputTokens": "Max output (tokens)",
-      "inputUsdPerMTok": "Input price / 1M tokens",
-      "outputUsdPerMTok": "Output price / 1M tokens",
-      "inputModalities": "Input",
-      "outputModalities": "Output",
-      "license": "License",
-      "knowledgeCutoff": "Knowledge cutoff",
-      "released": "Released"
-    }
   },
   "askGuide": {
     "title": "Not sure which model fits? Ask the guide",

@@ -1,8 +1,8 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ADMIN, ANON, USER } from '@/test/fixtures';
 import { mockApi } from '@/test/mockApi';
-import { renderApp } from '@/test/render';
+import { renderApp, settle } from '@/test/render';
 import { THEME_KEY } from '@/lib/theme';
 import pkg from '../../package.json';
 
@@ -12,9 +12,15 @@ describe('layout', () => {
     renderApp('/');
     await waitFor(() => expect(m.callsTo('GET', '/me')).toHaveLength(1));
     expect(within(screen.getByRole('banner')).queryByRole('link', { name: /Sign in/ })).not.toBeInTheDocument();
-    // Search is the home page and Models and Saved are on the roadmap (lib/features.ts): no menu for visitors.
+    // Search is the home page and Saved is on the roadmap (lib/features.ts): no menu for visitors.
     expect(screen.queryByRole('navigation', { name: 'Main' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Admin' })).not.toBeInTheDocument();
+  });
+
+  it('the removed models page is not a route any more', async () => {
+    mockApi();
+    renderApp('/models');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Page not found' })).toBeInTheDocument();
   });
 
   it('hides Admin for signed-in non-admins and shows it for admins', async () => {
@@ -35,6 +41,7 @@ describe('layout', () => {
     expect(screen.getByRole('banner')).toBeInTheDocument();
     expect(screen.getByRole('main')).toBeInTheDocument();
     expect(screen.getByRole('contentinfo')).toHaveTextContent('searches the sources listed on the Sources page, not the whole web');
+    await settle();
   });
 
   it('footer shows the release version and links to its notes in a new tab', async () => {
@@ -45,6 +52,7 @@ describe('layout', () => {
     expect(version).toHaveTextContent(`v${pkg.version}`);
     expect(version).toHaveAttribute('href', `https://github.com/silvioincalza/helper2.ai/releases/tag/v${pkg.version}`);
     expect(version).toHaveAttribute('target', '_blank');
+    await settle();
   });
 
   it('footer shows the copyright year and links to the repo and license in a new tab', async () => {
@@ -61,6 +69,7 @@ describe('layout', () => {
       expect(link).toHaveAttribute('target', '_blank');
       expect(link).toHaveAttribute('rel', 'noopener noreferrer');
     }
+    await settle();
   });
 
   it('the theme button cycles follow system, light and dark, and remembers a fixed choice', async () => {
@@ -85,6 +94,7 @@ describe('layout', () => {
     window.localStorage.setItem(THEME_KEY, 'dark');
     renderApp('/');
     expect(screen.getByRole('button', { name: 'Theme: dark. Change to follow system' })).toBeInTheDocument();
+    await settle();
   });
 
   it('moving to another page focuses its heading and announces it; new search params do not move focus', async () => {
@@ -97,10 +107,11 @@ describe('layout', () => {
     await waitFor(() => expect(h1).toHaveFocus());
     expect(document.querySelector('[aria-live="polite"].sr-only')).toHaveTextContent('Sources');
 
-    await router.navigate('/');
+    await act(() => router.navigate('/'));
     await screen.findByRole('heading', { level: 1, name: /Describe what you need/ });
     await userEvent.type(screen.getByRole('searchbox'), 'rag{Enter}');
     await waitFor(() => expect(router.state.location.search).toBe('?q=rag'));
     expect(screen.getByRole('searchbox')).toHaveFocus();
+    await settle();
   });
 });
