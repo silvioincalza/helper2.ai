@@ -36,6 +36,7 @@ jobs:
       - run: npm run typecheck
       - run: npx vitest run
       - run: npm run build
+      - run: npm run check:bundle
 
   backend:
     runs-on: ubuntu-latest
