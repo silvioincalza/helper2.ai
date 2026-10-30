@@ -2,7 +2,7 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axeViolations } from '@/test/a11y';
 import { mockApi } from '@/test/mockApi';
-import { renderApp } from '@/test/render';
+import { renderApp, settle } from '@/test/render';
 
 describe('mission, privacy and terms pages', () => {
   it('footer links open the mission, privacy and terms pages inside the app', async () => {
@@ -23,7 +23,7 @@ describe('mission, privacy and terms pages', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Terms of use' })).toBeInTheDocument();
   });
 
-  it('mission page states the promises and links to GitHub issues in a new tab', () => {
+  it('mission page states the promises and links to GitHub issues in a new tab', async () => {
     mockApi();
     renderApp('/mission');
     expect(document.title).toBe('Mission · Helper2.ai');
@@ -35,9 +35,10 @@ describe('mission, privacy and terms pages', () => {
     expect(issues).toHaveAttribute('href', 'https://github.com/silvioincalza/helper2.ai/issues');
     expect(issues).toHaveAttribute('target', '_blank');
     expect(issues).toHaveAttribute('rel', 'noopener noreferrer');
+    await settle();
   });
 
-  it('privacy page names the contact, the cookies and the data recipients', () => {
+  it('privacy page names the contact, the cookies and the data recipients', async () => {
     mockApi();
     renderApp('/privacy');
     expect(document.title).toBe('Privacy · Helper2.ai');
@@ -50,6 +51,7 @@ describe('mission, privacy and terms pages', () => {
     expect(screen.getByRole('region', { name: 'Legal basis' })).toHaveTextContent('Art. 6(1)(f) GDPR');
     expect(recipients).toHaveTextContent('Data Privacy Framework');
     expect(screen.getByRole('region', { name: 'How long we keep data' })).toHaveTextContent('Technical logs: up to 3 months.');
+    await settle();
   });
 
   it('terms page states the disclaimer, the liability limit and links to privacy', async () => {

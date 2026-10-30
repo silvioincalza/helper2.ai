@@ -1,7 +1,7 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { json, mockApi, problem } from '@/test/mockApi';
-import { renderApp } from '@/test/render';
+import { renderApp, settle } from '@/test/render';
 import { known, makeCard, makeSearch, makeStatus, unknownDate } from '@/test/fixtures';
 
 const url = '/?q=translate&type=MODEL&license=unknown';
@@ -147,6 +147,7 @@ describe('search on the one page', () => {
     expect(screen.getByRole('group', { name: /License/ })).toBeInTheDocument();
     expect(within(screen.getByRole('group', { name: /Type/ })).getByRole('checkbox', { name: /Product/ })).toBeInTheDocument();
     release();
+    await settle();
   });
 
   it('error state offers retry and recovers', async () => {
@@ -322,7 +323,8 @@ describe('search on the one page', () => {
     }));
     const { router } = renderApp('/?q=one');
     await waitFor(() => expect(signals).toHaveLength(1));
-    await router.navigate('/?q=two');
+    await act(() => router.navigate('/?q=two'));
     await waitFor(() => expect(signals[0]?.aborted).toBe(true));
+    await settle();
   });
 });
