@@ -50,7 +50,7 @@ public class NpmSource implements SearchSource {
         JsonNode root = HttpClients.getJson(() -> http.get()
             .uri(u -> u.path("/-/v1/search").queryParam("text", text).queryParam("size", Math.min(query.getLimit(), 50)).build())
             .retrieve().body(String.class), clock);
-        return HttpClients.hits(root.path("objects"), clock.instant(), NpmSource::toHit);
+        return HttpClients.hits("npm", root.path("objects"), clock.instant(), NpmSource::toHit);
     }
 
     private static SourceHit toHit(JsonNode o, Instant now, int position) {

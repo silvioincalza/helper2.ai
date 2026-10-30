@@ -172,7 +172,7 @@ public class AiDeadlinesCollector implements Collector {
         String location = Stream.of(e.text("city"), e.text("country")).filter(Objects::nonNull).collect(Collectors.joining(", "));
         String description = Stream.of(e.text("full_name"), e.text("venue"))
             .filter(Objects::nonNull).collect(Collectors.joining(". "));
-        return Optional.of(new SourceHit(ID, conference, URI.create(link), canonical, null,
+        return Optional.of(new SourceHit(ID, conference, HttpClients.link(link, canonical), canonical, null,
             year == null || title.contains(year) ? title : title + " " + year,
             description.isEmpty() ? null : description, ValueOrigin.SOURCE_PROVIDED, ResourceType.EVENT, Audience.BUILD_WITH_AI,
             null, Set.of(), Set.of("conference"), null, null, Set.of(), null,

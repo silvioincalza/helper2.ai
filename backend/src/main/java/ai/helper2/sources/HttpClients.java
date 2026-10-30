@@ -4,6 +4,7 @@ import ai.helper2.search.SourceFailure;
 import ai.helper2.search.SourceHit;
 import ai.helper2.search.SourceQuery;
 import ai.helper2.shared.CanonicalUrl;
+import io.micrometer.core.instrument.Metrics;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Clock;
@@ -12,6 +13,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
@@ -29,6 +32,7 @@ import tools.jackson.databind.json.JsonMapper;
  */
 final class HttpClients {
 
+    private static final Logger log = LoggerFactory.getLogger(HttpClients.class);
     private static final ObjectMapper JSON = JsonMapper.builder().build();
 
     private HttpClients() {
@@ -146,16 +150,32 @@ final class HttpClients {
         SourceHit toHit(JsonNode item, Instant now, int rank);
     }
 
-    static List<SourceHit> hits(Iterable<JsonNode> items, Instant now, HitMapper mapper) {
+    /**
+     * Maps each item; null means "not for us". An item whose mapping throws is malformed source data: it is
+     * dropped and counted in {@value #ITEMS_DROPPED} by source and exception type, and the other items are kept.
+     */
+    static List<SourceHit> hits(String sourceId, Iterable<JsonNode> items, Instant now, HitMapper mapper) {
         List<SourceHit> hits = new ArrayList<>();
         int rank = 0;
         for (JsonNode item : items) {
-            SourceHit hit = mapper.toHit(item, now, rank++);
-            if (hit != null) {
-                hits.add(hit);
+            try {
+                SourceHit hit = mapper.toHit(item, now, rank++);
+                if (hit != null) {
+                    hits.add(hit);
+                }
+            } catch (RuntimeException e) {
+                dropped(sourceId, e);
             }
         }
         return hits;
+    }
+
+    static final String ITEMS_DROPPED = "helper2.source.items.dropped";
+
+    /** Counts one malformed source item; the reason is the exception type, never source text. */
+    static void dropped(String sourceId, RuntimeException e) {
+        log.debug("{}: malformed item dropped: {}", sourceId, e.getClass().getSimpleName());
+        Metrics.counter(ITEMS_DROPPED, "source", sourceId, "reason", e.getClass().getSimpleName()).increment();
     }
 
     static String text(JsonNode n, String field) {

@@ -49,7 +49,7 @@ public class HuggingFaceSpacesSource implements SearchSource {
         JsonNode root = HttpClients.getJson(() -> http.get()
             .uri(u -> HttpClients.hubListing(u.path("/api/spaces"), query, text).queryParam("limit", Math.min(query.getLimit(), 50)).build())
             .retrieve().body(String.class), clock);
-        return HttpClients.hits(root, clock.instant(), HuggingFaceSpacesSource::toHit);
+        return HttpClients.hits("hf-spaces", root, clock.instant(), HuggingFaceSpacesSource::toHit);
     }
 
     private static SourceHit toHit(JsonNode s, Instant now, int position) {
