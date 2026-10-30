@@ -26,7 +26,8 @@ The guards run in this order. Values are defaults; each has an `H2_` variable.
    prompts, thinking flags, token limits, candidate text size, the validator's limits and `maxCandidates`. A new prompt
    or limit therefore never serves old answers. Memory first (500 entries, least recently used out), then Redis
    (`RedisGuideAnswerStore`, key `h2:v1:guide-answer:<sha256 of the key>`, versioned JSON). Time to live (TTL) `H2_GUIDE_CACHE_TTL`
-   (24 h), counted from the answer's `generatedAt`, which the page shows. Only complete artificial intelligence (AI) answers are cached: model
+   (24 h), counted from the answer's `generatedAt`, which the page shows; an answer built on web results lives only
+   as long as they are fresh, and one built on stale ones is not cached ([0037](0037-tavily-store-and-daily-quota.md)). Only complete artificial intelligence (AI) answers are cached: model
    used, at least one AI pick, and no AI pick with reason `NOT_CHECKED`. Redis calls run under the `redis` policy ([0033](0033-resilience-policies.md)).
 4. **Single-flight**: questions in progress are tracked by cache key. A second asker of the same question waits for the
    first answer (outcome `shared`) and shares its failure. On the stream it gets no step events, only the
@@ -40,7 +41,10 @@ The guards run in this order. Values are defaults; each has an `H2_` variable.
 6. **Global daily cap** (`H2_GUIDE_DAILY_MODEL_CALLS`, 600): one unit before each model attempt
    ([0014](0014-llm-integration.md)). When spent, plan or choose fails with `GuideBudgetExhausted` and the answer is the
    degraded one; the reason check leaves reasons `NOT_CHECKED`. Gauge `helper2.guide.budget.remaining`.
-7. **Metrics**: `helper2.guide.cache` (hit, miss) and `helper2.guide.questions` with outcome `cached`, `shared`,
+7. **Daily web searches** ([0037](0037-tavily-store-and-daily-quota.md)): the question's searches take one web search
+   from the asker's guide quota (3 a day for a guest), at the first live Tavily call; a cached or shared answer takes
+   none. Every answer states what the asker has left (`webSearches`).
+8. **Metrics**: `helper2.guide.cache` (hit, miss) and `helper2.guide.questions` with outcome `cached`, `shared`,
    `client_quota`, `answered`, `degraded`, `budget_exhausted`, `model_unavailable`, `no_candidates`, `timeout`, `error`.
 
 ## Consequences

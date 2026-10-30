@@ -24,6 +24,7 @@ The periods are a product decision the owner may change; changing one must not n
    | Postgres `review_item` | review decisions | 180 days after `resolved_at` (decided or superseded); open items stay | catalog purge |
    | Postgres `issue_report` | user reports | 12 months after their review was resolved, with that review item; open ones stay | catalog purge |
    | Postgres `scout_run` | Scout run history | 90 days after `started_at`; a `RUNNING` record stays | Scout purge |
+   | Postgres `tavily_query_result` | Tavily result sets, keyed by an HMAC of the query ([0037](0037-tavily-store-and-daily-quota.md)) | 7 days after `fetched_at` | search purge |
    | Postgres `source_cursor`, `scout_schedule`, `source`, `shedlock` | one row per source, schedule or lock | overwritten in place | — |
    | Postgres `app_user` | GitHub numeric id, display name, last sign-in | until the user deletes it; 24 months after `last_signed_in_at` | `DeleteMyAccount`, identity purge |
    | Postgres `bookmark` | resource id, title, link, type, saved at | until the user removes it or the account goes | `RemoveBookmark`, `ON DELETE CASCADE` |
@@ -34,6 +35,7 @@ The periods are a product decision the owner may change; changing one must not n
    | Redis `h2:v2:tool-guide:*` | setup guide answers, no question text | 7 days (`helper2.setup.guide.cache-ttl`) | Redis TTL |
    | Redis `h2:v1:budget:*` | daily model-call counts, per-client counts under a hash of the address | 2 days | Redis TTL |
    | Redis `h2:v1:rate:*` | rate-limit windows, keyed by the client address | 1 minute or 1 hour (the window) | Redis TTL |
+   | Redis `h2:v1:quota:*` | daily web searches per feature: guests under an HMAC of the address and the day, signed-in users under their id; the global count ([0037](0037-tavily-store-and-daily-quota.md)) | 24 h after the first count | Redis TTL, `DeleteMyAccount` |
    | Redis `helper2:session:*` | sign-in sessions | 30 minutes idle | Spring Session expiry |
    | In-memory caches (guide answers, query translations, setup materials and registry specs) | copies of the above | 24 h, 24 h, 1 h, 1 h; bounded entries; lost on restart | TTL and size bound |
    | Browser `localStorage` | language, theme, chosen AI client, bookmarks while signed out | until the user clears it; bookmarks move to the account at sign-in | the user's browser |
@@ -46,21 +48,23 @@ The periods are a product decision the owner may change; changing one must not n
 2. **Every period is configuration.** `helper2.retention.*` in `application.yaml`, each with an `H2_RETENTION_*`
    variable and an ISO-8601 default: `OBSERVED_UNSEEN` P180D, `ENRICHMENT_RUNS` P90D, `RESOLVED_REVIEW_ITEMS`
    P180D, `RESOLVED_ISSUE_REPORTS` P365D, `WEB_NEWS` P180D, `SCOUT_RUNS` P90D, `PAST_EVENTS` P365D,
-   `INACTIVE_ACCOUNTS` P730D, `ADMIN_AUDIT` P730D. `H2_RETENTION_CRON` (default `0 17 3 * * *`, UTC) sets when the
+   `INACTIVE_ACCOUNTS` P730D, `ADMIN_AUDIT` P730D, `TAVILY_RESULTS` P7D. `H2_RETENTION_CRON` (default `0 17 3 * * *`, UTC) sets when the
    purges run.
 3. **One `PurgeExpiredData` use case per owning module.** The module that owns a table deletes from it:
    `catalog.usecase.PurgeExpiredData` (review items, issue reports, enrichment runs, web news, past events,
    observed resources, in that order, so a resource that only a purged report kept goes in the same run; SQL in
    `catalog.internal.CatalogRetention`), `scout.usecase.PurgeExpiredData` (run history, through the
-   `RunHistoryRetention` port), and `identity.usecase.PurgeExpiredData` (inactive accounts, audit entries). Each
-   runs daily on `helper2.retention.cron` under its own cluster lock (`retention-catalog`, `retention-scout`,
-   `retention-identity`, `ClusterLocks.keptAlive`), so one replica runs it. A failed purge is logged and the next
+   `RunHistoryRetention` port), `identity.usecase.PurgeExpiredData` (inactive accounts, audit entries) and
+   `search.usecase.PurgeExpiredData` (stored Tavily result sets, through the `WebResultRetention` port). Each runs
+   daily on `helper2.retention.cron` under its own cluster lock (`retention-catalog`, `retention-scout`,
+   `retention-identity`, `retention-search`, `ClusterLocks.keptAlive`), so one replica runs it. A failed purge is logged and the next
    day's run catches up; each logs what it deleted.
 4. **Foreign keys carry the deletes.** A purge deletes the parent row; children go by `ON DELETE CASCADE`, links
    that must outlive their target are `ON DELETE SET NULL` (`issue_report.reporter_user_id`,
    `review_item.relationship_id`, `relationship.to_resource_id`, `enrichment_run.reprocess_of`). Each purge has an
    index on the column it filters by (`resource_observed_seen_idx`, `review_item_resolved_idx`,
-   `app_user_last_signed_in_idx`, `admin_audit_at_idx`, and the run and report indexes on the citing tables).
+   `app_user_last_signed_in_idx`, `admin_audit_at_idx`, `tavily_query_result_fetched_idx`, and the run and report
+   indexes on the citing tables).
 
 ## Consequences
 - Good: every store has a stated period, and the privacy page states the ones that hold personal data.
@@ -71,7 +75,7 @@ The periods are a product decision the owner may change; changing one must not n
   `first_discovered_at`.
 - Trade-off: the purges run once a day, so a row can outlive its period by up to a day.
 - Each rule has an integration test with a fixed clock on the real schema: `CatalogPurgeExpiredDataIT`,
-  `ScoutPurgeExpiredDataIT`, `IdentityPurgeExpiredDataIT`.
+  `ScoutPurgeExpiredDataIT`, `IdentityPurgeExpiredDataIT`, `JdbcWebResultStoreIT`.
 
 ## Alternatives considered
 - One purge job for every table — it would reach into every module's tables and break module ownership
@@ -88,6 +92,9 @@ The periods are a product decision the owner may change; changing one must not n
   `backend/src/main/java/ai/helper2/scout/internal/ScoutRetentionSchedule.java`, `JdbcScoutStore.java` — Scout rule.
 - `backend/src/main/java/ai/helper2/identity/usecase/PurgeExpiredData.java`, `identity/IdentityRetentionSchedule.java`,
   `identity/internal/Users.java`, `AuditLog.java` — identity rules.
+- `backend/src/main/kotlin/ai/helper2/search/usecase/PurgeExpiredData.kt`,
+  `backend/src/main/java/ai/helper2/search/config/SearchRetentionSchedule.java`, `search/internal/JdbcWebResultStore.java`
+  — search rule.
 - `backend/src/main/resources/db/migration/V1__schema.sql` — foreign keys and retention indexes.
 - `backend/src/main/resources/application.yaml` — `helper2.retention.*`.
 - `frontend/src/i18n/locales/en.json` — the privacy page's periods.
