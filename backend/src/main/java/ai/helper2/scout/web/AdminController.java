@@ -14,7 +14,7 @@ import ai.helper2.platform.NotFoundException;
 import ai.helper2.scout.RunSummary;
 import ai.helper2.scout.usecase.StartScoutRun;
 import ai.helper2.scout.ScoutStore;
-import ai.helper2.search.web.CardMapper;
+import ai.helper2.shared.UtcTimes;
 import java.util.List;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
@@ -76,14 +76,14 @@ class AdminController implements AdminApi {
 
     private static ReviewItemDto dto(ReviewQueue.Item i) {
         return new ReviewItemDto(i.id(), ReviewItemDto.KindEnum.fromValue(i.kind().name()), ReviewStatusDto.fromValue(i.status().name()),
-            i.reason(), CardMapper.odt(i.createdAt()))
+            i.reason(), UtcTimes.odt(i.createdAt()))
             .resourceId(i.resourceId()).resourceTitle(i.resourceTitle()).details(i.details())
-            .resolvedAt(CardMapper.odt(i.resolvedAt())).resolvedBy(i.resolvedBy());
+            .resolvedAt(UtcTimes.odt(i.resolvedAt())).resolvedBy(i.resolvedBy());
     }
 
     private static ScoutRunDto dto(RunSummary r) {
         return new ScoutRunDto(r.getId(), r.getSourceId(), ScoutRunDto.StatusEnum.fromValue(r.getStatus().name()),
-            CardMapper.odt(r.getStartedAt()), r.getItemsSeen(), r.getItemsChanged())
-            .finishedAt(CardMapper.odt(r.getFinishedAt())).enrichmentsQueued(r.getEnrichmentsQueued()).message(r.getMessage());
+            UtcTimes.odt(r.getStartedAt()), r.getItemsSeen(), r.getItemsChanged())
+            .finishedAt(UtcTimes.odt(r.getFinishedAt())).enrichmentsQueued(r.getEnrichmentsQueued()).message(r.getMessage());
     }
 }

@@ -25,6 +25,7 @@ import ai.helper2.identity.CurrentUser;
 import ai.helper2.platform.BadRequestException;
 import ai.helper2.platform.NotFoundException;
 import ai.helper2.search.web.CardMapper;
+import ai.helper2.shared.UtcTimes;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -72,9 +73,9 @@ class ResourcesController implements ResourcesApi {
                 r.targetTitle(), VerificationDto.fromValue(r.verification().name()), evidence(r.evidence())).targetId(r.targetId())).toList())
             .summary(d.summary() == null ? null : new AiSummaryDto(
                 d.summary().claims().stream().map(c -> new SummaryClaimDto(c.text(), evidence(c.evidence()))).toList(),
-                d.summary().model(), d.summary().promptVersion(), CardMapper.odt(d.summary().generatedAt())))
+                d.summary().model(), d.summary().promptVersion(), UtcTimes.odt(d.summary().generatedAt())))
             .sourceRecords(d.sourceRecords().stream().map(s -> new SourceRecordInfoDto(s.sourceId(), s.externalId(), s.url(),
-                CardMapper.odt(s.retrievedAt()), s.fingerprint())).toList())
+                UtcTimes.odt(s.retrievedAt()), s.fingerprint())).toList())
             .enrichmentStatus(ResourceDetailDto.EnrichmentStatusEnum.fromValue(d.enrichmentStatus()));
         return ResponseEntity.ok().cacheControl(CacheControl.noCache()).body(dto);
     }
@@ -87,7 +88,7 @@ class ResourcesController implements ResourcesApi {
         List<ResultCardDto> items = recent.list(since, now, types, size == null ? 12 : size).stream().map(CardMapper::card).toList();
         // Short cache: the index changes at most every Scout run (15 min); the page asks on every visit.
         return ResponseEntity.ok().cacheControl(CacheControl.maxAge(Duration.ofMinutes(2)).cachePublic())
-            .body(new RecentResponseDto(items, CardMapper.odt(since), CardMapper.odt(now)));
+            .body(new RecentResponseDto(items, UtcTimes.odt(since), UtcTimes.odt(now)));
     }
 
     @Override
@@ -97,7 +98,7 @@ class ResourcesController implements ResourcesApi {
         Instant today = now.truncatedTo(java.time.temporal.ChronoUnit.DAYS);
         List<ResultCardDto> items = upcoming.list(today, size == null ? 6 : size).stream().map(CardMapper::card).toList();
         return ResponseEntity.ok().cacheControl(CacheControl.maxAge(Duration.ofMinutes(5)).cachePublic())
-            .body(new UpcomingEventsResponseDto(items, CardMapper.odt(now)));
+            .body(new UpcomingEventsResponseDto(items, UtcTimes.odt(now)));
     }
 
     @Override
@@ -114,6 +115,6 @@ class ResourcesController implements ResourcesApi {
     }
 
     private static List<EvidenceDto> evidence(List<ResourceDetail.Evidence> list) {
-        return list.stream().map(e -> new EvidenceDto(e.id(), e.sourceUrl(), CardMapper.odt(e.retrievedAt())).excerpt(e.excerpt())).toList();
+        return list.stream().map(e -> new EvidenceDto(e.id(), e.sourceUrl(), UtcTimes.odt(e.retrievedAt())).excerpt(e.excerpt())).toList();
     }
 }

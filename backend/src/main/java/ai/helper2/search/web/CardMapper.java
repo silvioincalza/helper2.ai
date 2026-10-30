@@ -20,9 +20,7 @@ import ai.helper2.api.generated.model.ValueOriginDto;
 import ai.helper2.search.Compatibility;
 import ai.helper2.search.MergedResult;
 import ai.helper2.shared.DateFact;
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
+import ai.helper2.shared.UtcTimes;
 import java.util.ArrayList;
 import org.springframework.modulith.NamedInterface;
 
@@ -64,9 +62,9 @@ public final class CardMapper {
                 ? EventFormatDto.fromValue(r.getEventFormat().name()) : null)
             .freshness(FreshnessDto.fromValue(r.getFreshness().name()));
         r.getSources().forEach(s -> dto.addSourcesItem(new ResultSourceRefDto(
-            s.getSourceId(), s.getSourceName(), s.getUrl(), SourceModeDto.fromValue(s.getMode().name()), odt(s.getRetrievedAt()))));
+            s.getSourceId(), s.getSourceName(), s.getUrl(), SourceModeDto.fromValue(s.getMode().name()), UtcTimes.odt(s.getRetrievedAt()))));
         r.getPopularity().forEach(p -> dto.addPopularityItem(new PopularityMetricDto(
-            PopularityMetricDto.MetricEnum.fromValue(p.getKind().name()), p.getValue(), p.getSourceId(), odt(p.getAsOf()))));
+            PopularityMetricDto.MetricEnum.fromValue(p.getKind().name()), p.getValue(), p.getSourceId(), UtcTimes.odt(p.getAsOf()))));
         r.getConflicts().forEach(c -> dto.addConflictsItem(new FieldConflictDto(c.getField(),
             c.getValues().stream().map(v -> new SourcedValueDto(v.getValue(), v.getSourceId())).toList())));
         Compatibility.INSTANCE.of(r).forEach(f -> dto.addCompatibleWithItem(new CompatibilityFlagDto(
@@ -79,13 +77,9 @@ public final class CardMapper {
         DateFactDto dto = new DateFactDto(
             DateFactDto.PrecisionEnum.fromValue(f.getPrecision().name()),
             DateFactDto.StatusEnum.fromValue(f.getStatus().name()))
-            .value(f.getValue() == null ? null : odt(f.getValue()))
+            .value(UtcTimes.odt(f.getValue()))
             .sourceId(f.getValue() == null ? null : f.getSourceId());
         f.getAlternatives().forEach(a -> dto.addAlternativesItem(new SourcedValueDto(a.getValue(), a.getSourceId())));
         return dto;
-    }
-
-    public static OffsetDateTime odt(Instant i) {
-        return i == null ? null : i.atOffset(ZoneOffset.UTC);
     }
 }
