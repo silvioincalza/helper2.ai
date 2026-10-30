@@ -293,18 +293,6 @@ CREATE TABLE summary_claim_evidence (
     PRIMARY KEY (claim_id, evidence_id)
 );
 
--- AI model families for the comparison page (ADR 0021). Rows come from R__model_families.sql.
-CREATE TABLE model_family (
-    id            text PRIMARY KEY CHECK (id ~ '^[a-z0-9-]{2,40}$'),
-    position      int     NOT NULL,
-    provider      text    NOT NULL,
-    name          text    NOT NULL,
-    open_weights  boolean,
-    resource_id   uuid    NOT NULL REFERENCES resource (id) ON DELETE CASCADE,
-    -- Tags Scout sources put on this provider's models, to list its newest ones.
-    provider_tags text[]  NOT NULL DEFAULT '{}'
-);
-
 -- Users who signed in via OAuth2. Anonymous use needs no row.
 CREATE TABLE app_user (
     id           uuid PRIMARY KEY,
@@ -342,10 +330,12 @@ CREATE INDEX issue_report_resource_idx ON issue_report (resource_id);
 CREATE TABLE review_item (
     id                uuid PRIMARY KEY,
     kind              text        NOT NULL CHECK (kind IN ('ENRICHMENT_VALIDATION','SOURCE_CONFLICT','RELATIONSHIP_CANDIDATE','USER_REPORT')),
-    status            text        NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN','ACCEPTED','REJECTED')),
+    -- SUPERSEDED: closed by a newer enrichment run of the same resource, not by a person.
+    status            text        NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN','ACCEPTED','REJECTED','SUPERSEDED')),
     resource_id       uuid REFERENCES resource (id) ON DELETE CASCADE,
     enrichment_run_id uuid REFERENCES enrichment_run (id),
-    relationship_id   uuid REFERENCES relationship (id) ON DELETE CASCADE,
+    -- SET NULL: a superseded candidate outlives the unreviewed relationship a newer run replaced.
+    relationship_id   uuid REFERENCES relationship (id) ON DELETE SET NULL,
     report_id         uuid REFERENCES issue_report (id) ON DELETE CASCADE,
     reason            text        NOT NULL,
     details           text,

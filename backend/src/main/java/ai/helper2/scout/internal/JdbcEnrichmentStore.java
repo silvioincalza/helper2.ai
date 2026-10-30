@@ -38,8 +38,9 @@ import tools.jackson.databind.ObjectMapper;
  * enrichment results with full history. Every field and relationship the validator did not reject
  * is written with its verification state (VERIFIED, UNVERIFIED or CONFLICTING), together with the
  * validated summary claims; readers decide what to show by that state. Every problem opens a review item.
- * A new run with model output replaces the AI-extracted fields of earlier runs, so a page never
- * mixes two runs. Runs themselves are kept for audit.
+ * A new run with model output replaces the AI-extracted fields and the unreviewed AI-extracted
+ * relationships of earlier runs, and supersedes their open review items, so a page and the review queue
+ * never mix two runs. Relationships a reviewer decided stay. Runs themselves are kept for audit.
  */
 @Component
 class JdbcEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
@@ -138,11 +139,13 @@ class JdbcEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
         return new EnrichmentMaterial(new EnrichmentInput(resource.title(), materials, facts, Map.of()), sha(allText));
     }
 
+    /** Runs without a judged answer (LLM_UNAVAILABLE, FAILED) say nothing about the input, so they are passed over. */
     @Override
-    public String lastSuccessfulFingerprint(UUID resourceId) {
+    public String lastFingerprint(UUID resourceId) {
         return jdbc.sql("""
-                SELECT CASE WHEN outcome IN ('VALIDATED', 'PARTIAL') THEN input_fingerprint END
-                FROM enrichment_run WHERE resource_id = :id ORDER BY started_at DESC LIMIT 1
+                SELECT input_fingerprint FROM enrichment_run
+                WHERE resource_id = :id AND outcome NOT IN ('LLM_UNAVAILABLE', 'FAILED')
+                ORDER BY started_at DESC LIMIT 1
                 """).param("id", resourceId).query(String.class).optional().orElse(null);
     }
 
@@ -188,7 +191,9 @@ class JdbcEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
         if (result == null) {
             return;
         }
+        reviewQueue.supersedeEnrichmentItems(resourceId, runId);
         deleteAiFields(resourceId);
+        deleteUnreviewedAiRelationships(resourceId);
         Map<String, UUID> evidence = new HashMap<>();
         for (CheckedField f : result.getFields()) {
             if (f.getVerification() == Verification.REJECTED) {
@@ -240,16 +245,35 @@ class JdbcEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
 
     /**
      * Removes the resource's AI-extracted fields, and the evidence rows that only they used (the links go
-     * with the fields by cascade, the evidence itself would stay behind). Evidence a relationship or a
-     * summary claim still cites is kept.
+     * with the fields by cascade, the evidence itself would stay behind).
      */
     private void deleteAiFields(UUID resourceId) {
         // The CTE reads the links before the cascade removes them (one snapshot per statement).
-        List<UUID> cited = jdbc.sql("""
+        deleteOrphanEvidence(jdbc.sql("""
                 WITH gone AS (DELETE FROM field_assertion WHERE resource_id = :rid AND origin = 'AI_EXTRACTED' RETURNING id)
                 SELECT DISTINCT fae.evidence_id FROM field_assertion_evidence fae JOIN gone ON gone.id = fae.assertion_id
-                """).param("rid", resourceId).query(UUID.class).list();
-        if (cited.isEmpty()) {
+                """).param("rid", resourceId).query(UUID.class).list());
+    }
+
+    /**
+     * Removes the resource's AI-extracted relationships that no reviewer decided (no ACCEPTED or REJECTED
+     * review item), with the evidence rows only they used. A decided relationship stays, so the same proposal
+     * in the new run does not reopen it.
+     */
+    private void deleteUnreviewedAiRelationships(UUID resourceId) {
+        deleteOrphanEvidence(jdbc.sql("""
+                WITH gone AS (
+                    DELETE FROM relationship r WHERE r.from_resource_id = :rid AND r.origin = 'AI_EXTRACTED'
+                      AND NOT EXISTS (SELECT 1 FROM review_item i
+                                      WHERE i.relationship_id = r.id AND i.status IN ('ACCEPTED', 'REJECTED'))
+                    RETURNING r.id)
+                SELECT DISTINCT re.evidence_id FROM relationship_evidence re JOIN gone ON gone.id = re.relationship_id
+                """).param("rid", resourceId).query(UUID.class).list());
+    }
+
+    /** Deletes those of [ids] that no field, relationship or summary claim cites any more. */
+    private void deleteOrphanEvidence(List<UUID> ids) {
+        if (ids.isEmpty()) {
             return;
         }
         jdbc.sql("""
@@ -257,7 +281,7 @@ class JdbcEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
                   AND NOT EXISTS (SELECT 1 FROM field_assertion_evidence x WHERE x.evidence_id = e.id)
                   AND NOT EXISTS (SELECT 1 FROM relationship_evidence x WHERE x.evidence_id = e.id)
                   AND NOT EXISTS (SELECT 1 FROM summary_claim_evidence x WHERE x.evidence_id = e.id)
-                """).param("ids", cited).update();
+                """).param("ids", ids).update();
     }
 
     /** One evidence row per (source record, excerpt), linked to the owner. joinTable/fk are constants. */

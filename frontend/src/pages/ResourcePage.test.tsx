@@ -157,7 +157,9 @@ describe('resource detail', () => {
   it('shows summary claims with citations', async () => {
     mockApi({ [`GET /resources/${ID}`]: () => makeDetail({ enrichmentStatus: 'VALIDATED', summary: { claims: [{ text: 'It translates PDFs.', evidence: [ev] }], model: 'm1', promptVersion: 'v3', generatedAt: '2026-10-21T00:00:00Z' } }) });
     renderApp(`/resource/${ID}`);
-    expect(await screen.findByText('It translates PDFs.')).toBeInTheDocument();
+    const claim = await screen.findByText('It translates PDFs.');
+    expect(claim).toHaveAttribute('data-ai-generated', 'true');
+    expect(claim).toHaveAttribute('data-ai-model', 'm1');
     expect(screen.getByText('1 citation')).toBeInTheDocument();
     expect(screen.queryByText('No AI summary')).not.toBeInTheDocument();
   });

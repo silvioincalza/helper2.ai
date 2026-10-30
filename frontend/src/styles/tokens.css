@@ -22,7 +22,7 @@
   --on-accent: #1b1c3f; /* 4.9:1 on saffron */
   --accent-ink: #a8420a; /* saffron as text, 5.2:1 on --bg */
   --accent-deep: #2d2e60; /* indigo */
-  --focus: #e06a1d;
+  --focus: #2d2e60; /* indigo ring, drawn 2px off the control: ≥ 10.4:1 on every paper surface */
   --selected: #1b1c3f;
   --on-selected: #ffffff;
   --checked-bg: #e3f3ee;
@@ -93,7 +93,7 @@
   --on-accent: #15162f;
   --accent-ink: #f4a46a;
   --accent-deep: #c9cae3;
-  --focus: #f4a46a;
+  --focus: #c9cae3; /* light indigo ring: ≥ 8.8:1 on every dark surface */
   --selected: #f3f1ea;
   --on-selected: #15162f;
   --checked-bg: #123528;

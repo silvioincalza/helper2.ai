@@ -2,6 +2,8 @@
 *.local
 backend/build/
 backend/.gradle/
+# Search evaluation snapshots and judging pools: third-party data, local only (ADR 0036)
+backend/eval-data/
 frontend/node_modules/
 frontend/dist/
 frontend/src/api/schema.d.ts
@@ -48,6 +50,12 @@ deploy/k8s/terraform/*_override.tf
 # Demo-video tooling and recordings stay local
 /demo-video/
 
-# AI assistant memory and notes, never published
+# AI assistant instructions, memory and notes, never published (they belong in .private/)
 .claude/
 CLAUDE.md
+AGENTS.md
+GEMINI.md
+.cursor/
+.github/copilot-instructions.md
+.aider*
+.windsurf*

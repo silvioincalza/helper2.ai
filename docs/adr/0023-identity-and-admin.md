@@ -9,7 +9,7 @@ The admin check must not depend on a value a user can change, such as a GitHub l
 Visitors still want to keep a list of resources.
 
 ## Decision
-1. **Anonymous by default** (`SecurityConfiguration`). `GET` search, recent, model families, upcoming events,
+1. **Anonymous by default** (`SecurityConfiguration`). `GET` search, recent, upcoming events,
    resources, sources and `/me`, and `POST` reports and guide, are open. `/api/v1/admin/**` and `/actuator/**` need
    `ADMIN` (health and info are open; see [0024](0024-http-edge-protection.md) for metrics). `/api/v1/me/bookmarks`
    needs a signed-in user. Any other `/api/**` path is denied. Application programming interface (API) calls without a session get 401, not a redirect.

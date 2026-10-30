@@ -5,7 +5,7 @@
 ## Context
 The app is public and anonymous. Search calls paid or rate-limited APIs, and each guide question costs model calls,
 so one client must not use up shared budgets. The single-page app (SPA) and the application programming interface (API) share one origin, which must be
-safe against cross-site requests and injected scripts. Metrics must not be public. Client routes such as `/models`
+safe against cross-site requests and injected scripts. Metrics must not be public. Client routes such as `/sources`
 must load the app on a direct visit, and a new release must reach browsers at once.
 
 ## Decision
@@ -26,7 +26,8 @@ must load the app on a direct visit, and a new release must reach browsers at on
    evicted). Every such decision increments `helper2.rate-limit.fallback{limiter}`. Without Redis configured, only the
    in-memory limiter is used.
 4. **Client address.** `H2_FORWARD_HEADERS_STRATEGY` defaults to `none`, so `X-Forwarded-For` is ignored. The cluster
-   sets `native`: only `cloudflared` can reach the pod (NetworkPolicy), and Cloudflare sets the header.
+   sets `native`: only `cloudflared` can reach the app's port 8080 (NetworkPolicy `ingress-app`), and Cloudflare sets
+   the header.
 5. **CSRF** (cross-site request forgery). `CookieCsrfTokenRepository.withHttpOnlyFalse()` with the SPA setup:
    cookie `XSRF-TOKEN`; `api/client.ts` sends it back as `X-XSRF-TOKEN` on every non-GET call. `CsrfCookieFilter` makes
    sure the cookie exists before the first POST.
@@ -36,7 +37,7 @@ must load the app on a direct visit, and a new release must reach browsers at on
 7. **Session cookie**: `SameSite=Lax`, `HttpOnly`, `Secure` by default (`H2_COOKIE_SECURE`, true; the `dev` profile sets false).
    The session itself is in Redis ([0023](0023-identity-and-admin.md)).
 8. **Management port.** `H2_MANAGEMENT_PORT` (empty = app port). The chart sets 8081; the Service and the tunnel route
-   only 8080. The NetworkPolicy opens 8081 only to the `observability` namespace, so `H2_METRICS_PUBLIC=true` exposes
+   only 8080. The NetworkPolicy `ingress-app` opens 8081 only to the `observability` namespace, so `H2_METRICS_PUBLIC=true` exposes
    `/actuator/prometheus` only there; the other actuator endpoints, except health and info, stay ADMIN only. Health shows no details; Redis is left out of health.
 9. **SPA fallback and caching** (`SinglePageApp`, rules in [0001](0001-stack-and-runtime.md)): hashed assets are cached
    for one year, `index.html` and other files are `no-cache`, so a new release reaches browsers at once. Search and guide
@@ -67,7 +68,7 @@ must load the app on a direct visit, and a new release must reach browsers at on
 - `backend/src/main/java/ai/helper2/identity/SecurityConfiguration.java` — CSRF, CSP, referrer policy, access rules.
 - `backend/src/main/java/ai/helper2/platform/SinglePageApp.java` — SPA fallback and cache headers.
 - `backend/src/main/resources/application.yaml` — forward headers, cookie, management port, rate limits.
-- `deploy/helm/helper2/templates/app.yaml`, `networkpolicy.yaml` — port 8081, forwarded headers, ingress rules.
+- `deploy/helm/helper2/templates/app.yaml`, `networkpolicy.yaml` — port 8081, forwarded headers, the app's ingress policy.
 - `frontend/src/api/client.ts`, `frontend/public/theme.js` — CSRF header, CSP-safe theme script.
 
 ## Diagrams

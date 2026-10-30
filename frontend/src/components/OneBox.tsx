@@ -41,7 +41,7 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
 
   const go = (next: SearchState, ask: string, replace = false) => {
     const params = homeParams(next, ask);
-    if (onHome) setSp(params, { replace });
+    if (onHome) setSp(params, { replace, preventScrollReset: true });
     else void navigate({ pathname: '/', search: params.toString() });
   };
 

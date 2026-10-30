@@ -14,8 +14,9 @@ import org.slf4j.LoggerFactory
 
 /**
  * Runs the model, validates deterministically, persists, and routes problems to review. A resource whose
- * source text is unchanged since its last successful run is not sent again (UNCHANGED): a new star count or
- * version must not cost a model call.
+ * enrichment fingerprint (source text, prompt version, model) equals that of its last judged run is not sent
+ * again (UNCHANGED): a new star count or version must not cost a model call, and a REJECTED answer is not
+ * asked for twice. A new prompt version or model changes the fingerprint, so the resource is enriched again.
  */
 class EnrichResource(
     private val model: EnrichmentModel,
@@ -42,8 +43,10 @@ class EnrichResource(
 
     private fun attempt(resourceId: UUID): EnrichmentOutcome {
         val started = clock.instant()
-        val (input, fingerprint) = store.load(resourceId) ?: return EnrichmentOutcome.REJECTED
-        if (store.lastSuccessfulFingerprint(resourceId) == fingerprint) return EnrichmentOutcome.UNCHANGED
+        val material = store.load(resourceId) ?: return EnrichmentOutcome.REJECTED
+        val input = material.input
+        val fingerprint = material.fingerprintFor(model)
+        if (store.lastFingerprint(resourceId) == fingerprint) return EnrichmentOutcome.UNCHANGED
         val outcome: EnrichmentOutcome
         val result: ValidationResult?
         try {

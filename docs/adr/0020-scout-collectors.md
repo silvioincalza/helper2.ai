@@ -19,15 +19,14 @@ Six collectors implement the `Collector` port in `ai.helper2.sources`. All use `
    incremental: each pass reads the current list; unchanged models are a no-op in the catalog. The list API returns
    no description, so these models do not reach enrichment.
 3. **Hugging Face provider organizations** (`hf-provider-orgs`, 1 day). The 20 newest models of each official org:
-   `meta-llama`, `nvidia`, `mistralai`, `deepseek-ai`, `Qwen`, `google`, `openai`, `xai-org`. The org is added as a tag,
-   which the model-family page uses ([0021](0021-model-families.md)).
+   `meta-llama`, `nvidia`, `mistralai`, `deepseek-ai`, `Qwen`, `google`, `openai`, `xai-org`. The org is added as a tag.
 4. **Tavily discovery** (`tavily-scout`, every `H2_SCOUT_TAVILY_INTERVAL`, 5 days). 7 fixed news queries ("new AI tool
    launched", "new MCP server released"…), `search_depth basic`, up to 20 results each, published since the day of the
    last complete pass (first run: the last week). Each query costs one credit; the config comment estimates about 42
    credits a month. Stored as NEWS, ARTICLE or EVENT with Tavily's snippet as description. Off without `H2_TAVILY_API_KEY`.
 5. **GitHub awesome lists** (`github-awesome`, 1 day). Off without `H2_GITHUB_TOKEN` (GraphQL rejects anonymous calls).
    - Topic search with 6 topic pairs; only repositories named "awesome…" with at least 1000 stars; the top 10 lists.
-   - Each README is parsed into linked repositories (`AwesomeListParser`): at most 1000 per pass and
+   - Each README (read up to 5 MB) is parsed into linked repositories (`AwesomeListParser`): at most 1000 per pass and
      `H2_SCOUT_AWESOME_PER_RUN` (200) per run; an unfinished pass resumes from an entry offset.
    - Facts via GraphQL, 50 repositories per call; archived, forked and under-50-star repositories are dropped.
    - **Classifier.** The fast model (`SpringAiRepoClassifier`, `prompts/sources/classify-repos.txt`, thinking off)

@@ -7,10 +7,16 @@ import ai.helper2.platform.http.ObservedHttp;
 import ai.helper2.search.SourceFailure;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.testing.FixtureServer;
+import ai.helper2.search.SourceHit;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
 import java.net.URI;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.client.RestClient;
@@ -18,10 +24,16 @@ import org.springframework.web.client.RestClient;
 class HttpClientsMappingTest {
 
     final FixtureServer server = new FixtureServer();
+    final SimpleMeterRegistry meters = new SimpleMeterRegistry();
+
+    {
+        Metrics.addRegistry(meters);
+    }
 
     @AfterEach
     void stop() {
         server.close();
+        Metrics.removeRegistry(meters);
     }
 
     private RestClient client() {
@@ -57,5 +69,47 @@ class HttpClientsMappingTest {
         assertThat(HttpClients.link("  https://github.com/Acme/Tool  ", canonical)).isEqualTo(URI.create("https://github.com/Acme/Tool"));
         assertThat(HttpClients.link("git+https://github.com/acme/tool.git", canonical)).isEqualTo(URI.create("https://github.com/acme/tool"));
         assertThat(HttpClients.link("https://example.com/a b", CanonicalUrl.of("https://example.com/a"))).isEqualTo(URI.create("https://example.com/a"));
+    }
+
+    @Test
+    void aMalformedItemIsDroppedAndCountedWhileTheOthersAreKept() {
+        JsonNode items = JsonMapper.builder().build().readTree("[{\"id\":\"a\"},{\"id\":\"bad\"},{\"id\":\"c\"},{\"id\":\"skip\"}]");
+
+        List<SourceHit> hits = HttpClients.hits("test-source", items, GitHubSourceTest.CLOCK.instant(), (item, now, rank) -> {
+            String id = item.path("id").asString();
+            if (id.equals("bad")) {
+                throw new IllegalArgumentException("source data that does not map");
+            }
+            return id.equals("skip") ? null : OtherSourcesTest.hit(id, rank);
+        });
+
+        assertThat(hits).extracting(SourceHit::getExternalId).containsExactly("a", "c");
+        assertThat(meters.get("helper2.source.items.dropped").tag("source", "test-source")
+            .tag("reason", "IllegalArgumentException").counter().count()).isEqualTo(1.0);
+    }
+
+    @Test
+    void aResponseOverTheDefaultCapIsUnavailableAsTooLarge() {
+        server.route("/huge", FixtureServer.Reply.ok("x".repeat(ObservedHttp.MAX_RESPONSE_BYTES + 1)));
+        server.route("/fits", FixtureServer.Reply.ok("x".repeat(ObservedHttp.MAX_RESPONSE_BYTES)));
+        RestClient http = client();
+
+        assertThatThrownBy(() -> HttpClients.getText(() -> http.get().uri("/huge").retrieve().body(String.class), GitHubSourceTest.CLOCK))
+            .isInstanceOf(SourceFailure.Unavailable.class).hasMessage("response too large");
+        assertThat(HttpClients.getText(() -> http.get().uri("/fits").retrieve().body(String.class), GitHubSourceTest.CLOCK))
+            .hasSize(ObservedHttp.MAX_RESPONSE_BYTES);
+    }
+
+    @Test
+    void aCallCanAllowALargerResponseUpToItsOwnCap() {
+        server.route("/readme", FixtureServer.Reply.ok("x".repeat(3 * 1024 * 1024)));
+        server.route("/huge-readme", FixtureServer.Reply.ok("x".repeat(5 * 1024 * 1024 + 1)));
+        RestClient http = client();
+
+        assertThat(HttpClients.getText(() -> http.get().uri("/readme").attributes(ObservedHttp.maxResponseBytes(5 * 1024 * 1024))
+            .retrieve().body(String.class), GitHubSourceTest.CLOCK)).hasSize(3 * 1024 * 1024);
+        assertThatThrownBy(() -> HttpClients.getText(() -> http.get().uri("/huge-readme").attributes(ObservedHttp.maxResponseBytes(5 * 1024 * 1024))
+            .retrieve().body(String.class), GitHubSourceTest.CLOCK))
+            .isInstanceOf(SourceFailure.Unavailable.class).hasMessage("response too large");
     }
 }

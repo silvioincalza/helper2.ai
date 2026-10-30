@@ -1,0 +1,22 @@
+{{- /*
+Alert rules for the Prometheus Operator. The rules are deploy/monitoring/helper2-rules.yaml (ADR 0026), read
+through the symlink files/helper2-rules.yaml: one source for a plain Prometheus and for the operator.
+*/}}
+{{- if .Values.monitoring.prometheusRule.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: helper2
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" . | nindent 4 }}
+    {{- with .Values.monitoring.prometheusRule.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  {{- $rules := .Files.Get "files/helper2-rules.yaml" | fromYaml }}
+  {{- if not $rules.groups }}
+  {{- fail "files/helper2-rules.yaml (deploy/monitoring/helper2-rules.yaml) has no rule groups" }}
+  {{- end }}
+  {{- toYaml $rules | nindent 2 }}
+{{- end }}

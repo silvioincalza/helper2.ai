@@ -84,4 +84,3 @@ Without a configured model the application must still work.
 ## Roadmap
 - [Resilience4j for outbound calls](../roadmap.md#5-ai-quality-and-cost)
 - [A closed `llm` module instead of the open `platform` module](../roadmap.md#8-architecture)
-- [Alert when a daily budget runs low](../roadmap.md#3-operations)

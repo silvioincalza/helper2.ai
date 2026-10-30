@@ -1,12 +1,13 @@
 # Flowchart: where each kind of telemetry goes, and the switches that decide it.
 # Shows the actuator filter, trace export and sampling, the context wrapper for search threads,
-# structured logs on stdout, the pull of meters on the management port, and the Grafana dashboard.
+# structured logs on stdout, the pull of meters on the management port, the Grafana dashboard and the alert rules.
 # Source of truth: backend/src/main/resources/application.yaml (management.*, logging.structured),
 #   backend/src/main/java/ai/helper2/platform/observability/ObservabilityConfiguration.java,
 #   backend/src/main/java/ai/helper2/search/config/SearchConfiguration.java, MicrometerSearchMetrics.java,
 #   backend/src/main/java/ai/helper2/platform/llm/ModelCallMetrics.java, LlmConfiguration.java,
 #   backend/src/main/java/ai/helper2/platform/http/ObservedHttp.java, backend/src/main/java/ai/helper2/sources/SourcesConfiguration.java,
-#   deploy/helm/helper2/templates/app.yaml, deploy/helm/helper2/values.yaml, deploy/grafana/helper2.json.
+#   deploy/helm/helper2/templates/app.yaml, prometheusrule.yaml, deploy/helm/helper2/values.yaml, deploy/grafana/helper2.json,
+#   deploy/monitoring/helper2-rules.yaml.
 # Render: cd docs/diagrams && d2 fmt flow-0026-observability.d2 && d2 flow-0026-observability.d2 flow-0026-observability.svg
 
 ...@style
@@ -52,11 +53,11 @@ metrics: Metrics {
   endpoint: "/actuator/prometheus on\nH2_MANAGEMENT_PORT 8081" {class: app}
   scrape: "Alloy scrapes (pod annotations)\n→ remote write to Prometheus" {class: ext}
   grafana: "Grafana dashboard helper2.json\n(rows: overview, HTTP, search,\nguide, Scout, embeddings, runtime;\nlatency from _bucket series)" {class: ext}
-  alerts: "Alert rules: none yet" {class: fail}
+  alerts: "Alert rules deploy/monitoring/helper2-rules.yaml\n(rule file, or PrometheusRule with\nmonitoring.prometheusRule.enabled):\nevaluated by Prometheus" {class: config}
   registry -> endpoint
   endpoint -> scrape: {class: hot}
   scrape -> grafana: {class: hot}
-  grafana -> alerts: {class: config}
+  scrape -> alerts: {class: config}
 }
 
 req -> act

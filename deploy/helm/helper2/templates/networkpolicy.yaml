@@ -1,33 +1,75 @@
-# Inside the namespace: app <- cloudflared (when enabled); postgres/redis <- app only; postgres <- backup.
-# From outside: app <- the Ingress controller's namespace (when ingress is enabled); the app's
-# management port <- the metrics scraper's namespace (networkPolicy.metricsNamespace, when set).
+# Ingress: nothing for any pod here (cloudflared and pg-backup stay at that), then allowed per workload
+# below. app <- the edge (cloudflared, or the Ingress controller's namespace) on 8080, <- the metrics
+# scraper's namespace (networkPolicy.metricsNamespace) on 8081; postgres <- app and pg-backup;
+# redis <- app.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: ingress-rules
+  name: ingress-default-deny
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "helper2.labels" . | nindent 4 }}
 spec:
   podSelector: {}
   policyTypes: [Ingress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ingress-app
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" . | nindent 4 }}
+spec:
+  podSelector: { matchLabels: { app: helper2 } }
+  policyTypes: [Ingress]
+  {{- if or .Values.cloudflared.enabled .Values.ingress.enabled .Values.networkPolicy.metricsNamespace }}
   ingress:
     {{- if .Values.cloudflared.enabled }}
     - from: [{ podSelector: { matchLabels: { app: cloudflared } } }]
-      ports: [{ port: 8080 }]
+      ports: [{ port: 8080, protocol: TCP }]
     {{- end }}
     {{- if .Values.ingress.enabled }}
     - from: [{ namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: {{ required "ingress.controllerNamespace is required" .Values.ingress.controllerNamespace }} } } }]
-      ports: [{ port: 8080 }]
+      ports: [{ port: 8080, protocol: TCP }]
     {{- end }}
     {{- with .Values.networkPolicy.metricsNamespace }}
     - from: [{ namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: {{ . }} } } }]
-      ports: [{ port: 8081 }]
+      ports: [{ port: 8081, protocol: TCP }]
     {{- end }}
+  {{- end }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ingress-postgres
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" . | nindent 4 }}
+spec:
+  podSelector: { matchLabels: { app: postgres } }
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector: { matchLabels: { app: helper2 } }
+        {{- if .Values.backup.enabled }}
+        - podSelector: { matchLabels: { app: pg-backup } }
+        {{- end }}
+      ports: [{ port: 5432, protocol: TCP }]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ingress-redis
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" . | nindent 4 }}
+spec:
+  podSelector: { matchLabels: { app: redis } }
+  policyTypes: [Ingress]
+  ingress:
     - from: [{ podSelector: { matchLabels: { app: helper2 } } }]
-      ports: [{ port: 5432 }, { port: 6379 }]
-    - from: [{ podSelector: { matchLabels: { app: pg-backup } } }]
-      ports: [{ port: 5432 }]
+      ports: [{ port: 6379, protocol: TCP }]
 {{- with .Values.networkPolicy.egress }}
 {{- if .enabled }}
 {{- $dns := dict "to" (list (dict "namespaceSelector" (dict "matchLabels" (dict "kubernetes.io/metadata.name" .dns.namespace)) "podSelector" (dict "matchLabels" .dns.podLabels))) "ports" (list (dict "port" 53 "protocol" "UDP") (dict "port" 53 "protocol" "TCP")) }}

@@ -51,10 +51,10 @@ public class HuggingFaceModelsSource implements SearchSource {
         JsonNode root = HttpClients.getJson(() -> http.get()
             .uri(u -> HttpClients.hubListing(u.path("/api/models"), query, text).queryParam("limit", Math.min(query.getLimit(), 50)).build())
             .retrieve().body(String.class), clock);
-        return HttpClients.hits(root, clock.instant(), (item, now, rank) -> toHit(item, "hf-models", now, rank));
+        return HttpClients.hits("hf-models", root, clock.instant(), (item, now, rank) -> toHit(item, "hf-models", now, rank));
     }
 
-    /** Maps one Hub API model entry; shared with the Scout's trending collector. null when it has no id. */
+    /** Maps one Hub API model entry; shared with the Scout's trending collector. null when its id is no valid Hub path. */
     static SourceHit toHit(JsonNode m, String sourceId, Instant now, int position) {
         return toHit(m, sourceId, now, position, Set.of());
     }
@@ -65,7 +65,10 @@ public class HuggingFaceModelsSource implements SearchSource {
         if (id == null) {
             return null;
         }
-        String url = "https://huggingface.co/" + id;
+        CanonicalUrl canonical = CanonicalUrl.of("https://huggingface.co/" + id);
+        if (canonical == null) {
+            return null;
+        }
         Set<String> tags = new LinkedHashSet<>(extraTags);
         String license = null;
         for (JsonNode t : m.path("tags")) {
@@ -87,7 +90,7 @@ public class HuggingFaceModelsSource implements SearchSource {
         if (m.has("downloads")) {
             pop.add(new PopularityMetric(PopularityKind.HF_DOWNLOADS, m.path("downloads").asLong(), sourceId, now));
         }
-        return new SourceHit(sourceId, id, URI.create(url), CanonicalUrl.of(url), null, id, null,
+        return new SourceHit(sourceId, id, URI.create(canonical.getValue()), canonical, null, id, null,
             ValueOrigin.SOURCE_PROVIDED, ResourceType.MODEL, Audience.BUILD_WITH_AI, null, Set.of(), tags, license,
             null, Set.of(), Classification.openSource(license),
             DateFact.fromSource(HttpClients.instant(m, "createdAt"), sourceId, now),

@@ -89,7 +89,7 @@ class SinglePageAppTest {
     @Test
     void everyFrontendRouteServesIndexWithoutCaching() throws Exception {
         List<String> routes = frontendRoutes();
-        assertThat(routes).contains("models", "guide", "mission");
+        assertThat(routes).contains("sources", "guide", "mission");
         for (String route : routes) {
             mvc.perform(get("/" + route.replace(":id", "8a0e6c1e-2f43-5b6e-9d0a-1f1e2d3c4b5a")))
                 .andExpect(status().isOk())
@@ -136,13 +136,13 @@ class SinglePageAppTest {
     void notFoundWhenTheSpaIsNotBuilt() throws Exception {
         stop();
         MockMvc dev = mvcServing(dist.resolve("missing").toUri().toString());
-        dev.perform(get("/models")).andExpect(status().isNotFound());
+        dev.perform(get("/sources")).andExpect(status().isNotFound());
     }
 
     @Test
     void clientRoutesHaveNoExtensionAndAreNotServerPaths() {
         assertThat(SinglePageApp.isClientRoute("resource/abc")).isTrue();
-        assertThat(SinglePageApp.isClientRoute("/models")).isTrue();
+        assertThat(SinglePageApp.isClientRoute("/sources")).isTrue();
         assertThat(SinglePageApp.isClientRoute("apiary")).isTrue();
         assertThat(SinglePageApp.isClientRoute("api/v1/search")).isFalse();
         assertThat(SinglePageApp.isClientRoute("logout")).isFalse();

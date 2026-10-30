@@ -14,7 +14,7 @@ req: "Request to /api/**" {class: end}
 access: SecurityConfiguration rules {
   class: group
   direction: down
-  open: "Public GET (search, recent, sources,\nresources, model families, events, me)\nor POST reports / guide?" {class: decision}
+  open: "Public GET (search, recent, sources,\nresources, events, me)\nor POST reports / guide?" {class: decision}
   anon: "Allowed, no account" {class: end}
   admin: "/api/v1/admin/** or /actuator/**\n(not health, info)?" {class: decision}
   isadmin: "Session has ROLE_ADMIN?" {class: decision}

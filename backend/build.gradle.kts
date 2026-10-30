@@ -157,8 +157,32 @@ tasks.withType<Test>().configureEach {
 
 tasks.named<Test>("test") {
     useJUnitPlatform {
-        excludeTags("live")
+        excludeTags("live", "eval", "eval-record")
     }
+}
+
+// Search relevance and cutoff evaluation on recorded snapshots (ADR 0036): ./gradlew evalTest
+// Reads backend/eval-data (git-ignored) and docs/eval; skips with a message when either is missing.
+tasks.register<Test>("evalTest") {
+    description = "Runs @Tag(\"eval\") tests: offline replay and metrics over recorded search snapshots."
+    group = "verification"
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    useJUnitPlatform { includeTags("eval") }
+    outputs.upToDateWhen { false }
+}
+
+// Records search snapshots against the live sources through the real adapters (ADR 0036): ./gradlew evalRecord
+// Uses the repo-root .env and the embedding key, unlike the hermetic test tasks.
+tasks.register<Test>("evalRecord") {
+    description = "Runs @Tag(\"eval-record\"): one live search per query, saved to backend/eval-data."
+    group = "verification"
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    useJUnitPlatform { includeTags("eval-record") }
+    systemProperty("helper2.dotenv-import", "optional:file:../.env[.properties]")
+    systemProperty("helper2.embedding.api-key", System.getenv("H2_NVIDIA_API_KEY") ?: "")
+    outputs.upToDateWhen { false }
 }
 
 // Opt-in smoke tests that hit real external APIs: ./gradlew liveTest

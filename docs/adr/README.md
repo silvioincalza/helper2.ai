@@ -39,6 +39,7 @@ All diagrams: [docs/diagrams](../diagrams/README.md).
 | [0016](0016-guide-reason-check.md) | Guide reason check: a second model call checks each reason; `checked` event | 0014, 0015 | [flow](../diagrams/flow-0016-guide-reason-check.svg) · [sequence](../diagrams/sequence-0016-guide-reason-check.svg) |
 | [0017](0017-guide-cost-guard.md) | Guide cost guard: per-minute limit, per-client daily quota, global daily cap, answer cache with config hash, single-flight, concurrency limit and deadline | 0005, 0014, 0015, 0016 | [flow](../diagrams/flow-0017-guide-cost-guard.svg) · [sequence](../diagrams/sequence-0017-guide-cost-guard.svg) |
 | [0031](0031-setup-guide.md) | Setup guide: "Guide me" from source data (MCP Registry, README config), one snippet per AI client, checked README steps and questions | 0002, 0004, 0015 | — |
+| [0038](0038-ai-content-marking.md) | Marking AI-written text (EU AI Act Art. 50): labels on screen, `aiContent` in the API, `data-ai-generated` in the page | 0003, 0014, 0015, 0019 | — |
 
 ## Scout and catalog features
 
@@ -47,7 +48,6 @@ All diagrams: [docs/diagrams](../diagrams/README.md).
 | [0018](0018-scout-runner.md) | AI Resource Scout runner: schedule, intervals, cursors, backlog, failure isolation, cluster-wide run lock | 0004, 0006, 0014 | [flow](../diagrams/flow-0018-scout-runner.svg) · [sequence](../diagrams/sequence-0018-scout-runner.svg) |
 | [0019](0019-evidence-gated-enrichment.md) | Evidence-gated enrichment and review queue (value must appear in the excerpt; UNCHANGED skip; daily cap) | 0004, 0014, 0018 | [flow](../diagrams/flow-0019-evidence-gated-enrichment.svg) · [sequence](../diagrams/sequence-0019-evidence-gated-enrichment.svg) |
 | [0020](0020-scout-collectors.md) | Scout collectors: MCP Registry, HF trending, HF provider orgs, Tavily discovery, awesome lists with classifier, ai-deadlines | 0006, 0014, 0018 | [flow](../diagrams/flow-0020-scout-collectors.svg) · [sequence](../diagrams/sequence-0020-scout-collectors.svg) |
-| [0021](0021-model-families.md) | Compare AI models: curated model families with cited specs | 0003, 0004, 0020 | [flow](../diagrams/flow-0021-model-families.svg) · [sequence](../diagrams/sequence-0021-model-families.svg) |
 | [0022](0022-next-events.md) | Next events: stated event days, ai-deadlines and curated industry events | 0004, 0010, 0018, 0020 | [flow](../diagrams/flow-0022-next-events.svg) · [sequence](../diagrams/sequence-0022-next-events.svg) |
 
 ## Edge, frontend and operations
@@ -58,7 +58,7 @@ All diagrams: [docs/diagrams](../diagrams/README.md).
 | [0024](0024-http-edge-protection.md) | HTTP edge: rate limits (IPv6 /64), CSRF, CSP, forwarded headers, management port, SPA fallback and caching | 0001, 0005, 0007, 0023 | [flow](../diagrams/flow-0024-http-edge-protection.svg) · [sequence](../diagrams/sequence-0024-http-edge-protection.svg) |
 | [0025](0025-frontend-one-box.md) | Frontend: one page, one box, Radar design system, guide progress, accessibility, theme (system/light/dark) | 0001, 0003, 0008, 0015 | [flow](../diagrams/flow-0025-frontend-one-box.svg) · [sequence](../diagrams/sequence-0025-frontend-one-box.svg) |
 | [0026](0026-observability.md) | Observability: structured logs, OpenTelemetry traces, Prometheus meters, Grafana dashboard | 0001, 0008, 0014 | [flow](../diagrams/flow-0026-observability.svg) · [sequence](../diagrams/sequence-0026-observability.svg) |
-| [0027](0027-runtime-topology.md) | Runtime topology: Helm chart, three replicas on prod, Cloudflare tunnel, network policy (egress), Redis auth, backups | 0001, 0004, 0005, 0007, 0018, 0023, 0024 | — |
+| [0027](0027-runtime-topology.md) | Runtime topology: Helm chart, three replicas on prod, Cloudflare tunnel, per-workload network policies, ServiceAccount without token, Redis auth, backups | 0001, 0004, 0005, 0007, 0018, 0023, 0024 | — |
 | [0028](0028-ci-cd.md) | CI/CD: GitHub Actions, PR checks, OpenBao OIDC, staging then approved prod | 0007, 0027 | [flow](../diagrams/flow-0028-ci-cd.svg) · [sequence](../diagrams/sequence-0028-ci-cd.svg) |
 | [0029](0029-release-versioning.md) | Release and versioning: semantic versions, immutable tags, release workflow | 0001, 0028 | [flow](../diagrams/flow-0029-release-versioning.svg) |
 
