@@ -17,7 +17,7 @@ promtool test rules deploy/monitoring/tests/*.yaml
 cd frontend && npm test -- --run && npm run lint && npm run typecheck
 ```
 
-30 Oct 2026 at `a311827` (local run): backend 808 tests, 0 failed, 1 skipped by design; frontend 206 passed, 7 skipped,
+30 Oct 2026 (local run): backend 826 tests, 0 failed, 1 skipped by design; frontend 206 passed, 7 skipped,
 in 22 files. The 16 alert rules have promtool unit tests; CI runs them in the `monitoring` job.
 `evalTest` and `evalRecord` are not part of `test`: see [docs/eval](eval/README.md).
 
