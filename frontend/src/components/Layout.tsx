@@ -104,6 +104,7 @@ export function Footer() {
           <ul className="plain-list">
             <li><Link to="/mission">{t('footer.mission')}</Link></li>
             <li><Link to="/privacy">{t('footer.privacy')}</Link></li>
+            <li><Link to="/terms">{t('footer.terms')}</Link></li>
           </ul>
         </div>
         <div className="footer-col">
