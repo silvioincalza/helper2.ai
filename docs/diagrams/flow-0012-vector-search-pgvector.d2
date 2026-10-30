@@ -29,7 +29,7 @@ indexer: "Indexer on each replica (thread embedding-indexer, every 15 s)" {
   uptodate: "backlog = 0,\nlast.success = now" {class: end}
   embed: "NvidiaEmbedder.embed\n(input_type=passage, 30 s client)" {class: ai}
   result: "Result?" {class: decision}
-  save: "saveEmbeddings, backlog gauge,\nlast.success = now" {class: data}
+  save: "saveEmbeddings (other models'\nvectors deleted), backlog gauge,\nlast.success = now" {class: data}
   limited: "failures{rate_limited},\npause 2 min" {class: fail}
   failed: "failures{embedding|database},\nretry next tick" {class: fail}
   lock -> skip: no
@@ -53,7 +53,7 @@ search: "SemanticSearchSource.search (one search)" {
   cached: "Query vector in memory\n(last 1000)?" {class: decision}
   qembed: "embed(text, QUERY)" {class: ai}
   qerr: "429 → RateLimited (1 min cooldown)\nother → Unavailable" {class: fail}
-  knn: "HNSW: cosine distance ≤ 0.65,\nnearest first, LIMIT 30" {class: data}
+  knn: "HNSW, iterative scan (relaxed_order):\ncosine distance ≤ 0.65,\nnearest first, LIMIT 30" {class: data}
   hits: "Hits, rank = distance order;\nlabels and popularity attached" {class: end}
   blank -> nohits: yes
   blank -> cached: no
