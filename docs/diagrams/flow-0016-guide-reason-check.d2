@@ -1,5 +1,5 @@
 # Flowchart: the reason check that runs after GuideValidator, and the verdict each kept pick gets.
-# Source of truth: backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (AskGuide.verdicts), guide/Guide.kt (ReasonCheck), guide/GuideCost.kt (GuideAnswerCache.isCacheable),
+# Source of truth: backend/src/main/kotlin/ai/helper2/guide/usecase/ReasonCheckStep.kt (verdicts), guide/Guide.kt (ReasonCheck), guide/GuideCost.kt (GuideAnswerCache.isCacheable),
 #   backend/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java (verifyReasons),
 #   backend/src/main/resources/prompts/guide/verify-reasons.txt.
 # Render: cd docs/diagrams && d2 fmt flow-0016-guide-reason-check.d2 && d2 flow-0016-guide-reason-check.d2 flow-0016-guide-reason-check.svg

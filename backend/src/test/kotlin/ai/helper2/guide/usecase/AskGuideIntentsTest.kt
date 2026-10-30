@@ -33,8 +33,14 @@ import java.time.Clock
 import java.time.Duration
 import java.time.LocalDate
 import java.time.ZoneOffset
+import io.micrometer.core.instrument.observation.DefaultMeterObservationHandler
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
+import io.micrometer.observation.ObservationRegistry
+import ai.helper2.search.NoticeCode
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -120,6 +126,22 @@ class AskGuideIntentsTest {
     }
 
     private fun guide(model: GuideModel?) = AskGuide(search, model, clock)
+
+    private val meters = SimpleMeterRegistry()
+    private val observations = ObservationRegistry.create().also {
+        it.observationConfig().observationHandler(DefaultMeterObservationHandler(meters))
+    }
+
+    private fun steps(intent: String) =
+        meters.find("helper2.guide.step").tag("intent", intent).timers().map { it.id.getTag("step") }.toSet()
+
+    private fun ollamaVsLmStudio() = Model(
+        GuideSearchPlan("local LLM runner", intent = GuideIntent.COMPARE, subjects = listOf("Ollama", "LM Studio")),
+        compare = { s ->
+            val ollama = s.first { it.result.title == "ollama" }.key
+            ComparisonProposal(listOf(ProposedRow("Licence", listOf(ProposedCell(ollama, "MIT", "MIT License")))))
+        },
+    )
 
     private fun pickAll(c: List<Candidate>) = GuideProposal(
         c.map { ProposedPick(it.key, "Fits the need.", it.result.description!!) }, null, emptyList(),
@@ -286,5 +308,58 @@ class AskGuideIntentsTest {
         assertEquals(GuideIntent.LEARN, a.intent)
         assertEquals(LocalDate.of(2026, 9, 22), queries.single().publishedAfter)
         assertTrue(a.recommendations.all { it.result.published.value != null })
+    }
+
+    @Test
+    fun `compare, explain and dates questions time each of their steps`() {
+        val observed = { model: GuideModel -> AskGuide(search, model, clock, observations = observations) }
+        observed(ollamaVsLmStudio()).ask("Ollama vs LM Studio", null)
+        observed(Model(GuideSearchPlan("Ollama", intent = GuideIntent.WHAT_IS, subjects = listOf("Ollama")))).ask("what is Ollama?", null)
+        observed(Model(GuideSearchPlan("agent-kit", intent = GuideIntent.WHEN, subjects = listOf("agent-kit")))).ask("when was agent-kit released?", null)
+
+        assertEquals(setOf("plan", "search", "compare", "validate", "verify"), steps("compare"))
+        assertEquals(setOf("plan", "search", "explain", "validate"), steps("what_is"))
+        assertEquals(setOf("plan", "search"), steps("when"))
+    }
+
+    /** Each subject search waits until the other has started too: run one after the other, neither would see it. */
+    private class Rendezvous(private val hits: List<SourceHit>, private val subjects: Int) : SearchSource {
+        val together = CountDownLatch(subjects)
+        var allMet = true
+        override val descriptor = descriptor("r", timeout = Duration.ofSeconds(3))
+        override fun search(query: SourceQuery): List<SourceHit> {
+            together.countDown()
+            if (!together.await(1, TimeUnit.SECONDS)) allMet = false
+            return hits
+        }
+    }
+
+    @Test
+    fun `the subjects of a comparison are searched at the same time`() {
+        val source = Rendezvous(hits, subjects = 2)
+        val search = SearchResources(listOf(source), noCache, ResultObserver { emptyMap() }, executor, clock)
+
+        val a = AskGuide(search, ollamaVsLmStudio(), clock).ask("Ollama vs LM Studio", null)
+
+        assertTrue(source.allMet)
+        assertEquals(listOf("ollama", "LM Studio"), assertNotNull(a.comparison).subjects.map { it.result?.title })
+    }
+
+    @Test
+    fun `a subject whose search misses the deadline is not found`() {
+        val slowForLmStudio = object : SearchSource {
+            override val descriptor = descriptor("s", timeout = Duration.ofSeconds(3))
+            override fun search(query: SourceQuery): List<SourceHit> {
+                if (query.text.contains("lm studio", ignoreCase = true)) Thread.sleep(1_000)
+                return hits
+            }
+        }
+        val search = SearchResources(listOf(slowForLmStudio), noCache, ResultObserver { emptyMap() }, executor, clock)
+
+        val a = AskGuide(search, ollamaVsLmStudio(), clock, subjectSearchDeadline = Duration.ofMillis(200))
+            .ask("Ollama vs LM Studio", null)
+
+        assertNull(a.comparison)
+        assertTrue(a.notices.any { it.code == NoticeCode.GUIDE_SUBJECT_NOT_FOUND && it.message.startsWith("LM Studio") })
     }
 }

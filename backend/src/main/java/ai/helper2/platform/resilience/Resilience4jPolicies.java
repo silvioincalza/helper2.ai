@@ -9,6 +9,7 @@ import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.retry.Retry;
 import io.github.resilience4j.retry.RetryRegistry;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 /**
@@ -54,6 +55,24 @@ public final class Resilience4jPolicies implements Resilience {
         } catch (BulkheadFullException e) {
             throw new CallRefused(policy, CallRefused.Reason.BUSY, e);
         }
+    }
+
+    @Override
+    public Optional<Slot> trySlot(String policy) {
+        Optional<Bulkhead> found = bulkheads.find(policy);
+        if (found.isEmpty()) {
+            return Resilience.super.trySlot(policy);
+        }
+        Bulkhead bulkhead = found.get();
+        if (!bulkhead.tryAcquirePermission()) {
+            return Optional.empty();
+        }
+        AtomicBoolean released = new AtomicBoolean();
+        return Optional.of(() -> {
+            if (released.compareAndSet(false, true)) {
+                bulkhead.onComplete();
+            }
+        });
     }
 
     @Override

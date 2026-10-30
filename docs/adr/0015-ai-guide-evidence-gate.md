@@ -9,7 +9,7 @@ are real, but a ranked list does not explain why a result fits. A question takes
 show progress, and every claim on the page must be traceable to a real result.
 
 ## Decision
-1. **Retrieval first.** `AskGuide.answer` runs in this order:
+1. **Retrieval first.** `AskGuide.answer` runs in this order (`QuestionReader` plans, `PickAnswer` does the rest):
    - **plan** (fast model, `prompts/guide/plan.txt`): English `searchQuery`, up to 4 `constraints`, `wantsReading`,
      and a `webQuery`. Generic qualifiers ("open-source", "free", "MIT"…) are removed from the search query, which is
      cut to 6 words and 200 characters; the web query to 12 words. If the plan call fails, the user's own text is the query.
@@ -72,7 +72,8 @@ show progress, and every claim on the page must be traceable to a real result.
 - WebSocket for progress — two-way channel not needed; SSE works over plain Hypertext Transfer Protocol (HTTP) and proxies.
 
 ## Code
-- `backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt` — `AskGuide`.
+- `backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt` — `AskGuide` (the guards and the dispatch by intent);
+  `QuestionReader.kt` (plan), `PickAnswer.kt` (retrieve, choose, gate) in the same package.
 - `backend/src/main/kotlin/ai/helper2/guide/Guide.kt` — `GuideValidator`, `GuideModel`, `GuideProgress`.
 - `backend/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java` — plan and choose calls.
 - `backend/src/main/java/ai/helper2/guide/web/GuideStreamController.java`, `GuideController.java`, `GuideDtoMapper.java`.

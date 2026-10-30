@@ -1,5 +1,6 @@
 package ai.helper2.guide.internal;
 
+import ai.helper2.guide.AnswerLimits;
 import ai.helper2.guide.ClientQuota;
 import ai.helper2.guide.GuideAnswerCache;
 import ai.helper2.guide.GuideAnswerStore;
@@ -56,7 +57,7 @@ class GuideConfiguration {
     @Bean
     AskGuide guideService(SearchResources search, ObjectProvider<ChatModel> chatModel, LlmSettings llm, Clock clock,
                               DailyBudget guideBudget, CallCounter budgetCounter, GuideAnswerStore answerStore,
-                              ModelCallMetrics metrics, ObservationRegistry observations, MeterRegistry meters,
+                              ModelCallMetrics metrics, ObservationRegistry observations, MeterRegistry meters, Resilience resilience,
                               @Value("${helper2.llm.native-schema:true}") boolean nativeSchema,
                               @Value("${helper2.llm.choose-max-tokens:" + SpringAiGuideModel.DEFAULT_CHOOSE_MAX_TOKENS + "}") int chooseMaxTokens,
                               @Value("${helper2.guide.cache-ttl:PT24H}") Duration cacheTtl,
@@ -70,7 +71,7 @@ class GuideConfiguration {
         GuideModel guideModel = null;
         if (llm.usable(model) && llm.hasReasoningModel()) {
             guideModel = new SpringAiGuideModel(model, llm.provider(), llm.fast(), llm.reasoningModel(), nativeSchema, chooseMaxTokens,
-                new SpringAiGuideModel.Thinking(thinkPlan, thinkChoose, thinkVerify), guideBudget, metrics);
+                new SpringAiGuideModel.Thinking(thinkPlan, thinkChoose, thinkVerify), guideBudget, metrics, resilience);
             log.info("AI guide enabled: provider={}, fast={}, reasoning={}, nativeSchemaForChoose={}, chooseMaxTokens={}, "
                     + "thinking plan/choose/verify={}/{}/{}",
                 llm.provider(), llm.fast(), llm.reasoningModel(), nativeSchema, chooseMaxTokens, thinkPlan, thinkChoose, thinkVerify);
@@ -81,6 +82,6 @@ class GuideConfiguration {
             maxCandidates, clientDailyQuestions);
         return new AskGuide(search, guideModel, clock, maxCandidates, new GuideValidator(),
             new GuideAnswerCache(cacheTtl, cacheMaxEntries, clock, answerStore), observations, meters,
-            new ClientQuota(clientDailyQuestions, clock, budgetCounter));
+            new ClientQuota(clientDailyQuestions, clock, budgetCounter), AskGuide.SUBJECT_SEARCH_DEADLINE, AnswerLimits.DEFAULT);
     }
 }

@@ -1,9 +1,10 @@
 # Sequence: one guide model call (the plan step) through the shared LLM layer.
-# Shows the budget unit taken in Redis before the call, the per-attempt observation, the provider call and the
-# answer clean-up. The other callers (SpringAiEnrichmentModel, SpringAiQueryTranslator, SpringAiRepoClassifier)
-# follow the same steps with their own budget name.
+# Shows the llm-chat circuit, the budget unit taken in Redis inside it, the per-attempt observation with the prompt
+# version, the provider call and the answer clean-up. SpringAiQueryTranslator follows the same steps with its own
+# budget name; SpringAiEnrichmentModel and SpringAiRepoClassifier the same without the circuit.
 # Source of truth: backend/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java (plan, call),
-#   backend/src/main/java/ai/helper2/platform/llm/ (DailyBudget, RedisCallCounter, CallOptions, ModelCallMetrics, ModelAnswers).
+#   backend/src/main/java/ai/helper2/platform/llm/ (DailyBudget, RedisCallCounter, CallOptions, ModelCallMetrics, ModelAnswers),
+#   backend/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java.
 # Render: cd docs/diagrams && d2 fmt sequence-0014-llm-integration.d2 && d2 sequence-0014-llm-integration.d2 sequence-0014-llm-integration.svg
 
 ...@style
@@ -11,6 +12,7 @@
 shape: sequence_diagram
 
 model: SpringAiGuideModel {class: app}
+cb: "llm-chat circuit\n(Resilience)" {class: app}
 budget: DailyBudget "guide" {class: app}
 counter: RedisCallCounter {class: app}
 redis: Redis {class: data}
@@ -18,17 +20,20 @@ metrics: ModelCallMetrics {class: app}
 client: "ChatClient +\nOpenAI client" {class: app}
 tf: "Token Factory\n(Nemotron)" {class: ai}
 
-model -> budget: "tryAcquire()"
+model -> cb: "call(llm-chat, attempt)"
+cb -> cb: "closed: let through"
+cb -> budget: "tryAcquire()"
 budget -> counter: "increment(guide, UTC day)"
 counter -> redis: "Lua: INCR h2:v1:budget:guide:<day>,\nPEXPIRE 2 days on first"
 redis -> counter: count
 counter -> budget: "count (null on error:\ncount in memory)"
-budget -> model: "true (count ≤ 600)"
-model -> metrics: "observe(plan, model)"
+budget -> cb: "true (count ≤ 600)"
+cb -> metrics: "observe(plan, model,\nprompt version)"
 metrics -> client: "prompt(system, user)\nCallOptions.of(model, null, thinking=false)"
 client -> tf: "POST /v1/chat/completions\n(timeout 40 s, no SDK retry)" {class: ai-call}
 tf -> client: "JSON answer + token usage"
 client -> metrics: "ChatResponse"
-metrics -> metrics: "tokens(plan, response);\noutcome=ok"
-metrics -> model: "entity (BeanOutputConverter\nreads ModelAnswers.jsonObject)"
+metrics -> metrics: "tokens(plan, prompt version,\nresponse); outcome=ok"
+metrics -> cb: "entity (BeanOutputConverter\nreads ModelAnswers.jsonObject)"
+cb -> model: "entity; success recorded"
 model -> model: "GuideSearchPlan"

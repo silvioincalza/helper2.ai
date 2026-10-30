@@ -55,4 +55,15 @@ class ModelErrorsTest {
             .isEqualTo("parse_error");
         assertThat(ModelErrors.category(new IllegalStateException("other"))).isEqualTo("error");
     }
+
+    /** The llm-chat circuit counts the provider's failures only: our parse error or spent budget says nothing about it. */
+    @Test
+    void onlyProviderFailuresCountForTheChatCircuit() {
+        var notFromProvider = new ModelErrors.NotFromProvider();
+
+        assertThat(notFromProvider.test(new RateLimitException())).isFalse();
+        assertThat(notFromProvider.test(new BadRequestException())).isFalse();
+        assertThat(notFromProvider.test(new SocketTimeoutException("read timed out"))).isFalse();
+        assertThat(notFromProvider.test(new IllegalStateException("budget used up"))).isTrue();
+    }
 }

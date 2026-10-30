@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.ModelCallMetrics;
+import ai.helper2.platform.resilience.Resilience;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -60,7 +61,7 @@ class ThinkingOnTheWireTest {
                 .baseUrl("http://127.0.0.1:" + server.getAddress().getPort() + "/v1").apiKey("test").model("default").build())
             .build();
         return new SpringAiGuideModel(chat, "test", "fast", "reasoning", true, 8192, thinking,
-            new DailyBudget(10, Clock.systemUTC(), "guide"), ModelCallMetrics.none());
+            new DailyBudget(10, Clock.systemUTC(), "guide"), ModelCallMetrics.none(), Resilience.NONE);
     }
 
     @Test

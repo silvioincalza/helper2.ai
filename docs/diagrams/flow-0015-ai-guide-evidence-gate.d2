@@ -1,7 +1,8 @@
-# Flowchart: one fresh guide question in AskGuide.answer, from the request to the final status.
+# Flowchart: one fresh guide question for a pick intent (AskGuide.answer → PickAnswer.picks), from the request to the final status.
 # Shows plan → retrieve → choose → GuideValidator, every degraded exit, and the stream events sent on the way.
 # The cost guard in front of it (cache, single-flight, quota) is in flow-0017; the reason check in flow-0016.
-# Source of truth: backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (AskGuide.answer), guide/Guide.kt (GuideValidator),
+# Source of truth: backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (AskGuide.answer), QuestionReader.kt (read),
+#   PickAnswer.kt (picks), guide/Guide.kt (GuideValidator),
 #   backend/src/main/java/ai/helper2/guide/web/GuideStreamController.java (event names).
 # Render: cd docs/diagrams && d2 fmt flow-0015-ai-guide-evidence-gate.d2 && d2 flow-0015-ai-guide-evidence-gate.d2 flow-0015-ai-guide-evidence-gate.svg
 

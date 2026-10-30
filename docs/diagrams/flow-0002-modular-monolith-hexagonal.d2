@@ -50,9 +50,8 @@ today: "Module dependencies that pass today" {
   setup: "setup\n(Kotlin rules)" {class: app}
   guide: "guide\n(Kotlin rules)" {class: app}
   catalog: "catalog\n(Spring services over SQL)" {class: app}
-  platform: "platform (open)\nSpringAiQueryTranslator" {class: app}
   identity: "identity" {class: app}
-  search: "search\n(Kotlin rules, ports)" {class: port}
+  search: "search\n(Kotlin rules, ports;\nSpringAiQueryTranslator\nin search.internal)" {class: port}
 
   sources -> scout: "Collector, ports"
   sources -> search: "SearchSource"
@@ -64,7 +63,6 @@ today: "Module dependencies that pass today" {
   catalog -> identity: "CurrentUser,\nAuditTrail"
   scout -> search: "cards, models"
   setup -> search: "cards"
-  platform -> search: "QueryTranslator"
 }
 
 rules.ok -> today: "checked over every class" {class: config}

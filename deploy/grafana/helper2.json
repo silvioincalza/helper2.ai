@@ -1489,7 +1489,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, step, model) (rate(helper2_guide_model_call_seconds_bucket{application=\"helper2\",environment=\"$environment\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.95, sum by (le, step, model) (rate(helper2_llm_call_seconds_bucket{application=\"helper2\",environment=\"$environment\"}[$__rate_interval])))",
           "legendFormat": "{{step}} {{model}}",
           "refId": "A"
         }
@@ -1546,7 +1546,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (step, outcome) (rate(helper2_guide_model_call_seconds_count{application=\"helper2\",environment=\"$environment\"}[$__rate_interval]))",
+          "expr": "sum by (step, outcome) (rate(helper2_llm_call_seconds_count{application=\"helper2\",environment=\"$environment\"}[$__rate_interval]))",
           "legendFormat": "{{step}} {{outcome}}",
           "refId": "A"
         }
@@ -1603,7 +1603,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (step, type) (increase(helper2_guide_tokens_total{application=\"helper2\",environment=\"$environment\"}[$__rate_interval]))",
+          "expr": "sum by (step, type) (increase(helper2_llm_tokens_total{application=\"helper2\",environment=\"$environment\"}[$__rate_interval]))",
           "legendFormat": "{{step}} {{type}}",
           "refId": "A"
         }
