@@ -1018,6 +1018,24 @@
       "OK": ""
     }
   },
+  "resultsV2": {
+    "heading": "Results for {{q}}",
+    "types": "Result types",
+    "allTypes": "All",
+    "pick": "Pick #{{rank}}",
+    "fullAnswer": "How the guide decided",
+    "openOn": "Open on {{host}}",
+    "fullDetails": "Full details",
+    "whyMatches": "Why it matches",
+    "facts": "Facts",
+    "use": "Use",
+    "build": "Build",
+    "notStated": "Not stated",
+    "listedBy": "Listed by",
+    "timeline": "Timeline",
+    "fanOut_one": "{{ok}} of {{total}} sources answered · {{count}} result after merging",
+    "fanOut_other": "{{ok}} of {{total}} sources answered · {{count}} results after merging"
+  },
   "picks": {
     "title": "Guide picks",
     "aiWritten": "AI-written",

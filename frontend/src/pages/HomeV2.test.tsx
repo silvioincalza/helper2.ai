@@ -48,7 +48,7 @@ describe('design v2 home (flag on): only the home page', () => {
     await userEvent.type(screen.getByRole('searchbox'), 'mcp github{Enter}');
     await waitFor(() => expect(router.state.location.pathname).toBe('/search'));
     expect(params().get('q')).toBe('mcp github');
-    expect(await screen.findByText('Acme Translator')).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: 'Acme Translator' })).toBeInTheDocument();
     expect(m.callsTo('GET', '/search')).toHaveLength(1);
   });
 
@@ -126,7 +126,7 @@ describe('design v2 home (flag on): only the home page', () => {
   it('/?q=… still shows results and names /search as the canonical page', async () => {
     mockApi();
     renderApp('/?q=mcp');
-    expect(await screen.findByText('Acme Translator')).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: 'Acme Translator' })).toBeInTheDocument();
     const canonical = document.head.querySelector('link[rel="canonical"]') ?? document.querySelector('link[rel="canonical"]');
     expect(canonical).toHaveAttribute('href', '/search?q=mcp');
   });

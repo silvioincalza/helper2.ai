@@ -16,6 +16,7 @@ import { useGuideStream } from '@/hooks/useGuideStream';
 import { useTitle } from '@/hooks/useTitle';
 import { NEW_DESIGN_ENABLED } from '@/lib/features';
 import HomeV2 from '@/pages/HomeV2';
+import { ResultsV2 } from '@/components/results/ResultsV2';
 import { askedQuestion, clampQuestion, homeParams, parseSearchParams, patchState, type SearchState } from '@/lib/searchState';
 
 /** Example needs (`home.example.<id>`): a short label, and the full need it sends, which both searches AND asks the guide. */
@@ -34,7 +35,7 @@ export default function HomePage() {
   return (
     <>
       {pathname === '/' && <link rel="canonical" href={`/search?${sp.toString()}`} />}
-      <OnePage />
+      <ResultsV2 />
     </>
   );
 }
