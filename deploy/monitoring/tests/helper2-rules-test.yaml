@@ -83,6 +83,31 @@ tests:
               description: "Only 0% of today's model calls are left. When it reaches 0 the feature degrades until 00:00 UTC (guide: search-only answers; enrichment and classifier: skipped; translation: query sent as typed)."
               runbook: "Dashboard panels 'Questions by outcome' (AI guide) or 'Enrichment outcomes' (Scout): normal traffic or one loop/abuser? Caps: H2_GUIDE_DAILY_MODEL_CALLS (guide), H2_SEARCH_DAILY_TRANSLATIONS (search_translation), H2_SCOUT_DAILY_ENRICHMENT_CALLS (scout_enrichment), H2_SCOUT_AWESOME_CLASSIFIER_DAILY_CALLS (scout_classifier), helper2.setup.guide.daily-model-calls (tool_guide)."
 
+  # Tavily credits: 2 live calls an hour on prod (48 a day) fire once a day of them is in; staging at 1 an hour (24 a
+  # day) stays quiet. Search and guide add up.
+  - interval: 1h
+    input_series:
+      - series: 'helper2_tavily_credits_total{application="helper2", environment="prod", instance="a", feature="search", tier="guest"}'
+        values: '0+1x30'
+      - series: 'helper2_tavily_credits_total{application="helper2", environment="prod", instance="b", feature="guide", tier="guest"}'
+        values: '0+1x30'
+      - series: 'helper2_tavily_credits_total{application="helper2", environment="staging", instance="a", feature="search", tier="guest"}'
+        values: '0+1x30'
+    alert_rule_test:
+      - eval_time: 12h
+        alertname: Helper2TavilyCreditsHigh
+        exp_alerts: []
+      - eval_time: 25h
+        alertname: Helper2TavilyCreditsHigh
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              environment: prod
+            exp_annotations:
+              summary: "Tavily used more than 30 credits in the last 24 hours (prod)."
+              description: "48 live Tavily calls in the last 24 hours. At this pace the monthly credits run out before the plan resets; then Tavily fails for everyone and searches answer from stored results and the other sources."
+              runbook: "Dashboard: helper2_tavily_credits_total by feature and tier. Many guest addresses at the limit = rotating IPs: set H2_TAVILY_GLOBAL_DAILY_CREDITS to cap all live calls a day (no release). Few stored-set hits (helper2_cache_events_total, event=store_hit): check the freshness settings."
+
   # Scout age (the gauge holds epoch seconds; test time starts at epoch 0). hf-trending (daily) last succeeded at
   # 1h: quiet at 49h (48 h old), fires at 73h. tavily-scout (every 5 days) is as old and stays quiet; mcp-registry
   # keeps succeeding.
