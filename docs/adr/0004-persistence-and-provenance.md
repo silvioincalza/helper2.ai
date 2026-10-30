@@ -33,8 +33,8 @@ the search down.
 5. **One base schema, additive changes, repeatable seeds.** `V1__schema.sql` is the schema production started from;
    it is never edited again, because production has applied it and an edit changes its checksum (Flyway then refuses
    to start). Every later change is a new versioned migration (`V2__npm_dates_are_updates.sql`,
-   `V3__course_type.sql`, [0032](0032-guide-intents.md)). Flyway runs them, then `R__curated_seed.sql`,
-   `R__industry_events.sql` and `R__model_families.sql`. The seeds upsert, so Flyway re-runs one whenever
+   `V3__course_type.sql`, [0032](0032-guide-intents.md)). Flyway runs them, then `R__curated_seed.sql`
+   and `R__industry_events.sql`. The seeds upsert, so Flyway re-runs one whenever
    it changes. The events seed also removes the curated events that are no longer in its research file ([0022](0022-next-events.md)).
 6. **Catalog writes off the request path.** `SearchResources` reads first-discovery dates in one batched
    query (`ResultObserver.firstDiscovered`), then hands only the results fetched live in this search to

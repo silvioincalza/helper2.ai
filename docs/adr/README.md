@@ -48,7 +48,6 @@ All diagrams: [docs/diagrams](../diagrams/README.md).
 | [0018](0018-scout-runner.md) | AI Resource Scout runner: schedule, intervals, cursors, backlog, failure isolation, cluster-wide run lock | 0004, 0006, 0014 | [flow](../diagrams/flow-0018-scout-runner.svg) · [sequence](../diagrams/sequence-0018-scout-runner.svg) |
 | [0019](0019-evidence-gated-enrichment.md) | Evidence-gated enrichment and review queue (value must appear in the excerpt; UNCHANGED skip; daily cap) | 0004, 0014, 0018 | [flow](../diagrams/flow-0019-evidence-gated-enrichment.svg) · [sequence](../diagrams/sequence-0019-evidence-gated-enrichment.svg) |
 | [0020](0020-scout-collectors.md) | Scout collectors: MCP Registry, HF trending, HF provider orgs, Tavily discovery, awesome lists with classifier, ai-deadlines | 0006, 0014, 0018 | [flow](../diagrams/flow-0020-scout-collectors.svg) · [sequence](../diagrams/sequence-0020-scout-collectors.svg) |
-| [0021](0021-model-families.md) | Compare AI models: curated model families with cited specs | 0003, 0004, 0020 | [flow](../diagrams/flow-0021-model-families.svg) · [sequence](../diagrams/sequence-0021-model-families.svg) |
 | [0022](0022-next-events.md) | Next events: stated event days, ai-deadlines and curated industry events | 0004, 0010, 0018, 0020 | [flow](../diagrams/flow-0022-next-events.svg) · [sequence](../diagrams/sequence-0022-next-events.svg) |
 
 ## Edge, frontend and operations
