@@ -16,6 +16,9 @@ screen reader, and in light and dark mode.
 2. **Search results** (`SearchResults`, `useApi`). A new query aborts the old request. While it loads, the previous
    results stay on screen, dimmed, with `aria-busy`. Only the first load shows skeletons and one "querying" line per
    enabled source.
+   `useApi` keeps the last 50 successful answers for 5 minutes by key, so back and forward show a page at once without
+   a request; `reload` always asks again, and the admin page opts out (`cache: false`). `ScrollRestoration` puts the
+   page back where it was on back and forward, and at the top for a new page.
 3. **Guide stream as the browser sees it** (`api.askGuideStream`). `POST /api/v1/guide/stream` with the cross-site request forgery (CSRF) header.
    Server-Sent Events (SSE) are read with `fetch` and `SseParser`, not `EventSource`, so there is no automatic reconnect
    (each question costs model calls). An idle timer of 45 s (`GUIDE_IDLE_TIMEOUT_MS`) is re-armed on every chunk.
@@ -27,7 +30,7 @@ screen reader, and in light and dark mode.
    `checked`. Only the current step's title is in a `role="status"` region; the seconds counter is hidden from screen readers.
 5. **Radar design system.** The Helper2.ai design system in `docs/design/system`, named after its radar mark:
    warm paper, indigo ink, one saffron accent; `tokens.css` mirrors `tokens.json`. Unknown values read "Unknown".
-6. **Accessibility.** Skip link; `RouteFocus` moves focus to the new page's `h1` (or `#main`) and names the page in a
+6. **Accessibility.** Skip link; `RouteFocus` moves focus to the new page's `h1` (or `#main`, without scrolling) and names the page in a
    live region; paging moves focus to the results heading. Vitest runs axe-core smoke tests (`a11y.test.tsx`,
    color contrast excluded because jsdom cannot compute it).
 7. **Theme: system, light, dark.** One button cycles system → light → dark. A fixed choice is saved as `h2.theme`;
