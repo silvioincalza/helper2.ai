@@ -33,7 +33,7 @@ results by time, not only by relevance.
    `discovered` is Helper2.ai's own first-seen time (source id `helper2`). Event days (`eventStart`, `eventEnd`) are
    sent only for `EVENT` results.
 6. **Timeline view** (frontend only). `view=timeline` stays in the browser address (URL). `toApiParams` sends `sort=NEWEST` and
-   `size=50`. `ResultsTimeline` groups cards by the Coordinated Universal Time (UTC) month of the published date. Results without a stated date
+   `size=50`. `ResultList` groups the result rows by the Coordinated Universal Time (UTC) month of the published date. Results without a stated date
    form one "unknown" group at the end. The discovery date is never used to place a result in time.
 
 ## Consequences
@@ -59,7 +59,7 @@ results by time, not only by relevance.
 - `backend/src/main/java/ai/helper2/search/web/SearchController.java` — query parameters to `SearchFilters`.
 - `backend/src/main/java/ai/helper2/search/web/CardMapper.java` — dates and event days on the card.
 - `frontend/src/lib/searchState.ts` — URL state, `toApiParams`, `TIMELINE_PAGE_SIZE`.
-- `frontend/src/lib/timeline.ts`, `frontend/src/components/ResultsTimeline.tsx` — grouping by creation month.
+- `frontend/src/lib/timeline.ts`, `frontend/src/components/ResultList.tsx` — grouping by creation month.
 - `frontend/src/components/FilterPanel.tsx`, `DateFactView.tsx` — facets and date display.
 
 ## Diagrams

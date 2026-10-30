@@ -80,7 +80,7 @@ No source strip on the home page. It belongs to a search.
 One list, one preview.
 
 - **Header:** logo with tagline, the search box, theme and Saved buttons. Under it the type tabs with counts.
-- **List** (left, at most `list-max`): result rows, guide picks first. The selected row has a `row-selected-line` outline.
+- **List** (left, at most `list-max`): result rows in search order; a guide pick gets a "Pick #n" badge in its row. The selected row has a `row-selected-line` outline.
 - **Preview** (right): type tag and path, the title in `display`, the actions, then four parts with a mono section label each: Why it matches, Facts, Listed by, Timeline.
 - **Sources grid** under everything, then the footer.
 - Below `bp-split` the preview panel hides. The selected row opens an inline preview under it (proof quote, three facts, Open and Full details). Full details goes to `/resource/:id`.
@@ -131,14 +131,17 @@ Components are plain HTML plus the classes in `components/bundle.css` (prefix `h
 
 ### In the frontend
 
-The React components are in `frontend/src/components/ui/` (ADR 0040). Where the code name differs:
+The shared React components are in `frontend/src/components/ui/`, the results page's parts in `frontend/src/components/`
+(ADR 0040). Where the code name differs:
 
 | Design system | Code |
 |---|---|
 | Badge (type tag) | `TypeTag` |
-| ResultRow, its selected outline | `SelectableRow` (the row button; the row content comes with the results page) |
-| SourcesGrid, its tiles | `SourceTiles` (the fan-out line comes with the results page) |
-| Guide picks bar | `PicksBar` |
+| ResultRow | `ResultList` (the rows), `SelectableRow` (the row button and its selected outline) |
+| ResultPreview, InlinePreview | `ResultPreview`, `InlinePreview` |
+| FactList | `FactList` in `CardFacts` |
+| SourcesGrid | `SourcesSummary` (the fan-out line, the web searches left), `SourceTiles` (the tiles) |
+| Guide picks bar | `PicksBar` (the box), `GuidePicks` (the guide's answer in it) |
 
 `StatusPill` and `ProofQuote` keep their names.
 
@@ -153,4 +156,5 @@ Keep the bar's height reserved, so nothing jumps when the answer arrives.
 
 The URL keeps the search and the selected result: `?q=…&id=…`. It works on `/` and `/search`.
 Change it with replaceState, so Back leaves the search and does not step through rows.
-If the id is not in the results, select the first row. On phones a row opens `/resource/:id`.
+If the id is not in the results, select the first row. On phones the selected row opens the inline preview, with
+Full details to `/resource/:id`.

@@ -18,8 +18,8 @@ The success criteria at the end say which tests verify each journey today. What 
 1. User lands on the home page; the search box is the first focusable element after the skip link.
 2. There is one box and no scope to choose: the same search covers tools, models, MCP servers, libraries, papers and news.
 3. Types a name ("ollama"), keywords ("mcp postgres"), an intent ("I want to summarise PDFs"), or a use case ("traduzione").
-4. Results start when typing pauses (or on Enter), on the same page. The first search shows a skeleton and a per-source "querying…" line; a later search keeps the previous results on screen, dimmed, until the new ones arrive.
-5. Results arrive in one response, once every source has answered or hit its timeout; a summary line states e.g. "4 of 5 sources responded · 1 timed out", and the source status panel lists each source's outcome.
+4. Enter opens the results page (`/search`); there, results follow the box when typing pauses. The first search shows a skeleton and a per-source "querying…" line; a later search keeps the previous results on screen, dimmed, until the new ones arrive.
+5. Results arrive in one response, once every source has answered or hit its timeout; under the results a summary line states e.g. "4 of 5 sources responded · 1 timed out", and one tile per source states its outcome.
 
 **Key decisions:** whether to refine, or to ask the guide. **Success:** relevant result in the first page; user understands where results came from.
 
@@ -101,7 +101,7 @@ Sign-in exists for administrators ([ADR 0023](adr/0023-identity-and-admin.md)); 
 | ID | Criterion | Verified by |
 |---|---|---|
 | SC-1 | One query returns aggregated results from every enabled source that responded within its timeout | Today: API integration tests; UI component tests (Vitest + Testing Library, API mocked) for results, partial banner and empty/all-failed states. [Roadmap](roadmap.md): E2E journey (not yet automated) |
-| SC-2 | Every configured source appears in the status list with a truthful outcome | Today: orchestrator unit tests; UI component tests for the source status panel (every outcome in words). [Roadmap](roadmap.md): E2E journey (not yet automated) |
+| SC-2 | Every configured source appears in the status list with a truthful outcome | Today: orchestrator unit tests; UI component tests for the source tiles under the results (every outcome in words). [Roadmap](roadmap.md): E2E journey (not yet automated) |
 | SC-3 | Asking the guide never loses query/filters | Today: UI component tests: the URL keeps `q`, `ask` and filters; closing the answer keeps the search; back/forward restore the box; retry and replacing a running question. [Roadmap](roadmap.md): E2E journey (not yet automated) |
 | SC-4 | No invented dates/popularity; unknowns labeled | domain tests + UI tests |
 | SC-5 | Every published AI-extracted fact links to evidence; unsupported → unverified/review | enrichment validator tests |

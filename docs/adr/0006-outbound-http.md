@@ -7,7 +7,7 @@ Every search calls several public Application Programming Interfaces (APIs) in p
 calls more in the background. Each one can be slow, rate-limited or broken. One slow source must not hold up
 a search, and a rate limit must lead to a pause, not to more calls. Remote hosts and their data are untrusted:
 a redirect must not carry a token elsewhere, a body must not fill the heap, and one bad item must not cost the
-whole answer. Failures must reach the search as a small set of known outcomes, so the source status panel can
+whole answer. Failures must reach the search as a small set of known outcomes, so the sources under the results can
 state what happened.
 
 ## Decision

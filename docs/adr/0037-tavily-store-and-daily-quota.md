@@ -52,6 +52,8 @@ used up. The counts must hold across 3 replicas, store no address and no query t
 6. **What is left, in every answer.** `SearchResponse.webSearches` and `GuideResponse.webSearches`
    (`{limit, remaining}`, null without an enabled metered source or a readable count) show the visitor's web searches
    left today for that feature. A cached guide answer gets the current asker's count, never the first asker's.
+   The results page says both in one line under the sources; at the limit it says that stored web results still
+   answer and new ones come after 00:00 UTC, and offers nothing to buy ([0040](0040-frontend-design-v2.md)).
 7. **Guide answers live no longer than their web results.** Answer TTL = min(24 h, freshness left of the web results
    it used); an answer built on stale web results is not cached ([0017](0017-guide-cost-guard.md)).
 8. **Credits are measured.** `helper2.tavily.credits{feature,tier}` counts every live call (`none` for internal
@@ -108,12 +110,12 @@ used up. The counts must hold across 3 replicas, store no address and no query t
 - `backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt` (`find`, `forAsker`), `guide/GuideCost.kt` (`ttlOf`).
 - `backend/src/main/java/ai/helper2/identity/usecase/DeleteMyAccount.java` — counters deleted with the account.
 - `backend/src/main/resources/application.yaml` (`helper2.tavily.*`), `db/migration/V1__schema.sql`, `api/openapi.yaml` (`WebSearches`).
+- `frontend/src/components/SourcesSummary.tsx` — the web searches left today, or the daily limit, under the results.
 - `deploy/monitoring/helper2-rules.yaml` — `Helper2TavilyCreditsHigh`.
 
 ## Diagrams
 [flow](../diagrams/flow-0037-tavily-store-and-quota.svg) · [sequence](../diagrams/sequence-0037-tavily-store-and-quota.svg)
 
 ## Roadmap
-- The page shows the web searches left and the daily limit state (FE-2): [roadmap](../roadmap.md#5-ai-quality-and-cost).
 - Turn on the registered tier once end-user sign-in is live: [roadmap](../roadmap.md#domain-and-identity).
 - Scout news and events written to the same store, with their own share of credits: [roadmap](../roadmap.md#5-ai-quality-and-cost).

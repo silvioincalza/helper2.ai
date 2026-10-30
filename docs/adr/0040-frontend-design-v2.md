@@ -27,11 +27,15 @@ and chose between options for each part.
    scrolls by hand. Each row is in the list once and the list is not a live region, so a screen reader reads a normal
    list. Loading shows skeleton rows; empty and error say so, and an error offers to try again.
 3. **Results on `/search`.** The box and the examples open `/search?q=…`. `/?q=…` shows the same page and declares
-   `/search` as the canonical URL, so search engines see one page.
+   `/search` as the canonical URL, so search engines see one page. `/search` with nothing to search is the home page.
+   On the home page typing waits for Enter; on the results page it searches live ([0025](0025-frontend-one-box.md)).
 4. **List and preview.** From 861 px: the result list on the left, a preview of the selected result on the right
    (proof quote with the checked sentence highlighted, Use and Build facts, Listed by, Timeline, actions). Up to
-   860 px: the preview opens inside the list, under the selected row, with a link to `/resource/:id`.
-5. **The selected result is in the URL.** `?q=…&id=…`, changed with `history.replaceState`: a shared link opens the
+   860 px: the preview opens inside the list, under the selected row: why it matches, three facts, and links to the
+   source and to `/resource/:id`. Both come from the search answer, with no request of their own. A row is a button
+   named by its title; one row is in the tab order, and the arrow keys, Home and End move between rows and select.
+   Filters fold away above the list, so the list and the preview share the row.
+5. **The selected result is in the URL.** `?q=…&id=…`, replaced, not pushed (`history.replaceState`): a shared link opens the
    same result, and Back leaves the search instead of stepping through rows. An `id` that is not in the results
    selects the first row. The `id` is untrusted input: it only selects among results already on the page.
 6. **Guide picks bar, nothing moves.** A box above the list is there from the first render: "Guide is reading N
@@ -39,11 +43,21 @@ and chose between options for each part.
    (`POST /api/v1/guide/stream`, [0015](0015-ai-guide-evidence-gate.md)), the same box shows the picks as chips
    (#1, #2, #3), labelled AI-written ([0038](0038-ai-content-marking.md)). The list never re-orders: each pick gets a
    "Pick #n" badge and its reason in its own row. No pick: the box shrinks to one line, "No pick: no result had a
-   sentence that proves it". Tapping a chip selects that row.
-7. **Sources at the bottom.** The fan-out summary and one tile per source (status, response time or cache age) sit
-   under the results, not in the header.
-8. **States are designed, not left to chance.** Loading (skeleton rows), guide answering, no results, some sources
-   failed, all sources failed, 404. Each has a next step.
+   sentence that proves it", or the reason when it is another (no model, the daily limit, a comparison or an
+   explanation instead of picks). Tapping a chip selects that row and moves focus to it; a pick the guide found
+   outside the results on the page is a link to its resource page. The preview of a pick shows the checked quote in
+   the source's text, the user's requirements checked against it, and the model's explanation, labelled.
+   The bar also holds the question, a close button, the guide's question back and how it read the question
+   ([0032](0032-guide-intents.md)). The rest of the answer (search terms, evidence check, models, a comparison, an
+   explanation, a prompt) is folded under the bar, opened by the user, so nothing moves by itself.
+7. **Sources at the bottom.** The fan-out summary ("fan-out · N sources · N hits → N after merge") and one tile per
+   source (status, response time or cache age) sit under the results, not in the header. Under them one quiet line
+   says how many web searches are left today for search and the guide, or that the daily limit is reached and stored
+   web results still answer ([0037](0037-tavily-store-and-daily-quota.md)). It offers nothing to buy.
+8. **States are designed, not left to chance.** Loading (skeleton rows and the sources being asked), guide
+   answering (the waiting line), no results (remove the filters, fewer words, ask the guide), some sources failed
+   (a banner with the way to the sources and Try again), all sources failed (an alert with Try again), search or the
+   guide unavailable (Try again), 404. Each has a next step.
 9. **The footer makes one claim: "No ads."** Next to it, in one row, the links: Mission, Sources, Privacy, Terms,
    the code on GitHub, its licence and the release notes. Tracking cookies are planned later. The footer makes no claim about
    tracking, so it does not need to change when they come. Mission and Privacy keep their text until then.
@@ -57,6 +71,10 @@ and chose between options for each part.
 - Good: search ranking and the guide's opinion stay visibly separate: the list is ranking, the badges are the guide.
 - Bad: the picks bar takes about 110 px above the list, also when the guide has nothing to say (then one line).
 - Bad: two layouts for results (desktop preview, inline preview on a phone) to build and test.
+- Bad: the guide searches with its own words, so a pick can be missing from the list; its chip links to the resource
+  page instead of selecting a row.
+- Bad: a comparison or an explanation sits folded under the bar; the bar's line says it is there, and one click
+  opens it.
 - Bad: the boards move. Hover, focus, tap and the Pause button stop them. A screen reader user gets a normal list.
 - Trade-off: until the last step, the pages not built yet keep the layout of [0025](0025-frontend-one-box.md).
   Small pull requests per page keep that short.
@@ -80,24 +98,27 @@ and chose between options for each part.
 
 ## Code
 Built:
-- `frontend/src/styles/tokens.css` — the semantic tokens of `tokens.json` v3, each an alias of its base token, and
-  `board-height`.
-- `frontend/src/components/ui/` — `TypeTag`, `StatusPill`, `ProofQuote`, `SourceTiles`, `SelectableRow` (the
-  selected-row outline), `PicksBar` (reserved height, waiting line, no-pick line, AI-written picks slot) and
-  `NewsBoard` (heading, states, the moving list and its Pause/Play button), with `ui.css` imported by the components.
+- `frontend/src/styles/tokens.css` — the semantic tokens of `tokens.json` v3, each an alias of its base token,
+  `board-height`, `content-wide` and `list-max`.
+- `frontend/src/components/ui/` — `TypeTag`, `StatusPill`, `ProofQuote`, `SourceTiles`, `SelectableRow` (the row
+  button: selected outline, one tab stop, named by its title), `PicksBar` (reserved height, head with the question and
+  close, waiting line, no-pick line, AI-written picks and question back, footer) and `NewsBoard` (heading, states, the
+  moving list and its Pause/Play button), with `ui.css` imported by the components.
 - `frontend/src/pages/HomePage.tsx`, `components/HomeBoards.tsx` — the radar hero, the box, the examples, and the News
   (`GET /api/v1/recent`, 7 days) and Events (`GET /api/v1/events/upcoming`, [0022](0022-next-events.md), 90 days)
   boards.
-- `frontend/src/components/Layout.tsx` — the one-row footer.
-- `frontend/src/hooks/useGuideStream.ts` — the guide stream for the question and refinement in the URL.
+- `frontend/src/routes.tsx` — `/search`; `/` is the home page, `/?q=` shows the results page.
+- `frontend/src/pages/ResultsPage.tsx` — the canonical link, the search, the selection (`id`), the states.
+- `frontend/src/components/ResultList.tsx` — the rows, the pick badges and reasons, the arrow keys, the timeline view.
+- `frontend/src/components/ResultPreview.tsx` — `ResultPreview` and `InlinePreview`; `CardFacts.tsx` — Use and Build.
+- `frontend/src/hooks/useNarrow.ts` — `bp-split`: preview panel or inline preview.
+- `frontend/src/components/GuidePicks.tsx` — the guide's answer in `PicksBar`; `hooks/useGuideStream.ts` — the guide
+  stream for the question and refinement in the URL.
+- `frontend/src/components/SourcesSummary.tsx` — the fan-out line, the tiles, the web searches left today.
+- `frontend/src/components/Layout.tsx` — the box in the header on every page but the home page, the one-row footer.
 
 Planned:
-- `frontend/src/routes.tsx` — `/search`; `/` home only, `/?q=` shows results with a canonical link. Until then the box
-  and the examples show the results on `/` under the hero.
-- `frontend/src/components/SearchResults.tsx`, `ResultCardView.tsx` — list, preview, inline preview, `id` in the URL.
-- `frontend/src/components/GuideAnswer.tsx` — the picks in `PicksBar` and the badges.
-- `frontend/src/components/SourceStatusPanel.tsx`, `Layout.tsx` — sources at the bottom, header.
-- `tokens.css` — `content-wide`, `list-max` and `radar-sweep` of `tokens.json` v3, with the pages that use them.
+- `tokens.css` — `radar-sweep` of `tokens.json` v3, with the page that uses it.
 
 ## Diagrams
 [flow](../diagrams/flow-0040-frontend-design-v2.svg) · [sequence](../diagrams/sequence-0040-frontend-design-v2.svg)

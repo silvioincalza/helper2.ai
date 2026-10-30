@@ -3,7 +3,8 @@
 # re-ordering, the selected result written to the URL with replaceState, and a shared link that opens the same result.
 # Source of truth: docs/adr/0040-frontend-design-v2.md, docs/adr/0015-ai-guide-evidence-gate.md (guide stream),
 #   frontend/src/components/HomeBoards.tsx, frontend/src/components/ui/NewsBoard.tsx,
-#   frontend/src/hooks/useGuideStream.ts, frontend/src/components/ui/PicksBar.tsx.
+#   frontend/src/routes.tsx, frontend/src/pages/ResultsPage.tsx, frontend/src/components/GuidePicks.tsx,
+#   frontend/src/hooks/useGuideStream.ts, frontend/src/components/ui/PicksBar.tsx, SourcesSummary.tsx.
 # Render: cd docs/diagrams && d2 fmt sequence-0040-frontend-design-v2.d2 && d2 sequence-0040-frontend-design-v2.d2 sequence-0040-frontend-design-v2.svg
 
 ...@style
@@ -35,11 +36,14 @@ boards: Home boards {
 }
 
 search_first: Results first {
-  user -> page: "/search?q=postgres mcp server"
+  user -> page: "/search?q=…&ask=an MCP server for Postgres"
+  page -> user: "picks bar reserved:\n\"Guide is reading the results…\""
   page -> search: "search"
-  search -> page: "results"
-  page -> user: "list at once; picks bar reserved:\n\"Guide is reading 14 candidates…\"" {class: hot}
-  page -> guide: "ask the guide (same query)"
+  page -> guide: "ask the guide (the question)"
+  search -> page: "results, sources, web searches left"
+  page -> user: "list at once, first row in the preview;\nsources and web searches left under it" {class: hot}
+  guide -> page: "retrieved: 14 candidates"
+  page -> user: "\"Guide is reading 14 candidates…\""
 }
 
 reading: While the guide works {

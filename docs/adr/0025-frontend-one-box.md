@@ -1,4 +1,4 @@
-# 0025 — Frontend: one page, one box, Radar design system, guide progress, accessibility, theme (system/light/dark)
+# 0025 — Frontend: one box, Radar design system, guide progress, accessibility, theme (system/light/dark)
 
 **Status.** Accepted (2026-10-27). **Builds on:** [0001](0001-stack-and-runtime.md), [0003](0003-contract-first-rest-api.md), [0008](0008-federated-search.md), [0015](0015-ai-guide-evidence-gate.md)
 
@@ -9,15 +9,17 @@ progress. Search answers must not flash or steal focus while filters change. The
 screen reader, and in light and dark mode.
 
 ## Decision
-1. **One page, one box** (`OneBox`, `HomePage`). The box is the hero on `/` and sits in the header on other pages.
-   The home page around it (hero, examples, News and Events boards) and the look of every page are in
+1. **One box** (`OneBox`). The box is the hero on `/` and sits in the header on other pages. It opens the results
+   page, `/search`; the home page, the results page and the look of every page are in
    [0040](0040-frontend-design-v2.md).
-   Typing searches live: from 3 characters, 700 ms after the last key. One button follows the text: fewer than 4 words
-   search, 4 or more ask the guide; Shift+Enter always asks; Enter in an empty box goes back to the empty home page.
+   On the results page typing searches live: from 3 characters, 700 ms after the last key. On the home page typing
+   waits for Enter, so the page does not change under the typing. One button follows the text: fewer than 4 words
+   search, 4 or more ask the guide; Shift+Enter always asks; Enter in an empty box goes back to the home page.
    All state is in the page address (URL): `q` (at most 200 characters), `ask` (at most 500), the refinement of the
    question (`clar`, the reply to the guide's question back, at most 300; `drop`, the parts of the reading the user
-   removed, at most 8), filters, sort, page, view. A search change keeps the refinement; a new question starts without one.
-2. **Search results** (`SearchResults`, `useApi`). A new query aborts the old request. While it loads, the previous
+   removed, at most 8), filters, sort, page, view, and the selected result (`id`). A search change keeps the
+   refinement; a new question starts without one.
+2. **Search results** (`ResultsPage`, `useApi`). A new query aborts the old request. While it loads, the previous
    results stay on screen, dimmed, with `aria-busy`. Only the first load shows skeletons and one "querying" line per
    enabled source. A change of filter, sort or page keeps the scroll position.
    Back and forward show a recent answer at once, at the old scroll position: [0039](0039-frontend-recent-answers-cache.md).
@@ -30,9 +32,11 @@ screen reader, and in light and dark mode.
    so any bytes, a comment included, keep the stream alive. `SseParser` ignores comments.
    Failures: `IDLE_TIMEOUT`, `MALFORMED`, `ENDED_EARLY`, or the server's `error` event (its problem detail is shown).
    The user retries with a button, which asks the same question with the same refinement; a reload does too.
-   Closing the panel, asking again or refining aborts the running stream. A language change does not ask again.
-4. **Guide progress** (`GuideProgress`): five steps from real events — `planned`, `retrieved`, `chosen`, `validated`,
-   `checked`. `understood` and `clarify` reach the hook as steps too; they are not progress rows. Only the current step's title is in a `role="status"` region; the seconds counter is hidden from screen readers.
+   Closing the picks bar, asking again or refining aborts the running stream. A language change does not ask again.
+4. **Guide progress** (`GuidePicks`), from real events only: while the guide works, the picks bar says how many
+   candidates it reads (`retrieved`), and how it read the question (`understood`, the requirements of `planned`).
+   The line is a `role="status"`, so a screen reader hears it when it changes. `clarify` comes before an answer that
+   asks back. The picks bar is in [0040](0040-frontend-design-v2.md).
 5. **Radar design system.** The Helper2.ai design system in `docs/design/system`, named after its radar mark:
    warm paper, indigo ink, one saffron accent; `tokens.css` mirrors `tokens.json`. Unknown values read "Unknown".
 6. **Accessibility.** Skip link; `RouteFocus` moves focus to the new page's `h1` (or `#main`, without scrolling) and
@@ -48,12 +52,14 @@ screen reader, and in light and dark mode.
    paint on a deep link and no extra request per page. Lazy pages were measured and are larger without a
    bundler-specific chunk group (see Alternatives). `npm run check:bundle` (`scripts/check-bundle.mjs`) runs in CI
    after the build and fails it when the first visit's JavaScript (the entry and the modules it preloads) passes
-   160 KiB gzipped, or any other chunk passes 30 KiB (152.6 KiB measured). It runs in CI only, so a few bytes
+   160 KiB gzipped, or any other chunk passes 30 KiB (153.1 KiB measured). It runs in CI only, so a few bytes
    never block an image build or a deploy.
 
 ## Consequences
 - Good: one place to type; the guide and search share the same URL and can be bookmarked or shared.
 - Good: progress shows what the server did, not a timer that guesses.
+- Bad: while the guide works the page shows one line, not each step; the steps are in the server's timings
+  ([0032](0032-guide-intents.md), §7).
 - Good: growth of the first visit's JavaScript fails CI, with room for a few more pages.
 - Good: a slow model step does not look like a dead connection, thanks to the keep-alive comments. 45 s without any
   byte means the stream is stuck, and the user must retry.
@@ -65,17 +71,19 @@ screen reader, and in light and dark mode.
 - Separate search and guide pages — the user must choose a mode before typing.
 - `EventSource` for the stream — it only supports GET and reconnects by itself, which would ask the question again.
 - A spinner with a fixed estimate — not true to what the server is doing.
+- One row per step of the guide (plan, search, choose, check) — shows more, but takes the height above the list that
+  the picks need, and the list would move when the answer replaces it.
 - Only light and dark — users who follow the device setting would lose that.
 - Lazy pages (react-router `lazy`) — about 1.9 kB gzipped less on the home page, but only with a rolldown-specific
   chunk group in `vite.config.ts`; without it the first visit is larger than with eager pages. It also needs a
   hydrate fallback (a blank page until the chunk arrives) and one more request on a page's first visit.
 
 ## Code
-- `frontend/src/components/OneBox.tsx`, `frontend/src/pages/HomePage.tsx` — box, live search, guide section.
+- `frontend/src/components/OneBox.tsx` — box, live search on the results page.
 - `frontend/src/hooks/useGuideStream.ts`, `frontend/src/lib/searchState.ts` — the guide stream for the URL's question and refinement.
-- `frontend/src/components/SearchResults.tsx`, `frontend/src/hooks/useApi.ts` — previous results while loading.
+- `frontend/src/pages/ResultsPage.tsx`, `frontend/src/hooks/useApi.ts` — previous results while loading.
 - `frontend/src/api/client.ts`, `frontend/src/lib/sse.ts` — guide stream, idle timeout, error codes.
-- `frontend/src/components/GuideProgress.tsx` — five steps.
+- `frontend/src/components/GuidePicks.tsx` — progress, reading and answer in the picks bar.
 - `frontend/src/components/Layout.tsx`, `frontend/src/lib/theme.ts`, `frontend/public/theme.js` — `RouteFocus`, theme.
 - `frontend/src/context/SourcesContext.tsx`, `frontend/src/pages/PrivacyPage.tsx`.
 - `frontend/src/routes.tsx`, `frontend/scripts/check-bundle.mjs` — eager pages, bundle budget.

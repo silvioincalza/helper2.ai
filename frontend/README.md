@@ -19,19 +19,20 @@ Node 24 (`.nvmrc`). On this machine: prefix commands with `PATH=/opt/homebrew/op
 src/api        schema.ts (generated), types.ts (aliases), client.ts (typed fetch, CSRF, problem+json, guide stream)
 src/lib        searchState.ts (URL <-> state, guide refinement), locateQuote.ts, features.ts (flags), format.ts, bookmarks.ts (localStorage, try/catch)
 src/context    MeContext (GET /me), BookmarksContext (local, merged once to server on sign-in)
-src/hooks      useApi (keyed fetch with AbortController, recent-answers cache, ADR 0039), useGuideStream (guide SSE for the URL's question), useTitle
-src/components cards, badges, filter panel, source status panel, glossary Term, ...
+src/hooks      useApi (keyed fetch with AbortController, recent-answers cache, ADR 0039), useGuideStream (guide SSE for the URL's question), useNarrow (bp-split), useTitle
+src/components OneBox, filter panel, badges, glossary Term, the resource card, ...
+  ResultList, ResultPreview, GuidePicks, SourcesSummary   the results page (ADR 0040): rows, preview, picks bar, sources
   HomeBoards   the home page's News (GET /recent) and Events (GET /events/upcoming) boards
   ui/          design system components (ADR 0040): TypeTag, StatusPill, ProofQuote, SourceTiles, SelectableRow, PicksBar, NewsBoard; own ui.css
-src/pages      Home, Resource, Saved, Sources, Account, Admin, Mission, Privacy, Terms, NotFound (one entry chunk)
+src/pages      Home, Results (/search), Resource, Saved, Sources, Account, Admin, Mission, Privacy, Terms, NotFound (one entry chunk)
 src/i18n       index.ts + locales/{en,it}.json
 src/test       fixtures, fetch mock, render helper, axe helper
 ```
 
 ## Decisions
-- **All search state lives in URL params** (`q, view, sort, page, updatedAfter, openSource, type, source, license, pricing, platform, useCase, techLevel, audience`), and the guide's in `ask, clar, drop`. A search change keeps the question and its refinement; a new question starts without one.
+- **All search state lives in URL params** (`q, view, sort, page, updatedAfter, openSource, type, source, license, pricing, platform, useCase, techLevel, audience`), the selected result in `id` (replaced, never pushed), and the guide's in `ask, clar, drop`. A search change keeps the question and its refinement; a new question starts without one.
 - Stale searches are canceled: `useApi` aborts the previous request when the key changes.
-- Honesty: every search shows a collapsible source-status summary + table (outcome, mode, served-from, latency, checkedAt, cachedAt); partial banner; stale-cache badges; `DateFact` UNKNOWN renders "Unknown", CONFLICTING lists alternatives with source ids; popularity is always "value metric · source · as of date", never combined. Status is always icon + text.
+- Honesty: every search shows the sources under the results (fan-out line, one tile per source with its outcome, time or cache age, web searches left today); partial banner; stale-cache badges; `DateFact` UNKNOWN renders "Unknown", CONFLICTING lists alternatives with source ids; popularity is always "value metric · source · as of date", never combined. Status is always icon + text.
 - Relationships: only `VERIFIED` appear as confirmed; `UNVERIFIED`/`CONFLICTING` go to "Unverified candidates"; `REJECTED` are not shown.
 - Glossary terms are buttons with `aria-expanded` revealing an inline definition.
 - Unknown facet bucket: facet value `unknown` is labeled "Unknown". For enum-typed filters (`pricing`, `techLevel`, `audience`, `type`) it is sent as `UNKNOWN` (the contract's enum spelling); for `license`, `platform`, `useCase`, `source` as `unknown`.

@@ -56,7 +56,8 @@ to the text.
 ## Code
 - `api/openapi.yaml` — `AiContentMarker`, `GuideResponse.aiContent`.
 - `backend/.../guide/web/GuideDtoMapper.java` — builds the marker.
-- `frontend/src/lib/aiMark.ts` — the page attributes; used in `GuideAnswer.tsx`, `ResultCardView.tsx`, `ResourcePage.tsx`.
+- `frontend/src/lib/aiMark.ts` — the page attributes; used in `GuidePicks.tsx`, `ui/PicksBar.tsx`, `ResultList.tsx`,
+  `ResultPreview.tsx`, `ResultCardView.tsx`, `ResourcePage.tsx`.
 
 ## Diagrams
 [flow](../diagrams/flow-0038-ai-content-marking.svg) · [sequence](../diagrams/sequence-0038-ai-content-marking.svg)

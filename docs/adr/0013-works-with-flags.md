@@ -47,7 +47,8 @@ must also remove the flag.
 - `backend/src/main/java/ai/helper2/search/web/CardMapper.java` — adds `compatibleWith` to each card.
 - `backend/src/main/java/ai/helper2/catalog/internal/ResourceStore.java` — `replaceLabels`, `MAX_TAGS`.
 - `api/openapi.yaml` — `CompatibilityFlag`, `ResultCard.compatibleWith`.
-- `frontend/src/components/ResultCardView.tsx` — chips, reason as tooltip and screen-reader text.
+- `frontend/src/components/CardFacts.tsx` (`WorksWith`, in the result preview and on the resource page) — chips, reason as
+  tooltip and screen-reader text.
 
 ## Diagrams
 [flow](../diagrams/flow-0013-works-with-flags.svg) · [sequence](../diagrams/sequence-0013-works-with-flags.svg)

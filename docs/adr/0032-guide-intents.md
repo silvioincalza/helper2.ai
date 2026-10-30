@@ -274,7 +274,7 @@ either, and most platform courses end with a certificate.
   `explanation`. `GuideStatus` has `NEEDS_CLARIFICATION`.
 - Stream: `planned` (search query, constraints, model) when the plan call succeeded; `understood` (intent, subjects,
   window) for every fresh question; `clarify` before an `answer` with `NEEDS_CLARIFICATION`; `compare` and `explain`
-  report through the `chosen` and `validated` events of the progress view.
+  report through the `chosen` and `validated` events.
 - The page shows an "Understood as" line: intent, subjects, window, constraints, each as a chip. ✕ on a chip re-asks
   without it. The removal is structured, not text: `drop: ["window", "constraint:free", "intent"]`. Code applies it
   after the plan; the model never sees it, so it cannot be confused with instructions in the user's text.
@@ -350,7 +350,8 @@ to learn LangChain" picks the O'Reilly course.
   `sources/npm/NpmSource.java`, `sources/tavily/CourseCollector.java`; `catalog/internal/ResourceStore.java` — date pushdown, npm dates, courses.
 - `backend/src/main/resources/db/migration/V2__npm_dates_are_updates.sql`, `V3__course_type.sql`, `R__courses.sql`.
 - `api/openapi.yaml` — request, response, status, stream events.
-- `frontend/src/components/GuideAnswer.tsx` — clarification chips, "Understood as", comparison table, explanation.
+- `frontend/src/components/GuidePicks.tsx` — in the picks bar: clarification chips, "Understood as", comparison table,
+  explanation.
 
 ## Diagrams
 [flow](../diagrams/flow-0032-guide-intents.svg) · [sequence](../diagrams/sequence-0032-guide-intents.svg)

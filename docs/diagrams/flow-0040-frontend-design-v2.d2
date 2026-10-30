@@ -1,10 +1,12 @@
 # Flowchart: when a home board moves, and what the results page does from the search to the guide picks.
 # Shows the News and Events boards (move one row at a time, hold still on hover, focus, tap or Pause, never with
 # reduced motion), the list shown at once, the reserved picks bar, the guide answer arriving over SSE (picks or
-# no pick), badges in place with no re-order, and the selected result kept in the URL with replaceState.
-# Source of truth: docs/adr/0040-frontend-design-v2.md (built: frontend/src/components/ui/NewsBoard.tsx,
-#   frontend/src/components/HomeBoards.tsx, frontend/src/components/ui/PicksBar.tsx,
-#   frontend/src/hooks/useGuideStream.ts; planned: SearchResults.tsx, GuideAnswer.tsx, routes.tsx).
+# no pick), badges in place with no re-order, a chip for a pick outside the list, the sources and web searches left
+# under the results, and the selected result kept in the URL with replaceState.
+# Source of truth: docs/adr/0040-frontend-design-v2.md, frontend/src/components/ui/NewsBoard.tsx,
+#   frontend/src/components/HomeBoards.tsx, frontend/src/routes.tsx, frontend/src/pages/ResultsPage.tsx,
+#   frontend/src/components/ResultList.tsx, ResultPreview.tsx, GuidePicks.tsx, SourcesSummary.tsx,
+#   frontend/src/components/ui/PicksBar.tsx, frontend/src/hooks/useGuideStream.ts, useNarrow.ts.
 # Render: cd docs/diagrams && d2 fmt flow-0040-frontend-design-v2.d2 && d2 flow-0040-frontend-design-v2.d2 flow-0040-frontend-design-v2.svg
 
 ...@style
@@ -37,10 +39,11 @@ home: Home boards {
 
 start: "Search from the box or an example:\n/search?q=…  (/?q=… is the same page)" {class: app}
 results: "GET /api/v1/search" {class: ext}
-show: "Show the list at once.\nReserve the picks bar:\n\"Guide is reading N candidates…\"" {class: app}
+show: "Show the list at once.\nReserve the picks bar when the URL asks:\n\"Guide is reading N candidates…\"" {class: app}
+sources: "Under the results: fan-out line,\none tile per source,\nweb searches left today" {class: app}
 wide: "Screen wider than 860 px?" {class: decision}
 preview: "Preview on the right" {class: app}
-inline: "Preview inside the list,\nlink to /resource/:id" {class: app}
+inline: "Preview under the selected row,\nlink to /resource/:id" {class: app}
 guide: "POST /api/v1/guide/stream (SSE)" {class: ext}
 picks: "Guide found picks?" {class: decision}
 
@@ -48,12 +51,18 @@ answer: Picks {
   class: group
   direction: down
   bar: "Bar shows #1 #2 #3,\nlabelled AI-written" {class: app}
+  listed: "Pick among the rows\non the page?" {class: decision}
+  chip: "Chip selects its row" {class: app}
+  outside: "Chip links to /resource/:id" {class: end}
   badge: "Each pick gets \"Pick #n\"\nand its reason in its row" {class: app}
   still: "List order unchanged" {class: end}
   bar -> badge -> still
+  bar -> listed
+  listed -> chip: yes
+  listed -> outside: no
 }
 
-none: "Bar shrinks to one line:\n\"No pick: no result had a sentence that proves it\"" {class: end}
+none: "Bar shrinks to one line:\n\"No pick: no result had a sentence that proves it\"\nor the other reason" {class: end}
 
 select: Selecting a result {
   class: group
@@ -77,3 +86,5 @@ guide -> picks
 picks -> answer.bar: yes {class: hot}
 picks -> none: no
 show -> select.tap
+show -> sources
+answer.chip -> select.url
