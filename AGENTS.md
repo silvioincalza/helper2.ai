@@ -27,7 +27,8 @@ Run the relevant tests before calling a change done.
 
 ## How to work
 
-- Modular monolith, hexagonal: domain and use cases in the core, adapters for DB, LLM, HTTP, queue.
+- Modular monolith (single repo; the style is used when the user asks or the project is one repo),
+  hexagonal: domain and use cases in the core, adapters for DB, LLM, HTTP, queue.
   One explicit use case per business action. Lightweight DDD: ubiquitous language, clear modules.
 - TDD for domain logic, BDD for user-visible behaviour, integration tests for adapters.
 - Before adding a library or tool: compare 2-3 candidates (fit, maintenance, licence, lock-in,
@@ -79,7 +80,7 @@ Run the relevant tests before calling a change done.
     and retarget its PR to `main`;
   - worktree with uncommitted work, or owned by a running session: do not touch it; add a line
     to `.private/notes/worktrees.md` so its owner rebases at a safe point.
-- When a branch is merged, remove its worktree (`git worktree remove`) and delete the branch.
+- When Silvio has merged a branch, remove its worktree (`git worktree remove`) and delete the branch.
 - `/sync-worktrees` does the update steps above.
 
 ## AI architecture check
@@ -112,9 +113,11 @@ deferred (safe for now, say why).
 - No backward compatibility with removed code or migrations unless asked.
 - Never add AI attribution, "Generated with" footers or Co-Authored-By to commits, PRs,
   comments, docs or code.
-- Every change reaches `main` through a pull request. Open and merge it with `gh` from Silvio's
-  machine (never through a tool that adds an AI footer), then delete the branch.
+- Every change reaches `main` through a pull request. Open it with `gh` from Silvio's machine
+  (never through a tool that adds an AI footer). Silvio reviews and merges it himself: never
+  merge to `main`, never push to `main` directly, never deploy to prod.
 - AI-tool setup and settings are committed (`AGENTS.md`, `CLAUDE.md`, `.claude/settings.json`,
-  `.claude/agents/`, `.claude/commands/`). AI notes, reviews, memory and machine-local settings
-  never are: they go in the git-ignored `.private/` folder (or `CLAUDE.local.md`,
-  `.claude/settings.local.json`).
+  `.claude/agents/`, `.claude/commands/`). AI notes, reviews, plans, memory and machine-local
+  settings never are: they go in the git-ignored `.private/` folder (or `CLAUDE.local.md`,
+  `.claude/settings.local.json`). Plans, including the refactor plan and the AI scaffold map,
+  live in `.private/plans/`.

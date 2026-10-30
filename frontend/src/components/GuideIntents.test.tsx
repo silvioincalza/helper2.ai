@@ -111,3 +111,46 @@ describe('GuideAnswer intents (ADR 0032)', () => {
     expect(screen.getByText('Get up and running with large language models locally.')).toBeInTheDocument();
   });
 });
+
+describe('GuideAnswer marks every planner-written text (EU AI Act Art. 50(2), ADR 0038)', () => {
+  const planner: GuideResponse['aiContent'] = {
+    aiGenerated: true, provider: 'nebius-token-factory', models: ['nvidia/nemotron-nano'], fields: [], policy: '/mission',
+  };
+
+  it('marks the question back and its options, not our own label and buttons', () => {
+    view({
+      ...base,
+      status: 'NEEDS_CLARIFICATION',
+      aiContent: planner,
+      clarification: { question: 'New tools for what?', options: ['coding', 'agents'] },
+    });
+    const question = screen.getByRole('heading', { name: 'New tools for what?' });
+    expect(question).toHaveAttribute('data-ai-generated', 'true');
+    expect(question).toHaveAttribute('data-ai-model', 'nvidia/nemotron-nano');
+    expect(question.closest('section')).toHaveAttribute('data-ai-provider', 'nebius-token-factory');
+    expect(screen.getByRole('button', { name: 'agents' })).toHaveAttribute('data-ai-generated', 'true');
+    expect(screen.getByRole('button', { name: 'Search anyway' })).not.toHaveAttribute('data-ai-generated');
+  });
+
+  it('marks requirement chips and comparison aspects, not the remove button or the subjects', () => {
+    view({
+      ...base,
+      intent: 'COMPARE',
+      subjects: ['Ollama', 'LM Studio'],
+      constraints: ['free'],
+      comparison: {
+        subjects: [{ key: 's1', name: 'Ollama', resourceId: null, title: null, url: null }],
+        rows: [{ aspect: 'Licence', cells: [{ subjectKey: 's1', text: 'MIT', quote: 'MIT License', reasonCheck: 'SUPPORTED' }] }],
+      },
+    });
+    expect(screen.getByText('free')).toHaveAttribute('data-ai-generated', 'true');
+    expect(screen.getByRole('button', { name: 'Remove “free” and ask again' }).closest('[data-ai-generated]')).toBeNull();
+    expect(screen.getByText('Ollama', { selector: '.understood-chip' }).closest('[data-ai-generated]')).toBeNull();
+    expect(screen.getByText('Licence')).toHaveAttribute('data-ai-generated', 'true');
+  });
+
+  it('marks the planner-written search query when the answering model failed', () => {
+    view({ ...base, status: 'LLM_UNAVAILABLE', model: null, aiContent: planner, searchQuery: 'speech recognition' });
+    expect(screen.getByText(/speech recognition/)).toHaveAttribute('data-ai-model', 'nvidia/nemotron-nano');
+  });
+});

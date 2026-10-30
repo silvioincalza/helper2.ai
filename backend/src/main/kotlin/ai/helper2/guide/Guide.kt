@@ -257,6 +257,11 @@ data class GuideAnswer(
     val webFreshUntil: Instant? = null,
     /** The asker's web searches left today for the guide; set for each asker, never cached. */
     val webSearches: WebSearchesLeft? = null,
+    /**
+     * The planner's reading is in this answer (search query, requirements, question back), even when the answering
+     * call then failed and [modelUsed] is false. Drives the AI-content marker (ADR 0038), not the cache.
+     */
+    val planned: Boolean = false,
 )
 
 /**
