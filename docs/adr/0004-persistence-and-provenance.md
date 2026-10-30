@@ -1,4 +1,4 @@
-# 0004 — PostgreSQL as system of record; ids from canonical URLs; source records; dates never invented; one schema migration + repeatable seeds; catalog writes off the request path
+# 0004 — PostgreSQL as system of record; ids from canonical URLs; source records; dates never invented; one schema migration + repeatable seeds; catalog writes off the request path; the catalog owns its tables
 
 **Status.** Accepted (2026-10-27). **Builds on:** [0001](0001-stack-and-runtime.md), [0002](0002-modular-monolith-hexagonal.md)
 
@@ -46,6 +46,10 @@ the search down.
    (`catalog-observations`), a bounded queue (`helper2.catalog.observation-queue`, 256). A full queue drops
    the new write. Meters: `helper2.catalog.observations{outcome=written|dropped|failed}` and
    `helper2.catalog.observations.queued`. The Scout writes synchronously (`ResourceCatalog.index`).
+7. **The catalog owns its tables.** Other modules write through catalog ports: search through `ResultObserver`,
+   the Scout through `ResourceCatalog.index`, `ReviewQueue` and `EnrichmentResults` ([0019](0019-evidence-gated-enrichment.md)).
+   The SQL is in `catalog/internal` (`ResourceStore`, `JdbcEnrichmentResults`, `IssueReports`, `ReviewDecisions`);
+   catalog use cases call those classes and hold no SQL of their own.
 
 ## Consequences
 - A resource seen for the first time has no discovery date in that first response: the write is still in
@@ -80,6 +84,8 @@ the search down.
 - `backend/src/main/java/ai/helper2/catalog/internal/ObservationQueue.java` — background writer.
 - `backend/src/main/java/ai/helper2/catalog/internal/ResourceStore.java` — upserts, origin rank, labels, moved
   reports, orphan deletion.
+- `backend/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java`, `IssueReports.java`,
+  `ReviewDecisions.java` — enrichment results, user reports and review decisions.
 - `backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — read dates, then `record`.
 - `backend/src/main/resources/db/migration/V1__schema.sql`, `V2__…`, `V3__…`, `R__*.sql` — schema, its changes and seeds.
 - `deploy/postgres/Dockerfile` — PostgreSQL with pgvector, pinned by commit and checksum.
@@ -91,4 +97,4 @@ the search down.
 - Discovery date unknown on a resource's first search: [roadmap](../roadmap.md#6-search-and-catalog).
 - Delete indexed resources left without source records: [roadmap](../roadmap.md#6-search-and-catalog).
 - Batch the per-item queries of recent items, events and evidence: [roadmap](../roadmap.md#6-search-and-catalog).
-- One owner per table (Scout writes, catalog reads): [roadmap](../roadmap.md#8-architecture).
+- One owner per table (the Scout reads catalog tables for its enrichment backlog): [roadmap](../roadmap.md#8-architecture).

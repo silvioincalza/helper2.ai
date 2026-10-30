@@ -1,9 +1,10 @@
 # Sequence: a user opens "Guide me" on a resource page: the setup options from the MCP Registry (no model), then a
 # step-by-step guide from the tool's own documents, picked by the fast model and checked before it is shown.
 # Source of truth: frontend/src/components/SetupGuide.tsx, backend/src/main/java/ai/helper2/setup/web/SetupController.java,
-#   backend/src/main/kotlin/ai/helper2/setup/SetupGuides.kt, ToolGuide.kt (ToolGuides, ToolGuideValidator),
+#   backend/src/main/java/ai/helper2/setup/usecase/GetResourceSetup.java, AskAboutResource.java,
+#   backend/src/main/kotlin/ai/helper2/setup/SetupGuides.kt, ToolGuides.kt, ToolGuideValidator.kt,
 #   backend/src/main/java/ai/helper2/setup/internal/RegistryMcpServerSpecs.java, HttpToolMaterials.java,
-#   SpringAiToolGuideModel.java, RedisToolGuideCache.java, catalog/usecase/GetResourceDetail.java.
+#   HourlyFetchBudget.java, SpringAiToolGuideModel.java, RedisToolGuideCache.java, catalog/usecase/GetResourceDetail.java.
 # Render: cd docs/diagrams && d2 fmt sequence-0031-setup-guide.d2 && d2 sequence-0031-setup-guide.d2 sequence-0031-setup-guide.svg
 
 ...@style
@@ -12,6 +13,7 @@ shape: sequence_diagram
 
 page: "SetupGuide.tsx" {class: person}
 ctrl: SetupController {class: app}
+usecase: "GetResourceSetup /\nAskAboutResource" {class: app}
 detail: "GetResourceDetail\n(catalog.usecase)" {class: app}
 setup: "SetupGuides /\nToolGuides" {class: app}
 registry: "Official MCP Registry" {class: ext}
@@ -21,9 +23,10 @@ model: "Fast model\n(Nemotron)" {class: ai}
 
 options: Setup options, no model {
   page -> ctrl: "GET /api/v1/resources/{id}/setup" {class: hot}
-  ctrl -> detail: "find(id)"
-  detail -> ctrl: "card, source records\n(mcp-registry name)"
-  ctrl -> setup: "build(title, registryName, ref)"
+  ctrl -> usecase: "setup(id)"
+  usecase -> detail: "find(id)"
+  detail -> usecase: "card, source records\n(mcp-registry name)"
+  usecase -> setup: "build(title, registryName, ref)"
   setup -> registry: "GET /v0.1/servers/{name}/versions/latest\n(unless read in the last hour)"
   registry -> setup: "remotes, packages, settings"
   setup -> setup: "RunOptionRules, Launches,\none snippet per client"
@@ -32,10 +35,12 @@ options: Setup options, no model {
 
 walkthrough: Step-by-step guide (optional question) {
   page -> ctrl: "POST /api/v1/resources/{id}/guide\n{question?}" {class: hot}
-  ctrl -> detail: "find(id)"
-  ctrl -> setup: "answer(id, ref, question)"
+  ctrl -> usecase: "ask(id, question)"
+  usecase -> detail: "find(id)"
+  usecase -> setup: "answer(id, ref, question)"
+  setup -> redis: "INCR h2:v1:setup:fetches:<hour>\n(one per document fetch)"
   setup -> docs: "README, npm README,\nmodel or Space card"
-  docs -> setup: "documents (useful sections)"
+  docs -> setup: "documents (kept in memory,\nbounded by total length)"
   setup -> redis: "get(v1:<id>:<hash>)"
   redis -> setup: "miss"
   setup -> model: "write(ref, documents, question):\npick and order passages" {class: ai-call}

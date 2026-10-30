@@ -2,6 +2,7 @@
 # Source of truth: backend/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt (EnrichResource.attempt),
 #   backend/src/main/kotlin/ai/helper2/scout/Enrichment.kt (EvidenceValidator),
 #   backend/src/main/java/ai/helper2/scout/internal/SpringAiEnrichmentModel.java, JdbcEnrichmentStore.java,
+#   backend/src/main/java/ai/helper2/catalog/EnrichmentResults.java, catalog/internal/JdbcEnrichmentResults.java,
 #   backend/src/main/java/ai/helper2/catalog/ReviewQueue.java.
 # Render: cd docs/diagrams && d2 fmt sequence-0019-evidence-gated-enrichment.d2 && d2 sequence-0019-evidence-gated-enrichment.d2 sequence-0019-evidence-gated-enrichment.svg
 
@@ -16,6 +17,7 @@ model: SpringAiEnrichmentModel {class: app}
 budget: DailyBudget "enrichment" {class: app}
 tf: "Token Factory\n(reasoning model)" {class: ai}
 val: EvidenceValidator {class: app}
+results: "EnrichmentResults\n(catalog)" {class: app}
 review: ReviewQueue {class: app}
 
 runner -> svc: "enrich(resourceId)"
@@ -35,8 +37,9 @@ store -> svc: "known titles → ids"
 svc -> val: "validate(input, proposal)"
 val -> svc: "ValidationResult: PARTIAL,\nerrors, checked items"
 svc -> store: "save(run, result, PARTIAL)"
-store -> store: "INSERT enrichment_run"
-store -> review: "supersedeEnrichmentItems:\nolder OPEN items → SUPERSEDED"
-store -> store: "DELETE AI_EXTRACTED field_assertion\nand unreviewed AI relationships;\nINSERT fields, relationships,\nclaims, evidence"
-store -> review: "open(ENRICHMENT_VALIDATION, errors)"
+store -> results: "record(run, checked items)"
+results -> results: "INSERT enrichment_run"
+results -> review: "supersedeEnrichmentItems:\nolder OPEN items → SUPERSEDED"
+results -> results: "DELETE AI_EXTRACTED field_assertion\nand unreviewed AI relationships;\nINSERT fields, relationships,\nclaims, evidence"
+results -> review: "open(ENRICHMENT_VALIDATION, errors)"
 svc -> runner: "PARTIAL"

@@ -83,7 +83,10 @@ class RedisToolGuideCache implements ToolGuideCache {
         }
     }
 
-    /** Null for another version or an entry that no longer reads: both are a miss. */
+    /**
+     * Null for another version or an entry that no longer reads: both are a miss, and the answer the model writes
+     * next replaces the entry. An entry that does not read is logged, since each one costs a model call.
+     */
     ToolGuideAnswer decode(String raw) {
         try {
             JsonNode root = json.readTree(raw);
@@ -92,7 +95,7 @@ class RedisToolGuideCache implements ToolGuideCache {
             }
             return json.treeToValue(root.get("answer"), ToolGuideAnswer.class);
         } catch (RuntimeException e) {
-            log.debug("unreadable tool guide in Redis, treated as a miss: {}", e.getClass().getSimpleName());
+            log.warn("unreadable tool guide in Redis, treated as a miss: {}", e.getClass().getSimpleName());
             return null;
         }
     }

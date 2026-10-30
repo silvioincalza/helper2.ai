@@ -1,10 +1,7 @@
 package ai.helper2.scout.internal;
 
-import ai.helper2.catalog.ReviewQueue;
+import ai.helper2.catalog.EnrichmentResults;
 import ai.helper2.scout.CheckedCitation;
-import ai.helper2.scout.CheckedClaim;
-import ai.helper2.scout.CheckedField;
-import ai.helper2.scout.CheckedRelationship;
 import ai.helper2.scout.EnrichmentBacklog;
 import ai.helper2.scout.EnrichmentInput;
 import ai.helper2.scout.EnrichmentMaterial;
@@ -13,12 +10,9 @@ import ai.helper2.scout.EnrichmentOutcome;
 import ai.helper2.scout.EnrichmentStore;
 import ai.helper2.scout.Material;
 import ai.helper2.scout.ValidationResult;
-import ai.helper2.shared.Verification;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.sql.Timestamp;
-import java.time.Clock;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.HashMap;
@@ -30,17 +24,10 @@ import java.util.Set;
 import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
-import tools.jackson.databind.ObjectMapper;
 
 /**
- * Loads material from stored source records (title + description as retrieved) and persists
- * enrichment results with full history. Every field and relationship the validator did not reject
- * is written with its verification state (VERIFIED, UNVERIFIED or CONFLICTING), together with the
- * validated summary claims; readers decide what to show by that state. Every problem opens a review item.
- * A new run with model output replaces the AI-extracted fields and the unreviewed AI-extracted
- * relationships of earlier runs, and supersedes their open review items, so a page and the review queue
- * never mix two runs. Relationships a reviewer decided stay. Runs themselves are kept for audit.
+ * Loads material from stored source records (title + description as retrieved) and hands each run's checked
+ * answer to the catalog ({@link EnrichmentResults}), which owns how it is stored.
  */
 @Component
 class JdbcEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
@@ -52,15 +39,11 @@ class JdbcEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
     static final int MIN_DESCRIPTION = 40;
 
     private final JdbcClient jdbc;
-    private final ReviewQueue reviewQueue;
-    private final ObjectMapper json;
-    private final Clock clock;
+    private final EnrichmentResults results;
 
-    JdbcEnrichmentStore(JdbcClient jdbc, ReviewQueue reviewQueue, ObjectMapper json, Clock clock) {
+    JdbcEnrichmentStore(JdbcClient jdbc, EnrichmentResults results) {
         this.jdbc = jdbc;
-        this.reviewQueue = reviewQueue;
-        this.json = json;
-        this.clock = clock;
+        this.results = results;
     }
 
     /** Same text bar as {@link #pending}: a bare title gives the model nothing worth citing. */
@@ -172,133 +155,24 @@ class JdbcEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
     }
 
     @Override
-    @Transactional
     public void save(UUID resourceId, EnrichmentModel model, String inputFingerprint, Instant startedAt,
                      ValidationResult result, EnrichmentOutcome outcome, String failure) {
-        UUID runId = UUID.randomUUID();
-        jdbc.sql("""
-                INSERT INTO enrichment_run (id, resource_id, provider, model, prompt_version, input_fingerprint,
-                                            started_at, finished_at, outcome, validation_errors)
-                VALUES (:id, :rid, :provider, :model, :pv, :fp, :started, :finished, :outcome, CAST(:errors AS jsonb))
-                """)
-            .param("id", runId).param("rid", resourceId).param("provider", model.getProvider()).param("model", model.getModel())
-            .param("pv", model.getPromptVersion()).param("fp", inputFingerprint).param("started", Timestamp.from(startedAt))
-            .param("finished", Timestamp.from(clock.instant())).param("outcome", outcome.name())
-            .param("errors", json.writeValueAsString(result != null ? result.getErrors() : failure != null ? List.of(failure) : List.of()))
-            .update();
-        jdbc.sql("UPDATE resource SET enrichment_status = :s WHERE id = :id")
-            .param("s", outcome == EnrichmentOutcome.FAILED ? "REJECTED" : outcome.name()).param("id", resourceId).update();
-        if (result == null) {
-            return;
-        }
-        reviewQueue.supersedeEnrichmentItems(resourceId, runId);
-        deleteAiFields(resourceId);
-        deleteUnreviewedAiRelationships(resourceId);
-        Map<String, UUID> evidence = new HashMap<>();
-        for (CheckedField f : result.getFields()) {
-            if (f.getVerification() == Verification.REJECTED) {
-                continue;
-            }
-            UUID id = UUID.randomUUID();
-            jdbc.sql("""
-                    INSERT INTO field_assertion (id, resource_id, field, value, origin, verification, enrichment_run_id)
-                    VALUES (:id, :rid, :f, :v, 'AI_EXTRACTED', :ver, :run)
-                    """).param("id", id).param("rid", resourceId).param("f", f.getField()).param("v", f.getValue())
-                .param("ver", f.getVerification().name()).param("run", runId).update();
-            link("field_assertion_evidence", "assertion_id", id, f.getCitations(), evidence);
-        }
-        for (CheckedRelationship r : result.getRelationships()) {
-            if (r.getVerification() == Verification.REJECTED) {
-                continue;
-            }
-            UUID id = UUID.randomUUID();
-            int inserted = jdbc.sql("""
-                    INSERT INTO relationship (id, from_resource_id, to_resource_id, to_title, kind, verification, origin, enrichment_run_id)
-                    VALUES (:id, :from, :to, :title, :kind, :ver, 'AI_EXTRACTED', :run)
-                    ON CONFLICT (from_resource_id, kind, to_title) DO NOTHING
-                    """).param("id", id).param("from", resourceId).param("to", r.getTargetId()).param("title", r.getTarget())
-                .param("kind", r.getKind()).param("ver", r.getVerification().name()).param("run", runId).update();
-            if (inserted == 0) {
-                continue;
-            }
-            link("relationship_evidence", "relationship_id", id, r.getCitations(), evidence);
-            if (r.getVerification() != Verification.VERIFIED) {
-                reviewQueue.open(ReviewQueue.Kind.RELATIONSHIP_CANDIDATE, resourceId,
-                    "Unverified relationship: " + r.getKind() + " " + r.getTarget(),
-                    "Evidence supports the text, but the target is not a known resource.",
-                    new ReviewQueue.Links(runId, id, null));
-            }
-        }
-        int pos = 0;
-        for (CheckedClaim c : result.getSummary()) {
-            UUID id = UUID.randomUUID();
-            jdbc.sql("INSERT INTO summary_claim (id, resource_id, enrichment_run_id, position, text) VALUES (:id, :rid, :run, :p, :t)")
-                .param("id", id).param("rid", resourceId).param("run", runId).param("p", pos++).param("t", c.getText()).update();
-            link("summary_claim_evidence", "claim_id", id, c.getCitations(), evidence);
-        }
-        if (!result.getErrors().isEmpty() || result.getFields().stream().anyMatch(f -> f.getVerification() == Verification.CONFLICTING)) {
-            reviewQueue.open(ReviewQueue.Kind.ENRICHMENT_VALIDATION, resourceId,
-                "Enrichment " + outcome.name().toLowerCase() + ": " + result.getErrors().size() + " validation issue(s)",
-                String.join("\n", result.getErrors().stream().limit(20).toList()), new ReviewQueue.Links(runId, null, null));
-        }
+        List<String> errors = result != null ? result.getErrors() : failure != null ? List.of(failure) : List.of();
+        results.record(new EnrichmentResults.Run(resourceId, model.getProvider(), model.getModel(), model.getPromptVersion(),
+            inputFingerprint, startedAt, outcome.name(), errors), result == null ? null : checked(result));
     }
 
-    /**
-     * Removes the resource's AI-extracted fields, and the evidence rows that only they used (the links go
-     * with the fields by cascade, the evidence itself would stay behind).
-     */
-    private void deleteAiFields(UUID resourceId) {
-        // The CTE reads the links before the cascade removes them (one snapshot per statement).
-        deleteOrphanEvidence(jdbc.sql("""
-                WITH gone AS (DELETE FROM field_assertion WHERE resource_id = :rid AND origin = 'AI_EXTRACTED' RETURNING id)
-                SELECT DISTINCT fae.evidence_id FROM field_assertion_evidence fae JOIN gone ON gone.id = fae.assertion_id
-                """).param("rid", resourceId).query(UUID.class).list());
+    private static EnrichmentResults.Checked checked(ValidationResult result) {
+        return new EnrichmentResults.Checked(
+            result.getFields().stream().map(f -> new EnrichmentResults.Field(f.getField(), f.getValue(), f.getVerification(),
+                citations(f.getCitations()))).toList(),
+            result.getRelationships().stream().map(r -> new EnrichmentResults.Relationship(r.getKind(), r.getTarget(), r.getTargetId(),
+                r.getVerification(), citations(r.getCitations()))).toList(),
+            result.getSummary().stream().map(c -> new EnrichmentResults.Claim(c.getText(), citations(c.getCitations()))).toList());
     }
 
-    /**
-     * Removes the resource's AI-extracted relationships that no reviewer decided (no ACCEPTED or REJECTED
-     * review item), with the evidence rows only they used. A decided relationship stays, so the same proposal
-     * in the new run does not reopen it.
-     */
-    private void deleteUnreviewedAiRelationships(UUID resourceId) {
-        deleteOrphanEvidence(jdbc.sql("""
-                WITH gone AS (
-                    DELETE FROM relationship r WHERE r.from_resource_id = :rid AND r.origin = 'AI_EXTRACTED'
-                      AND NOT EXISTS (SELECT 1 FROM review_item i
-                                      WHERE i.relationship_id = r.id AND i.status IN ('ACCEPTED', 'REJECTED'))
-                    RETURNING r.id)
-                SELECT DISTINCT re.evidence_id FROM relationship_evidence re JOIN gone ON gone.id = re.relationship_id
-                """).param("rid", resourceId).query(UUID.class).list());
-    }
-
-    /** Deletes those of [ids] that no field, relationship or summary claim cites any more. */
-    private void deleteOrphanEvidence(List<UUID> ids) {
-        if (ids.isEmpty()) {
-            return;
-        }
-        jdbc.sql("""
-                DELETE FROM evidence e WHERE e.id IN (:ids)
-                  AND NOT EXISTS (SELECT 1 FROM field_assertion_evidence x WHERE x.evidence_id = e.id)
-                  AND NOT EXISTS (SELECT 1 FROM relationship_evidence x WHERE x.evidence_id = e.id)
-                  AND NOT EXISTS (SELECT 1 FROM summary_claim_evidence x WHERE x.evidence_id = e.id)
-                """).param("ids", ids).update();
-    }
-
-    /** One evidence row per (source record, excerpt), linked to the owner. joinTable/fk are constants. */
-    private void link(String joinTable, String fk, UUID owner, List<CheckedCitation> citations, Map<String, UUID> cache) {
-        for (CheckedCitation c : citations) {
-            String key = c.getEvidenceId() + "|" + c.getExcerpt();
-            UUID evidenceId = cache.computeIfAbsent(key, k -> {
-                UUID id = UUID.randomUUID();
-                jdbc.sql("""
-                        INSERT INTO evidence (id, source_record_id, source_url, retrieved_at, excerpt)
-                        SELECT :id, sr.id, sr.source_url, sr.retrieved_at, :excerpt FROM source_record sr WHERE sr.id = :rec
-                        """).param("id", id).param("rec", c.getEvidenceId()).param("excerpt", c.getExcerpt()).update();
-                return id;
-            });
-            jdbc.sql("INSERT INTO %s (%s, evidence_id) VALUES (:o, :e) ON CONFLICT DO NOTHING".formatted(joinTable, fk))
-                .param("o", owner).param("e", evidenceId).update();
-        }
+    private static List<EnrichmentResults.Citation> citations(List<CheckedCitation> citations) {
+        return citations.stream().map(c -> new EnrichmentResults.Citation(c.getEvidenceId(), c.getExcerpt())).toList();
     }
 
     private static String sha(String s) {

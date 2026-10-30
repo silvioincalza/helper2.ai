@@ -7,6 +7,8 @@
 #   guide/Guide.kt, guide/GuideCost.kt (ports),
 #   backend/src/main/java/ai/helper2/sources/SourcesConfiguration.java (sources and collectors),
 #   backend/src/main/java/ai/helper2/catalog/CatalogConfiguration.java (index, curated, semantic sources),
+#   backend/src/main/java/ai/helper2/catalog/EnrichmentResults.java (port the Scout writes through),
+#   backend/src/main/java/ai/helper2/setup/internal/SetupConfiguration.java (setup guide adapters),
 #   backend/src/main/java/ai/helper2/platform/http/ObservedHttp.java (observed client of sources and embedder),
 #   backend/src/main/resources/application.yaml (base URLs, llm-nebius profile, helper2.embedding),
 #   backend/src/test/java/ai/helper2/architecture/ModularityTest.java (rules).
@@ -82,8 +84,9 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
     class: group
     ctl: "ResourcesController\nresources, recent,\nevents, reports" {class: app}
     catalog: "ResourceCatalog · ReviewQueue\nusecase: GetResourceDetail · ReportIssue\nResolveReviewItem" {class: app}
+    p_results: EnrichmentResults {class: port}
     queue: "ObservationQueue\n(one writer thread)" {class: app}
-    store: ResourceStore {class: app}
+    store: "ResourceStore · JdbcEnrichmentResults\nIssueReports · ReviewDecisions\n(catalog.internal)" {class: app}
     index: "CatalogSearchSource\nhelper2-index · curated" {class: app}
     semantic: "SemanticSearchSource\nhelper2-semantic" {class: app}
     embed: "NvidiaEmbedder\nEmbeddingIndexer" {class: app}
@@ -91,6 +94,7 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
     catalog -> queue
     queue -> store
     catalog -> store
+    store -> p_results: implements {class: config}
     index -> store
     semantic -> embed: query vector {class: ai-call}
     semantic -> store
@@ -103,6 +107,19 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
     collectors: "Collector adapters\nMcpRegistryCollector · TavilyCollector\nHuggingFaceTrendingCollector\nHuggingFaceProviderOrgsCollector\nGitHubAwesomeCollector · AiDeadlinesCollector" {class: app}
     classifier: "SpringAiRepoClassifier\n(or Heuristic without a model)" {class: app}
     collectors -> classifier: awesome-list entries {class: ai-call}
+  }
+
+  setup: "setup (Kotlin domain)" {
+    class: group
+    ctl: "SetupController\nGET /resources/{id}/setup\nPOST /resources/{id}/guide" {class: app}
+    usecase: "GetResourceSetup\nAskAboutResource" {class: app}
+    core: "SetupGuides · RunOptionRules\nToolGuides · ToolGuideValidator" {class: app}
+    p_ports: "McpServerSpecs · ToolMaterials\nToolGuideModel · ToolGuideCache" {class: port}
+    adapters: "RegistryMcpServerSpecs · HttpToolMaterials\n(Caffeine, HourlyFetchBudget)\nSpringAiToolGuideModel · RedisToolGuideCache" {class: app}
+    ctl -> usecase
+    usecase -> core
+    core -> p_ports
+    adapters -> p_ports: implements {class: config}
   }
 
   identity: "identity (Java)" {
@@ -132,6 +149,8 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
   sources.collectors -> scout.p_collector: implements {class: config}
   sources.live -> platform.http: "HTTP client" {class: config}
   catalog.embed -> platform.http: "HTTP client" {class: config}
+  scout.jdbc -> catalog.p_results: "record runs" {class: config}
+  setup.usecase -> catalog.catalog: "resource detail"
 }
 
 stores: STORES {
@@ -161,6 +180,7 @@ hosts: "PUBLIC SOURCES (HTTPS)" {
   arxiv: "export.arxiv.org" {class: ext}
   tavily: "api.tavily.com" {class: ext}
   mcp: "registry.modelcontextprotocol.io" {class: ext}
+  jsdelivr: "cdn.jsdelivr.net\n(npm READMEs, setup guide)" {class: ext}
 }
 
 oauth: "github.com OAuth\n(profile oauth-github; off on\nstaging and prod)" {class: ext}
@@ -168,11 +188,13 @@ oauth: "github.com OAuth\n(profile oauth-github; off on\nstaging and prod)" {cla
 browser -> app.search.ctl: "search" {class: hot}
 browser -> app.guide.ctl: "ask (SSE)" {class: hot}
 browser -> app.catalog.ctl
+browser -> app.setup.ctl: "Guide me"
 browser -> app.identity.me
 
 app.search.cache -> stores.redis: "h2:v1:src:*"
 app.guide.store -> stores.redis: "h2:v1:guide-answer:*"
 app.platform.llm -> stores.redis: "h2:v1:budget:*"
+app.setup.adapters -> stores.redis: "h2:v2:tool-guide:*\nh2:v1:setup:fetches:*"
 app.catalog.store -> stores.pg: JDBC
 app.scout.jdbc -> stores.pg: JDBC
 app.identity.me -> stores.pg: "bookmarks, users"
@@ -180,9 +202,11 @@ app.identity.sec -> oauth: "sign-in for /admin" {class: config}
 
 app.guide.model -> nvidia.nebius: "plan, choose,\nreason check" {class: ai-call}
 app.scout.model -> nvidia.nebius: enrich {class: ai-call}
+app.setup.adapters -> nvidia.nebius: "tool guide steps" {class: ai-call}
 app.platform.llm -> nvidia.nebius: "translate query" {class: ai-call}
 app.sources.classifier -> nvidia.nebius: "classify repos" {class: ai-call}
 app.catalog.embed -> nvidia.embeddings: "/embeddings" {class: ai-call}
 
 app.sources.live -> hosts: "HTTPS: search calls"
 app.sources.collectors -> hosts: "HTTPS: Scout collection"
+app.setup.adapters -> hosts: "HTTPS: registry entry,\nREADMEs, model cards"

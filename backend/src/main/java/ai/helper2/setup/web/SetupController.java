@@ -13,10 +13,7 @@ import ai.helper2.api.generated.model.ToolGuideRequestDto;
 import ai.helper2.api.generated.model.ToolGuideSectionsInnerDto;
 import ai.helper2.api.generated.model.ToolGuideSectionsInnerStepsInnerCodeDto;
 import ai.helper2.api.generated.model.ToolGuideSectionsInnerStepsInnerDto;
-import ai.helper2.catalog.ResourceDetail;
-import ai.helper2.catalog.usecase.GetResourceDetail;
 import ai.helper2.platform.NotFoundException;
-import ai.helper2.search.web.CardMapper;
 import ai.helper2.setup.ClientGuide;
 import ai.helper2.setup.RunOption;
 import ai.helper2.setup.Setting;
@@ -26,11 +23,9 @@ import ai.helper2.setup.SetupUnavailable;
 import ai.helper2.setup.ShownOption;
 import ai.helper2.setup.GuideStep;
 import ai.helper2.setup.ToolGuideAnswer;
-import ai.helper2.setup.ToolGuides;
-import ai.helper2.setup.ToolRef;
-import ai.helper2.search.SourceHit;
-import java.util.ArrayList;
-import java.util.List;
+import ai.helper2.setup.usecase.AskAboutResource;
+import ai.helper2.setup.usecase.GetResourceSetup;
+import ai.helper2.shared.UtcTimes;
 import org.jspecify.annotations.Nullable;
 import java.time.Duration;
 import java.util.UUID;
@@ -45,31 +40,22 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/api/v1")
 class SetupController implements SetupApi {
 
-    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(SetupController.class);
-
     /** The registry asks aggregators to read it infrequently; an hour is how often the Scout reads it too. */
     private static final CacheControl CACHE = CacheControl.maxAge(Duration.ofHours(1)).cachePublic();
 
-    private final GetResourceDetail details;
-    private final SetupGuides guides;
-    private final ToolGuides toolGuides;
+    private final GetResourceSetup setup;
+    private final AskAboutResource ask;
 
-    SetupController(GetResourceDetail details, SetupGuides guides, ToolGuides toolGuides) {
-        this.details = details;
-        this.guides = guides;
-        this.toolGuides = toolGuides;
+    SetupController(GetResourceSetup setup, AskAboutResource ask) {
+        this.setup = setup;
+        this.ask = ask;
     }
 
     @Override
     public ResponseEntity<SetupGuideDto> getResourceSetup(UUID id) {
-        ResourceDetail d = details.find(id).orElseThrow(() -> new NotFoundException("Resource not found."));
-        String registryName = d.sourceRecords().stream()
-            .filter(r -> "mcp-registry".equals(r.sourceId()))
-            .map(ResourceDetail.SourceRecordInfo::externalId)
-            .findFirst().orElse(null);
         SetupGuide guide;
         try {
-            guide = guides.build(d.card().getTitle(), registryName, ref(d));
+            guide = setup.setup(id).orElseThrow(() -> new NotFoundException("Resource not found."));
         } catch (SetupUnavailable e) {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "The setup data could not be read now. Try again later.");
         }
@@ -78,29 +64,9 @@ class SetupController implements SetupApi {
 
     @Override
     public ResponseEntity<ToolGuideDto> askResourceGuide(UUID id, @Nullable ToolGuideRequestDto body) {
-        ResourceDetail d = details.find(id).orElseThrow(() -> new NotFoundException("Resource not found."));
-        ToolGuideAnswer a = toolGuides.answer(id.toString(), ref(d), body == null ? null : body.getQuestion());
-        if (a.getModel() != null) {
-            log.info("tool guide: status={} kept={} rejectedBy={} documents={}", a.getStatus(),
-                a.getSections().stream().mapToInt(s -> s.getSteps().size()).sum(), a.getRejectedBy(), a.getMaterials().size());
-        }
-        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(dto(id, d.card().getTitle(), a));
-    }
-
-    /** Where the resource's own documents are: identifiers parsed from its links and source records. */
-    static ToolRef ref(ResourceDetail d) {
-        List<String> urls = new ArrayList<>();
-        urls.add(d.card().getUrl().toString());
-        for (SourceHit h : d.card().getHits()) {
-            urls.add(h.getUrl().toString());
-            if (h.getRepositoryUrl() != null) {
-                urls.add(h.getRepositoryUrl().getValue());
-            }
-        }
-        d.sourceRecords().forEach(r -> urls.add(r.url().toString()));
-        List<String> npm = d.sourceRecords().stream().filter(r -> "npm".equals(r.sourceId()))
-            .map(ResourceDetail.SourceRecordInfo::externalId).toList();
-        return ToolRef.Companion.of(d.card().getTitle(), d.card().getType().name(), urls, npm);
+        AskAboutResource.Answered a = ask.ask(id, body == null ? null : body.getQuestion())
+            .orElseThrow(() -> new NotFoundException("Resource not found."));
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(dto(id, a.title(), a.answer()));
     }
 
     static ToolGuideDto dto(UUID id, String title, ToolGuideAnswer a) {
@@ -108,8 +74,8 @@ class SetupController implements SetupApi {
             a.getSections().stream().map(s -> new ToolGuideSectionsInnerDto(ToolGuideSectionsInnerDto.KindEnum.fromValue(s.getKind().name()),
                 s.getSteps().stream().map(SetupController::step).toList())).toList(),
             a.getMaterials().stream().map(m -> new ToolGuideDocumentsInnerDto(m.getKey(),
-                ToolGuideDocumentsInnerDto.KindEnum.fromValue(m.getKind().name()), m.getUrl(), CardMapper.odt(m.getRetrievedAt()))).toList(),
-            a.getRejected(), CardMapper.odt(a.getGeneratedAt()))
+                ToolGuideDocumentsInnerDto.KindEnum.fromValue(m.getKind().name()), m.getUrl(), UtcTimes.odt(m.getRetrievedAt()))).toList(),
+            a.getRejected(), UtcTimes.odt(a.getGeneratedAt()))
             .question(a.getQuestion()).model(a.getModel()).unavailable(a.getUnavailable());
     }
 
@@ -122,7 +88,7 @@ class SetupController implements SetupApi {
         return new SetupGuideDto(id, g.getTitle(),
             g.getOptions().stream().map(SetupController::option).toList(),
             g.getClients().stream().map(SetupController::client).toList(),
-            g.getSources().stream().map(s -> new SetupGuideSourcesInnerDto(s.getSourceId(), s.getUrl(), CardMapper.odt(s.getRetrievedAt()))).toList())
+            g.getSources().stream().map(s -> new SetupGuideSourcesInnerDto(s.getSourceId(), s.getUrl(), UtcTimes.odt(s.getRetrievedAt()))).toList())
             .version(g.getVersion());
     }
 

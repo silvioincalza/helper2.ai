@@ -1,9 +1,9 @@
 package ai.helper2.catalog.usecase;
 
 import ai.helper2.catalog.ReviewQueue;
+import ai.helper2.catalog.internal.IssueReports;
 import java.util.Optional;
 import java.util.UUID;
-import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,32 +13,20 @@ public class ReportIssue {
 
     public enum Kind { WRONG, OUTDATED, BROKEN_LINK, OTHER }
 
-    private final JdbcClient jdbc;
+    private final IssueReports reports;
     private final ReviewQueue reviewQueue;
 
-    public ReportIssue(JdbcClient jdbc, ReviewQueue reviewQueue) {
-        this.jdbc = jdbc;
+    public ReportIssue(IssueReports reports, ReviewQueue reviewQueue) {
+        this.reports = reports;
         this.reviewQueue = reviewQueue;
     }
 
     /** Returns empty when the resource does not exist. */
     @Transactional
     public Optional<UUID> submit(UUID resourceId, Kind kind, String field, String message, UUID reporterUserId) {
-        boolean exists = jdbc.sql("SELECT EXISTS (SELECT 1 FROM resource WHERE id = :id)")
-            .param("id", resourceId).query(Boolean.class).single();
-        if (!exists) {
-            return Optional.empty();
-        }
-        UUID id = UUID.randomUUID();
-        jdbc.sql("""
-                INSERT INTO issue_report (id, resource_id, kind, field, message, reporter_user_id)
-                VALUES (:id, :rid, :kind, :field, :message, :user)
-                """)
-            .param("id", id).param("rid", resourceId).param("kind", kind.name()).param("field", field)
-            .param("message", message).param("user", reporterUserId)
-            .update();
-        reviewQueue.open(ReviewQueue.Kind.USER_REPORT, resourceId, "User report: " + kind.name().toLowerCase(),
-            (field == null ? "" : "[" + field + "] ") + message, new ReviewQueue.Links(null, null, id));
-        return Optional.of(id);
+        Optional<UUID> report = reports.add(resourceId, kind.name(), field, message, reporterUserId);
+        report.ifPresent(id -> reviewQueue.open(ReviewQueue.Kind.USER_REPORT, resourceId, "User report: " + kind.name().toLowerCase(),
+            (field == null ? "" : "[" + field + "] ") + message, new ReviewQueue.Links(null, null, id)));
+        return report;
     }
 }

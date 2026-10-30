@@ -43,12 +43,20 @@ class SetupGuides @JvmOverloads constructor(
 
     /**
      * The registry entry first; without one (or one with no usable option), the config example in the README of
-     * [ref], when the resource is an MCP server.
+     * [ref], when the resource is an MCP server. When the registry cannot be read, the README example answers;
+     * without one, [SetupUnavailable] is thrown, since the registry may well have an entry.
      */
     fun build(title: String, registryName: String?, ref: ToolRef?): SetupGuide {
-        val fromRegistry = registryName?.let(specs::latest)?.takeIf { it.options.any(RunOptionRules::accepts) }
+        var registryDown: SetupUnavailable? = null
+        val fromRegistry = try {
+            registryName?.let(specs::latest)?.takeIf { it.options.any(RunOptionRules::accepts) }
+        } catch (e: SetupUnavailable) {
+            registryDown = e
+            null
+        }
         val spec = fromRegistry
             ?: ref?.takeIf { it.type == "MCP_SERVER" && (it.githubRepo != null || it.npmPackage != null) }?.let(readme::of)
+            ?: registryDown?.let { throw it }
             ?: return SetupGuide.none(title)
         val shown = spec.options.filter(RunOptionRules::accepts).mapNotNull { o ->
             when (o) {

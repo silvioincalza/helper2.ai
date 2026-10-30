@@ -4,6 +4,7 @@ import java.net.URI
 import java.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -36,6 +37,26 @@ class SetupGuidesTest {
         assertTrue(g.options.isEmpty())
         assertTrue(g.clients.isEmpty())
         assertTrue(g.sources.isEmpty())
+    }
+
+    @Test
+    fun `registry down falls back to the README config example`() {
+        val readmeSrc = URI("https://github.com/acme/pg-mcp")
+        val readme = ReadmeConfigs { McpServerSpec("pg-mcp", null, listOf(remote), readmeSrc, at) }
+        val ref = ToolRef("PG", "MCP_SERVER", "acme/pg-mcp", null, null, null)
+
+        val g = SetupGuides({ throw SetupUnavailable("down") }, readme).build("PG", "io.acme/pg", ref)
+
+        assertEquals(listOf(readmeSrc), g.sources.map { it.url })
+        assertEquals(1, g.options.size)
+    }
+
+    @Test
+    fun `registry down and no README example is still unavailable`() {
+        val ref = ToolRef("PG", "MCP_SERVER", "acme/pg-mcp", null, null, null)
+        assertFailsWith<SetupUnavailable> {
+            SetupGuides({ throw SetupUnavailable("down") }, ReadmeConfigs.NONE).build("PG", "io.acme/pg", ref)
+        }
     }
 
     @Test
