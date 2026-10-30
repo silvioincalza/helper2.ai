@@ -5,7 +5,7 @@ import { signOut } from '@/api/client';
 import { useMe } from '@/context/MeContext';
 import { LANGUAGES, setLanguage } from '@/i18n';
 import { chooseTheme, currentChoice, nextChoice, subscribeTheme, type ThemeChoice } from '@/lib/theme';
-import { MODELS_ENABLED, SAVED_ENABLED } from '@/lib/features';
+import { SAVED_ENABLED } from '@/lib/features';
 import { Logo } from './Logo';
 import { OneBox } from './OneBox';
 
@@ -42,10 +42,9 @@ export function Header() {
       <div className="container header-row">
         <Link to="/" className="logo-link" aria-label={t('nav.home')}><Logo /></Link>
         {/* Search is the home page (the logo goes there); the menu only lists the pages that are on. */}
-        {(MODELS_ENABLED || SAVED_ENABLED || isAdmin) && (
+        {(SAVED_ENABLED || isAdmin) && (
           <nav aria-label={t('nav.main')} className="main-nav">
             <ul className="plain-list">
-              {MODELS_ENABLED && <li><NavLink to="/models">{t('nav.models')}</NavLink></li>}
               {SAVED_ENABLED && <li><NavLink to="/saved">{t('nav.saved')}</NavLink></li>}
               {isAdmin && <li><NavLink to="/admin">{t('nav.admin')}</NavLink></li>}
             </ul>

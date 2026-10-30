@@ -12,9 +12,15 @@ describe('layout', () => {
     renderApp('/');
     await waitFor(() => expect(m.callsTo('GET', '/me')).toHaveLength(1));
     expect(within(screen.getByRole('banner')).queryByRole('link', { name: /Sign in/ })).not.toBeInTheDocument();
-    // Search is the home page and Models and Saved are on the roadmap (lib/features.ts): no menu for visitors.
+    // Search is the home page and Saved is on the roadmap (lib/features.ts): no menu for visitors.
     expect(screen.queryByRole('navigation', { name: 'Main' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Admin' })).not.toBeInTheDocument();
+  });
+
+  it('the removed models page is not a route any more', async () => {
+    mockApi();
+    renderApp('/models');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Page not found' })).toBeInTheDocument();
   });
 
   it('hides Admin for signed-in non-admins and shows it for admins', async () => {

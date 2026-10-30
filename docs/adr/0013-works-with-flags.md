@@ -24,7 +24,7 @@ must also remove the flag.
 5. **On every card.** `CardMapper.card` (named interface `cards` of the search module) adds `compatibleWith`, so
    search results, resource pages, the "new" list, upcoming events and model families show the same flags.
    Guide recommendations (`GuideRecommendation`) do not carry flags. The contract states they are never
-   model-generated. Provider ids match model-family ids, so the frontend links those flags to `/models?compare=<id>`.
+   model-generated.
 
 ## Consequences
 - Good: every flag can be traced to a tag, a type or a format; the rules are public.
