@@ -6,7 +6,10 @@ import ai.helper2.shared.ResourceType
 import ai.helper2.shared.TechLevel
 import ai.helper2.shared.Verification
 import java.net.URI
+import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
 import java.time.Instant
+import java.util.HexFormat
 import java.util.UUID
 
 /** One piece of retrieved source material the model may cite. */
@@ -21,8 +24,19 @@ data class EnrichmentInput(
     val knownResources: Map<String, UUID> = emptyMap(),
 )
 
-/** What the store loaded for one resource: the model's input and a fingerprint of its source text. */
-data class EnrichmentMaterial(val input: EnrichmentInput, val fingerprint: String)
+/** What the store loaded for one resource: the model's input and a hash of its source text. */
+data class EnrichmentMaterial(val input: EnrichmentInput, val textHash: String) {
+    /**
+     * The enrichment fingerprint: what a run of [model] would see. The same source text under another prompt
+     * version or another model is a different input, so it is enriched again.
+     */
+    fun fingerprintFor(model: EnrichmentModel): String =
+        sha256Prefix(listOf(textHash, model.promptVersion, model.model).joinToString("\u001f"))
+}
+
+/** First 16 bytes of the SHA-256 of [text], hex encoded. */
+private fun sha256Prefix(text: String): String =
+    HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(text.toByteArray(StandardCharsets.UTF_8)), 0, 16)
 
 /** The model must cite evidence by id and quote the supporting excerpt verbatim. */
 data class Citation(val evidenceId: String, val excerpt: String)

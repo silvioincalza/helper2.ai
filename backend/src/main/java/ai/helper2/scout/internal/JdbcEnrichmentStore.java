@@ -138,11 +138,13 @@ class JdbcEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
         return new EnrichmentMaterial(new EnrichmentInput(resource.title(), materials, facts, Map.of()), sha(allText));
     }
 
+    /** Runs without a judged answer (LLM_UNAVAILABLE, FAILED) say nothing about the input, so they are passed over. */
     @Override
-    public String lastSuccessfulFingerprint(UUID resourceId) {
+    public String lastFingerprint(UUID resourceId) {
         return jdbc.sql("""
-                SELECT CASE WHEN outcome IN ('VALIDATED', 'PARTIAL') THEN input_fingerprint END
-                FROM enrichment_run WHERE resource_id = :id ORDER BY started_at DESC LIMIT 1
+                SELECT input_fingerprint FROM enrichment_run
+                WHERE resource_id = :id AND outcome NOT IN ('LLM_UNAVAILABLE', 'FAILED')
+                ORDER BY started_at DESC LIMIT 1
                 """).param("id", resourceId).query(String.class).optional().orElse(null);
     }
 
