@@ -1,4 +1,4 @@
-# 0027 — Runtime topology: Helm chart, three replicas on prod, Cloudflare tunnel, network policy (egress), Redis auth, backups
+# 0027 — Runtime topology: Helm chart, three replicas on prod, Cloudflare tunnel, per-workload network policies, Redis auth, backups
 
 **Status.** Accepted (2026-10-27). **Builds on:** [0001](0001-stack-and-runtime.md), [0004](0004-persistence-and-provenance.md), [0005](0005-redis-disposable-cache.md), [0007](0007-configuration-and-secrets.md), [0018](0018-scout-runner.md), [0023](0023-identity-and-admin.md), [0024](0024-http-edge-protection.md)
 
@@ -16,7 +16,8 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
 2. **Workloads.** `helper2` Deployment, `postgres` StatefulSet
    (5 Gi `local-path` volume), `redis` Deployment, `cloudflared` Deployment, and in prod the `pg-backup`
    CronJob. Every container runs as non-root with a read-only root file system, no capabilities and the
-   `RuntimeDefault` seccomp profile.
+   `RuntimeDefault` seccomp profile. Every pod runs as the ServiceAccount `helper2`, which has no RoleBinding,
+   with `automountServiceAccountToken: false`: no workload calls the Kubernetes API, so no pod holds a token.
 3. **App replicas.** `app.replicas`: 3 on prod, 1 on staging. `RollingUpdate` with `maxUnavailable: 0` and
    `maxSurge: 1`: one new pod at a time, and an old pod goes only when the new one is ready. Topology spread over
    `kubernetes.io/hostname` (`ScheduleAnyway`). Above 1 replica a PodDisruptionBudget keeps `replicas - 1` available
@@ -37,8 +38,15 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
    (`H2_MANAGEMENT_PORT`). Probes and the Prometheus scrape use 8081, which the tunnel never reaches.
    Startup probe: every 5 s, up to `app.startupSeconds` (300 s); then readiness every 5 s and liveness
    every 10 s.
-6. **Network policy.** Ingress: app ← `cloudflared` on 8080; app ← namespace `observability` on 8081;
-   Postgres and Redis ← app; Postgres ← `pg-backup`. Egress is denied by default, then allowed per workload:
+6. **Network policy.** One policy per workload and direction, each naming only the peers that workload needs.
+   Ingress is denied by default, then allowed per workload:
+   - app (`ingress-app`): `cloudflared` (or the Ingress controller's namespace) on 8080, namespace
+     `observability` on 8081;
+   - Postgres (`ingress-postgres`): the app and `pg-backup` on 5432;
+   - Redis (`ingress-redis`): the app on 6379;
+   - `cloudflared` and `pg-backup`: nothing.
+
+   Egress is denied by default, then allowed per workload:
    - app: DNS, Postgres 5432, Redis 6379, the OpenTelemetry collector (`observability`, 4318), and the
      internet on 443 only, with the private ranges excluded;
    - `cloudflared`: DNS, the app on 8080, the internet on 7844;
@@ -58,7 +66,8 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
 
 ## Consequences
 - No inbound port is open on the cluster; Cloudflare is the only way in.
-- A compromised app pod can reach only the internet on 443, its own database and cache, and the trace collector.
+- A compromised app pod can reach only the internet on 443, its own database and cache, and the trace collector,
+  and holds no Kubernetes API credential.
 - A deploy or a node drain keeps the site up on prod, and one pod failing leaves two serving. Staging (1 replica)
   still has no failover, but a deploy there also starts the new pod before the old one stops.
 - A deploy takes longer (pods start one after another, startup up to 300 s each).
@@ -78,7 +87,7 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
 ## Code
 - `deploy/helm/helper2/values.yaml`, `values-staging.yaml`, `values-prod.yaml` — settings.
 - `deploy/helm/helper2/templates/app.yaml`, `postgres.yaml`, `redis.yaml`, `cloudflared.yaml`, `backup.yaml`,
-  `networkpolicy.yaml`, `secret.yaml`, `_helpers.tpl` — workloads and policies.
+  `networkpolicy.yaml`, `serviceaccount.yaml`, `secret.yaml`, `_helpers.tpl` — workloads and policies.
 - `deploy/k8s/terraform/main.tf`, `rbac.tf` — namespace, tunnel, DNS, redirect, deployer.
 - `deploy/k8s/Makefile`, `deploy/k8s/README.md` — deploy, rollback, backup and restore steps.
 

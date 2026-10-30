@@ -1,6 +1,6 @@
 # Runtime infrastructure of the hosted helper2 on Kubernetes: the Cloudflare tunnel, the two
 # namespaces and their workloads (3 app pods on prod, 1 on staging, rolling updates, disruption budget),
-# what the network policy lets each workload reach (egress), Redis auth,
+# what the per-workload network policies let each workload reach and accept, Redis auth,
 # OpenBao and Harbor for delivery, Alloy -> Prometheus / Tempo for observability, and the prod backup
 # with its optional off-site copy to Cloudflare R2 (off today).
 # Not drawn because it does not exist yet: the admin back office on admin.helper2.ai (roadmap).
@@ -32,7 +32,7 @@ cloudflare: CLOUDFLARE EDGE {
 cluster: "KUBERNETES (no public ingress)" {
   class: group
 
-  prod: "ns helper2-prod · Pod Security restricted · egress default-deny" {
+  prod: "ns helper2-prod · Pod Security restricted · ingress + egress default-deny\none policy per workload · ServiceAccount helper2: no RBAC, no token" {
     class: group
     cloudflared: "cloudflared\n--protocol http2\nout: Cloudflare edge TCP 7844" {class: app}
     app: "helper2 Deployment · 3 pods\nRollingUpdate: maxSurge 1, maxUnavailable 0\nPDB minAvailable 2 · spread by node\nJava 25 JRE, heap 60% of 1Gi\n:8080 site + /api/v1 (Service)\n:8081 Actuator (not in Service)" {class: app}

@@ -15,7 +15,7 @@ image:
   pullPolicy: IfNotPresent
 
 # Content of <env>/app.env (git-ignored), passed with --set-file envFile=... It becomes the Secret
-# helper2-env. Must contain H2_DATABASE_PASSWORD.
+# helper2-env. Must contain H2_DATABASE_PASSWORD; every key matches ^H2_[A-Z0-9_]+$.
 envFile: ""
 
 app:
@@ -111,10 +111,11 @@ cloudflared:
     requests: { cpu: 10m, memory: 32Mi }
     limits: { memory: 128Mi }
 
-# Egress (templates/networkpolicy.yaml): denied for every pod in the namespace, then allowed per
-# workload. app: DNS, postgres, redis, the OTLP collector, HTTPS to `external`. cloudflared: DNS, the
-# app, the Cloudflare edge. pg-backup: DNS, postgres, HTTPS to `external` when backup.offsite is on.
-# postgres and redis: nothing.
+# templates/networkpolicy.yaml: ingress and egress denied for every pod in the namespace, then allowed
+# per workload. Ingress: app <- the edge on 8080 and the metrics scraper on 8081; postgres <- app and
+# pg-backup; redis <- app; cloudflared and pg-backup: nothing. Egress: app -> DNS, postgres, redis, the
+# OTLP collector, HTTPS to `external`; cloudflared -> DNS, the app, the Cloudflare edge; pg-backup ->
+# DNS, postgres, HTTPS to `external` when backup.offsite is on; postgres and redis: nothing.
 networkPolicy:
   # Namespace of the metrics scraper allowed on the management port 8081. Empty = no scraper access.
   metricsNamespace: ""

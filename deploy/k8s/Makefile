@@ -136,10 +136,16 @@ HELM_ARGS = helper2 $(CHART) -n $(NS) -f $(CHART)/values-$(ENV).yaml \
 
 # CI runs this on every pull request; no cluster needed. Each environment's values (and prod with the
 # off-site backup on) with a fixture app.env, linted and checked against the Kubernetes schemas.
-chart-check: ## helm lint + helm template | kubeconform, for staging and prod
+chart-check: ## helm lint + helm template | kubeconform, for staging and prod; an envFile key without H2_ fails
 	@set -euo pipefail; \
-	env=$$(mktemp); trap 'rm -f "$$env"' EXIT; \
+	env=$$(mktemp); bad=$$(mktemp); trap 'rm -f "$$env" "$$bad"' EXIT; \
 	printf 'H2_DATABASE_PASSWORD=ci\nH2_REDIS_PASSWORD=00000000000000000000000000000000\n' > "$$env"; \
+	echo "== envFile with a key outside ^H2_[A-Z0-9_]+$$ must not render"; \
+	{ cat "$$env"; echo 'NEBIUS_API_KEY=stale'; } > "$$bad"; \
+	if out=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --set-file envFile="$$bad" 2>&1); then \
+		echo "chart rendered an envFile with the key NEBIUS_API_KEY"; exit 1; \
+	fi; \
+	grep -q 'NEBIUS_API_KEY' <<<"$$out" || { echo "$$out"; echo "render failed without naming the key"; exit 1; }; \
 	offsite=(--set backup.offsite.enabled=true --set backup.offsite.endpoint=https://example.r2.cloudflarestorage.com --set backup.offsite.bucket=ci); \
 	for v in "staging" "prod" "prod $${offsite[*]}"; do \
 		set -- $$v; e=$$1; shift; \
