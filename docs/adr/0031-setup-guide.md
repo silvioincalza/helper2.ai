@@ -11,13 +11,16 @@ and a snippet copied into 19 clients' config files runs on the user's machine.
 
 ## Decision
 1. **A separate endpoint**, `GET /api/v1/resources/{id}/setup`, in its own module `ai.helper2.setup`, apart from
-   the recommendation guide.
+   the recommendation guide. Two use cases, `GetResourceSetup` and `AskAboutResource` (`setup/usecase`), find the
+   resource in the catalog, take its MCP Registry name and the identifiers of its documents (`ToolRef`), and call the
+   domain; `SetupController` only maps requests and answers.
 2. **Facts from the source, at request time.** For an MCP server with an Official MCP Registry record, the latest
    entry is read by name (`GET /v0.1/servers/{name}/versions/latest`): remotes (Streamable HTTP or SSE, `https`
    only), packages run over stdio (npm, PyPI, OCI, NuGet) with their arguments, environment variables and headers.
    The answer lists where and when it was read. Nothing is stored in the database, so the Scout's change
-   detection is untouched. Answers (a missing entry too) are kept in memory for an hour, at most 500 names, so page
-   views do not become registry calls; failures are not kept.
+   detection is untouched. Answers (a missing entry too) are kept in memory for `H2_SETUP_CACHE_TTL` (an hour), at
+   most 500 names, so page views do not become registry calls; failures are not kept. When the registry cannot be
+   read, the README config example of point 8 answers; without one the endpoint says 503.
 3. **Launch from the registry type.** `runtimeHint` when the entry has one, else `npx -y pkg@v`, `uvx pkg==v`,
    `docker run -i --rm -e VAR image`, `dnx pkg@v --yes`. A registry type without a known launcher, or a package
    that is not stdio, is left out rather than guessed.
@@ -62,6 +65,13 @@ and a snippet copied into 19 clients' config files runs on the user's machine.
    single inner hyphens), a repository name is never `.` or `..`, and each part of a Hugging Face id follows the
    Hub's rules (no leading or trailing `-` or `.`, no `--` or `..`). A link can therefore never reach another API
    path with the server's token.
+   - **Hourly fetch budget.** The GitHub token is the Scout's (5,000 calls an hour). Every document fetch takes one
+     unit of `H2_SETUP_HOURLY_FETCHES` (1,000 per UTC hour), counted in Redis across replicas under the `redis`
+     policy ([0033](0033-resilience-policies.md)); when Redis cannot answer, each replica counts on its own. Over the
+     budget nothing is fetched, the answer is not cached, and `helper2.setup.fetches.refused` counts the refusal.
+   - **Document cache.** Documents are kept in memory per replica for `H2_SETUP_CACHE_TTL`, up to
+     `H2_SETUP_DOCUMENT_CACHE_MB` (32 MB) of text in all, the least recently used going first (Caffeine, weighed by
+     length). A document is cut at 512 KB.
 10. **Step-by-step guide (model, checked).** `POST /resources/{id}/guide` sends the tool's own documents (GitHub
    README, npm README, Hugging Face model or Space card; the useful sections of long ones) to the fast model, which
    may only pick and order passages. `ToolGuideValidator` decides what is shown:
@@ -83,23 +93,43 @@ and a snippet copied into 19 clients' config files runs on the user's machine.
    ANSWER section with the same checks. Answers are cached in Redis for 7 days, keyed by a hash of resource,
    documents, question and prompt. A cached answer holds the checked steps and the documents' links and read
    dates, never the question or a document's text; the question is added back to the response only. The endpoint
-   shares the guide's rate limit and has its own daily cap (`helper2.setup.guide.daily-model-calls`).
+   shares the guide's rate limit and has its own daily cap (`H2_SETUP_GUIDE_DAILY_MODEL_CALLS`, 300); the Redis TTL is
+   `H2_SETUP_GUIDE_CACHE_TTL`. An entry that no longer decodes is logged and treated as a miss, and the next answer
+   replaces it, so it costs one model call, not one per request.
+12. **Settings.** Every knob is an `H2_SETUP_*` variable in the `helper2.setup` block of `application.yaml`:
+   `DOCUMENT_TIMEOUT` (10 s), `NPM_README_BASE_URL`, `CACHE_TTL`, `DOCUMENT_CACHE_MB`, `HOURLY_FETCHES`,
+   `GUIDE_DAILY_MODEL_CALLS`, `GUIDE_REASONING` (false), `GUIDE_CACHE_TTL` (7 days).
 
 ## Consequences
 - Every MCP server with a registry entry or a README config example gets copy-paste setup for 19 clients without a
   model call; every tool with a GitHub, npm or Hugging Face document gets checked steps.
 - The guide is only as good as the tool's own documentation; it never fills gaps.
+- Past the hourly fetch budget, a resource whose documents are not cached gets no README snippet and no steps until
+  the next hour; registry snippets are not affected.
 - Client formats change; the docs URL on each row is where to re-check them.
 
 ## Alternatives considered
 - **Model-written guide from its own knowledge.** Richest, but breaks the evidence rule and invents commands.
 - **Capture registry install data in `source_record.extra` at collect time.** Gives provenance with the record,
   but changes every MCP record's fingerprint on the next pass and queues enrichments for all of them.
+- **Caches: a hand-written LRU map vs Caffeine (chosen).** A map bounded by a count of resources cannot bound
+  memory when one resource holds up to three 512 KB documents. Caffeine weighs entries by length, expires them by
+  time and loads each key once under concurrency, in one small, widely used library (3.2.3, Apache 2.0).
+- **An own GitHub token for setup fetches.** Separates the quotas, but adds a secret to rotate; the hourly budget
+  keeps the Scout's quota safe with one setting.
 
 ## Code
-`backend/src/main/kotlin/ai/helper2/setup/` (domain: `Setup.kt`, `Launch.kt`, `Clients.kt`, `SetupGuides.kt`,
-`RunOptionRules.kt`, `Formats.kt`, `Materials.kt`, `ToolGuide.kt`), `backend/src/main/resources/prompts/setup/tool-guide.txt`,
-`backend/src/main/java/ai/helper2/setup/` (registry adapter, endpoint), `frontend/src/components/SetupGuide.tsx`.
+- `backend/src/main/kotlin/ai/helper2/setup/` — domain: `Setup.kt`, `Launch.kt`, `Clients.kt`, `SetupGuides.kt`,
+  `RunOptionRules.kt`, `Formats.kt`, `Materials.kt`, `ToolGuideAnswer.kt`, `ToolGuidePorts.kt`,
+  `ToolGuideValidator.kt`, `ToolGuides.kt`.
+- `backend/src/main/java/ai/helper2/setup/usecase/` — `GetResourceSetup`, `AskAboutResource`.
+- `backend/src/main/java/ai/helper2/setup/internal/` — `RegistryMcpServerSpecs`, `HttpToolMaterials`,
+  `HourlyFetchBudget`, `ReadmeMcpConfigs`, `SpringAiToolGuideModel`, `RedisToolGuideCache`, `SetupConfiguration`.
+- `backend/src/main/java/ai/helper2/setup/web/SetupController.java`, `backend/src/main/resources/prompts/setup/tool-guide.txt`,
+  `frontend/src/components/SetupGuide.tsx`.
+
+## Diagrams
+[flow](../diagrams/flow-0031-setup-guide.svg) · [sequence](../diagrams/sequence-0031-setup-guide.svg)
 
 ## Roadmap
 - Guide me on every result card (same panel, inline).

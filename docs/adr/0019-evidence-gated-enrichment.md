@@ -41,8 +41,10 @@ source states. Every published value must point to the text it came from, and a 
    - summary claims need valid citations: at most 3 are read (`MAX_SUMMARY_CLAIMS`, the same number the prompt
      states through `{{maxSummaryClaims}}`), 300 characters each.
    Run outcome: `REJECTED` when nothing is accepted, `VALIDATED` with no error and no unverified relationship, else `PARTIAL`.
-7. **Storage.** Every run is an `enrichment_run` row: provider, model, prompt version, fingerprint, outcome, errors. In
-   the same transaction, a run with model output:
+7. **Storage, owned by the catalog.** The Scout hands each run to the catalog's port `EnrichmentResults`
+   (`record(run, checked items)`); the SQL is in `catalog/internal/JdbcEnrichmentResults`, which also reads the
+   results back for the detail page. Every run is an `enrichment_run` row: provider, model, prompt version,
+   fingerprint, outcome, errors. In the same transaction, a run with model output:
    - closes the resource's `OPEN` review items of earlier runs as `SUPERSEDED` (resolved by the system, with a note
      naming the new run);
    - deletes the resource's older `AI_EXTRACTED` field assertions, and its `AI_EXTRACTED` relationships that no
@@ -55,7 +57,9 @@ source states. Every published value must point to the text it came from, and a 
    `UNVERIFIED` relationship opens a `RELATIONSHIP_CANDIDATE`; accepting it is the only way it becomes `VERIFIED`.
    Statuses: `OPEN`, `ACCEPTED`, `REJECTED` (a person's decision) and `SUPERSEDED` (a newer run). Admins use
    `GET /api/v1/admin/review-items` (newest first, filtered by status, `page` and `size` up to 100, with the total)
-   and `PUT /api/v1/admin/review-items/{id}/resolution` (`ACCEPTED` or `REJECTED`).
+   and `PUT /api/v1/admin/review-items/{id}/resolution` (`ACCEPTED` or `REJECTED`); the decision's SQL is in
+   `catalog/internal/ReviewDecisions`. Gauge `helper2.review.open_items` counts `OPEN` items; alert
+   `Helper2ReviewBacklog` fires when more than 50 wait for a day.
 
 ## Consequences
 - Nothing the model says is shown as verified without a quoted excerpt from retrieved text.
@@ -64,7 +68,8 @@ source states. Every published value must point to the text it came from, and a 
 - A prompt or model change re-enriches the whole catalog, bounded by the same daily cap.
 - The cost is bounded per run (`H2_SCOUT_MAX_ENRICHMENTS`: 20 by default, 200 in the Helm chart) and per day (300);
   unchanged text costs nothing and does not use up a slot of the run.
-- Strict rules reject some correct values; the review queue grows with every partial run of new text and needs a person.
+- Strict rules reject some correct values; the review queue grows with every partial run of new text and needs a person,
+  which the backlog alert makes visible.
 - Source-stated `type` is a fact, so a model that disagrees (for example LIBRARY vs MCP_SERVER) opens a review item.
 
 ## Alternatives considered
@@ -80,13 +85,14 @@ source states. Every published value must point to the text it came from, and a 
 - `backend/src/main/kotlin/ai/helper2/scout/Enrichment.kt` — `EvidenceValidator`, proposal and result types.
 - `backend/src/main/java/ai/helper2/scout/internal/SpringAiEnrichmentModel.java`, `JdbcEnrichmentStore.java`, `ScoutConfiguration.java`.
 - `backend/src/main/resources/prompts/scout/enrich-v3.txt`.
-- `backend/src/main/java/ai/helper2/catalog/ReviewQueue.java`, `catalog/usecase/ListReviewItems.java`,
-  `catalog/usecase/ResolveReviewItem.java`, `scout/web/AdminController.java`.
+- `backend/src/main/java/ai/helper2/catalog/EnrichmentResults.java`, `catalog/internal/JdbcEnrichmentResults.java`.
+- `backend/src/main/java/ai/helper2/catalog/ReviewQueue.java`, `catalog/internal/ReviewDecisions.java`,
+  `catalog/usecase/ListReviewItems.java`, `catalog/usecase/ResolveReviewItem.java`, `scout/web/AdminController.java`.
+- `deploy/monitoring/helper2-rules.yaml` — `Helper2ReviewBacklog`.
 
 ## Diagrams
 [flow](../diagrams/flow-0019-evidence-gated-enrichment.svg) · [sequence](../diagrams/sequence-0019-evidence-gated-enrichment.svg)
 
 ## Roadmap
 - [Watch how often source `type` sends proposals to CONFLICTING review](../roadmap.md#5-ai-quality-and-cost)
-- [One owner per table: the Scout writes enrichment tables the catalog reads](../roadmap.md#8-architecture)
-- [Alert on the review backlog](../roadmap.md#3-operations)
+- [One owner per table: the Scout reads catalog tables for its enrichment backlog](../roadmap.md#8-architecture)

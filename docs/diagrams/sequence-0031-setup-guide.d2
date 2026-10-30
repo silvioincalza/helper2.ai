@@ -1,0 +1,55 @@
+# Sequence: a visitor opens "Guide me" on an MCP server whose registry entry is cached, then asks for the steps.
+# Source of truth: backend/src/main/java/ai/helper2/setup/web/SetupController.java,
+#   backend/src/main/java/ai/helper2/setup/usecase/GetResourceSetup.java, AskAboutResource.java,
+#   backend/src/main/kotlin/ai/helper2/setup/SetupGuides.kt, ToolGuides.kt, ToolGuideValidator.kt,
+#   backend/src/main/java/ai/helper2/setup/internal/RegistryMcpServerSpecs.java, HttpToolMaterials.java,
+#   HourlyFetchBudget.java, RedisToolGuideCache.java, SpringAiToolGuideModel.java.
+# Render: cd docs/diagrams && d2 fmt sequence-0031-setup-guide.d2 && d2 sequence-0031-setup-guide.d2 sequence-0031-setup-guide.svg
+
+...@style
+
+shape: sequence_diagram
+
+browser: Browser {class: person}
+ctl: SetupController {class: app}
+get: GetResourceSetup {class: app}
+ask: AskAboutResource {class: app}
+detail: "GetResourceDetail\n(catalog)" {class: app}
+guides: SetupGuides {class: app}
+specs: RegistryMcpServerSpecs {class: app}
+tools: ToolGuides {class: app}
+docs: HttpToolMaterials {class: app}
+redis: Redis {class: data}
+github: "GitHub API" {class: ext}
+model: "SpringAiToolGuideModel\n→ Token Factory" {class: ai}
+
+browser -> ctl: "GET /resources/{id}/setup"
+ctl -> get: "setup(id)"
+get -> detail: "find(id)"
+detail -> get: "card, source records"
+get -> guides: "build(title, registry name, ToolRef)"
+guides -> specs: "latest(name)"
+specs -> guides: "entry (from the in-memory cache)"
+guides -> get: "options, 19 client snippets"
+get -> ctl: "SetupGuide"
+ctl -> browser: "200, Cache-Control 1 h"
+
+browser -> ctl: "POST /resources/{id}/guide"
+ctl -> ask: "ask(id, question)"
+ask -> detail: "find(id)"
+ask -> tools: "answer(id, ToolRef, question)"
+tools -> docs: "load(ref)"
+docs -> redis: "INCR h2:v1:setup:fetches:<hour>\n(redis policy)"
+redis -> docs: "count ≤ H2_SETUP_HOURLY_FETCHES"
+docs -> github: "GET /repos/{owner}/{repo}/readme (raw)" {class: hot}
+github -> docs: "README (cut at 512 KB)"
+docs -> tools: "documents (cached by size)"
+tools -> redis: "GET answer key"
+redis -> tools: "miss"
+tools -> model: "write(ref, documents, question)" {class: ai-call}
+model -> tools: "proposed sections and steps"
+tools -> tools: "ToolGuideValidator: keep exact\nquotes and commands"
+tools -> redis: "SET checked steps, 7 days\n(no question, no text)"
+tools -> ask: "ToolGuideAnswer"
+ask -> ctl: "title, answer"
+ctl -> browser: "200, no-store"
