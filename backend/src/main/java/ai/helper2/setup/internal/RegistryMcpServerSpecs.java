@@ -8,16 +8,17 @@ import ai.helper2.setup.Setting;
 import ai.helper2.setup.SettingKind;
 import ai.helper2.setup.SetupUnavailable;
 import ai.helper2.setup.Transport;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.RestClient;
@@ -32,50 +33,38 @@ import tools.jackson.databind.ObjectMapper;
  * Docs: https://registry.modelcontextprotocol.io/docs. Only what the entry states is kept: remotes, packages with
  * their transport, arguments, environment variables and headers. Anything the entry does not state stays absent.
  *
- * <p>Answers (a missing entry included) are kept for {@link #TTL}, at most {@link #MAX_ENTRIES} names, so page views
+ * <p>Answers (a missing entry included) are kept for the cache TTL, at most {@link #MAX_ENTRIES} names, so page views
  * do not become registry calls: the registry asks aggregators to read it infrequently, and prod's egress address is
  * the one the Scout collects from. Failures are not kept.
  */
 class RegistryMcpServerSpecs implements McpServerSpecs {
 
-    static final Duration TTL = Duration.ofHours(1);
+    /** An entry is a few kilobytes: a count bounds the memory well enough. */
     static final int MAX_ENTRIES = 500;
-
-    private record Cached(@Nullable McpServerSpec spec, Instant expires) {
-    }
 
     private final RestClient http;
     private final String baseUrl;
     private final ObjectMapper json;
     private final Clock clock;
-    private final Map<String, Cached> cache = new LinkedHashMap<>(64, 0.75f, true) {
-        @Override
-        protected boolean removeEldestEntry(Map.Entry<String, Cached> eldest) {
-            return size() > MAX_ENTRIES;
-        }
-    };
+    private final Cache<String, Optional<McpServerSpec>> cache;
 
-    RegistryMcpServerSpecs(RestClient.Builder builder, String baseUrl, ObjectMapper json, Clock clock) {
+    RegistryMcpServerSpecs(RestClient.Builder builder, String baseUrl, ObjectMapper json, Clock clock, Duration ttl) {
         this.http = builder.baseUrl(baseUrl).build();
         this.baseUrl = baseUrl;
         this.json = json;
         this.clock = clock;
+        this.cache = Caffeine.newBuilder()
+            .ticker(() -> TimeUnit.MILLISECONDS.toNanos(clock.millis()))
+            .expireAfterWrite(ttl)
+            .maximumSize(MAX_ENTRIES)
+            .executor(Runnable::run)
+            .build();
     }
 
     @Override
     public @Nullable McpServerSpec latest(String name) {
-        Instant now = clock.instant();
-        synchronized (cache) {
-            Cached c = cache.get(name);
-            if (c != null && now.isBefore(c.expires())) {
-                return c.spec();
-            }
-        }
-        McpServerSpec spec = fetch(name);
-        synchronized (cache) {
-            cache.put(name, new Cached(spec, now.plus(TTL)));
-        }
-        return spec;
+        // A failure throws out of the loader, so nothing is kept for it.
+        return cache.get(name, n -> Optional.ofNullable(fetch(n))).orElse(null);
     }
 
     private @Nullable McpServerSpec fetch(String name) {

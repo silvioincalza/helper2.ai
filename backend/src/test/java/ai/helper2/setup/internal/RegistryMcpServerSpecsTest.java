@@ -86,7 +86,7 @@ class RegistryMcpServerSpecsTest {
             MutableClock clock = new MutableClock(Instant.parse("2026-10-27T20:00:00Z"));
             RegistryMcpServerSpecs specs = new RegistryMcpServerSpecs(
                 ObservedHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP), server.baseUrl(),
-                JsonMapper.builder().build(), clock);
+                JsonMapper.builder().build(), clock, Duration.ofHours(1));
 
             assertThat(specs.latest("ai.dotsy/mcp")).isNotNull();
             assertThat(specs.latest("ai.dotsy/mcp")).isNotNull();
@@ -102,7 +102,7 @@ class RegistryMcpServerSpecsTest {
             assertThatThrownBy(() -> specs.latest("down/x")).isInstanceOf(SetupUnavailable.class);
             assertThat(server.requests).filteredOn(r -> r.contains("down")).hasSizeGreaterThan(down);
 
-            clock.now = clock.now.plus(RegistryMcpServerSpecs.TTL);
+            clock.now = clock.now.plus(Duration.ofHours(1));
             specs.latest("ai.dotsy/mcp");
             assertThat(server.requests).filteredOn(r -> r.contains("dotsy")).hasSize(2);
         }
