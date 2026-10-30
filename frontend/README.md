@@ -17,17 +17,18 @@ Node 24 (`.nvmrc`). On this machine: prefix commands with `PATH=/opt/homebrew/op
 ## Structure
 ```
 src/api        schema.ts (generated), types.ts (aliases), client.ts (typed fetch, CSRF, problem+json, guide stream)
-src/lib        searchState.ts (URL <-> state), format.ts, bookmarks.ts (localStorage, try/catch)
+src/lib        searchState.ts (URL <-> state, guide refinement), locateQuote.ts, features.ts (flags), format.ts, bookmarks.ts (localStorage, try/catch)
 src/context    MeContext (GET /me), BookmarksContext (local, merged once to server on sign-in)
-src/hooks      useApi (keyed fetch with AbortController, recent-answers cache, ADR 0039), useTitle
-src/components cards, badges, filter panel, source status panel, path toggle, glossary Term, ...
+src/hooks      useApi (keyed fetch with AbortController, recent-answers cache, ADR 0039), useGuideStream (guide SSE for the URL's question), useTitle
+src/components cards, badges, filter panel, source status panel, glossary Term, ...
+  ui/          design v2 shared components (ADR 0040, behind NEW_DESIGN_ENABLED): TypeTag, StatusPill, ProofQuote, SourceTiles, SelectableRow, PicksBar; own ui.css
 src/pages      Home, Resource, Saved, Sources, Account, Admin, Mission, Privacy, Terms, NotFound (one entry chunk)
 src/i18n       index.ts + locales/{en,it}.json
 src/test       fixtures, fetch mock, render helper, axe helper
 ```
 
 ## Decisions
-- **All search state lives in URL params** (`q, path, sort, page, updatedAfter, openSource, type, source, license, pricing, platform, useCase, techLevel, audience`). Changing path only patches `path` (and resets `page`), so query and filters are never lost.
+- **All search state lives in URL params** (`q, view, sort, page, updatedAfter, openSource, type, source, license, pricing, platform, useCase, techLevel, audience`), and the guide's in `ask, clar, drop`. A search change keeps the question and its refinement; a new question starts without one.
 - Stale searches are canceled: `useApi` aborts the previous request when the key changes.
 - Honesty: every search shows a collapsible source-status summary + table (outcome, mode, served-from, latency, checkedAt, cachedAt); partial banner; stale-cache badges; `DateFact` UNKNOWN renders "Unknown", CONFLICTING lists alternatives with source ids; popularity is always "value metric · source · as of date", never combined. Status is always icon + text.
 - Relationships: only `VERIFIED` appear as confirmed; `UNVERIFIED`/`CONFLICTING` go to "Unverified candidates"; `REJECTED` are not shown.

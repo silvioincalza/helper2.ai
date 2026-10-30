@@ -128,6 +128,19 @@ Components are plain HTML plus the classes in `components/bundle.css` (prefix `h
 | **SourcesGrid** *(was SourceStatus)* | Under the results: one mono line "fan-out · N sources · N hits → N after merge", then a tile per source with a status dot, the name and the time or cache age. |
 | **Banner** | Notices, partial results, empty and error states. |
 
+### In the frontend
+
+The first v3 parts are React components in `frontend/src/components/ui/` (ADR 0040). Where the code name differs:
+
+| Design system | Code |
+|---|---|
+| Badge (type tag) | `TypeTag` |
+| ResultRow, its selected outline | `SelectableRow` (the row button; the row content comes with the results page) |
+| SourcesGrid, its tiles | `SourceTiles` (the fan-out line comes with the results page) |
+| Guide picks bar | `PicksBar` |
+
+`StatusPill` and `ProofQuote` keep their names.
+
 ## Guide picks bar (results page)
 
 The bar sits above the result list from the first render. While the guide works it says "Guide is reading N candidates… picks will appear here". When the answer arrives, the same box shows the picks as chips: #1, #2, #3. It is labelled AI-written.
