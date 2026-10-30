@@ -98,6 +98,27 @@ class Resilience4jPoliciesTest {
     }
 
     @Test
+    void aSlotHoldsAPlaceInTheBulkheadUntilItIsReleasedOnce() {
+        bulkheads.bulkhead("guide", BulkheadConfig.custom().maxConcurrentCalls(1).maxWaitDuration(Duration.ZERO).build());
+
+        Resilience.Slot first = resilience.trySlot("guide").orElseThrow();
+        assertThat(resilience.trySlot("guide")).as("every place taken").isEmpty();
+        first.release();
+        first.release();
+
+        Resilience.Slot second = resilience.trySlot("guide").orElseThrow();
+        assertThat(resilience.trySlot("guide")).as("a second release gives back no extra place").isEmpty();
+        second.release();
+    }
+
+    @Test
+    void aSlotNeedsABulkhead() {
+        circuit("redis");
+
+        assertThatThrownBy(() -> resilience.trySlot("redis")).isInstanceOf(IllegalStateException.class).hasMessageContaining("redis");
+    }
+
+    @Test
     void retriesOnlyWhatThePolicyCallsTransient() {
         retries.retry("collector-x", RetryConfig.custom().maxAttempts(3).waitDuration(Duration.ofMillis(1))
             .retryOnException(e -> e instanceof IllegalStateException).build());

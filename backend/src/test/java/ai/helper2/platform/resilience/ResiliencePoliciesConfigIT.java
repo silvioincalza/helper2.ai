@@ -76,6 +76,20 @@ class ResiliencePoliciesConfigIT {
     }
 
     @Test
+    void modelCallsHaveACircuitOnlyAndGuideQuestionsABulkhead() {
+        for (String policy : List.of("llm-chat", "llm-embed")) {
+            assertThat(circuits.find(policy)).as(policy).isPresent();
+            assertThat(bulkheads.find(policy)).as(policy + " is limited per question, not per call").isEmpty();
+            assertThat(retries.find(policy)).as(policy + " never retries: every attempt is charged").isEmpty();
+        }
+        var chat = circuits.find("llm-chat").orElseThrow().getCircuitBreakerConfig();
+        assertThat(chat.getIgnoreExceptionPredicate().test(new IllegalStateException("not the provider's"))).isTrue();
+        var guide = bulkheads.find("guide").orElseThrow().getBulkheadConfig();
+        assertThat(guide.getMaxConcurrentCalls()).isEqualTo(8);
+        assertThat(guide.getMaxWaitDuration()).isEqualTo(Duration.ZERO);
+    }
+
+    @Test
     void circuitStateAndRefusedCallsAreMetered() {
         assertThat(meters.find("resilience4j.circuitbreaker.state").tag("name", "source-github").tag("state", "open").gauge()).isNotNull();
         assertThat(meters.find("resilience4j.circuitbreaker.not.permitted.calls").tag("name", "redis").counter()).isNotNull();

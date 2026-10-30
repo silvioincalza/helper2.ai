@@ -1,5 +1,6 @@
 package ai.helper2.guide.web;
 
+import ai.helper2.platform.resilience.Resilience;
 import io.micrometer.context.ContextExecutorService;
 import io.micrometer.context.ContextSnapshotFactory;
 import java.time.Duration;
@@ -7,10 +8,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.Optional;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -18,10 +18,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
- * The guide's two bounds, shared by the JSON and the streamed endpoint: at most {@code helper2.guide.max-concurrent}
- * questions run at once, and each has a deadline ({@code helper2.guide.question-deadline}) after which its worker
- * is interrupted. Questions run on virtual threads that carry the request's trace, so the guide spans stay under
- * the HTTP request span.
+ * The guide's two bounds, shared by the JSON and the streamed endpoint: a question runs only with a place in the
+ * {@code guide} bulkhead ({@code H2_GUIDE_MAX_CONCURRENT}, ADR 0033), and each has a deadline
+ * ({@code helper2.guide.question-deadline}) after which its worker is interrupted. Questions run on virtual threads
+ * that carry the request's trace, so the guide spans stay under the HTTP request span.
  */
 @Component
 class GuideLimits implements DisposableBean {
@@ -32,16 +32,16 @@ class GuideLimits implements DisposableBean {
     static final String BUSY = "The guide is answering too many questions right now. Try again in a moment.";
     static final String TIMED_OUT = "The guide took too long to answer. Try again in a moment.";
 
-    private final int maxConcurrent;
-    private final Semaphore permits;
+    static final String POLICY = "guide";
+
+    private final Resilience resilience;
     private final Duration deadline;
     private final ExecutorService executor = ContextExecutorService.wrap(Executors.newVirtualThreadPerTaskExecutor(),
         ContextSnapshotFactory.builder().build());
 
-    GuideLimits(@Value("${helper2.guide.max-concurrent:8}") int maxConcurrent,
-                @Value("${helper2.guide.question-deadline:PT90S}") Duration deadline) {
-        this.maxConcurrent = maxConcurrent;
-        this.permits = new Semaphore(maxConcurrent);
+    GuideLimits(Resilience resilience, @Value("${helper2.guide.question-deadline:PT90S}") Duration deadline) {
+        resilience.require(POLICY);
+        this.resilience = resilience;
         this.deadline = deadline;
     }
 
@@ -56,16 +56,12 @@ class GuideLimits implements DisposableBean {
      * whichever comes first.
      */
     boolean tryStart(Runnable work, Runnable onTimeout) {
-        if (!permits.tryAcquire()) {
-            log.warn("guide question refused: {} questions already running", maxConcurrent);
+        Optional<Resilience.Slot> slot = resilience.trySlot(POLICY);
+        if (slot.isEmpty()) {
+            log.warn("guide question refused: every slot is taken");
             return false;
         }
-        AtomicBoolean released = new AtomicBoolean();
-        Runnable release = () -> {
-            if (released.compareAndSet(false, true)) {
-                permits.release();
-            }
-        };
+        Runnable release = slot.get()::release;
         Future<?> running;
         try {
             running = executor.submit(() -> {

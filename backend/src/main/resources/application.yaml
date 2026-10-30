@@ -139,6 +139,10 @@ management:
 #   collector-<id>  circuit breaker + retry with exponential backoff and jitter, only on 429, 503, network error or
 #                   timeout (TransientSourceFailure); Scout runs are background work and can wait.
 #   redis           circuit breaker shared by every Redis adapter: cache, guide answers, budgets, rate limits.
+#   llm-chat        circuit breaker on every chat-model call of the guide and the query translation; only provider
+#                   errors count (no connection, timeout, 429, 5xx, a rejected call), never an answer we could not parse.
+#   llm-embed       circuit breaker on every embedding call (search queries and the background indexer).
+#   guide           bulkhead: guide questions at once in this replica, held per question (GuideLimits), not per call.
 resilience4j:
   circuitbreaker:
     configs:
@@ -171,6 +175,13 @@ resilience4j:
         failure-rate-threshold: 50
         wait-duration-in-open-state: ${H2_RESILIENCE_REDIS_OPEN_FOR:30s}
         permitted-number-of-calls-in-half-open-state: 2
+      model:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: ${H2_RESILIENCE_LLM_OPEN_FOR:30s}
+        permitted-number-of-calls-in-half-open-state: 2
     instances:
       source-github: {base-config: source}
       source-hf-models: {base-config: source}
@@ -192,6 +203,11 @@ resilience4j:
       collector-ai-deadlines: {base-config: collector}
       collector-mcp-registry: {base-config: collector}
       redis: {base-config: store}
+      llm-chat:
+        base-config: model
+        # Malformed JSON or a spent daily budget is not an outage of the provider: neither success nor failure.
+        ignore-exception-predicate: ai.helper2.platform.llm.ModelErrors$NotFromProvider
+      llm-embed: {base-config: model}
   bulkhead:
     configs:
       source:
@@ -213,6 +229,10 @@ resilience4j:
       source-helper2-index: {base-config: catalog}
       source-helper2-semantic: {base-config: catalog}
       source-curated: {base-config: catalog}
+      guide:
+        # Questions running at once, JSON and streamed together; one more is refused at once as busy (503).
+        max-concurrent-calls: ${H2_GUIDE_MAX_CONCURRENT:8}
+        max-wait-duration: 0
   retry:
     configs:
       collector:
@@ -260,8 +280,6 @@ helper2:
     daily-model-calls: ${H2_GUIDE_DAILY_MODEL_CALLS:600}
     # Fresh (not cached) questions per client (IP; IPv6 by /64) per UTC day; past it the answer is search results only.
     client-daily-questions: ${H2_GUIDE_CLIENT_DAILY_QUESTIONS:30}
-    # Questions running at once, JSON and streamed together; one more is refused at once as busy (503).
-    max-concurrent: ${H2_GUIDE_MAX_CONCURRENT:8}
     # A question is cancelled after this long and the client gets a timeout (504).
     question-deadline: ${H2_GUIDE_QUESTION_DEADLINE:PT90S}
     # The streamed guide sends a keep-alive comment this often while a question runs (the client gives up after 45 s).

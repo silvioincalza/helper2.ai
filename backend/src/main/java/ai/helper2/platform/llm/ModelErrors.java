@@ -6,6 +6,7 @@ import java.net.SocketTimeoutException;
 import java.net.http.HttpTimeoutException;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Predicate;
 import org.springframework.web.client.ResourceAccessException;
 
 /**
@@ -65,6 +66,17 @@ public final class ModelErrors {
             return "unavailable";
         }
         return hasPackage(e, "tools.jackson") || hasPackage(e, "com.fasterxml.jackson") ? "parse_error" : "error";
+    }
+
+    /**
+     * For the {@code llm-chat} circuit (application.yaml): a failure that is not the provider's, such as an answer
+     * that is not the requested JSON or a spent daily budget, is neither a success nor a failure of the provider.
+     */
+    public static final class NotFromProvider implements Predicate<Throwable> {
+        @Override
+        public boolean test(Throwable e) {
+            return !isProviderError(e);
+        }
     }
 
     /** OkHttp (the OpenAI SDK's client) reports its timeouts as InterruptedIOException("timeout"). */

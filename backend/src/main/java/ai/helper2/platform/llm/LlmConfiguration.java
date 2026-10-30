@@ -49,7 +49,7 @@ class LlmConfiguration {
      */
     @Bean
     QueryTranslator queryTranslator(ObjectProvider<ChatModel> chatModel, LlmSettings llm, Clock clock,
-                                    CallCounter budgetCounter, ModelCallMetrics metrics, MeterRegistry meters,
+                                    CallCounter budgetCounter, ModelCallMetrics metrics, MeterRegistry meters, Resilience resilience,
                                     @Value("${helper2.search.daily-translations:300}") int dailyTranslations,
                                     @Value("${helper2.search.translate-queries:true}") boolean enabled) {
         ChatModel model = chatModel.getIfAvailable();
@@ -62,6 +62,6 @@ class LlmConfiguration {
         Gauge.builder("helper2.search.translation.budget.remaining", budget, DailyBudget::remaining)
             .description("Search query translations left under today's cap (UTC day)")
             .register(meters);
-        return new SpringAiQueryTranslator(model, llm.fast(), budget, clock, Duration.ofHours(24), 2000, metrics);
+        return new SpringAiQueryTranslator(model, llm.fast(), budget, clock, Duration.ofHours(24), 2000, metrics, resilience);
     }
 }

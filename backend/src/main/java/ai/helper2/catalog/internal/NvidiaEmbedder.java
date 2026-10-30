@@ -2,6 +2,9 @@ package ai.helper2.catalog.internal;
 
 import ai.helper2.catalog.Embedder;
 import ai.helper2.platform.http.ObservedHttp;
+import ai.helper2.platform.llm.LlmPolicies;
+import ai.helper2.platform.resilience.CallRefused;
+import ai.helper2.platform.resilience.Resilience;
 import io.micrometer.observation.ObservationRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -20,7 +23,8 @@ import org.springframework.web.client.RestClientResponseException;
  * NVIDIA API catalog embeddings (OpenAI-compatible {@code POST /v1/embeddings} plus NVIDIA's
  * {@code input_type} and {@code truncate}). Docs: https://docs.nvidia.com/nim/nemo-retriever/embedding/latest/use-the-api-openai.html
  * Nemotron 3.5 Embed accepts any dimension from 128 to 2048 (Matryoshka: first N values, re-normalised);
- * the schema stores 1024, under the 2000 limit of a pgvector HNSW index.
+ * the schema stores 1024, under the 2000 limit of a pgvector HNSW index. Every call runs under the {@code llm-embed}
+ * circuit (ADR 0033): while the API is down, embeddings fail at once instead of after their timeout.
  */
 public class NvidiaEmbedder implements Embedder {
 
@@ -36,13 +40,15 @@ public class NvidiaEmbedder implements Embedder {
     private final RestClient http;
     private final String model;
     private final int dimensions;
+    private final Resilience resilience;
 
     /**
      * Observed like the source calls (ObservedHttp): {@code timeout} to connect, to wait for response data and
      * to wait for a pooled connection; redirects are not followed, so the API key never goes to another host.
      */
     public NvidiaEmbedder(String baseUrl, String apiKey, String model, int dimensions, Duration timeout,
-                          ObservationRegistry observations) {
+                          ObservationRegistry observations, Resilience resilience) {
+        resilience.require(LlmPolicies.EMBED);
         // Buffered, so the request carries a Content-Length: a streamed (chunked) body of 50 texts made the
         // API catalog hang until the read timeout, while one short query went through (27 Oct 2026).
         var factory = new BufferingClientHttpRequestFactory(ObservedHttp.requestFactory(timeout, timeout, false));
@@ -50,6 +56,7 @@ public class NvidiaEmbedder implements Embedder {
             .defaultHeader("Authorization", "Bearer " + apiKey).build();
         this.model = model;
         this.dimensions = dimensions;
+        this.resilience = resilience;
     }
 
     @Override
@@ -69,9 +76,11 @@ public class NvidiaEmbedder implements Embedder {
         }
         Response response;
         try {
-            response = http.post().uri("/embeddings").contentType(MediaType.APPLICATION_JSON)
+            response = resilience.call(LlmPolicies.EMBED, () -> http.post().uri("/embeddings").contentType(MediaType.APPLICATION_JSON)
                 .body(new Request(model, texts, kind == Kind.QUERY ? "query" : "passage", dimensions, "END", "float"))
-                .retrieve().body(Response.class);
+                .retrieve().body(Response.class));
+        } catch (CallRefused e) {
+            throw new EmbeddingFailure("embedding call refused: " + e.reason(), false);
         } catch (RestClientResponseException e) {
             boolean limited = e.getStatusCode().isSameCodeAs(HttpStatus.TOO_MANY_REQUESTS);
             throw new EmbeddingFailure("embedding call failed: HTTP " + e.getStatusCode().value(), limited);

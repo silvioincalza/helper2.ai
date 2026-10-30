@@ -1,6 +1,8 @@
 package ai.helper2.platform.llm;
 
 import ai.helper2.platform.prompt.PromptTemplate;
+import ai.helper2.platform.resilience.CallRefused;
+import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.search.QueryTranslator;
 import java.time.Clock;
 import java.time.Duration;
@@ -15,8 +17,8 @@ import org.springframework.ai.chat.model.ChatModel;
 /**
  * Translates a non-English search query into English search terms with the fast model (ADR 0011).
  * Every call is charged to its own daily budget, not the guide's: search allows far more requests per client
- * than the guide. When the budget is spent, or the model fails, the answer is null and search runs
- * untranslated. Answers are cached in each replica's memory, so a repeated query costs nothing there; the cache
+ * than the guide. When the budget is spent, the model fails or the {@code llm-chat} circuit is open, the answer is
+ * null and search runs untranslated. Answers are cached in each replica's memory, so a repeated query costs nothing there; the cache
  * never leaves the process.
  */
 class SpringAiQueryTranslator implements QueryTranslator {
@@ -38,10 +40,20 @@ class SpringAiQueryTranslator implements QueryTranslator {
     private final Duration ttl;
     private final Map<String, Entry> cache;
     private final ModelCallMetrics metrics;
+    private final Resilience resilience;
+
+    /** The budget is checked inside the circuit, so a refused call is not charged; it is no provider failure either. */
+    private static final class BudgetSpent extends RuntimeException {
+        BudgetSpent() {
+            super("daily translation budget used up", null, false, false);
+        }
+    }
 
     SpringAiQueryTranslator(ChatModel chatModel, String model, DailyBudget budget, Clock clock, Duration ttl,
-                            int maxEntries, ModelCallMetrics metrics) {
+                            int maxEntries, ModelCallMetrics metrics, Resilience resilience) {
+        resilience.require(LlmPolicies.CHAT);
         this.metrics = metrics;
+        this.resilience = resilience;
         this.chat = ChatClient.builder(chatModel).build();
         this.system = systemPrompt();
         this.model = model;
@@ -65,22 +77,29 @@ class SpringAiQueryTranslator implements QueryTranslator {
                 return hit.english();
             }
         }
-        if (!budget.tryAcquire()) {
-            log.info("Query translation skipped: daily translation budget used up");
-            return null;
-        }
         String english;
         try {
-            english = metrics.observe("translate", model, () -> {
-                var response = chat.prompt()
-                    .options(CallOptions.of(model, 400, false))
-                    .system(system)
-                    .user("Language: " + language + "\nQuery: " + text)
-                    .call()
-                    .chatResponse();
-                metrics.tokens("translate", response);
-                return response == null || response.getResult() == null ? null : response.getResult().getOutput().getText();
+            english = resilience.call(LlmPolicies.CHAT, () -> {
+                if (!budget.tryAcquire()) {
+                    throw new BudgetSpent();
+                }
+                return metrics.observe("translate", model, () -> {
+                    var response = chat.prompt()
+                        .options(CallOptions.of(model, 400, false))
+                        .system(system)
+                        .user("Language: " + language + "\nQuery: " + text)
+                        .call()
+                        .chatResponse();
+                    metrics.tokens("translate", response);
+                    return response == null || response.getResult() == null ? null : response.getResult().getOutput().getText();
+                });
             });
+        } catch (BudgetSpent e) {
+            log.info("Query translation skipped: daily translation budget used up");
+            return null;
+        } catch (CallRefused e) {
+            log.info("Query translation skipped: {} is {}", e.policy(), e.reason());
+            return null;
         } catch (RuntimeException e) {
             log.info("Query translation failed: {}", e.toString());
             return null;
