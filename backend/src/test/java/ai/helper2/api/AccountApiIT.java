@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ai.helper2.platform.quota.QuotaKeys;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.ResourceId;
 import java.util.UUID;
@@ -24,6 +25,9 @@ class AccountApiIT extends ApiTestBase {
 
     @Autowired
     JdbcClient jdbc;
+
+    @Autowired
+    QuotaKeys quotaKeys;
 
     final String subject = "user-" + UUID.randomUUID();
     final OAuth2LoginRequestPostProcessor user = oauth2Login().attributes(a -> {
@@ -107,7 +111,7 @@ class AccountApiIT extends ApiTestBase {
     }
 
     @Test
-    void deletingTheAccountRemovesItsBookmarksAndKeepsItsReportsWithoutTheReporter() throws Exception {
+    void deletingTheAccountRemovesItsBookmarksAndQuotaCountersAndKeepsItsReportsWithoutTheReporter() throws Exception {
         String deepl = ResourceId.of(CanonicalUrl.of("https://deepl.com/translator")).toString();
         UUID saved = UUID.randomUUID();
         mvc.perform(put("/api/v1/me/bookmarks/" + saved).with(user).with(csrf()).contentType(MediaType.APPLICATION_JSON)
@@ -117,9 +121,12 @@ class AccountApiIT extends ApiTestBase {
             .andExpect(status().isAccepted()).andReturn().getResponse().getContentAsString();
         UUID reportId = UUID.fromString(com.jayway.jsonpath.JsonPath.read(report, "$.reportId"));
         assertThat(rows("SELECT count(*) FROM app_user WHERE subject = :s")).isOne();
+        UUID userId = jdbc.sql("SELECT id FROM app_user WHERE subject = :s").param("s", subject).query(UUID.class).single();
+        quotaKeys.userKeys(userId).forEach(k -> rateLimitRedis.opsForHash().put(k, "search", "2"));
 
         mvc.perform(delete("/api/v1/me").with(user).with(csrf())).andExpect(status().isNoContent());
 
+        assertThat(quotaKeys.userKeys(userId)).noneMatch(rateLimitRedis::hasKey);
         assertThat(rows("SELECT count(*) FROM app_user WHERE subject = :s")).isZero();
         assertThat(jdbc.sql("SELECT count(*) FROM bookmark WHERE resource_id = :r").param("r", saved).query(Long.class).single()).isZero();
         assertThat(jdbc.sql("SELECT reporter_user_id IS NULL FROM issue_report WHERE id = :id").param("id", reportId)
