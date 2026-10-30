@@ -22,8 +22,8 @@ state what happened.
    collectors use 10 s or 15 s.
 3. **Redirects.** `NoDowngradeRedirects` follows redirects, except one from `https` to `http`. A request that
    carries `Authorization` is not redirected to another scheme, host or port (HttpClient's `isRedirectAllowed`,
-   kept by `NoDowngradeRedirects`): a token only ever reaches the configured host, and the 3xx ends the call as
-   `Unavailable("HTTP 3xx")`. A redirected `POST` (Tavily) is re-sent as a `GET` without the source's headers.
+   kept by `NoDowngradeRedirects`): a token only ever reaches the configured host, and the unfollowed 3xx ends the call
+   as `Unavailable`. A redirected `POST` (Tavily) is re-sent as a `GET` without the source's headers.
 4. **Identity and tokens.** Every call sends `User-Agent: Helper2.ai-metasearch/<version> (+https://helper2.ai/sources)`.
    The version is the build version from the boot jar's manifest (`1.0.0`, [0029](0029-release-versioning.md));
    `dev` when the app runs from classes.
