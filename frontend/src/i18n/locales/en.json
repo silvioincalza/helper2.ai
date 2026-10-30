@@ -8,6 +8,10 @@
     "optional": "optional",
     "opensNewTab": "(opens in a new tab)"
   },
+  "carousel": {
+    "pause": "Pause {{label}}",
+    "play": "Play {{label}}"
+  },
   "guideMe": {
     "label": "Guide me",
     "aria": "Guide me: {{title}}",

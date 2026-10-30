@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const ROTATE_MS = 6000;
 
@@ -21,8 +22,8 @@ function prefersReducedMotion(): boolean {
 
 /**
  * A list `size` rows tall that scrolls through the rest: by itself one page every few seconds, by hand (wheel,
- * touch, keyboard) at any time. It holds still while the pointer or focus is inside, and never moves by itself for
- * anyone who asked for reduced motion. It is not a live region, so screen readers are not read every page.
+ * touch, keyboard) at any time. It holds still while the pointer or focus is inside or after Pause (a touch screen
+ * has no hover), and never moves by itself for anyone who asked for reduced motion. It is not a live region, so screen readers are not read every page.
  */
 export function Carousel<T>({ items, size = 2, label, render }: {
   items: T[];
@@ -32,7 +33,9 @@ export function Carousel<T>({ items, size = 2, label, render }: {
 }) {
   const track = useRef<HTMLUListElement>(null);
   const [height, setHeight] = useState<number>();
+  const { t } = useTranslation();
   const [inside, setInside] = useState(false);
+  const [paused, setPaused] = useState(false);
   const [reduced] = useState(prefersReducedMotion);
   const scrolls = items.length > size;
 
@@ -52,7 +55,7 @@ export function Carousel<T>({ items, size = 2, label, render }: {
   }, [items, size, scrolls]);
 
   useEffect(() => {
-    if (!scrolls || inside || reduced) return;
+    if (!scrolls || inside || paused || reduced) return;
     const id = window.setInterval(() => {
       const el = track.current;
       if (!el) return;
@@ -63,7 +66,7 @@ export function Carousel<T>({ items, size = 2, label, render }: {
       el.scrollTo?.({ top: rows[next]?.offsetTop ?? 0, behavior: 'smooth' });
     }, ROTATE_MS);
     return () => window.clearInterval(id);
-  }, [scrolls, inside, reduced, size]);
+  }, [scrolls, inside, paused, reduced, size]);
 
   return (
     <div className="carousel" onMouseEnter={() => setInside(true)} onMouseLeave={() => setInside(false)}
@@ -72,6 +75,11 @@ export function Carousel<T>({ items, size = 2, label, render }: {
         aria-live="off" style={height ? { height } : undefined}>
         {items.map(render)}
       </ul>
+      {scrolls && !reduced && (
+        <button type="button" className="btn btn-ghost carousel-toggle" onClick={() => setPaused((p) => !p)}>
+          {t(paused ? 'carousel.play' : 'carousel.pause', { label })}
+        </button>
+      )}
     </div>
   );
 }
