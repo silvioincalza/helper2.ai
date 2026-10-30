@@ -7,10 +7,11 @@ import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 
 /**
- * Gzipped kB. Measured 149.4 kB with the non-home pages lazy (150.8 kB with every page in the entry), plus ~2 %
- * headroom. Most of it is react-dom, react-router, i18next and the home page itself.
+ * Gzipped kB: 149.4 kB measured with the non-home pages lazy, under the 150.8 kB of an entry that holds every page,
+ * so a page imported eagerly again fails the build. Most of it is react-dom, react-router, i18next and the home page.
+ * Raise it only on purpose, in the change that needs it.
  */
-const INITIAL_JS_BUDGET_KB = 152;
+const INITIAL_JS_BUDGET_KB = 150;
 
 const dist = new URL('../dist/', import.meta.url).pathname;
 const html = readFileSync(join(dist, 'index.html'), 'utf8');
