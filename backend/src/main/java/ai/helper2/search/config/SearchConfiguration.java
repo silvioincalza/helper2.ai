@@ -1,6 +1,12 @@
 package ai.helper2.search.config;
 
+import ai.helper2.platform.quota.QuotaCounter;
+import ai.helper2.platform.quota.QuotaKeys;
 import ai.helper2.platform.resilience.Resilience;
+import ai.helper2.search.DailyLimits;
+import ai.helper2.search.WebFreshness;
+import ai.helper2.search.WebSearchQuota;
+import ai.helper2.search.internal.JdbcWebResultStore;
 import ai.helper2.search.usecase.SearchResources;
 import ai.helper2.search.QueryTranslator;
 import ai.helper2.search.ResultObserver;
@@ -23,6 +29,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import tools.jackson.databind.ObjectMapper;
 
 @Configuration(proxyBeanMethods = false)
@@ -51,20 +58,50 @@ class SearchConfiguration {
     }
 
     @Bean
+    JdbcWebResultStore webResultStore(JdbcClient jdbc, QuotaKeys keys, ResultObserver catalog) {
+        return new JdbcWebResultStore(jdbc, keys, catalog);
+    }
+
+    /** The daily web searches (ADR 0037); an empty global cap means none. */
+    @Bean
+    WebSearchQuota webSearchQuota(QuotaCounter counter, QuotaKeys keys,
+                                  @Value("${helper2.tavily.quota.guest.search}") int guestSearch,
+                                  @Value("${helper2.tavily.quota.guest.guide}") int guestGuide,
+                                  @Value("${helper2.tavily.quota.registered.search}") int registeredSearch,
+                                  @Value("${helper2.tavily.quota.registered.guide}") int registeredGuide,
+                                  @Value("${helper2.tavily.quota.registered-tier-enabled}") boolean registeredTier,
+                                  @Value("${helper2.tavily.quota.global-daily-credits:}") String globalDailyCredits) {
+        return new WebSearchQuota(counter, keys, new DailyLimits(guestSearch, guestGuide, registeredSearch, registeredGuide),
+            registeredTier, globalDailyCredits.isBlank() ? null : Long.valueOf(globalDailyCredits.strip()));
+    }
+
+    /**
+     * An enabled metered source needs {@code H2_QUOTA_KEY_SECRET}: without it no guest counter and no stored query
+     * could be keyed, so startup stops instead of spending credits unguarded.
+     */
+    @Bean
     SearchResources federatedSearch(List<SearchSource> sources, SearchCache cache, ResultObserver observer,
                                     ExecutorService searchExecutor, Clock clock, MeterRegistry registry,
                                     SourceHealth health, LanguageDetector languages,
                                     ObjectProvider<QueryTranslator> translator, Resilience resilience,
+                                    JdbcWebResultStore webResults, WebSearchQuota quota, QuotaKeys keys,
                                     @Value("${helper2.search.stale-for:24h}") Duration staleFor,
                                     @Value("${helper2.search.per-source-limit:30}") int perSourceLimit,
-                                    @Value("${helper2.search.translate-timeout-ms:2500}") long translateTimeoutMillis) {
+                                    @Value("${helper2.search.translate-timeout-ms:2500}") long translateTimeoutMillis,
+                                    @Value("${helper2.tavily.fresh-time-bound}") Duration freshTimeBound,
+                                    @Value("${helper2.tavily.fresh-general}") Duration freshGeneral,
+                                    @Value("${helper2.retention.tavily-results}") Duration keep) {
         List<SearchSource> ordered = sources.stream()
             .sorted(Comparator.comparingInt((SearchSource s) -> s.getDescriptor().getPriority())
                 .thenComparing(s -> s.getDescriptor().getId()))
             .toList();
+        if (!keys.hasSecret() && ordered.stream().anyMatch(s -> s.getDescriptor().getMetered() && s.getDescriptor().getEnabled())) {
+            throw new IllegalStateException("H2_QUOTA_KEY_SECRET must be set while a metered web source (Tavily) is enabled");
+        }
         return new SearchResources(ordered, cache, observer, searchExecutor, clock, staleFor, perSourceLimit,
             new MicrometerSearchMetrics(registry, List.of(health)),
             new ai.helper2.search.QueryAnalyzer(), new ai.helper2.search.ResultMerger(), new ai.helper2.search.Ranking(60),
-            languages, translator.getIfAvailable(() -> QueryTranslator.NONE), Duration.ofMillis(translateTimeoutMillis), resilience);
+            languages, translator.getIfAvailable(() -> QueryTranslator.NONE), Duration.ofMillis(translateTimeoutMillis), resilience,
+            webResults, quota, new WebFreshness(freshTimeBound, freshGeneral, keep));
     }
 }

@@ -19,7 +19,7 @@ fs: SearchResources {class: app}
 cache: RedisSearchCache {class: app}
 gh: GitHubSource {class: app}
 idx: "CatalogSearchSource\n(helper2-index)" {class: app}
-tav: "TavilySource\n(slow today)" {class: app}
+hf: "HuggingFaceModelsSource\n(slow today)" {class: app}
 npm: "NpmSource\n(down for an hour)" {class: app}
 merger: ResultMerger {class: app}
 catalog: ResourceCatalog {class: app}
@@ -32,9 +32,9 @@ start: Start every source (own start time) {
   cache -> fs: "miss"
   fs -> gh: "search(query) on a virtual thread" {class: hot}
   fs -> idx: "search(query) on a virtual thread" {class: hot}
-  fs -> cache: "get(h2:v1:src:tavily:…)"
+  fs -> cache: "get(h2:v1:src:hf-models:…)"
   cache -> fs: "entry, 3 h old (older than 30 min)"
-  fs -> tav: "search(query) on a virtual thread"
+  fs -> hf: "search(query) on a virtual thread"
   fs -> cache: "get(h2:v1:src:npm:…)"
   cache -> fs: "entry, 2 h old"
   fs -> fs: "call(source-npm, …):\ncircuit OPEN, CallRefused"
@@ -44,8 +44,8 @@ collect: Collect, each until its own deadline {
   gh -> fs: "hits (within 2500 ms)" {class: hot}
   fs -> cache: "put(entry, TTL 24 h)"
   idx -> fs: "rows as hits (within 3 s)" {class: hot}
-  fs -> fs: "future.get times out\n(6 s after Tavily's start)"
-  fs -> tav: "cancel(true)"
+  fs -> fs: "future.get times out\n(2500 ms after its start)"
+  fs -> hf: "cancel(true)"
   fs -> fs: "TIMED_OUT, served STALE_CACHE\n(entry younger than 24 h)"
   fs -> fs: "npm: SKIPPED CIRCUIT_OPEN,\nno call, served STALE_CACHE"
 }

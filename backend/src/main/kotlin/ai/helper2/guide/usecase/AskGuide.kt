@@ -34,7 +34,10 @@ import ai.helper2.guide.TOOL_TYPES
 import ai.helper2.guide.isSubject
 import ai.helper2.guide.sha256Hex
 import ai.helper2.guide.wantsReading
+import ai.helper2.search.Asker
+import ai.helper2.search.Feature
 import ai.helper2.search.Filtering
+import ai.helper2.search.IntentClass
 import ai.helper2.search.MergedResult
 import ai.helper2.search.Notice
 import ai.helper2.search.NoticeCode
@@ -50,7 +53,9 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.micrometer.observation.Observation
 import io.micrometer.observation.ObservationRegistry
 import java.time.Clock
+import java.time.Instant
 import java.time.LocalDate
+import java.util.UUID
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.CompletableFuture
@@ -128,7 +133,8 @@ class AskGuide(
 
     /**
      * A cached or shared answer is returned without any [progress] call: no step ran for this asker.
-     * [client] identifies the asker for the per-client quota; null (internal callers, tests) is never limited.
+     * [client] identifies the asker for the per-client quota and, with [userId] when signed in, for the daily web
+     * searches; null (internal callers, tests) is never limited. Every answer carries this asker's web searches left.
      * [clarification] is the user's answer to a [GuideStatus.NEEDS_CLARIFICATION] answer ("" = "search anyway"):
      * a question with one is never clarified again. [drops] are parts of the reading the user removed.
      */
@@ -140,10 +146,12 @@ class AskGuide(
         client: String? = null,
         clarification: String? = null,
         drops: Drops = Drops.NONE,
+        userId: UUID? = null,
     ): GuideAnswer {
         val observation = Observation.createNotStarted("helper2.guide.ask", observations).start()
         var outcome = "error"
-        val question = Question(request.trim(), path, clarification?.trim(), drops)
+        val asker = client?.let { Asker(Feature.GUIDE, it, userId) }
+        val question = Question(request.trim(), path, clarification?.trim(), drops, asker)
         try {
             observation.openScope().use {
                 val key = GuideAnswerCache.key(request, path, configHash, question.clarification, drops)
@@ -152,31 +160,31 @@ class AskGuide(
                     meters.counter("helper2.guide.cache", "result", if (hit != null) "hit" else "miss").increment()
                     if (hit != null) {
                         outcome = "cached"
-                        return hit
+                        return hit.forAsker(asker)
                     }
                 }
                 inFlight[key]?.let {
                     outcome = "shared"
-                    return await(it)
+                    return await(it).forAsker(asker)
                 }
                 val asked = Asked()
                 if (client != null && quota?.tryAcquire(client) == false) {
                     log.info("guide client quota reached: answering from search only")
                     outcome = "client_quota"
                     val searchOnly = answer(question, progress, asked, model = null)
-                    return searchOnly.copy(notices = searchOnly.notices + DAILY_QUOTA_NOTICE)
+                    return searchOnly.copy(notices = searchOnly.notices + DAILY_QUOTA_NOTICE).forAsker(asker)
                 }
                 val mine = CompletableFuture<GuideAnswer>()
                 inFlight.putIfAbsent(key, mine)?.let {
                     outcome = "shared"
-                    return await(it)
+                    return await(it).forAsker(asker)
                 }
                 try {
                     val answer = answer(question, progress, asked, model)
                     cache?.put(key, answer)
                     mine.complete(answer)
                     outcome = outcomeOf(answer, asked)
-                    return answer
+                    return answer.forAsker(asker)
                 } catch (e: Throwable) {
                     mine.completeExceptionally(e)
                     throw e
@@ -199,13 +207,36 @@ class AskGuide(
         }
     }
 
-    /** What the user asked: the text, the answer to a clarification and the parts of the reading they removed. */
-    private class Question(val text: String, val path: AudiencePath?, val clarification: String?, val drops: Drops) {
+    /**
+     * What the user asked: the text, the answer to a clarification and the parts of the reading they removed; and who
+     * asks, for the daily web searches (one per question, however many searches it runs).
+     */
+    private class Question(val text: String, val path: AudiencePath?, val clarification: String?, val drops: Drops, val asker: Asker?) {
         /** The text the search and the no-model backup see: the question plus the user's answer to our question. */
         val fullText: String get() = listOfNotNull(text, clarification?.takeIf { it.isNotBlank() }).joinToString(" ")
 
         /** Set once the question is read; the metric tag of the intent. */
         var intentTag: String = "unknown"
+
+        /** When the earliest web results this question's searches used stop being fresh. */
+        var webFreshUntil: Instant? = null
+    }
+
+    /** The answer with [asker]'s web searches left; read for each asker, so a cached answer never shows another's. */
+    private fun GuideAnswer.forAsker(asker: Asker?) = copy(webSearches = asker?.let(this@AskGuide.search::webSearchesLeft))
+
+    /**
+     * Every search of a question: under its asker's web-search quota, with the freshness its intent needs (dates,
+     * newest and learning questions are time-bound), and noting how long the web results it used stay fresh.
+     */
+    private fun find(q: Question, r: Reading, request: SearchRequest): SearchOutcome {
+        val intentClass = when (r.intent) {
+            GuideIntent.NEWEST, GuideIntent.WHEN, GuideIntent.LEARN -> IntentClass.TIME_BOUND
+            else -> IntentClass.GENERAL
+        }
+        val outcome = search.search(request.copy(asker = q.asker, intentClass = intentClass))
+        outcome.webFreshUntil?.let { until -> q.webFreshUntil = q.webFreshUntil?.let { minOf(it, until) } ?: until }
+        return outcome
     }
 
     /** The answer of the identical question already running; its failure is this asker's failure. */
@@ -332,7 +363,7 @@ class AskGuide(
             )
             GuideIntent.HOW_TO, GuideIntent.SUGGEST -> picks(q, r, progress, asked, usable, Retrieval(r.query, readingFilter(r)))
         }
-        return answer.copy(intent = r.intent, subjects = r.subjects, window = r.window)
+        return answer.copy(intent = r.intent, subjects = r.subjects, window = r.window, webFreshUntil = q.webFreshUntil)
     }
 
     /** Tools only, unless the user asked for something to read (seen in evaluation run 4: papers filled the slots). */
@@ -381,7 +412,7 @@ class AskGuide(
     private fun alternatives(q: Question, r: Reading, progress: GuideProgress, asked: Asked, model: GuideModel?): GuideAnswer {
         val name = r.subjects.firstOrNull()
             ?: return picks(q, r, progress, asked, model, Retrieval(r.query, readingFilter(r)))
-        val own = search.search(SearchRequest(text = name, path = q.path, filters = SearchFilters(types = TOOL_TYPES), size = SUBJECT_SEARCH_SIZE))
+        val own = find(q, r, SearchRequest(text = name, path = q.path, filters = SearchFilters(types = TOOL_TYPES), size = SUBJECT_SEARCH_SIZE))
             .results.firstOrNull { isSubject(it, name) }
         val category = own?.let { listOfNotNull(it.useCases.joinToString(" ").ifBlank { null }, it.type.name.lowercase().replace('_', ' ')).joinToString(" ") }
         val notices = if (own == null) listOf(Notice(NoticeCode.GUIDE_SUBJECT_NOT_FOUND, "$name was not found in our sources; showing tools for: ${r.query}")) else emptyList()
@@ -397,7 +428,8 @@ class AskGuide(
         val text = q.fullText
         val planStart = System.nanoTime()
         val searchStart = System.nanoTime()
-        val outcome = search.search(
+        val outcome = find(
+            q, r,
             SearchRequest(
                 text = retrieval.text, path = q.path, filters = retrieval.filters, sort = retrieval.sort, size = maxCandidates,
                 webQuery = r.webQuery, browse = retrieval.browse,
@@ -500,7 +532,7 @@ class AskGuide(
      */
     private fun compare(q: Question, r: Reading, progress: GuideProgress, asked: Asked, model: GuideModel?): GuideAnswer {
         val found = r.subjects.map { name ->
-            name to search.search(SearchRequest(text = name, path = q.path, size = SUBJECT_SEARCH_SIZE)).results.firstOrNull { isSubject(it, name) }
+            name to find(q, r, SearchRequest(text = name, path = q.path, size = SUBJECT_SEARCH_SIZE)).results.firstOrNull { isSubject(it, name) }
         }
         val subjects = found.mapIndexed { i, (name, res) -> ComparedSubject("s${i + 1}", name, res) }
         val present = subjects.mapNotNull { s -> s.result?.let { Candidate(s.key, it) } }
@@ -572,7 +604,7 @@ class AskGuide(
      */
     private fun explain(q: Question, r: Reading, progress: GuideProgress, asked: Asked, model: GuideModel?): GuideAnswer {
         val subject = r.subjects.firstOrNull() ?: r.query
-        val outcome = search.search(SearchRequest(text = subject, path = q.path, size = maxCandidates, webQuery = r.webQuery))
+        val outcome = find(q, r, SearchRequest(text = subject, path = q.path, size = maxCandidates, webQuery = r.webQuery))
         // Only what can be quoted: an entry without a description cannot support a sentence. The subject's own entry
         // first, then web explainers (articles, news), which say what a thing is better than projects named after it.
         val ordered = outcome.results.filterNot { it.description.isNullOrBlank() }
@@ -638,7 +670,7 @@ class AskGuide(
     private fun dates(q: Question, r: Reading, progress: GuideProgress): GuideAnswer {
         val subject = r.subjects.firstOrNull()
         val text = subject ?: IntentRules.subjectWords(r.query).ifBlank { "AI" }
-        val outcome = search.search(SearchRequest(text = text, path = q.path, size = maxCandidates))
+        val outcome = find(q, r, SearchRequest(text = text, path = q.path, size = maxCandidates))
         progress.retrieved(outcome.results.size, outcome)
         val window = r.window
         val events = outcome.results.filter { it.type == ResourceType.EVENT && it.eventStart.value != null }

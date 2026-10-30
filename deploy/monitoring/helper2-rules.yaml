@@ -160,6 +160,19 @@ groups:
           description: "Only {{ $value | humanizePercentage }} of today's model calls are left. When it reaches 0 the feature degrades until 00:00 UTC (guide: search-only answers; enrichment and classifier: skipped; translation: query sent as typed)."
           runbook: "Dashboard panels 'Questions by outcome' (AI guide) or 'Enrichment outcomes' (Scout): normal traffic or one loop/abuser? Caps: H2_GUIDE_DAILY_MODEL_CALLS (guide), H2_SEARCH_DAILY_TRANSLATIONS (search_translation), H2_SCOUT_DAILY_ENRICHMENT_CALLS (scout_enrichment), H2_SCOUT_AWESOME_CLASSIFIER_DAILY_CALLS (scout_classifier), H2_SETUP_GUIDE_DAILY_MODEL_CALLS (tool_guide)."
 
+      - alert: Helper2TavilyCreditsHigh
+        # ADR 0037: live Tavily calls of searches and the guide (one credit each), every feature and tier. The free plan
+        # has 1,000 credits a month and the Scout uses about 85, so 30 a day is what the live share can spend; change
+        # the number here when the plan changes. The Scout's calls are not in this counter.
+        expr: sum by (environment) (increase(helper2_tavily_credits_total{application="helper2"}[1d])) > 30
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Tavily used more than 30 credits in the last 24 hours ({{ $labels.environment }})."
+          description: "{{ $value | humanize }} live Tavily calls in the last 24 hours. At this pace the monthly credits run out before the plan resets; then Tavily fails for everyone and searches answer from stored results and the other sources."
+          runbook: "Dashboard: helper2_tavily_credits_total by feature and tier. Many guest addresses at the limit = rotating IPs: set H2_TAVILY_GLOBAL_DAILY_CREDITS to cap all live calls a day (no release). Few stored-set hits (helper2_cache_events_total, event=store_hit): check the freshness settings."
+
   - name: helper2-catalog
     rules:
       - alert: Helper2EmbeddingIndexerStalled

@@ -735,6 +735,18 @@ components:
         total: { type: integer, description: Matches after filters, across all pages. }
         page: { type: integer }
         size: { type: integer }
+        webSearches: { oneOf: [{ $ref: '#/components/schemas/WebSearches' }, { type: 'null' }] }
+
+    WebSearches:
+      type: object
+      description: |
+        Live web searches (Tavily) this visitor has left today for this feature; search and the guide count apart
+        (ADR 0037). Resets at 00:00 UTC. Results already stored cost none. Null when no web source is enabled or the
+        count cannot be read.
+      required: [limit, remaining]
+      properties:
+        limit: { type: integer, minimum: 0 }
+        remaining: { type: integer, minimum: 0 }
 
     Evidence:
       type: object
@@ -1092,6 +1104,7 @@ components:
         clarification: { oneOf: [{ $ref: '#/components/schemas/GuideClarification' }, { type: 'null' }] }
         comparison: { oneOf: [{ $ref: '#/components/schemas/GuideComparison' }, { type: 'null' }] }
         explanation: { oneOf: [{ $ref: '#/components/schemas/GuideExplanation' }, { type: 'null' }] }
+        webSearches: { oneOf: [{ $ref: '#/components/schemas/WebSearches' }, { type: 'null' }] }
 
     GuideIntent:
       type: string

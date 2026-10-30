@@ -16,6 +16,7 @@ import ai.helper2.api.generated.model.ProblemDto;
 import ai.helper2.guide.GuideProgress;
 import ai.helper2.guide.usecase.AskGuide;
 import ai.helper2.platform.ClientKey;
+import ai.helper2.platform.SignedInUser;
 import ai.helper2.search.SearchOutcome;
 import ai.helper2.shared.AudiencePath;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,6 +24,7 @@ import jakarta.validation.Valid;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -65,14 +67,16 @@ class GuideStreamController implements DisposableBean {
     private final GuideDtoMapper mapper;
     private final GuideLimits limits;
     private final Duration heartbeat;
+    private final SignedInUser signedInUser;
     private final ScheduledExecutorService heartbeats = Executors.newSingleThreadScheduledExecutor(
         Thread.ofPlatform().name("guide-heartbeat").daemon().factory());
 
-    GuideStreamController(AskGuide guide, GuideDtoMapper mapper, GuideLimits limits,
+    GuideStreamController(AskGuide guide, GuideDtoMapper mapper, GuideLimits limits, SignedInUser signedInUser,
                           @Value("${helper2.guide.heartbeat:PT15S}") Duration heartbeat) {
         this.guide = guide;
         this.mapper = mapper;
         this.limits = limits;
+        this.signedInUser = signedInUser;
         this.heartbeat = heartbeat;
     }
 
@@ -90,10 +94,11 @@ class GuideStreamController implements DisposableBean {
         String request = GuideController.validRequest(body);
         AudiencePath path = GuideController.path(body);
         String client = ClientKey.of(http.getRemoteAddr());
+        UUID userId = signedInUser.id().orElse(null);
         Events events = new Events(new SseEmitter(limits.deadline().plus(EMITTER_GRACE).toMillis()));
         String clarification = GuideController.clarification(body);
         Drops drops = GuideController.drops(body);
-        boolean started = limits.tryStart(() -> run(events, request, path, client, clarification, drops),
+        boolean started = limits.tryStart(() -> run(events, request, path, client, userId, clarification, drops),
             () -> events.fail(504, "Guide timed out", GuideLimits.TIMED_OUT));
         if (started) {
             events.keepAlive();
@@ -107,9 +112,9 @@ class GuideStreamController implements DisposableBean {
             .body(events.emitter);
     }
 
-    private void run(Events events, String request, AudiencePath path, String client, String clarification, Drops drops) {
+    private void run(Events events, String request, AudiencePath path, String client, UUID userId, String clarification, Drops drops) {
         try {
-            var answer = guide.ask(request, path, events, client, clarification, drops);
+            var answer = guide.ask(request, path, events, client, clarification, drops, userId);
             events.finish("answer", mapper.toDto(answer));
         } catch (Throwable e) {
             // Throwable, not only RuntimeException: the emitter must complete whatever happened (an interrupt, an Error).

@@ -48,4 +48,14 @@ class TavilySourceTest {
 
         assertThat(server.requestBodies.getFirst()).contains("\"query\":\"speech recognition asr artificial intelligence\"");
     }
+
+    @Test
+    void eachCallCostsACreditSoTheSourceIsMeteredAndKeepsNoPerSourceCache() {
+        var descriptor = new TavilySource(new SourceSettings(true, server.baseUrl(), "test-token", Duration.ofSeconds(2), Duration.ofMinutes(30)),
+            ObservedHttp.restClientBuilder(Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP), GitHubSourceTest.CLOCK)
+            .getDescriptor();
+
+        assertThat(descriptor.getMetered()).isTrue();
+        assertThat(descriptor.getCacheTtl()).isZero();
+    }
 }

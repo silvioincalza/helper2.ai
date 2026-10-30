@@ -1,8 +1,9 @@
 # Sequence: the daily catalog purge on a cluster of replicas: one replica takes the lock and runs the rules in order,
-# the others skip; the Scout and identity purges run the same way under their own locks.
+# the others skip; the Scout, identity and search purges run the same way under their own locks.
 # Source of truth: backend/src/main/java/ai/helper2/catalog/CatalogRetentionSchedule.java, catalog/usecase/PurgeExpiredData.java,
 #   catalog/internal/CatalogRetention.java, platform/ClusterLocks.java (keptAlive, tryRun),
-#   backend/src/main/java/ai/helper2/scout/internal/ScoutRetentionSchedule.java, identity/IdentityRetentionSchedule.java.
+#   backend/src/main/java/ai/helper2/scout/internal/ScoutRetentionSchedule.java, identity/IdentityRetentionSchedule.java,
+#   search/config/SearchRetentionSchedule.java.
 # Render: cd docs/diagrams && d2 fmt sequence-0034-data-retention.d2 && d2 sequence-0034-data-retention.d2 sequence-0034-data-retention.svg
 
 ...@style

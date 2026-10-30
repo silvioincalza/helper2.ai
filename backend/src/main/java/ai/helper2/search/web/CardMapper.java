@@ -17,8 +17,10 @@ import ai.helper2.api.generated.model.SourcedValueDto;
 import ai.helper2.api.generated.model.TechLevelDto;
 import ai.helper2.api.generated.model.TimelineDto;
 import ai.helper2.api.generated.model.ValueOriginDto;
+import ai.helper2.api.generated.model.WebSearchesDto;
 import ai.helper2.search.Compatibility;
 import ai.helper2.search.MergedResult;
+import ai.helper2.search.WebSearchesLeft;
 import ai.helper2.shared.DateFact;
 import ai.helper2.shared.UtcTimes;
 import java.util.ArrayList;
@@ -81,5 +83,10 @@ public final class CardMapper {
             .sourceId(f.getValue() == null ? null : f.getSourceId());
         f.getAlternatives().forEach(a -> dto.addAlternativesItem(new SourcedValueDto(a.getValue(), a.getSourceId())));
         return dto;
+    }
+
+    /** Web searches left today; null when unknown. */
+    public static WebSearchesDto webSearches(WebSearchesLeft left) {
+        return left == null ? null : new WebSearchesDto(left.getLimit(), left.getRemaining());
     }
 }

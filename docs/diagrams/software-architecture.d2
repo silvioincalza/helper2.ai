@@ -10,6 +10,8 @@
 #   backend/src/main/java/ai/helper2/catalog/EnrichmentResults.java (port the Scout writes through),
 #   backend/src/main/java/ai/helper2/setup/internal/SetupConfiguration.java (setup guide adapters),
 #   backend/src/main/java/ai/helper2/platform/http/ObservedHttp.java (observed client of sources and embedder),
+#   backend/src/main/kotlin/ai/helper2/search/WebSearch.kt, search/internal/JdbcWebResultStore.java,
+#   backend/src/main/java/ai/helper2/platform/quota/ (Tavily store and daily quota, ADR 0037),
 #   backend/src/main/resources/application.yaml (base URLs, llm-nebius profile, helper2.embedding),
 #   backend/src/test/java/ai/helper2/architecture/ModularityTest.java (rules).
 # Render: cd docs/diagrams && d2 fmt software-architecture.d2 && d2 software-architecture.d2 software-architecture.svg
@@ -32,18 +34,23 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
   search: "search (Kotlin domain)" {
     class: group
     ctl: "SearchController\nGET /search, /sources" {class: app}
-    core: "SearchResources\nQueryAnalyzer · ResultMerger\nRanking · Filtering · Facets" {class: app}
+    core: "SearchResources · WebSearchQuota\nQueryAnalyzer · ResultMerger\nRanking · Filtering · Facets" {class: app}
     p_source: SearchSource {class: port}
     p_cache: SearchCache {class: port}
+    p_web: "WebResultStore\nWebResultRetention" {class: port}
     p_observer: "ResultObserver\nRecordedOutcomes" {class: port}
     p_translate: QueryTranslator {class: port}
     cache: "RedisSearchCache\n(search.cache)" {class: app}
+    web: "JdbcWebResultStore\n(search.internal)" {class: app}
     ctl -> core: {class: hot}
     core -> p_source: {class: hot}
     core -> p_cache
+    core -> p_web
     core -> p_observer
     core -> p_translate
     cache -> p_cache: implements {class: config}
+    web -> p_web: implements {class: config}
+    web -> p_observer: "recorded hits"
   }
 
   guide: "guide (Kotlin domain)" {
@@ -134,6 +141,7 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
     edge: "RateLimitInterceptor · RateLimiter\nApiExceptionHandler · SinglePageApp\nPromptTemplate" {class: app}
     http: "http: ObservedHttp\n(pooled, observed RestClient;\nUser-Agent with build version)" {class: app}
     resilience: "resilience: Resilience (named\npolicies on Resilience4j)\nOutboundThrottle (Redis)" {class: app}
+    quota: "quota: QuotaCounter (Redis Lua)\nQuotaKeys (HMAC)" {class: app}
   }
 
   shared: "shared (open, Kotlin)\nCanonicalUrl · ResourceId · DateFact\nLanguageDetector · Vocabulary" {class: app}
@@ -149,6 +157,8 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
   sources.collectors -> scout.p_collector: implements {class: config}
   sources.live -> platform.http: "HTTP client" {class: config}
   catalog.embed -> platform.http: "HTTP client" {class: config}
+  search.core -> platform.quota: "daily web searches"
+  identity.me -> platform.quota: "delete counters\nwith the account"
   scout.jdbc -> catalog.p_results: "record runs" {class: config}
   setup.usecase -> catalog.catalog: "resource detail"
 }
@@ -192,6 +202,8 @@ browser -> app.setup.ctl: "Guide me"
 browser -> app.identity.me
 
 app.search.cache -> stores.redis: "h2:v1:src:*"
+app.search.web -> stores.pg: "tavily_query_result"
+app.platform.quota -> stores.redis: "h2:v1:quota:*"
 app.guide.store -> stores.redis: "h2:v1:guide-answer:*"
 app.platform.llm -> stores.redis: "h2:v1:budget:*"
 app.setup.adapters -> stores.redis: "h2:v2:tool-guide:*\nh2:v1:setup:fetches:*"

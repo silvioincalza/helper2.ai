@@ -31,6 +31,7 @@ import ai.helper2.guide.GuideAnswer;
 import ai.helper2.platform.llm.LlmSettings;
 import ai.helper2.search.MergedResult;
 import ai.helper2.search.SearchOutcome;
+import ai.helper2.search.web.CardMapper;
 import ai.helper2.shared.UtcTimes;
 import java.util.List;
 import java.util.stream.Stream;
@@ -94,7 +95,8 @@ class GuideDtoMapper {
             .window(window(a.getWindow()))
             .clarification(clarification(a.getClarification()))
             .comparison(comparison(a.getComparison()))
-            .explanation(explanation(a.getExplanation()));
+            .explanation(explanation(a.getExplanation()))
+            .webSearches(CardMapper.webSearches(a.getWebSearches()));
     }
 
     private AiContentMarkerDto aiContent() {

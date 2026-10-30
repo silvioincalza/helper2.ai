@@ -12,7 +12,7 @@ so the list of sources must be disclosed. Two sources can describe the same reso
 ## Decision
 1. **One port.** Every source implements `SearchSource` with a `SourceDescriptor`: id, name, mode
    (`LIVE`, `INDEXED`, `CURATED`, `DEMO`), timeout, cache time to live (TTL), `enabled`, `priority`, `usesWebQuery`,
-   `usesTranslation`. Search sources and their priority (lower wins on display text): `curated` 10, `github` 20,
+   `usesTranslation`, `metered`. Search sources and their priority (lower wins on display text): `curated` 10, `github` 20,
    `hf-models` 30, `hf-spaces` 35, `npm` 40, `arxiv` 45, `tavily` 48, `helper2-index` 50, `helper2-semantic` 55
    (only with an embedding key, [0012](0012-vector-search-pgvector.md)). `GET /api/v1/sources` lists them.
 2. **Parallel fan-out.** `SearchResources.search` starts each source on the `searchExecutor`
@@ -24,6 +24,10 @@ so the list of sources must be disclosed. Two sources can describe the same reso
    On timeout the task is canceled and the outcome is `TIMED_OUT`.
 4. **Cache for LIVE sources.** The fresh and stale windows of [0005](0005-redis-disposable-cache.md) apply: a fresh entry
    is served as `CACHE` with no live call, and after a failure an entry inside the stale window is served as `STALE_CACHE`.
+   A metered source (Tavily, `descriptor.metered`) reads its stored result set instead, fresh for 24 h or 48 h by the
+   question's intent, and calls live only inside the asker's daily web searches; over the limit it is `SKIPPED` with
+   `SkipReason.DAILY_LIMIT` (or `QUOTA_UNAVAILABLE` when the count cannot be read), with its stored set up to 7 days
+   old ([0037](0037-tavily-store-and-daily-quota.md)).
 5. **Cooldown.** `SourceFailure.RateLimited` pauses the source until `Retry-After` (or 1 min). During the pause the
    source is `SKIPPED` with `SkipReason.RATE_LIMIT_PAUSE` ("Paused after a rate limit"), with a stale entry if one exists.
    A source that cannot browse is `SKIPPED` with `SkipReason.NOT_BROWSABLE` on a browse request.
@@ -86,6 +90,8 @@ so the list of sources must be disclosed. Two sources can describe the same reso
 - `backend/src/main/java/ai/helper2/search/config/SearchConfiguration.java` — executor, ordering, properties.
 - `backend/src/main/resources/application.yaml` (`resilience4j.*`) — the `source-<id>` policies.
 - `backend/src/main/java/ai/helper2/search/cache/RedisSearchCache.java` — Redis adapter on the `redis` policy.
+- `backend/src/main/java/ai/helper2/search/internal/JdbcWebResultStore.java`, `search/WebSearch.kt` — the metered source's
+  store and quota ([0037](0037-tavily-store-and-daily-quota.md)).
 - `backend/src/main/java/ai/helper2/search/web/SearchController.java` — `GET /api/v1/search`, `GET /api/v1/sources`.
 - `backend/src/main/java/ai/helper2/catalog/ResourceCatalog.java` — `ResultObserver` implementation.
 

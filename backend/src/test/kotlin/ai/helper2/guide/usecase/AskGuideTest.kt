@@ -382,6 +382,26 @@ class AskGuideTest {
     }
 
     @Test
+    fun `an answer built on web results lives no longer than they are fresh`() {
+        val t = MovableClock(ai.helper2.search.NOW)
+        val cache = GuideAnswerCache(Duration.ofHours(24), 10, t)
+        cache.put("k", reasoned().copy(webFreshUntil = ai.helper2.search.NOW.plus(Duration.ofHours(5))))
+
+        t.now = ai.helper2.search.NOW.plus(Duration.ofHours(4))
+        assertTrue(cache.get("k") != null)
+        t.now = ai.helper2.search.NOW.plus(Duration.ofHours(5))
+        assertEquals(null, cache.get("k"))
+    }
+
+    @Test
+    fun `an answer built on stale web results is not cached`() {
+        val cache = GuideAnswerCache(Duration.ofHours(24), 10, clock)
+        cache.put("k", reasoned().copy(webFreshUntil = ai.helper2.search.NOW.minus(Duration.ofHours(1))))
+
+        assertEquals(null, cache.get("k"))
+    }
+
+        @Test
     fun `cache drops the least recently used entry when full`() {
         val cache = GuideAnswerCache(Duration.ofHours(24), 2, clock)
         val a = reasoned()

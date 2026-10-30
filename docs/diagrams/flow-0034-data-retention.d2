@@ -3,7 +3,9 @@
 # Source of truth: backend/src/main/java/ai/helper2/catalog/usecase/PurgeExpiredData.java, catalog/internal/CatalogRetention.java,
 #   catalog/CatalogRetentionSchedule.java, backend/src/main/kotlin/ai/helper2/scout/usecase/PurgeExpiredData.kt,
 #   scout/internal/ScoutRetentionSchedule.java, JdbcScoutStore.java, identity/usecase/PurgeExpiredData.java,
-#   identity/IdentityRetentionSchedule.java, identity/internal/Users.java, AuditLog.java, db/migration/V1__schema.sql.
+#   identity/IdentityRetentionSchedule.java, identity/internal/Users.java, AuditLog.java,
+#   backend/src/main/kotlin/ai/helper2/search/usecase/PurgeExpiredData.kt, search/config/SearchRetentionSchedule.java,
+#   search/internal/JdbcWebResultStore.java, db/migration/V1__schema.sql.
 # Render: cd docs/diagrams && d2 fmt flow-0034-data-retention.d2 && d2 flow-0034-data-retention.d2 flow-0034-data-retention.svg
 
 ...@style
@@ -11,7 +13,7 @@
 direction: down
 
 cron: "@Scheduled helper2.retention.cron\n(default 0 17 3 * * *, UTC),\non every replica" {class: end}
-lock: "ClusterLocks.keptAlive: this module's\nlock free? (retention-catalog,\nretention-scout, retention-identity)" {class: decision}
+lock: "ClusterLocks.keptAlive: this module's\nlock free? (retention-catalog,\nretention-scout, retention-identity,\nretention-search)" {class: decision}
 skip: "Another replica purges today" {class: end}
 
 catalog: "catalog.usecase.PurgeExpiredData (in this order)" {
@@ -43,6 +45,12 @@ identity: "identity purge" {
   users -> audit
 }
 
+search: "search purge" {
+  class: group
+  direction: down
+  sets: "search.usecase.PurgeExpiredData:\ntavily_query_result fetched > 7 d" {class: data}
+}
+
 cascade: "ON DELETE CASCADE: records, labels, embeddings,\nevidence, assertions, claims of a resource;\nON DELETE SET NULL: links that outlive their target" {class: data}
 logged: "Each logs what it deleted;\na failure is logged, the next\nday's run catches up" {class: end}
 
@@ -51,8 +59,10 @@ lock -> skip: no
 lock -> catalog.rev: "yes (catalog)" {class: hot}
 lock -> scout.sruns: "yes (scout)"
 lock -> identity.users: "yes (identity)"
+lock -> search.sets: "yes (search)"
 catalog.ref -> cascade: "yes: deleted" {class: hot}
 catalog.ref -> catalog.later: no
 scout.sruns -> logged
 identity.audit -> logged
+search.sets -> logged
 cascade -> logged

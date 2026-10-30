@@ -1,6 +1,7 @@
 package ai.helper2.identity;
 
 import ai.helper2.identity.internal.Users;
+import ai.helper2.platform.SignedInUser;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.context.event.EventListener;
@@ -15,7 +16,7 @@ import org.springframework.stereotype.Component;
  * refreshes the display name and the last sign-in that retention reads); later calls only read it.
  */
 @Component
-public class CurrentUser {
+public class CurrentUser implements SignedInUser {
 
     private final Users users;
 
@@ -23,6 +24,7 @@ public class CurrentUser {
         this.users = users;
     }
 
+    @Override
     public Optional<UUID> id() {
         Authentication a = SecurityContextHolder.getContext().getAuthentication();
         if (a instanceof OAuth2AuthenticationToken t && t.isAuthenticated()) {

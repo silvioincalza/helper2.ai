@@ -1,11 +1,12 @@
 # Flowchart: what SearchResources does with each source in one search, then merge and coverage.
 # Shows disabled sources, the rate-limit cooldown, the fresh/stale Redis windows for LIVE sources, the source's
 # policy source-<id> (circuit breaker and bulkhead, no retry), the per-source deadline counted from the source's own
-# start, and the notices.
+# start, and the notices. A metered source (Tavily) reads its stored result set instead of Redis and calls live only
+# inside the daily quota: its own flow is flow-0037.
 # Source of truth: backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt (Run.start, Run.collect, stale, search),
 #   backend/src/main/kotlin/ai/helper2/search/ResultMerger.kt,
 #   backend/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java (resilience4j.* in application.yaml),
-#   backend/src/main/java/ai/helper2/search/cache/RedisSearchCache.java.
+#   backend/src/main/java/ai/helper2/search/cache/RedisSearchCache.java, search/internal/JdbcWebResultStore.java.
 # Render: cd docs/diagrams && d2 fmt flow-0008-federated-search.d2 && d2 flow-0008-federated-search.d2 flow-0008-federated-search.svg
 
 ...@style
@@ -22,15 +23,17 @@ each: For each source (in parallel) {
   cooldown: "In cooldown after\na rate limit?" {class: decision}
   paused: "SKIPPED (+ stale entry\nif one exists)" {class: end}
   live: "mode == LIVE?" {class: decision}
-  fresh: "Redis entry younger\nthan cacheTtl?" {class: decision}
+  fresh: "Redis entry younger than cacheTtl?\n(metered: stored set fresh for its\nintent class, 24 h / 48 h)" {class: decision}
   cached: "SUCCEEDED, served CACHE\n(no live call)" {class: end}
+  quota: "Metered: a daily web search\nleft for this asker?" {class: decision}
+  limited: "SKIPPED, no call:\nDAILY_LIMIT or\nQUOTA_UNAVAILABLE" {class: fail}
   call: "source.search(query)\non a virtual thread" {class: app}
   policy: "source-<id> lets it through?\n(circuit closed or trial call,\nbulkhead slot free)" {class: decision}
   refused: "SKIPPED, no call:\nCIRCUIT_OPEN or BUSY" {class: fail}
   deadline: "Answer within timeout,\ncounted from own start?" {class: decision}
-  ok: "SUCCEEDED, LIVE\n(LIVE: put entry, TTL 24 h)" {class: end}
+  ok: "SUCCEEDED, LIVE\n(LIVE: put entry, TTL 24 h;\nmetered: replace stored set)" {class: end}
   failed: "TIMED_OUT / RATE_LIMITED /\nFAILED (rate limit sets cooldown;\nfailures and slow calls count\nfor the circuit)" {class: fail}
-  stale: "Entry younger\nthan 24 h?" {class: decision}
+  stale: "Entry younger than 24 h?\n(metered: 7 days)" {class: decision}
   stalehit: "outcome kept,\nserved STALE_CACHE" {class: end}
   none: "outcome kept,\nserved NONE, 0 hits" {class: fail}
 
@@ -41,7 +44,10 @@ each: For each source (in parallel) {
   live -> fresh: yes
   live -> call: "no (index,\ncurated)"
   fresh -> cached: yes
-  fresh -> call: "no / miss"
+  fresh -> quota: "no / miss"
+  quota -> call: "yes (or not metered)"
+  quota -> limited: no
+  limited -> stale
   call -> policy
   policy -> deadline: yes {class: hot}
   policy -> refused: no

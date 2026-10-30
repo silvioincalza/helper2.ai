@@ -18,16 +18,18 @@ so the cache must be optional: when Redis is down, the app still works, only slo
    only costs cache misses. Connection: `H2_REDIS_HOST`, `H2_REDIS_PORT`
    (6379), `H2_REDIS_PASSWORD`; command timeout 250 ms, connect timeout 500 ms. The Redis health
    indicator is off, so a Redis outage never takes the app out of the readiness rotation.
-2. **Source responses.** `RedisSearchCache` implements the `SearchCache` port for sources in `LIVE` mode.
+2. **Source responses.** `RedisSearchCache` implements the `SearchCache` port for sources in `LIVE` mode, except a
+   metered source (Tavily), whose result sets live in PostgreSQL ([0037](0037-tavily-store-and-daily-quota.md)).
    Key `h2:v1:src:{sourceId}:{hash}`; the hash covers the normalized query, the expansions, the limit and,
-   for sources that read it, the guide's web query. No raw query text is stored in a key. Values use the
+   for sources that read it, the guide's web query and the date window. No raw query text is stored in a key. Values use the
    versioned `SourceHitCodec`; an unknown version is a miss.
 3. **Fresh and stale windows.** An entry younger than the source's `cacheTtl` (30 minutes by default,
    6 hours for arXiv) answers without a live call. Every entry lives for `H2_SEARCH_STALE_FOR` (24 hours).
    When the live call fails, times out, is rate-limited, is in cooldown or is refused by the source's open circuit,
    an entry inside that window is served as `STALE_CACHE`, with the failure stated in the source status.
 4. **Circuit breaker.** Every Redis call of the search cache, the guide and tool guide answer stores, the budget
-   counter, the rate limiter, the outbound throttle and the session reads runs under the one `redis` policy ([0033](0033-resilience-policies.md)):
+   counter, the web-search quota, the rate limiter, the outbound throttle and the session reads runs under the one
+   `redis` policy ([0033](0033-resilience-policies.md)):
    once half of the last calls (at least 3) failed, the circuit opens for 30 seconds (`H2_RESILIENCE_REDIS_OPEN_FOR`)
    and callers get their fallback at once, without a Redis call. Then 2 trial calls decide whether it closes again.
    A search cache error or refusal adds the notice `CACHE_UNAVAILABLE`, and the sources are called live. A session
@@ -41,9 +43,10 @@ so the cache must be optional: when Redis is down, the app still works, only slo
    `RedisGuideAnswerStore`: key `h2:v1:guide-answer:{sha256}`, Redis time to live (TTL) = `H2_GUIDE_CACHE_TTL` (24 hours),
    JavaScript Object Notation (JSON) in a versioned envelope. Only complete artificial intelligence (AI) answers are stored.
 7. **Shared state for the replicas.** Prod runs 3 replicas ([0027](0027-runtime-topology.md)). The same Redis also
-   holds the rate-limit windows (`h2:v1:rate:{limiter}:{client}`, [0024](0024-http-edge-protection.md)) and the
-   sign-in sessions (namespace `helper2:session`, [0023](0023-identity-and-admin.md)), so every replica sees them.
-   Both have their own fallback while Redis is down.
+   holds the rate-limit windows (`h2:v1:rate:{limiter}:{client}`, [0024](0024-http-edge-protection.md)), the sign-in
+   sessions (namespace `helper2:session`, [0023](0023-identity-and-admin.md)) and the daily web-search counters
+   (`h2:v1:quota:*`, [0037](0037-tavily-store-and-daily-quota.md)), so every replica sees them. Rate limits and
+   sessions have their own fallback while Redis is down; the web-search quota allows no live call then.
 
 ## Consequences
 - A Redis outage costs a few failed calls per 30 seconds for the whole replica (the circuit is shared by every
@@ -56,8 +59,9 @@ so the cache must be optional: when Redis is down, the app still works, only slo
 - Redis is not ready while it loads the AOF at start; the app treats that like a short outage (the `redis` circuit).
 - Source cooldowns, the guide's in-memory answer cache and its single-flight map stay in each replica's memory, on
   purpose: a replica that misses them costs one more call, not a wrong answer ([roadmap](../roadmap.md#4-more-than-one-replica)).
-- Redis holds sessions and rate-limit windows next to cache entries, in the same 128 MB with `allkeys-lru`.
-  Under memory pressure an admin can be signed out, or a client can get a fresh window early.
+- Redis holds sessions, rate-limit windows and web-search counters next to cache entries, in the same 128 MB with
+  `allkeys-lru`. Under memory pressure an admin can be signed out, or a client can get a fresh window or a fresh
+  day of web searches early.
 - `RedisSearchCacheTest`, `RedisGuideAnswerStoreTest`, `RedisCallCounterTest` and `RedisRateLimiterIT` cover the open
   window, the trial call and the fallbacks; `RedisDownIT` covers search with no Redis at all.
 
@@ -79,6 +83,7 @@ so the cache must be optional: when Redis is down, the app still works, only slo
 - `backend/src/main/java/ai/helper2/platform/resilience/` (`Resilience`, policy `redis` in `application.yaml`) —
   fail-fast guard ([0033](0033-resilience-policies.md)).
 - `backend/src/main/java/ai/helper2/platform/llm/RedisCallCounter.java`, `DailyBudget.java` — counters.
+- `backend/src/main/java/ai/helper2/platform/quota/RedisQuotaCounter.java` — daily web-search counters.
 - `backend/src/main/kotlin/ai/helper2/guide/GuideCost.kt` (`GuideAnswerCache`, `ClientQuota`) and
   `backend/src/main/java/ai/helper2/guide/internal/RedisGuideAnswerStore.java` — guide answers.
 - `deploy/helm/helper2/templates/redis.yaml` (StatefulSet, AOF, PVC), `compose.yaml` — Redis settings;
