@@ -1,22 +1,7 @@
 package ai.helper2.search
 
 import ai.helper2.shared.AudiencePath
-import ai.helper2.shared.DateFact
-import ai.helper2.shared.LanguageDetector
-import ai.helper2.shared.SourceMode
-import java.security.MessageDigest
-import java.time.Clock
-import java.time.Duration
 import java.time.Instant
-import java.util.HexFormat
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ExecutionException
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Future
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
-import java.util.concurrent.atomic.AtomicLong
-import org.slf4j.LoggerFactory
 
 data class SearchRequest @JvmOverloads constructor(
     val text: String,

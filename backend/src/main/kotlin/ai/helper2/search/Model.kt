@@ -123,6 +123,9 @@ sealed class SourceFailure(message: String) : RuntimeException(message) {
 
 enum class SourceOutcome { SUCCEEDED, FAILED, TIMED_OUT, RATE_LIMITED, SKIPPED }
 
+/** Why a source was SKIPPED in a search. */
+enum class SkipReason { DISABLED, NOT_BROWSABLE, RATE_LIMIT_PAUSE }
+
 enum class ServedFrom { LIVE, CACHE, STALE_CACHE, NONE }
 
 data class SourceStatus(
@@ -134,6 +137,8 @@ data class SourceStatus(
     val checkedAt: Instant,
     val cachedAt: Instant? = null,
     val message: String? = null,
+    /** SKIPPED only. */
+    val skipReason: SkipReason? = null,
 )
 
 enum class Freshness { LIVE, CACHED, STALE, INDEXED, CURATED, DEMO }
