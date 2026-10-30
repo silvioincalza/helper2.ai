@@ -178,7 +178,8 @@ public final class ObservedHttp {
 
     /**
      * Pooled Apache client: {@code timeout} as connect and response timeout, {@code poolWait} for a free
-     * connection; redirects either followed without an https-to-http downgrade, or not followed at all.
+     * connection; redirects either followed without an https-to-http downgrade, or not followed at all. Each request
+     * is sent once: retries are the caller's resilience policy (ADR 0033), so they are counted and bounded there.
      */
     public static HttpComponentsClientHttpRequestFactory requestFactory(Duration timeout, Duration poolWait, boolean followRedirects) {
         ConnectionConfig connection = ConnectionConfig.custom().setConnectTimeout(Timeout.of(timeout)).build();
@@ -186,7 +187,8 @@ public final class ObservedHttp {
             .setDefaultConnectionConfig(connection).setMaxConnTotal(50).setMaxConnPerRoute(20).build();
         RequestConfig request = RequestConfig.custom()
             .setResponseTimeout(Timeout.of(timeout)).setConnectionRequestTimeout(Timeout.of(poolWait)).build();
-        HttpClientBuilder client = HttpClientBuilder.create().setConnectionManager(pool).setDefaultRequestConfig(request);
+        HttpClientBuilder client = HttpClientBuilder.create().setConnectionManager(pool).setDefaultRequestConfig(request)
+            .disableAutomaticRetries();
         if (followRedirects) {
             client.setRedirectStrategy(NoDowngradeRedirects.INSTANCE);
         } else {
