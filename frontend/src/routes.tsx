@@ -5,11 +5,10 @@ import { askParams } from '@/lib/searchState';
 import AdminPage from '@/pages/AdminPage';
 import HomePage from '@/pages/HomePage';
 import MissionPage from '@/pages/MissionPage';
-import ModelsPage from '@/pages/ModelsPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 import PrivacyPage from '@/pages/PrivacyPage';
 import ResourcePage from '@/pages/ResourcePage';
-import { MODELS_ENABLED, SAVED_ENABLED } from '@/lib/features';
+import { SAVED_ENABLED } from '@/lib/features';
 import SavedPage from '@/pages/SavedPage';
 import SourcesPage from '@/pages/SourcesPage';
 
@@ -34,7 +33,6 @@ export const routes: RouteObject[] = [
       { path: 'search', element: <SearchRedirect /> },
       { path: 'guide', element: <GuideRedirect /> },
       { path: 'resource/:id', element: <ResourcePage /> },
-      { path: 'models', element: MODELS_ENABLED ? <ModelsPage /> : <Navigate replace to="/" /> },
       { path: 'saved', element: SAVED_ENABLED ? <SavedPage /> : <Navigate replace to="/" /> },
       { path: 'sources', element: <SourcesPage /> },
       { path: 'admin', element: <AdminPage /> },

@@ -173,7 +173,6 @@ describe('ResultCardView compatibility flags', () => {
       { tool: 'mcp', label: 'Any MCP client', basis: 'TYPE', evidence: 'MCP_SERVER', sourceId: null },
     ] }));
     const list = screen.getByRole('list', { name: 'Works with' });
-    // The models page is on the roadmap, so no flag links to it for now.
     const openai = within(list).getByText('OpenAI').closest('.compat-chip') as HTMLElement;
     expect(openai).toHaveAttribute('title', 'npm lists the tag “openai”');
     expect(openai.closest('a')).toBeNull();

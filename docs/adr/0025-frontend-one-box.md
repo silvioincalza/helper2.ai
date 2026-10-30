@@ -32,8 +32,8 @@ screen reader, and in light and dark mode.
    color contrast excluded because jsdom cannot compute it).
 7. **Theme: system, light, dark.** One button cycles system → light → dark. A fixed choice is saved as `h2.theme`;
    "system" removes it. `public/theme.js` sets `data-theme` before the first paint and follows the device while no choice is saved.
-8. **Shared data.** `SourcesContext` fetches `GET /api/v1/sources` once per page load for all pages. `ModelsPage` has
-   no second question field: ready questions link to `/?q=…&ask=…`. `PrivacyPage` names the contact `helper2ai@incalza.me`.
+8. **Shared data.** `SourcesContext` fetches `GET /api/v1/sources` once per page load for all pages. `PrivacyPage` names
+   the contact `helper2ai@incalza.me`.
 
 ## Consequences
 - Good: one place to type; the guide and search share the same URL and can be bookmarked or shared.
@@ -56,14 +56,14 @@ screen reader, and in light and dark mode.
 - `frontend/src/api/client.ts`, `frontend/src/lib/sse.ts` — guide stream, idle timeout, error codes.
 - `frontend/src/components/GuideProgress.tsx` — five steps.
 - `frontend/src/components/Layout.tsx`, `frontend/src/lib/theme.ts`, `frontend/public/theme.js` — `RouteFocus`, theme.
-- `frontend/src/context/SourcesContext.tsx`, `frontend/src/pages/ModelsPage.tsx`, `frontend/src/pages/PrivacyPage.tsx`.
+- `frontend/src/context/SourcesContext.tsx`, `frontend/src/pages/PrivacyPage.tsx`.
 - `docs/design/system/` — design tokens and components.
 
 ## Diagrams
 [flow](../diagrams/flow-0025-frontend-one-box.svg) · [sequence](../diagrams/sequence-0025-frontend-one-box.svg)
 
 ## Roadmap
-- [Browser end-to-end tests with Playwright (skipped for now)](../roadmap.md#quality-gates).
+- [Browser end-to-end tests (skipped for now)](../roadmap.md#quality-gates).
 - [Manual accessibility pass on real browsers](../roadmap.md#quality-gates).
 - [The shared `/sources` data can be old during a long visit](../roadmap.md#7-frontend).
 - [A fixed theme can be overridden by a device change when storage is blocked](../roadmap.md#7-frontend).
