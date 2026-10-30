@@ -16,9 +16,7 @@ screen reader, and in light and dark mode.
 2. **Search results** (`SearchResults`, `useApi`). A new query aborts the old request. While it loads, the previous
    results stay on screen, dimmed, with `aria-busy`. Only the first load shows skeletons and one "querying" line per
    enabled source.
-   `useApi` keeps the last 50 successful answers for 5 minutes by key, so back and forward show a page at once without
-   a request; `reload` always asks again, and the admin page opts out (`cache: false`). `ScrollRestoration` puts the
-   page back where it was on back and forward, and at the top for a new page.
+   Back and forward show a recent answer at once, at the old scroll position: [0039](0039-frontend-recent-answers-cache.md).
 3. **Guide stream as the browser sees it** (`api.askGuideStream`). `POST /api/v1/guide/stream` with the cross-site request forgery (CSRF) header.
    Server-Sent Events (SSE) are read with `fetch` and `SseParser`, not `EventSource`, so there is no automatic reconnect
    (each question costs model calls). An idle timer of 45 s (`GUIDE_IDLE_TIMEOUT_MS`) is re-armed on every chunk.
