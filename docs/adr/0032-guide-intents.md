@@ -368,4 +368,4 @@ clear ones that must not. Pass criteria per intent: `NEWEST` — every pick born
   `i18n/locales/en.json` — clarification chips, "Understood as", comparison table, explanation, course badge.
 
 ## Diagrams
-To add: flow-0032 (plan → clarify? → retrieval by intent → answer by intent) and sequence-0032 (clarification round trip).
+[flow](../diagrams/flow-0032-guide-intents.svg) · [sequence](../diagrams/sequence-0032-guide-intents.svg)

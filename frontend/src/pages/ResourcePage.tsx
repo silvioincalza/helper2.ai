@@ -13,7 +13,7 @@ import { ResultCardView } from '@/components/ResultCardView';
 import { useApi } from '@/hooks/useApi';
 import { useTitle } from '@/hooks/useTitle';
 import { formatDate } from '@/lib/format';
-import { aiMark } from '@/lib/aiMark';
+import { aiMark, isAiOrigin } from '@/lib/aiMark';
 
 function RelList({ items }: { items: Relationship[] }) {
   const { t } = useTranslation();
@@ -102,7 +102,7 @@ export default function ResourcePage() {
                 {d.assertions.map((a, i) => (
                   <tr key={`${a.field}-${i}`}>
                     <th scope="row">{a.field}</th>
-                    <td>{a.value}</td>
+                    <td {...(isAiOrigin(a.origin) ? aiMark() : {})}>{a.value}</td>
                     <td><OriginLabel origin={a.origin} />{a.sourceId && <div className="muted small">{a.sourceId}</div>}</td>
                     <td><VerificationBadge verification={a.verification} /></td>
                     <td><EvidenceList evidence={a.evidence} /></td>

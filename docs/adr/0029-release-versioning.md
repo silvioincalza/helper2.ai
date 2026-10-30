@@ -50,13 +50,13 @@ and the Helm chart. A published version must always mean the same code, so it ca
 
 ## Code
 - `.github/workflows/release.yml` — tag checks and GitHub release.
-- `backend/build.gradle.kts`, `frontend/package.json`, `deploy/helm/helper2/Chart.yaml` — the version.
+- `backend/build.gradle.kts`, `frontend/package.json`, `deploy/helm/helper2/Chart.yaml`, `api/openapi.yaml` (`info.version`) — the version.
 - `frontend/vite.config.ts`, `frontend/src/components/Layout.tsx` — version in the footer.
 - `deploy/k8s/Makefile` (`image`) — commit tags never rebuilt.
 - `deploy/k8s/CI.md` (Releases) — how to tag a release.
 
 ## Diagrams
-[flow](../diagrams/flow-0029-release-versioning.svg) · Sequence: none, the workflow is one job with no other actors.
+[flow](../diagrams/flow-0029-release-versioning.svg) · [sequence](../diagrams/sequence-0029-release-versioning.svg)
 
 ## Roadmap
 - GitHub tag ruleset on `refs/tags/v*` and a Harbor tag-immutability rule: [roadmap](../roadmap.md#1-release-v100-before-the-hackathon-deadline-30-oct-2026-1800-zurich).

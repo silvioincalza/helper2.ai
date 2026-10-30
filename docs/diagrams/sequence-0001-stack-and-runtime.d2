@@ -1,0 +1,41 @@
+# Sequence: a browser opens a deep link on the hosted site, loads the SPA and calls the API on the same origin;
+# then the same calls in local development, where Vite serves the UI and proxies the server paths.
+# Source of truth: backend/src/main/java/ai/helper2/platform/SinglePageApp.java, frontend/vite.config.ts (server.proxy),
+#   backend/src/main/resources/application.yaml (spring.threads.virtual.enabled), deploy/Dockerfile, compose.yaml.
+# Render: cd docs/diagrams && d2 fmt sequence-0001-stack-and-runtime.d2 && d2 sequence-0001-stack-and-runtime.d2 sequence-0001-stack-and-runtime.svg
+
+...@style
+
+shape: sequence_diagram
+
+browser: Browser {class: person}
+vite: "Vite dev server\n(:5173, local only)" {class: ext}
+mvc: "Spring MVC (:8080)\none virtual thread\nper request" {class: app}
+spa: SinglePageApp {class: app}
+ctrl: "API controller\n(generated interface)" {class: app}
+stores: "Postgres, Redis\n(compose.yaml locally)" {class: data}
+
+hosted: Hosted: one image serves page and API {
+  browser -> mvc: "GET /resources/abc (refresh)" {class: hot}
+  mvc -> spa: "no controller matches"
+  spa -> spa: "no file; isClientRoute → index.html"
+  spa -> browser: "index.html, Cache-Control: no-cache"
+  browser -> mvc: "GET /assets/index-<hash>.js"
+  mvc -> spa: "resource handler /assets/**"
+  spa -> browser: "file, max-age 365 days, immutable"
+  browser -> mvc: "GET /api/v1/resources/abc\n(same origin, no CORS)" {class: hot}
+  mvc -> ctrl: "blocking call on the virtual thread"
+  ctrl -> stores: "JDBC / Redis (blocking)"
+  stores -> ctrl: "rows"
+  ctrl -> browser: "JSON"
+}
+
+dev: Local development {
+  browser -> vite: "GET /, /src/** (hot reload)"
+  vite -> browser: "SPA modules"
+  browser -> vite: "GET /api/v1/... (also /oauth2, /login, /logout)"
+  vite -> mvc: "proxy to http://localhost:8080"
+  mvc -> ctrl: "controller"
+  ctrl -> vite: "JSON"
+  vite -> browser: "JSON"
+}

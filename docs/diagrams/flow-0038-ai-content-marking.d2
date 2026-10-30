@@ -1,0 +1,57 @@
+# Flowchart: how AI-written text is marked for machines (EU AI Act Art. 50(2)): the aiContent marker of a guide answer
+# in the API, and the data-ai-* attributes the page puts on the elements that render AI-written text.
+# Source of truth: backend/src/main/java/ai/helper2/guide/web/GuideDtoMapper.java (AI_WRITTEN_FIELDS, aiContent),
+#   api/openapi.yaml (AiContentMarker, ValueOrigin), frontend/src/lib/aiMark.ts,
+#   frontend/src/components/GuideAnswer.tsx, ResultCardView.tsx, frontend/src/pages/ResourcePage.tsx.
+# Render: cd docs/diagrams && d2 fmt flow-0038-ai-content-marking.d2 && d2 flow-0038-ai-content-marking.d2 flow-0038-ai-content-marking.svg
+
+...@style
+
+direction: down
+
+api: "API: GuideDtoMapper.toDto(answer)" {
+  class: group
+  direction: down
+  used: "answer.modelUsed?" {class: decision}
+  marker: "aiContent: aiGenerated true, provider,\nmodels (fast + reasoning), fields =\nAI_WRITTEN_FIELDS, policy /mission" {class: app}
+  none: "No aiContent:\nsearch-only answer" {class: end}
+  out: "JSON response, or the\nstreamed answer event" {class: end}
+  used -> marker: yes {class: hot}
+  used -> none: no
+  marker -> out
+}
+
+catalog: "API: catalog values" {
+  class: group
+  direction: down
+  origin: "descriptionOrigin, Assertion.origin:\nAI_SUMMARY or AI_EXTRACTED;\nAiSummary.model" {class: app}
+}
+
+page: "Page: one element of text" {
+  class: group
+  direction: down
+  what: "Where does the text\ncome from?" {class: decision}
+  source: "Quote, title, link,\nsource-stated value" {class: app}
+  plain: "Not marked" {class: end}
+  guide: "Guide answer: reason, searched-for\nquery (fast model), comparison cell,\nexplanation sentence, prompt text" {class: app}
+  card: "Card description with\nAI origin (isAiOrigin)" {class: app}
+  summary: "AI summary claims\non the resource page" {class: app}
+  mark: "aiMark(model?):\ndata-ai-generated=\"true\"\n(+ data-ai-model when known)" {class: end}
+  section: "Guide answer section:\ndata-ai-provider,\ndata-ai-models" {class: end}
+
+  what -> source: "the source"
+  source -> plain
+  what -> guide: "the guide's model" {class: hot}
+  what -> card: "catalog, AI origin"
+  what -> summary: "catalog summary"
+  guide -> mark: {class: hot}
+  card -> mark
+  summary -> mark
+  guide -> section
+}
+
+rule: "No hidden characters in the text;\n/mission explains the marking" {class: config}
+
+api.out -> page.what: {class: hot}
+catalog.origin -> page.what
+page.mark -> rule

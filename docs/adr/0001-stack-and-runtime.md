@@ -54,7 +54,8 @@ The stack must be well known, typed end to end, and cheap to operate: one image,
 - `compose.yaml` — local Postgres and Redis.
 
 ## Diagrams
-None: no runtime flow. The modules are in the [software architecture](../diagrams/software-architecture.svg) diagram.
+[flow](../diagrams/flow-0001-stack-and-runtime.svg) · [sequence](../diagrams/sequence-0001-stack-and-runtime.svg)
+The modules are in the [software architecture](../diagrams/software-architecture.svg) diagram.
 
 ## Roadmap
 - Search engine support (robots.txt, sitemap, metadata for detail pages): [roadmap](../roadmap.md#product-and-legal).

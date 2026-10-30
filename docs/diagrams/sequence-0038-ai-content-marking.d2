@@ -1,0 +1,38 @@
+# Sequence: one guide answer marked in the API and in the page, then read by a machine (crawler, browser extension).
+# Source of truth: backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt,
+#   backend/src/main/java/ai/helper2/guide/web/GuideStreamController.java, GuideController.java, GuideDtoMapper.java,
+#   frontend/src/components/GuideAnswer.tsx, frontend/src/lib/aiMark.ts.
+# Render: cd docs/diagrams && d2 fmt sequence-0038-ai-content-marking.d2 && d2 sequence-0038-ai-content-marking.d2 sequence-0038-ai-content-marking.svg
+
+...@style
+
+shape: sequence_diagram
+
+user: User {class: person}
+page: "GuideAnswer.tsx\n(aiMark)" {class: app}
+ctrl: "GuideStreamController /\nGuideController" {class: app}
+mapper: GuideDtoMapper {class: app}
+guide: AskGuide {class: app}
+reader: "Machine reader\n(crawler, extension)" {class: ext}
+
+ask: Answer {
+  user -> page: "ask a question"
+  page -> ctrl: "POST /api/v1/guide/stream" {class: hot}
+  ctrl -> guide: "ask(…)"
+  guide -> ctrl: "GuideAnswer (modelUsed = true)"
+  ctrl -> mapper: "toDto(answer)"
+  mapper -> ctrl: "GuideResponse + aiContent {aiGenerated,\nprovider, models, fields, policy: /mission}"
+  ctrl -> page: "event answer (same object as\nthe JSON endpoint)" {class: hot}
+}
+
+render: Render {
+  page -> page: "<section data-ai-provider data-ai-models>"
+  page -> page: "reason, query, cells, sentences, prompt:\ndata-ai-generated=\"true\" [+ data-ai-model]"
+  page -> page: "quotes, titles, links: no attribute"
+  page -> user: "visible labels \"AI reasoning\", \"AI\";\ntext copied without hidden characters"
+}
+
+detect: Detection {
+  reader -> page: "read the DOM: [data-ai-generated]"
+  reader -> ctrl: "or the API: aiContent.fields\n(JSON paths of AI-written text)"
+}

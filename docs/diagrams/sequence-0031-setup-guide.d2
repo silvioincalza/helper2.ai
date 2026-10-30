@@ -1,55 +1,51 @@
-# Sequence: a visitor opens "Guide me" on an MCP server whose registry entry is cached, then asks for the steps.
-# Source of truth: backend/src/main/java/ai/helper2/setup/web/SetupController.java,
+# Sequence: a user opens "Guide me" on a resource page: the setup options from the MCP Registry (no model), then a
+# step-by-step guide from the tool's own documents, picked by the fast model and checked before it is shown.
+# Source of truth: frontend/src/components/SetupGuide.tsx, backend/src/main/java/ai/helper2/setup/web/SetupController.java,
 #   backend/src/main/java/ai/helper2/setup/usecase/GetResourceSetup.java, AskAboutResource.java,
 #   backend/src/main/kotlin/ai/helper2/setup/SetupGuides.kt, ToolGuides.kt, ToolGuideValidator.kt,
 #   backend/src/main/java/ai/helper2/setup/internal/RegistryMcpServerSpecs.java, HttpToolMaterials.java,
-#   HourlyFetchBudget.java, RedisToolGuideCache.java, SpringAiToolGuideModel.java.
+#   HourlyFetchBudget.java, SpringAiToolGuideModel.java, RedisToolGuideCache.java, catalog/usecase/GetResourceDetail.java.
 # Render: cd docs/diagrams && d2 fmt sequence-0031-setup-guide.d2 && d2 sequence-0031-setup-guide.d2 sequence-0031-setup-guide.svg
 
 ...@style
 
 shape: sequence_diagram
 
-browser: Browser {class: person}
-ctl: SetupController {class: app}
-get: GetResourceSetup {class: app}
-ask: AskAboutResource {class: app}
-detail: "GetResourceDetail\n(catalog)" {class: app}
-guides: SetupGuides {class: app}
-specs: RegistryMcpServerSpecs {class: app}
-tools: ToolGuides {class: app}
-docs: HttpToolMaterials {class: app}
-redis: Redis {class: data}
-github: "GitHub API" {class: ext}
-model: "SpringAiToolGuideModel\n→ Token Factory" {class: ai}
+page: "SetupGuide.tsx" {class: person}
+ctrl: SetupController {class: app}
+usecase: "GetResourceSetup /\nAskAboutResource" {class: app}
+detail: "GetResourceDetail\n(catalog.usecase)" {class: app}
+setup: "SetupGuides /\nToolGuides" {class: app}
+registry: "Official MCP Registry" {class: ext}
+docs: "GitHub, jsDelivr,\nHugging Face" {class: ext}
+redis: "Redis\n(policy redis)" {class: data}
+model: "Fast model\n(Nemotron)" {class: ai}
 
-browser -> ctl: "GET /resources/{id}/setup"
-ctl -> get: "setup(id)"
-get -> detail: "find(id)"
-detail -> get: "card, source records"
-get -> guides: "build(title, registry name, ToolRef)"
-guides -> specs: "latest(name)"
-specs -> guides: "entry (from the in-memory cache)"
-guides -> get: "options, 19 client snippets"
-get -> ctl: "SetupGuide"
-ctl -> browser: "200, Cache-Control 1 h"
+options: Setup options, no model {
+  page -> ctrl: "GET /api/v1/resources/{id}/setup" {class: hot}
+  ctrl -> usecase: "setup(id)"
+  usecase -> detail: "find(id)"
+  detail -> usecase: "card, source records\n(mcp-registry name)"
+  usecase -> setup: "build(title, registryName, ref)"
+  setup -> registry: "GET /v0.1/servers/{name}/versions/latest\n(unless read in the last hour)"
+  registry -> setup: "remotes, packages, settings"
+  setup -> setup: "RunOptionRules, Launches,\none snippet per client"
+  setup -> page: "200 SetupGuide: options, snippets\nfor 19 clients, source and read time" {class: hot}
+}
 
-browser -> ctl: "POST /resources/{id}/guide"
-ctl -> ask: "ask(id, question)"
-ask -> detail: "find(id)"
-ask -> tools: "answer(id, ToolRef, question)"
-tools -> docs: "load(ref)"
-docs -> redis: "INCR h2:v1:setup:fetches:<hour>\n(redis policy)"
-redis -> docs: "count ≤ H2_SETUP_HOURLY_FETCHES"
-docs -> github: "GET /repos/{owner}/{repo}/readme (raw)" {class: hot}
-github -> docs: "README (cut at 512 KB)"
-docs -> tools: "documents (cached by size)"
-tools -> redis: "GET answer key"
-redis -> tools: "miss"
-tools -> model: "write(ref, documents, question)" {class: ai-call}
-model -> tools: "proposed sections and steps"
-tools -> tools: "ToolGuideValidator: keep exact\nquotes and commands"
-tools -> redis: "SET checked steps, 7 days\n(no question, no text)"
-tools -> ask: "ToolGuideAnswer"
-ask -> ctl: "title, answer"
-ctl -> browser: "200, no-store"
+walkthrough: Step-by-step guide (optional question) {
+  page -> ctrl: "POST /api/v1/resources/{id}/guide\n{question?}" {class: hot}
+  ctrl -> usecase: "ask(id, question)"
+  usecase -> detail: "find(id)"
+  usecase -> setup: "answer(id, ref, question)"
+  setup -> redis: "INCR h2:v1:setup:fetches:<hour>\n(one per document fetch)"
+  setup -> docs: "README, npm README,\nmodel or Space card"
+  docs -> setup: "documents (kept in memory,\nbounded by total length)"
+  setup -> redis: "get(v1:<id>:<hash>)"
+  redis -> setup: "miss"
+  setup -> model: "write(ref, documents, question):\npick and order passages" {class: ai-call}
+  model -> setup: "ProposedGuide"
+  setup -> setup: "ToolGuideValidator.validate:\ndrop steps not in the documents"
+  setup -> redis: "put (7 days, no question,\nno document text)"
+  setup -> page: "200 ToolGuide: sections, steps,\ndocuments with read dates" {class: hot}
+}

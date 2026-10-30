@@ -1,0 +1,66 @@
+# Flowchart: how AskGuide reads a question (plan, grounding, backup rules, window), when it asks back, and how each
+# intent retrieves and answers. The pick pipeline (choose, evidence gate, reason check) is drawn in flow-0015 and flow-0016.
+# Source of truth: backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (read, grounded, clarificationOf, answer,
+#   newest, alternatives, picks, compare, explain, dates), backend/src/main/kotlin/ai/helper2/guide/Intents.kt (IntentRules),
+#   backend/src/main/kotlin/ai/helper2/guide/Guide.kt, GuideCost.kt (GuideAnswerCache.isCacheable, WINDOWED_TTL).
+# Render: cd docs/diagrams && d2 fmt flow-0032-guide-intents.d2 && d2 flow-0032-guide-intents.d2 flow-0032-guide-intents.svg
+
+...@style
+
+direction: down
+
+q: "Question (+ clarification, drop[])\nafter the cost guards of 0017" {class: end}
+
+read: AskGuide.read {
+  class: group
+  direction: down
+  plan: "GuideModel.plan (fast model):\nintent, subjects, window,\nconstraints, clarify" {class: ai}
+  ground: "Keep only what the words support:\nsubjects in the text, window only with\na time word (IntentRules.mentionsTime),\nintent grounded, constraints stated" {class: app}
+  backup: "Missing or dropped? IntentRules.intentOf /\nwindowOf on the text, else SUGGEST;\nwindow resolved from today (UTC),\nmonth = 30 days" {class: app}
+  newest: "A window with intent SUGGEST\nbecomes NEWEST" {class: app}
+  plan -> ground -> backup -> newest
+}
+
+clarify: "clarify set, no clarification yet, and\nCOMPARE with < 2 subjects or nothing to\nsearch (no subject, window or subject words)?" {class: decision}
+ask: "NEEDS_CLARIFICATION:\nquestion + 2–4 options\n(one model call, never cached)" {class: end}
+
+route: "Intent?" {class: decision}
+
+intents: Retrieval and answer by intent {
+  class: group
+  direction: down
+  suggest: "SUGGEST, HOW_TO:\ntool types (reading if asked),\nrelevance" {class: app}
+  learn: "LEARN: COURSE type,\nwindow if stated" {class: app}
+  nw: "NEWEST: tools + web announcements\npublished in the window; no window:\nsort NEWEST; browse when no subject\n(thinking on)" {class: app}
+  alt: "ALTERNATIVES: find the subject,\nsearch its use cases and type,\nsubject excluded" {class: app}
+  picks: "picks: choose, evidence gate,\npick outside the window rejected,\nreason check" {class: ai}
+  cmp: "COMPARE: one search per subject\n(size 5); both found?" {class: decision}
+  compare: "compare call: one column per subject,\ncells gated by quote" {class: ai}
+  explain: "WHAT_IS: subject's own entry, then\nweb explainers; explain call,\nsentences without a quote dropped" {class: ai}
+  when: "WHEN: no model call; events by name\nand window, else the subject's\npublished date, else closest results" {class: app}
+
+  suggest -> picks
+  learn -> picks
+  nw -> picks: "newest first"
+  alt -> picks
+  cmp -> compare: yes
+  cmp -> picks: "no: picks on the\nfound subject"
+}
+
+done: "GuideAnswer with intent, subjects, window;\ncached when model-checked\n(windowed: at most 6 h)" {class: end}
+
+q -> read.plan: {class: hot}
+read.newest -> clarify: {class: hot}
+clarify -> ask: yes
+clarify -> route: no {class: hot}
+route -> intents.suggest: "SUGGEST, HOW_TO"
+route -> intents.learn: LEARN
+route -> intents.nw: NEWEST {class: hot}
+route -> intents.alt: ALTERNATIVES
+route -> intents.cmp: COMPARE
+route -> intents.explain: WHAT_IS
+route -> intents.when: WHEN
+intents.picks -> done
+intents.compare -> done
+intents.explain -> done
+intents.when -> done

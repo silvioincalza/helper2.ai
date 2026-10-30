@@ -11,9 +11,9 @@ All diagrams: [docs/diagrams](../diagrams/README.md).
 
 | # | Decision | Builds on | Diagrams |
 |---|---|---|---|
-| [0001](0001-stack-and-runtime.md) | Stack and runtime: Java 25 + Kotlin, Spring Boot 4.1, Spring AI 2.0, React SPA served by Spring, JVM image | — | — |
-| [0002](0002-modular-monolith-hexagonal.md) | Modular monolith with Spring Modulith; hexagonal where business rules live; Kotlin domain, Java adapters | 0001 | — |
-| [0003](0003-contract-first-rest-api.md) | Contract-first REST with OpenAPI 3.1; generated server interfaces and TypeScript types; problem+json | 0001, 0002 | — |
+| [0001](0001-stack-and-runtime.md) | Stack and runtime: Java 25 + Kotlin, Spring Boot 4.1, Spring AI 2.0, React SPA served by Spring, JVM image | — | [flow](../diagrams/flow-0001-stack-and-runtime.svg) · [sequence](../diagrams/sequence-0001-stack-and-runtime.svg) |
+| [0002](0002-modular-monolith-hexagonal.md) | Modular monolith with Spring Modulith; hexagonal where business rules live; Kotlin domain, Java adapters | 0001 | [flow](../diagrams/flow-0002-modular-monolith-hexagonal.svg) · [sequence](../diagrams/sequence-0002-modular-monolith-hexagonal.svg) |
+| [0003](0003-contract-first-rest-api.md) | Contract-first REST with OpenAPI 3.1; generated server interfaces and TypeScript types; problem+json | 0001, 0002 | [flow](../diagrams/flow-0003-contract-first-rest-api.svg) · [sequence](../diagrams/sequence-0003-contract-first-rest-api.svg) |
 | [0004](0004-persistence-and-provenance.md) | PostgreSQL as system of record; ids from canonical URLs; source records; dates never invented; one schema migration + repeatable seeds; catalog writes off the request path | 0001, 0002 | [flow](../diagrams/flow-0004-persistence-and-provenance.svg) · [sequence](../diagrams/sequence-0004-persistence-and-provenance.svg) |
 | [0005](0005-redis-disposable-cache.md) | Redis as a disposable cache: source responses, fresh/stale windows, circuit breaker, counters, guide answers | 0002, 0004 | [flow](../diagrams/flow-0005-redis-disposable-cache.svg) · [sequence](../diagrams/sequence-0005-redis-disposable-cache.svg) |
 | [0006](0006-outbound-http.md) | Outbound HTTP: Apache HttpClient 5 behind RestClient; timeouts; no HTTPS→HTTP; error mapping | 0002, 0005 | [flow](../diagrams/flow-0006-outbound-http.svg) · [sequence](../diagrams/sequence-0006-outbound-http.svg) |
@@ -38,8 +38,9 @@ All diagrams: [docs/diagrams](../diagrams/README.md).
 | [0015](0015-ai-guide-evidence-gate.md) | AI guide: plan → retrieve → choose → deterministic evidence gate; streamed over SSE | 0008, 0009, 0012, 0014 | [flow](../diagrams/flow-0015-ai-guide-evidence-gate.svg) · [sequence](../diagrams/sequence-0015-ai-guide-evidence-gate.svg) |
 | [0016](0016-guide-reason-check.md) | Guide reason check: a second model call checks each reason; `checked` event | 0014, 0015 | [flow](../diagrams/flow-0016-guide-reason-check.svg) · [sequence](../diagrams/sequence-0016-guide-reason-check.svg) |
 | [0017](0017-guide-cost-guard.md) | Guide cost guard: per-minute limit, per-client daily quota, global daily cap, answer cache with config hash, single-flight, concurrency limit and deadline | 0005, 0014, 0015, 0016 | [flow](../diagrams/flow-0017-guide-cost-guard.svg) · [sequence](../diagrams/sequence-0017-guide-cost-guard.svg) |
-| [0031](0031-setup-guide.md) | Setup guide: "Guide me" from source data (MCP Registry, README config), one snippet per AI client, checked README steps and questions | 0002, 0004, 0015 | — |
-| [0038](0038-ai-content-marking.md) | Marking AI-written text (EU AI Act Art. 50): labels on screen, `aiContent` in the API, `data-ai-generated` in the page | 0003, 0014, 0015, 0019 | — |
+| [0031](0031-setup-guide.md) | Setup guide: "Guide me" from source data (MCP Registry, README config), one snippet per AI client, checked README steps and questions | 0002, 0004, 0015 | [flow](../diagrams/flow-0031-setup-guide.svg) · [sequence](../diagrams/sequence-0031-setup-guide.svg) |
+| [0032](0032-guide-intents.md) | Guide intents: understand the question, ask back when vague, retrieve and answer by intent | 0014, 0015, 0016, 0017, 0030 | [flow](../diagrams/flow-0032-guide-intents.svg) · [sequence](../diagrams/sequence-0032-guide-intents.svg) |
+| [0038](0038-ai-content-marking.md) | Marking AI-written text (EU AI Act Art. 50): labels on screen, `aiContent` in the API, `data-ai-generated` in the page | 0003, 0014, 0015, 0019 | [flow](../diagrams/flow-0038-ai-content-marking.svg) · [sequence](../diagrams/sequence-0038-ai-content-marking.svg) |
 
 ## Scout and catalog features
 
@@ -58,15 +59,18 @@ All diagrams: [docs/diagrams](../diagrams/README.md).
 | [0024](0024-http-edge-protection.md) | HTTP edge: rate limits (IPv6 /64), CSRF, CSP, forwarded headers, management port, SPA fallback and caching | 0001, 0005, 0007, 0023 | [flow](../diagrams/flow-0024-http-edge-protection.svg) · [sequence](../diagrams/sequence-0024-http-edge-protection.svg) |
 | [0025](0025-frontend-one-box.md) | Frontend: one page, one box, Radar design system, guide progress, accessibility, theme (system/light/dark) | 0001, 0003, 0008, 0015 | [flow](../diagrams/flow-0025-frontend-one-box.svg) · [sequence](../diagrams/sequence-0025-frontend-one-box.svg) |
 | [0026](0026-observability.md) | Observability: structured logs, OpenTelemetry traces, Prometheus meters, Grafana dashboard | 0001, 0008, 0014 | [flow](../diagrams/flow-0026-observability.svg) · [sequence](../diagrams/sequence-0026-observability.svg) |
-| [0027](0027-runtime-topology.md) | Runtime topology: Helm chart, three replicas on prod, Cloudflare tunnel, per-workload network policies, ServiceAccount without token, Redis auth, backups | 0001, 0004, 0005, 0007, 0018, 0023, 0024 | — |
+| [0027](0027-runtime-topology.md) | Runtime topology: Helm chart, three replicas on prod, Cloudflare tunnel, per-workload network policies, ServiceAccount without token, Redis auth, backups | 0001, 0004, 0005, 0007, 0018, 0023, 0024 | [flow](../diagrams/flow-0027-runtime-topology.svg) · [sequence](../diagrams/sequence-0027-runtime-topology.svg) |
 | [0028](0028-ci-cd.md) | CI/CD: GitHub Actions, PR checks, OpenBao OIDC, staging then approved prod | 0007, 0027 | [flow](../diagrams/flow-0028-ci-cd.svg) · [sequence](../diagrams/sequence-0028-ci-cd.svg) |
-| [0029](0029-release-versioning.md) | Release and versioning: semantic versions, immutable tags, release workflow | 0001, 0028 | [flow](../diagrams/flow-0029-release-versioning.svg) |
+| [0029](0029-release-versioning.md) | Release and versioning: semantic versions, immutable tags, release workflow | 0001, 0028 | [flow](../diagrams/flow-0029-release-versioning.svg) · [sequence](../diagrams/sequence-0029-release-versioning.svg) |
+| [0033](0033-resilience-policies.md) | Resilience policies (Resilience4j): circuit breakers, bulkheads and retries by name | 0002, 0005, 0006, 0008, 0026 | [flow](../diagrams/flow-0033-resilience-policies.svg) · [sequence](../diagrams/sequence-0033-resilience-policies.svg) |
+| [0034](0034-data-retention.md) | Data retention: a period and a mechanism for every store; daily purges per module | 0004, 0005, 0023, 0026 | [flow](../diagrams/flow-0034-data-retention.svg) · [sequence](../diagrams/sequence-0034-data-retention.svg) |
 
 ## Quality
 
 | # | Decision | Builds on | Diagrams |
 |---|---|---|---|
-| [0030](0030-guide-evaluation.md) | Guide evaluation: fixed question set, script, published results | 0015, 0016, 0017 | [flow](../diagrams/flow-0030-guide-evaluation.svg) |
+| [0030](0030-guide-evaluation.md) | Guide evaluation: fixed question set, script, published results | 0015, 0016, 0017 | [flow](../diagrams/flow-0030-guide-evaluation.svg) · [sequence](../diagrams/sequence-0030-guide-evaluation.svg) |
+| [0036](0036-search-evaluation-harness.md) | Search evaluation harness: frozen snapshots, pooled graded judgements, offline replay | 0008, 0009, 0012, 0030 | [flow](../diagrams/flow-0036-search-evaluation-harness.svg) · [sequence](../diagrams/sequence-0036-search-evaluation-harness.svg) |
 
 ## Writing a new ADR
 

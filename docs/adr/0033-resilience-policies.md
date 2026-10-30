@@ -102,9 +102,10 @@ The domain (Kotlin) must not depend on the library that implements them ([0002](
 - `deploy/monitoring/helper2-rules.yaml` — `Helper2CircuitOpen`, `Helper2CallsNotPermitted`.
 
 ## Diagrams
+[flow](../diagrams/flow-0033-resilience-policies.svg) · [sequence](../diagrams/sequence-0033-resilience-policies.svg)
+
 [flow 0008](../diagrams/flow-0008-federated-search.svg) (source policy in the fan-out) ·
 [sequence 0005](../diagrams/sequence-0005-redis-disposable-cache.svg) (the `redis` circuit)
 
 ## Roadmap
 - The guide's concurrency slots and the model calls as `llm-chat` and `llm-embed` policies: [roadmap](../roadmap.md#5-ai-quality-and-cost).
-- The session store's read guard on the `redis` policy ([0023](0023-identity-and-admin.md)): [roadmap](../roadmap.md#3-operations).

@@ -1,0 +1,38 @@
+# Sequence: one release, from the owner's annotated tag to the published GitHub release, the tag ruleset that blocks
+# a moved or deleted tag at push time, and the footer link that leads back to the release.
+# Source of truth: .github/workflows/release.yml, deploy/k8s/CI.md (Releases), frontend/vite.config.ts (__APP_VERSION__),
+#   frontend/src/components/Layout.tsx (footer link).
+# Render: cd docs/diagrams && d2 fmt sequence-0029-release-versioning.d2 && d2 sequence-0029-release-versioning.d2 sequence-0029-release-versioning.svg
+
+...@style
+
+shape: sequence_diagram
+
+owner: Owner {class: person}
+github: "GitHub\n(repository, tag ruleset\nrefs/tags/v*)" {class: ext}
+runner: "release.yml\n(GitHub-hosted runner)" {class: app}
+releases: "GitHub Releases\n(gh CLI)" {class: ext}
+visitor: "Visitor\n(site footer)" {class: person}
+
+tag: Release vX.Y.Z {
+  owner -> owner: "bump the version in build.gradle.kts,\npackage.json, Chart.yaml, openapi.yaml\n(release commit, merged to main)"
+  owner -> github: "git push origin vX.Y.Z\n(annotated tag on a main commit)" {class: hot}
+  github -> runner: "push event: tag v*,\nbefore, forced, deleted" {class: hot}
+  runner -> runner: "deleted, forced or a previous\nvalue? fail: tags are immutable"
+  runner -> github: "fetch refs/tags/vX.Y.Z and main"
+  github -> runner: "tag object, history"
+  runner -> runner: "name vX.Y.Z, annotated, on main,\nfour files = X.Y.Z at the commit?"
+  runner -> releases: "gh release view vX.Y.Z"
+  releases -> runner: "not found (an existing one is left as is)"
+  runner -> releases: "gh release create --verify-tag\nnotes = tag message + image\nhelper2:<commit[0:12]>" {class: hot}
+}
+
+blocked: Moving or deleting a release tag {
+  owner -> github: "git push --force / --delete vX.Y.Z"
+  github -> owner: "rejected by the tag ruleset (no bypass)"
+}
+
+footer: On the site {
+  visitor -> visitor: "footer shows v<package.json version>\n(__APP_VERSION__ from Vite)"
+  visitor -> releases: "open /releases/tag/vX.Y.Z"
+}
