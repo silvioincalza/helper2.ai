@@ -18,6 +18,9 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 - Imprint and contact (EU). The Privacy and Terms pages exist; the Sources page lists attributions.
 - Lawyer review of the Privacy and Terms pages and of the AI Act reading in
   [ADR 0038](adr/0038-ai-content-marking.md): provider role, metadata-only marking, deadline.
+- Lawyer review of the web-search quota ([ADR 0037](adr/0037-tavily-store-and-daily-quota.md)): whether an HMAC of
+  the address or of the query is personal data, legitimate interest as the basis, and the wording on the transfer of
+  queries to Tavily in the US.
 - Check each US source and GitHub for Data Privacy Framework certification, as the Privacy page states.
 - Make server and Traefik logs delete after 3 months, as the Privacy page states.
 - Review each source's terms again for commercial use.
