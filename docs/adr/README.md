@@ -58,7 +58,7 @@ All diagrams: [docs/diagrams](../diagrams/README.md).
 | [0024](0024-http-edge-protection.md) | HTTP edge: rate limits (IPv6 /64), CSRF, CSP, forwarded headers, management port, SPA fallback and caching | 0001, 0005, 0007, 0023 | [flow](../diagrams/flow-0024-http-edge-protection.svg) · [sequence](../diagrams/sequence-0024-http-edge-protection.svg) |
 | [0025](0025-frontend-one-box.md) | Frontend: one page, one box, Radar design system, guide progress, accessibility, theme (system/light/dark) | 0001, 0003, 0008, 0015 | [flow](../diagrams/flow-0025-frontend-one-box.svg) · [sequence](../diagrams/sequence-0025-frontend-one-box.svg) |
 | [0026](0026-observability.md) | Observability: structured logs, OpenTelemetry traces, Prometheus meters, Grafana dashboard | 0001, 0008, 0014 | [flow](../diagrams/flow-0026-observability.svg) · [sequence](../diagrams/sequence-0026-observability.svg) |
-| [0027](0027-runtime-topology.md) | Runtime topology: Helm chart, three replicas on prod, Cloudflare tunnel, network policy (egress), Redis auth, backups | 0001, 0004, 0005, 0007, 0018, 0023, 0024 | — |
+| [0027](0027-runtime-topology.md) | Runtime topology: Helm chart, three replicas on prod, Cloudflare tunnel, per-workload network policies, ServiceAccount without token, Redis auth, backups | 0001, 0004, 0005, 0007, 0018, 0023, 0024 | — |
 | [0028](0028-ci-cd.md) | CI/CD: GitHub Actions, PR checks, OpenBao OIDC, staging then approved prod | 0007, 0027 | [flow](../diagrams/flow-0028-ci-cd.svg) · [sequence](../diagrams/sequence-0028-ci-cd.svg) |
 | [0029](0029-release-versioning.md) | Release and versioning: semantic versions, immutable tags, release workflow | 0001, 0028 | [flow](../diagrams/flow-0029-release-versioning.svg) |
 
