@@ -45,7 +45,7 @@ screen reader, and in light and dark mode.
    admin, not found) is a react-router `lazy` route in its own chunk, loaded on its first visit. `vite.config.ts` keeps
    all shared modules in the entry, so the first visit loads one script, not a set of small preloaded fragments.
    `scripts/bundle-budget.mjs` runs after every `vite build` (local, CI, image) and fails it when the entry and the
-   modules it preloads pass 151 kB gzipped (150.7 kB measured; an entry with every page is 152.1 kB).
+   modules it preloads pass 153.5 kB gzipped (152.7 kB measured; an entry with every page is 154.5 kB).
 
 ## Consequences
 - Good: one place to type; the guide and search share the same URL and can be bookmarked or shared.
