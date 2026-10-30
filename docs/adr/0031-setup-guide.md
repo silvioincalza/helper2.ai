@@ -77,7 +77,8 @@ and a snippet copied into 19 clients' config files runs on the user's machine.
      reviewed for safety;
    - a step is never repeated in a later section; at most 8 per section.
    Measured on 11 real resources (2026-10-28): 9 with steps, in 1–10 s; one gated Hugging Face model had no
-   readable card, one README gave nothing that passed.
+   readable card, one README gave nothing that passed. The fixed setup set of [0030](0030-guide-evaluation.md)
+   (point 6) measures steps kept and rejected, snippet coverage and latency on every run.
 11. **Same function for "ask" about a tool.** The same endpoint takes an optional question; the answer is an
    ANSWER section with the same checks. Answers are cached in Redis for 7 days, keyed by a hash of resource,
    documents, question and prompt. A cached answer holds the checked steps and the documents' links and read
@@ -102,5 +103,4 @@ and a snippet copied into 19 clients' config files runs on the user's machine.
 
 ## Roadmap
 - Guide me on every result card (same panel, inline).
-- A fixed set of resources in the eval script (ADR 0030) with steps kept and rejected per reason.
 - PyPI package pages as a document source (no PyPI source in the catalog yet).
