@@ -1,0 +1,46 @@
+# Live: once a week, the source adapters against the real APIs (./gradlew liveTest, @Tag("live")).
+# The mapping tests replay recorded responses; this catches an API that changed its response, its terms of access
+# or its limits. Tests whose key is missing are skipped. Tavily costs 3 credits per run; GitHub, Hugging Face,
+# npm, arXiv and the MCP Registry cost nothing. Not called by CI or CD: a failure here never blocks a deploy.
+# Never add `pull_request` or `pull_request_target`: the job holds API keys and the repo is public.
+name: live
+
+on:
+  schedule:
+    # Mondays 05:17 UTC.
+    - cron: '17 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live
+  cancel-in-progress: false
+
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      H2_GITHUB_TOKEN: ${{ secrets.H2_GITHUB_TOKEN }}
+      H2_HF_TOKEN: ${{ secrets.H2_HF_TOKEN }}
+      H2_TAVILY_API_KEY: ${{ secrets.H2_TAVILY_API_KEY }}
+      H2_NEBIUS_API_KEY: ${{ secrets.H2_NEBIUS_API_KEY }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+      - run: ./gradlew --no-daemon liveTest
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: live-test-reports
+          path: backend/build/reports/tests/
+          retention-days: 7

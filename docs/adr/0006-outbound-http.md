@@ -14,8 +14,8 @@ state what happened.
 1. **One observed client for every remote API.** `platform.http.ObservedHttp` builds the Spring `RestClient` on
    Apache HttpClient 5 (5.6.5) with a connection pool (50 connections, 20 per host). Sources and Scout collectors use
    `ObservedHttp.restClientBuilder(timeout, observations)`. It lives in `platform`, so the catalog module (embeddings)
-   can use it too without depending on `sources`. `sources.HttpClients` adds only the base URL, the token and the
-   error mapping. The client sends each request once (its automatic retries are off): retries belong to the
+   can use it too without depending on `sources`. `sources.support.HttpClients` adds only the base URL, the token and
+   the error mapping. The client sends each request once (its automatic retries are off): retries belong to the
    caller's resilience policy ([0033](0033-resilience-policies.md)), where they are counted and bounded.
 2. **Timeouts.** The source's timeout is used once as the connect timeout and once as the response timeout.
    Waiting for a free pooled connection is limited to 250 ms (`POOL_WAIT`). Search source timeouts are
@@ -61,6 +61,10 @@ state what happened.
    queries, 30 s for indexing batches ([0012](0012-vector-search-pgvector.md)).
 12. **Model calls** go through Spring AI's own client, with `H2_LLM_TIMEOUT` (40 s) and `H2_LLM_MAX_RETRIES` (0, so the SDK does not retry);
    see [0014](0014-llm-integration.md). They are observed by `ModelCallMetrics`, not by `ObservedHttp`.
+13. **Live check, weekly.** Every source and collector adapter has one `@Tag("live")` test against the real API
+   (`*LiveTest` next to its adapter). Only `./gradlew liveTest` runs them, never `test`; a test whose key is not set
+   is skipped. `.github/workflows/live.yml` runs `liveTest` every Monday on a GitHub-hosted runner with the repository
+   secrets `H2_GITHUB_TOKEN`, `H2_HF_TOKEN`, `H2_TAVILY_API_KEY` and `H2_NEBIUS_API_KEY`. It is not part of CI or CD.
 
 ## Consequences
 - A failing source costs at most its timeout, and the search still answers with the other sources.
@@ -76,6 +80,8 @@ state what happened.
 - Embedding calls have the same span, `http.client.requests` timer and bounded `uri` tag as source calls.
 - A host that redirects a token-carrying call elsewhere, streams an oversized body or sends a malformed item
   costs that call or that item, never a token leak, the heap or the whole source.
+- An API that changes its response shape, its access or its limits shows up within a week as a failed `live` run,
+  not as a source that quietly returns nothing. Each run costs 3 Tavily credits; the other APIs are free.
 - `HttpClientsMappingTest`, `TokenRedirectTest`, `ArxivSourceTest`, `RedisOutboundThrottleIT`, `ObservedHttpRedirectTest`,
   `ObservedHttpRetryTest`, `ObservedHttpObservationTest` and `ObservedHttpUserAgentTest` cover the rules.
 
@@ -99,9 +105,12 @@ state what happened.
 - `backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` (`Run.collect`) — deadlines and outcomes.
 - `backend/src/main/kotlin/ai/helper2/search/Model.kt` (`SourceFailure`) — failure types.
 - `backend/src/main/java/ai/helper2/catalog/internal/NvidiaEmbedder.java` — embedding client on `ObservedHttp`.
+- `backend/src/test/java/ai/helper2/sources/*/*LiveTest.java`, `.github/workflows/live.yml` — the weekly live check.
 
 ## Diagrams
 [flow](../diagrams/flow-0006-outbound-http.svg) · [sequence](../diagrams/sequence-0006-outbound-http.svg)
+
+The weekly live check (13) is a scheduled test run, not a runtime path, so the diagrams leave it out.
 
 ## Roadmap
 - Total deadline per call instead of a per-read timeout: [roadmap](../roadmap.md#6-search-and-catalog).
