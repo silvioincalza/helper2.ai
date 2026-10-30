@@ -16,7 +16,8 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
 2. **Workloads.** `helper2` Deployment, `postgres` StatefulSet
    (5 Gi `local-path` volume), `redis` Deployment, `cloudflared` Deployment, and in prod the `pg-backup`
    CronJob. Every container runs as non-root with a read-only root file system, no capabilities and the
-   `RuntimeDefault` seccomp profile.
+   `RuntimeDefault` seccomp profile. Every pod runs as the ServiceAccount `helper2`, which has no RoleBinding,
+   with `automountServiceAccountToken: false`: no workload calls the Kubernetes API, so no pod holds a token.
 3. **App replicas.** `app.replicas`: 3 on prod, 1 on staging. `RollingUpdate` with `maxUnavailable: 0` and
    `maxSurge: 1`: one new pod at a time, and an old pod goes only when the new one is ready. Topology spread over
    `kubernetes.io/hostname` (`ScheduleAnyway`). Above 1 replica a PodDisruptionBudget keeps `replicas - 1` available
@@ -58,7 +59,8 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
 
 ## Consequences
 - No inbound port is open on the cluster; Cloudflare is the only way in.
-- A compromised app pod can reach only the internet on 443, its own database and cache, and the trace collector.
+- A compromised app pod can reach only the internet on 443, its own database and cache, and the trace collector,
+  and holds no Kubernetes API credential.
 - A deploy or a node drain keeps the site up on prod, and one pod failing leaves two serving. Staging (1 replica)
   still has no failover, but a deploy there also starts the new pod before the old one stops.
 - A deploy takes longer (pods start one after another, startup up to 300 s each).
@@ -78,7 +80,7 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
 ## Code
 - `deploy/helm/helper2/values.yaml`, `values-staging.yaml`, `values-prod.yaml` — settings.
 - `deploy/helm/helper2/templates/app.yaml`, `postgres.yaml`, `redis.yaml`, `cloudflared.yaml`, `backup.yaml`,
-  `networkpolicy.yaml`, `secret.yaml`, `_helpers.tpl` — workloads and policies.
+  `networkpolicy.yaml`, `serviceaccount.yaml`, `secret.yaml`, `_helpers.tpl` — workloads and policies.
 - `deploy/k8s/terraform/main.tf`, `rbac.tf` — namespace, tunnel, DNS, redirect, deployer.
 - `deploy/k8s/Makefile`, `deploy/k8s/README.md` — deploy, rollback, backup and restore steps.
 

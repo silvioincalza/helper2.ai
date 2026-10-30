@@ -18,6 +18,8 @@ spec:
         checksum/auth: {{ get (include "helper2.env" . | fromJson) "H2_REDIS_PASSWORD" | sha256sum }}
       {{- end }}
     spec:
+      serviceAccountName: helper2
+      automountServiceAccountToken: false
       securityContext: { runAsNonRoot: true, runAsUser: 999, runAsGroup: 999, seccompProfile: { type: RuntimeDefault } }
       containers:
         - name: redis

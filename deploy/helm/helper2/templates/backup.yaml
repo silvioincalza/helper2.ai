@@ -40,6 +40,8 @@ spec:
         metadata: { labels: { app: pg-backup } }
         spec:
           restartPolicy: OnFailure
+          serviceAccountName: helper2
+          automountServiceAccountToken: false
           securityContext: { runAsNonRoot: true, runAsUser: 70, runAsGroup: 70, fsGroup: 70, seccompProfile: { type: RuntimeDefault } }
           {{- /* With an off-site copy the dump runs first, as an init container, and the upload after it. */}}
           {{- if $offsite.enabled }}
