@@ -44,7 +44,7 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 
 ### Quality gates
 - **Browser end-to-end tests (skipped for now, owner decision 27 Oct 2026).** No browser journey is automated,
-  and no tool is installed (the unused Playwright setup was removed). Later, choose the tool, then on the `demo` profile:
+  and no tool is installed. Later, choose the tool, then on the `demo` profile:
   search with a partial result and the source status panel; ask the guide, follow the streamed steps, close the
   answer and keep the search; back and forward; the theme switch. Then run them in CI.
   See [user-journeys.md](user-journeys.md) (SC-1 to SC-3).
