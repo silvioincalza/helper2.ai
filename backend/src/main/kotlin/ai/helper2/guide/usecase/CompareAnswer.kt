@@ -91,7 +91,7 @@ internal class CompareAnswer(
                 .toList()
         }
         progress.validated(rows.sumOf { row -> row.cells.count { it.text != null } }, rejected)
-        log.info("guide compare: subjects=${present.size} rows=${proposal.rows.size} keptRows=${rows.size} rejectedCells=$rejected")
+        q.counts += "subjects=${present.size} rows=${proposal.rows.size} keptRows=${rows.size} rejectedCells=$rejected"
         val claims = rows.flatMapIndexed { i, row ->
             row.cells.filter { it.text != null }.map { cell -> ReasonClaim("r${i + 1}-${cell.subjectKey}", cell.text!!, cell.quote!!, byKey.getValue(cell.subjectKey).text, emptyList()) }
         }

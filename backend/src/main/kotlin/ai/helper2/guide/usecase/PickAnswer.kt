@@ -150,10 +150,8 @@ internal class PickAnswer(
         val keptRanks = checked.picks.map { candidates.indexOf(it.candidate) + 1 }
         keptRanks.forEach { meters.counter("helper2.guide.picks", "rank", AskGuide.rankBand(it)).increment() }
         val verdicts = if (checked.picks.isEmpty()) emptyMap() else reasonCheck.verdicts(q, model, claimsOf(checked), progress)
-        log.info(
-            "guide picks: candidates=${candidates.size} kept=${checked.picks.size} keptRanks=$keptRanks rejected=${checked.rejected} " +
-                "rejectedBy=${checked.rejectedBy} reasons=${verdicts.values.groupingBy { it }.eachCount()}",
-        )
+        q.counts += "candidates=${candidates.size} kept=${checked.picks.size} keptRanks=$keptRanks rejected=${checked.rejected} " +
+            "rejectedBy=${checked.rejectedBy} reasons=${verdicts.values.groupingBy { it }.eachCount()}"
         if (checked.picks.isEmpty()) {
             return degraded(clock, GuideStatus.PARTIAL, query, candidates, outcome, checked.rejected, modelUsed = true, constraints).withNotices(retrieval.notices)
         }

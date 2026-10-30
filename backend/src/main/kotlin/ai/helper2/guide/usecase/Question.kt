@@ -47,6 +47,9 @@ internal class Question(val text: String, val path: AudiencePath?, val clarifica
 
     /** Milliseconds per step, in the order the steps ran, for the question's log line. */
     val timings = LinkedHashMap<String, Long>()
+
+    /** What the steps found (`kept=2 keptRanks=[1, 4]`), for the question's log line; never user text. */
+    val counts = mutableListOf<String>()
 }
 
 /** Set while answering, for the question metric: the status alone cannot tell a spent budget from an outage. */

@@ -88,7 +88,7 @@ internal class ExplainAnswer(
             }.take(limits.maxSentences)
         }
         progress.validated(kept.size, rejected)
-        log.info("guide explain: candidates=${candidates.size} proposed=${proposal.sentences.size} kept=${kept.size} rejected=$rejected")
+        q.counts += "candidates=${candidates.size} proposed=${proposal.sentences.size} kept=${kept.size} rejected=$rejected"
         val claims = kept.mapIndexed { i, (key, p) -> ReasonClaim("e${i + 1}", p.text.trim(), p.quote.trim(), byKey.getValue(key).text, emptyList()) }
         val verdicts = if (claims.isEmpty()) emptyMap() else reasonCheck.verdicts(q, model, claims, progress)
         val sentences = kept.mapIndexedNotNull { i, (key, p) ->

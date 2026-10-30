@@ -193,8 +193,10 @@ class AskGuide(
             return answerByIntent(q, progress, asked, model)
         } finally {
             // Timings feed the evaluation and the provider feedback; no user text is logged.
-            log.info("guide steps: intent=${q.intentTag} ${q.timings.entries.joinToString(" ") { (step, ms) -> "$step=${ms}ms" }}" +
-                (model?.let { " fast=${it.fastModel} reasoning=${it.reasoningModel}" } ?: ""))
+            log.info(
+                (listOf("guide timings: intent=${q.intentTag}") + q.timings.map { (step, ms) -> "$step=${ms}ms" } +
+                    listOfNotNull(model?.let { "fast=${it.fastModel} reasoning=${it.reasoningModel}" }) + q.counts).joinToString(" "),
+            )
         }
     }
 
