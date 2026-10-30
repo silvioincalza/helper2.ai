@@ -136,6 +136,18 @@ describe('resource detail', () => {
     expect(screen.getByText('No verified relationships.')).toBeInTheDocument();
   });
 
+  it('marks values extracted by AI as AI-generated and values stated by the source not (ADR 0038)', async () => {
+    mockApi({ [`GET /resources/${ID}`]: () => makeDetail({ assertions: [
+      { field: 'license', value: 'MIT', origin: 'AI_EXTRACTED', verification: 'VERIFIED', sourceId: 'github', evidence: [ev] },
+      { field: 'stars', value: '120', origin: 'SOURCE_PROVIDED', verification: 'VERIFIED', sourceId: 'github', evidence: [] },
+    ] }) });
+    renderApp(`/resource/${ID}`);
+    const license = await screen.findByRole('rowheader', { name: 'license' });
+    const stars = screen.getByRole('rowheader', { name: 'stars' });
+    expect(within(license.closest('tr') as HTMLElement).getByText('MIT')).toHaveAttribute('data-ai-generated', 'true');
+    expect(within(stars.closest('tr') as HTMLElement).getByText('120')).not.toHaveAttribute('data-ai-generated');
+  });
+
   it('renders assertions with origin, verification and evidence excerpt', async () => {
     mockApi({ [`GET /resources/${ID}`]: () => makeDetail({ assertions: [{ field: 'license', value: 'MIT', origin: 'AI_EXTRACTED', verification: 'VERIFIED', sourceId: 'github', evidence: [ev] }] }) });
     renderApp(`/resource/${ID}`);

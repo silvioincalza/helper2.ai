@@ -54,6 +54,22 @@ describe('GuideAnswer intents (ADR 0032)', () => {
     expect(onRefine).toHaveBeenLastCalledWith({ drop: ['constraint:free'] });
   });
 
+  it('marks the model-written question, options and requirements as AI-generated (ADR 0038)', () => {
+    view({
+      ...base,
+      status: 'NEEDS_CLARIFICATION',
+      clarification: { question: 'New tools for what?', options: ['coding', 'agents'] },
+    });
+    expect(screen.getByRole('heading', { name: 'New tools for what?' })).toHaveAttribute('data-ai-generated', 'true');
+    expect(screen.getByText('coding')).toHaveAttribute('data-ai-generated', 'true');
+  });
+
+  it('marks requirements read by the model as AI-generated, and the period it computed in code not (ADR 0038)', () => {
+    view({ ...base, window: { from: '2026-09-28', to: '2026-10-28' }, constraints: ['free'] });
+    expect(screen.getByText('free')).toHaveAttribute('data-ai-generated', 'true');
+    expect(screen.getByText('Created 2026-09-28 – 2026-10-28').closest('[data-ai-generated]')).toBeNull();
+  });
+
   it('removes the intent when no period holds it in place', async () => {
     const onRefine = view({ ...base, intent: 'NEWEST' });
     await userEvent.click(screen.getByRole('button', { name: 'Remove “New resources” and ask again' }));

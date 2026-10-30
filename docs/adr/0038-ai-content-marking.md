@@ -25,7 +25,9 @@ to the text.
 2. **API: catalog values keep their origin.** `ResultCard.descriptionOrigin` and `Assertion.origin` already say
    `AI_SUMMARY` or `AI_EXTRACTED`, and `AiSummary.model` names the model. No change.
 3. **Page: an attribute on every AI-written element.** `data-ai-generated="true"`, plus `data-ai-model` when the
-   model is known (`src/lib/aiMark.ts`). The guide answer carries `data-ai-provider` and `data-ai-models`.
+   model is known (`src/lib/aiMark.ts`): every field the API lists as AI-written (search query, requirements, reasons,
+   prompt, clarification question and options, comparison cells, explanation sentences), AI summaries and values
+   extracted by AI. The guide answer carries `data-ai-provider` and `data-ai-models`.
    Quotes, titles and links are never marked: they come from the sources.
 4. **Explained in public.** The Mission page has a section "How we mark AI text".
 5. **No hidden characters in the text.** We do not add zero-width or other invisible characters.
