@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ADMIN, ANON, USER } from '@/test/fixtures';
 import { mockApi, problem } from '@/test/mockApi';
@@ -103,10 +103,10 @@ describe('admin page', () => {
       expect(await screen.findByText('Running')).toBeInTheDocument();
 
       listed = [{ ...run, status: 'SUCCEEDED', itemsSeen: 4 }];
-      await vi.advanceTimersByTimeAsync(RUN_POLL_MS);
+      await act(() => vi.advanceTimersByTimeAsync(RUN_POLL_MS));
       expect(await screen.findByText('Succeeded')).toBeInTheDocument();
       const polls = m.callsTo('GET', '/admin/scout-runs').length;
-      await vi.advanceTimersByTimeAsync(RUN_POLL_MS * 2);
+      await act(() => vi.advanceTimersByTimeAsync(RUN_POLL_MS * 2));
       expect(m.callsTo('GET', '/admin/scout-runs')).toHaveLength(polls);
     } finally {
       vi.useRealTimers();
