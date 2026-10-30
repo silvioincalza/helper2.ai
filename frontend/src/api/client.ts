@@ -198,6 +198,7 @@ export const api = {
   resolveReviewItem: (id: string, body: ReviewResolution) =>
     request<ReviewItem>('PUT', `/admin/review-items/${encodeURIComponent(id)}/resolution`, { body }),
   listScoutRuns: (signal?: AbortSignal) => request<ScoutRun[]>('GET', '/admin/scout-runs', { signal }),
+  /** Answers at once with the started run's records (RUNNING); follow them with listScoutRuns. 409 while a run holds the lock. */
   startScoutRun: (sourceId?: string) =>
     request<ScoutRun[]>('POST', '/admin/scout-runs', { body: sourceId ? { sourceId } : {} }),
 };

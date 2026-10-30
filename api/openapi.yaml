@@ -385,14 +385,19 @@ paths:
     post:
       tags: [admin]
       operationId: startScoutRun
-      summary: Run collection for one source (or all) now.
+      summary: Start collection for one source (or all) now.
+      description: >-
+        Answers as soon as the run holds the cluster-wide Scout run lock; the run then collects in the background.
+        Poll GET /admin/scout-runs for its progress.
       requestBody:
         content:
           application/json:
             schema: { $ref: '#/components/schemas/ScoutRunRequest' }
       responses:
         '202':
-          description: Run finished or started; see status.
+          description: >-
+            Run started: one record per selected collector, RUNNING (SKIPPED when the collector is disabled). The ids
+            match the records listed by GET /admin/scout-runs.
           content:
             application/json:
               schema: { type: array, items: { $ref: '#/components/schemas/ScoutRun' } }

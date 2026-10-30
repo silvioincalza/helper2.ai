@@ -37,6 +37,9 @@ interface ScoutStore {
     fun saveCursor(sourceId: String, cursor: ScoutCursor)
     fun save(run: RunSummary)
     fun recent(limit: Int): List<RunSummary>
+
+    /** Closes every RUNNING record as FAILED at [at]; returns how many. */
+    fun markInterrupted(at: Instant): Int
 }
 
 /** Outbound port: when the last scheduled run ended, seen by every replica. Admin runs are not recorded. */

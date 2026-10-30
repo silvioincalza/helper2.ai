@@ -63,7 +63,7 @@ class AdminController implements AdminApi {
 
     @Override
     public ResponseEntity<List<ScoutRunDto>> startScoutRun(@Nullable ScoutRunRequestDto body) {
-        List<RunSummary> runs = runner.tryRunAll(body == null ? null : body.getSourceId());
+        List<RunSummary> runs = runner.tryStart(body == null ? null : body.getSourceId());
         if (runs == null) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "A Scout run is already in progress. Try again when it ends.");
         }

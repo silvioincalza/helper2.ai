@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { api } from '@/api/client';
+import { api, ApiError } from '@/api/client';
 import type { ReviewStatus } from '@/api/types';
 import { Pagination } from '@/components/Pagination';
 import { SignIn } from '@/components/SignIn';
@@ -10,6 +10,8 @@ import { useApi } from '@/hooks/useApi';
 import { useTitle } from '@/hooks/useTitle';
 import { formatDate } from '@/lib/format';
 
+/** How often the run listing is reloaded while a Scout run is RUNNING. */
+export const RUN_POLL_MS = 3000;
 const REVIEW_PAGE_SIZE = 20;
 
 export default function AdminPage() {
@@ -17,13 +19,24 @@ export default function AdminPage() {
   const { me, isAdmin, loaded } = useMe();
   const [params] = useSearchParams();
   const [status, setStatus] = useState<ReviewStatus>('OPEN');
+  const [actionError, setActionError] = useState<'failed' | 'runInProgress' | null>(null);
   const [page, setPage] = useState(0);
-  const [actionError, setActionError] = useState(false);
   const [busy, setBusy] = useState(false);
   const items = useApi(`review/${status}/${page}/${isAdmin}`, (s) =>
     (isAdmin ? api.listReviewItems(status, page, REVIEW_PAGE_SIZE, s) : Promise.resolve({ items: [], total: 0 })));
   const runs = useApi(`runs/${isAdmin}`, (s) => (isAdmin ? api.listScoutRuns(s) : Promise.resolve([])));
   useTitle(t('nav.admin'));
+
+  // A run collects in the background after its start is accepted: follow it on the listing until no run is RUNNING.
+  // While it reloads, the listing keeps showing the previous runs.
+  const runList = runs.data ?? runs.previous ?? [];
+  const pollRuns = runs.data?.some((r) => r.status === 'RUNNING') ?? false;
+  const reloadRuns = runs.reload;
+  useEffect(() => {
+    if (!pollRuns) return;
+    const timer = setTimeout(reloadRuns, RUN_POLL_MS);
+    return () => clearTimeout(timer);
+  }, [pollRuns, runs.data, reloadRuns]);
 
   if (!loaded) return <p role="status">{t('common.loading')}</p>;
   if (!isAdmin && !me.authenticated && me.loginProviders.length > 0) {
@@ -45,12 +58,12 @@ export default function AdminPage() {
   const act = async (request: () => Promise<unknown>, then: () => void) => {
     if (busy) return;
     setBusy(true);
-    setActionError(false);
+    setActionError(null);
     try {
       await request();
       then();
-    } catch {
-      setActionError(true);
+    } catch (e) {
+      setActionError(e instanceof ApiError && e.status === 409 ? 'runInProgress' : 'failed');
     } finally {
       setBusy(false);
     }
@@ -62,7 +75,7 @@ export default function AdminPage() {
   return (
     <div>
       <h1>{t('admin.title')}</h1>
-      {actionError && <p role="alert" className="banner banner-warn">{t('admin.actionFailed')}</p>}
+      {actionError && <p role="alert" className="banner banner-warn">{t(actionError === 'runInProgress' ? 'admin.runInProgress' : 'admin.actionFailed')}</p>}
 
       <section aria-labelledby="rq-h" className="panel">
         <h2 id="rq-h">{t('admin.reviewQueue')}</h2>
@@ -100,7 +113,7 @@ export default function AdminPage() {
       <section aria-labelledby="sr-h" className="panel">
         <h2 id="sr-h">{t('admin.scoutRuns')}</h2>
         <button type="button" className="btn btn-primary" aria-disabled={disabled} onClick={() => void runNow()}>{t('admin.runNow')}</button>
-        {runs.loading ? <p role="status">{t('common.loading')}</p> : (runs.data ?? []).length === 0 ? <p className="muted">{t('admin.noRuns')}</p> : (
+        {runs.loading && runs.previous === undefined ? <p role="status">{t('common.loading')}</p> : runList.length === 0 ? <p className="muted">{t('admin.noRuns')}</p> : (
           <div className="table-wrap">
             <table>
               <thead>
@@ -114,7 +127,7 @@ export default function AdminPage() {
                 </tr>
               </thead>
               <tbody>
-                {(runs.data ?? []).map((r) => (
+                {runList.map((r) => (
                   <tr key={r.id}>
                     <th scope="row">{r.sourceId}</th>
                     <td>{t(`admin.runStatus.${r.status}`)}</td>
