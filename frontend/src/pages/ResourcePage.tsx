@@ -1,7 +1,7 @@
 import { Link, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { api, ApiError } from '@/api/client';
-import type { Relationship } from '@/api/types';
+import type { Relationship, ResourceDetail } from '@/api/types';
 import { OriginLabel, VerificationBadge } from '@/components/Badges';
 import { EvidenceList } from '@/components/EvidenceList';
 import { ExternalLink } from '@/components/ExternalLink';
@@ -14,6 +14,8 @@ import { useApi } from '@/hooks/useApi';
 import { useTitle } from '@/hooks/useTitle';
 import { formatDate } from '@/lib/format';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
+import { NEW_DESIGN_ENABLED } from '@/lib/features';
+import { ResourceV2 } from '@/components/results/ResourceV2';
 
 function RelList({ items }: { items: Relationship[] }) {
   const { t } = useTranslation();
@@ -33,7 +35,7 @@ function RelList({ items }: { items: Relationship[] }) {
 
 export default function ResourcePage() {
   const { id = '' } = useParams();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const q = useApi(`resource/${id}`, (signal) => api.getResource(id, signal));
   const d = q.data;
   useTitle(d?.card.title ?? '');
@@ -50,8 +52,7 @@ export default function ResourcePage() {
     );
   }
 
-  const confirmed = d.relationships.filter((r) => r.verification === 'VERIFIED');
-  const candidates = d.relationships.filter((r) => r.verification === 'UNVERIFIED' || r.verification === 'CONFLICTING');
+  if (NEW_DESIGN_ENABLED) return <ResourceV2 detail={d}><DetailSections detail={d} /></ResourceV2>;
 
   return (
     <div className="detail">
@@ -59,6 +60,18 @@ export default function ResourcePage() {
       <ResultCardView card={d.card} detailed />
       {canGuide(d.card) && <SetupGuidePanel id={id} title={d.card.title} />}
 
+      <DetailSections detail={d} />
+    </div>
+  );
+}
+
+/** Summary, recorded facts, relationships, source records and the report form: the same in both designs. */
+function DetailSections({ detail: d }: { detail: ResourceDetail }) {
+  const { t, i18n } = useTranslation();
+  const confirmed = d.relationships.filter((r) => r.verification === 'VERIFIED');
+  const candidates = d.relationships.filter((r) => r.verification === 'UNVERIFIED' || r.verification === 'CONFLICTING');
+  return (
+    <>
       <section aria-labelledby="sum-h" className="panel">
         <h2 id="sum-h">{t('detail.summary')}</h2>
         <p className="muted small">{t(`enrichment.${d.enrichmentStatus}`)}</p>
@@ -156,6 +169,6 @@ export default function ResourcePage() {
         <h2 id="report-h">{t('report.title')}</h2>
         <ReportForm resourceId={d.card.id} />
       </section>
-    </div>
+    </>
   );
 }

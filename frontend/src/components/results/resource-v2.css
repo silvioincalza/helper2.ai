@@ -1,0 +1,14 @@
+/* Design v2 resource page (ADR 0040, 4). Reuses the preview classes from results-v2.css. Only semantic tokens. */
+.h2-res { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4) 0 var(--space-7); }
+.h2-res__back { margin: 0; }
+.h2-res__back a { min-height: var(--target-min); display: inline-flex; align-items: center; font-weight: 600; color: var(--accent-deep); text-decoration: none; }
+.h2-res__back a:hover { text-decoration: underline; }
+.h2-res__grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 340px); gap: var(--space-6); align-items: start; }
+.h2-res__main { min-width: 0; }
+.h2-res__main .h2-pv__title { font-size: clamp(1.8rem, 1.6vw + 1.2rem, 2.6rem); }
+.h2-res__text { margin: var(--space-2) 0 0; font-size: 1.0625rem; line-height: 1.65; color: var(--ink-2); }
+.h2-res__details { margin-top: var(--space-5); display: flex; flex-direction: column; gap: var(--space-4); }
+.h2-res__side { min-width: 0; padding: var(--space-4) var(--space-5); border: 1px solid var(--border); border-radius: var(--radius-xl); background: var(--surface); }
+.h2-res__side > section:first-child .h2-pv__sec { margin-top: 0; padding-top: 0; border-top: 0; }
+.h2-res__side .h2-facts { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 860px) { .h2-res__grid { grid-template-columns: minmax(0, 1fr); } }
