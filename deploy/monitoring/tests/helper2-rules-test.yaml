@@ -63,7 +63,7 @@ tests:
             exp_annotations:
               summary: "Daily budget guide is below 20% (prod)."
               description: "Only 16.67% of today's model calls are left. When it reaches 0 the feature degrades until 00:00 UTC (guide: search-only answers; enrichment and classifier: skipped; translation: query sent as typed)."
-              runbook: "Dashboard panels 'Questions by outcome' (AI guide) or 'Enrichment outcomes' (Scout): normal traffic or one loop/abuser? Caps: H2_GUIDE_DAILY_MODEL_CALLS (guide), H2_SEARCH_DAILY_TRANSLATIONS (search_translation), H2_SCOUT_DAILY_ENRICHMENT_CALLS (scout_enrichment), H2_SCOUT_AWESOME_CLASSIFIER_DAILY_CALLS (scout_classifier), helper2.setup.guide.daily-model-calls (tool_guide)."
+              runbook: "Dashboard panels 'Questions by outcome' (AI guide) or 'Enrichment outcomes' (Scout): normal traffic or one loop/abuser? Caps: H2_GUIDE_DAILY_MODEL_CALLS (guide), H2_SEARCH_DAILY_TRANSLATIONS (search_translation), H2_SCOUT_DAILY_ENRICHMENT_CALLS (scout_enrichment), H2_SCOUT_AWESOME_CLASSIFIER_DAILY_CALLS (scout_classifier), H2_SETUP_GUIDE_DAILY_MODEL_CALLS (tool_guide)."
 
   # Daily budget: the budget label comes from the gauge name (Scout enrichment, spent).
   - interval: 5m
@@ -81,7 +81,7 @@ tests:
             exp_annotations:
               summary: "Daily budget scout_enrichment is below 20% (prod)."
               description: "Only 0% of today's model calls are left. When it reaches 0 the feature degrades until 00:00 UTC (guide: search-only answers; enrichment and classifier: skipped; translation: query sent as typed)."
-              runbook: "Dashboard panels 'Questions by outcome' (AI guide) or 'Enrichment outcomes' (Scout): normal traffic or one loop/abuser? Caps: H2_GUIDE_DAILY_MODEL_CALLS (guide), H2_SEARCH_DAILY_TRANSLATIONS (search_translation), H2_SCOUT_DAILY_ENRICHMENT_CALLS (scout_enrichment), H2_SCOUT_AWESOME_CLASSIFIER_DAILY_CALLS (scout_classifier), helper2.setup.guide.daily-model-calls (tool_guide)."
+              runbook: "Dashboard panels 'Questions by outcome' (AI guide) or 'Enrichment outcomes' (Scout): normal traffic or one loop/abuser? Caps: H2_GUIDE_DAILY_MODEL_CALLS (guide), H2_SEARCH_DAILY_TRANSLATIONS (search_translation), H2_SCOUT_DAILY_ENRICHMENT_CALLS (scout_enrichment), H2_SCOUT_AWESOME_CLASSIFIER_DAILY_CALLS (scout_classifier), H2_SETUP_GUIDE_DAILY_MODEL_CALLS (tool_guide)."
 
   # Scout age (the gauge holds epoch seconds; test time starts at epoch 0). hf-trending (daily) last succeeded at
   # 1h: quiet at 49h (48 h old), fires at 73h. tavily-scout (every 5 days) is as old and stays quiet; mcp-registry
@@ -219,6 +219,30 @@ tests:
               summary: "Resources have waited for an embedding for 3 hours (prod)."
               description: "The embedding backlog has stayed above 0 for 3 hours (120 resources now); a full reindex of the catalog takes about 2 hours."
               runbook: "If Helper2EmbeddingIndexerStalled fires too, fix that first. Otherwise resources arrive faster than the indexer embeds them (helper2.embedding.batch 50 every 15 s = 200 a minute)."
+
+  # Review backlog: 60 OPEN items for a day fire; 40 stay quiet. Two replicas report the same count.
+  - interval: 1m
+    input_series:
+      - series: 'helper2_review_open_items{application="helper2", environment="prod", instance="a"}'
+        values: '60x1560'
+      - series: 'helper2_review_open_items{application="helper2", environment="prod", instance="b"}'
+        values: '60x1560'
+      - series: 'helper2_review_open_items{application="helper2", environment="staging", instance="a"}'
+        values: '40x1560'
+    alert_rule_test:
+      - eval_time: 12h
+        alertname: Helper2ReviewBacklog
+        exp_alerts: []
+      - eval_time: 25h
+        alertname: Helper2ReviewBacklog
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              environment: prod
+            exp_annotations:
+              summary: "More than 50 review items have waited for a decision for a day (prod)."
+              description: "60 review items are OPEN. Until someone decides them, AI-proposed relationships stay unverified and user reports go unanswered."
+              runbook: "Admin page, Review: decide or reject in bulk by kind. A sudden rise of one kind (ENRICHMENT_VALIDATION, RELATIONSHIP_CANDIDATE) points to an enrichment prompt or model change."
 
   # Backup: tonight's failed pg-backup Job fires; it clears once the Job is a day old. A Job that succeeded is quiet.
   - interval: 1h
