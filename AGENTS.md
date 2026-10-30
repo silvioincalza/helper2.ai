@@ -27,7 +27,8 @@ Run the relevant tests before calling a change done.
 
 ## How to work
 
-- Modular monolith, hexagonal: domain and use cases in the core, adapters for DB, LLM, HTTP, queue.
+- Modular monolith (single repo; the style is used when Silvio asks or the project is one repo),
+  hexagonal: domain and use cases in the core, adapters for DB, LLM, HTTP, queue.
   One explicit use case per business action. Lightweight DDD: ubiquitous language, clear modules.
 - TDD for domain logic, BDD for user-visible behaviour, integration tests for adapters.
 - Before adding a library or tool: compare 2-3 candidates (fit, maintenance, licence, lock-in,
