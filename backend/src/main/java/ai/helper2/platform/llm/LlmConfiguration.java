@@ -21,11 +21,16 @@ class LlmConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(LlmConfiguration.class);
 
+    /** Every module's model settings; startup stops here when a configured model is not an NVIDIA one (NvidiaOnly). */
     @Bean
     LlmSettings llmSettings(@Value("${spring.ai.model.chat:none}") String chatProvider,
                             @Value("${helper2.llm.provider-label:}") String providerLabel,
                             @Value("${helper2.llm.fast-model:}") String fastModel,
-                            @Value("${helper2.llm.reasoning-model:}") String reasoningModel) {
+                            @Value("${helper2.llm.reasoning-model:}") String reasoningModel,
+                            @Value("${spring.ai.openai.chat.model:}") String chatModel,
+                            @Value("${helper2.embedding.api-key:}") String embeddingKey,
+                            @Value("${helper2.embedding.model:}") String embeddingModel) {
+        NvidiaOnly.require(chatProvider, chatModel, fastModel, reasoningModel, embeddingKey, embeddingModel);
         return new LlmSettings(chatProvider, providerLabel, fastModel, reasoningModel);
     }
 
