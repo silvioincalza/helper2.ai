@@ -1,6 +1,6 @@
 # 0025 — Frontend: one page, one box, Radar design system, guide progress, accessibility, theme (system/light/dark)
 
-**Status.** Accepted (2026-10-27). **Builds on:** [0001](0001-stack-and-runtime.md), [0003](0003-contract-first-rest-api.md), [0008](0008-federated-search.md), [0015](0015-ai-guide-evidence-gate.md)
+**Status.** Accepted (2026-10-27). Look and layout will be superseded by [0040](0040-frontend-design-v2.md) when it ships. **Builds on:** [0001](0001-stack-and-runtime.md), [0003](0003-contract-first-rest-api.md), [0008](0008-federated-search.md), [0015](0015-ai-guide-evidence-gate.md)
 
 ## Context
 Users come with a need, not with a choice between "search" and "ask an artificial intelligence (AI)". Two boxes or a mode switch make them
