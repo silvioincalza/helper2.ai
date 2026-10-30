@@ -1,9 +1,11 @@
 # Flowchart: what each Scout collector does in collect(), after RunScout has called it.
 # Shows the shared gates (enabled, token, run interval) and the decisions inside each collector,
 # with the awesome-list classifier in detail.
-# Source of truth: backend/src/main/java/ai/helper2/sources/ (McpRegistryCollector, HuggingFaceTrendingCollector,
-#   HuggingFaceProviderOrgsCollector, TavilyCollector, GitHubAwesomeCollector, SpringAiRepoClassifier,
-#   RepoClassifier, AiDeadlinesCollector, RunInterval, SourcesConfiguration),
+# Source of truth: backend/src/main/java/ai/helper2/sources/ (mcp/McpRegistryCollector,
+#   huggingface/HuggingFaceTrendingCollector, huggingface/HuggingFaceProviderOrgsCollector, tavily/TavilyCollector,
+#   tavily/CourseCollector,
+#   github/GitHubAwesomeCollector, classifier/SpringAiRepoClassifier, classifier/RepoClassifier,
+#   aideadlines/AiDeadlinesCollector, support/RunInterval, config/SourcesConfiguration),
 #   backend/src/main/resources/application.yaml (helper2.scout.*, helper2.sources.*).
 # Render: cd docs/diagrams && d2 fmt flow-0020-scout-collectors.d2 && d2 flow-0020-scout-collectors.d2 flow-0020-scout-collectors.svg
 
@@ -22,6 +24,7 @@ mcp: "MCP Registry (1 h):\n/v0.1/servers?updated_since,\nlatest versions only, c
 hft: "HF trending (1 d):\ntop 100 by trendingScore,\nlikes ≥ 20" {class: ext}
 hfo: "HF provider orgs (1 d):\n20 newest models per org,\norg added as a tag" {class: ext}
 tav: "Tavily (5 d): 7 news queries,\nstart_date = last pass day\n(first run: last week)" {class: ext}
+courses: "Courses (7 d): one Tavily search\nper platform (include_domains);\nkeep pages on the platform,\nabout AI, course-like" {class: ext}
 aid: "ai-deadlines (1 d): one YAML\nper conference, raw host only,\nnext edition not ended" {class: ext}
 
 awesome: GitHub awesome lists (1 d) {
@@ -46,6 +49,7 @@ awesome: GitHub awesome lists (1 d) {
 }
 
 batch: "CollectedBatch(hits,\nnextCursor, checkpoint)" {class: end}
+candidates: "CollectedBatch(no hits, checkpoint,\ncandidates): RunScout sends them\nto the review list" {class: end}
 
 call -> enabled
 enabled -> skipped: no
@@ -56,11 +60,13 @@ which -> mcp
 which -> hft
 which -> hfo
 which -> tav
+which -> courses
 which -> aid
 which -> awesome.lists
 mcp -> batch
 hft -> batch
 hfo -> batch
 tav -> batch
+courses -> candidates
 aid -> batch
 awesome.keep -> batch

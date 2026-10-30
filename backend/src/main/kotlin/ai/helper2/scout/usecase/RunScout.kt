@@ -1,5 +1,6 @@
 package ai.helper2.scout.usecase
 
+import ai.helper2.scout.CandidateReview
 import ai.helper2.scout.CatalogIndex
 import ai.helper2.scout.Collector
 import ai.helper2.scout.EnrichmentBacklog
@@ -65,8 +66,9 @@ private class Planned(val collector: Collector, val summary: RunSummary)
 
 /**
  * Scheduled, deterministic collection. Each collector runs in isolation: one failure never stops
- * the others. Checkpoints advance only after a complete pass, so runs are incremental and
- * idempotent (re-running a pass re-upserts the same records with the same fingerprints).
+ * the others. Hits are indexed; candidates go to the review list. Checkpoints advance only after a
+ * complete pass, so runs are incremental and idempotent (re-running a pass re-upserts the same
+ * records with the same fingerprints, and the review list opens nothing it has seen before).
  */
 class RunScout(
     private val collectors: List<Collector>,
@@ -85,6 +87,8 @@ class RunScout(
     private val observations: ObservationRegistry = ObservationRegistry.create().also {
         it.observationConfig().observationHandler(DefaultMeterObservationHandler(meters))
     },
+    /** The admin review list for the candidates a collector proposes; required as soon as one does. */
+    private val review: CandidateReview? = null,
 ) {
     private val log = LoggerFactory.getLogger(RunScout::class.java)
     // Strong references: a gauge only holds its source object weakly.
@@ -255,6 +259,9 @@ class RunScout(
             }
             val merged = merger.merge(batch.hits, mapOf(d.id to SourceContext(d, ServedFrom.LIVE)))
             val changed = catalog.index(merged, d.id).distinct()
+            if (batch.candidates.isNotEmpty()) {
+                checkNotNull(review) { "${d.id} proposed candidates but no review list is configured" }.propose(d.id, batch.candidates)
+            }
             store.saveCursor(
                 d.id,
                 if (batch.nextCursor != null) ScoutCursor(cursor.checkpoint, batch.nextCursor, passStartedAt)

@@ -359,7 +359,7 @@ clear ones that must not. Pass criteria per intent: `NEWEST` — every pick born
 - `backend/src/main/kotlin/ai/helper2/search/Filtering.kt` — `publishedAfter`, `publishedBefore`.
 - `backend/src/main/kotlin/ai/helper2/search/Ports.kt`, `usecase/SearchResources.kt` — `SourceQuery.publishedAfter`,
   cache key.
-- `backend/src/main/java/ai/helper2/sources/*Source.java`, `catalog/CatalogSearchSource.java`, `ResourceStore` — date
+- `backend/src/main/java/ai/helper2/sources/*/*Source.java`, `catalog/CatalogSearchSource.java`, `ResourceStore` — date
   pushdown; `NpmSource` date fix.
 - `backend/src/main/kotlin/ai/helper2/shared/Vocabulary.kt` — `ResourceType.COURSE`.
 - Scout: `CourseCollector`, curated seed file; `sources/` — one source per platform with confirmed API access.
