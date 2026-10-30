@@ -52,7 +52,8 @@
     "mission": "Mission",
     "privacy": "Privacy",
     "terms": "Terms",
-    "versionLabel": "Release notes for version {{version}} (opens in a new tab)"
+    "versionLabel": "Release notes for version {{version}} (opens in a new tab)",
+    "noAds": "No ads."
   },
   "home": {
     "title": "Describe what you need.",
@@ -1027,5 +1028,30 @@
   "sourceTile": {
     "label": "Sources searched",
     "cached": "cached {{age}}"
+  },
+  "board": {
+    "paused": "Paused · tap to play",
+    "news": {
+      "title": "News",
+      "sub": "Last 7 days",
+      "list": "New resources",
+      "foot": "Dates as each source states them"
+    },
+    "events": {
+      "title": "Events",
+      "sub": "Next 3 months",
+      "list": "Next events",
+      "foot": "Only events whose source states the dates"
+    },
+    "countdown": {
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "days_one": "In {{count}} day",
+      "days_other": "In {{count}} days",
+      "weeks_one": "In {{count}} week",
+      "weeks_other": "In {{count}} weeks",
+      "months_one": "In {{count}} month",
+      "months_other": "In {{count}} months"
+    }
   }
 }

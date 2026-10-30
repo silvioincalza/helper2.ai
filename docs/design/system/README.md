@@ -138,6 +138,7 @@ The first v3 parts are React components in `frontend/src/components/ui/` (ADR 00
 | ResultRow, its selected outline | `SelectableRow` (the row button; the row content comes with the results page) |
 | SourcesGrid, its tiles | `SourceTiles` (the fan-out line comes with the results page) |
 | Guide picks bar | `PicksBar` |
+| NewsBoard (News and Events) | `HomeBoard`, filled by `NewsBoard` and `EventsBoard` (`components/home/`) |
 
 `StatusPill` and `ProofQuote` keep their names.
 
