@@ -20,11 +20,12 @@ import tools.jackson.module.kotlin.KotlinModule;
 
 /**
  * Tool guide answers in Redis, shared by every replica and kept across deploys (same envelope and circuit breaker
- * as the guide's answer store). Any Redis error opens the circuit; while open, get misses and put does nothing.
+ * as the guide's answer store). An answer holds the checked steps and links to the documents, never the question
+ * or a document's text. Any Redis error opens the circuit; while open, get misses and put does nothing.
  */
 class RedisToolGuideCache implements ToolGuideCache {
 
-    static final int VERSION = 1;
+    static final int VERSION = 2;
     private static final Logger log = LoggerFactory.getLogger(RedisToolGuideCache.class);
 
     private final StringRedisTemplate redis;
@@ -42,7 +43,7 @@ class RedisToolGuideCache implements ToolGuideCache {
         this.circuit = new CircuitBreaker("tool guide cache", clock, Duration.ofSeconds(30));
     }
 
-    /** The key holds the user's question, so Redis sees only its hash. */
+    /** A fixed-length Redis key under this cache's prefix, whatever the length of the domain's key. */
     static String redisKey(String key) {
         try {
             byte[] digest = MessageDigest.getInstance("SHA-256").digest(key.getBytes(StandardCharsets.UTF_8));

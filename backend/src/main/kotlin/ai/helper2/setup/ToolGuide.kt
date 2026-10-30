@@ -20,7 +20,9 @@ data class Code(val language: String?, val text: String)
 /**
  * One step the user can follow. [quote] is a passage of the material at [materialKey]; [code], when present, is
  * whole lines of one fenced block of that material (or one inline code span), as written there. [caution] marks
- * a command that pipes a download into a shell, uses sudo or deletes recursively: copied, not vouched for.
+ * a command that hands text to a shell or interpreter (a pipe, `sh -c "$(curl …)"`, `bash <(curl …)`, `iex`),
+ * uses sudo, opens permissions to everyone or deletes recursively: copied exactly from the document, not reviewed
+ * for safety.
  */
 data class GuideStep(val text: String, val materialKey: String, val quote: String, val code: Code?, val caution: Boolean)
 
@@ -39,10 +41,11 @@ enum class ToolGuideStatus {
 
 data class ToolGuideAnswer(
     val status: ToolGuideStatus,
+    /** The question asked; never kept in the cache, where answers are shared by every asker. */
     val question: String?,
     val sections: List<GuideSection>,
-    /** The documents the steps were read from; steps refer to them by key. */
-    val materials: List<Material>,
+    /** The documents the steps were read from, without their text; steps refer to them by key. */
+    val materials: List<MaterialRef>,
     val model: String?,
     val rejected: Int,
     val generatedAt: Instant,
@@ -65,7 +68,7 @@ interface ToolGuideModel {
     fun write(ref: ToolRef, materials: List<Material>, question: String?): ProposedGuide
 }
 
-/** Outbound port: answers kept across requests and replicas. */
+/** Outbound port: answers kept across requests and replicas, stored without the question that produced them. */
 interface ToolGuideCache {
     fun get(key: String): ToolGuideAnswer?
     fun put(key: String, answer: ToolGuideAnswer)
@@ -204,7 +207,20 @@ class ToolGuideValidator {
 
         private val LANGUAGE = Regex("[a-z0-9+#-]{1,16}")
         private val LINK = Regex("https?://|www\\.", RegexOption.IGNORE_CASE)
-        private val CAUTION = Regex("\\|\\s*(sudo\\s+)?(ba|z)?sh\\b|\\bsudo\\b|\\brm\\s+-[a-z]*r[a-z]*f|\\brm\\s+-[a-z]*f[a-z]*r")
+        /** A program that runs whatever text it is given: a shell or a script interpreter. */
+        private const val RUNNER = "(?:(?:ba|z|da|k|fi)?sh|python[0-9.]*|perl|ruby|node|php|pwsh|powershell|iex|invoke-expression)"
+        private const val DOWNLOAD = "(?:curl|wget|iwr|irm|invoke-webrequest|invoke-restmethod)"
+        private val CAUTION = Regex(listOf(
+            // Anything piped into a runner, possibly through sudo or env.
+            "\\|\\s*(?:sudo(?:\\s+-\\S+)*\\s+)?(?:env(?:\\s+\\S+=\\S*)*\\s+)?$RUNNER(?![\\w.-])",
+            // A download handed to a shell as text: sh -c "$(curl …)", bash <(curl …), eval "$(wget …)".
+            "[$<]\\(\\s*$DOWNLOAD\\b",
+            "\\b(?:invoke-expression|iex)\\s*\\(",
+            "\\bsudo\\b",
+            "\\bchmod\\s+(?:-\\S+\\s+)*0?777\\b",
+            "\\brm\\s+(?:-\\S+\\s+)*-[a-z]*(?:r[a-z]*f|f[a-z]*r)",
+            "\\brm\\s+(?:-\\S+\\s+)*--recursive\\b",
+        ).joinToString("|"), RegexOption.IGNORE_CASE)
 
         fun containsLink(text: String) = LINK.containsMatchIn(text)
 
@@ -277,21 +293,21 @@ class ToolGuides @JvmOverloads constructor(
         if (model == null) return empty(ToolGuideStatus.LLM_UNAVAILABLE, q, docs, "error")
         val key = "v1:" + resourceId + ":" + sha256(model.configFingerprint + "\u0000" + (q?.lowercase() ?: "") + "\u0000" +
             docs.joinToString("\u0000") { it.url.toString() + "\u0000" + it.text })
-        cache.get(key)?.let { return it }
+        cache.get(key)?.let { return it.copy(question = q) }
         val proposal = try {
             model.write(ref, docs, q)
         } catch (e: ToolGuideUnavailable) {
             return empty(ToolGuideStatus.LLM_UNAVAILABLE, q, docs, e.reason)
         }
         val result = validator.validate(proposal, docs)
-        val answer = ToolGuideAnswer(if (result.sections.isEmpty()) ToolGuideStatus.NO_STEPS else ToolGuideStatus.OK, q,
-            result.sections, docs, model.model, result.rejected, clock.instant(), result.rejectedBy)
+        val answer = ToolGuideAnswer(if (result.sections.isEmpty()) ToolGuideStatus.NO_STEPS else ToolGuideStatus.OK, null,
+            result.sections, docs.map { it.ref }, model.model, result.rejected, clock.instant(), result.rejectedBy)
         cache.put(key, answer)
-        return answer
+        return answer.copy(question = q)
     }
 
     private fun empty(status: ToolGuideStatus, q: String?, docs: List<Material>, why: String? = null) =
-        ToolGuideAnswer(status, q, emptyList(), docs, null, 0, clock.instant(), unavailable = why)
+        ToolGuideAnswer(status, q, emptyList(), docs.map { it.ref }, null, 0, clock.instant(), unavailable = why)
 
     private fun sha256(s: String): String = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(s.toByteArray()))
 }

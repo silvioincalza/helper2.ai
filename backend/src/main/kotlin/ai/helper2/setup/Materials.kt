@@ -12,7 +12,12 @@ data class Material(
     val url: URI,
     val retrievedAt: Instant,
     val text: String,
-)
+) {
+    val ref: MaterialRef get() = MaterialRef(key, kind, url, retrievedAt)
+}
+
+/** Which document a step cites, without its text: what an answer keeps and shows. */
+data class MaterialRef(val key: String, val kind: MaterialKind, val url: URI, val retrievedAt: Instant)
 
 /**
  * Where a resource's own documentation lives, parsed from its source records and links. Only identifiers are
@@ -40,14 +45,32 @@ data class ToolRef(
         fun of(title: String, type: String, urls: Collection<String>, npmNames: Collection<String>): ToolRef {
             val repo = urls.firstNotNullOfOrNull { u ->
                 GITHUB.matchEntire(u.trim())?.takeIf { it.groupValues[1].lowercase() !in NOT_REPOS }
+                    ?.takeIf { GITHUB_OWNER.matches(it.groupValues[1]) && githubRepoName(it.groupValues[2]) }
                     ?.let { it.groupValues[1] + "/" + it.groupValues[2] }
             }
-            val space = urls.firstNotNullOfOrNull { HF_SPACE.matchEntire(it.trim())?.groupValues?.get(1) }
+            val space = urls.firstNotNullOfOrNull { HF_SPACE.matchEntire(it.trim())?.groupValues?.get(1)?.takeIf(::hfId) }
             val model = urls.firstNotNullOfOrNull { u ->
-                HF_MODEL.matchEntire(u.trim())?.groupValues?.get(1)?.takeIf { !it.startsWith("spaces/") && !it.startsWith("datasets/") }
+                HF_MODEL.matchEntire(u.trim())?.groupValues?.get(1)
+                    ?.takeIf { !it.startsWith("spaces/") && !it.startsWith("datasets/") && hfId(it) }
             }
             val npm = npmNames.firstOrNull { NPM_NAME.matches(it) }
             return ToolRef(title, type, repo, npm, if (space == null) model else null, space)
+        }
+
+        /** GitHub's own name rules: an owner is 1–39 letters, digits or single inner hyphens; a repository is never `.` or `..`. */
+        private val GITHUB_OWNER = Regex("^[A-Za-z0-9](?:-?[A-Za-z0-9]){0,38}$")
+        private val GITHUB_REPO = Regex("^[A-Za-z0-9_.-]{1,100}$")
+
+        private fun githubRepoName(name: String) = GITHUB_REPO.matches(name) && name != "." && name != ".."
+
+        /**
+         * Hugging Face's rules for each part of `namespace/name`: letters, digits, `-`, `_`, `.`, at most 96, no
+         * leading or trailing `-` or `.`, no `--` or `..`.
+         */
+        private val HF_PART = Regex("^[A-Za-z0-9](?:[A-Za-z0-9_.-]{0,94}[A-Za-z0-9_])?$")
+
+        private fun hfId(id: String) = id.split('/').let { parts ->
+            parts.size == 2 && parts.all { HF_PART.matches(it) && "--" !in it && ".." !in it }
         }
     }
 }

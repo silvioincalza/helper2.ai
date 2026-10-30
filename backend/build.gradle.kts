@@ -71,6 +71,9 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation("com.tngtech.archunit:archunit-junit5:1.5.1")
     testImplementation("com.networknt:json-schema-validator:3.0.8")
+    // Parse-back tests of the setup snippets (TOML for Codex, YAML for Continue and Goose).
+    testImplementation("tools.jackson.dataformat:jackson-dataformat-toml")
+    testImplementation("tools.jackson.dataformat:jackson-dataformat-yaml")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

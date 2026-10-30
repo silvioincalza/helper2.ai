@@ -30,12 +30,18 @@ internal object Formats {
                 c == '\n' -> append("\\n")
                 c == '\r' -> append("\\r")
                 c == '\t' -> append("\\t")
-                c < ' ' -> append("\\u%04x".format(c.code))
+                escaped(c) -> append("\\u%04x".format(c.code))
                 else -> append(c)
             }
         }
         append('"')
     }
+
+    /**
+     * Characters written as `\uXXXX` in JSON, TOML and YAML strings: controls (C0, DEL, C1), which TOML and YAML do not
+     * allow raw, the line and paragraph separators a YAML 1.1 reader folds as line breaks, and the byte order mark.
+     */
+    private fun escaped(c: Char) = c < ' ' || c in '\u007f'..'\u009f' || c == '\u2028' || c == '\u2029' || c == '\ufeff'
 
     /** A TOML key: bare when it can be, quoted otherwise. */
     fun tomlKey(k: String): String = if (BARE.matches(k)) k else jsonString(k)
@@ -76,8 +82,27 @@ internal object Formats {
     @Suppress("UNCHECKED_CAST")
     private fun stringKeys(m: Map<*, *>): Map<String, Any?> = m as Map<String, Any?>
 
-    /** One shell word: left bare only when it has no character a POSIX shell treats specially. */
-    fun sh(word: String): String = if (SAFE_SHELL.matches(word)) word else "'" + word.replace("'", "'\\''") + "'"
+    /**
+     * One shell word: bare when it has no character a POSIX shell treats specially, single-quoted otherwise. A word
+     * with a character a terminal would act on when pasted (a control, a line break) is written with `$'…'`
+     * escapes (POSIX.1-2024, bash, zsh, ksh) so the pasted text holds only printable characters.
+     */
+    fun sh(word: String): String = when {
+        SAFE_SHELL.matches(word) -> word
+        word.none(::escaped) -> "'" + word.replace("'", "'\\''") + "'"
+        else -> buildString {
+            append("$'")
+            for (c in word) {
+                when {
+                    c == '\'' || c == '\\' -> append('\\').append(c)
+                    c.code < 0x100 && escaped(c) -> append("\\x%02x".format(c.code))
+                    escaped(c) -> append("\\u%04x".format(c.code))
+                    else -> append(c)
+                }
+            }
+            append('\'')
+        }
+    }
 
     private val BARE = Regex("[A-Za-z0-9_-]+")
     private val SAFE_SHELL = Regex("[A-Za-z0-9_@%+=:,./-]+")
