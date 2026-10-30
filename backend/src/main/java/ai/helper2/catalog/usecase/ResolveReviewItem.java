@@ -26,7 +26,7 @@ public class ResolveReviewItem {
      */
     @Transactional
     public Optional<ReviewQueue.Item> resolve(UUID id, ReviewQueue.Status decision, String by, String note) {
-        if (decision == ReviewQueue.Status.OPEN) {
+        if (decision != ReviewQueue.Status.ACCEPTED && decision != ReviewQueue.Status.REJECTED) {
             throw new BadRequestException("decision must be ACCEPTED or REJECTED");
         }
         int updated = jdbc.sql("""

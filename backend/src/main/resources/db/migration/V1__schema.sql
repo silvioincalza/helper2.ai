@@ -342,10 +342,12 @@ CREATE INDEX issue_report_resource_idx ON issue_report (resource_id);
 CREATE TABLE review_item (
     id                uuid PRIMARY KEY,
     kind              text        NOT NULL CHECK (kind IN ('ENRICHMENT_VALIDATION','SOURCE_CONFLICT','RELATIONSHIP_CANDIDATE','USER_REPORT')),
-    status            text        NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN','ACCEPTED','REJECTED')),
+    -- SUPERSEDED: closed by a newer enrichment run of the same resource, not by a person.
+    status            text        NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN','ACCEPTED','REJECTED','SUPERSEDED')),
     resource_id       uuid REFERENCES resource (id) ON DELETE CASCADE,
     enrichment_run_id uuid REFERENCES enrichment_run (id),
-    relationship_id   uuid REFERENCES relationship (id) ON DELETE CASCADE,
+    -- SET NULL: a superseded candidate outlives the unreviewed relationship a newer run replaced.
+    relationship_id   uuid REFERENCES relationship (id) ON DELETE SET NULL,
     report_id         uuid REFERENCES issue_report (id) ON DELETE CASCADE,
     reason            text        NOT NULL,
     details           text,

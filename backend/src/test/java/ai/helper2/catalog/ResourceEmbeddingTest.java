@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.transaction.annotation.Transactional;
 
 /** resource_embedding against real Postgres + pgvector: the indexer loop and nearest-neighbour search. */
 @SpringBootTest
@@ -46,13 +47,18 @@ class ResourceEmbeddingTest {
     }
 
     private UUID insert(String title, String description) {
+        return insert(title, description, "INDEXED");
+    }
+
+    private UUID insert(String title, String description, String dataOrigin) {
         UUID id = UUID.randomUUID();
         String url = "https://embedding.example/" + run + "/" + id;
         jdbc.sql("""
                 INSERT INTO resource (id, canonical_url, url, title, description, description_origin, type, audience, data_origin)
-                VALUES (:id, :url, :url, :title, :description, 'SOURCE_PROVIDED', 'LIBRARY', 'BUILD_WITH_AI', 'INDEXED')
+                VALUES (:id, :url, :url, :title, :description, 'SOURCE_PROVIDED', 'LIBRARY', 'BUILD_WITH_AI', :origin)
                 """)
-            .param("id", id).param("url", url).param("title", title).param("description", description).update();
+            .param("id", id).param("url", url).param("title", title).param("description", description)
+            .param("origin", dataOrigin).update();
         created.add(id);
         return id;
     }
@@ -140,6 +146,46 @@ class ResourceEmbeddingTest {
 
         assertThat(all).containsExactly(near, far);
         assertThat(close).containsExactly(near);
+    }
+
+    @Test
+    void reembeddingUnderTheConfiguredModelDropsTheVectorsOfOtherModels() {
+        UUID id = insert("switched", "x");
+        String oldModel = "old-model-" + run;
+        store.saveEmbeddings(oldModel, List.of(new EmbeddingTask(id, "switched\nx", "h")), List.of(axis(0, 0)));
+
+        store.saveEmbeddings(model, List.of(new EmbeddingTask(id, "switched\nx", "h")), List.of(axis(2, 0)));
+
+        assertThat(jdbc.sql("SELECT model FROM resource_embedding WHERE resource_id = :id").param("id", id).query(String.class).list())
+            .containsExactly(model);
+    }
+
+    /**
+     * Observed rows closer to the query than the one indexed row, more of them than the HNSW candidate list holds:
+     * a filtered scan that stops after one list finds no indexed row. The test transaction makes the planner read
+     * through the HNSW index (no sort, small candidate list) as it does on a large table; the search's own
+     * transaction setting must keep scanning until the limit is met.
+     */
+    @Test
+    @Transactional
+    void theNearestRowsOfTheWantedOriginsAreFoundBehindCloserRowsOfOtherOrigins() {
+        jdbc.sql("SET LOCAL enable_sort = off").update();
+        jdbc.sql("SET LOCAL enable_seqscan = off").update();
+        jdbc.sql("SET LOCAL hnsw.ef_search = 10").update();
+        List<EmbeddingTask> crowd = new ArrayList<>();
+        List<float[]> crowdVectors = new ArrayList<>();
+        for (int i = 0; i < 60; i++) {
+            crowd.add(new EmbeddingTask(insert("crowd " + i, "x", "OBSERVED"), "crowd", "h"));
+            crowdVectors.add(axis(0, 0.001f * i));
+        }
+        store.saveEmbeddings(model, crowd, crowdVectors);
+        UUID wanted = insert("wanted", "x");
+        store.saveEmbeddings(model, List.of(new EmbeddingTask(wanted, "wanted\nx", "h")), List.of(axis(0, 0.5f)));
+
+        List<UUID> found = store.semanticSearch(axis(0, 0), model, Set.of(DataOrigin.INDEXED), 10, 2).stream()
+            .map(ResourceRow::id).toList();
+
+        assertThat(found).containsExactly(wanted);
     }
 
     @Test

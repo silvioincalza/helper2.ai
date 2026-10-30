@@ -33,10 +33,10 @@ class ReportAndReviewIT extends ApiTestBase {
         ContractValidator.assertMatches("IssueReportAccepted", accepted);
 
         var admin = oauth2Login().authorities(new SimpleGrantedAuthority("ROLE_ADMIN"));
-        String items = mvc.perform(get("/api/v1/admin/review-items").param("status", "OPEN").with(admin))
+        String items = mvc.perform(get("/api/v1/admin/review-items").param("status", "OPEN").param("size", "100").with(admin))
             .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
-        ContractValidator.assertArrayMatches("ReviewItem", items);
-        List<String> ids = JsonPath.read(items, "$[?(@.kind=='USER_REPORT' && @.resourceId=='" + deepl + "')].id");
+        ContractValidator.assertMatches("ReviewItemPage", items);
+        List<String> ids = JsonPath.read(items, "$.items[?(@.kind=='USER_REPORT' && @.resourceId=='" + deepl + "')].id");
         mvc.perform(put("/api/v1/admin/review-items/" + ids.getFirst() + "/resolution").with(admin).with(csrf())
                 .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"ACCEPTED\",\"note\":\"ok\"}"))
             .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("ACCEPTED"));
@@ -47,7 +47,7 @@ class ReportAndReviewIT extends ApiTestBase {
         var queue = context.getBean(ai.helper2.catalog.ReviewQueue.class);
         UUID oldest = queue.open(ai.helper2.catalog.ReviewQueue.Kind.USER_REPORT, null, "old", null,
             ai.helper2.catalog.ReviewQueue.Links.NONE);
-        for (int i = 0; i < 201; i++) {
+        for (int i = 0; i <= ai.helper2.catalog.usecase.ListReviewItems.MAX_PAGE_SIZE; i++) {
             queue.open(ai.helper2.catalog.ReviewQueue.Kind.USER_REPORT, null, "newer " + i, null, ai.helper2.catalog.ReviewQueue.Links.NONE);
         }
         var admin = oauth2Login().authorities(new SimpleGrantedAuthority("ROLE_ADMIN"));
