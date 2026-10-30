@@ -1,6 +1,6 @@
 # 0026 — Observability: structured logs, OpenTelemetry traces, Prometheus meters, Grafana dashboard, alert rules
 
-**Status.** Accepted (2026-10-27). **Builds on:** [0001](0001-stack-and-runtime.md), [0008](0008-federated-search.md), [0014](0014-llm-integration.md)
+**Status.** Accepted (2026-10-27). **Builds on:** [0001](0001-stack-and-runtime.md), [0008](0008-federated-search.md), [0014](0014-llm-integration.md), [0033](0033-resilience-policies.md)
 
 ## Context
 One search calls up to nine sources in parallel; one guide question calls a model several times. When an answer is
@@ -37,8 +37,13 @@ retention limit.
      `helper2.scout.enrichment{outcome}`, `helper2.scout.enrichment.budget.remaining`,
      `helper2.scout.classifier.budget.remaining`;
    - platform: `helper2.rate-limit.fallback{limiter}` (rate-limit decisions made in one replica's memory while
-     Redis is down, [0024](0024-http-edge-protection.md)).
-   Tag values are fixed words, source ids and configured model ids; never a query, a prompt or a user.
+     Redis is down, [0024](0024-http-edge-protection.md));
+   - resilience policies (resilience4j-micrometer, [0033](0033-resilience-policies.md)), tag `name` = policy
+     (`source-<id>`, `collector-<id>`, `redis`): `resilience4j.circuitbreaker.state{name,state}` (1 for the current
+     state), `resilience4j.circuitbreaker.calls{name,kind}`, `resilience4j.circuitbreaker.not.permitted.calls{name}`,
+     `resilience4j.circuitbreaker.failure.rate`, `resilience4j.circuitbreaker.slow.call.rate`,
+     `resilience4j.bulkhead.available.concurrent.calls{name}`, `resilience4j.retry.calls{name,kind}`.
+   Tag values are fixed words, source ids, policy names and configured model ids; never a query, a prompt or a user.
 5. **Dashboard.** `deploy/grafana/helper2.json` (uid `helper2`, variable `environment`, datasource uid `prometheus`).
    Rows: overview, Hypertext Transfer Protocol (HTTP), search and sources, artificial intelligence (AI) guide, Scout,
    embeddings, runtime. Latency panels (HTTP, search, source, model call, Scout run) use `histogram_quantile` over
@@ -60,6 +65,9 @@ retention limit.
      (SKIPPED is a decision, not a failure); `Helper2PartialSearches`: more than half of the searches partial for
      30 min; `Helper2SearchCacheErrors`: `helper2.cache.events{event="error"}` for 10 min;
    - `Helper2RateLimitInMemory`: any `helper2.rate-limit.fallback`;
+   - `Helper2CircuitOpen`: a policy's circuit not closed on some pod for 5 min (it cycles open and half-open while
+     the dependency is down); `Helper2CallsNotPermitted`: an open circuit refuses more than one call a minute for
+     10 min ([0033](0033-resilience-policies.md));
    - `Helper2DailyBudgetLow`: any `*.budget.remaining` gauge below 20% of its cap for 5 min (the cap is the
      gauge's highest value of the last day; label `budget` = guide, tool_guide, search_translation,
      scout_enrichment, scout_classifier);
@@ -85,13 +93,16 @@ retention limit.
 ## Consequences
 - Good: a slow search shows per-source latency and outcome; a slow guide shows the model step and model.
 - Good: logs, traces and meters share the trace id.
-- Good: a failing source, a spent budget, a stalled indexer or Scout, a failed backup or a poisoned pick raises an
-  alert, and each alert says where to look first.
+- Good: a failing source, an open circuit, a spent budget, a stalled indexer or Scout, a failed backup or a poisoned
+  pick raises an alert, and each alert says where to look first.
 - Good: one rule file serves a plain Prometheus and the operator; the unit tests pin each threshold.
 - Bad: alert delivery (Alertmanager receivers, the owner's phone or mail) is configured in the observability stack,
   not here.
 - Bad: gauges live in the memory of one replica (the Scout and indexer gauges on the replica that ran them), so
   their rules look back over time windows; a collector disabled on purpose keeps alerting until its value is 9 days old.
+  Circuit states are per replica too: the circuit rule fires when any pod's circuit stays open.
+- Bad: Redis memory and evictions are not measured (no Redis exporter in the chart), so an evicted key is noticed
+  only by its effect (a cache miss, a fresh rate-limit window).
 - Bad: histogram buckets add series per timer; the bucketed timers are limited to the six listed above.
 
 ## Alternatives considered

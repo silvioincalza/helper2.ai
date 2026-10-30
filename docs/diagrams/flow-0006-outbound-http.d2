@@ -1,11 +1,13 @@
 # Flowchart: one outbound source call, from the pooled Apache client to the outcome the search reports.
-# Shows the pool wait, connect/response timeouts, the redirect rules (sources follow redirects without an
-# https-to-http downgrade and never carry a token to another host; the embedder follows none), the status
-# mapping to SourceFailure, the response size cap, the per-item guard, and how SearchResources turns each
-# failure into a source outcome.
+# Shows the shared arXiv slot in Redis, the pool wait, connect/response timeouts, one request per attempt (no client
+# retries), the redirect rules (sources follow redirects without an https-to-http downgrade and never carry a token
+# to another host; the embedder follows none), the status mapping to SourceFailure (transient for 503 and network
+# errors), the response size cap, the per-item guard, and how SearchResources turns each failure into a source outcome.
 # Source of truth: backend/src/main/java/ai/helper2/platform/http/ObservedHttp.java (restClientBuilder,
 #   requestFactory, NoDowngradeRedirects, BoundedResponse), backend/src/main/java/ai/helper2/sources/HttpClients.java
-#   (getText, getJson, mapStatus, retryAfter, hits), backend/src/main/java/ai/helper2/catalog/internal/NvidiaEmbedder.java,
+#   (getText, getJson, mapStatus, retryAfter, hits), backend/src/main/java/ai/helper2/sources/ArxivSource.java (search),
+#   backend/src/main/java/ai/helper2/platform/resilience/RedisOutboundThrottle.java,
+#   backend/src/main/java/ai/helper2/catalog/internal/NvidiaEmbedder.java,
 #   backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt (Run.collect).
 # Render: cd docs/diagrams && d2 fmt flow-0006-outbound-http.d2 && d2 flow-0006-outbound-http.d2 flow-0006-outbound-http.svg
 
@@ -14,8 +16,10 @@
 direction: down
 
 start: "source.search(query)\non a virtual thread" {class: end}
+arxiv: "arXiv only: SET h2:v1:outbound:arxiv\nNX PX 3000 succeeded?\n(Redis down: no)" {class: decision}
+paced: "SourceFailure.RateLimited\n(pause 3 s, no request)" {class: app}
 pool: "Free pooled connection\nwithin 250 ms?" {class: decision}
-send: "Connect + send\n(connect timeout = source timeout)" {class: app}
+send: "Connect + send once, no client retry\n(connect timeout = source timeout)" {class: app}
 redirect: "Redirect?" {class: decision}
 follows: "Client follows redirects?\n(sources: yes; embedder: no)" {class: decision}
 down: "https → http?" {class: decision}
@@ -24,8 +28,8 @@ noredir: "Not followed:\nthe 3xx is the response" {class: app}
 status: "Status 2xx?" {class: decision}
 limited: "429, or 403 with\nx-ratelimit-remaining 0,\nor 503 with Retry-After?" {class: decision}
 rl: "SourceFailure.RateLimited\n(pause from Retry-After\nor x-ratelimit-reset)" {class: app}
-httpfail: "SourceFailure.Unavailable\n\"HTTP <status>\"" {class: app}
-netfail: "SourceFailure.Unavailable\n\"network error or timeout\"" {class: app}
+httpfail: "SourceFailure.Unavailable\n\"HTTP <status>\"\n(transient for 503)" {class: app}
+netfail: "SourceFailure.Unavailable\n\"network error or timeout\"\n(transient)" {class: app}
 size: "Body within the cap?\n(2 MB; README 5 MB)" {class: decision}
 toolarge: "SourceFailure.Unavailable\n\"response too large\"" {class: app}
 json: "Body is a JSON\nobject or array?" {class: decision}
@@ -49,7 +53,10 @@ search: SearchResources.collect {
   kind -> failed: "Unavailable or\nother exception"
 }
 
-start -> pool: {class: hot}
+start -> arxiv: {class: hot}
+arxiv -> pool: "yes, or another source" {class: hot}
+arxiv -> paced: no
+paced -> search.deadline
 pool -> netfail: "no"
 pool -> send: yes {class: hot}
 send -> netfail: "connect or\nresponse timeout,\nI/O error"

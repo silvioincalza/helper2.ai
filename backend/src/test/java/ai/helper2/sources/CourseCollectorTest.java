@@ -3,6 +3,7 @@ package ai.helper2.sources;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.platform.http.ObservedHttp;
+import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.Candidate;
 import ai.helper2.scout.CandidateReview;
 import ai.helper2.scout.CollectedBatch;
@@ -42,7 +43,7 @@ class CourseCollectorTest {
 
     CourseCollector collector(String token, List<String> platforms) {
         return new CourseCollector(new SourceSettings(true, server.baseUrl(), token, Duration.ofSeconds(2), Duration.ZERO),
-            ObservedHttp.restClientBuilder(Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP), GitHubSourceTest.CLOCK,
+            ObservedHttp.restClientBuilder(Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP), GitHubSourceTest.CLOCK, Resilience.NONE,
             new RunInterval(Duration.ofDays(7)), "new artificial intelligence course or certification", platforms, review);
     }
 

@@ -336,3 +336,52 @@ tests:
               summary: "The search cache in Redis fails on helper2 (prod)."
               description: "Search cache reads or writes have failed for 10 minutes. Searches still answer, but every search calls the sources live."
               runbook: "Check the redis-0 pod (kubectl -n helper2-<env> get pod redis-0, logs) and its PersistentVolumeClaim; the rate-limit alert Helper2RateLimitInMemory fires too when Redis is down."
+
+  # Circuit: a source circuit that cycles open and half_open (never closed) for 10 minutes fires; one that closes
+  # again within 3 minutes does not. Two pods: one open circuit is enough.
+  - interval: 1m
+    input_series:
+      - series: 'resilience4j_circuitbreaker_state{application="helper2", environment="prod", instance="a", name="source-npm", state="closed"}'
+        values: '1 1 0 0 0 0 0 0 0 0 0 0 0 0'
+      - series: 'resilience4j_circuitbreaker_state{application="helper2", environment="prod", instance="b", name="source-npm", state="closed"}'
+        values: '1 1 1 1 1 1 1 1 1 1 1 1 1 1'
+      - series: 'resilience4j_circuitbreaker_state{application="helper2", environment="prod", instance="a", name="redis", state="closed"}'
+        values: '1 0 0 0 1 1 1 1 1 1 1 1 1 1'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: Helper2CircuitOpen
+        exp_alerts: []
+      - eval_time: 9m
+        alertname: Helper2CircuitOpen
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              environment: prod
+              name: source-npm
+            exp_annotations:
+              summary: "Circuit source-npm has not closed for 5 minutes (prod)."
+              description: "The resilience policy source-npm keeps refusing calls (ADR 0033): source-* is SKIPPED in searches, collector-* fails its Scout runs, redis means the cache, budgets and rate limits run without Redis."
+              runbook: "Dashboard row 'Search and sources' (source outcomes) or the Redis pod for name=redis. A source-* circuit: check the provider's status and its outbound HTTP errors; it closes by itself once a trial call succeeds (every 30 s)."
+
+  # Not permitted: 2 refused calls a minute for 15 minutes fire; one refused call now and then does not.
+  - interval: 1m
+    input_series:
+      - series: 'resilience4j_circuitbreaker_not_permitted_calls_total{application="helper2", environment="prod", instance="a", name="source-tavily", kind="not_permitted"}'
+        values: '0+2x30'
+      - series: 'resilience4j_circuitbreaker_not_permitted_calls_total{application="helper2", environment="prod", instance="a", name="redis", kind="not_permitted"}'
+        values: '0 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: Helper2CallsNotPermitted
+        exp_alerts: []
+      - eval_time: 20m
+        alertname: Helper2CallsNotPermitted
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              environment: prod
+              name: source-tavily
+            exp_annotations:
+              summary: "Policy source-tavily refuses calls (prod)."
+              description: "2 calls a minute were refused by the open circuit of source-tavily over the last 5 minutes, for 10 minutes."
+              runbook: "Same cause as Helper2CircuitOpen for source-tavily; the rate shows how much traffic the outage costs. Searches still answer from the other sources and the stale cache."

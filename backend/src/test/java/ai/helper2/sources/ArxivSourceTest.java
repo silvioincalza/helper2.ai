@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.helper2.platform.http.ObservedHttp;
+import ai.helper2.platform.resilience.OutboundThrottle;
 import ai.helper2.search.SourceFailure;
 import ai.helper2.search.SourceHit;
 import ai.helper2.search.SourceQuery;
@@ -17,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -30,9 +32,37 @@ class ArxivSourceTest {
         server.close();
     }
 
+    /** One arXiv slot for every replica: what the shared throttle answers, and every interval it was asked for. */
+    final List<Duration> asked = new ArrayList<>();
+    boolean slotFree = true;
+    final OutboundThrottle throttle = (host, interval) -> {
+        assertThat(host).isEqualTo("arxiv");
+        asked.add(interval);
+        return slotFree;
+    };
+
     ArxivSource source() {
         return new ArxivSource(new SourceSettings(true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ofHours(6)),
-            ObservedHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP), GitHubSourceTest.CLOCK);
+            ObservedHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP), GitHubSourceTest.CLOCK, throttle);
+    }
+
+    @Test
+    void everyCallTakesTheSharedThreeSecondSlotFirst() {
+        server.route("/api/query", FixtureServer.Reply.ok("<feed xmlns=\"http://www.w3.org/2005/Atom\"/>"));
+
+        source().search(query("agents"));
+
+        assertThat(asked).containsExactly(Duration.ofSeconds(3));
+        assertThat(server.requests).hasSize(1);
+    }
+
+    @Test
+    void whenAnotherReplicaHoldsTheSlotOrRedisIsDownTheCallIsRateLimitedWithoutReachingArxiv() {
+        slotFree = false;
+
+        assertThatThrownBy(() -> source().search(query("agents")))
+            .isInstanceOfSatisfying(SourceFailure.RateLimited.class, e -> assertThat(e.getRetryAfter()).isEqualTo(Duration.ofSeconds(3)));
+        assertThat(server.requests).isEmpty();
     }
 
     static SourceQuery query(String text) {

@@ -1,8 +1,8 @@
 # Sequence: a Redis outage seen by the search cache and the daily budget counter, then recovery.
-# Shows the 30 s open window (no half-open state) and the in-memory fallback of DailyBudget. RedisCallCounter
-# has its own CircuitBreaker instance with the same rule; the participant below is the search cache's one.
+# Shows the one redis circuit shared by every Redis adapter (open 30 s after half of the last calls failed, then
+# trial calls in half-open) and the in-memory fallback of DailyBudget.
 # Source of truth: backend/src/main/java/ai/helper2/search/cache/RedisSearchCache.java,
-#   backend/src/main/java/ai/helper2/platform/CircuitBreaker.java,
+#   backend/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java (policy redis in application.yaml),
 #   backend/src/main/java/ai/helper2/platform/llm/RedisCallCounter.java, DailyBudget.java,
 #   backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt.
 # Render: cd docs/diagrams && d2 fmt sequence-0005-redis-disposable-cache.d2 && d2 sequence-0005-redis-disposable-cache.d2 sequence-0005-redis-disposable-cache.svg
@@ -13,19 +13,19 @@ shape: sequence_diagram
 
 search: SearchResources {class: app}
 cache: RedisSearchCache {class: app}
-breaker: CircuitBreaker {class: app}
 budget: DailyBudget {class: app}
 counter: RedisCallCounter {class: app}
+policy: "Resilience\n(policy redis)" {class: app}
 redis: Redis {class: data}
 source: Live source {class: ext}
 
 outage: Redis goes down {
   search -> cache: "get(key)"
-  cache -> breaker: "isOpen()"
-  breaker -> cache: "false"
-  cache -> redis: "GET h2:v1:src:..."
-  redis -> cache: "error (command timeout 250 ms)"
-  cache -> breaker: "trip(e): openUntil = now + 30 s"
+  cache -> policy: "call(redis, GET)"
+  policy -> redis: "GET h2:v1:src:..."
+  redis -> policy: "error (command timeout 250 ms)"
+  policy -> policy: "failure counted;\nhalf of the last calls (at least 3)\nfailed: circuit OPEN for 30 s"
+  policy -> cache: "error"
   cache -> search: "IllegalStateException"
   search -> search: "notice CACHE_UNAVAILABLE"
   search -> source: "live call" {class: hot}
@@ -34,22 +34,26 @@ outage: Redis goes down {
 
 open: Next 30 seconds {
   search -> cache: "get(key) / put(key)"
-  cache -> breaker: "isOpen()"
-  breaker -> cache: "true"
-  cache -> search: "fails at once, no Redis call"
+  cache -> policy: "call(redis, ...)"
+  policy -> cache: "CallRefused CIRCUIT_OPEN,\nno Redis call"
+  cache -> search: "fails at once"
   budget -> counter: "increment(name, day)"
-  counter -> budget: "null (its own CircuitBreaker\nis open for 30 s)"
+  counter -> policy: "call(redis, Lua INCR)"
+  policy -> counter: "CallRefused (the same circuit)"
+  counter -> budget: "null"
   budget -> budget: "count in memory\nfrom last known value"
 }
 
-after: After 30 seconds (no half-open state) {
+after: After 30 seconds: half-open, trial calls {
   search -> cache: "get(key)"
-  cache -> breaker: "isOpen()"
-  breaker -> cache: "false"
-  cache -> redis: "GET h2:v1:src:..."
-  redis -> cache: "entry or miss"
+  cache -> policy: "call(redis, GET)"
+  policy -> redis: "GET h2:v1:src:... (trial call)"
+  redis -> policy: "entry or miss"
+  policy -> policy: "trial calls succeed:\ncircuit CLOSED"
+  policy -> cache: "entry or miss"
   budget -> counter: "increment(name, day)"
-  counter -> redis: "Lua: INCR h2:v1:budget:{name}:{day},\nPEXPIRE 2 days on first"
+  counter -> policy: "call(redis, Lua script)"
+  policy -> redis: "Lua: INCR h2:v1:budget:{name}:{day},\nPEXPIRE 2 days on first"
   redis -> counter: "count"
   counter -> budget: "count (Redis is the source again)"
 }

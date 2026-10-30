@@ -5,6 +5,8 @@ import ai.helper2.platform.llm.CallCounter;
 import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.LlmSettings;
 import ai.helper2.platform.llm.ModelCallMetrics;
+import ai.helper2.platform.resilience.OutboundThrottle;
+import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CandidateReview;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -69,9 +71,9 @@ class SourcesConfiguration {
     }
 
     @Bean
-    ArxivSource arxivSource(SourcesProperties p, Clock clock, ObservationRegistry observations) {
+    ArxivSource arxivSource(SourcesProperties p, Clock clock, ObservationRegistry observations, OutboundThrottle throttle) {
         SourceSettings s = p.get("arxiv");
-        return new ArxivSource(s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock);
+        return new ArxivSource(s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock, throttle);
     }
 
     @Bean
@@ -81,31 +83,31 @@ class SourcesConfiguration {
     }
 
     @Bean
-    HuggingFaceTrendingCollector huggingFaceTrendingCollector(SourcesProperties p, Clock clock, ObservationRegistry observations,
+    HuggingFaceTrendingCollector huggingFaceTrendingCollector(SourcesProperties p, Clock clock, Resilience resilience, ObservationRegistry observations,
             @Value("${helper2.scout.hf-trending.interval:P1D}") Duration interval,
             @Value("${helper2.scout.hf-trending.min-likes:20}") int minLikes) {
         SourceSettings s = p.get("hf-trending");
-        return new HuggingFaceTrendingCollector(s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock,
+        return new HuggingFaceTrendingCollector(s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock, resilience,
             new RunInterval(interval), minLikes);
     }
 
     @Bean
-    TavilyCollector tavilyCollector(SourcesProperties p, Clock clock, ObservationRegistry observations,
+    TavilyCollector tavilyCollector(SourcesProperties p, Clock clock, Resilience resilience, ObservationRegistry observations,
             @Value("${helper2.scout.tavily.interval:P5D}") Duration interval,
             @Value("${helper2.scout.tavily.queries:}") List<String> queries) {
         SourceSettings s = p.get("tavily-scout");
-        return new TavilyCollector(s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock, new RunInterval(interval),
+        return new TavilyCollector(s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock, resilience, new RunInterval(interval),
             queries.stream().map(String::trim).filter(q -> !q.isEmpty()).toList());
     }
 
     /** Weekly Tavily searches on learning platforms; what it finds goes to the admin review list (ADR 0032 §8). */
     @Bean
-    CourseCollector courseCollector(SourcesProperties p, Clock clock, ObservationRegistry observations, CandidateReview review,
+    CourseCollector courseCollector(SourcesProperties p, Clock clock, Resilience resilience, ObservationRegistry observations, CandidateReview review,
             @Value("${helper2.scout.courses.interval:P7D}") Duration interval,
             @Value("${helper2.scout.courses.query:new artificial intelligence course or certification}") String query,
             @Value("${helper2.scout.courses.platforms:}") List<String> platforms) {
         SourceSettings s = p.get("course-scout");
-        return new CourseCollector(s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock, new RunInterval(interval), query,
+        return new CourseCollector(s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock, resilience, new RunInterval(interval), query,
             platforms.stream().map(String::trim).filter(x -> !x.isEmpty()).toList(), review);
     }
 
@@ -114,7 +116,7 @@ class SourcesConfiguration {
      * Its daily call cap is counted in Redis, so a restart does not reset the day.
      */
     @Bean
-    GitHubAwesomeCollector gitHubAwesomeCollector(SourcesProperties p, Clock clock, ObservationRegistry observations, ObjectProvider<ChatModel> chatModel,
+    GitHubAwesomeCollector gitHubAwesomeCollector(SourcesProperties p, Clock clock, Resilience resilience, ObservationRegistry observations, ObjectProvider<ChatModel> chatModel,
             LlmSettings llm, CallCounter budgetCounter, ModelCallMetrics metrics, MeterRegistry meters,
             @Value("${helper2.scout.github-awesome.interval:P1D}") Duration interval,
             @Value("${helper2.scout.github-awesome.topic-queries:topic:awesome-list topic:llm}") List<String> topicQueries,
@@ -139,7 +141,7 @@ class SourcesConfiguration {
             classifier = new SpringAiRepoClassifier(model, llm.fast(), classifyMaxTokens, budget, metrics);
         }
         log.info("GitHub awesome lists: enabled={}, classifier={}", s.enabled() && s.hasToken(), classifier.name());
-        return new GitHubAwesomeCollector(s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock, new RunInterval(interval),
+        return new GitHubAwesomeCollector(s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock, resilience, new RunInterval(interval),
             topicQueries.stream().map(String::trim).filter(q -> !q.isEmpty()).toList(),
             new GitHubAwesomeCollector.Limits(maxLists, minListStars, maxEntriesPerPass, maxEntriesPerRun, minRepoStars,
                 classifyBatch),
@@ -147,26 +149,26 @@ class SourcesConfiguration {
     }
 
     @Bean
-    HuggingFaceProviderOrgsCollector huggingFaceProviderOrgsCollector(SourcesProperties p, Clock clock, ObservationRegistry observations,
+    HuggingFaceProviderOrgsCollector huggingFaceProviderOrgsCollector(SourcesProperties p, Clock clock, Resilience resilience, ObservationRegistry observations,
             @Value("${helper2.scout.hf-provider-orgs.interval:P1D}") Duration interval,
             @Value("${helper2.scout.hf-provider-orgs.orgs:meta-llama,nvidia,mistralai,deepseek-ai,Qwen,google,openai,xai-org}") List<String> orgs,
             @Value("${helper2.scout.hf-provider-orgs.per-org:20}") int perOrg) {
         SourceSettings s = p.get("hf-provider-orgs");
-        return new HuggingFaceProviderOrgsCollector(s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock,
+        return new HuggingFaceProviderOrgsCollector(s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock, resilience,
             new RunInterval(interval), orgs.stream().map(String::trim).filter(o -> !o.isEmpty()).toList(), perOrg);
     }
 
     @Bean
-    AiDeadlinesCollector aiDeadlinesCollector(SourcesProperties p, Clock clock, ObservationRegistry observations,
+    AiDeadlinesCollector aiDeadlinesCollector(SourcesProperties p, Clock clock, Resilience resilience, ObservationRegistry observations,
             @Value("${helper2.scout.ai-deadlines.interval:P1D}") Duration interval) {
         SourceSettings s = p.get("ai-deadlines");
-        return new AiDeadlinesCollector(s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock, new RunInterval(interval));
+        return new AiDeadlinesCollector(s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock, resilience, new RunInterval(interval));
     }
 
     @Bean
-    McpRegistryCollector mcpRegistryCollector(SourcesProperties p, Clock clock, ObservationRegistry observations,
+    McpRegistryCollector mcpRegistryCollector(SourcesProperties p, Clock clock, Resilience resilience, ObservationRegistry observations,
             @Value("${helper2.scout.mcp-registry.interval:PT1H}") Duration interval) {
         SourceSettings s = p.get("mcp-registry");
-        return new McpRegistryCollector(s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock, new RunInterval(interval));
+        return new McpRegistryCollector(s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock, resilience, new RunInterval(interval));
     }
 }

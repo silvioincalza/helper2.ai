@@ -1,5 +1,6 @@
 package ai.helper2.sources;
 
+import ai.helper2.platform.resilience.OutboundThrottle;
 import ai.helper2.search.SearchSource;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.SourceFailure;
@@ -22,7 +23,6 @@ import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.springframework.web.client.RestClient;
@@ -32,8 +32,9 @@ import org.w3c.dom.NodeList;
 
 /**
  * arXiv papers in AI categories. API: https://info.arxiv.org/help/api/ — metadata is CC0; no more than
- * one request every 3 seconds, so this adapter self-throttles and reports RATE_LIMITED instead of
- * calling faster. Helper2 must not imply arXiv endorsement.
+ * one request every 3 seconds from all of Helper2, so each call first takes the shared slot ({@link OutboundThrottle},
+ * in Redis) and reports RATE_LIMITED when another replica holds it or Redis cannot tell. Helper2 must not imply arXiv
+ * endorsement.
  */
 public class ArxivSource implements SearchSource {
 
@@ -44,10 +45,11 @@ public class ArxivSource implements SearchSource {
     private final RestClient http;
     private final Clock clock;
     private final SourceDescriptor descriptor;
-    private final AtomicReference<Instant> lastCall = new AtomicReference<>(Instant.MIN);
+    private final OutboundThrottle throttle;
 
-    public ArxivSource(SourceSettings settings, RestClient.Builder builder, Clock clock) {
+    public ArxivSource(SourceSettings settings, RestClient.Builder builder, Clock clock, OutboundThrottle throttle) {
         this.clock = clock;
+        this.throttle = throttle;
         this.http = builder.baseUrl(settings.baseUrl()).build();
         this.descriptor = new SourceDescriptor("arxiv", "arXiv", SourceMode.LIVE, URI.create("https://arxiv.org"),
             URI.create("https://info.arxiv.org/help/api/tou.html"),
@@ -62,11 +64,10 @@ public class ArxivSource implements SearchSource {
 
     @Override
     public List<SourceHit> search(SourceQuery query) {
-        Instant now = clock.instant();
-        Instant previous = lastCall.get();
-        if (Duration.between(previous, now).compareTo(MIN_INTERVAL) < 0 || !lastCall.compareAndSet(previous, now)) {
+        if (!throttle.tryAcquire("arxiv", MIN_INTERVAL)) {
             throw new SourceFailure.RateLimited(MIN_INTERVAL);
         }
+        Instant now = clock.instant();
         String searchQuery = searchQuery(query);
         // Browsing has no words to rank by relevance: newest submissions first.
         String sortBy = query.getBrowse() ? "submittedDate" : "relevance";

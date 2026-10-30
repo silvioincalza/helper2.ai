@@ -1,6 +1,6 @@
 # 0024 — HTTP edge: rate limits (IPv6 /64), CSRF, CSP, forwarded headers, management port, SPA fallback and caching
 
-**Status.** Accepted (2026-10-27). **Builds on:** [0001](0001-stack-and-runtime.md), [0005](0005-redis-disposable-cache.md), [0007](0007-configuration-and-secrets.md), [0023](0023-identity-and-admin.md)
+**Status.** Accepted (2026-10-27). **Builds on:** [0001](0001-stack-and-runtime.md), [0005](0005-redis-disposable-cache.md), [0007](0007-configuration-and-secrets.md), [0023](0023-identity-and-admin.md), [0033](0033-resilience-policies.md)
 
 ## Context
 The app is public and anonymous. Search calls paid or rate-limited APIs, and each guide question costs model calls,
@@ -21,8 +21,9 @@ must load the app on a direct visit, and a new release must reach browsers at on
    The client is `platform.ClientKey.of(remote address)`: Internet Protocol version 4 (IPv4) as is, Internet Protocol
    version 6 (IPv6) by its /64 prefix, a zone id (`%eth0`) dropped, IPv4-mapped addresses as IPv4, a missing address
    as `unknown`. Both limiters and the guide's daily quota ([0017](0017-guide-cost-guard.md)) use this one key.
-3. **In-memory fallback.** On a Redis error the platform `CircuitBreaker` opens for 30 s, and each replica counts in
-   its own `InMemoryRateLimiter` with the same limits (windows in start order, at most 50,000 clients, oldest
+3. **In-memory fallback.** The script runs under the `redis` policy ([0033](0033-resilience-policies.md)). On a Redis
+   error, or while that circuit is open (30 s after repeated errors), each replica counts in its own
+   `InMemoryRateLimiter` with the same limits (windows in start order, at most 50,000 clients, oldest
    evicted). Every such decision increments `helper2.rate-limit.fallback{limiter}`. Without Redis configured, only the
    in-memory limiter is used.
 4. **Client address.** `H2_FORWARD_HEADERS_STRATEGY` defaults to `none`, so `X-Forwarded-For` is ignored. The cluster
@@ -58,6 +59,11 @@ must load the app on a direct visit, and a new release must reach browsers at on
 - In-memory limiter only — with 3 replicas a client gets up to 3 times the limit.
 - Fail closed (refuse while Redis is down) — a cache outage would take search and the guide down.
 - A token bucket or sliding window — smoother, but more state per key; a fixed window is enough here.
+- Resilience4j's rate limiter ([0033](0033-resilience-policies.md)) — it counts in one Java virtual machine (JVM) and for
+  the whole app, not per client: 3 replicas would allow 3 times the limit, and one client per limiter would mean an
+  unbounded registry keyed by address. Resilience4j guards the calls to Redis here; the count stays in Redis.
+- Bucket4j or another distributed limiter library — the same Redis round trip and key as the short Lua script, with
+  one more dependency.
 - Trusting `X-Forwarded-For` by default — any client could choose its own address and skip the limit.
 - Spring Boot's default static resource handling — no control over cache headers per path.
 

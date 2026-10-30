@@ -1,5 +1,6 @@
 package ai.helper2.platform;
 
+import ai.helper2.platform.resilience.Resilience;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
@@ -13,8 +14,9 @@ import org.springframework.data.redis.core.script.RedisScript;
  * clock and what is left of it is the Retry-After. INCR and PEXPIRE run in one script: a key is never left
  * without an expiry (which would block that client for good).
  *
- * <p>Fails open: while Redis is unavailable (the circuit is open after a failure) each replica counts in its own
- * memory with the same limit, and every such decision is counted in {@code helper2.rate-limit.fallback}.
+ * <p>Fails open: the script runs under the {@code redis} policy (ADR 0033); on a Redis error, or while the circuit is
+ * open, each replica counts in its own memory with the same limit, and every such decision is counted in
+ * {@code helper2.rate-limit.fallback}.
  */
 public final class RedisRateLimiter implements RateLimiter {
 
@@ -33,18 +35,18 @@ public final class RedisRateLimiter implements RateLimiter {
     private final int limit;
     private final Duration window;
     private final StringRedisTemplate redis;
-    private final CircuitBreaker breaker;
+    private final Resilience resilience;
     private final RateLimiter fallback;
     private final Counter fallbacks;
 
     /** {@code name} is the key's namespace and the meter's {@code limiter} tag: one per limit, not per endpoint. */
-    public RedisRateLimiter(String name, int limit, Duration window, StringRedisTemplate redis, CircuitBreaker breaker,
+    public RedisRateLimiter(String name, int limit, Duration window, StringRedisTemplate redis, Resilience resilience,
                             RateLimiter fallback, MeterRegistry meters) {
         this.name = name;
         this.limit = limit;
         this.window = window;
         this.redis = redis;
-        this.breaker = breaker;
+        this.resilience = resilience;
         this.fallback = fallback;
         this.fallbacks = Counter.builder("helper2.rate-limit.fallback")
             .description("Rate-limit decisions made in one replica's memory because Redis was unavailable")
@@ -57,15 +59,12 @@ public final class RedisRateLimiter implements RateLimiter {
 
     @Override
     public long acquire(String clientAddress) {
-        if (!breaker.isOpen()) {
-            try {
-                return fromRedis(clientAddress);
-            } catch (RuntimeException e) {
-                breaker.trip(e);
-            }
+        try {
+            return resilience.call("redis", () -> fromRedis(clientAddress));
+        } catch (RuntimeException e) {
+            fallbacks.increment();
+            return fallback.acquire(clientAddress);
         }
-        fallbacks.increment();
-        return fallback.acquire(clientAddress);
     }
 
     private long fromRedis(String clientAddress) {

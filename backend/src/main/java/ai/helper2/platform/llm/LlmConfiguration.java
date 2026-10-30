@@ -1,5 +1,6 @@
 package ai.helper2.platform.llm;
 
+import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.search.QueryTranslator;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -30,9 +31,9 @@ class LlmConfiguration {
 
     /** Daily budgets survive restarts in Redis; without Redis they count in memory. */
     @Bean
-    CallCounter budgetCounter(ObjectProvider<StringRedisTemplate> redis, Clock clock) {
+    CallCounter budgetCounter(ObjectProvider<StringRedisTemplate> redis, Resilience resilience) {
         StringRedisTemplate template = redis.getIfAvailable();
-        return template == null ? CallCounter.NONE : new RedisCallCounter(template, clock, Duration.ofSeconds(30));
+        return template == null ? CallCounter.NONE : new RedisCallCounter(template, resilience);
     }
 
     /** One metrics recorder for every model call, whichever module makes it. */

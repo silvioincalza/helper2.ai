@@ -100,7 +100,8 @@ final class HttpClients {
             if (ObservedHttp.isTooLarge(e)) {
                 throw new SourceFailure.Unavailable("response too large");
             }
-            throw new SourceFailure.Unavailable(e instanceof ResourceAccessException ? "network error or timeout" : "http error");
+            boolean network = e instanceof ResourceAccessException;
+            throw new SourceFailure.Unavailable(network ? "network error or timeout" : "http error", network);
         }
     }
 
@@ -127,7 +128,7 @@ final class HttpClients {
         if (status == 429 || (status == 403 && exhausted) || pause) {
             return new SourceFailure.RateLimited(retryAfter(h, clock));
         }
-        return new SourceFailure.Unavailable("HTTP " + status);
+        return new SourceFailure.Unavailable("HTTP " + status, status == 503);
     }
 
     private static Duration retryAfter(HttpHeaders h, Clock clock) {

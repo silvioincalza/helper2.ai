@@ -1,5 +1,6 @@
 package ai.helper2.sources;
 
+import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.scout.Collector;
 import ai.helper2.search.SourceDescriptor;
@@ -34,19 +35,27 @@ public class McpRegistryCollector implements Collector {
 
     private static final String META = "io.modelcontextprotocol.registry/official";
 
+    /** Circuit breaker and retry of this collector's calls (ADR 0033). */
+    static final String POLICY = "collector-mcp-registry";
+
     private final RestClient http;
     private final Clock clock;
+    private final Resilience resilience;
     private final String baseUrl;
     private final SourceDescriptor descriptor;
     private final RunInterval interval;
 
-    public McpRegistryCollector(SourceSettings settings, RestClient.Builder builder, Clock clock) {
-        this(settings, builder, clock, new RunInterval(Duration.ZERO));
+    public McpRegistryCollector(SourceSettings settings, RestClient.Builder builder, Clock clock, Resilience resilience) {
+        this(settings, builder, clock, resilience, new RunInterval(Duration.ZERO));
     }
 
     /** [interval]: the registry asks aggregators to poll "on a regular but infrequent basis (e.g., once per hour)". */
-    public McpRegistryCollector(SourceSettings settings, RestClient.Builder builder, Clock clock, RunInterval interval) {
+    public McpRegistryCollector(SourceSettings settings, RestClient.Builder builder, Clock clock, Resilience resilience, RunInterval interval) {
         this.clock = clock;
+        this.resilience = resilience;
+        if (settings.enabled()) {
+            resilience.require(POLICY);
+        }
         this.interval = interval;
         this.baseUrl = settings.baseUrl();
         this.http = builder.baseUrl(settings.baseUrl()).build();
@@ -73,7 +82,7 @@ public class McpRegistryCollector implements Collector {
         int pages = 0;
         do {
             String c = cursor;
-            JsonNode root = HttpClients.getJson(() -> http.get().uri(u -> {
+            JsonNode root = resilience.call(POLICY, () -> HttpClients.getJson(() -> http.get().uri(u -> {
                 var b = u.path("/v0.1/servers").queryParam("limit", 100);
                 if (checkpoint != null) {
                     b = b.queryParam("updated_since", checkpoint);
@@ -82,7 +91,7 @@ public class McpRegistryCollector implements Collector {
                     b = b.queryParam("cursor", c);
                 }
                 return b.build();
-            }).retrieve().body(String.class), clock);
+            }).retrieve().body(String.class), clock));
             for (JsonNode entry : root.path("servers")) {
                 JsonNode meta = entry.path("_meta").path(META);
                 if (!meta.path("isLatest").asBoolean(false)) {

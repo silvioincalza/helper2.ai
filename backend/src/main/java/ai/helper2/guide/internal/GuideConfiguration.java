@@ -10,6 +10,7 @@ import ai.helper2.platform.llm.CallCounter;
 import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.LlmSettings;
 import ai.helper2.platform.llm.ModelCallMetrics;
+import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.search.usecase.SearchResources;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -33,12 +34,12 @@ class GuideConfiguration {
 
     /** Guide answers survive restarts and deploys in Redis; without Redis the cache is in memory only. */
     @Bean
-    GuideAnswerStore guideAnswerStore(ObjectProvider<StringRedisTemplate> redis, ObjectMapper json, Clock clock) {
+    GuideAnswerStore guideAnswerStore(ObjectProvider<StringRedisTemplate> redis, ObjectMapper json, Resilience resilience) {
         StringRedisTemplate template = redis.getIfAvailable();
         if (template == null) {
             return GuideAnswerStore.NONE;
         }
-        return new RedisGuideAnswerStore(template, json, clock, Duration.ofSeconds(30));
+        return new RedisGuideAnswerStore(template, json, resilience);
     }
 
     /** Daily model-call cap of the guide (ADR 0017); every provider attempt takes one call. */

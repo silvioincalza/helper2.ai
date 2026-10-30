@@ -1,5 +1,7 @@
 package ai.helper2.search.usecase
 
+import ai.helper2.platform.resilience.Resilience
+import ai.helper2.platform.resilience.Resilience4jPolicies
 import ai.helper2.search.CachedHits
 import ai.helper2.search.Freshness
 import ai.helper2.search.MergedResult
@@ -11,6 +13,7 @@ import ai.helper2.search.SearchFilters
 import ai.helper2.search.SearchRequest
 import ai.helper2.search.SearchSource
 import ai.helper2.search.ServedFrom
+import ai.helper2.search.SkipReason
 import ai.helper2.search.SourceDescriptor
 import ai.helper2.search.SourceFailure
 import ai.helper2.search.SourceHit
@@ -20,6 +23,11 @@ import ai.helper2.search.descriptor
 import ai.helper2.search.hit
 import ai.helper2.shared.ResourceId
 import ai.helper2.testing.MovableClock
+import io.github.resilience4j.bulkhead.BulkheadConfig
+import io.github.resilience4j.bulkhead.BulkheadRegistry
+import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry
+import io.github.resilience4j.retry.RetryRegistry
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
@@ -28,6 +36,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -68,7 +77,22 @@ class SearchResourcesTest {
         sources: List<SearchSource>,
         cache: SearchCache = MapCache(),
         observer: ResultObserver = ResultObserver { emptyMap() },
-    ) = SearchResources(sources, cache, observer, executor, clock, staleFor = Duration.ofHours(24))
+        resilience: Resilience = Resilience.NONE,
+    ) = SearchResources(sources, cache, observer, executor, clock, staleFor = Duration.ofHours(24), resilience = resilience)
+
+    /** Policies for [ids]: a circuit that opens after 2 failed calls of 4 for 30 s, and a bulkhead of [concurrent] calls. */
+    private fun policies(vararg ids: String, concurrent: Int = 10): Resilience {
+        val circuits = CircuitBreakerRegistry.ofDefaults()
+        val bulkheads = BulkheadRegistry.ofDefaults()
+        ids.forEach {
+            circuits.circuitBreaker("source-$it", CircuitBreakerConfig.custom()
+                .slidingWindowSize(4).minimumNumberOfCalls(2).failureRateThreshold(50f)
+                .waitDurationInOpenState(Duration.ofSeconds(30)).permittedNumberOfCallsInHalfOpenState(1)
+                .ignoreExceptions(SourceFailure.RateLimited::class.java).clock(clock).build())
+            bulkheads.bulkhead("source-$it", BulkheadConfig.custom().maxConcurrentCalls(concurrent).maxWaitDuration(Duration.ZERO).build())
+        }
+        return Resilience4jPolicies(circuits, bulkheads, RetryRegistry.ofDefaults())
+    }
 
     private fun req(text: String = "agent tools") = SearchRequest(text = text)
 
@@ -294,4 +318,82 @@ class SearchResourcesTest {
         assertFalse(SearchResources.cacheKey(web, planned).contains("announcement"))
         assertEquals(SearchResources.cacheKey(other, plain), SearchResources.cacheKey(other, planned))
     }
+
+    @Test
+    fun `an enabled source without a policy stops startup, a disabled one does not need one`() {
+        val resilience = policies("github")
+        service(listOf(ok("github"), FakeSource(descriptor("off", enabled = false)) { emptyList() }), resilience = resilience)
+
+        val e = assertFailsWith<IllegalStateException> { service(listOf(ok("github"), ok("npm")), resilience = resilience) }
+        assertTrue(e.message!!.contains("source-npm"))
+    }
+
+    @Test
+    fun `a source that keeps failing is skipped without a call while its circuit is open, then tried again`() {
+        var down = true
+        val flaky = FakeSource(descriptor("npm")) { if (down) throw SourceFailure.Unavailable("HTTP 502") else listOf(hit("npm", "https://www.npmjs.com/package/x")) }
+        val svc = service(listOf(flaky), resilience = policies("npm"))
+
+        repeat(2) { assertEquals(SourceOutcome.FAILED, svc.search(req("q$it")).statuses.single().outcome) }
+        val open = svc.search(req("q3")).statuses.single()
+        assertEquals(SourceOutcome.SKIPPED, open.outcome)
+        assertEquals(SkipReason.CIRCUIT_OPEN, open.skipReason)
+        assertEquals(2, flaky.calls.get(), "no call while the circuit is open")
+
+        down = false
+        clock.now = clock.now.plusSeconds(31)
+        val back = svc.search(req("q4")).statuses.single()
+        assertEquals(SourceOutcome.SUCCEEDED, back.outcome)
+        assertEquals(3, flaky.calls.get())
+    }
+
+    @Test
+    fun `an open circuit still serves the stale cache entry`() {
+        var down = false
+        val gh = FakeSource(descriptor("github")) { if (down) throw SourceFailure.Unavailable("HTTP 500") else listOf(hit("github", "https://github.com/a/x")) }
+        val svc = service(listOf(gh), resilience = policies("github"))
+        svc.search(req())
+        down = true
+        clock.now = clock.now.plus(Duration.ofHours(1))
+        repeat(2) { svc.search(req()) }
+
+        val status = svc.search(req()).statuses.single()
+        assertEquals(SkipReason.CIRCUIT_OPEN, status.skipReason)
+        assertEquals(ServedFrom.STALE_CACHE, status.servedFrom)
+        assertEquals(1, status.resultCount)
+    }
+
+    @Test
+    fun `a rate limit does not count against the circuit`() {
+        val limited = FakeSource(descriptor("github")) { throw SourceFailure.RateLimited(Duration.ofSeconds(1)) }
+        val svc = service(listOf(limited), resilience = policies("github"))
+
+        repeat(3) {
+            assertEquals(SourceOutcome.RATE_LIMITED, svc.search(req("q$it")).statuses.single().outcome)
+            clock.now = clock.now.plusSeconds(2)
+        }
+    }
+
+    @Test
+    fun `a source already running as many calls as its bulkhead allows is skipped as busy`() {
+        val inside = java.util.concurrent.CountDownLatch(1)
+        val release = java.util.concurrent.CountDownLatch(1)
+        val slow = FakeSource(descriptor("tavily", timeout = Duration.ofSeconds(5))) {
+            inside.countDown()
+            release.await(5, java.util.concurrent.TimeUnit.SECONDS)
+            emptyList()
+        }
+        val svc = service(listOf(slow), resilience = policies("tavily", concurrent = 1))
+        val first = executor.submit<Unit> { svc.search(req("first")) }
+        assertTrue(inside.await(5, java.util.concurrent.TimeUnit.SECONDS))
+
+        val busy = svc.search(req("second")).statuses.single()
+        release.countDown()
+        first.get()
+
+        assertEquals(SourceOutcome.SKIPPED, busy.outcome)
+        assertEquals(SkipReason.BUSY, busy.skipReason)
+        assertEquals(1, slow.calls.get())
+    }
+
 }

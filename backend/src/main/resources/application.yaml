@@ -132,6 +132,106 @@ management:
           # OTLP over HTTP/protobuf; in the cluster: http://alloy.observability.svc:4318/v1/traces
           endpoint: ${H2_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
 
+# Resilience policies (ADR 0033), applied in code by platform.resilience.Resilience: no annotations. One policy per
+# name; an enabled source or collector without its policy stops startup. Instances are created at startup, so each
+# has its meters (resilience4j_circuitbreaker_state, ..._not_permitted_calls) before its first call.
+#   source-<id>     circuit breaker + bulkhead, never a retry: the search deadline is the budget (SearchResources).
+#   collector-<id>  circuit breaker + retry with exponential backoff and jitter, only on 429, 503, network error or
+#                   timeout (TransientSourceFailure); Scout runs are background work and can wait.
+#   redis           circuit breaker shared by every Redis adapter: cache, guide answers, budgets, rate limits.
+resilience4j:
+  circuitbreaker:
+    configs:
+      source:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 20
+        minimum-number-of-calls: 10
+        failure-rate-threshold: ${H2_RESILIENCE_SOURCE_FAILURE_RATE:50}
+        # A call slower than this counts as slow; half of the window slow opens the circuit like failures do.
+        slow-call-duration-threshold: 2s
+        slow-call-rate-threshold: 50
+        wait-duration-in-open-state: ${H2_RESILIENCE_SOURCE_OPEN_FOR:30s}
+        permitted-number-of-calls-in-half-open-state: 2
+        # A rate limit is not an outage: SearchResources pauses the source until Retry-After instead.
+        ignore-exceptions: ai.helper2.search.SourceFailure$RateLimited
+      collector:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: ${H2_RESILIENCE_COLLECTOR_OPEN_FOR:1m}
+        permitted-number-of-calls-in-half-open-state: 1
+        ignore-exceptions: ai.helper2.search.SourceFailure$RateLimited
+      store:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        # Redis answers in a millisecond or fails at its 250 ms command timeout: three failures are enough to stop
+        # waiting on it for the open window.
+        minimum-number-of-calls: 3
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: ${H2_RESILIENCE_REDIS_OPEN_FOR:30s}
+        permitted-number-of-calls-in-half-open-state: 2
+    instances:
+      source-github: {base-config: source}
+      source-hf-models: {base-config: source}
+      source-hf-spaces: {base-config: source}
+      source-npm: {base-config: source}
+      source-arxiv: {base-config: source}
+      source-tavily:
+        base-config: source
+        # Tavily answers in 2-4 s (timeout 6 s).
+        slow-call-duration-threshold: 5s
+      source-helper2-index: {base-config: source}
+      source-helper2-semantic: {base-config: source}
+      source-curated: {base-config: source}
+      collector-hf-trending: {base-config: collector}
+      collector-tavily-scout: {base-config: collector}
+      collector-course-scout: {base-config: collector}
+      collector-github-awesome: {base-config: collector}
+      collector-hf-provider-orgs: {base-config: collector}
+      collector-ai-deadlines: {base-config: collector}
+      collector-mcp-registry: {base-config: collector}
+      redis: {base-config: store}
+  bulkhead:
+    configs:
+      source:
+        # Calls to one source at once in this replica; one more is SKIPPED as busy, it never waits.
+        max-concurrent-calls: ${H2_RESILIENCE_SOURCE_MAX_CONCURRENT:20}
+        max-wait-duration: 0
+      catalog:
+        # The catalog sources query Postgres: below the connection pool (H2_DATABASE_POOL_SIZE, 10), so searches
+        # never take every connection from the Scout and the admin.
+        max-concurrent-calls: ${H2_RESILIENCE_CATALOG_MAX_CONCURRENT:6}
+        max-wait-duration: 0
+    instances:
+      source-github: {base-config: source}
+      source-hf-models: {base-config: source}
+      source-hf-spaces: {base-config: source}
+      source-npm: {base-config: source}
+      source-arxiv: {base-config: source}
+      source-tavily: {base-config: source}
+      source-helper2-index: {base-config: catalog}
+      source-helper2-semantic: {base-config: catalog}
+      source-curated: {base-config: catalog}
+  retry:
+    configs:
+      collector:
+        max-attempts: ${H2_RESILIENCE_COLLECTOR_MAX_ATTEMPTS:3}
+        wait-duration: 1s
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        enable-randomized-wait: true
+        randomized-wait-factor: 0.5
+        retry-exception-predicate: ai.helper2.sources.TransientSourceFailure
+    instances:
+      collector-hf-trending: {base-config: collector}
+      collector-tavily-scout: {base-config: collector}
+      collector-course-scout: {base-config: collector}
+      collector-github-awesome: {base-config: collector}
+      collector-hf-provider-orgs: {base-config: collector}
+      collector-ai-deadlines: {base-config: collector}
+      collector-mcp-registry: {base-config: collector}
+
 logging:
   structured:
     format:
@@ -437,6 +537,19 @@ spring:
 helper2:
   scout:
     enabled: false
+resilience4j:
+  circuitbreaker:
+    instances:
+      source-demo-catalog: {base-config: source}
+      source-demo-mirror: {base-config: source}
+      source-demo-slow: {base-config: source}
+      source-demo-down: {base-config: source}
+  bulkhead:
+    instances:
+      source-demo-catalog: {base-config: source}
+      source-demo-mirror: {base-config: source}
+      source-demo-slow: {base-config: source}
+      source-demo-down: {base-config: source}
 
 ---
 # Data retention (ADR 0034): what the daily purges delete, and when. Every period can be changed without a release.

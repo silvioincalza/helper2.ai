@@ -118,13 +118,18 @@ data class SourceQuery @JvmOverloads constructor(
 /** Raised by source adapters; anything else thrown is treated as FAILED. */
 sealed class SourceFailure(message: String) : RuntimeException(message) {
     class RateLimited(val retryAfter: Duration?) : SourceFailure("rate limited")
-    class Unavailable(message: String) : SourceFailure(message)
+
+    /** [transient]: the same call may succeed soon (503, network error or timeout), so a background caller may retry it. */
+    class Unavailable @JvmOverloads constructor(message: String, val transient: Boolean = false) : SourceFailure(message)
 }
 
 enum class SourceOutcome { SUCCEEDED, FAILED, TIMED_OUT, RATE_LIMITED, SKIPPED }
 
-/** Why a source was SKIPPED in a search. */
-enum class SkipReason { DISABLED, NOT_BROWSABLE, RATE_LIMIT_PAUSE }
+/**
+ * Why a source was SKIPPED in a search: turned off, nothing to browse, paused after a rate limit, its circuit open
+ * after repeated failures, or already running as many calls as its bulkhead allows.
+ */
+enum class SkipReason { DISABLED, NOT_BROWSABLE, RATE_LIMIT_PAUSE, CIRCUIT_OPEN, BUSY }
 
 enum class ServedFrom { LIVE, CACHE, STALE_CACHE, NONE }
 

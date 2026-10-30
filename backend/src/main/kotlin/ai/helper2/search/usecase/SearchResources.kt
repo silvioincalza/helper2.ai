@@ -1,5 +1,7 @@
 package ai.helper2.search.usecase
 
+import ai.helper2.platform.resilience.CallRefused
+import ai.helper2.platform.resilience.Resilience
 import ai.helper2.search.AnalyzedQuery
 import ai.helper2.search.CachedHits
 import ai.helper2.search.Coverage
@@ -55,6 +57,11 @@ import org.slf4j.LoggerFactory
  * A non-English query is translated in parallel with the sources that never read the translation
  * ([SourceDescriptor.usesTranslation]); the other sources start when it is in, and each source's timeout
  * and reported latency count from its own start, so translation never eats into a source's budget.
+ *
+ * Each call runs under the source's policy `source-<id>` ([Resilience], ADR 0033): a circuit breaker and a bulkhead,
+ * never a retry (the deadline is the budget). A call the policy refuses does not reach the source and is SKIPPED
+ * ([SkipReason.CIRCUIT_OPEN], [SkipReason.BUSY]), with a stale cache entry when one exists. Every enabled source must
+ * have a policy: a missing one fails at construction, so at startup.
  */
 class SearchResources(
     private val sources: List<SearchSource>,
@@ -71,9 +78,14 @@ class SearchResources(
     private val languages: LanguageDetector? = null,
     private val translator: QueryTranslator = QueryTranslator.NONE,
     private val translateTimeout: Duration = Duration.ofMillis(2500),
+    private val resilience: Resilience = Resilience.NONE,
 ) {
     private val log = LoggerFactory.getLogger(SearchResources::class.java)
     private val cooldownUntil = ConcurrentHashMap<String, Instant>()
+
+    init {
+        sources.filter { it.descriptor.enabled }.forEach { resilience.require(policy(it.descriptor)) }
+    }
 
     private class Attempt(val status: SourceStatus, val hits: List<SourceHit>)
 
@@ -128,7 +140,7 @@ class SearchResources(
             val started = System.nanoTime()
             val future = executor.submit<List<SourceHit>> {
                 try {
-                    source.search(query)
+                    resilience.call(policy(d)) { source.search(query) }
                 } finally {
                     finished.set(System.nanoTime())
                 }
@@ -162,6 +174,12 @@ class SearchResources(
             } catch (e: ExecutionException) {
                 val latency = latency()
                 when (val cause = e.cause) {
+                    is CallRefused -> when (cause.reason()) {
+                        CallRefused.Reason.CIRCUIT_OPEN -> stale(d, startedAt, null, SourceOutcome.SKIPPED,
+                            "Paused after repeated failures", cachedFor[d.id], SkipReason.CIRCUIT_OPEN)
+                        CallRefused.Reason.BUSY -> stale(d, startedAt, null, SourceOutcome.SKIPPED,
+                            "Too many searches at once", cachedFor[d.id], SkipReason.BUSY)
+                    }
                     is SourceFailure.RateLimited -> {
                         cooldownUntil[d.id] = startedAt.plus(cause.retryAfter ?: Duration.ofMinutes(1))
                         stale(d, startedAt, latency, SourceOutcome.RATE_LIMITED, "Source rate limit reached", cachedFor[d.id])
@@ -343,6 +361,10 @@ class SearchResources(
 
     companion object {
         private const val MAX_TRANSLATION_CHARS = 120
+
+        /** The resilience policy of a search source. */
+        @JvmStatic
+        fun policy(d: SourceDescriptor) = "source-${d.id}"
         private val URL_LIKE = Regex("(?i)https?:|www\\.|://")
         private val NON_WORD = Regex("[^\\p{L}\\p{N}\\s-]+")
         private val SPACES = Regex("\\s+")

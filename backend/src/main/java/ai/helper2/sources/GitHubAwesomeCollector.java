@@ -1,6 +1,7 @@
 package ai.helper2.sources;
 
 import ai.helper2.platform.http.ObservedHttp;
+import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.scout.Collector;
 import ai.helper2.search.PopularityKind;
@@ -47,6 +48,8 @@ import tools.jackson.databind.node.ObjectNode;
 public class GitHubAwesomeCollector implements Collector {
 
     static final String ID = "github-awesome";
+    /** Circuit breaker and retry of this collector\'s calls (ADR 0033). */
+    static final String POLICY = "collector-" + ID;
     private static final Logger log = LoggerFactory.getLogger(GitHubAwesomeCollector.class);
     private static final int GRAPHQL_BATCH = 50;
     private static final int SEARCH_PAGE = 20;
@@ -57,6 +60,7 @@ public class GitHubAwesomeCollector implements Collector {
 
     private final RestClient http;
     private final Clock clock;
+    private final Resilience resilience;
     private final RunInterval interval;
     private final List<String> topicQueries;
     private final Limits limits;
@@ -64,9 +68,13 @@ public class GitHubAwesomeCollector implements Collector {
     private final RepoClassifier fallback = new RepoClassifier.Heuristic();
     private final SourceDescriptor descriptor;
 
-    public GitHubAwesomeCollector(SourceSettings settings, RestClient.Builder builder, Clock clock, RunInterval interval,
+    public GitHubAwesomeCollector(SourceSettings settings, RestClient.Builder builder, Clock clock, Resilience resilience, RunInterval interval,
                                   List<String> topicQueries, Limits limits, RepoClassifier classifier) {
         this.clock = clock;
+        this.resilience = resilience;
+        if (settings.enabled()) {
+            resilience.require(POLICY);
+        }
         this.interval = interval;
         this.topicQueries = topicQueries;
         this.limits = limits;
@@ -112,10 +120,10 @@ public class GitHubAwesomeCollector implements Collector {
             String q = topics + " fork:false archived:false stars:>=" + limits.minListStars();
             JsonNode root;
             try {
-                root = HttpClients.getJson(() -> http.get()
+                root = resilience.call(POLICY, () -> HttpClients.getJson(() -> http.get()
                     .uri(u -> u.path("/search/repositories").queryParam("q", q).queryParam("sort", "stars")
                         .queryParam("order", "desc").queryParam("per_page", SEARCH_PAGE).build())
-                    .retrieve().body(String.class), clock);
+                    .retrieve().body(String.class), clock));
             } catch (SourceFailure.Unavailable e) {
                 log.warn("awesome list search '{}' failed: {}", topics, e.getMessage());
                 continue;
@@ -160,11 +168,11 @@ public class GitHubAwesomeCollector implements Collector {
 
     private String readme(String list) {
         String[] parts = list.split("/", 2);
-        return HttpClients.getText(() -> http.get()
+        return resilience.call(POLICY, () -> HttpClients.getText(() -> http.get()
             .uri("/repos/{owner}/{repo}/readme", parts[0], parts[1])
             .header("Accept", "application/vnd.github.raw+json")
             .attributes(ObservedHttp.maxResponseBytes(README_MAX_BYTES))
-            .retrieve().body(String.class), clock);
+            .retrieve().body(String.class), clock));
     }
 
     /** Facts by lower-case full name. Repositories GitHub cannot resolve (renamed, deleted) are absent. */
@@ -173,9 +181,9 @@ public class GitHubAwesomeCollector implements Collector {
         for (int from = 0; from < entries.size(); from += GRAPHQL_BATCH) {
             List<AwesomeListParser.Entry> batch = entries.subList(from, Math.min(entries.size(), from + GRAPHQL_BATCH));
             ObjectNode body = JsonNodeFactory.instance.objectNode().put("query", graphQl(batch));
-            JsonNode root = HttpClients.getJson(() -> http.post().uri("/graphql")
+            JsonNode root = resilience.call(POLICY, () -> HttpClients.getJson(() -> http.post().uri("/graphql")
                 .header("Content-Type", "application/json").body(body.toString())
-                .retrieve().body(String.class), clock);
+                .retrieve().body(String.class), clock));
             for (JsonNode error : root.path("errors")) {
                 if ("RATE_LIMITED".equals(error.path("type").asString(""))) {
                     throw new SourceFailure.RateLimited(null);

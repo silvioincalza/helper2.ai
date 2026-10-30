@@ -116,6 +116,7 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
     llm: "llm: LlmSettings · DailyBudget\nRedisCallCounter · ModelCallMetrics\nSpringAiQueryTranslator" {class: app}
     edge: "RateLimitInterceptor · RateLimiter\nApiExceptionHandler · SinglePageApp\nCircuitBreaker · PromptTemplate" {class: app}
     http: "http: ObservedHttp\n(pooled, observed RestClient;\nUser-Agent with build version)" {class: app}
+    resilience: "resilience: Resilience (named\npolicies on Resilience4j)\nOutboundThrottle (Redis)" {class: app}
   }
 
   shared: "shared (open, Kotlin)\nCanonicalUrl · ResourceId · DateFact\nLanguageDetector · Vocabulary" {class: app}
