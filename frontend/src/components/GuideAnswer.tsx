@@ -1,16 +1,17 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import type { GuideRequest, GuideResponse } from '@/api/types';
+import type { GuideResponse } from '@/api/types';
 import { ExternalLink } from '@/components/ExternalLink';
 import { Icon } from '@/components/Icon';
 import { aiMark } from '@/lib/aiMark';
+import type { Refinement } from '@/lib/searchState';
 import { typeTagClass } from '@/lib/typeTag';
 
 type Recommendation = GuideResponse['recommendations'][number];
 
 /** A follow-up the user asks from the answer: their reply to our question, or parts of the reading to remove. */
-export type Refinement = Pick<GuideRequest, 'clarification' | 'drop'>;
+type Refine = (r: Partial<Refinement>) => void;
 
 /**
  * Where [quote] sits inside [text], matched like the validator does (case and runs of whitespace ignored).
@@ -31,7 +32,7 @@ export function locateQuote(text: string, quote: string): { before: string; matc
  * requirements as confirmed / not confirmed, and the model's explanation folded away and labelled with the outcome of
  * the reason check (checked by a second model call, removed, or not checked).
  */
-export function GuideAnswer({ answer, onRefine }: { answer: GuideResponse; onRefine?: ((r: Refinement) => void) | undefined }) {
+export function GuideAnswer({ answer, onRefine }: { answer: GuideResponse; onRefine?: Refine | undefined }) {
   const { t } = useTranslation();
   if (answer.status === 'NEEDS_CLARIFICATION' && answer.clarification) {
     return <Clarify clarification={answer.clarification} aiContent={answer.aiContent} onRefine={onRefine} />;
@@ -128,7 +129,7 @@ export function GuideAnswer({ answer, onRefine }: { answer: GuideResponse; onRef
  * How the guide read the question, as chips: the kind of answer, the named subjects, the period and the
  * requirements. ✕ re-asks without that part (sent as a structured removal, never as text to the model).
  */
-function Understood({ answer, onRefine }: { answer: GuideResponse; onRefine?: ((r: Refinement) => void) | undefined }) {
+function Understood({ answer, onRefine }: { answer: GuideResponse; onRefine?: Refine | undefined }) {
   const { t } = useTranslation();
   const intent = answer.intent ?? 'SUGGEST';
   // `ai`: the planner wrote the label. Intent and period labels are our own text; subjects are the user's own words.
@@ -166,7 +167,7 @@ function Understood({ answer, onRefine }: { answer: GuideResponse; onRefine?: ((
 function Clarify({ clarification, aiContent, onRefine }: {
   clarification: NonNullable<GuideResponse['clarification']>;
   aiContent?: GuideResponse['aiContent'];
-  onRefine?: ((r: Refinement) => void) | undefined;
+  onRefine?: Refine | undefined;
 }) {
   const { t } = useTranslation();
   const [other, setOther] = useState('');

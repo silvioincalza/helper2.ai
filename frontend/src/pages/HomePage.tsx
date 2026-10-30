@@ -2,9 +2,8 @@ import { useEffect, useRef, useState, type CSSProperties, type RefObject } from 
 import { useSearchParams } from 'react-router';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
-import { api, ApiError } from '@/api/client';
-import type { GuideRequest, GuideResponse, GuideStep } from '@/api/types';
-import { GuideAnswer, type Refinement } from '@/components/GuideAnswer';
+import { ApiError } from '@/api/client';
+import { GuideAnswer } from '@/components/GuideAnswer';
 import { GuideProgress } from '@/components/GuideProgress';
 import { Icon } from '@/components/Icon';
 import { OneBox } from '@/components/OneBox';
@@ -13,6 +12,7 @@ import { SourceStrip } from '@/components/SourceStrip';
 import { NextEvents } from '@/components/NextEvents';
 import { Radar } from '@/components/Radar';
 import { SearchResults } from '@/components/SearchResults';
+import { useGuideStream } from '@/hooks/useGuideStream';
 import { useTitle } from '@/hooks/useTitle';
 import { askedQuestion, clampQuestion, homeParams, parseSearchParams, patchState, type SearchState } from '@/lib/searchState';
 
@@ -31,13 +31,12 @@ export default function HomePage() {
   useTitle(state.q);
 
   // A filter, sort or page change keeps the reader where they are; only a new page starts at the top.
-  const go = (next: SearchState, ask: string) => setSp(homeParams(next, ask), { preventScrollReset: true });
+  const go = (next: SearchState, ask: string) => setSp(homeParams(next, ask, sp), { preventScrollReset: true });
   const update = (next: SearchState) => go(next, asked);
   const ask = (question: string) => {
     const q = clampQuestion(question);
     if (q) go(patchState(state, { q }), q);
   };
-  const [attempt, setAttempt] = useState(0);
   const words = state.q.split(/\s+/).filter(Boolean).length;
   const empty = !state.q && !asked;
   const slot = useRef<HTMLDivElement>(null);
@@ -83,10 +82,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {asked && (
-        <GuideSection key={`${attempt}:${asked}`} question={asked} onClose={() => go(state, '')}
-          onRetry={() => setAttempt((n) => n + 1)} />
-      )}
+      {asked && <GuideSection onClose={() => go(state, '')} />}
 
       {!asked && words >= 4 && (
         <button type="button" className="btn suggest-guide" onClick={() => ask(state.q)}>
@@ -179,45 +175,12 @@ function guideError(err: unknown, t: TFunction): string {
 }
 
 /**
- * Asks the guide once, over the event stream, and shows each real step as it happens; mounted with
- * a key per question and attempt, so a new question or a retry starts fresh and unmounting cancels the call.
+ * The guide's answer to the question in the URL, with each real step from the event stream while it works.
+ * Closing the panel or asking something else unmounts or restarts the stream (see useGuideStream).
  */
-function GuideSection({ question, onClose, onRetry }: { question: string; onClose: () => void; onRetry: () => void }) {
+function GuideSection({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation();
-  const [answer, setAnswer] = useState<GuideResponse | null>(null);
-  const [steps, setSteps] = useState<GuideStep[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(true);
-  // A reply to the guide's question, or parts of its reading the user removed: the same question, asked again.
-  const [refinement, setRefinement] = useState<Refinement>({});
-  const refine = (r: Refinement) => {
-    setAnswer(null);
-    setSteps([]);
-    setError(null);
-    setBusy(true);
-    setRefinement((prev) => {
-      const clarification = r.clarification ?? prev.clarification;
-      const drop = [...new Set([...(prev.drop ?? []), ...(r.drop ?? [])])];
-      return clarification === undefined ? { drop } : { clarification, drop };
-    });
-  };
-
-  useEffect(() => {
-    const ctrl = new AbortController();
-    const body: GuideRequest = { request: question };
-    if (refinement.clarification !== undefined) body.clarification = refinement.clarification;
-    if (refinement.drop?.length) body.drop = refinement.drop;
-    api.askGuideStream(body, (step) => { if (!ctrl.signal.aborted) setSteps((s) => [...s, step]); }, ctrl.signal)
-      .then((a) => { if (!ctrl.signal.aborted) setAnswer(a); })
-      .catch((err: unknown) => {
-        if (ctrl.signal.aborted) return;
-        setError(guideError(err, t));
-      })
-      .finally(() => { if (!ctrl.signal.aborted) setBusy(false); });
-    // Closing the panel, asking something else or retrying unmounts this section: the old stream is aborted.
-    // The backend shares identical in-flight questions, so replacing a running question costs nothing extra.
-    return () => ctrl.abort();
-  }, [question, refinement, t]);
+  const { question, id, steps, answer, error, busy, refine, retry } = useGuideStream();
 
   return (
     <section aria-labelledby="guide-h" className="guide-panel">
@@ -227,12 +190,12 @@ function GuideSection({ question, onClose, onRetry }: { question: string; onClos
       </div>
       <h2 id="guide-h" className="guide-question"><q>{question}</q></h2>
       {/* The status sits outside the busy region: screen readers hold a busy region's announcements back. */}
-      {busy && <GuideProgress steps={steps} />}
+      {busy && <GuideProgress key={id} steps={steps} />}
       <div aria-live="polite" aria-busy={busy}>
-        {error && (
+        {error !== null && (
           <div className="state-box state-error">
-            <p role="alert"><Icon name="warn" /> {error}</p>
-            <button type="button" className="btn btn-primary" onClick={onRetry}><Icon name="refresh" /> {t('common.retry')}</button>
+            <p role="alert"><Icon name="warn" /> {guideError(error, t)}</p>
+            <button type="button" className="btn btn-primary" onClick={retry}><Icon name="refresh" /> {t('common.retry')}</button>
           </div>
         )}
         {answer && <GuideAnswer answer={answer} onRefine={refine} />}
