@@ -1,5 +1,5 @@
 import { useEffect, useRef, useSyncExternalStore, type ReactNode } from 'react';
-import { NavLink, Outlet, Link, useLocation } from 'react-router';
+import { NavLink, Outlet, Link, ScrollRestoration, useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { signOut } from '@/api/client';
 import { useMe } from '@/context/MeContext';
@@ -148,7 +148,8 @@ function RouteFocus() {
     const main = document.getElementById('main');
     const h1 = main?.querySelector('h1');
     if (h1) h1.tabIndex = -1;
-    (h1 ?? main)?.focus();
+    // ScrollRestoration owns the scroll position (top for a new page, the old place on back and forward).
+    (h1 ?? main)?.focus({ preventScroll: true });
     if (live.current) live.current.textContent = h1?.textContent?.trim() || document.title;
   }, [pathname]);
   return <p ref={live} className="sr-only" aria-live="polite" aria-atomic="true" />;
@@ -159,6 +160,7 @@ export function Layout() {
   return (
     <>
       <a className="skip-link" href="#main">{t('nav.skip')}</a>
+      <ScrollRestoration />
       <RouteFocus />
       <Header />
       <main id="main" tabIndex={-1} className="container main">

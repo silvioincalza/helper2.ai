@@ -16,8 +16,8 @@ export default function AdminPage() {
   const [status, setStatus] = useState<ReviewStatus>('OPEN');
   const [actionError, setActionError] = useState(false);
   const [busy, setBusy] = useState(false);
-  const items = useApi(`review/${status}/${isAdmin}`, (s) => (isAdmin ? api.listReviewItems(status, s) : Promise.resolve([])));
-  const runs = useApi(`runs/${isAdmin}`, (s) => (isAdmin ? api.listScoutRuns(s) : Promise.resolve([])));
+  const items = useApi(`review/${status}/${isAdmin}`, (s) => (isAdmin ? api.listReviewItems(status, s) : Promise.resolve([])), { cache: false });
+  const runs = useApi(`runs/${isAdmin}`, (s) => (isAdmin ? api.listScoutRuns(s) : Promise.resolve([])), { cache: false });
   useTitle(t('nav.admin'));
 
   if (!loaded) return <p role="status">{t('common.loading')}</p>;
