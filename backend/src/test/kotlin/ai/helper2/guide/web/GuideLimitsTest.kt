@@ -5,6 +5,7 @@ import ai.helper2.guide.GuideModel
 import ai.helper2.guide.GuideProposal
 import ai.helper2.guide.GuideSearchPlan
 import ai.helper2.guide.usecase.AskGuide
+import ai.helper2.platform.SignedInUser
 import ai.helper2.platform.llm.LlmSettings
 import ai.helper2.search.CachedHits
 import ai.helper2.search.usecase.SearchResources
@@ -81,8 +82,8 @@ class GuideLimitsTest {
         val mapper = GuideDtoMapper(LlmSettings("fake", "", "fast", "reasoning"))
         val shared = GuideLimits(maxConcurrent, deadline).also { limits += it }
         return MockMvcBuilders.standaloneSetup(
-            GuideStreamController(guide, mapper, shared, Duration.ofMillis(50)).also { streams += it },
-            GuideController(guide, mapper, shared, MockHttpServletRequest()),
+            GuideStreamController(guide, mapper, shared, SignedInUser.ANONYMOUS, Duration.ofMillis(50)).also { streams += it },
+            GuideController(guide, mapper, shared, MockHttpServletRequest(), SignedInUser.ANONYMOUS),
         ).build()
     }
 

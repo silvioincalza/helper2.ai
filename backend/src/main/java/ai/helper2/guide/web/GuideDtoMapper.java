@@ -94,7 +94,8 @@ class GuideDtoMapper {
             .window(window(a.getWindow()))
             .clarification(clarification(a.getClarification()))
             .comparison(comparison(a.getComparison()))
-            .explanation(explanation(a.getExplanation()));
+            .explanation(explanation(a.getExplanation()))
+            .webSearches(CardMapper.webSearches(a.getWebSearches()));
     }
 
     private AiContentMarkerDto aiContent() {

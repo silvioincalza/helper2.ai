@@ -3,6 +3,7 @@ package ai.helper2.guide
 import ai.helper2.search.MergedResult
 import ai.helper2.search.Notice
 import ai.helper2.search.SearchOutcome
+import ai.helper2.search.WebSearchesLeft
 import ai.helper2.shared.AudiencePath
 import ai.helper2.shared.ResourceType
 import java.text.Normalizer
@@ -252,6 +253,10 @@ data class GuideAnswer(
     val comparison: Comparison? = null,
     /** [GuideIntent.WHAT_IS] only. */
     val explanation: Explanation? = null,
+    /** When the web results the answer was built on stop being fresh; null when it used none. Bounds its cache life. */
+    val webFreshUntil: Instant? = null,
+    /** The asker's web searches left today for the guide; set for each asker, never cached. */
+    val webSearches: WebSearchesLeft? = null,
 )
 
 /**

@@ -117,17 +117,22 @@ class GuideAnswerCache @JvmOverloads constructor(
     }
 
     fun put(key: String, answer: GuideAnswer) {
-        if (!isCacheable(answer)) return
         val ttl = ttlOf(answer)
+        if (!isCacheable(answer) || !ttl.isPositive) return
         synchronized(this) { entries[key] = Entry(answer, clock.instant().plus(ttl)) }
         store?.let { runCatching { it.put(key, answer, ttl) } }
     }
 
     /**
      * The cache is read before the plan, so its key cannot hold the resolved window of "last month". An answer with a
-     * window lives at most [WINDOWED_TTL] instead, which bounds how far its window drifts from today's.
+     * window lives at most [WINDOWED_TTL] instead, which bounds how far its window drifts from today's. An answer built
+     * on web results lives no longer than they are fresh ([GuideAnswer.webFreshUntil]); one built on stale ones is not
+     * cached at all.
      */
-    private fun ttlOf(answer: GuideAnswer): Duration = if (answer.window != null) minOf(ttl, WINDOWED_TTL) else ttl
+    private fun ttlOf(answer: GuideAnswer): Duration {
+        val life = if (answer.window != null) minOf(ttl, WINDOWED_TTL) else ttl
+        return answer.webFreshUntil?.let { minOf(life, Duration.between(answer.generatedAt, it)) } ?: life
+    }
 
     companion object {
         /**

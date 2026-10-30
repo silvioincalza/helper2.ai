@@ -9,8 +9,10 @@ import ai.helper2.guide.GuideProgress;
 import ai.helper2.guide.usecase.AskGuide;
 import ai.helper2.platform.BadRequestException;
 import ai.helper2.platform.ClientKey;
+import ai.helper2.platform.SignedInUser;
 import ai.helper2.shared.AudiencePath;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import org.springframework.http.CacheControl;
@@ -33,12 +35,14 @@ class GuideController implements GuideApi {
     private final GuideLimits limits;
     /** A proxy to the current request: the generated interface does not pass it. */
     private final HttpServletRequest http;
+    private final SignedInUser signedInUser;
 
-    GuideController(AskGuide guide, GuideDtoMapper mapper, GuideLimits limits, HttpServletRequest http) {
+    GuideController(AskGuide guide, GuideDtoMapper mapper, GuideLimits limits, HttpServletRequest http, SignedInUser signedInUser) {
         this.guide = guide;
         this.mapper = mapper;
         this.limits = limits;
         this.http = http;
+        this.signedInUser = signedInUser;
     }
 
     @Override
@@ -47,10 +51,11 @@ class GuideController implements GuideApi {
         AudiencePath path = path(body);
         // Read on the request thread: the request proxy is not bound on the worker.
         String client = ClientKey.of(http.getRemoteAddr());
+        UUID userId = signedInUser.id().orElse(null);
         CompletableFuture<GuideAnswer> answer = new CompletableFuture<>();
         boolean started = limits.tryStart(() -> {
             try {
-                answer.complete(guide.ask(request, path, GuideProgress.NONE, client, clarification(body), drops(body)));
+                answer.complete(guide.ask(request, path, GuideProgress.NONE, client, clarification(body), drops(body), userId));
             } catch (Throwable e) {
                 answer.completeExceptionally(e);
             }
