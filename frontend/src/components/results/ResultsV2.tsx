@@ -1,5 +1,5 @@
 import { useId, useMemo, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { Link, useLocation, useSearchParams } from 'react-router';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { api, ApiError } from '@/api/client';
@@ -29,6 +29,7 @@ import { aiMark, isAiOrigin } from '@/lib/aiMark';
 import { SAVED_ENABLED } from '@/lib/features';
 import { displayHost, guidePicks, picksById, selectedResult, type GuidePick } from '@/lib/selection';
 import { askedQuestion, clampQuestion, homeParams, parseSearchParams, patchState, toApiParams, type SearchState } from '@/lib/searchState';
+import { ListedBy, ResultFacts } from './ResultFacts';
 import './results-v2.css';
 
 /** From this width the preview sits next to the list; below it opens inside the list (design system breakpoints). */
@@ -254,8 +255,6 @@ function RowContent({ card, pick }: { card: ResultCard; pick: GuidePick | undefi
   );
 }
 
-interface Fact { key: string; label: string; value: string | null }
-
 /** The selected result: actions, the proof, Use and Build facts, who lists it and its dates. */
 function Preview({ card, pick, inline = false }: { card: ResultCard; pick: GuidePick | undefined; inline?: boolean }) {
   const { t } = useTranslation();
@@ -263,35 +262,21 @@ function Preview({ card, pick, inline = false }: { card: ResultCard; pick: Guide
   const guide = useGuideToggle(card.id);
   const bodyId = `guide-${useId()}`;
   const button = useRef<HTMLButtonElement>(null);
+  const location = useLocation();
+  // The resource page links back to this search and shows the same checked sentence.
+  const detail = { pathname: `/resource/${card.id}` };
+  const back = new URLSearchParams(location.search);
+  back.set('id', card.id);
+  const detailState = { from: `${location.pathname}?${back.toString()}`, quote: pick?.quote ?? null };
   // The same levels inline and beside the list: the page's h1, then this h2.
   const TitleTag = 'h2';
   const SecTag = 'h3';
   const GroupTag = 'h4';
-  const use: Fact[] = [
-    { key: 'pricing', label: t('card.pricing'), value: card.pricing ? t(`pricing.${card.pricing}`) : null },
-    { key: 'platforms', label: t('card.platforms'), value: card.platforms.length ? card.platforms.join(', ') : null },
-    { key: 'useCases', label: t('card.useCases'), value: card.useCases.length ? card.useCases.map((u) => t(`useCase.${u}`, { defaultValue: u })).join(', ') : null },
-  ];
-  const build: Fact[] = [
-    { key: 'license', label: t('card.license'), value: card.license ?? null },
-    { key: 'openSource', label: t('card.openSource'), value: card.openSource === true ? t('common.yes') : card.openSource === false ? t('common.no') : null },
-    { key: 'techLevel', label: t('card.techLevel'), value: card.techLevel ? t(`techLevel.${card.techLevel}`) : null },
-  ];
-  const facts = (title: string, list: Fact[]) => (
-    <div className="h2-facts__group">
-      <GroupTag>{title}</GroupTag>
-      <dl>
-        {list.map((f) => (
-          <div key={f.key}><dt>{f.label}</dt><dd className={f.value === null ? 'is-not-stated' : undefined}>{f.value ?? t('resultsV2.notStated')}</dd></div>
-        ))}
-      </dl>
-    </div>
-  );
   return (
     <div className="h2-pv">
       <div className="h2-pv__top"><TypeTag type={card.type} /><span className="h2-row__host">{host}</span></div>
       <TitleTag id={inline ? undefined : 'h2-preview-title'} className="h2-pv__title">
-        <Link to={`/resource/${card.id}`}>{card.title}</Link>
+        <Link to={detail} state={detailState}>{card.title}</Link>
       </TitleTag>
       <div className="h2-pv__actions">
         <a className="btn btn-primary" href={card.url} target="_blank" rel="noopener noreferrer">
@@ -299,7 +284,7 @@ function Preview({ card, pick, inline = false }: { card: ResultCard; pick: Guide
         </a>
         {SAVED_ENABLED && <BookmarkButton card={card} />}
         {canGuide(card) && <GuideMeButton title={card.title} open={guide.open} onToggle={guide.toggle} bodyId={bodyId} buttonRef={button} />}
-        {inline && <Link className="btn" to={`/resource/${card.id}`}>{t('resultsV2.fullDetails')}</Link>}
+        {inline && <Link className="btn" to={detail} state={detailState}>{t('resultsV2.fullDetails')}</Link>}
       </div>
       {canGuide(card) && (
         <div id={bodyId} hidden={!guide.open}>{guide.open && <GuideBody id={card.id} title={card.title} level={3} />}</div>
@@ -318,12 +303,10 @@ function Preview({ card, pick, inline = false }: { card: ResultCard; pick: Guide
       )}
 
       <SecTag className="h2-pv__sec">{t('resultsV2.facts')}</SecTag>
-      <div className="h2-facts">{facts(t('resultsV2.use'), use)}{facts(t('resultsV2.build'), build)}</div>
+      <ResultFacts card={card} groupTag={GroupTag} />
 
       <SecTag className="h2-pv__sec">{t('resultsV2.listedBy')}</SecTag>
-      <ul className="plain-list inline-list">
-        {card.sources.map((s) => <li key={s.sourceId} className="h2-pv__source">{s.sourceName}</li>)}
-      </ul>
+      <ListedBy card={card} />
 
       <SecTag className="h2-pv__sec">{t('resultsV2.timeline')}</SecTag>
       <Timeline timeline={card.timeline} compact />

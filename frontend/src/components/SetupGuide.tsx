@@ -1,4 +1,5 @@
 import { createContext, type FormEvent, type HTMLAttributes, type Ref, useContext, useEffect, useId, useRef, useState } from 'react';
+import { aiMark } from '@/lib/aiMark';
 import { useTranslation } from 'react-i18next';
 import { api } from '@/api/client';
 import type { SetupClient, SetupGuide as Guide, SetupOption, ToolGuide } from '@/api/types';
@@ -229,7 +230,7 @@ function ToolSteps({ guide, title, level }: { guide: ToolGuide; title: string; l
               const doc = docs.get(st.source);
               return (
                 <li key={i}>
-                  <p className="setup-step-text">{st.text}</p>
+                  <p className="setup-step-text" {...aiMark(guide.model)}>{st.text}</p>
                   {st.code && (
                     <div className="setup-step-code">
                       <pre className="setup-code" data-language={st.code.language ?? undefined}><code>{st.code.text}</code></pre>
