@@ -1,14 +1,9 @@
-import type { ResourceType } from '@/api/types';
+import type { Bookmark } from '@/api/types';
 
 export const BOOKMARK_KEY = 'h2.bookmarks.v1';
 
-export interface LocalBookmark {
-  resourceId: string;
-  title: string;
-  url: string;
-  type: ResourceType | null;
-  savedAt: string;
-}
+/** A bookmark kept in the browser has the same shape as one kept on the server. */
+export type LocalBookmark = Bookmark;
 
 export function readLocalBookmarks(): LocalBookmark[] {
   try {

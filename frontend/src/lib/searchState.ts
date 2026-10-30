@@ -1,4 +1,4 @@
-import type { SortOrder, TriState } from '@/api/types';
+import type { SearchQuery, SortOrder, TriState } from '@/api/types';
 
 export const MULTI_KEYS = [
   'type',
@@ -9,7 +9,7 @@ export const MULTI_KEYS = [
   'useCase',
   'techLevel',
   'audience',
-] as const;
+] as const satisfies readonly (keyof SearchQuery)[];
 export type MultiKey = (typeof MULTI_KEYS)[number];
 
 /** Keys whose API enums spell the unknown bucket in upper case. */
@@ -45,8 +45,11 @@ export function clampQuestion(text: string): string {
   return q.length >= MIN_QUESTION ? q : '';
 }
 
-const SORTS: SortOrder[] = ['RELEVANCE', 'NEWEST', 'RECENTLY_UPDATED'];
-const TRI: TriState[] = ['true', 'false', 'unknown'];
+// Records keyed by the contract's enums: a value added to or removed from the API breaks the build here.
+const SORT_VALUES = { RELEVANCE: true, NEWEST: true, RECENTLY_UPDATED: true } satisfies Record<SortOrder, true>;
+const TRI_VALUES = { true: true, false: true, unknown: true } satisfies Record<TriState, true>;
+const SORTS = Object.keys(SORT_VALUES) as SortOrder[];
+const TRI = Object.keys(TRI_VALUES) as TriState[];
 
 export function emptyFilters(): Record<MultiKey, string[]> {
   return { type: [], source: [], license: [], pricing: [], platform: [], useCase: [], techLevel: [], audience: [] };
