@@ -6,9 +6,6 @@ import ai.helper2.api.generated.model.AssertionDto;
 import ai.helper2.api.generated.model.EvidenceDto;
 import ai.helper2.api.generated.model.IssueReportAcceptedDto;
 import ai.helper2.api.generated.model.IssueReportRequestDto;
-import ai.helper2.api.generated.model.ListedModelDto;
-import ai.helper2.api.generated.model.ModelFamiliesResponseDto;
-import ai.helper2.api.generated.model.ModelFamilyDto;
 import ai.helper2.api.generated.model.RecentResponseDto;
 import ai.helper2.api.generated.model.RelationshipDto;
 import ai.helper2.api.generated.model.ResourceDetailDto;
@@ -21,7 +18,6 @@ import ai.helper2.api.generated.model.ValueOriginDto;
 import ai.helper2.api.generated.model.VerificationDto;
 import ai.helper2.catalog.ResourceDetail;
 import ai.helper2.catalog.usecase.GetResourceDetail;
-import ai.helper2.catalog.usecase.ListModelFamilies;
 import ai.helper2.catalog.usecase.ListRecentResources;
 import ai.helper2.catalog.usecase.ListUpcomingEvents;
 import ai.helper2.catalog.usecase.ReportIssue;
@@ -51,16 +47,14 @@ class ResourcesController implements ResourcesApi {
     private final ListRecentResources recent;
     private final ListUpcomingEvents upcoming;
     private final ReportIssue reports;
-    private final ListModelFamilies families;
     private final CurrentUser currentUser;
     private final Clock clock;
 
     ResourcesController(GetResourceDetail details, ListRecentResources recent, ListUpcomingEvents upcoming, ReportIssue reports,
-                        ListModelFamilies families, CurrentUser currentUser, Clock clock) {
+                        CurrentUser currentUser, Clock clock) {
         this.details = details;
         this.recent = recent;
         this.upcoming = upcoming;
-        this.families = families;
         this.clock = clock;
         this.reports = reports;
         this.currentUser = currentUser;
@@ -117,21 +111,6 @@ class ResourcesController implements ResourcesApi {
                 currentUser.id().orElse(null))
             .orElseThrow(() -> new NotFoundException("Resource not found in the Helper2 index."));
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(new IssueReportAcceptedDto(reportId));
-    }
-
-    @Override
-    public ResponseEntity<ModelFamiliesResponseDto> listModelFamilies() {
-        List<ModelFamilyDto> out = families.list(5).stream().map(f -> new ModelFamilyDto(f.id(), f.provider(), f.name(), f.openWeights(),
-                CardMapper.card(f.detail().card()),
-                // Only the curated official specs: the card's own source facts (title, description) are not specs.
-                f.detail().assertions().stream().filter(a -> a.origin() == ai.helper2.shared.ValueOrigin.CURATED && a.sourceId() == null)
-                    .map(a -> new AssertionDto(a.field(), a.value(), ValueOriginDto.fromValue(a.origin().name()),
-                        VerificationDto.fromValue(a.verification().name()), evidence(a.evidence()))).toList(),
-                f.listed().stream().map(m -> new ListedModelDto(m.resourceId(), m.title(), m.url(), m.sourceId(),
-                    CardMapper.odt(m.retrievedAt())).published(CardMapper.odt(m.published()))).toList()))
-            .toList();
-        return ResponseEntity.ok().cacheControl(CacheControl.maxAge(Duration.ofMinutes(5)).cachePublic())
-            .body(new ModelFamiliesResponseDto(out));
     }
 
     private static List<EvidenceDto> evidence(List<ResourceDetail.Evidence> list) {

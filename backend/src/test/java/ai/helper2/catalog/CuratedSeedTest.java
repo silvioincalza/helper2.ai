@@ -51,13 +51,11 @@ class CuratedSeedTest {
                    (SELECT count(*) FROM source_record WHERE source_id = 'curated') || '/' ||
                    (SELECT count(*) FROM resource_label l JOIN resource r ON r.id = l.resource_id WHERE r.data_origin = 'CURATED') || '/' ||
                    (SELECT count(*) FROM field_assertion WHERE origin = 'CURATED') || '/' ||
-                   (SELECT count(*) FROM evidence) || '/' ||
-                   (SELECT count(*) FROM model_family)
+                   (SELECT count(*) FROM evidence)
             """;
         String before = jdbc.sql(counts).query(String.class).single();
 
-        for (String seed : List.of("R__curated_seed.sql", "R__industry_events.sql", "R__community_events.sql", "R__model_families.sql",
-            "R__courses.sql")) {
+        for (String seed : List.of("R__curated_seed.sql", "R__industry_events.sql", "R__community_events.sql", "R__courses.sql")) {
             String sql = new String(new ClassPathResource("db/migration/" + seed).getInputStream().readAllBytes(), StandardCharsets.UTF_8);
             tx.executeWithoutResult(status -> template.execute(sql));
         }
