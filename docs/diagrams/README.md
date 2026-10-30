@@ -59,10 +59,11 @@ Flowcharts use diamonds for decisions, white ovals for normal ends and pink oval
 
 ## Render
 
-CI re-renders every diagram with d2 v0.7.1 and fails if a committed SVG differs.
+CI re-renders every diagram with d2 v0.9.0 built with Go 1.27.3, and fails if a committed SVG differs. Use the same
+Go version: the embedded fonts change from one Go release to the next.
 
 ```bash
-go install oss.terrastruct.com/d2@v0.7.1
+go install github.com/d2lang/d2@v0.9.0
 cd docs/diagrams
 for f in *.d2; do [ "$f" = style.d2 ] && continue; d2 fmt "$f" && d2 "$f" "${f%.d2}.svg"; done
 ```
