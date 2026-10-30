@@ -1,34 +1,23 @@
-package ai.helper2.catalog;
+package ai.helper2.api;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oauth2Login;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import ai.helper2.TestcontainersConfiguration;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.OAuth2LoginRequestPostProcessor;
-import org.springframework.test.web.servlet.MockMvc;
 
 /** GET /admin/review-items: paged, newest first, filtered by status (SUPERSEDED included). */
-@SpringBootTest
-@AutoConfigureMockMvc
-@Import(TestcontainersConfiguration.class)
-class ReviewItemsApiIT {
+class ReviewItemsApiIT extends ApiTestBase {
 
     static final OAuth2LoginRequestPostProcessor ADMIN = oauth2Login().authorities(new SimpleGrantedAuthority("ROLE_ADMIN"));
-
-    @Autowired
-    MockMvc mvc;
 
     @Autowired
     JdbcClient jdbc;
