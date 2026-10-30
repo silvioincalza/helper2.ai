@@ -49,7 +49,8 @@ export function NewsBoard({ title, lede, rows, failed, onRetry, emptyText, error
     <section className="h2-board" aria-labelledby={titleId}>
       <h2 id={titleId} className="h2-board__title">{title}</h2>
       <p className="h2-board__lede">{lede}</p>
-      <div aria-live="polite" aria-busy={loading}>
+      {/* Not a live region: on a page load it would read every row aloud. The error is an alert of its own. */}
+      <div aria-busy={loading}>
         {loading && (
           <div>
             <span className="sr-only">{t('common.loading')}</span>
@@ -111,7 +112,7 @@ function MovingList({ rows, label }: { rows: BoardRow[]; label: string }) {
       onPointerUp={onTap}
       onFocus={() => setFocus(true)}
       onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setFocus(false); }}>
-      <ul ref={track} className="h2-board__list" aria-label={label} aria-live="off">
+      <ul ref={track} className="h2-board__list" aria-label={label}>
         {rows.map((r) => (
           <li key={r.id} className="h2-board__row">
             <p className="h2-board__meta">

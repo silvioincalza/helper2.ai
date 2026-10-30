@@ -122,13 +122,13 @@ describe('home page: the Events board', () => {
 });
 
 describe('home page: both boards', () => {
-  it('while loading, show skeleton rows and nest no status role inside their live regions', async () => {
+  it('while loading, show skeleton rows and are not live regions, so a page load reads no list aloud', async () => {
     mockApi({ 'GET /recent': () => new Promise(() => undefined), 'GET /events/upcoming': () => new Promise(() => undefined) });
     renderApp('/');
     await board('News');
     expect(document.querySelectorAll('[aria-busy="true"]').length).toBeGreaterThanOrEqual(2);
     expect(document.querySelectorAll('.h2-board .skeleton-row').length).toBeGreaterThanOrEqual(8);
-    expect(document.querySelectorAll('[aria-live] [role="status"]')).toHaveLength(0);
+    expect(document.querySelectorAll('.h2-board [aria-live], .h2-board [role="status"]')).toHaveLength(0);
   });
 
   it('pass axe with rows in both', async () => {

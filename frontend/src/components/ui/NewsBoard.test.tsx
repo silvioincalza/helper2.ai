@@ -125,7 +125,7 @@ describe('a News or Events board', () => {
   it('a screen reader gets a normal list: one copy of each row, never announced as it moves', () => {
     renderBoard();
     const list = screen.getByRole('list', { name: 'News' });
-    expect(list).toHaveAttribute('aria-live', 'off');
+    expect(list.closest('[aria-live]')).toBeNull();
     expect(screen.getAllByRole('link', { name: 'Server 1' })).toHaveLength(1);
   });
 

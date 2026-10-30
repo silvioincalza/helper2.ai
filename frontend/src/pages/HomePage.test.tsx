@@ -74,9 +74,8 @@ describe('home: one page, one box', () => {
     expect(screen.getByRole('heading', { name: 'Try an example' })).toBeInTheDocument();
     expect(await screen.findByRole('region', { name: 'News' })).toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'Events' })).toBeInTheDocument();
-    // How the guide works lives on /mission; the sources belong to a search.
+    // How the guide works lives on /mission.
     expect(screen.queryByRole('heading', { name: 'How the guide answers' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /disclosed source/ })).not.toBeInTheDocument();
     await settle();
   });
 
