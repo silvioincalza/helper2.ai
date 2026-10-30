@@ -9,7 +9,6 @@ One system for every feature. Start with [system/README.md](system/README.md) (p
 | Path | What |
 |---|---|
 | `tokens.json` | Colors (light and dark), type, spacing, radius, sizes. The frontend's `frontend/src/styles/tokens.css` mirrors it. |
-| `components/<Name>/README.md` | Guidelines per component: Header, Omnibox, Button, Pill, Badge, ResultCard, FactList, GuidePick, FeedRow, Banner, SourceStatus |
 | `components/<Name>/preview.html` | Live preview markup (needs the artifact's generated `tokens.css`) |
 | `components/bundle.css` | The `h2-` component classes |
 | `assets/Logos/radar-mark.svg` | The radar mark |

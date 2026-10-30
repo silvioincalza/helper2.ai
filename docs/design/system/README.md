@@ -1,6 +1,6 @@
 # Helper2.ai
 
-The design system for every part of Helper2.ai: the search-and-ask box, results, the AI guide, What's new, resource pages, saved resources, the sources page and admin. The look is warm paper with one saffron accent, a geometric display face for headings, a sans for doing things, and a mono for names that came from a source. The reference design is the v3 canvas **helper2.ai — UI redesign proposals** (boards Home and Results — list + preview), agreed on 30 October 2026.
+The design system for every part of Helper2.ai: the search-and-ask box, results, the AI guide, the News and Events boards, resource pages, saved resources, the sources page and admin. The look is warm paper with one saffron accent, a geometric display face for headings, a sans for doing things, and a mono for names that came from a source. The reference design is the v3 canvas **helper2.ai — UI redesign proposals** (boards Home and Results — list + preview), agreed on 30 October 2026.
 
 ## Principles
 
@@ -32,12 +32,13 @@ The design system for every part of Helper2.ai: the search-and-ask box, results,
 | Links | `accent-ink` | Text links and text buttons. |
 | Caution | `not-stated` | Unknown values, First seen dates, cached or rate-limited sources. |
 | Error | `danger` | Failed sources and requests, rejected claims, form errors. |
-| Sources grid | `source-tile-bg` + `source-tile-line`, dots in `status-ok` / `status-warn` | The sources that answered a search, under the results. No dark band any more. |
+| Sources grid | `source-tile-bg` + `source-tile-line`, dots in `status-ok` / `status-warn` | The sources that answered a search, under the results. |
 | Status pills | `pill-ok-*`, `pill-warn-*`, `pill-next-*`, `pill-later-*` | Updated or Published, First seen, the next event, later events. |
 
 - **Spacing:** 4-based steps `space-1` to `space-7` (4, 8, 12, 16, 24, 32, 48px). Pills `space-2` apart, card parts `space-3`, page sections `space-5`, gutters `space-6`, the home hero `space-7`.
 - **Controls:** at least `target-min` (44px) tall. The search box and its buttons are `box-height` (56px).
 - **Focus:** a 3px `focus` outline with 2px offset on every control.
+- **Motion:** `motion` (160ms) for hover and state changes, `radar-sweep` for the hero radar. A News or Events board steps up one row every 4 s (`ROW_MS` in `NewsBoard`) instead of looping, so it has no motion token. Under `prefers-reduced-motion` nothing moves.
 - **Elevation:** none. Objects are set apart by `border`, never by shadow.
 - **Width:** the page column stops at `content-wide` (1240px), with 32px gutters, 16px below `bp-small`.
 - **Themes:** light and dark; every token has both values. The header button cycles system → light → dark: "system" follows the device setting and is the default.
@@ -106,31 +107,31 @@ Layout is flex and grid with `gap`. No fixed heights except the boards.
 
 ## Components
 
-Components are plain HTML plus the classes in `components/bundle.css` (prefix `h2-`). There is no JavaScript bundle. Each folder has a live preview. Components marked *new* or *changed* come from the v3 canvas; their `preview.html` still shows v2 until the rollout updates them.
+Components are plain HTML plus the classes in `components/bundle.css` (prefix `h2-`). There is no JavaScript bundle. The folders in `components/` hold a live preview for Header, Omnibox, Button, Pill, Badge, ResultCard, FactList, GuidePick, FeedRow, Banner, SourceStatus, Footer and Cover; the table below and the v3 canvas are the reference where a preview differs.
 
 | Component | Used for |
 |---|---|
-| **Header** *(changed)* | Logo with tagline, the search box, theme and Saved buttons. Type tabs under it on the results page. 72px min height. |
+| **Header** | Logo with tagline, the search box, theme and Saved buttons. Type tabs under it on the results page. 72px min height. |
 | **Footer** | One row: the one claim "No ads.", then Mission, Sources, Privacy, Terms, GitHub, the licence and the release version. |
-| **Omnibox** *(changed)* | The search box. A 999px pill, 52px (58px in the hero), search icon, input, saffron **Search** button. No keyboard-shortcut hint unless the shortcut works. |
-| **TypeTabs** *new* | All, MCP servers, Libraries, Models, Articles, each with a mono count. Active tab: ink text, 3px `accent` underline. Scrolls sideways on phones. |
-| **Button** *(changed)* | 44px high, 999px corners, label on one line. Primary in `accent`. An external link ends with `↗`. |
+| **Omnibox** | The search box. A 999px pill, 52px (58px in the hero), search icon, input, saffron **Search** button. No keyboard-shortcut hint unless the shortcut works. |
+| **TypeTabs** | All, MCP servers, Libraries, Models, Articles, each with a mono count. Active tab: ink text, 3px `accent` underline. Scrolls sideways on phones. |
+| **Button** | 44px high, 999px corners, label on one line. Primary in `accent`. An external link ends with `↗`. |
 | **Pill** | Example needs and filters. |
 | **Badge** | Type tags, Quote checked, verification. |
-| **StatusPill** *new* | `mono` 11px uppercase pill: ok (Updated, Published), warn (First seen), next (the next event, outlined in `accent`), later (outlined in `border-strong`). |
-| **ResultRow** *new* | One row in the result list: tag, domain, Guide pick label, title in `display` 18px, the proof quote cut at two lines. A real button; selected has an `accent` outline. |
-| **ResultPreview** *new* | The right panel: title, actions (Open on source ↗, Save, Guide me through setup when the type has a setup), Why it matches, Facts, Listed by, Timeline. |
-| **InlinePreview** *new* | The phone version of ResultPreview, under the selected row: proof, three facts, Open and Full details. |
-| **ProofQuote** *(was in GuidePick)* | The source text on `proof-bg`, with the checked sentence on `proof-mark`, and a mono caption naming the source. |
-| **FactList** *(changed)* | Two groups, Use and Build, as a `dl`. A value no source stated reads **Not stated** in `not-stated`, italic. |
+| **StatusPill** | `mono` 11px uppercase pill: ok (Updated, Published), warn (First seen), next (the next event, outlined in `accent`), later (outlined in `border-strong`). |
+| **ResultRow** | One row in the result list: tag, domain, Guide pick label, title in `display` 18px, the proof quote cut at two lines. A real button; selected has an `accent` outline. |
+| **ResultPreview** | The right panel: title, actions (Open on source ↗, Save, Guide me through setup when the type has a setup), Why it matches, Facts, Listed by, Timeline. |
+| **InlinePreview** | The phone version of ResultPreview, under the selected row: proof, three facts, Open and Full details. |
+| **ProofQuote** | The source text on `proof-bg`, with the checked sentence on `proof-mark`, and a mono caption naming the source. |
+| **FactList** | Two groups, Use and Build, as a `dl`. A value no source stated reads **Not stated** in `not-stated`, italic. |
 | **GuidePick** | One of the guide's picks with its checked quote. |
-| **NewsBoard** *new* | News or Events on the home page. 2px `ink` rule on top, `display` heading, a short subtitle, "All … →" on the right. Each row: date in mono `accent-ink`, type tag, source or place, a StatusPill on the right; the name under it in `display`, two lines at most. The rows scroll up one at a time, back to the top at the end, with a Pause/Play button under the board. |
-| **SourcesGrid** *(was SourceStatus)* | Under the results: one mono line "fan-out · N sources · N hits → N after merge", then a tile per source with a status dot, the name and the time or cache age. |
+| **NewsBoard** | News or Events on the home page. 2px `ink` rule on top, `display` heading, a short subtitle. Each row: date in mono `accent-ink`, type tag, source or place, a StatusPill on the right; the name under it in `display`, two lines at most, linking to the resource page. The rows move up one row every 4 s, back to the top at the end, with a Pause/Play button under the board. |
+| **SourcesGrid** | Under the results: one mono line "fan-out · N sources · N hits → N after merge", then a tile per source with a status dot, the name and the time or cache age. |
 | **Banner** | Notices, partial results, empty and error states. |
 
 ### In the frontend
 
-The first v3 parts are React components in `frontend/src/components/ui/` (ADR 0040). Where the code name differs:
+The React components are in `frontend/src/components/ui/` (ADR 0040). Where the code name differs:
 
 | Design system | Code |
 |---|---|
