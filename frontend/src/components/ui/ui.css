@@ -41,13 +41,23 @@
 .h2-select-row:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 
 /* PicksBar: height reserved from the first render; one line when there is no pick. */
-.h2-picks { min-height: 110px; box-sizing: border-box; display: flex; flex-wrap: wrap; align-content: flex-start; align-items: center; gap: var(--space-2) var(--space-3); padding: var(--space-3) var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); }
+.h2-picks { min-height: 110px; box-sizing: border-box; display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3) var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); }
 .h2-picks.is-none { min-height: 0; }
+.h2-picks > * { margin: 0; }
+.h2-picks__head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
 .h2-picks__title { margin: 0; font: 600 13px/18px var(--font-sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.h2-picks__question { flex: 1 1 12rem; min-width: 0; font: 400 16px/22px var(--font-display); color: var(--ink); overflow-wrap: anywhere; }
 .h2-picks__ai { padding: 2px 8px; border-radius: var(--radius-pill); border: 1px solid var(--border-strong); font: 500 12px/16px var(--font-sans); color: var(--ink-2); }
-.h2-picks__line { flex-basis: 100%; margin: 0; font: 400 14px/21px var(--font-sans); color: var(--ink-2); }
-.h2-picks.is-none .h2-picks__line { flex-basis: auto; }
-.h2-picks__list { flex-basis: 100%; }
+.h2-picks__close { margin-left: auto; }
+.h2-picks__line { margin: 0; font: 400 14px/21px var(--font-sans); color: var(--ink-2); }
+.h2-picks__chips { display: flex; flex-wrap: wrap; gap: var(--space-2); list-style: none; margin: 0; padding: 0; }
+.h2-pick-chip { min-height: var(--target-min); text-decoration: none; }
+.h2-pick-chip__n { font: 600 12px/1 var(--font-mono); color: var(--accent-ink); }
+.h2-picks__error { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
+.h2-picks__error p { margin: 0; color: var(--danger); }
+.h2-picks__note { font-size: 0.875rem; color: var(--ink-2); }
+.h2-picks__details summary { cursor: pointer; min-height: var(--target-min); display: flex; align-items: center; font-size: 0.875rem; color: var(--accent-ink); }
+.h2-picks__details > :not(summary) { margin: var(--space-2) 0; }
 
 /* NewsBoard: 2px ink rule on top, display heading, a short subtitle, then a window of board-height over the rows. */
 .h2-board { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; padding-top: var(--space-3); border-top: 2px solid var(--ink); }

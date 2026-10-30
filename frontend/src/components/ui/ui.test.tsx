@@ -80,6 +80,17 @@ describe('SourceTiles', () => {
 });
 
 describe('SelectableRow', () => {
+  it('is named by the parts the list names and described by the rest, with the tab stop the list gives', () => {
+    render(
+      <SelectableRow selected onSelect={() => undefined} labelledBy="t m" describedBy="d" tabIndex={-1}>
+        <span id="m">MCP server</span> <span id="t">Postgres MCP</span> <span id="d">Read-only SQL.</span>
+      </SelectableRow>,
+    );
+    const button = screen.getByRole('button', { name: 'Postgres MCP MCP server' });
+    expect(button).toHaveAccessibleDescription('Read-only SQL.');
+    expect(button).toHaveAttribute('tabindex', '-1');
+  });
+
   it('is a real button; the selected row says so to assistive tech and gets the selected outline', async () => {
     const onSelect = vi.fn();
     const { container } = render(
@@ -130,4 +141,38 @@ describe('PicksBar', () => {
     expect(within(bar).queryByRole('status')).toBeNull();
     expect(await axeViolations(container)).toEqual([]);
   });
+
+  it('names the question in its head and closes with a labelled button', async () => {
+    const onClose = vi.fn();
+    render(<PicksBar state={{ kind: 'reading' }} question="an MCP server for Postgres" onClose={onClose} closeLabel="Close the guide answer" />);
+    expect(screen.getByText('an MCP server for Postgres').tagName).toBe('Q');
+    await userEvent.click(screen.getByRole('button', { name: 'Close the guide answer' }));
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('with no pick for another reason, says that reason on its one line', () => {
+    render(<PicksBar state={{ kind: 'none', reason: 'The AI model is not available right now.' }} />);
+    expect(screen.getByRole('status')).toHaveTextContent('The AI model is not available right now.');
+  });
+
+  it('a question back sits under the AI-written label, the answer\'s provider and models on the bar', () => {
+    render(<PicksBar state={{ kind: 'ask' }} ai={{ provider: 'nebius', models: ['nano'] }}><h3>New tools for what?</h3></PicksBar>);
+    const bar = screen.getByRole('region', { name: 'Guide picks' });
+    expect(within(bar).getByText('AI-written')).toBeInTheDocument();
+    expect(bar).toHaveAttribute('data-ai-provider', 'nebius');
+    expect(bar).toHaveAttribute('data-ai-models', 'nano');
+    expect(within(bar).queryByRole('status')).toBeNull();
+  });
+
+  it('an error shows what the page passes, with no AI-written label', () => {
+    render(<PicksBar state={{ kind: 'error' }}><p role="alert">The model timed out.</p></PicksBar>);
+    expect(screen.getByRole('alert')).toHaveTextContent('The model timed out.');
+    expect(screen.queryByText('AI-written')).toBeNull();
+  });
+
+  it('shows its footer in every state', () => {
+    render(<PicksBar state={{ kind: 'reading' }} footer={<p>Understood as: New resources</p>} />);
+    expect(screen.getByText('Understood as: New resources')).toBeInTheDocument();
+  });
 });
+
