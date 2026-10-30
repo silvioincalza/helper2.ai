@@ -79,7 +79,7 @@ Run the relevant tests before calling a change done.
     and retarget its PR to `main`;
   - worktree with uncommitted work, or owned by a running session: do not touch it; add a line
     to `.private/notes/worktrees.md` so its owner rebases at a safe point.
-- When a branch is merged, remove its worktree (`git worktree remove`) and delete the branch.
+- When Silvio has merged a branch, remove its worktree (`git worktree remove`) and delete the branch.
 - `/sync-worktrees` does the update steps above.
 
 ## AI architecture check
@@ -112,8 +112,9 @@ deferred (safe for now, say why).
 - No backward compatibility with removed code or migrations unless asked.
 - Never add AI attribution, "Generated with" footers or Co-Authored-By to commits, PRs,
   comments, docs or code.
-- Every change reaches `main` through a pull request. Open and merge it with `gh` from Silvio's
-  machine (never through a tool that adds an AI footer), then delete the branch.
+- Every change reaches `main` through a pull request. Open it with `gh` from Silvio's machine
+  (never through a tool that adds an AI footer). Silvio reviews and merges it himself: never
+  merge to `main`, never push to `main` directly, never deploy to prod.
 - AI-tool setup and settings are committed (`AGENTS.md`, `CLAUDE.md`, `.claude/settings.json`,
   `.claude/agents/`, `.claude/commands/`). AI notes, reviews, memory and machine-local settings
   never are: they go in the git-ignored `.private/` folder (or `CLAUDE.local.md`,
