@@ -22,6 +22,11 @@ Evidence for every term/limit: [research/sources-and-costs.md](research/sources-
 | `curated` | Helper2 curated list | CURATED | PostgreSQL | — | — | editorial; no publication dates or prices asserted. Industry and community events (hackathons, meetups, talks, workshops) carry the days stated on each event's own site, with that excerpt as evidence, and the format (online, in person) only when the page states it | event days only (industry events) |
 | `demo-*` | Demo sources | DEMO | in-process fixtures | — | — | **profile `demo` only** | fixture |
 
+**Every source call** ([ADR 0006](adr/0006-outbound-http.md)): a token goes only to the configured host (no redirect
+to another host while `Authorization` is set); a body is read up to 2 MB (awesome-list READMEs 5 MB), past that the
+source is `FAILED` ("response too large"); a malformed item is dropped and counted in
+`helper2.source.items.dropped{source,reason}` while the other items are kept.
+
 **Not connected (and why):** Hacker News via Algolia (no readable terms of use found), PyPI (no search API), Product Hunt (API forbids commercial use),
 There's An AI For That (terms not obtainable), paid web-search APIs other than Tavily.
 

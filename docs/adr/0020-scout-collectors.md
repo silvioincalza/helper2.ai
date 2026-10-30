@@ -27,7 +27,7 @@ Six collectors implement the `Collector` port in `ai.helper2.sources`. All use `
    credits a month. Stored as NEWS, ARTICLE or EVENT with Tavily's snippet as description. Off without `H2_TAVILY_API_KEY`.
 5. **GitHub awesome lists** (`github-awesome`, 1 day). Off without `H2_GITHUB_TOKEN` (GraphQL rejects anonymous calls).
    - Topic search with 6 topic pairs; only repositories named "awesome…" with at least 1000 stars; the top 10 lists.
-   - Each README is parsed into linked repositories (`AwesomeListParser`): at most 1000 per pass and
+   - Each README (read up to 5 MB) is parsed into linked repositories (`AwesomeListParser`): at most 1000 per pass and
      `H2_SCOUT_AWESOME_PER_RUN` (200) per run; an unfinished pass resumes from an entry offset.
    - Facts via GraphQL, 50 repositories per call; archived, forked and under-50-star repositories are dropped.
    - **Classifier.** The fast model (`SpringAiRepoClassifier`, `prompts/sources/classify-repos.txt`, thinking off)
