@@ -84,8 +84,13 @@ and chose between options for each part.
     page shows none; the results page shows them for a search. The account page, opened from the signed-in name,
     says who is signed in and deletes the account after a confirmation; it offers no sign-in. Loading, empty and
     error are designed states (8).
-11. **Built page by page**, one pull request each: shared components and tokens, Home, Results, Resource, States,
-    Saved and Sources, Mission and Privacy. Each step builds its page in place, so the code holds one design.
+11. **Text pages and admin.** Mission, Privacy and Terms are one reading column: the title, the date of the last
+    change in mono (Privacy and Terms), a lede, then one part per section with a `display` heading and a rule on top.
+    Their text lives in the locale file. Mission says where the AI-written labels sit on screen
+    ([0038](0038-ai-content-marking.md)). Admin (`/admin`, [0023](0023-identity-and-admin.md)) shows the review queue
+    as rows like the saved rows, each status as a StatusPill, and the Scout runs in the table of the Sources page.
+    Saved, Sources, the account page, admin and the text pages share one page layout: the `h1`, a lede, then parts
+    with a rule on top. These pages have no runtime path of their own beyond [0023](0023-identity-and-admin.md).
 
 ## Consequences
 - Good: the user reads results at once and is never moved. The guide adds to the list, it does not reorder it.
@@ -102,8 +107,6 @@ and chose between options for each part.
 - Bad: a comparison or an explanation sits folded under the bar; the bar's line says it is there, and one click
   opens it.
 - Bad: the boards move. Hover, focus, tap and the Pause button stop them. A screen reader user gets a normal list.
-- Trade-off: until the last step, the pages not built yet keep the layout of [0025](0025-frontend-one-box.md).
-  Small pull requests per page keep that short.
 
 ## Alternatives considered
 - **Look: minimal search page, editorial news front page, or developer console** — each drawn on its own. Minimal
@@ -116,9 +119,6 @@ and chose between options for each part.
 - **Guide answer: move the picks to the top** — the best answer comes first, but the list jumps while the user reads.
 - **Guide answer: badges only** — nothing moves, but the best answer can sit at row 5, under the fold.
 - **Results only on `/`** — keeps one route, but home and results share a URL and a page component.
-- **Big-bang branch** — one review instead of seven, but a long-lived branch and one large merge.
-- **A flag per page** — keeps two designs in the code while it lives; no user knows another design, so it protects
-  no one.
 - **Boards as a seamless loop** (the rows repeated, the copy hidden from assistive tech) — smooth, but twice the
   rows in the page and a copy to keep out of the tab order; one row at a time reads as well.
 
@@ -156,6 +156,11 @@ Built:
   `context/BookmarksContext.tsx` — browser or account list, its loading and error.
 - `frontend/src/pages/SourcesPage.tsx` — the last outcome as `SourceTiles`, the modes, what each source covers.
 - `frontend/src/pages/AccountPage.tsx` — who is signed in, delete the account after a confirmation.
+- `frontend/src/pages/MissionPage.tsx`, `PrivacyPage.tsx`, `TermsPage.tsx` — the text pages;
+  `components/TextSections.tsx` (a locale file's sections as parts), `components/HowItWorks.tsx` (how the guide
+  answers, the rules).
+- `frontend/src/pages/AdminPage.tsx` — the review queue and the Scout runs.
+- `frontend/src/styles/app.css` — `.page`, `.page-part`, `.page-table`: the layout the pages of parts share.
 
 Planned:
 - `tokens.css` — `radar-sweep` of `tokens.json`, with the page that uses it.

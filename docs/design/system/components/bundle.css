@@ -31,14 +31,6 @@
 .h2-not-stated { color: var(--not-stated); font-style: italic; }
 .h2-meta { font: 400 13px/18px var(--font-sans); color: var(--muted); }
 
-/* Result card */
-.h2-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: var(--space-4) 18px; display: flex; flex-direction: column; gap: var(--space-2); }
-.h2-card__head { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
-.h2-card__date { margin-left: auto; }
-.h2-card__title { margin: 0; font: 400 24px/28px var(--font-display); color: var(--ink); }
-.h2-card__body { margin: 0; font: 400 14px/21px var(--font-sans); color: var(--ink-2); }
-.h2-card__actions { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); }
-
 /* Guide pick */
 .h2-pick { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-4); display: flex; flex-direction: column; gap: 10px; }
 .h2-pick__head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }

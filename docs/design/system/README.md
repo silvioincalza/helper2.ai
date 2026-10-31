@@ -73,7 +73,7 @@ Home only: the hero, then two boards. The results live on their own page.
 1. **Hero** on `hero-bg`: radar rings, slow sweep and blips behind, the mark and wordmark, the eyebrow **AI ON YOUR RADAR**, the two-part `display` title (second half in `accent-ink`), the search box and three example Pills. The search and the examples open the results page.
 2. **News** and **Events**, side by side, one column below `bp-two-col`. See NewsBoard.
 
-No source strip on the home page. It belongs to a search.
+The sources a search asked sit under its results, not on the home page.
 
 ## Results page
 

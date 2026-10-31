@@ -129,11 +129,35 @@ Response times, cache ages and the web searches left today belong to a search: t
 
 ## UJ-9 Admin: keep the catalog honest
 
+**Entry:** **Admin** in the header, for an administrator only (UJ-7).
+
 1. Admin signs in (role ADMIN from an allow-list), opens **Admin**.
-2. Sees the review queue: enrichment outputs that failed validation, source conflicts, unverified relationship candidates, user reports. Accepts or rejects each with a note.
-3. Triggers a scout run for one source or all; sees run history with items seen/changed and failures.
+2. Review queue: enrichment outputs that failed validation, source conflicts, unverified relationship candidates, course candidates, user reports. Each row: the kind, the date, the resource (a link to its page), the reason and the details. A status filter (Open, Accepted, Rejected, Superseded) and pages of 20. Accept or Reject on each open item; a resolved item shows its status.
+3. Scout runs: **Run now** starts a run of every source; the table lists each source's runs with the status, start, items seen and changed, and the message. While a run is running the table follows it until it ends.
+
+One action at a time: while a request runs, the other buttons wait.
+
+**Exit:** a resource page, the box in the header, the logo.
+
+| State | Behavior |
+|---|---|
+| Loading | Skeleton rows for the queue, "Loading…" for the runs. |
+| Queue error | An alert "Could not load the review queue" with Try again; focus stays on the queue's heading. |
+| Empty | "Nothing in this queue." / "No runs yet." |
+| Action failed | An alert line: the action failed, or a Scout run is already in progress. |
+| Not an administrator | An alert that an administrator account is needed, and the way home. |
 
 **Failure cases:** LLM provider unavailable → runs complete with `LLM_UNAVAILABLE`, original source metadata stays published; one connector failing does not stop others.
+
+## UJ-10 Read the mission, privacy notice and terms
+
+**Entry:** Mission, Privacy and Terms in the footer of every page; the account page links to Privacy.
+
+1. **Mission** (`/mission`): why Helper2.ai exists, what it promises, how it marks AI-written text and where the labels sit on screen, who is behind it, how the guide answers and the rules it never breaks.
+2. **Privacy** (`/privacy`): the contact, what is processed and why, the legal basis, cookies and browser storage, who receives data, how long it is kept, deleting the account, the user's rights.
+3. **Terms** (`/terms`): the service, no guarantee on results, third-party content, acceptable use, liability, law; a link to Privacy.
+
+**Exit:** GitHub issues (Mission, new tab), the contact e-mail, the box in the header, the logo.
 
 ## Success criteria (product level)
 
