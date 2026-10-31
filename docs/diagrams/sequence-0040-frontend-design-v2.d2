@@ -1,7 +1,9 @@
-# Sequence: a search on the v2 results page, from the box to the guide picks and a shared link.
+# Sequence: design v2 from the home page (built) to a search on the results page (planned), the guide picks and a
+# shared link.
 # Shows results shown before the guide answers, the reserved picks bar, the SSE answer that adds badges without
 # re-ordering, the selected result written to the URL with replaceState, and a shared link that opens the same result.
 # Source of truth: docs/adr/0040-frontend-design-v2.md, docs/adr/0015-ai-guide-evidence-gate.md (guide stream),
+#   frontend/src/pages/HomeV2.tsx, frontend/src/components/home/NewsBoard.tsx, EventsBoard.tsx,
 #   frontend/src/hooks/useGuideStream.ts, frontend/src/components/ui/PicksBar.tsx.
 # Render: cd docs/diagrams && d2 fmt sequence-0040-frontend-design-v2.d2 && d2 sequence-0040-frontend-design-v2.d2 sequence-0040-frontend-design-v2.svg
 
@@ -10,10 +12,21 @@
 shape: sequence_diagram
 
 user: User {class: person}
+home: "Home page\n(hero, boards)" {class: app}
+feeds: "GET /api/v1/recent\nGET /api/v1/events/upcoming" {class: ext}
 page: "Results page\n(list, preview, picks bar)" {class: app}
 history: "Browser history" {class: data}
 search: "GET /api/v1/search" {class: ext}
 guide: "POST /api/v1/guide/stream\n(SSE)" {class: ext}
+
+landing: Home (built) {
+  user -> home: "/"
+  home -> feeds: "news of the last 7 days,\nevents of the next 3 months"
+  feeds -> home: "rows"
+  home -> user: "hero and the two boards"
+  user -> home: "types, presses Enter"
+  home -> page: "navigate /search?q=…" {class: hot}
+}
 
 search_first: Results first {
   user -> page: "/search?q=postgres mcp server"
