@@ -70,8 +70,8 @@ function Registry({ sources }: { sources: SourceInfo[] }) {
           <table aria-labelledby="sources-covers-h">
             <thead>
               <tr>
-                <th scope="col">{t('sourcesPage.col.source')}</th>
-                <th scope="col">{t('sourcesPage.col.mode')}</th>
+                <th scope="col">{t('sources.col.source')}</th>
+                <th scope="col">{t('sources.col.mode')}</th>
                 <th scope="col">{t('sourcesPage.col.types')}</th>
                 <th scope="col">{t('sourcesPage.col.terms')}</th>
                 <th scope="col">{t('sourcesPage.col.attribution')}</th>
