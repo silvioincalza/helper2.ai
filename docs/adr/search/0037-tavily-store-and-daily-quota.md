@@ -38,6 +38,10 @@ used up. The counts must hold across 3 replicas, store no address and no query t
    search: a guide question that searches several times takes it at its first live call. Over the limit the source
    is `SKIPPED` (`SkipReason.DAILY_LIMIT`, "Daily limit of web searches reached; back at 00:00 UTC"), with its stored
    set when it is not older than 7 days (`STALE_CACHE`); the other sources answer as usual.
+   The guest limits are `H2_TAVILY_GUEST_SEARCH` and `H2_TAVILY_GUEST_GUIDE` (default 3). The chart sets them, with
+   the guide's questions per client and the global cap, only where `app.dailyLimits` sets them: staging raises the
+   per-visitor limits to 1000, so a test is never cut off by earlier tests, and keeps a global cap of 200 live calls
+   a day, because staging is public. Prod keeps the defaults.
 4. **Credits of the day, optional global cap.** Every live call (also the later calls of one guide question and the
    calls of internal callers) counts on `h2:v1:quota:global:<UTC date>`, field `credits`: the credits of the day
    for the whole cluster. With `H2_TAVILY_GLOBAL_DAILY_CREDITS` set, the counter is capped; unset (the default) means

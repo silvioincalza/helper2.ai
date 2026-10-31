@@ -631,9 +631,10 @@ helper2:
     quota:
       # HMAC key of the guest counters and of the stored query keys (OpenBao). Required while Tavily is enabled.
       key-secret: ${H2_QUOTA_KEY_SECRET:}
+      # Per visitor and feature, per UTC day. Staging raises them for testing (chart app.dailyLimits).
       guest:
-        search: 3
-        guide: 3
+        search: ${H2_TAVILY_GUEST_SEARCH:3}
+        guide: ${H2_TAVILY_GUEST_GUIDE:3}
       registered:
         search: 10
         guide: 10
