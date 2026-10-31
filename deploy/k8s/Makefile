@@ -140,7 +140,7 @@ HELM_ARGS = helper2 $(CHART) -n $(NS) -f $(CHART)/values-$(ENV).yaml \
 # PrometheusRule is checked against its CRD schema from the CRDs-catalog, pinned to a commit, and must hold the
 # alerts of deploy/monitoring/helper2-rules.yaml (read through the chart's files/ symlink).
 CRD_SCHEMAS := https://raw.githubusercontent.com/datreeio/CRDs-catalog/3eb90d47aba8d61919d4419dd38301536e32a94b/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json
-chart-check: ## helm lint + helm template | kubeconform, for staging and prod; Redis AOF + PVC; daily limits only where set; PrometheusRule = rule file; an envFile key without H2_ fails
+chart-check: ## helm lint + helm template | kubeconform, for staging and prod; Redis AOF + PVC; daily limits only where set; admin Service, tunnel never on the admin port; PrometheusRule = rule file; an envFile key without H2_ fails
 	@set -euo pipefail; \
 	env=$$(mktemp); bad=$$(mktemp); trap 'rm -f "$$env" "$$bad"' EXIT; \
 	printf 'H2_DATABASE_PASSWORD=ci\nH2_REDIS_PASSWORD=00000000000000000000000000000000\n' > "$$env"; \
@@ -170,6 +170,13 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 			--show-only templates/app.yaml | grep -cE "$$limits" || true); \
 		want=0; [ $$e = staging ] && want=4; \
 		[ "$$n" -eq "$$want" ] || { echo "$$e renders $$n daily limits, want $$want"; exit 1; }; \
+	done; \
+	echo "== admin port (ADR 0035): Service helper2-admin, never reachable through the tunnel"; \
+	for e in prod staging; do \
+		r=(helm template helper2 $(CHART) -f $(CHART)/values-$$e.yaml --set image.tag=000000000000 --set-file envFile=$$env); \
+		if ! "$${r[@]}" --show-only templates/app.yaml | grep -q '^  name: helper2-admin$$'; then echo "$$e: no Service helper2-admin"; exit 1; fi; \
+		if "$${r[@]}" --show-only templates/networkpolicy.yaml | grep -A1 'app: cloudflared' | grep -q '8082'; then \
+			echo "$$e: cloudflared may reach the admin port"; exit 1; fi; \
 	done; \
 	echo "== PrometheusRule holds deploy/monitoring/helper2-rules.yaml"; \
 	rule=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --set-file envFile=$$env \

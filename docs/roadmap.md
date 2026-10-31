@@ -40,9 +40,10 @@ Items are grouped by the order in which they matter. Inside a group, the first i
   `oauth-github` profile on prod ([ADR 0023](adr/edge/0023-identity-and-admin.md)).
 - Turn on the registered Tavily tier (more web searches per day for signed-in users) once that sign-in is live
   ([ADR 0037](adr/search/0037-tavily-store-and-daily-quota.md)).
-- Admin back office on `admin.helper2.ai`, reachable only through WireGuard via Traefik, with no app-level
-  network filter. Not built yet: today `/admin` is served on the public hosts and protected only by sign-in
-  ([ADR 0023](adr/edge/0023-identity-and-admin.md)).
+- Admin host cutover ([ADR 0035](adr/edge/0035-admin-host.md)): the app and the chart are ready (admin port 8082,
+  Service `helper2-admin`). Left: add the admin callbacks to the GitHub app, apply the platform's
+  `helper2-edge` branch (incalza-me-infra) with the DNS switch, turn on `oauth-github` and `H2_ADMINS`, then
+  remove `cloudflared` from the chart. Staging first.
 
 ### Quality gates
 - **Browser end-to-end tests (skipped for now, owner decision 27 Oct 2026).** No browser journey is automated,

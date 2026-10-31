@@ -48,6 +48,10 @@ spec:
             {{- end }}
             # The running build: guide answers in Redis are kept per build, so a deploy is seen at once.
             - { name: H2_BUILD_VERSION, value: {{ .Values.image.tag | quote }} }
+            {{- if gt (int .Values.app.adminPort) 0 }}
+            # The back office and the ADMIN role only on this port (ADR 0035); the public port answers 404 there.
+            - { name: H2_ADMIN_PORT, value: {{ .Values.app.adminPort | toString | quote }} }
+            {{- end }}
             - { name: H2_SCOUT_ENABLED, value: {{ .Values.app.scoutEnabled | toString | quote }} }
             - { name: H2_SCOUT_INITIAL_DELAY, value: {{ required "app.scoutInitialDelay" .Values.app.scoutInitialDelay | quote }} }
             - { name: H2_SCOUT_EVERY, value: {{ required "app.scoutEvery" .Values.app.scoutEvery | quote }} }
@@ -73,7 +77,12 @@ spec:
             # the metrics that are open on 8081 off the public site.
             - { name: H2_MANAGEMENT_PORT, value: "8081" }
             - { name: H2_METRICS_PUBLIC, value: "true" }
-          ports: [{ containerPort: 8080, name: http }, { containerPort: 8081, name: management }]
+          ports:
+            - { containerPort: 8080, name: http }
+            - { containerPort: 8081, name: management }
+            {{- if gt (int .Values.app.adminPort) 0 }}
+            - { containerPort: {{ .Values.app.adminPort }}, name: admin }
+            {{- end }}
           # Startup runs Flyway and loads the Lingua language models: up to periodSeconds x
           # failureThreshold (app.startupSeconds) before the kubelet restarts the container. Liveness
           # and readiness only start once this has passed, so neither needs an initial delay.
@@ -118,3 +127,18 @@ metadata:
 spec:
   selector: { app: helper2 }
   ports: [{ port: 80, targetPort: http }]
+{{- if gt (int .Values.app.adminPort) 0 }}
+---
+# The back office (ADR 0035). Route only an in-network host here (an Ingress with a source allow-list, or a VPN):
+# never the public edge.
+apiVersion: v1
+kind: Service
+metadata:
+  name: helper2-admin
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" . | nindent 4 }}
+spec:
+  selector: { app: helper2 }
+  ports: [{ port: 80, targetPort: admin }]
+{{- end }}

@@ -3,7 +3,7 @@
 # what the per-workload network policies let each workload reach and accept, Redis auth and its AOF volume,
 # OpenBao and Harbor for delivery, Alloy -> Prometheus / Tempo for observability, and the prod backup
 # with its optional off-site copy to Cloudflare R2 (off today).
-# Not drawn because it does not exist yet: the admin back office on admin.helper2.ai (roadmap).
+# Not drawn yet: the admin host (ADR 0035) until its cutover to ingress-nginx is applied (roadmap).
 # Source of truth: deploy/helm/helper2 (values*.yaml, templates/*.yaml), deploy/k8s/terraform (main.tf,
 #   rbac.tf), deploy/k8s/Makefile, deploy/k8s/CI.md, .github/workflows/deploy.yml,
 #   backend/src/main/resources/application.yaml (management, tracing).

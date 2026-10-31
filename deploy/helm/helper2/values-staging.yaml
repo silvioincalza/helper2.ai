@@ -10,6 +10,11 @@ redis:
   storageClassName: local-path
 cloudflared:
   enabled: true
+# The platform's ingress-nginx serves the Ingresses (incalza-me-infra terraform/k8s/helper2.tf): public host ->
+# Service helper2, in-network admin host -> Service helper2-admin (ADR 0035). The tunnel stays until the DNS switch.
+ingress:
+  controllerNamespace: ingress-nginx
+  controllerPodLabels: { app.kubernetes.io/name: ingress-nginx }
 networkPolicy:
   metricsNamespace: observability
   egress:

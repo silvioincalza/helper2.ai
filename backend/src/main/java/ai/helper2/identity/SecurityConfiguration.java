@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
@@ -50,7 +51,8 @@ class SecurityConfiguration {
     SecurityFilterChain api(HttpSecurity http, ObjectProvider<ClientRegistrationRepository> registrations,
                             @Value("${helper2.security.admins:}") String admins,
                             @Value("${helper2.security.metrics-public:false}") boolean metricsPublic,
-                            @Value("${helper2.frontend-url:/}") String frontendUrl) throws Exception {
+                            @Value("${helper2.frontend-url:/}") String frontendUrl,
+                            AdminPort adminPort) throws Exception {
         Set<String> adminSet = Arrays.stream(admins.split(",")).map(String::trim).filter(s -> !s.isEmpty())
             .collect(Collectors.toUnmodifiableSet());
         http
@@ -81,46 +83,54 @@ class SecurityConfiguration {
                 .contentSecurityPolicy(csp -> csp.policyDirectives(CSP))
                 .referrerPolicy(r -> r.policy(org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)));
         if (registrations.getIfAvailable() != null) {
+            // Sign-in on both ports, each host with its own callback ({baseUrl}): end users on the public host, the
+            // owner on the admin host. ADMIN only for a sign-in made on the admin port (ADR 0035).
+            BooleanSupplier onAdminPort = adminPort::currentRequestAdmitted;
             http.oauth2Login(o -> o
-                .defaultSuccessUrl(adminPage(frontendUrl), true)
-                .failureUrl(adminPage(frontendUrl) + "?signin=failed")
-                .userInfoEndpoint(u -> u.userService(oauthUsers(adminSet)).oidcUserService(oidcUsers(adminSet))));
+                .successHandler((req, res, auth) -> res.sendRedirect(afterSignIn(frontendUrl, adminPort.admits(req))))
+                .failureHandler((req, res, e) -> res.sendRedirect(afterSignIn(frontendUrl, adminPort.admits(req)) + "?signin=failed"))
+                .userInfoEndpoint(u -> u.userService(oauthUsers(adminSet, onAdminPort)).oidcUserService(oidcUsers(adminSet, onAdminPort))));
         }
         return http.build();
     }
 
-    /** Sign-in is offered on the admin page only, so OAuth2 returns there ("/" → "/admin"). */
+    /** The admin page under the frontend URL ("/" → "/admin"). */
     static String adminPage(String frontendUrl) {
         return (frontendUrl.endsWith("/") ? frontendUrl : frontendUrl + "/") + "admin";
     }
 
-    static OAuth2UserService<OAuth2UserRequest, OAuth2User> oauthUsers(Set<String> admins) {
+    /** Where a sign-in returns: the back office on the admin port, the site on the public port. */
+    static String afterSignIn(String frontendUrl, boolean onAdminPort) {
+        return onAdminPort ? adminPage(frontendUrl) : (frontendUrl.endsWith("/") ? frontendUrl : frontendUrl + "/");
+    }
+
+    static OAuth2UserService<OAuth2UserRequest, OAuth2User> oauthUsers(Set<String> admins, BooleanSupplier onAdminPort) {
         DefaultOAuth2UserService delegate = new DefaultOAuth2UserService();
         return req -> {
             OAuth2User user = delegate.loadUser(req);
             String reg = req.getClientRegistration().getRegistrationId();
             String key = req.getClientRegistration().getProviderDetails().getUserInfoEndpoint().getUserNameAttributeName();
             // Match only the immutable subject (GitHub: numeric id). Logins can be renamed and re-registered.
-            Set<GrantedAuthority> roles = roles(admins, reg, user.getName(), null);
+            Set<GrantedAuthority> roles = roles(admins, reg, user.getName(), null, onAdminPort.getAsBoolean());
             return new DefaultOAuth2User(roles, user.getAttributes(), key == null || key.isBlank() ? "id" : key);
         };
     }
 
-    static OAuth2UserService<OidcUserRequest, OidcUser> oidcUsers(Set<String> admins) {
+    static OAuth2UserService<OidcUserRequest, OidcUser> oidcUsers(Set<String> admins, BooleanSupplier onAdminPort) {
         OidcUserService delegate = new OidcUserService();
         return req -> {
             OidcUser user = delegate.loadUser(req);
             String reg = req.getClientRegistration().getRegistrationId();
             Boolean verified = user.getEmailVerified();
             String email = Boolean.TRUE.equals(verified) ? user.getEmail() : null;
-            return new DefaultOidcUser(roles(admins, reg, user.getSubject(), email), user.getIdToken(), user.getUserInfo());
+            return new DefaultOidcUser(roles(admins, reg, user.getSubject(), email, onAdminPort.getAsBoolean()), user.getIdToken(), user.getUserInfo());
         };
     }
 
-    static Set<GrantedAuthority> roles(Set<String> admins, String registrationId, String subject, String alias) {
+    static Set<GrantedAuthority> roles(Set<String> admins, String registrationId, String subject, String alias, boolean onAdminPort) {
         Set<GrantedAuthority> roles = new HashSet<>();
         roles.add(new SimpleGrantedAuthority("ROLE_USER"));
-        if (admins.contains(registrationId + ":" + subject) || (alias != null && admins.contains(registrationId + ":" + alias))) {
+        if (onAdminPort && admins.contains(registrationId + ":" + subject) || (alias != null && admins.contains(registrationId + ":" + alias))) {
             roles.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
         }
         return roles;
