@@ -36,9 +36,10 @@ and chose between options for each part.
    candidates… picks will appear here". Its height is reserved, and so are the lines that come with the answer ("web searches left" and "How the guide decided"); the chips stay on one line, cut a long title with "…", and scroll sideways when they do not fit. When the answer arrives over SSE
    (`POST /api/v1/guide/stream`, [0015](../guide/0015-ai-guide-evidence-gate.md)), the same box shows the picks as chips
    (#1, #2, #3), labelled AI-written ([0038](../guide/0038-ai-content-marking.md)). The list never re-orders: each pick gets a
-   "Pick #n" badge and its reason in its own row. No pick: the box shrinks to one line, "No pick: no result had a
-   sentence that proves it", and the guide's full answer opens under it, so its notice and how it read the question
-   stay in reach. Tapping a chip selects that row; a pick that is not on the page links to its own page.
+   "Pick #n" badge and its reason in its own row. No pick: the box shrinks to one line that says why, in the
+   words of the answer's notice (today's AI answers are used, the model is not available, nothing fits, the subject
+   was not found), or "No pick: no result had a sentence that proves it". The full answer stays folded under "How the
+   guide decided", so the results stay in view and how it read the question is one tap away. Tapping a chip selects that row; a pick that is not on the page links to its own page.
 7. **Sources at the bottom.** The fan-out summary and one tile per source (status, response time or cache age) sit
    under the results, not in the header.
 8. **States are designed, not left to chance.** Loading (skeleton rows), guide answering, no results, some sources
