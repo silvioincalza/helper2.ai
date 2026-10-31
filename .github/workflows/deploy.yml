@@ -26,7 +26,10 @@ permissions:
 jobs:
   deploy:
     runs-on: [self-hosted, incalzame]
-    timeout-minutes: 15
+    # helm waits up to 12m for the upgrade and, when it fails, up to 12m more for the rollback (Makefile
+    # deploy). A shorter job kills the rollback halfway and leaves the release pending-rollback with
+    # pods that point at resources the rollback already removed (30 Oct 2026, staging).
+    timeout-minutes: 30
     environment:
       name: ${{ inputs.environment }}
       url: ${{ inputs.environment == 'prod' && 'https://helper2.ai' || 'https://helper2.incalza.me' }}
