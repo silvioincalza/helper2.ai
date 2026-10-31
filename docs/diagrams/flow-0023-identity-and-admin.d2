@@ -45,7 +45,7 @@ access: SecurityConfiguration rules {
 signin: Sign-in (only from /admin) {
   class: group
   direction: down
-  profile: "Profile oauth-github active?\n(not on staging or prod today)" {class: decision}
+  profile: "Profile oauth-github active?\n(off unless set for the environment)" {class: decision}
   nosign: "No sign-in offered" {class: end}
   github: "GitHub OAuth2, scope read:user" {class: ext}
   roles: "\"github:<numeric id>\"\nin H2_ADMINS?" {class: decision}

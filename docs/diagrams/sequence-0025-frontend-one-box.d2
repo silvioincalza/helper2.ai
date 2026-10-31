@@ -1,10 +1,10 @@
 # Sequence: the guide stream as the browser sees it, with the 45 s idle timeout and the retry.
 # Shows fetch + SseParser (no EventSource, no automatic reconnect), the idle timer re-armed on every chunk
-# (keep-alive comments included), the progress steps, a stream that goes quiet, the retry and the refinement,
-# both asked again by useGuideStream from the URL.
-# Source of truth: frontend/src/pages/HomePage.tsx (GuideSection, guideError), frontend/src/hooks/useGuideStream.ts,
-#   frontend/src/lib/searchState.ts (askedRefinement, refinedParams), frontend/src/api/client.ts (askGuideStream),
-#   frontend/src/lib/sse.ts, frontend/src/components/GuideProgress.tsx,
+# (keep-alive comments included), the picks bar while the guide reads, a stream that goes quiet, the retry and the
+# refinement, both asked again by useGuideStream from the URL.
+# Source of truth: frontend/src/components/results/ResultsV2.tsx (GuidePicks, guideError),
+#   frontend/src/hooks/useGuideStream.ts, frontend/src/lib/searchState.ts (askedRefinement, refinedParams),
+#   frontend/src/api/client.ts (askGuideStream), frontend/src/lib/sse.ts, frontend/src/components/GuideAnswer.tsx,
 #   backend/src/main/java/ai/helper2/guide/web/GuideStreamController.java.
 # Render: cd docs/diagrams && d2 fmt sequence-0025-frontend-one-box.d2 && d2 sequence-0025-frontend-one-box.d2 sequence-0025-frontend-one-box.svg
 
@@ -13,9 +13,8 @@
 shape: sequence_diagram
 
 user: User {class: person}
-gs: "GuideSection\n(HomePage)" {class: app}
+gs: "GuidePicks\n(ResultsV2)" {class: app}
 hook: useGuideStream {class: app}
-gp: GuideProgress {class: app}
 client: "api.askGuideStream\n(client.ts)" {class: app}
 parser: SseParser {class: app}
 server: "POST /api/v1/guide/stream\n(GuideStreamController)" {class: app}
@@ -32,10 +31,9 @@ normal: Normal stream {
   client -> parser: "push(text)"
   parser -> client: "{event: planned, data}"
   client -> hook: "onStep(planned)"
-  hook -> gs: "steps = [planned]"
-  gs -> gp: "steps"
-  gp -> user: "role=status: current step title"
-  server -> client: "understood, retrieved\n(steps; understood is no progress row)" {class: ai-call}
+  hook -> gs: "steps = [planned], busy"
+  gs -> user: "picks bar: the guide is reading"
+  server -> client: "understood, retrieved" {class: ai-call}
   server -> client: "chunk: \":keep-alive\" comment\n(every 15 s while the question runs)"
   client -> client: "re-arm idle timer"
   client -> parser: "push(text)"
@@ -45,7 +43,7 @@ normal: Normal stream {
   server -> client: "event answer" {class: ai-call}
   client -> hook: "resolve(GuideResponse)"
   hook -> gs: "answer"
-  gs -> user: "GuideAnswer (aria-live polite)"
+  gs -> user: "picks bar: #1… chips (badges on the rows),\nor GuideAnswer when there is no pick"
 }
 
 quiet: Stream goes quiet {
@@ -53,14 +51,14 @@ quiet: Stream goes quiet {
   client -> client: "45 s without a byte:\nidle = true, abort, cancel reader"
   client -> hook: "ApiError(stream = IDLE_TIMEOUT)"
   hook -> gs: "error"
-  gs -> user: "role=alert: \"The guide sent nothing for\n45 seconds…\" + Retry button"
+  gs -> user: "role=alert: guide.streamFailure.IDLE_TIMEOUT\n+ Retry button"
 }
 
 other: Other failures {
   server -> client: "event error {status 503 busy | 504 deadline}"
   client -> hook: "ApiError(status, problem)"
   hook -> gs: "error"
-  gs -> user: "problem.detail"
+  gs -> user: "role=alert: problem.detail + Retry"
   client -> hook: "MALFORMED (bad JSON) or\nENDED_EARLY (closed, no answer)"
 }
 

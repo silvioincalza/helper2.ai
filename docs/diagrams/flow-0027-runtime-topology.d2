@@ -39,7 +39,7 @@ options: Per-environment values {
   out: "Egress per workload: app DNS, 5432, 6379,\nOTLP 4318, 443 without private ranges;\ncloudflared DNS, app 8080, 7844" {class: app}
   backup: "backup.enabled?\n(prod only)" {class: decision}
   cron: "pg-backup CronJob 02:30 Europe/Zurich,\nPVC kept on uninstall, 7 days;\npostgres accepts pg-backup" {class: app}
-  offsite: "backup.offsite.enabled?\n(off today)" {class: decision}
+  offsite: "backup.offsite.enabled?\n(off unless configured)" {class: decision}
   rclone: "rclone copy to R2 after the dump;\npg-backup egress 443" {class: app}
 
   replicas -> pdb: yes

@@ -203,102 +203,76 @@ Open items:
 
 ## 10. Known limits
 
-What each decision does not cover. These come from the ADRs, which describe only what the code does. Fix an item
-here or accept it; when it is fixed, remove it.
+What each decision leaves open. The ADRs describe only what the code does; their limits live here. Limits that
+already have a task above are not repeated: sign-in for everyone and SEO (section 2), backups, exporters and
+tokens (section 3), per-replica state (section 4), the labeled query set (section 2) and module coupling (section 8).
+Fix an item or accept it; when it no longer holds, remove it.
 
 ### Foundation
 
-- Startup is slower than a native binary: Flyway and the language models load first. The Helm chart gives the startup probe up to 300 seconds (see 0027). ([ADR 0001](adr/foundation/0001-stack-and-runtime.md))
-- Two backend languages raise the entry cost for a new developer. 0002 limits Kotlin to the business rules. ([ADR 0001](adr/foundation/0001-stack-and-runtime.md))
-- The SPA is not crawled well by search engines; detail pages have no HTML rendered on the server. ([ADR 0001](adr/foundation/0001-stack-and-runtime.md))
-- `setup` has no `usecase` package yet: its split waits for the tool-guide work in that module. ([ADR 0002](adr/foundation/0002-modular-monolith-hexagonal.md))
-- The `guide` domain uses `platform.llm.CallCounter` and `DailyBudget`. Allowed because `platform` is open, but the LLM layer is visible to every module. ([ADR 0002](adr/foundation/0002-modular-monolith-hexagonal.md))
-- Modulith checks Java types only. The `scout` module writes enrichment tables that `catalog` reads; this coupling through the schema is not checked. ([ADR 0002](adr/foundation/0002-modular-monolith-hexagonal.md))
-- Generated code is not committed. After a fresh checkout, run Gradle or npm once before the editor can resolve the generated types. ([ADR 0003](adr/foundation/0003-contract-first-rest-api.md))
-- The SSE handler is not generated, so the compiler ties only its event names to the contract. ([ADR 0003](adr/foundation/0003-contract-first-rest-api.md))
-- A resource seen for the first time has no discovery date in that first response: the write is still in the queue. ([ADR 0004](adr/foundation/0004-persistence-and-provenance.md))
-- On shutdown the queue gets 5 seconds to finish; later writes are lost. ([ADR 0004](adr/foundation/0004-persistence-and-provenance.md))
-- Bookmarks and reports are user data; the backup (0027) is the only copy. ([ADR 0004](adr/foundation/0004-persistence-and-provenance.md))
-- During a Redis outage, budgets count in memory per replica: with 3 replicas, up to three times what was left of the day. A restart during an outage resets that replica's count. ([ADR 0005](adr/foundation/0005-redis-disposable-cache.md))
-- With `everysec`, a Redis crash loses at most the last second of writes; a lost volume starts Redis empty. ([ADR 0005](adr/foundation/0005-redis-disposable-cache.md))
-- Redis holds sessions, rate-limit windows and web-search counters next to cache entries, in the same 128 MB with `allkeys-lru`: under memory pressure an admin can be signed out, or a client can get a fresh window or day early. ([ADR 0005](adr/foundation/0005-redis-disposable-cache.md))
-- arXiv: while Redis is down, arXiv is not called. ([ADR 0006](adr/foundation/0006-outbound-http.md))
-- The response timeout applies to each read, not to the whole call. A Scout collector has no deadline of its own. ([ADR 0006](adr/foundation/0006-outbound-http.md))
-- The Kubernetes Secret is only base64 in the cluster; access to the namespace means access to it. ([ADR 0007](adr/foundation/0007-configuration-and-secrets.md))
-- The Cloudflare tunnel token is created by Terraform and kept in its state and in the Secret `cloudflared-token`, not in OpenBao. ([ADR 0007](adr/foundation/0007-configuration-and-secrets.md))
-- A renamed variable needs the OpenBao entry rewritten by hand; an old name is silently ignored. ([ADR 0007](adr/foundation/0007-configuration-and-secrets.md))
-- Circuits live in each replica's memory; each replica finds an outage on its own (10 calls at most). ([ADR 0033](adr/foundation/0033-resilience-policies.md))
+- Startup is slower than a native binary: Flyway and the language models load first; the startup probe allows up to 300 s. ([ADR 0001](adr/foundation/0001-stack-and-runtime.md), [ADR 0027](adr/operations/0027-runtime-topology.md))
+- Two backend languages raise the entry cost for a new developer; Kotlin stays in the rule packages. ([ADR 0001](adr/foundation/0001-stack-and-runtime.md), [ADR 0002](adr/foundation/0002-modular-monolith-hexagonal.md))
+- The `setup` module has no `usecase` package yet; the split waits for the tool-guide work. ([ADR 0002](adr/foundation/0002-modular-monolith-hexagonal.md))
+- Generated API code is not committed: after a fresh checkout, run Gradle or npm once before the editor resolves the types. The guide SSE handler is hand-written, so the compiler checks only its event names. ([ADR 0003](adr/foundation/0003-contract-first-rest-api.md), [ADR 0015](adr/guide/0015-ai-guide-evidence-gate.md))
+- A resource seen for the first time has no discovery date in that first response (the write is still queued); a dropped write delays it until the resource is seen again. On shutdown the queue gets 5 s; later writes are lost. ([ADR 0004](adr/foundation/0004-persistence-and-provenance.md))
+- Bookmarks and reports are user data; the backup is the only copy. ([ADR 0004](adr/foundation/0004-persistence-and-provenance.md), [ADR 0027](adr/operations/0027-runtime-topology.md))
+- During a Redis outage, budgets count in memory per replica (up to three times what was left of the day on prod); Redis is not ready while it loads the AOF; with `everysec` a crash loses at most the last second. ([ADR 0005](adr/foundation/0005-redis-disposable-cache.md))
+- arXiv is not called while Redis is down. The HTTP response timeout applies per read, not per call; a Scout collector has no deadline of its own, and a retried call can add 1 + 2 + 4 s of backoff. ([ADR 0006](adr/foundation/0006-outbound-http.md), [ADR 0033](adr/foundation/0033-resilience-policies.md))
+- The Kubernetes Secret is base64 in the cluster: namespace access means secret access. A renamed variable needs its OpenBao entry rewritten by hand (an old name is ignored); an `app_env` change needs `make credentials` and a deploy. ([ADR 0007](adr/foundation/0007-configuration-and-secrets.md))
+- Resilience4j is one more library to keep current with Spring Boot. ([ADR 0033](adr/foundation/0033-resilience-policies.md))
 
 ### Search
 
-- The response waits for the slowest answering source up to its deadline: Tavily (6 s) sets the worst case; a non-English query can add the translation wait (0011). ([ADR 0008](adr/search/0008-federated-search.md))
-- Cooldowns, circuits and per-source health on the Sources page live in each replica's memory; the Sources page shows what the answering replica has seen. ([ADR 0008](adr/search/0008-federated-search.md))
-- Facets and filters only see the hits fetched for this query (at most 30 per source), not the whole catalog (also 0010). ([ADR 0008](adr/search/0008-federated-search.md))
-- Ranking weights and popularity references are chosen by hand from a few queries; no labeled query set measures them. ([ADR 0009](adr/search/0009-ranking.md))
-- The popularity formula exists twice, in SQL (`h2_resource_popularity`) and Kotlin (`Ranking.popularity`); they must change together. ([ADR 0009](adr/search/0009-ranking.md))
-- Index stage 1 can cut rows that hold only some words when more than 300 rows match. ([ADR 0009](adr/search/0009-ranking.md))
-- The timeline pages 50 results at a time, so one month can be split across two pages. ([ADR 0010](adr/search/0010-filters-facets-dates-timeline.md))
-- A wrong early date from one source moves a result in sort and timeline; the badge shows the date is disputed. ([ADR 0010](adr/search/0010-filters-facets-dates-timeline.md))
-- The translation cache is per replica; a miss on another replica costs one more model call. ([ADR 0011](adr/search/0011-language-aware-search.md))
-- The embedding backlog gauge does not count rows whose text changed after they were embedded. ([ADR 0012](adr/search/0012-vector-search-pgvector.md))
-- The 0.65 semantic cutoff comes from one set of measurements and may need tuning. ([ADR 0012](adr/search/0012-vector-search-pgvector.md))
-- Query-vector cache and the 2 min rate-limit pause are per replica. ([ADR 0012](adr/search/0012-vector-search-pgvector.md))
-- "Works with" tag lists are kept by hand; a resource with no tags gets no flag; index hits name `helper2-index`, not the original source; the 20-tag limit can drop a tag. ([ADR 0013](adr/search/0013-works-with-flags.md))
-- Accepted risk (owner, 30 Oct 2026): rotating addresses can drain the monthly Tavily credits while no cap is set; then searches answer from stored sets and the other sources. ([ADR 0037](adr/search/0037-tavily-store-and-daily-quota.md))
-- Under Redis memory pressure a web-search counter can be evicted and a visitor's day starts early. ([ADR 0037](adr/search/0037-tavily-store-and-daily-quota.md))
-- The quota is taken before the call, so a call the circuit then refuses still counts for the visitor. ([ADR 0037](adr/search/0037-tavily-store-and-daily-quota.md))
-- A stored hit is read back with two short queries per hit (owner, then records). ([ADR 0037](adr/search/0037-tavily-store-and-daily-quota.md))
-- A scheduled Scout run can start up to one `H2_SCOUT_TICK` (1 h) after it is due; a short `H2_SCOUT_EVERY` needs a shorter tick. ([ADR 0018](adr/scout/0018-scout-runner.md))
-- A pause of the lease-renewal thread longer than one lease lets another replica start a second run. ([ADR 0018](adr/scout/0018-scout-runner.md))
-- The enrichment review queue grows with every partial run and needs a person. ([ADR 0019](adr/scout/0019-evidence-gated-enrichment.md))
-- HF provider models reach no enrichment: the list API returns no description. ([ADR 0020](adr/scout/0020-scout-collectors.md))
-- Coverage of consumer AI tools is thin: sources lean toward developer resources. ([ADR 0020](adr/scout/0020-scout-collectors.md))
-- Course pages wait for an admin decision each week. ([ADR 0020](adr/scout/0020-scout-collectors.md))
-- An event whose source gives no day is not listed; curated events need a research pass to stay current. ([ADR 0022](adr/scout/0022-next-events.md))
+- A search waits for the slowest answering source up to its deadline: Tavily (6 s) sets the worst case, and a non-English query can start most sources up to 2.5 s later for translation. ([ADR 0008](adr/search/0008-federated-search.md), [ADR 0011](adr/search/0011-language-aware-search.md))
+- Facets and filters see only the hits fetched for this query (at most 30 per source), not the whole catalog. ([ADR 0008](adr/search/0008-federated-search.md), [ADR 0010](adr/search/0010-filters-facets-dates-timeline.md))
+- A package found without its repository is a result of its own until a search finds both. ([ADR 0008](adr/search/0008-federated-search.md))
+- The popularity formula exists twice, in SQL (`h2_resource_popularity`) and Kotlin (`Ranking.popularity`); change them together. Index stage 1 can cut partial matches when more than 300 rows match. ([ADR 0009](adr/search/0009-ranking.md))
+- The timeline pages 50 results at a time, so a month can split across pages. A wrong early date from one source moves the result; the badge shows the dispute. ([ADR 0010](adr/search/0010-filters-facets-dates-timeline.md))
+- The English/Italian lexicon still runs next to translation, so Italian gets two kinds of help and other languages rely on the model. ([ADR 0011](adr/search/0011-language-aware-search.md))
+- A new or changed resource has no current vector until the indexer reaches it; the backlog gauge does not count changed text. The 0.65 cutoff comes from one set of measurements. ([ADR 0012](adr/search/0012-vector-search-pgvector.md))
+- “Works with” tag lists are kept by hand; no tag means no flag (not “does not work”); index hits name `helper2-index`; the 20-tag limit can drop a tag. ([ADR 0013](adr/search/0013-works-with-flags.md))
+- Accepted risk (owner, 30 Oct 2026): rotating addresses can drain the monthly Tavily credits while no cap is set; searches then answer from stored sets and other sources. Failing closed loses fresh web results for a Redis outage. ([ADR 0037](adr/search/0037-tavily-store-and-daily-quota.md))
+- The web-search quota is taken before the call, so a call the circuit refuses still counts. A stored hit is read back with two short queries; a set not yet stored is a miss. ([ADR 0037](adr/search/0037-tavily-store-and-daily-quota.md))
 
-### AI guide and quality
+### Scout
 
-- Setting `H2_LLM_MAX_RETRIES` above 0 adds attempts that no budget counts; the LLM circuit lives in each replica's memory. ([ADR 0014](adr/guide/0014-llm-integration.md))
-- Thinking off makes calls faster and repeatable, but the chooser returns fewer picks (0030). ([ADR 0014](adr/guide/0014-llm-integration.md))
-- The gate proves the quote, not that it is true: a description written to be chosen passes the gate and the reason check. ([ADR 0015](adr/guide/0015-ai-guide-evidence-gate.md))
-- The guide is only as good as retrieval: a resource not in the 24 candidates cannot be picked. ([ADR 0015](adr/guide/0015-ai-guide-evidence-gate.md))
-- The guide SSE contract is hand-written, not generated from OpenAPI. ([ADR 0015](adr/guide/0015-ai-guide-evidence-gate.md))
-- The reason check is a model's judgment and can miss a claim or reject a correct one; it adds one model call per question (the 600-call daily cap covers at most 200 fresh questions). ([ADR 0016](adr/guide/0016-guide-reason-check.md))
-- Clients behind one shared address (office, mobile carrier) share one guide quota. ([ADR 0017](adr/guide/0017-guide-cost-guard.md))
-- The in-memory answer cache, single-flight map and `guide` bulkhead are per replica; while Redis is down each replica counts on its own. ([ADR 0017](adr/guide/0017-guide-cost-guard.md))
-- The quota is taken before the question runs, so a question that later fails still counts. ([ADR 0017](adr/guide/0017-guide-cost-guard.md))
-- 20 evaluation questions is a small sample; the script measures the JSON endpoint, not the stream or the browser; an ungraded pick counts as not relevant. ([ADR 0030](adr/quality/0030-guide-evaluation.md))
-- Past the hourly fetch budget, an uncached resource gets no README snippet and no steps until the next hour; client formats change and need a re-check. ([ADR 0031](adr/guide/0031-setup-guide.md))
-- A name is asked back only when our sources hold entries of two kinds; an unrelated project with a model's exact name also triggers the question. ([ADR 0032](adr/guide/0032-guide-intents.md))
-- A broad "what is new" question takes about 10 s longer (thinking on for its choose call); a subject slower than 10 s is reported as not found. ([ADR 0032](adr/guide/0032-guide-intents.md))
-- `NEWEST` drops undated results (npm and others) silently. ([ADR 0032](adr/guide/0032-guide-intents.md))
-- Events are found only in a source's own top hits; event words are a fixed list. ([ADR 0032](adr/guide/0032-guide-intents.md))
-- The course list needs editorial review; Coursera, edX and Udemy are covered only through the collector and the seed. ([ADR 0032](adr/guide/0032-guide-intents.md))
-- Frozen snapshots age; pooled judging leaves results outside every top 20 unjudged; labelling is about 5 hours of human work per judge. ([ADR 0036](adr/quality/0036-search-evaluation-harness.md))
-- Lawyer: whether metadata-only marking is enough for text (it is lost on copy). ([ADR 0038](adr/guide/0038-ai-content-marking.md))
-- A new AI-written field must be added to the marking and its tests by hand. ([ADR 0038](adr/guide/0038-ai-content-marking.md))
+- A scheduled run can start up to one `H2_SCOUT_TICK` (1 h) late; a short `H2_SCOUT_EVERY` needs a shorter tick. A renewal-thread pause longer than one lease lets another replica start a second run. ([ADR 0018](adr/scout/0018-scout-runner.md))
+- Strict enrichment rules reject some correct values; the review queue grows with every partial run and needs a person. ([ADR 0019](adr/scout/0019-evidence-gated-enrichment.md))
+- Hugging Face provider models get no enrichment (the list API has no description). Consumer AI tools are thinly covered. Tavily finds news about tools, not the tools. Course pages wait for an admin each week. ([ADR 0020](adr/scout/0020-scout-collectors.md))
+- An event whose source gives no day is not listed; event days can be a few hours off far from UTC; conference dates are as correct as ai-deadlines; curated events need a research pass to stay current. ([ADR 0022](adr/scout/0022-next-events.md))
 
-### Edge, frontend and operations
+### AI guide
 
-- Sign-in is offered only on `/admin`, so visitors keep bookmarks only in their own browser. ([ADR 0023](adr/edge/0023-identity-and-admin.md))
-- `/admin` and `/api/v1/admin/**` are on the public host, protected only by the role check. ([ADR 0023](adr/edge/0023-identity-and-admin.md))
-- Roles live in the session: removing an admin takes effect at their next sign-in; a Redis outage or eviction signs the admin out. ([ADR 0023](adr/edge/0023-identity-and-admin.md))
-- While Redis is down each replica counts alone, so a client can get up to 3 times the rate limit on prod; an evicted key gives a fresh window early. ([ADR 0024](adr/edge/0024-http-edge-protection.md))
-- Clients behind one shared address (office, carrier NAT) share one rate limit. ([ADR 0024](adr/edge/0024-http-edge-protection.md))
-- No browser end-to-end tests: frontend tests run in jsdom only, also in CI (0028). ([ADR 0025](adr/frontend/0025-frontend-one-box.md))
-- A recent answer can be up to 5 minutes old; a new page that shows data the user changes must pass `cache: false`. ([ADR 0039](adr/frontend/0039-frontend-recent-answers-cache.md))
-- The picks bar takes about 110 px above the list, also when the guide has nothing to say. ([ADR 0040](adr/frontend/0040-frontend-design-v2.md))
-- Two result layouts (desktop preview, inline preview on a phone) to build and test. ([ADR 0040](adr/frontend/0040-frontend-design-v2.md))
-- The picks bar says only that the guide is reading (no step-by-step progress); there is no button to close the guide's answer. ([ADR 0040](adr/frontend/0040-frontend-design-v2.md))
-- Alert delivery (Alertmanager receivers) is configured in the observability stack, not here. ([ADR 0026](adr/operations/0026-observability.md))
-- Gauges and circuit states live in one replica's memory; a collector disabled on purpose keeps alerting until its value is 9 days old. ([ADR 0026](adr/operations/0026-observability.md))
-- Redis memory and evictions are not measured (no Redis exporter in the chart). ([ADR 0026](adr/operations/0026-observability.md))
-- The off-site backup copy is off and no restore has been tested. ([ADR 0027](adr/operations/0027-runtime-topology.md))
-- Staging (1 replica) has no failover; a prod deploy starts pods one after another (startup up to 300 s each). ([ADR 0027](adr/operations/0027-runtime-topology.md))
-- Plain HTTP inside the cluster; sign-in for everyone changes that. ([ADR 0027](adr/operations/0027-runtime-topology.md))
-- Never run `helm uninstall`: it deletes the Postgres and Redis StatefulSets. ([ADR 0027](adr/operations/0027-runtime-topology.md))
-- The deployer's Kubernetes token does not expire; it sits in OpenBao and in the namespace. ([ADR 0028](adr/operations/0028-ci-cd.md))
-- Terraform stays manual (`make bootstrap`). ([ADR 0028](adr/operations/0028-ci-cd.md))
+- `H2_LLM_MAX_RETRIES` above 0 adds attempts that no budget counts. Thinking off makes the chooser return fewer picks. ([ADR 0014](adr/guide/0014-llm-integration.md), [ADR 0030](adr/quality/0030-guide-evaluation.md))
+- The gate proves a quote, not that it is true: a description written to be chosen passes the gate and the reason check. Strict rules reject some good picks. A resource outside the 24 candidates cannot be picked. ([ADR 0015](adr/guide/0015-ai-guide-evidence-gate.md))
+- The reason check is a model's judgment and can miss or reject a claim; it costs one more call per question (the 600-call daily cap covers at most 200 fresh questions). ([ADR 0016](adr/guide/0016-guide-reason-check.md))
+- Clients behind one shared address share one guide quota; the quota is taken before the question runs, so a failed question still counts. ([ADR 0017](adr/guide/0017-guide-cost-guard.md))
+- The setup guide is only as good as the tool's own docs; past the hourly fetch budget an uncached resource gets no README snippet; client config formats change and need a re-check. ([ADR 0031](adr/guide/0031-setup-guide.md))
+- Asking back costs a round trip and a model call. A name is asked back only when our sources hold two kinds, and an unrelated project with a model's exact name also triggers it. A broad “what is new” question takes about 10 s longer; a subject slower than 10 s is reported as not found. ([ADR 0032](adr/guide/0032-guide-intents.md))
+- `NEWEST` drops undated results silently. Events are found only in a source's own top hits, and the event words are a fixed list. Two more prompts (`compare`, `explain`) to maintain and evaluate. The course list needs editorial review. ([ADR 0032](adr/guide/0032-guide-intents.md))
+- Lawyer: is metadata-only marking enough for text (it is lost on copy)? A new AI-written field must be added to the marking and its tests by hand. ([ADR 0038](adr/guide/0038-ai-content-marking.md))
+
+### Edge and identity
+
+- `/admin` and `/api/v1/admin/**` are on the public host, protected only by the role check. Roles live in the session: removing an admin takes effect at the next sign-in; a Redis outage signs the admin out. ([ADR 0023](adr/edge/0023-identity-and-admin.md))
+- While Redis is down each replica counts alone (up to 3× the limit on prod). Clients behind one shared address share one limit. ([ADR 0024](adr/edge/0024-http-edge-protection.md))
+
+### Frontend
+
+- The four-word rule sends a short question to search and a long keyword list to the guide; Shift+Enter always asks. ([ADR 0025](adr/frontend/0025-frontend-one-box.md))
+- No browser end-to-end tests: frontend tests run in jsdom only, also in CI. ([ADR 0025](adr/frontend/0025-frontend-one-box.md), [ADR 0028](adr/operations/0028-ci-cd.md))
+- A recent answer can be up to 5 minutes old (50 entries, 5 minutes, fixed). A new page that shows data the user changes must pass `cache: false`. ([ADR 0039](adr/frontend/0039-frontend-recent-answers-cache.md))
+- The picks bar takes about 110 px also when the guide has nothing to say, and shows no step-by-step progress; there is no button to close the guide's answer. Two result layouts to build and test. The boards move (hover, focus and tap pause them). ([ADR 0040](adr/frontend/0040-frontend-design-v2.md))
+
+### Operations
+
+- Alert delivery is configured in the observability stack, not here. A collector disabled on purpose keeps alerting until its value is 9 days old. Histogram buckets add series per timer. ([ADR 0026](adr/operations/0026-observability.md))
+- Staging (1 replica) has no failover; a prod deploy starts pods one after another (up to 300 s each). Plain HTTP inside the cluster; sign-in for everyone changes that. Never run `helm uninstall`: it deletes the Postgres and Redis StatefulSets. ([ADR 0027](adr/operations/0027-runtime-topology.md))
+- Terraform stays manual (`make bootstrap`): it needs the Cloudflare token. ([ADR 0028](adr/operations/0028-ci-cd.md))
 - Deleting an old image needs the Harbor immutability rule disabled first, and enabled again after. ([ADR 0029](adr/operations/0029-release-versioning.md))
-- A deleted row stays in the backups for up to 7 days; purges run daily, so a row can outlive its period by up to a day. ([ADR 0034](adr/operations/0034-data-retention.md))
-- An observed resource seen again after its purge comes back as a new row with a new `first_discovered_at`. ([ADR 0034](adr/operations/0034-data-retention.md))
+- A deleted row stays in the backups for up to 7 days; purges run daily, so a row can outlive its period by a day; a purged observed resource seen again comes back with a new `first_discovered_at`. ([ADR 0034](adr/operations/0034-data-retention.md))
+
+### Quality
+
+- 20 guide questions is a small sample; the script measures the JSON endpoint, not the stream or the browser; an ungraded pick counts as not relevant; the hand-written notes describe the previous run until updated. ([ADR 0030](adr/quality/0030-guide-evaluation.md))
+- Frozen search snapshots age; pooled judging leaves results outside every top 20 unjudged; labelling takes about 5 hours per judge; Tavily credits are spent once per recorded query. ([ADR 0036](adr/quality/0036-search-evaluation-harness.md))
