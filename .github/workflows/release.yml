@@ -27,6 +27,7 @@ jobs:
       TAG: ${{ github.ref_name }}
     outputs:
       commit: ${{ steps.check.outputs.commit }}
+      sha: ${{ steps.check.outputs.sha }}
     steps:
       - name: Refuse a moved or deleted tag
         env:
@@ -95,14 +96,15 @@ jobs:
       actions: read
     env:
       GH_TOKEN: ${{ github.token }}
-      SHA: ${{ needs.release.outputs.commit }}
+      SHA: ${{ needs.release.outputs.sha }}
     steps:
       - name: Wait for the commit's CD run to pass staging
         run: |
           set -euo pipefail
           for _ in $(seq 1 80); do
-            run=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/cd.yml/runs?event=push&per_page=100" \
-              --jq "[.workflow_runs[] | select(.head_sha | startswith(\"$SHA\"))][0] // empty | [.status, (.conclusion // \"\"), .html_url] | @tsv")
+            # Filtered by the full commit on the server, so an old release commit is found as well as a new one.
+            run=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/cd.yml/runs?event=push&head_sha=$SHA&per_page=1" \
+              --jq ".workflow_runs[0] // empty | [.status, (.conclusion // \"\"), .html_url] | @tsv")
             if [[ -z $run ]]; then
               echo "::error::no CD run for $SHA: the commit never went through staging"; exit 1
             fi
