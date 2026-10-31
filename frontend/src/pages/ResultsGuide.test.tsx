@@ -62,6 +62,7 @@ describe('the guide picks bar', () => {
     expect(rows[1]).toHaveTextContent('Pick #1');
     const reason = within(rows[1] as HTMLElement).getByText('Lets an agent run read-only SQL against Postgres.');
     expect(reason).toHaveAttribute('data-ai-generated', 'true');
+    expect(reason).toHaveAttribute('data-ai-model', 'nvidia/nemotron-3-super');
     expect(within(rows[0] as HTMLElement).queryByText(/Pick #/)).not.toBeInTheDocument();
   });
 
@@ -80,7 +81,9 @@ describe('the guide picks bar', () => {
     expect(mark?.closest('blockquote')).toHaveTextContent(/^Fast\. An .* with audit logs\.$/);
     expect(mark?.closest('[data-ai-generated]')).toBeNull();
     // The model's explanation is labelled and shown at once: for "Guide me" on a tool it is the answer.
-    expect(within(panel).getByText('Lets an agent run read-only SQL against Postgres.').closest('details')).toHaveAttribute('open');
+    const explanation = within(panel).getByText('Lets an agent run read-only SQL against Postgres.');
+    expect(explanation.closest('details')).toHaveAttribute('open');
+    expect(explanation).toHaveAttribute('data-ai-model', 'nvidia/nemotron-3-super');
     expect(within(panel).getByText(/Model's explanation \(not checked\)/)).toBeInTheDocument();
     expect(await axeViolations(container)).toEqual([]);
   });
@@ -91,11 +94,11 @@ describe('the guide picks bar', () => {
     expect(await screen.findByRole('link', { name: '#1 Postgres MCP' })).toHaveAttribute('href', `/resource/${PG}`);
   });
 
-  it('marks the answer machine-readable on the bar: provider and models (EU AI Act Art. 50(2), ADR 0038)', async () => {
+  it('marks the answer machine-readable on the bar: provider and models; a chip holds a source title, so it is not marked (EU AI Act Art. 50(2), ADR 0038)', async () => {
     mockApi({ 'GET /search': withPick, 'POST /guide/stream': () => sse(makeGuide()) });
     renderApp(QUESTION);
     const chip = await screen.findByRole('button', { name: '#1 Postgres MCP' });
-    expect(chip.closest('[data-ai-generated]')).toHaveAttribute('data-ai-model', 'nvidia/nemotron-3-super');
+    expect(chip.closest('[data-ai-generated]')).toBeNull();
     expect(bar()).toHaveAttribute('data-ai-provider', 'nebius-token-factory');
     expect(bar()).toHaveAttribute('data-ai-models', 'nvidia/nemotron-nano nvidia/nemotron-3-super');
   });
@@ -189,12 +192,13 @@ describe('the guide picks bar', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('The connection closed before the answer arrived.');
   });
 
-  it('closing the bar aborts the stream and keeps the search', async () => {
+  it('closing the bar aborts the stream, keeps the search and moves focus to the results heading', async () => {
     const m = mockApi({ 'GET /search': withPick, 'POST /guide/stream': () => new Promise(() => undefined) });
     const { params } = renderApp(QUESTION);
     await waitFor(() => expect(m.callsTo('POST', '/guide/stream')).toHaveLength(1));
     await userEvent.click(screen.getByRole('button', { name: 'Close the guide answer' }));
     expect(screen.queryByRole('region', { name: /Guide picks/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: /results?$/ })).toHaveFocus();
     const init = m.fetchMock.mock.calls.find(([input]) => String(input).endsWith('/guide/stream'))?.[1];
     expect(init?.signal?.aborted).toBe(true);
     expect(params().get('ask')).toBeNull();

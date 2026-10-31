@@ -96,6 +96,11 @@ function Results({ state, asked, guide, update, onAsk, onCloseGuide }: {
     select(id);
     document.getElementById(rowId(id))?.focus();
   };
+  const closeGuide = () => {
+    onCloseGuide();
+    // The bar and its close button go away: keep the reader on the results.
+    heading.current?.focus();
+  };
   const toPage = (page: number) => {
     update(patchState(state, { page }));
     // The new page replaces the list under the pager: start reading again from the results heading.
@@ -105,7 +110,7 @@ function Results({ state, asked, guide, update, onAsk, onCloseGuide }: {
   return (
     <>
       {asked && (
-        <GuidePicks guide={guide} picks={picks} listed={new Set(cards.map((c) => c.id))} onPick={onPick} onClose={onCloseGuide} />
+        <GuidePicks guide={guide} picks={picks} listed={new Set(cards.map((c) => c.id))} onPick={onPick} onClose={closeGuide} />
       )}
       {hasQuery && (
       <section aria-labelledby="results-count" className="results">

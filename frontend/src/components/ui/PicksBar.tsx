@@ -1,6 +1,5 @@
 import { useId, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { aiMark } from '@/lib/aiMark';
 import './ui.css';
 
 /**
@@ -10,16 +9,17 @@ import './ui.css';
 export type PicksState =
   | { kind: 'reading'; candidates?: number | undefined }
   | { kind: 'none'; reason?: string | undefined }
-  | { kind: 'picks'; model?: string | null | undefined }
+  | { kind: 'picks' }
   | { kind: 'ask' }
   | { kind: 'error' };
 
 /**
  * The box above the result list that holds the guide's picks (ADR 0040, 6). It is there from the first render with
- * its height reserved, so nothing below it moves when the answer arrives; with no pick it shrinks to one line.
+ * the height of its three rows reserved (head, line or picks, footer), so nothing below it moves when the answer
+ * arrives; with no pick it shrinks to one line.
  * The waiting and no-pick lines are a status, so a screen reader hears each once. The picks and the question back
- * ([children]) sit under an AI-written label; the picks are marked machine-readable (ADR 0038), and [ai] names the
- * provider and models of the whole answer. [question] is what the guide was asked, [onClose] closes the answer, and
+ * ([children]) sit under an AI-written label, and [ai] names the provider and models of the whole answer (ADR 0038).
+ * A pick shows a title from its source, so the bar does not mark it; the AI-written text in [children] marks itself. [question] is what the guide was asked, [onClose] closes the answer, and
  * [footer] (how the guide read the question, the answer's details) follows in every state.
  */
 export function PicksBar({ state, question, onClose, closeLabel, ai, footer, children }: {
@@ -52,9 +52,9 @@ export function PicksBar({ state, question, onClose, closeLabel, ai, footer, chi
             : state.candidates === undefined ? t('picks.readingResults') : t('picks.reading', { count: state.candidates })}
         </p>
       ) : (
-        <div className="h2-picks__list" {...(state.kind === 'picks' ? aiMark(state.model) : {})}>{children}</div>
+        <div className="h2-picks__list">{children}</div>
       )}
-      {footer}
+      {footer && <div className="h2-picks__foot">{footer}</div>}
     </section>
   );
 }

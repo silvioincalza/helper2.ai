@@ -77,7 +77,7 @@ export function ResultList({ cards, view, selected, onSelect, picks, inline }: {
         </SelectableRow>
         {reason && (
           <p className="result-row__reason">
-            <span className="result-row__reason-label">{t('picks.reason')}</span> <span {...aiMark()}>{reason}</span>
+            <span className="result-row__reason-label">{t('picks.reason')}</span> <span {...aiMark(pick?.model)}>{reason}</span>
           </p>
         )}
         {isSelected && inline?.(card)}

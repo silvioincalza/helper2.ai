@@ -1,7 +1,7 @@
-import { Navigate, useLocation, useSearchParams, type RouteObject } from 'react-router';
+import { Navigate, useSearchParams, type RouteObject } from 'react-router';
 import { Layout } from '@/components/Layout';
 import { AppProviders } from '@/AppProviders';
-import { askParams, hasResults, RESULTS_PATH } from '@/lib/searchState';
+import { hasResults } from '@/lib/searchState';
 import AccountPage from '@/pages/AccountPage';
 import AdminPage from '@/pages/AdminPage';
 import HomePage from '@/pages/HomePage';
@@ -27,12 +27,6 @@ function SearchRoute() {
   return hasResults(sp) ? <ResultsPage /> : <Navigate replace to="/" />;
 }
 
-/** /guide?q=… links: the question goes to the guide and to search on the results page. */
-function GuideRedirect() {
-  const q = new URLSearchParams(useLocation().search).get('q') ?? '';
-  return <Navigate replace to={{ pathname: RESULTS_PATH, search: askParams(q).toString() }} />;
-}
-
 /** Kept separate from the router so tests can mount it in createMemoryRouter. */
 export const routes: RouteObject[] = [
   {
@@ -40,7 +34,6 @@ export const routes: RouteObject[] = [
     children: [
       { index: true, element: <HomeOrResults /> },
       { path: 'search', element: <SearchRoute /> },
-      { path: 'guide', element: <GuideRedirect /> },
       { path: 'resource/:id', element: <ResourcePage /> },
       { path: 'saved', element: SAVED_ENABLED ? <SavedPage /> : <Navigate replace to="/" /> },
       { path: 'sources', element: <SourcesPage /> },

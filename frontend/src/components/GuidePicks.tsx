@@ -10,17 +10,19 @@ import type { GuideStream } from '@/hooks/useGuideStream';
 import { aiMark } from '@/lib/aiMark';
 import type { Refinement } from '@/lib/searchState';
 
-/** One of the guide's picks: its place (#1, #2, #3) and the recommendation behind it. */
+/** One of the guide's picks: its place (#1, #2, #3), the recommendation behind it and the model that wrote its reason. */
 export interface GuidePick {
   n: number;
   rec: GuideRecommendation;
+  model: string | undefined;
 }
 
 /** The picks of an answer, by resource id: only recommendations the model chose and the evidence gate kept. */
 export function guidePicks(answer: GuideResponse | null): Map<string, GuidePick> {
   const picks = new Map<string, GuidePick>();
+  const model = answer?.model?.reasoningModel;
   for (const rec of answer?.recommendations ?? []) {
-    if (rec.aiReasoned) picks.set(rec.resourceId, { n: picks.size + 1, rec });
+    if (rec.aiReasoned) picks.set(rec.resourceId, { n: picks.size + 1, rec, model });
   }
   return picks;
 }
@@ -76,7 +78,7 @@ export function GuidePicks({ guide, picks, listed, onPick, onClose }: {
   if (error !== null) state = { kind: 'error' };
   else if (clarification) state = { kind: 'ask' };
   else if (busy || !answer) state = { kind: 'reading', candidates: step.retrieved?.candidates };
-  else if (picks.size > 0) state = { kind: 'picks', model: answer.model?.reasoningModel };
+  else if (picks.size > 0) state = { kind: 'picks' };
   else state = { kind: 'none', reason: noPickReason(answer, t) };
 
   const reading = answer ?? { ...step.understood, constraints: step.planned?.constraints };

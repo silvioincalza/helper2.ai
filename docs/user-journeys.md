@@ -36,15 +36,15 @@ The success criteria at the end say which tests verify each journey today. What 
 ## UJ-2 Ask the guide without losing the search
 
 1. With a query and filters on the page, the user clicks **Ask the guide** (or presses Shift+Enter, or follows the "Sounds like a question" hint after 4+ words).
-2. The guide's answer appears above the results; query, filters, sort and page persist (they live in the URL: `q`, `ask`, filters).
-3. Closing the answer keeps the search; back/forward and shared links reproduce the same state. `/search` and `/guide` links land on the one page.
+2. The guide's picks appear in a bar above the results; the list keeps its order, and each pick gets a badge and its reason in its own row. Query, filters, sort, page and the selected result persist (they live in the URL: `q`, `ask`, filters, `id`).
+3. Closing the answer keeps the search; back/forward and shared links reproduce the same state, the selected result included.
 
 **Success:** zero re-typing; URL fully describes the state. A new question while one is being answered replaces it.
 **Failure case:** the guide fails or is unavailable, or its stream stalls for 45 s or ends without an answer → the search results stay, the answer area says what went wrong and offers **Try again**.
 
 ## UJ-3 Refine: filter and sort
 
-1. User opens filters (drawer on mobile): type, audience, use case, tech level, source, license, pricing, platform, open-source, updated-after.
+1. User opens the filters, folded above the list: type, audience, use case, tech level, source, license, pricing, platform, open-source, updated-after.
 2. Each facet shows counts and an **Unknown** bucket for results where the source did not say.
 3. Sort: Relevance (default), Newest (publication date), Recently updated. Results with unknown dates sort last and are labeled "date unknown".
 

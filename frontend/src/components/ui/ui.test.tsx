@@ -128,16 +128,15 @@ describe('PicksBar', () => {
     expect(await axeViolations(container)).toEqual([]);
   });
 
-  it('shows the picks under an AI-written label, marked machine-readable (ADR 0038)', async () => {
+  it('shows the picks under an AI-written label; their titles come from the sources, so they are not marked (ADR 0038)', async () => {
     const { container } = render(
-      <PicksBar state={{ kind: 'picks', model: 'nvidia/nemotron-3-super' }}>
+      <PicksBar state={{ kind: 'picks' }}>
         <ol><li>#1 Postgres MCP</li></ol>
       </PicksBar>,
     );
     const bar = screen.getByRole('region', { name: 'Guide picks' });
     expect(within(bar).getByText('AI-written')).toBeInTheDocument();
-    const picks = within(bar).getByText('#1 Postgres MCP').closest('[data-ai-generated]');
-    expect(picks).toHaveAttribute('data-ai-model', 'nvidia/nemotron-3-super');
+    expect(within(bar).getByText('#1 Postgres MCP').closest('[data-ai-generated]')).toBeNull();
     expect(within(bar).queryByRole('status')).toBeNull();
     expect(await axeViolations(container)).toEqual([]);
   });
