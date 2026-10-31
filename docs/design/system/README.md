@@ -139,6 +139,8 @@ The first v3 parts are React components in `frontend/src/components/ui/` (ADR 00
 | SourcesGrid, its tiles | `SourceTiles` (the fan-out line comes with the results page) |
 | Guide picks bar | `PicksBar` |
 | NewsBoard (News and Events) | `HomeBoard`, filled by `NewsBoard` and `EventsBoard` (`components/home/`) |
+| States (error, empty, 404) | `StatePanel`, with `RetryButton` for Try again |
+| Copy button | `CopyButton` (setup snippets, the guide prompt) |
 
 `StatusPill` and `ProofQuote` keep their names.
 
