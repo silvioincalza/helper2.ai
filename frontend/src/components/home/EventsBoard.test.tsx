@@ -55,6 +55,17 @@ describe('home page Events board', () => {
     expect(rows[2]).not.toHaveTextContent(/Hackathon|Meetup|Conference|Talk|Workshop/);
   });
 
+  it('does not read the rows aloud on load: only loading, error and empty are announced (ADR 0040, 2)', async () => {
+    mockApi({ 'GET /events/upcoming': () => ({ generatedAt: '2026-10-27T09:00:00Z', items: [
+      event('NeurIPS 2026', '2026-12-06T00:00:00Z', null, 'Sydney, Australia'),
+    ] }) });
+    renderApp('/');
+    const section = (await screen.findByRole('heading', { name: 'Events' })).closest('section') as HTMLElement;
+    const list = await within(section).findByRole('list', { name: 'Next events' });
+    expect(list.closest('[aria-live]')).toBeNull();
+    expect(section.querySelector('[aria-live]')).not.toBeNull();
+  });
+
   it('says so when no event has stated dates', async () => {
     mockApi();
     renderApp('/');
