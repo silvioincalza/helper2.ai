@@ -161,7 +161,7 @@ Planned:
 - `tokens.css` — `radar-sweep` of `tokens.json` v3, with the page that uses it.
 
 ## Diagrams
-[flow](../diagrams/flow-0040-frontend-design-v2.svg) · [sequence](../diagrams/sequence-0040-frontend-design-v2.svg)
+[flow](../diagrams/flow-0040-frontend-design.svg) · [sequence](../diagrams/sequence-0040-frontend-design.svg)
 
 ## Roadmap
 [Frontend](../roadmap.md#7-frontend): the boards' pause on touch and with a screen reader checked against WCAG 2.2.2

@@ -39,7 +39,7 @@ not instants. Helper2 never invents a date ([0004](0004-persistence-and-provenan
 6. **Other events have no dates.** Tavily stores some news items as EVENT, but never with stated days, so they are never listed.
 7. **Application programming interface (API).** `GET /api/v1/events/upcoming?size=` (1–60, default 6): resources of type EVENT with a stated start whose
    end (or start) is on or after today 00:00 UTC, soonest first, then by title. `Cache-Control: public, max-age=300`.
-   The home page's Events board (`HomeBoards`, [0040](0040-frontend-design-v2.md)) asks for 60 (about 45 curated events
+   The home page's Events board (`HomeBoards`, [0040](0040-frontend-design.md)) asks for 60 (about 45 curated events
    today, plus conferences) and lists those that start within 90 days of the response's `generatedAt`, each with
    when it starts ("in 13 days", "On now").
 

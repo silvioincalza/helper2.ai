@@ -53,7 +53,7 @@ used up. The counts must hold across 3 replicas, store no address and no query t
    (`{limit, remaining}`, null without an enabled metered source or a readable count) show the visitor's web searches
    left today for that feature. A cached guide answer gets the current asker's count, never the first asker's.
    The results page says both in one line under the sources; at the limit it says that stored web results still
-   answer and new ones come after 00:00 UTC, and offers nothing to buy ([0040](0040-frontend-design-v2.md)).
+   answer and new ones come after 00:00 UTC, and offers nothing to buy ([0040](0040-frontend-design.md)).
 7. **Guide answers live no longer than their web results.** Answer TTL = min(24 h, freshness left of the web results
    it used); an answer built on stale web results is not cached ([0017](0017-guide-cost-guard.md)).
 8. **Credits are measured.** `helper2.tavily.credits{feature,tier}` counts every live call (`none` for internal

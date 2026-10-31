@@ -11,7 +11,7 @@ screen reader, and in light and dark mode.
 ## Decision
 1. **One box** (`OneBox`). The box is the hero on `/` and sits in the header on other pages. It opens the results
    page, `/search`; the home page, the results page and the look of every page are in
-   [0040](0040-frontend-design-v2.md).
+   [0040](0040-frontend-design.md).
    On the results page typing searches live: from 3 characters, 700 ms after the last key. On the home page typing
    waits for Enter, so the page does not change under the typing. One button follows the text: fewer than 4 words
    search, 4 or more ask the guide; Shift+Enter always asks; Enter in an empty box goes back to the home page.
@@ -36,13 +36,13 @@ screen reader, and in light and dark mode.
 4. **Guide progress** (`GuidePicks`), from real events only: while the guide works, the picks bar says how many
    candidates it reads (`retrieved`), and how it read the question (`understood`, the requirements of `planned`).
    The line is a `role="status"`, so a screen reader hears it when it changes. `clarify` comes before an answer that
-   asks back. The picks bar is in [0040](0040-frontend-design-v2.md).
+   asks back. The picks bar is in [0040](0040-frontend-design.md).
 5. **Radar design system.** The Helper2.ai design system in `docs/design/system`, named after its radar mark:
    warm paper, indigo ink, one saffron accent; `tokens.css` mirrors `tokens.json`. Unknown values read "Unknown".
 6. **Accessibility.** Skip link; `RouteFocus` moves focus to the new page's `h1` (or `#main`, without scrolling) and
    names the page in a live region; paging moves focus to the results heading. The focus ring is a 3px indigo outline 2px off the control
    (`--focus`): at least 10.4:1 on every light surface and 8.8:1 (light indigo) on every dark one, above the 3:1 of
-   WCAG 1.4.11. Moving content on the home page follows WCAG 2.2.2 ([0040](0040-frontend-design-v2.md)). Vitest runs axe-core smoke tests (`a11y.test.tsx`,
+   WCAG 1.4.11. Moving content on the home page follows WCAG 2.2.2 ([0040](0040-frontend-design.md)). Vitest runs axe-core smoke tests (`a11y.test.tsx`,
    color contrast excluded because jsdom cannot compute it).
 7. **Theme: system, light, dark.** One button cycles system → light → dark. A fixed choice is saved as `h2.theme`;
    "system" removes it. `public/theme.js` sets `data-theme` before the first paint and follows the device while no choice is saved.
