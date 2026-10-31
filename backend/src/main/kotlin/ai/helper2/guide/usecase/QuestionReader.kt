@@ -41,9 +41,12 @@ internal class QuestionReader(private val clock: Clock) {
             .filter { text.contains(it, ignoreCase = true) }
             .distinctBy { it.lowercase() }.take(MAX_SUBJECTS)
         val modelIntent = plan?.intent?.takeIf { grounded(it, text, subjects) }
+        val ruleIntent = IntentRules.intentOf(text)
         val intent = when {
             q.drops.intent -> GuideIntent.SUGGEST
-            else -> modelIntent ?: IntentRules.intentOf(text) ?: GuideIntent.SUGGEST
+            // The planner's SUGGEST is its "nothing special": newness the user's words state still counts ("new MCP servers").
+            modelIntent == GuideIntent.SUGGEST && ruleIntent == GuideIntent.NEWEST -> GuideIntent.NEWEST
+            else -> modelIntent ?: ruleIntent ?: GuideIntent.SUGGEST
         }
         val modelWindow = plan?.window?.takeIf { IntentRules.mentionsTime(text) }
         val planned = if (q.drops.window) null else modelWindow ?: IntentRules.windowOf(text)

@@ -18,7 +18,7 @@ read: QuestionReader.read {
   direction: down
   plan: "GuideModel.plan (fast model):\nintent, subjects, window,\nconstraints, clarify" {class: ai}
   ground: "Keep only what the words support:\nsubjects in the text, window only with\na time word (IntentRules.mentionsTime),\nintent grounded, constraints stated" {class: app}
-  backup: "Missing or dropped? IntentRules.intentOf /\nwindowOf on the text, else SUGGEST;\nwindow resolved from today (UTC),\nmonth = 30 days" {class: app}
+  backup: "Missing or dropped? IntentRules.intentOf /\nwindowOf on the text, else SUGGEST;\nplanner SUGGEST + rules NEWEST = NEWEST;\nwindow resolved from today (UTC),\nmonth = 30 days" {class: app}
   newest: "A window with intent SUGGEST\nbecomes NEWEST; drop[] applied;\nevents planned (if the plan call\nsucceeded) and understood" {class: app}
   plan -> ground -> backup -> newest
 }

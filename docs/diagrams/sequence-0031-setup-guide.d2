@@ -2,7 +2,7 @@
 # step-by-step guide the fast model writes from the tool's own documents, checked before it is shown, its
 # instructions labelled and marked as AI-written on the page.
 # Source of truth: frontend/src/components/SetupGuide.tsx, backend/src/main/java/ai/helper2/setup/web/SetupController.java,
-#   backend/src/main/java/ai/helper2/setup/usecase/GetResourceSetup.java, AskAboutResource.java,
+#   backend/src/main/java/ai/helper2/setup/usecase/GetResourceSetup.java, GetToolGuide.java,
 #   backend/src/main/kotlin/ai/helper2/setup/SetupGuides.kt, ToolGuides.kt, ToolGuideValidator.kt,
 #   backend/src/main/java/ai/helper2/setup/internal/RegistryMcpServerSpecs.java, HttpToolMaterials.java,
 #   HourlyFetchBudget.java, SpringAiToolGuideModel.java, RedisToolGuideCache.java, catalog/usecase/GetResourceDetail.java.
@@ -14,7 +14,7 @@ shape: sequence_diagram
 
 page: "SetupGuide.tsx" {class: person}
 ctrl: SetupController {class: app}
-usecase: "GetResourceSetup /\nAskAboutResource" {class: app}
+usecase: "GetResourceSetup /\nGetToolGuide" {class: app}
 detail: "GetResourceDetail\n(catalog.usecase)" {class: app}
 setup: "SetupGuides /\nToolGuides" {class: app}
 registry: "Official MCP Registry" {class: ext}
@@ -31,23 +31,23 @@ options: Setup options, no model {
   setup -> registry: "GET /v0.1/servers/{name}/versions/latest\n(unless read in the last hour)"
   registry -> setup: "remotes, packages, settings"
   setup -> setup: "RunOptionRules, Launches,\none snippet per client"
-  setup -> page: "200 SetupGuide: options, snippets\nfor 19 clients, source and read time" {class: hot}
+  setup -> page: "200 SetupGuide: options, snippets\nfor 8 clients, source and read time" {class: hot}
 }
 
-walkthrough: Step-by-step guide (optional question) {
-  page -> ctrl: "POST /api/v1/resources/{id}/guide\n{question?}" {class: hot}
-  ctrl -> usecase: "ask(id, question)"
+walkthrough: Step-by-step guide {
+  page -> ctrl: "POST /api/v1/resources/{id}/guide" {class: hot}
+  ctrl -> usecase: "guide(id)"
   usecase -> detail: "find(id)"
-  usecase -> setup: "answer(id, ref, question)"
+  usecase -> setup: "answer(id, ref)"
   setup -> redis: "INCR h2:v1:setup:fetches:<hour>\n(one per document fetch)"
-  setup -> docs: "README, npm README,\nmodel or Space card"
+  setup -> docs: "README (setup's own GitHub token\nor anonymous), npm README,\nmodel or Space card"
   docs -> setup: "documents (kept in memory,\nbounded by total length)"
   setup -> redis: "get(v1:<id>:<hash>)"
   redis -> setup: "miss"
-  setup -> model: "write(ref, documents, question):\nan instruction per step, with\nits passage and command" {class: ai-call}
+  setup -> model: "write(ref, documents):\nan instruction per step, with\nits passage and command" {class: ai-call}
   model -> setup: "ProposedGuide"
   setup -> setup: "ToolGuideValidator.validate:\ndrop steps not in the documents"
-  setup -> redis: "put (7 days, no question,\nno document text; 10 min for\ntwo unreadable model answers)"
+  setup -> redis: "put (7 days, no document text;\n10 min for two unreadable\nmodel answers)"
   setup -> page: "200 ToolGuide: sections, steps,\ndocuments with read dates, model" {class: hot}
   page -> page: "instructions labelled \"Steps written by AI\"\nand marked data-ai-generated, data-ai-model"
 }
