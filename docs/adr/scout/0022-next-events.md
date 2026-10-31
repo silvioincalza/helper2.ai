@@ -1,6 +1,6 @@
 # 0022 — Next events: stated event days, ai-deadlines and curated industry and community events
 
-**Status.** Accepted (2026-10-27). **Builds on:** [0004](../foundation/0004-persistence-and-provenance.md), [0010](../search/0010-filters-facets-dates-timeline.md), [0018](0018-scout-runner.md), [0020](0020-scout-collectors.md)
+**Status.** Accepted. **Builds on:** [0004](../foundation/0004-persistence-and-provenance.md), [0010](../search/0010-filters-facets-dates-timeline.md), [0018](0018-scout-runner.md), [0020](0020-scout-collectors.md)
 
 ## Context
 The home page lists the next artificial intelligence (AI) events: research conferences, industry events and community
@@ -20,8 +20,8 @@ not instants. Helper2 never invents a date ([0004](../foundation/0004-persistenc
    An edition without a parseable start ("TBA") is skipped, and so is one without an official link or a title. City and
    country come from the file.
 3. **Curated industry events.** `docs/research/industry-events-2026-10-27.json` holds each event's official site, the
-   page that states the dates and the exact excerpt, checked against the live page on 2026-10-27.
-   `scripts/industry-events-seed.mjs` generates the repeatable migration `R__industry_events.sql` (21 events today,
+   page that states the dates and the exact excerpt, checked against the live page.
+   `scripts/industry-events-seed.mjs` generates the repeatable migration `R__industry_events.sql` (21 events,
    from 2026-11-09 to 2027-09-20) and fails when a start date, web address (URL) or excerpt is missing. Each event gets an `eventDates`
    assertion (`CURATED`, `VERIFIED`) with the excerpt as evidence. The place is only what the page states; a country is
    kept only when the excerpt names it. Editions that share a site get distinct ids (`?event=<edition slug>`).
@@ -38,17 +38,14 @@ not instants. Helper2 never invents a date ([0004](../foundation/0004-persistenc
 6. **Other events have no dates.** Tavily stores some news items as EVENT, but never with stated days, so they are never listed.
 7. **Application programming interface (API).** `GET /api/v1/events/upcoming?size=` (1–60, default 6): resources of type EVENT with a stated start whose
    end (or start) is on or after today 00:00 UTC, soonest first, then by title. `Cache-Control: public, max-age=300`.
-   The home page component `NextEvents` asks for 60 (about 45 curated events today, plus conferences) and lists those that start within 90 days of the response's
+   The home page component `NextEvents` asks for 60 (about 45 curated events, plus conferences) and lists those that start within 90 days of the response's
    `generatedAt`.
 
 ## Consequences
 - Every listed date can be traced to a source: the ai-deadlines file or an excerpt of the event's own page.
-- An event whose source gives no day is not listed, even if it is well known.
-- An event stays listed until its last day is over (UTC), which can be a few hours off for visitors far from UTC.
-- Curated events need a research pass to stay current. The events seed removes curated events that are no longer
-  in the research file: their curated assertions, evidence and source record, and the resource itself when no other
-  source record points to it.
-- Conference dates are only as correct as the community-maintained ai-deadlines files.
+- An event stays listed until its last day is over (UTC).
+- The events seed removes curated events that are not in the research file: their curated assertions, evidence and
+  source record, and the resource itself when no other source record points to it.
 
 ## Alternatives considered
 - Extract dates from news text with the model — a model can misread or invent a day; nothing to verify it against.
@@ -74,3 +71,4 @@ not instants. Helper2 never invents a date ([0004](../foundation/0004-persistenc
 - [Live collectors for hackathons, meetups, talks and workshops](../../roadmap.md#6-search-and-catalog)
 - [`ListUpcomingEvents` makes two queries per item; batch them](../../roadmap.md#6-search-and-catalog)
 - [Count skipped ai-deadlines files in a metric](../../roadmap.md#6-search-and-catalog)
+- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

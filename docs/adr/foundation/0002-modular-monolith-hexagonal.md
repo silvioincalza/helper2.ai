@@ -1,6 +1,6 @@
 # 0002 — Modular monolith with Spring Modulith; hexagonal where business rules live; Kotlin domain, Java adapters
 
-**Status.** Accepted (2026-10-27). **Builds on:** [0001](0001-stack-and-runtime.md)
+**Status.** Accepted. **Builds on:** [0001](0001-stack-and-runtime.md)
 
 ## Context
 The app has several features: federated search, a catalog, an artificial intelligence (AI) guide, a background Scout and sign-in.
@@ -48,13 +48,8 @@ internals. Microservices would add network calls and deploys without a scaling n
 - Domain tests are plain unit tests with fakes (for example `SearchResourcesTest`, `GuideValidatorTest`).
 - A use case is found by its name, not inside a large service file; its tests sit next to it
   (`search/usecase/SearchResourcesTest`, `guide/usecase/AskGuideTest`, `scout/usecase/RunScoutTest`).
-- `setup` has no `usecase` package yet: its split waits for the tool-guide work in that module.
 - A boundary break fails the build, not a review.
-- The `guide` domain uses `platform.llm.CallCounter` and `DailyBudget`. This is allowed because
-  `platform` is open, but it means the LLM layer is visible to every module.
-- Modulith checks Java types only. The `scout` module writes enrichment tables that `catalog` reads;
-  this coupling through the schema is not checked.
-- Two languages in one build. Kotlin is limited to the rule packages, so most framework code is Java.
+- Kotlin stays in the rule packages, so most framework code is Java.
 
 ## Alternatives considered
 - Microservices — more deploys, network failure between features, and no part needs its own scaling.
@@ -83,3 +78,4 @@ Modules, ports and adapters: [software architecture](../../diagrams/software-arc
 - One owner per table, so the schema has no hidden coupling: [roadmap](../../roadmap.md#8-architecture).
 - A closed `llm` module instead of the LLM layer in open `platform`: [roadmap](../../roadmap.md#8-architecture).
 - Move the source and catalog adapters into `internal` packages: [roadmap](../../roadmap.md#8-architecture).
+- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

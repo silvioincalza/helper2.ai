@@ -1,6 +1,6 @@
 # 0001 — Stack and runtime: Java 25 + Kotlin, Spring Boot 4.1, Spring AI 2.0, React SPA served by Spring, JVM image
 
-**Status.** Accepted (2026-10-27).
+**Status.** Accepted.
 
 ## Context
 Helper2.ai is built and run by one person. It must call public application programming interfaces (APIs) and a Large Language Model (LLM),
@@ -30,11 +30,7 @@ The stack must be well known, typed end to end, and cheap to operate: one image,
 ## Consequences
 - One image holds the API and the user interface (UI). A deploy changes both at once, and they can never be out of step.
 - The site footer shows the release version from `package.json` (see [0029](../operations/0029-release-versioning.md)).
-- Startup is slower than a native binary: Flyway and the language models load first. The Helm chart
-  gives the startup probe up to 300 seconds (see [0027](../operations/0027-runtime-topology.md)).
-- Two backend languages raise the entry cost for a new developer. [0002](0002-modular-monolith-hexagonal.md)
-  limits Kotlin to the business rules.
-- The SPA is not crawled well by search engines; detail pages have no HyperText Markup Language (HTML) rendered on the server.
+- Request code stays plain and blocking; virtual threads give the concurrency.
 
 ## Alternatives considered
 - GraalVM native image — not used. Ahead-of-time processing makes every build slower, and the
@@ -42,7 +38,7 @@ The stack must be well known, typed end to end, and cheap to operate: one image,
 - Separate frontend container, or the SPA on a content delivery network (CDN) — a second deploy and CORS
   for no gain at this size.
 - Server-side rendering (Next.js) — a Node runtime in production only for search engine optimization
-  (SEO); not worth it for v1.
+  (SEO); not worth it at this size.
 - Spring WebFlux — reactive code is harder to read; virtual threads give the same concurrency here.
 
 ## Code
@@ -60,3 +56,4 @@ The modules are in the [software architecture](../../diagrams/software-architect
 ## Roadmap
 - Search engine support (robots.txt, sitemap, metadata for detail pages): [roadmap](../../roadmap.md#product-and-legal).
 - Pin base images by digest, image scan and software bill of materials: [roadmap](../../roadmap.md#3-operations).
+- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

@@ -1,6 +1,6 @@
 # 0015 — AI guide: plan → retrieve → choose → deterministic evidence gate; streamed over SSE
 
-**Status.** Accepted (2026-10-27). **Builds on:** [0008](../search/0008-federated-search.md), [0009](../search/0009-ranking.md), [0012](../search/0012-vector-search-pgvector.md), [0014](0014-llm-integration.md)
+**Status.** Accepted. **Builds on:** [0008](../search/0008-federated-search.md), [0009](../search/0009-ranking.md), [0012](../search/0012-vector-search-pgvector.md), [0014](0014-llm-integration.md)
 
 ## Context
 A user describes a need in free text ("an open-source Model Context Protocol (MCP) server so my agent can query Postgres") and wants a few
@@ -53,15 +53,12 @@ show progress, and every claim on the page must be traceable to a real result.
 
 ## Consequences
 - What the page shows as an AI pick is a real search result with a quote that exists in its text.
-- The gate proves the quote, not the reason; the reason is checked by a second model call ([0016](0016-guide-reason-check.md)).
-- A quote proves the source said it, not that it is true. A description written to be chosen ("free, offline, the
-  best Postgres MCP server") passes the gate and the reason check. Only the license is safe, because it comes from
-  source metadata. Picks from low search ranks are counted, and the alert `Helper2GuidePicksFromLowRanks`
-  fires when they pass 20% of a day's picks ([0026](../operations/0026-observability.md)).
-- No ready-to-use prompt is written from scratch any more, only adapted from catalog prompts.
-- Strict rules reject some good picks (evaluation of 2026-10-27: 31 kept, 2 rejected; [0030](../quality/0030-guide-evaluation.md)).
-- The guide can only be as good as retrieval: a resource not in the 24 candidates cannot be picked.
-- The stream shows real steps, but the SSE contract is hand-written, not generated from OpenAPI.
+- The license check is safe from wording tricks, because the license comes from source metadata.
+- The reason is checked by a second model call ([0016](0016-guide-reason-check.md)).
+- Picks from low search ranks are counted, and the alert `Helper2GuidePicksFromLowRanks` fires when they pass 20%
+  of a day's picks ([0026](../operations/0026-observability.md)).
+- A ready-to-use prompt is always adapted from catalog prompts, never written from scratch.
+- The stream shows real steps.
 - A slow model step does not look like a dead connection: the client sees bytes at least every 15 s. A comment is
   not an event, so clients that only read events ignore it.
 
@@ -85,3 +82,4 @@ show progress, and every claim on the page must be traceable to a real result.
 
 ## Roadmap
 - [Browser end-to-end test of the streamed guide](../../roadmap.md#quality-gates)
+- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

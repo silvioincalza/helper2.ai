@@ -1,6 +1,6 @@
 # 0026 — Observability: structured logs, OpenTelemetry traces, Prometheus meters, Grafana dashboard, alert rules
 
-**Status.** Accepted (2026-10-27). **Builds on:** [0001](../foundation/0001-stack-and-runtime.md), [0008](../search/0008-federated-search.md), [0014](../guide/0014-llm-integration.md), [0033](../foundation/0033-resilience-policies.md)
+**Status.** Accepted. **Builds on:** [0001](../foundation/0001-stack-and-runtime.md), [0008](../search/0008-federated-search.md), [0014](../guide/0014-llm-integration.md), [0033](../foundation/0033-resilience-policies.md)
 
 ## Context
 One search calls up to nine sources in parallel; one guide question calls a model several times. When an answer is
@@ -91,19 +91,13 @@ retention limit.
    bucket's lifecycle rule ([0027](0027-runtime-topology.md)).
 
 ## Consequences
-- Good: a slow search shows per-source latency and outcome; a slow guide shows the model step and model.
-- Good: logs, traces and meters share the trace id.
-- Good: a failing source, an open circuit, a spent budget, a stalled indexer or Scout, a failed backup or a poisoned
+- A slow search shows per-source latency and outcome; a slow guide shows the model step and model.
+- Logs, traces and meters share the trace id.
+- A failing source, an open circuit, a spent budget, a stalled indexer or Scout, a failed backup or a poisoned
   pick raises an alert, and each alert says where to look first.
-- Good: one rule file serves a plain Prometheus and the operator; the unit tests pin each threshold.
-- Bad: alert delivery (Alertmanager receivers, the owner's phone or mail) is configured in the observability stack,
-  not here.
-- Bad: gauges live in the memory of one replica (the Scout and indexer gauges on the replica that ran them), so
-  their rules look back over time windows; a collector disabled on purpose keeps alerting until its value is 9 days old.
-  Circuit states are per replica too: the circuit rule fires when any pod's circuit stays open.
-- Bad: Redis memory and evictions are not measured (no Redis exporter in the chart), so an evicted key is noticed
-  only by its effect (a cache miss, a fresh rate-limit window).
-- Bad: histogram buckets add series per timer; the bucketed timers are limited to the six listed above.
+- One rule file serves a plain Prometheus and the operator; the unit tests pin each threshold.
+- The rules look back over time windows, so a gauge kept by one replica (Scout, indexer) or a circuit open on any
+  pod still raises its alert.
 
 ## Alternatives considered
 - Push metrics over OTLP — the cluster scrapes with Alloy; pushing would send a second copy.
@@ -135,3 +129,4 @@ retention limit.
 - [Postgres and Redis exporters in the Helm chart](../../roadmap.md#3-operations).
 - [Confirm trace and span ids in every log line](../../roadmap.md#3-operations).
 - [Conference files skipped by ai-deadlines are logged, not counted](../../roadmap.md#6-search-and-catalog).
+- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

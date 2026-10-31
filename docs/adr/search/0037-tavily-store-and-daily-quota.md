@@ -1,14 +1,14 @@
 # 0037 — Tavily: store first, per-feature daily quota
 
-**Status.** Accepted (2026-10-30). **Builds on:** [0005](../foundation/0005-redis-disposable-cache.md), [0008](0008-federated-search.md),
+**Status.** Accepted. **Builds on:** [0005](../foundation/0005-redis-disposable-cache.md), [0008](0008-federated-search.md),
 [0017](../guide/0017-guide-cost-guard.md), [0023](../edge/0023-identity-and-admin.md), [0033](../foundation/0033-resilience-policies.md),
 [0034](../operations/0034-data-retention.md)
 
 ## Context
 Tavily is the only source that costs money per call: one credit per basic search, 1,000 credits a month on the free
-plan, and the Scout already uses about 85 of them. Every search and every guide question calls it. One visitor at the
+plan, and the Scout uses about 85 of them. Every search and every guide question calls it. One visitor at the
 search rate limit can spend the month in under an hour, and many visitors asking the same news question pay for it
-again and again. Tavily gave its written OK to show its results publicly, to store them and to reuse them across
+again and again. Tavily allows in writing to show its results publicly, to store them and to reuse them across
 users. So the same question should cost one credit, and each visitor should get a fair, small share of fresh web
 searches per day, for search and for the guide apart. The rest of the search must keep working when the share is
 used up. The counts must hold across 3 replicas, store no address and no query text, and survive a restart.
@@ -46,8 +46,7 @@ used up. The counts must hold across 3 replicas, store no address and no query t
    no live Tavily call goes out (`SkipReason.QUOTA_UNAVAILABLE`, "Web search paused: the daily limit cannot be
    checked"); stored sets still answer. Credits are the only cost here that grows with traffic, and during a Redis
    outage the per-client rate limits count per replica ([0024](../edge/0024-http-edge-protection.md)), so failing open would
-   leave the monthly credits unguarded exactly when abuse is easiest. Failing closed costs fresh web results for the
-   length of a Redis outage (usually the 30 s of an open circuit); everything else keeps answering. The arXiv pace
+   leave the monthly credits unguarded exactly when abuse is easiest. Everything else keeps answering. The arXiv pace
    fails closed for the same reason ([0006](../foundation/0006-outbound-http.md)).
 6. **What is left, in every answer.** `SearchResponse.webSearches` and `GuideResponse.webSearches`
    (`{limit, remaining}`, null without an enabled metered source or a readable count) show the visitor's web searches
@@ -63,22 +62,13 @@ used up. The counts must hold across 3 replicas, store no address and no query t
 10. **No secret, no start.** An enabled metered source without `H2_QUOTA_KEY_SECRET` (OpenBao) stops startup.
 
 ## Consequences
-- Good: a question asked by many visitors costs one credit per day or two; stored answers are free and instant for
+- A question asked by many visitors costs one credit per day or two; stored answers are free and instant for
   everyone.
-- Good: one visitor spends at most 3 + 3 credits a day; the alert and the switchable cap bound the rest without a release.
-- Good: no address and no query text are stored for this; the counters are gone after a day.
-- Trade-off: Redis runs `allkeys-lru` (128 MB, [0005](../foundation/0005-redis-disposable-cache.md)). Under memory pressure a counter
-  can be evicted, and that visitor's day starts again early; the keys are tiny, so this needs a full Redis.
-- Trade-off: a stored hit is read back from the catalog with two short queries per hit (owner, then records).
-- Trade-off: the quota is taken before the call, so a call the circuit then refuses still counts for the visitor.
-- Trade-off: a set whose hits the background catalog write has not stored yet (or dropped under load) is a miss; the
-  next live call writes it again.
-- Accepted risk (owner, 30 Oct 2026): rotating addresses can drain the monthly credits while no cap is set; then
-  Tavily fails for everyone until the plan resets, and searches answer from stored sets and the other sources.
-- Security (STRIDE): spoofing by rotating addresses is the accepted risk above; the user id comes from the session
-  only, never from the request. Information disclosure: a leaked secret lets someone test guesses against one day's
-  guest keys or a stored query key, so the secret lives in OpenBao and rotating it only resets the day's counters and
-  the stored sets. Denial of service: a Redis outage stops fresh web results, not the search.
+- One visitor spends at most 3 + 3 credits a day; the alert and the switchable cap bound the rest without a release.
+- No address and no query text are stored for this; the counters are gone after a day.
+- Security (STRIDE): the user id comes from the session only, never from the request. The HMAC secret lives in
+  OpenBao, so day keys and stored query keys cannot be tested against guesses; rotating it only resets the day's
+  counters and the stored sets. A Redis outage stops fresh web results, not the search.
 - AI architecture check: covered are Tool & API (metered source behind a quota), Data (one table, retention), Cost &
   Reliability (quota, cap, alert, fail closed), Observability (credits meter), Security & Identity (HMAC keys,
   registered tier behind sign-in). Evaluation of whether near-duplicate queries could share a set is deferred (exact
@@ -93,9 +83,8 @@ used up. The counts must hold across 3 replicas, store no address and no query t
 - A plain SHA-256 of the query as key — short queries can be found again by hashing guesses; the HMAC needs the secret.
 - Count in memory per replica while Redis is down, as the model budgets do — three times the limit with 3 replicas,
   and a map of client keys in memory, for an outage that lasts seconds.
-- A global cap only — one visitor could spend the whole day's credits; the owner chose per-visitor quotas, cap optional.
-- Near-duplicate reuse by embeddings — more hits, but wrong answers when two questions only look alike; later, if
-  evaluation shows it pays.
+- A global cap only — one visitor could spend the whole day's credits; per-visitor quotas with an optional cap share them fairly.
+- Near-duplicate reuse by embeddings — more hits, but wrong answers when two questions only look alike.
 
 ## Code
 - `backend/src/main/kotlin/ai/helper2/search/WebSearch.kt` — `Asker`, `IntentClass`, `WebFreshness`, `WebSearchQuota`.
@@ -117,3 +106,4 @@ used up. The counts must hold across 3 replicas, store no address and no query t
 - The page shows the web searches left and the daily limit state (FE-2): [roadmap](../../roadmap.md#5-ai-quality-and-cost).
 - Turn on the registered tier once end-user sign-in is live: [roadmap](../../roadmap.md#domain-and-identity).
 - Scout news and events written to the same store, with their own share of credits: [roadmap](../../roadmap.md#5-ai-quality-and-cost).
+- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

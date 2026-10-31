@@ -1,11 +1,11 @@
 # 0010 — Filters, facets with Unknown, sort, stated dates, list and timeline view
 
-**Status.** Accepted (2026-10-27). **Builds on:** [0004](../foundation/0004-persistence-and-provenance.md), [0008](0008-federated-search.md)
+**Status.** Accepted. **Builds on:** [0004](../foundation/0004-persistence-and-provenance.md), [0008](0008-federated-search.md)
 
 ## Context
 Sources state different facts, and many facts are missing. A filter must not hide a resource only because no
 source stated the value, and it must not pretend a value is known. Dates are the most misleading field:
-"when was this made" and "when did Helper2.ai first see it" are different facts. Users also asked for a view of
+"when was this made" and "when did Helper2.ai first see it" are different facts. Users also want a view of
 results by time, not only by relevance.
 
 ## Decision
@@ -37,13 +37,9 @@ results by time, not only by relevance.
    form one "unknown" group at the end. The discovery date is never used to place a result in time.
 
 ## Consequences
-- Good: a missing fact is visible and filterable; nothing is guessed.
-- Good: facet counts tell the user how many results each choice would give.
-- Bad: filters and facets work on the hits fetched for this query (at most 30 per source), not on the whole catalog.
-- Bad: the timeline pages through results 50 at a time, so one month can be split across two pages.
-- Good: a date that sources disagree on is marked as such, and the user sees every stated value.
-- Trade-off: the earliest (or latest) value is still used to sort and place the result; a wrong early date from one
-  source moves the result, but the badge shows that the date is disputed.
+- A missing fact is visible and filterable; nothing is guessed.
+- Facet counts tell the user how many results each choice would give.
+- A date that sources disagree on is marked as such, and the user sees every stated value.
 
 ## Alternatives considered
 - Hide results with an unknown value when a filter is set — the user would lose results without knowing why.
@@ -67,3 +63,4 @@ results by time, not only by relevance.
 
 ## Roadmap
 Nothing open.
+- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

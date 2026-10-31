@@ -1,6 +1,6 @@
 # 0007 — Configuration and secrets: every external variable uses the H2_ prefix; secrets only in OpenBao (helper2/kv ci/<env> app_env); profiles
 
-**Status.** Accepted (2026-10-27). **Builds on:** [0001](0001-stack-and-runtime.md)
+**Status.** Accepted. **Builds on:** [0001](0001-stack-and-runtime.md)
 
 ## Context
 The app needs database and Redis passwords, model and source application programming interface (API)
@@ -40,11 +40,7 @@ or in GitHub settings, and the deploy must not need a person to copy them.
 - One search for `H2_` finds every setting. A missing or misspelled prefix is easy to spot in review.
 - No secret is stored in GitHub: the deploy reads OpenBao after a login that is bound to the
   repository and the job's environment.
-- The Kubernetes Secret is still only base64 in the cluster; access to the namespace means access to it.
-- The Cloudflare tunnel token is created by Terraform and kept in its state and in the Secret
-  `cloudflared-token`, not in OpenBao.
-- Renamed variables need the OpenBao entry rewritten by hand; an old name is silently ignored.
-- A change in `app_env` takes effect only after `make credentials` and the next deploy.
+- A changed value restarts the pods that use it on the next deploy.
 
 ## Alternatives considered
 - GitHub Actions secrets — long-lived values in a second place, readable by any workflow change.
@@ -65,7 +61,8 @@ or in GitHub settings, and the deploy must not need a person to copy them.
 [flow](../../diagrams/flow-0007-configuration-and-secrets.svg) · [sequence](../../diagrams/sequence-0007-configuration-and-secrets.svg)
 
 ## Roadmap
-- Rewrite `app_env` in OpenBao with the `H2_` names: [roadmap](../../roadmap.md#1-release-v100-before-the-hackathon-deadline-30-oct-2026-1800-zurich).
+- Rewrite `app_env` in OpenBao with the `H2_` names: [roadmap](../../roadmap.md#1-before-the-hackathon-deadline-30-oct-2026-1800-zurich).
 - Short-lived deployer token from the OpenBao Kubernetes secrets engine: [roadmap](../../roadmap.md#3-operations).
 - Restart Redis on rotation when `redis.auth.existingSecret` is used: [roadmap](../../roadmap.md#3-operations).
 - Production GitHub OAuth App and `H2_ADMINS`: [roadmap](../../roadmap.md#domain-and-identity).
+- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

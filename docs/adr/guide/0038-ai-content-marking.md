@@ -1,15 +1,15 @@
 # 0038 — Marking AI-written text: labels on screen, metadata in the API and the page
 
-**Status.** Accepted (2026-10-30). **Builds on:** [0003](../foundation/0003-contract-first-rest-api.md), [0014](0014-llm-integration.md), [0015](0015-ai-guide-evidence-gate.md), [0019](../scout/0019-evidence-gated-enrichment.md)
+**Status.** Accepted. **Builds on:** [0003](../foundation/0003-contract-first-rest-api.md), [0014](0014-llm-integration.md), [0015](0015-ai-guide-evidence-gate.md), [0019](../scout/0019-evidence-gated-enrichment.md)
 
 ## Context
 The EU AI Act applies to Helper2.ai because people in the EU use it. Helper2.ai builds the guide on top of NVIDIA
 Nemotron and offers it under its own name, so it is most likely the provider of an AI system that writes text.
 Art. 50 has applied since 2 August 2026:
-- Art. 50(1): people must know they deal with AI. The UI already says so ("Ask the AI guide", "AI reasoning",
+- Art. 50(1): people must know they deal with AI. The UI says so ("Ask the AI guide", "AI reasoning",
   "AI summary", "Extracted by AI").
 - Art. 50(2): AI-written text must also be marked in a machine-readable way, so it can be detected, as far as
-  technically feasible. Nothing did this.
+  technically feasible.
 
 The Commission's Code of Practice on marking AI content (June 2026) is voluntary. It asks for marking, two layers
 where needed (metadata, watermark or similar), and a way to detect it.
@@ -26,8 +26,8 @@ to the text.
    (`GuideAnswer.planned`). When the planner read the question but the answering call then failed, the answer still
    holds the planner's search query and requirements: the marker is present and names the fast model only.
    `modelUsed` keeps its meaning for the cache and the "answered by" line.
-2. **API: catalog values keep their origin.** `ResultCard.descriptionOrigin` and `Assertion.origin` already say
-   `AI_SUMMARY` or `AI_EXTRACTED`, and `AiSummary.model` names the model. No change.
+2. **API: catalog values keep their origin.** `ResultCard.descriptionOrigin` and `Assertion.origin` say
+   `AI_SUMMARY` or `AI_EXTRACTED`, and `AiSummary.model` names the model.
 3. **Page: an attribute on every AI-written element.** `data-ai-generated="true"`, plus `data-ai-model` when the
    model is known (`src/lib/aiMark.ts`). The guide answer and the question back carry `data-ai-provider` and
    `data-ai-models`. Marked: reasons, requirements (chips and checks), the question back and its options, comparison
@@ -39,10 +39,8 @@ to the text.
 
 ## Consequences
 - A crawler, a browser extension or a regulator can find AI-written text in the page and in the API without guessing.
-- The marking is lost when someone copies the text. That is the main weakness of metadata. Whether metadata alone
-  is "enough" for text is not settled; a lawyer should confirm it.
-- A new AI-written field must be added to `AI_WRITTEN_FIELDS` and marked in the UI. A field that is missed is not
-  marked; the tests cover the current fields only.
+- The text itself stays clean: copy and paste, search and screen readers work as for any other text.
+- A new AI-written field goes into `AI_WRITTEN_FIELDS` and is marked in the UI.
 - The setup guide ([0031](0031-setup-guide.md)) only picks and orders passages from the tool's own documents, so it
   writes no new text and is not marked.
 
@@ -63,3 +61,4 @@ to the text.
 
 ## Roadmap
 - [Signed provenance manifest for AI-written text](../../roadmap.md#5-ai-quality-and-cost)
+- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

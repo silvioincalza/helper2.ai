@@ -1,6 +1,6 @@
 # 0024 — HTTP edge: rate limits (IPv6 /64), CSRF, CSP, forwarded headers, management port, SPA fallback and caching
 
-**Status.** Accepted (2026-10-27). **Builds on:** [0001](../foundation/0001-stack-and-runtime.md), [0005](../foundation/0005-redis-disposable-cache.md), [0007](../foundation/0007-configuration-and-secrets.md), [0023](0023-identity-and-admin.md), [0033](../foundation/0033-resilience-policies.md)
+**Status.** Accepted. **Builds on:** [0001](../foundation/0001-stack-and-runtime.md), [0005](../foundation/0005-redis-disposable-cache.md), [0007](../foundation/0007-configuration-and-secrets.md), [0023](0023-identity-and-admin.md), [0033](../foundation/0033-resilience-policies.md)
 
 ## Context
 The app is public and anonymous. Search calls paid or rate-limited APIs, and each guide question costs model calls,
@@ -45,14 +45,11 @@ must load the app on a direct visit, and a new release must reach browsers at on
    answers are `no-store`.
 
 ## Consequences
-- Good: one client cannot drain the search or guide budget by itself; rotating IPv6 addresses inside a /64 does not help.
-- Good: no third-party script or frame can run; cross-site POSTs fail without the token.
-- Good: a limit holds across the 3 prod replicas, whichever pod gets the request.
-- Bad: while Redis is down each replica counts alone, so a client can get up to 3 times the limit on prod.
-- Bad: one Redis round trip per limited request. Rate-limit keys share the 128 MB cache (`allkeys-lru`); an
-  evicted key gives that client a fresh window early.
-- Bad: clients behind one shared address (an office, carrier network address translation (NAT)) share one limit.
-- Trade-off: the fallback serves `index.html` for unknown client paths; the SPA shows its own "not found" page.
+- One client cannot drain the search or guide budget by itself; rotating IPv6 addresses inside a /64 does not help.
+- No third-party script or frame can run; cross-site POSTs fail without the token.
+- A limit holds across the 3 prod replicas, whichever pod gets the request.
+- A Redis outage does not take search or the guide down: each replica keeps counting in memory.
+- Every client route loads the app on a direct visit; the SPA shows its own "not found" page for unknown paths.
 
 ## Alternatives considered
 - Limits keyed by raw path — bypassable with path variants that reach the same controller.
@@ -84,3 +81,4 @@ must load the app on a direct visit, and a new release must reach browsers at on
 - [Redis memory shared by rate limits, sessions and cache; alert on evictions](../../roadmap.md#4-more-than-one-replica).
 - [Load test of search at the expected peak; check the rate limits](../../roadmap.md#quality-gates).
 - [Serve the back office on admin.helper2.ai, reachable only through WireGuard via Traefik](../../roadmap.md#domain-and-identity) ([0023](0023-identity-and-admin.md)).
+- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

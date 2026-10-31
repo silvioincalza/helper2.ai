@@ -1,12 +1,12 @@
 # 0009 — Ranking: every query word first, synonyms, two-stage index query, reciprocal-rank fusion, bounded popularity
 
-**Status.** Accepted (2026-10-27). **Builds on:** [0004](../foundation/0004-persistence-and-provenance.md), [0008](0008-federated-search.md)
+**Status.** Accepted. **Builds on:** [0004](../foundation/0004-persistence-and-provenance.md), [0008](0008-federated-search.md)
 
 ## Context
 Each source ranks its own hits. Helper2.ai must put them in one order that is repeatable and easy to explain.
-The catalog index must also rank its own rows. Ranking by text density alone failed: a code comment in
-`ResourceStore` records that for "MCP server Postgres" (MCP: Model Context Protocol) the full-text score put `crystaldba/postgres-mcp` (3.4k stars)
-at position 368, behind short npm names. The index query also took 2.0 s on the production catalog, close to its 3 s timeout.
+The catalog index must also rank its own rows. Text density alone is not relevance: for "MCP server Postgres"
+(MCP: Model Context Protocol) a full-text score puts short npm names ahead of `crystaldba/postgres-mcp` (3.4k stars).
+The index query must also stay well inside its 3 s timeout on the production catalog.
 
 ## Decision
 1. **Query analysis without a model** (`QueryAnalyzer`). Type words become type hints and are removed from the required words:
@@ -19,7 +19,7 @@ at position 368, behind short npm names. The index query also took 2.0 s on the 
    similar: `lower(title) % lower(:raw)` (trigram GIN index) and `similarity > 0.35`. Stage 1 orders all matches by
    "contains every word of a variant", then `popularity + similarity`, and keeps 300 rows (`PRESELECT`). Stage 2 scores
    only those: `2 (all words) + popularity + 0.5 × min((ts_rank_cd × 3 + similarity) / 10, 1)`, then title.
-   A code comment records 2.0 s → 0.2 s on prod (2026-10-26).
+   The query runs in about 0.2 s on the production catalog.
 3. **Stored popularity.** `resource.popularity` (0..1) is kept by the trigger `source_record_popularity`:
    the strongest metric of the resource's records, `ln(1 + value) / ln(1 + reference)`, capped at 1.
    References: GitHub stars 50,000; Hugging Face likes 5,000; Hugging Face downloads 5,000,000; npm weekly downloads 1,000,000.
@@ -34,15 +34,12 @@ at position 368, behind short npm names. The index query also took 2.0 s on the 
    0.008 is about half the fusion score of a first place in one source (1/61). Ties: title, then id.
 
 ## Consequences
-- Good: the same query gives the same order. Every boost is a fixed, visible rule.
-- Good: a popular project that matches poorly stays below a good match; popularity only breaks near-ties.
-- Bad: the weights and references were chosen by hand from a few queries. No labeled query set measures them.
-- Bad: the popularity formula exists twice, in SQL (`h2_resource_popularity`) and in Kotlin (`Ranking.popularity`).
-  They must be changed together.
-- Trade-off: stage 1 can cut rows that hold only some words when more than 300 rows match.
+- The same query gives the same order. Every boost is a fixed, visible rule.
+- A popular project that matches poorly stays below a good match; popularity only breaks near-ties.
+- The index query scores only 300 rows, so it stays fast on a large catalog.
 
 ## Alternatives considered
-- Full-text score alone — measured: word density, not relevance (see Context).
+- Full-text score alone — it measures word density, not relevance (see Context).
 - Popularity as a main signal — popular but unrelated results would win.
 - Re-ranking with a model — cost and latency per search, and not repeatable.
 - A learned ranking model — there is no labeled data to train or check it.
@@ -59,3 +56,4 @@ at position 368, behind short npm names. The index query also took 2.0 s on the 
 
 ## Roadmap
 - [Ranking measured on a labeled query set](../../roadmap.md#quality-gates).
+- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

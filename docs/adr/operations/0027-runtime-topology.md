@@ -1,6 +1,6 @@
 # 0027 — Runtime topology: Helm chart, three replicas on prod, Cloudflare tunnel, per-workload network policies, Redis auth, backups
 
-**Status.** Accepted (2026-10-27). **Builds on:** [0001](../foundation/0001-stack-and-runtime.md), [0004](../foundation/0004-persistence-and-provenance.md), [0005](../foundation/0005-redis-disposable-cache.md), [0007](../foundation/0007-configuration-and-secrets.md), [0018](../scout/0018-scout-runner.md), [0023](../edge/0023-identity-and-admin.md), [0024](../edge/0024-http-edge-protection.md)
+**Status.** Accepted. **Builds on:** [0001](../foundation/0001-stack-and-runtime.md), [0004](../foundation/0004-persistence-and-provenance.md), [0005](../foundation/0005-redis-disposable-cache.md), [0007](../foundation/0007-configuration-and-secrets.md), [0018](../scout/0018-scout-runner.md), [0023](../edge/0023-identity-and-admin.md), [0024](../edge/0024-http-edge-protection.md)
 
 ## Context
 The hosted Helper2 runs on one Kubernetes cluster, with a staging environment and
@@ -62,7 +62,6 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
 8. **Backups (prod).** `pg-backup` runs at 02:30 Europe/Zurich: `pg_dump --no-owner | gzip` to the Network File System (NFS)
    volume `pg-backup` (kept on `helm uninstall`), 7 days kept. With `backup.offsite.enabled`, rclone then
    copies new dumps to Cloudflare R2 (it never deletes there; the bucket's lifecycle rule sets retention).
-   The off-site copy is off today.
 9. **Per environment.** The chart runs the Scout once a day (`app.scoutEvery: P1D`, so each collector runs at
    most once a day; each replica checks every hour, `H2_SCOUT_TICK` default, and a restart does not add a run) with at most 200 enrichments per run (`app.scoutMaxEnrichments`); the daily enrichment cap
    (300) still applies. Staging has the Scout off and no backup.
@@ -71,15 +70,11 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
 - No inbound port is open on the cluster; Cloudflare is the only way in.
 - A compromised app pod can reach only the internet on 443, its own database and cache, and the trace collector,
   and holds no Kubernetes API credential.
-- A deploy or a node drain keeps the site up on prod, and one pod failing leaves two serving. Staging (1 replica)
-  still has no failover, but a deploy there also starts the new pod before the old one stops.
-- A deploy takes longer (pods start one after another, startup up to 300 s each).
+- A deploy or a node drain keeps the site up on prod, and one pod failing leaves two serving. On staging too, a
+  deploy starts the new pod before the old one stops.
 - Postgres connections: (replicas + 1 during a deploy) × `H2_DATABASE_POOL_SIZE` (10) = 40 on prod, under the default
   `max_connections` of 100.
-- Never run `helm uninstall`: it deletes the Postgres and Redis StatefulSets. Their volumes are not owned by the
-  release and stay.
-- The dumps stay in the same cluster until the off-site copy is turned on, and no restore has been tested.
-- Plain HTTP inside the cluster is acceptable while both sites are anonymous; sign-in changes that.
+- The Postgres and Redis volumes are not owned by the release, so the data outlives the release.
 
 ## Alternatives considered
 - Ingress controller with a public Internet Protocol (IP) address — opens a port on the cluster and needs certificate management.
@@ -102,10 +97,11 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
 The topology itself is in the [infrastructure](../../diagrams/infrastructure.svg) diagram.
 
 ## Roadmap
-- Check that the DNS pods carry `k8s-app=kube-dns` in `kube-system`: [roadmap](../../roadmap.md#1-release-v100-before-the-hackathon-deadline-30-oct-2026-1800-zurich).
+- Check that the DNS pods carry `k8s-app=kube-dns` in `kube-system`: [roadmap](../../roadmap.md#1-before-the-hackathon-deadline-30-oct-2026-1800-zurich).
 - Test a restore, add a restore-check job, turn on the R2 copy, encrypt dumps: [roadmap](../../roadmap.md#3-operations).
 - Postgres and Redis exporters; narrow `cloudflared` egress to Cloudflare ranges: [roadmap](../../roadmap.md#3-operations).
 - What stays per replica; `preStop` delay for rolling updates; Scout lock after a crash; Redis memory:
   [roadmap](../../roadmap.md#4-more-than-one-replica).
 - Admin back office on `admin.helper2.ai`, reachable only through WireGuard and Traefik; not in the chart
   today: [roadmap](../../roadmap.md#domain-and-identity).
+- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

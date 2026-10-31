@@ -1,6 +1,6 @@
 # 0029 — Release and versioning: semantic versions, immutable tags, release workflow
 
-**Status.** Accepted (2026-10-27). **Builds on:** [0001](../foundation/0001-stack-and-runtime.md), [0028](0028-ci-cd.md)
+**Status.** Accepted. **Builds on:** [0001](../foundation/0001-stack-and-runtime.md), [0028](0028-ci-cd.md)
 
 ## Context
 Deploys use commit tags (12 characters, [0028](0028-ci-cd.md)), which say nothing about what changed.
@@ -32,22 +32,18 @@ and the Helm chart. A published version must always mean the same code, so it ca
    on `refs/tags/v*` blocks moving and deleting release tags, with no bypass. Image tags are commits and are never
    rebuilt: `make image` skips a tag that Harbor already has, and a Harbor tag-immutability rule on the `helper2`
    project refuses to overwrite or delete any tag.
-7. **v1.0.0 is the first release** (27 Oct 2026), deployed with a clean start: a fresh database, and clean
-   images and Helm releases. Every later change ships as a new version under point 6.
-8. **v1.1.0 withdrawn** (28 Oct 2026). It raised the minor number, against point 1. Its GitHub release, tag, images
-   and Helm revisions were removed with the protections of point 6 lifted for that one change, and the next
-   release is v1.0.2. v1.1.1 was never tagged.
+7. **v1.0.0 is the first release**, on a fresh database with clean images and Helm releases. Every later change
+   ships as a new version under point 6.
 
 ## Consequences
 - A version names one commit and one image, so a rollback to a release is `make ENV=prod TAG=<commit> deploy`.
-- The ruleset blocks a moved or deleted tag at push time; the workflow check stays as a second guard.
-- Deleting an old image needs the Harbor immutability rule disabled first, and enabled again after.
+- The ruleset blocks a moved or deleted tag at push time; the workflow check is a second guard.
 - A release deploys prod; a push to `main` deploys staging only ([0028](0028-ci-cd.md)). So prod always runs a
   version the footer can name.
 
 ## Alternatives considered
 - Calendar versions — they do not say whether an upgrade breaks a client.
-- A version derived from Git at build time — the three files would not show it, and the frontend build
+- A version derived from Git at build time — the four files would not show it, and the frontend build
   would need Git history inside the image build.
 - Release tools that bump and tag automatically — more tooling than one manual tag per release needs.
 
@@ -62,4 +58,5 @@ and the Helm chart. A published version must always mean the same code, so it ca
 [flow](../../diagrams/flow-0029-release-versioning.svg) · [sequence](../../diagrams/sequence-0029-release-versioning.svg)
 
 ## Roadmap
-- GitHub tag ruleset on `refs/tags/v*` and a Harbor tag-immutability rule: [roadmap](../../roadmap.md#1-release-v100-before-the-hackathon-deadline-30-oct-2026-1800-zurich).
+- GitHub tag ruleset on `refs/tags/v*` and a Harbor tag-immutability rule: [roadmap](../../roadmap.md#1-before-the-hackathon-deadline-30-oct-2026-1800-zurich).
+- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

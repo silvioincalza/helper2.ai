@@ -1,15 +1,14 @@
 # 0030 — Guide evaluation: fixed question set, script, published results
 
-**Status.** Accepted (2026-10-27). **Builds on:** [0015](../guide/0015-ai-guide-evidence-gate.md), [0016](../guide/0016-guide-reason-check.md), [0017](../guide/0017-guide-cost-guard.md)
+**Status.** Accepted. **Builds on:** [0015](../guide/0015-ai-guide-evidence-gate.md), [0016](../guide/0016-guide-reason-check.md), [0017](../guide/0017-guide-cost-guard.md)
 
 ## Context
 Prompt, model and retrieval changes move the guide's quality in ways a unit test cannot see: more or fewer picks,
 picks that do not fit, slower answers. Claims such as "24 candidates beat 12" or "thinking off is faster" need
-numbers measured the same way each time. The numbers must be public and reproducible, including the bad ones.
+numbers measured the same way each time. The numbers must be public and reproducible, good and bad alike.
 
 ## Decision
-1. **Fixed question set.** `docs/eval/guide-queries.json`: 20 queries written before the first run and not tuned
-   since. 14 for building with artificial intelligence (AI) (`b01`–`b14`, `b14` in Italian), 4 for using AI (`u01`–`u04`), one news question
+1. **Fixed question set.** `docs/eval/guide-queries.json`: 20 fixed queries, never tuned to the results. 14 for building with artificial intelligence (AI) (`b01`–`b14`, `b14` in Italian), 4 for using AI (`u01`–`u04`), one news question
    (`n01`) and one nonsense question (`x01`, whose honest answer is no AI pick).
 2. **Script.** `node scripts/eval-guide.mjs [baseUrl] [--intents | --adversarial]` (Node 18 or newer; default
    `http://localhost:8080`):
@@ -49,26 +48,21 @@ numbers measured the same way each time. The numbers must be public and reproduc
 7. **Manual notes, written down.** Observations a number does not show go
    in the section "Notes on this run", between the markers `<!-- hand-written: kept by scripts/eval-guide.mjs -->` and
    `<!-- end hand-written -->`. The script keeps that text as it is and regenerates the rest; the notes must be
-   updated by hand after each run. A run that is replaced moves to `docs/eval/` with a name that
-   says what it measured (for example `run-16-before-thinking-off.md`). Runs that went badly stay.
-8. **Results of 2026-10-27** (from [docs/evaluation.md](../../evaluation.md), against `https://helper2.ai`, thinking off,
-   with the reason check): 20 / 20 answered; status OK 12, PARTIAL 8; 31 AI picks kept, 2 rejected; reason check 30
-   supported, 1 removed, 0 not checked; 3 constraint checks confirmed, 0 not confirmed; latency p50 10870 ms,
-   p90 17412 ms, max 17838 ms. An AI pick on 13 of 19 real queries (previous run, thinking on: 17); 12 of the 13 top
-   picks judged relevant, one not checked. The vector index was at 5 % during this run, and Token Factory was overloaded.
+   updated by hand after each run. When a new run takes its place, the old report moves to `docs/eval/` with a name
+   that says what it measured (for example `run-16-before-thinking-off.md`). Every run stays, good or bad.
+8. **Cost of a run.** A run costs up to 3 model calls per question (more with retries) from the guide's daily cap:
+   about 60 for the default set, 66 for the intent cases, 24 for the adversarial set; the setup set costs up to 15
+   tool-guide calls. Each question also counts against the client's daily questions
+   (`H2_GUIDE_CLIENT_DAILY_QUESTIONS`), so the backend under test sets a quota that covers the sets it runs.
+9. **Results.** The latest run is in [docs/evaluation.md](../../evaluation.md); its header states the conditions
+   (date, commit, models, index size).
 
 ## Consequences
 - Every change to prompts, models or retrieval can be compared on the same 20 questions.
 - Bad results are visible next to good ones; the report states its conditions (date, commit, models, index size).
-- 20 questions is a small sample: a difference of one or two queries is noise.
-- Relevance is graded by people, per pick, with fixed grade definitions; P@3 and nDCG@3 cover only judged
-  questions, and a pick not graded yet counts as not relevant.
-- A run costs up to 3 model calls per question (more with retries) from the guide's daily cap: about 60 for the
-  default set, 66 for the intent cases, 24 for the adversarial set; the setup set costs up to 15 tool-guide calls.
-  Each question also counts against the client's daily questions (`H2_GUIDE_CLIENT_DAILY_QUESTIONS`), so the
-  backend under test sets a quota that covers the sets it runs.
-- The script uses the JSON endpoint, so it does not measure the stream or the browser.
-- The hand-written notes survive a run, but they still describe the previous run until someone updates them.
+- Relevance is graded by people, per pick, with fixed grade definitions.
+- Hostile questions and intent cases have their own pass rules; a failure ends the script with exit code 1.
+- The hand-written notes survive a regenerated report.
 
 ## Alternatives considered
 - Automatic relevance scoring by a large language model (LLM), "LLM as judge" — the judge has the same blind spots as the chooser.
@@ -89,3 +83,4 @@ numbers measured the same way each time. The numbers must be public and reproduc
 ## Roadmap
 - [Guide relevance judged by a second person](../../roadmap.md#quality-gates)
 - [Browser end-to-end journeys for the guide](../../roadmap.md#quality-gates)
+- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

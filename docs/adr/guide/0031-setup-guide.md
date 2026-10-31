@@ -1,6 +1,6 @@
 # 0031 — Setup guide: "Guide me" from source data, one snippet per AI client, checked steps from the README
 
-**Status.** Accepted (2026-10-27). **Builds on:** [0002](../foundation/0002-modular-monolith-hexagonal.md), [0004](../foundation/0004-persistence-and-provenance.md), [0015](0015-ai-guide-evidence-gate.md)
+**Status.** Accepted. **Builds on:** [0002](../foundation/0002-modular-monolith-hexagonal.md), [0004](../foundation/0004-persistence-and-provenance.md), [0015](0015-ai-guide-evidence-gate.md)
 
 ## Context
 The AI guide picks among search candidates; asked "What is X, and what can I use it for?" on a tool's own page,
@@ -43,7 +43,7 @@ and a snippet copied into 19 clients' config files runs on the user's machine.
    a `<placeholder>`. A published template such as `Bearer {api_key}` keeps its shape with `<api_key>`. VS Code gets
    a password `input` instead of a placeholder.
 6. **Clients are a table** (`Clients.ALL`): id, name, the client's own documentation URL, and how it renders each
-   run option. Each format was checked against that documentation on 2026-10-27 (19 clients). When the
+   run option. Each format follows that documentation (19 clients). When the
    documentation gives no way to configure an option (SSE in Codex, Goose, Zed, Kiro, opencode; env or headers in
    JetBrains; headers in Amazon Q; local servers in LM Studio, whose documentation shows only remote ones), the
    client says so instead of a snippet. Adding a client is adding a row. The writers (JSON, TOML, YAML, POSIX shell)
@@ -86,15 +86,14 @@ and a snippet copied into 19 clients' config files runs on the user's machine.
    - the page says every quote and command is copied exactly from the document and that commands are not
      reviewed for safety;
    - a step is never repeated in a later section; at most 8 per section.
-   Measured on 11 real resources (2026-10-28): 9 with steps, in 1–10 s; one gated Hugging Face model had no
-   readable card, one README gave nothing that passed. The fixed setup set of [0030](../quality/0030-guide-evaluation.md)
+   The fixed setup set of [0030](../quality/0030-guide-evaluation.md)
    (point 6) measures steps kept and rejected, snippet coverage and latency on every run.
 11. **Same function for "ask" about a tool.** The same endpoint takes an optional question; the answer is an
    ANSWER section with the same checks. Answers are cached in Redis for 7 days, keyed by a hash of resource,
    documents, question and prompt. A cached answer holds the checked steps and the documents' links and read
    dates, never the question or a document's text; the question is added back to the response only. The endpoint
    shares the guide's rate limit and has its own daily cap (`H2_SETUP_GUIDE_DAILY_MODEL_CALLS`, 300); the Redis TTL is
-   `H2_SETUP_GUIDE_CACHE_TTL`. An entry that no longer decodes is logged and treated as a miss, and the next answer
+   `H2_SETUP_GUIDE_CACHE_TTL`. An entry that does not decode is logged and treated as a miss, and the next answer
    replaces it, so it costs one model call, not one per request.
 12. **Settings.** Every knob is an `H2_SETUP_*` variable in the `helper2.setup` block of `application.yaml`:
    `DOCUMENT_TIMEOUT` (10 s), `NPM_README_BASE_URL`, `CACHE_TTL`, `DOCUMENT_CACHE_MB`, `HOURLY_FETCHES`,
@@ -103,10 +102,9 @@ and a snippet copied into 19 clients' config files runs on the user's machine.
 ## Consequences
 - Every MCP server with a registry entry or a README config example gets copy-paste setup for 19 clients without a
   model call; every tool with a GitHub, npm or Hugging Face document gets checked steps.
-- The guide is only as good as the tool's own documentation; it never fills gaps.
-- Past the hourly fetch budget, a resource whose documents are not cached gets no README snippet and no steps until
-  the next hour; registry snippets are not affected.
-- Client formats change; the docs URL on each row is where to re-check them.
+- The guide never fills gaps: every step comes from the tool's own documentation.
+- The hourly fetch budget keeps the Scout's GitHub quota safe; registry snippets need no fetch budget.
+- Each client row links its own documentation, so every format can be re-checked at its source.
 
 ## Alternatives considered
 - **Model-written guide from its own knowledge.** Richest, but breaks the evidence rule and invents commands.
@@ -134,3 +132,4 @@ and a snippet copied into 19 clients' config files runs on the user's machine.
 ## Roadmap
 - Guide me on every result card (same panel, inline).
 - PyPI package pages as a document source (no PyPI source in the catalog yet).
+- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

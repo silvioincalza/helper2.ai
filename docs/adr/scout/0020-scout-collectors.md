@@ -1,6 +1,6 @@
 # 0020 — Scout collectors: MCP Registry, HF trending, HF provider orgs, Tavily discovery, courses, awesome lists with classifier, ai-deadlines
 
-**Status.** Accepted (2026-10-27). **Builds on:** [0006](../foundation/0006-outbound-http.md), [0014](../guide/0014-llm-integration.md), [0018](0018-scout-runner.md)
+**Status.** Accepted. **Builds on:** [0006](../foundation/0006-outbound-http.md), [0014](../guide/0014-llm-integration.md), [0018](0018-scout-runner.md)
 
 ## Context
 The Scout runner ([0018](0018-scout-runner.md)) needs collectors that find new artificial intelligence (AI) resources without a user query.
@@ -19,8 +19,7 @@ A collector returns hits, which the runner indexes, and candidates, which the ru
    100 pages. Link: repository, else website, else the registry entry. Platform `remote` when the server lists remotes,
    else `local`. Data is CC0 (Creative Commons public domain). Incremental; resumes with the registry's cursor.
 2. **Hugging Face trending** (`hf-trending`, 1 day). Top 100 models by `trendingScore` with at least 20 likes. Not
-   incremental: each pass reads the current list; unchanged models are a no-op in the catalog. The list API returns
-   no description, so these models do not reach enrichment.
+   incremental: each pass reads the current list; unchanged models are a no-op in the catalog.
 3. **Hugging Face provider organizations** (`hf-provider-orgs`, 1 day). The 20 newest models of each official org:
    `meta-llama`, `nvidia`, `mistralai`, `deepseek-ai`, `Qwen`, `google`, `openai`, `xai-org`. The org is added as a tag.
 4. **Tavily discovery** (`tavily-scout`, every `H2_SCOUT_TAVILY_INTERVAL`, 5 days). 7 fixed news queries ("new AI tool
@@ -55,9 +54,7 @@ A collector returns hits, which the runner indexes, and candidates, which the ru
 - Intervals keep cost and load low: Tavily credits (about 85 a month for discovery and courses), GitHub limits and
   Hub calls are bounded per pass.
 - The classifier keeps non-AI repositories of awesome lists out; the heuristic keeps the collector working without a model.
-- Coverage of consumer AI tools is thin: the sources lean toward developer resources.
-- Tavily results are news about tools, not the tools themselves.
-- Course pages wait for a person: the review list grows by the pages found each week, and an admin decides each.
+- A course page reaches the catalog only after an admin accepts it.
 
 ## Alternatives considered
 - Full crawl of GitHub or the Hub — millions of items; bounded windows (trending, newest, curated lists) are enough.
@@ -83,3 +80,4 @@ A collector returns hits, which the runner indexes, and candidates, which the ru
 - [More registries, if their terms allow it](../../roadmap.md#6-search-and-catalog)
 - [Count skipped ai-deadlines files in a metric](../../roadmap.md#6-search-and-catalog)
 - [Review each source's terms for commercial use](../../roadmap.md#product-and-legal)
+- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

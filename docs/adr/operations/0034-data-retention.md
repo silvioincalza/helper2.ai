@@ -1,6 +1,6 @@
 # 0034 — Data retention: a period and a mechanism for every store; daily purges per module
 
-**Status.** Accepted (2026-10-30). **Builds on:** [0004](../foundation/0004-persistence-and-provenance.md), [0005](../foundation/0005-redis-disposable-cache.md), [0023](../edge/0023-identity-and-admin.md), [0026](0026-observability.md)
+**Status.** Accepted. **Builds on:** [0004](../foundation/0004-persistence-and-provenance.md), [0005](../foundation/0005-redis-disposable-cache.md), [0023](../edge/0023-identity-and-admin.md), [0026](0026-observability.md)
 
 ## Context
 Helper2 keeps three kinds of data: what sources said (the catalog), what the Scout and the model did (run history,
@@ -67,13 +67,9 @@ The periods are a product decision the owner may change; changing one must not n
    indexes on the citing tables).
 
 ## Consequences
-- Good: every store has a stated period, and the privacy page states the ones that hold personal data.
-- Good: the owner changes a period with one variable and a restart.
-- Good: a purge never leaves a dangling row and never deletes a resource a reviewer still needs.
-- Trade-off: a deleted row stays in the backups for up to 7 days.
-- Trade-off: an observed resource that a search sees again after its purge comes back as a new row with a new
-  `first_discovered_at`.
-- Trade-off: the purges run once a day, so a row can outlive its period by up to a day.
+- Every store has a stated period, and the privacy page states the ones that hold personal data.
+- The owner changes a period with one variable and a restart.
+- A purge never leaves a dangling row and never deletes a resource a reviewer still needs.
 - Each rule has an integration test with a fixed clock on the real schema: `CatalogPurgeExpiredDataIT`,
   `ScoutPurgeExpiredDataIT`, `IdentityPurgeExpiredDataIT`, `JdbcWebResultStoreIT`.
 
@@ -101,3 +97,6 @@ The periods are a product decision the owner may change; changing one must not n
 
 ## Diagrams
 [flow](../../diagrams/flow-0034-data-retention.svg) · [sequence](../../diagrams/sequence-0034-data-retention.svg)
+
+## Roadmap
+- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

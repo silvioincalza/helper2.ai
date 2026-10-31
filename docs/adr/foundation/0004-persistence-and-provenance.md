@@ -1,6 +1,6 @@
 # 0004 — PostgreSQL as system of record; ids from canonical URLs; source records; dates never invented; one schema migration + repeatable seeds; catalog writes off the request path; the catalog owns its tables
 
-**Status.** Accepted (2026-10-27). **Builds on:** [0001](0001-stack-and-runtime.md), [0002](0002-modular-monolith-hexagonal.md)
+**Status.** Accepted. **Builds on:** [0001](0001-stack-and-runtime.md), [0002](0002-modular-monolith-hexagonal.md)
 
 ## Context
 The same resource reaches Helper2 from many places: a GitHub repository, its npm package, a Hugging Face
@@ -24,7 +24,7 @@ the search down.
    source said, `retrieved_at` and a content `fingerprint`. `resource` is the merged view. A write never
    overwrites the fields of a resource from a stronger origin (`DEMO` > `CURATED` > `INDEXED` > `OBSERVED`). Labels and
    event dates are rebuilt from the current records on every write.
-   A record can move to another resource (its source now points to another URL). When all the records of the old
+   A record moves to another resource when its source points to another URL. When all the records of the old
    resource have moved to one resource, its user reports (`issue_report`) and review items (`review_item`) move with
    them (`ResourceStore.moveReportsOfEmptiedResources`). Then `deleteOrphans` deletes an `OBSERVED` resource left
    without records, unless a report or a review item still points at it. That happens when its records went to
@@ -34,12 +34,11 @@ the search down.
    days for the same date; the merge rules are in [0010](../search/0010-filters-facets-dates-timeline.md). Date columns are nullable;
    `published_precision = 'UNKNOWN'` exactly when `published_at` is null (a table check).
    `first_discovered_at` is Helper2's own observation, labeled as such.
-5. **One base schema, additive changes, repeatable seeds.** `V1__schema.sql` is the schema production started from;
-   it is never edited again, because production has applied it and an edit changes its checksum (Flyway then refuses
-   to start). Every later change is a new versioned migration (`V2__npm_dates_are_updates.sql`,
+5. **One base schema, additive changes, repeatable seeds.** `V1__schema.sql` is the base schema. It is never
+   edited: an edit changes its checksum, and Flyway then refuses to start. Every change is a new versioned migration (`V2__npm_dates_are_updates.sql`,
    `V3__course_type.sql`, [0032](../guide/0032-guide-intents.md)). Flyway runs them, then `R__curated_seed.sql`
    and `R__industry_events.sql`. The seeds upsert, so Flyway re-runs one whenever
-   it changes. The events seed also removes the curated events that are no longer in its research file ([0022](../scout/0022-next-events.md)).
+   it changes. The events seed also removes the curated events that are not in its research file ([0022](../scout/0022-next-events.md)).
 6. **Catalog writes off the request path.** `SearchResources` reads first-discovery dates in one batched
    query (`ResultObserver.firstDiscovered`), then hands only the results fetched live in this search to
    `ResultObserver.record`. `ResourceCatalog.record` queues the write in `ObservationQueue`: one thread
@@ -52,15 +51,13 @@ the search down.
    catalog use cases call those classes and hold no SQL of their own.
 
 ## Consequences
-- A resource seen for the first time has no discovery date in that first response: the write is still in
-  the queue. The next search shows it.
-- A dropped or failed write only delays a discovery date until the resource is seen again.
+- A search never waits for a catalog write.
 - One writer thread and rows written in canonical-URL order keep concurrent upserts from deadlocking.
 - If the first-discovery read fails, the search still answers, with an `INDEX_UNAVAILABLE` notice and
   unknown discovery dates.
-- On shutdown the queue gets 5 seconds to finish; later writes are lost.
-- The index can be rebuilt by the Scout and the embedding indexer. Bookmarks and reports are user data; the
-  backup ([0027](../operations/0027-runtime-topology.md)) is the only copy.
+- On shutdown the queue gets 5 seconds to finish.
+- The index can be rebuilt by the Scout and the embedding indexer. Bookmarks and reports are user data, kept by
+  the backup ([0027](../operations/0027-runtime-topology.md)).
 - How long each table keeps its rows, and the daily purges that enforce it, are in
   [0034](../operations/0034-data-retention.md); the foreign keys and indexes those purges use are part of `V1__schema.sql`.
 - A merge of two resources never loses a user report. A resource whose records were split over several resources
@@ -75,8 +72,8 @@ the search down.
 - Random ids — the same URL from two sources would become two resources, and links would not be stable.
 - A document store — the data is relational (records, evidence, labels, bookmarks), and PostgreSQL
   also gives full-text search and vectors.
-- One versioned migration per feature — a longer chain to read and replay. v1.0.0 is the first release and
-  starts on a fresh database, so one schema file is enough.
+- One versioned migration per feature from the start — a longer chain to read and replay. One base schema
+  plus small additive changes is enough.
 
 ## Code
 - `backend/src/main/kotlin/ai/helper2/shared/CanonicalUrl.kt`, `ResourceId.kt`, `DateFact.kt` — identity and dates.
@@ -98,3 +95,4 @@ the search down.
 - Delete indexed resources left without source records: [roadmap](../../roadmap.md#6-search-and-catalog).
 - Batch the per-item queries of recent items, events and evidence: [roadmap](../../roadmap.md#6-search-and-catalog).
 - One owner per table (the Scout reads catalog tables for its enrichment backlog): [roadmap](../../roadmap.md#8-architecture).
+- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

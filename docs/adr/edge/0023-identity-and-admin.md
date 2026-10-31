@@ -1,13 +1,13 @@
 # 0023 — Identity: anonymous-first; GitHub sign-in; ADMIN by numeric id; bookmarks and account deletion for signed-in users; admin audit trail
 
-**Status.** Accepted (2026-10-27). **Builds on:** [0003](../foundation/0003-contract-first-rest-api.md), [0004](../foundation/0004-persistence-and-provenance.md), [0005](../foundation/0005-redis-disposable-cache.md), [0007](../foundation/0007-configuration-and-secrets.md), [0034](../operations/0034-data-retention.md)
+**Status.** Accepted. **Builds on:** [0003](../foundation/0003-contract-first-rest-api.md), [0004](../foundation/0004-persistence-and-provenance.md), [0005](../foundation/0005-redis-disposable-cache.md), [0007](../foundation/0007-configuration-and-secrets.md), [0034](../operations/0034-data-retention.md)
 
 ## Context
 Search, the guide, resource pages and reports must work without an account: an account costs the user time and
 costs us personal data to protect. Sign-in serves the back office (review queue, Scout runs) and the users who want
 their saved resources on every device.
 The admin check must not depend on a value a user can change, such as a GitHub login name.
-Visitors still want to keep a list of resources; a signed-in user keeps it on the server, so an account holds
+Visitors want to keep a list of resources; a signed-in user keeps it on the server, so an account holds
 personal data that its owner must be able to delete. What an administrator decides (review items, Scout runs) must be
 traceable to that administrator.
 
@@ -35,7 +35,7 @@ traceable to that administrator.
    most 2000 characters, and an account holds at most 500; adding or merging is idempotent (the first `savedAt`
    stays), and a merge is all or nothing (400). A bookmark keeps the resource id, title, link, type and `savedAt`, so it
    renders even when the resource left the catalog. `MeController` only maps requests; `Bookmarks` and `Users` only
-   run SQL. The Saved page stays off (`SAVED_ENABLED`) until end-user sign-in is offered on the public pages.
+   run SQL. The Saved page is behind `SAVED_ENABLED`, off while sign-in is offered on /admin only.
 6. **Delete my account.** The signed-in user's name in the header opens `/account`, where "Delete my account" asks
    for confirmation, then calls `DELETE /api/v1/me` (CSRF token required). `DeleteMyAccount` deletes the `app_user`
    row; its bookmarks go by `ON DELETE CASCADE`, and the user's issue reports stay with `reporter_user_id` set to null
@@ -52,10 +52,9 @@ traceable to that administrator.
    saved its run records (or was refused), since the run itself goes on in the background. The table is append-only: a
    trigger refuses `UPDATE`, and only the 24-month retention deletes rows. `GET /api/v1/admin/audit` (ADMIN, paged
    like the review items, newest first, at most 100 per page) reads it for the back office.
-8. **Admin host (intended).** The back office is meant to live on `admin.helper2.ai`, reachable only through the
-   WireGuard network via Traefik. The app adds no network filter of its own. This is not implemented: `deploy/` routes
-   only `helper2.ai`, `www.helper2.ai` and the staging host through the Cloudflare tunnel, and neither staging nor
-   prod enables `oauth-github` today, so nobody can sign in there.
+8. **Admin host.** The back office belongs on `admin.helper2.ai`, reachable only through the WireGuard network via
+   Traefik. The app adds no network filter of its own. `deploy/` routes `helper2.ai`, `www.helper2.ai` and the staging
+   host through the Cloudflare tunnel; each environment turns sign-in on with the `oauth-github` profile.
 9. **Sessions in Redis** (Spring Session Data Redis, namespace `helper2:session`), so every replica knows a signed-in
    admin. Timeout and cookie stay under `server.servlet.session`. Only sign-in creates a session: the saved-request
    cache is off (`NullRequestCache`), so an anonymous request never writes one. While Redis is down
@@ -63,15 +62,11 @@ traceable to that administrator.
    `redis` policy, [0033](../foundation/0033-resilience-policies.md)), and sign-in redirects to `/admin?signin=failed`; any other request that fails on the session store gets 503.
 
 ## Consequences
-- Good: an anonymous visitor leaves no account data; a signed-in user's account holds two fields and the bookmarks,
+- An anonymous visitor leaves no account data; a signed-in user's account holds two fields and the bookmarks,
   and its owner deletes it, with its web-search counters, in two clicks.
-- Good: every admin decision names the administrator, and the trail cannot be edited.
-- Good: renaming a GitHub account cannot grant or remove ADMIN.
-- Bad: the public pages offer no sign-in, so visitors keep bookmarks only in their own browser.
-- Bad: today `/admin` and `/api/v1/admin/**` are on the public host, protected only by the role check.
-- Trade-off: roles live in the session; removing an admin takes effect at their next sign-in.
-- Trade-off: a Redis outage signs the admin out until it ends; the public site is not affected. Sessions share
-  the 128 MB Redis cache (`allkeys-lru`), so under memory pressure an admin can be signed out.
+- Every admin decision names the administrator, and the trail cannot be edited.
+- Renaming a GitHub account cannot grant or remove ADMIN.
+- A Redis outage touches only signed-in sessions; the public site keeps working.
 
 ## Alternatives considered
 - Accounts for every visitor — more personal data and more work, for little gain.
@@ -112,3 +107,4 @@ traceable to that administrator.
 - [Register a production GitHub OAuth App, enable `oauth-github`, set `H2_ADMINS`](../../roadmap.md#domain-and-identity).
 - [Sign-in for everyone: a public sign-in entry point for bookmarks and account deletion](../../roadmap.md#domain-and-identity).
 - [Redis memory shared by sessions, rate limits and cache; alert on evictions](../../roadmap.md#4-more-than-one-replica).
+- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

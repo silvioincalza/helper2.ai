@@ -1,6 +1,6 @@
 # 0019 — Evidence-gated enrichment and review queue (value must appear in the excerpt; UNCHANGED skip; daily cap)
 
-**Status.** Accepted (2026-10-27). **Builds on:** [0004](../foundation/0004-persistence-and-provenance.md), [0014](../guide/0014-llm-integration.md), [0018](0018-scout-runner.md)
+**Status.** Accepted. **Builds on:** [0004](../foundation/0004-persistence-and-provenance.md), [0014](../guide/0014-llm-integration.md), [0018](0018-scout-runner.md)
 
 ## Context
 Sources give a title, a description and a few facts. Search and filters work better with more: audience, technical
@@ -68,8 +68,6 @@ source states. Every published value must point to the text it came from, and a 
 - A prompt or model change re-enriches the whole catalog, bounded by the same daily cap.
 - The cost is bounded per run (`H2_SCOUT_MAX_ENRICHMENTS`: 20 by default, 200 in the Helm chart) and per day (300);
   unchanged text costs nothing and does not use up a slot of the run.
-- Strict rules reject some correct values; the review queue grows with every partial run of new text and needs a person,
-  which the backlog alert makes visible.
 - Source-stated `type` is a fact, so a model that disagrees (for example LIBRARY vs MCP_SERVER) opens a review item.
 
 ## Alternatives considered
@@ -78,7 +76,7 @@ source states. Every published value must point to the text it came from, and a 
 - Let the model overwrite source values — sources are the record of truth for what they state.
 - Enrich on every run — the fingerprint skip saves calls when only popularity or version changed.
 - Fingerprint the source text alone — a better prompt or model would never reach resources already enriched.
-- Keep every run's relationships and items — pages and the queue would show proposals the newest run no longer makes.
+- Keep every run's relationships and items — pages and the queue would show proposals the newest run does not make.
 
 ## Code
 - `backend/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt` — `EnrichResource`.
@@ -96,3 +94,4 @@ source states. Every published value must point to the text it came from, and a 
 ## Roadmap
 - [Watch how often source `type` sends proposals to CONFLICTING review](../../roadmap.md#5-ai-quality-and-cost)
 - [One owner per table: the Scout reads catalog tables for its enrichment backlog](../../roadmap.md#8-architecture)
+- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

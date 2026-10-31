@@ -1,6 +1,6 @@
 # 0013 — "Works with" flags derived from current source tags
 
-**Status.** Accepted (2026-10-27). **Builds on:** [0004](../foundation/0004-persistence-and-provenance.md), [0008](0008-federated-search.md)
+**Status.** Accepted. **Builds on:** [0004](../foundation/0004-persistence-and-provenance.md), [0008](0008-federated-search.md)
 
 ## Context
 Users want to know if a resource works with the tool they already use (OpenAI, Ollama, a Model Context Protocol (MCP) client, VS Code…).
@@ -30,12 +30,8 @@ must also remove the flag.
    model-generated.
 
 ## Consequences
-- Good: every flag can be traced to a tag, a type or a format; the rules are public.
-- Good: no model cost, no latency, the same input always gives the same flags.
-- Bad: a resource whose sources do not tag it gets no flag. No flag does not mean "does not work".
-- Bad: the tag lists are kept by hand.
-- Bad: for hits from the Helper2 index the flag names `helper2-index`, which relays the tag, not the original source.
-- Trade-off: the 20-tag limit can drop a tag that would have given a flag.
+- Every flag can be traced to a tag, a type or a format; the rules are public.
+- No model cost, no latency, the same input always gives the same flags.
 
 ## Alternatives considered
 - Ask a model per resource — guesses shown as facts, plus cost.
@@ -54,3 +50,4 @@ must also remove the flag.
 
 ## Roadmap
 Nothing open.
+- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

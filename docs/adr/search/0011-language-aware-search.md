@@ -1,11 +1,11 @@
 # 0011 — Language-aware search: detected stemmer, query translation in parallel with sources
 
-**Status.** Accepted (2026-10-27). **Builds on:** [0008](0008-federated-search.md), [0009](0009-ranking.md)
+**Status.** Accepted. **Builds on:** [0008](0008-federated-search.md), [0009](0009-ranking.md)
 
 ## Context
 Users type in many languages. Most sources and most catalog text are in English. An Italian query such as
 "app per tradurre" finds little in English text unless it is translated. A wrong language guess is also harmful:
-a code comment in `LanguageDetector` records that "mcp postgres" came out Norwegian and "vector database" Romanian.
+short technical queries such as "mcp postgres" or "vector database" look like Norwegian or Romanian to a plain detector.
 A translation costs a model call and time, and it must not slow down sources that do not need it.
 
 ## Decision
@@ -17,7 +17,7 @@ A translation costs a model call and time, and it must not slow down sources tha
    `websearch_to_tsquery(h2_ts_config(:lang), …)` next to `english` and `simple`. Stored text uses the stemmer of its
    own detected language in `search_vector`.
 3. **Translation in parallel** (`SearchResources`). For a non-English query the model call starts first. Sources with
-   `usesTranslation = false` start at the same time (today `helper2-semantic`, which embeds the text as typed).
+   `usesTranslation = false` start at the same time (`helper2-semantic`, which embeds the text as typed).
    The other sources start when the translation is in, or after `H2_SEARCH_TRANSLATE_TIMEOUT_MS` (2500 ms).
    Each source's deadline and latency count from its own start, so the wait never eats a source's budget.
 4. **Translator** (`SpringAiQueryTranslator` in `search.internal`, the search module's adapter of its port
@@ -34,13 +34,9 @@ A translation costs a model call and time, and it must not slow down sources tha
    receive them as extra terms and the user sees "Also searched for: …" (`QUERY_EXPANDED`).
 
 ## Consequences
-- Good: queries in other languages find English resources, and the user sees the words that were added.
-- Good: a model outage or a spent budget only removes the translation; search still answers.
-- Bad: for a non-English query most sources start up to 2.5 s later, so the response can be that much slower.
-- Bad: the translation cache is per replica. A miss on another replica costs one more model call, inside the
-  daily cap, which is counted in Redis for all replicas.
-- Trade-off: the fixed English/Italian lexicon ([0009](0009-ranking.md)) still runs, so Italian gets two kinds of help;
-  other languages rely on the model.
+- Queries in other languages find English resources, and the user sees the words that were added.
+- A model outage or a spent budget only removes the translation; search still answers.
+- English queries cost no model call and no wait.
 
 ## Alternatives considered
 - Always translate — a model call for every English query too, and wrong guesses on short queries.
@@ -65,3 +61,4 @@ A translation costs a model call and time, and it must not slow down sources tha
 - [More user interface (UI) languages; the UI is English only](../../roadmap.md#7-frontend).
 - [Cross-language retrieval in vector search](../../roadmap.md#5-ai-quality-and-cost).
 - [Translation cache stays per replica, on purpose](../../roadmap.md#4-more-than-one-replica).
+- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

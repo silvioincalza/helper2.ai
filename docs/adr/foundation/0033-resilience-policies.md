@@ -1,6 +1,6 @@
 # 0033 — Resilience policies (Resilience4j): circuit breakers, bulkheads and retries by name
 
-**Status.** Accepted (2026-10-30). **Builds on:** [0002](0002-modular-monolith-hexagonal.md), [0005](0005-redis-disposable-cache.md),
+**Status.** Accepted. **Builds on:** [0002](0002-modular-monolith-hexagonal.md), [0005](0005-redis-disposable-cache.md),
 [0006](0006-outbound-http.md), [0008](../search/0008-federated-search.md), [0014](../guide/0014-llm-integration.md), [0017](../guide/0017-guide-cost-guard.md), [0026](../operations/0026-observability.md)
 
 ## Context
@@ -16,8 +16,7 @@ The domain (Kotlin) must not depend on the library that implements them ([0002](
 
 ## Decision
 1. **Resilience4j 2.4.0** (`resilience4j-spring-boot4`, `resilience4j-micrometer`; circuit breaker, bulkhead, retry).
-   The 2.4.0 bill of materials (BOM) shipped without the Spring Boot 4 module at first, so `build.gradle.kts` pins that
-   module's version explicitly next to the BOM import.
+   `build.gradle.kts` pins the version of the Spring Boot 4 module explicitly, next to the bill of materials (BOM) import.
 2. **One port, applied in code.** `platform.resilience.Resilience`: `call(policy, supplier)` and `run(policy, runnable)`.
    `Resilience4jPolicies` builds each call from the registries of the Spring Boot module with programmatic decorators:
    no annotations, no aspect-oriented proxies, so Kotlin use cases and Java adapters use it the same way and a test
@@ -69,23 +68,18 @@ The domain (Kotlin) must not depend on the library that implements them ([0002](
    open circuit never takes a pod out of readiness.
 
 ## Consequences
-- Good: a provider that is down costs a few searches their deadline, then is `SKIPPED` ("Paused after repeated
+- a provider that is down costs a few searches their deadline, then is `SKIPPED` ("Paused after repeated
   failures", `SkipReason.CIRCUIT_OPEN`) without a call until a trial call succeeds; its stale cache entry still answers.
-- Good: a Redis outage costs at most a few 250 ms timeouts per 30 s for the whole replica, not per adapter.
-- Good: one source cannot hold every virtual thread or every database connection; one search too many for a source
+- a Redis outage costs at most a few 250 ms timeouts per 30 s for the whole replica, not per adapter.
+- one source cannot hold every virtual thread or every database connection; one search too many for a source
   is `SKIPPED` ("Too many searches at once", `SkipReason.BUSY`) at once.
-- Good: a Scout collector rides out a short 503 without losing its run; a permanent error fails at once.
-- Good: while the model provider is down, the guide answers with top search results at once and search runs
+- a Scout collector rides out a short 503 without losing its run; a permanent error fails at once.
+- while the model provider is down, the guide answers with top search results at once and search runs
   untranslated, without spending the daily budget on calls that cannot succeed; while the embedding API is down,
   search is keyword-only without waiting for the embedding timeout.
-- Good: the guide's concurrency limit is one more named, metered bulkhead (`resilience4j.bulkhead.available.concurrent.calls{name="guide"}`).
-- Good: the state of every circuit and every refused call is a meter and an alert (`Helper2CircuitOpen`,
+- the guide's concurrency limit is one more named, metered bulkhead (`resilience4j.bulkhead.available.concurrent.calls{name="guide"}`).
+- the state of every circuit and every refused call is a meter and an alert (`Helper2CircuitOpen`,
   `Helper2CallsNotPermitted`, [0026](../operations/0026-observability.md)).
-- Trade-off: circuits live in each replica's memory; each replica finds an outage on its own (10 calls at most).
-- Trade-off: a retried collector call can take up to 1 + 2 + 4 s of backoff (±50%) on top of its timeouts; Scout runs are
-  background work.
-- Bad: one more library (Apache-2.0, maintained by the Resilience4j project) and its configuration model to keep
-  current with Spring Boot.
 - `Resilience4jPoliciesTest`, `ResiliencePoliciesConfigIT`, `SearchResourcesTest`, `SourceCircuitIT`, `GuideLimitsTest`,
   `SpringAiGuideModelTest`, `SpringAiQueryTranslatorTest`, `NvidiaEmbedderTest`,
   `CollectorRetryIT`, `TransientSourceFailureTest`, `ObservedHttpRetryTest` and the Redis adapter tests cover the rules.
@@ -125,3 +119,6 @@ The domain (Kotlin) must not depend on the library that implements them ([0002](
 
 [flow 0008](../../diagrams/flow-0008-federated-search.svg) (source policy in the fan-out) ·
 [sequence 0005](../../diagrams/sequence-0005-redis-disposable-cache.svg) (the `redis` circuit)
+
+## Roadmap
+- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

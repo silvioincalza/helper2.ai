@@ -1,6 +1,6 @@
 # 0036 — Search evaluation harness: frozen snapshots, pooled graded judgements, offline replay
 
-**Status.** Accepted (2026-10-30). **Builds on:** [0008](../search/0008-federated-search.md), [0009](../search/0009-ranking.md),
+**Status.** Accepted. **Builds on:** [0008](../search/0008-federated-search.md), [0009](../search/0009-ranking.md),
 [0012](../search/0012-vector-search-pgvector.md), [0030](0030-guide-evaluation.md)
 
 ## Context
@@ -14,8 +14,7 @@ runs of the same query compare two inputs, not two rankings. Their data is third
 repository. Relevance needs a human judgement per result, and judging every result of every variant does not scale.
 
 ## Decision
-1. **Fixed query set.** `docs/eval/search-queries.json`: 80 queries written before the first run and not tuned on
-   results. Groups: navigational (10), MCP server for a task (12), model for a task (10), library for a language (10),
+1. **Fixed query set.** `docs/eval/search-queries.json`: 80 fixed queries, never tuned on results. Groups: navigational (10), MCP server for a task (12), model for a task (10), library for a language (10),
    paper (8), news and events (8), Italian and other languages (10), typos and synonyms (8), nonsense control (4).
    The guide questions of [0030](0030-guide-evaluation.md) that fit are reused (`from` names the guide id).
    `docs/eval/semantic-gold.json` adds 20 paraphrase queries with few words in common with their answers, for vector
@@ -26,6 +25,8 @@ repository. Relevance needs a human judgement per result, and judging every resu
    description, type, audience, tags, popularity), its outcome and latency, and, when vector search is on, the 50
    nearest catalog vectors with their distance and no cutoff. One JSON file per query in `backend/eval-data/`
    (git-ignored). A query with a file is not recorded again: the snapshot set stays frozen until its folder is deleted.
+   Recording runs on the real stack: a catalog database with the index to measure, the GitHub token, the Tavily key
+   and the embedding key. A new recording comes with a new baseline and a new judging pool.
 3. **Offline replay.** The evaluation runs production `ResultMerger.merge` and `Ranking.rank` on the snapshots: no
    network, same input, same order. A variant is a different `Ranking`, a different merge, or a source left out.
 4. **Pooled graded judgements.** `docs/eval/search-qrels.tsv` (`query_id`, `url`, `grade` 0–3: 0 not relevant,
@@ -33,8 +34,9 @@ repository. Relevance needs a human judgement per result, and judging every resu
    variant, plus the 10 nearest vectors at any distance; `evalTest` writes the unjudged part to
    `backend/eval-data/search-pool.tsv`. A grade attaches to every URL of a merged result (identity, each source's URL
    or repository), so a result found by two sources is judged once. A second judge grades a random 20 % of the pool
-   blind; Cohen's kappa between the two is reported with the results. Labels are written by people only; the set
-   starts empty.
+   blind; Cohen's kappa between the two is reported with the results. Labels are written by people only. The unjudged
+   share of the top 10 shows when a variant surfaces results outside the pool; the pool is extended before that
+   variant is compared.
 5. **Metrics, in Kotlin.** nDCG@10 (gain 2^grade − 1), MRR and Recall@20 (relevant = grade ≥ 2), duplicates in the
    top 10 (same name under two URLs), unjudged share of the top 10, and per source the marginal Recall@20 and ΔnDCG@10
    of leaving it out. A comparison between two runs uses a paired bootstrap over queries (10 000 resamples, fixed
@@ -61,14 +63,8 @@ absence costs no measurable quality for a group is not called for that group.
   the uncertainty, not only the difference.
 - Third-party data never enters git: snapshots, pools and reports live in `backend/eval-data/` on the machine that
   recorded them, and are deleted with it. The query set and the labels (URLs and grades) are committed.
-- Snapshots age: a frozen set measures ranking, not today's sources. Re-recording changes the input, so the baseline
-  and the judging pool are redone with it.
-- Pooled judging leaves results no variant put in its top 20 unjudged; a new variant can surface them, which the
-  unjudged share of the top 10 shows. The pool is extended before such a variant is compared.
-- Labelling is human work: about 80 queries × 25–30 pooled results, roughly 5 hours for one judge, plus 20 % for the
-  second.
-- Recording needs the real stack: a catalog database with the index to measure, the GitHub token, the Tavily key and
-  the embedding key. Tavily credits are spent once per recorded query.
+- Pooled judging keeps human work small: only the results some variant puts in its top 20 are judged.
+- The gate runs offline, with no network and no model, so it is fast and gives the same result every time.
 
 ## Alternatives considered
 - **Live runs per variant** — the sources change between runs, so a difference mixes ranking and data.
@@ -88,3 +84,6 @@ absence costs no measurable quality for a group is not called for that group.
 
 ## Diagrams
 [flow](../../diagrams/flow-0036-search-evaluation-harness.svg) · [sequence](../../diagrams/sequence-0036-search-evaluation-harness.svg)
+
+## Roadmap
+- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

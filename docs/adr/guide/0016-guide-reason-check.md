@@ -1,6 +1,6 @@
 # 0016 — Guide reason check: a second model call checks each reason; `checked` event
 
-**Status.** Accepted (2026-10-27). **Builds on:** [0014](0014-llm-integration.md), [0015](0015-ai-guide-evidence-gate.md)
+**Status.** Accepted. **Builds on:** [0014](0014-llm-integration.md), [0015](0015-ai-guide-evidence-gate.md)
 
 ## Context
 The evidence gate ([0015](0015-ai-guide-evidence-gate.md)) proves that a pick's quote exists in the resource's own
@@ -29,12 +29,10 @@ language; a model can, but its answer is a judgment, not a proof.
    fresh question costs 3 calls, more with retries.
 
 ## Consequences
-- A reason that adds price, license, hosting or feature claims is caught most of the time. Evaluation of 2026-10-27:
-  30 reasons supported, 1 removed, 0 not checked ([0030](../quality/0030-guide-evaluation.md)).
-- It is a model's judgment and can miss a claim or reject a correct one. The quote stays the hard guarantee.
-- One more model call per question: more cost and latency (reason check 0.5–3.7 s on 2026-10-27, from
-  [docs/evaluation.md](../../evaluation.md)). The daily cap of 600 calls covers at most 200 fresh questions.
+- A reason that adds price, license, hosting or feature claims is checked against its evidence before it is shown.
+- The quote stays the hard guarantee; the check adds a second layer on the reason, and a failed check never removes a pick.
 - Blanking a reason keeps a useful pick visible without an unsupported claim.
+- One call checks all picks of an answer, and an unchecked reason is never cached.
 
 ## Alternatives considered
 - No check — unsupported claims in reasons reach the user.
@@ -55,3 +53,4 @@ language; a model can, but its answer is a judgment, not a proof.
 
 ## Roadmap
 - [The reason check is a model judgment and can miss a claim](../../roadmap.md#5-ai-quality-and-cost)
+- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

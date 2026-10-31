@@ -1,6 +1,6 @@
 # 0003 — Contract-first REST with OpenAPI 3.1; generated server interfaces and TypeScript types; problem+json
 
-**Status.** Accepted (2026-10-27). **Builds on:** [0001](0001-stack-and-runtime.md), [0002](0002-modular-monolith-hexagonal.md)
+**Status.** Accepted. **Builds on:** [0001](0001-stack-and-runtime.md), [0002](0002-modular-monolith-hexagonal.md)
 
 ## Context
 The backend (Java and Kotlin) and the frontend (TypeScript) change in the same pull request. Hand-written
@@ -33,10 +33,8 @@ every source has a status), and these rules must be visible in one place that bo
 ## Consequences
 - A field rename breaks the compile on both sides in the same pull request.
 - The contract documents the honesty rules (`DateFact`, source status, field origin) next to the schemas.
-- Generated code is not committed. After a fresh checkout, run Gradle or npm once before the editor can
-  resolve the generated types.
-- The Server-Sent Events (SSE) handler is not generated, so the compiler ties only its event names to the contract.
-  `GuideApiIT` validates each event's data against its schema.
+- The Server-Sent Events (SSE) stream follows the contract too: its event names come from the generated enum,
+  and `GuideApiIT` validates each event's data against its schema.
 
 ## Alternatives considered
 - Code-first (springdoc generates the spec) — the spec then follows the Java types, and the frontend
@@ -59,3 +57,4 @@ every source has a status), and these rules must be visible in one place that bo
 
 ## Roadmap
 Nothing open.
+- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

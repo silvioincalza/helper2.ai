@@ -1,12 +1,12 @@
 # 0039 — Frontend recent-answers cache: back and forward without a new request
 
-**Status.** Accepted (2026-10-30). **Builds on:** [0025](0025-frontend-one-box.md)
+**Status.** Accepted. **Builds on:** [0025](0025-frontend-one-box.md)
 
 ## Context
 Back and forward are the most common moves on the site: from the results to a resource and back, or between two
-resources. Each move remounted the page, and `useApi` asked the server again. The user saw skeletons for an answer
-the browser had a second ago, and the page jumped to the top. Search runs every source again; a resource guide may
-call the model again. Both cost time and quota for nothing.
+resources. Each move remounts the page. Without a cache, `useApi` asks the server again, the user sees skeletons
+for an answer the browser had a second ago, and the page jumps to the top. Search runs every source again; a resource
+guide may call the model again. Both cost time and quota for nothing.
 
 ## Decision
 1. **One shared cache in `useApi`.** The last 50 successful answers (`CACHE_MAX`), by request key, for 5 minutes
@@ -24,12 +24,11 @@ call the model again. Both cost time and quota for nothing.
    top for a new page. `RouteFocus` focuses without scrolling, so it does not undo that.
 
 ## Consequences
-- Good: back and forward show the page at once, at the place the user left it, with no request.
-- Good: fewer search fan-outs and guide calls for the same question within a few minutes.
-- Bad: an answer can be up to 5 minutes old. The server's own caches ([0005](../foundation/0005-redis-disposable-cache.md),
-  [0017](../guide/0017-guide-cost-guard.md)) already allow that much and more.
-- Trade-off: 50 entries and 5 minutes are a fixed choice. A visit of a few searches and resources fits many times over.
-- A new page that shows data the user changes must pass `cache: false`, or it shows its old state after back.
+- Back and forward show the page at once, at the place the user left it, with no request.
+- Fewer search fan-outs and guide calls for the same question within a few minutes.
+- 50 entries and 5 minutes hold a visit of a few searches and resources many times over. The server's own caches
+  ([0005](../foundation/0005-redis-disposable-cache.md), [0017](../guide/0017-guide-cost-guard.md)) keep answers at least as long.
+- A page that shows data the user changes passes `cache: false` and always shows fresh data.
 
 ## Alternatives considered
 - **A data library (TanStack Query, SWR)** — cache, stale-while-revalidate and retries out of the box, but a new
@@ -51,3 +50,4 @@ call the model again. Both cost time and quota for nothing.
 
 ## Roadmap
 Nothing open.
+- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

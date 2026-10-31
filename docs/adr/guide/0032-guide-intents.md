@@ -1,6 +1,6 @@
 # 0032 — Guide intents: understand the question, ask back when vague or ambiguous, retrieve and answer by intent
 
-**Status.** Accepted (2026-10-28). **Builds on:** [0014](0014-llm-integration.md), [0015](0015-ai-guide-evidence-gate.md),
+**Status.** Accepted. **Builds on:** [0014](0014-llm-integration.md), [0015](0015-ai-guide-evidence-gate.md),
 [0016](0016-guide-reason-check.md), [0017](0017-guide-cost-guard.md), [0030](../quality/0030-guide-evaluation.md)
 
 ## Context
@@ -9,10 +9,10 @@ tools born in the last month?" wants new things, so age matters more than words.
 answer Cursor. "Ollama vs LM Studio" wants a comparison, "what is MCP?" an explanation, "when is NeurIPS?" a date, and
 "AI certifications for beginners" a course.
 
-One pipeline for all of them (search the words by relevance, choose picks with a quote) answers them badly. For the
-"born in the last month" question it searches "AI tools last month" with no date filter, so the candidates contain
-"tool" and "month", the chooser rejects them all, and the answer is three old packages. A vague question ("new
-tools?") would be searched as typed. A name can mean things of different kinds: "Gemini" is a model family and a
+One pipeline for all of them (search the words by relevance, choose picks with a quote) would answer them badly. For
+the "born in the last month" question it would search "AI tools last month" with no date filter, so the candidates
+would contain "tool" and "month", the chooser would reject them all, and the answer would be three old packages. A
+vague question ("new tools?") would be searched as typed. A name can mean things of different kinds: "Gemini" is a model family and a
 command-line tool, and an answer about the wrong one is worse than a short question. An event shares its name with
 projects ("NeurIPS", "AI hackathon"), so a date question searched over every type can lose the event among them.
 
@@ -182,7 +182,7 @@ the window, so a windowed query is never served unwindowed hits.
 **Browse.** With a window and no subject words, the search text is empty and `SourceQuery.browse` is set: sources
 that can list by date and type alone (`SourceDescriptor.browses`) rank by popularity inside the window; the others are
 SKIPPED for that request. The chooser thinks before answering only for this browse (`GuideModel.choose(…, think)`):
-with thinking off, Nemotron 3 Super returned no pick for "AI tools born last month".
+with thinking off, Nemotron 3 Super finds no pick for a question such as "AI tools born last month".
 
 **Subject resolution** (`isSubject`, for `ALTERNATIVES`, `COMPARE`, `WHAT_IS`, `WHEN`). A result is the subject when
 its title or the last segment of its link, in lower case without punctuation or owner prefix (`org/`, `@scope/`),
@@ -260,7 +260,7 @@ either, and most platform courses end with a certificate.
 - **Curated seed** (`R__courses.sql`): official programmes and the core courses of platforms without an open API
   (DeepLearning.AI, Hugging Face Learn, fast.ai, vendor certifications of Google Cloud, AWS, Microsoft, NVIDIA DLI,
   IBM, Databricks). Each entry links the provider's own page.
-- **No platform source.** Checked 2026-10-28: Coursera's catalog endpoint has no search, O'Reilly's search API and
+- **No platform source.** Coursera's catalog endpoint has no search, O'Reilly's search API and
   edX's Discovery API answer 401 without an enterprise or client key, and Udemy's API answers 403.
 - **Scout collector** `CourseCollector` ([0020](../scout/0020-scout-collectors.md)): Tavily searches restricted to each
   platform's domain for new AI courses and certification pages. New pages go to the admin review list
@@ -286,29 +286,14 @@ cell without a gated quote; `WHAT_IS` — every sentence quoted; `WHEN` — the 
 question about an event shows events only; `LEARN` — every pick has type `COURSE`; ask-back cases — asked back
 exactly when expected ("new tools?", "Gemini", "what is Gemini?" are; "what is Ollama?" is not).
 
-Live check on 2026-10-28 (Nemotron 3 Nano plans, Nemotron 3 Super chooses): "what are the last ai tools born in the
-last month?" is answered `OK` with three AI picks created inside the window, newest first, every reason SUPPORTED;
-"vLLM vs SGLang" compares both; "what is retrieval augmented generation?" explains in two quoted sentences; "courses
-to learn LangChain" picks the O'Reilly course.
-
 ## Consequences
 - The guide answers the kind of question asked and shows how it read it, so a misreading is visible and correctable.
-- A question is asked back only when it has nothing to search or its one subject has own entries of different kinds;
-  one extra round trip, one model call, and for an ambiguous subject one more daily web search for the reply.
-- Ambiguity depends on our sources: a name is asked back only when they hold own entries of two kinds, and an
-  unrelated project that happens to carry the exact name of a model also triggers the question. The evaluation set
-  carries ask-back cases both ways.
-- A broad "what is new" question takes about 10 s longer (thinking on for its choose call).
-- `NEWEST` is honest but smaller: npm and other undated results are dropped silently; the answer does not count them.
-- A comparison costs one search per subject, run at the same time; a subject slower than 10 s is reported as not found.
-- An event is found only when a source returns it among its own top hits for the text: the `EVENT` filter runs
-  after merging, like every filter (§4). A release with no creation date in our sources has no date, even when news
-  reported it.
-- The event words are a fixed list; an event question without them, and a planner that does not name the kind of
-  event, is answered like a release question over every type, events still included.
-- Two prompts (`compare`, `explain`) and their schemas to maintain and evaluate.
-- The course list needs editorial review; the collector proposes, an admin accepts. Coursera, edX and Udemy are covered
-  only through the collector and the seed.
+- A question is asked back only when it has nothing to search or its one subject has own entries of different kinds.
+  The evaluation set carries ask-back cases both ways.
+- Dates come from records, never from a model.
+- A `NEWEST` answer lists only results with a known creation date, so "born last month" is always backed.
+- A comparison runs its subject searches at the same time.
+- New courses reach the catalog only through the admin review list: the collector proposes, an admin accepts.
 
 ## Alternatives considered
 - **One intent with a date filter** — fixes "born last month", not alternatives, comparisons, explanations, dates or
@@ -354,3 +339,6 @@ to learn LangChain" picks the O'Reilly course.
 
 ## Diagrams
 [flow](../../diagrams/flow-0032-guide-intents.svg) · [sequence](../../diagrams/sequence-0032-guide-intents.svg)
+
+## Roadmap
+- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

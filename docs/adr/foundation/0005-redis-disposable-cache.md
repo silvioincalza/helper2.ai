@@ -1,6 +1,6 @@
 # 0005 — Redis as a disposable cache: source responses, fresh/stale windows, circuit breaker, counters, guide answers
 
-**Status.** Accepted (2026-10-27). **Builds on:** [0002](0002-modular-monolith-hexagonal.md), [0004](0004-persistence-and-provenance.md), [0033](0033-resilience-policies.md)
+**Status.** Accepted. **Builds on:** [0002](0002-modular-monolith-hexagonal.md), [0004](0004-persistence-and-provenance.md), [0033](0033-resilience-policies.md)
 
 ## Context
 Live sources are slow (seconds) and rate-limited. A guide answer costs three model calls. The daily
@@ -51,17 +51,9 @@ so the cache must be optional: when Redis is down, the app still works, only slo
 ## Consequences
 - A Redis outage costs a few failed calls per 30 seconds for the whole replica (the circuit is shared by every
   adapter), not a timeout on every request.
-- During an outage, budgets count in memory, in each replica on its own. They can only allow more calls, never
-  block the model by mistake: with 3 replicas, up to three times what was left of the day. A restart during an
-  outage resets that replica's count.
-- Answers, counters, sessions and rate-limit windows survive app restarts, deploys and Redis restarts. With
-  `everysec`, a Redis crash loses at most the last second of writes; a lost volume starts Redis empty.
-- Redis is not ready while it loads the AOF at start; the app treats that like a short outage (the `redis` circuit).
-- Source cooldowns, the guide's in-memory answer cache and its single-flight map stay in each replica's memory, on
-  purpose: a replica that misses them costs one more call, not a wrong answer ([roadmap](../../roadmap.md#4-more-than-one-replica)).
-- Redis holds sessions, rate-limit windows and web-search counters next to cache entries, in the same 128 MB with
-  `allkeys-lru`. Under memory pressure an admin can be signed out, or a client can get a fresh window or a fresh
-  day of web searches early.
+- During an outage, budgets count in memory and never block the model by mistake.
+- Answers, counters, sessions and rate-limit windows survive app restarts, deploys and Redis restarts.
+- While Redis loads the AOF at start, the app treats it like a short outage (the `redis` circuit).
 - `RedisSearchCacheTest`, `RedisGuideAnswerStoreTest`, `RedisCallCounterTest` and `RedisRateLimiterIT` cover the open
   window, the trial call and the fallbacks; `RedisDownIT` covers search with no Redis at all.
 
@@ -95,3 +87,4 @@ so the cache must be optional: when Redis is down, the app still works, only slo
 ## Roadmap
 - A Redis exporter and alerts on cache errors: [roadmap](../../roadmap.md#3-operations).
 - Redis memory shared by cache, sessions and rate limits; alert on evictions: [roadmap](../../roadmap.md#4-more-than-one-replica).
+- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

@@ -1,6 +1,6 @@
 # 0008 — Federated search over disclosed sources: modes, parallel fan-out, deadlines, cooldown, circuit breakers, partial results, source status, merge and conflicts
 
-**Status.** Accepted (2026-10-27). **Builds on:** [0002](../foundation/0002-modular-monolith-hexagonal.md), [0004](../foundation/0004-persistence-and-provenance.md), [0005](../foundation/0005-redis-disposable-cache.md), [0006](../foundation/0006-outbound-http.md), [0033](../foundation/0033-resilience-policies.md)
+**Status.** Accepted. **Builds on:** [0002](../foundation/0002-modular-monolith-hexagonal.md), [0004](../foundation/0004-persistence-and-provenance.md), [0005](../foundation/0005-redis-disposable-cache.md), [0006](../foundation/0006-outbound-http.md), [0033](../foundation/0033-resilience-policies.md)
 
 ## Context
 Helper2.ai answers a search from several sources: public application programming interfaces (APIs) (GitHub, Hugging Face, npm, arXiv, Tavily) and its own catalog.
@@ -59,17 +59,10 @@ so the list of sources must be disclosed. Two sources can describe the same reso
 10. Each source returns at most `H2_SEARCH_PER_SOURCE_LIMIT` (30) hits. The response has `Cache-Control: no-store`.
 
 ## Consequences
-- Good: a slow or failed source costs only its own results. The user sees the outcome of every source.
-- Good: a source that is down costs at most 10 searches its deadline per replica, then none until it recovers.
-- Good: the merge is deterministic. Conflicts are shown, not resolved.
-- Good: each package of a monorepo is its own result and catalog resource; a package joins its repository only when the link is unambiguous.
-- Trade-off: a package found without its repository is a result of its own. When a later search finds both, its catalog
-  record moves to the repository's resource and links to the package's id still resolve ([0004](../foundation/0004-persistence-and-provenance.md)).
-- Bad: the response waits for the slowest answering source up to its deadline. Tavily (6 s) sets the worst case;
-  a non-English query can add the translation wait before most sources start ([0011](0011-language-aware-search.md)).
-- Bad: cooldowns, circuits and the per-source health on the Sources page live in each replica's memory. Each replica
-  finds a source's rate limit or outage on its own, and the Sources page shows what the replica that answered has seen.
-- Trade-off: facets and filters only see the hits fetched for this query (at most 30 per source), not the whole catalog.
+- A slow or failed source costs only its own results. The user sees the outcome of every source.
+- A source that is down costs at most 10 searches its deadline per replica, then none until it recovers.
+- The merge is deterministic. Conflicts are shown, not resolved.
+- Each package of a monorepo is its own result and catalog resource; a package joins its repository only when the link is unambiguous.
 
 ## Alternatives considered
 - One global deadline for the whole search — a slow step (translation, a slow source) would eat the budget of the others.
@@ -100,3 +93,4 @@ so the list of sources must be disclosed. Two sources can describe the same reso
 
 ## Roadmap
 - [Source cooldowns, circuits and source health stay per replica, on purpose](../../roadmap.md#4-more-than-one-replica).
+- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

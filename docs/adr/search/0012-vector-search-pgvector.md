@@ -1,6 +1,6 @@
 # 0012 — Vector search: pgvector + NVIDIA embeddings, indexer, fused by rank
 
-**Status.** Accepted (2026-10-27). **Builds on:** [0004](../foundation/0004-persistence-and-provenance.md), [0008](0008-federated-search.md), [0009](0009-ranking.md)
+**Status.** Accepted. **Builds on:** [0004](../foundation/0004-persistence-and-provenance.md), [0008](0008-federated-search.md), [0009](0009-ranking.md)
 
 ## Context
 Keyword search misses a resource when the user describes a need in different words than the resource uses.
@@ -43,15 +43,8 @@ never break keyword search.
    Distances and keyword scores are never compared directly. Embedding 429 → `SourceFailure.RateLimited` (1 min cooldown).
 
 ## Consequences
-- Good: needs described in other words find resources; a resource found both ways ranks higher.
-- Good: no new stateful service; vectors are derived data and safe to truncate.
-- Bad: a new or changed resource has no current vector until the indexer reaches it. The backlog gauge does not
-  count rows whose text changed after they were embedded.
-- Bad: the 0.65 cutoff comes from one set of measurements (code comment, 27 Oct 2026: same need 0.28–0.55,
-  other topics 0.72–0.95, nonsense 0.81 at best). It may need tuning.
-- Trade-off: the query-vector cache is per replica; a miss costs one embedding call on that replica.
-- Trade-off: the 2 min pause after a rate limit is per replica. Only the replica that got the 429 pauses; the
-  others go on, still at most one batch per period in total.
+- Needs described in other words find resources; a resource found both ways ranks higher.
+- No new stateful service; vectors are derived data and safe to truncate.
 
 ## Alternatives considered
 - A second Redis instance for vectors — one more stateful workload with its own persistence and sync.
@@ -74,7 +67,8 @@ never break keyword search.
 [flow](../../diagrams/flow-0012-vector-search-pgvector.svg) · [sequence](../../diagrams/sequence-0012-vector-search-pgvector.svg)
 
 ## Roadmap
-- [Full vector index before recording the video](../../roadmap.md#1-release-v100-before-the-hackathon-deadline-30-oct-2026-1800-zurich).
+- [Full vector index before recording the video](../../roadmap.md#1-before-the-hackathon-deadline-30-oct-2026-1800-zurich).
 - [The embedding backlog gauge does not count rows whose text changed](../../roadmap.md#6-search-and-catalog).
 - [Cross-language retrieval in vector search](../../roadmap.md#5-ai-quality-and-cost).
 - [Query-vector cache and rate-limit pause stay per replica, on purpose](../../roadmap.md#4-more-than-one-replica).
+- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

@@ -1,6 +1,6 @@
 # 0017 — Guide cost guard: per-minute limit, per-client daily quota, global daily cap, answer cache with config hash, single-flight, concurrency limit and deadline
 
-**Status.** Accepted (2026-10-27). **Builds on:** [0005](../foundation/0005-redis-disposable-cache.md), [0014](0014-llm-integration.md), [0015](0015-ai-guide-evidence-gate.md), [0016](0016-guide-reason-check.md)
+**Status.** Accepted. **Builds on:** [0005](../foundation/0005-redis-disposable-cache.md), [0014](0014-llm-integration.md), [0015](0015-ai-guide-evidence-gate.md), [0016](0016-guide-reason-check.md)
 
 ## Context
 A fresh guide question costs 3 model calls and several seconds. The demo is public and free, paid by provider
@@ -54,14 +54,10 @@ The guards run in this order. Values are defaults; each has an `H2_` variable.
 - The worst case per day is bounded: 600 model calls, whatever the traffic.
 - One client can use at most 30 fresh questions a day (90 calls), so a single client cannot spend the global cap alone.
 - Repeated example questions are free and instant; a cached answer is honest about its age.
-- Clients behind one shared address (an office, a mobile carrier) share one quota.
 - The rate limit and the daily counts (quota, global cap) are in Redis and hold across replicas
-  ([0027](../operations/0027-runtime-topology.md): 3 on prod). While Redis is down, each replica counts on its own.
-- The in-memory answer cache, the single-flight map and the `guide` bulkhead are per replica. Two replicas may
-  answer the same new question once each; the answer in Redis then serves every replica.
-- The quota is taken before the question runs, so a question that later fails still counts.
-- The quota's memory is bounded (10,000 clients a day). A client that leaves memory keeps its count in Redis; only
-  the in-memory fallback count is lost, so while Redis is down such a client can start again from zero.
+  ([0027](../operations/0027-runtime-topology.md): 3 on prod).
+- An answer stored in Redis serves every replica.
+- The quota's memory is bounded (10,000 clients a day), and no client address is stored.
 
 ## Alternatives considered
 - Global cap only — one client could spend the day in about twenty minutes at 10 per minute.
@@ -85,3 +81,4 @@ The guards run in this order. Values are defaults; each has an `H2_` variable.
 
 ## Roadmap
 - [In-memory answer cache, single-flight and concurrency limit stay per replica, on purpose](../../roadmap.md#4-more-than-one-replica)
+- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

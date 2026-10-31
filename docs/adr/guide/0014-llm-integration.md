@@ -1,6 +1,6 @@
 # 0014 — LLM integration: Spring AI behind ports, one OpenAI-compatible provider, prompts on the classpath, thinking off, timeouts, budget per attempt, degraded mode
 
-**Status.** Accepted (2026-10-27). **Builds on:** [0001](../foundation/0001-stack-and-runtime.md), [0002](../foundation/0002-modular-monolith-hexagonal.md), [0005](../foundation/0005-redis-disposable-cache.md), [0007](../foundation/0007-configuration-and-secrets.md)
+**Status.** Accepted. **Builds on:** [0001](../foundation/0001-stack-and-runtime.md), [0002](../foundation/0002-modular-monolith-hexagonal.md), [0005](../foundation/0005-redis-disposable-cache.md), [0007](../foundation/0007-configuration-and-secrets.md)
 
 ## Context
 Four features call a large language model (LLM): the artificial intelligence (AI) guide, the Scout's enrichment, search query translation and
@@ -32,8 +32,9 @@ Without a configured model the application must still work.
    `max-retries` = `H2_LLM_MAX_RETRIES` (0); the defaults of the provider's software development kit (SDK) are 10 minutes
    and 3 retries. With 0 the SDK does not retry on its own, so every attempt is one of ours and is charged to a daily
    budget. A transient provider error reaches our code at once (`ModelErrors`).
-5. **Thinking off.** `chat_template_kwargs.enable_thinking=false` on every call. `CallOptions` records the measurement
-   of 27 Oct 2026 on the plan prompt with Nemotron 3 Nano: 526 vs 47 completion tokens, 2.5 s vs 0.5 s, same plan.
+5. **Thinking off.** `chat_template_kwargs.enable_thinking=false` on every call. On the plan prompt with Nemotron 3
+   Nano, thinking off gives the same plan with 47 completion tokens in 0.5 s, against 526 tokens in 2.5 s with
+   thinking on (`CallOptions`).
    The guide can turn it on per step (`H2_GUIDE_THINK_PLAN|CHOOSE|VERIFY`, default false).
 6. **Daily budget per use, per attempt.** `DailyBudget.tryAcquire()` runs before each provider attempt, retries
    included. The only retry is ours: the guide tries once more when it cannot use an answer, for example malformed
@@ -68,15 +69,14 @@ Without a configured model the application must still work.
 ## Consequences
 - The daily spend has a ceiling per feature, and a restart does not reset it while Redis is up.
 - A Redis outage can only allow more calls (memory counts from zero), never block the model by mistake.
-- Every model call is charged to a daily budget: the SDK makes no hidden retry by default. Setting
-  `H2_LLM_MAX_RETRIES` above 0 would add attempts that no budget counts.
-- A short provider error (timeout, 429, 5xx) is not retried at once: the guide falls back to search results and
+- Every model call is charged to a daily budget: the SDK makes no hidden retry.
+- A short provider error (timeout, 429, 5xx) reaches our code at once: the guide falls back to search results and
   enrichment stays in the backlog for a later run.
 - During a provider outage the guide degrades after at most a few timed-out calls per replica, then at once until a
-  trial call succeeds; the circuit lives in each replica's memory.
+  trial call succeeds.
 - A model id of another vendor stops the deploy at startup instead of reaching that vendor.
-- Thinking off makes calls faster and repeatable, but the chooser returns fewer picks (see [0030](../quality/0030-guide-evaluation.md)).
-- One provider keeps setup and image small. A second provider needs a dependency and a profile; the ports do not change.
+- Thinking off makes calls faster and repeatable.
+- One provider keeps setup and image small. A second provider needs only a dependency and a profile; the ports stay the same.
 
 ## Alternatives considered
 - Provider SDK called directly — ties every adapter to one SDK; Spring AI gives structured output and observations.
@@ -102,3 +102,4 @@ Without a configured model the application must still work.
 
 ## Roadmap
 - [A closed `llm` module instead of the open `platform` module](../../roadmap.md#8-architecture)
+- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

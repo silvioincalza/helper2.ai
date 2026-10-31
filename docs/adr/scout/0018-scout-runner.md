@@ -1,6 +1,6 @@
 # 0018 — AI Resource Scout runner: schedule, intervals, cursors, backlog, failure isolation, cluster-wide run lock
 
-**Status.** Accepted (2026-10-27). **Builds on:** [0004](../foundation/0004-persistence-and-provenance.md), [0006](../foundation/0006-outbound-http.md), [0014](../guide/0014-llm-integration.md)
+**Status.** Accepted. **Builds on:** [0004](../foundation/0004-persistence-and-provenance.md), [0006](../foundation/0006-outbound-http.md), [0014](../guide/0014-llm-integration.md)
 
 ## Context
 Live search only shows what sources return for one query. To answer from its own index (keyword and vector search,
@@ -75,8 +75,7 @@ at the same time. Prod runs 3 replicas ([0027](../operations/0027-runtime-topolo
 ## Consequences
 - One broken source shows as `FAILED` in its own row; the others keep the index fresh.
 - A crash mid-pass loses nothing: the next run resumes from the saved cursor or repeats the pass.
-- Credit-priced sources (Tavily) run rarely. The 1-hour MCP Registry interval follows the registry's polling advice,
-  but the Helm chart starts a run only once a day (`H2_SCOUT_EVERY=P1D`), so in the cluster it runs daily.
+- Credit-priced sources (Tavily) run rarely. The 1-hour MCP Registry interval follows the registry's polling advice.
 - Enrichment cost per run is bounded (20 calls by default, 200 in the Helm chart, and 300 per day), and the backlog catches up after an outage or a day with a spent budget.
 - The admin call answers in milliseconds; the run's progress is the run listing, so no request is held for the
   length of a run and no extra status endpoint exists.
@@ -86,19 +85,15 @@ at the same time. Prod runs 3 replicas ([0027](../operations/0027-runtime-topolo
   empty `scout_schedule` runs at once.
 - A tick that meets an admin run is not lost: the next tick runs the Scout if it is still due. Admin runs do not
   move the schedule.
-- A scheduled run can start up to one `H2_SCOUT_TICK` (1 h) after it is due. With `P1D` this is small; with a short
-  `H2_SCOUT_EVERY` (local: 15 min), set a shorter tick (`.env.example` and the demo use 5 min).
-- A pod killed mid-run holds `scout-run` for at most one lease (2 min). Its rows show `FAILED` once a replica starts
+- A pod killed mid-run frees `scout-run` within one lease (2 min). Its rows show `FAILED` once a replica starts
   or the next run begins; its end time is not recorded, so the next tick runs the Scout again.
-- One renewal thread per replica extends the lease. A pause of that thread longer than one lease (a long GC, an
-  unreachable database) lets another replica start a second run; a renewal every half lease leaves a wide margin.
 
 ## Alternatives considered
 - Spring Batch or a job framework — far more setup than a loop over a few collectors.
 - Separate worker service — a second deployable and image for a small load.
 - Cron per collector — more schedules to run; the per-collector interval gives the same effect in one loop.
 - Fixed delay of `H2_SCOUT_EVERY` per replica, with a second lock held for most of a period — each replica has its
-  own phase, a tick that met an admin run lost its period, and the lock length had to be guessed. The end time in
+  own phase, a tick that meets an admin run loses its period, and the lock length must be guessed. The end time in
   the database gives one schedule for all replicas.
 - Checkpoint = time of the last item seen — misses items updated during a long pass; the pass start does not.
 - Lock in Redis (`SET NX PX`) — Redis is a disposable cache with `allkeys-lru`, so a lock could be evicted.
@@ -132,3 +127,6 @@ at the same time. Prod runs 3 replicas ([0027](../operations/0027-runtime-topolo
 
 ## Diagrams
 [flow](../../diagrams/flow-0018-scout-runner.svg) · [sequence](../../diagrams/sequence-0018-scout-runner.svg)
+
+## Roadmap
+- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).
