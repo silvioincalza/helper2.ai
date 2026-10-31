@@ -27,7 +27,10 @@ The guards run in this order. Values are defaults; each has an `H2_` variable.
    prompts, thinking flags, token limits, candidate text size, the validator's limits, the comparison and explanation
    limits (`AnswerLimits`) and `maxCandidates`. A new prompt
    or limit therefore never serves old answers. Memory first (500 entries, least recently used out), then Redis
-   (`RedisGuideAnswerStore`, key `h2:v1:guide-answer:<sha256 of the key>`, versioned JSON). Time to live (TTL) `H2_GUIDE_CACHE_TTL`
+   (`RedisGuideAnswerStore`, key `h2:v2:guide-answer:<build>:<sha256 of the key>`, versioned JSON). `<build>` is
+   the running build (`H2_BUILD_VERSION`, the image tag the chart passes): a restart keeps the answers, a deploy
+   starts empty, so a change in how the guide reads or answers is seen at once and never hidden for 24 h by answers
+   of the old code. Time to live (TTL) `H2_GUIDE_CACHE_TTL`
    (24 h), counted from the answer's `generatedAt`, which the page shows; an answer built on web results lives only
    as long as they are fresh, and one built on stale ones is not cached ([0037](../search/0037-tavily-store-and-daily-quota.md)). Only complete artificial intelligence (AI) answers are cached: model
    used, at least one AI pick, and no AI pick with reason `NOT_CHECKED`. Redis calls run under the `redis` policy ([0033](../foundation/0033-resilience-policies.md)).
