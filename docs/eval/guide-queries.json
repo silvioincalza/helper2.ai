@@ -18,5 +18,5 @@
   { "id": "u03", "path": "USE_AI", "request": "transcribe a podcast episode into text" },
   { "id": "u04", "path": "USE_AI", "request": "write a polite reply to a customer complaint" },
   { "id": "n01", "path": null, "request": "latest news about NVIDIA Nemotron models" },
-  { "id": "x01", "path": "BUILD_WITH_AI", "request": "a quantum blockchain toaster that writes poems" }
+  { "id": "x01", "path": "BUILD_WITH_AI", "request": "a quantum blockchain toaster that writes poems", "expectNoPick": true }
 ]

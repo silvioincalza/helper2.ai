@@ -1,9 +1,10 @@
 # Sequence: the telemetry of one search in the cluster: one trace across threads, meters, logs,
-# the scrape on the management port and the dashboard read.
+# the time to the first useful event of a guide question, the scrape on the management port and the dashboard read.
 # Source of truth: backend/src/main/java/ai/helper2/search/config/SearchConfiguration.java, MicrometerSearchMetrics.java,
 #   backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt, backend/src/main/java/ai/helper2/platform/http/ObservedHttp.java,
 #   backend/src/main/resources/application.yaml, deploy/helm/helper2/templates/app.yaml, networkpolicy.yaml,
-#   deploy/grafana/helper2.json.
+#   deploy/grafana/helper2.json; the guide block: backend/src/main/java/ai/helper2/guide/web/GuideStreamController.java,
+#   deploy/monitoring/helper2-rules.yaml (Helper2GuideFirstUsefulSlow).
 # Render: cd docs/diagrams && d2 fmt sequence-0026-observability.d2 && d2 sequence-0026-observability.d2 sequence-0026-observability.svg
 
 ...@style
@@ -35,6 +36,14 @@ app -> browser: "200"
 app -> alloy: "spans of T over OTLP/HTTP :4318"
 alloy -> tempo: "forward spans"
 
+guide: A guide question on the stream {
+  browser -> app: "POST /api/v1/guide/stream" {class: hot}
+  app -> browser: "event: planned, understood"
+  app -> browser: "event: retrieved (or clarify):\nthe first useful event" {class: hot}
+  app -> reg: "helper2.guide.first_useful{intent}:\nrequest to that event, once"
+  app -> browser: "event: chosen, validated, checked, answer"
+}
+
 scrape: Every scrape {
   alloy -> app: "GET :8081/actuator/prometheus\n(NetworkPolicy: observability ns only)"
   app -> alloy: "text format, no observation\nfor /actuator"
@@ -43,3 +52,4 @@ scrape: Every scrape {
 
 graf -> prom: "dashboard helper2: PromQL per environment;\nlatency: histogram_quantile over _bucket"
 prom -> graf: "series"
+prom -> prom: "rules: p95 of first useful > 8 s\nfor 15 min → Helper2GuideFirstUsefulSlow"

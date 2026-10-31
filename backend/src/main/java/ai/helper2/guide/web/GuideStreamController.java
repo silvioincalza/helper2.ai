@@ -20,11 +20,14 @@ import ai.helper2.platform.ClientKey;
 import ai.helper2.platform.SignedInUser;
 import ai.helper2.search.SearchOutcome;
 import ai.helper2.shared.AudiencePath;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -55,6 +58,10 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
  * <p>While a question runs, a {@code :keep-alive} comment is sent every {@code helper2.guide.heartbeat}: one model
  * step can be silent for longer than the client's idle timeout, and an asker who joined an identical question
  * already running gets no step events at all. The comments come from one shared scheduler thread.
+ *
+ * <p>The guide's latency target is the time to the first useful event (ADR 0026): from the request to the first
+ * {@code retrieved} (the results the guide reads) or {@code clarify} (the question back), timed once per question as
+ * {@code helper2.guide.first_useful{intent}}. A cached or shared answer has no step events and is not timed.
  */
 @RestController
 @RequestMapping("/api/v1")
@@ -63,21 +70,24 @@ class GuideStreamController implements DisposableBean {
     private static final Logger log = LoggerFactory.getLogger(GuideStreamController.class);
     /** The emitter outlives the deadline a little, so the deadline's error event can still be sent. */
     private static final Duration EMITTER_GRACE = Duration.ofSeconds(10);
+    static final String FIRST_USEFUL = "helper2.guide.first_useful";
 
     private final AskGuide guide;
     private final GuideDtoMapper mapper;
     private final GuideLimits limits;
     private final Duration heartbeat;
     private final SignedInUser signedInUser;
+    private final MeterRegistry meters;
     private final ScheduledExecutorService heartbeats = Executors.newSingleThreadScheduledExecutor(
         Thread.ofPlatform().name("guide-heartbeat").daemon().factory());
 
-    GuideStreamController(AskGuide guide, GuideDtoMapper mapper, GuideLimits limits, SignedInUser signedInUser,
+    GuideStreamController(AskGuide guide, GuideDtoMapper mapper, GuideLimits limits, SignedInUser signedInUser, MeterRegistry meters,
                           @Value("${helper2.guide.heartbeat:PT15S}") Duration heartbeat) {
         this.guide = guide;
         this.mapper = mapper;
         this.limits = limits;
         this.signedInUser = signedInUser;
+        this.meters = meters;
         this.heartbeat = heartbeat;
     }
 
@@ -133,8 +143,11 @@ class GuideStreamController implements DisposableBean {
      */
     private final class Events implements GuideProgress {
         private final SseEmitter emitter;
+        private final long startedNanos = System.nanoTime();
         private boolean open = true;
         private boolean finished;
+        private boolean usefulSent;
+        private String intent = "unknown";
         private ScheduledFuture<?> keepAlive;
 
         Events(SseEmitter emitter) {
@@ -148,18 +161,19 @@ class GuideStreamController implements DisposableBean {
 
         @Override
         public void understood(GuideIntent intent, List<String> subjects, DateWindow window) {
+            this.intent = intent.name().toLowerCase(Locale.ROOT);
             send(GuideStreamEventDto.UNDERSTOOD, new GuideStreamUnderstoodDto(GuideIntentDto.fromValue(intent.name()), subjects)
                 .window(GuideDtoMapper.window(window)));
         }
 
         @Override
         public void clarify(Clarification clarification) {
-            send(GuideStreamEventDto.CLARIFY, GuideDtoMapper.clarification(clarification));
+            useful(GuideStreamEventDto.CLARIFY, GuideDtoMapper.clarification(clarification));
         }
 
         @Override
         public void retrieved(int candidates, SearchOutcome search) {
-            send(GuideStreamEventDto.RETRIEVED, new GuideStreamRetrievedDto(candidates, GuideDtoMapper.statuses(search)));
+            useful(GuideStreamEventDto.RETRIEVED, new GuideStreamRetrievedDto(candidates, GuideDtoMapper.statuses(search)));
         }
 
         @Override
@@ -175,6 +189,22 @@ class GuideStreamController implements DisposableBean {
         @Override
         public void reasonsChecked(int supported, int removed, int notChecked) {
             send(GuideStreamEventDto.CHECKED, new GuideStreamCheckedDto(supported, removed, notChecked));
+        }
+
+        /** Sends an event that shows the asker something real; the first one sent is the question's first useful event. */
+        private synchronized void useful(GuideStreamEventDto name, Object data) {
+            if (send(name, data) && !usefulSent) {
+                usefulSent = true;
+                Timer.builder(FIRST_USEFUL)
+                    .description("Time from the guide request to its first useful stream event (retrieved or clarify)")
+                    .tag("intent", intent)
+                    .publishPercentileHistogram()
+                    .serviceLevelObjectives(Duration.ofSeconds(3), Duration.ofSeconds(8))
+                    .minimumExpectedValue(Duration.ofMillis(100))
+                    .maximumExpectedValue(Duration.ofSeconds(30))
+                    .register(meters)
+                    .record(Duration.ofNanos(System.nanoTime() - startedNanos));
+            }
         }
 
         /** Sends a comment every heartbeat until the last event (or the client is gone). */
@@ -217,14 +247,17 @@ class GuideStreamController implements DisposableBean {
             }
         }
 
-        synchronized void send(GuideStreamEventDto name, Object data) {
+        /** True when the event reached the connection. */
+        synchronized boolean send(GuideStreamEventDto name, Object data) {
             if (!open || finished) {
-                return;
+                return false;
             }
             try {
                 emitter.send(SseEmitter.event().name(name.getValue()).data(data, MediaType.APPLICATION_JSON));
+                return true;
             } catch (IOException | IllegalStateException e) {
                 open = false;
+                return false;
             }
         }
     }
