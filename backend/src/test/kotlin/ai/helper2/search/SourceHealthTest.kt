@@ -1,5 +1,6 @@
 package ai.helper2.search
 
+import java.time.Duration
 import java.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -59,5 +60,48 @@ class SourceHealthTest {
             message = "Paused", skipReason = SkipReason.RATE_LIMIT_PAUSE))
 
         assertEquals(SourceHealth.Entry(SourceOutcome.SKIPPED, later), health.lastFor("github", null))
+    }
+
+    private fun called(id: String, millis: Long, outcome: SourceOutcome = SourceOutcome.SUCCEEDED,
+                       servedFrom: ServedFrom = ServedFrom.LIVE) =
+        SourceStatus(descriptor(id), outcome, servedFrom, 0, Duration.ofMillis(millis), later)
+
+    @Test
+    fun `the response time is the median of the last calls`() {
+        val health = SourceHealth()
+        listOf(900L, 100L, 300L).forEach { health.sourceCompleted(called("github", it)) }
+
+        assertEquals(Duration.ofMillis(300), health.responseTime("github"))
+    }
+
+    @Test
+    fun `failed and timed-out calls count, cache hits and skipped calls do not`() {
+        val health = SourceHealth()
+        health.sourceCompleted(called("github", 200))
+        health.sourceCompleted(called("github", 2500, SourceOutcome.TIMED_OUT, ServedFrom.STALE_CACHE))
+        health.sourceCompleted(called("github", 2400, SourceOutcome.FAILED, ServedFrom.NONE))
+        health.sourceCompleted(called("github", 0, servedFrom = ServedFrom.CACHE))
+        health.sourceCompleted(SourceStatus(descriptor("github"), SourceOutcome.SKIPPED, ServedFrom.NONE, 0, null, later,
+            skipReason = SkipReason.CIRCUIT_OPEN))
+
+        assertEquals(Duration.ofMillis(2400), health.responseTime("github"))
+    }
+
+    @Test
+    fun `only the last twenty calls count`() {
+        val health = SourceHealth()
+        repeat(30) { health.sourceCompleted(called("github", 5000)) }
+        repeat(20) { health.sourceCompleted(called("github", 100)) }
+
+        assertEquals(Duration.ofMillis(100), health.responseTime("github"))
+    }
+
+    @Test
+    fun `a source not called on this replica has no response time`() {
+        val health = SourceHealth()
+        health.sourceCompleted(called("github", 0, servedFrom = ServedFrom.CACHE))
+
+        assertNull(health.responseTime("github"))
+        assertNull(health.responseTime("npm"))
     }
 }
