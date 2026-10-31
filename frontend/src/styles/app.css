@@ -489,3 +489,20 @@ h1.resource-title:focus:not(:focus-visible) { outline: none; }
 .resource-say__head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 .resource-say__field { font: 500 0.85rem/1.4 var(--font-mono); color: var(--ink-2); }
 .resource-say__value { font: 400 1.1rem/1.4 var(--font-display); color: var(--ink); overflow-wrap: anywhere; }
+
+/* Sources page (ADR 0040, 10): the last outcome as tiles, the modes, then what each source covers. */
+.sources-page { display: flex; flex-direction: column; gap: var(--space-4); }
+.sources-page > * { margin: 0; }
+.sources-page h1:focus:not(:focus-visible) { outline: none; }
+.sources-page__part { display: flex; flex-direction: column; gap: var(--space-2); padding-top: var(--space-4); border-top: 1px solid var(--border); }
+.sources-page__part > * { margin: 0; }
+.sources-page__skeleton { height: 8rem; border-radius: var(--radius-lg); }
+.sources-page__modes { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: var(--space-2) var(--space-5); margin: 0; }
+.sources-page__modes div { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2); }
+.sources-page__modes dd { margin: 0; font-size: 0.9rem; color: var(--ink-2); }
+.sources-page__table { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); }
+.sources-page__table table { min-width: 40rem; }
+.sources-page__table th, .sources-page__table td { padding: var(--space-3) var(--space-4); }
+.sources-page__table thead th { font: 500 12px/16px var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.sources-page__table tbody th { font: 500 0.95rem/1.4 var(--font-mono); }
+.sources-page__table tbody tr:last-child > * { border-bottom: 0; }

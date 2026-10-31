@@ -411,19 +411,23 @@
     "failed": "Your account could not be deleted. Please try again later."
   },
   "sourcesPage": {
-    "title": "Sources",
-    "lede": "These are all the sources Helper2.ai can search. Anything not listed here is not covered.",
+    "title": "Sources we search",
+    "lede": "Helper2.ai searches these sources and nothing else. It does not search the whole web. Every search shows what happened to each one.",
+    "last": "Last outcome",
+    "lastNote": "The outcome of the latest search or Scout run that asked each source, as this server saw it.",
     "modes": "How sources work",
-    "error": "Could not load the source list.",
-    "disabled": "Disabled",
+    "covers": "What each source covers",
+    "error": "Could not load the sources",
+    "errorBody": "We could not reach the Helper2.ai service.",
+    "empty": "No sources are configured",
     "terms": "Terms",
-    "neverChecked": "Never checked",
+    "noAttribution": "None",
     "col": {
-      "enabled": "Enabled",
+      "source": "Source",
+      "mode": "Mode",
       "types": "Resource types",
       "terms": "Terms",
-      "attribution": "Attribution",
-      "lastOutcome": "Last outcome"
+      "attribution": "Attribution"
     }
   },
   "admin": {

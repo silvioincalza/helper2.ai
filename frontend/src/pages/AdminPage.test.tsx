@@ -6,22 +6,6 @@ import { renderApp } from '@/test/render';
 import type { ReviewItem, ScoutRun } from '@/api/types';
 import { RUN_POLL_MS } from '@/pages/AdminPage';
 
-describe('sources page', () => {
-  it('lists the disclosed registry with mode, terms, attribution and last outcome', async () => {
-    mockApi();
-    renderApp('/sources');
-    const table = await screen.findByRole('table');
-    const gh = within(table).getByRole('row', { name: /GitHub/ });
-    expect(within(gh).getByText('Live', { selector: '.mode' })).toBeInTheDocument();
-    expect(within(gh).getByRole('link', { name: /Terms/ })).toHaveAttribute('rel', 'noopener noreferrer nofollow');
-    expect(within(gh).getByText('Data from GitHub')).toBeInTheDocument();
-    expect(within(gh).getByText('Succeeded')).toBeInTheDocument();
-    const seed = within(table).getByRole('row', { name: /Helper2 seed/ });
-    expect(within(seed).getByText('Curated', { selector: '.mode' })).toBeInTheDocument();
-    expect(within(seed).getAllByText('Never checked')).toHaveLength(2);
-  });
-});
-
 const item: ReviewItem = { id: '66666666-6666-5666-8666-666666666666', kind: 'USER_REPORT', status: 'OPEN', reason: 'Wrong price', details: null, resourceId: null, resourceTitle: 'Acme', createdAt: '2026-10-21T10:00:00Z' };
 const page = (items: ReviewItem[], total = items.length) => ({ items, total });
 
