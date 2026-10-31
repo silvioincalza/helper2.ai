@@ -148,3 +148,52 @@ describe('admin page', () => {
     await waitFor(() => expect(run).not.toHaveAttribute('aria-disabled'));
   });
 });
+
+describe('Feature: the admin page in the design', () => {
+  it('Scenario: a review item shows its kind, date and resource as a row, and a closed item its status as a pill', async () => {
+    mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/review-items': () => page([{ ...item, status: 'ACCEPTED', resourceId: 'a/b c', details: 'It is free' }]),
+      'GET /admin/scout-runs': () => [{ id: '77777777-7777-5777-8777-777777777777', sourceId: 'github', status: 'FAILED', startedAt: '2026-10-21T10:00:00Z', finishedAt: null, itemsSeen: 0, itemsChanged: 0, message: 'rate limited' }],
+    });
+    renderApp('/admin');
+    const queue = await screen.findByRole('list', { name: 'Review queue' });
+    const row = within(queue).getByRole('listitem');
+    expect(within(row).getByText('User report')).toBeInTheDocument();
+    // The resource link encodes the id, so an id can never add a path segment.
+    expect(within(row).getByRole('link', { name: 'Acme' })).toHaveAttribute('href', '/resource/a%2Fb%20c');
+    expect(within(row).getByText('Accepted')).toHaveClass('h2-status-pill', 'h2-status-pill--ok');
+    const runs = await screen.findByRole('table', { name: 'Scout runs' });
+    expect(within(runs).getByText('Failed')).toHaveClass('h2-status-pill--warn');
+  });
+
+  it('Scenario: a signed-in visitor who is not an admin gets the way home', async () => {
+    mockApi({ 'GET /me': () => USER });
+    renderApp('/admin');
+    expect(await screen.findByRole('alert')).toHaveTextContent('administrator');
+    expect(screen.getByRole('link', { name: 'Go to the home page' })).toHaveAttribute('href', '/');
+  });
+});
+
+describe('Feature: the review queue cannot load', () => {
+  it('Scenario: Try again keeps focus on the queue and shows the items', async () => {
+    // Given the review queue fails once
+    let fail = true;
+    mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/review-items': () => (fail ? problem(503, 'Service Unavailable') : page([item])),
+      'GET /admin/scout-runs': () => [],
+    });
+    renderApp('/admin');
+    // Then an alert says so and offers Try again
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Could not load the review queue.');
+    // When the admin tries again by keyboard
+    fail = false;
+    within(alert).getByRole('button', { name: /Try again/ }).focus();
+    await userEvent.keyboard('{Enter}');
+    // Then the items load and focus stays on the queue's heading, not the page body
+    expect(await screen.findByRole('button', { name: /Accept/ })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Review queue' })).toHaveFocus());
+  });
+});
