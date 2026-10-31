@@ -41,6 +41,10 @@ import org.springframework.test.web.servlet.MockMvc;
     "helper2.sources.npm.enabled=false",
     "helper2.sources.mcp-registry.enabled=false", "helper2.sources.arxiv.enabled=false", "helper2.sources.tavily.enabled=false",
     "helper2.sources.hf-trending.enabled=false", "helper2.sources.tavily-scout.enabled=false", "helper2.sources.course-scout.enabled=false",
+    // Collectors too: an admin Scout run in these tests must not call the network, nor hold the cluster-wide run
+    // lock (shared with every context through the one PostgreSQL) while it waits for it.
+    "helper2.sources.github-awesome.enabled=false", "helper2.sources.hf-provider-orgs.enabled=false",
+    "helper2.sources.ai-deadlines.enabled=false",
     // The fake source's policy (ADR 0033): a bulkhead only, so no circuit opened by one test's failures skips it in the next.
     "resilience4j.bulkhead.instances.source-fake-live.base-config=source",
     "helper2.rate-limit.search-per-minute=10000",
