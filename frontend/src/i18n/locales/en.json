@@ -424,7 +424,7 @@
     "queueEmpty": "Nothing in this queue.",
     "accept": "Accept",
     "reject": "Reject",
-    "loadError": "Could not load.",
+    "loadError": "Could not load the review queue.",
     "actionFailed": "The action failed. Please try again.",
     "scoutRuns": "Scout runs",
     "runNow": "Run now",
