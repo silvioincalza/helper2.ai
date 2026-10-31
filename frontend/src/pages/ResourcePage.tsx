@@ -1,24 +1,173 @@
-import { Link, useParams } from 'react-router';
+import { useId } from 'react';
+import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { api, ApiError } from '@/api/client';
-import type { Relationship } from '@/api/types';
+import type { Relationship, ResourceDetail } from '@/api/types';
 import { OriginLabel, VerificationBadge } from '@/components/Badges';
 import { EvidenceList } from '@/components/EvidenceList';
 import { ExternalLink } from '@/components/ExternalLink';
-import { SetupGuidePanel } from '@/components/setup/GuideBody';
-import { canGuide } from '@/components/setup/GuideMe';
-import { Icon } from '@/components/Icon';
+import { Part, ResourceOverview, type FromResults } from '@/components/ResourceOverview';
 import { ReportForm } from '@/components/ReportForm';
-import { ResultCardView } from '@/components/ResultCardView';
+import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
 import { useApi } from '@/hooks/useApi';
+import { useRetry } from '@/hooks/useRetry';
 import { useTitle } from '@/hooks/useTitle';
-import { formatDate } from '@/lib/format';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
+import { formatDate } from '@/lib/format';
+
+/** Page-only parts sit under the h1, at the level of the overview's part labels. */
+const LEVEL = 2;
+
+/**
+ * `/resource/:id` (ADR 0040, 4 and 8): the overview the results preview shows, as a page, then what only the page
+ * has: the AI summary with its citations, what each source says with its evidence, relationships, the source records
+ * and the report form. Loading, not found and an error are designed states; Try again keeps focus on the page.
+ */
+export default function ResourcePage() {
+  const { id = '' } = useParams();
+  const { t } = useTranslation();
+  const q = useApi(`resource/${id}`, (signal) => api.getResource(id, signal));
+  const { retry, focusRef } = useRetry(q.reload, q.loading);
+  const titleId = useId();
+  const notFound = q.error instanceof ApiError && q.error.status === 404;
+  const d = q.data;
+  useTitle(d?.card.title ?? (q.error === undefined ? '' : t(notFound ? 'detail.notFound' : 'detail.errorTitle')));
+
+  if (q.loading) {
+    return (
+      <div className="resource-page" aria-busy="true">
+        <p role="status" className="muted">{t('common.loading')}</p>
+        {Array.from({ length: 4 }, (_, i) => <div key={i} className="skeleton-row resource-skeleton" aria-hidden="true" />)}
+      </div>
+    );
+  }
+  if (notFound) {
+    return (
+      <StatePanel tone="notice" level={1} title={t('detail.notFound')} headingRef={focusRef} next={<HomeLink primary />}>
+        <p>{t('detail.notFoundBody')}</p>
+      </StatePanel>
+    );
+  }
+  if (q.error !== undefined || !d) {
+    return (
+      <StatePanel tone="error" level={1} title={t('detail.errorTitle')} headingRef={focusRef} next={<><RetryButton onClick={retry} /><HomeLink /></>}>
+        <p>{q.error instanceof ApiError && q.error.problem?.detail ? q.error.problem.detail : t('detail.errorBody')}</p>
+      </StatePanel>
+    );
+  }
+
+  return (
+    <article className="resource-page" aria-labelledby={titleId}>
+      <BackToResults />
+      <ResourceOverview card={d.card} page titleId={titleId} titleRef={focusRef} />
+      <AiSummary detail={d} />
+      <SourcesSay assertions={d.assertions} />
+      <Relationships relationships={d.relationships} />
+      <SourceRecords detail={d} />
+      <Part label={t('report.title')} level={LEVEL}>
+        <ReportForm resourceId={d.card.id} />
+      </Part>
+    </article>
+  );
+}
+
+function HomeLink({ primary = false }: { primary?: boolean }) {
+  const { t } = useTranslation();
+  return <Link to="/" className={primary ? 'btn btn-primary' : undefined}>{t('notFound.home')}</Link>;
+}
+
+/**
+ * Followed from the results ("Full details"), the page steps back to them like the browser's Back: the same search,
+ * selection and scroll position. Opened any other way, there is nothing to go back to; the header has the box.
+ */
+function BackToResults() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const from = (useLocation().state as Partial<FromResults> | null)?.from;
+  if (typeof from !== 'string' || !from.startsWith('/') || from.startsWith('//')) return null;
+  return (
+    <Link to={from} className="resource-back" onClick={(e) => { e.preventDefault(); void navigate(-1); }}>
+      ← {t('detail.backToResults')}
+    </Link>
+  );
+}
+
+/** The AI-written summary (ADR 0019): labelled, marked with its model (ADR 0038), each claim with its citations. */
+function AiSummary({ detail }: { detail: ResourceDetail }) {
+  const { t, i18n } = useTranslation();
+  const { summary } = detail;
+  return (
+    <Part label={t('detail.summary')} level={LEVEL}>
+      <p className="muted small">{t(`enrichment.${detail.enrichmentStatus}`)}</p>
+      {summary ? (
+        <>
+          <ul className="plain-list resource-claims">
+            {summary.claims.map((c, i) => (
+              <li key={i}>
+                <p {...aiMark(summary.model)}>{c.text}</p>
+                <details className="resource-cites">
+                  <summary>{t('detail.citations', { count: c.evidence.length })}</summary>
+                  <EvidenceList evidence={c.evidence} />
+                </details>
+              </li>
+            ))}
+          </ul>
+          <p className="muted small">
+            {t('detail.summaryMeta', { model: summary.model, version: summary.promptVersion, date: formatDate(summary.generatedAt, i18n.language, 'INSTANT') })}
+          </p>
+        </>
+      ) : (
+        <p>{t('detail.noSummary')}</p>
+      )}
+    </Part>
+  );
+}
+
+/** Each stated value (ADR 0004): where it came from, whether it is verified, and the evidence. AI-extracted values are marked. */
+function SourcesSay({ assertions }: { assertions: ResourceDetail['assertions'] }) {
+  const { t } = useTranslation();
+  return (
+    <Part label={t('detail.assertions')} level={LEVEL}>
+      {assertions.length === 0 ? <p className="muted">{t('detail.noAssertions')}</p> : (
+        <ul className="plain-list resource-says">
+          {assertions.map((a, i) => (
+            <li key={`${a.field}-${i}`} className="resource-say">
+              <p className="resource-say__head"><span className="resource-say__field">{a.field}</span> <VerificationBadge verification={a.verification} /></p>
+              <p className="resource-say__value" {...(isAiOrigin(a.origin) ? aiMark() : {})}>{a.value}</p>
+              <p className="muted small"><OriginLabel origin={a.origin} />{a.sourceId && <> · {a.sourceId}</>}</p>
+              <EvidenceList evidence={a.evidence} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </Part>
+  );
+}
+
+/** Only verified relationships count as facts; unverified and conflicting ones are leads; rejected ones are not shown. */
+function Relationships({ relationships }: { relationships: Relationship[] }) {
+  const { t } = useTranslation();
+  const confirmed = relationships.filter((r) => r.verification === 'VERIFIED');
+  const candidates = relationships.filter((r) => r.verification === 'UNVERIFIED' || r.verification === 'CONFLICTING');
+  return (
+    <>
+      <Part label={t('detail.relationships')} level={LEVEL}>
+        {confirmed.length === 0 ? <p className="muted">{t('detail.noVerified')}</p> : <RelList items={confirmed} />}
+      </Part>
+      {candidates.length > 0 && (
+        <Part label={t('detail.candidates')} level={LEVEL}>
+          <p className="notice notice-warn">{t('detail.candidatesHint')}</p>
+          <RelList items={candidates} />
+        </Part>
+      )}
+    </>
+  );
+}
 
 function RelList({ items }: { items: Relationship[] }) {
   const { t } = useTranslation();
   return (
-    <ul className="plain-list rel-list">
+    <ul className="plain-list resource-rels">
       {items.map((r, i) => (
         <li key={`${r.kind}-${r.targetTitle}-${i}`}>
           <strong>{t(`relationship.${r.kind}`)}</strong>{' '}
@@ -31,131 +180,33 @@ function RelList({ items }: { items: Relationship[] }) {
   );
 }
 
-export default function ResourcePage() {
-  const { id = '' } = useParams();
+/** Provenance: every source record behind the resource, when it was read and its content fingerprint. */
+function SourceRecords({ detail }: { detail: ResourceDetail }) {
   const { t, i18n } = useTranslation();
-  const q = useApi(`resource/${id}`, (signal) => api.getResource(id, signal));
-  const d = q.data;
-  useTitle(d?.card.title ?? '');
-
-  if (q.loading) return <p role="status" aria-busy="true">{t('common.loading')}</p>;
-  if (q.error !== undefined || !d) {
-    const notFound = q.error instanceof ApiError && q.error.status === 404;
-    return (
-      <div role="alert" className="state-box state-error">
-        <h1 className="h-small">{notFound ? t('detail.notFound') : t('detail.errorTitle')}</h1>
-        {!notFound && <button type="button" className="btn btn-primary" onClick={q.reload}>{t('common.retry')}</button>}
-        <p><Link to="/">{t('detail.backToSearch')}</Link></p>
-      </div>
-    );
-  }
-
-  const confirmed = d.relationships.filter((r) => r.verification === 'VERIFIED');
-  const candidates = d.relationships.filter((r) => r.verification === 'UNVERIFIED' || r.verification === 'CONFLICTING');
-
   return (
-    <div className="detail">
-      <p><Link to="/">{t('detail.backToSearch')}</Link></p>
-      <ResultCardView card={d.card} />
-      {canGuide(d.card) && <SetupGuidePanel id={id} title={d.card.title} />}
-
-      <section aria-labelledby="sum-h" className="panel">
-        <h2 id="sum-h">{t('detail.summary')}</h2>
-        <p className="muted small">{t(`enrichment.${d.enrichmentStatus}`)}</p>
-        {d.summary ? (
-          <>
-            <ul className="plain-list claims">
-              {d.summary.claims.map((c, i) => (
-                <li key={i}>
-                  <p {...aiMark(d.summary?.model)}>{c.text}</p>
-                  <details>
-                    <summary>{t('detail.citations', { count: c.evidence.length })}</summary>
-                    <EvidenceList evidence={c.evidence} />
-                  </details>
-                </li>
-              ))}
-            </ul>
-            <p className="muted small">
-              {t('detail.summaryMeta', { model: d.summary.model, version: d.summary.promptVersion, date: formatDate(d.summary.generatedAt, i18n.language, 'INSTANT') })}
-            </p>
-          </>
-        ) : (
-          <p>{t('detail.noSummary')}</p>
-        )}
-      </section>
-
-      <section aria-labelledby="as-h" className="panel">
-        <h2 id="as-h">{t('detail.assertions')}</h2>
-        {d.assertions.length === 0 ? <p className="muted">{t('detail.noAssertions')}</p> : (
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th scope="col">{t('detail.col.field')}</th>
-                  <th scope="col">{t('detail.col.value')}</th>
-                  <th scope="col">{t('detail.col.origin')}</th>
-                  <th scope="col">{t('detail.col.verification')}</th>
-                  <th scope="col">{t('detail.col.evidence')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {d.assertions.map((a, i) => (
-                  <tr key={`${a.field}-${i}`}>
-                    <th scope="row">{a.field}</th>
-                    <td {...(isAiOrigin(a.origin) ? aiMark() : {})}>{a.value}</td>
-                    <td><OriginLabel origin={a.origin} />{a.sourceId && <div className="muted small">{a.sourceId}</div>}</td>
-                    <td><VerificationBadge verification={a.verification} /></td>
-                    <td><EvidenceList evidence={a.evidence} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-
-      <section aria-labelledby="rel-h" className="panel">
-        <h2 id="rel-h">{t('detail.relationships')}</h2>
-        {confirmed.length === 0 ? <p className="muted">{t('detail.noVerified')}</p> : <RelList items={confirmed} />}
-      </section>
-      {candidates.length > 0 && (
-        <section aria-labelledby="cand-h" className="panel panel-candidates">
-          <h2 id="cand-h"><Icon name="question" /> {t('detail.candidates')}</h2>
-          <p className="muted">{t('detail.candidatesHint')}</p>
-          <RelList items={candidates} />
-        </section>
-      )}
-
-      <section aria-labelledby="rec-h" className="panel">
-        <h2 id="rec-h">{t('detail.sourceRecords')}</h2>
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">{t('sources.col.source')}</th>
-                <th scope="col">{t('detail.col.externalId')}</th>
-                <th scope="col">{t('detail.col.retrieved')}</th>
-                <th scope="col">{t('detail.col.fingerprint')}</th>
+    <Part label={t('detail.sourceRecords')} level={LEVEL}>
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">{t('sources.col.source')}</th>
+              <th scope="col">{t('detail.col.externalId')}</th>
+              <th scope="col">{t('detail.col.retrieved')}</th>
+              <th scope="col">{t('detail.col.fingerprint')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {detail.sourceRecords.map((r) => (
+              <tr key={`${r.sourceId}-${r.externalId}`}>
+                <th scope="row">{r.sourceId}</th>
+                <td><ExternalLink url={r.url} showHost={false}>{r.externalId}</ExternalLink></td>
+                <td>{formatDate(r.retrievedAt, i18n.language, 'INSTANT')}</td>
+                <td><code title={r.fingerprint}>{r.fingerprint.slice(0, 12)}</code></td>
               </tr>
-            </thead>
-            <tbody>
-              {d.sourceRecords.map((r) => (
-                <tr key={`${r.sourceId}-${r.externalId}`}>
-                  <th scope="row">{r.sourceId}</th>
-                  <td><ExternalLink url={r.url} showHost={false}>{r.externalId}</ExternalLink></td>
-                  <td>{formatDate(r.retrievedAt, i18n.language, 'INSTANT')}</td>
-                  <td><code title={r.fingerprint}>{r.fingerprint.slice(0, 12)}</code></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section aria-labelledby="report-h" className="panel">
-        <h2 id="report-h">{t('report.title')}</h2>
-        <ReportForm resourceId={d.card.id} />
-      </section>
-    </div>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Part>
   );
 }

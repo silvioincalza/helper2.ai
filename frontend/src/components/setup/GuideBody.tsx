@@ -1,8 +1,7 @@
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Heading } from '@/components/ui/Heading';
 import { ConnectPart } from './ConnectPart';
-import { GuideMeButton, useGuideToggle } from './GuideMe';
 import { StepsPart } from './StepsPart';
 
 /**
@@ -22,18 +21,5 @@ export function GuideBody({ id, title, level }: { id: string; title: string; lev
       <ConnectPart id={id} level={level + 1} />
       <StepsPart id={id} title={title} level={level + 1} />
     </div>
-  );
-}
-
-/** The detail page's Guide me: a primary button, the panel under it. */
-export function SetupGuidePanel({ id, title }: { id: string; title: string }) {
-  const { t } = useTranslation();
-  const { open, toggle } = useGuideToggle();
-  const bodyId = `setup-${useId()}`;
-  return (
-    <section className="setup" aria-label={t('setup.title', { title, interpolation: { escapeValue: false } })}>
-      <GuideMeButton title={title} open={open} onToggle={toggle} bodyId={bodyId} primary />
-      <div id={bodyId} hidden={!open}>{open && <GuideBody id={id} title={title} level={2} />}</div>
-    </section>
   );
 }
