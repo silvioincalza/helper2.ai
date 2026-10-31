@@ -9,7 +9,7 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 ## 1. Before the hackathon deadline (30 Oct 2026, 18:00 Zurich)
 
 - **Full vector index before recording the video.** Every resource has an embedding
-  ([ADR 0012](adr/0012-vector-search-pgvector.md)). The Scout fills the index over a few days (300 enrichments
+  ([ADR 0012](adr/search/0012-vector-search-pgvector.md)). The Scout fills the index over a few days (300 enrichments
   per day).
 
 ## 2. Launch hardening
@@ -17,30 +17,30 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 ### Product and legal
 - Imprint and contact (EU). The Privacy and Terms pages exist; the Sources page lists attributions.
 - Lawyer review of the Privacy and Terms pages and of the AI Act reading in
-  [ADR 0038](adr/0038-ai-content-marking.md): provider role, metadata-only marking, deadline.
-- Lawyer review of the web-search quota ([ADR 0037](adr/0037-tavily-store-and-daily-quota.md)): whether an HMAC of
+  [ADR 0038](adr/guide/0038-ai-content-marking.md): provider role, metadata-only marking, deadline.
+- Lawyer review of the web-search quota ([ADR 0037](adr/search/0037-tavily-store-and-daily-quota.md)): whether an HMAC of
   the address or of the query is personal data, legitimate interest as the basis, and the wording on the transfer of
   queries to Tavily in the US.
 - Check each US source and GitHub for Data Privacy Framework certification, as the Privacy page states.
 - Make server and Traefik logs delete after 3 months, as the Privacy page states.
 - Review each source's terms again for commercial use.
 - SEO: `robots.txt`, `sitemap.xml`, metadata and JSON-LD for detail pages. Detail pages are not crawlable
-  today, because the frontend is a single-page app ([ADR 0025](adr/0025-frontend-one-box.md)).
+  today, because the frontend is a single-page app ([ADR 0025](adr/frontend/0025-frontend-one-box.md)).
 
 ### Domain and identity
 - DNS: `CAA` record for the edge's certificate authority; `v=spf1 -all` and DMARC `p=reject` if no mail is sent.
 - Register a production GitHub OAuth App, add profile `oauth-github`, set `H2_GITHUB_OAUTH_CLIENT_ID`,
-  `H2_GITHUB_OAUTH_CLIENT_SECRET` and `H2_ADMINS=github:<numeric id>` ([ADR 0023](adr/0023-identity-and-admin.md)).
+  `H2_GITHUB_OAUTH_CLIENT_SECRET` and `H2_ADMINS=github:<numeric id>` ([ADR 0023](adr/edge/0023-identity-and-admin.md)).
 - ADMIN is decided at sign-in, so a change to `H2_ADMINS` needs a new sign-in.
 - Optional `H2_HF_TOKEN` on prod.
 - **Sign-in for everyone.** Sign-in is offered only on `/admin`, so server-side bookmarks and account deletion
   (`DELETE /me`) reach only admins today. Add a public sign-in entry point in the page; it needs the
-  `oauth-github` profile on prod ([ADR 0023](adr/0023-identity-and-admin.md)).
+  `oauth-github` profile on prod ([ADR 0023](adr/edge/0023-identity-and-admin.md)).
 - Turn on the registered Tavily tier (more web searches per day for signed-in users) once that sign-in is live
-  ([ADR 0037](adr/0037-tavily-store-and-daily-quota.md)).
+  ([ADR 0037](adr/search/0037-tavily-store-and-daily-quota.md)).
 - Admin back office on `admin.helper2.ai`, reachable only through WireGuard via Traefik, with no app-level
   network filter. Not built yet: today `/admin` is served on the public hosts and protected only by sign-in
-  ([ADR 0023](adr/0023-identity-and-admin.md)).
+  ([ADR 0023](adr/edge/0023-identity-and-admin.md)).
 
 ### Quality gates
 - **Browser end-to-end tests (skipped for now, owner decision 27 Oct 2026).** No browser journey is automated,
@@ -52,10 +52,10 @@ Items are grouped by the order in which they matter. Inside a group, the first i
   - After a route change, the focused heading and the live region can both be read out.
 - Load test of search at the expected peak: confirm p95 and that the rate limits do not trip for normal use.
 - Run `./gradlew liveTest` against production egress.
-- Ranking measured on a labeled query set ([ADR 0009](adr/0009-ranking.md)). The harness and the queries exist
-  ([ADR 0036](adr/0036-search-evaluation-harness.md)); the grades do not. Label them as
+- Ranking measured on a labeled query set ([ADR 0009](adr/search/0009-ranking.md)). The harness and the queries exist
+  ([ADR 0036](adr/quality/0036-search-evaluation-harness.md)); the grades do not. Label them as
   [docs/eval](eval/README.md) describes, then record the baseline.
-- Guide relevance judged by a second person, not only by the owner ([ADR 0030](adr/0030-guide-evaluation.md)).
+- Guide relevance judged by a second person, not only by the owner ([ADR 0030](adr/quality/0030-guide-evaluation.md)).
 
 ## 3. Operations
 
@@ -65,9 +65,9 @@ Items are grouped by the order in which they matter. Inside a group, the first i
   - test a restore;
   - add a periodic restore-check job;
   - turn on the off-site copy to R2 (`backup.offsite`) with a bucket-scoped token;
-  - encrypt dumps on the client side before upload ([ADR 0027](adr/0027-runtime-topology.md)).
+  - encrypt dumps on the client side before upload ([ADR 0027](adr/operations/0027-runtime-topology.md)).
 - **Short-lived deployer token.** Mint it with the OpenBao Kubernetes secrets engine. Today the deployer token
-  in `deploy/k8s/terraform/rbac.tf` does not expire ([ADR 0028](adr/0028-ci-cd.md)).
+  in `deploy/k8s/terraform/rbac.tf` does not expire ([ADR 0028](adr/operations/0028-ci-cd.md)).
 - **Supply chain:**
   - pin base images by digest (`deploy/Dockerfile`, `deploy/postgres/Dockerfile`);
   - set `postgres.image.digest`;
@@ -90,7 +90,7 @@ on purpose:
   question it has not seen; two replicas may answer the same new question once each.
 - **Query-vector cache** (`SemanticSearchSource`). A miss costs one embedding call (about 0.3 s) on that replica.
 - **Source cooldowns after a rate limit** (`SearchResources`), **circuit breakers and bulkheads** (`source-<id>`
-  policies, [ADR 0033](adr/0033-resilience-policies.md)) and the Sources page's last outcomes (`SourceHealth`).
+  policies, [ADR 0033](adr/foundation/0033-resilience-policies.md)) and the Sources page's last outcomes (`SourceHealth`).
   Each replica finds a limited or failing source on its own, at the cost of a few more refused calls.
 - **Query-translation cache** (`SpringAiQueryTranslator`). A miss costs one model call, inside the daily
   translation cap, which is counted in Redis.
@@ -110,28 +110,28 @@ Open items:
 ## 5. AI quality and cost
 
 - The guide reason check is a model judgment and can miss a claim. Only the quote is proven
-  ([ADR 0016](adr/0016-guide-reason-check.md)).
+  ([ADR 0016](adr/guide/0016-guide-reason-check.md)).
 - Watch whether the source `type`, now a source fact in enrichment, sends many proposals to CONFLICTING review
-  (for example GitHub LIBRARY versus MCP_SERVER) ([ADR 0019](adr/0019-evidence-gated-enrichment.md)).
+  (for example GitHub LIBRARY versus MCP_SERVER) ([ADR 0019](adr/scout/0019-evidence-gated-enrichment.md)).
 - Cross-language retrieval in vector search.
 - A Grafana panel for the share of kept picks ranked 9+ (`helper2.guide.picks{rank="9+"}`), next to the alert
-  `Helper2GuidePicksFromLowRanks` ([ADR 0015](adr/0015-ai-guide-evidence-gate.md)).
+  `Helper2GuidePicksFromLowRanks` ([ADR 0015](adr/guide/0015-ai-guide-evidence-gate.md)).
 - Show the web searches left today on the page, and say when the daily limit is reached (FE-2,
-  [ADR 0037](adr/0037-tavily-store-and-daily-quota.md)). The API already returns them (`webSearches`).
+  [ADR 0037](adr/search/0037-tavily-store-and-daily-quota.md)). The API already returns them (`webSearches`).
 - Write the Scout's Tavily news and events to the same stored sets as searches, with their own share of credits
-  ([ADR 0037](adr/0037-tavily-store-and-daily-quota.md)).
+  ([ADR 0037](adr/search/0037-tavily-store-and-daily-quota.md)).
 - Setup guide: a model answer that stays unreadable after two attempts is not cached, so the same resource and
   question cost two model calls on every request until the daily cap. Give it its own reason and a short negative
-  cache ([ADR 0031](adr/0031-setup-guide.md)).
+  cache ([ADR 0031](adr/guide/0031-setup-guide.md)).
 - **Signed provenance manifest for AI-written text** (C2PA-style): sign each guide answer with its model, time and
   AI-written fields, so the origin survives outside our page and API. Today the marking is metadata only and is
-  lost on copy ([ADR 0038](adr/0038-ai-content-marking.md)). Do it when a standard and tooling for text exist, or
+  lost on copy ([ADR 0038](adr/guide/0038-ai-content-marking.md)). Do it when a standard and tooling for text exist, or
   if a regulator finds metadata alone too weak.
 - Pass a prompt version from `SpringAiEnrichmentModel`, `SpringAiToolGuideModel` and `SpringAiRepoClassifier`, and
   put them under the `llm-chat` circuit; then delete the "unversioned" methods of `ModelCallMetrics`
-  ([ADR 0014](adr/0014-llm-integration.md)).
+  ([ADR 0014](adr/guide/0014-llm-integration.md)).
 - Guide `WHEN` for a release: when our sources have no creation date, take the date quoted in a Tavily news item,
-  through the evidence gate. Measure after the `WHEN` event filter ([ADR 0032](adr/0032-guide-intents.md)).
+  through the evidence gate. Measure after the `WHEN` event filter ([ADR 0032](adr/guide/0032-guide-intents.md)).
 - Run `scripts/eval-guide.mjs --adversarial` in a scheduled job after each deploy; today it is run by hand.
 - A question from a shared `?ask=` link is asked on page load. Asking only after a click would stop a link from
   spending model calls for its visitors (one cached answer per question limits it today).
@@ -142,19 +142,19 @@ Open items:
   query per assertion. Batch them.
 - Indexed resources left without source records are not deleted (only observed ones are).
 - The Apache client's response timeout applies per read, not as a total deadline per call
-  ([ADR 0006](adr/0006-outbound-http.md)).
+  ([ADR 0006](adr/foundation/0006-outbound-http.md)).
 - The embedding backlog gauge does not count rows whose text changed after they were embedded.
 - Conference files that the ai-deadlines collector skips are logged, not counted in a metric.
 - On a resource's first search, the discovery date is unknown, because catalog writes run off the request path
-  ([ADR 0004](adr/0004-persistence-and-provenance.md)).
+  ([ADR 0004](adr/foundation/0004-persistence-and-provenance.md)).
 - "Works with" flags on index hits name `helper2-index` as their source, not the source that set the tag, and only
-  the first 20 tags (alphabetical) are kept, which can drop a flag ([ADR 0013](adr/0013-works-with-flags.md)).
+  the first 20 tags (alphabetical) are kept, which can drop a flag ([ADR 0013](adr/search/0013-works-with-flags.md)).
 - Guide recommendations carry no "works with" flags (they are not built with `CardMapper.card()`).
 - The MCP Registry asks for hourly polling, but the Scout runs once a day in the cluster, so the registry is
-  read daily ([ADR 0018](adr/0018-scout-runner.md)).
+  read daily ([ADR 0018](adr/scout/0018-scout-runner.md)).
 - More registries, if their terms allow it. Consumer AI-tool coverage is thin.
 - Live event collectors for hackathons, meetups, talks and workshops, so the curated community-events list
-  ([ADR 0022](adr/0022-next-events.md)) does not need a research pass to stay current. Candidates: Devpost and
+  ([ADR 0022](adr/scout/0022-next-events.md)) does not need a research pass to stay current. Candidates: Devpost and
   MLH (hackathons), Luma and Meetup (meetups, talks, workshops), Eventbrite. Each needs a terms review for public
   redisplay first, must state the days and the format (online, in person) in a form code can read, and Meetup's
   API needs a paid plan.
@@ -163,7 +163,7 @@ Open items:
   catalog, a newsletter) from the Sources page. A request names the site and what it lists; it goes to the admin
   review list, and an accepted request becomes a collector or a curated entry after a terms review for public
   redisplay. Rate-limited like issue reports; no sign-in needed. Courses and certifications (Coursera, O'Reilly,
-  edX, Udemy, vendor programmes) are the first case ([ADR 0032](adr/0032-guide-intents.md)).
+  edX, Udemy, vendor programmes) are the first case ([ADR 0032](adr/guide/0032-guide-intents.md)).
 
 ## 7. Frontend
 
@@ -180,7 +180,7 @@ Open items:
   `typescript-eslint` 8.72 needs TypeScript <6.1 and `eslint-plugin-jsx-a11y` 6.10 needs ESLint <=9. Remove the
   ignore rules once both plugins support the new majors.
 
-- **Design v2** ([0040](adr/0040-frontend-design-v2.md)) is done and on staging. Prod gets it with the next release:
+- **Design v2** ([0040](adr/frontend/0040-frontend-design-v2.md)) is done and on staging. Prod gets it with the next release:
   cut one once staging looks right.
 - The News and Events boards move on their own. Hover, focus and tap pause them; check this against WCAG 2.2.2 with
   a real touch and screen-reader test before launch.
@@ -191,7 +191,7 @@ Open items:
 
 - The Scout reads catalog tables (`resource`, `source_record`) for its enrichment backlog in
   `JdbcEnrichmentStore`. Spring Modulith cannot see coupling through the schema; read them through a catalog port
-  ([ADR 0002](adr/0002-modular-monolith-hexagonal.md)).
+  ([ADR 0002](adr/foundation/0002-modular-monolith-hexagonal.md)).
 - `platform` is an open module and holds the LLM layer. Consider a closed `llm` module with a named interface.
 - Move the source and catalog adapters into `internal` packages.
 

@@ -28,14 +28,14 @@ Redis, PostgreSQL and the NVIDIA models on the driven side.
 
 ![Software architecture](diagrams/software-architecture.svg)
 
-- Module boundaries are checked by `ModularityTest` (Spring Modulith + ArchUnit): [ADR 0002](adr/0002-modular-monolith-hexagonal.md).
+- Module boundaries are checked by `ModularityTest` (Spring Modulith + ArchUnit): [ADR 0002](adr/foundation/0002-modular-monolith-hexagonal.md).
 - The API is contract-first: controller interfaces and frontend types are generated from `api/openapi.yaml`:
-  [ADR 0003](adr/0003-contract-first-rest-api.md).
+  [ADR 0003](adr/foundation/0003-contract-first-rest-api.md).
 
 ## Infrastructure
 
 Staging and production (`helper2.ai`) run on one Kubernetes cluster, one Helm release per
-namespace. The chart runs on any cluster ([ADR 0027](adr/0027-runtime-topology.md), [deploy/k8s/README.md](../deploy/k8s/README.md)).
+namespace. The chart runs on any cluster ([ADR 0027](adr/operations/0027-runtime-topology.md), [deploy/k8s/README.md](../deploy/k8s/README.md)).
 
 ![Infrastructure](diagrams/infrastructure.svg)
 
@@ -43,11 +43,11 @@ namespace. The chart runs on any cluster ([ADR 0027](adr/0027-runtime-topology.m
 
 | To understand | Read |
 |---|---|
-| One search, end to end | [0008 federated search](adr/0008-federated-search.md) → [0009 ranking](adr/0009-ranking.md) → [0011 language](adr/0011-language-aware-search.md) → [0012 vector search](adr/0012-vector-search-pgvector.md) |
-| One guide question, end to end | [0014 LLM layer](adr/0014-llm-integration.md) → [0015 evidence gate](adr/0015-ai-guide-evidence-gate.md) → [0016 reason check](adr/0016-guide-reason-check.md) → [0017 cost guard](adr/0017-guide-cost-guard.md) |
-| How the index grows | [0018 Scout runner](adr/0018-scout-runner.md) → [0019 enrichment](adr/0019-evidence-gated-enrichment.md) → [0020 collectors](adr/0020-scout-collectors.md) |
-| Configuration and secrets | [0007](adr/0007-configuration-and-secrets.md) |
-| Logs, traces and meters (full meter list) | [0026 observability](adr/0026-observability.md) |
-| From commit to prod | [0028 CI/CD](adr/0028-ci-cd.md) → [0029 release](adr/0029-release-versioning.md) |
+| One search, end to end | [0008 federated search](adr/search/0008-federated-search.md) → [0009 ranking](adr/search/0009-ranking.md) → [0011 language](adr/search/0011-language-aware-search.md) → [0012 vector search](adr/search/0012-vector-search-pgvector.md) |
+| One guide question, end to end | [0014 LLM layer](adr/guide/0014-llm-integration.md) → [0015 evidence gate](adr/guide/0015-ai-guide-evidence-gate.md) → [0016 reason check](adr/guide/0016-guide-reason-check.md) → [0017 cost guard](adr/guide/0017-guide-cost-guard.md) |
+| How the index grows | [0018 Scout runner](adr/scout/0018-scout-runner.md) → [0019 enrichment](adr/scout/0019-evidence-gated-enrichment.md) → [0020 collectors](adr/scout/0020-scout-collectors.md) |
+| Configuration and secrets | [0007](adr/foundation/0007-configuration-and-secrets.md) |
+| Logs, traces and meters (full meter list) | [0026 observability](adr/operations/0026-observability.md) |
+| From commit to prod | [0028 CI/CD](adr/operations/0028-ci-cd.md) → [0029 release](adr/operations/0029-release-versioning.md) |
 
 All diagrams, with a flowchart and a sequence diagram per feature: [diagrams/](diagrams/README.md).

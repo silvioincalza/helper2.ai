@@ -75,7 +75,7 @@ The success criteria at the end say which tests verify each journey today. What 
 
 ## UJ-7 Sign in (admin only)
 
-Sign-in exists for administrators ([ADR 0023](adr/0023-identity-and-admin.md)); the header never offers it.
+Sign-in exists for administrators ([ADR 0023](adr/edge/0023-identity-and-admin.md)); the header never offers it.
 
 1. An anonymous visitor to `/admin` sees a prompt and the configured OAuth2 provider (a GitHub OAuth App, profile `oauth-github`); without a provider the app is anonymous-only and `/admin` says an administrator account is needed.
 2. After login the user returns to `/admin`; the header shows the display name and **Sign out**; bookmarks merge (UJ-6). A signed-in user without the `ADMIN` role sees the forbidden message.

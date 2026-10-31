@@ -5,7 +5,7 @@ Rows: overview, HTTP, search and sources, AI guide, Scout (empty on staging, whe
 (empty without `H2_NVIDIA_API_KEY`), runtime, pod, logs.
 The pod row reads the cluster's cAdvisor and kube-state-metrics series, and the logs row reads Loki (datasource uid
 `loki`); both select the namespace `helper2-$environment`, and the logs row adds a `level` variable.
-Meters and tags: [ADR 0026](../../docs/adr/0026-observability.md).
+Meters and tags: [ADR 0026](../../docs/adr/operations/0026-observability.md).
 
 The datasources are referenced by uid (`prometheus`, `loki`): provision them with these uids. There are no
 `${DS_*}` inputs to rewrite.

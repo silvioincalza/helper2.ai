@@ -68,7 +68,7 @@ The section under "Notes on this run" is hand-written and kept by the script; th
 ## Notes on this run
 
 <!-- hand-written: kept by scripts/eval-guide.mjs -->
-- This run measures `f41bc48c` on prod (29 Oct 2026, 00:25 UTC): guide intents ([ADR 0032](adr/0032-guide-intents.md)) on top of run 17 (thinking off, reason check, vector search).
+- This run measures `f41bc48c` on prod (29 Oct 2026, 00:25 UTC): guide intents ([ADR 0032](adr/guide/0032-guide-intents.md)) on top of run 17 (thinking off, reason check, vector search).
 - **Twice as fast:** p50 5.6 s, p90 7.6 s, max 7.8 s, against 10.9 s / 17.4 s / 17.8 s in run 17 ([eval/run-17-before-intents.md](eval/run-17-before-intents.md)). Token Factory was overloaded during run 17, so part of the gain is the provider, not the code. One request of a first attempt hung for 5 minutes with no response headers and stopped that attempt; its answer was then cached (b01, 137 ms), and b01 is left out of the percentiles.
 - **One answer fewer:** an AI pick on 11 of 19 real queries (run 17: 12; its notes said 13, a miscount: its own list of queries with no pick has 7 entries). Lost: u02 (meeting notes). No pick for b03, b05, b10, b13, u01, u02, u04 and n01. 24 picks kept, none rejected by the validator; the reason check removed 3.
 - **" p19" as a constraint:** this run appended " p19" to every question; the planner read it as a constraint on b05, b13 and u01, so those three were judged against a constraint no user would write.
