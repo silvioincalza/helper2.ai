@@ -108,7 +108,7 @@ Sign-in exists for administrators ([ADR 0023](adr/0023-identity-and-admin.md)); 
 
 **Failure case:** sign-in fails or the provider is down → `/admin?signin=failed` says "Sign-in did not complete. Try again."; anonymous use is unaffected.
 
-**Delete the account.** The signed-in name in the header opens the account page (`/account`): who is signed in, and **Delete my account**. A dialog asks to confirm, with focus on Cancel; Escape closes it and focus goes back to the button. On confirm the account and its saved items are deleted and the page starts over, signed out. If the deletion fails, an alert says so and the account stays. Signed out, the page says there is no account to delete and links to Privacy; it offers no sign-in.
+**Delete the account.** The signed-in name in the header opens the account page (`/account`): who is signed in, and **Delete my account**. A dialog asks to confirm, with focus on Cancel; Escape closes it and focus goes back to the button. On confirm the account and its saved items are deleted and the page starts over, signed out. If the deletion fails, an alert says so and the account stays. While it asks who is signed in, it says "Loading…". Signed out, the page says there is no account to delete and links to Privacy; it offers no sign-in.
 
 ## UJ-8 Understand coverage and sources
 
