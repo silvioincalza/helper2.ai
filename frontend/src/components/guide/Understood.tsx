@@ -6,7 +6,7 @@ import type { Refine } from './types';
 
 /**
  * How the guide read the question, as chips: the kind of answer, the named subjects, the period and the
- * requirements. ✕ re-asks without that part (sent as a structured removal, never as text to the model).
+ * requirements; the AI-written requirements carry one label for the group. ✕ re-asks without that part (sent as a structured removal, never as text to the model).
  */
 export function Understood({ answer, onRefine }: { answer: GuideResponse; onRefine?: Refine | undefined }) {
   const { t } = useTranslation();
@@ -23,6 +23,8 @@ export function Understood({ answer, onRefine }: { answer: GuideResponse; onRefi
           )}
         </span>
       ))}
+      {/* Art. 50: the requirements are marked in the HTML and labelled on screen, once for the group. */}
+      {parts.some((p) => p.ai) && <span className="badge">{t('guide.requirementsAi')}</span>}
     </p>
   );
 }

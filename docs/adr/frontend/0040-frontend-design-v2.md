@@ -42,7 +42,9 @@ and chose between options for each part.
 7. **Sources at the bottom.** The fan-out summary and one tile per source (status, response time or cache age) sit
    under the results, not in the header.
 8. **States are designed, not left to chance.** Loading (skeleton rows), guide answering, no results, some sources
-   failed, all sources failed, 404. Each has a next step.
+   failed, all sources failed, 404. Each has a next step. One component draws them all (`StatePanel`): a heading
+   that says what happened, why under it, the next step last. An error is an alert. Try again keeps focus on a
+   heading that stays on the page, never on the page body.
 9. **Footer says only "No ads."** The footer makes no claim about tracking, so it stays true whatever the cookie
    policy becomes.
 10. **One design, released by tag.** The code holds one design and no design flag. Prod deploys only a release tag
@@ -73,18 +75,21 @@ and chose between options for each part.
 - `frontend/src/styles/tokens.css` — the semantic tokens of `tokens.json` v3, each an alias of its base token, with
   `board-height` and `board-loop`.
 - `frontend/src/components/ui/` — `TypeTag`, `StatusPill`, `ProofQuote`, `SourceTiles`, `SelectableRow` (the
-  selected-row outline), `PicksBar` (reserved height, waiting line, no-pick line, AI-written picks slot) and the type
-  tabs; `ui.css`.
+  selected-row outline), `PicksBar` (reserved height, waiting line, no-pick line, AI-written picks slot),
+  `StatePanel` and `RetryButton` (every error, empty and 404 state), `CopyButton` and the type tabs; `ui.css`.
+- `frontend/src/hooks/useRetry.ts` — Try again moves focus to a heading, so it never falls to the page body.
+  `frontend/src/lib/motion.ts` — one `prefersReducedMotion` for the boards and the radar.
 - `frontend/src/hooks/useGuideStream.ts` — the guide stream for the question and refinement in the URL.
 - `frontend/src/pages/HomeV2.tsx` — the home page: radar hero, the one box, the examples, the two boards.
 - `frontend/src/components/home/` — `HomeBoard` (the loop, the copy hidden from assistive tech and from Tab, pause
   on hover, focus and tap, still under reduced motion), `NewsBoard` (`GET /recent`) and `EventsBoard`
   (`GET /events/upcoming`); `home-v2.css`. `frontend/src/lib/countdown.ts` — Today, Tomorrow, In N days, weeks or
   months.
-- `frontend/src/lib/searchState.ts` — `RESULTS_PATH` is `/search`. `OneBox` sends results there and searches live only
+- `frontend/src/lib/searchState.ts` — `RESULTS_PATH` is `/search`; `resourcePath(id)` builds every link to a
+  resource page with the id encoded. `OneBox` sends results there and searches live only
   on that page.
 - `frontend/src/pages/HomePage.tsx`, `routes.tsx` — `/` empty is the home page; `/search` shows results and goes home
-  with no query; `/?q=` shows results with a canonical link to `/search`; `/guide?q=` links go to `/search`.
+  with no query; `/?q=` shows results with a canonical link to `/search`; there is no `/guide` route (the site was never public, so no old links exist).
 - `frontend/src/components/results/ResultsV2.tsx` — the results page: the box, the picks bar (questions only), type
   tabs, a "Filters" fold with sort, list or timeline and the filter panel, search notices and use-case hints, the list
   of `SelectableRow`s, the preview beside the list from 861 px and inside it below, the pager, and the sources at the
@@ -98,6 +103,9 @@ and chose between options for each part.
   `pages/AccountPage.tsx` — Saved, Sources and your account.
 - `frontend/src/components/TextPageV2.tsx`, `pages/MissionPage.tsx`, `PrivacyPage.tsx`, `TermsPage.tsx` — the text
   pages with "On this page".
+- `frontend/src/pages/AdminPage.tsx`, `pages/admin-v2.css` — the admin back office ([0023](../edge/0023-identity-and-admin.md))
+  in the design: the review queue as rows like the saved rows, each status as a `StatusPill`, the Scout runs as a
+  table.
 - `frontend/src/components/Layout.tsx` — Sources and Mission in the menu, "No ads." in the footer.
 
 ## Diagrams

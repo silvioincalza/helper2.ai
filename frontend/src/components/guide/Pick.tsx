@@ -6,6 +6,7 @@ import { aiMark } from '@/lib/aiMark';
 import { locateQuote } from '@/lib/locateQuote';
 import { typeTagClass } from '@/lib/typeTag';
 import type { Recommendation } from './types';
+import { resourcePath } from '@/lib/searchState';
 
 /** One recommendation: its checked quote inside the resource's own text, the requirement checks, the model's reason. */
 export function Pick({ r, best }: { r: Recommendation; best: boolean }) {
@@ -21,7 +22,7 @@ export function Pick({ r, best }: { r: Recommendation; best: boolean }) {
           {r.aiReasoned && <Icon name="check" />}{r.aiReasoned ? t('guide.quoteChecked') : t('guide.noAi')}
         </span>
       </div>
-      <h3 className="card-title"><Link to={`/resource/${r.resourceId}`}>{r.title}</Link></h3>
+      <h3 className="card-title"><Link to={resourcePath(r.resourceId)}>{r.title}</Link></h3>
       <figure className="guide-quote">
         <figcaption className="small">
           {r.aiReasoned && <Icon name="check" />}{r.aiReasoned ? t('guide.evidence') : t('guide.fromDescription')}
@@ -33,18 +34,22 @@ export function Pick({ r, best }: { r: Recommendation; best: boolean }) {
         )}
       </figure>
       {(r.checks?.length ?? 0) > 0 && (
-        <ul className="plain-list guide-checks" aria-label={t('guide.checksLabel')}>
-          {r.checks!.map((c) => (
-            <li key={c.constraint} className={c.status === 'CONFIRMED' ? 'check-ok' : 'check-unknown'}>
-              {/* Status in words, never colour alone (WCAG 1.4.1). */}
-              <Icon name={c.status === 'CONFIRMED' ? 'check' : 'info'} />{' '}
-              <strong {...aiMark()}>{c.constraint}</strong>:{' '}
-              {c.status === 'CONFIRMED'
-                ? <>{t('guide.checkConfirmed')} <q>{c.quote}</q></>
-                : t('guide.checkNotConfirmed')}
-            </li>
-          ))}
-        </ul>
+        <>
+          {/* Art. 50: the planner wrote the requirements; labelled on screen once, marked on each. */}
+          <p className="muted small">{t('guide.checksLabel')} <span className="badge">{t('guide.requirementsAi')}</span></p>
+          <ul className="plain-list guide-checks" aria-label={t('guide.checksLabel')}>
+            {r.checks!.map((c) => (
+              <li key={c.constraint} className={c.status === 'CONFIRMED' ? 'check-ok' : 'check-unknown'}>
+                {/* Status in words, never colour alone (WCAG 1.4.1). */}
+                <Icon name={c.status === 'CONFIRMED' ? 'check' : 'info'} />{' '}
+                <strong {...aiMark()}>{c.constraint}</strong>:{' '}
+                {c.status === 'CONFIRMED'
+                  ? <>{t('guide.checkConfirmed')} <q>{c.quote}</q></>
+                  : t('guide.checkNotConfirmed')}
+              </li>
+            ))}
+          </ul>
+        </>
       )}
       {/* Without an AI pick the backend reason is a fixed fallback; the badge already says it. */}
       {r.aiReasoned && r.reasonCheck === 'REMOVED' && (

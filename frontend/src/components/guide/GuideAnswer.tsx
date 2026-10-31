@@ -42,7 +42,8 @@ export function GuideAnswer({ answer, onRefine }: { answer: GuideResponse; onRef
         <ol className="plain-list proof-strip" aria-label={t('guide.howMade')}>
           <li>
             <span className="proof-n">{t('guide.strip.planned')}</span>
-            <strong {...aiMark(answer.model.fastModel)}>{t('guide.searchedFor', { q: answer.searchQuery })}</strong>
+            <strong {...aiMark(answer.model.fastModel)}>{t('guide.searchedFor', { q: answer.searchQuery })}</strong>{' '}
+            <span className="badge">{t('picks.aiWritten')}</span>
             <span className="proof-sub">{answer.model.fastModel}</span>
           </li>
           <li>
@@ -65,6 +66,7 @@ export function GuideAnswer({ answer, onRefine }: { answer: GuideResponse; onRef
         <p className="muted small">
           {/* The planner may have written the query even when the answering model failed (aiContent says so). */}
           <span {...(answer.aiContent ? aiMark(answer.aiContent.models[0]) : {})}>{t('guide.searchedFor', { q: answer.searchQuery })}</span>
+          {answer.aiContent && <>{' '}<span className="badge">{t('picks.aiWritten')}</span></>}
           {' · '}{t('guide.considered', { n: answer.candidatesConsidered })}
         </p>
       )}

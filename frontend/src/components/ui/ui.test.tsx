@@ -2,7 +2,9 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axeViolations } from '@/test/a11y';
 import { makeStatus } from '@/test/fixtures';
+import { CopyButton } from './CopyButton';
 import { PicksBar } from './PicksBar';
+import { RetryButton, StatePanel } from './StatePanel';
 import { ProofQuote } from './ProofQuote';
 import { SelectableRow } from './SelectableRow';
 import { SourceTiles } from './SourceTiles';
@@ -120,9 +122,47 @@ describe('PicksBar', () => {
     );
     const bar = screen.getByRole('region', { name: 'Guide picks' });
     expect(within(bar).getByText('AI-written')).toBeInTheDocument();
-    const picks = within(bar).getByText('#1 Postgres MCP').closest('[data-ai-generated]');
-    expect(picks).toHaveAttribute('data-ai-model', 'nvidia/nemotron-3-super');
+    // The chips are source titles: labelled on screen, never marked as AI-written (ADR 0038).
+    expect(within(bar).getByText('#1 Postgres MCP').closest('[data-ai-generated]')).toBeNull();
     expect(within(bar).queryByRole('status')).toBeNull();
     expect(await axeViolations(container)).toEqual([]);
+  });
+});
+
+describe('CopyButton', () => {
+  it('copies its text and says so on the button', async () => {
+    const user = userEvent.setup();
+    const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue();
+    render(<CopyButton text="npx server" label="Copy prompt" />);
+    await user.click(screen.getByRole('button', { name: 'Copy prompt' }));
+    expect(writeText).toHaveBeenCalledWith('npx server');
+    expect(screen.getByRole('button', { name: 'Copied' })).toBeInTheDocument();
+  });
+
+  it('is named Copy when the snippet needs no other name', () => {
+    render(<CopyButton text="x" />);
+    expect(screen.getByRole('button', { name: 'Copy' })).toBeInTheDocument();
+  });
+});
+
+describe('StatePanel', () => {
+  it('an error is an alert: its heading says what happened, the next step sits under it', async () => {
+    const retry = vi.fn();
+    const { container } = render(<StatePanel tone="error" level={2} title="Could not load" next={<RetryButton onClick={retry} />}><p>The server did not answer.</p></StatePanel>);
+    const alert = screen.getByRole('alert');
+    expect(within(alert).getByRole('heading', { level: 2, name: 'Could not load' })).toBeInTheDocument();
+    expect(alert).toHaveTextContent('The server did not answer.');
+    await userEvent.click(within(alert).getByRole('button', { name: /Try again/ }));
+    expect(retry).toHaveBeenCalledTimes(1);
+    expect(await axeViolations(container)).toEqual([]);
+  });
+
+  it('a notice is read with the page, or announced as a status when it is live; it may have no next step', () => {
+    const { rerender } = render(<StatePanel tone="notice" level={3} title="Nothing new this week" />);
+    expect(screen.getByRole('heading', { level: 3, name: 'Nothing new this week' })).toBeInTheDocument();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    rerender(<StatePanel tone="notice" live level={2} title="No results" />);
+    expect(screen.getByRole('status')).toHaveTextContent('No results');
   });
 });

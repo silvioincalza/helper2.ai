@@ -1,5 +1,5 @@
 # Flowchart: the two answers of a resource page's "Guide me": the setup options and client snippets from source data
-# (no model), and the step-by-step guide picked by the model and checked against the tool's own documents.
+# (no model), and the step-by-step guide the model writes from the tool's own documents, checked against them.
 # Source of truth: backend/src/main/java/ai/helper2/setup/usecase/GetResourceSetup.java, GetToolGuide.java,
 #   backend/src/main/kotlin/ai/helper2/setup/SetupGuides.kt, RunOptionRules.kt, Launch.kt, Clients.kt, ToolGuides.kt,
 #   ToolGuideValidator.kt, backend/src/main/java/ai/helper2/setup/internal/RegistryMcpServerSpecs.java,
@@ -52,7 +52,7 @@ guide: "POST /api/v1/resources/{id}/guide (limiter guide, GetToolGuide)" {
   noMat: "NO_MATERIAL" {class: end}
   cached: "Readable Redis tool-guide answer\n(resource, documents,\nprompt hash; 7 days, or 10 min\nfor an unreadable model answer)?" {class: decision}
   hit: "Cached answer" {class: end}
-  write: "ToolGuideModel.write: pick and order\npassages (fast model,\ntool-guide daily budget)" {class: ai}
+  write: "ToolGuideModel.write: an instruction\nper step, with its passage and command\n(fast model, tool-guide daily budget)" {class: ai}
   unav: "LLM_UNAVAILABLE, not cached\n(no model, budget spent, provider\nerror or open llm-chat circuit)" {class: fail}
   unreadable: "LLM_UNAVAILABLE \"error\", cached\nH2_SETUP_UNREADABLE_TTL (10 min)" {class: fail}
   check: "ToolGuideValidator: whole command lines\nor a found quote; risky commands\nmarked caution; ≤ 8 per section" {class: app}

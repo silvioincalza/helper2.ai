@@ -19,6 +19,7 @@ import { Timeline } from '@/components/Timeline';
 import { ProofQuote } from '@/components/ui/ProofQuote';
 import { SelectableRow } from '@/components/ui/SelectableRow';
 import { SourceTiles } from '@/components/ui/SourceTiles';
+import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { TypeTag } from '@/components/ui/TypeTag';
 import { useApi } from '@/hooks/useApi';
@@ -28,7 +29,7 @@ import { useTitle } from '@/hooks/useTitle';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
 import { SAVED_ENABLED } from '@/lib/features';
 import { displayHost, guidePicks, picksById, selectedResult, type GuidePick } from '@/lib/selection';
-import { activeFilterCount, askedQuestion, clampQuestion, clearFilters, homeParams, isSelected, parseSearchParams, patchState, toApiParams, toggleFilter, type ResultsView, type SearchState } from '@/lib/searchState';
+import { activeFilterCount, askedQuestion, clampQuestion, clearFilters, homeParams, isSelected, parseSearchParams, patchState, toApiParams, toggleFilter, type ResultsView, type SearchState, resourcePath } from '@/lib/searchState';
 import { useSources } from '@/context/SourcesContext';
 import { ListedBy, ResultFacts } from './ResultFacts';
 import './results-v2.css';
@@ -94,11 +95,9 @@ export function ResultsV2() {
         </div>
       )}
       {!search.loading && search.error !== undefined && (
-        <div role="alert" className="state-box state-error">
-          <h2 className="h-small"><Icon name="warn" /> {t('results.errorTitle')}</h2>
+        <StatePanel tone="error" level={2} title={t('results.errorTitle')} next={<RetryButton onClick={search.reload} />}>
           <p>{search.error instanceof ApiError && search.error.problem?.detail ? search.error.problem.detail : t('results.errorBody')}</p>
-          <button type="button" className="btn btn-primary" onClick={search.reload}><Icon name="refresh" /> {t('common.retry')}</button>
-        </div>
+        </StatePanel>
       )}
       {shown && (
         <div className={search.loading ? 'is-stale' : undefined} aria-busy={search.loading}>
@@ -217,26 +216,22 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
       )}
 
       {nothingSearched ? (
-        <div role="alert" className="state-box state-error">
-          <h2 className="h-small"><Icon name="warn" /> {t('results.allFailedTitle')}</h2>
+        <StatePanel tone="error" level={2} title={t('results.allFailedTitle')}
+          next={<><RetryButton onClick={retry} /><Link to="/sources">{t('resultsV2.seeSources')}</Link></>}>
           <p>{t('results.allFailedBody')}</p>
-          <p className="h2-state__next">
-            <button type="button" className="btn btn-primary" onClick={retry}><Icon name="refresh" /> {t('common.retry')}</button>
-            <Link to="/sources">{t('resultsV2.seeSources')}</Link>
-          </p>
-        </div>
+        </StatePanel>
       ) : res.results.length === 0 ? (
-        <div role="status" className="state-box state-empty">
-          <h2 className="h-small">{t('results.emptyTitle')}</h2>
-          <p>{t('results.emptyTryOther')}</p>
-          <p className="h2-state__next">
+        <StatePanel tone="notice" live level={2} title={t('results.emptyTitle')} next={(
+          <>
             {activeFilterCount(state) > 0 && (
               <button type="button" className="btn" onClick={() => update(clearFilters(state))}>{t('results.emptyRemoveFilters')}</button>
             )}
             {ask && <button type="button" className="btn btn-primary" onClick={ask}>{t('resultsV2.askGuide')}</button>}
             <Link to="/sources">{t('resultsV2.seeSources')}</Link>
-          </p>
-        </div>
+          </>
+        )}>
+          <p>{t('results.emptyTryOther')}</p>
+        </StatePanel>
       ) : state.view === 'timeline' ? (
         <ResultsTimeline cards={res.results} sourceStatuses={res.sources} />
       ) : (
@@ -318,7 +313,7 @@ function Preview({ card, pick, stale, inline = false }: { card: ResultCard; pick
   const button = useRef<HTMLButtonElement>(null);
   const location = useLocation();
   // The resource page links back to this search and shows the same checked sentence.
-  const detail = { pathname: `/resource/${card.id}` };
+  const detail = { pathname: resourcePath(card.id) };
   const back = new URLSearchParams(location.search);
   back.set('id', card.id);
   const detailState = { from: `${location.pathname}?${back.toString()}`, quote: pick?.quote ?? null };

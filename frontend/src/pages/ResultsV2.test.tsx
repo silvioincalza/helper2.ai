@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import type { GuideResponse, ResultCard } from '@/api/types';
 import { axeViolations } from '@/test/a11y';
 import { makeCard, makeSearch, makeStatus } from '@/test/fixtures';
-import { mockApi, sse } from '@/test/mockApi';
+import { mockApi, problem, sse } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
 
 
@@ -139,6 +139,17 @@ describe('design v2 results: list and preview', () => {
     renderApp('/search?q=postgres');
     expect(await screen.findByRole('heading', { name: /2 of 2 sources answered/ })).toBeInTheDocument();
     expect(screen.getByRole('list', { name: 'Sources searched' })).toBeInTheDocument();
+  });
+
+  it('Try again on a failed guide keeps the reader there: focus moves to the picks heading, not the page body', async () => {
+    let n = 0;
+    mockApi({ 'GET /search': () => search(), 'POST /guide/stream': () => (n++ === 0 ? problem(502, 'Bad gateway', 'The model timed out.') : sse(guide())) });
+    renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
+    expect(await screen.findByRole('alert')).toHaveTextContent('The model timed out.');
+    screen.getByRole('button', { name: /Try again/ }).focus();
+    await userEvent.keyboard('{Enter}');
+    expect(await screen.findByRole('button', { name: '#1 Postgres MCP' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Guide picks' })).toHaveFocus();
   });
 
   it('has one h1 and no axe violations', async () => {

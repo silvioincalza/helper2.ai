@@ -76,8 +76,10 @@ and a snippet copied into an AI client's config file runs on the user's machine.
      `H2_SETUP_DOCUMENT_CACHE_MB` (32 MB) of text in all, the least recently used going first (Caffeine, weighed by
      length). A document is cut at 512 KB.
 10. **Step-by-step guide (model, checked).** `POST /resources/{id}/guide` sends the tool's own documents (GitHub
-   README, npm README, Hugging Face model or Space card; the useful sections of long ones) to the fast model, which
-   may only pick and order passages. `ToolGuideValidator` decides what is shown:
+   README, npm README, Hugging Face model or Space card; the useful sections of long ones) to the fast model. For
+   each step it writes one short instruction and picks the passage and the command behind it; the instruction is
+   the only text it writes, and the page labels and marks it as AI-written ([0038](0038-ai-content-marking.md)).
+   `ToolGuideValidator` decides what is shown:
    - a **command** is whole logical lines of one fenced block (a backslash-continued command counts as one line)
      or one whole inline code span, compared case-sensitively with whitespace collapsed; a command that does not
      pass is dropped, never shortened or merged;
@@ -86,8 +88,8 @@ and a snippet copied into an AI client's config file runs on the user's machine.
    - a command that hands text to a shell or interpreter (a pipe into `sh`, `bash`, `python`, `node`, `perl`,
      `pwsh`, `iex`, also through `sudo` or `env`; `sh -c "$(curl …)"`, `bash <(curl …)`, `eval "$(wget …)"`,
      `Invoke-Expression`), uses sudo, runs `chmod 777` or deletes recursively is kept but marked `caution`;
-   - the page says every quote and command is copied exactly from the document and that commands are not
-     reviewed for safety;
+   - the page says the steps are written by AI from the document, that every quote and command is copied exactly
+     from it and that commands are not reviewed for safety;
    - a step is never repeated in a later section; at most 8 per section.
    The fixed setup set of [0030](../quality/0030-guide-evaluation.md)
    (point 6) measures steps kept and rejected, snippet coverage and latency on every run.

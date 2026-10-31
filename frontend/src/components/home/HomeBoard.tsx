@@ -1,8 +1,9 @@
 import { useEffect, useState, type MouseEvent, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { Icon } from '@/components/Icon';
+import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
 import { StatusPill, type StatusTone } from '@/components/ui/StatusPill';
+import { prefersReducedMotion, REDUCED_MOTION_QUERY } from '@/lib/motion';
 import './home-v2.css';
 
 /** One row of a board: when, what kind, from where, its status in words, and the name that opens it. */
@@ -20,17 +21,12 @@ export interface BoardRow {
 
 /** Fewer rows than this fit in view: the board does not loop. */
 const LOOP_MIN = 5;
-const REDUCE = '(prefers-reduced-motion: reduce)';
-
-function prefersReducedMotion(): boolean {
-  return typeof window.matchMedia === 'function' && window.matchMedia(REDUCE).matches;
-}
 
 function useReducedMotion(): boolean {
   const [reduce, setReduce] = useState(prefersReducedMotion);
   useEffect(() => {
     if (typeof window.matchMedia !== 'function') return;
-    const mq = window.matchMedia(REDUCE);
+    const mq = window.matchMedia(REDUCED_MOTION_QUERY);
     const onChange = () => setReduce(mq.matches);
     mq.addEventListener?.('change', onChange);
     return () => mq.removeEventListener?.('change', onChange);
@@ -84,12 +80,9 @@ export function HomeBoard({ id, title, sub, listLabel, foot, loading, error, err
           </div>
         )}
         {!loading && error && (
-          <div role="alert" className="state-box state-error">
-            <p><Icon name="warn" /> {errorText}</p>
-            <button type="button" className="btn" onClick={onRetry}><Icon name="refresh" /> {t('common.retry')}</button>
-          </div>
+          <StatePanel tone="error" level={3} title={errorText} next={<RetryButton onClick={onRetry} />} />
         )}
-        {!loading && !error && rows.length === 0 && <p className="state-box">{emptyText}</p>}
+        {!loading && !error && rows.length === 0 && <StatePanel tone="notice" level={3} title={emptyText} />}
       </div>
       {rows.length > 0 && (
         // A tap pauses or plays the loop; it is a touch extra, as hover and keyboard focus already pause it.

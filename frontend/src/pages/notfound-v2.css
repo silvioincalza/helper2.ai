@@ -1,4 +1,2 @@
-/* Design v2 404 page (ADR 0040, 8). */
-.h2-notfound { max-width: 40rem; margin: var(--space-7) auto; display: flex; flex-direction: column; gap: var(--space-4); }
-.h2-notfound h1 { margin: 0; }
-.h2-notfound p { margin: 0; color: var(--ink-2); }
+/* Design v2 404 page (ADR 0040, 8): the state panel, centred. */
+.h2-notfound { max-width: 40rem; margin: var(--space-7) auto; }

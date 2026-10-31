@@ -14,6 +14,7 @@ import { Term, type GlossaryKey } from './Term';
 import { Timeline } from './Timeline';
 import { typeTagClass } from '@/lib/typeTag';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
+import { resourcePath } from '@/lib/searchState';
 
 /** Every type has a definition, so every card can say where its type comes from. */
 
@@ -88,7 +89,7 @@ export function ResultCardView({ card, sourceStatuses = [], detailed = false }: 
   const buildMeta = factList('build', buildFacts, [{ key: 'records', label: t('card.sourceRecords'), value: String(card.sources.length) }]);
   const unknownNote = !detailed && unknownCount > 0 && (
     <p className="muted small card-unknown" key="unknown">
-      {t('card.unknownFacts', { count: unknownCount })} · <Link to={`/resource/${card.id}`}>{t('card.allFacts')}</Link>
+      {t('card.unknownFacts', { count: unknownCount })} · <Link to={resourcePath(card.id)}>{t('card.allFacts')}</Link>
     </p>
   );
 
@@ -142,7 +143,7 @@ export function ResultCardView({ card, sourceStatuses = [], detailed = false }: 
           <FreshnessBadge freshness={card.freshness} />
         </div>
         <Heading id={titleId} className="card-title">
-          {detailed ? card.title : <Link to={`/resource/${card.id}`}>{card.title}</Link>}
+          {detailed ? card.title : <Link to={resourcePath(card.id)}>{card.title}</Link>}
         </Heading>
         <div className="card-actions">
           <ExternalLink url={card.url} />

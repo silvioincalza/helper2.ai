@@ -5,6 +5,7 @@ import { TypeTag } from '@/components/ui/TypeTag';
 import { useApi } from '@/hooks/useApi';
 import { shortDay } from '@/lib/format';
 import { HomeBoard, type BoardRow } from './HomeBoard';
+import { resourcePath } from '@/lib/searchState';
 
 /**
  * Tools and research only: news and events come from a web-search API whose terms do not clearly allow
@@ -48,7 +49,7 @@ export function NewsBoard() {
       status: date ? t(`radar.${date.key}`) : t('radar.noDate'),
       tone: date && date.key !== 'firstSeen' ? 'ok' : 'warn',
       title: card.title,
-      href: `/resource/${encodeURIComponent(card.id)}`,
+      href: resourcePath(card.id),
     };
   });
   return (

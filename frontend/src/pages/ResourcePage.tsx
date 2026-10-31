@@ -6,12 +6,14 @@ import { OriginLabel, VerificationBadge } from '@/components/Badges';
 import { EvidenceList } from '@/components/EvidenceList';
 import { ExternalLink } from '@/components/ExternalLink';
 import { Icon } from '@/components/Icon';
+import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
 import { ReportForm } from '@/components/ReportForm';
 import { useApi } from '@/hooks/useApi';
 import { useTitle } from '@/hooks/useTitle';
 import { formatDate } from '@/lib/format';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
 import { ResourceV2 } from '@/components/results/ResourceV2';
+import { resourcePath } from '@/lib/searchState';
 
 function RelList({ items }: { items: Relationship[] }) {
   const { t } = useTranslation();
@@ -20,7 +22,7 @@ function RelList({ items }: { items: Relationship[] }) {
       {items.map((r, i) => (
         <li key={`${r.kind}-${r.targetTitle}-${i}`}>
           <strong>{t(`relationship.${r.kind}`)}</strong>{' '}
-          {r.targetId ? <Link to={`/resource/${r.targetId}`}>{r.targetTitle}</Link> : r.targetTitle}{' '}
+          {r.targetId ? <Link to={resourcePath(r.targetId)}>{r.targetTitle}</Link> : r.targetTitle}{' '}
           <VerificationBadge verification={r.verification} />
           <EvidenceList evidence={r.evidence} />
         </li>
@@ -40,11 +42,8 @@ export default function ResourcePage() {
   if (q.error !== undefined || !d) {
     const notFound = q.error instanceof ApiError && q.error.status === 404;
     return (
-      <div role="alert" className="state-box state-error">
-        <h1 className="h-small">{notFound ? t('detail.notFound') : t('detail.errorTitle')}</h1>
-        {!notFound && <button type="button" className="btn btn-primary" onClick={q.reload}>{t('common.retry')}</button>}
-        <p><Link to="/">{t('detail.backToSearch')}</Link></p>
-      </div>
+      <StatePanel tone="error" level={1} title={notFound ? t('detail.notFound') : t('detail.errorTitle')}
+        next={<>{!notFound && <RetryButton onClick={q.reload} />}<Link to="/">{t('detail.backToSearch')}</Link></>} />
     );
   }
 
