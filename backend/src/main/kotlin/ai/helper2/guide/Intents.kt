@@ -229,9 +229,11 @@ object IntentRules {
         ALTERNATIVES.containsMatchIn(request) -> GuideIntent.ALTERNATIVES
         LEARN.containsMatchIn(request) -> GuideIntent.LEARN
         WHEN.containsMatchIn(request) -> GuideIntent.WHEN
-        windowOf(request) != null || NEWEST.containsMatchIn(request) || NEW_KIND.containsMatchIn(request) -> GuideIntent.NEWEST
+        windowOf(request) != null || NEWEST.containsMatchIn(request) -> GuideIntent.NEWEST
         WHAT_IS.containsMatchIn(request) -> GuideIntent.WHAT_IS
         HOW_TO.containsMatchIn(request) -> GuideIntent.HOW_TO
+        // After the question shapes: "how to set up new MCP servers" asks how, not what is new.
+        NEW_KIND.containsMatchIn(request) -> GuideIntent.NEWEST
         else -> null
     }
 

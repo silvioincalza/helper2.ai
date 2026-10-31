@@ -186,6 +186,8 @@ class AskGuideIntentsTest {
         // Any other intent of the planner stays too: only its "nothing special" gives way.
         val howTo = Model(GuideSearchPlan("MCP server", intent = GuideIntent.HOW_TO), choose = ::pickAll)
         assertEquals(GuideIntent.HOW_TO, guide(howTo).ask("how to set up new MCP servers", null).intent)
+        // Without a model the rules keep the question shape too.
+        assertEquals(GuideIntent.HOW_TO, guide(null).ask("how to set up new MCP servers", null).intent)
     }
 
     @Test
