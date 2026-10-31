@@ -1,7 +1,7 @@
 package ai.helper2.setup
 
 /**
- * Minimal writers for the config formats AI clients read (JSON, TOML, YAML, POSIX shell). The domain stays free of
+ * Minimal writers for the config formats AI clients read (JSON, TOML, POSIX shell). The domain stays free of
  * serialization libraries; values are only strings, booleans, numbers, lists and ordered maps.
  */
 internal object Formats {
@@ -38,8 +38,8 @@ internal object Formats {
     }
 
     /**
-     * Characters written as `\uXXXX` in JSON, TOML and YAML strings: controls (C0, DEL, C1), which TOML and YAML do not
-     * allow raw, the line and paragraph separators a YAML 1.1 reader folds as line breaks, and the byte order mark.
+     * Characters written as `\uXXXX` in JSON and TOML strings: controls (C0, DEL, C1), which TOML does not allow raw,
+     * the line and paragraph separators some readers fold as line breaks, and the byte order mark.
      */
     private fun escaped(c: Char) = c < ' ' || c in '\u007f'..'\u009f' || c == '\u2028' || c == '\u2029' || c == '\ufeff'
 
@@ -53,34 +53,6 @@ internal object Formats {
         is Map<*, *> -> value.entries.joinToString(", ", "{ ", " }") { (k, v) -> "${tomlKey(k.toString())} = ${toml(v)}" }
         else -> value.toString()
     }
-
-    /** YAML block; every string is double-quoted (a valid YAML scalar with JSON escapes), so nothing is misread. */
-    fun yaml(value: Map<String, Any?>, indent: String = ""): String = value.entries.joinToString("\n") { (k, v) ->
-        val key = "$indent${yamlKey(k)}:"
-        when (v) {
-            is Map<*, *> -> if (v.isEmpty()) "$key {}" else "$key\n" + yaml(stringKeys(v), "$indent  ")
-            is List<*> -> when {
-                v.isEmpty() -> "$key []"
-                v.all { it !is Map<*, *> } -> "$key " + v.joinToString(", ", "[", "]") { yamlScalar(it) }
-                else -> "$key\n" + v.joinToString("\n") { item ->
-                    val body = yaml(stringKeys(item as Map<*, *>), "$indent    ")
-                    "$indent  - " + body.removePrefix("$indent    ")
-                }
-            }
-            else -> "$key ${yamlScalar(v)}"
-        }
-    }
-
-    private fun yamlKey(k: String) = if (BARE.matches(k)) k else jsonString(k)
-
-    private fun yamlScalar(v: Any?): String = when (v) {
-        null -> "null"
-        is String -> jsonString(v)
-        else -> v.toString()
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    private fun stringKeys(m: Map<*, *>): Map<String, Any?> = m as Map<String, Any?>
 
     /**
      * One shell word: bare when it has no character a POSIX shell treats specially, single-quoted otherwise. A word

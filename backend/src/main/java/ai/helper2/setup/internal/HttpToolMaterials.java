@@ -33,7 +33,7 @@ class HttpToolMaterials implements ToolMaterials {
     static final int MAX_BYTES = 512 * 1024;
     private static final Logger log = LoggerFactory.getLogger(HttpToolMaterials.class);
 
-    /** Base URLs of the fixed hosts, and the tokens the sources use there (empty for none). */
+    /** Base URLs of the fixed hosts, the setup guide's own GitHub token and the Hub token (empty for none). */
     record Hosts(String github, String npm, String hf, String githubToken, String hfToken) {
     }
 

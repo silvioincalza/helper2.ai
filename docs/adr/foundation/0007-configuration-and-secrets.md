@@ -15,6 +15,9 @@ or in GitHub settings, and the deploy must not need a person to copy them.
    default (for example `H2_COOKIE_SECURE=true`, `H2_FORWARD_HEADERS_STRATEGY=none`,
    `H2_METRICS_PUBLIC=false`, `H2_SCOUT_ENABLED=false`). Search and rate-limit settings follow the same rule
    (`H2_SEARCH_STALE_FOR`, `H2_SEARCH_PER_SOURCE_LIMIT`, `H2_SEARCH_TRANSLATE_TIMEOUT_MS`, `H2_RATE_LIMIT_*`).
+   A token whose quota two features would share has one variable per feature: `H2_GITHUB_TOKEN` for the sources
+   and the Scout, `H2_SETUP_GITHUB_TOKEN` for the setup guide's README fetches
+   ([0031](../guide/0031-setup-guide.md)). An empty token means anonymous calls, never another feature's token.
    The pod sets `enableServiceLinks: false`, so Kubernetes adds no service variables of its own.
 2. **Profiles.** `llm-nebius` turns on the model provider (needs `H2_NEBIUS_API_KEY`); `oauth-github` turns
    on sign-in (needs `H2_GITHUB_OAUTH_CLIENT_ID` and `_SECRET`); `dev` starts compose and allows

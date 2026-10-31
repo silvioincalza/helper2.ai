@@ -111,6 +111,12 @@ class SetupGuidesTest {
     }
 
     @Test
+    fun `the clients are the eight MCP clients with the widest reach, in display order`() {
+        assertEquals(listOf("claude-code", "claude-desktop", "cursor", "vscode", "codex", "windsurf", "gemini-cli", "cline"),
+            Clients.ALL.map { it.id })
+    }
+
+    @Test
     fun `every client answers every option, with a snippet or a reason`() {
         val g = guide(remote, sse, npm)
         assertEquals(Clients.ALL.size, g.clients.size)
@@ -179,7 +185,7 @@ class SetupGuidesTest {
     }
 
     @Test
-    fun `codex toml, gemini httpUrl vs url, opencode command array, goose uri`() {
+    fun `codex toml, gemini httpUrl vs url, cline names the transport`() {
         val g = guide(remote, sse, npm)
         assertEquals("[mcp_servers.dotsy]\nurl = \"https://mcp.dotsy.ai/mcp\"", snippet(g, "codex").text)
         assertFalse(snippet(g, "codex", "o2").supported)
@@ -187,29 +193,8 @@ class SetupGuidesTest {
             "[mcp_servers.dotsy.env]\nDATABASE_URL = \"<DATABASE_URL>\"\nLOG_LEVEL = \"info\"", snippet(g, "codex", "o3").text)
         assertTrue("\"httpUrl\": \"https://mcp.dotsy.ai/mcp\"" in snippet(g, "gemini-cli").text!!)
         assertTrue("\"url\": \"https://example.com/sse\"" in snippet(g, "gemini-cli", "o2").text!!)
-        assertTrue("\"command\": [\"npx\", \"-y\", \"@kaiva/postgres-mcp@0.1.1\", \"<database_url>\"]" in snippet(g, "opencode", "o3").text!!)
-        assertTrue("uri: \"https://mcp.dotsy.ai/mcp\"" in snippet(g, "goose").text!!)
-        assertEquals("Goose does not support SSE servers.", snippet(g, "goose", "o2").note)
-    }
-
-    @Test
-    fun `continue block file is valid yaml list`() {
-        assertEquals("""
-            name: "dotsy"
-            version: "0.0.1"
-            schema: "v1"
-            mcpServers:
-              - name: "dotsy"
-                type: "streamable-http"
-                url: "https://mcp.dotsy.ai/mcp"
-        """.trimIndent(), snippet(guide(remote), "continue").text)
-    }
-
-    @Test
-    fun `jetbrains says why when env is needed`() {
-        val s = snippet(guide(npm), "jetbrains")
-        assertFalse(s.supported)
-        assertEquals("The documentation does not say how to pass environment variables.", s.note)
+        assertTrue("\"type\": \"streamableHttp\"" in snippet(g, "cline").text!!)
+        assertTrue("\"type\": \"sse\"" in snippet(g, "cline", "o2").text!!)
     }
 
     @Test

@@ -4,7 +4,6 @@ import ai.helper2.setup.Formats.json
 import ai.helper2.setup.Formats.sh
 import ai.helper2.setup.Formats.toml
 import ai.helper2.setup.Formats.tomlKey
-import ai.helper2.setup.Formats.yaml
 import java.net.URI
 
 /** One snippet for one run option in one client: ready to paste, or why it cannot be used there. */
@@ -34,24 +33,23 @@ data class Target(
 /**
  * An AI client: where its MCP configuration goes and its format, as the client's own documentation states it
  * ([docsUrl], read 2026-10-27). [render] returns null for an option the documentation gives no way to configure,
- * with the reason in [unsupported].
+ * and the snippet says so instead.
  */
 class Client(
     val id: String,
     val name: String,
     val docsUrl: URI,
     private val render: (Target) -> Snippet?,
-    private val unsupported: (Target) -> String = { if (it.sse) NO_SSE else NO_WAY },
 ) {
-    fun snippet(t: Target): Snippet = render(t) ?: Snippet(t.optionId, false, note = unsupported(t))
+    fun snippet(t: Target): Snippet = render(t) ?: Snippet(t.optionId, false, note = if (t.sse) NO_SSE else NO_WAY)
 
-    companion object {
+    private companion object {
         const val NO_SSE = "This client's documentation does not describe connecting to an SSE server."
         const val NO_WAY = "This client's documentation does not describe a way to configure this."
     }
 }
 
-/** The clients, in display order. Adding a client is adding a row. */
+/** The eight MCP clients with the widest reach, in display order. Adding a client is adding a row. */
 object Clients {
 
     val ALL: List<Client> = listOf(
@@ -83,14 +81,6 @@ object Clients {
         }),
         Client("vscode", "VS Code (GitHub Copilot)",
             URI("https://code.visualstudio.com/docs/agents/reference/mcp-configuration"), { t -> vsCode(t) }),
-        Client("copilot-cli", "GitHub Copilot CLI",
-            URI("https://code.visualstudio.com/docs/agents/reference/mcp-configuration"), { t ->
-                when {
-                    t.stdio -> jsonSnippet(t, "~/.copilot/mcp-config.json", "mcpServers", stdioEntry(t))
-                    t.sse -> null
-                    else -> jsonSnippet(t, "~/.copilot/mcp-config.json", "mcpServers", mapOf("type" to "http") + urlEntry(t))
-                }
-            }),
         Client("codex", "OpenAI Codex", URI("https://learn.chatgpt.com/docs/extend/mcp"), { t ->
             when {
                 t.sse -> null
@@ -102,16 +92,6 @@ object Clients {
                 if (t.stdio) stdioEntry(t) else mapOf("serverUrl" to t.url) + headers(t))
                 .copy(note = "This file is read by the Cascade agent; the Devin Local agent reads the Devin CLI configuration.")
         }),
-        Client("opencode", "opencode", URI("https://opencode.ai/docs/mcp-servers"), { t ->
-            val entry: Map<String, Any?> = when {
-                t.stdio -> linkedMapOf("type" to "local", "command" to listOf(t.launch!!.command) + t.launch.args,
-                    "enabled" to true) + (if (t.values.isEmpty()) emptyMap() else mapOf("environment" to t.values))
-                t.sse -> return@Client null
-                else -> linkedMapOf("type" to "remote", "url" to t.url, "enabled" to true) + headers(t)
-            }
-            Snippet(t.optionId, true, "opencode.json (project) or ~/.config/opencode/opencode.json", "json",
-                json(linkedMapOf("\$schema" to "https://opencode.ai/config.json", "mcp" to mapOf(t.key to entry))))
-        }),
         Client("gemini-cli", "Gemini CLI", URI("https://github.com/google-gemini/gemini-cli/blob/main/docs/tools/mcp-server.md"), { t ->
             jsonSnippet(t, ".gemini/settings.json (project) or ~/.gemini/settings.json", "mcpServers", when {
                 t.stdio -> stdioEntry(t)
@@ -120,13 +100,6 @@ object Clients {
                 else -> mapOf("httpUrl" to t.url) + headers(t)
             })
         }),
-        Client("zed", "Zed", URI("https://zed.dev/docs/ai/mcp"), { t ->
-            when {
-                t.stdio -> jsonSnippet(t, "~/.config/zed/settings.json", "context_servers", stdioEntry(t) + ("env" to t.values))
-                t.sse -> null
-                else -> jsonSnippet(t, "~/.config/zed/settings.json", "context_servers", urlEntry(t))
-            }
-        }),
         Client("cline", "Cline", URI("https://docs.cline.bot/mcp/mcp-overview"), { t ->
             jsonSnippet(t, "Cline › MCP Servers › Configure (cline_mcp_settings.json)", "mcpServers", when {
                 t.stdio -> stdioEntry(t) + linkedMapOf("disabled" to false, "autoApprove" to emptyList<String>())
@@ -134,69 +107,6 @@ object Clients {
                 else -> mapOf("type" to if (t.sse) "sse" else "streamableHttp") + urlEntry(t)
             })
         }),
-        Client("continue", "Continue", URI("https://docs.continue.dev/customize/deep-dives/mcp"), { t ->
-            val server: Map<String, Any?> = linkedMapOf<String, Any?>("name" to t.key) + if (t.stdio) {
-                linkedMapOf("type" to "stdio", "command" to t.launch!!.command, "args" to t.launch.args) +
-                    (if (t.values.isEmpty()) emptyMap() else mapOf("env" to t.values))
-            } else {
-                linkedMapOf("type" to if (t.sse) "sse" else "streamable-http", "url" to t.url) +
-                    (if (t.values.isEmpty()) emptyMap() else mapOf("requestOptions" to mapOf("headers" to t.values)))
-            }
-            Snippet(t.optionId, true, ".continue/mcpServers/${t.key}.yaml", "yaml",
-                yaml(linkedMapOf("name" to t.key, "version" to "0.0.1", "schema" to "v1", "mcpServers" to listOf(server))))
-        }),
-        Client("goose", "Goose", URI("https://goose-docs.ai/docs/guides/config-files"), { t ->
-            val ext: Map<String, Any?> = when {
-                t.stdio -> linkedMapOf("type" to "stdio", "name" to t.key, "enabled" to true, "cmd" to t.launch!!.command,
-                    "args" to t.launch.args, "envs" to t.values, "env_keys" to emptyList<String>(), "timeout" to 300)
-                t.sse -> return@Client null
-                else -> linkedMapOf("type" to "streamable_http", "name" to t.key, "enabled" to true, "uri" to t.url,
-                    "headers" to t.values, "envs" to emptyMap<String, String>(), "env_keys" to emptyList<String>(), "timeout" to 300)
-            }
-            Snippet(t.optionId, true, "~/.config/goose/config.yaml", "yaml", yaml(mapOf("extensions" to mapOf(t.key to ext))))
-        }, { t -> if (t.sse) "Goose does not support SSE servers." else Client.NO_WAY }),
-        Client("kiro", "Kiro", URI("https://kiro.dev/docs/mcp/configuration"), { t ->
-            when {
-                t.stdio -> jsonSnippet(t, ".kiro/settings/mcp.json (project) or ~/.kiro/settings/mcp.json", "mcpServers",
-                    stdioEntry(t) + linkedMapOf("disabled" to false, "autoApprove" to emptyList<String>()))
-                t.sse -> null
-                else -> jsonSnippet(t, ".kiro/settings/mcp.json (project) or ~/.kiro/settings/mcp.json", "mcpServers", urlEntry(t))
-            }
-        }),
-        Client("roo-code", "Roo Code", URI("https://roocodeinc.github.io/Roo-Code/features/mcp/using-mcp-in-roo/"), { t ->
-            jsonSnippet(t, ".roo/mcp.json (project) or the global mcp_settings.json", "mcpServers", when {
-                t.stdio -> stdioEntry(t) + linkedMapOf("alwaysAllow" to emptyList<String>(), "disabled" to false)
-                else -> mapOf("type" to if (t.sse) "sse" else "streamable-http") + urlEntry(t)
-            })
-        }),
-        Client("warp", "Warp", URI("https://docs.warp.dev/agents/capabilities/mcp"), { t ->
-            jsonSnippet(t, "~/.warp/.mcp.json or Settings › Agents › MCP servers", "mcpServers",
-                if (t.stdio) stdioEntry(t) else urlEntry(t))
-        }),
-        Client("jetbrains", "JetBrains AI Assistant", URI("https://www.jetbrains.com/help/ai-assistant/mcp.html"), { t ->
-            when {
-                // The documentation shows neither env nor headers.
-                t.values.isNotEmpty() -> null
-                else -> jsonSnippet(t, "Settings › Tools › AI Assistant › Model Context Protocol (MCP) › Add › As JSON",
-                    "mcpServers", if (t.stdio) stdioEntry(t) else mapOf("url" to t.url))
-            }
-        }, { t ->
-            if (t.stdio) "The documentation does not say how to pass environment variables."
-            else "The documentation does not say how to send headers."
-        }),
-        Client("amazon-q", "Amazon Q Developer CLI",
-            URI("https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/command-line-mcp-config-CLI.html"), { t ->
-                when {
-                    t.stdio -> jsonSnippet(t, "~/.aws/amazonq/cli-agents/<agent>.json", "mcpServers", stdioEntry(t))
-                    t.sse || t.values.isNotEmpty() -> null
-                    else -> jsonSnippet(t, "~/.aws/amazonq/cli-agents/<agent>.json", "mcpServers", mapOf("type" to "http", "url" to t.url))
-                }
-            }, { t -> if (t.sse) Client.NO_SSE else "The documentation does not say how to send headers." }),
-        // The documentation shows only a remote server ("follows Cursor's notation"); a local one is not shown.
-        Client("lm-studio", "LM Studio", URI("https://lmstudio.ai/docs/app/mcp"), { t ->
-            if (t.stdio || t.sse) null
-            else jsonSnippet(t, "LM Studio › Program › Install › Edit mcp.json", "mcpServers", urlEntry(t))
-        }, { t -> if (t.sse) Client.NO_SSE else "The documentation shows only remote servers." }),
     )
 
     /** stdio entry in the common `command` / `args` / `env` shape. */

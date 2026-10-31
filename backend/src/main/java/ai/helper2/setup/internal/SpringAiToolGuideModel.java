@@ -41,7 +41,6 @@ class SpringAiToolGuideModel implements ToolGuideModel {
 
     /** Per document sent to the model; the validator still checks quotes and commands against the full text. */
     static final int MAX_DOCUMENT_CHARS = 14_000;
-    static final int MAX_QUESTION_CHARS = 500;
     static final int MAX_TOKENS = 8192;
 
     record Answer(List<Section> sections) {
@@ -89,15 +88,14 @@ class SpringAiToolGuideModel implements ToolGuideModel {
     }
 
     @Override
-    public ProposedGuide write(ToolRef ref, List<Material> materials, String question) {
+    public ProposedGuide write(ToolRef ref, List<Material> materials) {
         String docs = materials.stream()
             .map(m -> "<document key=\"" + m.getKey() + "\" kind=\"" + m.getKind() + "\">\n"
                 + UntrustedText.untrusted(Markdown.INSTANCE.relevant(m.getText(), MAX_DOCUMENT_CHARS), MAX_DOCUMENT_CHARS + 200)
                 + "\n</document>")
             .collect(Collectors.joining("\n"));
         String user = "TOOL: " + UntrustedText.untrusted(ref.getTitle(), 200) + " (" + ref.getType() + ")\n"
-            + "QUESTION: " + (question == null ? "(none)" : "<question>" + UntrustedText.untrusted(question, MAX_QUESTION_CHARS) + "</question>")
-            + "\n\nDOCUMENTS:\n" + docs;
+            + "\nDOCUMENTS:\n" + docs;
         Answer answer = call(user);
         if (log.isDebugEnabled()) {
             log.debug("tool guide proposal for {}: {}", ref.getTitle(), answer);

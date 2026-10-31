@@ -1,4 +1,4 @@
-import type { UpcomingEventsResponse, Bookmark, BookmarkRequest, GuideRequest, GuideResponse, GuideStep, GuideStepEvent, IssueReportAccepted, IssueReportRequest, Me, Problem, RecentResponse, ResourceDetail, ReviewItem, ReviewItemPage, SetupGuide, ToolGuide, ToolGuideRequest, ReviewResolution, ReviewStatus, ScoutRun, SearchResponse, SourceInfo } from './types';
+import type { UpcomingEventsResponse, Bookmark, BookmarkRequest, GuideRequest, GuideResponse, GuideStep, GuideStepEvent, IssueReportAccepted, IssueReportRequest, Me, Problem, RecentResponse, ResourceDetail, ReviewItem, ReviewItemPage, SetupGuide, ToolGuide, ReviewResolution, ReviewStatus, ScoutRun, SearchResponse, SourceInfo } from './types';
 
 import { guideStreamEventValues } from './schema';
 import { SseParser } from '@/lib/sse';
@@ -182,8 +182,8 @@ export const api = {
     request<ResourceDetail>('GET', `/resources/${encodeURIComponent(id)}`, { signal }),
   getResourceSetup: (id: string, signal?: AbortSignal) =>
     request<SetupGuide>('GET', `/resources/${encodeURIComponent(id)}/setup`, { signal }),
-  askResourceGuide: (id: string, body: ToolGuideRequest, signal?: AbortSignal) =>
-    request<ToolGuide>('POST', `/resources/${encodeURIComponent(id)}/guide`, { body, signal }),
+  askResourceGuide: (id: string, signal?: AbortSignal) =>
+    request<ToolGuide>('POST', `/resources/${encodeURIComponent(id)}/guide`, { signal }),
   reportResource: (id: string, body: IssueReportRequest) =>
     request<IssueReportAccepted>('POST', `/resources/${encodeURIComponent(id)}/reports`, { body }),
   askGuide: (body: GuideRequest, signal?: AbortSignal) => request<GuideResponse>('POST', '/guide', { body, signal }),
