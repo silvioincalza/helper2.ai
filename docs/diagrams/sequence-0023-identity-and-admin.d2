@@ -1,6 +1,6 @@
 # Sequence: the owner signs in on /admin with GitHub, gets ADMIN by numeric id, local bookmarks move to the account,
 # a review decision is audited, and a signed-in user deletes their account.
-# Only possible where profile oauth-github is active (not on staging or prod today).
+# Only possible where profile oauth-github is active (off unless set for the environment).
 # Source of truth: backend/src/main/java/ai/helper2/identity/SecurityConfiguration.java, CurrentUser.java, MeController.java,
 #   backend/src/main/java/ai/helper2/identity/usecase/MergeLocalBookmarks.java, DeleteMyAccount.java,
 #   backend/src/main/java/ai/helper2/identity/internal/Users.java, Bookmarks.java, AuditLog.java,

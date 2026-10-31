@@ -26,6 +26,8 @@ tag: Release vX.Y.Z {
   runner -> releases: "gh release view vX.Y.Z"
   releases -> runner: "not found (an existing one is left as is)"
   runner -> releases: "gh release create --verify-tag\nnotes = tag message + image\nhelper2:<commit[0:12]>" {class: hot}
+  runner -> github: "job staged: the commit's CD run\n(waits while it runs)"
+  github -> runner: "completed, success"
   github -> owner: "job prod waits for the\napproval on environment prod"
   owner -> github: "approve"
   github -> prod: "deploy.yml env prod,\ntag = commit[0:12]" {class: hot}

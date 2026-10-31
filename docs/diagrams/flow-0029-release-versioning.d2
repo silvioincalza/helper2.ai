@@ -28,6 +28,8 @@ e_main: "Fail: not on main" {class: fail}
 e_versions: "Fail: file <name> has\nanother version" {class: fail}
 keep: "Release left as is" {class: app}
 publish: "gh release create vX.Y.Z\nnotes = tag message\n+ image helper2:<commit[0:12]>" {class: app}
+staged: "Commit's CD run\npassed staging?" {class: decision}
+e_staged: "Fail: no prod deploy" {class: fail}
 prod: "Prod deploy of the commit\n(deploy.yml, after the\nprod approval, ADR 0028)" {class: end}
 
 owner -> tag: {class: hot}
@@ -47,5 +49,7 @@ versions -> e_versions: no
 versions -> exists: yes {class: hot}
 exists -> keep: yes
 exists -> publish: no {class: hot}
-keep -> prod
-publish -> prod: {class: hot}
+keep -> staged
+publish -> staged: {class: hot}
+staged -> e_staged: no
+staged -> prod: yes {class: hot}
