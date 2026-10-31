@@ -85,7 +85,11 @@
     "placeholder": "Search tools, models, MCP servers… or ask in plain words",
     "submit": "Search",
     "enterQuery": "Type what you are looking for to search the listed sources.",
-    "heroPlaceholder": "Describe what you need, or type a name"
+    "heroPlaceholder": "Describe what you need, or type a name",
+    "clear": "Clear the box",
+    "slashHint": "Press / to search",
+    "charsLeft_one": "{{count}} character left",
+    "charsLeft_other": "{{count}} characters left"
   },
   "results": {
     "title": "Search results",
@@ -1022,14 +1026,12 @@
     "news": {
       "title": "News",
       "sub": "Last 7 days",
-      "list": "New resources",
-      "foot": "Dates as each source states them"
+      "list": "New resources"
     },
     "events": {
       "title": "Events",
       "sub": "Next 3 months",
-      "list": "Next events",
-      "foot": "Only events whose source states the dates"
+      "list": "Next events"
     },
     "countdown": {
       "today": "Today",

@@ -14,9 +14,9 @@ describe('one box', () => {
     expect(screen.queryByRole('radio')).not.toBeInTheDocument();
     expect(screen.getByText(/A sentence, or Shift\+Enter, asks the guide/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Search' })).toBeDisabled();
-    await userEvent.type(screen.getByRole('searchbox'), 'rag');
+    await userEvent.type(screen.getByRole('textbox', { name: 'Search AI resources' }), 'rag');
     expect(screen.getByRole('button', { name: 'Search' })).toBeEnabled();
-    await userEvent.type(screen.getByRole('searchbox'), ' for my own notes');
+    await userEvent.type(screen.getByRole('textbox', { name: 'Search AI resources' }), ' for my own notes');
     expect(screen.getByRole('button', { name: 'Ask the guide' })).toBeEnabled();
     expect(screen.queryByRole('button', { name: 'Search' })).not.toBeInTheDocument();
   });
@@ -24,11 +24,11 @@ describe('one box', () => {
   it('a sentence asks the guide on Enter; Shift+Enter asks even for two words', async () => {
     const m = mockApi();
     const { params } = renderApp('/');
-    await userEvent.type(screen.getByRole('searchbox'), 'an MCP server for Postgres{Enter}');
+    await userEvent.type(screen.getByRole('textbox', { name: 'Search AI resources' }), 'an MCP server for Postgres{Enter}');
     await waitFor(() => expect(params().get('ask')).toBe('an MCP server for Postgres'));
     await waitFor(() => expect(m.callsTo('POST', '/guide/stream')).toHaveLength(1));
-    await userEvent.clear(screen.getByRole('searchbox'));
-    await userEvent.type(screen.getByRole('searchbox'), 'vector db{Shift>}{Enter}{/Shift}');
+    await userEvent.clear(screen.getByRole('textbox', { name: 'Search AI resources' }));
+    await userEvent.type(screen.getByRole('textbox', { name: 'Search AI resources' }), 'vector db{Shift>}{Enter}{/Shift}');
     await waitFor(() => expect(params().get('ask')).toBe('vector db'));
     await waitFor(() => expect(m.callsTo('POST', '/guide/stream')).toHaveLength(2));
   });
@@ -36,7 +36,7 @@ describe('one box', () => {
   it('Enter on the home page opens the results on /search, and focus lands on the results heading', async () => {
     const m = mockApi();
     const { router, params } = renderApp('/');
-    await userEvent.type(screen.getByRole('searchbox'), 'mcp github{Enter}');
+    await userEvent.type(screen.getByRole('textbox', { name: 'Search AI resources' }), 'mcp github{Enter}');
     await waitFor(() => expect(router.state.location.pathname).toBe('/search'));
     expect(params().get('q')).toBe('mcp github');
     expect(await (await results()).findByText('Acme Translator')).toBeInTheDocument();
@@ -50,8 +50,8 @@ describe('one box', () => {
     const m = mockApi();
     const { params } = renderApp('/search?q=mcp');
     await (await results()).findByText('Acme Translator');
-    await userEvent.clear(screen.getByRole('searchbox'));
-    await userEvent.type(screen.getByRole('searchbox'), 'rag library');
+    await userEvent.clear(screen.getByRole('textbox', { name: 'Search AI resources' }));
+    await userEvent.type(screen.getByRole('textbox', { name: 'Search AI resources' }), 'rag library');
     await waitFor(() => expect(params().get('q')).toBe('rag library'), { timeout: 2000 });
     await settle();
     expect(m.callsTo('GET', '/search').map((c) => new URLSearchParams(c.search).get('q'))).toEqual(['mcp', 'rag library']);
@@ -75,7 +75,7 @@ describe('one box', () => {
   it('the header box works from any page and opens the results', async () => {
     mockApi();
     const { router, params } = renderApp('/mission');
-    await userEvent.type(screen.getByRole('searchbox'), 'vector database{Enter}');
+    await userEvent.type(screen.getByRole('textbox', { name: 'Search AI resources' }), 'vector database{Enter}');
     await waitFor(() => expect(router.state.location.pathname).toBe('/search'));
     expect(params().get('q')).toBe('vector database');
     await settle();
@@ -96,7 +96,7 @@ describe('one box', () => {
   it('typing then asking at once keeps the question: a pending live search must not drop `ask`', async () => {
     const m = mockApi();
     const { params } = renderApp('/');
-    await userEvent.type(screen.getByRole('searchbox'), 'mcp server for slack');
+    await userEvent.type(screen.getByRole('textbox', { name: 'Search AI resources' }), 'mcp server for slack');
     await userEvent.click(screen.getByRole('button', { name: 'Ask the guide' }));
     await waitFor(() => expect(params().get('ask')).toBe('mcp server for slack'));
     await new Promise((r) => setTimeout(r, 1000)); // past the 700 ms live-search delay
@@ -108,10 +108,10 @@ describe('one box', () => {
     mockApi();
     const { params } = renderApp('/search?q=mcp');
     await (await results()).findByText('Acme Translator');
-    await userEvent.clear(screen.getByRole('searchbox'));
-    await userEvent.type(screen.getByRole('searchbox'), 'rag library ');
+    await userEvent.clear(screen.getByRole('textbox', { name: 'Search AI resources' }));
+    await userEvent.type(screen.getByRole('textbox', { name: 'Search AI resources' }), 'rag library ');
     await waitFor(() => expect(params().get('q')).toBe('rag library'), { timeout: 2000 });
-    expect(screen.getByRole('searchbox')).toHaveValue('rag library ');
+    expect(screen.getByRole('textbox', { name: 'Search AI resources' })).toHaveValue('rag library ');
   });
 
   it('a question longer than a search keeps its full text in the box; the search takes its first 200 characters', async () => {
@@ -119,24 +119,24 @@ describe('one box', () => {
     const { params } = renderApp('/');
     const question = `an MCP server ${'that works with Postgres '.repeat(12)}`.slice(0, 300).trimEnd();
     expect(question.length).toBeGreaterThan(290);
-    await userEvent.click(screen.getByRole('searchbox'));
+    await userEvent.click(screen.getByRole('textbox', { name: 'Search AI resources' }));
     await userEvent.paste(question);
     await userEvent.click(screen.getByRole('button', { name: 'Ask the guide' }));
     await waitFor(() => expect(params().get('ask')).toBe(question));
     expect(params().get('q')).toBe(question.slice(0, 200).trimEnd());
     await new Promise((r) => setTimeout(r, 1000)); // past the live-search delay
-    expect(screen.getByRole('searchbox')).toHaveValue(question);
+    expect(screen.getByRole('textbox', { name: 'Search AI resources' })).toHaveValue(question);
     expect(m.callsTo('POST', '/guide/stream')[0]?.body).toEqual({ request: question });
   });
 
   it('back and forward put the URL query back in the box', async () => {
     mockApi();
     const { router } = renderApp('/?q=first');
-    await userEvent.clear(screen.getByRole('searchbox'));
-    await userEvent.type(screen.getByRole('searchbox'), 'second{Enter}');
+    await userEvent.clear(screen.getByRole('textbox', { name: 'Search AI resources' }));
+    await userEvent.type(screen.getByRole('textbox', { name: 'Search AI resources' }), 'second{Enter}');
     await waitFor(() => expect(router.state.location.search).toBe('?q=second'));
     await act(() => router.navigate(-1));
-    await waitFor(() => expect(screen.getByRole('searchbox')).toHaveValue('first'));
+    await waitFor(() => expect(screen.getByRole('textbox', { name: 'Search AI resources' })).toHaveValue('first'));
     await settle();
   });
 
@@ -144,8 +144,8 @@ describe('one box', () => {
     mockApi();
     const { router } = renderApp('/search?q=translate&type=MODEL');
     await (await results()).findByText('Acme Translator');
-    await userEvent.clear(screen.getByRole('searchbox'));
-    await userEvent.type(screen.getByRole('searchbox'), '{Enter}');
+    await userEvent.clear(screen.getByRole('textbox', { name: 'Search AI resources' }));
+    await userEvent.type(screen.getByRole('textbox', { name: 'Search AI resources' }), '{Enter}');
     await waitFor(() => expect(router.state.location.search).toBe(''));
     expect(await screen.findByRole('heading', { name: 'Try an example' })).toBeInTheDocument();
   });

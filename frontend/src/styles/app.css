@@ -115,7 +115,7 @@ textarea { width: 100%; resize: vertical; }
 .one-box { display: flex; flex-direction: column; gap: var(--space-2); }
 .one-box .searchbox { width: 100%; }
 .one-box > .muted { margin: 0; }
-.searchbox.large input { min-height: var(--box-height); background: var(--bg); border-radius: var(--radius-lg); }
+.searchbox.large .searchbox-field { min-height: var(--box-height); background: var(--bg); border-radius: var(--radius-lg); }
 .searchbox.large .btn { min-height: var(--box-height); border-radius: var(--radius-lg); }
 .examples .inline-list { justify-content: flex-start; }
 .examples h2 { margin-bottom: var(--space-2); }
@@ -176,8 +176,8 @@ textarea { width: 100%; resize: vertical; }
 .suggest-guide { align-self: flex-start; border-style: dashed; }
 
 .searchbox { display: flex; gap: var(--space-2); }
-.searchbox input { flex: 1; min-width: 0; }
-.searchbox.large input { padding: var(--space-4) var(--space-4); font-size: 1.1rem; border-radius: var(--radius); border-color: var(--border-strong); }
+.searchbox .searchbox-field { flex: 1; min-width: 0; }
+.searchbox.large .searchbox-field { padding: var(--space-4) var(--space-4); font-size: 1.1rem; border-radius: var(--radius); border-color: var(--border-strong); }
 .searchbox.large .btn { padding: 0 var(--space-5); border-radius: var(--radius); }
 .filters { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-4); }
 .filters-toggle { display: none; }
@@ -251,7 +251,7 @@ tbody th { font-weight: 600; }
   .header-row { gap: var(--space-2) var(--space-4); }
   .main-nav { order: 3; flex-basis: 100%; }
   .searchbox.large { flex-flow: row wrap; }
-  .searchbox.large input { flex-basis: 100%; }
+  .searchbox.large .searchbox-field { flex-basis: 100%; }
   .searchbox.large .btn { flex: 1 1 0; }
   .one-box > .muted { display: none; }
 }
@@ -353,13 +353,13 @@ h1, h2 { font-weight: 500; letter-spacing: -0.03em; }
 /* the one box */
 .searchbox.large { align-items: center; gap: var(--space-3); background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-lg); padding: 6px 6px 6px var(--space-4); }
 .searchbox.large:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
-.searchbox.large input { border: 0; background: transparent; padding: var(--space-3) 0; min-height: 0; font-size: 1.05rem; }
-.searchbox.large input:focus-visible { outline: none; }
+.searchbox.large .searchbox-field { border: 0; background: transparent; padding: var(--space-3) 0; min-height: 0; font-size: 1.05rem; }
+.searchbox.large .searchbox-field:focus-visible { outline: none; }
 .searchbox-icon { display: inline-flex; color: var(--accent-ink); flex: none; }
 .searchbox.large .btn { min-height: 48px; border-radius: var(--radius-md); padding: 0 var(--space-5); }
 .enter-key { font-family: var(--font-mono); font-size: 0.75rem; border-radius: 6px; padding: 2px 6px; background: color-mix(in srgb, var(--on-accent) 12%, transparent); }
 .one-box.is-hero .searchbox.large { padding: 10px 10px 10px var(--space-5); border-radius: 22px; box-shadow: 0 24px 60px color-mix(in srgb, var(--accent) 22%, transparent); }
-.one-box.is-hero .searchbox.large input { font-size: 1.35rem; font-weight: 500; padding: var(--space-4) 0; }
+.one-box.is-hero .searchbox.large .searchbox-field { font-size: 1.35rem; font-weight: 500; padding: var(--space-4) 0; }
 .one-box.is-hero .searchbox.large .btn { min-height: 62px; border-radius: 15px; font-size: 1.05rem; }
 @keyframes pin-in { from { transform: translateY(-12px); opacity: 0.4; } }
 
@@ -414,7 +414,7 @@ details.guide-reason p { margin: 0 0 var(--space-2); color: var(--ink-2); }
   .home-hero { padding-top: var(--space-6); }
   .one-box.is-hero .searchbox.large { flex-flow: row wrap; padding: 6px; }
   .searchbox-icon { display: none; }
-  .searchbox.large input { padding-left: var(--space-3); }
+  .searchbox.large .searchbox-field { padding-left: var(--space-3); }
   .searchbox.large .btn { flex-basis: 100%; justify-content: center; }
   /* On a phone the brand takes the full width; the two link columns sit side by side under it. */
   .footer-grid { grid-template-columns: 1fr 1fr; }
@@ -459,3 +459,19 @@ input[type='search']::-webkit-search-cancel-button { filter: grayscale(1); }
 .guide-compare td q { display: block; margin-top: 4px; font-size: 0.85rem; color: var(--text-muted); }
 .guide-explain { display: grid; gap: var(--space-2); }
 .guide-explain li q { display: block; font-size: 0.85rem; color: var(--text-muted); }
+
+/* The box grows with the text (OneBox): one row, then up to six lines, then it scrolls. The height animates; the
+   script sets it from the content each time the text changes. */
+.searchbox-field { width: auto; resize: none; overflow-y: auto; line-height: 1.4; max-height: calc(1.4em * 6 + 2 * var(--space-4)); transition: height 160ms ease; }
+@media (prefers-reduced-motion: reduce) { .searchbox-field { transition: none; } }
+
+/* Clear (×) when the box has text, a "/" hint when it is empty (keyboard devices only), characters left near 500. */
+.searchbox-clear { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border: 0; border-radius: 50%; background: transparent; color: var(--muted); cursor: pointer; transition: background-color 120ms ease, color 120ms ease; }
+.searchbox-clear:hover, .searchbox-clear:focus-visible { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--text); }
+.searchbox-slash { flex: none; font-family: var(--font-mono); font-size: 0.8rem; color: var(--muted); border: 1px solid var(--border-strong); border-radius: 6px; padding: 1px 7px; }
+.searchbox.large:focus-within .searchbox-slash { visibility: hidden; }
+@media (hover: none) { .searchbox-slash { display: none; } }
+.searchbox-left { margin: var(--space-2) var(--space-4) 0; color: var(--muted); text-align: right; }
+.searchbox-left.is-full { color: var(--warn); }
+@media (prefers-reduced-motion: reduce) { .searchbox-clear { transition: none; } }
+
