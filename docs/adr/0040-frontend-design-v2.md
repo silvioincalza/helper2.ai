@@ -35,8 +35,8 @@ and chose between options for each part.
    source and to `/resource/:id`. Both come from the search answer, with no request of their own. A row is a button
    named by its title; one row is in the tab order, and the arrow keys, Home and End move between rows and select.
    Filters fold away above the list, so the list and the preview share the row.
-5. **The selected result is in the URL.** `?q=…&id=…`, replaced, not pushed (`history.replaceState`): a shared link opens the
-   same result, and Back leaves the search instead of stepping through rows. An `id` that is not in the results
+5. **The selected result is in the URL.** `?q=…&id=…`, replaced, not pushed (`history.replaceState`): a shared link
+   opens the same result, and Back leaves the search instead of stepping through rows. An `id` that is not in the results
    selects the first row. The `id` is untrusted input: it only selects among results already on the page.
 6. **Guide picks bar, nothing moves.** A box above the list is there from the first render: "Guide is reading N
    candidates… picks will appear here". Its height is reserved. When the answer arrives over SSE
@@ -69,7 +69,8 @@ and chose between options for each part.
 - Good: checking a result is one click, not a page load and a Back.
 - Good: a shared link opens the same search and the same result.
 - Good: search ranking and the guide's opinion stay visibly separate: the list is ranking, the badges are the guide.
-- Bad: the picks bar takes about 110 px above the list, also when the guide has nothing to say (then one line).
+- Bad: the picks bar takes about 175 px above the list (head, picks, how the guide read the question) while the guide
+  works and when it picks; with no pick it is shorter.
 - Bad: two layouts for results (desktop preview, inline preview on a phone) to build and test.
 - Bad: the guide searches with its own words, so a pick can be missing from the list; its chip links to the resource
   page instead of selecting a row.
@@ -102,8 +103,8 @@ Built:
   `board-height`, `content-wide` and `list-max`.
 - `frontend/src/components/ui/` — `TypeTag`, `StatusPill`, `ProofQuote`, `SourceTiles`, `SelectableRow` (the row
   button: selected outline, one tab stop, named by its title), `PicksBar` (reserved height, head with the question and
-  close, waiting line, no-pick line, AI-written picks and question back, footer) and `NewsBoard` (heading, states, the
-  moving list and its Pause/Play button), with `ui.css` imported by the components.
+  close, waiting line, no-pick line, the AI-written label over the picks and the question back, footer) and
+  `NewsBoard` (heading, states, the moving list and its Pause/Play button), with `ui.css` imported by the components.
 - `frontend/src/pages/HomePage.tsx`, `components/HomeBoards.tsx` — the radar hero, the box, the examples, and the News
   (`GET /api/v1/recent`, 7 days) and Events (`GET /api/v1/events/upcoming`, [0022](0022-next-events.md), 90 days)
   boards.
