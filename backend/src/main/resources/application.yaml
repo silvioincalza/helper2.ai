@@ -302,6 +302,9 @@ helper2:
     translate-timeout-ms: ${H2_SEARCH_TRANSLATE_TIMEOUT_MS:2500}
     # Non-English queries translated by the fast model per UTC day (ADR 0011); separate from the guide's cap.
     daily-translations: ${H2_SEARCH_DAILY_TRANSLATIONS:300}
+    # Translations and query vectors are shared by the replicas in Redis this long (ADR 0011, ADR 0012).
+    translation-ttl: ${H2_SEARCH_TRANSLATION_TTL:24h}
+    query-vector-ttl: ${H2_SEARCH_QUERY_VECTOR_TTL:7d}
   # Requests per client address; past them the answer is 429.
   rate-limit:
     search-per-minute: ${H2_RATE_LIMIT_SEARCH_PER_MINUTE:60}
