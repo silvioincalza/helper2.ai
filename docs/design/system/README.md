@@ -1,6 +1,6 @@
 # Helper2.ai
 
-The design system for every part of Helper2.ai: the search-and-ask box, results, the AI guide, the News and Events boards, resource pages, saved resources, the sources page and admin. The look is warm paper with one saffron accent, a geometric display face for headings, a sans for doing things, and a mono for names that came from a source. The reference design is the v3 canvas **helper2.ai — UI redesign proposals** (boards Home and Results — list + preview), agreed on 30 October 2026.
+The design system for every part of Helper2.ai: the search-and-ask box, results, the AI guide, the News and Events boards, resource pages, saved resources, the sources page and admin. The look is warm paper with one saffron accent, a geometric display face for headings, a sans for doing things, and a mono for names that came from a source. The reference design is the design canvas ([../README.md](../README.md)), agreed on 30 October 2026.
 
 ## Principles
 
@@ -8,7 +8,7 @@ The design system for every part of Helper2.ai: the search-and-ask box, results,
 2. **Show where every fact came from.** Each result, card, fact and pick names its source. A value no source stated reads **Unknown**, in `not-stated`. Dates are the source's own; otherwise "First seen" with the date Helper2.ai first saw it.
 3. **Checked versus not checked.** A guide quote the validator matched word for word sits on `quote-bg` with a **Quote checked** badge (`checked-bg` / `checked-ink`). The model's own reason is always labeled "Model's explanation (not checked)" and is never styled like the quote.
 4. **State in words, not color alone.** Every status (source answered, cached, rate-limited, failed; verified, conflicting, rejected) carries a word and an icon. Color only repeats it.
-5. **Editorial voice, tool behavior.** Space Grotesk (`display`) for page and section headings, feed titles and quotes. Inter (`sans`) for every control and all running text. JetBrains Mono (`mono`) for resource names and source status.
+5. **Editorial voice, tool behavior.** Space Grotesk (`display`) for page and section headings, board and result titles, and quotes. Inter (`sans`) for every control and all running text. JetBrains Mono (`mono`) for resource names and source status.
 6. **Quiet surfaces, one accent.** Saffron `accent` marks the one primary action per area. Selection uses `selected` (ink), so state and action never look alike.
 
 ## Content fundamentals
@@ -137,7 +137,7 @@ Layout is flex and grid with `gap`. No fixed heights except the boards.
 
 ## Components
 
-Components are plain HTML plus the classes in `components/bundle.css` (prefix `h2-`). There is no JavaScript bundle. The folders in `components/` hold a live preview for Header, Omnibox, Button, Pill, Badge, ResultCard, FactList, GuidePick, FeedRow, Banner, SourceStatus, Footer and Cover; the table below and the v3 canvas are the reference where a preview differs.
+Components are plain HTML plus the classes in `components/bundle.css` (prefix `h2-`). There is no JavaScript bundle. The folders in `components/` hold a live preview for Header, Omnibox, Button, Pill, Badge, ResultCard, FactList, GuidePick, Banner, SourceStatus, Footer and Cover; the table below and the canvas are the reference where a preview differs.
 
 | Component | Used for |
 |---|---|

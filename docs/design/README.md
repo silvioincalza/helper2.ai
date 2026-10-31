@@ -20,7 +20,6 @@ Each `.dc.html` is one board; `canvas.json` lays them out. They render inside th
 | Board | What |
 |---|---|
 | `DS-Brand`, `DS-Colors`, `DS-Type`, `DS-Components` | Design system page: brand book, every color in light and dark, type scale with spacing and radius, all 11 components |
-| `One-Page` | Clickable prototype: one page, one box (search + guide + What's new) |
 | `Website` | One-page marketing website |
 | `S-Header` | Shared header used by every screen |
 | `S-Home` … `S-Admin` | Mockups of every app screen: Home, Search results, Guide answer, Resource page, Saved, Sources, Admin |
