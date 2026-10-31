@@ -6,6 +6,14 @@ import { askedQuestion, clampQuery, clampQuestion, homeParams, MAX_QUESTION, par
 /** Waits this long after the last keystroke before searching: live, but not one request per letter. */
 const LIVE_SEARCH_MS = 700;
 const MIN_LIVE_CHARS = 3;
+/** From this many characters left, the box says how many remain. */
+const SHOW_LEFT_FROM = 50;
+
+/** True while the keyboard is in a field, where "/" is a character and not the shortcut to the box. */
+function typingIn(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
+}
 /** A need of this many words or more is a question for the guide; fewer words are a search. */
 export const AUTO_ASK_WORDS = 4;
 
@@ -94,7 +102,18 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
   };
   const asking = action === 'ask';
   const cannotSubmit = asking ? !clampQuestion(text) : !text.trim();
+  /** × and Esc: empty the box and keep the results on the page; the cursor stays in the box. */
+  const emptyBox = () => {
+    cancelLive();
+    setText('');
+    field.current?.focus();
+  };
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Escape' && text) {
+      e.preventDefault();
+      emptyBox();
+      return;
+    }
     if (e.key !== 'Enter' || e.nativeEvent.isComposing) return;
     // A textarea would add a line: Enter submits instead, as a one-line search field does.
     e.preventDefault();
@@ -124,6 +143,18 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
     return () => window.removeEventListener('resize', fit);
   }, [fit]);
 
+  // "/" from anywhere on the page puts the cursor in the box, as on most search sites.
+  useEffect(() => {
+    const onSlash = (e: globalThis.KeyboardEvent) => {
+      if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey || typingIn(e.target)) return;
+      e.preventDefault();
+      field.current?.focus();
+    };
+    document.addEventListener('keydown', onSlash);
+    return () => document.removeEventListener('keydown', onSlash);
+  }, []);
+  const left = MAX_QUESTION - text.length;
+
   return (
     <div className={`one-box${hero ? ' is-hero' : ''}`}>
       <form role="search" className="searchbox large" onSubmit={submit}>
@@ -135,7 +166,15 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
         <label htmlFor="q" className="sr-only">{t('search.label')}</label>
         <textarea ref={field} id="q" name="q" rows={1} className="searchbox-field"
           value={text} maxLength={MAX_QUESTION} autoComplete="off" spellCheck={false}
-          placeholder={t(hero ? 'search.heroPlaceholder' : 'search.placeholder')} onChange={(e) => onType(e.target.value)} onKeyDown={onKey} />
+          placeholder={t(hero ? 'search.heroPlaceholder' : 'search.placeholder')} onChange={(e) => onType(e.target.value)} onKeyDown={onKey}
+          aria-describedby={left <= SHOW_LEFT_FROM ? 'q-left' : undefined} />
+        {text ? (
+          <button type="button" className="searchbox-clear" aria-label={t('search.clear')} onClick={emptyBox}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+          </button>
+        ) : (
+          <kbd className="searchbox-slash" aria-hidden="true" title={t('search.slashHint')}>/</kbd>
+        )}
         {/* One button whose job follows the text: a few words search, a sentence asks. A new question replaces one
             still being answered. */}
         <button type="submit" className="btn btn-primary" disabled={cannotSubmit}>
@@ -143,6 +182,11 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
           <kbd className="enter-key" aria-hidden="true">↵</kbd>
         </button>
       </form>
+      {left <= SHOW_LEFT_FROM && (
+        <p id="q-left" className={`searchbox-left small${left === 0 ? ' is-full' : ''}`} aria-live="polite">
+          {t('search.charsLeft', { count: left })}
+        </p>
+      )}
     </div>
   );
 }
