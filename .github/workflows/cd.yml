@@ -1,5 +1,5 @@
-# CD: every push to main runs CI, builds the image once, deploys staging, then waits for approval
-# on the `prod` environment to promote the same tag. Manual runs redeploy or promote a given tag.
+# CD: every push to main runs CI, builds the image once and deploys staging. Prod is not deployed from
+# here: a release tag vX.Y.Z does that (release.yml). Manual runs redeploy or roll back a given tag.
 # No pull_request trigger here: self-hosted jobs must never run fork code (the repo is public).
 name: cd
 
@@ -58,17 +58,6 @@ jobs:
       id-token: write
     with:
       environment: staging
-
-  prod:
-    needs: staging
-    uses: ./.github/workflows/deploy.yml
-    permissions:
-      contents: read
-      id-token: write
-    with:
-      environment: prod
-      # Exactly what staging just got, even if a later push has moved staging on meanwhile.
-      tag: ${{ needs.staging.outputs.tag }}
 
   manual:
     if: github.event_name == 'workflow_dispatch'

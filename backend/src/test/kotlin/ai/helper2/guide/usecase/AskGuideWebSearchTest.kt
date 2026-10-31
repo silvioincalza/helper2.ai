@@ -1,7 +1,9 @@
 package ai.helper2.guide.usecase
 
 import ai.helper2.guide.Candidate
+import ai.helper2.guide.GuideAnswer
 import ai.helper2.guide.GuideAnswerCache
+import ai.helper2.guide.GuideAnswerStore
 import ai.helper2.guide.GuideIntent
 import ai.helper2.guide.GuideModel
 import ai.helper2.guide.GuideProposal
@@ -33,11 +35,13 @@ import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneOffset
+import java.util.UUID
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 /** The guide under the daily web searches (ADR 0037): one per question, its own count, freshness by intent. */
 class AskGuideWebSearchTest {
@@ -148,6 +152,23 @@ class AskGuideWebSearchTest {
 
         assertEquals(3, cached.webSearches!!.remaining)
         assertEquals(2, webCalls.get())
+    }
+
+    @Test
+    fun `a stored or shared answer keeps no asker`() {
+        val stored = mutableListOf<GuideAnswer>()
+        val store = object : GuideAnswerStore {
+            override fun get(key: String): GuideAnswer? = null
+            override fun put(key: String, answer: GuideAnswer, ttl: Duration) { stored += answer }
+        }
+        val guide = AskGuide(search, alternatives, clock, cache = GuideAnswerCache(Duration.ofHours(24), 10, clock, store))
+        val user = UUID.randomUUID()
+        guide.ask("alternatives to Ollama", null, client = "203.0.113.7", userId = user)
+
+        val cached = guide.ask("alternatives to Ollama", null, client = "198.51.100.1")
+
+        assertNull(stored.single().search.request.asker, "Redis must not hold the address or the user id")
+        assertNull(cached.search.request.asker, "another asker must not see the first one")
     }
 
     @Test

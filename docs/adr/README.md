@@ -64,8 +64,8 @@ All diagrams: [docs/diagrams](../diagrams/README.md).
 | [0040](0040-frontend-design.md) | Frontend design: home page, results with preview, resource page, guide picks bar, designed states and the pages around them | 0015, 0025, 0031, 0038, 0039 | [flow](../diagrams/flow-0040-frontend-design.svg) · [sequence](../diagrams/sequence-0040-frontend-design.svg) |
 | [0026](0026-observability.md) | Observability: structured logs, OpenTelemetry traces, Prometheus meters, Grafana dashboard, alert rules | 0001, 0008, 0014, 0033 | [flow](../diagrams/flow-0026-observability.svg) · [sequence](../diagrams/sequence-0026-observability.svg) |
 | [0027](0027-runtime-topology.md) | Runtime topology: Helm chart, three replicas on prod, Cloudflare tunnel, per-workload network policies, Redis auth, backups | 0001, 0004, 0005, 0007, 0018, 0023, 0024 | [flow](../diagrams/flow-0027-runtime-topology.svg) · [sequence](../diagrams/sequence-0027-runtime-topology.svg) |
-| [0028](0028-ci-cd.md) | CI/CD: GitHub Actions, PR checks, OpenBao OIDC, staging then approved prod | 0007, 0027 | [flow](../diagrams/flow-0028-ci-cd.svg) · [sequence](../diagrams/sequence-0028-ci-cd.svg) |
-| [0029](0029-release-versioning.md) | Release and versioning: semantic versions, immutable tags, release workflow | 0001, 0028 | [flow](../diagrams/flow-0029-release-versioning.svg) · [sequence](../diagrams/sequence-0029-release-versioning.svg) |
+| [0028](0028-ci-cd.md) | CI/CD: GitHub Actions, PR checks, OpenBao OIDC, staging on main, approved prod on a release | 0007, 0027 | [flow](../diagrams/flow-0028-ci-cd.svg) · [sequence](../diagrams/sequence-0028-ci-cd.svg) |
+| [0029](0029-release-versioning.md) | Release and versioning: semantic versions, immutable tags, release workflow that deploys prod | 0001, 0028 | [flow](../diagrams/flow-0029-release-versioning.svg) · [sequence](../diagrams/sequence-0029-release-versioning.svg) |
 | [0034](0034-data-retention.md) | Data retention: a period and a mechanism for every store; daily purges per module | 0004, 0005, 0023, 0026 | [flow](../diagrams/flow-0034-data-retention.svg) · [sequence](../diagrams/sequence-0034-data-retention.svg) |
 
 ## Quality

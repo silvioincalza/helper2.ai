@@ -1,6 +1,6 @@
-# Sequence: one release, from the owner's annotated tag to the published GitHub release, the tag ruleset that blocks
+# Sequence: one release, from the owner's annotated tag to the published GitHub release and the prod deploy, the tag ruleset that blocks
 # a moved or deleted tag at push time, and the footer link that leads back to the release.
-# Source of truth: .github/workflows/release.yml, deploy/k8s/CI.md (Releases), frontend/vite.config.ts (__APP_VERSION__),
+# Source of truth: .github/workflows/release.yml, .github/workflows/deploy.yml, deploy/k8s/CI.md (Releases), frontend/vite.config.ts (__APP_VERSION__),
 #   frontend/src/components/Layout.tsx (footer link).
 # Render: cd docs/diagrams && d2 fmt sequence-0029-release-versioning.d2 && d2 sequence-0029-release-versioning.d2 sequence-0029-release-versioning.svg
 
@@ -12,6 +12,7 @@ owner: Owner {class: person}
 github: "GitHub\n(repository, tag ruleset\nrefs/tags/v*)" {class: ext}
 runner: "release.yml\n(GitHub-hosted runner)" {class: app}
 releases: "GitHub Releases\n(gh CLI)" {class: ext}
+prod: "Prod deploy\n(deploy.yml, self-hosted)" {class: app}
 visitor: "Visitor\n(site footer)" {class: person}
 
 tag: Release vX.Y.Z {
@@ -25,6 +26,10 @@ tag: Release vX.Y.Z {
   runner -> releases: "gh release view vX.Y.Z"
   releases -> runner: "not found (an existing one is left as is)"
   runner -> releases: "gh release create --verify-tag\nnotes = tag message + image\nhelper2:<commit[0:12]>" {class: hot}
+  github -> owner: "job prod waits for the\napproval on environment prod"
+  owner -> github: "approve"
+  github -> prod: "deploy.yml env prod,\ntag = commit[0:12]" {class: hot}
+  prod -> prod: "helm upgrade; helper2.ai\nruns vX.Y.Z (sequence 0028)"
 }
 
 blocked: Moving or deleting a release tag {

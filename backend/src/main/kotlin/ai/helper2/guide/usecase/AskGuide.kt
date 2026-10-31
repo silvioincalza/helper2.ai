@@ -142,7 +142,8 @@ class AskGuide(
                     return await(it).forAsker(asker)
                 }
                 try {
-                    val answer = answer(question, progress, asked, model)
+                    // Cached in Redis and shared with other askers: it must not carry this asker's address or user id.
+                    val answer = answer(question, progress, asked, model).withoutAsker()
                     cache?.put(key, answer)
                     mine.complete(answer)
                     outcome = outcomeOf(answer, asked)
@@ -171,6 +172,8 @@ class AskGuide(
 
     /** The answer with [asker]'s web searches left; read for each asker, so a cached answer never shows another's. */
     private fun GuideAnswer.forAsker(asker: Asker?) = copy(webSearches = asker?.let(this@AskGuide.search::webSearchesLeft))
+
+    private fun GuideAnswer.withoutAsker() = copy(search = search.copy(request = search.request.copy(asker = null)))
 
     /** The answer of the identical question already running; its failure is this asker's failure. */
     private fun await(shared: CompletableFuture<GuideAnswer>): GuideAnswer = try {

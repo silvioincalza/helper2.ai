@@ -1,6 +1,6 @@
-# Flowchart: the release workflow, from a pushed v* tag to the published GitHub release.
+# Flowchart: the release workflow, from a pushed v* tag to the published GitHub release and the prod deploy.
 # Shows every check in order: deleted or moved tag, name, annotated, on main, one version in four files.
-# Source of truth: .github/workflows/release.yml, deploy/k8s/CI.md (Releases),
+# Source of truth: .github/workflows/release.yml (release and prod jobs), deploy/k8s/CI.md (Releases),
 #   backend/build.gradle.kts, frontend/package.json, deploy/helm/helper2/Chart.yaml.
 # Render: cd docs/diagrams && d2 fmt flow-0029-release-versioning.d2 && d2 flow-0029-release-versioning.d2 flow-0029-release-versioning.svg
 
@@ -26,9 +26,9 @@ e_name: "Fail: not vX.Y.Z" {class: fail}
 e_annotated: "Fail: must be annotated" {class: fail}
 e_main: "Fail: not on main" {class: fail}
 e_versions: "Fail: file <name> has\nanother version" {class: fail}
-keep: "Left as is" {class: end}
+keep: "Release left as is" {class: app}
 publish: "gh release create vX.Y.Z\nnotes = tag message\n+ image helper2:<commit[0:12]>" {class: app}
-done: "Release published" {class: end}
+prod: "Prod deploy of the commit\n(deploy.yml, after the\nprod approval, ADR 0028)" {class: end}
 
 owner -> tag: {class: hot}
 tag -> push: {class: hot}
@@ -47,4 +47,5 @@ versions -> e_versions: no
 versions -> exists: yes {class: hot}
 exists -> keep: yes
 exists -> publish: no {class: hot}
-publish -> done: {class: hot}
+keep -> prod
+publish -> prod: {class: hot}

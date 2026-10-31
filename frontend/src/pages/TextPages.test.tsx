@@ -53,6 +53,8 @@ describe('mission, privacy and terms pages', () => {
     expect(screen.getByRole('region', { name: 'Your rights' })).toHaveTextContent('FADP');
     expect(screen.getByRole('region', { name: 'Legal basis' })).toHaveTextContent('Art. 6(1)(f) GDPR');
     expect(recipients).toHaveTextContent('Data Privacy Framework');
+    expect(recipients).toHaveTextContent('Cloudflare (United States)');
+    expect(recipients).toHaveTextContent('Hugging Face, npm, arXiv and Tavily are not certified');
     expect(screen.getByRole('region', { name: 'How long we keep data' })).toHaveTextContent('Technical logs: up to 3 months.');
   });
 
