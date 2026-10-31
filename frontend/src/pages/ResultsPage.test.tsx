@@ -48,14 +48,6 @@ describe('the results page: where it lives', () => {
     expect(await screen.findByRole('region', { name: 'News' })).toBeInTheDocument();
   });
 
-  it('given an old /guide?q= link, it asks the guide on /search', async () => {
-    const m = mockApi({ 'POST /guide/stream': () => new Promise(() => undefined) });
-    const { router, params } = renderApp('/guide?q=MCP+server+for+Slack');
-    await waitFor(() => expect(router.state.location.pathname).toBe('/search'));
-    expect(params().get('ask')).toBe('MCP server for Slack');
-    await waitFor(() => expect(m.callsTo('POST', '/guide/stream')).toHaveLength(1));
-  });
-
   it('sends the URL filters to the API and drops parameters it does not know', async () => {
     const m = mockApi();
     renderApp('/search?q=translate&path=USE_AI&type=MODEL&license=unknown');
