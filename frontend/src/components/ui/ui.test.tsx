@@ -122,8 +122,8 @@ describe('PicksBar', () => {
     );
     const bar = screen.getByRole('region', { name: 'Guide picks' });
     expect(within(bar).getByText('AI-written')).toBeInTheDocument();
-    const picks = within(bar).getByText('#1 Postgres MCP').closest('[data-ai-generated]');
-    expect(picks).toHaveAttribute('data-ai-model', 'nvidia/nemotron-3-super');
+    // The chips are source titles: labelled on screen, never marked as AI-written (ADR 0038).
+    expect(within(bar).getByText('#1 Postgres MCP').closest('[data-ai-generated]')).toBeNull();
     expect(within(bar).queryByRole('status')).toBeNull();
     expect(await axeViolations(container)).toEqual([]);
   });
