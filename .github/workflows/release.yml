@@ -1,4 +1,6 @@
-# Release (ADR 0029): pushing an annotated tag vX.Y.Z on a commit of main publishes the GitHub release.
+# Release (ADR 0029): pushing an annotated tag vX.Y.Z on a commit of main publishes the GitHub release,
+# then deploys that commit to prod after the approval on the `prod` environment. This is the only
+# automatic way to prod: a push to main reaches staging only (cd.yml).
 # A release tag is never moved or deleted: a push that rewrites or deletes an existing v* tag fails
 # here and publishes nothing. The repository's tag ruleset is what blocks such a push up front;
 # this job is the check that it held.
@@ -23,6 +25,8 @@ jobs:
       contents: write
     env:
       TAG: ${{ github.ref_name }}
+    outputs:
+      commit: ${{ steps.check.outputs.commit }}
     steps:
       - name: Refuse a moved or deleted tag
         env:
@@ -65,6 +69,7 @@ jobs:
             [[ ${v#*=} == "$version" ]] || { echo "::error::${v%%=*} has version ${v#*=}, the tag says $version"; exit 1; }
           done
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "commit=${sha::12}" >> "$GITHUB_OUTPUT"
 
       - name: Publish the GitHub release
         env:
@@ -79,3 +84,15 @@ jobs:
           git tag -l --format='%(contents)' "$TAG" > "$notes"
           printf '\nImage: `harbor-i.infra.incalza.me/helper2/apps/helper2:%s`\n' "${SHA::12}" >> "$notes"
           gh release create "$TAG" --verify-tag --title "$TAG" --notes-file "$notes"
+
+  # Only after every check above: the image of that commit, built when it reached main and already run
+  # on staging, goes to prod. Never rebuilt (ADR 0028).
+  prod:
+    needs: release
+    uses: ./.github/workflows/deploy.yml
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      environment: prod
+      tag: ${{ needs.release.outputs.commit }}

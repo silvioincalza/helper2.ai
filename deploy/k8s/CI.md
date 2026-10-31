@@ -3,9 +3,9 @@
 | Workflow | Trigger | Runner | Does |
 |---|---|---|---|
 | [`ci.yml`](../../.github/workflows/ci.yml) | pull request, called by `cd` | GitHub-hosted | frontend lint, typecheck, vitest, build; backend `gradlew test` (Testcontainers); `make chart-check` (helm lint, `helm template \| kubeconform`). PRs only: app image build (no push), Postgres image build + tag-bump check when `deploy/postgres` changes, `terraform fmt -check` + `validate` (no backend), D2 diagrams re-rendered with d2 v0.9.0 and diffed |
-| [`cd.yml`](../../.github/workflows/cd.yml) | push to `main`, manual | self-hosted | CI → `make postgres-image` + `make image` (each only if its tag is not in the registry yet) → staging → **approval** → prod, same tag |
-| [`deploy.yml`](../../.github/workflows/deploy.yml) | called by `cd` only | self-hosted | `make diff`, `make deploy`, `make status` for one env |
-| [`release.yml`](../../.github/workflows/release.yml) | push of a `v*` tag | GitHub-hosted | refuses a moved or deleted tag; checks annotated, on `main`, same version in the four files (ADR 0029); publishes the GitHub release |
+| [`cd.yml`](../../.github/workflows/cd.yml) | push to `main`, manual | self-hosted | CI → `make postgres-image` + `make image` (each only if its tag is not in the registry yet) → staging. Never prod on its own |
+| [`deploy.yml`](../../.github/workflows/deploy.yml) | called by `cd` and `release` only | self-hosted | `make diff`, `make deploy`, `make status` for one env |
+| [`release.yml`](../../.github/workflows/release.yml) | push of a `v*` tag | GitHub-hosted | refuses a moved or deleted tag; checks annotated, on `main`, same version in the four files (ADR 0029); publishes the GitHub release → **approval** → prod, the tag's commit |
 
 Third-party actions are pinned to commit SHAs with the version as a comment;
 [Dependabot](../../.github/dependabot.yml) bumps them weekly, along with Gradle, npm and the Dockerfiles' base images.
@@ -16,10 +16,14 @@ CD runs the steps of [README.md](README.md) for the two hosted environments, wra
 commit, image built from `git archive` of it.
 
 ```
-push main ─► ci ─► image ─► staging ─► (prod reviewer approves) ─► prod
-manual:      environment=staging|prod, tag=<12-char commit> ─► deploy
-             prod with empty tag = what staging runs now (promote)
+push main      ─► ci ─► image ─► staging
+push tag vX.Y.Z ─► release checks ─► GitHub release ─► (prod reviewer approves) ─► prod, that commit
+manual:         environment=staging|prod, tag=<12-char commit> ─► deploy
+                prod with empty tag = what staging runs now (promote)
 ```
+
+Prod runs only released versions. Staging runs every commit of `main`, so unfinished work (for example
+a new design built page by page) can sit on `main` and on staging while prod stays on the last release.
 
 Rollback: run `cd` manually with the previous tag (`helm -n helper2-<env> history helper2`), or
 `helm rollback`. Terraform ([`terraform/`](terraform)) stays manual: it owns the namespaces, the
@@ -36,7 +40,8 @@ runner must never run pull-request code: `cd.yml` has no `pull_request` trigger 
 Nothing long-lived is stored in GitHub.
 
 **GitHub** (repo settings)
-- Environments `staging` and `prod`, deployment branch `main` only; `prod` has a required reviewer.
+- Environments `staging` (deployment branch `main` only) and `prod` (branch `main` and tags `v*`, for
+  manual runs and releases); `prod` has a required reviewer.
   A missing environment is auto-created *without* protection rules, so they must exist first.
 - Actions → General → Fork pull request workflows: require approval for all outside collaborators.
 - Variable `BAO_ADDR` (the secrets store address); optional `IMAGE_ENGINE` (default `podman`).
@@ -62,7 +67,8 @@ cluster-wide ([`terraform/rbac.tf`](terraform/rbac.tf)). The prod deployer may a
 Deployment in staging (to promote what staging runs), but not staging's Secrets. After an `app.env`
 change, rerun `make ENV=<env> credentials`; the next deploy restarts the app with it.
 
-**Releases** — tag the release commit on `main`: `git tag -a v1.2.0 -m "<notes>" <commit>; git push origin v1.2.0`.
+**Releases** — tag the release commit on `main`: `git tag -a v1.0.3 -m "<notes>" <commit>; git push origin v1.0.3`.
+The push publishes the GitHub release and starts the prod deploy of that commit, which waits for the approval.
 A release tag is never moved: publish a new version instead. Repo settings → Rules → a tag ruleset on
 `refs/tags/v*` restricting updates and deletions blocks the push itself; `release.yml` fails on one that
 got through and publishes nothing.

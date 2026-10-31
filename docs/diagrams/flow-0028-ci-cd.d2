@@ -1,6 +1,6 @@
 # Flowchart: from a pull request to prod. PR checks on GitHub-hosted runners; on main, CI again, one
-# image build on the self-hosted runner, staging, the prod approval, prod with the same tag.
-# Source of truth: .github/workflows/ci.yml, cd.yml, deploy.yml, deploy/k8s/Makefile (image,
+# image build on the self-hosted runner, staging. Prod only from a release tag, after the approval.
+# Source of truth: .github/workflows/ci.yml, cd.yml, deploy.yml, release.yml, deploy/k8s/Makefile (image,
 #   postgres-image, chart-check, diff, deploy, status), deploy/k8s/CI.md.
 # Render: cd docs/diagrams && d2 fmt flow-0028-ci-cd.d2 && d2 flow-0028-ci-cd.d2 flow-0028-ci-cd.svg
 
@@ -37,11 +37,8 @@ cd: cd.yml (push to main) {
   push: "Build from git archive,\npush TAG = commit[0:12]" {class: data}
   staging: "deploy.yml env staging:\ndiff, deploy, status" {class: app}
   ok: "Staging rollout\nhealthy?" {class: decision}
-  rollback: "helm --rollback-on-failure:\nprevious revision; prod not run" {class: fail}
-  approve: "Prod reviewer\napproves?" {class: decision}
-  wait: "Prod waits\n(not deployed)" {class: end}
-  prod: "deploy.yml env prod:\nsame tag as staging" {class: app}
-  live: "helper2.ai runs the tag" {class: end}
+  rollback: "helm --rollback-on-failure:\nprevious revision" {class: fail}
+  done: "Staging runs the commit;\nprod unchanged" {class: end}
 
   ci -> build: {class: hot}
   build -> exists
@@ -51,11 +48,31 @@ cd: cd.yml (push to main) {
   push -> staging: {class: hot}
   staging -> ok
   ok -> rollback: no
-  ok -> approve: yes {class: hot}
+  ok -> done: yes {class: hot}
+}
+
+release: release.yml (push of a tag vX.Y.Z) {
+  class: group
+  direction: down
+  checks: "Release checks (0029):\nnot moved, annotated,\non main, four versions" {class: app}
+  valid: "All pass?" {class: decision}
+  refused: "Fail: no release,\nno deploy" {class: fail}
+  publish: "GitHub release\npublished" {class: app}
+  approve: "Prod reviewer\napproves?" {class: decision}
+  wait: "Prod waits\n(not deployed)" {class: end}
+  prod: "deploy.yml env prod:\nthe tag's commit\n(image built on main)" {class: app}
+  live: "helper2.ai runs the release" {class: end}
+
+  checks -> valid
+  valid -> refused: no
+  valid -> publish: yes {class: hot}
+  publish -> approve: {class: hot}
   approve -> wait: no
   approve -> prod: yes {class: hot}
   prod -> live: {class: hot}
 }
+
+tagger: "Owner tags a main\ncommit vX.Y.Z" {class: person}
 
 manual: "Manual run (workflow_dispatch):\nenvironment + tag;\nprod with empty tag = promote\nwhat staging runs" {class: config}
 
@@ -65,4 +82,5 @@ checks -> green
 green -> fix: no
 green -> merge: yes {class: hot}
 merge -> cd.ci: {class: hot}
-manual -> cd.prod: {class: config}
+tagger -> release.checks: {class: hot}
+manual -> release.prod: "or any env" {class: config}
