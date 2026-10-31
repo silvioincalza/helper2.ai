@@ -25,7 +25,9 @@ and the Helm chart. A published version must always mean the same code, so it ca
    - it checks the name is `vX.Y.Z`, the tag is annotated, and its commit is on `main`;
    - it checks the four files at that commit carry the same version as the tag;
    - it publishes the GitHub release with the tag message as notes plus the image name
-     `<registry>/helper2/apps/helper2:<commit[0:12]>`. An existing release is left as is.
+     `<registry>/helper2/apps/helper2:<commit[0:12]>`. An existing release is left as is;
+   - then it deploys that commit to prod, after the approval on the `prod` environment ([0028](0028-ci-cd.md)).
+     A release is the only automatic way to prod.
 6. **Tags are immutable.** A release tag is never moved or deleted; a fix is a new version. A GitHub tag ruleset
    on `refs/tags/v*` blocks moving and deleting release tags, with no bypass. Image tags are commits and are never
    rebuilt: `make image` skips a tag that Harbor already has, and a Harbor tag-immutability rule on the `helper2`
@@ -40,7 +42,8 @@ and the Helm chart. A published version must always mean the same code, so it ca
 - A version names one commit and one image, so a rollback to a release is `make ENV=prod TAG=<commit> deploy`.
 - The ruleset blocks a moved or deleted tag at push time; the workflow check stays as a second guard.
 - Deleting an old image needs the Harbor immutability rule disabled first, and enabled again after.
-- A release does not deploy anything; deploys stay with continuous delivery (CD, [0028](0028-ci-cd.md)).
+- A release deploys prod; a push to `main` deploys staging only ([0028](0028-ci-cd.md)). So prod always runs a
+  version the footer can name.
 
 ## Alternatives considered
 - Calendar versions — they do not say whether an upgrade breaks a client.
@@ -49,7 +52,7 @@ and the Helm chart. A published version must always mean the same code, so it ca
 - Release tools that bump and tag automatically — more tooling than one manual tag per release needs.
 
 ## Code
-- `.github/workflows/release.yml` — tag checks and GitHub release.
+- `.github/workflows/release.yml` — tag checks, GitHub release, prod deploy (calls `deploy.yml`).
 - `backend/build.gradle.kts`, `frontend/package.json`, `deploy/helm/helper2/Chart.yaml`, `api/openapi.yaml` (`info.version`) — the version.
 - `frontend/vite.config.ts`, `frontend/src/components/Layout.tsx` — version in the footer.
 - `deploy/k8s/Makefile` (`image`) — commit tags never rebuilt.

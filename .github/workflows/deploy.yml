@@ -1,5 +1,6 @@
 # Deploys one environment with `make deploy` (deploy/k8s/Makefile) on the self-hosted runner in the
-# mesh. Called by cd.yml only; it has no trigger of its own, so a pull request can never reach it.
+# mesh. Called by cd.yml (staging, manual runs) and release.yml (prod); it has no trigger of its own,
+# so a pull request can never reach it.
 name: deploy
 
 on:
