@@ -2,9 +2,10 @@
 # Shows fetch + SseParser (no EventSource, no automatic reconnect), the idle timer re-armed on every chunk
 # (keep-alive comments included), the picks bar while the guide reads, a stream that goes quiet, the retry and the
 # refinement, both asked again by useGuideStream from the URL.
-# Source of truth: frontend/src/components/results/ResultsV2.tsx (GuidePicks, guideError),
+# Source of truth: frontend/src/components/results/ResultsV2.tsx, frontend/src/components/guide/GuidePicks.tsx
+#   (GuidePicks, guideError), frontend/src/components/guide/reading.ts (progressOf), frontend/src/components/ui/PicksBar.tsx,
 #   frontend/src/hooks/useGuideStream.ts, frontend/src/lib/searchState.ts (askedRefinement, refinedParams),
-#   frontend/src/api/client.ts (askGuideStream), frontend/src/lib/sse.ts, frontend/src/components/GuideAnswer.tsx,
+#   frontend/src/api/client.ts (askGuideStream), frontend/src/lib/sse.ts, frontend/src/components/guide/GuideAnswer.tsx,
 #   backend/src/main/java/ai/helper2/guide/web/GuideStreamController.java.
 # Render: cd docs/diagrams && d2 fmt sequence-0025-frontend-one-box.d2 && d2 sequence-0025-frontend-one-box.d2 sequence-0025-frontend-one-box.svg
 
@@ -32,8 +33,13 @@ normal: Normal stream {
   parser -> client: "{event: planned, data}"
   client -> hook: "onStep(planned)"
   hook -> gs: "steps = [planned], busy"
-  gs -> user: "picks bar: the guide is reading"
-  server -> client: "understood, retrieved" {class: ai-call}
+  gs -> user: "picks bar, role=status: the guide is reading the results"
+  server -> client: "event understood" {class: ai-call}
+  client -> hook: "onStep(understood)"
+  gs -> user: "role=status: … · Understood as <intent, subjects, period>\n(plain labels, no ✕ while it works)"
+  server -> client: "event retrieved" {class: ai-call}
+  client -> hook: "onStep(retrieved)"
+  gs -> user: "role=status: the guide is reading N candidates"
   server -> client: "chunk: \":keep-alive\" comment\n(every 15 s while the question runs)"
   client -> client: "re-arm idle timer"
   client -> parser: "push(text)"
@@ -43,7 +49,7 @@ normal: Normal stream {
   server -> client: "event answer" {class: ai-call}
   client -> hook: "resolve(GuideResponse)"
   hook -> gs: "answer"
-  gs -> user: "picks bar: #1… chips (badges on the rows),\nor GuideAnswer when there is no pick"
+  gs -> user: "picks bar: #1… chips (badges on the rows),\nor GuideAnswer when there is no pick;\nweb searches left today (from the first one used)"
 }
 
 quiet: Stream goes quiet {

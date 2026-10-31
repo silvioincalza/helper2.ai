@@ -29,6 +29,13 @@ screen reader, and in light and dark mode.
    Failures: `IDLE_TIMEOUT`, `MALFORMED`, `ENDED_EARLY`, or the server's `error` event (its problem detail is shown).
    The user retries with a button, which asks the same question with the same refinement; a reload does too.
    Closing the panel, asking again or refining aborts the running stream. A language change does not ask again.
+   While the guide works, the status line in the picks bar (`GuidePicks`, `PicksBar`, `components/guide/reading.ts`)
+   adds how the question was read (`understood`: intent, subjects, period), then how many results the guide reads
+   (`retrieved`). It is a `role="status"` line, so a screen reader hears each change once. The parts are plain labels
+   until the answer: ✕ to remove one comes with the answer, so a second question never runs next to the first.
+   Search and the guide each show the web searches left today (`WebSearchesLeft`, [0037](../search/0037-tavily-store-and-daily-quota.md)),
+   from the first one used, because the limit is small; at 0 the line says that stored results still answer and when
+   the limit resets. Nothing is shown when the count is unknown.
 4. **Radar design system.** The Helper2.ai design system in `docs/design/system`, named after its radar mark:
    warm paper, indigo ink, one saffron accent; `tokens.css` mirrors `tokens.json` (v3, [0040](0040-frontend-design-v2.md)).
    Unknown values read "Unknown".
@@ -67,6 +74,7 @@ screen reader, and in light and dark mode.
 ## Code
 - `frontend/src/components/OneBox.tsx`, `frontend/src/pages/HomePage.tsx` — box, live search, guide section.
 - `frontend/src/hooks/useGuideStream.ts`, `frontend/src/lib/searchState.ts` — the guide stream for the URL's question and refinement.
+- `frontend/src/components/guide/` — `GuidePicks` (picks bar and progress line), `reading.ts`, `GuideAnswer` and its parts, `WebSearchesLeft`.
 - `frontend/src/components/results/ResultsV2.tsx`, `frontend/src/hooks/useApi.ts` — previous results while loading.
 - `frontend/src/api/client.ts`, `frontend/src/lib/sse.ts` — guide stream, idle timeout, error codes.
 - `frontend/src/components/Layout.tsx`, `frontend/src/lib/theme.ts`, `frontend/public/theme.js` — `RouteFocus`, theme.
