@@ -734,6 +734,9 @@
     "pause": "Pause {{label}}",
     "play": "Play {{label}}"
   },
+  "textPage": {
+    "onThisPage": "On this page"
+  },
   "mission": {
     "title": "Our mission",
     "lede": "Help people find the right AI resource for their need, and show the proof behind every answer.",
