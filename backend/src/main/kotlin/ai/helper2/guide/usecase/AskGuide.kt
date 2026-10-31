@@ -11,6 +11,8 @@ import ai.helper2.guide.GuideProgress
 import ai.helper2.guide.GuideStatus
 import ai.helper2.guide.GuideValidator
 import ai.helper2.guide.LEARN_TYPES
+import ai.helper2.guide.ReadingKey
+import ai.helper2.guide.SimilarQuestions
 import ai.helper2.guide.sha256Hex
 import ai.helper2.search.Asker
 import ai.helper2.search.Feature
@@ -37,7 +39,8 @@ import org.slf4j.LoggerFactory
  *
  * Fresh questions cost model calls, so three things stand before them: the answer [cache]; one shared
  * computation for identical questions asked at the same time; and the per-client [quota], past which a
- * client gets the degraded answer (top search results) instead of an error.
+ * client gets the degraded answer (top search results) instead of an error. With [similar], a question that
+ * misses the cache is planned and then answered with the cached answer of a near twin read the same way.
  */
 class AskGuide(
     private val search: SearchResources,
@@ -52,6 +55,8 @@ class AskGuide(
     /** How long the subject searches of a comparison may take together; a subject not found by then is not found. */
     private val subjectSearchDeadline: Duration = SUBJECT_SEARCH_DEADLINE,
     private val limits: AnswerLimits = AnswerLimits.DEFAULT,
+    /** Reuse of a similar question's answer (ADR 0041); null (no threshold set) keeps the exact key only. */
+    private val similar: SimilarQuestions? = null,
 ) {
     private val log = LoggerFactory.getLogger(AskGuide::class.java)
 
@@ -94,7 +99,8 @@ class AskGuide(
     private val dates = DateAnswer(steps, maxCandidates, clock)
 
     /**
-     * A cached or shared answer is returned without any [progress] call: no step ran for this asker.
+     * A cached or shared answer is returned without any [progress] call: no step ran for this asker. A similar
+     * question's answer comes after the plan's calls (`planned`, `understood`) and no other.
      * [client] identifies the asker for the per-client quota and, with [userId] when signed in, for the daily web
      * searches; null (internal callers, tests) is never limited. Every answer carries this asker's web searches left.
      * [clarification] is the user's answer to a [GuideStatus.NEEDS_CLARIFICATION] answer ("" = "search anyway"):
@@ -112,18 +118,16 @@ class AskGuide(
     ): GuideAnswer {
         val observation = Observation.createNotStarted("helper2.guide.ask", observations).start()
         var outcome = "error"
+        var cacheResult = "miss"
         val asker = client?.let { Asker(Feature.GUIDE, it, userId) }
         val question = Question(request.trim(), path, clarification?.trim(), drops, asker)
         try {
             observation.openScope().use {
                 val key = GuideAnswerCache.key(request, path, configHash, question.clarification, drops)
-                if (cache != null) {
-                    val hit = cache.get(key)
-                    meters.counter("helper2.guide.cache", "result", if (hit != null) "hit" else "miss").increment()
-                    if (hit != null) {
-                        outcome = "cached"
-                        return hit.forAsker(asker)
-                    }
+                cache?.get(key)?.let {
+                    cacheResult = "exact"
+                    outcome = "cached"
+                    return it.forAsker(asker)
                 }
                 inFlight[key]?.let {
                     outcome = "shared"
@@ -144,9 +148,12 @@ class AskGuide(
                 try {
                     // Cached in Redis and shared with other askers: it must not carry this asker's address or user id.
                     val answer = answer(question, progress, asked, model).withoutAsker()
-                    cache?.put(key, answer)
+                    val expiresAt = cache?.put(key, answer)
+                    // A reused answer is not indexed again: a chain of near twins would drift from the question answered.
+                    if (expiresAt != null && !asked.reused) asked.probe?.let { similar?.remember(it, key, expiresAt) }
                     mine.complete(answer)
-                    outcome = outcomeOf(answer, asked)
+                    if (asked.reused) cacheResult = "similar"
+                    outcome = if (asked.reused) "cached" else outcomeOf(answer, asked)
                     return answer.forAsker(asker)
                 } catch (e: Throwable) {
                     mine.completeExceptionally(e)
@@ -164,6 +171,7 @@ class AskGuide(
             if (Thread.currentThread().isInterrupted) outcome = "timeout"
             observation.lowCardinalityKeyValue("outcome", outcome)
             observation.stop()
+            if (cache != null) meters.counter("helper2.guide.cache", "result", cacheResult).increment()
             meters.counter("helper2.guide.questions", "outcome", outcome).increment()
             // Its own meter: adding a tag to helper2.guide.questions would split the series the dashboard and alerts read.
             meters.counter("helper2.guide.intents", "intent", question.intentTag).increment()
@@ -203,12 +211,29 @@ class AskGuide(
         }
     }
 
+    /**
+     * The cached answer of a question read the same way and worded closely enough (ADR 0041), once the planner read
+     * this one. Not for a question with a clarification or removed parts: those are rare and read differently. Sets
+     * [Asked.probe], so the fresh answer is indexed, or [Asked.reused].
+     */
+    private fun similarAnswer(q: Question, r: Reading, asked: Asked): GuideAnswer? {
+        if (similar == null || cache == null || q.clarification != null || !q.drops.isEmpty || r.plan == null || r.modelFailed) return null
+        val probe = similar.probe(q.text, configHash, q.path, r.key()) ?: return null
+        asked.probe = probe
+        val answer = similar.nearest(probe)?.let(cache::get) ?: return null
+        asked.reused = true
+        return answer
+    }
+
+    private fun Reading.key() = ReadingKey(intent, subjects, constraints, window, allowReading, aboutEvent, askBackSubject != null)
+
     private fun answerByIntent(q: Question, progress: GuideProgress, asked: Asked, model: GuideModel?): GuideAnswer {
         val r = steps.step(q, "plan") { reader.read(q, progress, asked, model) }
         reader.clarificationOf(q, r)?.let { c ->
             return askBack(clock, r, c, SearchOutcome.empty(clock.instant()), progress)
                 .copy(intent = r.intent, subjects = r.subjects, window = r.window, planned = true)
         }
+        similarAnswer(q, r, asked)?.let { return it }
         val usable = if (r.modelFailed) null else model
         val answer = when (r.intent) {
             GuideIntent.COMPARE -> comparison.answer(q, r, progress, asked, usable)

@@ -597,7 +597,7 @@ class AskGuideTest {
     }
 
     @Test
-    fun `a repeated question is counted as cached with a cache hit after a miss`() {
+    fun `a repeated question is counted as cached with an exact cache hit after a miss`() {
         val guide = observed(whisperPick(), GuideAnswerCache(Duration.ofHours(24), 10, clock))
 
         guide.ask(need, null)
@@ -606,7 +606,7 @@ class AskGuideTest {
         assertEquals(1.0, questions("answered"))
         assertEquals(1.0, questions("cached"))
         assertEquals(1.0, cacheCount("miss"))
-        assertEquals(1.0, cacheCount("hit"))
+        assertEquals(1.0, cacheCount("exact"))
     }
 
     @Test

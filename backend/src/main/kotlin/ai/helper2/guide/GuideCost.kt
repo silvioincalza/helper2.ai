@@ -87,7 +87,7 @@ interface GuideAnswerStore {
  * they would hide a provider recovery.
  *
  * In memory first; on a memory miss it reads through to [store] (Redis), so entries survive restarts.
- * An answer read from the store expires [ttl] after its generatedAt, the same moment as in the store.
+ * An answer expires [ttl] after its generatedAt, in memory and in the store alike.
  */
 class GuideAnswerCache @JvmOverloads constructor(
     private val ttl: Duration,
@@ -118,11 +118,18 @@ class GuideAnswerCache @JvmOverloads constructor(
         return durable
     }
 
-    fun put(key: String, answer: GuideAnswer) {
-        val ttl = ttlOf(answer)
-        if (!isCacheable(answer) || !ttl.isPositive) return
-        synchronized(this) { entries[key] = Entry(answer, clock.instant().plus(ttl)) }
-        store?.let { runCatching { it.put(key, answer, ttl) } }
+    /**
+     * Caches [answer] under [key] until [ttl] after its generatedAt, also when it is an older answer reused for a
+     * similar question (ADR 0041): a copy never outlives the original. Returns when it expires; null when the answer
+     * is not cached.
+     */
+    fun put(key: String, answer: GuideAnswer): Instant? {
+        val expiresAt = answer.generatedAt.plus(ttlOf(answer))
+        val left = Duration.between(clock.instant(), expiresAt)
+        if (!isCacheable(answer) || !left.isPositive) return null
+        synchronized(this) { entries[key] = Entry(answer, expiresAt) }
+        store?.let { runCatching { it.put(key, answer, left) } }
+        return expiresAt
     }
 
     /**
