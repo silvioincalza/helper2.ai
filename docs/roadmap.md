@@ -33,6 +33,8 @@ Items are grouped by the order in which they matter. Inside a group, the first i
   `H2_GITHUB_OAUTH_CLIENT_SECRET` and `H2_ADMINS=github:<numeric id>` ([ADR 0023](adr/edge/0023-identity-and-admin.md)).
 - ADMIN is decided at sign-in, so a change to `H2_ADMINS` needs a new sign-in.
 - Optional `H2_HF_TOKEN` on prod.
+- `H2_SETUP_GITHUB_TOKEN` (read-only, public repositories) in `app_env` on staging and prod; without it Guide me reads
+  GitHub anonymously, 60 calls an hour ([ADR 0031](adr/guide/0031-setup-guide.md)).
 - **Sign-in for everyone.** Sign-in is offered only on `/admin`, so server-side bookmarks and account deletion
   (`DELETE /me`) reach only admins today. Add a public sign-in entry point in the page; it needs the
   `oauth-github` profile on prod ([ADR 0023](adr/edge/0023-identity-and-admin.md)).
@@ -204,7 +206,6 @@ Fix an item or accept it; when it no longer holds, remove it.
 
 - Startup is slower than a native binary: Flyway and the language models load first; the startup probe allows up to 300 s. ([ADR 0001](adr/foundation/0001-stack-and-runtime.md), [ADR 0027](adr/operations/0027-runtime-topology.md))
 - Two backend languages raise the entry cost for a new developer; Kotlin stays in the rule packages. ([ADR 0001](adr/foundation/0001-stack-and-runtime.md), [ADR 0002](adr/foundation/0002-modular-monolith-hexagonal.md))
-- The `setup` module has no `usecase` package yet; the split waits for the tool-guide work. ([ADR 0002](adr/foundation/0002-modular-monolith-hexagonal.md))
 - Generated API code is not committed: after a fresh checkout, run Gradle or npm once before the editor resolves the types. The guide SSE handler is hand-written, so the compiler checks only its event names. ([ADR 0003](adr/foundation/0003-contract-first-rest-api.md), [ADR 0015](adr/guide/0015-ai-guide-evidence-gate.md))
 - A resource seen for the first time has no discovery date in that first response (the write is still queued); a dropped write delays it until the resource is seen again. On shutdown the queue gets 5 s; later writes are lost. ([ADR 0004](adr/foundation/0004-persistence-and-provenance.md))
 - Bookmarks and reports are user data; the backup is the only copy. ([ADR 0004](adr/foundation/0004-persistence-and-provenance.md), [ADR 0027](adr/operations/0027-runtime-topology.md))

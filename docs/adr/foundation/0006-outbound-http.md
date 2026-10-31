@@ -28,7 +28,8 @@ state what happened.
 4. **Identity and tokens.** Every call sends `User-Agent: Helper2.ai-metasearch/<version> (+https://helper2.ai/sources)`.
    The version is the build version from the boot jar's manifest (`1.0.0`, [0029](../operations/0029-release-versioning.md));
    `dev` when the app runs from classes.
-   A token, when set (`H2_GITHUB_TOKEN`, `H2_HF_TOKEN`, `H2_TAVILY_API_KEY`), goes in `Authorization: Bearer`.
+   A token, when set (`H2_GITHUB_TOKEN`, `H2_SETUP_GITHUB_TOKEN`, `H2_HF_TOKEN`, `H2_TAVILY_API_KEY`), goes in
+   `Authorization: Bearer`.
 5. **Bounded bodies.** Source clients (`restClientBuilder`) read at most 2 MB of a response body
    (`MAX_RESPONSE_BYTES`); a call may set its own cap with `ObservedHttp.maxResponseBytes`, as the awesome-list
    README fetch does (5 MB). A longer body stops the read and ends the call as `Unavailable("response too large")`.

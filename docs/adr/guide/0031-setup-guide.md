@@ -6,12 +6,12 @@
 The AI guide picks among search candidates; asked "What is X, and what can I use it for?" on a tool's own page,
 it can only repeat the tool back with a short reason. What a user needs on that page is different: how to install
 the tool, what it depends on, what to configure, and how to connect it to the AI tool they use (Claude Code,
-Cursor, VS Code, Codex and many more). A wrong install command is worse than none: it is copied into a terminal,
-and a snippet copied into 19 clients' config files runs on the user's machine.
+Cursor, VS Code, Codex and others). A wrong install command is worse than none: it is copied into a terminal,
+and a snippet copied into an AI client's config file runs on the user's machine.
 
 ## Decision
 1. **A separate endpoint**, `GET /api/v1/resources/{id}/setup`, in its own module `ai.helper2.setup`, apart from
-   the recommendation guide. Two use cases, `GetResourceSetup` and `AskAboutResource` (`setup/usecase`), find the
+   the recommendation guide. Two use cases, `GetResourceSetup` and `GetToolGuide` (`setup/usecase`), find the
    resource in the catalog, take its MCP Registry name and the identifiers of its documents (`ToolRef`), and call the
    domain; `SetupController` only maps requests and answers.
 2. **Facts from the source, at request time.** For an MCP server with an Official MCP Registry record, the latest
@@ -43,14 +43,14 @@ and a snippet copied into 19 clients' config files runs on the user's machine.
    a `<placeholder>`. A published template such as `Bearer {api_key}` keeps its shape with `<api_key>`. VS Code gets
    a password `input` instead of a placeholder.
 6. **Clients are a table** (`Clients.ALL`): id, name, the client's own documentation URL, and how it renders each
-   run option. Each format follows that documentation (19 clients). When the
-   documentation gives no way to configure an option (SSE in Codex, Goose, Zed, Kiro, opencode; env or headers in
-   JetBrains; headers in Amazon Q; local servers in LM Studio, whose documentation shows only remote ones), the
-   client says so instead of a snippet. Adding a client is adding a row. The writers (JSON, TOML, YAML, POSIX shell)
-   are framework-free; every string escapes controls, DEL, C1, U+2028/U+2029 and the byte order mark as `\uXXXX`,
-   and a shell word holding one of them is written with `$'…'` escapes, so a pasted snippet holds only printable
-   characters. A parse-back test reads every client's snippet with a real JSON, TOML and YAML parser and a POSIX
-   word splitter, with hostile keys and values.
+   run option. Each format follows that documentation. There are 8: Claude Code, Claude Desktop, Cursor, VS Code
+   (GitHub Copilot), OpenAI Codex, Windsurf, Gemini CLI and Cline, the MCP-capable clients with the widest reach in
+   October 2026 (no usage data of our own yet). When the documentation gives no way to configure an option (SSE in
+   Codex), the client says so instead of a snippet. Adding a client is adding a row. The writers (JSON, TOML, POSIX
+   shell) are framework-free; every string escapes controls, DEL, C1, U+2028/U+2029 and the byte order mark as
+   `\uXXXX`, and a shell word holding one of them is written with `$'…'` escapes, so a pasted snippet holds only
+   printable characters. A parse-back test reads every client's snippet with a real JSON and TOML parser and a
+   POSIX word splitter, with hostile keys and values.
 7. **No setup data, no invention.** A resource whose sources state nothing gets an empty answer; the page says so
    and offers the step-by-step guide below.
 8. **README config examples (no model).** Without a registry entry, an MCP server's README is read (GitHub REST
@@ -65,10 +65,13 @@ and a snippet copied into 19 clients' config files runs on the user's machine.
    single inner hyphens), a repository name is never `.` or `..`, and each part of a Hugging Face id follows the
    Hub's rules (no leading or trailing `-` or `.`, no `--` or `..`). A link can therefore never reach another API
    path with the server's token.
-   - **Hourly fetch budget.** The GitHub token is the Scout's (5,000 calls an hour). Every document fetch takes one
-     unit of `H2_SETUP_HOURLY_FETCHES` (1,000 per UTC hour), counted in Redis across replicas under the `redis`
-     policy ([0033](../foundation/0033-resilience-policies.md)); when Redis cannot answer, each replica counts on its own. Over the
-     budget nothing is fetched, the answer is not cached, and `helper2.setup.fetches.refused` counts the refusal.
+   - **Own GitHub token.** READMEs are read with the setup guide's own token, `H2_SETUP_GITHUB_TOKEN` (5,000 calls
+     an hour), never the Scout's `H2_GITHUB_TOKEN`. Without it, GitHub is read anonymously (60 calls an hour).
+   - **Hourly fetch budget.** Every document fetch takes one unit of `H2_SETUP_HOURLY_FETCHES` (1,000 per UTC
+     hour), counted in Redis across replicas under the `redis` policy
+     ([0033](../foundation/0033-resilience-policies.md)); when Redis cannot answer, each replica counts on its own.
+     Over the budget nothing is fetched, the answer is not cached, and `helper2.setup.fetches.refused` counts the
+     refusal.
    - **Document cache.** Documents are kept in memory per replica for `H2_SETUP_CACHE_TTL`, up to
      `H2_SETUP_DOCUMENT_CACHE_MB` (32 MB) of text in all, the least recently used going first (Caffeine, weighed by
      length). A document is cut at 512 KB.
@@ -88,27 +91,31 @@ and a snippet copied into 19 clients' config files runs on the user's machine.
    - a step is never repeated in a later section; at most 8 per section.
    The fixed setup set of [0030](../quality/0030-guide-evaluation.md)
    (point 6) measures steps kept and rejected, snippet coverage and latency on every run.
-11. **Same function for "ask" about a tool.** The same endpoint takes an optional question; the answer is an
-   ANSWER section with the same checks. Answers are cached in Redis for 7 days, keyed by a hash of resource,
-   documents, question and prompt. A cached answer holds the checked steps and the documents' links and read
-   dates, never the question or a document's text; the question is added back to the response only. The endpoint
-   shares the guide's rate limit and has its own daily cap (`H2_SETUP_GUIDE_DAILY_MODEL_CALLS`, 300); the Redis TTL is
+11. **One guide per tool, no free-form questions.** The guide answers only what the page is for: setup options,
+   client snippets and checked steps. It is the same for every visitor and cached in Redis for 7 days, keyed by a
+   hash of resource, documents and prompt. A cached answer holds the checked steps and the documents' links and
+   read dates, never a document's text. The endpoint takes no input but the resource id, shares the guide's rate
+   limit and has its own daily cap (`H2_SETUP_GUIDE_DAILY_MODEL_CALLS`, 300); the Redis TTL is
    `H2_SETUP_GUIDE_CACHE_TTL`. An entry that does not decode is logged and treated as a miss, and the next answer
    replaces it, so it costs one model call, not one per request. Each model call runs under the `llm-chat` circuit
    ([0033](../foundation/0033-resilience-policies.md)); a malformed answer is asked for once more. When both answers are not the
    requested JSON, the "unavailable" answer is cached for `H2_SETUP_UNREADABLE_TTL` (10 minutes), so the same
-   resource and question do not spend two model calls on every request. A provider error, an open circuit or a spent
+   resource does not spend two model calls on every request. A provider error, an open circuit or a spent
    budget is not cached: each recovers by itself. The user sees the same "unavailable" answer in every case but the
    budget.
 12. **Settings.** Every knob is an `H2_SETUP_*` variable in the `helper2.setup` block of `application.yaml`:
    `DOCUMENT_TIMEOUT` (10 s), `NPM_README_BASE_URL`, `CACHE_TTL`, `DOCUMENT_CACHE_MB`, `HOURLY_FETCHES`,
-   `GUIDE_DAILY_MODEL_CALLS`, `GUIDE_REASONING` (false), `GUIDE_CACHE_TTL` (7 days), `UNREADABLE_TTL` (10 minutes).
+   `GITHUB_TOKEN` (empty), `GUIDE_DAILY_MODEL_CALLS`, `GUIDE_REASONING` (false), `GUIDE_CACHE_TTL` (7 days),
+   `UNREADABLE_TTL` (10 minutes).
 
 ## Consequences
-- Every MCP server with a registry entry or a README config example gets copy-paste setup for 19 clients without a
+- Every MCP server with a registry entry or a README config example gets copy-paste setup for 8 clients without a
   model call; every tool with a GitHub, npm or Hugging Face document gets checked steps.
+- A visitor types nothing into Guide me, so no user text reaches the model, the cache or the logs from this page.
 - The guide never fills gaps: every step comes from the tool's own documentation.
-- The hourly fetch budget keeps the Scout's GitHub quota safe; registry snippets need no fetch budget.
+- README fetches never spend the Scout's GitHub quota; the hourly budget bounds the setup guide's own. Registry
+  snippets need no fetch budget.
+- One more secret to rotate (`H2_SETUP_GITHUB_TOKEN`, a read-only token for public repositories).
 - Each client row links its own documentation, so every format can be re-checked at its source.
 
 ## Alternatives considered
@@ -118,14 +125,20 @@ and a snippet copied into 19 clients' config files runs on the user's machine.
 - **Caches: a hand-written LRU map vs Caffeine (chosen).** A map bounded by a count of resources cannot bound
   memory when one resource holds up to three 512 KB documents. Caffeine weighs entries by length, expires them by
   time and loads each key once under concurrency, in one small, widely used library (3.2.3, Apache 2.0).
-- **An own GitHub token for setup fetches.** Separates the quotas, but adds a secret to rotate; the hourly budget
-  keeps the Scout's quota safe with one setting.
+- **The Scout's GitHub token with a hard hourly budget.** No secret to add, but every README fetch still comes out of
+  the Scout's 5,000 calls, so a busy hour of Guide me slows the Scout. An own token (chosen) keeps the quotas apart.
+- **Free-form questions about a tool.** A text box answered from the tool's documents with the same checks. It turns
+  the page into a chat with one README: a second prompt branch, user text in the cache key and the model input,
+  and an answer type no other part of Helper2 needs. The plain guide covers what the page is for.
+- **Every client whose documentation we could check (19).** More reach at the margin, but each format must be
+  re-checked when its client changes, and several need their own writer (YAML) and their own "not supported"
+  rules. Eight clients cover the large majority of MCP users.
 
 ## Code
 - `backend/src/main/kotlin/ai/helper2/setup/` — domain: `Setup.kt`, `Launch.kt`, `Clients.kt`, `SetupGuides.kt`,
   `RunOptionRules.kt`, `Formats.kt`, `Materials.kt`, `ToolGuideAnswer.kt`, `ToolGuidePorts.kt`,
   `ToolGuideValidator.kt`, `ToolGuides.kt`.
-- `backend/src/main/java/ai/helper2/setup/usecase/` — `GetResourceSetup`, `AskAboutResource`.
+- `backend/src/main/java/ai/helper2/setup/usecase/` — `GetResourceSetup`, `GetToolGuide`.
 - `backend/src/main/java/ai/helper2/setup/internal/` — `RegistryMcpServerSpecs`, `HttpToolMaterials`,
   `HourlyFetchBudget`, `ReadmeMcpConfigs`, `SpringAiToolGuideModel`, `RedisToolGuideCache`, `SetupConfiguration`.
 - `backend/src/main/java/ai/helper2/setup/web/SetupController.java`, `backend/src/main/resources/prompts/setup/tool-guide.txt`,

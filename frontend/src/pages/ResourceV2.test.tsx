@@ -24,7 +24,7 @@ function guide(): GuideResponse {
 }
 
 const STEPS: ToolGuide = {
-  resourceId: PG.id, title: PG.title, status: 'OK', question: null, rejected: 0, generatedAt: '2026-10-28T00:00:00Z', model: 'nemotron-nano',
+  resourceId: PG.id, title: PG.title, status: 'OK', rejected: 0, generatedAt: '2026-10-28T00:00:00Z', model: 'nemotron-nano',
   sections: [{ kind: 'INSTALL', steps: [{ text: 'Install it with npm.', quote: 'Install globally:', source: 'readme', caution: false }] }],
   documents: [{ key: 'readme', kind: 'README', url: 'https://github.com/acme/postgres-mcp', retrievedAt: '2026-10-28T00:00:00Z' }],
 };

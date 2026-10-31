@@ -19,8 +19,8 @@ import tools.jackson.module.kotlin.KotlinModule;
 
 /**
  * Tool guide answers in Redis, shared by every replica and kept across deploys (same envelope and {@code redis} policy
- * as the guide's answer store, ADR 0033). An answer holds the checked steps and links to the documents, never the
- * question or a document's text. A Redis error, or the open circuit refusing the call, makes get miss and put do nothing.
+ * as the guide's answer store, ADR 0033). An answer holds the checked steps and links to the documents, never a
+ * document's text. A Redis error, or the open circuit refusing the call, makes get miss and put do nothing.
  */
 class RedisToolGuideCache implements ToolGuideCache {
 
