@@ -182,8 +182,6 @@ Open items:
 
 - **Design v2** ([0040](adr/0040-frontend-design-v2.md)) is done and on staging. Prod gets it with the next release:
   cut one once staging looks right.
-- The v3 board says "Switzerland · EU servers" in the footer. Add "EU servers" only once the hosting region is written
-  down and checked.
 - The News and Events boards move on their own. Hover, focus and tap pause them; check this against WCAG 2.2.2 with
   a real touch and screen-reader test before launch.
 - Tracking cookies are planned. Before the first one: consent banner, cookie notice, Privacy page and record of

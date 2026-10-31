@@ -39,6 +39,7 @@ describe('design v2 home: only the home page', () => {
     await board('Events');
     expect(screen.queryByText('Acme Translator')).not.toBeInTheDocument();
     expect(screen.getByText(/No ads\./)).toBeInTheDocument();
+    expect(screen.getByRole('contentinfo')).toHaveTextContent('Switzerland · EU servers');
   });
 
   it('Enter in the box opens the results on /search', async () => {
