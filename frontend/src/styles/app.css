@@ -106,7 +106,7 @@ textarea { width: 100%; resize: vertical; }
 /* example needs under the box */
 .examples { text-align: left; }
 
-/* one page, one box */
+/* the home page and the one box */
 .one-page { display: flex; flex-direction: column; gap: var(--space-5); }
 .one-box { display: flex; flex-direction: column; gap: var(--space-2); }
 .one-box .searchbox { width: 100%; }
@@ -171,14 +171,6 @@ textarea { width: 100%; resize: vertical; }
 .type-tag.tag-mcp { background: var(--tag-mcp-bg); color: var(--checked-ink); }
 .btn-icon { min-width: 2.75rem; min-height: 2.75rem; justify-content: center; font-size: 1.25rem; line-height: 1; }
 .suggest-guide { align-self: flex-start; border-style: dashed; }
-/* Guide request in flight: a ring in the current text colour, so it reads on the accent button and on the panel. */
-.spinner { flex: none; width: 1em; height: 1em; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-@keyframes pulse { 50% { opacity: 0.35; } }
-@media (prefers-reduced-motion: reduce) {
-  /* No rotation: a full ring that slowly fades in and out. */
-  .spinner { border-right-color: currentColor; animation: pulse 2s ease-in-out infinite; }
-}
 
 .searchbox { display: flex; gap: var(--space-2); }
 .searchbox input { flex: 1; min-width: 0; }
