@@ -7,8 +7,10 @@ Draft an ADR for: $ARGUMENTS
 1. Read `docs/adr/README.md` and pick the next free number.
 2. Compare 2-3 realistic options on simplicity, coupling, testability, operational cost,
    failure modes, security, reversibility and cognitive load for a one-person team.
-3. Write `docs/adr/NNNN-<slug>.md` with: Context, Decision, Alternatives, Consequences, Diagrams.
-   Match the style of the existing ADRs. Short and plain.
+3. Write `docs/adr/<category>/NNNN-<slug>.md` (category folder as in the README) with: Context, Decision,
+   Consequences, Alternatives considered, Code, Diagrams, Roadmap. Match the style of the existing ADRs.
+   Short and plain, present tense, no history. Consequences say what the decision gives; known limits
+   go to `docs/roadmap.md`.
 4. Diagrams, in D2 like the existing ones (see `docs/diagrams/README.md`):
    - `docs/diagrams/flow-NNNN-<slug>.d2` — flowchart of the decisions in the code
    - `docs/diagrams/sequence-NNNN-<slug>.d2` — sequence of the call path

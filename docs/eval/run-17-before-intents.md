@@ -66,7 +66,7 @@ The section under "Notes on this run" is hand-written and kept by the script; th
 ## Notes on this run
 
 <!-- hand-written: kept by scripts/eval-guide.mjs -->
-- This run measures `fa27bc8`: Nemotron thinking off, the reason check, and vector search ([ADR 0012](adr/0012-vector-search-pgvector.md), [ADR 0016](adr/0016-guide-reason-check.md)). The vector index was still being built: 1,326 of 25,810 resources (5 %), so this run says little about vector search yet.
+- This run measures `fa27bc8`: Nemotron thinking off, the reason check, and vector search ([ADR 0012](adr/search/0012-vector-search-pgvector.md), [ADR 0016](adr/guide/0016-guide-reason-check.md)). The vector index was still being built: 1,326 of 25,810 resources (5 %), so this run says little about vector search yet.
 - Token Factory was overloaded during the run (HTTP 529 on a direct call at the same time). Server-side timings: plan 0.4–1.1 s, search 1.1–4.9 s, choose 0.5–11.5 s, reason check 0.5–3.7 s. The choose times are well above the 1.3 s measured on the same requests an hour earlier ([eval/run-17-thinking.md](eval/run-17-thinking.md)).
 - Previous run (thinking on, no reason check): [eval/run-16-before-thinking-off.md](eval/run-16-before-thinking-off.md): p50 21.0 s, p90 46.4 s, AI pick on 17 of 19 real queries, 45 picks kept.
 - Relevance of the top pick, judged by hand on 27 Oct 2026 from title and quote: 12 of the 13 real queries with an AI pick look relevant; u03 (`spoken-mcp`) was not checked. Better than run 16: b01 (a Postgres MCP server instead of a SQL Server monitor), b06 (Microsoft Agent Framework instead of a small repo).

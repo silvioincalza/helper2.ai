@@ -6,17 +6,17 @@ its relevance part with a message.
 
 | File | What | Read by |
 |---|---|---|
-| `search-queries.json` | 80 search queries in 9 groups ([ADR 0036](../adr/0036-search-evaluation-harness.md)) | `./gradlew evalRecord`, `evalTest` |
+| `search-queries.json` | 80 search queries in 9 groups ([ADR 0036](../adr/quality/0036-search-evaluation-harness.md)) | `./gradlew evalRecord`, `evalTest` |
 | `semantic-gold.json` | 20 paraphrase queries for vector search and its cutoff (ADR 0012, 0036) | same |
 | `search-qrels.tsv` | graded judgements for both sets: `query_id`, `url`, `grade` 0–3 | `evalTest` |
 | `search-qrels-second.tsv` | the second judge's grades of a 20 % sample (same format, optional) | `evalTest` (Cohen's kappa) |
 | `search-baseline.json` | nDCG@10 the gate compares with, and the snapshots and labels it was measured on | `evalTest` |
-| `guide-queries.json` | 20 guide questions ([ADR 0030](../adr/0030-guide-evaluation.md)) | `scripts/eval-guide.mjs` |
-| `guide-intents.json` | 16 intent cases and 6 ask-back cases with pass rules ([ADR 0032](../adr/0032-guide-intents.md) §10) | `scripts/eval-guide.mjs --intents` |
+| `guide-queries.json` | 20 guide questions ([ADR 0030](../adr/quality/0030-guide-evaluation.md)) | `scripts/eval-guide.mjs` |
+| `guide-intents.json` | 16 intent cases and 6 ask-back cases with pass rules ([ADR 0032](../adr/guide/0032-guide-intents.md) §10) | `scripts/eval-guide.mjs --intents` |
 | `guide-adversarial.json` | 8 hostile questions | `scripts/eval-guide.mjs --adversarial` |
 | `guide-qrels.tsv` | graded judgements of guide picks: `query_id` (guide or intent case id), `url`, `grade` 0–3 | `scripts/eval-guide.mjs` (P@3, nDCG@3) |
 | `classifier-labels.tsv` | items labelled AI-related or not, for `Classification.isAiRelated` | `ClassificationLabelsTest` |
-| `setup-resources.json` | 15 resources for the setup guide ([ADR 0031](../adr/0031-setup-guide.md)) | `scripts/eval-setup.mjs` |
+| `setup-resources.json` | 15 resources for the setup guide ([ADR 0031](../adr/guide/0031-setup-guide.md)) | `scripts/eval-setup.mjs` |
 
 Snapshots, judging pools, TREC files and reports are third-party data and stay in `backend/eval-data/` (git-ignored).
 

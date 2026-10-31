@@ -12,7 +12,7 @@ as scope creep.
 - `api/openapi.yaml` — contract first (OpenAPI 3.1); the frontend generates types from it
 - PostgreSQL 18 (full-text + pgvector), Redis 8 (disposable cache)
 - `deploy/` — Helm charts for staging and prod
-- `docs/adr/` — one ADR per decision; `docs/roadmap.md` — every open TODO
+- `docs/adr/<category>/` — one ADR per decision; `docs/roadmap.md` — every open TODO
 - LLMs: NVIDIA models only (Nemotron on Nebius Token Factory)
 
 ## Commands
@@ -33,7 +33,8 @@ Run the relevant tests before calling a change done.
 - TDD for domain logic, BDD for user-visible behaviour, integration tests for adapters.
 - Before adding a library or tool: compare 2-3 candidates (fit, maintenance, licence, lock-in,
   operational cost), recommend one, state the trade-off.
-- Lasting decision → new ADR in `docs/adr/` (next number), linked from `docs/adr/README.md`.
+- Lasting decision → new ADR in `docs/adr/<category>/` (next number), linked from `docs/adr/README.md`.
+  Written in the present tense, as the code is; known limits go to the roadmap.
 - Every ADR has a flowchart (the decisions in the code) and a sequence diagram (the call path),
   as D2 sources in `docs/diagrams/` (`flow-NNNN-<slug>.d2`, `sequence-NNNN-<slug>.d2`) with the
   rendered SVG committed next to them, linked from the ADR and both README indexes. When the
