@@ -148,3 +148,38 @@ describe('admin page', () => {
     await waitFor(() => expect(run).not.toHaveAttribute('aria-disabled'));
   });
 });
+
+describe('Feature: the review queue cannot load', () => {
+  it('Scenario: Try again keeps focus on the queue and shows the items', async () => {
+    // Given the review queue fails once
+    let fail = true;
+    mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/review-items': () => (fail ? problem(503, 'Service Unavailable') : page([item])),
+      'GET /admin/scout-runs': () => [],
+    });
+    renderApp('/admin');
+    // Then an alert says so and offers Try again
+    const alert = await screen.findByRole('alert');
+    expect(within(alert).getByRole('heading', { name: 'Could not load the review queue' })).toBeInTheDocument();
+    // When the admin tries again by keyboard
+    fail = false;
+    within(alert).getByRole('button', { name: 'Try again' }).focus();
+    await userEvent.keyboard('{Enter}');
+    // Then the items load and focus stays on the queue's heading, not the page body
+    expect(await screen.findByRole('button', { name: /Accept/ })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Review queue' })).toHaveFocus());
+  });
+});
+
+describe('Feature: links to resources', () => {
+  it('Scenario: a review item links to its resource page with the id encoded', async () => {
+    mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/review-items': () => page([{ ...item, resourceId: 'a/b c', resourceTitle: 'Acme' }]),
+      'GET /admin/scout-runs': () => [],
+    });
+    renderApp('/admin');
+    expect(await screen.findByRole('link', { name: 'Acme' })).toHaveAttribute('href', '/resource/a%2Fb%20c');
+  });
+});

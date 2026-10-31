@@ -6,9 +6,12 @@ import type { ReviewStatus } from '@/api/types';
 import { Pagination } from '@/components/Pagination';
 import { SignIn } from '@/components/SignIn';
 import { useMe } from '@/context/MeContext';
+import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
 import { useApi } from '@/hooks/useApi';
+import { useRetry } from '@/hooks/useRetry';
 import { useTitle } from '@/hooks/useTitle';
 import { formatDate } from '@/lib/format';
+import { resourcePath } from '@/lib/searchState';
 
 /** How often the run listing is reloaded while a Scout run is RUNNING. */
 export const RUN_POLL_MS = 3000;
@@ -27,6 +30,7 @@ export default function AdminPage() {
     (s) => (isAdmin ? api.listReviewItems(status, page, REVIEW_PAGE_SIZE, s) : Promise.resolve({ items: [], total: 0 })),
     { cache: false },
   );
+  const { retry: retryItems, focusRef: queueHeading } = useRetry(items.reload, items.loading);
   const runs = useApi(`runs/${isAdmin}`, (s) => (isAdmin ? api.listScoutRuns(s) : Promise.resolve([])), { cache: false });
   useTitle(t('nav.admin'));
 
@@ -81,7 +85,7 @@ export default function AdminPage() {
       {actionError && <p role="alert" className="banner banner-warn">{t(actionError === 'runInProgress' ? 'admin.runInProgress' : 'admin.actionFailed')}</p>}
 
       <section aria-labelledby="rq-h" className="panel">
-        <h2 id="rq-h">{t('admin.reviewQueue')}</h2>
+        <h2 id="rq-h" ref={queueHeading} tabIndex={-1}>{t('admin.reviewQueue')}</h2>
         <label>
           {t('admin.status')}{' '}
           <select value={status} onChange={(e) => { setStatus(e.target.value as ReviewStatus); setPage(0); }}>
@@ -89,13 +93,13 @@ export default function AdminPage() {
           </select>
         </label>
         {items.loading ? <p role="status">{t('common.loading')}</p> : items.error !== undefined ? (
-          <p role="alert">{t('admin.loadError')} <button type="button" className="btn" onClick={items.reload}>{t('common.retry')}</button></p>
+          <StatePanel tone="error" level={3} title={t('admin.loadError')} next={<RetryButton onClick={retryItems} />} />
         ) : (items.data?.items ?? []).length === 0 ? <p className="muted">{t('admin.queueEmpty')}</p> : (
           <ul className="plain-list review-list">
             {(items.data?.items ?? []).map((it) => (
               <li key={it.id} className="card">
                 <p><span className="badge">{t(`admin.kind.${it.kind}`)}</span>{' '}
-                  {it.resourceId ? <Link to={`/resource/${it.resourceId}`}>{it.resourceTitle ?? it.resourceId}</Link> : null}
+                  {it.resourceId ? <Link to={resourcePath(it.resourceId)}>{it.resourceTitle ?? it.resourceId}</Link> : null}
                 </p>
                 <p>{it.reason}</p>
                 {it.details && <p className="muted small">{it.details}</p>}

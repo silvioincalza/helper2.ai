@@ -4,6 +4,7 @@ import { api } from '@/api/client';
 import type { RecentResponse, ResultCard, UpcomingEventsResponse } from '@/api/types';
 import { useApi } from '@/hooks/useApi';
 import { formatDate } from '@/lib/format';
+import { resourcePath } from '@/lib/searchState';
 import { NewsBoard, type BoardRow } from './ui/NewsBoard';
 import { StatusPill } from './ui/StatusPill';
 import { TypeTag } from './ui/TypeTag';
@@ -20,8 +21,6 @@ const NEWS_DAYS = 7;
 const EVENTS_SIZE = 60;
 const EVENTS_DAYS = 90;
 const DAY_MS = 86_400_000;
-
-const resourcePath = (card: ResultCard) => `/resource/${encodeURIComponent(card.id)}`;
 
 /** The date a source stated (published, else updated); otherwise when Helper2.ai first saw it, labelled as such. */
 function statedDate(card: ResultCard): { key: 'published' | 'updated' | 'firstSeen'; value: string; precision: 'INSTANT' | 'DAY' | 'UNKNOWN' } | null {
@@ -41,7 +40,7 @@ function newsRow(card: ResultCard, t: TFunction, lang: string): BoardRow {
     where: card.sources[0]?.sourceName ?? null,
     status: date && <StatusPill tone={date.key === 'firstSeen' ? 'warn' : 'ok'}>{t(`board.news.${date.key}`)}</StatusPill>,
     name: card.title,
-    to: resourcePath(card),
+    to: resourcePath(card.id),
   };
 }
 
@@ -78,7 +77,7 @@ function eventRow(card: ResultCard, index: number, now: number, t: TFunction, la
     // The next event is outlined in accent; the ones after it in a quieter line.
     status: Number.isNaN(days) ? null : <StatusPill tone={index === 0 ? 'next' : 'later'}>{startsIn(days, t, lang)}</StatusPill>,
     name: card.title,
-    to: resourcePath(card),
+    to: resourcePath(card.id),
   };
 }
 

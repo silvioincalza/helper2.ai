@@ -10,6 +10,7 @@ import { useBookmarks } from '@/context/BookmarksContext';
 import { useRetry } from '@/hooks/useRetry';
 import { useTitle } from '@/hooks/useTitle';
 import { formatDate, hostname } from '@/lib/format';
+import { resourcePath } from '@/lib/searchState';
 
 /**
  * The visitor's saved resources (ADR 0023, ADR 0040): from this browser for a guest, from the account when signed in.
@@ -83,7 +84,7 @@ function SavedRow({ item, onRemove }: { item: Bookmark; onRemove: () => void }) 
         <span className="result-row__domain">{hostname(item.url)}</span>
         <span>{t('saved.savedAt', { date: formatDate(item.savedAt, i18n.language) })}</span>
       </p>
-      <h2 className="result-row__title"><Link to={`/resource/${item.resourceId}`}>{item.title}</Link></h2>
+      <h2 className="result-row__title"><Link to={resourcePath(item.resourceId)}>{item.title}</Link></h2>
       <div className="saved-row__actions">
         <ExternalLink url={item.url} showHost={false}>{t('preview.open')}</ExternalLink>
         <button type="button" className="btn saved-row__remove" aria-label={t('saved.removeLabel', { title: item.title })} onClick={onRemove}>
