@@ -49,7 +49,10 @@ class WebSearchQuotaApiIT extends ApiTestBase {
 
     static final AtomicInteger WEB_CALLS = new AtomicInteger();
 
-    private final String address = "198.51.100." + (1 + Math.floorMod(UUID.randomUUID().hashCode(), 250));
+    /** One address per test, so no two tests share a counter (a random pick of 250 sometimes did). */
+    private static final AtomicInteger ADDRESSES = new AtomicInteger(10);
+
+    private final String address = "198.51.100." + ADDRESSES.incrementAndGet();
     private final RequestPostProcessor visitor = request -> {
         request.setRemoteAddr(address);
         return request;
@@ -112,6 +115,23 @@ class WebSearchQuotaApiIT extends ApiTestBase {
             .andExpect(jsonPath("$.webSearches.remaining").value(2))
             .andReturn().getResponse().getContentAsString();
         ContractValidator.assertMatches("GuideResponse", json);
+    }
+
+    private Number creditsToday() throws Exception {
+        String body = mvc.perform(get("/api/v1/sources")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        ContractValidator.assertArrayMatches("SourceInfo", body);
+        assertThat(read(body, "$[?(@.id == 'fake-web')].webCredits.dailyCap")).asList().containsExactly((Object) null);
+        assertThat(read(body, "$[?(@.id == 'fake-live')].webCredits")).asList().containsOnlyNulls();
+        return (Number) ((List<?>) read(body, "$[?(@.id == 'fake-web')].webCredits.usedToday")).getFirst();
+    }
+
+    @Test
+    void theSourcesPageShowsTheCreditsOfTheDayForAllVisitorsWithoutACap() throws Exception {
+        long before = creditsToday().longValue();
+
+        search("agents " + UUID.randomUUID());
+
+        assertThat(creditsToday().longValue()).isEqualTo(before + 1);
     }
 
     @TestConfiguration(proxyBeanMethods = false)

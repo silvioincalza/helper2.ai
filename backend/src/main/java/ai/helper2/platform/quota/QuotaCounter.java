@@ -32,6 +32,9 @@ public interface QuotaCounter {
      */
     Result take(Counter own, int ownLimit, Counter global, long globalLimit);
 
+    /** Takes one count off {@code counter}, never below 0: a count whose work did not run. */
+    void giveBack(Counter counter);
+
     /** The count of {@code counter}; 0 when nothing was counted. */
     long used(Counter counter);
 

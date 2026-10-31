@@ -28,7 +28,7 @@ store -> pg: "SELECT … FROM tavily_query_result\nWHERE query_key = HMAC(secret
 pg -> store: "no row"
 store -> svc: "miss"
 svc -> quota: "take(asker)"
-quota -> redis: "EVAL: HGET guest key 'search' < 3 ?\nHINCRBY + PEXPIRE 24 h\n(key = HMAC(day key, client))"
+quota -> redis: "EVAL: HGET guest key 'search' < 3 ?\nglobal key 'credits' < cap (none if unset) ?\nHINCRBY both + PEXPIRE 24 h\n(guest key = HMAC(day key, client))"
 redis -> quota: "TAKEN, used 1"
 quota -> svc: "Allowed(2 left)"
 svc -> tavily: "POST /search under source-tavily\n(credits counter +1)"

@@ -8,7 +8,10 @@ import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.retry.Retry;
 import io.github.resilience4j.retry.RetryRegistry;
+import java.time.Instant;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
@@ -17,17 +20,32 @@ import java.util.function.Supplier;
  * policy is the circuit breaker, bulkhead and retry instances that share its name; it has at least one of them.
  * Order, outermost first: retry, bulkhead, circuit breaker. A busy bulkhead is not a failure of the dependency, so
  * it never reaches the circuit; a refused call is never retried (the retry predicates only match failures of the work).
+ * It watches every circuit's state transitions to know when an open circuit opened, on the circuit's own clock.
  */
 public final class Resilience4jPolicies implements Resilience {
 
     private final CircuitBreakerRegistry circuits;
     private final BulkheadRegistry bulkheads;
     private final RetryRegistry retries;
+    private final Map<String, Instant> openedAt = new ConcurrentHashMap<>();
 
     public Resilience4jPolicies(CircuitBreakerRegistry circuits, BulkheadRegistry bulkheads, RetryRegistry retries) {
         this.circuits = circuits;
         this.bulkheads = bulkheads;
         this.retries = retries;
+        circuits.getEventPublisher().onEntryAdded(added -> watch(added.getAddedEntry()));
+        circuits.getAllCircuitBreakers().forEach(this::watch);
+    }
+
+    private void watch(CircuitBreaker circuit) {
+        circuit.getEventPublisher().onStateTransition(event -> {
+            CircuitBreaker.State to = event.getStateTransition().getToState();
+            if (to == CircuitBreaker.State.OPEN || to == CircuitBreaker.State.FORCED_OPEN) {
+                openedAt.put(circuit.getName(), circuit.getCircuitBreakerConfig().getClock().instant());
+            } else {
+                openedAt.remove(circuit.getName());
+            }
+        });
     }
 
     @Override
@@ -72,6 +90,16 @@ public final class Resilience4jPolicies implements Resilience {
             if (released.compareAndSet(false, true)) {
                 bulkhead.onComplete();
             }
+        });
+    }
+
+    /** FORCED_OPEN shows as OPEN; DISABLED and METRICS_ONLY let every call through, so they show as CLOSED. */
+    @Override
+    public Optional<Circuit> circuit(String policy) {
+        return circuits.find(policy).map(circuit -> switch (circuit.getState()) {
+            case OPEN, FORCED_OPEN -> new Circuit(Circuit.State.OPEN, openedAt.get(policy));
+            case HALF_OPEN -> new Circuit(Circuit.State.HALF_OPEN, null);
+            case CLOSED, DISABLED, METRICS_ONLY -> new Circuit(Circuit.State.CLOSED, null);
         });
     }
 

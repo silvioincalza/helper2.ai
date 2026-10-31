@@ -1,7 +1,10 @@
 # Flowchart: what one search (or one search of a guide question) does with the metered web source, Tavily.
-# Store first; a live call only inside the asker's daily web searches; a live answer replaces the stored set.
+# Store first; a live call only inside the asker's daily web searches; every live call counts on the global counter
+# (the credits of the day, capped only when set) and gives it back when the source-tavily policy refuses the call;
+# a live answer replaces the stored set.
 # Source of truth: backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt (Run.start, Run.quotaAllows, Run.save, stale),
-#   backend/src/main/kotlin/ai/helper2/search/WebSearch.kt (IntentClass, WebFreshness, WebSearchQuota),
+#   backend/src/main/kotlin/ai/helper2/search/WebSearch.kt (IntentClass, WebFreshness, WebSearchQuota, refund, creditsToday),
+#   backend/src/main/kotlin/ai/helper2/search/usecase/ListSources.kt (webCredits),
 #   backend/src/main/java/ai/helper2/search/internal/JdbcWebResultStore.java, catalog/ResourceCatalog.java (recordedHits),
 #   backend/src/main/java/ai/helper2/platform/quota/RedisQuotaCounter.java, QuotaKeys.java,
 #   backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (find, forAsker), guide/GuideCost.kt (GuideAnswerCache.ttlOf).
@@ -17,10 +20,9 @@ lookup: "tavily_query_result by HMAC(query)\n+ intent class; every hit still\nin
 fresh: "Fetched less than 24 h ago\n(time-bound) or 48 h (general)?" {class: decision}
 served: "SUCCEEDED, served CACHE\nno live call, no quota used" {class: end}
 asked: "This action already took\nits web search?" {class: decision}
-quota: "Redis Lua, one step:\nown counter < 3 (guest) or 10\n(registered, flag on) and global\ncounter < cap (if set)? → +1" {class: decision}
+quota: "Redis Lua, one step:\nown counter < 3 (guest) or 10\n(registered, flag on) and global\ncounter < cap (none if unset)?\n→ both +1" {class: decision}
 down: "Redis down or\nredis circuit open" {class: fail}
-global: "Global cap set?\n(H2_TAVILY_GLOBAL_DAILY_CREDITS)" {class: decision}
-gcheck: "Global counter < cap? → +1" {class: decision}
+gcheck: "Global counter < cap?\n(H2_TAVILY_GLOBAL_DAILY_CREDITS;\nnone if unset) → +1" {class: decision}
 skip: "SKIPPED: DAILY_LIMIT or\nQUOTA_UNAVAILABLE" {class: fail}
 stale: "Stored set younger\nthan 7 days?" {class: decision}
 stalehit: "served STALE_CACHE" {class: end}
@@ -28,7 +30,9 @@ nothing: "served NONE; the other\nsources still answer" {class: fail}
 live: "source-tavily policy → live call\nhelper2.tavily.credits{feature,tier} +1" {class: ext}
 ok: "SUCCEEDED, LIVE: replace the\nstored set; hits go to the catalog\nin the background" {class: end}
 failed: "FAILED / TIMED_OUT" {class: fail}
+refused: "SKIPPED: CIRCUIT_OPEN or BUSY\nglobal counter -1 (refund),\nown web search stays taken" {class: fail}
 reply: "Response: webSearches\n{limit, remaining} for this\nasker and feature" {class: end}
+credits: "GET /api/v1/sources:\nwebCredits {usedToday, dailyCap}\nfrom the global counter, no count" {class: data}
 ttl: "Guide answer cached for\nmin(24 h, freshness left of the\nweb results it used); none if stale" {class: data}
 
 req -> intent
@@ -37,13 +41,12 @@ lookup -> fresh: found
 lookup -> asked: "no / incomplete"
 fresh -> served: yes {class: hot}
 fresh -> asked: no
-asked -> global: "yes (allowed)"
+asked -> gcheck: "yes (allowed)"
 asked -> skip: "yes (refused)"
 asked -> quota: no
-global -> live: no
-global -> gcheck: yes
 gcheck -> live: yes
 gcheck -> skip: no
+gcheck -> down: error
 quota -> live: yes {class: hot}
 quota -> skip: no
 quota -> down: error
@@ -53,9 +56,12 @@ stale -> stalehit: yes
 stale -> nothing: no
 live -> ok: answer {class: hot}
 live -> failed: error
+live -> refused: "policy refuses"
+refused -> stale
 failed -> stale
 served -> reply
 ok -> reply: {class: hot}
 stalehit -> reply
 nothing -> reply
 reply -> ttl: guide only
+gcheck -> credits: "read by"

@@ -163,6 +163,10 @@ class SearchResources @JvmOverloads constructor(
                         if (d.metered) metrics.creditSpent(d.id, asker, asker?.let { quota?.tierOf(it) })
                         source.search(query)
                     }
+                } catch (e: CallRefused) {
+                    // The credit was counted before the circuit was asked; no live call went out.
+                    if (d.metered) quota?.refund()
+                    throw e
                 } finally {
                     finished.set(System.nanoTime())
                 }

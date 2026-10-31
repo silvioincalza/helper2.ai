@@ -20,6 +20,9 @@ enum class QuotaTier { GUEST, REGISTERED }
 /** Web searches [feature] has left today for one visitor, out of [limit]. */
 data class WebSearchesLeft(val feature: Feature, val tier: QuotaTier, val limit: Int, val remaining: Int)
 
+/** Credits taken today by every live call of all replicas, and the global daily cap (null: none). */
+data class WebCredits(val usedToday: Long, val dailyCap: Long?)
+
 /**
  * Who asks, for the daily web-search quota: the client address ([ai.helper2.platform.ClientKey]) and, when signed in,
  * the user id. One instance per user action: a guide question that calls the web source several times takes one web
@@ -96,9 +99,10 @@ data class WebFreshness(
 
 /**
  * Daily web searches per visitor and feature (ADR 0037). A guest is counted under an HMAC of the client address and the
- * day, a signed-in user (only with [registeredTier] on) under the user id. With [globalDailyCredits] set, every live
- * call also counts against one daily cap for all of Helper2. Check and count run in one step in [counter], so no
- * replica passes a limit. When [counter] cannot answer, no live call goes out: credits are not spent unguarded.
+ * day, a signed-in user (only with [registeredTier] on) under the user id. Every live call also counts on one global
+ * daily counter for all of Helper2, the credits of the day; with [globalDailyCredits] set, it is capped. Check and
+ * count run in one step in [counter], so no replica passes a limit. When [counter] cannot answer, no live call goes
+ * out: credits are not spent unguarded.
  */
 class WebSearchQuota @JvmOverloads constructor(
     private val counter: QuotaCounter,
@@ -111,15 +115,15 @@ class WebSearchQuota @JvmOverloads constructor(
 
     /** One web search for [asker]'s action (null: an internal caller, bound only by the global cap). */
     fun take(asker: Asker?): QuotaDecision {
-        val global = globalDailyCredits?.let { Counter(keys.global(), GLOBAL_FIELD) }
+        val global = global()
         if (asker == null) {
-            return if (global == null) QuotaDecision.Allowed(null) else ask(null, 0, global) { null }
+            return ask(null, 0, global) { null }
         }
         synchronized(asker) {
             val decision = when (val earlier = asker.decision) {
                 is QuotaDecision.OverLimit -> earlier
                 is QuotaDecision.Allowed ->
-                    if (global == null) earlier else ask(null, 0, global) { earlier.left }.let { if (it is QuotaDecision.Allowed) earlier else it }
+                    ask(null, 0, global) { earlier.left }.let { if (it is QuotaDecision.Allowed) earlier else it }
                 QuotaDecision.Unavailable, null -> {
                     val tier = tierOf(asker)
                     val limit = limits.of(tier, asker.feature)
@@ -149,15 +153,36 @@ class WebSearchQuota @JvmOverloads constructor(
         }
     }
 
+    /**
+     * Gives back the credit of the day [take] counted for a live call that did not go out (the source's circuit or
+     * bulkhead refused it). The asker's own web search stays taken. When the counter cannot answer, the credit stays
+     * counted: that errs towards the cap.
+     */
+    fun refund() {
+        try {
+            counter.giveBack(global())
+        } catch (_: RuntimeException) {
+        }
+    }
+
+    /** The credits of the day for all of Helper2, without counting; null when the counter cannot be read. */
+    fun creditsToday(): WebCredits? = try {
+        WebCredits(counter.used(global()), globalDailyCredits)
+    } catch (_: RuntimeException) {
+        null
+    }
+
+    private fun global() = Counter(keys.global(), GLOBAL_FIELD)
+
     /** The quota counters [asker] uses. */
     private fun own(asker: Asker, tier: QuotaTier): Counter {
         val field = asker.feature.name.lowercase()
         return if (tier == QuotaTier.REGISTERED) Counter(keys.user(asker.userId!!), field) else Counter(keys.guest(asker.client), field)
     }
 
-    private fun ask(own: Counter?, limit: Int, global: Counter?, left: (Long) -> WebSearchesLeft?): QuotaDecision {
+    private fun ask(own: Counter?, limit: Int, global: Counter, left: (Long) -> WebSearchesLeft?): QuotaDecision {
         val result = try {
-            counter.take(own, limit, global, globalDailyCredits ?: 0)
+            counter.take(own, limit, global, globalDailyCredits ?: Long.MAX_VALUE)
         } catch (_: RuntimeException) {
             return QuotaDecision.Unavailable
         }
