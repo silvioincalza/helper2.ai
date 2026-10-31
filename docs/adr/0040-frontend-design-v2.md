@@ -96,10 +96,18 @@ Built (step 2, Home; only while the flag is on):
 - `frontend/src/components/Layout.tsx` — Sources and Mission in the menu, "No ads." in the footer.
 - `tokens.css` — `board-height` and `board-loop`.
 
+Built (step 3, Results; only while the flag is on):
+- `frontend/src/components/results/ResultsV2.tsx` — the results page: the box, the guide picks bar (only when the
+  guide is asked, as before), type tabs, the list of `SelectableRow`s, the preview beside the list from 861 px and
+  inside it below, the sources at the bottom; `results-v2.css`. The old `SearchResults` and `ResultCardView` stay
+  for the flag-off page.
+- `frontend/src/lib/selection.ts` — the selected result (`id` in the URL, else the first) and the guide picks by
+  resource id: badges never change the order of the list.
+- `frontend/src/hooks/useMediaQuery.ts` — beside the list or inside it.
+- Filters and the timeline view keep working: the filters fold under a "Filters" line above the list for now.
+
 Planned:
-- `frontend/src/components/SearchResults.tsx`, `ResultCardView.tsx` — list, preview, inline preview, `id` in the URL.
-- `frontend/src/components/GuideAnswer.tsx` — the picks in `PicksBar` and the badges.
-- `frontend/src/components/SourceStatusPanel.tsx`, `Layout.tsx` — sources at the bottom, header, footer.
+- `frontend/src/components/SourceStatusPanel.tsx`, `Layout.tsx` — header and footer on the other pages.
 - `tokens.css` — the sizes (`content-wide`, `list-max`) and motion (`radar-sweep`) of `tokens.json` v3, with the
   pages that use them.
 
