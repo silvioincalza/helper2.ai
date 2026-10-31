@@ -40,6 +40,7 @@ jobs:
       - uses: ./.github/actions/bao-login
         with:
           addr: ${{ vars.BAO_ADDR }}
+          audience: ${{ vars.BAO_AUDIENCE }}
           role: deploy
       # Postgres + pgvector (ADR 0012): built and pushed only when postgres.image.tag is not in Harbor yet.
       - env:
