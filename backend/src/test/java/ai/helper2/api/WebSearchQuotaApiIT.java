@@ -114,6 +114,23 @@ class WebSearchQuotaApiIT extends ApiTestBase {
         ContractValidator.assertMatches("GuideResponse", json);
     }
 
+    private Number creditsToday() throws Exception {
+        String body = mvc.perform(get("/api/v1/sources")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        ContractValidator.assertArrayMatches("SourceInfo", body);
+        assertThat(read(body, "$[?(@.id == 'fake-web')].webCredits.dailyCap")).asList().containsExactly((Object) null);
+        assertThat(read(body, "$[?(@.id == 'fake-live')].webCredits")).asList().containsOnlyNulls();
+        return (Number) ((List<?>) read(body, "$[?(@.id == 'fake-web')].webCredits.usedToday")).getFirst();
+    }
+
+    @Test
+    void theSourcesPageShowsTheCreditsOfTheDayForAllVisitorsWithoutACap() throws Exception {
+        long before = creditsToday().longValue();
+
+        search("agents " + UUID.randomUUID());
+
+        assertThat(creditsToday().longValue()).isEqualTo(before + 1);
+    }
+
     @TestConfiguration(proxyBeanMethods = false)
     static class FakeWeb {
         @Bean

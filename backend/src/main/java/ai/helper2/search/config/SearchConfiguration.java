@@ -4,9 +4,12 @@ import ai.helper2.platform.quota.QuotaCounter;
 import ai.helper2.platform.quota.QuotaKeys;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.search.DailyLimits;
+import ai.helper2.search.DescribedSource;
+import ai.helper2.search.RecordedOutcomes;
 import ai.helper2.search.WebFreshness;
 import ai.helper2.search.WebSearchQuota;
 import ai.helper2.search.internal.JdbcWebResultStore;
+import ai.helper2.search.usecase.ListSources;
 import ai.helper2.search.usecase.SearchResources;
 import ai.helper2.search.QueryTranslator;
 import ai.helper2.search.ResultObserver;
@@ -73,6 +76,12 @@ class SearchConfiguration {
                                   @Value("${helper2.tavily.quota.global-daily-credits:}") String globalDailyCredits) {
         return new WebSearchQuota(counter, keys, new DailyLimits(guestSearch, guestGuide, registeredSearch, registeredGuide),
             registeredTier, globalDailyCredits.isBlank() ? null : Long.valueOf(globalDailyCredits.strip()));
+    }
+
+    @Bean
+    ListSources listSources(List<DescribedSource> sources, SourceHealth health, RecordedOutcomes recorded,
+                            Resilience resilience, WebSearchQuota quota) {
+        return new ListSources(sources, health, recorded, resilience, quota);
     }
 
     /**
