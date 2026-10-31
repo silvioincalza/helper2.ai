@@ -56,8 +56,9 @@ export function ResourceV2({ detail: d, children }: { detail: ResourceDetail; ch
 
           <section className="h2-res__sec" aria-labelledby="h2-res-text">
             <h2 id="h2-res-text" className="h2-pv__sec">{t('resourceV2.sourceText')}</h2>
-            {quote && card.description ? (
-              <ProofQuote text={card.description} quote={quote} source={host} />
+            {/* A checked quote can come from the title alone, so it shows even without a description. */}
+            {quote ? (
+              <ProofQuote text={card.description ?? ''} quote={quote} source={host} />
             ) : card.description ? (
               <p className="h2-res__text" {...(isAiOrigin(card.descriptionOrigin) ? aiMark() : {})}>{card.description}</p>
             ) : (
@@ -80,7 +81,7 @@ export function ResourceV2({ detail: d, children }: { detail: ResourceDetail; ch
           </section>
           <section aria-labelledby="h2-res-time">
             <h2 id="h2-res-time" className="h2-pv__sec">{t('resultsV2.timeline')}</h2>
-            <Timeline timeline={card.timeline} compact />
+            <Timeline timeline={card.timeline} />
           </section>
         </aside>
       </div>
