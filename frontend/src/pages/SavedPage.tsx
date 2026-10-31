@@ -46,8 +46,8 @@ export default function SavedPage() {
       <h1 ref={focusRef} tabIndex={-1}>{t('saved.title')}</h1>
       <p className="lede">{b.mode === 'server' ? t('saved.serverNote') : t('saved.localNote')}</p>
       <p role="status" className="sr-only">{removed}</p>
-      {b.storageFailed && <p role="alert" className="saved-page__warn"><Icon name="warn" /> {t('saved.storageFailed')}</p>}
-      {b.syncFailed && <p role="alert" className="saved-page__warn"><Icon name="warn" /> {t('saved.syncFailed')}</p>}
+      {b.storageFailed && <p role="alert" className="warn-line"><Icon name="warn" /> {t('saved.storageFailed')}</p>}
+      {b.syncFailed && <p role="alert" className="warn-line"><Icon name="warn" /> {t('saved.syncFailed')}</p>}
       {b.loading && (
         <div aria-busy="true">
           <span className="sr-only">{t('common.loading')}</span>
