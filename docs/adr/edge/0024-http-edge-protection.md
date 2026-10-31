@@ -27,8 +27,11 @@ must load the app on a direct visit, and a new release must reach browsers at on
    evicted). Every such decision increments `helper2.rate-limit.fallback{limiter}`. Without Redis configured, only the
    in-memory limiter is used.
 4. **Client address.** `H2_FORWARD_HEADERS_STRATEGY` defaults to `none`, so `X-Forwarded-For` is ignored. The cluster
-   sets `native`: only the Ingress controller can reach the app's port 8080 (NetworkPolicy `ingress-app`), and it sets
-   the header.
+   sets `native`: only the Ingress controller can reach the app's port 8080 (NetworkPolicy `ingress-app`). The chain
+   is Cloudflare (appends the visitor's address to `X-Forwarded-For`), the platform's tunnel, then ingress-nginx
+   (`compute-full-forwarded-for`: appends the tunnel pod's address). Tomcat's remote-IP handling reads the header from
+   the right and skips private and loopback addresses (its default `internalProxies`), so the first public address is the one
+   Cloudflare appended. A client can prepend addresses but cannot replace that one.
 5. **CSRF** (cross-site request forgery). `CookieCsrfTokenRepository.withHttpOnlyFalse()` with the SPA setup:
    cookie `XSRF-TOKEN`; `api/client.ts` sends it back as `X-XSRF-TOKEN` on every non-GET call. `CsrfCookieFilter` makes
    sure the cookie exists before the first POST.

@@ -10,7 +10,7 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
 
 ## Decision
 1. **Split of ownership.** The platform repository (incalza-me-infra) owns identity and edge: the namespace
-   (`helper2-<env>`), Domain Name System (DNS) records, the Cloudflare tunnel, ingress-nginx and the Ingresses, and the
+   (`helper2-<env>`, Pod Security `restricted` enforced), Domain Name System (DNS) records, the Cloudflare tunnel, ingress-nginx and the Ingresses, and the
    `deployer` ServiceAccount and Role. The Helm chart `deploy/helm/helper2` owns the workloads: one release
    `helper2` per namespace, values `values-staging.yaml` / `values-prod.yaml`. The chart creates no Ingress.
 2. **Workloads.** `helper2` Deployment, `postgres` StatefulSet
@@ -30,7 +30,7 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
 4. **Edge.** The public names (`helper2.ai`, `www.helper2.ai`, `helper2.incalza.me`) are proxied by Cloudflare,
    which terminates Transport Layer Security (TLS) and sends the traffic through the platform's tunnel to
    ingress-nginx (namespace `ingress-nginx`). The Ingress `helper2-public` routes them to the Service `helper2`,
-   port 80. The admin names (`admin.helper2.ai`, `helper2-admin.incalza.me`) are DNS-only records to ingress-nginx;
+   port 80; on prod it also redirects `www.helper2.ai` to the apex (301, path and query kept). The admin names (`admin.helper2.ai`, `helper2-admin.incalza.me`) are DNS-only records to ingress-nginx;
    the Ingress `helper2-admin` routes them, from the in-network ranges only, to the Service `helper2-admin`
    ([0035](../edge/0035-admin-host.md)). From ingress-nginx to the app the traffic is plain Hypertext Transfer
    Protocol (HTTP). On any other cluster, your own Ingress or route targets the same two Services.
