@@ -50,6 +50,32 @@ describe('design v2 resource page (flag on)', () => {
     expect(params().get('id')).toBe(PG.id);
   });
 
+  it('a checked quote from the title alone is still shown when there is no description', async () => {
+    const bare = { ...PG, description: null };
+    const g = guide();
+    g.recommendations = [{ ...g.recommendations[0]!, quote: 'Postgres MCP' }];
+    mockApi({
+      'GET /search': () => makeSearch({ results: [bare], total: 1, sources: [makeStatus()] }),
+      'POST /guide/stream': () => sse(g),
+      [`GET /resources/${PG.id}`]: () => makeDetail({ card: bare }),
+    });
+    renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
+    await screen.findByRole('button', { name: '#1 Postgres MCP' });
+    await userEvent.click(within(screen.getByRole('article')).getByRole('link', { name: 'Postgres MCP' }));
+    await screen.findByRole('heading', { level: 1, name: 'Postgres MCP' });
+    expect(document.querySelector('.h2-proof mark')).toHaveTextContent('Postgres MCP');
+    expect(screen.queryByText('No description available.')).not.toBeInTheDocument();
+  });
+
+  it('the timeline shows every date: published, updated and first seen', async () => {
+    mockApi({ [`GET /resources/${PG.id}`]: () => makeDetail({ card: PG }) });
+    renderApp(`/resource/${PG.id}`);
+    const time = (await screen.findByRole('heading', { level: 2, name: /Timeline/i })).closest('section') as HTMLElement;
+    expect(time).toHaveTextContent('Published');
+    expect(time).toHaveTextContent('Discovered by Helper2');
+    await settle();
+  });
+
   it('opened directly: the source text without a highlight, facts no source states say Not stated, back goes to search', async () => {
     mockApi({ [`GET /resources/${PG.id}`]: () => makeDetail({ card: PG }) });
     renderApp(`/resource/${PG.id}`);
