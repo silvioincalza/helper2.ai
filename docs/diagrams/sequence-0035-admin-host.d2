@@ -2,6 +2,7 @@
 # user, and the back office is not there (ADR 0035).
 # Source of truth: backend/src/main/java/ai/helper2/identity/AdminPortConfiguration.java (BackOfficeOffPublicPort),
 #   AdminPort.java, SecurityConfiguration.java (oauthUsers, roles, afterSignIn),
+#   frontend/src/components/SignIn.tsx, Layout.tsx (SignInReturn), frontend/src/lib/signInReturn.ts,
 #   incalza-me-infra terraform/k8s/helper2.tf (helper2-admin Ingress, whitelist-source-range).
 # Render: cd docs/diagrams && d2 fmt sequence-0035-admin-host.d2 && d2 sequence-0035-admin-host.d2 sequence-0035-admin-host.svg
 
@@ -34,6 +35,7 @@ adminhost: Admin host {
 publichost: Public host {
   owner -> apub: "GET helper2.ai/api/v1/admin/review-items"
   apub -> owner: "404 (no back office here)"
-  owner -> apub: "sign in on the public site"
+  owner -> apub: "Sign in with GitHub (header or Saved);\nthe page stays in sessionStorage"
   apub -> owner: "ROLE_USER only, 302 /"
+  owner -> owner: "SPA opens the stored page again\n(a path on this site only)"
 }

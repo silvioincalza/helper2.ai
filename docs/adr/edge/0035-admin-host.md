@@ -23,7 +23,9 @@ the cluster with an address from the vSwitch range (the Proxmox node masquerades
 4. **Sign-in on both hosts, each with its own callback.** The redirect URI is `{baseUrl}/login/oauth2/code/github`,
    so the public host and the admin host each get their own callback. The GitHub app must list both. After sign-in
    the admin host returns to `/admin`, the public host to `/`. A failed sign-in returns to the same place with
-   `?signin=failed`.
+   `?signin=failed`. On the public site, "Sign in with GitHub" sits in the header and on the Saved page, only when
+   the server offers a provider; the page the visitor was on waits in sessionStorage (`h2.signInReturn`, a path on
+   this site only) and is opened again after the return to `/`.
 5. **Host-only cookies.** The session and CSRF cookies set no `Domain`, so the browser never sends the public session
    to the admin host or the other way round.
 6. **The edge decides who reaches the admin host.** The chart ships the Service `helper2-admin` (port 80 → admin port).

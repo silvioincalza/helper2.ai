@@ -81,10 +81,10 @@ describe('one box', () => {
     await settle();
   });
 
-  it('/saved goes home while Saved is on the roadmap', async () => {
+  it('/saved is the saved page', async () => {
     mockApi();
-    const { router } = renderApp('/saved');
-    await waitFor(() => expect(router.state.location.pathname).toBe('/'));
+    renderApp('/saved');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Saved resources' })).toBeInTheDocument();
   });
 
   it('a long query suggests asking the guide', async () => {
