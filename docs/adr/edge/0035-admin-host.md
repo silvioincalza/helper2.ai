@@ -60,7 +60,7 @@ the cluster with an address from the vSwitch range (the Proxmox node masquerades
 - `backend/src/main/java/ai/helper2/identity/AdminPort.java`, `AdminPortConfiguration.java` — second connector, port filter.
 - `backend/src/main/java/ai/helper2/identity/SecurityConfiguration.java` — ADMIN per port, return after sign-in.
 - `backend/src/main/java/ai/helper2/identity/SessionConfiguration.java` — failed sign-in per port.
-- `backend/src/test/java/ai/helper2/api/AdminPortIT.java`, `identity/AdminAllowListTest.java`.
+- `backend/src/test/java/ai/helper2/api/HttpEdgeIT.java` (admin port, in the same test context), `identity/AdminAllowListTest.java`.
 - `deploy/helm/helper2/templates/app.yaml` (Service `helper2-admin`), `networkpolicy.yaml`, `values*.yaml`;
   `deploy/k8s/Makefile` (`chart-check`).
 
