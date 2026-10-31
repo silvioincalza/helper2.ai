@@ -49,6 +49,12 @@ fun interface QuestionEmbedder {
 /** A question whose answer is cached: its embedding, the cache key of its answer and when that answer expires. */
 class IndexedQuestion(val answerKey: String, val vector: FloatArray, val expiresAt: Instant)
 
+/** Outbound port: indexed questions past their expiry (ADR 0034). */
+fun interface SimilarQuestionRetention {
+    /** Deletes the indexed questions that expired before [cutoff]; returns how many. */
+    fun deleteExpiredBefore(cutoff: Instant): Int
+}
+
 /** The stored question closest to a probe, by cosine similarity. */
 data class Neighbour(val answerKey: String, val similarity: Double)
 

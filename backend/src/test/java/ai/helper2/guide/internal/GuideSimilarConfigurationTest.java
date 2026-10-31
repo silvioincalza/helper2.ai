@@ -31,30 +31,31 @@ class GuideSimilarConfigurationTest {
     }
 
     private final Embedder embedder = embedder(1024);
+    private final JdbcSimilarQuestionIndex index = new JdbcSimilarQuestionIndex(null);
     private final Clock clock = Clock.systemUTC();
 
     @Test
     void anUnsetThresholdIsOff() {
-        assertThat(GuideConfiguration.similarQuestions("", embedder, null, clock)).isNull();
-        assertThat(GuideConfiguration.similarQuestions(null, embedder, null, clock)).isNull();
+        assertThat(GuideConfiguration.similarQuestions("", embedder, index, clock)).isNull();
+        assertThat(GuideConfiguration.similarQuestions(null, embedder, index, clock)).isNull();
     }
 
     @Test
     void withoutTheEmbedderOrWithVectorsTheIndexCannotHoldItIsOff() {
-        assertThat(GuideConfiguration.similarQuestions("0.96", null, null, clock)).isNull();
-        assertThat(GuideConfiguration.similarQuestions("0.96", embedder(2048), null, clock)).isNull();
+        assertThat(GuideConfiguration.similarQuestions("0.96", null, index, clock)).isNull();
+        assertThat(GuideConfiguration.similarQuestions("0.96", embedder(2048), index, clock)).isNull();
     }
 
     @Test
     void aThresholdTurnsItOn() {
-        assertThat(GuideConfiguration.similarQuestions(" 0.96 ", embedder, null, clock).getThreshold()).isEqualTo(0.96);
+        assertThat(GuideConfiguration.similarQuestions(" 0.96 ", embedder, index, clock).getThreshold()).isEqualTo(0.96);
     }
 
     @Test
     void aThresholdThatIsNotACosineStopsTheStart() {
-        assertThatThrownBy(() -> GuideConfiguration.similarQuestions("high", embedder, null, clock))
+        assertThatThrownBy(() -> GuideConfiguration.similarQuestions("high", embedder, index, clock))
             .isInstanceOf(NumberFormatException.class);
-        assertThatThrownBy(() -> GuideConfiguration.similarQuestions("1.5", embedder, null, clock))
+        assertThatThrownBy(() -> GuideConfiguration.similarQuestions("1.5", embedder, index, clock))
             .isInstanceOf(IllegalArgumentException.class);
     }
 }

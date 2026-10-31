@@ -1,6 +1,6 @@
 package ai.helper2.guide.internal;
 
-import ai.helper2.guide.GuideAnswerRetention;
+import ai.helper2.guide.SimilarQuestionRetention;
 import ai.helper2.guide.usecase.PurgeExpiredData;
 import ai.helper2.platform.ClusterLock;
 import ai.helper2.platform.ClusterLocks;
@@ -19,7 +19,7 @@ class GuideRetentionSchedule {
     private static final Logger log = LoggerFactory.getLogger(GuideRetentionSchedule.class);
 
     @Bean("guidePurgeExpiredData")
-    PurgeExpiredData guidePurgeExpiredData(GuideAnswerRetention retention, Clock clock) {
+    PurgeExpiredData guidePurgeExpiredData(SimilarQuestionRetention retention, Clock clock) {
         return new PurgeExpiredData(retention, clock);
     }
 

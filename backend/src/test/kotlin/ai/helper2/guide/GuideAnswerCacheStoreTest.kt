@@ -22,7 +22,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-/** The answer cache lives in a durable store (PostgreSQL), so a restart does not cost the model calls again. */
+/** The answer cache lives in a durable store (the shared cache), so a restart does not cost the model calls again. */
 class GuideAnswerCacheStoreTest {
 
     private val executor = Executors.newVirtualThreadPerTaskExecutor()
@@ -33,7 +33,7 @@ class GuideAnswerCacheStoreTest {
 
     private class DownStore : GuideAnswerStore {
         override fun get(key: String): GuideAnswer = throw IllegalStateException("database down")
-        override fun put(key: String, answer: GuideAnswer, expiresAt: java.time.Instant) = throw IllegalStateException("database down")
+        override fun put(key: String, answer: GuideAnswer, ttl: Duration) = throw IllegalStateException("database down")
     }
 
     private class CountingModel : GuideModel {

@@ -63,21 +63,15 @@ internal fun sha256Hex(text: String): String =
     HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(text.toByteArray(Charsets.UTF_8)))
 
 /**
- * Where guide answers are kept (PostgreSQL, ADR 0041): on disk and shared by every replica, so a restart or a deploy
- * does not throw away answers that cost three model calls each. An unavailable store or an unreadable entry is a
- * miss, never an error.
+ * Where guide answers are kept (the shared cache in PostgreSQL, ADR 0041): on disk and shared by every replica, so a
+ * restart does not throw away answers that cost three model calls each. An unavailable store or an unreadable entry
+ * is a miss, never an error.
  */
 interface GuideAnswerStore {
     fun get(key: String): GuideAnswer?
 
-    /** Keeps [answer] under [key] until [expiresAt], replacing what the key held. */
-    fun put(key: String, answer: GuideAnswer, expiresAt: Instant)
-}
-
-/** Outbound port: guide answers and indexed questions past their expiry (ADR 0034). */
-fun interface GuideAnswerRetention {
-    /** Deletes the answers and indexed questions that expired before [cutoff]; returns how many answers. */
-    fun deleteExpiredBefore(cutoff: Instant): Int
+    /** Keeps [answer] under [key] for [ttl], replacing what the key held. */
+    fun put(key: String, answer: GuideAnswer, ttl: Duration)
 }
 
 /**
@@ -106,8 +100,9 @@ class GuideAnswerCache(
      */
     fun put(key: String, answer: GuideAnswer): Instant? {
         val expiresAt = answer.generatedAt.plus(ttlOf(answer))
-        if (!isCacheable(answer) || !clock.instant().isBefore(expiresAt)) return null
-        return expiresAt.takeIf { runCatching { store.put(key, answer, expiresAt) }.isSuccess }
+        val left = Duration.between(clock.instant(), expiresAt)
+        if (!isCacheable(answer) || !left.isPositive) return null
+        return expiresAt.takeIf { runCatching { store.put(key, answer, left) }.isSuccess }
     }
 
     /**

@@ -173,7 +173,7 @@ class GuideApiIT extends ApiTestBase {
     }
 
     @Test
-    void anAnswerIsKeptInPostgresSoARestartDoesNotLoseIt() throws Exception {
+    void anAnswerIsKeptInTheSharedCacheSoARestartDoesNotLoseIt() throws Exception {
         String question = "translate a rental agreement to Portuguese";
         Set<String> before = keys();
 
@@ -186,16 +186,16 @@ class GuideApiIT extends ApiTestBase {
         added.removeAll(before);
         assertThat(added).hasSize(1);
         String key = added.iterator().next();
-        assertThat(key).matches("[0-9a-f]{64}");
-        Instant expiresAt = jdbc.sql("SELECT expires_at FROM guide_answer WHERE answer_key = :k").param("k", key)
-            .query(java.sql.Timestamp.class).single().toInstant();
+        Instant expiresAt = jdbc.sql("SELECT expires_at FROM ai_cache WHERE cache_name = 'guide-answer' AND encode(key_hash, 'hex') = :k")
+            .param("k", key).query(java.sql.Timestamp.class).single().toInstant();
         assertThat(java.time.Duration.between(Instant.now(), expiresAt).toHours()).isBetween(23L, 24L);
-        assertThat(jdbc.sql("SELECT answer::text FROM guide_answer WHERE answer_key = :k").param("k", key)
-            .query(String.class).single()).contains(QUOTE);
+        assertThat(jdbc.sql("SELECT value FROM ai_cache WHERE cache_name = 'guide-answer' AND encode(key_hash, 'hex') = :k")
+            .param("k", key).query(String.class).single()).contains(QUOTE);
     }
 
     private Set<String> keys() {
-        return Set.copyOf(jdbc.sql("SELECT answer_key FROM guide_answer").query(String.class).list());
+        return Set.copyOf(jdbc.sql("SELECT encode(key_hash, 'hex') FROM ai_cache WHERE cache_name = 'guide-answer'")
+            .query(String.class).list());
     }
 
     /** One IPv6 subscriber holds a whole /64: rotating addresses inside it does not reset the quota. */

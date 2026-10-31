@@ -24,12 +24,12 @@ class MemoryQuestionIndex : SimilarQuestionIndex {
     val size: Int get() = groups.values.sumOf { it.size }
 }
 
-/** What the guide_answer table holds, in memory. */
+/** What the shared cache holds for the guide, in memory. */
 class MemoryAnswerStore : GuideAnswerStore {
     val entries = mutableMapOf<String, GuideAnswer>()
     var puts = 0
     override fun get(key: String) = entries[key]
-    override fun put(key: String, answer: GuideAnswer, expiresAt: Instant) {
+    override fun put(key: String, answer: GuideAnswer, ttl: java.time.Duration) {
         puts++
         entries[key] = answer
     }

@@ -3,6 +3,7 @@ package ai.helper2.guide.internal;
 import ai.helper2.guide.IndexedQuestion;
 import ai.helper2.guide.Neighbour;
 import ai.helper2.guide.SimilarQuestionIndex;
+import ai.helper2.guide.SimilarQuestionRetention;
 import ai.helper2.platform.PgVectors;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -14,11 +15,12 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 /**
  * {@link SimilarQuestionIndex} in {@code guide_similar_question} (ADR 0041), embeddings in a pgvector column. A group
  * holds a few rows, so the search is an exact scan of the group's live rows by cosine distance ({@code <=>}): no
- * approximate index to tune at this size. A row goes with its answer ({@code ON DELETE CASCADE}) or at its own expiry.
+ * approximate index to tune at this size. A row lives as long as its answer in the shared cache ({@code expires_at});
+ * the guide purge deletes it after.
  *
  * <p>A database error finds nothing and stores nothing: it only costs the reuse.
  */
-class JdbcSimilarQuestionIndex implements SimilarQuestionIndex {
+class JdbcSimilarQuestionIndex implements SimilarQuestionIndex, SimilarQuestionRetention {
 
     private static final Logger log = LoggerFactory.getLogger(JdbcSimilarQuestionIndex.class);
 
@@ -63,5 +65,10 @@ class JdbcSimilarQuestionIndex implements SimilarQuestionIndex {
         } catch (DataAccessException e) {
             log.debug("similar question not indexed: {}", e.getClass().getSimpleName());
         }
+    }
+
+    @Override
+    public int deleteExpiredBefore(Instant cutoff) {
+        return jdbc.sql("DELETE FROM guide_similar_question WHERE expires_at < :cutoff").param("cutoff", Timestamp.from(cutoff)).update();
     }
 }
