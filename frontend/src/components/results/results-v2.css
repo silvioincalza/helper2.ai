@@ -36,6 +36,7 @@
 .h2-facts__group dt { color: var(--muted); }
 .h2-facts__group dd { margin: 0; color: var(--ink); }
 .h2-facts__group dd.is-not-stated { color: var(--not-stated); font-style: italic; }
+.h2-facts__group dd.is-conflict { color: var(--not-stated); }
 .h2-pv__source { padding: 6px 10px; border: 1px solid var(--border-strong); border-radius: var(--radius-pill); font: 500 12px/1 var(--font-mono); color: var(--ink-2); }
 .h2-results__sources { padding-top: var(--space-4); border-top: 1px solid var(--border); }
 .h2-results__fan { margin: 0 0 var(--space-2); font: 500 12px/1.4 var(--font-mono); color: var(--muted); }

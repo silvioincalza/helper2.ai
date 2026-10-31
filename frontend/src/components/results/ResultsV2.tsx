@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { api, ApiError } from '@/api/client';
 import type { GuideResponse, ResultCard, SearchResponse } from '@/api/types';
 import { ActiveFilters } from '@/components/ActiveFilters';
-import { FreshnessBadge } from '@/components/Badges';
+import { FreshnessBadge, OriginLabel } from '@/components/Badges';
 import { BookmarkButton } from '@/components/BookmarkButton';
 import { FilterPanel } from '@/components/FilterPanel';
 import { GuideAnswer } from '@/components/GuideAnswer';
@@ -361,7 +361,11 @@ function RowContent({ card, pick }: { card: ResultCard; pick: GuidePick | undefi
         {pick && <StatusPill tone="next">{t('resultsV2.pick', { rank: pick.rank })}</StatusPill>}
       </span>
       <span className="h2-row__title">{card.title}</span>
-      {card.description && <span className="h2-row__text">{card.description}</span>}
+      {card.description && (
+        isAiOrigin(card.descriptionOrigin)
+          ? <span className="h2-row__text"><span className="h2-row__ai"><OriginLabel origin={card.descriptionOrigin} /></span> <span {...aiMark()}>{card.description}</span></span>
+          : <span className="h2-row__text">{card.description}</span>
+      )}
       {pick && (
         <span className="h2-row__reason">
           <span className="h2-row__ai">{t('picks.aiWritten')}</span> <span {...aiMark()}>{pick.reason}</span>
