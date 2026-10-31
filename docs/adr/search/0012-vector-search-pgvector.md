@@ -31,10 +31,13 @@ never break keyword search.
    period, as with one replica; a replica whose tick finds the lock taken skips that period.
    Meters: `helper2.embedding.backlog`, `helper2.embedding.failures{reason}`, `helper2.embedding.last.success`.
 5. **One more source** (`SemanticSearchSource`, id `helper2-semantic`, mode `INDEXED`, priority 55). It embeds the
-   query as typed (`usesTranslation = false`, [0011](0011-language-aware-search.md)), keeps the last 1000 query vectors
-   in memory, and returns the nearest rows of the index, curated list and observed resources with cosine distance at most
+   query as typed (`usesTranslation = false`, [0011](0011-language-aware-search.md)) and returns the nearest rows of the index, curated list and observed resources with cosine distance at most
    `H2_SOURCE_SEMANTIC_MAX_DISTANCE` (0.65), within `H2_SOURCE_SEMANTIC_TIMEOUT` (3 s).
    Rows carry labels and stored popularity like keyword rows ([0009](0009-ranking.md)).
+   Query vectors are shared by every replica in the shared cache `query-vector` (`QueryVectorCache`, table `ai_cache`,
+   [0004](../foundation/0004-persistence-and-provenance.md)): key a SHA-256 of the embedding model and the normalised query,
+   value the floats in Base64, kept `H2_SEARCH_QUERY_VECTOR_TTL` (7 days). A vector of another size is a miss, and so is
+   a database error or a lookup over its time limit: the query is embedded again. So the guide's example questions and pagination spend the embedding rate limit once for the cluster.
    The model, origin and distance filters apply to the HNSW candidates, so the query runs in its own transaction with
    `SET LOCAL hnsw.iterative_scan = relaxed_order` (pgvector 0.8): the scan reads on until the limit is met instead of
    stopping after one candidate list. The rows are sorted by distance again, since relaxed order may return them
@@ -45,17 +48,26 @@ never break keyword search.
 ## Consequences
 - Needs described in other words find resources; a resource found both ways ranks higher.
 - No new stateful service; vectors are derived data and safe to truncate.
+- A query vector is kept for 7 days, under a hash of the query; the privacy page states it. The daily shared cache
+  purge deletes it afterwards ([0034](../operations/0034-data-retention.md)).
 
 ## Alternatives considered
-- A second Redis instance for vectors — one more stateful workload with its own persistence and sync.
+- Query vectors in Redis — about 5.5 kB each for 7 days in the memory that sessions and rate limits share, and not in
+  the backups.
+- Query vectors as `vector(N)` in their own table — no vector search runs on them; Base64 text in the one shared cache
+  table needs no table per embedding dimension.
 - A separate vector database — more operational work for a catalog of this size.
 - One Structured Query Language (SQL) query that mixes text and vector scores — the two scales do not compare, and one failure would remove both.
 - `hnsw.iterative_scan = strict_order` — exact order is not needed (Ranking uses the rank only) and costs more index reads.
 - A partial HNSW index per model — one index per model id, created at deploy; one model at a time is simpler.
 - Re-ranking with a model — cost and latency per search.
+- Query vectors in each replica's memory — each of the 3 prod replicas pays its own embedding call for the same query.
+- An in-memory cache in front of the table — it saves a lookup of about 1 ms next to an embedding call of about 0.3 s, for
+  a second TTL and size bound to reason about.
 
 ## Code
-- `backend/src/main/java/ai/helper2/catalog/SemanticSearchSource.java` — the source and its query-vector cache.
+- `backend/src/main/java/ai/helper2/catalog/SemanticSearchSource.java`, `QueryVectorCache.java` — the source and its shared
+  query vectors; `platform/cache/JdbcSharedCache.java` — the shared cache.
 - `backend/src/main/java/ai/helper2/catalog/internal/EmbeddingIndexer.java` — batches, pause, meters.
 - `backend/src/main/java/ai/helper2/catalog/internal/NvidiaEmbedder.java`, `catalog/Embedder.java` — API client and port.
 - `backend/src/main/java/ai/helper2/catalog/CatalogConfiguration.java` — conditional beans, `IndexerSchedule`, indexer lock.
@@ -70,5 +82,5 @@ never break keyword search.
 - [Full vector index before recording the video](../../roadmap.md#1-before-the-hackathon-deadline-30-oct-2026-1800-zurich).
 - [The embedding backlog gauge does not count rows whose text changed](../../roadmap.md#6-search-and-catalog).
 - [Cross-language retrieval in vector search](../../roadmap.md#5-ai-quality-and-cost).
-- [Query-vector cache and rate-limit pause stay per replica, on purpose](../../roadmap.md#4-more-than-one-replica).
+- [Rate-limit pause stays per replica, on purpose](../../roadmap.md#4-more-than-one-replica).
 - Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

@@ -1,0 +1,63 @@
+# Flowchart: how a guide question finds a cached answer: the exact key of its normalised text, then, once planned,
+# the answer of a similar question read the same way.
+# Source of truth: backend/src/main/kotlin/ai/helper2/guide/GuideCost.kt (GuideAnswerCache.key, normalized, put),
+#   backend/src/main/kotlin/ai/helper2/guide/SimilarQuestions.kt (ReadingKey, SimilarQuestions),
+#   backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (ask, similarAnswer),
+#   backend/src/main/java/ai/helper2/guide/internal/SharedGuideAnswerStore.java, JdbcSimilarQuestionIndex.java,
+#   GuideConfiguration.java (similarQuestions, H2_GUIDE_SIMILAR_THRESHOLD), GuideRetentionSchedule.java,
+#   backend/src/main/resources/db/migration/V1__schema.sql (ai_cache, guide_similar_question),
+#   backend/src/main/java/ai/helper2/platform/cache/JdbcSharedCache.java.
+#   Rate limit, slot, single-flight and quota between the two lookups: flow-0017.
+# Render: cd docs/diagrams && d2 fmt flow-0041-guide-answer-cache.d2 && d2 flow-0041-guide-answer-cache.d2 flow-0041-guide-answer-cache.svg
+
+...@style
+
+direction: down
+
+ask: "Guide question\n(+ clarification, drops)" {class: person}
+norm: "Normalise: NFKC, lower case,\nno quote marks or invisible\ncharacters, one space, no final\n. ? ! … (word order kept)" {class: app}
+key: "Key = SHA-256(normalised question |\npath | config hash |\nclarification | drops)" {class: app}
+exact: "Shared cache guide-answer:\nrow for this key and build,\nnot expired?" {class: decision}
+cachedExact: "Cached answer\ncache result=exact" {class: end}
+guards: "Single-flight and\nclient quota (ADR 0017)" {class: app}
+plan: "Plan (fast model):\nintent, subjects, constraints,\nwindow (ADR 0032)" {class: ai}
+eligible: "Threshold set, plan succeeded,\nno clarification, no drops?" {class: decision}
+embed: "Embed the normalised question\n(query, Nemotron embed, 1024)" {class: ai}
+embedOk: "Embedded?" {class: decision}
+group: "Group = SHA-256(embedding model |\nconfig | path | reading key)" {class: app}
+closest: "Closest live question of the\ngroup (pgvector <=>):\ncosine ≥ threshold?" {class: decision}
+stillCached: "Its answer still cached?" {class: decision}
+reuse: "Reuse that answer\ncache result=similar,\nno search, no web search taken" {class: end}
+copy: "Store it under this key\nuntil the original expires;\nnot indexed" {class: data}
+fresh: "Search → choose → validate →\nreason check\ncache result=miss" {class: ai}
+cacheable: "Cacheable?\n(ADR 0017)" {class: decision}
+put: "Shared cache (ai_cache):\nexpires at generatedAt + TTL" {class: data}
+probe: "Probe taken?" {class: decision}
+index: "guide_similar_question:\nembedding, group, same expiry" {class: data}
+answer: "Answer" {class: end}
+
+ask -> norm -> key -> exact
+exact -> cachedExact: yes
+exact -> guards: no {class: hot}
+guards -> plan: {class: hot}
+plan -> eligible
+eligible -> fresh: no
+eligible -> embed: yes {class: hot}
+embed -> embedOk
+embedOk -> fresh: no
+embedOk -> group: yes {class: hot}
+group -> closest
+closest -> fresh: no
+closest -> stillCached: yes {class: hot}
+stillCached -> fresh: no
+stillCached -> reuse: yes {class: hot}
+reuse -> copy
+fresh -> cacheable
+cacheable -> answer: no
+cacheable -> put: yes
+put -> probe
+probe -> index: yes
+probe -> answer: no
+index -> answer
+purge: "Daily purges (ADR 0034):\nshared cache, and the guide's\nfor guide_similar_question" {class: data}
+put -> purge: "later" {style.stroke-dash: 3}

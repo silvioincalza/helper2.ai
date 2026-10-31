@@ -4,7 +4,7 @@
 #   backend/src/main/kotlin/ai/helper2/setup/SetupGuides.kt, RunOptionRules.kt, Launch.kt, Clients.kt, ToolGuides.kt,
 #   ToolGuideValidator.kt, backend/src/main/java/ai/helper2/setup/internal/RegistryMcpServerSpecs.java,
 #   ReadmeMcpConfigs.java, HttpToolMaterials.java, HourlyFetchBudget.java, SpringAiToolGuideModel.java,
-#   RedisToolGuideCache.java, platform/RateLimitInterceptor.java.
+#   SharedToolGuideCache.java, platform/cache/JdbcSharedCache.java, platform/RateLimitInterceptor.java.
 # Render: cd docs/diagrams && d2 fmt flow-0031-setup-guide.d2 && d2 flow-0031-setup-guide.d2 flow-0031-setup-guide.svg
 
 ...@style
@@ -50,7 +50,7 @@ guide: "POST /api/v1/resources/{id}/guide (limiter guide, GetToolGuide)" {
   skipped: "Document skipped;\nanswer not cached" {class: fail}
   hasDocs: "Any document?" {class: decision}
   noMat: "NO_MATERIAL" {class: end}
-  cached: "Readable Redis tool-guide answer\n(resource, documents,\nprompt hash; 7 days, or 10 min\nfor an unreadable model answer)?" {class: decision}
+  cached: "Readable tool-guide answer\nin ai_cache (resource, documents,\nprompt hash; 7 days, or 10 min\nfor an unreadable model answer)?" {class: decision}
   hit: "Cached answer" {class: end}
   write: "ToolGuideModel.write: an instruction\nper step, with its passage and command\n(fast model, tool-guide daily budget)" {class: ai}
   unav: "LLM_UNAVAILABLE, not cached\n(no model, budget spent, provider\nerror or open llm-chat circuit)" {class: fail}

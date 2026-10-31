@@ -1414,7 +1414,7 @@
       "type": "timeseries",
       "id": 24,
       "title": "Answer cache hit ratio",
-      "description": "",
+      "description": "Share of guide questions answered from the cache: exact key, or a similar question read the same way (ADR 0041).",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -1431,8 +1431,8 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "(sum(rate(helper2_guide_cache_total{application=\"helper2\",environment=\"$environment\",result=\"hit\"}[1h])) or vector(0)) /clamp_min(sum(rate(helper2_guide_cache_total{application=\"helper2\",environment=\"$environment\"}[1h])), 1e-9)",
-          "legendFormat": "hit ratio",
+          "expr": "(sum by (result) (rate(helper2_guide_cache_total{application=\"helper2\",environment=\"$environment\",result=~\"exact|similar\"}[1h])) or vector(0)) /scalar(clamp_min(sum(rate(helper2_guide_cache_total{application=\"helper2\",environment=\"$environment\"}[1h])), 1e-9))",
+          "legendFormat": "{{result}}",
           "refId": "A"
         }
       ],

@@ -1,5 +1,6 @@
 package ai.helper2.catalog.internal;
 
+import ai.helper2.platform.PgVectors;
 import ai.helper2.search.MergedResult;
 import ai.helper2.search.PopularityKind;
 import ai.helper2.search.PopularityMetric;
@@ -572,7 +573,7 @@ public class ResourceStore {
                     DO UPDATE SET text_hash = EXCLUDED.text_hash, embedding = EXCLUDED.embedding, embedded_at = now()
                     """)
                 .param("id", t.resourceId()).param("model", model).param("hash", t.textHash())
-                .param("v", vectorLiteral(vectors.get(i)))
+                .param("v", PgVectors.literal(vectors.get(i)))
                 .update();
         }
     }
@@ -612,25 +613,11 @@ public class ResourceStore {
                 ) nearest
                 ORDER BY score DESC
                 """)
-            .param("v", vectorLiteral(query)).param("model", model)
+            .param("v", PgVectors.literal(query)).param("model", model)
             .param("origins", origins.stream().map(Enum::name).toArray(String[]::new))
             .param("maxDistance", maxDistance).param("limit", limit)
             .query(this::mapResource)
             .list());
-    }
-
-    static String vectorLiteral(float[] v) {
-        StringBuilder sb = new StringBuilder(v.length * 10).append('[');
-        for (int i = 0; i < v.length; i++) {
-            if (i > 0) {
-                sb.append(',');
-            }
-            if (!Float.isFinite(v[i])) {
-                throw new IllegalArgumentException("embedding value is not finite");
-            }
-            sb.append(v[i]);
-        }
-        return sb.append(']').toString();
     }
 
     /**

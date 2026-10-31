@@ -7,6 +7,7 @@ import ai.helper2.guide.ClientQuota
 import ai.helper2.guide.ConstraintQuote
 import ai.helper2.guide.GuideAnswer
 import ai.helper2.guide.GuideAnswerCache
+import ai.helper2.guide.MemoryAnswerStore
 import ai.helper2.guide.GuideBudgetExhausted
 import ai.helper2.guide.GuideModel
 import ai.helper2.guide.GuideProgress
@@ -223,7 +224,7 @@ class AskGuideTest {
     @Test
     fun `a repeated question is answered from the cache without calling the model`() {
         val model = CountingModel(whisperPick())
-        val guide = AskGuide(search, model, clock, cache = GuideAnswerCache(Duration.ofHours(24), 10, clock))
+        val guide = AskGuide(search, model, clock, cache = GuideAnswerCache(Duration.ofHours(24), clock, MemoryAnswerStore()))
 
         val first = guide.ask(need, null)
         val second = guide.ask("  ${need.uppercase()} ", null)
@@ -239,7 +240,7 @@ class AskGuideTest {
             override fun plan(request: String, path: AudiencePath?): GuideSearchPlan =
                 if (down) throw IllegalStateException("down") else GuideSearchPlan("speech recognition")
         })
-        val guide = AskGuide(search, model, clock, cache = GuideAnswerCache(Duration.ofHours(24), 10, clock))
+        val guide = AskGuide(search, model, clock, cache = GuideAnswerCache(Duration.ofHours(24), clock, MemoryAnswerStore()))
 
         assertEquals(GuideStatus.LLM_UNAVAILABLE, guide.ask(need, null).status)
         down = false
@@ -290,7 +291,7 @@ class AskGuideTest {
 
     @Test
     fun `a cached answer reports no progress, because no step ran`() {
-        val guide = AskGuide(search, whisperPick(), clock, cache = GuideAnswerCache(Duration.ofHours(24), 10, clock))
+        val guide = AskGuide(search, whisperPick(), clock, cache = GuideAnswerCache(Duration.ofHours(24), clock, MemoryAnswerStore()))
         guide.ask(need, null)
         val steps = RecordedSteps()
         guide.ask(need, null, steps)
@@ -314,7 +315,7 @@ class AskGuideTest {
     @Test
     fun `past its daily quota a client gets search results, while other clients and cached answers are unaffected`() {
         val model = CountingModel(whisperPick())
-        val guide = AskGuide(search, model, clock, cache = GuideAnswerCache(Duration.ofHours(24), 10, clock), quota = ClientQuota(1, clock))
+        val guide = AskGuide(search, model, clock, cache = GuideAnswerCache(Duration.ofHours(24), clock, MemoryAnswerStore()), quota = ClientQuota(1, clock))
 
         assertTrue(guide.ask(need, null, client = "10.0.0.1").recommendations.any { it.aiReasoned })
         val overQuota = guide.ask("another question about speech", null, client = "10.0.0.1")
@@ -372,7 +373,7 @@ class AskGuideTest {
 
     @Test
     fun `a new prompt or model setting does not serve answers cached under the old one`() {
-        val cache = GuideAnswerCache(Duration.ofHours(24), 10, clock)
+        val cache = GuideAnswerCache(Duration.ofHours(24), clock, MemoryAnswerStore())
         fun withPrompt(prompt: String) = CountingModel(object : GuideModel by whisperPick() {
             override val configFingerprint = prompt
         })
@@ -389,7 +390,7 @@ class AskGuideTest {
 
     @Test
     fun `new answer limits do not serve answers cached under the old ones`() {
-        val cache = GuideAnswerCache(Duration.ofHours(24), 10, clock)
+        val cache = GuideAnswerCache(Duration.ofHours(24), clock, MemoryAnswerStore())
         val model = CountingModel(whisperPick())
 
         AskGuide(search, model, clock, cache = cache).ask(need, null)
@@ -403,7 +404,7 @@ class AskGuideTest {
     @Test
     fun `cache entries expire after the ttl`() {
         val t = MovableClock(ai.helper2.search.NOW)
-        val cache = GuideAnswerCache(Duration.ofHours(24), 10, t)
+        val cache = GuideAnswerCache(Duration.ofHours(24), t, MemoryAnswerStore())
         cache.put("k", reasoned())
 
         t.now = ai.helper2.search.NOW.plus(Duration.ofHours(23))
@@ -415,7 +416,7 @@ class AskGuideTest {
     @Test
     fun `an answer built on web results lives no longer than they are fresh`() {
         val t = MovableClock(ai.helper2.search.NOW)
-        val cache = GuideAnswerCache(Duration.ofHours(24), 10, t)
+        val cache = GuideAnswerCache(Duration.ofHours(24), t, MemoryAnswerStore())
         cache.put("k", reasoned().copy(webFreshUntil = ai.helper2.search.NOW.plus(Duration.ofHours(5))))
 
         t.now = ai.helper2.search.NOW.plus(Duration.ofHours(4))
@@ -426,22 +427,10 @@ class AskGuideTest {
 
     @Test
     fun `an answer built on stale web results is not cached`() {
-        val cache = GuideAnswerCache(Duration.ofHours(24), 10, clock)
+        val cache = GuideAnswerCache(Duration.ofHours(24), clock, MemoryAnswerStore())
         cache.put("k", reasoned().copy(webFreshUntil = ai.helper2.search.NOW.minus(Duration.ofHours(1))))
 
         assertEquals(null, cache.get("k"))
-    }
-
-        @Test
-    fun `cache drops the least recently used entry when full`() {
-        val cache = GuideAnswerCache(Duration.ofHours(24), 2, clock)
-        val a = reasoned()
-        cache.put("a", a)
-        cache.put("b", a)
-        cache.get("a")
-        cache.put("c", a)
-
-        assertEquals(listOf(true, false, true), listOf("a", "b", "c").map { cache.get(it) != null })
     }
 
     @Test
@@ -458,7 +447,7 @@ class AskGuideTest {
         assertTrue(!GuideAnswerCache.isCacheable(unchecked))
 
         val model = CountingModel(ScriptedModel(GuideSearchPlan("speech recognition"), proposal = whisperPick("Self-hostable.")))
-        val guide = AskGuide(search, model, clock, cache = GuideAnswerCache(Duration.ofHours(24), 10, clock))
+        val guide = AskGuide(search, model, clock, cache = GuideAnswerCache(Duration.ofHours(24), clock, MemoryAnswerStore()))
         guide.ask(need, null)
         guide.ask(need, null)
         assertEquals(4, model.calls)
@@ -597,8 +586,8 @@ class AskGuideTest {
     }
 
     @Test
-    fun `a repeated question is counted as cached with a cache hit after a miss`() {
-        val guide = observed(whisperPick(), GuideAnswerCache(Duration.ofHours(24), 10, clock))
+    fun `a repeated question is counted as cached with an exact cache hit after a miss`() {
+        val guide = observed(whisperPick(), GuideAnswerCache(Duration.ofHours(24), clock, MemoryAnswerStore()))
 
         guide.ask(need, null)
         guide.ask(need, null)
@@ -606,7 +595,7 @@ class AskGuideTest {
         assertEquals(1.0, questions("answered"))
         assertEquals(1.0, questions("cached"))
         assertEquals(1.0, cacheCount("miss"))
-        assertEquals(1.0, cacheCount("hit"))
+        assertEquals(1.0, cacheCount("exact"))
     }
 
     @Test
@@ -616,7 +605,7 @@ class AskGuideTest {
         val obs = ObservationRegistry.create().also { it.observationConfig().observationHandler(DefaultMeterObservationHandler(prom)) }
         fun guide(model: GuideModel, cache: GuideAnswerCache? = null) =
             AskGuide(search, model, clock, cache = cache, observations = obs, meters = prom)
-        val cached = guide(whisperPick(), GuideAnswerCache(Duration.ofHours(24), 10, clock))
+        val cached = guide(whisperPick(), GuideAnswerCache(Duration.ofHours(24), clock, MemoryAnswerStore()))
         cached.ask(need, null)
         cached.ask(need, null)
         guide(spentBudget()).ask(need, null)

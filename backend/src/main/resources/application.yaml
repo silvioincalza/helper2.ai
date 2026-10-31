@@ -139,6 +139,7 @@ management:
 #   collector-<id>  circuit breaker + retry with exponential backoff and jitter, only on 429, 503, network error or
 #                   timeout (TransientSourceFailure); Scout runs are background work and can wait.
 #   redis           circuit breaker shared by every Redis adapter: cache, guide answers, budgets, rate limits.
+#   db-cache        circuit breaker + bulkhead on the shared caches of model answers in PostgreSQL (SharedCaches).
 #   llm-chat        circuit breaker on every chat-model call (guide, translation, setup guide, enrichment, classifier);
 #                   only provider errors count (no connection, timeout, 429, 5xx, a rejected call), never an answer we
 #                   could not parse.
@@ -209,6 +210,17 @@ resilience4j:
         # Malformed JSON or a spent daily budget is not an outage of the provider: neither success nor failure.
         ignore-exception-predicate: ai.helper2.platform.llm.ModelErrors$NotFromProvider
       llm-embed: {base-config: model}
+      db-cache:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        # A lookup is one primary-key read in about a millisecond; a slow or failing database opens the circuit after a
+        # few calls, and every lookup is then a miss at once for the open window.
+        minimum-number-of-calls: 3
+        failure-rate-threshold: 50
+        slow-call-duration-threshold: 250ms
+        slow-call-rate-threshold: 50
+        wait-duration-in-open-state: ${H2_RESILIENCE_DB_CACHE_OPEN_FOR:30s}
+        permitted-number-of-calls-in-half-open-state: 2
   bulkhead:
     configs:
       source:
@@ -230,6 +242,11 @@ resilience4j:
       source-helper2-index: {base-config: catalog}
       source-helper2-semantic: {base-config: catalog}
       source-curated: {base-config: catalog}
+      db-cache:
+        # Shared cache lookups at once in this replica, next to the catalog sources' 6: they never take the connections
+        # of the pool (H2_DATABASE_POOL_SIZE, 10) that the Scout and the admin need. One more is a miss, it never waits.
+        max-concurrent-calls: ${H2_RESILIENCE_DB_CACHE_MAX_CONCURRENT:2}
+        max-wait-duration: 0
       guide:
         # Questions running at once, JSON and streamed together; one more is refused at once as busy (503).
         max-concurrent-calls: ${H2_GUIDE_MAX_CONCURRENT:8}
@@ -260,7 +277,7 @@ logging:
 
 helper2:
   build:
-    # The running build (the chart passes the image tag). Guide answers in Redis are kept per build.
+    # The running build (the chart passes the image tag). Cached guide answers are kept per build.
     version: ${H2_BUILD_VERSION:local}
   # Where sign-in returns to (the SPA). "/" when the SPA is served by the backend itself.
   frontend-url: ${H2_FRONTEND_URL:/}
@@ -289,7 +306,9 @@ helper2:
     # The streamed guide sends a keep-alive comment this often while a question runs (the client gives up after 45 s).
     heartbeat: ${H2_GUIDE_HEARTBEAT:PT15S}
     cache-ttl: ${H2_GUIDE_CACHE_TTL:PT24H}
-    cache-max-entries: 500
+    # Reuse the cached answer of a question read the same way whose embedding is at least this close (cosine,
+    # ADR 0041). Empty: off, no question is embedded. Needs H2_NVIDIA_API_KEY.
+    similar-threshold: ${H2_GUIDE_SIMILAR_THRESHOLD:}
     # How many retrieved results Nemotron 3 Super chooses from (ADR 0015). 24 beat 12 in the 20-query
     # evaluation of 26 Oct 2026 (docs/eval/run-8-12-candidates.md vs docs/evaluation.md).
     max-candidates: ${H2_GUIDE_MAX_CANDIDATES:24}
@@ -305,6 +324,9 @@ helper2:
     translate-timeout-ms: ${H2_SEARCH_TRANSLATE_TIMEOUT_MS:2500}
     # Non-English queries translated by the fast model per UTC day (ADR 0011); separate from the guide's cap.
     daily-translations: ${H2_SEARCH_DAILY_TRANSLATIONS:300}
+    # Translations and query vectors are shared by the replicas in Redis this long (ADR 0011, ADR 0012).
+    translation-ttl: ${H2_SEARCH_TRANSLATION_TTL:24h}
+    query-vector-ttl: ${H2_SEARCH_QUERY_VECTOR_TTL:7d}
   # Requests per client address; past them the answer is 429.
   rate-limit:
     search-per-minute: ${H2_RATE_LIMIT_SEARCH_PER_MINUTE:60}
@@ -621,9 +643,9 @@ helper2:
       daily-model-calls: ${H2_SETUP_GUIDE_DAILY_MODEL_CALLS:300}
       # Use the reasoning model instead of the fast one.
       reasoning: ${H2_SETUP_GUIDE_REASONING:false}
-      # How long checked answers stay in Redis.
+      # How long checked answers are kept.
       cache-ttl: ${H2_SETUP_GUIDE_CACHE_TTL:P7D}
-      # How long the "unavailable" answer stays in Redis after two model answers that could not be read, so the same
+      # How long the "unavailable" answer is kept after two model answers that could not be read, so the same
       # ask does not spend two model calls again at once. Provider errors and a spent budget are never kept.
       unreadable-ttl: ${H2_SETUP_UNREADABLE_TTL:PT10M}
 

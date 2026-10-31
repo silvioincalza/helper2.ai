@@ -79,7 +79,12 @@ drop in quality must be seen the next day, not at the next run by hand.
    and no runner inside the cluster. A Kubernetes CronJob in the staging release would need an image with Node and
    the scripts, an `evaluation` switch in the chart that every other cluster carries, and a volume or an upload
    credential to keep the report; a GitHub schedule keeps the chart generic and keeps the report for free.
-10. **Results.** The latest run is in [docs/evaluation.md](../../evaluation.md); its header states the conditions
+10. **Similar-question set.** `docs/eval/guide-similar.json`: 55 question pairs, 25 that should share a cached
+   answer and 30 near misses that must not, each side with the reading a correct plan gives it
+   ([0041](../guide/0041-guide-answer-cache.md)). Their query embeddings are recorded once into
+   `docs/eval/guide-similar-vectors.json` (`./gradlew evalRecord --tests '*GuideSimilarRecorder'`, the embedding key),
+   so `GuideSimilarEvaluationTest` sweeps the reuse threshold offline in every build, with no model call.
+11. **Results.** The latest run is in [docs/evaluation.md](../../evaluation.md); its header states the conditions
    (date, commit, models, index size).
 
 ## Consequences
@@ -105,7 +110,7 @@ drop in quality must be seen the next day, not at the next run by hand.
 - `scripts/eval-guide.mjs` — the guide runner, pass rate and report writer; `scripts/eval-setup.mjs` — the setup runner;
   `scripts/eval-lib.mjs` — session token, resource id, judgements, P@k and nDCG@k shared by both.
 - `docs/eval/guide-queries.json`, `guide-intents.json`, `guide-adversarial.json`, `guide-qrels.tsv`,
-  `setup-resources.json` — the fixed sets and the judgements; `docs/eval/README.md` — grades and how to judge.
+  `guide-similar.json`, `guide-similar-vectors.json`, `setup-resources.json` — the fixed sets and the judgements; `docs/eval/README.md` — grades and how to judge.
 - `docs/evaluation.md`, `docs/evaluation-intents.md`, `docs/evaluation-adversarial.md`, `docs/evaluation-setup.md` —
   the latest runs; `docs/eval/run-*.md` — earlier runs.
 
