@@ -39,7 +39,7 @@ export AWS_SECRET_ACCESS_KEY  = $(R2_SECRET_ACCESS_KEY)
 export TF_VAR_kubeconfig_path = $(KUBECONFIG)
 export TF_VAR_environment     = $(ENV)
 
-.PHONY: help init plan bootstrap credentials backup-credentials image postgres-image chart-check check-env deploy diff rollback status
+.PHONY: help init plan bootstrap credentials backup-credentials image postgres-image chart-check check-env release-ready deploy diff rollback status
 
 help: ## this list
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
@@ -172,13 +172,24 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 check-env:
 	@test -f $(ENV)/app.env || { echo "$(ENV)/app.env missing: copy app.env.example and fill it"; exit 1; }
 
+# A release left in pending-install/upgrade/rollback (an interrupted helm run) refuses every new
+# upgrade with "another operation is in progress". Stop here with the way out instead.
+# No release yet (first install) is fine.
+release-ready:
+	@status=$$(helm -n $(NS) status helper2 2>/dev/null | awk '/^STATUS:/ {print $$2}'); \
+	case "$$status" in \
+	  pending-*) echo "release helper2 in $(NS) is $$status: an earlier helm run was interrupted."; \
+	             echo "Check the pods, then finish it: make ENV=$(ENV) rollback (back to the last deployed revision)."; \
+	             exit 1 ;; \
+	esac
+
 # Revision 1 exists in both envs (adopted from kustomize on 2026-10-26), so a failed upgrade rolls
 # back to the previous revision. Never `helm uninstall`: it would delete the Postgres StatefulSet
 # (its data PVC stays, it is not owned by the release).
 # --force-conflicts: Helm is the only owner. Fields last written by kubectl (kustomize era, or a manual
 # `kubectl edit`) would otherwise block server-side apply, e.g. the image on the first new tag.
 # 12m: the app's replicas are replaced one after another, each only once the previous one is ready.
-deploy: check-env ## helm upgrade ENV to TAG (default: current commit), wait, roll back on failure
+deploy: check-env release-ready ## helm upgrade ENV to TAG (default: current commit), wait, roll back on failure
 	helm upgrade --install $(HELM_ARGS) --server-side=true --force-conflicts --wait --timeout 12m --rollback-on-failure --history-max 10
 
 # kubectl diff exits 1 when there are changes (the usual case before a deploy) and >1 on an error
