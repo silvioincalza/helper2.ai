@@ -578,7 +578,7 @@
     "checkConfirmed": "confirmed by the source:",
     "checkNotConfirmed": "not confirmed by the source (it may still be true; check before you rely on it)",
     "promptTitle": "Ready-to-use prompt",
-    "promptAi": "Written by AI",
+    "promptAi": "AI-written",
     "basedOn": "Adapted from catalog prompts:",
     "promptReview": "Third parties wrote the prompts it adapts. Read it before you paste it, and never add a password or key it asks for.",
     "copy": "Copy prompt",
@@ -691,7 +691,7 @@
       {
         "title": "How we mark AI text",
         "items": [
-          "On the screen, every text written by an AI model has a label next to it: “AI-written” in the guide’s picks bar and on the guide’s reasons in the result list, “Model’s explanation” over a reason in the preview, “AI summary” and “Extracted by AI” on the resource page, and “Steps written by AI” in the setup guide.",
+          "On the screen, every text written by an AI model has a label next to it: “AI-written” in the guide’s picks bar, on its requirements and search terms, on its reasons in the result list, and on its comparison, explanation and prompt; “Model’s explanation” over a reason in the preview; “AI summary” and “Extracted by AI” on a description or a value in the preview and on the resource page; and “Steps written by AI” in the setup guide.",
           "In the page, the same text carries the HTML attribute data-ai-generated=\"true\", and data-ai-model with the model name when we know it.",
           "In our API, a guide answer has an aiContent object that names the provider, the models and the fields they wrote. Catalog values carry an origin such as AI_SUMMARY or AI_EXTRACTED.",
           "Quotes, titles and links are never written by AI. They come from the sources."

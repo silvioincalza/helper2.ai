@@ -33,7 +33,7 @@ describe('mission, privacy and terms pages', () => {
     expect(screen.getByRole('region', { name: 'Never guessed' })).toBeInTheDocument();
     const marking = screen.getByRole('region', { name: 'How we mark AI text' });
     expect(marking).toHaveTextContent('data-ai-generated');
-    expect(marking).toHaveTextContent('“AI-written” in the guide’s picks bar');
+    expect(marking).toHaveTextContent('“AI-written” in the guide’s picks bar, on its requirements and search terms');
     const issues = screen.getByRole('link', { name: 'Open an issue on GitHub (opens in a new tab)' });
     expect(issues).toHaveAttribute('href', 'https://github.com/silvioincalza/helper2.ai/issues');
     expect(issues).toHaveAttribute('target', '_blank');
