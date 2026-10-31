@@ -962,7 +962,10 @@
   },
   "sourceTile": {
     "label": "Sources searched",
-    "cached": "cached {{age}}"
+    "cached": "cached {{age}}",
+    "checked": "{{outcome}} {{age}}",
+    "notChecked": "Not asked yet",
+    "off": "Turned off"
   },
   "preview": {
     "label": "Preview of {{title}}",

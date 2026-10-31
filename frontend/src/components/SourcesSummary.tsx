@@ -47,7 +47,7 @@ export function SourcesSummary({ res, guideWebSearches }: { res: SearchResponse;
       <h2 id="sources-h" tabIndex={-1} className="preview-label">{t('sources.title')}</h2>
       <p className="sources-summary__fanout">{t('sources.fanout', { sources: res.coverage.sourcesQueried, hits, merged: res.total })}</p>
       <p className="small">{outcomes(res, t)}</p>
-      <SourceTiles sources={res.sources} now={Date.parse(res.executedAt)} />
+      <SourceTiles search={res.sources} now={Date.parse(res.executedAt)} />
       <WebSearchesLine search={res.webSearches} guide={guideWebSearches} />
       <p className="muted small">{res.coverage.note}</p>
     </section>

@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axeViolations } from '@/test/a11y';
-import { makeStatus } from '@/test/fixtures';
+import { SOURCES, makeStatus } from '@/test/fixtures';
 import { PicksBar } from './PicksBar';
 import { ProofQuote } from './ProofQuote';
 import { SelectableRow } from './SelectableRow';
@@ -61,7 +61,7 @@ describe('SourceTiles', () => {
   it('gives each source its state in words: time, cache age or what went wrong', async () => {
     const now = Date.parse('2026-10-30T10:00:00Z');
     const { container } = render(
-      <SourceTiles now={now} sources={[
+      <SourceTiles now={now} search={[
         makeStatus({ sourceId: 'github', name: 'GitHub', outcome: 'SUCCEEDED', servedFrom: 'LIVE', latencyMs: 320 }),
         makeStatus({ sourceId: 'hf', name: 'Hugging Face', outcome: 'SUCCEEDED', servedFrom: 'CACHE', cachedAt: '2026-10-30T09:56:00Z' }),
         makeStatus({ sourceId: 'npm', name: 'npm', outcome: 'TIMED_OUT', servedFrom: 'NONE', latencyMs: null }),
@@ -75,6 +75,28 @@ describe('SourceTiles', () => {
     expect(tiles[1]).toHaveClass('is-warn');
     expect(tiles[2]).toHaveTextContent('Timed out');
     expect(tiles[2]).toHaveClass('is-failed');
+    expect(await axeViolations(container)).toEqual([]);
+  });
+
+  it('gives each configured source its last outcome and when, not asked yet, or turned off', async () => {
+    const now = Date.parse('2026-10-30T10:00:00Z');
+    const { container } = render(
+      <SourceTiles now={now} label="Sources" registry={[
+        { ...SOURCES[0]!, lastOutcome: 'SUCCEEDED', lastCheckedAt: '2026-10-30T08:00:00Z' },
+        { ...SOURCES[0]!, id: 'arxiv', name: 'arXiv', lastOutcome: 'RATE_LIMITED', lastCheckedAt: '2026-10-30T09:55:00Z' },
+        { ...SOURCES[1]!, lastOutcome: null, lastCheckedAt: null },
+        { ...SOURCES[0]!, id: 'tavily', name: 'Tavily', enabled: false },
+      ]} />,
+    );
+    const tiles = within(screen.getByRole('list', { name: 'Sources' })).getAllByRole('listitem');
+    expect(tiles[0]).toHaveTextContent('GitHubSucceeded 2 hr. ago');
+    expect(tiles[0]).toHaveClass('is-ok');
+    expect(tiles[1]).toHaveTextContent('Rate limited 5 min. ago');
+    expect(tiles[1]).toHaveClass('is-warn');
+    expect(tiles[2]).toHaveTextContent('Not asked yet');
+    expect(tiles[2]).toHaveClass('is-off');
+    expect(tiles[3]).toHaveTextContent('Turned off');
+    expect(tiles[3]).toHaveClass('is-off');
     expect(await axeViolations(container)).toEqual([]);
   });
 });
