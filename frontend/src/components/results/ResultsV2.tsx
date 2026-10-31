@@ -72,7 +72,15 @@ export function ResultsV2() {
       {search.loading && !shown && (
         <div role="status" className="h2-results__loading">
           <p>{t('results.loading')}</p>
-          {[0, 1, 2].map((i) => <div key={i} className="skeleton-card" aria-hidden="true" />)}
+          <ul className="plain-list h2-skeleton" aria-hidden="true">
+            {[0, 1, 2, 3].map((i) => (
+              <li key={i} className="h2-skeleton__row">
+                <span className="h2-skeleton__line is-short" />
+                <span className="h2-skeleton__line is-title" />
+                <span className="h2-skeleton__line" />
+              </li>
+            ))}
+          </ul>
         </div>
       )}
       {!search.loading && search.error !== undefined && (
@@ -84,7 +92,7 @@ export function ResultsV2() {
       )}
       {shown && (
         <div className={search.loading ? 'is-stale' : undefined} aria-busy={search.loading}>
-          <ResultsBody res={shown} state={state} update={update} retry={search.reload} picks={picks} />
+          <ResultsBody res={shown} state={state} update={update} retry={search.reload} picks={picks} ask={asked ? undefined : () => ask(state.q)} />
         </div>
       )}
     </div>
@@ -157,8 +165,10 @@ function guideError(err: unknown, t: TFunction): string {
   return err.problem?.detail ?? t('guide.error');
 }
 
-function ResultsBody({ res, state, update, retry, picks }: {
+function ResultsBody({ res, state, update, retry, picks, ask }: {
   res: SearchResponse; state: SearchState; update: (s: SearchState) => void; retry: () => void; picks: ReadonlyMap<string, GuidePick>;
+  /** Asks the guide the same words; absent when the guide is already asked. */
+  ask?: (() => void) | undefined;
 }) {
   const { t } = useTranslation();
   const [sp, setSp] = useSearchParams();
@@ -193,17 +203,33 @@ function ResultsBody({ res, state, update, retry, picks }: {
       <ActiveFilters state={state} sources={res.sources} onChange={update} />
 
       {res.coverage.partial && (
-        <p role="status" className="banner banner-warn"><Icon name="warn" /> {t('results.partialBody', { ok: res.coverage.sourcesSucceeded, total: res.coverage.sourcesQueried })}</p>
+        <div role="status" className="banner banner-warn h2-partial">
+          <p><Icon name="warn" /> {t('results.partialBody', { ok: res.coverage.sourcesSucceeded, total: res.coverage.sourcesQueried })}</p>
+          <p className="h2-partial__next">
+            <a href="#h2-sources-h">{t('resultsV2.seeWhich')}</a>
+            <button type="button" className="btn" onClick={retry}><Icon name="refresh" /> {t('common.retry')}</button>
+          </p>
+        </div>
       )}
 
       {nothingSearched ? (
         <div role="alert" className="state-box state-error">
           <h2 className="h-small"><Icon name="warn" /> {t('results.allFailedTitle')}</h2>
           <p>{t('results.allFailedBody')}</p>
-          <button type="button" className="btn btn-primary" onClick={retry}><Icon name="refresh" /> {t('common.retry')}</button>
+          <p className="h2-state__next">
+            <button type="button" className="btn btn-primary" onClick={retry}><Icon name="refresh" /> {t('common.retry')}</button>
+            <Link to="/sources">{t('resultsV2.seeSources')}</Link>
+          </p>
         </div>
       ) : res.results.length === 0 ? (
-        <div className="state-box state-empty"><h2 className="h-small">{t('results.emptyTitle')}</h2><p>{t('results.emptyTryOther')}</p></div>
+        <div role="status" className="state-box state-empty">
+          <h2 className="h-small">{t('results.emptyTitle')}</h2>
+          <p>{t('results.emptyTryOther')}</p>
+          <p className="h2-state__next">
+            {ask && <button type="button" className="btn btn-primary" onClick={ask}>{t('resultsV2.askGuide')}</button>}
+            <Link to="/sources">{t('resultsV2.seeSources')}</Link>
+          </p>
+        </div>
       ) : state.view === 'timeline' ? (
         <ResultsTimeline cards={res.results} sourceStatuses={res.sources} />
       ) : (
