@@ -9,6 +9,12 @@ export function formatDate(iso: string, lang: string, precision: DateFact['preci
   return new Intl.DateTimeFormat(lang, { dateStyle: 'medium', timeZone: 'UTC' }).format(d);
 }
 
+/** Day and month, read as a UTC calendar day: "26 Oct". Empty for a date it cannot read. */
+export function shortDay(iso: string, lang: string): string {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? '' : new Intl.DateTimeFormat(lang, { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(d);
+}
+
 export function formatCompact(n: number, lang: string): string {
   return new Intl.NumberFormat(lang, { notation: 'compact', maximumFractionDigits: 1 }).format(n);
 }

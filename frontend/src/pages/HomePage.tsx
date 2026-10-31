@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
-import { useSearchParams } from 'react-router';
+import { Navigate, useLocation, useSearchParams } from 'react-router';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { ApiError } from '@/api/client';
@@ -14,16 +14,36 @@ import { Radar } from '@/components/Radar';
 import { SearchResults } from '@/components/SearchResults';
 import { useGuideStream } from '@/hooks/useGuideStream';
 import { useTitle } from '@/hooks/useTitle';
+import { NEW_DESIGN_ENABLED } from '@/lib/features';
+import HomeV2 from '@/pages/HomeV2';
 import { askedQuestion, clampQuestion, homeParams, parseSearchParams, patchState, type SearchState } from '@/lib/searchState';
 
 /** Example needs (`home.example.<id>`): a short label, and the full need it sends, which both searches AND asks the guide. */
 const EXAMPLES = ['postgres', 'embeddings', 'translation'] as const;
 
 /**
+ * The page at / (and, in design v2, at /search). In design v2 (ADR 0040) an empty / is only the home page and results
+ * live on /search; /?q=… still shows them and names /search as the canonical page. With the flag off, nothing changes.
+ */
+export default function HomePage() {
+  const [sp] = useSearchParams();
+  const { pathname } = useLocation();
+  if (!NEW_DESIGN_ENABLED) return <OnePage />;
+  const empty = !parseSearchParams(sp).q && !askedQuestion(sp);
+  if (empty) return pathname === '/' ? <HomeV2 /> : <Navigate replace to="/" />;
+  return (
+    <>
+      {pathname === '/' && <link rel="canonical" href={`/search?${sp.toString()}`} />}
+      <OnePage />
+    </>
+  );
+}
+
+/**
  * One page under the header's one box: the guide's answer, then search results; with an empty box,
  * the hero, example needs and a short list of what is new; how the guide works lives on /mission. Everything lives in the URL (see OneBox).
  */
-export default function HomePage() {
+function OnePage() {
   const { t } = useTranslation();
   const [sp, setSp] = useSearchParams();
   const state = parseSearchParams(sp);

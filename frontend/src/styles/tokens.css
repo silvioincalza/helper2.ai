@@ -59,6 +59,9 @@
   --source-tile-bg: var(--surface);
   --source-tile-line: var(--border);
   --row-selected-line: var(--accent);
+  /* Design v2 sizes and motion (tokens.json v3) used by Home. */
+  --board-height: 380px; /* 340px at bp-phone, set where it is used */
+  --board-loop: 48s;
 
   /* Older names used across app.css, mapped onto the design system. */
   --text: var(--ink);
