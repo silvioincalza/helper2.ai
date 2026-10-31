@@ -14,8 +14,8 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
 
 /**
- * The k8s setup: actuator on its own port with metrics open for the cluster scraper. Only the app
- * port is routed through the tunnel, so it must not serve any actuator endpoint.
+ * The k8s setup: actuator on its own port with metrics open for the cluster scraper. The edge routes
+ * the app port, so it must not serve any actuator endpoint.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
     "helper2.sources.github.enabled=false", "helper2.sources.huggingface.enabled=false",

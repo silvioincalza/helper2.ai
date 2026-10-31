@@ -2,7 +2,7 @@
 
 | Workflow | Trigger | Runner | Does |
 |---|---|---|---|
-| [`ci.yml`](../../.github/workflows/ci.yml) | pull request, called by `cd` | GitHub-hosted | frontend lint, typecheck, vitest, build; backend `gradlew test` (Testcontainers); `make chart-check` (helm lint, `helm template \| kubeconform`). PRs only: app image build (no push), Postgres image build + tag-bump check when `deploy/postgres` changes, `terraform fmt -check` + `validate` (no backend), D2 diagrams re-rendered with d2 v0.9.0 and diffed |
+| [`ci.yml`](../../.github/workflows/ci.yml) | pull request, called by `cd` | GitHub-hosted | frontend lint, typecheck, vitest, build; backend `gradlew test` (Testcontainers); `make chart-check` (helm lint, `helm template \| kubeconform`). PRs only: app image build (no push), Postgres image build + tag-bump check when `deploy/postgres` changes, D2 diagrams re-rendered with d2 v0.9.0 and diffed |
 | [`cd.yml`](../../.github/workflows/cd.yml) | push to `main`, manual | self-hosted | CI → `make postgres-image` + `make image` (each only if its tag is not in the registry yet) → staging. Never prod on its own |
 | [`deploy.yml`](../../.github/workflows/deploy.yml) | called by `cd` and `release` only | self-hosted | `make diff`, `make deploy`, `make status` for one env |
 | [`guide-eval.yml`](../../.github/workflows/guide-eval.yml) | nightly 01:41 UTC, manual | GitHub-hosted | `scripts/eval-guide.mjs` (fails below 10 of 20 passed) and `--adversarial` (fails on any case) against staging, never prod; reports kept 30 days as an artifact. No secret. Not called by CI or CD: a failure never blocks a deploy ([ADR 0030](../../docs/adr/quality/0030-guide-evaluation.md)) |
@@ -27,8 +27,8 @@ Prod runs only released versions. Staging runs every commit of `main`, so unfini
 a new design built page by page) can sit on `main` and on staging while prod stays on the last release.
 
 Rollback: run `cd` manually with the previous tag (`helm -n helper2-<env> history helper2`), or
-`helm rollback`. Terraform ([`terraform/`](terraform)) stays manual: it owns the namespaces, the
-Cloudflare tunnels, DNS and the `deployer` ServiceAccounts of the hosted environments.
+`helm rollback`. The platform repo (incalza-me-infra) owns the namespaces, DNS, the Ingresses and the
+`deployer` ServiceAccounts of the hosted environments; CD never changes them.
 
 ## Why a self-hosted runner
 
@@ -65,7 +65,7 @@ an unprivileged user with rootless podman. No ambient credentials: no kubeconfig
 `make ENV=<env> credentials` writes it.
 
 **Kubernetes** — `deployer` in each namespace may manage what the chart creates there, nothing
-cluster-wide ([`terraform/rbac.tf`](terraform/rbac.tf)). The prod deployer may also `get` the `helper2`
+cluster-wide (RBAC in incalza-me-infra). The prod deployer may also `get` the `helper2`
 Deployment in staging (to promote what staging runs), but not staging's Secrets. After an `app.env`
 change, rerun `make ENV=<env> credentials`; the next deploy restarts the app with it.
 

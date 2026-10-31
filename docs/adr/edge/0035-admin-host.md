@@ -27,11 +27,12 @@ the cluster with an address from the vSwitch range (the Proxmox node masquerades
 5. **Host-only cookies.** The session and CSRF cookies set no `Domain`, so the browser never sends the public session
    to the admin host or the other way round.
 6. **The edge decides who reaches the admin host.** The chart ships the Service `helper2-admin` (port 80 → admin port).
-   The platform (incalza-me-infra `terraform/k8s/helper2.tf`) routes the admin host to it with an ingress-nginx
-   allow-list of the vSwitch and mesh ranges, a DNS-only record to the ingress IP and a DNS-01 certificate. The
-   admin names have no route through the Cloudflare tunnel.
-7. **Network policy.** The tunnel may reach only the public port. The ingress controller's pods
-   (`ingress.controllerNamespace`, `controllerPodLabels`) may reach the public port and the admin port.
+   The platform (incalza-me-infra `terraform/k8s/helper2.tf`) routes the admin host to it with the Ingress
+   `helper2-admin` on ingress-nginx: an allow-list of the vSwitch and mesh ranges, a DNS-only record to the ingress
+   IP and a DNS-01 certificate. The public names go through Cloudflare to the Ingress `helper2-public`, which routes
+   only to the Service `helper2`. No public name reaches the admin port.
+7. **Network policy.** Only the ingress controller's pods (`networkPolicy.ingressController`) may reach the app:
+   the public port and the admin port.
 
 | Host | Port | Back office | Sign-in | ADMIN |
 |---|---|---|---|---|
@@ -44,8 +45,6 @@ the cluster with an address from the vSwitch range (the Proxmox node masquerades
 - End users can sign in on the public site, so bookmarks on the server and the registered tier can go live.
 - The GitHub app needs two callback URLs per environment. A GitHub OAuth App allows only one: use a GitHub App, or
   one OAuth App per host. Manual step, outside the repo.
-- Cutover in order: this chart first (it lets ingress-nginx in next to the tunnel), then the platform apply with the
-  DNS switch, then a small change that removes cloudflared. Staging before prod.
 - Local development keeps one port (`H2_ADMIN_PORT` unset).
 
 ## Alternatives considered

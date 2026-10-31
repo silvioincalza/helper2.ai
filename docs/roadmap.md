@@ -43,10 +43,9 @@ Items are grouped by the order in which they matter. Inside a group, the first i
   `oauth-github` profile on prod ([ADR 0023](adr/edge/0023-identity-and-admin.md)).
 - Turn on the registered Tavily tier (more web searches per day for signed-in users) once that sign-in is live
   ([ADR 0037](adr/search/0037-tavily-store-and-daily-quota.md)).
-- Admin host cutover ([ADR 0035](adr/edge/0035-admin-host.md)): the app and the chart are ready (admin port 8082,
-  Service `helper2-admin`). Left: add the admin callbacks to the GitHub app, apply the platform's
-  `helper2-edge` branch (incalza-me-infra) with the DNS switch, turn on `oauth-github` and `H2_ADMINS`, then
-  remove `cloudflared` from the chart. Staging first.
+- Admin host ([ADR 0035](adr/edge/0035-admin-host.md)): the app, the chart and the edge serve the admin port
+  (8082, Service `helper2-admin`, Ingress `helper2-admin` in incalza-me-infra). Left: add the admin callbacks to the
+  GitHub app, turn on `oauth-github` and `H2_ADMINS`. Staging first.
 
 ### Quality gates
 - **Browser end-to-end tests (skipped for now, owner decision 27 Oct 2026).** No browser journey is automated,
@@ -76,18 +75,14 @@ Items are grouped by the order in which they matter. Inside a group, the first i
   - add a periodic restore-check job;
   - turn on the off-site copy to R2 (`backup.offsite`) with a bucket-scoped token;
   - encrypt dumps on the client side before upload ([ADR 0027](adr/operations/0027-runtime-topology.md)).
-- **Short-lived deployer token.** Mint it with the OpenBao Kubernetes secrets engine. Today the deployer token
-  in `deploy/k8s/terraform/rbac.tf` does not expire ([ADR 0028](adr/operations/0028-ci-cd.md)).
+- **Short-lived deployer token.** Mint it with the OpenBao Kubernetes secrets engine. The deployer token
+  (incalza-me-infra) does not expire ([ADR 0028](adr/operations/0028-ci-cd.md)).
 - **Supply chain:**
   - pin base images by digest (`deploy/Dockerfile`, `deploy/postgres/Dockerfile`);
   - set `postgres.image.digest`;
   - add an image scan and an SBOM.
-- Real Terraform validation of the edge module needs read access to the private `topology` submodule.
-  CI uses a stub today.
-- cloudflared egress allows `0.0.0.0/0:7844`. Narrow it to Cloudflare's published ranges.
 - Redis with `redis.auth.existingSecret` has no restart checksum, so a password rotation needs a manual restart.
 - Remove the unused duplicate `deploy/.dockerignore`.
-- The Cloudflare tunnel token lives in Terraform state and a Kubernetes Secret, not in OpenBao. Move it.
 - Confirm that trace and span ids appear in every log line (only a configuration comment says so today).
 - **Staging settings for the nightly guide evaluation** (owner): add `H2_GUIDE_CACHE_TTL=PT1S`,
   `H2_GUIDE_CLIENT_DAILY_QUESTIONS=60` and `H2_GUIDE_DAILY_MODEL_CALLS=150` to staging's `app.env`, run
@@ -283,7 +278,6 @@ Fix an item or accept it; when it no longer holds, remove it.
 
 - Alert delivery is configured in the observability stack, not here. A collector disabled on purpose keeps alerting until its value is 9 days old. Histogram buckets add series per timer. ([ADR 0026](adr/operations/0026-observability.md))
 - Staging (1 replica) has no failover; a prod deploy starts pods one after another (up to 300 s each). Plain HTTP inside the cluster; sign-in for everyone changes that. Never run `helm uninstall`: it deletes the Postgres and Redis StatefulSets. ([ADR 0027](adr/operations/0027-runtime-topology.md))
-- Terraform stays manual (`make bootstrap`): it needs the Cloudflare token. ([ADR 0028](adr/operations/0028-ci-cd.md))
 - Deleting an old image needs the Harbor immutability rule disabled first, and enabled again after. ([ADR 0029](adr/operations/0029-release-versioning.md))
 - A deleted row stays in the backups for up to 7 days; purges run daily, so a row can outlive its period by a day; a purged observed resource seen again comes back with a new `first_discovered_at`. ([ADR 0034](adr/operations/0034-data-retention.md))
 

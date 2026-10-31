@@ -1,8 +1,8 @@
 # Deploy on Kubernetes
 
 The Helm chart [`../helm/helper2`](../helm/helper2) runs Helper2.ai on any Kubernetes cluster: the app,
-Postgres with pgvector and Redis, one release `helper2` per namespace. The app is exposed through an
-Ingress or a Cloudflare tunnel. A nightly database backup is optional.
+Postgres with pgvector and Redis, one release `helper2` per namespace. The chart creates no Ingress: you
+route your hosts to its Services with your own Ingress. A nightly database backup is optional.
 
 ## Requirements
 
@@ -10,7 +10,7 @@ Ingress or a Cloudflare tunnel. A nightly database backup is optional.
 - A container registry that the cluster can pull from. The chart sets no `imagePullSecrets`: use a
   public registry, or attach a pull secret to the namespace's `default` ServiceAccount.
 - A storage class for `ReadWriteOnce` volumes. Empty `storageClassName` = the cluster default.
-- An Ingress controller (or a Cloudflare tunnel, see [Options](#options)).
+- An Ingress controller, and an Ingress of your own for the app (see [step 3](#3-install)).
 - A CNI that enforces NetworkPolicy. Without one, the policies are created but do nothing.
 - A Nebius Token Factory API key for the AI guide. Without it, search works and the guide shows plain
   search results instead.
@@ -38,7 +38,7 @@ Docker works the same way. Tags are never rebuilt or moved: one commit, one imag
 contain `H2_DATABASE_PASSWORD` and `H2_REDIS_PASSWORD` (`openssl rand -hex 32`; letters and digits only).
 The chart turns the file into the Secret `helper2-env`. A change restarts the app only.
 
-**`my-values.yaml`**, for an Ingress with TLS:
+**`my-values.yaml`**:
 
 ```yaml
 app:
@@ -48,12 +48,10 @@ image:
 postgres:
   image:
     repository: ghcr.io/<owner>/helper2-postgres
-ingress:
-  enabled: true
-  className: nginx
-  host: helper2.example.com
-  tlsSecretName: helper2-tls   # e.g. issued by cert-manager through ingress.annotations
-  controllerNamespace: ingress-nginx
+networkPolicy:
+  ingressController:           # the pods that may reach the app
+    namespace: ingress-nginx
+    podLabels: { app.kubernetes.io/name: ingress-nginx }
 ```
 
 Every value and its default is described in [`values.yaml`](../helm/helper2/values.yaml).
@@ -75,6 +73,26 @@ kubectl -n helper2 port-forward deploy/helper2 8081 &
 curl -s localhost:8081/actuator/health/readiness    # {"status":"UP"}
 ```
 
+Route your host to the Service `helper2`, port 80, for example:
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata: { name: helper2, namespace: helper2 }
+spec:
+  ingressClassName: nginx
+  tls: [{ hosts: [helper2.example.com], secretName: helper2-tls }]   # e.g. issued by cert-manager
+  rules:
+    - host: helper2.example.com
+      http:
+        paths:
+          - { path: /, pathType: Prefix, backend: { service: { name: helper2, port: { number: 80 } } } }
+```
+
+The back office (`/admin`) answers only on the Service `helper2-admin`, port 80
+([ADR 0035](../../docs/adr/edge/0035-admin-host.md)). Route it from a host that only your own network can
+reach (for example an Ingress with a source allow-list), never from the public host.
+
 Then open `https://<host>`. The Scout starts about 20 seconds after startup and fills the catalog over
 the next hours.
 
@@ -84,15 +102,15 @@ To upgrade, build a new tag and run the same `helm upgrade --install` command wi
 
 | What | Values |
 |---|---|
-| Cloudflare tunnel instead of an Ingress | `cloudflared.enabled: true`; a Secret `cloudflared-token` (key `token`) with the tunnel token. Route the public hostnames to `http://helper2.<namespace>.svc.cluster.local:80`. |
 | Traces (OTLP/HTTP) | `app.tracing.export: true`, `app.tracing.endpoint`, `networkPolicy.egress.otlp.namespace` of the collector |
 | Metrics scraping | `networkPolicy.metricsNamespace` of the scraper. The pods carry `prometheus.io/*` annotations (port 8081). |
 | Replicas | `app.replicas` (default 3) |
 | Nightly backup | `backup.enabled: true`, see [Backups](#backups) |
 | DNS for the egress policy | `networkPolicy.egress.dns` (default: CoreDNS in `kube-system`) |
 
-The network policy lets only the edge (the Ingress controller's namespace or cloudflared) reach the app,
-and only on port 8080. The app trusts `X-Forwarded-For` from that edge for its per-client rate limits.
+The network policy lets only the Ingress controller (`networkPolicy.ingressController`) reach the app, on
+port 8080 and the admin port. Without it, no visitor reaches the app. The app trusts `X-Forwarded-For` from
+that edge for its per-client rate limits.
 
 ## Operations
 
