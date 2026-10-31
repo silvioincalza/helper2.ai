@@ -83,7 +83,8 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 - Confirm that trace and span ids appear in every log line (only a configuration comment says so today).
 - **Staging settings for the nightly guide evaluation** (owner): add `H2_GUIDE_CACHE_TTL=PT1S`,
   `H2_GUIDE_CLIENT_DAILY_QUESTIONS=60` and `H2_GUIDE_DAILY_MODEL_CALLS=150` to staging's `app.env`, run
-  `make ENV=staging credentials`, and check the first run of `guide-eval.yml`
+  `make ENV=staging credentials`, set the repository variable `H2_STAGING_URL`, and check the first run of
+  `guide-eval.yml`
   ([ADR 0030](adr/quality/0030-guide-evaluation.md)).
 
 ## 4. More than one replica

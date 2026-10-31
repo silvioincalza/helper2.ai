@@ -62,7 +62,8 @@ drop in quality must be seen the next day, not at the next run by hand.
    sets a quota that covers the sets it runs.
 9. **Nightly run on staging.** `.github/workflows/guide-eval.yml` runs every night at 01:41 Coordinated Universal
    Time (UTC), after the daily caps reset, and by hand; never on a pull request. It runs the default set with
-   `--min-pass 0.5` and the adversarial set, against `https://helper2.incalza.me` only, never prod:
+   `--min-pass 0.5` and the adversarial set, against the staging URL in the repository variable `H2_STAGING_URL` only, never prod (without it the job
+   does not run, so the workflow carries no host of its own):
    - 28 questions, about 84 model calls; the run may cost at most 150. The intent cases (66 more) do not fit and
      stay a run by hand;
    - the default set fails below 10 of 20 passed: the last published run passed 11 (12 with the answer that came
