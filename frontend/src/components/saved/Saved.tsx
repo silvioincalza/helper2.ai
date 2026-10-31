@@ -6,14 +6,14 @@ import { ExternalLink } from '@/components/ExternalLink';
 import { TypeTag } from '@/components/ui/TypeTag';
 import { useBookmarks } from '@/context/BookmarksContext';
 import { formatDate, hostname } from '@/lib/format';
-import './saved-v2.css';
+import './saved.css';
 import { resourcePath } from '@/lib/searchState';
 
 /**
- * Design v2 saved page (ADR 0040, 10): type tabs when there is more than one type, one row per saved resource
+ * Saved page (ADR 0040, 10): type tabs when there is more than one type, one row per saved resource
  * (type, host, saved date, title, the original link, Remove). A saved item keeps no quote, so the row shows none.
  */
-export function SavedV2() {
+export function Saved() {
   const { t, i18n } = useTranslation();
   const { items, remove, mode, storageFailed, serverError } = useBookmarks();
   const [picked, setType] = useState<ResourceType | null>(null);
@@ -37,9 +37,9 @@ export function SavedV2() {
       ) : (
         <>
           {types.length > 1 && (
-            <nav className="h2-tabs" aria-label={t('savedV2.types')}>
+            <nav className="h2-tabs" aria-label={t('saved.types')}>
               <button type="button" className="h2-tab" aria-pressed={type === null} onClick={() => setType(null)}>
-                {t('resultsV2.allTypes')} <span className="h2-tab__n">{items.length}</span>
+                {t('results.allTypes')} <span className="h2-tab__n">{items.length}</span>
               </button>
               {types.map((ty) => (
                 <button key={ty} type="button" className="h2-tab" aria-pressed={type === ty} onClick={() => setType(ty)}>

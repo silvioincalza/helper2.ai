@@ -38,7 +38,7 @@ export function ResultFacts({ card, groupTag: GroupTag }: { card: ResultCard; gr
         </dd>
       );
     }
-    return <dd className={f.value === null ? 'is-not-stated' : undefined}>{f.value ?? t('resultsV2.notStated')}</dd>;
+    return <dd className={f.value === null ? 'is-not-stated' : undefined}>{f.value ?? t('results.notStated')}</dd>;
   };
   const group = (title: string, list: Fact[]) => (
     <div className="h2-facts__group">
@@ -50,7 +50,7 @@ export function ResultFacts({ card, groupTag: GroupTag }: { card: ResultCard; gr
       </dl>
     </div>
   );
-  return <div className="h2-facts">{group(t('resultsV2.use'), use)}{group(t('resultsV2.build'), build)}</div>;
+  return <div className="h2-facts">{group(t('results.use'), use)}{group(t('results.build'), build)}</div>;
 }
 
 /** The sources that list a result, as chips. */

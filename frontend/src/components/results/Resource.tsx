@@ -12,8 +12,8 @@ import { aiMark, isAiOrigin } from '@/lib/aiMark';
 import { SAVED_ENABLED } from '@/lib/features';
 import { displayHost } from '@/lib/selection';
 import { ListedBy, ResultFacts } from './ResultFacts';
-import './results-v2.css';
-import './resource-v2.css';
+import './results.css';
+import './resource.css';
 
 /** What the results page passes on: where to go back to, and the sentence the guide checked. */
 interface FromResults { from?: string | undefined; quote?: string | null }
@@ -28,11 +28,11 @@ function fromResults(state: unknown): FromResults {
 }
 
 /**
- * Design v2 resource page (ADR 0040, 4): the same parts as the results preview, full width. The main column has the
+ * Resource page (ADR 0040, 4): the same parts as the results preview, full width. The main column has the
  * title, the actions, the source's own text (with the checked sentence when the guide picked it) and the detail
  * sections ([children]); the side column has the Use and Build facts, who lists it and its dates.
  */
-export function ResourceV2({ detail: d, children }: { detail: ResourceDetail; children: ReactNode }) {
+export function Resource({ detail: d, children }: { detail: ResourceDetail; children: ReactNode }) {
   const { t } = useTranslation();
   const { from, quote } = fromResults(useLocation().state);
   const card = d.card;
@@ -40,7 +40,7 @@ export function ResourceV2({ detail: d, children }: { detail: ResourceDetail; ch
   return (
     <div className="h2-res">
       <p className="h2-res__back">
-        <Link to={from ?? '/'}><span aria-hidden="true">← </span>{from ? t('resourceV2.backToResults') : t('detail.backToSearch')}</Link>
+        <Link to={from ?? '/'}><span aria-hidden="true">← </span>{from ? t('resource.backToResults') : t('detail.backToSearch')}</Link>
       </p>
       <div className="h2-res__grid">
         <div className="h2-res__main">
@@ -48,14 +48,14 @@ export function ResourceV2({ detail: d, children }: { detail: ResourceDetail; ch
           <h1 className="h2-pv__title">{card.title}</h1>
           <div className="h2-pv__actions">
             <a className="btn btn-primary" href={card.url} target="_blank" rel="noopener noreferrer">
-              {t('resultsV2.openOn', { host })} <span aria-hidden="true">↗</span>
+              {t('results.openOn', { host })} <span aria-hidden="true">↗</span>
             </a>
             {SAVED_ENABLED && <BookmarkButton card={card} />}
           </div>
           {canGuide(card) && <SetupGuidePanel id={card.id} title={card.title} />}
 
           <section className="h2-res__sec" aria-labelledby="h2-res-text">
-            <h2 id="h2-res-text" className="h2-pv__sec">{t('resourceV2.sourceText')}</h2>
+            <h2 id="h2-res-text" className="h2-pv__sec">{t('resource.sourceText')}</h2>
             {/* A checked quote can come from the title alone, so it shows even without a description. */}
             {quote ? (
               <ProofQuote text={card.description ?? ''} quote={quote} source={host} />
@@ -64,23 +64,23 @@ export function ResourceV2({ detail: d, children }: { detail: ResourceDetail; ch
             ) : (
               <p className="muted">{t('card.noDescription')}</p>
             )}
-            {quote && <p className="muted small">{t('resourceV2.checkedNote')}</p>}
+            {quote && <p className="muted small">{t('resource.checkedNote')}</p>}
           </section>
 
           <div className="h2-res__details">{children}</div>
         </div>
 
-        <aside className="h2-res__side" aria-label={t('resultsV2.facts')}>
+        <aside className="h2-res__side" aria-label={t('results.facts')}>
           <section aria-labelledby="h2-res-facts">
-            <h2 id="h2-res-facts" className="h2-pv__sec">{t('resultsV2.facts')}</h2>
+            <h2 id="h2-res-facts" className="h2-pv__sec">{t('results.facts')}</h2>
             <ResultFacts card={card} groupTag="h3" />
           </section>
           <section aria-labelledby="h2-res-listed">
-            <h2 id="h2-res-listed" className="h2-pv__sec">{t('resultsV2.listedBy')}</h2>
+            <h2 id="h2-res-listed" className="h2-pv__sec">{t('results.listedBy')}</h2>
             <ListedBy card={card} />
           </section>
           <section aria-labelledby="h2-res-time">
-            <h2 id="h2-res-time" className="h2-pv__sec">{t('resultsV2.timeline')}</h2>
+            <h2 id="h2-res-time" className="h2-pv__sec">{t('results.timeline')}</h2>
             <Timeline timeline={card.timeline} />
           </section>
         </aside>

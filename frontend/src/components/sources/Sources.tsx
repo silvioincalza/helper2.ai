@@ -7,8 +7,8 @@ import { TypeTag } from '@/components/ui/TypeTag';
 import { useSources } from '@/context/SourcesContext';
 import { useRetry } from '@/hooks/useRetry';
 import { formatDate } from '@/lib/format';
-import '@/components/saved/saved-v2.css';
-import './sources-v2.css';
+import '@/components/saved/saved.css';
+import './sources.css';
 
 const MODES: SourceMode[] = ['LIVE', 'INDEXED', 'CURATED', 'DEMO'];
 const STEPS = ['ask', 'merge', 'prove', 'dates'] as const;
@@ -25,10 +25,10 @@ export function sourceState(s: SourceInfo): SourceState {
 }
 
 /**
- * Design v2 sources page (ADR 0040, 10): how a search works, the source modes in use, the last check of every
+ * Sources page (ADR 0040, 10): how a search works, the source modes in use, the last check of every
  * source in words, and one card per source with what it covers, its terms and attribution.
  */
-export function SourcesV2() {
+export function Sources() {
   const { t, i18n } = useTranslation();
   const q = useSources();
   const { retry, focusRef } = useRetry(q.reload, q.loading);
@@ -51,13 +51,13 @@ export function SourcesV2() {
       </header>
 
       <section aria-labelledby="how-h">
-        <h2 id="how-h" className="h2-sources__h">{t('sourcesV2.how')}</h2>
+        <h2 id="how-h" className="h2-sources__h">{t('sources.how')}</h2>
         <ol className="h2-sources__steps">
           {STEPS.map((k, i) => (
             <li key={k} className="h2-sources__step">
               <span className="h2-sources__n">{String(i + 1).padStart(2, '0')}</span>
-              <h3>{t(`sourcesV2.steps.${k}.title`)}</h3>
-              <p>{t(`sourcesV2.steps.${k}.text`)}</p>
+              <h3>{t(`sources.steps.${k}.title`)}</h3>
+              <p>{t(`sources.steps.${k}.text`)}</p>
             </li>
           ))}
         </ol>
@@ -75,7 +75,7 @@ export function SourcesV2() {
       )}
 
       <section aria-labelledby="all-h">
-        <h2 id="all-h" ref={focusRef} tabIndex={-1} className="h2-sources__h">{t('sourcesV2.all')}</h2>
+        <h2 id="all-h" ref={focusRef} tabIndex={-1} className="h2-sources__h">{t('sources.all')}</h2>
         {q.loading && <p role="status">{t('common.loading')}</p>}
         {!q.loading && q.error !== undefined && (
           <StatePanel tone="error" level={3} title={t('sourcesPage.error')} next={<RetryButton onClick={retry} />} />
@@ -83,14 +83,14 @@ export function SourcesV2() {
         {q.data && (
           <>
             <p className="h2-sources__summary">
-              <strong>{t('sourcesV2.summary', { ok: count('ok'), total: all.length })}</strong>
-              {count('warn') > 0 && <span><span className="h2-dot is-warn" aria-hidden="true" />{t('sourcesV2.warn', { count: count('warn') })}</span>}
-              {count('failed') > 0 && <span><span className="h2-dot is-failed" aria-hidden="true" />{t('sourcesV2.failed', { count: count('failed') })}</span>}
-              {count('never') > 0 && <span><span className="h2-dot is-never" aria-hidden="true" />{t('sourcesV2.never', { count: count('never') })}</span>}
+              <strong>{t('sources.summary', { ok: count('ok'), total: all.length })}</strong>
+              {count('warn') > 0 && <span><span className="h2-dot is-warn" aria-hidden="true" />{t('sources.warn', { count: count('warn') })}</span>}
+              {count('failed') > 0 && <span><span className="h2-dot is-failed" aria-hidden="true" />{t('sources.failed', { count: count('failed') })}</span>}
+              {count('never') > 0 && <span><span className="h2-dot is-never" aria-hidden="true" />{t('sources.never', { count: count('never') })}</span>}
             </p>
             {modes.length > 1 && (
-              <div className="h2-sources__chips" role="group" aria-label={t('sourcesV2.filter')}>
-                <button type="button" className="h2-chip" aria-pressed={mode === null} onClick={() => setMode(null)}>{t('resultsV2.allTypes')}</button>
+              <div className="h2-sources__chips" role="group" aria-label={t('sources.filter')}>
+                <button type="button" className="h2-chip" aria-pressed={mode === null} onClick={() => setMode(null)}>{t('results.allTypes')}</button>
                 {modes.map((m) => (
                   <button key={m} type="button" className="h2-chip" aria-pressed={mode === m} onClick={() => setMode(m)}>{t(`mode.${m}.label`)}</button>
                 ))}
@@ -105,7 +105,7 @@ export function SourcesV2() {
                     <span className={`h2-src-card__status is-${sourceState(s)}`}><span className="h2-dot" aria-hidden="true" />{status(s)}</span>
                   </div>
                   {s.resourceTypes.length > 0 && (
-                    <div className="h2-src-card__covers" aria-label={t('sourcesV2.covers')}>
+                    <div className="h2-src-card__covers" aria-label={t('sources.covers')}>
                       {s.resourceTypes.map((r) => <TypeTag key={r} type={r} />)}
                     </div>
                   )}
@@ -114,7 +114,7 @@ export function SourcesV2() {
                     <dd>{s.termsUrl ? <ExternalLink url={s.termsUrl} showHost={false}>{t('sourcesPage.terms')}</ExternalLink> : t('common.unknown')}</dd>
                     <dt>{t('sourcesPage.col.attribution')}</dt>
                     <dd>{s.attribution ?? '—'}</dd>
-                    <dt>{t('sourcesV2.lastCheck')}</dt>
+                    <dt>{t('sources.lastCheck')}</dt>
                     <dd className="h2-src-card__mono">{s.lastCheckedAt ? formatDate(s.lastCheckedAt, i18n.language, 'INSTANT') : t('sourcesPage.neverChecked')}</dd>
                   </dl>
                 </li>

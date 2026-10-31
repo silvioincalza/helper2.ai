@@ -7,7 +7,7 @@ import { Icon } from '@/components/Icon';
 import { Pagination } from '@/components/Pagination';
 import { SignIn } from '@/components/SignIn';
 import { useMe } from '@/context/MeContext';
-import '@/components/saved/saved-v2.css';
+import '@/components/saved/saved.css';
 import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
 import { StatusPill, type StatusTone } from '@/components/ui/StatusPill';
 import { useApi } from '@/hooks/useApi';
@@ -15,7 +15,7 @@ import { useRetry } from '@/hooks/useRetry';
 import { useTitle } from '@/hooks/useTitle';
 import { formatDate } from '@/lib/format';
 import { resourcePath } from '@/lib/searchState';
-import './admin-v2.css';
+import './admin.css';
 
 /** How often the run listing is reloaded while a Scout run is RUNNING. */
 export const RUN_POLL_MS = 3000;

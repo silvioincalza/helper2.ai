@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
 import { StatusPill, type StatusTone } from '@/components/ui/StatusPill';
 import { prefersReducedMotion, REDUCED_MOTION_QUERY } from '@/lib/motion';
-import './home-v2.css';
+import './home.css';
 
 /** One row of a board: when, what kind, from where, its status in words, and the name that opens it. */
 export interface BoardRow {

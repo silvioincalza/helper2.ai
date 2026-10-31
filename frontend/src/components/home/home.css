@@ -1,4 +1,4 @@
-/* Design v2 Home (ADR 0040, 2): the two boards under the hero. Only semantic tokens. */
+/* Home (ADR 0040, 2): the two boards under the hero. Only semantic tokens. */
 .h2-boards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-6) var(--space-7); padding: var(--space-6) 0 var(--space-7); }
 .h2-board { min-width: 0; border-top: 2px solid var(--ink); padding-top: var(--space-3); }
 .h2-board__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-3); margin-bottom: var(--space-2); }

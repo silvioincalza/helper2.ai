@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { HowItWorks } from '@/components/HowItWorks';
 import { REPO_URL } from '@/components/Layout';
 import { useTitle } from '@/hooks/useTitle';
-import { TextPageV2 } from '@/components/TextPageV2';
+import { TextPage } from '@/components/TextPage';
 
 export default function MissionPage() {
   const { t } = useTranslation();
@@ -15,7 +15,7 @@ export default function MissionPage() {
     </p>
   );
   return (
-    <TextPageV2
+    <TextPage
       i18nKey="mission.sections"
       head={<><h1>{t('mission.title')}</h1><p className="lede">{t('mission.lede')}</p></>}
       after={<><HowItWorks />{feedback}</>}

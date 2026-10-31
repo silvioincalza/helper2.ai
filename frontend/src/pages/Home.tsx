@@ -11,10 +11,10 @@ import { askParams, clampQuestion, RESULTS_PATH } from '@/lib/searchState';
 const EXAMPLES = ['postgres', 'embeddings', 'translation'] as const;
 
 /**
- * Design v2 home page (ADR 0040, 2): only the home page. The radar hero, the one box and example needs; under them
+ * Home page (ADR 0040, 2): only the home page. The radar hero, the one box and example needs; under them
  * the News and Events boards. The box and the examples open the results on /search.
  */
-export default function HomeV2() {
+export default function Home() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   useTitle('');
@@ -24,7 +24,7 @@ export default function HomeV2() {
   };
 
   return (
-    <div className="one-page home-v2">
+    <div className="one-page home">
       <section className="home-hero" aria-labelledby="home-h">
         <RadarRings />
         <div className="home-hero-inner">

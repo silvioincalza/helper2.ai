@@ -29,7 +29,7 @@ const STEPS: ToolGuide = {
   documents: [{ key: 'readme', kind: 'README', url: 'https://github.com/acme/postgres-mcp', retrievedAt: '2026-10-28T00:00:00Z' }],
 };
 
-describe('design v2 resource page', () => {
+describe('the resource page', () => {
   it('opened from a guide pick: shows the checked sentence highlighted, and the back link returns to the same search and result', async () => {
     mockApi({
       'GET /search': () => makeSearch({ results: [PG], total: 1, sources: [makeStatus()] }),

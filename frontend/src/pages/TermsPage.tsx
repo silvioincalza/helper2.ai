@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { useTitle } from '@/hooks/useTitle';
-import { TextPageV2 } from '@/components/TextPageV2';
+import { TextPage } from '@/components/TextPage';
 import { PRIVACY_CONTACT } from '@/pages/PrivacyPage';
 
 export default function TermsPage() {
@@ -18,7 +18,7 @@ export default function TermsPage() {
     </p>
   );
   return (
-    <TextPageV2
+    <TextPage
       i18nKey="terms.sections"
       head={<><h1>{t('terms.title')}</h1><p className="updated">{t('terms.updated')}</p><p className="lede">{t('terms.lede')}</p>{contact}</>}
       after={privacy}
