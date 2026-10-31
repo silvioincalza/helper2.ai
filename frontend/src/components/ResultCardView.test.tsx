@@ -154,13 +154,13 @@ describe('ResultCardView', () => {
     await settle();
   });
 
-  it('shows no Save button while Saved is on the roadmap', async () => {
+  it('shows a Save button on each card', async () => {
     view(makeCard());
-    expect(screen.queryByRole('button', { name: /Save Acme Translator/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Save Acme Translator/ })).toBeInTheDocument();
     await settle();
   });
 
-  it('the bookmark toggle (hidden for now) is a pressed button', async () => {
+  it('the bookmark toggle is a pressed button', async () => {
     render(<BookmarksProvider><BookmarkButton card={makeCard()} /></BookmarksProvider>);
     const btn = screen.getByRole('button', { name: /Save Acme Translator/ });
     expect(btn).toHaveAttribute('aria-pressed', 'false');

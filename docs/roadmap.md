@@ -38,9 +38,9 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 - Optional `H2_HF_TOKEN` on prod.
 - `H2_SETUP_GITHUB_TOKEN` (read-only, public repositories) in `app_env` on staging and prod; without it Guide me reads
   GitHub anonymously, 60 calls an hour ([ADR 0031](adr/guide/0031-setup-guide.md)).
-- **Sign-in for everyone.** Sign-in is offered only on `/admin`, so server-side bookmarks and account deletion
-  (`DELETE /me`) reach only admins today. Add a public sign-in entry point in the page; it needs the
-  `oauth-github` profile on prod ([ADR 0023](adr/edge/0023-identity-and-admin.md)).
+- **Sign-in on prod.** The site offers "Sign in with GitHub" wherever the server has a provider: turn on the
+  `oauth-github` profile on prod with its own GitHub App (helper2.ai and admin.helper2.ai callbacks)
+  ([ADR 0035](adr/edge/0035-admin-host.md)).
 - Turn on the registered Tavily tier (more web searches per day for signed-in users) once that sign-in is live
   ([ADR 0037](adr/search/0037-tavily-store-and-daily-quota.md)).
 - Admin host cutover ([ADR 0035](adr/edge/0035-admin-host.md)): the app and the chart are ready (admin port 8082,
@@ -177,9 +177,6 @@ Open items:
 
 ## 7. Frontend
 
-- **Saved** (bookmarks) is hidden until it is finished: the menu item, the Save buttons and `/saved` (which goes
-  home). The bookmark code, its tests and the `/me/bookmarks` API stay; `SAVED_ENABLED` in
-  `frontend/src/lib/features.ts` brings it back.
 - Sources page shows response time, circuit state and Tavily credits from GET /sources (`responseTimeMs`,
   `circuit`, `circuitOpenedAt`, `webCredits`; [ADR 0008](adr/search/0008-federated-search.md)). Response time and
   circuit are the answering replica's.

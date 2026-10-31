@@ -1,5 +1,5 @@
 import { useEffect, useRef, useSyncExternalStore, type ReactNode } from 'react';
-import { NavLink, Outlet, Link, ScrollRestoration, useLocation } from 'react-router';
+import { NavLink, Outlet, Link, ScrollRestoration, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { signOut } from '@/api/client';
 import { useMe } from '@/context/MeContext';
@@ -7,8 +7,10 @@ import { LANGUAGES, setLanguage } from '@/i18n';
 import { chooseTheme, currentChoice, nextChoice, subscribeTheme, type ThemeChoice } from '@/lib/theme';
 import { SAVED_ENABLED } from '@/lib/features';
 import { RESULTS_PATH } from '@/lib/searchState';
+import { takeSignInReturn } from '@/lib/signInReturn';
 import { Logo } from './Logo';
 import { OneBox } from './OneBox';
+import { SignIn } from './SignIn';
 
 /** Each choice's 18px stroke icon: the device for "follow system", else the sun or the moon. */
 const THEME_ICON: Record<ThemeChoice, ReactNode> = {
@@ -62,6 +64,8 @@ export function Header() {
               </select>
             </label>
           )}
+          {/* The admin page has its own sign-in. */}
+          {!me.authenticated && !pathname.startsWith('/admin') && <SignIn className="btn" />}
           {me.authenticated && (
             <span className="auth">
               <Link to="/account" className="small" title={t('nav.account')}>{me.displayName ?? t('nav.signedIn')}</Link>
@@ -163,6 +167,26 @@ function RouteFocus() {
   return <p ref={live} className="sr-only" aria-live="polite" aria-atomic="true" />;
 }
 
+/**
+ * After GitHub sends a signed-in visitor back, goes to the page where they clicked "Sign in" (ADR 0035). A failed
+ * sign-in (?signin=failed) drops the stored page and says so.
+ */
+function SignInReturn() {
+  const { t } = useTranslation();
+  const { me, loaded } = useMe();
+  const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const { pathname } = useLocation();
+  const failed = params.get('signin') === 'failed';
+  useEffect(() => {
+    if (!loaded || (!me.authenticated && !failed)) return;
+    const path = takeSignInReturn();
+    if (me.authenticated && path) navigate(path, { replace: true });
+  }, [loaded, me.authenticated, failed, navigate]);
+  // The admin page says it in its own words.
+  return failed && !pathname.startsWith('/admin') ? <p role="alert" className="banner banner-warn">{t('nav.signInFailed')}</p> : null;
+}
+
 export function Layout() {
   const { t } = useTranslation();
   return (
@@ -173,6 +197,7 @@ export function Layout() {
       <RouteFocus />
       <Header />
       <main id="main" tabIndex={-1} className="container main">
+        <SignInReturn />
         <Outlet />
       </main>
       <Footer />

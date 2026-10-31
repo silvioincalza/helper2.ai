@@ -14,3 +14,5 @@
 .h2-saved__title a:hover { text-decoration: underline; }
 .h2-saved__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); }
 .h2-saved__actions .ext-link { min-height: var(--target-min); display: inline-flex; align-items: center; }
+
+.h2-saved__signin { margin-top: var(--space-3); }
