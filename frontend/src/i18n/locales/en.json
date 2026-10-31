@@ -327,7 +327,6 @@
     "status": "Page {{page}} of {{pages}}"
   },
   "detail": {
-    "backToSearch": "Back to search",
     "backToResults": "Back to results",
     "notFound": "Resource not found",
     "notFoundBody": "It is not in the Helper2 index: it may have been removed, or the link is wrong. Search for it with the box above.",
