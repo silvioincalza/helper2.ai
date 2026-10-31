@@ -48,3 +48,9 @@
 .h2-picks__line { flex-basis: 100%; margin: 0; font: 400 14px/21px var(--font-sans); color: var(--ink-2); }
 .h2-picks.is-none .h2-picks__line { flex-basis: auto; }
 .h2-picks__list { flex-basis: 100%; }
+
+/* Type tabs: a row of filter buttons with counts; the pressed one is underlined (results, saved). */
+.h2-tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--border); }
+.h2-tab { min-height: 46px; padding: 0 var(--space-3); border: 0; border-bottom: 3px solid transparent; background: none; color: var(--muted); font: 500 0.875rem/1 var(--font-sans); white-space: nowrap; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.h2-tab[aria-pressed='true'] { color: var(--ink); border-bottom-color: var(--accent); }
+.h2-tab__n { font: 500 12px/1 var(--font-mono); }

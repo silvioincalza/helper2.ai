@@ -127,6 +127,16 @@ Built (step 5, States; only while the flag is on):
   unavailable is an alert with retry. Status lines use `role=status`, failures `role=alert`.
 - `frontend/src/pages/NotFoundPage.tsx` — the 404 page points to the search box in the header and the home page.
 
+Built (step 6, Saved, Sources and your account; only while the flag is on):
+- `frontend/src/components/saved/SavedV2.tsx` — the saved page, still behind `SAVED_ENABLED`: type tabs when there
+  is more than one type, one row per item (type, host, saved date, title, the original link, Remove). A saved item
+  keeps no quote, so the row shows none. `saved-v2.css` also holds the page head shared with the sources page.
+- `frontend/src/components/sources/SourcesV2.tsx` — the sources page: how a search works, the source modes in use,
+  a summary of the last checks, mode chips, and one card per source with its last check in words, what it covers,
+  its terms and attribution. The sources list has no response time, so the cards show none. `sources-v2.css`.
+- `frontend/src/pages/AccountPage.tsx` — the same behaviour and words in the text-page look (`text-v2.css`).
+- `frontend/src/components/ui/ui.css` — the type tabs, now shared by results and saved.
+
 Planned:
 - `frontend/src/components/SourceStatusPanel.tsx`, `Layout.tsx` — header and footer on the other pages.
 - `tokens.css` — the sizes (`content-wide`, `list-max`) and motion (`radar-sweep`) of `tokens.json` v3, with the

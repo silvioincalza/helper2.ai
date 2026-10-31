@@ -7,10 +7,6 @@
 .h2-pick-chip:hover { border-color: var(--accent); }
 .h2-pick-chip b { font: 600 11px/1 var(--font-mono); color: var(--accent-ink); }
 .h2-results__full summary, .h2-results__filters summary { min-height: var(--target-min); display: inline-flex; align-items: center; cursor: pointer; color: var(--accent-deep); font-weight: 600; }
-.h2-tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--border); }
-.h2-tab { min-height: 46px; padding: 0 var(--space-3); border: 0; border-bottom: 3px solid transparent; background: none; color: var(--muted); font: 500 0.875rem/1 var(--font-sans); white-space: nowrap; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
-.h2-tab[aria-pressed='true'] { color: var(--ink); border-bottom-color: var(--accent); }
-.h2-tab__n { font: 500 12px/1 var(--font-mono); }
 .h2-split { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-5); }
 .h2-list { flex: 1 1 380px; min-width: 0; max-width: 460px; }
 .h2-list > ul > li { margin-bottom: var(--space-1); }
