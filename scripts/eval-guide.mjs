@@ -41,7 +41,8 @@ const intents = args.includes('--intents');
 const minPassAt = args.indexOf('--min-pass');
 const minPass = minPassAt >= 0 ? Number(args[minPassAt + 1]) : null;
 if (minPass != null && !(minPass >= 0 && minPass <= 1)) throw new Error('--min-pass takes a share between 0 and 1, for example 0.5');
-const base = (args.find((a, i) => !a.startsWith('--') && i !== minPassAt + 1) ?? 'http://localhost:8080').replace(/\/$/, '');
+// The share after --min-pass is not the base URL; without the option, every bare argument may be.
+const base = (args.find((a, i) => !a.startsWith('--') && (minPassAt < 0 || i !== minPassAt + 1)) ?? 'http://localhost:8080').replace(/\/$/, '');
 const QUERY_FILE = adversarial ? 'guide-adversarial.json' : intents ? 'guide-intents.json' : 'guide-queries.json';
 const queries = JSON.parse(await readFile(new URL(`../docs/eval/${QUERY_FILE}`, import.meta.url), 'utf8'));
 const qrels = await readQrels(new URL('../docs/eval/guide-qrels.tsv', import.meta.url));
