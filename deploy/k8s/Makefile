@@ -1,12 +1,11 @@
 # helper2 on the incalza.me cluster, ENV=staging (helper2.incalza.me) or ENV=prod (helper2.ai).
 # Run from the workstation with the mesh (WireGuard) up.
 #
-# Required environment — the platform repo's .env / .secrets.env carry the first five:
-#   KUBECONFIG  R2_ACCESS_KEY_ID  R2_SECRET_ACCESS_KEY  TF_STATE_BUCKET  CF_ACCOUNT_ID  BAO_ADDR
+# Required environment: KUBECONFIG and BAO_ADDR, from the platform repo:
 #   set -a; . <incalza-me-infra>/.env; . <incalza-me-infra>/.secrets.env; set +a
 #   export KUBECONFIG=<incalza-me-infra>/.secrets/kubeconfig
+# The platform repo (incalza-me-infra) owns the namespaces, the Ingresses, DNS and the deployer RBAC.
 #
-#   make ENV=staging bootstrap   once per env: namespace + tunnel + DNS (+ www redirect in prod)
 #   make image                   build linux/amd64 image, push to Harbor (robot from OpenBao helper2/kv ci/harbor)
 #   make ENV=staging diff        what the next deploy would change
 #   make ENV=staging deploy      helm upgrade --install (chart ../helm/helper2) with TAG, wait, roll back on failure
@@ -15,7 +14,6 @@
 
 SHELL    := /bin/bash
 ROOT     := $(abspath ../..)
-TF       := terraform -chdir=terraform
 REGISTRY := harbor-i.infra.incalza.me
 IMAGE    := $(REGISTRY)/helper2/apps/helper2
 CHART    := ../helm/helper2
@@ -34,33 +32,14 @@ ifeq ($(filter $(ENV),staging prod),)
 $(error ENV must be staging or prod)
 endif
 
-export AWS_ACCESS_KEY_ID      = $(R2_ACCESS_KEY_ID)
-export AWS_SECRET_ACCESS_KEY  = $(R2_SECRET_ACCESS_KEY)
-export TF_VAR_kubeconfig_path = $(KUBECONFIG)
-export TF_VAR_environment     = $(ENV)
-
-.PHONY: help init plan bootstrap credentials backup-credentials image postgres-image chart-check check-env release-ready deploy diff rollback status
+.PHONY: help credentials backup-credentials image postgres-image chart-check check-env release-ready deploy diff rollback status
 
 help: ## this list
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
 
-# One state per environment (helper2-staging.tfstate, helper2-prod.tfstate); -reconfigure switches.
-init: ## terraform init against the state of ENV
-	@test -n "$(TF_STATE_BUCKET)" || { echo "TF_STATE_BUCKET is not set"; exit 1; }
-	@test -n "$(CF_ACCOUNT_ID)"   || { echo "CF_ACCOUNT_ID is not set"; exit 1; }
-	@printf 'bucket = "%s"\nkey = "$(NS).tfstate"\nregion = "auto"\nendpoints = { s3 = "https://%s.r2.cloudflarestorage.com" }\n' \
-		"$(TF_STATE_BUCKET)" "$(CF_ACCOUNT_ID)" > terraform/backend.hcl
-	$(TF) init -input=false -reconfigure -backend-config=backend.hcl
-
-plan: init ## what bootstrap would change
-	$(TF) plan -input=false
-
-bootstrap: init ## namespace + tunnel + DNS + tunnel token secret
-	$(TF) apply -input=false
-
 # What the CI deploy job of ENV reads (helper2/kv ci/<env>): the deployer's kubeconfig and app.env.
 # Needs a BAO_TOKEN with helper2-write: `export BAO_TOKEN=$(bao login -method=oidc -path=oidc -token-only role=helper2-operator)`.
-# Run after bootstrap, and again after an app.env change or a token rotation.
+# Run once per env, and again after an app.env change or a token rotation.
 API_SERVER ?= https://10.0.0.40:6443
 credentials: check-env ## write ENV's deployer kubeconfig + app.env to OpenBao for CI
 	@set -euo pipefail; \
