@@ -92,7 +92,7 @@ export function ResultsV2() {
       )}
       {shown && (
         <div className={search.loading ? 'is-stale' : undefined} aria-busy={search.loading}>
-          <ResultsBody res={shown} state={state} update={update} retry={search.reload} picks={picks} ask={asked ? undefined : () => ask(state.q)} />
+          <ResultsBody res={shown} state={state} update={update} retry={search.reload} picks={picks} ask={asked || !clampQuestion(state.q) ? undefined : () => ask(state.q)} />
         </div>
       )}
     </div>
