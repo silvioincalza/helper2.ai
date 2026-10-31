@@ -177,6 +177,53 @@ tests:
               description: "33.33% of the picks kept in the last day were ranked 9+ in search. A page may be written to be chosen by the model (content poisoning)."
               runbook: "Logs: 'guide timings' lines with keptRanks containing 9 or more, then ask the same question and read the low-ranked pick's page for instructions aimed at a model. Report the resource from the back office; rerun scripts/eval-guide.mjs --adversarial."
 
+  # Guide first useful event: prod has a third of its questions above 8 s and fires after the 15 minutes of `for`;
+  # staging is fast; dev is slow but below the floor of 3 questions in 15 minutes.
+  - interval: 1m
+    input_series:
+      - series: 'helper2_guide_first_useful_seconds_bucket{application="helper2", environment="prod", intent="suggest", le="3.0"}'
+        values: '0+3x40'
+      - series: 'helper2_guide_first_useful_seconds_bucket{application="helper2", environment="prod", intent="suggest", le="8.0"}'
+        values: '0+4x40'
+      - series: 'helper2_guide_first_useful_seconds_bucket{application="helper2", environment="prod", intent="suggest", le="30.0"}'
+        values: '0+6x40'
+      - series: 'helper2_guide_first_useful_seconds_bucket{application="helper2", environment="prod", intent="suggest", le="+Inf"}'
+        values: '0+6x40'
+      - series: 'helper2_guide_first_useful_seconds_count{application="helper2", environment="prod", intent="suggest"}'
+        values: '0+6x40'
+      - series: 'helper2_guide_first_useful_seconds_bucket{application="helper2", environment="staging", intent="suggest", le="3.0"}'
+        values: '0+6x40'
+      - series: 'helper2_guide_first_useful_seconds_bucket{application="helper2", environment="staging", intent="suggest", le="8.0"}'
+        values: '0+6x40'
+      - series: 'helper2_guide_first_useful_seconds_bucket{application="helper2", environment="staging", intent="suggest", le="30.0"}'
+        values: '0+6x40'
+      - series: 'helper2_guide_first_useful_seconds_bucket{application="helper2", environment="staging", intent="suggest", le="+Inf"}'
+        values: '0+6x40'
+      - series: 'helper2_guide_first_useful_seconds_count{application="helper2", environment="staging", intent="suggest"}'
+        values: '0+6x40'
+      - series: 'helper2_guide_first_useful_seconds_bucket{application="helper2", environment="dev", intent="suggest", le="8.0"}'
+        values: '0x40'
+      - series: 'helper2_guide_first_useful_seconds_bucket{application="helper2", environment="dev", intent="suggest", le="30.0"}'
+        values: '0+0.1x40'
+      - series: 'helper2_guide_first_useful_seconds_bucket{application="helper2", environment="dev", intent="suggest", le="+Inf"}'
+        values: '0+0.1x40'
+      - series: 'helper2_guide_first_useful_seconds_count{application="helper2", environment="dev", intent="suggest"}'
+        values: '0+0.1x40'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: Helper2GuideFirstUsefulSlow
+        exp_alerts: []
+      - eval_time: 20m
+        alertname: Helper2GuideFirstUsefulSlow
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              environment: prod
+            exp_annotations:
+              summary: "The guide takes more than 8 s to show its first useful step at p95 (prod)."
+              description: "The p95 time from a guide question to its results or question back was 26.7s over the last 15 minutes, above the 8 s target, for 15 minutes."
+              runbook: "Dashboard row 'AI guide', 'Time to first useful event by intent', then 'Model call p95 by step / model' (step plan) and 'Source latency p95' (the search). Logs: 'guide timings' lines, plan= and search=. A slow provider: Token Factory status; a slow source: Helper2SourceFailing."
+
   # Rate-limit fallback: any decision made in memory fires at once.
   - interval: 1m
     input_series:

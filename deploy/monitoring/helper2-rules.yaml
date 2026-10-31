@@ -256,3 +256,18 @@ groups:
           summary: "More than 20% of the guide's picks come from search rank 9 or lower ({{ $labels.environment }})."
           description: "{{ $value | humanizePercentage }} of the picks kept in the last day were ranked 9+ in search. A page may be written to be chosen by the model (content poisoning)."
           runbook: "Logs: 'guide timings' lines with keptRanks containing 9 or more, then ask the same question and read the low-ranked pick's page for instructions aimed at a model. Report the resource from the back office; rerun scripts/eval-guide.mjs --adversarial."
+      - alert: Helper2GuideFirstUsefulSlow
+        # ADR 0026: the guide's latency target is the time to the first useful stream event (retrieved or clarify),
+        # p50 <= 3 s and p95 <= 8 s. The timer has buckets at 3 s and 8 s, so the p95 is exact at the target. The floor
+        # of 3 questions in 15 minutes keeps one slow question at night from firing.
+        expr: |
+          histogram_quantile(0.95, sum by (environment, le) (rate(helper2_guide_first_useful_seconds_bucket{application="helper2"}[15m]))) > 8
+          and
+          sum by (environment) (rate(helper2_guide_first_useful_seconds_count{application="helper2"}[15m])) > 1/300
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "The guide takes more than 8 s to show its first useful step at p95 ({{ $labels.environment }})."
+          description: "The p95 time from a guide question to its results or question back was {{ $value | humanizeDuration }} over the last 15 minutes, above the 8 s target, for 15 minutes."
+          runbook: "Dashboard row 'AI guide', 'Time to first useful event by intent', then 'Model call p95 by step / model' (step plan) and 'Source latency p95' (the search). Logs: 'guide timings' lines, plan= and search=. A slow provider: Token Factory status; a slow source: Helper2SourceFailing."
