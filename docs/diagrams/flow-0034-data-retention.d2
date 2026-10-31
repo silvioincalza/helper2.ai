@@ -6,7 +6,8 @@
 #   identity/IdentityRetentionSchedule.java, identity/internal/Users.java, AuditLog.java,
 #   backend/src/main/kotlin/ai/helper2/search/usecase/PurgeExpiredData.kt, search/config/SearchRetentionSchedule.java,
 #   search/internal/JdbcWebResultStore.java, platform/cache/SharedCacheConfiguration.java, SharedCacheRetention.java,
-#   db/migration/V1__schema.sql.
+#   backend/src/main/kotlin/ai/helper2/guide/usecase/PurgeExpiredData.kt, guide/internal/GuideRetentionSchedule.java,
+#   guide/internal/JdbcSimilarQuestionIndex.java, db/migration/V1__schema.sql.
 # Render: cd docs/diagrams && d2 fmt flow-0034-data-retention.d2 && d2 flow-0034-data-retention.d2 flow-0034-data-retention.svg
 
 ...@style
@@ -14,7 +15,7 @@
 direction: down
 
 cron: "@Scheduled helper2.retention.cron\n(default 0 17 3 * * *, UTC),\non every replica" {class: end}
-lock: "ClusterLocks.keptAlive: this module's\nlock free? (retention-catalog,\nretention-scout, retention-identity,\nretention-search,\nretention-shared-cache)" {class: decision}
+lock: "ClusterLocks.keptAlive: this module's\nlock free? (retention-catalog,\nretention-scout, retention-identity,\nretention-search, retention-guide,\nretention-shared-cache)" {class: decision}
 skip: "Another replica purges today" {class: end}
 
 catalog: "catalog.usecase.PurgeExpiredData (in this order)" {
@@ -58,6 +59,12 @@ shared: "shared cache purge (platform)" {
   expired: "SharedCacheRetention:\nai_cache expires_at ≤ now\n(reads already skip them)" {class: data}
 }
 
+guide: "guide purge" {
+  class: group
+  direction: down
+  questions: "guide.usecase.PurgeExpiredData:\nguide_similar_question\npast expires_at" {class: data}
+}
+
 cascade: "ON DELETE CASCADE: records, labels, embeddings,\nevidence, assertions, claims of a resource;\nON DELETE SET NULL: links that outlive their target;\nNO ACTION: a run a current row cites stays" {class: data}
 logged: "Each logs what it deleted;\na failure is logged, the next\nday's run catches up" {class: end}
 
@@ -68,10 +75,12 @@ lock -> scout.sruns: "yes (scout)"
 lock -> identity.users: "yes (identity)"
 lock -> search.sets: "yes (search)"
 lock -> shared.expired: "yes (shared cache)"
+lock -> guide.questions: "yes (guide)"
 catalog.ref -> cascade: "yes: deleted" {class: hot}
 catalog.ref -> catalog.later: no
 scout.sruns -> logged
 identity.audit -> logged
 search.sets -> logged
 shared.expired -> logged
+guide.questions -> logged
 cascade -> logged

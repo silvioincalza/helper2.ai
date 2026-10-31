@@ -22,25 +22,29 @@ The guards run in this order. Values are defaults; each has an `H2_` variable.
    slot is free from the deadline on. The question metric records outcome `timeout`. On the stream, a question that
    got a slot receives a `:keep-alive` comment every `H2_GUIDE_HEARTBEAT` (15 s) until its last event
    ([0015](0015-ai-guide-evidence-gate.md)).
-3. **Answer cache** (`GuideAnswerCache`): key = request trimmed, lower-cased, spaces collapsed | audience path |
-   config hash. The config hash is the first 16 hex characters of a Secure Hash Algorithm (SHA-256) hash over provider, both model ids, the rendered
-   prompts, thinking flags, token limits, candidate text size, the validator's limits, the comparison and explanation
-   limits (`AnswerLimits`) and `maxCandidates`. A new prompt
-   or limit therefore never serves old answers. Memory first (500 entries, least recently used out), then Redis
-   (`RedisGuideAnswerStore`, key `h2:v2:guide-answer:<build>:<sha256 of the key>`, versioned JSON). `<build>` is
-   the running build (`H2_BUILD_VERSION`, the image tag the chart passes): a restart keeps the answers, a deploy
-   starts empty, so a change in how the guide reads or answers is seen at once and never hidden for 24 h by answers
-   of the old code. Time to live (TTL) `H2_GUIDE_CACHE_TTL`
-   (24 h), counted from the answer's `generatedAt`, which the page shows; an answer built on web results lives only
-   as long as they are fresh, and one built on stale ones is not cached ([0037](../search/0037-tavily-store-and-daily-quota.md)). Only complete artificial intelligence (AI) answers are cached: model
-   used, at least one AI pick, and no AI pick with reason `NOT_CHECKED`. Redis calls run under the `redis` policy ([0033](../foundation/0033-resilience-policies.md)).
+3. **Answer cache** (`GuideAnswerCache`, [0041](0041-guide-answer-cache.md)): key = SHA-256 of the normalised
+   question | audience path | config hash | clarification | removed parts. The config hash is the first 16 hex
+   characters of a Secure Hash Algorithm (SHA-256) hash over provider, both model ids, the rendered prompts, thinking
+   flags, token limits, candidate text size, the validator's limits, the comparison and explanation limits
+   (`AnswerLimits`) and `maxCandidates`. A new prompt or limit therefore never serves old answers. Answers live in
+   the shared cache `guide-answer` in PostgreSQL (`ai_cache`, `SharedGuideAnswerStore`, versioned JSON), shared by
+   every replica, per build
+   (`H2_BUILD_VERSION`, the image tag the chart passes): a restart keeps the answers, a deploy starts empty, so a
+   change in how the guide reads or answers is seen at once and never hidden for 24 h by answers of the old code.
+   Time to live (TTL) `H2_GUIDE_CACHE_TTL` (24 h), counted from the answer's `generatedAt`, which the page shows; an
+   answer built on web results lives only as long as they are fresh, and one built on stale ones is not cached
+   ([0037](../search/0037-tavily-store-and-daily-quota.md)). Only complete artificial intelligence (AI) answers are
+   cached: model used, at least one AI pick, and no AI pick with reason `NOT_CHECKED`. With
+   `H2_GUIDE_SIMILAR_THRESHOLD` set, a question that misses the key is planned and then answered with the cached
+   answer of a near-identical question read the same way ([0041](0041-guide-answer-cache.md) §3).
 4. **Single-flight**: questions in progress are tracked by cache key. A second asker of the same question waits for the
    first answer (outcome `shared`) and shares its failure. On the stream it gets no step events, only the
    keep-alive comments, so its connection does not look dead.
 5. **Per-client daily quota** (`ClientQuota`): `H2_GUIDE_CLIENT_DAILY_QUESTIONS` (30) fresh questions per client per day
    (Coordinated Universal Time, UTC), per `ClientKey`. Counted with a `DailyBudget` named
    `guide-client:<16 hex of SHA-256(client)>`, so no address is stored. Past the quota the client gets a search-only
-   answer with the notice `GUIDE_DAILY_QUOTA`, not an error. Cached and shared answers do not count. In memory,
+   answer with the notice `GUIDE_DAILY_QUOTA`, not an error. Cached and shared answers do not count; a question answered with a similar question's answer
+   counts, because its plan ran ([0041](0041-guide-answer-cache.md)). In memory,
    `ClientQuota` keeps only today's clients, at most 10,000 (`MAX_CLIENTS`; the least recently seen leaves first),
    and drops them all when the day changes.
 6. **Global daily cap** (`H2_GUIDE_DAILY_MODEL_CALLS`, 600): one unit before each model attempt
@@ -48,9 +52,9 @@ The guards run in this order. Values are defaults; each has an `H2_` variable.
    unit. When spent, plan or choose fails with `GuideBudgetExhausted` and the answer is the degraded one; the reason
    check leaves reasons `NOT_CHECKED`. Gauge `helper2.guide.budget.remaining`.
 7. **Daily web searches** ([0037](../search/0037-tavily-store-and-daily-quota.md)): the question's searches take one web search
-   from the asker's guide quota (3 a day for a guest), at the first live Tavily call; a cached or shared answer takes
-   none. Every answer states what the asker has left (`webSearches`).
-8. **Metrics**: `helper2.guide.cache` (hit, miss) and `helper2.guide.questions` with outcome `cached`, `shared`,
+   from the asker's guide quota (3 a day for a guest), at the first live Tavily call; a cached, shared or reused answer
+   takes none. Every answer states what the asker has left (`webSearches`).
+8. **Metrics**: `helper2.guide.cache` (`exact`, `similar`, `miss`) and `helper2.guide.questions` with outcome `cached`, `shared`,
    `client_quota`, `answered`, `degraded`, `budget_exhausted`, `model_unavailable`, `no_candidates`, `timeout`, `error`.
 
 ## Consequences
@@ -59,29 +63,30 @@ The guards run in this order. Values are defaults; each has an `H2_` variable.
 - Repeated example questions are free and instant; a cached answer is honest about its age.
 - The rate limit and the daily counts (quota, global cap) are in Redis and hold across replicas
   ([0027](../operations/0027-runtime-topology.md): 3 on prod).
-- An answer stored in Redis serves every replica.
+- An answer stored in PostgreSQL serves every replica.
 - The quota's memory is bounded (10,000 clients a day), and no client address is stored.
 
 ## Alternatives considered
 - Global cap only — one client could spend the day in about twenty minutes at 10 per minute.
-- Cache in memory only — a deploy or restart throws away answers that cost 3 calls each.
+- Cache in memory only — a restart throws away answers that cost 3 calls each, and each replica pays for its own.
 - Cache without a config hash — a changed prompt or model would serve answers of the old one for 24 hours.
 - Error (429) past the quota — the search-only answer is still useful and explains itself.
 - Queue extra questions instead of 503 — a queue hides overload and makes every user wait longer.
 
 ## Code
-- `backend/src/main/kotlin/ai/helper2/guide/GuideCost.kt` — `ClientQuota`, `GuideAnswerCache`, `GuideAnswerStore`.
+- `backend/src/main/kotlin/ai/helper2/guide/GuideCost.kt` — `ClientQuota`, `GuideAnswerCache`, `GuideAnswerStore`;
+  `SimilarQuestions.kt` ([0041](0041-guide-answer-cache.md)).
 - `backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt` — `AskGuide.ask` (order of the guards, config hash, single-flight).
 - `backend/src/main/java/ai/helper2/guide/web/GuideLimits.java` — slot in the `guide` bulkhead and deadline.
 - `backend/src/main/kotlin/ai/helper2/guide/AnswerLimits.kt` — comparison and explanation limits in the config hash.
 - `backend/src/main/java/ai/helper2/guide/web/GuideStreamController.java` — keep-alive comments.
 - `backend/src/main/java/ai/helper2/platform/ClientKey.java` — the client key for the rate limits and the quota.
-- `backend/src/main/java/ai/helper2/guide/internal/RedisGuideAnswerStore.java`, `GuideConfiguration.java`.
+- `backend/src/main/java/ai/helper2/guide/internal/SharedGuideAnswerStore.java`, `GuideConfiguration.java`.
 - `backend/src/main/java/ai/helper2/platform/RateLimitInterceptor.java`, `RateLimiter.java`.
 
 ## Diagrams
 [flow](../../diagrams/flow-0017-guide-cost-guard.svg) · [sequence](../../diagrams/sequence-0017-guide-cost-guard.svg)
 
 ## Roadmap
-- [In-memory answer cache, single-flight and concurrency limit stay per replica, on purpose](../../roadmap.md#4-more-than-one-replica)
+- [Single-flight and concurrency limit stay per replica, on purpose](../../roadmap.md#4-more-than-one-replica)
 - Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

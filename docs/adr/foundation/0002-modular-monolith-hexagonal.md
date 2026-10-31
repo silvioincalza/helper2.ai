@@ -19,7 +19,7 @@ internals. Microservices would add network calls and deploys without a scaling n
 2. **Hexagonal where the business rules are.** The top-level packages `search`, `scout`, `guide`, `setup` and
    `shared` hold the rules in Kotlin. They talk to the outside only through ports (Kotlin interfaces), for
    example `SearchSource`, `SearchCache`, `ResultObserver`, `QueryTranslator` (search), `Collector`,
-   `EnrichmentModel`, `ScoutStore`, `CatalogIndex` (scout), `GuideModel`, `GuideAnswerStore` (guide).
+   `EnrichmentModel`, `ScoutStore`, `CatalogIndex` (scout), `GuideModel`, `GuideAnswerStore`, `SimilarQuestionIndex`, `SimilarQuestionRetention`, `QuestionEmbedder` (guide).
 3. **Adapters in Java, in sub-packages.** `web` (controllers), `cache`, `config` and `internal`
    (Spring AI, Redis, Java Database Connectivity (JDBC)). The `sources` module implements `SearchSource` and `Collector` for each
    public application programming interface (API). The `catalog` module implements `ResultObserver`, `RecordedOutcomes` and two

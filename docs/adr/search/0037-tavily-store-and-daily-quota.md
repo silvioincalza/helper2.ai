@@ -57,11 +57,13 @@ used up. The counts must hold across 3 replicas, store no address and no query t
    fails closed for the same reason ([0006](../foundation/0006-outbound-http.md)).
 6. **What is left, in every answer.** `SearchResponse.webSearches` and `GuideResponse.webSearches`
    (`{limit, remaining}`, null without an enabled metered source or a readable count) show the visitor's web searches
-   left today for that feature. A cached guide answer gets the current asker's count, never the first asker's.
+   left today for that feature. A cached guide answer, or one reused for a similar question
+   ([0041](../guide/0041-guide-answer-cache.md)), takes no web search and gets the current asker's count, never the first asker's.
    `GET /api/v1/sources` shows the credits of the day and the cap on the metered source
    (`webCredits {usedToday, dailyCap}`, `WebSearchQuota.creditsToday`, [0008](0008-federated-search.md)): one read, no count.
-7. **Guide answers live no longer than their web results.** Answer TTL = min(24 h, freshness left of the web results
-   it used); an answer built on stale web results is not cached ([0017](../guide/0017-guide-cost-guard.md)).
+7. **Guide answers live no longer than their web results.** Guide answers are kept in PostgreSQL
+   (the shared cache `ai_cache`, [0041](../guide/0041-guide-answer-cache.md)). Answer TTL = min(24 h, freshness left of the web
+   results it used); an answer built on stale web results is not cached ([0017](../guide/0017-guide-cost-guard.md)).
 8. **Credits are measured.** `helper2.tavily.credits{feature,tier}` counts every live call (`none` for internal
    callers). Alert `Helper2TavilyCreditsHigh` when more than 30 credits were spent in 24 h, the share the free plan
    leaves after the Scout.

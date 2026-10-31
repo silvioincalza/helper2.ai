@@ -277,7 +277,7 @@ logging:
 
 helper2:
   build:
-    # The running build (the chart passes the image tag). Guide answers in Redis are kept per build.
+    # The running build (the chart passes the image tag). Cached guide answers are kept per build.
     version: ${H2_BUILD_VERSION:local}
   # Where sign-in returns to (the SPA). "/" when the SPA is served by the backend itself.
   frontend-url: ${H2_FRONTEND_URL:/}
@@ -306,7 +306,9 @@ helper2:
     # The streamed guide sends a keep-alive comment this often while a question runs (the client gives up after 45 s).
     heartbeat: ${H2_GUIDE_HEARTBEAT:PT15S}
     cache-ttl: ${H2_GUIDE_CACHE_TTL:PT24H}
-    cache-max-entries: 500
+    # Reuse the cached answer of a question read the same way whose embedding is at least this close (cosine,
+    # ADR 0041). Empty: off, no question is embedded. Needs H2_NVIDIA_API_KEY.
+    similar-threshold: ${H2_GUIDE_SIMILAR_THRESHOLD:}
     # How many retrieved results Nemotron 3 Super chooses from (ADR 0015). 24 beat 12 in the 20-query
     # evaluation of 26 Oct 2026 (docs/eval/run-8-12-candidates.md vs docs/evaluation.md).
     max-candidates: ${H2_GUIDE_MAX_CANDIDATES:24}

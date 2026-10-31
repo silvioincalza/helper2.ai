@@ -6,7 +6,8 @@
 #   backend/src/main/resources/application.yaml (resilience4j.bulkhead.instances.guide, llm-chat circuit),
 #   backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (AskGuide.ask),
 #   backend/src/main/kotlin/ai/helper2/guide/GuideCost.kt (ClientQuota, GuideAnswerCache),
-#   backend/src/main/java/ai/helper2/guide/internal/RedisGuideAnswerStore.java, GuideConfiguration.java.
+#   backend/src/main/java/ai/helper2/guide/internal/SharedGuideAnswerStore.java, GuideConfiguration.java.
+#   Normalised keys and the reuse of a similar question's answer: flow-0041.
 #   The searches of a question take the asker's daily web searches (flow-0037), not drawn here.
 # Render: cd docs/diagrams && d2 fmt flow-0017-guide-cost-guard.d2 && d2 flow-0017-guide-cost-guard.d2 flow-0017-guide-cost-guard.svg
 
@@ -19,21 +20,21 @@ rate: "Rate limit: 10 per minute\nper client (IPv6 by /64),\nshared by both endp
 r429: "429 Too Many Requests\n+ Retry-After" {class: fail}
 slot: "GuideLimits: free slot in\nthe guide bulkhead?\n(H2_GUIDE_MAX_CONCURRENT 8)" {class: decision}
 busy: "503 Guide busy\n(error event on the stream)" {class: fail}
-key: "Cache key: normalised text |\npath | config hash" {class: app}
-cache: "Answer cache hit?\nmemory, then Redis" {class: decision}
+key: "Cache key: SHA-256 of normalised\ntext | path | config hash (ADR 0041)" {class: app}
+cache: "Answer cache hit?\n(shared cache guide-answer,\nPostgreSQL)" {class: decision}
 cached: "Cached answer\n(same generatedAt)" {class: end}
 flight: "Same key already\nbeing answered?" {class: decision}
 shared: "Wait for that answer\n(single-flight; the stream\ngets only :keep-alive)" {class: end}
 quota: "ClientQuota: fresh question\nleft today for this ClientKey?\n(H2_GUIDE_CLIENT_DAILY_QUESTIONS 30)" {class: decision}
 searchOnly: "Search-only answer\n+ notice GUIDE_DAILY_QUOTA" {class: end}
-run: "Plan → search → choose →\nvalidate → reason check" {class: ai}
+run: "Plan; a similar question's\ncached answer (ADR 0041), or\nsearch → choose → validate →\nreason check" {class: ai}
 circuit: "llm-chat circuit closed?\n(each model attempt)" {class: decision}
 budget: "Global daily budget unit\nbefore each model attempt?\n(H2_GUIDE_DAILY_MODEL_CALLS 600)" {class: decision}
 degraded: "Degraded answer\n(top search results)" {class: fail}
 deadline: "Deadline passed?\n(H2_GUIDE_QUESTION_DEADLINE 90 s)" {class: decision}
 timeout: "504 Guide timed out,\nworker interrupted" {class: fail}
 cacheable: "Cacheable? AI pick, no reason\nNOT_CHECKED, web results it used\nstill fresh" {class: decision}
-store: "Store in memory and Redis for\nmin(24 h, freshness left of its\nweb results, ADR 0037)" {class: data}
+store: "Store in the shared cache for\nmin(24 h, freshness left of its\nweb results, ADR 0037)" {class: data}
 answer: "Answer" {class: end}
 
 ask -> rate

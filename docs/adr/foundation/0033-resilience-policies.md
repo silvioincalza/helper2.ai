@@ -5,7 +5,7 @@
 
 ## Context
 Every search calls up to six public application programming interfaces (APIs) plus the catalog, the Scout calls seven
-more in the background, Redis sits on the path of every request (cache, budgets, rate limits, guide answers), the
+more in the background, Redis sits on the path of every request (cache, budgets, rate limits), the
 shared caches of model answers read PostgreSQL before a model call, the
 guide, the query translation, the setup guide, the Scout's enrichment and the awesome-list classifier call the model
 provider, and search queries and the indexer call the embedding API.
@@ -34,8 +34,8 @@ The domain (Kotlin) must not depend on the library that implements them ([0002](
    |---|---|---|---|
    | `source-<id>` (github, hf-models, hf-spaces, npm, arxiv, tavily, helper2-index, helper2-semantic, curated) | count window 20, at least 10 calls, opens at 50% failed or slow (over 2 s; Tavily 5 s), open 30 s, 2 trial calls | 20 calls per replica, no wait; catalog sources 6 (below the database pool of 10) | none: the search deadline is the budget |
    | `collector-<id>` (the seven Scout collectors) | count window 10, at least 5 calls, 50%, open 1 min, 1 trial call | none: the Scout runs one collector at a time | 3 attempts, 1 s then ×2 with ±50% jitter, only on a transient failure |
-   | `redis` (search cache, guide answers, budget counters, rate limits, outbound throttle, session reads) | count window 10, at least 3 calls, 50%, open 30 s, 2 trial calls | none | none |
-   | `db-cache` (shared caches of model answers in `ai_cache`: translations, query vectors, setup guide answers, [0004](0004-persistence-and-provenance.md)) | count window 10, at least 3 calls, 50% failed or slow (over 250 ms), open 30 s, 2 trial calls; each statement also stops after 1 s | 2 calls per replica, no wait: with the catalog sources' 6, below the database pool of 10 | none: a miss costs one model call |
+   | `redis` (search cache, budget counters, rate limits, outbound throttle, session reads) | count window 10, at least 3 calls, 50%, open 30 s, 2 trial calls | none | none |
+   | `db-cache` (shared caches of model answers in `ai_cache`: translations, query vectors, setup guide answers, guide answers, [0004](0004-persistence-and-provenance.md)) | count window 10, at least 3 calls, 50% failed or slow (over 250 ms), open 30 s, 2 trial calls; each statement also stops after 1 s | 2 calls per replica, no wait: with the catalog sources' 6, below the database pool of 10 | none: a miss costs one model call |
    | `llm-chat` (every chat-model call: guide, query translation, setup guide, Scout enrichment, awesome-list classifier) | count window 10, at least 5 calls, 50%, open 30 s, 2 trial calls; only provider errors count (`ModelErrors.NotFromProvider` ignores a malformed answer and a spent budget) | none | none: every attempt is charged to a daily budget ([0014](../guide/0014-llm-integration.md)) |
    | `llm-embed` (every embedding call: search queries and the indexer) | as `llm-chat`, every failure counts | none | none |
    | `guide` (guide questions) | none | 8 questions per replica, no wait, held per question with `trySlot` by `GuideLimits` from start to end or deadline ([0017](../guide/0017-guide-cost-guard.md)) | none |
@@ -117,7 +117,7 @@ The domain (Kotlin) must not depend on the library that implements them ([0002](
 - `backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — `source-<id>`, `CIRCUIT_OPEN` and `BUSY`.
 - `backend/src/main/java/ai/helper2/sources/*/*Collector.java`, `support/TransientSourceFailure.java` — `collector-<id>` and what
   it retries; `support/HttpClients.java` — transient failures.
-- `backend/src/main/java/ai/helper2/search/cache/RedisSearchCache.java`, `guide/internal/RedisGuideAnswerStore.java`,
+- `backend/src/main/java/ai/helper2/search/cache/RedisSearchCache.java`,
   `platform/llm/RedisCallCounter.java`, `platform/RedisRateLimiter.java` — `redis`.
 - `backend/src/main/java/ai/helper2/platform/cache/SharedCaches.java`, `JdbcSharedCache.java` — `db-cache`.
 - `backend/src/main/java/ai/helper2/platform/http/ObservedHttp.java` — one request per attempt.

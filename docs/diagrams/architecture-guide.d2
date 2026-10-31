@@ -22,9 +22,9 @@ guide: "guide (Kotlin domain)" {
   gate: "GuideValidator\nverbatim quote, candidate keys" {class: app}
   quota: "ClientQuota · GuideAnswerCache" {class: app}
   p_model: GuideModel {class: port}
-  p_store: GuideAnswerStore {class: port}
+  p_store: "GuideAnswerStore\nSimilarQuestionIndex" {class: port}
   model: "SpringAiGuideModel" {class: app}
-  store: "RedisGuideAnswerStore" {class: app}
+  store: "SharedGuideAnswerStore\nJdbcSimilarQuestionIndex" {class: app}
   ctl -> quota
   quota -> core: {class: hot}
   core -> p_model: {class: ai-call}
@@ -43,7 +43,9 @@ platform: "platform.llm" {
   metrics: "ModelCallMetrics" {class: app}
 }
 
-redis: "Redis\nh2:v1:guide-answer:*\nh2:v1:budget:*" {shape: cylinder; class: data}
+redis: "Redis\nh2:v1:budget:*" {shape: cylinder; class: data}
+pg: "PostgreSQL + pgvector\nai_cache (guide-answer)\nguide_similar_question" {shape: cylinder; class: data}
+embed: "NVIDIA API catalog\nnemotron-3.5-embed-1b\n(similar questions, ADR 0041)" {class: ai}
 nebius: "Nebius Token Factory\nNano: plan\nSuper: choose, reason check" {class: ai}
 
 browser -> guide.ctl: "ask (SSE)" {class: hot}
@@ -52,5 +54,6 @@ guide.core -> platform.settings
 guide.core -> platform.budget: "check before each call"
 guide.core -> platform.metrics
 guide.model -> nebius: "plan, choose,\nreason check" {class: ai-call}
-guide.store -> redis
+guide.store -> pg
+guide.core -> embed: "question embedding\n(threshold set)" {class: ai-call}
 platform.budget -> redis

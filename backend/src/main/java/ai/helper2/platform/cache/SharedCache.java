@@ -15,7 +15,7 @@ import org.jspecify.annotations.Nullable;
  */
 public interface SharedCache {
 
-    /** The cache an entry belongs to ({@code translation}, {@code query-vector}, {@code tool-guide}). */
+    /** The cache an entry belongs to ({@code translation}, {@code query-vector}, {@code tool-guide}, {@code guide-answer}). */
     String name();
 
     @Nullable String get(String key);

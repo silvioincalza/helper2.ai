@@ -4,7 +4,7 @@
 #   backend/src/main/java/ai/helper2/guide/web/GuideLimits.java, GuideController.java,
 #   backend/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java (trySlot on the guide bulkhead),
 #   backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (AskGuide.ask), GuideCost.kt (ClientQuota, GuideAnswerCache),
-#   backend/src/main/java/ai/helper2/guide/internal/RedisGuideAnswerStore.java.
+#   backend/src/main/java/ai/helper2/guide/internal/SharedGuideAnswerStore.java, backend/src/main/java/ai/helper2/platform/cache/JdbcSharedCache.java.
 # Render: cd docs/diagrams && d2 fmt sequence-0017-guide-cost-guard.d2 && d2 sequence-0017-guide-cost-guard.d2 sequence-0017-guide-cost-guard.svg
 
 ...@style
@@ -20,6 +20,7 @@ svc: AskGuide {class: app}
 cache: GuideAnswerCache {class: app}
 quota: ClientQuota {class: app}
 redis: Redis {class: data}
+db: PostgreSQL {class: data}
 model: SpringAiGuideModel {class: app}
 
 browser -> rl: "POST /api/v1/guide"
@@ -33,8 +34,8 @@ bulkhead -> limits: "slot (8 per replica)"
 limits -> limits: "deadline timer 90 s"
 limits -> svc: "ask(request, path, progress, client)\non a virtual thread"
 svc -> cache: "get(key)"
-cache -> redis: "GET h2:v1:guide-answer:<sha256>"
-redis -> cache: "nil"
+cache -> db: "SELECT value FROM ai_cache WHERE cache_name =\n'guide-answer' AND key_hash = <sha256 of build, key>"
+db -> cache: "no row"
 cache -> svc: "miss"
 svc -> svc: "inFlight.putIfAbsent(key)"
 svc -> quota: "tryAcquire(client)"
@@ -44,7 +45,7 @@ quota -> svc: "true"
 svc -> model: "plan, choose, verifyReasons\n(each attempt: llm-chat circuit,\nthen a guide budget unit)" {class: ai-call}
 model -> svc: "results"
 svc -> cache: "put(key, answer)\nif cacheable"
-cache -> redis: "SET … EX 24 h"
+cache -> db: "INSERT INTO ai_cache … ON CONFLICT\nDO UPDATE, expires_at ≤ 24 h"
 svc -> svc: "inFlight.remove(key);\nwaiting askers get the answer"
 svc -> limits: "answer"
 limits -> bulkhead: "slot.release()"

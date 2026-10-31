@@ -15,6 +15,8 @@ its relevance part with a message.
 | `guide-intents.json` | 16 intent cases and 6 ask-back cases with pass rules ([ADR 0032](../adr/guide/0032-guide-intents.md) §10) | `scripts/eval-guide.mjs --intents` |
 | `guide-adversarial.json` | 8 hostile questions | `scripts/eval-guide.mjs --adversarial` |
 | `guide-qrels.tsv` | graded judgements of guide picks: `query_id` (guide or intent case id), `url`, `grade` 0–3 | `scripts/eval-guide.mjs` (P@3, nDCG@3) |
+| `guide-similar.json` | 55 question pairs for similar-question reuse: 25 that should share an answer, 30 near misses that must not, each side with the reading a correct plan gives it ([ADR 0041](../adr/guide/0041-guide-answer-cache.md)) | `GuideSimilarEvaluationTest` (in `test`) |
+| `guide-similar-vectors.json` | the query embeddings of those questions, recorded once | written by `./gradlew evalRecord --tests '*GuideSimilarRecorder'` |
 | `classifier-labels.tsv` | items labelled AI-related or not, for `Classification.isAiRelated` | `ClassificationLabelsTest` |
 | `setup-resources.json` | 15 resources for the setup guide ([ADR 0031](../adr/guide/0031-setup-guide.md)) | `scripts/eval-setup.mjs` |
 

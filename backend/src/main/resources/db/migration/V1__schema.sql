@@ -410,7 +410,7 @@ CREATE TABLE tavily_query_result (
 );
 CREATE INDEX tavily_query_result_fetched_idx ON tavily_query_result (fetched_at);
 
--- Model answers shared by every replica (ADR 0005): query translations, query vectors, setup guide answers.
+-- Model answers shared by every replica (ADR 0005): query translations, query vectors, setup guide answers, guide answers.
 -- key_hash is a SHA-256 of the entry's parts (model, prompt version, normalised query...); the query text is never
 -- stored. A read ignores an expired row; the daily shared-cache purge deletes it (ADR 0034).
 CREATE TABLE ai_cache (
@@ -421,6 +421,23 @@ CREATE TABLE ai_cache (
     PRIMARY KEY (cache_name, key_hash)
 );
 CREATE INDEX ai_cache_expires_idx ON ai_cache (expires_at);
+
+-- ===== Guide similar-question index (ADR 0041) =====
+-- Questions of cached guide answers (ai_cache, cache guide-answer), for reuse by a near-identical question read the same
+-- way (H2_GUIDE_SIMILAR_THRESHOLD). answer_key is the guide answer's cache key, a SHA-256 of the normalised question,
+-- path, config, clarification and removed parts; the question text is never stored. group_key is the SHA-256 of the
+-- embedding model, config hash, audience path and reading (intent, subjects, constraints, window); embedding is the
+-- query embedding of the normalised question, the model of resource_embedding. A row lives as long as its answer
+-- (expires_at); the guide purge deletes it after (ADR 0034). A group holds a few rows: exact cosine search.
+CREATE TABLE guide_similar_question (
+    answer_key text         PRIMARY KEY CHECK (answer_key ~ '^[0-9a-f]{64}$'),
+    group_key  text         NOT NULL,
+    embedding  vector(1024) NOT NULL,
+    expires_at timestamptz  NOT NULL
+);
+CREATE INDEX guide_similar_question_group_idx ON guide_similar_question (group_key, expires_at);
+CREATE INDEX guide_similar_question_expires_idx ON guide_similar_question (expires_at);
+-- ===== end guide similar-question index =====
 
 -- Scout collection checkpoints and run history: they go with their source.
 CREATE TABLE source_cursor (
