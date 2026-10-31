@@ -52,7 +52,7 @@ screen reader, and in light and dark mode.
    paint on a deep link and no extra request per page. Lazy pages were measured and are larger without a
    bundler-specific chunk group (see Alternatives). `npm run check:bundle` (`scripts/check-bundle.mjs`) runs in CI
    after the build and fails it when the first visit's JavaScript (the entry and the modules it preloads) passes
-   160 KiB gzipped, or any other chunk passes 30 KiB (153.1 KiB measured). It runs in CI only, so a few bytes
+   160 KiB gzipped, or any other chunk passes 30 KiB (154.7 KiB measured). It runs in CI only, so a few bytes
    never block an image build or a deploy.
 
 ## Consequences

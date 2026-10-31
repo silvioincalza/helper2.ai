@@ -29,6 +29,9 @@ src/components OneBox, filter panel, badges, glossary Term, ...
 src/pages      Home, Results (/search), Resource, Saved, Sources, Account, Admin, Mission, Privacy, Terms, NotFound (one entry chunk)
   Saved        rows like the result rows; Remove moves focus to the next row's Remove, or to the empty state
   Sources      the last outcome per source as SourceTiles, the modes, what each source covers
+  Admin        the review queue as rows like the saved rows, the Scout runs in a table
+  Mission, Privacy, Terms   one reading column; their text is in the locale file (TextSections)
+src/styles     tokens.css (the design tokens), app.css (layout; .page and .page-part for every page of parts)
 src/i18n       index.ts + locales/en.json
 src/test       fixtures, fetch mock, render helper, axe helper
 ```
