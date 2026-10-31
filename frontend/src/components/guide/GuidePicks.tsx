@@ -39,12 +39,12 @@ export function GuidePicks({ stream, loaded }: { stream: GuideStream; loaded: Re
             {picks.map((p) => (
               <li key={p.resourceId}>
                 {loaded.has(p.resourceId) ? (
-                  <button type="button" className="h2-pick-chip" onClick={() => select(p.resourceId)}>
-                    <b>#{p.rank}</b> {p.title}
+                  <button type="button" className="h2-pick-chip" title={p.title} onClick={() => select(p.resourceId)}>
+                    <b>#{p.rank}</b> <span className="h2-pick-chip__title">{p.title}</span>
                   </button>
                 ) : (
-                  <Link className="h2-pick-chip" to={resourcePath(p.resourceId)}>
-                    <b>#{p.rank}</b> {p.title}
+                  <Link className="h2-pick-chip" title={p.title} to={resourcePath(p.resourceId)}>
+                    <b>#{p.rank}</b> <span className="h2-pick-chip__title">{p.title}</span>
                   </Link>
                 )}
               </li>
@@ -52,7 +52,10 @@ export function GuidePicks({ stream, loaded }: { stream: GuideStream; loaded: Re
           </ul>
         </PicksBar>
       )}
-      {!busy && <WebSearchesLeft feature="guide" value={answer?.webSearches} />}
+      {/* While the guide reads, a blank line of the same style holds the place of "web searches left", which comes with the answer. */}
+      {busy && error === null
+        ? <p className="muted small h2-web-left" aria-hidden="true">&nbsp;</p>
+        : !busy && <WebSearchesLeft feature="guide" value={answer?.webSearches} />}
       {error !== null && (
         <StatePanel tone="error" level={2} title={guideError(error, t)} next={<RetryButton onClick={retry} />} />
       )}
