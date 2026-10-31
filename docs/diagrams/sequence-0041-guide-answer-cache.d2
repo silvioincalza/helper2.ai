@@ -1,0 +1,43 @@
+# Sequence: a paraphrase of a cached guide question. The exact key misses, the plan runs, and the answer of the
+# near twin is reused without a search.
+# Source of truth: backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (ask, similarAnswer),
+#   backend/src/main/kotlin/ai/helper2/guide/GuideCost.kt (GuideAnswerCache), SimilarQuestions.kt,
+#   backend/src/main/java/ai/helper2/guide/internal/GuideConfiguration.java (embedder adapter),
+#   backend/src/main/java/ai/helper2/catalog/internal/NvidiaEmbedder.java,
+#   backend/src/main/java/ai/helper2/guide/internal/JdbcGuideAnswerStore.java, JdbcSimilarQuestionIndex.java.
+# Render: cd docs/diagrams && d2 fmt sequence-0041-guide-answer-cache.d2 && d2 sequence-0041-guide-answer-cache.d2 sequence-0041-guide-answer-cache.svg
+
+...@style
+
+shape: sequence_diagram
+
+svc: AskGuide {class: app}
+cache: GuideAnswerCache {class: app}
+model: SpringAiGuideModel {class: app}
+similar: SimilarQuestions {class: app}
+embedder: NvidiaEmbedder {class: ext}
+index: JdbcSimilarQuestionIndex {class: app}
+db: "PostgreSQL\n(pgvector)" {class: data}
+
+svc -> cache: "get(SHA-256 of the normalised question …)"
+cache -> db: "SELECT answer FROM guide_answer\nWHERE answer_key = <key> AND build = <build>"
+db -> cache: "no row"
+cache -> svc: "miss"
+svc -> model: "plan(question) — after single-flight\nand the client quota (ADR 0017)" {class: ai-call}
+model -> svc: "intent, subjects, constraints, window"
+svc -> similar: "probe(question, config, path, reading key)"
+similar -> embedder: "POST /embeddings\ninput_type=query, dimensions=1024" {class: ai-call}
+embedder -> similar: "vector"
+svc -> similar: "nearest(probe)"
+similar -> index: "nearest(group, vector, now)"
+index -> db: "SELECT answer_key, 1 - (embedding <=> v)\nWHERE group_key = <group> AND expires_at > now\nORDER BY embedding <=> v LIMIT 1"
+db -> index: "closest answer key, cosine"
+similar -> similar: "cosine ≥ threshold?"
+similar -> svc: "answer key of the near twin"
+svc -> cache: "get(answer key)"
+cache -> db: "SELECT … WHERE answer_key = <answer key>"
+db -> cache: "answer"
+cache -> svc: "answer (its own generatedAt)"
+svc -> cache: "put(key, answer)"
+cache -> db: "INSERT … ON CONFLICT DO UPDATE\nexpires_at = the original's"
+svc -> svc: "cache result=similar,\noutcome=cached; no search"

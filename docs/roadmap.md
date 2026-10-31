@@ -22,6 +22,9 @@ Items are grouped by the order in which they matter. Inside a group, the first i
   the address or of the query is personal data, legitimate interest as the basis, and the wording on the transfer of
   queries to Tavily in the US.
 - Check each US source and GitHub for Data Privacy Framework certification, as the Privacy page states.
+- Lawyer review of guide question embeddings ([ADR 0041](adr/guide/0041-guide-answer-cache.md)): whether an embedding of a
+  question is personal data, the basis for keeping it up to a day, and the transfer of search and guide text to the
+  NVIDIA API catalog in the US (not yet listed under transfers abroad).
 - Make server and Traefik logs delete after 3 months, as the Privacy page states.
 - Review each source's terms again for commercial use.
 - SEO: `robots.txt`, `sitemap.xml`, metadata and JSON-LD for detail pages. Detail pages are not crawlable
@@ -97,8 +100,8 @@ Prod runs 3 replicas (`app.replicas`, staging 1). The Scout and the embedding in
 time (ShedLock, table `shedlock` in Postgres); rate limits and sign-in sessions are in Redis. Still per replica,
 on purpose:
 
-- **Guide answers: in-memory LRU and single-flight map.** Answers are also in Redis, so a replica only misses a
-  question it has not seen; two replicas may answer the same new question once each.
+- **Guide single-flight map.** Answers are in PostgreSQL and shared; two replicas may answer the same new question
+  once each when it arrives on both at the same time.
 - **Query-vector cache** (`SemanticSearchSource`). A miss costs one embedding call (about 0.3 s) on that replica.
 - **Source cooldowns after a rate limit** (`SearchResources`), **circuit breakers and bulkheads** (`source-<id>`
   policies, [ADR 0033](adr/foundation/0033-resilience-policies.md)) and the Sources page's last outcomes (`SourceHealth`).
@@ -125,6 +128,10 @@ Open items:
 - Watch whether the source `type`, now a source fact in enrichment, sends many proposals to CONFLICTING review
   (for example GitHub LIBRARY versus MCP_SERVER) ([ADR 0019](adr/scout/0019-evidence-gated-enrichment.md)).
 - Cross-language retrieval in vector search.
+- Similar-question reuse of guide answers ([ADR 0041](adr/guide/0041-guide-answer-cache.md)): record
+  `docs/eval/guide-similar.json` again through the NVIDIA API with the production key, run the planner on its
+  direction and negation pairs to confirm the readings the set assumes, then set `H2_GUIDE_SIMILAR_THRESHOLD=0.96` on
+  staging and watch `helper2.guide.cache{result="similar"}`.
 - A Grafana panel for the share of kept picks ranked 9+ (`helper2.guide.picks{rank="9+"}`), next to the alert
   `Helper2GuidePicksFromLowRanks` ([ADR 0015](adr/guide/0015-ai-guide-evidence-gate.md)).
 - Write the Scout's Tavily news and events to the same stored sets as searches, with their own share of credits
@@ -257,6 +264,9 @@ Fix an item or accept it; when it no longer holds, remove it.
 - The setup guide is only as good as the tool's own docs; past the hourly fetch budget an uncached resource gets no README snippet; client config formats change and need a re-check. ([ADR 0031](adr/guide/0031-setup-guide.md))
 - Asking back costs a round trip and a model call. A name is asked back only when our sources hold two kinds, and an unrelated project with a model's exact name also triggers it. A broad “what is new” question takes about 10 s longer; a subject slower than 10 s is reported as not found. ([ADR 0032](adr/guide/0032-guide-intents.md))
 - `NEWEST` drops undated results silently. Events are found only in a source's own top hits, and the event words are a fixed list. Two more prompts (`compare`, `explain`) to maintain and evaluate. The course list needs editorial review. ([ADR 0032](adr/guide/0032-guide-intents.md))
+- Similar-question reuse shares an answer only between questions read the same way; the reading cannot tell "this
+  year" from "last year", and a question with no subject keeps no direction, which is why the threshold is high and
+  most paraphrases still miss. ([ADR 0041](adr/guide/0041-guide-answer-cache.md))
 - Lawyer: is metadata-only marking enough for text (it is lost on copy)? A new AI-written field must be added to the marking and its tests by hand. ([ADR 0038](adr/guide/0038-ai-content-marking.md))
 
 ### Edge and identity

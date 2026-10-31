@@ -62,9 +62,9 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
     ctl: "GuideController (JSON)\nGuideStreamController (SSE)" {class: app}
     core: "AskGuide (QuestionReader, PickAnswer,\nCompareAnswer, ExplainAnswer,\nDateAnswer, ReasonCheckStep)\nGuideValidator · GuideAnswerCache\nClientQuota · GuideLimits" {class: app}
     p_model: GuideModel {class: port}
-    p_store: GuideAnswerStore {class: port}
+    p_store: "GuideAnswerStore\nSimilarQuestionIndex" {class: port}
     model: "SpringAiGuideModel\n(guide.internal)" {class: app}
-    store: "RedisGuideAnswerStore\n(guide.internal)" {class: app}
+    store: "JdbcGuideAnswerStore\nJdbcSimilarQuestionIndex\n(guide.internal)" {class: app}
     ctl -> core: {class: hot}
     core -> p_model: {class: ai-call}
     core -> p_store
@@ -207,7 +207,7 @@ browser -> app.identity.me
 app.search.cache -> stores.redis: "h2:v1:src:*"
 app.search.web -> stores.pg: "tavily_query_result"
 app.platform.quota -> stores.redis: "h2:v1:quota:*"
-app.guide.store -> stores.redis: "h2:v1:guide-answer:*"
+app.guide.store -> stores.pg: "guide_answer\nguide_similar_question"
 app.platform.llm -> stores.redis: "h2:v1:budget:*"
 app.setup.adapters -> stores.redis: "h2:v2:tool-guide:*\nh2:v1:setup:fetches:*"
 app.catalog.store -> stores.pg: JDBC
@@ -221,6 +221,7 @@ app.setup.adapters -> nvidia.nebius: "tool guide steps" {class: ai-call}
 app.search.translator -> nvidia.nebius: "translate query" {class: ai-call}
 app.sources.classifier -> nvidia.nebius: "classify repos" {class: ai-call}
 app.catalog.embed -> nvidia.embeddings: "/embeddings" {class: ai-call}
+app.guide.core -> nvidia.embeddings: "question embedding\n(similar questions, ADR 0041)" {class: ai-call}
 
 app.sources.live -> hosts: "HTTPS: search calls"
 app.sources.collectors -> hosts: "HTTPS: Scout collection"

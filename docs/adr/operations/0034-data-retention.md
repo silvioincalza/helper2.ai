@@ -25,19 +25,20 @@ The periods are a product decision the owner may change; changing one must not n
    | Postgres `issue_report` | user reports | 12 months after their review was resolved, with that review item; open ones stay | catalog purge |
    | Postgres `scout_run` | Scout run history | 90 days after `started_at`; a `RUNNING` record stays | Scout purge |
    | Postgres `tavily_query_result` | Tavily result sets, keyed by an HMAC of the query ([0037](../search/0037-tavily-store-and-daily-quota.md)) | 7 days after `fetched_at` | search purge |
+   | Postgres `guide_answer` | guide answers, keyed by a hash of the question, per build ([0041](../guide/0041-guide-answer-cache.md)) | until `expires_at`: 24 h after the answer (`H2_GUIDE_CACHE_TTL`), 6 h for a dated question, never past its web results; deleted the next night | guide purge |
+   | Postgres `guide_similar_question` | the query embedding of a cached answer's question, and its reading group (a hash), only with `H2_GUIDE_SIMILAR_THRESHOLD` set | as long as its answer, until its own `expires_at` | guide purge, `ON DELETE CASCADE` |
    | Postgres `source_cursor`, `scout_schedule`, `source`, `shedlock` | one row per source, schedule or lock | overwritten in place | — |
    | Postgres `app_user` | GitHub numeric id, display name, last sign-in | until the user deletes it; 24 months after `last_signed_in_at` | `DeleteMyAccount`, identity purge |
    | Postgres `bookmark` | resource id, title, link, type, saved at | until the user removes it or the account goes | `RemoveBookmark`, `ON DELETE CASCADE` |
    | Postgres `issue_report.reporter_user_id` | link to the reporter | until the account goes | `ON DELETE SET NULL` |
    | Postgres `admin_audit` | admin id, action, target, time, outcome | 24 months after `at` | identity purge |
    | Redis `h2:v1:src:*` | source responses, keyed by a hash of the query | 24 h (`H2_SEARCH_STALE_FOR`) | Redis TTL |
-   | Redis `h2:v2:guide-answer:<build>:*` | guide answers, keyed by a hash of the question | 24 h (`H2_GUIDE_CACHE_TTL`), 6 h for a dated question | Redis TTL |
    | Redis `h2:v2:tool-guide:*` | setup guide answers (checked steps, document links), no user text | 7 days (`helper2.setup.guide.cache-ttl`) | Redis TTL |
    | Redis `h2:v1:budget:*` | daily model-call counts, per-client counts under a hash of the address | 2 days | Redis TTL |
    | Redis `h2:v1:rate:*` | rate-limit windows, keyed by the client address | 1 minute or 1 hour (the window) | Redis TTL |
    | Redis `h2:v1:quota:*` | daily web searches per feature: guests under an HMAC of the address and the day, signed-in users under their id; the global count ([0037](../search/0037-tavily-store-and-daily-quota.md)) | 24 h after the first count | Redis TTL, `DeleteMyAccount` |
    | Redis `helper2:session:*` | sign-in sessions | 30 minutes idle | Spring Session expiry |
-   | In-memory caches (guide answers, query translations, setup materials and registry specs) | copies of the above | 24 h, 24 h, 1 h, 1 h; bounded entries; lost on restart | TTL and size bound |
+   | In-memory caches (query translations, setup materials and registry specs) | copies of the above | 24 h, 1 h, 1 h; bounded entries; lost on restart | TTL and size bound |
    | Browser `localStorage` | language, theme, chosen AI client, bookmarks while signed out | until the user clears it; bookmarks move to the account at sign-in | the user's browser |
    | Logs (Loki), traces (Tempo), metrics (Prometheus) | technical logs with addresses, traces, meters | 90 days | [0026](0026-observability.md) |
    | Database backups (`pg-backup`) | full dumps | 7 days; the off-site copy by its bucket's lifecycle rule | [0026](0026-observability.md), [0027](0027-runtime-topology.md) |
@@ -48,16 +49,18 @@ The periods are a product decision the owner may change; changing one must not n
 2. **Every period is configuration.** `helper2.retention.*` in `application.yaml`, each with an `H2_RETENTION_*`
    variable and an ISO-8601 default: `OBSERVED_UNSEEN` P180D, `ENRICHMENT_RUNS` P90D, `RESOLVED_REVIEW_ITEMS`
    P180D, `RESOLVED_ISSUE_REPORTS` P365D, `WEB_NEWS` P180D, `SCOUT_RUNS` P90D, `PAST_EVENTS` P365D,
-   `INACTIVE_ACCOUNTS` P730D, `ADMIN_AUDIT` P730D, `TAVILY_RESULTS` P7D. `H2_RETENTION_CRON` (default `0 17 3 * * *`, UTC) sets when the
+   `INACTIVE_ACCOUNTS` P730D, `ADMIN_AUDIT` P730D, `TAVILY_RESULTS` P7D. Cached guide answers keep the expiry
+   their own time to live gives them (`H2_GUIDE_CACHE_TTL`). `H2_RETENTION_CRON` (default `0 17 3 * * *`, UTC) sets when the
    purges run.
 3. **One `PurgeExpiredData` use case per owning module.** The module that owns a table deletes from it:
    `catalog.usecase.PurgeExpiredData` (review items, issue reports, enrichment runs, web news, past events,
    observed resources, in that order, so a resource that only a purged report kept goes in the same run; SQL in
    `catalog.internal.CatalogRetention`), `scout.usecase.PurgeExpiredData` (run history, through the
-   `RunHistoryRetention` port), `identity.usecase.PurgeExpiredData` (inactive accounts, audit entries) and
-   `search.usecase.PurgeExpiredData` (stored Tavily result sets, through the `WebResultRetention` port). Each runs
-   daily on `helper2.retention.cron` under its own cluster lock (`retention-catalog`, `retention-scout`,
-   `retention-identity`, `retention-search`, `ClusterLocks.keptAlive`), so one replica runs it. A failed purge is logged and the next
+   `RunHistoryRetention` port), `identity.usecase.PurgeExpiredData` (inactive accounts, audit entries),
+   `search.usecase.PurgeExpiredData` (stored Tavily result sets, through the `WebResultRetention` port) and
+   `guide.usecase.PurgeExpiredData` (expired guide answers and indexed questions, through the `GuideAnswerRetention`
+   port). Each runs daily on `helper2.retention.cron` under its own cluster lock (`retention-catalog`,
+   `retention-scout`, `retention-identity`, `retention-search`, `retention-guide`, `ClusterLocks.keptAlive`), so one replica runs it. A failed purge is logged and the next
    day's run catches up; each logs what it deleted.
 4. **Foreign keys carry the deletes.** Every foreign key states its delete rule. A purge deletes the parent row;
    children go by `ON DELETE CASCADE`, links that must outlive their target are `ON DELETE SET NULL`
@@ -96,6 +99,9 @@ The periods are a product decision the owner may change; changing one must not n
 - `backend/src/main/kotlin/ai/helper2/search/usecase/PurgeExpiredData.kt`,
   `backend/src/main/java/ai/helper2/search/config/SearchRetentionSchedule.java`, `search/internal/JdbcWebResultStore.java`
   — search rule.
+- `backend/src/main/kotlin/ai/helper2/guide/usecase/PurgeExpiredData.kt`,
+  `backend/src/main/java/ai/helper2/guide/internal/GuideRetentionSchedule.java`, `guide/internal/JdbcGuideAnswerStore.java`
+  — guide rule.
 - `backend/src/main/resources/db/migration/V1__schema.sql` — foreign keys and retention indexes.
 - `backend/src/main/resources/application.yaml` — `helper2.retention.*`.
 - `frontend/src/i18n/locales/en.json` — the privacy page's periods.
