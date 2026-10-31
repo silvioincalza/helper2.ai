@@ -753,7 +753,8 @@
           "Tavily (United States): your search text or the guide's web query, unless a stored result answers.",
           "AI models: guide questions, and searches written in a language other than English, are sent to NVIDIA Nemotron models on Nebius Token Factory, processed in the European Union. We send only the text, never your account data.",
           "GitHub, when you choose to sign in with it.",
-          "Transfers abroad: some search sources, and GitHub, are in the United States. Where a provider is certified under the Swiss-US and EU-US Data Privacy Framework, the transfer relies on that certification. Otherwise, we send your search text abroad only because it is needed to give you the results you asked for (Art. 17(1)(b) FADP, Art. 49(1)(b) GDPR).",
+          "Network edge: every request to helper2.ai passes through Cloudflare (United States), which routes traffic to our servers. Cloudflare sees your IP address and the request.",
+          "Transfers abroad: GitHub and Cloudflare are certified under the Swiss-US and EU-US Data Privacy Framework and its UK Extension, so those transfers rely on that certification. Hugging Face, npm, arXiv and Tavily are not certified. We send them only your search text, never your IP address or account data, and only because it is needed to give you the results you asked for (Art. 17(1)(b) FADP, Art. 49(1)(b) GDPR).",
           "Hosting: our servers are in Germany (European Union)."
         ]
       },
