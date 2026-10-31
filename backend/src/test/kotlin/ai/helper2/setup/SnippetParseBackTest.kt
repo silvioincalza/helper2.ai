@@ -8,7 +8,6 @@ import tools.jackson.databind.JsonNode
 import tools.jackson.databind.ObjectMapper
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.dataformat.toml.TomlMapper
-import tools.jackson.dataformat.yaml.YAMLMapper
 
 /**
  * Every snippet of every client, parsed back with a real parser for its format, gives exactly the values it was
@@ -24,7 +23,7 @@ class SnippetParseBackTest {
         "new\nline\r\ttab",
         "nul\u0000 bell\u0007 esc\u001b del\u007f c1\u0085\u009f",
         "toml ]] [[x]] # comment = \"\"\" '''",
-        "yaml: - [a, b] {c: d} & * ! | > % @ ` #x",
+        "json: [a, b] {c: d} & * ! | > % @ ` #x",
         "unicode é ☃ 🚀     ﻿",
         "",
         " leading and trailing ",
@@ -41,7 +40,6 @@ class SnippetParseBackTest {
 
     private val json: ObjectMapper = JsonMapper.builder().build()
     private val toml: ObjectMapper = TomlMapper.builder().build()
-    private val yaml: ObjectMapper = YAMLMapper.builder().build()
 
     @Test
     fun `every client's snippet parses back to the same arguments, values and url`() {
@@ -54,7 +52,6 @@ class SnippetParseBackTest {
                 val strings = when (s.language) {
                     "json" -> leaves(json.readTree(text))
                     "toml" -> leaves(toml.readTree(text))
-                    "yaml" -> leaves(yaml.readTree(text))
                     "shell" -> shellWords(text)
                     null -> listOf(text)
                     else -> error("$where: unexpected language ${s.language}")
@@ -65,8 +62,8 @@ class SnippetParseBackTest {
                 } else {
                     assertTrue(t.url in strings, "$where: url\n$text")
                 }
-                // Clients without a way to pass values say so instead of a snippet; the desktop remote is only a URL.
-                if (s.language != null && client.id != "jetbrains") {
+                // The desktop remote is only a URL.
+                if (s.language != null) {
                     for ((k, v) in values) {
                         assertTrue(v in strings || "$k=$v" in strings || "$k: $v" in strings, "$where: value of $k\n$text")
                     }
@@ -77,13 +74,9 @@ class SnippetParseBackTest {
 
     @Test
     fun `keys that cannot be bare are quoted and read back as written`() {
-        for (client in Clients.ALL.filter { it.id in setOf("codex", "continue", "goose", "cursor") }) {
+        for (client in Clients.ALL.filter { it.id in setOf("codex", "cursor") }) {
             val s = client.snippet(stdio)
-            val tree = when (s.language) {
-                "toml" -> toml.readTree(s.text!!)
-                "yaml" -> yaml.readTree(s.text!!)
-                else -> json.readTree(s.text!!)
-            }
+            val tree = if (s.language == "toml") toml.readTree(s.text!!) else json.readTree(s.text!!)
             val names = mutableSetOf<String>()
             fun walk(n: JsonNode) {
                 n.properties().forEach { (k, v) -> names += k; walk(v) }
@@ -95,16 +88,15 @@ class SnippetParseBackTest {
     }
 
     @Test
-    fun `toml, yaml and json escape every control character`() {
+    fun `toml and json escape every control character`() {
         val all = (0..0x9f).filter { it < 0x20 || it in 0x7f..0x9f }.map { it.toChar() }.joinToString("")
         assertEquals(all, toml.readTree("v = " + Formats.toml(all)).path("v").asString())
-        assertEquals(all, yaml.readTree("v: " + Formats.json(all)).path("v").asString())
         assertEquals(all, json.readTree(Formats.json(all)).asString())
     }
 
     /**
      * The parsers above accept more than their specs allow, so the written text is also checked against the specs:
-     * TOML 1.0 basic strings forbid raw U+007F and controls; YAML 1.2 forbids raw U+007F to U+009F and U+FEFF.
+     * TOML 1.0 basic strings forbid raw U+007F and controls; C1 controls and U+FEFF are escaped as well.
      */
     @Test
     fun `no snippet holds a raw character its format forbids`() {

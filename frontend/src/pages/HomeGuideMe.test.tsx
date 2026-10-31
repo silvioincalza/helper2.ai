@@ -11,7 +11,7 @@ const P = '33333333-3333-5333-8333-333333333333';
 
 const setup = (id: string, title: string): SetupGuide => ({ resourceId: id, title, version: null, options: [], clients: [], sources: [] });
 const steps = (id: string, title: string): ToolGuide => ({
-  resourceId: id, title, status: 'OK', question: null, rejected: 0, generatedAt: '2026-10-28T00:00:00Z', model: 'nano',
+  resourceId: id, title, status: 'OK', rejected: 0, generatedAt: '2026-10-28T00:00:00Z', model: 'nano',
   sections: [{ kind: 'INSTALL', steps: [{ text: `Install ${title}.`, quote: 'npm install', source: 'readme', caution: false, code: { language: 'bash', text: `npm install ${title}` } }] }],
   documents: [{ key: 'readme', kind: 'README', url: 'https://github.com/acme/x', retrievedAt: '2026-10-28T00:00:00Z' }],
 });

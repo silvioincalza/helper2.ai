@@ -9,10 +9,10 @@ interface ToolGuideModel {
     /** Changes when the prompt or settings change, so cached answers from another prompt are not reused. */
     val configFingerprint: String
 
-    fun write(ref: ToolRef, materials: List<Material>, question: String?): ProposedGuide
+    fun write(ref: ToolRef, materials: List<Material>): ProposedGuide
 }
 
-/** Outbound port: answers kept across requests and replicas, stored without the question that produced them. */
+/** Outbound port: answers kept across requests and replicas, shared by every visitor. */
 interface ToolGuideCache {
     fun get(key: String): ToolGuideAnswer?
     fun put(key: String, answer: ToolGuideAnswer, ttl: Duration)

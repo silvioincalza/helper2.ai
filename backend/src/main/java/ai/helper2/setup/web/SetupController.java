@@ -9,7 +9,6 @@ import ai.helper2.api.generated.model.SetupOptionDto;
 import ai.helper2.api.generated.model.SetupSettingDto;
 import ai.helper2.api.generated.model.ToolGuideDocumentsInnerDto;
 import ai.helper2.api.generated.model.ToolGuideDto;
-import ai.helper2.api.generated.model.ToolGuideRequestDto;
 import ai.helper2.api.generated.model.ToolGuideSectionsInnerDto;
 import ai.helper2.api.generated.model.ToolGuideSectionsInnerStepsInnerCodeDto;
 import ai.helper2.api.generated.model.ToolGuideSectionsInnerStepsInnerDto;
@@ -23,10 +22,9 @@ import ai.helper2.setup.SetupUnavailable;
 import ai.helper2.setup.ShownOption;
 import ai.helper2.setup.GuideStep;
 import ai.helper2.setup.ToolGuideAnswer;
-import ai.helper2.setup.usecase.AskAboutResource;
 import ai.helper2.setup.usecase.GetResourceSetup;
+import ai.helper2.setup.usecase.GetToolGuide;
 import ai.helper2.shared.UtcTimes;
-import org.jspecify.annotations.Nullable;
 import java.time.Duration;
 import java.util.UUID;
 import org.springframework.http.CacheControl;
@@ -44,11 +42,11 @@ class SetupController implements SetupApi {
     private static final CacheControl CACHE = CacheControl.maxAge(Duration.ofHours(1)).cachePublic();
 
     private final GetResourceSetup setup;
-    private final AskAboutResource ask;
+    private final GetToolGuide toolGuide;
 
-    SetupController(GetResourceSetup setup, AskAboutResource ask) {
+    SetupController(GetResourceSetup setup, GetToolGuide toolGuide) {
         this.setup = setup;
-        this.ask = ask;
+        this.toolGuide = toolGuide;
     }
 
     @Override
@@ -63,9 +61,8 @@ class SetupController implements SetupApi {
     }
 
     @Override
-    public ResponseEntity<ToolGuideDto> askResourceGuide(UUID id, @Nullable ToolGuideRequestDto body) {
-        AskAboutResource.Answered a = ask.ask(id, body == null ? null : body.getQuestion())
-            .orElseThrow(() -> new NotFoundException("Resource not found."));
+    public ResponseEntity<ToolGuideDto> askResourceGuide(UUID id) {
+        GetToolGuide.Guided a = toolGuide.guide(id).orElseThrow(() -> new NotFoundException("Resource not found."));
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(dto(id, a.title(), a.answer()));
     }
 
@@ -76,7 +73,7 @@ class SetupController implements SetupApi {
             a.getMaterials().stream().map(m -> new ToolGuideDocumentsInnerDto(m.getKey(),
                 ToolGuideDocumentsInnerDto.KindEnum.fromValue(m.getKind().name()), m.getUrl(), UtcTimes.odt(m.getRetrievedAt()))).toList(),
             a.getRejected(), UtcTimes.odt(a.getGeneratedAt()))
-            .question(a.getQuestion()).model(a.getModel()).unavailable(a.getUnavailable());
+            .model(a.getModel()).unavailable(a.getUnavailable());
     }
 
     private static ToolGuideSectionsInnerStepsInnerDto step(GuideStep s) {
