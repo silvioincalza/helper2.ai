@@ -40,7 +40,7 @@ so the cache must be optional: when Redis is down, the app still works, only slo
    and `guide-client:{hash}` for the per-client guide quota. On an error, or while the `redis` circuit is open,
    `DailyBudget` counts in memory.
 6. **Guide answers.** `GuideAnswerCache` keeps up to 500 answers in memory and reads through to
-   `RedisGuideAnswerStore`: key `h2:v1:guide-answer:{sha256}`, Redis time to live (TTL) = `H2_GUIDE_CACHE_TTL` (24 hours),
+   `RedisGuideAnswerStore`: key `h2:v2:guide-answer:{build}:{sha256}`, one set per build ([0017](../guide/0017-guide-cost-guard.md)), Redis time to live (TTL) = `H2_GUIDE_CACHE_TTL` (24 hours),
    JavaScript Object Notation (JSON) in a versioned envelope. Only complete artificial intelligence (AI) answers are stored.
 7. **Shared state for the replicas.** Prod runs 3 replicas ([0027](../operations/0027-runtime-topology.md)). The same Redis also
    holds the rate-limit windows (`h2:v1:rate:{limiter}:{client}`, [0024](../edge/0024-http-edge-protection.md)), the sign-in
@@ -52,7 +52,8 @@ so the cache must be optional: when Redis is down, the app still works, only slo
 - A Redis outage costs a few failed calls per 30 seconds for the whole replica (the circuit is shared by every
   adapter), not a timeout on every request.
 - During an outage, budgets count in memory and never block the model by mistake.
-- Answers, counters, sessions and rate-limit windows survive app restarts, deploys and Redis restarts.
+- Answers, counters, sessions and rate-limit windows survive app restarts, deploys and Redis restarts; guide answers
+  survive restarts of the same build, and a deploy starts a new set (the old one expires with its TTL).
 - While Redis loads the AOF at start, the app treats it like a short outage (the `redis` circuit).
 - `RedisSearchCacheTest`, `RedisGuideAnswerStoreTest`, `RedisCallCounterTest` and `RedisRateLimiterIT` cover the open
   window, the trial call and the fallbacks; `RedisDownIT` covers search with no Redis at all.
