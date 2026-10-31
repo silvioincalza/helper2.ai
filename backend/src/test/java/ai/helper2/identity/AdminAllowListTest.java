@@ -82,6 +82,15 @@ class AdminAllowListTest {
     }
 
     @Test
+    void anAllowListedEmailGrantsAdminOnlyOnTheAdminPort() {
+        Set<String> admins = Set.of("oidc:owner@example.org");
+        assertThat(SecurityConfiguration.roles(admins, "oidc", "subject-1", "owner@example.org", true))
+            .extracting(GrantedAuthority::getAuthority).contains("ROLE_ADMIN");
+        assertThat(SecurityConfiguration.roles(admins, "oidc", "subject-1", "owner@example.org", false))
+            .extracting(GrantedAuthority::getAuthority).containsExactly("ROLE_USER");
+    }
+
+    @Test
     void signInReturnsToTheBackOfficeOnTheAdminPortAndToTheSiteOnThePublicPort() {
         assertThat(SecurityConfiguration.afterSignIn("/", true)).isEqualTo("/admin");
         assertThat(SecurityConfiguration.afterSignIn("/", false)).isEqualTo("/");
