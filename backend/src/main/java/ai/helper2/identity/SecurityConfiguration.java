@@ -130,7 +130,9 @@ class SecurityConfiguration {
     static Set<GrantedAuthority> roles(Set<String> admins, String registrationId, String subject, String alias, boolean onAdminPort) {
         Set<GrantedAuthority> roles = new HashSet<>();
         roles.add(new SimpleGrantedAuthority("ROLE_USER"));
-        if (onAdminPort && admins.contains(registrationId + ":" + subject) || (alias != null && admins.contains(registrationId + ":" + alias))) {
+        boolean allowListed = admins.contains(registrationId + ":" + subject)
+            || (alias != null && admins.contains(registrationId + ":" + alias));
+        if (onAdminPort && allowListed) {
             roles.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
         }
         return roles;
