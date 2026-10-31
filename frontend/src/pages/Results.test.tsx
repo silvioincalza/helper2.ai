@@ -78,6 +78,27 @@ describe('results: list and preview', () => {
     expect(within(preview).getByText('gives agents read-only access to a PostgreSQL database').tagName).toBe('MARK');
   });
 
+  it('keeps a line for "web searches left" while the guide reads, and the count takes its place', async () => {
+    let answer: (r: Response) => void = () => undefined;
+    mockApi({ 'GET /search': () => search(), 'POST /guide/stream': () => new Promise<Response>((r) => { answer = r; }) });
+    renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
+    await screen.findByRole('article');
+    const blank = document.querySelector('.h2-results__guide .h2-web-left');
+    expect(blank).toHaveAttribute('aria-hidden', 'true');
+    expect(blank?.textContent?.trim()).toBe('');
+    await act(async () => { answer(sse({ ...guide(), webSearches: { limit: 3, remaining: 2 } })); });
+    expect(await screen.findByText(/2 of 3 web searches left today for the guide/)).toBeInTheDocument();
+    expect(document.querySelectorAll('.h2-results__guide .h2-web-left')).toHaveLength(1);
+  });
+
+  it('a pick chip keeps its full title for screen readers and on hover, however long', async () => {
+    const long = 'davidmoserai/AzureDocumentIntelligenceChunkerForVeryLongPdfDocuments';
+    mockApi({ 'GET /search': () => search(), 'POST /guide/stream': () => sse({ ...guide(), recommendations: [{ ...guide().recommendations[0]!, title: long }] }) });
+    renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
+    const chip = await screen.findByRole('button', { name: `#1 ${long}` });
+    expect(chip).toHaveAttribute('title', long);
+  });
+
   it('an AI-written description in a row is labelled and marked machine-readable', async () => {
     const ai = makeCard({ id: 'dddddddd-dddd-5ddd-8ddd-dddddddddddd', title: 'Summed Up', description: 'A short summary.', descriptionOrigin: 'AI_SUMMARY' });
     mockApi({ 'GET /search': () => makeSearch({ results: [A, ai], total: 2, sources: [makeStatus()] }) });

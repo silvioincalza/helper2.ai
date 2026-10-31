@@ -33,7 +33,7 @@ and chose between options for each part.
 6. **Guide picks bar, nothing moves.** The guide runs only for a question: four words or more, or Shift+Enter. A name
    search ("pgvector") gets no picks bar and no model call ([0017](../guide/0017-guide-cost-guard.md)). For a question, a box
    above the list is there from the first render: "Guide is reading N
-   candidates… picks will appear here". Its height is reserved, and so is the row "How the guide decided" that comes with the answer; the chips stay on one line and scroll sideways when they do not fit. When the answer arrives over SSE
+   candidates… picks will appear here". Its height is reserved, and so are the lines that come with the answer ("web searches left" and "How the guide decided"); the chips stay on one line, cut a long title with "…", and scroll sideways when they do not fit. When the answer arrives over SSE
    (`POST /api/v1/guide/stream`, [0015](../guide/0015-ai-guide-evidence-gate.md)), the same box shows the picks as chips
    (#1, #2, #3), labelled AI-written ([0038](../guide/0038-ai-content-marking.md)). The list never re-orders: each pick gets a
    "Pick #n" badge and its reason in its own row. No pick: the box shrinks to one line, "No pick: no result had a
