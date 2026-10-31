@@ -15,7 +15,7 @@ inputs:
     default: helper2/jwt
   audience:
     description: audience requested for the OIDC token, must match the role's bound_audiences
-    default: https://openbao.infra.incalza.me
+    required: true
 runs:
   using: composite
   steps:
@@ -27,6 +27,7 @@ runs:
         AUDIENCE: ${{ inputs.audience }}
       run: |
         set -euo pipefail
+        [ -n "$BAO_ADDR" ] && [ -n "$AUDIENCE" ] || { echo "::error::set the BAO_ADDR and BAO_AUDIENCE repo variables"; exit 1; }
         jwt=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
           "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUDIENCE" | jq -r .value)
         token=$(bao write -field=token "auth/$MOUNT/login" role="$ROLE" jwt="$jwt")

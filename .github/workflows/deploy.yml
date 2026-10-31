@@ -54,6 +54,7 @@ jobs:
       - uses: ./.github/actions/bao-login
         with:
           addr: ${{ vars.BAO_ADDR }}
+          audience: ${{ vars.BAO_AUDIENCE }}
           role: deploy-${{ inputs.environment }}
 
       # Cluster access comes only from the env's OpenBao entry, so the prod approval gates prod access.

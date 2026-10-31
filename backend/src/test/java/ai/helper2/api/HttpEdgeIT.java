@@ -3,6 +3,8 @@ package ai.helper2.api;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.TestcontainersConfiguration;
+import java.io.IOException;
+import java.net.ServerSocket;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -14,6 +16,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 
 /**
  * Real HTTP through the servlet container: cookies, sessions, CSRF, security headers, rate limiting. MockMvc would
@@ -36,6 +40,17 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 })
 @Import(TestcontainersConfiguration.class)
 class HttpEdgeIT {
+
+    /**
+     * The admin port (ADR 0035) lives in this context too, not in a context of its own: one more distinct context
+     * would make the context cache (32) evict another, and closing it stops the shared Testcontainers.
+     */
+    static final int ADMIN_PORT = freePort();
+
+    @DynamicPropertySource
+    static void adminPort(DynamicPropertyRegistry r) {
+        r.add("helper2.admin.port", () -> ADMIN_PORT);
+    }
 
     @LocalServerPort
     int port;
@@ -119,7 +134,8 @@ class HttpEdgeIT {
             send(HttpRequest.newBuilder(uri("/api/v1/recent"))),
             send(HttpRequest.newBuilder(uri("/api/v1/me/bookmarks"))),
             send(HttpRequest.newBuilder(uri("/api/v1/admin/review-items"))));
-        assertThat(responses).extracting(HttpResponse::statusCode).containsExactly(200, 200, 200, 401, 401);
+        // The back office is not on the public port (ADR 0035): 404, still without a session.
+        assertThat(responses).extracting(HttpResponse::statusCode).containsExactly(200, 200, 200, 401, 404);
         assertThat(responses).allSatisfy(r -> assertThat(sessionCookies(r)).isEmpty());
         assertThat(redis.keys("helper2:session:*")).isEqualTo(before);
     }
@@ -154,5 +170,59 @@ class HttpEdgeIT {
         }
         assertThat(statuses.subList(0, 3)).as("the encoded path really reaches the guide").containsOnly(200);
         assertThat(statuses.subList(3, 6)).as("encoded and plain paths share one budget").containsOnly(429);
+    }
+
+    // ── Admin port (ADR 0035) ──
+
+    final HttpClient noRedirects = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).build();
+
+    HttpResponse<String> getAt(int port, String path) throws Exception {
+        return noRedirects.send(HttpRequest.newBuilder(URI.create("http://localhost:" + port + path)).build(), HttpResponse.BodyHandlers.ofString());
+    }
+
+    @Test
+    void thePublicPortHasNoBackOffice() throws Exception {
+        assertThat(getAt(port, "/api/v1/admin/audit").statusCode()).isEqualTo(404);
+        assertThat(getAt(port, "/api/v1/admin").statusCode()).isEqualTo(404);
+        assertThat(getAt(port, "/admin").statusCode()).isEqualTo(404);
+        assertThat(getAt(port, "/admin/review").statusCode()).isEqualTo(404);
+    }
+
+    @Test
+    void anEncodedOrWalkedPathDoesNotReachTheBackOfficeOnThePublicPort() throws Exception {
+        assertThat(getAt(port, "/api/v1/%61dmin/audit").statusCode()).isIn(400, 404);
+        assertThat(getAt(port, "/api/v1/x/../admin/audit").statusCode()).isIn(400, 404);
+        assertThat(getAt(port, "/api/v1//admin/audit").statusCode()).isIn(400, 404);
+    }
+
+    @Test
+    void theAdminPortAnswersTheBackOfficeBehindSignIn() throws Exception {
+        assertThat(getAt(ADMIN_PORT, "/api/v1/admin/audit").statusCode()).isEqualTo(401);
+    }
+
+    @Test
+    void endUsersSignInOnThePublicPortAndAdminsOnTheAdminPortEachWithItsOwnCallback() throws Exception {
+        HttpResponse<String> publicSignIn = getAt(port, "/oauth2/authorization/test");
+        assertThat(publicSignIn.statusCode()).isEqualTo(302);
+        assertThat(publicSignIn.headers().firstValue("Location")).hasValueSatisfying(l -> assertThat(l)
+            .startsWith("https://provider.example/authorize").contains("redirect_uri=http://localhost:" + port + "/login/oauth2/code/test"));
+
+        HttpResponse<String> adminSignIn = getAt(ADMIN_PORT, "/oauth2/authorization/test");
+        assertThat(adminSignIn.statusCode()).isEqualTo(302);
+        assertThat(adminSignIn.headers().firstValue("Location")).hasValueSatisfying(l -> assertThat(l)
+            .contains("redirect_uri=http://localhost:" + ADMIN_PORT + "/login/oauth2/code/test"));
+    }
+
+    @Test
+    void thePublicApiStaysOnThePublicPort() throws Exception {
+        assertThat(getAt(port, "/api/v1/me").statusCode()).isEqualTo(200);
+    }
+
+    static int freePort() {
+        try (ServerSocket s = new ServerSocket(0)) {
+            return s.getLocalPort();
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
     }
 }

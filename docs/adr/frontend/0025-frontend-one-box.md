@@ -1,6 +1,6 @@
 # 0025 — Frontend: one box, state in the URL, guide stream, accessibility, theme (system/light/dark)
 
-**Status.** Accepted. The pages, their layout and the design system are in [0040](0040-frontend-design-v2.md). **Builds on:** [0001](../foundation/0001-stack-and-runtime.md), [0003](../foundation/0003-contract-first-rest-api.md), [0008](../search/0008-federated-search.md), [0015](../guide/0015-ai-guide-evidence-gate.md)
+**Status.** Accepted. The pages, their layout and the design system are in [0040](0040-frontend-design.md). **Builds on:** [0001](../foundation/0001-stack-and-runtime.md), [0003](../foundation/0003-contract-first-rest-api.md), [0008](../search/0008-federated-search.md), [0015](../guide/0015-ai-guide-evidence-gate.md)
 
 ## Context
 Users come with a need, not with a choice between "search" and "ask an artificial intelligence (AI)". Two boxes or a mode switch make them
@@ -37,13 +37,13 @@ screen reader, and in light and dark mode.
    from the first one used, because the limit is small; at 0 the line says that stored results still answer and when
    the limit resets. Nothing is shown when the count is unknown.
 4. **Radar design system.** The Helper2.ai design system in `docs/design/system`, named after its radar mark:
-   warm paper, indigo ink, one saffron accent; `tokens.css` mirrors `tokens.json` (v3, [0040](0040-frontend-design-v2.md)).
+   warm paper, indigo ink, one saffron accent; `tokens.css` mirrors `tokens.json` ([0040](0040-frontend-design.md)).
    Unknown values read "Unknown".
 5. **Accessibility.** Skip link; `RouteFocus` moves focus to the new page's `h1` (or `#main`, without scrolling) and
    names the page in a live region; paging moves focus to the results heading. The focus ring is a 3px indigo outline 2px off the control
    (`--focus`): at least 10.4:1 on every light surface and 8.8:1 (light indigo) on every dark one, above the 3:1 of
    WCAG 1.4.11. The home boards pause on hover, focus and tap and never move with reduced motion
-   ([0040](0040-frontend-design-v2.md)). Vitest runs axe-core smoke tests (`a11y.test.tsx`,
+   ([0040](0040-frontend-design.md)). Vitest runs axe-core smoke tests (`a11y.test.tsx`,
    color contrast excluded because jsdom cannot compute it).
 6. **Theme: system, light, dark.** One button cycles system → light → dark. A fixed choice is saved as `h2.theme`;
    "system" removes it. `public/theme.js` sets `data-theme` before the first paint and follows the device while no choice is saved.

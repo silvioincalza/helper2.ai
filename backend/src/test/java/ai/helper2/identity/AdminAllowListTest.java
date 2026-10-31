@@ -45,6 +45,10 @@ class AdminAllowListTest {
     }
 
     private static Set<String> rolesFor(Set<String> admins) {
+        return rolesFor(admins, true);
+    }
+
+    private static Set<String> rolesFor(Set<String> admins, boolean onAdminPort) {
         // The provider defaults Spring Boot uses for "github": user-name attribute "id".
         ClientRegistration github = CommonOAuth2Provider.GITHUB.getBuilder("github")
             .clientId("client").clientSecret("secret")
@@ -52,7 +56,7 @@ class AdminAllowListTest {
             .build();
         OAuth2AccessToken token = new OAuth2AccessToken(OAuth2AccessToken.TokenType.BEARER, "token",
             Instant.now(), Instant.now().plusSeconds(60));
-        return SecurityConfiguration.oauthUsers(admins).loadUser(new OAuth2UserRequest(github, token))
+        return SecurityConfiguration.oauthUsers(admins, () -> onAdminPort).loadUser(new OAuth2UserRequest(github, token))
             .getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet());
     }
 
@@ -69,5 +73,19 @@ class AdminAllowListTest {
     @Test
     void sameIdUnderAnotherProviderDoesNotGrantAdmin() {
         assertThat(rolesFor(Set.of("google:12345"))).doesNotContain("ROLE_ADMIN");
+    }
+
+    @Test
+    void anAdminWhoSignsInOnThePublicPortIsAPlainUserThere() {
+        // ADR 0035: ADMIN only on a session made on the admin port, so a stolen public session is never an admin one.
+        assertThat(rolesFor(Set.of("github:12345"), false)).contains("ROLE_USER").doesNotContain("ROLE_ADMIN");
+    }
+
+    @Test
+    void signInReturnsToTheBackOfficeOnTheAdminPortAndToTheSiteOnThePublicPort() {
+        assertThat(SecurityConfiguration.afterSignIn("/", true)).isEqualTo("/admin");
+        assertThat(SecurityConfiguration.afterSignIn("/", false)).isEqualTo("/");
+        assertThat(SecurityConfiguration.afterSignIn("http://localhost:5173", true)).isEqualTo("http://localhost:5173/admin");
+        assertThat(SecurityConfiguration.afterSignIn("http://localhost:5173", false)).isEqualTo("http://localhost:5173/");
     }
 }
