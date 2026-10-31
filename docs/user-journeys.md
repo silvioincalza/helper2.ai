@@ -108,6 +108,8 @@ Sign-in exists for administrators ([ADR 0023](adr/0023-identity-and-admin.md)); 
 
 **Failure case:** sign-in fails or the provider is down → `/admin?signin=failed` says "Sign-in did not complete. Try again."; anonymous use is unaffected.
 
+**Delete the account.** The signed-in name in the header opens the account page (`/account`): who is signed in, and **Delete my account**. A dialog asks to confirm, with focus on Cancel; Escape closes it and focus goes back to the button. On confirm the account and its saved items are deleted and the page starts over, signed out. If the deletion fails, an alert says so and the account stays. Signed out, the page says there is no account to delete and links to Privacy; it offers no sign-in.
+
 ## UJ-8 Understand coverage and sources
 
 **Entry:** Sources in the footer of every page; the sources under every search (UJ-1).
@@ -158,6 +160,23 @@ One action at a time: while a request runs, the other buttons wait.
 3. **Terms** (`/terms`): the service, no guarantee on results, third-party content, acceptable use, liability, law; a link to Privacy.
 
 **Exit:** GitHub issues (Mission, new tab), the contact e-mail, the box in the header, the logo.
+
+## UJ-11 See what is new (home boards)
+
+**Entry:** the home page, under the box and the examples.
+
+1. **News**: what came into the Helper2 index in the last 7 days, by the date each source states (Published, Updated), or First seen when no source states one. Tools and research only.
+2. **Events**: AI events in the next three months, soonest first, with the days, the kind, the place or online, and how soon ("in 13 days", "On now").
+3. Each row: the date, the type tag, the source or the place, the status pill, and the name. The name opens the resource page (UJ-4).
+4. A board with more rows than fit moves up one row every 4 seconds. Hover, keyboard focus, a tap or the Pause button stop it. With reduced motion it never moves by itself. A screen reader reads a normal list.
+
+**Exit:** a row's name to its resource page, the box, the examples.
+
+| State | Behavior |
+|---|---|
+| Loading | "Loading…" and skeleton rows. |
+| Empty | The board says there is nothing in its window ("Nothing with a stated publication date in the last 7 days."). The box above is the next step. |
+| Error | An alert under the board's heading with Try again; focus stays on the board's heading. |
 
 ## Success criteria (product level)
 
