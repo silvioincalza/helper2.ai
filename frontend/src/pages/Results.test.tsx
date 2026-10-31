@@ -61,9 +61,14 @@ describe('results: list and preview', () => {
     expect(await screen.findByText('Guide is reading the results… picks will appear here')).toBeInTheDocument();
     await screen.findByRole('article');
     const before = rowTitles();
+    // jsdom cannot measure: the slot that keeps the row of "How the guide decided" stands in for it while the guide reads.
+    expect(document.querySelector('.h2-results__full-slot')).toBeInTheDocument();
+    expect(screen.queryByText('How the guide decided')).not.toBeInTheDocument();
     await act(async () => { answer(sse(guide())); });
     const chip = await screen.findByRole('button', { name: '#1 Postgres MCP' });
     expect(rowTitles()).toEqual(before);
+    expect(screen.getByText('How the guide decided')).toBeInTheDocument();
+    expect(document.querySelector('.h2-results__full-slot')).not.toBeInTheDocument();
     expect(screen.getByText('Pick #1')).toBeInTheDocument();
     const reason = screen.getAllByText('Read-only access fits an agent that only reads.')[0]!;
     expect(reason).toHaveAttribute('data-ai-generated', 'true');
