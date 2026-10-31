@@ -62,6 +62,7 @@
 /* NewsBoard: 2px ink rule on top, display heading, a short subtitle, then a window of board-height over the rows. */
 .h2-board { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; padding-top: var(--space-3); border-top: 2px solid var(--ink); }
 .h2-board__title { margin: 0; font: 500 28px/32px var(--font-display); letter-spacing: -0.02em; color: var(--ink); }
+.h2-board__title:focus:not(:focus-visible) { outline: none; }
 .h2-board__lede { margin: 0 0 var(--space-2); font: 400 14px/21px var(--font-sans); color: var(--muted); }
 .h2-board__window { display: flex; flex-direction: column; gap: var(--space-2); }
 .h2-board__list { position: relative; list-style: none; margin: 0; padding: 0; height: var(--board-height); overflow-y: auto; scrollbar-width: thin; border-top: 1px solid var(--border); }
@@ -81,3 +82,14 @@
   .h2-board__list { height: 340px; }
   .h2-board__row { padding: var(--space-2) var(--space-1); }
 }
+
+/* StatePanel: what happened in the heading, why under it, the next step in the last row. */
+.h2-state { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4) var(--space-5); border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); }
+.h2-state > * { margin: 0; }
+.h2-state--error { border-color: var(--danger); }
+.h2-state__title { display: flex; align-items: center; gap: var(--space-2); font: 600 1rem/1.35 var(--font-sans); letter-spacing: normal; color: var(--ink); }
+h1.h2-state__title { font: 500 clamp(1.75rem, 2vw + 1.1rem, 2.5rem)/1.1 var(--font-display); letter-spacing: -0.03em; }
+.h2-state__title:focus:not(:focus-visible) { outline: none; }
+.h2-state__next { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); }
+.h2-state__steps { display: flex; flex-direction: column; gap: var(--space-1); }
+.h2-state__next > .btn, .h2-state__next > a { min-height: var(--target-min); display: inline-flex; align-items: center; }

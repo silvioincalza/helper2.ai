@@ -1,4 +1,3 @@
-import { useRef } from 'react';
 import { useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { api, ApiError } from '@/api/client';
@@ -12,10 +11,12 @@ import { Pagination } from '@/components/Pagination';
 import { ResultList, rowId } from '@/components/ResultList';
 import { InlinePreview, ResultPreview } from '@/components/ResultPreview';
 import { SourcesSummary } from '@/components/SourcesSummary';
+import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
 import { useSources } from '@/context/SourcesContext';
 import { useApi } from '@/hooks/useApi';
 import { useGuideStream, type GuideStream } from '@/hooks/useGuideStream';
 import { useNarrow } from '@/hooks/useNarrow';
+import { useRetry } from '@/hooks/useRetry';
 import { useTitle } from '@/hooks/useTitle';
 import {
   activeFilterCount, askedQuestion, clampQuestion, clearFilters, isSelected, parseSearchParams, patchState, RESULTS_PATH,
@@ -80,7 +81,8 @@ function Results({ state, asked, guide, update, onAsk, onCloseGuide }: {
   const search = useApi<SearchResponse | null>(`search?${apiParams.toString()}`, (signal) => (hasQuery ? api.search(apiParams, signal) : Promise.resolve(null)));
   const registry = useSources();
   const narrow = useNarrow();
-  const heading = useRef<HTMLHeadingElement>(null);
+  // Try again and a new page both start reading again from the results heading.
+  const { retry, focusRef: heading } = useRetry(search.reload, search.loading);
   // While a new search loads, the last results stay on the page (dimmed, aria-busy), so the list does not flash and
   // the control the user just used keeps focus. Skeleton rows only on the first load.
   const shown = (search.loading ? search.previous : search.data) ?? undefined;
@@ -151,16 +153,14 @@ function Results({ state, asked, guide, update, onAsk, onCloseGuide }: {
         )}
 
         {!search.loading && search.error !== undefined && (
-          <div role="alert" className="state-box state-error">
-            <h3 className="h-small"><Icon name="warn" /> {t('results.errorTitle')}</h3>
+          <StatePanel tone="error" level={3} title={t('results.errorTitle')} next={<RetryButton onClick={retry} />}>
             <p>{search.error instanceof ApiError && search.error.problem?.detail ? search.error.problem.detail : t('results.errorBody')}</p>
-            <button type="button" className="btn btn-primary" onClick={search.reload}><Icon name="refresh" /> {t('common.retry')}</button>
-          </div>
+          </StatePanel>
         )}
 
         <div className={`results-body${search.loading ? ' is-stale' : ''}`} aria-busy={search.loading}>
           {shown && (
-            <ResultsBody res={shown} state={state} update={update} retry={search.reload} asked={asked} onAsk={onAsk}>
+            <ResultsBody res={shown} state={state} update={update} retry={retry} asked={asked} onAsk={onAsk}>
               <div className={`results-split${narrow ? ' is-narrow' : ''}`}>
                 <div className="results-list-col">
                   <ResultList cards={cards} view={state.view} selected={selected?.id} onSelect={select} picks={picks}
@@ -247,23 +247,21 @@ function ResultsBody({ res, state, update, retry, asked, onAsk, children }: {
       )}
 
       {nothingSearched ? (
-        <div role="alert" className="state-box state-error">
-          <h3 className="h-small"><Icon name="warn" /> {t('results.allFailedTitle')}</h3>
+        <StatePanel tone="error" level={3} title={t('results.allFailedTitle')} next={<RetryButton onClick={retry} />}>
           <p>{t('results.allFailedBody')}</p>
           {sourceList}
-          <button type="button" className="btn btn-primary" onClick={retry}><Icon name="refresh" /> {t('common.retry')}</button>
-        </div>
+        </StatePanel>
       ) : res.results.length === 0 ? (
-        <div className="state-box state-empty">
-          <h3 className="h-small">{t('results.emptyTitle')}</h3>
-          <ul>
+        <StatePanel tone="notice" level={3} title={t('results.emptyTitle')} next={(
+          <ul className="plain-list h2-state__steps">
             {filtered && <li><button type="button" className="btn btn-link" onClick={() => update(clearFilters(state))}>{t('results.emptyRemoveFilters')}</button></li>}
             <li>{t('results.emptyTryOther')}</li>
             {!asked && <li><button type="button" className="btn btn-link" onClick={onAsk}>{t('results.emptyAsk')}</button></li>}
           </ul>
+        )}>
           <p>{t('results.emptySearched')}</p>
           {sourceList}
-        </div>
+        </StatePanel>
       ) : children}
     </>
   );

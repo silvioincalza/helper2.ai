@@ -154,6 +154,7 @@ describe('a News or Events board', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Could not load the news.');
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(onRetry).toHaveBeenCalledOnce();
+    expect(screen.getByRole('heading', { name: 'News' })).toHaveFocus();
     expect(await axeViolations(container)).toEqual([]);
   });
 });

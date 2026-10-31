@@ -67,6 +67,8 @@ describe('home page: the News board', () => {
     expect(await within(news).findByRole('alert')).toHaveTextContent('Could not load the news right now.');
     await userEvent.click(within(news).getByRole('button', { name: 'Try again' }));
     expect(await within(news).findByRole('link', { name: 'Fresh MCP server' })).toBeInTheDocument();
+    // The button is gone with the error: focus stays on the board, on its heading, not on the page body.
+    expect(within(news).getByRole('heading', { name: 'News' })).toHaveFocus();
   });
 });
 

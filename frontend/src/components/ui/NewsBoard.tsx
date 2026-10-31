@@ -1,7 +1,9 @@
 import { useEffect, useId, useRef, useState, type PointerEvent, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import { useRetry } from '@/hooks/useRetry';
 import { Icon } from '../Icon';
+import { RetryButton, StatePanel } from './StatePanel';
 import './ui.css';
 
 /** One row: the date, the type tag, the source or the place, the status pill, and the name linking to [to]. */
@@ -31,7 +33,8 @@ function topRow(el: HTMLElement): number {
 
 /**
  * News or Events on the home page (ADR 0040, 2): a heading, a short subtitle, and the rows in a window of
- * `--board-height`. [rows] is undefined while loading; [failed] shows the error with Retry.
+ * `--board-height`. [rows] is undefined while loading; [failed] shows the error with Try again, which keeps focus on
+ * the board's heading.
  */
 export function NewsBoard({ title, lede, rows, failed, onRetry, emptyText, errorText }: {
   title: string;
@@ -45,9 +48,10 @@ export function NewsBoard({ title, lede, rows, failed, onRetry, emptyText, error
   const { t } = useTranslation();
   const titleId = useId();
   const loading = rows === undefined && !failed;
+  const { retry, focusRef } = useRetry(onRetry, loading);
   return (
     <section className="h2-board" aria-labelledby={titleId}>
-      <h2 id={titleId} className="h2-board__title">{title}</h2>
+      <h2 id={titleId} ref={focusRef} tabIndex={-1} className="h2-board__title">{title}</h2>
       <p className="h2-board__lede">{lede}</p>
       {/* Not a live region: on a page load it would read every row aloud. The error is an alert of its own. */}
       <div aria-busy={loading}>
@@ -58,10 +62,7 @@ export function NewsBoard({ title, lede, rows, failed, onRetry, emptyText, error
           </div>
         )}
         {failed && (
-          <div role="alert" className="state-box state-error">
-            <p><Icon name="warn" /> {errorText}</p>
-            <button type="button" className="btn" onClick={onRetry}><Icon name="refresh" /> {t('common.retry')}</button>
-          </div>
+          <StatePanel tone="error" level={3} title={errorText} next={<RetryButton onClick={retry} />} />
         )}
         {!failed && rows?.length === 0 && <p className="state-box">{emptyText}</p>}
         {!failed && rows !== undefined && rows.length > 0 && <MovingList rows={rows} label={title} />}

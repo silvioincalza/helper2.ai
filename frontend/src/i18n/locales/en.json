@@ -473,7 +473,9 @@
     }
   },
   "notFound": {
-    "title": "Page not found"
+    "title": "Page not found",
+    "body": "There is nothing at this address. Search with the box above, or start from the home page.",
+    "home": "Go to the home page"
   },
   "glossary": {
     "whatIs": "What does this mean?",

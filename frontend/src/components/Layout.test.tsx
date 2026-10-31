@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { ADMIN, ANON, USER } from '@/test/fixtures';
 import { mockApi } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
+import { axeViolations } from '@/test/a11y';
 import { THEME_KEY } from '@/lib/theme';
 import pkg from '../../package.json';
 
@@ -17,10 +18,14 @@ describe('layout', () => {
     expect(screen.queryByRole('link', { name: 'Admin' })).not.toBeInTheDocument();
   });
 
-  it('the removed models page is not a route any more', async () => {
+  it('an unknown address is a 404 page that says so and offers the way home and the box', async () => {
     mockApi();
-    renderApp('/models');
+    const { container } = renderApp('/models');
     expect(await screen.findByRole('heading', { level: 1, name: 'Page not found' })).toBeInTheDocument();
+    expect(screen.getByText(/There is nothing at this address/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Go to the home page' })).toHaveAttribute('href', '/');
+    expect(within(screen.getByRole('banner')).getByRole('searchbox')).toBeInTheDocument();
+    expect(await axeViolations(container)).toEqual([]);
   });
 
   it('hides Admin for signed-in non-admins and shows it for admins', async () => {

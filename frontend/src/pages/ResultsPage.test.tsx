@@ -284,6 +284,7 @@ describe('the states of the results page', () => {
     expect(await axeViolations(container)).toEqual([]);
     await userEvent.click(within(alert).getByRole('button', { name: /Try again/ }));
     expect(await screen.findByRole('button', { name: /^Acme Translator / })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '1 result' })).toHaveFocus();
   });
 
   it('when nothing matched: next steps (remove filters, fewer words, ask the guide) and the sources searched', async () => {
@@ -306,6 +307,16 @@ describe('the states of the results page', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Search is unavailable');
     await userEvent.click(screen.getByRole('button', { name: /Try again/ }));
     expect(await screen.findByRole('button', { name: /^Acme Translator / })).toBeInTheDocument();
+    // The button went away with the error: focus is on the results heading, not on the page body.
+    expect(screen.getByRole('heading', { name: '1 result' })).toHaveFocus();
+  });
+
+  it('when search is still unavailable after Try again: focus stays on the results heading', async () => {
+    mockApi({ 'GET /search': () => problem(503, 'Unavailable') });
+    renderApp('/search?q=translate');
+    await userEvent.click(within(await screen.findByRole('alert')).getByRole('button', { name: /Try again/ }));
+    await waitFor(() => expect(screen.getByRole('heading', { name: /^Search results$/ })).toHaveFocus());
+    expect(screen.getByRole('alert')).toHaveTextContent('Search is unavailable');
   });
 
   it('when the network is down: says search is unavailable', async () => {
