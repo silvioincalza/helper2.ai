@@ -85,15 +85,15 @@ class SpringAiToolGuideModelTest {
             {"sections":[{"kind":"INSTALL","steps":[
               {"text":"Install it.","source":"readme","quote":"Acme X","code":"npm install acme-x","language":"bash"}]}]}""");
 
-        ProposedGuide guide = model().write(REF, List.of(README), "How do I install it?");
+        ProposedGuide guide = model().write(REF, List.of(README));
 
         assertThat(guide.getSections()).singleElement().satisfies(s -> {
             assertThat(s.getKind()).isEqualTo("INSTALL");
             assertThat(s.getSteps()).containsExactly(new ProposedStep("Install it.", "readme", "Acme X", "npm install acme-x", "bash"));
         });
         assertThat(server.requestBodies).singleElement().satisfies(body -> {
-            assertThat(body).contains("\"model\":\"fast\"").contains("<document key=\\\"readme\\\" kind=\\\"README\\\">")
-                .contains("<question>How do I install it?</question>");
+            assertThat(body).contains("\"model\":\"fast\"").contains("<document key=\\\"readme\\\" kind=\\\"README\\\">");
+            assertThat(body).doesNotContain("QUESTION");
             // Third-party angle brackets are masked, so a README cannot close the document tag or open its own.
             assertThat(body).doesNotContain("<script>");
         });
@@ -104,7 +104,7 @@ class SpringAiToolGuideModelTest {
     void anAnswerThatDoesNotDecodeIsRetriedOnce_thenItIsUnreadable() {
         reply("Sorry, I cannot help with that.");
 
-        assertThatThrownBy(() -> model().write(REF, List.of(README), null))
+        assertThatThrownBy(() -> model().write(REF, List.of(README)))
             .isInstanceOfSatisfying(ToolGuideUnavailable.class, e -> assertThat(e.getReason()).isEqualTo(Reason.UNREADABLE));
         assertThat(server.requests).hasSize(2);
         assertThat(budget.usedToday()).isEqualTo(2);
@@ -114,7 +114,7 @@ class SpringAiToolGuideModelTest {
     void aProviderErrorIsNotRetried() {
         server.route("/v1/chat/completions", new FixtureServer.Reply(500, "{\"error\":{\"message\":\"down\"}}", Map.of(), 0));
 
-        assertThatThrownBy(() -> model().write(REF, List.of(README), null))
+        assertThatThrownBy(() -> model().write(REF, List.of(README)))
             .isInstanceOfSatisfying(ToolGuideUnavailable.class, e -> assertThat(e.getReason()).isEqualTo(Reason.PROVIDER));
         assertThat(budget.usedToday()).isEqualTo(1);
     }
@@ -131,7 +131,7 @@ class SpringAiToolGuideModelTest {
         };
 
         assertThatThrownBy(() -> new SpringAiToolGuideModel(chat, "fast", false, budget, ModelCallMetrics.none(), Resilience.NONE)
-            .write(REF, List.of(README), null))
+            .write(REF, List.of(README)))
             .isInstanceOfSatisfying(ToolGuideUnavailable.class, e -> assertThat(e.getReason()).isEqualTo(Reason.PROVIDER));
         assertThat(calls).hasValue(2);
     }
@@ -139,7 +139,7 @@ class SpringAiToolGuideModelTest {
     /** An open llm-chat circuit is a provider error at once: no request, no unit of the daily cap. */
     @Test
     void anOpenCircuitIsAProviderErrorWithoutTheProviderOrTheBudget() {
-        assertThatThrownBy(() -> model(ModelCallMetrics.none(), TestPolicies.llmChatOpen()).write(REF, List.of(README), null))
+        assertThatThrownBy(() -> model(ModelCallMetrics.none(), TestPolicies.llmChatOpen()).write(REF, List.of(README)))
             .isInstanceOfSatisfying(ToolGuideUnavailable.class, e -> assertThat(e.getReason()).isEqualTo(Reason.PROVIDER));
         assertThat(server.requests).isEmpty();
         assertThat(budget.usedToday()).isZero();
@@ -153,7 +153,7 @@ class SpringAiToolGuideModelTest {
         observations.observationConfig().observationHandler(new DefaultMeterObservationHandler(meters));
         reply("{\"sections\":[]}");
 
-        model(new ModelCallMetrics(observations, meters), Resilience.NONE).write(REF, List.of(README), null);
+        model(new ModelCallMetrics(observations, meters), Resilience.NONE).write(REF, List.of(README));
 
         String version = ModelCallMetrics.promptVersion(SpringAiToolGuideModel.systemPrompt());
         assertThat(meters.get(ModelCallMetrics.CALL).tags("step", "tool-guide", "prompt", version, "outcome", "ok").timer().count())
@@ -167,7 +167,7 @@ class SpringAiToolGuideModelTest {
         DailyBudget none = new DailyBudget(0, Clock.systemUTC(), "tool-guide");
 
         assertThatThrownBy(() -> new SpringAiToolGuideModel(chat(), "fast", true, none, ModelCallMetrics.none(), Resilience.NONE)
-            .write(REF, List.of(README), null))
+            .write(REF, List.of(README)))
             .isInstanceOfSatisfying(ToolGuideUnavailable.class, e -> assertThat(e.getReason()).isEqualTo(Reason.BUDGET));
         assertThat(server.requests).isEmpty();
     }

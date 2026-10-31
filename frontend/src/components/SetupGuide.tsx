@@ -1,4 +1,4 @@
-import { createContext, type FormEvent, type HTMLAttributes, type Ref, useContext, useEffect, useId, useRef, useState } from 'react';
+import { createContext, type HTMLAttributes, type Ref, useContext, useEffect, useId, useRef, useState } from 'react';
 import { aiMark } from '@/lib/aiMark';
 import { useTranslation } from 'react-i18next';
 import { api } from '@/api/client';
@@ -62,11 +62,10 @@ export function GuideMeButton({ title, open, onToggle, bodyId, primary = false, 
 }
 
 /**
- * "Guide me" on a tool: how to install, configure, use and connect it, from its own sources only. Three parts,
+ * "Guide me" on a tool: how to install, configure, use and connect it, from its own sources only. Two parts,
  * loaded when opened: snippets per AI tool from its registry entry or README config example (GET /setup, no AI),
  * steps from its README or model card (POST /guide, AI-picked, every quote and command checked against the
- * document), and a follow-up question about this tool (same endpoint, with the question). Focus moves to its
- * heading when it opens.
+ * document). Focus moves to its heading when it opens.
  */
 export function GuideBody({ id, title, level }: { id: string; title: string; level: number }) {
   const { t } = useTranslation();
@@ -156,41 +155,24 @@ function SetupAnswer({ guide, locale, level }: { guide: Guide; locale: string; l
   );
 }
 
-/** The step-by-step guide, then the follow-up box; a question replaces the steps with its answer. Try again keeps focus on the part's heading. */
+/** The step-by-step guide. Try again keeps focus on the part's heading. */
 function StepsPart({ id, title, level }: { id: string; title: string; level: number }) {
   const { t } = useTranslation();
   const uid = useId();
-  const [question, setQuestion] = useState('');
-  const [asked, setAsked] = useState<string | null>(null);
-  const q = useApi(`tool-guide/${id}/${asked ?? ''}`, (signal) => api.askResourceGuide(id, asked ? { question: asked } : {}, signal));
+  const q = useApi(`tool-guide/${id}`, (signal) => api.askResourceGuide(id, signal));
   const { retry, focusRef } = useRetry(q.reload, q.loading);
-  const name = { title, interpolation: { escapeValue: false } };
-  function submit(e: FormEvent) {
-    e.preventDefault();
-    const text = question.trim();
-    if (text.length >= 3) setAsked(text);
-  }
   return (
     <section className="setup-part" aria-labelledby={`${uid}-h`}>
-      <H level={level} id={`${uid}-h`} ref={focusRef} tabIndex={-1} className="setup-part-h">{asked ? t('setup.answerTitle') : t('setup.stepsTitle')}</H>
-      {asked && <p className="small"><q>{asked}</q> · <button type="button" className="btn btn-ghost" onClick={() => { setAsked(null); setQuestion(''); }}>{t('setup.backToSteps')}</button></p>}
+      <H level={level} id={`${uid}-h`} ref={focusRef} tabIndex={-1} className="setup-part-h">{t('setup.stepsTitle')}</H>
       <div aria-live="polite" aria-busy={q.loading}>
         {q.loading ? (
-          <p className="muted" role="status">{t(asked ? 'setup.answering' : 'setup.reading')}</p>
+          <p className="muted" role="status">{t('setup.reading')}</p>
         ) : q.error !== undefined || !q.data ? (
           <StatePanel tone="error" level={level + 1} title={t('setup.stepsError')} next={<RetryButton onClick={retry} />} />
         ) : (
           <ToolSteps guide={q.data} title={title} level={level + 1} />
         )}
       </div>
-      <form className="setup-ask" onSubmit={submit}>
-        <label htmlFor={`${uid}-q`} className="filter-legend">{t('setup.askLabel', name)}</label>
-        <div className="setup-ask-row">
-          <input id={`${uid}-q`} type="text" enterKeyHint="send" maxLength={500} value={question}
-            placeholder={t('setup.askPlaceholder')} onChange={(e) => setQuestion(e.target.value)} />
-          <button type="submit" className="btn btn-primary" disabled={question.trim().length < 3 || q.loading}>{t('setup.ask')}</button>
-        </div>
-      </form>
     </section>
   );
 }

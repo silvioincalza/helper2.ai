@@ -146,22 +146,16 @@ paths:
     post:
       tags: [setup]
       operationId: askResourceGuide
-      summary: Step-by-step guide for one tool from its own documentation, or the answer to a question about it.
+      summary: Step-by-step guide for one tool from its own documentation.
       description: |
         Reads the tool's own documents (GitHub README, npm package README, Hugging Face model or Space card) from
         fixed hosts. A model may only pick and order passages from them; a deterministic check keeps a step only
         when its quote is found in the cited document and its command is whole lines of one code block (or one
-        inline code span) of that document, exactly as written. Without a question the answer is the full guide
-        (requirements, install, configure, use, connect) and is the same for every visitor; with one, it starts
-        with the answer. POST because it can call a model: it shares the guide's rate limit and has its own
-        daily cap. `status` says when there is nothing to show and why.
+        inline code span) of that document, exactly as written. The answer is the full guide (requirements,
+        install, configure, use, connect) and is the same for every visitor. POST because it can call a model: it
+        shares the guide's rate limit and has its own daily cap. `status` says when there is nothing to show and why.
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/ToolGuideRequest' }
       responses:
         '200':
           description: Guide (possibly without steps; see status).
@@ -906,11 +900,6 @@ components:
               text: { type: [string, 'null'], description: Ready to paste; secrets are placeholders. }
               note: { type: [string, 'null'], description: Why it is not supported, or what to do after pasting. }
 
-    ToolGuideRequest:
-      type: object
-      properties:
-        question: { type: [string, 'null'], minLength: 3, maxLength: 500, description: A question about this tool; empty for the full guide. }
-
     ToolGuide:
       type: object
       required: [resourceId, title, status, sections, documents, rejected, generatedAt]
@@ -921,7 +910,6 @@ components:
           type: string
           enum: [OK, NO_STEPS, NO_MATERIAL, LLM_UNAVAILABLE]
           description: 'OK: steps passed the checks. NO_STEPS: documents read, nothing passed. NO_MATERIAL: no document to read. LLM_UNAVAILABLE: no model now (see unavailable).'
-        question: { type: [string, 'null'] }
         unavailable: { type: [string, 'null'], description: 'With LLM_UNAVAILABLE: "budget" (today''s model calls are used up) or "error".' }
         sections:
           type: array
@@ -929,7 +917,7 @@ components:
             type: object
             required: [kind, steps]
             properties:
-              kind: { type: string, enum: [ANSWER, REQUIREMENTS, INSTALL, CONFIGURE, USE, CONNECT] }
+              kind: { type: string, enum: [REQUIREMENTS, INSTALL, CONFIGURE, USE, CONNECT] }
               steps:
                 type: array
                 items:

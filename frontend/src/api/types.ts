@@ -32,7 +32,6 @@ export type SetupGuide = S['SetupGuide'];
 export type SetupOption = S['SetupOption'];
 export type SetupClient = S['SetupClient'];
 export type ToolGuide = S['ToolGuide'];
-export type ToolGuideRequest = S['ToolGuideRequest'];
 export type IssueReportRequest = S['IssueReportRequest'];
 export type IssueReportAccepted = S['IssueReportAccepted'];
 export type SourceInfo = S['SourceInfo'];

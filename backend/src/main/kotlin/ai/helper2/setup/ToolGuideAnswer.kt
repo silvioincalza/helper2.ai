@@ -2,8 +2,8 @@ package ai.helper2.setup
 
 import java.time.Instant
 
-/** Sections of a tool guide, in the order they are shown. ANSWER holds the answer to a follow-up question. */
-enum class GuideSectionKind { ANSWER, REQUIREMENTS, INSTALL, CONFIGURE, USE, CONNECT }
+/** Sections of a tool guide, in the order they are shown. */
+enum class GuideSectionKind { REQUIREMENTS, INSTALL, CONFIGURE, USE, CONNECT }
 
 /** The model's proposal: everything in it is checked by [ToolGuideValidator] before anyone sees it. */
 data class ProposedStep(val text: String, val materialKey: String, val quote: String, val code: String? = null, val language: String? = null)
@@ -38,8 +38,6 @@ enum class ToolGuideStatus {
 
 data class ToolGuideAnswer(
     val status: ToolGuideStatus,
-    /** The question asked; never kept in the cache, where answers are shared by every asker. */
-    val question: String?,
     val sections: List<GuideSection>,
     /** The documents the steps were read from, without their text; steps refer to them by key. */
     val materials: List<MaterialRef>,

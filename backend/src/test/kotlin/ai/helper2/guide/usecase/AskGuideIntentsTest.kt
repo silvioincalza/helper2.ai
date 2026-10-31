@@ -175,6 +175,20 @@ class AskGuideIntentsTest {
     }
 
     @Test
+    fun `new right before a kind of resource asks for the newest even when the planner says suggest`() {
+        val model = Model(GuideSearchPlan("MCP server postgres", intent = GuideIntent.SUGGEST), choose = ::pickAll)
+        val a = guide(model).ask("new mcp servers for postgres", null)
+        assertEquals(GuideIntent.NEWEST, a.intent)
+        assertNull(a.window)
+        // Nothing in the words says new: the planner's suggestion stays.
+        val plain = Model(GuideSearchPlan("MCP server postgres", intent = GuideIntent.SUGGEST), choose = ::pickAll)
+        assertEquals(GuideIntent.SUGGEST, guide(plain).ask("an MCP server for Postgres", null).intent)
+        // Any other intent of the planner stays too: only its "nothing special" gives way.
+        val howTo = Model(GuideSearchPlan("MCP server", intent = GuideIntent.HOW_TO), choose = ::pickAll)
+        assertEquals(GuideIntent.HOW_TO, guide(howTo).ask("how to set up new MCP servers", null).intent)
+    }
+
+    @Test
     fun `without a model the backup rules still read the window and date the answer`() {
         val a = guide(null).ask("AI tools from the last month", null)
         assertEquals(GuideIntent.NEWEST, a.intent)

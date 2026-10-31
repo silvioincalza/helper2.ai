@@ -2,7 +2,8 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { makeCard, makeDetail } from '@/test/fixtures';
 import { mockApi, problem } from '@/test/mockApi';
-import { renderApp } from '@/test/render';
+import { axeViolations } from '@/test/a11y';
+import { renderApp, settle } from '@/test/render';
 import type { Evidence, Relationship, SetupGuide, ToolGuide } from '@/api/types';
 
 const ID = '11111111-1111-5111-8111-111111111111';
@@ -26,25 +27,25 @@ describe('resource detail', () => {
   const SETUP: SetupGuide = {
     resourceId: ID, title: 'pg-mcp-server', version: '1.2.0',
     options: [
-      { id: 'o1', kind: 'REMOTE', transport: 'STREAMABLE_HTTP', label: 'Hosted server (Streamable HTTP)', url: 'https://mcp.acme.dev/mcp', settings: [] },
+      { id: 'o1', kind: 'REMOTE', transport: 'SSE', label: 'Hosted server (SSE)', url: 'https://mcp.acme.dev/sse', settings: [] },
       { id: 'o2', kind: 'PACKAGE', transport: 'STDIO', label: 'npm package @acme/pg-mcp', registryType: 'npm', identifier: '@acme/pg-mcp', runtime: 'npx', requires: 'Node.js (npx)',
         settings: [{ name: 'DATABASE_URL', kind: 'ENV', description: 'Connection string', required: true, secret: true }] },
     ],
     clients: [
       { id: 'claude-code', name: 'Claude Code', docsUrl: 'https://code.claude.com/docs/en/mcp', snippets: [
-        { optionId: 'o1', supported: true, where: 'Terminal', language: 'shell', text: 'claude mcp add --transport http pg-mcp-server https://mcp.acme.dev/mcp' },
+        { optionId: 'o1', supported: true, where: 'Terminal', language: 'shell', text: 'claude mcp add --transport sse pg-mcp-server https://mcp.acme.dev/sse' },
         { optionId: 'o2', supported: true, where: 'Terminal', language: 'shell', text: "claude mcp add --env 'DATABASE_URL=<DATABASE_URL>' --transport stdio pg-mcp-server -- npx -y @acme/pg-mcp@1.2.0" },
       ] },
-      { id: 'goose', name: 'Goose', docsUrl: 'https://goose-docs.ai/docs/guides/config-files', snippets: [
-        { optionId: 'o1', supported: true, where: '~/.config/goose/config.yaml', language: 'yaml', text: 'extensions:' },
-        { optionId: 'o2', supported: false, note: 'This client\'s documentation does not describe a way to configure this.' },
+      { id: 'codex', name: 'OpenAI Codex', docsUrl: 'https://learn.chatgpt.com/docs/extend/mcp', snippets: [
+        { optionId: 'o1', supported: false, note: 'This client\'s documentation does not describe connecting to an SSE server.' },
+        { optionId: 'o2', supported: true, where: '~/.codex/config.toml', language: 'toml', text: '[mcp_servers.pg-mcp-server]' },
       ] },
     ],
     sources: [{ sourceId: 'mcp-registry', url: 'https://registry.modelcontextprotocol.io/v0.1/servers/io.acme%2Fpg/versions/latest', retrievedAt: '2026-10-27T20:00:00Z' }],
   };
 
   const STEPS: ToolGuide = {
-    resourceId: ID, title: 'pg-mcp-server', status: 'OK', question: null, rejected: 1, generatedAt: '2026-10-28T00:00:00Z', model: 'nemotron-nano',
+    resourceId: ID, title: 'pg-mcp-server', status: 'OK', rejected: 1, generatedAt: '2026-10-28T00:00:00Z', model: 'nemotron-nano',
     sections: [
       { kind: 'REQUIREMENTS', steps: [{ text: 'Install Node.js 20 or later.', quote: 'Requires Node.js 20 or later.', source: 'readme', caution: false }] },
       { kind: 'INSTALL', steps: [{ text: 'Install it with npm.', quote: 'Install globally:', source: 'readme', caution: false,
@@ -53,41 +54,40 @@ describe('resource detail', () => {
     documents: [{ key: 'readme', kind: 'README', url: 'https://github.com/acme/pg-mcp', retrievedAt: '2026-10-28T00:00:00Z' }],
   };
 
-  it('Guide me opens snippets per AI tool, checked steps from the README, and a follow-up box', async () => {
+  it('Guide me opens snippets per AI tool and checked steps from the README, with no question box', async () => {
     const m = mockApi({
       [`GET /resources/${ID}`]: () => makeDetail({ card: makeCard({ type: 'MCP_SERVER', title: 'pg-mcp-server' }) }),
       [`GET /resources/${ID}/setup`]: () => SETUP,
-      [`POST /resources/${ID}/guide`]: ({ body }) => (body as { question?: string }).question
-        ? { ...STEPS, question: 'Does it need an API key?', sections: [{ kind: 'ANSWER', steps: [{ text: 'No key; it needs a database URL.', quote: 'Pass the database URL', source: 'readme', caution: false }] }] }
-        : STEPS,
+      [`POST /resources/${ID}/guide`]: () => STEPS,
     });
-    renderApp(`/resource/${ID}`);
+    const { container } = renderApp(`/resource/${ID}`);
     const button = await screen.findByRole('button', { name: 'Guide me' });
     expect(button).toHaveAttribute('aria-expanded', 'false');
     expect(m.callsTo('GET', `/resources/${ID}/setup`)).toHaveLength(0);
     await userEvent.click(button);
 
     expect(await screen.findByRole('heading', { name: 'Set up pg-mcp-server' })).toBeInTheDocument();
-    expect(await screen.findByText('claude mcp add --transport http pg-mcp-server https://mcp.acme.dev/mcp')).toBeInTheDocument();
+    expect(await screen.findByText('claude mcp add --transport sse pg-mcp-server https://mcp.acme.dev/sse')).toBeInTheDocument();
     expect(screen.getByText(/From its Official MCP Registry entry, version 1.2.0/)).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('radio', { name: 'npm package @acme/pg-mcp' }));
     expect(screen.getByText(/needs Node.js \(npx\)/)).toBeInTheDocument();
     expect(screen.getByText(/secret: fill in your own/)).toBeInTheDocument();
 
-    await userEvent.selectOptions(screen.getByLabelText('Your AI tool'), 'goose');
-    expect(screen.getByText(/Not available in Goose/)).toBeInTheDocument();
+    await userEvent.selectOptions(screen.getByLabelText('Your AI tool'), 'codex');
+    expect(screen.getByText('[mcp_servers.pg-mcp-server]')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('radio', { name: 'Hosted server (SSE)' }));
+    expect(screen.getByText(/Not available in OpenAI Codex/)).toBeInTheDocument();
 
     expect(await screen.findByRole('heading', { name: 'Install' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'What you need first' })).toBeInTheDocument();
     expect(screen.getByText('npm install -g @acme/pg-mcp')).toBeInTheDocument();
     expect(screen.getByText(/copied exactly from it; commands are not reviewed for safety/)).toBeInTheDocument();
-    expect(m.callsTo('POST', `/resources/${ID}/guide`)[0]?.body).toEqual({});
-
-    await userEvent.type(screen.getByLabelText('Ask about pg-mcp-server'), 'Does it need an API key?');
-    await userEvent.click(screen.getByRole('button', { name: 'Ask' }));
-    expect(await screen.findByText('No key; it needs a database URL.')).toBeInTheDocument();
-    expect(m.callsTo('POST', `/resources/${ID}/guide`)[1]?.body).toEqual({ question: 'Does it need an API key?' });
+    expect(m.callsTo('POST', `/resources/${ID}/guide`)).toHaveLength(1);
+    expect(m.callsTo('POST', `/resources/${ID}/guide`)[0]?.body).toBeUndefined();
+    expect(screen.queryByRole('textbox', { name: /Ask about/ })).not.toBeInTheDocument();
+    await settle();
+    expect(await axeViolations(container)).toEqual([]);
   });
 
   it('a run command copied from the README says it is not reviewed for safety', async () => {
@@ -124,7 +124,7 @@ describe('resource detail', () => {
     expect(screen.queryByRole('button', { name: /Try again/ })).not.toBeInTheDocument();
   });
 
-  it('without setup data or documents it says why, and the follow-up box stays', async () => {
+  it('without setup data or documents it says why', async () => {
     mockApi({
       [`GET /resources/${ID}`]: () => makeDetail({ card: makeCard({ type: 'LIBRARY', title: 'acme-lib' }) }),
       [`GET /resources/${ID}/setup`]: () => ({ resourceId: ID, title: 'acme-lib', version: null, options: [], clients: [], sources: [] }),
@@ -134,7 +134,6 @@ describe('resource detail', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Guide me' }));
     expect(await screen.findByText(/acme-lib has no README or model card/)).toBeInTheDocument();
     expect(screen.queryByLabelText('Your AI tool')).not.toBeInTheDocument();
-    expect(screen.getByLabelText('Ask about acme-lib')).toBeInTheDocument();
   });
 
   it('offers no Guide me on a paper', async () => {
