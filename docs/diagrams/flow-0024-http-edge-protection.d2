@@ -16,10 +16,10 @@ direction: down
 
 in: "Request" {class: end}
 port: "Port?" {class: decision}
-mgmt: "8081 management: only from the\nobservability namespace (NetworkPolicy);\nnot in the Service or the tunnel" {class: config}
+mgmt: "8081 management: only from the\nobservability namespace (NetworkPolicy);\nin no Service or Ingress" {class: config}
 metrics: "/actuator/prometheus, health" {class: end}
 
-app: "8080 app (from cloudflared only)" {class: app}
+app: "8080 app (from the Ingress\ncontroller only)" {class: app}
 addr: "remoteAddr: X-Forwarded-For used only when\nH2_FORWARD_HEADERS_STRATEGY=native\n(default none)" {class: app}
 headers: "Response headers: CSP 'self' only,\nReferrer-Policy strict-origin-when-cross-origin" {class: app}
 

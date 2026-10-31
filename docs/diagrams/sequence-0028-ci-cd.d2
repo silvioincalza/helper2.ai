@@ -2,7 +2,7 @@
 # tag checks, helm upgrade with rollback on failure, status, clean-up.
 # Source of truth: .github/workflows/release.yml (prod job), .github/workflows/deploy.yml,
 #   .github/actions/bao-login/action.yml, deploy/k8s/Makefile (diff, deploy, status),
-#   deploy/k8s/terraform/rbac.tf (prod deployer may get the staging Deployment).
+#   incalza-me-infra deployer RBAC (prod deployer may get the staging Deployment).
 # Render: cd docs/diagrams && d2 fmt sequence-0028-ci-cd.d2 && d2 sequence-0028-ci-cd.d2 sequence-0028-ci-cd.svg
 
 ...@style

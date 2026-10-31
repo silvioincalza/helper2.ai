@@ -19,7 +19,7 @@ checks: ci.yml (GitHub-hosted, on every PR) {
   chart: "chart:\nhelm lint + template\n| kubeconform" {class: app}
   image: "PR only: app image\nbuild, no push" {class: app}
   pg: "PR only: Postgres image\n+ tag bumped?" {class: app}
-  tf: "PR only: terraform\nfmt + validate (stub)" {class: app}
+  monitoring: "monitoring:\npromtool check\n+ test rules" {class: app}
   d2: "PR only: diagrams\nre-rendered = committed?" {class: app}
 }
 
