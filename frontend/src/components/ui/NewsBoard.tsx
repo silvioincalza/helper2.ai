@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState, type PointerEvent, type ReactNode }
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useRetry } from '@/hooks/useRetry';
+import { prefersReducedMotion } from '@/lib/motion';
 import { Icon } from '../Icon';
 import { RetryButton, StatePanel } from './StatePanel';
 import './ui.css';
@@ -21,10 +22,6 @@ export interface BoardRow {
 const ROWS_IN_VIEW = 4;
 /** One row up every few seconds: slow enough to read a row before it moves. */
 const ROW_MS = 4000;
-
-function prefersReducedMotion(): boolean {
-  return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-}
 
 /** The first row at the top of the window. */
 function topRow(el: HTMLElement): number {

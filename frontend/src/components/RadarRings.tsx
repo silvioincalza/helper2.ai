@@ -1,4 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react';
+import { prefersReducedMotion } from '@/lib/motion';
 
 /** Green blips at a time, and how often they move: once per sweep (see `.radar-sweep` in app.css). */
 const BLIPS = 3;
@@ -13,10 +14,6 @@ function randomBlip(): Blip {
   const x = 550 + r * Math.cos(angle);
   const y = Math.min(820, Math.max(280, 550 + r * Math.sin(angle)));
   return { left: (x / 1100) * 100, top: (y / 1100) * 100, delay: Math.random() * 2.6 };
-}
-
-function prefersReducedMotion(): boolean {
-  return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
 /**
