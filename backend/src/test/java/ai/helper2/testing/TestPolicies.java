@@ -18,8 +18,17 @@ public final class TestPolicies {
 
     /** A {@code redis} circuit that opens on the first failure for 30 s, then lets one trial call through. */
     public static Resilience redis(Clock clock) {
+        return openingOnFirstFailure("redis", clock);
+    }
+
+    /** A {@code db-cache} circuit that opens on the first failure for 30 s, then lets one trial call through. */
+    public static Resilience dbCache(Clock clock) {
+        return openingOnFirstFailure("db-cache", clock);
+    }
+
+    private static Resilience openingOnFirstFailure(String policy, Clock clock) {
         CircuitBreakerRegistry circuits = CircuitBreakerRegistry.ofDefaults();
-        circuits.circuitBreaker("redis", CircuitBreakerConfig.custom()
+        circuits.circuitBreaker(policy, CircuitBreakerConfig.custom()
             .slidingWindowSize(1).minimumNumberOfCalls(1).failureRateThreshold(50)
             .waitDurationInOpenState(Duration.ofSeconds(30)).permittedNumberOfCallsInHalfOpenState(1)
             .clock(clock).build());

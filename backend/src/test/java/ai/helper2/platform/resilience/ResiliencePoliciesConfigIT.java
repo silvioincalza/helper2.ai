@@ -75,6 +75,17 @@ class ResiliencePoliciesConfigIT {
         assertThat(retries.find("redis")).isEmpty();
     }
 
+    /** Shared cache lookups give up on a slow database and never take more than 2 of its 10 connections per replica. */
+    @Test
+    void theSharedCachesHaveACircuitOnSlowCallsAndASmallBulkhead() {
+        var circuit = circuits.find("db-cache").orElseThrow().getCircuitBreakerConfig();
+        assertThat(circuit.getSlowCallDurationThreshold()).isEqualTo(Duration.ofMillis(250));
+        var bulkhead = bulkheads.find("db-cache").orElseThrow().getBulkheadConfig();
+        assertThat(bulkhead.getMaxConcurrentCalls()).isEqualTo(2);
+        assertThat(bulkhead.getMaxWaitDuration()).isEqualTo(Duration.ZERO);
+        assertThat(retries.find("db-cache")).isEmpty();
+    }
+
     @Test
     void modelCallsHaveACircuitOnlyAndGuideQuestionsABulkhead() {
         for (String policy : List.of("llm-chat", "llm-embed")) {

@@ -30,7 +30,9 @@ the guide work long before that, and what makes the wait feel long is the first 
    `helper2.search.latency`, `helper2.source.latency` (`application.yaml`), and `helper2.guide.first_useful` (set on
    the timer, with exact buckets at its 3 s and 8 s targets). Our meters:
    - search: `helper2.search.requests{partial}`, `helper2.search.latency`, `helper2.source.requests{source,outcome,served_from}`,
-     `helper2.source.latency{source}`, `helper2.cache.events{event}`;
+     `helper2.source.latency{source}`, `helper2.cache.events{event}`,
+     `helper2.shared.cache{cache,result}` (`translation`, `query-vector`, `tool-guide`; a miss includes a database error
+     or timeout);
    - catalog: `helper2.catalog.observations{outcome}`, `helper2.catalog.observations.queued`,
      `helper2.embedding.backlog`, `helper2.embedding.failures{reason}`, `helper2.embedding.last.success`;
    - guide and models: `helper2.guide.ask{outcome}`, `helper2.guide.questions{outcome}`, `helper2.guide.cache{result}`,

@@ -10,9 +10,7 @@ import ai.helper2.search.SourceHit;
 import ai.helper2.search.SourceQuery;
 import java.time.Clock;
 import java.time.Duration;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import org.springframework.dao.DataAccessException;
 
@@ -21,12 +19,9 @@ import org.springframework.dao.DataAccessException;
  * returned. It is one more federated source, so SearchResources fuses it with keyword search by rank
  * (Ranking), and a failure here (embedding API down, rate limit) only removes its results.
  *
- * Query vectors are kept in memory for repeated queries: the guide's example questions and pagination
- * would otherwise spend the embedding API's rate limit on the same text.
+ * Query vectors are shared by every replica ({@link QueryVectorCache}), so a repeated query costs no embedding call.
  */
 public class SemanticSearchSource implements SearchSource {
-
-    private static final int CACHED_QUERIES = 1000;
 
     private final SourceDescriptor descriptor;
     private final ResourceStore store;
@@ -34,21 +29,17 @@ public class SemanticSearchSource implements SearchSource {
     private final Set<DataOrigin> origins;
     private final double maxDistance;
     private final Clock clock;
-    private final Map<String, float[]> queryVectors = new LinkedHashMap<>(64, 0.75f, true) {
-        @Override
-        protected boolean removeEldestEntry(Map.Entry<String, float[]> eldest) {
-            return size() > CACHED_QUERIES;
-        }
-    };
+    private final QueryVectorCache queryVectors;
 
-    public SemanticSearchSource(SourceDescriptor descriptor, ResourceStore store, Embedder embedder,
-                                Set<DataOrigin> origins, double maxDistance, Clock clock) {
+    SemanticSearchSource(SourceDescriptor descriptor, ResourceStore store, Embedder embedder, QueryVectorCache queryVectors,
+                         Set<DataOrigin> origins, double maxDistance, Clock clock) {
         this.descriptor = descriptor;
         this.store = store;
         this.embedder = embedder;
         this.origins = origins;
         this.maxDistance = maxDistance;
         this.clock = clock;
+        this.queryVectors = queryVectors;
     }
 
     @Override
@@ -72,12 +63,9 @@ public class SemanticSearchSource implements SearchSource {
     }
 
     private float[] vectorOf(String text) {
-        String key = text.toLowerCase();
-        synchronized (queryVectors) {
-            float[] cached = queryVectors.get(key);
-            if (cached != null) {
-                return cached;
-            }
+        float[] cached = queryVectors.get(text);
+        if (cached != null) {
+            return cached;
         }
         float[] vector;
         try {
@@ -85,9 +73,7 @@ public class SemanticSearchSource implements SearchSource {
         } catch (EmbeddingFailure e) {
             throw e.rateLimited() ? new SourceFailure.RateLimited(Duration.ofMinutes(1)) : new SourceFailure.Unavailable(e.getMessage());
         }
-        synchronized (queryVectors) {
-            queryVectors.put(key, vector);
-        }
+        queryVectors.put(text, vector);
         return vector;
     }
 }

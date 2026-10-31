@@ -4,7 +4,7 @@
 # Source of truth: backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt,
 #   backend/src/main/kotlin/ai/helper2/shared/LanguageDetector.kt,
 #   backend/src/main/java/ai/helper2/search/internal/SpringAiQueryTranslator.java, .../platform/llm/DailyBudget.java,
-#   .../platform/resilience/Resilience4jPolicies.java (llm-chat),
+#   .../platform/resilience/Resilience4jPolicies.java (llm-chat, db-cache), .../platform/cache/JdbcSharedCache.java,
 #   backend/src/main/java/ai/helper2/catalog/SemanticSearchSource.java, CatalogSearchSource.java.
 # Render: cd docs/diagrams && d2 fmt sequence-0011-language-aware-search.d2 && d2 sequence-0011-language-aware-search.d2 sequence-0011-language-aware-search.svg
 
@@ -17,6 +17,7 @@ ld: LanguageDetector {class: app}
 tr: SpringAiQueryTranslator {class: app}
 cb: "llm-chat circuit\n(Resilience)" {class: app}
 budget: "DailyBudget\n(translation)" {class: app}
+pg: "PostgreSQL ai_cache\n(shared by the replicas)" {class: data}
 llm: "Nebius Token Factory\n(fast Nemotron model)" {class: ai}
 sem: "SemanticSearchSource\n(usesTranslation = false)" {class: app}
 idx: "CatalogSearchSource\n(helper2-index)" {class: app}
@@ -28,13 +29,15 @@ fs -> tr: "toEnglish(text, \"it\") on the executor" {class: ai-call}
 fs -> sem: "search(query as typed), deadline 3 s\nfrom now" {class: hot}
 
 model: Translation (bounded by 2500 ms) {
-  tr -> tr: "in-memory cache: miss"
+  tr -> pg: "SELECT translation, sha256(model,\nprompt version, language, query),\nnot expired (db-cache, ≤ 1 s)"
+  pg -> tr: "miss"
   tr -> cb: "call(llm-chat): closed"
   cb -> budget: "tryAcquire()"
   budget -> cb: "true (under 300 today)"
   cb -> llm: "translate-query prompt,\n400 tokens, thinking off" {class: ai-call}
   llm -> cb: "\"translation app text\"" {class: ai-call}
   cb -> tr: "answer"
+  tr -> pg: "upsert, expires in 24 h"
   tr -> fs: "English words"
 }
 

@@ -26,9 +26,8 @@ so the cache must be optional: when Redis is down, the app still works, only slo
    6 hours for arXiv) answers without a live call. Every entry lives for `H2_SEARCH_STALE_FOR` (24 hours).
    When the live call fails, times out, is rate-limited, is in cooldown or is refused by the source's open circuit,
    an entry inside that window is served as `STALE_CACHE`, with the failure stated in the source status.
-4. **Circuit breaker.** Every Redis call of the search cache, the tool guide answer store, the budget
-   counter, the web-search quota, the rate limiter, the outbound throttle and the session reads runs under the one
-   `redis` policy ([0033](0033-resilience-policies.md)):
+4. **Circuit breaker.** Every Redis call of the search cache, the budget counter, the web-search quota, the rate
+   limiter, the outbound throttle and the session reads runs under the one `redis` policy ([0033](0033-resilience-policies.md)):
    once half of the last calls (at least 3) failed, the circuit opens for 30 seconds (`H2_RESILIENCE_REDIS_OPEN_FOR`)
    and callers get their fallback at once, without a Redis call. Then 2 trial calls decide whether it closes again.
    A search cache error or refusal adds the notice `CACHE_UNAVAILABLE`, and the sources are called live. A session
@@ -38,7 +37,10 @@ so the cache must be optional: when Redis is down, the app still works, only slo
    counter key is never left without an expiry. Names: `guide`, `translation`, `enrichment`, `classifier`,
    and `guide-client:{hash}` for the per-client guide quota. On an error, or while the `redis` circuit is open,
    `DailyBudget` counts in memory.
-6. **Shared state for the replicas.** Prod runs 3 replicas ([0027](../operations/0027-runtime-topology.md)). The same Redis also
+6. **Model answers are not in Redis.** Query translations, query vectors, setup guide answers and guide answers
+   ([0041](../guide/0041-guide-answer-cache.md)) are kept on disk in the PostgreSQL table `ai_cache`
+   ([0004](0004-persistence-and-provenance.md)): they are backed up, survive a Redis restart and cost no Redis memory.
+7. **Shared state for the replicas.** Prod runs 3 replicas ([0027](../operations/0027-runtime-topology.md)). The same Redis also
    holds the rate-limit windows (`h2:v1:rate:{limiter}:{client}`, [0024](../edge/0024-http-edge-protection.md)), the sign-in
    sessions (namespace `helper2:session`, [0023](../edge/0023-identity-and-admin.md)) and the daily web-search counters
    (`h2:v1:quota:*`, [0037](../search/0037-tavily-store-and-daily-quota.md)), so every replica sees them. Rate limits and
@@ -50,12 +52,14 @@ so the cache must be optional: when Redis is down, the app still works, only slo
 - During an outage, budgets count in memory and never block the model by mistake.
 - Source responses, counters, sessions and rate-limit windows survive app restarts, deploys and Redis restarts.
 - While Redis loads the AOF at start, the app treats it like a short outage (the `redis` circuit).
-- `RedisSearchCacheTest`, `RedisCallCounterTest` and `RedisRateLimiterIT` cover the open
-  window, the trial call and the fallbacks; `RedisDownIT` covers search with no Redis at all.
+- Redis memory holds source responses, counters, rate-limit windows and sessions only.
+- `RedisSearchCacheTest`, `RedisCallCounterTest` and `RedisRateLimiterIT` cover the open window, the trial call and
+  the fallbacks; `RedisDownIT` covers search with no Redis at all.
 
 ## Alternatives considered
 - Caffeine (in-process cache) only — lost on every deploy, and budgets would reset with each restart.
-- Cache in PostgreSQL — writes on the hot path to the system of record, and eviction by hand.
+- Source responses in PostgreSQL — a write on every live call of every search, and eviction by hand, for entries
+  that are stale after 24 hours.
 - One circuit per Redis adapter — each adapter would find the same outage on its own and pay its own timeouts.
 - A bypass after any single error, without a failure rate or a trial call — one slow command opens it, and the
   first call after the window meets a Redis that may still be down at full timeout.

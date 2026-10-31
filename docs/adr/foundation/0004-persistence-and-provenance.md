@@ -1,4 +1,4 @@
-# 0004 — PostgreSQL as system of record; ids from canonical URLs; source records; dates never invented; one schema migration, forward-only once data must be kept, + repeatable seeds; catalog writes off the request path; the catalog owns its tables
+# 0004 — PostgreSQL as system of record; ids from canonical URLs; source records; dates never invented; one schema migration, forward-only once data must be kept, + repeatable seeds; catalog writes off the request path; the catalog owns its tables; shared model answers in one table
 
 **Status.** Accepted. **Builds on:** [0001](0001-stack-and-runtime.md), [0002](0002-modular-monolith-hexagonal.md)
 
@@ -54,6 +54,18 @@ the search down.
    the Scout through `ResourceCatalog.index`, `ReviewQueue` and `EnrichmentResults` ([0019](../scout/0019-evidence-gated-enrichment.md)).
    The SQL is in `catalog/internal` (`ResourceStore`, `JdbcEnrichmentResults`, `IssueReports`, `ReviewDecisions`);
    catalog use cases call those classes and hold no SQL of their own.
+8. **Model answers shared by the replicas in `ai_cache`.** One table, owned by the open `platform` module
+   (`platform.cache`, [0002](0002-modular-monolith-hexagonal.md)), holds every cache of model answers: query translations
+   (cache `translation`, [0011](../search/0011-language-aware-search.md)), query vectors (`query-vector`,
+   [0012](../search/0012-vector-search-pgvector.md)) and setup guide answers (`tool-guide`, [0031](../guide/0031-setup-guide.md)).
+   Columns: `cache_name`, `key_hash` (SHA-256 of the entry's parts, never the query text), `value` (text), `expires_at`;
+   primary key (`cache_name`, `key_hash`). Port `SharedCache`, adapter `JdbcSharedCache`, created by
+   `SharedCaches.named(name)`. A read is one primary-key lookup with `expires_at > now()`; a write is an upsert
+   (`ON CONFLICT … DO UPDATE`) with `expires_at = now() + ttl`, so the database clock decides expiry for every replica.
+   Each statement runs under the `db-cache` policy ([0033](0033-resilience-policies.md)) with a 1 s statement timeout:
+   an error, a timeout, the open circuit or a full bulkhead is a miss and a write that does nothing, and the caller asks
+   the model. The daily shared cache purge deletes expired rows ([0034](../operations/0034-data-retention.md)).
+   Meter `helper2.shared.cache{cache, result}` counts hits and misses ([0026](../operations/0026-observability.md)).
 
 ## Consequences
 - A search never waits for a catalog write.
@@ -66,6 +78,9 @@ the search down.
 - How long each table keeps its rows, and the daily purges that enforce it, are in
   [0034](../operations/0034-data-retention.md); the foreign keys and indexes those purges use are part of `V1__schema.sql`.
 - One file holds the whole schema, so a reader sees every table as it is, not a chain of changes.
+- A query is translated and embedded once for the cluster, and a setup guide is written once, not once per replica.
+  These answers are on disk and in the backups, and a slow database costs a lookup at most 1 s.
+  `JdbcSharedCacheIT` covers sharing, expiry, the purge, a locked table and a database that is down.
 - A deploy whose schema does not match the database's migration history stops at startup: the new pods never
   become ready, the deploy rolls back and the old pods keep serving ([0028](../operations/0028-ci-cd.md)).
 - `SchemaContractTest` checks the migrated schema with plain JDBC: every foreign key's delete rule, an index on every
@@ -87,6 +102,9 @@ the search down.
   rows that a new database never has.
 - A Flyway baseline on the old history — the files would no longer describe how the database was built, and
   every environment would still carry the old columns and checks.
+- Model answers in Redis — memory shared with sessions and rate limits under `allkeys-lru`, and not in the backups.
+- One table per cache — the same four columns three times, and three purges.
+- `UNLOGGED` table for `ai_cache` — faster writes, but emptied after a crash and left out of the backups.
 
 ## Code
 - `backend/src/main/kotlin/ai/helper2/shared/CanonicalUrl.kt`, `ResourceId.kt`, `DateFact.kt` — identity and dates.
@@ -99,11 +117,17 @@ the search down.
 - `backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — read dates, then `record`.
 - `backend/src/main/resources/db/migration/V1__schema.sql`, `R__*.sql` — schema and seeds.
 - `backend/src/test/java/ai/helper2/SchemaContractTest.java` — the schema contract.
+- `backend/src/main/java/ai/helper2/platform/cache/SharedCache.java`, `SharedCaches.java`, `JdbcSharedCache.java`,
+  `SharedCacheRetention.java`, `SharedCacheConfiguration.java` — the shared caches and their purge.
 - `deploy/k8s/RESET-DATABASE.md` — empty database for an in-place edit of `V1__schema.sql`.
 - `deploy/postgres/Dockerfile` — PostgreSQL with pgvector, pinned by commit and checksum.
 
 ## Diagrams
 [flow](../../diagrams/flow-0004-persistence-and-provenance.svg) · [sequence](../../diagrams/sequence-0004-persistence-and-provenance.svg)
+
+Shared cache lookups: [flow 0011](../../diagrams/flow-0011-language-aware-search.svg) ·
+[sequence 0011](../../diagrams/sequence-0011-language-aware-search.svg) ·
+[sequence 0012](../../diagrams/sequence-0012-vector-search-pgvector.svg); purge: [flow 0034](../../diagrams/flow-0034-data-retention.svg).
 
 ## Roadmap
 - Discovery date unknown on a resource's first search: [roadmap](../../roadmap.md#6-search-and-catalog).

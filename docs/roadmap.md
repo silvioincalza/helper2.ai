@@ -97,17 +97,14 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 ## 4. More than one replica
 
 Prod runs 3 replicas (`app.replicas`, staging 1). The Scout and the embedding indexer run on one replica at a
-time (ShedLock, table `shedlock` in Postgres); rate limits and sign-in sessions are in Redis. Still per replica,
-on purpose:
+time (ShedLock, table `shedlock` in Postgres); rate limits and sign-in sessions are in Redis, query translations,
+query vectors and setup guide answers in the Postgres table `ai_cache`. Still per replica, on purpose:
 
 - **Guide single-flight map.** Answers are in PostgreSQL and shared; two replicas may answer the same new question
   once each when it arrives on both at the same time.
-- **Query-vector cache** (`SemanticSearchSource`). A miss costs one embedding call (about 0.3 s) on that replica.
 - **Source cooldowns after a rate limit** (`SearchResources`), **circuit breakers and bulkheads** (`source-<id>`
   policies, [ADR 0033](adr/foundation/0033-resilience-policies.md)) and the Sources page's last outcomes (`SourceHealth`).
   Each replica finds a limited or failing source on its own, at the cost of a few more refused calls.
-- **Query-translation cache** (`SpringAiQueryTranslator`). A miss costs one model call, inside the daily
-  translation cap, which is counted in Redis.
 - **Guide concurrency limit** (`H2_GUIDE_MAX_CONCURRENT`, 8 per replica, 24 on prod). The daily model-call cap
   in Redis still bounds the cost.
 - **Embedding indexer pause after a rate limit.** Only the replica that got the 429 pauses; the lock already
