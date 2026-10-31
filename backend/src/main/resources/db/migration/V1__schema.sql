@@ -410,6 +410,18 @@ CREATE TABLE tavily_query_result (
 );
 CREATE INDEX tavily_query_result_fetched_idx ON tavily_query_result (fetched_at);
 
+-- Model answers shared by every replica (ADR 0005): query translations, query vectors, setup guide answers.
+-- key_hash is a SHA-256 of the entry's parts (model, prompt version, normalised query...); the query text is never
+-- stored. A read ignores an expired row; the daily shared-cache purge deletes it (ADR 0034).
+CREATE TABLE ai_cache (
+    cache_name text        NOT NULL,
+    key_hash   bytea       NOT NULL,
+    value      text        NOT NULL,
+    expires_at timestamptz NOT NULL,
+    PRIMARY KEY (cache_name, key_hash)
+);
+CREATE INDEX ai_cache_expires_idx ON ai_cache (expires_at);
+
 -- Scout collection checkpoints and run history: they go with their source.
 CREATE TABLE source_cursor (
     source_id  text PRIMARY KEY REFERENCES source (id) ON DELETE CASCADE,

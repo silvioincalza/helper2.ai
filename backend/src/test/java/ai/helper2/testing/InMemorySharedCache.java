@@ -1,15 +1,20 @@
 package ai.helper2.testing;
 
 import ai.helper2.platform.cache.SharedCache;
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.jspecify.annotations.Nullable;
 
-/** The shared cache of unit tests: one map stands for Redis, so two adapters on it stand for two replicas. */
+/**
+ * The shared cache of unit tests: one map stands for the table, so two adapters on it stand for two replicas. It keeps
+ * each entry's TTL to check it, and never expires an entry.
+ */
 public final class InMemorySharedCache implements SharedCache {
 
     private final String name;
     public final Map<String, String> values = new ConcurrentHashMap<>();
+    public final Map<String, Duration> ttls = new ConcurrentHashMap<>();
     public boolean down;
 
     public InMemorySharedCache(String name) {
@@ -27,9 +32,10 @@ public final class InMemorySharedCache implements SharedCache {
     }
 
     @Override
-    public void put(String key, String value) {
+    public void put(String key, String value, Duration ttl) {
         if (!down) {
             values.put(key, value);
+            ttls.put(key, ttl);
         }
     }
 }

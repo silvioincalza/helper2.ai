@@ -6,7 +6,7 @@ import ai.helper2.catalog.internal.ObservationQueue;
 import ai.helper2.catalog.internal.ResourceStore;
 import ai.helper2.catalog.internal.ResourceStore.DataOrigin;
 import ai.helper2.platform.ClusterLock;
-import ai.helper2.platform.cache.RedisSharedCache;
+import ai.helper2.platform.cache.SharedCaches;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.shared.ResourceType;
@@ -30,7 +30,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.core.StringRedisTemplate;
 
 @Configuration(proxyBeanMethods = false)
 class CatalogConfiguration {
@@ -94,7 +93,7 @@ class CatalogConfiguration {
 
         @Bean
         SemanticSearchSource semanticSearchSource(ResourceStore store, Embedder embedder, Clock clock,
-                                                  StringRedisTemplate redis, Resilience resilience, MeterRegistry meters,
+                                                  SharedCaches caches,
                                                   @Value("${helper2.sources.semantic.timeout:3s}") Duration timeout,
                                                   @Value("${helper2.sources.semantic.max-distance:0.65}") double maxDistance,
                                                   @Value("${helper2.search.query-vector-ttl:7d}") Duration queryVectorTtl) {
@@ -103,8 +102,7 @@ class CatalogConfiguration {
                 "The Helper2 index searched by meaning with " + embedder.model() + " embeddings",
                 // Embeds the query as typed, so it never waits for the English translation.
                 EnumSet.allOf(ResourceType.class), timeout, Duration.ZERO, true, 55, false, false);
-            var queryVectors = new QueryVectorCache(
-                new RedisSharedCache("qvec", queryVectorTtl, redis, resilience, meters), embedder.model(), embedder.dimensions());
+            var queryVectors = new QueryVectorCache(caches.named("query-vector"), embedder.model(), embedder.dimensions(), queryVectorTtl);
             return new SemanticSearchSource(d, store, embedder, queryVectors,
                 Set.of(DataOrigin.INDEXED, DataOrigin.OBSERVED, DataOrigin.CURATED), maxDistance, clock);
         }

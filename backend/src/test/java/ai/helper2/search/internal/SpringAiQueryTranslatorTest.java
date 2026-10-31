@@ -7,6 +7,7 @@ import ai.helper2.platform.llm.LlmPolicies;
 import ai.helper2.platform.llm.ModelCallMetrics;
 import ai.helper2.testing.InMemorySharedCache;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -25,6 +26,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 
 class SpringAiQueryTranslatorTest {
 
+    static final Duration TTL = Duration.ofHours(24);
     static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-26T12:00:00Z"), ZoneOffset.UTC);
 
     static SpringAiQueryTranslator translator(String reply) {
@@ -35,7 +37,7 @@ class SpringAiQueryTranslatorTest {
             }
         };
         return new SpringAiQueryTranslator(chat, "fast", new DailyBudget(10, CLOCK, "translation"),
-            new InMemorySharedCache("translation"), ModelCallMetrics.none(), Resilience.NONE);
+            new InMemorySharedCache("translation"), TTL, ModelCallMetrics.none(), Resilience.NONE);
     }
 
     /** A model that answers {@code reply} and counts its calls. */
@@ -84,7 +86,7 @@ class SpringAiQueryTranslatorTest {
             return new ChatResponse(List.of(new Generation(new AssistantMessage("MCP server postgres"))));
         };
         DailyBudget budget = new DailyBudget(10, CLOCK, "translation");
-        var translator = new SpringAiQueryTranslator(chat, "fast", budget, new InMemorySharedCache("translation"), ModelCallMetrics.none(),
+        var translator = new SpringAiQueryTranslator(chat, "fast", budget, new InMemorySharedCache("translation"), TTL, ModelCallMetrics.none(),
             new Resilience4jPolicies(circuits, BulkheadRegistry.ofDefaults(), RetryRegistry.ofDefaults()));
 
         assertThat(translator.toEnglish("server MCP per postgres", "it")).isNull();
@@ -98,8 +100,8 @@ class SpringAiQueryTranslatorTest {
         InMemorySharedCache shared = new InMemorySharedCache("translation");
         CountingModel model = new CountingModel();
         DailyBudget budget = new DailyBudget(10, CLOCK, "translation");
-        var a = new SpringAiQueryTranslator(model, "fast", budget, shared, ModelCallMetrics.none(), Resilience.NONE);
-        var b = new SpringAiQueryTranslator(model, "fast", budget, shared, ModelCallMetrics.none(), Resilience.NONE);
+        var a = new SpringAiQueryTranslator(model, "fast", budget, shared, TTL, ModelCallMetrics.none(), Resilience.NONE);
+        var b = new SpringAiQueryTranslator(model, "fast", budget, shared, TTL, ModelCallMetrics.none(), Resilience.NONE);
 
         assertThat(a.toEnglish("server MCP per postgres", "it")).isEqualTo("MCP server postgres");
         assertThat(b.toEnglish("  Server mcp  per Postgres", "it")).isEqualTo("MCP server postgres");
@@ -110,6 +112,7 @@ class SpringAiQueryTranslatorTest {
             assertThat(key).doesNotContain("postgres");
             assertThat(value).isEqualTo("MCP server postgres");
         });
+        assertThat(shared.ttls.values()).containsOnly(TTL);
     }
 
     /** A refused call must not stick: once the budget allows it again, the next search gets its translation. */
@@ -117,7 +120,7 @@ class SpringAiQueryTranslatorTest {
     void aBudgetRefusedTranslationIsNotCached() {
         InMemorySharedCache shared = new InMemorySharedCache("translation");
         CountingModel model = new CountingModel();
-        var translator = new SpringAiQueryTranslator(model, "fast", new DailyBudget(0, CLOCK, "translation"), shared,
+        var translator = new SpringAiQueryTranslator(model, "fast", new DailyBudget(0, CLOCK, "translation"), shared, TTL,
             ModelCallMetrics.none(), Resilience.NONE);
 
         assertThat(translator.toEnglish("server MCP per postgres", "it")).isNull();
@@ -131,20 +134,20 @@ class SpringAiQueryTranslatorTest {
         InMemorySharedCache shared = new InMemorySharedCache("translation");
         CountingModel model = new CountingModel();
         model.reply = "<think>no answer yet";
-        var translator = new SpringAiQueryTranslator(model, "fast", new DailyBudget(10, CLOCK, "translation"), shared,
+        var translator = new SpringAiQueryTranslator(model, "fast", new DailyBudget(10, CLOCK, "translation"), shared, TTL,
             ModelCallMetrics.none(), Resilience.NONE);
 
         assertThat(translator.toEnglish("server MCP per postgres", "it")).isNull();
         assertThat(shared.values).isEmpty();
     }
 
-    /** Redis down is a miss: the model answers and search goes on. */
+    /** An unavailable store is a miss: the model answers and search goes on. */
     @Test
     void anUnavailableCacheOnlyCostsAModelCall() {
         InMemorySharedCache shared = new InMemorySharedCache("translation");
         shared.down = true;
         CountingModel model = new CountingModel();
-        var translator = new SpringAiQueryTranslator(model, "fast", new DailyBudget(10, CLOCK, "translation"), shared,
+        var translator = new SpringAiQueryTranslator(model, "fast", new DailyBudget(10, CLOCK, "translation"), shared, TTL,
             ModelCallMetrics.none(), Resilience.NONE);
 
         assertThat(translator.toEnglish("server MCP per postgres", "it")).isEqualTo("MCP server postgres");

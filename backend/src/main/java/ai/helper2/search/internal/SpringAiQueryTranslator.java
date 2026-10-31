@@ -10,6 +10,7 @@ import ai.helper2.platform.prompt.PromptTemplate;
 import ai.helper2.platform.resilience.CallRefused;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.search.QueryTranslator;
+import java.time.Duration;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,9 +21,9 @@ import org.springframework.ai.chat.model.ChatModel;
  * Translates a non-English search query into English search terms with the fast model (ADR 0011).
  * Every call is charged to its own daily budget, not the guide's: search allows far more requests per client
  * than the guide. When the budget is spent, the model fails or the {@code llm-chat} circuit is open, the answer is
- * null and search runs untranslated. Answers are shared by every replica in Redis, keyed by a hash of the model, the
- * prompt version, the language and the normalised query, so a repeated query costs no model call on any replica; a
- * failed or refused translation is not cached.
+ * null and search runs untranslated. Answers are shared by every replica for {@code ttl} (cache {@code translation}),
+ * keyed by a hash of the model, the prompt version, the language and the normalised query, so a repeated query costs no
+ * model call on any replica; a failed or refused translation is not cached.
  */
 class SpringAiQueryTranslator implements QueryTranslator {
 
@@ -38,6 +39,7 @@ class SpringAiQueryTranslator implements QueryTranslator {
     private final String model;
     private final DailyBudget budget;
     private final SharedCache cache;
+    private final Duration ttl;
     private final ModelCallMetrics metrics;
     private final Resilience resilience;
 
@@ -48,7 +50,7 @@ class SpringAiQueryTranslator implements QueryTranslator {
         }
     }
 
-    SpringAiQueryTranslator(ChatModel chatModel, String model, DailyBudget budget, SharedCache cache,
+    SpringAiQueryTranslator(ChatModel chatModel, String model, DailyBudget budget, SharedCache cache, Duration ttl,
                             ModelCallMetrics metrics, Resilience resilience) {
         resilience.require(LlmPolicies.CHAT);
         this.metrics = metrics;
@@ -59,6 +61,7 @@ class SpringAiQueryTranslator implements QueryTranslator {
         this.model = model;
         this.budget = budget;
         this.cache = cache;
+        this.ttl = ttl;
     }
 
     @Override
@@ -101,7 +104,7 @@ class SpringAiQueryTranslator implements QueryTranslator {
             return null;
         }
         english = english.lines().reduce((first, second) -> second).orElse("").strip();
-        cache.put(key, english);
+        cache.put(key, english, ttl);
         return english;
     }
 }
