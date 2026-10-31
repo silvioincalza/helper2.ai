@@ -126,7 +126,7 @@ class CatalogPurgeExpiredDataIT {
         UUID from = resource("INDEXED", "LIBRARY", NOW);
         jdbc.sql("""
                 INSERT INTO relationship (id, from_resource_id, to_resource_id, to_title, kind, verification, origin)
-                VALUES (gen_random_uuid(), :from, :to, 'Linked', 'USES', 'VERIFIED', 'CURATED')
+                VALUES (gen_random_uuid(), :from, :to, 'Linked', 'USES', 'VERIFIED', 'AI_EXTRACTED')
                 """).param("from", from).param("to", linked).update();
 
         purge().purge();
