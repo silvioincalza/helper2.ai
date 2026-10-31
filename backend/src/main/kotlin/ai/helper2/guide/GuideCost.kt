@@ -4,12 +4,14 @@ import ai.helper2.platform.llm.CallCounter
 import ai.helper2.platform.llm.DailyBudget
 import ai.helper2.shared.AudiencePath
 import java.security.MessageDigest
+import java.text.Normalizer
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.HexFormat
+import java.util.Locale
 
 /**
  * Fresh (not cached) guide questions per client per UTC day. The per-minute rate limit alone lets one client
@@ -158,17 +160,42 @@ class GuideAnswerCache @JvmOverloads constructor(
         private const val SHAPE = "v2"
 
         /**
-         * Same question, different casing or spacing, same [config] (models, prompts, limits) → same key. A
-         * clarification answer and removed parts of the reading ([drops]) are part of the question.
+         * Same [normalized] question, same [config] (models, prompts, limits) → same key. A clarification answer and
+         * removed parts of the reading ([drops]) are part of the question. The key is a SHA-256 hash, so no store
+         * sees the question.
          */
         @JvmStatic
         @JvmOverloads
         fun key(request: String, path: AudiencePath?, config: String, clarification: String? = null, drops: Drops = Drops.NONE): String =
-            listOf(
-                SHAPE, normalized(request), path?.name ?: "-", config,
-                clarification?.let { "c:" + normalized(it) } ?: "-", drops.key.ifEmpty { "-" },
-            ).joinToString("|")
+            sha256Hex(
+                listOf(
+                    SHAPE, normalized(request), path?.name ?: "-", config,
+                    clarification?.let { "c:" + normalized(it) } ?: "-", drops.key.ifEmpty { "-" },
+                ).joinToString("|"),
+            )
 
-        private fun normalized(text: String) = text.trim().lowercase().replace(Regex("\\s+"), " ")
+        private val QUOTES = Regex("[\"`«»‹›“”„‟]")
+        private val APOSTROPHES = Regex("[‘’‚‛ʼ]")
+        private val QUOTING_APOSTROPHE = Regex("(?<![\\p{L}\\p{N}])'|'(?![\\p{L}\\p{N}])")
+        private val INVISIBLE = Regex("[​-‍⁠﻿]")
+        private val SPACES = Regex("[\\p{Z}\\s]+")
+        private val TRAILING_PUNCTUATION = Regex("[\\s.?!,;:…¿¡]+$")
+
+        /**
+         * The question as the cache key and the similar-question index see it: only changes that cannot change the
+         * answer. Unicode compatibility form (NFKC: full-width letters, ligatures, no-break spaces), lower case, quote
+         * marks removed (an apostrophe inside a word stays), invisible characters removed, spaces collapsed, and the
+         * punctuation that ends the sentence removed. Word order, inner punctuation ("c++", "node.js", "gpt-4") and
+         * every word stay: "python bindings for rust" is not "rust bindings for python".
+         */
+        @JvmStatic
+        fun normalized(text: String): String {
+            val plain = Normalizer.normalize(text, Normalizer.Form.NFKC).lowercase(Locale.ROOT)
+                .replace(INVISIBLE, "")
+                .replace(APOSTROPHES, "'")
+                .replace(QUOTES, " ")
+                .replace(QUOTING_APOSTROPHE, " ")
+            return plain.replace(SPACES, " ").replace(TRAILING_PUNCTUATION, "").trim()
+        }
     }
 }

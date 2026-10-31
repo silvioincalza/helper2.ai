@@ -125,13 +125,4 @@ class RedisGuideAnswerStoreTest {
         assertNull(store.get("k"))
         assertEquals(2, redis.calls)
     }
-
-    @Test
-    fun `Redis sees only a hash of the question`() {
-        val key = RedisGuideAnswerStore.redisKey("speech to text i can self-host|-|fast|reasoning")
-
-        assertTrue(key.startsWith("h2:v${RedisGuideAnswerStore.VERSION}:guide-answer:"))
-        assertTrue(!key.contains("speech"))
-        assertEquals(key, RedisGuideAnswerStore.redisKey("speech to text i can self-host|-|fast|reasoning"))
-    }
 }

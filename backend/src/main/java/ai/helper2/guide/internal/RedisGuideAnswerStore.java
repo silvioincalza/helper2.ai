@@ -3,11 +3,7 @@ package ai.helper2.guide.internal;
 import ai.helper2.guide.GuideAnswer;
 import ai.helper2.guide.GuideAnswerStore;
 import ai.helper2.platform.resilience.Resilience;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
-import java.util.HexFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -47,14 +43,9 @@ class RedisGuideAnswerStore implements GuideAnswerStore {
         this.resilience = resilience;
     }
 
-    /** The cache key holds the user's question, so Redis sees only its hash. */
+    /** The cache key is already a hash of the question ({@code GuideAnswerCache.key}). */
     static String redisKey(String cacheKey) {
-        try {
-            byte[] digest = MessageDigest.getInstance("SHA-256").digest(cacheKey.getBytes(StandardCharsets.UTF_8));
-            return "h2:v" + VERSION + ":guide-answer:" + HexFormat.of().formatHex(digest);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException(e);
-        }
+        return "h2:v" + VERSION + ":guide-answer:" + cacheKey;
     }
 
     @Override
