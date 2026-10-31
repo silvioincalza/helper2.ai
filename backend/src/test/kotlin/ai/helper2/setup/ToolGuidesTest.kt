@@ -77,10 +77,10 @@ class ToolGuidesTest {
 
     @Test
     fun `no documents, no model, budget and nothing kept are told apart`() {
-        assertEquals(ToolGuideStatus.NO_MATERIAL, guides(Model { good }, ToolGuideCache.NONE, { emptyList() }).answer("id", ref).status)
+        assertEquals(ToolGuideStatus.NO_MATERIAL, guides(Model { good }, MemoryCache(), { emptyList() }).answer("id", ref).status)
         val noRef = ToolRef.of("x", "PRODUCT", listOf("https://example.com"), emptyList())
-        assertEquals(ToolGuideStatus.NO_MATERIAL, guides(null, ToolGuideCache.NONE, { error("not called") }).answer("id", noRef).status)
-        val none = guides(null, ToolGuideCache.NONE).answer("id", ref)
+        assertEquals(ToolGuideStatus.NO_MATERIAL, guides(null, MemoryCache(), { error("not called") }).answer("id", noRef).status)
+        val none = guides(null, MemoryCache()).answer("id", ref)
         assertEquals(ToolGuideStatus.LLM_UNAVAILABLE, none.status)
         val budget = guides(failing(ToolGuideUnavailable.Reason.BUDGET)).answer("id", ref)
         assertEquals(ToolGuideStatus.LLM_UNAVAILABLE, budget.status)
