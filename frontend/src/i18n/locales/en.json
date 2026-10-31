@@ -85,7 +85,11 @@
     "placeholder": "Search tools, models, MCP servers… or ask in plain words",
     "submit": "Search",
     "enterQuery": "Type what you are looking for to search the listed sources.",
-    "heroPlaceholder": "Describe what you need, or type a name"
+    "heroPlaceholder": "Describe what you need, or type a name",
+    "clear": "Clear the box",
+    "slashHint": "Press / to search",
+    "charsLeft_one": "{{count}} character left",
+    "charsLeft_other": "{{count}} characters left"
   },
   "results": {
     "title": "Search results",

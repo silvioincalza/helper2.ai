@@ -14,6 +14,9 @@ screen reader, and in light and dark mode.
    search, 4 or more ask the guide; Shift+Enter always asks; Enter in an empty box goes back to the empty home page.
    The box is a one-row text area that grows with the text, up to six lines, then scrolls; the height animates
    (160 ms, none under reduced motion). Enter never adds a line, and a pasted line break becomes a space.
+   × (or Esc) empties the box and keeps the results; "/" from anywhere on the page puts the cursor in the box (not
+   while typing in another field), with a "/" hint on keyboard devices; from 50 characters left the box says how
+   many remain.
    All state is in the page address (URL): `q` (at most 200 characters), `ask` (at most 500), the refinement of the
    question (`clar`, the reply to the guide's question back, at most 300; `drop`, the parts of the reading the user
    removed, at most 8), filters, sort, page, view. A search change keeps the refinement; a new question starts without one.
