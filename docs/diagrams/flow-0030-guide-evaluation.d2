@@ -1,13 +1,15 @@
 # Flowchart: scripts/eval-guide.mjs, from a fixed question set to its report (default set shown;
 # --intents and --adversarial differ only in the set, the pass rules and the report file).
-# Source of truth: scripts/eval-guide.mjs, scripts/eval-lib.mjs, docs/eval/guide-queries.json, docs/eval/guide-qrels.tsv.
+# Source of truth: scripts/eval-guide.mjs, scripts/eval-lib.mjs, docs/eval/guide-queries.json, docs/eval/guide-qrels.tsv,
+#   .github/workflows/guide-eval.yml (nightly run on staging).
 # Render: cd docs/diagrams && d2 fmt flow-0030-guide-evaluation.d2 && d2 flow-0030-guide-evaluation.d2 flow-0030-guide-evaluation.svg
 
 ...@style
 
 direction: down
 
-start: "node scripts/eval-guide.mjs\n[baseUrl] [--intents | --adversarial]\n(backend: H2_GUIDE_CACHE_TTL=PT1S)" {class: person}
+start: "node scripts/eval-guide.mjs\n[baseUrl] [--intents | --adversarial | --min-pass]\n(backend: H2_GUIDE_CACHE_TTL=PT1S)" {class: person}
+nightly: "guide-eval.yml, 01:41 UTC:\nstaging only, --min-pass 0.5,\nthen --adversarial" {class: config}
 queries: "Read docs/eval/guide-queries.json\n(20 fixed queries)" {class: data}
 csrf: "GET /api/v1/me →\nXSRF-TOKEN cookie?" {class: decision}
 noBackend: "Stop: \"is the\nbackend running?\"" {class: fail}
@@ -22,7 +24,7 @@ loop: For each query, in order {
   quota: "Notice GUIDE_DAILY_QUOTA?" {class: decision}
   cached: "generatedAt older than\nthe request − 1 s?" {class: decision}
   fromCache: "Mark (cache);\nleave out of latency" {class: end}
-  row: "Keep status, AI picks,\nrejected, reason checks,\nconstraint checks, latency" {class: end}
+  row: "Keep status, AI picks,\nrejected, reason checks,\nconstraint checks, latency;\npassed = fresh model answer,\nAI pick as expected" {class: end}
 
   pause -> post
   post -> ok
@@ -40,8 +42,11 @@ rel: "P@3 and nDCG@3\nof the AI picks" {class: app}
 pool: "Ungraded picks →\nbackend/eval-data/guide-pool.tsv" {class: data}
 keep: "Read the hand-written notes\nbetween the markers\n(placeholder if none)" {class: app}
 write: "Rewrite docs/evaluation.md\n(summary, per-query table,\nhow to run, notes kept)" {class: data}
+minPass: "--min-pass given and\nshare passed below it?" {class: decision}
+failRun: "Exit 1: the nightly job fails;\nreports kept 30 days\nas an artifact" {class: fail}
 manual: "By hand: grade the pool into\nguide-qrels.tsv, update the notes,\nmove the old run to docs/eval/" {class: person}
 
+nightly -> start
 start -> queries -> csrf
 csrf -> noBackend: no
 csrf -> loop.pause: yes {class: hot}
@@ -55,4 +60,6 @@ qrels -> pool: no
 rel -> pool
 pool -> keep: {class: hot}
 keep -> write: {class: hot}
-write -> manual
+write -> minPass
+minPass -> failRun: yes
+minPass -> manual: no

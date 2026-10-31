@@ -81,6 +81,10 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 - Remove the unused duplicate `deploy/.dockerignore`.
 - The Cloudflare tunnel token lives in Terraform state and a Kubernetes Secret, not in OpenBao. Move it.
 - Confirm that trace and span ids appear in every log line (only a configuration comment says so today).
+- **Staging settings for the nightly guide evaluation** (owner): add `H2_GUIDE_CACHE_TTL=PT1S`,
+  `H2_GUIDE_CLIENT_DAILY_QUESTIONS=60` and `H2_GUIDE_DAILY_MODEL_CALLS=150` to staging's `app.env`, run
+  `make ENV=staging credentials`, and check the first run of `guide-eval.yml`
+  ([ADR 0030](adr/quality/0030-guide-evaluation.md)).
 
 ## 4. More than one replica
 
@@ -126,7 +130,9 @@ Open items:
   if a regulator finds metadata alone too weak.
 - Guide `WHEN` for a release: when our sources have no creation date, take the date quoted in a Tavily news item,
   through the evidence gate. Measure after the `WHEN` event filter ([ADR 0032](adr/guide/0032-guide-intents.md)).
-- Run `scripts/eval-guide.mjs --adversarial` in a scheduled job after each deploy; today it is run by hand.
+- Confirm the guide latency targets (first useful event p50 3 s, p95 8 s) with two weeks of
+  `helper2.guide.first_useful` on prod, and the nightly pass threshold (10 of 20) with two weeks of runs
+  ([ADR 0026](adr/operations/0026-observability.md), [ADR 0030](adr/quality/0030-guide-evaluation.md)).
 - A question from a shared `?ask=` link is asked on page load. Asking only after a click would stop a link from
   spending model calls for its visitors (one cached answer per question limits it today).
 
@@ -270,5 +276,5 @@ Fix an item or accept it; when it no longer holds, remove it.
 
 ### Quality
 
-- 20 guide questions is a small sample; the script measures the JSON endpoint, not the stream or the browser; an ungraded pick counts as not relevant; the hand-written notes describe the previous run until updated. ([ADR 0030](adr/quality/0030-guide-evaluation.md))
+- 20 guide questions is a small sample; the script measures the JSON endpoint, not the stream or the browser; an ungraded pick counts as not relevant; the hand-written notes describe the previous run until updated. The nightly run leaves out the intent cases; staging visitors share what it leaves of 150 guide calls a day; it needs the staging address reachable from GitHub's runners. ([ADR 0030](adr/quality/0030-guide-evaluation.md))
 - Frozen search snapshots age; pooled judging leaves results outside every top 20 unjudged; labelling takes about 5 hours per judge; Tavily credits are spent once per recorded query. ([ADR 0036](adr/quality/0036-search-evaluation-harness.md))

@@ -17,9 +17,11 @@ promtool test rules deploy/monitoring/tests/*.yaml
 cd frontend && npm test -- --run && npm run lint && npm run typecheck
 ```
 
-31 Oct 2026 (local run): backend 873 tests, 0 failed, 1 skipped by design; frontend 303 passed, 7 skipped,
-in 33 files. The 16 alert rules have promtool unit tests; CI runs them in the `monitoring` job.
+31 Oct 2026 (local run): backend COUNT_B tests, 0 failed, 1 skipped by design; frontend 303 passed, 7 skipped,
+in 33 files. The 17 alert rules have promtool unit tests; CI runs them in the `monitoring` job.
 `evalTest` and `evalRecord` are not part of `test`: see [docs/eval](eval/README.md).
+The guide evaluation (`scripts/eval-guide.mjs`, default and adversarial sets) runs every night against staging in
+[`guide-eval.yml`](../.github/workflows/guide-eval.yml) ([ADR 0030](adr/quality/0030-guide-evaluation.md)).
 
 ## What exists
 
@@ -35,7 +37,7 @@ in 33 files. The 16 alert rules have promtool unit tests; CI runs them in the `m
 | API (Spring + Testcontainers) | SearchApiIT, ReportAndReviewIT, ReviewItemsApiIT, RecentApiIT, SecurityIT, AccountApiIT, AdminAuditApiIT, WebSearchQuotaApiIT, HttpEdgeIT, ForwardedHeadersNativeIT, ManagementPortIT, RedisDownIT | responses **validated against the OpenAPI schema**; partial results; Redis cache; recent resources; CSRF; headers; 401/403; rate limiting over real HTTP (a spoofed `X-Forwarded-For` opens no new bucket, behind the proxy only the appended address counts; an encoded path such as `/api/v1/%67uide` shares the guide budget); anonymous requests create no session, sign-in state is a Redis session; bookmarks and DELETE /me for a signed-in user; admin actions in the audit trail; web searches left per day; GET /sources with response time, circuits and the credits of the day, no internals; with Redis unreachable, search (cache and rate limits included) works and sign-in returns to the admin page; metrics and probes on the management port only |
 | Scout end to end | ScoutPipelineIT | fixture MCP Registry → index → fake LLM → only evidenced claims published → review items → idempotent rerun; run now is 409 while another replica holds the run lock |
 | AI guide (Kotlin) | GuideValidatorTest, AskGuideTest, AskGuideIntentsTest, AskGuideWebSearchTest, DailyBudgetTest, RedisCallCounterTest | verbatim-quote gate, constraint checks, injected text, prompt kept only when adapted from PROMPT candidates, kept picks counted by search rank band, prompt link filter (schemes without `//`, mixed case, `%XX`/HTML-entity/fullwidth/zero-width disguises, markdown and HTML links, protocol-relative, trailing punctuation; plain "Format:"-style prompts kept), reading-type filter, answer cache (hit, expiry, LRU, degraded answers not cached), comparison and explanation limits from one `AnswerLimits`, each step its own span tagged with the step and the intent, compared subjects searched at the same time, global daily model-call budget in Redis with in-memory fallback |
-| AI guide end to end | GuideApiIT, GuideWithoutModelApiIT, GuideLimitsTest | scripted ChatModel: fast then reasoning model, invented key and quote rejected, contract-valid response, cache hit makes no model call, provider error degrades, CSRF, per-client rate limit; no model → top search results; both guide endpoints share the guide slots, a full guide answers busy at once, a cancelled question gives its slot back |
+| AI guide end to end | GuideApiIT, GuideWithoutModelApiIT, GuideLimitsTest, GuideFirstUsefulTest | scripted ChatModel: fast then reasoning model, invented key and quote rejected, contract-valid response, cache hit makes no model call, provider error degrades, CSRF, per-client rate limit; no model → top search results; both guide endpoints share the guide slots, a full guide answers busy at once, a cancelled question gives its slot back; the stream times its first `retrieved` or `clarify` event once, with the intent, and a stream that ends before one is not timed |
 | Architecture | ModularityTest | Spring Modulith `verify()`; ArchUnit: domain packages are framework-free and never depend on their web/cache/config/internal adapters |
 | Platform | InMemoryRateLimiterTest, RedisRateLimiterIT, Resilience4jPoliciesTest, ResiliencePoliciesConfigIT, RedisOutboundThrottleIT, ObservedHttpRetryTest, QuotaKeysTest, RedisQuotaCounterIT, NvidiaOnlyTest | limit, wait time, window reset, independent keys, IPv6 by /64; one count shared by replicas in Redis, in-memory fallback while Redis is down; retry, bulkhead and circuit breaker by policy name, circuit state and opening time, every configured policy created at startup; daily quota keys without address or query text; startup stops on a configured model that is not an NVIDIA model |
 | Identity | AdminAllowListTest, FailSoftSessionRepositoryTest | GitHub sign-in through the real user service: `github:<numeric id>` grants ADMIN, `github:<login>` does not; session reads fail soft while Redis is down |
@@ -43,7 +45,7 @@ in 33 files. The 16 alert rules have promtool unit tests; CI runs them in the `m
 | Search evaluation | RelevanceMetricsTest, SearchEvaluationTest, CutoffSweepTest, SnapshotTakerTest | nDCG@10, reciprocal rank and recall on known cases; the vector cutoff sweep; offline replay of recorded snapshots and the nDCG@10 gate (`evalTest`) |
 | Live smoke | GitHubSourceLiveTest, HuggingFaceLiveTest, NpmSourceLiveTest, ArxivSourceLiveTest, TavilyLiveTest, McpRegistryCollectorLiveTest, AiDeadlinesCollectorLiveTest, GitHubAwesomeLiveTest | one per adapter, against the real API (the awesome-list collector with Nemotron classification); a test whose key is missing is skipped; runs only with `./gradlew liveTest`, once a week in the `live` workflow |
 | Frontend | 303 Vitest + RTL tests (AccountPage.test.tsx and others) | pages, client, bookmarks, account deletion, i18n, layout; axe smoke checks in jsdom |
-| Alert rules | deploy/monitoring/tests | promtool unit tests: each of the 16 rules fires on its condition and stays quiet otherwise |
+| Alert rules | deploy/monitoring/tests | promtool unit tests: each of the 17 rules fires on its condition and stays quiet otherwise |
 
 ## Known gaps (not covered by automated tests)
 
