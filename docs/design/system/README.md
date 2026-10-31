@@ -93,6 +93,21 @@ sources say (each value with its origin, verification and evidence), Verified re
 (only when there are any), Source records and the report form. Opened from the results, a "← Back to results" link
 goes back to the same search and selection.
 
+## Saved page
+
+`/saved`, from Saved in the header. The heading, one line that says where the list lives ("Saved in this browser
+only." or "Saved on your account."), then one row per saved resource, styled like a result row: type tag, site and
+the date saved in mono, the title in `display` linking to the resource page, then Open on source ↗ and Remove. After
+Remove, focus goes to the next row's Remove, or to the empty state's heading. Empty: "Nothing saved yet", with Search
+as the next step.
+
+## Sources page
+
+`/sources`, from Sources in the footer. The heading "Sources we search" and one line: these sources and nothing else.
+Then three parts with a mono label each: Last outcome (one SourcesGrid tile per configured source: the outcome and how
+long ago, Not asked yet, or Turned off), How sources work (the modes) and What each source covers (a table: source,
+mode, resource types, terms, attribution).
+
 ## States
 
 Every state has a heading that says what happened, the reason, and a next step: Try again, the way home, fewer words,
@@ -155,7 +170,7 @@ The shared React components are in `frontend/src/components/ui/`, the results pa
 | ResultPreview, InlinePreview | `ResultPreview`, `InlinePreview`; the parts they share with the resource page in `ResourceOverview` |
 | Banner (empty, error and not-found states) | `StatePanel` |
 | FactList | `FactList` in `CardFacts` |
-| SourcesGrid | `SourcesSummary` (the fan-out line, the web searches left), `SourceTiles` (the tiles) |
+| SourcesGrid | `SourcesSummary` (the fan-out line, the web searches left), `SourceTiles` (the tiles, under the results and on the Sources page) |
 | Guide picks bar | `PicksBar` (the box), `GuidePicks` (the guide's answer in it) |
 
 `StatusPill` and `ProofQuote` keep their names.

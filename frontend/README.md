@@ -17,8 +17,8 @@ Node 24 (`.nvmrc`). On this machine: prefix commands with `PATH=/opt/homebrew/op
 ## Structure
 ```
 src/api        schema.ts (generated), types.ts (aliases), client.ts (typed fetch, CSRF, problem+json, guide stream)
-src/lib        searchState.ts (URL <-> state, guide refinement), locateQuote.ts, features.ts (flags), format.ts, bookmarks.ts (localStorage, try/catch)
-src/context    MeContext (GET /me), BookmarksContext (local, merged once to server on sign-in)
+src/lib        searchState.ts (URL <-> state, guide refinement), locateQuote.ts, format.ts, bookmarks.ts (localStorage, try/catch)
+src/context    MeContext (GET /me), BookmarksContext (browser storage for a guest, the account when signed in, the browser list merged once on sign-in; loading and error of the account list), SourcesContext (GET /sources, once per page load)
 src/hooks      useApi (keyed fetch with AbortController, recent-answers cache, ADR 0039), useGuideStream (guide SSE for the URL's question), useNarrow (bp-split), useRetry (Try again that keeps focus on a heading), useTitle
 src/components OneBox, filter panel, badges, glossary Term, ...
   ResultList, ResultPreview, GuidePicks, SourcesSummary   the results page (ADR 0040): rows, preview, picks bar, sources
@@ -27,6 +27,8 @@ src/components OneBox, filter panel, badges, glossary Term, ...
   HomeBoards   the home page's News (GET /recent) and Events (GET /events/upcoming) boards
   ui/          design system components (ADR 0040): TypeTag, StatusPill, ProofQuote, SourceTiles, SelectableRow, PicksBar, NewsBoard, StatePanel, Heading; own ui.css
 src/pages      Home, Results (/search), Resource, Saved, Sources, Account, Admin, Mission, Privacy, Terms, NotFound (one entry chunk)
+  Saved        rows like the result rows; Remove moves focus to the next row's Remove, or to the empty state
+  Sources      the last outcome per source as SourceTiles, the modes, what each source covers
 src/i18n       index.ts + locales/en.json
 src/test       fixtures, fetch mock, render helper, axe helper
 ```
@@ -35,7 +37,8 @@ src/test       fixtures, fetch mock, render helper, axe helper
 - **All search state lives in URL params** (`q, view, sort, page, updatedAfter, openSource, type, source, license, pricing, platform, useCase, techLevel, audience`), the selected result in `id` (replaced, never pushed), and the guide's in `ask, clar, drop`. A search change keeps the question and its refinement; a new question starts without one.
 - Stale searches are canceled: `useApi` aborts the previous request when the key changes.
 - Honesty: every search shows the sources under the results (fan-out line, one tile per source with its outcome, time or cache age, web searches left today); partial banner; stale-cache badges; `DateFact` UNKNOWN renders "Unknown", CONFLICTING lists alternatives with source ids; popularity is always "value metric · source · as of date", never combined. Status is always icon + text.
-- States (ADR 0040, 8): the error, empty and not-found states of the results, the home boards, the resource page, Guide me's steps and the 404 page are a `StatePanel` (heading, reason, next step). Try again goes through `useRetry` there and in the picks bar, so focus lands on a heading, never on the page body.
+- States (ADR 0040, 8): the error, empty and not-found states of the results, the home boards, the resource page, Guide me's steps, Saved, Sources, the account page, the review queue and the 404 page are a `StatePanel` (heading, reason, next step). Try again goes through `useRetry` there and in the picks bar, so focus lands on a heading, never on the page body.
+- Resource page links are built by `resourcePath` (`lib/searchState.ts`), which encodes the id.
 - Relationships: only `VERIFIED` appear as confirmed; `UNVERIFIED`/`CONFLICTING` go to "Unverified candidates"; `REJECTED` are not shown.
 - Glossary terms are buttons with `aria-expanded` revealing an inline definition.
 - Unknown facet bucket: facet value `unknown` is labeled "Unknown". For enum-typed filters (`pricing`, `techLevel`, `audience`, `type`) it is sent as `UNKNOWN` (the contract's enum spelling); for `license`, `platform`, `useCase`, `source` as `unknown`.

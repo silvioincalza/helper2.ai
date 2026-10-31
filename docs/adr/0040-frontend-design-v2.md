@@ -1,4 +1,4 @@
-# 0040 — Frontend design: home page, results with preview, resource page, guide picks bar, designed states, design system v3
+# 0040 — Frontend design: home page, results with preview, resource page, guide picks bar, designed states, saved and sources pages, design system v3
 
 **Status.** Accepted (2026-10-30). **Builds on:** [0025](0025-frontend-one-box.md),
 [0015](0015-ai-guide-evidence-gate.md), [0031](0031-setup-guide.md), [0038](0038-ai-content-marking.md),
@@ -73,7 +73,18 @@ and chose between options for each part.
 9. **The footer makes one claim: "No ads."** Next to it, in one row, the links: Mission, Sources, Privacy, Terms,
    the code on GitHub, its licence and the release notes. Tracking cookies are planned later. The footer makes no claim about
    tracking, so it does not need to change when they come. Mission and Privacy keep their text until then.
-10. **Built page by page**, one pull request each: shared components and tokens, Home, Results, Resource, States,
+10. **Saved, Sources and the account page.** Saved (`/saved`, in the header) lists the saved resources as rows like
+    the result rows: type tag, site, the date saved, the title linking to the resource page, Open on source and
+    Remove. A guest's list is in this browser, a signed-in user's on the account
+    ([0023](0023-identity-and-admin.md)). Remove moves focus to the Remove button of the row that takes its place, or
+    to the empty state's heading, and a status line says what went. Sources (`/sources`, in the footer) shows each
+    configured source's last outcome as the tiles under the results (the outcome and how long ago, not asked yet, or
+    turned off; [0008](0008-federated-search.md)), what the modes mean, and a table of what each source covers, its
+    terms and attribution. `GET /api/v1/sources` gives no response time, circuit state or web searches left, so the
+    page shows none; the results page shows them for a search. The account page, opened from the signed-in name,
+    says who is signed in and deletes the account after a confirmation; it offers no sign-in. Loading, empty and
+    error are designed states (8).
+11. **Built page by page**, one pull request each: shared components and tokens, Home, Results, Resource, States,
     Saved and Sources, Mission and Privacy. Each step builds its page in place, so the code holds one design.
 
 ## Consequences
@@ -139,7 +150,12 @@ Built:
 - `frontend/src/components/GuidePicks.tsx` — the guide's answer in `PicksBar`; `hooks/useGuideStream.ts` — the guide
   stream for the question and refinement in the URL.
 - `frontend/src/components/SourcesSummary.tsx` — the fan-out line, the tiles, the web searches left today.
-- `frontend/src/components/Layout.tsx` — the box in the header on every page but the home page, the one-row footer.
+- `frontend/src/components/Layout.tsx` — the box in the header on every page but the home page, Saved in the header,
+  the one-row footer.
+- `frontend/src/pages/SavedPage.tsx` — the saved rows, Remove and where focus goes after it, the states;
+  `context/BookmarksContext.tsx` — browser or account list, its loading and error.
+- `frontend/src/pages/SourcesPage.tsx` — the last outcome as `SourceTiles`, the modes, what each source covers.
+- `frontend/src/pages/AccountPage.tsx` — who is signed in, delete the account after a confirmation.
 
 Planned:
 - `tokens.css` — `radar-sweep` of `tokens.json` v3, with the page that uses it.

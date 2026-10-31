@@ -81,9 +81,22 @@ The success criteria at the end say which tests verify each journey today. What 
 
 ## UJ-6 Save resources
 
-1. Anonymous user bookmarks a card → stored in `localStorage`; visible on **Saved**.
-2. If storage is unavailable (private mode), the toggle explains saving is unavailable in this browser.
-3. The public site never asks for an account: the Saved page says "Saved in this browser only." A user who signed in (only possible on `/admin`, UJ-7) gets local bookmarks merged into the account once; they then follow the account across devices.
+**Entry:** Save in a result's preview or on a resource page; Saved in the header.
+
+1. The user presses Save. A guest's bookmark goes to browser storage (`h2.bookmarks.v1`); a signed-in user's to the account. The button stays pressed: "Saved".
+2. Saved (`/saved`) lists them: type tag, site, the date saved, the title linking to the resource page, Open on source and Remove.
+3. Remove takes the row out. Focus goes to the next row's Remove (or the one above), or to the empty state's heading; a status line says "Removed … from saved."
+4. The public site never asks for an account: the page says "Saved in this browser only." A user who signed in (only possible on `/admin`, UJ-7) gets the browser's bookmarks merged into the account once; the page then says "Saved on your account." and the list follows the account across devices.
+
+**Exit:** a title to its resource page (UJ-4), Open on source, the box in the header, the logo.
+
+| State | Behavior |
+|---|---|
+| Loading | Signed in, while the account list loads: "Loading…" and skeleton rows, never "Nothing saved yet". |
+| Empty | "Nothing saved yet", "Use Save on any result to keep it here.", and Search. |
+| Storage blocked | Saving works until the user leaves the page; Saved warns that the browser blocked storage. |
+| Account list fails | An alert "Could not load your saved resources" with Try again; focus stays on the page heading and moves to the list when it loads. |
+| Account refuses a change | The item comes back and an alert says the account could not be updated. |
 
 ## UJ-7 Sign in (admin only)
 
@@ -97,8 +110,22 @@ Sign-in exists for administrators ([ADR 0023](adr/0023-identity-and-admin.md)); 
 
 ## UJ-8 Understand coverage and sources
 
-1. **Sources** page lists every configured source: mode (LIVE, INDEXED, CURATED, DEMO), what it covers, homepage, terms, attribution, last outcome and check time.
-2. Footer on every page: "Helper2.ai searches the sources listed here — not the whole web."
+**Entry:** Sources in the footer of every page; the sources under every search (UJ-1).
+
+1. **Sources** (`/sources`) says Helper2.ai searches these sources and nothing else, not the whole web.
+2. Last outcome: one tile per configured source with its last outcome and how long ago (as the server that answered saw it in searches and Scout runs), "Not asked yet", or "Turned off".
+3. How sources work: what LIVE, INDEXED, CURATED and DEMO mean.
+4. What each source covers: the source (its homepage), mode, resource types, terms and attribution.
+
+Response times, cache ages and the web searches left today belong to a search: they are under the results (UJ-1), not on this page.
+
+**Exit:** a source's homepage or terms (new tab), the box in the header, the logo.
+
+| State | Behavior |
+|---|---|
+| Loading | "Loading…" and a skeleton block. |
+| Error | An alert "Could not load the sources" with Try again; focus stays on the page heading. |
+| Empty | "No sources are configured" and the way home. |
 
 ## UJ-9 Admin: keep the catalog honest
 

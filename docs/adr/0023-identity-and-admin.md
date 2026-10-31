@@ -35,7 +35,9 @@ traceable to that administrator.
    most 2000 characters, and an account holds at most 500; adding or merging is idempotent (the first `savedAt`
    stays), and a merge is all or nothing (400). A bookmark keeps the resource id, title, link, type and `savedAt`, so it
    renders even when the resource left the catalog. `MeController` only maps requests; `Bookmarks` and `Users` only
-   run SQL. The Saved page stays off (`SAVED_ENABLED`) until end-user sign-in is offered on the public pages.
+   run SQL. The Saved page (`/saved`, in the header) shows the browser list to a guest ("Saved in this browser
+   only.") and the account list to a signed-in user ("Saved on your account."), with a loading state and Try again
+   when the account list cannot load; a removal the account refuses puts the item back and says so.
 6. **Delete my account.** The signed-in user's name in the header opens `/account`, where "Delete my account" asks
    for confirmation, then calls `DELETE /api/v1/me` (CSRF token required). `DeleteMyAccount` deletes the `app_user`
    row; its bookmarks go by `ON DELETE CASCADE`, and the user's issue reports stay with `reporter_user_id` set to null
@@ -100,8 +102,9 @@ traceable to that administrator.
 - `backend/src/main/java/ai/helper2/catalog/usecase/ResolveReviewItem.java`,
   `backend/src/main/kotlin/ai/helper2/scout/usecase/StartScoutRun.kt` — admin use cases that write the trail.
 - `backend/src/test/java/ai/helper2/api/AccountApiIT.java`, `AdminAuditApiIT.java` — bookmarks, account deletion, audit.
-- `frontend/src/context/MeContext.tsx`, `BookmarksContext.tsx`, `frontend/src/components/SignIn.tsx`,
-  `frontend/src/pages/AccountPage.tsx`, `frontend/src/pages/AdminPage.tsx`.
+- `frontend/src/context/MeContext.tsx`, `BookmarksContext.tsx`, `frontend/src/lib/bookmarks.ts`,
+  `frontend/src/components/SignIn.tsx`, `BookmarkButton.tsx`, `frontend/src/pages/SavedPage.tsx`, `AccountPage.tsx`,
+  `AdminPage.tsx`.
 - `backend/src/main/resources/application.yaml` — profile `oauth-github`, `helper2.security.admins`.
 
 ## Diagrams
