@@ -28,7 +28,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import tools.jackson.databind.ObjectMapper;
 
 @Configuration(proxyBeanMethods = false)
@@ -36,15 +36,13 @@ class GuideConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(GuideConfiguration.class);
 
-    /** Guide answers survive restarts in Redis, per build; without Redis the cache is in memory only. */
+    /** guide_similar_question.embedding is vector(1024), like resource_embedding. */
+    static final int INDEX_DIMENSIONS = 1024;
+
+    /** Guide answers in PostgreSQL (ADR 0041): they survive restarts and serve every replica, per build. */
     @Bean
-    GuideAnswerStore guideAnswerStore(ObjectProvider<StringRedisTemplate> redis, ObjectMapper json, Resilience resilience,
-                                      @Value("${helper2.build.version:local}") String build) {
-        StringRedisTemplate template = redis.getIfAvailable();
-        if (template == null) {
-            return GuideAnswerStore.NONE;
-        }
-        return new RedisGuideAnswerStore(template, json, resilience, build);
+    JdbcGuideAnswerStore guideAnswerStore(JdbcClient jdbc, ObjectMapper json, @Value("${helper2.build.version:local}") String build) {
+        return new JdbcGuideAnswerStore(jdbc, json, build);
     }
 
     /** Daily model-call cap of the guide (ADR 0017); every provider attempt takes one call. */
@@ -60,34 +58,32 @@ class GuideConfiguration {
 
     /**
      * Reuse of a similar question's answer (ADR 0041): on only with a threshold, the question embedder of vector search
-     * (ADR 0012) and Redis for the index. Unset threshold: off, no question is embedded.
+     * (ADR 0012), whose vectors fit the index's column. Unset threshold: off, no question is embedded.
      */
-    static SimilarQuestions similarQuestions(String threshold, Embedder embedder, StringRedisTemplate redis, Resilience resilience,
-                                             Clock clock) {
+    static SimilarQuestions similarQuestions(String threshold, Embedder embedder, JdbcClient jdbc, Clock clock) {
         if (threshold == null || threshold.isBlank()) {
             return null;
         }
-        if (embedder == null || redis == null) {
-            log.warn("H2_GUIDE_SIMILAR_THRESHOLD is set but {} is missing: similar questions are not reused",
-                embedder == null ? "the embedding API key" : "Redis");
+        if (embedder == null || embedder.dimensions() != INDEX_DIMENSIONS) {
+            log.warn("H2_GUIDE_SIMILAR_THRESHOLD is set but {}: similar questions are not reused",
+                embedder == null ? "the embedding API key is missing" : "the embeddings are not " + INDEX_DIMENSIONS + " long");
             return null;
         }
         double value = Double.parseDouble(threshold.strip());
         log.info("AI guide reuses the answer of a similar question: cosine at least {}, embeddings by {}", value, embedder.model());
         return new SimilarQuestions(value, embedder.model(),
             question -> embedder.embed(List.of(question), Embedder.Kind.QUERY).getFirst(),
-            new RedisSimilarQuestionIndex(redis, resilience, clock, RedisSimilarQuestionIndex.DEFAULT_MAX_PER_GROUP), clock);
+            new JdbcSimilarQuestionIndex(jdbc), clock);
     }
 
     @Bean
     AskGuide guideService(SearchResources search, ObjectProvider<ChatModel> chatModel, LlmSettings llm, Clock clock,
                               DailyBudget guideBudget, CallCounter budgetCounter, GuideAnswerStore answerStore,
-                              ObjectProvider<Embedder> embedder, ObjectProvider<StringRedisTemplate> redis,
+                              ObjectProvider<Embedder> embedder, JdbcClient jdbc,
                               ModelCallMetrics metrics, ObservationRegistry observations, MeterRegistry meters, Resilience resilience,
                               @Value("${helper2.llm.native-schema:true}") boolean nativeSchema,
                               @Value("${helper2.llm.choose-max-tokens:" + SpringAiGuideModel.DEFAULT_CHOOSE_MAX_TOKENS + "}") int chooseMaxTokens,
                               @Value("${helper2.guide.cache-ttl:PT24H}") Duration cacheTtl,
-                              @Value("${helper2.guide.cache-max-entries:500}") int cacheMaxEntries,
                               @Value("${helper2.guide.similar-threshold:}") String similarThreshold,
                               @Value("${helper2.guide.max-candidates:24}") int maxCandidates,
                               @Value("${helper2.guide.client-daily-questions:30}") int clientDailyQuestions,
@@ -108,8 +104,8 @@ class GuideConfiguration {
         log.info("AI guide: Nemotron chooses among up to {} candidates; {} fresh questions per client per day",
             maxCandidates, clientDailyQuestions);
         return new AskGuide(search, guideModel, clock, maxCandidates, new GuideValidator(),
-            new GuideAnswerCache(cacheTtl, cacheMaxEntries, clock, answerStore), observations, meters,
+            new GuideAnswerCache(cacheTtl, clock, answerStore), observations, meters,
             new ClientQuota(clientDailyQuestions, clock, budgetCounter), AskGuide.SUBJECT_SEARCH_DEADLINE, AnswerLimits.DEFAULT,
-            similarQuestions(similarThreshold, embedder.getIfAvailable(), redis.getIfAvailable(), resilience, clock));
+            similarQuestions(similarThreshold, embedder.getIfAvailable(), jdbc, clock));
     }
 }

@@ -410,6 +410,32 @@ CREATE TABLE tavily_query_result (
 );
 CREATE INDEX tavily_query_result_fetched_idx ON tavily_query_result (fetched_at);
 
+-- ===== Guide answer cache (ADR 0041) =====
+-- Guide answers by question (ADR 0017): answer_key is the SHA-256 of the normalised question, audience path, config
+-- hash, clarification and removed parts; the question text is never stored. build is the release that answered
+-- (H2_BUILD_VERSION): a release reads only its own answers. Read only before expires_at (at most 24 h after the answer,
+-- 6 h for a dated question, never past its web results); deleted by the guide purge after it (ADR 0034).
+CREATE TABLE guide_answer (
+    answer_key text        PRIMARY KEY CHECK (answer_key ~ '^[0-9a-f]{64}$'),
+    build      text        NOT NULL,
+    answer     jsonb       NOT NULL,
+    expires_at timestamptz NOT NULL
+);
+CREATE INDEX guide_answer_expires_idx ON guide_answer (expires_at);
+
+-- Questions of cached answers, for reuse by a near-identical question read the same way (H2_GUIDE_SIMILAR_THRESHOLD).
+-- group_key is the SHA-256 of the embedding model, config hash, audience path and reading (intent, subjects,
+-- constraints, window); embedding is the query embedding of the normalised question, the model of resource_embedding.
+-- A row goes with its answer, or at its own expires_at (guide purge). A group holds a few rows: exact cosine search.
+CREATE TABLE guide_similar_question (
+    answer_key text         PRIMARY KEY REFERENCES guide_answer (answer_key) ON DELETE CASCADE,
+    group_key  text         NOT NULL,
+    embedding  vector(1024) NOT NULL,
+    expires_at timestamptz  NOT NULL
+);
+CREATE INDEX guide_similar_question_group_idx ON guide_similar_question (group_key, expires_at);
+-- ===== end guide answer cache =====
+
 -- Scout collection checkpoints and run history: they go with their source.
 CREATE TABLE source_cursor (
     source_id  text PRIMARY KEY REFERENCES source (id) ON DELETE CASCADE,

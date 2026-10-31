@@ -3,6 +3,7 @@ package ai.helper2.guide.usecase
 import ai.helper2.guide.Candidate
 import ai.helper2.guide.Drops
 import ai.helper2.guide.GuideAnswerCache
+import ai.helper2.guide.MemoryAnswerStore
 import ai.helper2.guide.GuideModel
 import ai.helper2.guide.GuideProposal
 import ai.helper2.guide.GuideSearchPlan
@@ -114,7 +115,7 @@ class AskGuideSimilarTest {
     private val meters = SimpleMeterRegistry()
 
     private fun guide(similar: SimilarQuestions? = SimilarQuestions(0.95, "embed", embedder, index, clock)) =
-        AskGuide(search, model, clock, cache = GuideAnswerCache(Duration.ofHours(24), 10, clock), meters = meters, similar = similar)
+        AskGuide(search, model, clock, cache = GuideAnswerCache(Duration.ofHours(24), clock, MemoryAnswerStore()), meters = meters, similar = similar)
 
     private fun cache(result: String) = meters.counter("helper2.guide.cache", "result", result).count()
     private fun questions(outcome: String) = meters.counter("helper2.guide.questions", "outcome", outcome).count()
@@ -207,7 +208,7 @@ class AskGuideSimilarTest {
             "python bindings for rust" to floatArrayOf(1f, 0f),
             "rust bindings for python" to floatArrayOf(0.99f, 0.141f), // cosine 0.99, as recorded: 0.986
         ))
-        val guide = AskGuide(search, sameOrder, clock, cache = GuideAnswerCache(Duration.ofHours(24), 10, clock), meters = meters,
+        val guide = AskGuide(search, sameOrder, clock, cache = GuideAnswerCache(Duration.ofHours(24), clock, MemoryAnswerStore()), meters = meters,
             similar = SimilarQuestions(0.95, "embed", embedder, index, clock))
         guide.ask("python bindings for rust", null)
 

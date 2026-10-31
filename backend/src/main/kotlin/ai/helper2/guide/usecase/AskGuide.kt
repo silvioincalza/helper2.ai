@@ -146,7 +146,7 @@ class AskGuide(
                     return await(it).forAsker(asker)
                 }
                 try {
-                    // Cached in Redis and shared with other askers: it must not carry this asker's address or user id.
+                    // Stored in the database and shared with other askers: it must not carry this asker's address or user id.
                     val answer = answer(question, progress, asked, model).withoutAsker()
                     val expiresAt = cache?.put(key, answer)
                     // A reused answer is not indexed again: a chain of near twins would drift from the question answered.

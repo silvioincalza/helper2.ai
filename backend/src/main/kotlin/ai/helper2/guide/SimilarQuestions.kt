@@ -49,14 +49,18 @@ fun interface QuestionEmbedder {
 /** A question whose answer is cached: its embedding, the cache key of its answer and when that answer expires. */
 class IndexedQuestion(val answerKey: String, val vector: FloatArray, val expiresAt: Instant)
 
+/** The stored question closest to a probe, by cosine similarity. */
+data class Neighbour(val answerKey: String, val similarity: Double)
+
 /**
- * Outbound port: the questions of each reading group whose answers are cached. Disposable like the answer cache: an
- * unavailable index finds nothing and forgets what it is given, never an error.
+ * Outbound port: the questions of each reading group whose answers are cached (PostgreSQL and pgvector, ADR 0041).
+ * Disposable like the answer cache: an unavailable index finds nothing and forgets what it is given, never an error.
  */
 interface SimilarQuestionIndex {
-    /** The live questions of [group]. */
-    fun questions(group: String): List<IndexedQuestion>
+    /** The question of [group] whose answer is still cached at [now] and whose embedding is closest to [vector]. */
+    fun nearest(group: String, vector: FloatArray, now: Instant): Neighbour?
 
+    /** Indexes [question] in [group], replacing what its answer key held. */
     fun add(group: String, question: IndexedQuestion)
 }
 
@@ -94,15 +98,8 @@ class SimilarQuestions(
     }
 
     /** The answer key of the closest live question of the probe's group, if it is at least [threshold] close. */
-    fun nearest(probe: Probe): String? {
-        val now = clock.instant()
-        return index.questions(probe.group)
-            .filter { now.isBefore(it.expiresAt) }
-            .map { it to cosine(probe.vector, it.vector) }
-            .filter { it.second >= threshold }
-            .maxByOrNull { it.second }
-            ?.first?.answerKey
-    }
+    fun nearest(probe: Probe): String? =
+        index.nearest(probe.group, probe.vector, clock.instant())?.takeIf { it.similarity >= threshold }?.answerKey
 
     /** Indexes a freshly answered question whose answer is cached under [answerKey] until [expiresAt]. */
     fun remember(probe: Probe, answerKey: String, expiresAt: Instant) =

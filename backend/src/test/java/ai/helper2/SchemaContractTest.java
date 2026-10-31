@@ -104,6 +104,8 @@ class SchemaContractTest {
             Map.entry("review_item.resource_id", "resource CASCADE"),
             Map.entry("review_item.report_id", "issue_report CASCADE"),
             Map.entry("bookmark.user_id", "app_user CASCADE"),
+            // An indexed guide question goes with the cached answer it points to.
+            Map.entry("guide_similar_question.answer_key", "guide_answer CASCADE"),
             // A run that a current row cites is never deleted on its own (the retention purge keeps it). NO ACTION, not
             // RESTRICT: a resource delete cascades to its runs and to the rows citing them in one statement, and the
             // check runs at the end of that statement.

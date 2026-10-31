@@ -3,6 +3,7 @@ package ai.helper2.guide
 import ai.helper2.search.NOW
 import ai.helper2.shared.AudiencePath
 import ai.helper2.testing.MovableClock
+import java.time.Instant
 import java.time.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -10,14 +11,28 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
 
-/** What the Redis index holds, in memory: every question added, by group. */
+/** What the PostgreSQL index holds, in memory: one question per answer key, by group; exact cosine search. */
 class MemoryQuestionIndex : SimilarQuestionIndex {
-    val groups = mutableMapOf<String, MutableList<IndexedQuestion>>()
-    override fun questions(group: String): List<IndexedQuestion> = groups[group].orEmpty()
+    val groups = mutableMapOf<String, MutableMap<String, IndexedQuestion>>()
+    override fun nearest(group: String, vector: FloatArray, now: Instant): Neighbour? =
+        groups[group].orEmpty().values.filter { now.isBefore(it.expiresAt) }
+            .map { Neighbour(it.answerKey, SimilarQuestions.cosine(vector, it.vector)) }
+            .maxByOrNull { it.similarity }
     override fun add(group: String, question: IndexedQuestion) {
-        groups.getOrPut(group) { mutableListOf() } += question
+        groups.getOrPut(group) { mutableMapOf() }[question.answerKey] = question
     }
     val size: Int get() = groups.values.sumOf { it.size }
+}
+
+/** What the guide_answer table holds, in memory. */
+class MemoryAnswerStore : GuideAnswerStore {
+    val entries = mutableMapOf<String, GuideAnswer>()
+    var puts = 0
+    override fun get(key: String) = entries[key]
+    override fun put(key: String, answer: GuideAnswer, expiresAt: Instant) {
+        puts++
+        entries[key] = answer
+    }
 }
 
 /** Embeds by a fixed table of normalised questions; any other text fails, as an unavailable API would. */

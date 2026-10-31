@@ -63,21 +63,21 @@ internal fun sha256Hex(text: String): String =
     HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(text.toByteArray(Charsets.UTF_8)))
 
 /**
- * Durable copy of the guide answer cache, so a restart or a deploy does not throw away answers that
- * cost three model calls each. An unavailable store or an unreadable entry is a miss, never an error.
+ * Where guide answers are kept (PostgreSQL, ADR 0041): on disk and shared by every replica, so a restart or a deploy
+ * does not throw away answers that cost three model calls each. An unavailable store or an unreadable entry is a
+ * miss, never an error.
  */
 interface GuideAnswerStore {
     fun get(key: String): GuideAnswer?
-    fun put(key: String, answer: GuideAnswer, ttl: Duration)
 
-    companion object {
-        /** No durable copy (no Redis): the cache works in memory only. */
-        @JvmField
-        val NONE: GuideAnswerStore = object : GuideAnswerStore {
-            override fun get(key: String): GuideAnswer? = null
-            override fun put(key: String, answer: GuideAnswer, ttl: Duration) {}
-        }
-    }
+    /** Keeps [answer] under [key] until [expiresAt], replacing what the key held. */
+    fun put(key: String, answer: GuideAnswer, expiresAt: Instant)
+}
+
+/** Outbound port: guide answers and indexed questions past their expiry (ADR 0034). */
+fun interface GuideAnswerRetention {
+    /** Deletes the answers and indexed questions that expired before [cutoff]; returns how many answers. */
+    fun deleteExpiredBefore(cutoff: Instant): Int
 }
 
 /**
@@ -86,36 +86,17 @@ interface GuideAnswerStore {
  * original generatedAt, so the page stays honest about its age. Degraded answers are never cached:
  * they would hide a provider recovery.
  *
- * In memory first; on a memory miss it reads through to [store] (Redis), so entries survive restarts.
- * An answer expires [ttl] after its generatedAt, in memory and in the store alike.
+ * Kept in [store]; an answer expires [ttl] after its generatedAt.
  */
-class GuideAnswerCache @JvmOverloads constructor(
+class GuideAnswerCache(
     private val ttl: Duration,
-    private val maxEntries: Int,
     private val clock: Clock,
-    private val store: GuideAnswerStore? = null,
+    private val store: GuideAnswerStore,
 ) {
-    private data class Entry(val answer: GuideAnswer, val expiresAt: Instant)
-
-    private val entries = object : LinkedHashMap<String, Entry>(16, 0.75f, true) {
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Entry>?) = size > maxEntries
-    }
-
     fun get(key: String): GuideAnswer? {
-        val now = clock.instant()
-        synchronized(this) {
-            val e = entries[key]
-            if (e != null) {
-                if (now.isBefore(e.expiresAt)) return e.answer
-                entries.remove(key)
-            }
-        }
-        // Outside the lock: a slow store must not queue every caller behind it.
-        val durable = store?.let { runCatching { it.get(key) }.getOrNull() } ?: return null
-        val expiresAt = durable.generatedAt.plus(ttlOf(durable))
-        if (!now.isBefore(expiresAt) || !isCacheable(durable)) return null
-        synchronized(this) { entries[key] = Entry(durable, expiresAt) }
-        return durable
+        val stored = runCatching { store.get(key) }.getOrNull() ?: return null
+        val expiresAt = stored.generatedAt.plus(ttlOf(stored))
+        return stored.takeIf { clock.instant().isBefore(expiresAt) && isCacheable(it) }
     }
 
     /**
@@ -125,11 +106,8 @@ class GuideAnswerCache @JvmOverloads constructor(
      */
     fun put(key: String, answer: GuideAnswer): Instant? {
         val expiresAt = answer.generatedAt.plus(ttlOf(answer))
-        val left = Duration.between(clock.instant(), expiresAt)
-        if (!isCacheable(answer) || !left.isPositive) return null
-        synchronized(this) { entries[key] = Entry(answer, expiresAt) }
-        store?.let { runCatching { it.put(key, answer, left) } }
-        return expiresAt
+        if (!isCacheable(answer) || !clock.instant().isBefore(expiresAt)) return null
+        return expiresAt.takeIf { runCatching { store.put(key, answer, expiresAt) }.isSuccess }
     }
 
     /**
