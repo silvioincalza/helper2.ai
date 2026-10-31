@@ -116,8 +116,6 @@ Open items:
 - Cross-language retrieval in vector search.
 - A Grafana panel for the share of kept picks ranked 9+ (`helper2.guide.picks{rank="9+"}`), next to the alert
   `Helper2GuidePicksFromLowRanks` ([ADR 0015](adr/guide/0015-ai-guide-evidence-gate.md)).
-- Show the web searches left today on the page, and say when the daily limit is reached (FE-2,
-  [ADR 0037](adr/search/0037-tavily-store-and-daily-quota.md)). The API already returns them (`webSearches`).
 - Write the Scout's Tavily news and events to the same stored sets as searches, with their own share of credits
   ([ADR 0037](adr/search/0037-tavily-store-and-daily-quota.md)).
 - **Signed provenance manifest for AI-written text** (C2PA-style): sign each guide answer with its model, time and
