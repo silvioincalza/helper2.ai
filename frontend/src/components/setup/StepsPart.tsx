@@ -8,13 +8,14 @@ import { Heading } from '@/components/ui/Heading';
 import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
 import { useApi } from '@/hooks/useApi';
 import { useRetry } from '@/hooks/useRetry';
+import { aiMark } from '@/lib/aiMark';
 import { formatDate } from '@/lib/format';
 import { CopyButton } from './CopyButton';
 
 /**
- * Steps from the tool's README or model card (POST /guide, AI-picked, every quote and command checked against the
- * document), then the follow-up box; a question replaces the steps with its answer. Try again keeps focus on the
- * part's heading.
+ * Steps from the tool's README or model card (POST /guide): the model writes each instruction (labelled and marked,
+ * ADR 0038), every quote and command is checked against the document. Then the follow-up box; a question replaces
+ * the steps with its answer. Try again keeps focus on the part's heading.
  */
 export function StepsPart({ id, title, level }: { id: string; title: string; level: number }) {
   const { t } = useTranslation();
@@ -73,7 +74,7 @@ function ToolSteps({ guide, title, level }: { guide: ToolGuide; title: string; l
               const doc = docs.get(st.source);
               return (
                 <li key={i}>
-                  <p className="setup-step-text">{st.text}</p>
+                  <p className="setup-step-text" {...aiMark(guide.model)}>{st.text}</p>
                   {st.code && (
                     <div className="setup-step-code">
                       <pre className="setup-code" data-language={st.code.language ?? undefined}><code>{st.code.text}</code></pre>

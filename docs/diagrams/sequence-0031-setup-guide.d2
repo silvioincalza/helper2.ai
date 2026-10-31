@@ -1,5 +1,6 @@
 # Sequence: a user opens "Guide me" on a resource page: the setup options from the MCP Registry (no model), then a
-# step-by-step guide from the tool's own documents, picked by the fast model and checked before it is shown.
+# step-by-step guide the fast model writes from the tool's own documents, checked before it is shown, its
+# instructions labelled and marked as AI-written on the page.
 # Source of truth: frontend/src/components/setup/ (ConnectPart.tsx, StepsPart.tsx), backend/src/main/java/ai/helper2/setup/web/SetupController.java,
 #   backend/src/main/java/ai/helper2/setup/usecase/GetResourceSetup.java, AskAboutResource.java,
 #   backend/src/main/kotlin/ai/helper2/setup/SetupGuides.kt, ToolGuides.kt, ToolGuideValidator.kt,
@@ -43,9 +44,10 @@ walkthrough: Step-by-step guide (optional question) {
   docs -> setup: "documents (kept in memory,\nbounded by total length)"
   setup -> redis: "get(v1:<id>:<hash>)"
   redis -> setup: "miss"
-  setup -> model: "write(ref, documents, question):\npick and order passages" {class: ai-call}
+  setup -> model: "write(ref, documents, question):\nan instruction per step, with\nits passage and command" {class: ai-call}
   model -> setup: "ProposedGuide"
   setup -> setup: "ToolGuideValidator.validate:\ndrop steps not in the documents"
   setup -> redis: "put (7 days, no question,\nno document text)"
-  setup -> page: "200 ToolGuide: sections, steps,\ndocuments with read dates" {class: hot}
+  setup -> page: "200 ToolGuide: sections, steps,\ndocuments with read dates, model" {class: hot}
+  page -> page: "instructions labelled \"Steps written by AI\"\nand marked data-ai-generated, data-ai-model"
 }

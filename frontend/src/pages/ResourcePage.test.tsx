@@ -253,6 +253,23 @@ describe('the resource page: Guide me (ADR 0031)', () => {
     expect(screen.getByLabelText('Ask about acme-lib')).toBeInTheDocument();
   });
 
+  it('the steps are labelled and marked as written by their model; quotes and commands from the README are not (ADR 0038)', async () => {
+    mockApi({
+      [`GET /resources/${ID}`]: tool('MCP_SERVER', 'pg-mcp-server'),
+      [`GET /resources/${ID}/setup`]: () => SETUP,
+      [`POST /resources/${ID}/guide`]: () => STEPS,
+    });
+    renderApp(PAGE);
+    await userEvent.click(await screen.findByRole('button', { name: 'Guide me: pg-mcp-server' }));
+    const step = await screen.findByText('Install it with npm.');
+    expect(step).toHaveAttribute('data-ai-generated', 'true');
+    expect(step).toHaveAttribute('data-ai-model', 'nemotron-nano');
+    expect(screen.getByText(/Steps written by AI from the tool's own documentation/)).toBeInTheDocument();
+    expect(screen.getByText(/steps written by nemotron-nano/)).toBeInTheDocument();
+    expect(screen.getByText('npm install -g @acme/pg-mcp').closest('[data-ai-generated]')).toBeNull();
+    expect(screen.getByText('Install globally:').closest('[data-ai-generated]')).toBeNull();
+  });
+
   it('Try again on the steps keeps focus in the guide: on the steps heading, not the page body', async () => {
     let n = 0;
     mockApi({
