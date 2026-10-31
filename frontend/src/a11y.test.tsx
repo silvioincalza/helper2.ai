@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { axeViolations } from '@/test/a11y';
 import { ADMIN, USER, makeDetail, makeSearch, makeStatus } from '@/test/fixtures';
 import { mockApi } from '@/test/mockApi';
-import { renderApp } from '@/test/render';
+import { renderApp, settle } from '@/test/render';
 import { clearApiCache } from '@/hooks/useApi';
 
 const ID = '11111111-1111-5111-8111-111111111111';
@@ -24,10 +24,10 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
     expect(await axeViolations(container)).toEqual([]);
   });
 
-  it('search results with expanded source table and partial banner', async () => {
+  it('search results with the sources grid and the partial banner', async () => {
     mockApi({ 'GET /search': () => makeSearch({ sources: [makeStatus(), makeStatus({ sourceId: 'x', name: 'X', outcome: 'TIMED_OUT', servedFrom: 'NONE' })], coverage: { partial: true, sourcesConfigured: 2, sourcesQueried: 2, sourcesSucceeded: 1, note: 'n' } }) });
     const { container } = renderApp('/search?q=translate&type=MODEL');
-    await userEvent.click(await screen.findByRole('button', { name: /sources responded/ }));
+    await screen.findByRole('list', { name: 'Sources searched' });
     expect(await axeViolations(container)).toEqual([]);
   });
 
@@ -54,7 +54,8 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
   it('sources, admin', async () => {
     mockApi({ 'GET /me': () => ADMIN, 'GET /admin/review-items': () => ({ items: [], total: 0 }), 'GET /admin/scout-runs': () => [], 'GET /me/bookmarks': () => [] });
     const s = renderApp('/sources');
-    await screen.findByRole('table');
+    await screen.findByRole('heading', { level: 2, name: 'Every source' });
+    await settle();
     expect(await axeViolations(s.container)).toEqual([]);
     s.unmount();
     const ad = renderApp('/admin');

@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>helper2.ai — Home</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;family=Space+Grotesk:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+.r{--bg:#f7f2e9;--surface:#fffdf8;--tint:#efe9dd;--quote:#fbefe2;--ink:#1b1c3f;--ink2:#35344f;--muted:#4f4b63;--border:#e7dfd0;--border2:#d3c7b2;--accent:#e06a1d;--on-accent:#1b1c3f;--accent-ink:#a8420a;--deep:#2d2e60;--ok-bg:#e3f3ee;--ok:#0f4d3c;--ns:#7a3e00;--model-bg:#fdebd3;--model-ink:#7a3e00;--news-bg:#e6f0fb;--news-ink:#173f70;--lib-bg:#e6e7f5;--mcp-bg:#e3f3ee;--st-ok:#2f8f5b;--hero:#f4ede1;--ring:#e2d6c2;min-height:100vh;display:flex;flex-direction:column;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,sans-serif;font-size:16px;line-height:1.55}
+.r.dark{--bg:#15162f;--surface:#1d1e3d;--tint:#26274f;--quote:#2a2440;--ink:#f3f1ea;--ink2:#d4d2e4;--muted:#aeacc6;--border:#2f3058;--border2:#45477a;--accent:#f08a42;--on-accent:#15162f;--accent-ink:#f4a46a;--deep:#c9cae3;--ok-bg:#123528;--ok:#86efac;--ns:#fbbf77;--model-bg:#3a2a12;--model-ink:#fbbf77;--news-bg:#13263d;--news-ink:#93c5fd;--lib-bg:#26274f;--mcp-bg:#123528;--st-ok:#86efac;--hero:#191a38;--ring:#2f3058;color-scheme:dark}
+.r *{box-sizing:border-box}
+a{color:var(--deep)}a:hover{color:var(--accent-ink)}
+.r :focus-visible{outline:3px solid var(--deep);outline-offset:2px;border-radius:4px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.wrap{width:100%;max-width:1240px;margin:0 auto;padding:0 32px}
+.top{display:flex;justify-content:flex-end;align-items:center;gap:4px;padding-top:12px;padding-bottom:4px}
+.nav-a{min-height:44px;display:inline-flex;align-items:center;padding:0 12px;font-size:14px;color:var(--ink2);text-decoration:none;border-radius:8px}
+.nav-a:hover{background:var(--tint);color:var(--ink)}
+.icon-btn{width:44px;height:44px;border-radius:999px;border:0;background:transparent;color:var(--ink2);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.icon-btn:hover{background:var(--tint)}
+.mark{width:40px;height:40px;border-radius:12px;background:var(--accent);color:var(--on-accent);display:inline-flex;align-items:center;justify-content:center;flex:none}
+.mark svg{width:60%;height:60%}
+.word{font:500 1.6rem/1 'Space Grotesk',sans-serif;letter-spacing:-0.02em}
+.hero{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;gap:20px;padding:64px 20px 56px;text-align:center;background:var(--hero);border-bottom:1px solid var(--border)}
+.hero > *:not(.radar-rings){position:relative}
+.hero .mark{width:60px;height:60px;border-radius:16px}
+.hero .word{font-size:48px}
+.eyebrow{margin:0;font:500 12.5px 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink)}
+.hero-h{font:400 clamp(1.4rem,2vw + .8rem,2rem)/1.2 'Space Grotesk',sans-serif;margin:0;color:var(--ink2);max-width:28ch;text-wrap:balance}
+.box{display:flex;align-items:center;gap:10px;width:100%;max-width:660px;height:58px;padding:0 6px 0 18px;border:1px solid var(--border2);border-radius:999px;background:var(--surface);color:var(--muted)}
+.box:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+.box input{flex:1;min-width:0;border:0;background:transparent;font:inherit;font-size:16px;color:var(--ink);outline:none;height:100%}
+.go{height:44px;display:inline-flex;align-items:center;padding:0 20px;border-radius:999px;border:0;background:var(--accent);color:var(--on-accent);font:600 14px/1 Inter,sans-serif;text-decoration:none;cursor:pointer;white-space:nowrap}
+.go:hover{color:var(--on-accent);filter:brightness(1.05)}
+.chips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.chip{min-height:44px;display:inline-flex;align-items:center;padding:0 16px;border:1px solid var(--border2);border-radius:999px;background:var(--surface);color:var(--ink2);font:500 14px Inter,sans-serif;text-decoration:none}
+.chip:hover{border-color:var(--accent);color:var(--ink)}
+.radar-rings{position:absolute;left:50%;top:50%;width:1100px;height:1100px;margin:-550px 0 0 -550px;pointer-events:none}
+.radar-rings svg{position:absolute;inset:0;width:100%;height:100%}
+.radar-rings circle,.radar-rings line{fill:none;stroke:var(--ring);stroke-width:1}
+.radar-sweep{animation:sweep 7s linear infinite;transform-origin:50% 50%}
+.radar-sweep path{fill:var(--accent);fill-opacity:.1}
+.radar-sweep line{stroke:var(--accent);stroke-opacity:.55;stroke-width:1.5}
+.radar-blip{position:absolute;width:10px;height:10px;border-radius:50%;background:var(--accent)}
+.radar-blip::after{content:'';position:absolute;inset:0;border-radius:50%;background:inherit;animation:ping 2.6s ease-out infinite}
+.blip-a{left:72%;top:30%}
+.blip-b{background:var(--st-ok)}
+@keyframes sweep{to{transform:rotate(360deg)}}
+@keyframes ping{0%{transform:scale(.6);opacity:.9}100%{transform:scale(2.6);opacity:0}}
+.tag{font:500 11px/1 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.06em;padding:5px 8px;border-radius:6px;white-space:nowrap}
+.t-mcp{background:var(--mcp-bg);color:var(--ok)}.t-model{background:var(--model-bg);color:var(--model-ink)}.t-lib{background:var(--lib-bg);color:var(--deep)}.t-news{background:var(--news-bg);color:var(--news-ink)}.t-ev{background:var(--tint);color:var(--ink2)}
+.boards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:40px;padding-top:40px;padding-bottom:64px}
+.board{min-width:0;border-top:2px solid var(--ink);padding-top:14px}
+.b-head{display:flex;align-items:baseline;justify-content:space-between;gap:4px 16px;flex-wrap:wrap;margin-bottom:6px}
+.b-title{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.b-title h2{font:400 1.75rem/1.1 'Space Grotesk',sans-serif;margin:0;letter-spacing:-0.01em}
+.b-sub{font-size:13px;color:var(--muted)}
+.b-all{min-height:44px;display:inline-flex;align-items:center;font:600 14px Inter,sans-serif;color:var(--deep);text-decoration:none}
+.b-all:hover{text-decoration:underline}
+.b-body{height:380px;overflow:hidden;position:relative;-webkit-mask-image:linear-gradient(to bottom,transparent,#000 5%,#000 92%,transparent);mask-image:linear-gradient(to bottom,transparent,#000 5%,#000 92%,transparent)}
+.b-track{animation:roll 48s linear infinite}
+.board:hover .b-track,.board:focus-within .b-track,.board.paused .b-track{animation-play-state:paused}
+.b-body{cursor:pointer}
+.b-state{font:500 11px/1 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.06em;padding:5px 8px;border-radius:6px;background:var(--tint);color:var(--ink2);box-shadow:inset 0 0 0 1px var(--border2)}
+@keyframes roll{to{transform:translateY(-50%)}}
+.b-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:12px;row-gap:6px;padding:14px 10px;border-bottom:1px solid var(--border);border-radius:8px}
+.b-row:hover{background:var(--tint)}
+.b-meta{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;font-size:13.5px;color:var(--muted);min-width:0}
+.b-time{font:600 13px 'JetBrains Mono',monospace;color:var(--accent-ink);white-space:nowrap}
+.b-name{grid-column:1 / -1;font:500 1.15rem/1.3 'Space Grotesk',sans-serif;letter-spacing:-0.01em;color:var(--ink);text-decoration:none;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere}
+.b-name:hover{text-decoration:underline;color:var(--ink)}
+.st{justify-self:end;font:500 11px/1 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.06em;padding:4px 8px;border-radius:999px;white-space:nowrap;background:var(--ok-bg);color:var(--ok)}
+.st.warn{background:var(--model-bg);color:var(--ns)}
+.st.go{background:var(--tint);color:var(--ink2);box-shadow:inset 0 0 0 1px var(--border2)}
+.st.soon{background:var(--quote);color:var(--accent-ink);box-shadow:inset 0 0 0 1px var(--accent)}
+.b-foot{margin:0;font-size:12px;color:var(--muted);padding:10px 10px 0}
+@media (prefers-reduced-motion:reduce){.radar-sweep,.radar-blip::after,.b-track{animation:none}.b-body{overflow-y:auto}}
+.foot{margin-top:auto;border-top:1px solid var(--border);background:var(--tint);font-size:13px;color:var(--muted)}
+.foot .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:4px 20px;padding-top:10px;padding-bottom:10px}
+.foot a{min-height:44px;display:inline-flex;align-items:center;color:var(--muted)}
+.foot .end{margin-left:auto}
+@media (max-width:1000px){.boards{grid-template-columns:minmax(0,1fr);gap:32px}}
+@media (max-width:640px){.wrap{padding:0 16px}.top{padding-top:6px}.hero{padding:40px 16px 36px;gap:16px}.hero .word{font-size:36px}.hero .mark{width:48px;height:48px;border-radius:14px}.box{height:54px;padding-left:14px}.go{padding:0 16px}.boards{padding-top:28px;padding-bottom:40px}.b-body{height:340px}.b-row{padding:12px 4px}.foot .end{margin-left:0}}
+</style>
+</helmet>
+<div class="{{rootClass}}">
+  <header class="wrap top">
+    <a href="Saved.dc.html" class="nav-a">Saved</a>
+    <a href="Sources.dc.html" class="nav-a">Sources</a>
+    <a href="Mission.dc.html" class="nav-a">Mission</a>
+    <button type="button" class="icon-btn" aria-label="{{themeLabel}}" onClick="{{toggleTheme}}">
+      <sc-if value="{{isDark}}" hint-placeholder-val="{{false}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg></sc-if>
+      <sc-if value="{{isLight}}" hint-placeholder-val="{{true}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"></path></svg></sc-if>
+    </button>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="radar-rings" aria-hidden="true">
+        <svg viewBox="0 0 1100 1100" focusable="false"><circle cx="550" cy="550" r="180"></circle><circle cx="550" cy="550" r="300"></circle><circle cx="550" cy="550" r="420"></circle><circle cx="550" cy="550" r="540"></circle><line x1="10" y1="550" x2="1090" y2="550"></line><line x1="550" y1="10" x2="550" y2="1090"></line></svg>
+        <svg class="radar-sweep" viewBox="0 0 1100 1100" focusable="false"><path d="M550 550 L550 10 A540 540 0 0 1 931.8 168.2 Z"></path><line x1="550" y1="550" x2="931.8" y2="168.2"></line></svg>
+        <span class="radar-blip blip-a"></span>
+        <span class="radar-blip blip-b" style="left:30%;top:60%"></span>
+        <span class="radar-blip blip-b" style="left:66%;top:68%"></span>
+        <span class="radar-blip blip-b" style="left:38%;top:33%"></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px"><span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="4.2" stroke-width="1.4" opacity="0.5"></circle><path d="M12 12 18.4 5.6"></path><path d="M16.2 11.1Q16.2 15 20.1 15Q16.2 15 16.2 18.9Q16.2 15 12.3 15Q16.2 15 16.2 11.1Z" fill="currentColor" stroke-width="1"></path></svg></span><span class="word">helper2.ai</span></div>
+      <p class="eyebrow">AI on your radar</p>
+      <h1 class="hero-h">Describe what you need. <span style="color:var(--accent-ink)">Get picks you can verify.</span></h1>
+      <form class="box" role="search" onSubmit="{{onSubmit}}">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+        <label for="q-home" class="sr">Search AI resources</label>
+        <input id="q-home" type="search" placeholder="Describe what you need, or type a name">
+        <a href="ResultsPreview.dc.html" class="go">Search</a>
+      </form>
+      <div class="chips">
+        <a href="ResultsPreview.dc.html" class="chip">Postgres MCP server</a>
+        <a href="ResultsPreview.dc.html" class="chip">Laptop embedding model</a>
+        <a href="ResultsPreview.dc.html" class="chip">Free document translation</a>
+      </div>
+    </section>
+
+    <div class="wrap boards">
+      <section class="{{newsCls}}" aria-labelledby="news-h">
+        <div class="b-head">
+          <div class="b-title"><h2 id="news-h">News</h2><span class="b-sub">Last 7 days</span><sc-if value="{{newsPaused}}" hint-placeholder-val="{{false}}"><span class="b-state" role="status">Paused · tap to play</span></sc-if></div>
+          <a href="#" class="b-all">All news →</a>
+        </div>
+        <div class="b-body" role="list" aria-label="New resources" onClick="{{toggleNews}}">
+          <div class="b-track">
+            <sc-for list="{{news}}" as="a" hint-placeholder-count="6">
+              <div class="b-row" role="listitem" aria-hidden="{{a.dup}}"><div class="b-meta"><span class="b-time">{{a.time}}</span><span class="{{a.tag}}">{{a.label}}</span><span>{{a.source}}</span></div><span class="{{a.stCls}}">{{a.status}}</span><a href="Resource.dc.html" class="b-name" tabindex="{{a.tab}}">{{a.title}}</a></div>
+            </sc-for>
+          </div>
+        </div>
+        <p class="b-foot">Dates as each source states them</p>
+      </section>
+
+      <section class="{{eventsCls}}" aria-labelledby="events-h">
+        <div class="b-head">
+          <div class="b-title"><h2 id="events-h">Events</h2><span class="b-sub">Next 3 months</span><sc-if value="{{eventsPaused}}" hint-placeholder-val="{{false}}"><span class="b-state" role="status">Paused · tap to play</span></sc-if></div>
+          <a href="#" class="b-all">All events →</a>
+        </div>
+        <div class="b-body" role="list" aria-label="Next events" onClick="{{toggleEvents}}">
+          <div class="b-track">
+            <sc-for list="{{events}}" as="d" hint-placeholder-count="6">
+              <div class="b-row" role="listitem" aria-hidden="{{d.dup}}"><div class="b-meta"><span class="b-time">{{d.time}}</span><span class="{{d.tag}}">{{d.label}}</span><span>{{d.where}}</span></div><span class="{{d.stCls}}">{{d.status}}</span><a href="#" class="b-name" tabindex="{{d.tab}}">{{d.name}}</a></div>
+            </sc-for>
+          </div>
+        </div>
+        <p class="b-foot">Only events whose source states the dates</p>
+      </section>
+    </div>
+  </main>
+
+  <footer class="foot"><div class="wrap"><span>helper2.ai · Switzerland · EU servers</span><a href="Mission.dc.html">Mission</a><a href="Sources.dc.html">Sources</a><a href="Privacy.dc.html">Privacy</a><span class="end">No ads.</span></div></footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1250}}'>
+var NEWS = [
+  {time:'26.10',cat:'MCP',title:'DBHub',source:'GitHub',status:'Updated',stCls:'st'},
+  {time:'24.10',cat:'MCP',title:'Supabase MCP server',source:'GitHub',status:'Updated',stCls:'st'},
+  {time:'[dd.mm]',cat:'MODEL',title:'[Model name]',source:'Hugging Face',status:'Published',stCls:'st'},
+  {time:'[dd.mm]',cat:'PAPER',title:'[Paper title]',source:'arXiv',status:'Published',stCls:'st'},
+  {time:'[dd.mm]',cat:'LIB',title:'[Library name]',source:'GitHub',status:'Updated',stCls:'st'},
+  {time:'[dd.mm]',cat:'AGENT',title:'[Agent name]',source:'PulseMCP',status:'First seen',stCls:'st warn'}
+];
+var EVENTS = [
+  {date:'2026-11-12',name:'[Conference name]',cat:'CONF',where:'Zurich · In person'},
+  {date:'2026-11-19',name:'[Meetup name]',cat:'MEET',where:'Geneva · Hybrid'},
+  {date:'2026-11-26',name:'[Hackathon name]',cat:'HACK',where:'Online'},
+  {date:'2026-12-03',name:'[Talk title]',cat:'TALK',where:'Online'},
+  {date:'2026-12-10',name:'[Workshop name]',cat:'WORK',where:'Lausanne · In person'},
+  {date:'2027-01-21',name:'[Conference name]',cat:'CONF',where:'Bern · In person'}
+];
+var TYPE_TAG = {MCP:['tag t-mcp','MCP server'],MODEL:['tag t-model','Model'],PAPER:['tag t-lib','Paper'],LIB:['tag t-lib','Library'],AGENT:['tag t-news','Agent'],CONF:['tag t-ev','Conference'],MEET:['tag t-ev','Meetup'],HACK:['tag t-ev','Hackathon'],TALK:['tag t-ev','Talk'],WORK:['tag t-ev','Workshop']};
+function until(days) {
+  if (days <= 0) return 'Today';
+  if (days === 1) return 'Tomorrow';
+  if (days < 14) return 'In ' + days + ' days';
+  if (days < 45) { var w = Math.round(days / 7); return 'In ' + w + (w === 1 ? ' week' : ' weeks'); }
+  var m = Math.round(days / 30); return 'In ' + m + (m === 1 ? ' month' : ' months');
+}
+var EV = EVENTS.map(function (e, i) {
+  var days = Math.round((Date.UTC(+e.date.slice(0, 4), +e.date.slice(5, 7) - 1, +e.date.slice(8, 10)) - Date.UTC(2026, 9, 30)) / 864e5);
+  return { time: e.date.slice(8, 10) + '.' + e.date.slice(5, 7), cat: e.cat, name: e.name, where: e.where, status: until(days), stCls: i === 0 ? 'st soon' : 'st go' };
+});
+function loop(list) {
+  var dress = function (x, dup) { var t = TYPE_TAG[x.cat] || ['tag t-ev', x.cat]; return Object.assign({}, x, { tag: t[0], label: t[1], dup: dup, tab: dup ? -1 : 0 }); };
+  return list.map(function (x) { return dress(x, false); }).concat(list.map(function (x) { return dress(x, true); }));
+}
+class Component extends DCLogic {
+  renderVals() {
+    var self = this;
+    var dark = (this.state && this.state.dark !== undefined) ? this.state.dark : !!this.props.dark;
+    var newsPaused = !!(this.state && this.state.newsPaused), eventsPaused = !!(this.state && this.state.eventsPaused);
+    return {
+      rootClass: dark ? 'r dark' : 'r', isDark: dark, isLight: !dark,
+      themeLabel: dark ? 'Theme: dark. Change to light' : 'Theme: light. Change to dark',
+      toggleTheme: function () { self.setState({ dark: !dark }); },
+      onSubmit: function (e) { e.preventDefault(); },
+      news: loop(NEWS), events: loop(EV),
+      newsPaused: newsPaused, eventsPaused: eventsPaused,
+      newsCls: newsPaused ? 'board paused' : 'board', eventsCls: eventsPaused ? 'board paused' : 'board',
+      toggleNews: function (e) { if (e && e.target && e.target.closest && e.target.closest('a')) return; self.setState({ newsPaused: !newsPaused }); },
+      toggleEvents: function (e) { if (e && e.target && e.target.closest && e.target.closest('a')) return; self.setState({ eventsPaused: !eventsPaused }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

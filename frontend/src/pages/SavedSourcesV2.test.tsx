@@ -7,14 +7,14 @@ import { SOURCES, USER } from '@/test/fixtures';
 import { mockApi } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
 
-vi.mock('@/lib/features', () => ({ SAVED_ENABLED: true, NEW_DESIGN_ENABLED: true }));
+vi.mock('@/lib/features', () => ({ SAVED_ENABLED: true }));
 
 const saved: Bookmark[] = [
   { resourceId: '11111111-1111-5111-8111-111111111111', title: 'Postgres MCP', url: 'https://github.com/a/pg', type: 'MCP_SERVER', savedAt: '2026-10-20T10:00:00Z' },
   { resourceId: '22222222-2222-5222-8222-222222222222', title: 'pgvector', url: 'https://github.com/pgvector/pgvector', type: 'LIBRARY', savedAt: '2026-10-21T10:00:00Z' },
 ];
 
-describe('Feature: saved resources in design v2 (flag on)', () => {
+describe('Feature: saved resources in design v2', () => {
   beforeEach(() => window.localStorage.setItem(BOOKMARK_KEY, JSON.stringify(saved)));
   afterEach(() => window.localStorage.clear());
 
@@ -64,7 +64,7 @@ const sources: SourceInfo[] = [
   { id: 'npm', name: 'npm', mode: 'LIVE', enabled: true, homepage: 'https://www.npmjs.com', termsUrl: null, attribution: null, resourceTypes: ['LIBRARY'], lastOutcome: 'FAILED', lastCheckedAt: '2026-10-22T08:30:00Z' },
 ];
 
-describe('Feature: the sources page in design v2 (flag on)', () => {
+describe('Feature: the sources page in design v2', () => {
   it('Scenario: every source says its last check in words, and the summary counts them', async () => {
     mockApi({ 'GET /sources': () => sources });
     renderApp('/sources');
@@ -77,6 +77,13 @@ describe('Feature: the sources page in design v2 (flag on)', () => {
     const arxiv = screen.getByRole('heading', { level: 3, name: /arXiv/ }).closest('li') as HTMLElement;
     expect(within(arxiv).getByText('Rate limited')).toBeInTheDocument();
     expect(within(arxiv).getByText('Thanks to arXiv')).toBeInTheDocument();
+  });
+
+  it('Scenario: each source links its terms as an external, nofollow link', async () => {
+    mockApi();
+    renderApp('/sources');
+    const gh = (await screen.findByRole('heading', { level: 3, name: /GitHub/ })).closest('li') as HTMLElement;
+    expect(within(gh).getByRole('link', { name: /Terms/ })).toHaveAttribute('rel', 'noopener noreferrer nofollow');
   });
 
   it('Scenario: the mode chips show only the sources of that mode', async () => {
@@ -99,7 +106,7 @@ describe('Feature: the sources page in design v2 (flag on)', () => {
   });
 });
 
-describe('Feature: your account in design v2 (flag on)', () => {
+describe('Feature: your account in design v2', () => {
   it('Scenario: the delete flow is unchanged: confirm dialog, cancel deletes nothing', async () => {
     const m = mockApi({ 'GET /me': () => USER });
     renderApp('/account');

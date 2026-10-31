@@ -6,7 +6,6 @@ import { axeViolations } from '@/test/a11y';
 import { mockApi } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
 
-vi.mock('@/lib/features', () => ({ SAVED_ENABLED: false, NEW_DESIGN_ENABLED: true }));
 
 const PAGES: Array<{ path: string; title: string; sections: TextSection[] }> = [
   { path: '/mission', title: en.mission.title, sections: en.mission.sections as TextSection[] },
@@ -18,7 +17,7 @@ function narrowScreen(matches: boolean) {
   vi.stubGlobal('matchMedia', vi.fn(() => ({ matches, addEventListener: () => undefined, removeEventListener: () => undefined })));
 }
 
-describe('Feature: text pages in design v2 (flag on)', () => {
+describe('Feature: text pages in design v2', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('sectionAnchor turns a title into a stable id', () => {

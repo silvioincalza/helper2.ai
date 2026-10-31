@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>helper2.ai — Saved resources</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;family=Space+Grotesk:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+.r{--bg:#f7f2e9;--surface:#fffdf8;--tint:#efe9dd;--quote:#fbefe2;--ink:#1b1c3f;--ink2:#35344f;--muted:#4f4b63;--border:#e7dfd0;--border2:#d3c7b2;--accent:#e06a1d;--on-accent:#1b1c3f;--accent-ink:#a8420a;--deep:#2d2e60;--mark:#fde68a;--ok-bg:#e3f3ee;--ok:#0f4d3c;--ns:#7a3e00;--danger:#b42318;--model-bg:#fdebd3;--model-ink:#7a3e00;--news-bg:#e6f0fb;--news-ink:#173f70;--lib-bg:#e6e7f5;--mcp-bg:#e3f3ee;--st-ok:#2f8f5b;--st-warn:#c98a0b;min-height:100vh;display:flex;flex-direction:column;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,sans-serif;font-size:16px;line-height:1.55}
+.r.dark{--bg:#15162f;--surface:#1d1e3d;--tint:#26274f;--quote:#2a2440;--ink:#f3f1ea;--ink2:#d4d2e4;--muted:#aeacc6;--border:#2f3058;--border2:#45477a;--accent:#f08a42;--on-accent:#15162f;--accent-ink:#f4a46a;--deep:#c9cae3;--mark:#6b5310;--ok-bg:#123528;--ok:#86efac;--ns:#fbbf77;--danger:#ff8f8f;--model-bg:#3a2a12;--model-ink:#fbbf77;--news-bg:#13263d;--news-ink:#93c5fd;--lib-bg:#26274f;--mcp-bg:#123528;--st-ok:#86efac;--st-warn:#fcd34d;color-scheme:dark}
+.r *{box-sizing:border-box}
+a{color:var(--deep)}a:hover{color:var(--accent-ink)}
+.r :focus-visible{outline:3px solid var(--deep);outline-offset:2px;border-radius:4px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.wrap{width:100%;max-width:1240px;margin:0 auto;padding:0 32px}
+.hdr{border-bottom:1px solid var(--border);background:var(--surface)}
+.hdr-row{display:flex;align-items:center;gap:24px;min-height:72px;flex-wrap:wrap;padding-top:10px;padding-bottom:10px}
+.logo{display:inline-flex;align-items:center;gap:16px;text-decoration:none;color:var(--ink);min-height:44px}
+.mark{width:40px;height:40px;border-radius:12px;background:var(--accent);color:var(--on-accent);display:inline-flex;align-items:center;justify-content:center;flex:none}
+.mark svg{width:60%;height:60%}
+.logo-text{display:inline-flex;flex-direction:column;gap:2px}
+.word{font:500 1.6rem/1 'Space Grotesk',sans-serif;letter-spacing:-0.02em}
+.tagline{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);line-height:1.2}
+.box{display:flex;align-items:center;gap:10px;height:52px;padding:0 6px 0 18px;border:1px solid var(--border2);border-radius:999px;background:var(--bg);flex:1 1 380px;max-width:680px;color:var(--muted)}
+.box:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+.box input{flex:1;min-width:0;border:0;background:transparent;font:inherit;font-size:16px;color:var(--ink);outline:none;height:100%}
+.go{height:40px;padding:0 18px;border-radius:999px;border:0;background:var(--accent);color:var(--on-accent);font:600 14px Inter,sans-serif;cursor:pointer}
+.tools{margin-left:auto;display:flex;align-items:center;gap:6px}
+.icon-btn{width:44px;height:44px;border-radius:999px;border:0;background:transparent;color:var(--ink2);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.icon-btn:hover{background:var(--tint)}
+.icon-btn.on{background:var(--tint);color:var(--accent-ink)}
+.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--border)}
+.tab{height:46px;padding:0 12px;border:0;background:none;border-bottom:3px solid transparent;color:var(--muted);font:500 14px Inter,sans-serif;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+.tab .n{font:500 12px 'JetBrains Mono',monospace}
+.tab.on{color:var(--ink);border-bottom-color:var(--accent)}
+.tag{font:500 11px/1 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.06em;padding:5px 8px;border-radius:6px;width:max-content}
+.t-mcp{background:var(--mcp-bg);color:var(--ok)}.t-model{background:var(--model-bg);color:var(--model-ink)}.t-lib{background:var(--lib-bg);color:var(--deep)}.t-news{background:var(--news-bg);color:var(--news-ink)}
+mark{background:var(--mark);color:inherit;padding:0 2px;border-radius:3px}
+.ns{color:var(--ns);font-style:italic}
+.path{font:400 12px 'JetBrains Mono',monospace;color:var(--muted);overflow-wrap:anywhere}
+.foot{border-top:1px solid var(--border);background:var(--tint);font-size:13px;color:var(--muted)}
+.foot .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;padding-top:14px;padding-bottom:14px}
+.foot a{color:var(--muted)}
+/* Saved */
+.page{flex:1;padding-top:36px;padding-bottom:64px}
+.page-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 24px;border-bottom:2px solid var(--ink);padding-bottom:10px;margin-bottom:8px}
+.page-h{font:400 clamp(1.9rem,2vw + 1.1rem,2.6rem)/1.1 'Space Grotesk',sans-serif;margin:0;letter-spacing:-0.015em}
+.note{display:inline-flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);margin:0}
+.banner{display:flex;gap:12px;align-items:flex-start;margin:16px 0 0;padding:14px 16px;border-radius:12px;background:var(--model-bg);color:var(--ns);font-size:14px}
+.banner strong{color:var(--ink)}
+.list{list-style:none;margin:0;padding:0}
+.item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 24px;padding:20px 0;border-bottom:1px solid var(--border);align-items:start}
+.item-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.item-h{font:500 21px/1.25 'Space Grotesk',sans-serif;margin:6px 0 6px;letter-spacing:-0.01em}
+.item-h a{color:var(--deep);text-decoration:none}
+.item-h a:hover{text-decoration:underline}
+.proof{margin:0;padding:10px 14px;background:var(--quote);border-radius:8px;font-size:14.5px;line-height:1.55;color:var(--ink2);max-width:72ch}
+.when{margin:8px 0 0;font-size:13px;color:var(--muted)}
+.acts{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.btn{box-sizing:border-box;height:44px;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 16px;border-radius:999px;border:1px solid var(--border2);background:var(--surface);color:var(--ink);font:600 14px/1 Inter,sans-serif;white-space:nowrap;text-decoration:none;cursor:pointer}
+.btn:hover{border-color:var(--accent);color:var(--ink)}
+.btn.ghost{background:none;color:var(--ink2)}
+.btn.ghost:hover{border-color:var(--danger);color:var(--danger)}
+.empty{margin-top:28px;padding:40px 28px;border:1px dashed var(--border2);border-radius:16px;background:var(--surface);text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px}
+.empty h2{font:400 1.6rem/1.2 'Space Grotesk',sans-serif;margin:0}
+.empty p{margin:0;color:var(--ink2);max-width:46ch}
+.empty .ico{width:52px;height:52px;border-radius:14px;background:var(--tint);color:var(--accent-ink);display:inline-flex;align-items:center;justify-content:center}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+@media (max-width:640px){.wrap{padding-left:16px;padding-right:16px}.hdr-row{gap:10px}.hdr .box{order:3;flex:1 1 100%}.item{grid-template-columns:minmax(0,1fr)}.acts{justify-content:flex-start}.acts .btn{flex:1 1 auto}.page{padding-top:24px}}
+</style>
+</helmet>
+<div class="{{rootClass}}">
+  <header class="hdr">
+    <div class="wrap hdr-row">
+      <a href="Mix.dc.html" class="logo" aria-label="helper2.ai home"><span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="4.2" stroke-width="1.4" opacity="0.5"></circle><path d="M12 12 18.4 5.6"></path><path d="M16.2 11.1Q16.2 15 20.1 15Q16.2 15 16.2 18.9Q16.2 15 12.3 15Q16.2 15 16.2 11.1Z" fill="currentColor" stroke-width="1"></path></svg></span><span class="logo-text"><span class="word">helper2.ai</span><span class="tagline">AI on your radar</span></span></a>
+      <form class="box" role="search" onSubmit="{{noSubmit}}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+        <label for="qs" class="sr">Search AI resources</label>
+        <input id="qs" type="search" placeholder="Search tools, models, MCP servers…">
+        <button type="submit" class="go">Search</button>
+      </form>
+      <div class="tools">
+        <button type="button" class="icon-btn" aria-label="{{themeLabel}}" onClick="{{toggleTheme}}">
+          <sc-if value="{{isDark}}" hint-placeholder-val="{{false}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg></sc-if>
+          <sc-if value="{{isLight}}" hint-placeholder-val="{{true}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"></path></svg></sc-if>
+        </button>
+        <a href="Saved.dc.html" class="icon-btn on" aria-label="Saved" aria-current="page"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"></path></svg></a>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap page">
+    <div class="page-head">
+      <h1 class="page-h">Saved resources</h1>
+      <p class="note"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"></rect><path d="M8 20h8M12 16v4"></path></svg>Saved in this browser only.</p>
+    </div>
+
+    <sc-if value="{{showBlocked}}" hint-placeholder-val="{{false}}">
+      <p class="banner" role="alert"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;margin-top:2px"><path d="M12 3l9 16H3z"></path><path d="M12 10v4M12 17h.01"></path></svg><span><strong>Storage blocked.</strong> Your browser blocked storage, so saved items will be lost when you leave this page.</span></p>
+    </sc-if>
+
+    <sc-if value="{{hasItems}}" hint-placeholder-val="{{true}}">
+      <nav class="tabs" aria-label="Filter by type">
+        <sc-for list="{{tabs}}" as="t" hint-placeholder-count="4"><button type="button" class="{{t.cls}}" onClick="{{t.pick}}" aria-pressed="{{t.on}}">{{t.label}} <span class="n">{{t.count}}</span></button></sc-for>
+      </nav>
+      <ul class="list" aria-label="Saved resources">
+        <sc-for list="{{items}}" as="i" hint-placeholder-count="4">
+          <li class="item">
+            <div>
+              <div class="item-top"><span class="{{i.tag}}">{{i.typeLabel}}</span><span class="path">{{i.domain}}/{{i.path}}</span></div>
+              <h2 class="item-h"><a href="ResultsPreview.dc.html">{{i.title}}</a></h2>
+              <p class="proof">“<mark>{{i.quote}}</mark>”</p>
+              <p class="when">Saved {{i.savedAt}}</p>
+            </div>
+            <div class="acts">
+              <a href="#" class="btn"><span>Open on {{i.domain}}</span><span aria-hidden="true">↗</span></a>
+              <button type="button" class="btn ghost" onClick="{{i.remove}}" aria-label="Remove {{i.title}} from saved">Remove</button>
+            </div>
+          </li>
+        </sc-for>
+      </ul>
+    </sc-if>
+
+    <sc-if value="{{isEmpty}}" hint-placeholder-val="{{false}}">
+      <section class="empty" aria-labelledby="empty-h">
+        <span class="ico" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"></path></svg></span>
+        <h2 id="empty-h">Nothing saved yet.</h2>
+        <p>Use Save on any result to keep it here, together with the sentence that proves it.</p>
+        <a href="Mix.dc.html" class="btn primary">Back to search</a>
+      </section>
+    </sc-if>
+  </main>
+
+  <footer class="foot"><div class="wrap"><span>helper2.ai · Switzerland · EU servers</span><a href="#">Mission</a><a href="Sources.dc.html">Sources</a><a href="#">Privacy</a></div></footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"view":{"editor":"enum","options":["items","empty","storage blocked"],"default":"items"},"$preview":{"width":1440,"height":1300}}'>
+var SAVED = [
+  {id:'pg',type:'MCP_SERVER',typeLabel:'MCP server',tag:'tag t-mcp',title:'PostgreSQL MCP server',domain:'github.com',path:'modelcontextprotocol/servers',quote:'A Model Context Protocol server that provides read-only access to PostgreSQL databases.',savedAt:'28 Oct 2026'},
+  {id:'dbhub',type:'MCP_SERVER',typeLabel:'MCP server',tag:'tag t-mcp',title:'DBHub',domain:'github.com',path:'bytebase/dbhub',quote:'Universal database MCP server',savedAt:'27 Oct 2026'},
+  {id:'pgv',type:'LIBRARY',typeLabel:'Library',tag:'tag t-lib',title:'pgvector',domain:'github.com',path:'pgvector/pgvector',quote:'Open-source vector similarity search for Postgres.',savedAt:'21 Oct 2026'},
+  {id:'nomic',type:'MODEL',typeLabel:'Model',tag:'tag t-model',title:'nomic-embed-text-v1.5',domain:'huggingface.co',path:'nomic-ai/nomic-embed-text-v1.5',quote:'Resizable production embeddings with Matryoshka Representation Learning',savedAt:'[date]'}
+];
+var TABS = [{id:'ALL',label:'All'},{id:'MCP_SERVER',label:'MCP servers'},{id:'LIBRARY',label:'Libraries'},{id:'MODEL',label:'Models'}];
+class Component extends DCLogic {
+  st(k, d) { return (this.state && this.state[k] !== undefined) ? this.state[k] : d; }
+  renderVals() {
+    var self = this;
+    var dark = this.st('dark', !!this.props.dark);
+    var view = this.props.view || 'items';
+    var removed = this.st('removed', []);
+    var tab = this.st('tab', 'ALL');
+    var all = view === 'empty' ? [] : SAVED.filter(function (s) { return removed.indexOf(s.id) < 0; });
+    var shown = all.filter(function (s) { return tab === 'ALL' || s.type === tab; });
+    return {
+      rootClass: dark ? 'r dark' : 'r', isDark: dark, isLight: !dark,
+      themeLabel: dark ? 'Theme: dark. Change to light' : 'Theme: light. Change to dark',
+      toggleTheme: function () { self.setState({ dark: !dark }); },
+      noSubmit: function (e) { e.preventDefault(); },
+      showBlocked: view === 'storage blocked',
+      hasItems: all.length > 0, isEmpty: all.length === 0,
+      tabs: TABS.map(function (t) {
+        var n = all.filter(function (s) { return t.id === 'ALL' || s.type === t.id; }).length;
+        return { label: t.label, count: n, on: t.id === tab, cls: t.id === tab ? 'tab on' : 'tab', pick: function () { self.setState({ tab: t.id }); } };
+      }),
+      items: shown.map(function (s) { return Object.assign({}, s, { remove: function () { self.setState({ removed: removed.concat([s.id]) }); } }); })
+    };
+  }
+}
+</script>
+</body>
+</html>

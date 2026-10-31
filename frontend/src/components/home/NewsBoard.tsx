@@ -1,15 +1,36 @@
 import { useTranslation } from 'react-i18next';
 import { api } from '@/api/client';
-import type { RecentResponse } from '@/api/types';
-import { ALL_TYPES, cardDate, DAYS, SHOWN } from '@/components/Radar';
+import type { RecentResponse, ResultCard } from '@/api/types';
 import { TypeTag } from '@/components/ui/TypeTag';
 import { useApi } from '@/hooks/useApi';
 import { shortDay } from '@/lib/format';
 import { HomeBoard, type BoardRow } from './HomeBoard';
 
 /**
- * News: the newest resources in Helper2's own index, by the date each source states (GET /recent, the same request
- * as the old Radar, so it shares its cache). A row with no stated date says when Helper2.ai first saw it.
+ * Tools and research only: news and events come from a web-search API whose terms do not clearly allow
+ * public redisplay (docs/sources.md), so the home page does not show them. Search still finds them.
+ */
+const ALL_TYPES: ResultCard['type'][] = ['MCP_SERVER', 'MODEL', 'LIBRARY', 'PAPER', 'AGENT', 'DATASET', 'PROMPT', 'SKILL', 'PRODUCT'];
+
+/**
+ * Data comes from GET /recent: Helper2's own index, newest by the date the SOURCE states, so the home page makes
+ * no live source calls (GitHub and arXiv are rate-limited) and "new" really means newly published, not "matched a
+ * keyword, then sorted". Everything from the last week, as many as the API gives (24).
+ */
+const SHOWN = 24;
+const DAYS = 7;
+
+/** The date a source stated (published, else updated); otherwise when Helper2.ai first saw it, labelled as such. */
+function cardDate(card: ResultCard): { key: 'published' | 'updated' | 'firstSeen'; value: string; precision: 'INSTANT' | 'DAY' | 'UNKNOWN' } | null {
+  const { published, updated, discovered } = card.timeline;
+  if (published.status !== 'UNKNOWN' && published.value) return { key: 'published', value: published.value, precision: published.precision };
+  if (updated.status !== 'UNKNOWN' && updated.value) return { key: 'updated', value: updated.value, precision: updated.precision };
+  if (discovered.status === 'KNOWN' && discovered.value) return { key: 'firstSeen', value: discovered.value, precision: 'DAY' };
+  return null;
+}
+
+/**
+ * News: the newest resources in Helper2's own index, by the date each source states (GET /recent). A row with no stated date says when Helper2.ai first saw it.
  */
 export function NewsBoard() {
   const { t, i18n } = useTranslation();

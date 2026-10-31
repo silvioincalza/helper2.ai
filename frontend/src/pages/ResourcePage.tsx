@@ -5,16 +5,12 @@ import type { Relationship, ResourceDetail } from '@/api/types';
 import { OriginLabel, VerificationBadge } from '@/components/Badges';
 import { EvidenceList } from '@/components/EvidenceList';
 import { ExternalLink } from '@/components/ExternalLink';
-import { canGuide } from '@/components/GuideMe';
-import { SetupGuidePanel } from '@/components/SetupGuide';
 import { Icon } from '@/components/Icon';
 import { ReportForm } from '@/components/ReportForm';
-import { ResultCardView } from '@/components/ResultCardView';
 import { useApi } from '@/hooks/useApi';
 import { useTitle } from '@/hooks/useTitle';
 import { formatDate } from '@/lib/format';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
-import { NEW_DESIGN_ENABLED } from '@/lib/features';
 import { ResourceV2 } from '@/components/results/ResourceV2';
 
 function RelList({ items }: { items: Relationship[] }) {
@@ -52,20 +48,10 @@ export default function ResourcePage() {
     );
   }
 
-  if (NEW_DESIGN_ENABLED) return <ResourceV2 detail={d}><DetailSections detail={d} /></ResourceV2>;
-
-  return (
-    <div className="detail">
-      <p><Link to="/">{t('detail.backToSearch')}</Link></p>
-      <ResultCardView card={d.card} detailed />
-      {canGuide(d.card) && <SetupGuidePanel id={id} title={d.card.title} />}
-
-      <DetailSections detail={d} />
-    </div>
-  );
+  return <ResourceV2 detail={d}><DetailSections detail={d} /></ResourceV2>;
 }
 
-/** Summary, recorded facts, relationships, source records and the report form: the same in both designs. */
+/** Summary, recorded facts, relationships, source records and the report form. */
 function DetailSections({ detail: d }: { detail: ResourceDetail }) {
   const { t, i18n } = useTranslation();
   const confirmed = d.relationships.filter((r) => r.verification === 'VERIFIED');

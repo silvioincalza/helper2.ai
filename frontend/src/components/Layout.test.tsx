@@ -12,8 +12,9 @@ describe('layout', () => {
     renderApp('/');
     await waitFor(() => expect(m.callsTo('GET', '/me')).toHaveLength(1));
     expect(within(screen.getByRole('banner')).queryByRole('link', { name: /Sign in/ })).not.toBeInTheDocument();
-    // Search is the home page and Saved is on the roadmap (lib/features.ts): no menu for visitors.
-    expect(screen.queryByRole('navigation', { name: 'Main' })).not.toBeInTheDocument();
+    // Saved is on the roadmap (lib/features.ts): the menu has Sources and Mission only.
+    const nav = screen.getByRole('navigation', { name: 'Main' });
+    expect(within(nav).getAllByRole('link').map((a) => a.textContent)).toEqual(['Sources', 'Mission']);
     expect(screen.queryByRole('link', { name: 'Admin' })).not.toBeInTheDocument();
   });
 
@@ -100,17 +101,15 @@ describe('layout', () => {
   it('moving to another page focuses its heading and announces it; new search params do not move focus', async () => {
     mockApi();
     const { router } = renderApp('/');
-    // Sources lives in the footer, not the header.
-    expect(within(screen.getByRole('banner')).queryByRole('link', { name: 'Sources' })).not.toBeInTheDocument();
     await userEvent.click(within(screen.getByRole('contentinfo')).getByRole('link', { name: 'Sources' }));
     const h1 = await screen.findByRole('heading', { level: 1, name: 'Sources' });
     await waitFor(() => expect(h1).toHaveFocus());
     expect(document.querySelector('[aria-live="polite"].sr-only')).toHaveTextContent('Sources');
 
-    await act(() => router.navigate('/'));
-    await screen.findByRole('heading', { level: 1, name: /Describe what you need/ });
-    await userEvent.type(screen.getByRole('searchbox'), 'rag{Enter}');
-    await waitFor(() => expect(router.state.location.search).toBe('?q=rag'));
+    await act(() => router.navigate('/search?q=rag'));
+    await screen.findByRole('list', { name: 'Search results' });
+    await userEvent.type(screen.getByRole('searchbox'), ' db{Enter}');
+    await waitFor(() => expect(router.state.location.search).toBe('?q=rag+db'));
     expect(screen.getByRole('searchbox')).toHaveFocus();
     await settle();
   });

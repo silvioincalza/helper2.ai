@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { api, ApiError } from '@/api/client';
 import type { GuideResponse, ResultCard, SearchResponse } from '@/api/types';
 import { ActiveFilters } from '@/components/ActiveFilters';
+import { FreshnessBadge, OriginLabel } from '@/components/Badges';
 import { BookmarkButton } from '@/components/BookmarkButton';
 import { FilterPanel } from '@/components/FilterPanel';
 import { GuideAnswer } from '@/components/GuideAnswer';
@@ -28,7 +29,8 @@ import { useTitle } from '@/hooks/useTitle';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
 import { SAVED_ENABLED } from '@/lib/features';
 import { displayHost, guidePicks, picksById, selectedResult, type GuidePick } from '@/lib/selection';
-import { askedQuestion, clampQuestion, homeParams, parseSearchParams, patchState, toApiParams, type SearchState } from '@/lib/searchState';
+import { activeFilterCount, askedQuestion, clampQuestion, clearFilters, homeParams, isSelected, parseSearchParams, patchState, toApiParams, toggleFilter, type ResultsView, type SearchState } from '@/lib/searchState';
+import { useSources } from '@/context/SourcesContext';
 import { ListedBy, ResultFacts } from './ResultFacts';
 import './results-v2.css';
 
@@ -61,6 +63,7 @@ export function ResultsV2() {
   const key = apiParams.toString();
   const search = useApi<SearchResponse | null>(`search?${key}`, (signal) => (state.q ? api.search(apiParams, signal) : Promise.resolve(null)));
   const shown = search.loading ? (search.previous ?? undefined) : (search.data ?? undefined);
+  const registry = useSources();
 
   return (
     <div className="h2-results">
@@ -69,9 +72,16 @@ export function ResultsV2() {
       {asked ? <GuidePicks stream={stream} loaded={new Set((shown?.results ?? []).map((c) => c.id))} /> : words >= 4 && (
         <button type="button" className="btn suggest-guide" onClick={() => ask(state.q)}>{t('home.suggestGuide', { q: state.q })}</button>
       )}
-      {search.loading && !shown && (
+      {/* Each new search says so; the skeleton only on the first load, later the last results stay, dimmed. */}
+      {search.loading && (
         <div role="status" className="h2-results__loading">
           <p>{t('results.loading')}</p>
+          {!shown && (<>
+          <ul className="plain-list h2-results__querying">
+            {(registry.data ?? []).filter((s) => s.enabled).map((s) => (
+              <li key={s.id} className="muted small"><Icon name="clock" /> {t('results.queryingSource', { name: s.name })}</li>
+            ))}
+          </ul>
           <ul className="plain-list h2-skeleton" aria-hidden="true">
             {[0, 1, 2, 3].map((i) => (
               <li key={i} className="h2-skeleton__row">
@@ -81,6 +91,7 @@ export function ResultsV2() {
               </li>
             ))}
           </ul>
+          </>)}
         </div>
       )}
       {!search.loading && search.error !== undefined && (
@@ -142,17 +153,18 @@ function GuidePicks({ stream, loaded }: { stream: GuideStream; loaded: ReadonlyS
         </div>
       )}
       {answer && answer.status === 'NEEDS_CLARIFICATION' && <GuideAnswer answer={answer} onRefine={refine} />}
-      {answered && picks.length > 0 && <FullAnswer answer={answer} onRefine={refine} />}
+      {/* No pick: the answer opens under the one-line bar, so how the guide read the question can be refined. */}
+      {answered && !plainAnswer && <FullAnswer answer={answer} onRefine={refine} open={picks.length === 0} />}
       {plainAnswer && <GuideAnswer answer={answer} onRefine={refine} />}
     </div>
   );
 }
 
 /** The whole answer (checks, comparison, how it was made), folded away under the picks bar. */
-function FullAnswer({ answer, onRefine }: { answer: GuideResponse; onRefine: Parameters<typeof GuideAnswer>[0]['onRefine'] }) {
+function FullAnswer({ answer, onRefine, open }: { answer: GuideResponse; onRefine: Parameters<typeof GuideAnswer>[0]['onRefine']; open: boolean }) {
   const { t } = useTranslation();
   return (
-    <details className="h2-results__full">
+    <details className="h2-results__full" open={open}>
       <summary>{t('resultsV2.fullAnswer')}</summary>
       <GuideAnswer answer={answer} onRefine={onRefine} />
     </details>
@@ -181,6 +193,14 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
   const activeType = state.filters.type.length === 1 ? state.filters.type[0] : null;
   const setType = (type: string | null) => update(patchState(state, { filters: { ...state.filters, type: type ? [type] : [] } }));
   const okSources = res.sources.filter((s) => s.outcome === 'SUCCEEDED').length;
+  const stale = useMemo(() => new Set(res.sources.filter((x) => x.servedFrom === 'STALE_CACHE').map((x) => x.sourceId)), [res.sources]);
+  const useCaseHints = res.interpretation.detectedUseCases.filter((u) => !isSelected(state.filters.useCase, u));
+  // After a page change the new list replaces the old one: reading starts again at the count.
+  const count = useRef<HTMLParagraphElement>(null);
+  const toPage = (page: number) => {
+    update(patchState(state, { page }));
+    count.current?.focus();
+  };
   const nothingSearched = res.results.length === 0 && (res.coverage.sourcesSucceeded === 0 || res.notices.some((n) => n.code === 'ALL_SOURCES_FAILED'));
 
   return (
@@ -198,9 +218,59 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
 
       <details className="h2-results__filters">
         <summary>{t('filters.title')}</summary>
+        <div className="results-head">
+          <div className="view-switch" role="group" aria-label={t('timeline.viewLabel')}>
+            {(['list', 'timeline'] as ResultsView[]).map((v) => (
+              <button key={v} type="button" className="chip" aria-pressed={state.view === v} onClick={() => update(patchState(state, { view: v }))}>
+                {t(`timeline.view.${v}`)}
+              </button>
+            ))}
+          </div>
+          {state.view === 'timeline' ? (
+            <p className="muted small">{t('timeline.order')}</p>
+          ) : (
+            <label className="sort">
+              {t('sort.label')}{' '}
+              <select value={state.sort} onChange={(e) => update(patchState(state, { sort: e.target.value as SearchState['sort'] }))}>
+                <option value="RELEVANCE">{t('sort.RELEVANCE')}</option>
+                <option value="NEWEST">{t('sort.NEWEST')}</option>
+                <option value="RECENTLY_UPDATED">{t('sort.RECENTLY_UPDATED')}</option>
+              </select>
+            </label>
+          )}
+        </div>
         <FilterPanel facets={res.facets} state={state} sources={res.sources} onChange={update} />
       </details>
       <ActiveFilters state={state} sources={res.sources} onChange={update} />
+
+      {/* QUERY_EXPANDED is shown by the interpretation line below; other notices are localized by code. */}
+      {res.notices.some((n) => n.code !== 'QUERY_EXPANDED') && (
+        <ul className="plain-list notices">
+          {res.notices.filter((n) => n.code !== 'QUERY_EXPANDED').map((n, i) => (
+            <li key={`${n.code}-${i}`} className={`notice notice-${n.code.toLowerCase()}`}>
+              <Icon name={n.code === 'ALL_SOURCES_FAILED' ? 'warn' : 'info'} />
+              <span className="sr-only">{t(n.code === 'ALL_SOURCES_FAILED' ? 'results.noticeWarning' : 'results.noticeInfo')}: </span>
+              {t(`results.notice.${n.code}`, { defaultValue: n.message })}
+            </li>
+          ))}
+        </ul>
+      )}
+      {res.interpretation.expandedTerms.length > 0 && (
+        <p className="muted small interpretation">
+          {t('results.alsoSearched', { terms: res.interpretation.expandedTerms.join(', ') })}{' '}
+          <span>({t('results.lexiconNote')})</span>
+        </p>
+      )}
+      {useCaseHints.length > 0 && (
+        <div className="hints">
+          <span className="muted small">{t('results.suggestUseCase')}</span>{' '}
+          {useCaseHints.map((u) => (
+            <button key={u} type="button" className="chip" onClick={() => update(toggleFilter(state, 'useCase', u))}>
+              {t(`useCase.${u}`, { defaultValue: u })}
+            </button>
+          ))}
+        </div>
+      )}
 
       {res.coverage.partial && (
         <div role="status" className="banner banner-warn h2-partial">
@@ -226,6 +296,9 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
           <h2 className="h-small">{t('results.emptyTitle')}</h2>
           <p>{t('results.emptyTryOther')}</p>
           <p className="h2-state__next">
+            {activeFilterCount(state) > 0 && (
+              <button type="button" className="btn" onClick={() => update(clearFilters(state))}>{t('results.emptyRemoveFilters')}</button>
+            )}
             {ask && <button type="button" className="btn btn-primary" onClick={ask}>{t('resultsV2.askGuide')}</button>}
             <Link to="/sources">{t('resultsV2.seeSources')}</Link>
           </p>
@@ -235,7 +308,7 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
       ) : (
         <div className="h2-split">
           <div className="h2-list">
-            <p className="h2-list__count" aria-live="polite">{t('results.count', { count: res.total })}</p>
+            <p ref={count} tabIndex={-1} className="h2-list__count" aria-live="polite">{t('results.count', { count: res.total })}</p>
             <ul className="plain-list" aria-label={t('results.title')}>
               {res.results.map((c) => {
                 const on = c.id === selected?.id;
@@ -246,7 +319,7 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
                     </SelectableRow>
                     {on && !wide && (
                       <div className="h2-inline-preview">
-                        <Preview card={c} pick={picks.get(c.id)} inline />
+                        <Preview card={c} pick={picks.get(c.id)} stale={stale} inline />
                       </div>
                     )}
                   </li>
@@ -256,14 +329,14 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
           </div>
           {wide && selected && (
             <article className="h2-preview" aria-labelledby="h2-preview-title">
-              <Preview card={selected} pick={picks.get(selected.id)} />
+              <Preview card={selected} pick={picks.get(selected.id)} stale={stale} />
             </article>
           )}
         </div>
       )}
       {/* Under the list and under the timeline alike: the timeline asks for 50 per page, so it pages too. */}
       {!nothingSearched && res.results.length > 0 && (
-        <Pagination page={res.page} size={res.size} total={res.total} onPage={(page) => update(patchState(state, { page }))} />
+        <Pagination page={res.page} size={res.size} total={res.total} onPage={toPage} />
       )}
 
       <section className="h2-results__sources" aria-labelledby="h2-sources-h">
@@ -288,7 +361,11 @@ function RowContent({ card, pick }: { card: ResultCard; pick: GuidePick | undefi
         {pick && <StatusPill tone="next">{t('resultsV2.pick', { rank: pick.rank })}</StatusPill>}
       </span>
       <span className="h2-row__title">{card.title}</span>
-      {card.description && <span className="h2-row__text">{card.description}</span>}
+      {card.description && (
+        isAiOrigin(card.descriptionOrigin)
+          ? <span className="h2-row__text"><span className="h2-row__ai"><OriginLabel origin={card.descriptionOrigin} /></span> <span {...aiMark()}>{card.description}</span></span>
+          : <span className="h2-row__text">{card.description}</span>
+      )}
       {pick && (
         <span className="h2-row__reason">
           <span className="h2-row__ai">{t('picks.aiWritten')}</span> <span {...aiMark()}>{pick.reason}</span>
@@ -299,7 +376,7 @@ function RowContent({ card, pick }: { card: ResultCard; pick: GuidePick | undefi
 }
 
 /** The selected result: actions, the proof, Use and Build facts, who lists it and its dates. */
-function Preview({ card, pick, inline = false }: { card: ResultCard; pick: GuidePick | undefined; inline?: boolean }) {
+function Preview({ card, pick, stale, inline = false }: { card: ResultCard; pick: GuidePick | undefined; stale: ReadonlySet<string>; inline?: boolean }) {
   const { t } = useTranslation();
   const host = displayHost(card.url);
   const guide = useGuideToggle(card.id);
@@ -317,7 +394,7 @@ function Preview({ card, pick, inline = false }: { card: ResultCard; pick: Guide
   const GroupTag = 'h4';
   return (
     <div className="h2-pv">
-      <div className="h2-pv__top"><TypeTag type={card.type} /><span className="h2-row__host">{host}</span></div>
+      <div className="h2-pv__top"><TypeTag type={card.type} /><span className="h2-row__host">{host}</span><FreshnessBadge freshness={card.freshness} /></div>
       <TitleTag id={inline ? undefined : 'h2-preview-title'} className="h2-pv__title">
         <Link to={detail} state={detailState}>{card.title}</Link>
       </TitleTag>
@@ -349,7 +426,7 @@ function Preview({ card, pick, inline = false }: { card: ResultCard; pick: Guide
       <ResultFacts card={card} groupTag={GroupTag} />
 
       <SecTag className="h2-pv__sec">{t('resultsV2.listedBy')}</SecTag>
-      <ListedBy card={card} />
+      <ListedBy card={card} stale={stale} />
 
       <SecTag className="h2-pv__sec">{t('resultsV2.timeline')}</SecTag>
       <Timeline timeline={card.timeline} compact />

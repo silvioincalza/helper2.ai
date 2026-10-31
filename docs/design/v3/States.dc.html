@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>helper2.ai — Results states</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;family=Space+Grotesk:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+.r{--bg:#f7f2e9;--surface:#fffdf8;--tint:#efe9dd;--quote:#fbefe2;--ink:#1b1c3f;--ink2:#35344f;--muted:#4f4b63;--border:#e7dfd0;--border2:#d3c7b2;--accent:#e06a1d;--on-accent:#1b1c3f;--accent-ink:#a8420a;--deep:#2d2e60;--mark:#fde68a;--ok-bg:#e3f3ee;--ok:#0f4d3c;--ns:#7a3e00;--danger:#b42318;--danger-bg:#fdecea;--model-bg:#fdebd3;--model-ink:#7a3e00;--news-bg:#e6f0fb;--news-ink:#173f70;--lib-bg:#e6e7f5;--mcp-bg:#e3f3ee;--st-ok:#2f8f5b;--st-warn:#c98a0b;min-height:100vh;display:flex;flex-direction:column;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,sans-serif;font-size:16px;line-height:1.55}
+.r.dark{--bg:#15162f;--surface:#1d1e3d;--tint:#26274f;--quote:#2a2440;--ink:#f3f1ea;--ink2:#d4d2e4;--muted:#aeacc6;--border:#2f3058;--border2:#45477a;--accent:#f08a42;--on-accent:#15162f;--accent-ink:#f4a46a;--deep:#c9cae3;--mark:#6b5310;--ok-bg:#123528;--ok:#86efac;--ns:#fbbf77;--danger:#ff8f8f;--danger-bg:#3a1a24;--model-bg:#3a2a12;--model-ink:#fbbf77;--news-bg:#13263d;--news-ink:#93c5fd;--lib-bg:#26274f;--mcp-bg:#123528;--st-ok:#86efac;--st-warn:#fcd34d;color-scheme:dark}
+.r *{box-sizing:border-box}
+a{color:var(--deep)}a:hover{color:var(--accent-ink)}
+.r :focus-visible{outline:3px solid var(--deep);outline-offset:2px;border-radius:4px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.wrap{width:100%;max-width:1240px;margin:0 auto;padding:0 32px}
+.hdr{border-bottom:1px solid var(--border);background:var(--surface)}
+.hdr-row{display:flex;align-items:center;gap:24px;min-height:72px;flex-wrap:wrap;padding-top:10px;padding-bottom:10px}
+.logo{display:inline-flex;align-items:center;gap:16px;text-decoration:none;color:var(--ink);min-height:44px}
+.mark{width:40px;height:40px;border-radius:12px;background:var(--accent);color:var(--on-accent);display:inline-flex;align-items:center;justify-content:center;flex:none}
+.mark svg{width:60%;height:60%}
+.logo-text{display:inline-flex;flex-direction:column;gap:2px}
+.word{font:500 1.6rem/1 'Space Grotesk',sans-serif;letter-spacing:-0.02em}
+.tagline{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);line-height:1.2}
+.box{display:flex;align-items:center;gap:10px;height:52px;padding:0 6px 0 18px;border:1px solid var(--border2);border-radius:999px;background:var(--bg);flex:1 1 380px;max-width:680px;color:var(--muted)}
+.box:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+.box input{flex:1;min-width:0;border:0;background:transparent;font:inherit;font-size:16px;color:var(--ink);outline:none;height:100%}
+.go{height:40px;padding:0 18px;border-radius:999px;border:0;background:var(--accent);color:var(--on-accent);font:600 14px Inter,sans-serif;cursor:pointer}
+.tools{margin-left:auto;display:flex;align-items:center;gap:6px}
+.icon-btn{width:44px;height:44px;border-radius:999px;border:0;background:transparent;color:var(--ink2);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.icon-btn:hover{background:var(--tint)}
+.tag{font:500 11px/1 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.06em;padding:5px 8px;border-radius:6px;width:max-content}
+.t-mcp{background:var(--mcp-bg);color:var(--ok)}.t-lib{background:var(--lib-bg);color:var(--deep)}
+.path{font:400 12px 'JetBrains Mono',monospace;color:var(--muted);overflow-wrap:anywhere}
+.foot{border-top:1px solid var(--border);background:var(--tint);font-size:13px;color:var(--muted)}
+.foot .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;padding-top:14px;padding-bottom:14px}
+.foot a{color:var(--muted)}
+/* states */
+.switch{display:flex;flex-wrap:wrap;gap:6px;padding:16px 0 4px}
+.switch-l{font:500 12px 'JetBrains Mono',monospace;color:var(--muted);align-self:center;margin-right:6px}
+.seg{min-height:44px;padding:0 16px;border:1px solid var(--border2);border-radius:999px;background:var(--surface);color:var(--ink2);font:500 14px Inter,sans-serif;cursor:pointer}
+.seg.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.body{flex:1;padding-top:16px;padding-bottom:56px}
+.meta{font-size:13px;color:var(--muted);margin:0 0 10px}
+.split{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}
+.list{flex:1 1 380px;min-width:0;max-width:460px}
+.panel{flex:999 1 520px;min-width:0;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px 26px}
+.row{display:flex;flex-direction:column;gap:6px;padding:14px;border:1px solid transparent;border-radius:12px;margin-bottom:4px}
+.row-h{font:500 18px/1.25 'Space Grotesk',sans-serif;color:var(--deep)}
+.row-q{font-size:13.5px;color:var(--ink2)}
+.sk{background:linear-gradient(90deg,var(--tint) 0%,var(--border) 50%,var(--tint) 100%);background-size:200% 100%;border-radius:6px;animation:shimmer 1.4s linear infinite}
+@keyframes shimmer{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.sk,.pulse{animation:none}}
+.sk-row{display:flex;flex-direction:column;gap:10px;padding:16px 14px;border-bottom:1px solid var(--border)}
+.status{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:14px;color:var(--ink2)}
+.pulse{width:10px;height:10px;border-radius:50%;background:var(--accent);animation:pulse 1.2s ease-in-out infinite;flex:none}
+@keyframes pulse{50%{opacity:.35}}
+.progress{height:6px;border-radius:999px;background:var(--tint);overflow:hidden;margin:14px 0 6px}
+.progress span{display:block;height:100%;width:45%;background:var(--accent);border-radius:999px}
+.note{font-size:13px;color:var(--muted);margin:0}
+.kicker{font:500 11px 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.1em;color:var(--accent-ink)}
+.empty{max-width:640px;margin:24px auto;text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px}
+.empty h2,.big h1{font:400 clamp(1.6rem,1.6vw + 1rem,2.25rem)/1.15 'Space Grotesk',sans-serif;margin:0;letter-spacing:-0.01em}
+.empty p{margin:0;color:var(--ink2)}
+.tips{list-style:none;margin:0;padding:0;text-align:left;font-size:15px;color:var(--ink2);display:flex;flex-direction:column;gap:6px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.chip{min-height:44px;padding:0 16px;border:1px solid var(--border2);border-radius:999px;background:var(--surface);color:var(--ink2);font:500 14px Inter,sans-serif;cursor:pointer}
+.chip:hover{border-color:var(--accent)}
+.btn{height:44px;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 18px;border-radius:999px;border:1px solid var(--border2);background:var(--surface);color:var(--ink);font:600 14px/1 Inter,sans-serif;white-space:nowrap;text-decoration:none;cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.alert{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;padding:14px 16px;border-radius:12px;background:var(--model-bg);color:var(--ink);margin-bottom:16px}
+.alert.bad{background:var(--danger-bg)}
+.alert strong{display:block}
+.alert p{margin:2px 0 0;font-size:14px;color:var(--ink2)}
+.alert .btn{margin-left:auto}
+.fails{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.fail{font:500 12px 'JetBrains Mono',monospace;padding:5px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--border2);color:var(--danger)}
+.big{max-width:620px;margin:40px auto;text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px}
+.code{font:600 64px/1 'JetBrains Mono',monospace;color:var(--accent-ink)}
+.big p{margin:0;color:var(--ink2)}
+@media (max-width:860px){.list{max-width:none}}
+@media (max-width:640px){.wrap{padding-left:16px;padding-right:16px}.hdr-row{gap:10px}.hdr .box{order:3;flex:1 1 100%}.panel{padding:18px 16px}.alert .btn{margin-left:0}}
+</style>
+</helmet>
+<div class="{{rootClass}}">
+  <header class="hdr">
+    <div class="wrap hdr-row">
+      <a href="Mix.dc.html" class="logo" aria-label="helper2.ai home"><span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="4.2" stroke-width="1.4" opacity="0.5"></circle><path d="M12 12 18.4 5.6"></path><path d="M16.2 11.1Q16.2 15 20.1 15Q16.2 15 16.2 18.9Q16.2 15 12.3 15Q16.2 15 16.2 11.1Z" fill="currentColor" stroke-width="1"></path></svg></span><span class="logo-text"><span class="word">helper2.ai</span><span class="tagline">AI on your radar</span></span></a>
+      <form class="box" role="search" onSubmit="{{onSubmit}}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+        <label for="qs" class="sr">Search AI resources</label>
+        <input id="qs" type="search" placeholder="Search tools, models, MCP servers…" value="{{input}}" onChange="{{onInput}}">
+        <button type="submit" class="go">Search</button>
+      </form>
+      <div class="tools">
+        <button type="button" class="icon-btn" aria-label="{{themeLabel}}" onClick="{{toggleTheme}}">
+          <sc-if value="{{isDark}}" hint-placeholder-val="{{false}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg></sc-if>
+          <sc-if value="{{isLight}}" hint-placeholder-val="{{true}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"></path></svg></sc-if>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="switch" role="group" aria-label="Show state">
+      <span class="switch-l">State:</span>
+      <sc-for list="{{states}}" as="s" hint-placeholder-count="6"><button type="button" class="{{s.cls}}" aria-pressed="{{s.on}}" onClick="{{s.pick}}">{{s.label}}</button></sc-for>
+    </div>
+  </div>
+
+  <main class="wrap body">
+    <sc-if value="{{isLoading}}" hint-placeholder-val="{{true}}">
+      <h1 class="sr">Loading results</h1>
+      <p class="meta" role="status">Searching 8 sources for “postgres mcp server”…</p>
+      <div class="split" aria-hidden="true">
+        <div class="list">
+          <sc-for list="{{skel}}" as="k" hint-placeholder-count="5"><div class="sk-row"><div class="sk" style="height:18px;width:90px"></div><div class="sk" style="height:20px;width:70%"></div><div class="sk" style="height:14px;width:95%"></div></div></sc-for>
+        </div>
+        <div class="panel"><div class="sk" style="height:32px;width:60%"></div><div class="sk" style="height:44px;width:240px;margin-top:18px;border-radius:999px"></div><div class="sk" style="height:110px;margin-top:22px"></div><div class="sk" style="height:90px;margin-top:18px"></div></div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{isGuide}}" hint-placeholder-val="{{false}}">
+      <h1 class="sr">Results, guide still answering</h1>
+      <p class="meta">6 results for “postgres mcp server” · the guide is still choosing</p>
+      <div class="split">
+        <div class="list">
+          <div class="panel" style="padding:16px 18px;margin-bottom:12px" role="status" aria-live="polite">
+            <span class="kicker">Guide pick</span>
+            <div class="status" style="margin-top:8px"><span class="pulse" aria-hidden="true"></span><span>Guide is reading 14 candidates…</span></div>
+            <div class="progress" aria-hidden="true"><span></span></div>
+            <p class="note">This usually takes about 15 seconds. The results below are ready now.</p>
+          </div>
+          <sc-for list="{{rows}}" as="r" hint-placeholder-count="4">
+            <div class="row"><span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="{{r.tag}}">{{r.typeLabel}}</span><span class="path">{{r.domain}}</span></span><span class="row-h">{{r.title}}</span><span class="row-q">“{{r.quote}}”</span></div>
+          </sc-for>
+        </div>
+        <div class="panel">
+          <span class="tag t-mcp">MCP server</span>
+          <h2 style="font:500 1.9rem/1.1 'Space Grotesk',sans-serif;margin:10px 0 8px">PostgreSQL MCP server</h2>
+          <p class="note">The first result is open. When the guide finishes, its picks move to the top and get a “Guide pick” badge. What you have open stays open.</p>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{isEmpty}}" hint-placeholder-val="{{false}}">
+      <section class="empty">
+        <h1 class="sr">No results</h1>
+        <h2>No results for “postgress mpc sever”</h2>
+        <p>None of the 8 sources had a match. Try one of these:</p>
+        <ul class="tips"><li>• Check the spelling: did you mean <a href="#">postgres mcp server</a>?</li><li>• Use fewer words, or a more general word.</li><li>• Describe what you need in a sentence and let the guide look.</li></ul>
+        <div class="chips"><button type="button" class="btn primary">Ask the guide</button><button type="button" class="chip">Remove filters</button></div>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{isPartial}}" hint-placeholder-val="{{false}}">
+      <h1 class="sr">Results with some sources missing</h1>
+      <div class="alert" role="alert">
+        <div><strong>2 of 8 sources did not answer</strong><p>You see results from the other 6. Results from these sources may be missing:</p><div class="fails"><span class="fail">arxiv · timed out</span><span class="fail">pulsemcp · error</span></div></div>
+        <button type="button" class="btn">Try them again</button>
+      </div>
+      <sc-for list="{{rows}}" as="r" hint-placeholder-count="3">
+        <div class="row" style="border-bottom:1px solid var(--border);border-radius:0"><span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="{{r.tag}}">{{r.typeLabel}}</span><span class="path">{{r.domain}}</span></span><span class="row-h">{{r.title}}</span><span class="row-q">“{{r.quote}}”</span></div>
+      </sc-for>
+    </sc-if>
+
+    <sc-if value="{{isFail}}" hint-placeholder-val="{{false}}">
+      <section class="empty">
+        <h1 class="sr">Search failed</h1>
+        <div class="alert bad" role="alert" style="text-align:left;width:100%"><div><strong>Search is not working right now</strong><p>No source answered. This is on our side, not yours. Your search was not saved.</p></div></div>
+        <div class="chips"><button type="button" class="btn primary">Try again</button><a href="#" class="chip" style="display:inline-flex;align-items:center;text-decoration:none">See source status</a></div>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{is404}}" hint-placeholder-val="{{false}}">
+      <section class="big">
+        <span class="code" aria-hidden="true">404</span>
+        <h1>This page is not on our radar</h1>
+        <p>The link may be old, or the resource was removed from the index.</p>
+        <form class="box" role="search" style="width:100%;flex:none" onSubmit="{{onSubmit}}"><label for="q404" class="sr">Search AI resources</label><input id="q404" type="search" placeholder="Search instead"><button type="submit" class="go">Search</button></form>
+        <a href="Mix.dc.html" style="min-height:44px;display:inline-flex;align-items:center;font-weight:600">Go to the home page</a>
+      </section>
+    </sc-if>
+  </main>
+
+  <footer class="foot"><div class="wrap"><span>helper2.ai · Switzerland · EU servers</span><a href="#">Mission</a><a href="#">Sources</a><a href="#">Privacy</a></div></footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1100}}'>
+var STATES = [{id:'loading',label:'Loading'},{id:'guide',label:'Guide answering'},{id:'empty',label:'No results'},{id:'partial',label:'Some sources failed'},{id:'fail',label:'Search failed'},{id:'404',label:'404'}];
+var ROWS = [
+  {tag:'tag t-mcp',typeLabel:'MCP server',domain:'github.com',title:'PostgreSQL MCP server',quote:'A Model Context Protocol server that provides read-only access to PostgreSQL databases.'},
+  {tag:'tag t-mcp',typeLabel:'MCP server',domain:'github.com',title:'DBHub',quote:'Universal database MCP server'},
+  {tag:'tag t-mcp',typeLabel:'MCP server',domain:'github.com',title:'Supabase MCP server',quote:'Connect your Supabase projects to Cursor, Claude, Windsurf, and other AI assistants.'},
+  {tag:'tag t-lib',typeLabel:'Library',domain:'github.com',title:'pgvector',quote:'Open-source vector similarity search for Postgres.'}
+];
+class Component extends DCLogic {
+  st(k, d) { return (this.state && this.state[k] !== undefined) ? this.state[k] : d; }
+  renderVals() {
+    var self = this;
+    var dark = this.st('dark', !!this.props.dark);
+    var s = this.st('s', 'guide');
+    return {
+      rootClass: dark ? 'r dark' : 'r', isDark: dark, isLight: !dark,
+      themeLabel: dark ? 'Theme: dark. Change to light' : 'Theme: light. Change to dark',
+      toggleTheme: function () { self.setState({ dark: !dark }); },
+      input: this.st('input', 'postgres mcp server'), onInput: function (e) { self.setState({ input: e.target.value }); },
+      onSubmit: function (e) { e.preventDefault(); },
+      states: STATES.map(function (x) { return { label: x.label, on: x.id === s, cls: x.id === s ? 'seg on' : 'seg', pick: function () { self.setState({ s: x.id }); } }; }),
+      isLoading: s === 'loading', isGuide: s === 'guide', isEmpty: s === 'empty', isPartial: s === 'partial', isFail: s === 'fail', is404: s === '404',
+      skel: [1, 2, 3, 4, 5], rows: ROWS
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -6,7 +6,6 @@ import { makeCard, makeSearch, makeStatus } from '@/test/fixtures';
 import { mockApi, sse } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
 
-vi.mock('@/lib/features', () => ({ SAVED_ENABLED: false, NEW_DESIGN_ENABLED: true }));
 
 const A = makeCard({ id: 'aaaaaaaa-aaaa-5aaa-8aaa-aaaaaaaaaaaa', title: 'Alpha Search', url: 'https://www.alpha.example/x', license: null });
 const B = makeCard({
@@ -30,7 +29,7 @@ function guide(): GuideResponse {
 const row = (name: string) => screen.getAllByRole('button', { name: new RegExp(name) }).find((b) => b.classList.contains('h2-select-row'))!;
 const rowTitles = () => [...document.querySelectorAll('.h2-select-row .h2-row__title')].map((e) => e.textContent);
 
-describe('design v2 results (flag on): list and preview', () => {
+describe('design v2 results: list and preview', () => {
   it('selects the first result and shows its preview; a click selects another and writes its id to the URL', async () => {
     mockApi({ 'GET /search': () => search() });
     const { params } = renderApp('/search?q=postgres');
@@ -72,6 +71,28 @@ describe('design v2 results (flag on): list and preview', () => {
     const preview = screen.getByRole('article');
     expect(within(preview).getByRole('heading', { level: 2 })).toHaveTextContent('Postgres MCP');
     expect(within(preview).getByText('gives agents read-only access to a PostgreSQL database').tagName).toBe('MARK');
+  });
+
+  it('an AI-written description in a row is labelled and marked machine-readable', async () => {
+    const ai = makeCard({ id: 'dddddddd-dddd-5ddd-8ddd-dddddddddddd', title: 'Summed Up', description: 'A short summary.', descriptionOrigin: 'AI_SUMMARY' });
+    mockApi({ 'GET /search': () => makeSearch({ results: [A, ai], total: 2, sources: [makeStatus()] }) });
+    renderApp('/search?q=postgres+mcp');
+    await screen.findByText('Summed Up');
+    const r = row('Summed Up');
+    expect(within(r).getByText('AI summary')).toBeInTheDocument();
+    expect(within(r).getByText('A short summary.')).toHaveAttribute('data-ai-generated', 'true');
+  });
+
+  it('a fact the sources disagree on says so, with each value and its source, not "Not stated"', async () => {
+    const split = makeCard({
+      id: 'eeeeeeee-eeee-5eee-8eee-eeeeeeeeeeee', title: 'Split License', license: null,
+      conflicts: [{ field: 'license', values: [{ value: 'MIT', sourceId: 'github' }, { value: 'Apache-2.0', sourceId: 'npm' }] }],
+    });
+    mockApi({ 'GET /search': () => makeSearch({ results: [split], total: 1, sources: [makeStatus()] }) });
+    renderApp('/search?q=postgres+mcp');
+    const preview = await screen.findByRole('article');
+    expect(preview.querySelector('dd.is-conflict')).toHaveTextContent('Sources disagree: MIT (github) · Apache-2.0 (npm)');
+    expect(preview.querySelector('dd.is-conflict')).not.toHaveTextContent('Not stated');
   });
 
   it('with no pick the bar says so in one line', async () => {

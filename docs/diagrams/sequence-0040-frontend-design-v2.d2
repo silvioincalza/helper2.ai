@@ -1,10 +1,10 @@
-# Sequence: design v2 from the home page (built) to a search on the results page (planned), the guide picks and a
-# shared link.
-# Shows results shown before the guide answers, the reserved picks bar, the SSE answer that adds badges without
-# re-ordering, the selected result written to the URL with replaceState, and a shared link that opens the same result.
+# Sequence: design v2 from the home page to a question on the results page, the guide picks and a shared link.
+# Shows results shown before the guide answers (the guide runs only for a question: 4+ words or Shift+Enter), the
+# reserved picks bar, the SSE answer that adds badges without re-ordering, the selected result written to the URL with
+# replace, and a shared link that opens the same result.
 # Source of truth: docs/adr/0040-frontend-design-v2.md, docs/adr/0015-ai-guide-evidence-gate.md (guide stream),
-#   frontend/src/pages/HomeV2.tsx, frontend/src/components/home/NewsBoard.tsx, EventsBoard.tsx,
-#   frontend/src/hooks/useGuideStream.ts, frontend/src/components/ui/PicksBar.tsx.
+#   frontend/src/pages/HomeV2.tsx, components/home/NewsBoard.tsx, EventsBoard.tsx, components/OneBox.tsx,
+#   components/results/ResultsV2.tsx, hooks/useGuideStream.ts, components/ui/PicksBar.tsx.
 # Render: cd docs/diagrams && d2 fmt sequence-0040-frontend-design-v2.d2 && d2 sequence-0040-frontend-design-v2.d2 sequence-0040-frontend-design-v2.svg
 
 ...@style
@@ -19,26 +19,26 @@ history: "Browser history" {class: data}
 search: "GET /api/v1/search" {class: ext}
 guide: "POST /api/v1/guide/stream\n(SSE)" {class: ext}
 
-landing: Home (built) {
+landing: Home {
   user -> home: "/"
   home -> feeds: "news of the last 7 days,\nevents of the next 3 months"
   feeds -> home: "rows"
   home -> user: "hero and the two boards"
-  user -> home: "types, presses Enter"
+  user -> home: "types a question, presses Enter"
   home -> page: "navigate /search?q=…" {class: hot}
 }
 
 search_first: Results first {
-  user -> page: "/search?q=postgres mcp server"
+  user -> page: "/search?q=an MCP server for my Postgres database\n&ask=… (4+ words: a question)"
   page -> search: "search"
   search -> page: "results"
   page -> user: "list at once; picks bar reserved:\n\"Guide is reading 14 candidates…\"" {class: hot}
-  page -> guide: "ask the guide (same query)"
+  page -> guide: "ask the guide (a question only;\na name search makes no call)"
 }
 
 reading: While the guide works {
   user -> page: "click row 4"
-  page -> history: "replaceState ?q=…&id=spec"
+  page -> history: "replace ?q=…&id=spec"
   page -> user: "preview of row 4"
 }
 
@@ -46,7 +46,7 @@ answer: Guide answers {
   guide -> page: "picks #1 #2 #3 with checked quotes"
   page -> user: "bar shows the picks (AI-written);\nbadges in place; row 4 stays where it was" {class: hot}
   user -> page: "tap chip #1"
-  page -> history: "replaceState ?q=…&id=pg"
+  page -> history: "replace ?q=…&id=pg"
   page -> user: "preview of pick #1"
 }
 

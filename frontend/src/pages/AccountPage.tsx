@@ -4,10 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { deleteMyAccount } from '@/api/client';
 import { useMe } from '@/context/MeContext';
 import { useTitle } from '@/hooks/useTitle';
-import { NEW_DESIGN_ENABLED } from '@/lib/features';
 import './text-v2.css';
-
-const V2 = NEW_DESIGN_ENABLED;
 
 /** The signed-in user's account: who they are signed in as, and deleting the account after a confirmation. */
 export default function AccountPage() {
@@ -37,8 +34,8 @@ export default function AccountPage() {
   if (!loaded) return null;
   if (!me.authenticated) {
     return (
-      <div className={V2 ? 'h2-text-page' : 'state-box'}>
-        <h1 className={V2 ? undefined : 'h-small'}>{t('account.title')}</h1>
+      <div className="h2-text-page">
+        <h1>{t('account.title')}</h1>
         <p>{t('account.signedOut')} <Link to="/privacy">{t('nav.privacy')}</Link></p>
       </div>
     );
@@ -56,10 +53,10 @@ export default function AccountPage() {
   };
 
   return (
-    <article className={V2 ? 'text-page h2-text-page' : 'text-page'}>
+    <article className="text-page h2-text-page">
       <h1>{t('account.title')}</h1>
       <p>{t('account.signedInAs', { name: me.displayName ?? t('nav.signedIn') })}</p>
-      <h2 className={V2 ? undefined : 'h-mid'}>{t('account.deleteTitle')}</h2>
+      <h2>{t('account.deleteTitle')}</h2>
       <p>{t('account.deleteText')} <Link to="/privacy">{t('account.privacyLink')}</Link></p>
       {failed && <p role="alert" className="banner banner-warn">{t('account.failed')}</p>}
       <button ref={opener} type="button" className="btn" onClick={() => setConfirming(true)} disabled={confirming}>
@@ -67,10 +64,10 @@ export default function AccountPage() {
       </button>
       {confirming && (
         <div role="alertdialog" aria-modal="false" aria-labelledby="account-confirm-title" aria-describedby="account-confirm-text"
-          className={V2 ? 'h2-dialog' : 'card'}>
-          <h2 id="account-confirm-title" className={V2 ? undefined : 'h-mid'}>{t('account.confirmTitle')}</h2>
+          className="h2-dialog">
+          <h2 id="account-confirm-title" >{t('account.confirmTitle')}</h2>
           <p id="account-confirm-text">{t('account.confirmText')}</p>
-          <div className={V2 ? 'h2-dialog__actions' : 'card-actions'}>
+          <div className="h2-dialog__actions">
             <button ref={cancelButton} type="button" className="btn" onClick={cancel} disabled={busy}>{t('account.cancel')}</button>
             <button type="button" className="btn btn-primary" onClick={confirm} disabled={busy}>{t('account.confirm')}</button>
           </div>
