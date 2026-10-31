@@ -34,10 +34,14 @@ class HttpToolMaterialsTest {
     }
 
     private HttpToolMaterials materials(int fetchesPerHour, long maxCacheChars) {
+        return materials(fetchesPerHour, maxCacheChars, "gh-token");
+    }
+
+    private HttpToolMaterials materials(int fetchesPerHour, long maxCacheChars, String githubToken) {
         HourlyFetchBudget budget = new HourlyFetchBudget(fetchesPerHour, clock, null, Resilience.NONE,
             meters.counter("helper2.setup.fetches.refused"));
         return new HttpToolMaterials(ObservedHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP),
-            new HttpToolMaterials.Hosts(server.baseUrl(), server.baseUrl() + "/jsdelivr", server.baseUrl() + "/hf", "gh-token", "hf-token"),
+            new HttpToolMaterials.Hosts(server.baseUrl(), server.baseUrl() + "/jsdelivr", server.baseUrl() + "/hf", githubToken, "hf-token"),
             clock, budget, new HttpToolMaterials.CacheSettings(Duration.ofHours(1), maxCacheChars));
     }
 
@@ -46,7 +50,7 @@ class HttpToolMaterialsTest {
     }
 
     @Test
-    void readsTheGithubReadmeRawWithTheToken_andLinksTheRepositoryPage() {
+    void readsTheGithubReadmeRawWithTheSetupToken_andLinksTheRepositoryPage() {
         server.route("/repos/acme/x/readme", FixtureServer.Reply.ok(README));
 
         List<Material> docs = materials(100, 1_000_000).load(ref("acme/x", "acme-x", null));
@@ -62,6 +66,17 @@ class HttpToolMaterialsTest {
         assertThat(headers.get("Authorization")).containsExactly("Bearer gh-token");
         // The npm README is read only when GitHub gave nothing.
         assertThat(server.requests).containsExactly("/repos/acme/x/readme");
+    }
+
+    @Test
+    void withoutASetupTokenTheGithubReadmeIsReadAnonymously_underTheSameHourlyBudget() {
+        server.route("/repos/acme/", FixtureServer.Reply.ok(README));
+        HttpToolMaterials materials = materials(1, 1_000_000, "");
+
+        assertThat(materials.load(ref("acme/a", null, null))).hasSize(1);
+        assertThat(server.requestHeaders.get(0)).doesNotContainKey("Authorization");
+        assertThat(materials.load(ref("acme/b", null, null))).isEmpty();
+        assertThat(meters.counter("helper2.setup.fetches.refused").count()).isEqualTo(1);
     }
 
     @Test

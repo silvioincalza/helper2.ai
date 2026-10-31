@@ -45,12 +45,13 @@ class SetupConfiguration {
      * @param npmReadmeBaseUrl where npm READMEs are read (jsDelivr)
      * @param cacheTtl         how long registry entries and documents are kept in memory
      * @param documentCacheMb  the most document text kept in memory per replica
-     * @param hourlyFetches    documents fetched per UTC hour across replicas (shares the Scout's GitHub token)
+     * @param hourlyFetches    documents fetched per UTC hour across replicas
+     * @param githubToken      the setup guide's own GitHub token, never the Scout's; empty reads anonymously
      * @param guide            the step-by-step guide's model settings
      */
     @ConfigurationProperties("helper2.setup")
     record SetupProperties(Duration documentTimeout, String npmReadmeBaseUrl, Duration cacheTtl, int documentCacheMb,
-                           int hourlyFetches, Guide guide) {
+                           int hourlyFetches, String githubToken, Guide guide) {
 
         /**
          * [dailyModelCalls] the guide's own cap; [cacheTtl] how long answers stay in Redis; [unreadableTtl] how long the
@@ -68,10 +69,12 @@ class SetupConfiguration {
         return new RegistryMcpServerSpecs(ObservedHttp.restClientBuilder(timeout, observations), baseUrl, json, clock, setup.cacheTtl());
     }
 
-    /** The tool's own documents, from the hosts the sources already use (same tokens), under an hourly budget. */
+    /**
+     * The tool's own documents, from the hosts the sources already use, under an hourly budget. GitHub is read with
+     * the setup guide's own token, so README fetches never spend the Scout's quota.
+     */
     @Bean
     ToolMaterials toolMaterials(@Value("${helper2.sources.github.base-url:https://api.github.com}") String github,
-                                @Value("${helper2.sources.github.token:}") String githubToken,
                                 @Value("${helper2.sources.huggingface.base-url:https://huggingface.co}") String hf,
                                 @Value("${helper2.sources.huggingface.token:}") String hfToken,
                                 SetupProperties setup, ObservationRegistry observations, Clock clock,
@@ -80,7 +83,7 @@ class SetupConfiguration {
             Counter.builder("helper2.setup.fetches.refused")
                 .description("Setup guide document fetches turned down by the hourly budget").register(meters));
         return new HttpToolMaterials(ObservedHttp.restClientBuilder(setup.documentTimeout(), observations),
-            new HttpToolMaterials.Hosts(github, setup.npmReadmeBaseUrl(), hf, githubToken, hfToken), clock, budget,
+            new HttpToolMaterials.Hosts(github, setup.npmReadmeBaseUrl(), hf, setup.githubToken(), hfToken), clock, budget,
             new HttpToolMaterials.CacheSettings(setup.cacheTtl(), setup.documentCacheMb() * 1024L * 1024L));
     }
 
