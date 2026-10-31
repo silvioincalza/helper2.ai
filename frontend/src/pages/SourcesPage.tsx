@@ -5,6 +5,8 @@ import { ExternalLink } from '@/components/ExternalLink';
 import { useSources } from '@/context/SourcesContext';
 import { useTitle } from '@/hooks/useTitle';
 import { formatDate } from '@/lib/format';
+import { NEW_DESIGN_ENABLED } from '@/lib/features';
+import { SourcesV2 } from '@/components/sources/SourcesV2';
 
 const MODES: SourceMode[] = ['LIVE', 'INDEXED', 'CURATED', 'DEMO'];
 
@@ -12,6 +14,7 @@ export default function SourcesPage() {
   const { t, i18n } = useTranslation();
   const q = useSources();
   useTitle(t('nav.sources'));
+  if (NEW_DESIGN_ENABLED) return <SourcesV2 />;
   return (
     <div>
       <h1>{t('sourcesPage.title')}</h1>

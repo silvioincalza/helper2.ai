@@ -1082,5 +1082,40 @@
     "backToResults": "Back to results",
     "sourceText": "From the source",
     "checkedNote": "Highlighted: the sentence the guide checked against this source."
+  },
+  "savedV2": {
+    "types": "Saved by type"
+  },
+  "sourcesV2": {
+    "how": "How we search",
+    "all": "Every source",
+    "filter": "Show sources by mode",
+    "covers": "Covers",
+    "lastCheck": "Last check",
+    "summary": "{{ok}} of {{total}} sources answered at their last check",
+    "warn_one": "{{count}} rate limited or skipped",
+    "warn_other": "{{count}} rate limited or skipped",
+    "failed_one": "{{count}} failed",
+    "failed_other": "{{count}} failed",
+    "never_one": "{{count}} not checked yet",
+    "never_other": "{{count}} not checked yet",
+    "steps": {
+      "ask": {
+        "title": "One search, every source",
+        "text": "Your search goes to every enabled source at the same time."
+      },
+      "merge": {
+        "title": "Duplicates become one",
+        "text": "The same resource from several sources is shown once, with every source named."
+      },
+      "prove": {
+        "title": "Picks quote their source",
+        "text": "The guide only recommends what it found, and quotes the sentence that supports it."
+      },
+      "dates": {
+        "title": "Dates as stated",
+        "text": "A date is shown only when the source states it. Nothing is guessed."
+      }
+    }
   }
 }
