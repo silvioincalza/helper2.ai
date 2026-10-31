@@ -816,7 +816,7 @@
           "Cached searches and guide answers: up to 30 minutes and 24 hours.",
           "Technical logs: up to 3 months.",
           "Web search counters: 24 hours. Stored results: 7 days.",
-          "English translations of searches typed in another language: 24 hours. Search vectors (the numbers we use to search by meaning): 7 days. Both are stored under a hash of the search, not its text.",
+          "English translations of searches typed in another language: 24 hours. Search vectors (the numbers we use to search by meaning): 7 days. Both are stored under a hash of the search, not its text, and deleted from the database within a day after they expire.",
           "Your account and saved items: until you delete them, or 24 months after you last signed in. Then we delete the account and its saved items.",
           "Reports: 12 months after they were handled. If your account is deleted, your reports stay without your name until then.",
           "Database backups: 7 days. Anything deleted above is gone from the backups within 7 days."
