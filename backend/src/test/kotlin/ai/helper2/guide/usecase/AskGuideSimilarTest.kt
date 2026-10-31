@@ -198,6 +198,26 @@ class AskGuideSimilarTest {
     }
 
     @Test
+    fun `subjects are read in the user's order, so a reversed direction is never reused, whatever order the planner gives`() {
+        val sameOrder = object : GuideModel by model {
+            override fun plan(request: String, path: AudiencePath?) =
+                GuideSearchPlan("language bindings", subjects = listOf("python", "rust")).also { model.plans++ }
+        }
+        val embedder = TableEmbedder(mapOf(
+            "python bindings for rust" to floatArrayOf(1f, 0f),
+            "rust bindings for python" to floatArrayOf(0.99f, 0.141f), // cosine 0.99, as recorded: 0.986
+        ))
+        val guide = AskGuide(search, sameOrder, clock, cache = GuideAnswerCache(Duration.ofHours(24), 10, clock), meters = meters,
+            similar = SimilarQuestions(0.95, "embed", embedder, index, clock))
+        guide.ask("python bindings for rust", null)
+
+        guide.ask("rust bindings for python", null)
+
+        assertEquals(2, model.chooses)
+        assertEquals(0.0, cache("similar"))
+    }
+
+    @Test
     fun `without a threshold no question is embedded`() {
         val guide = guide(similar = null)
         guide.ask(original, null)

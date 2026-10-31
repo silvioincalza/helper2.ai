@@ -218,14 +218,19 @@ class AskGuide(
      */
     private fun similarAnswer(q: Question, r: Reading, asked: Asked): GuideAnswer? {
         if (similar == null || cache == null || q.clarification != null || !q.drops.isEmpty || r.plan == null || r.modelFailed) return null
-        val probe = similar.probe(q.text, configHash, q.path, r.key()) ?: return null
+        val probe = similar.probe(q.text, configHash, q.path, r.key(q)) ?: return null
         asked.probe = probe
         val answer = similar.nearest(probe)?.let(cache::get) ?: return null
         asked.reused = true
         return answer
     }
 
-    private fun Reading.key() = ReadingKey(intent, subjects, constraints, window, allowReading, aboutEvent, askBackSubject != null)
+    /** Subjects in the order the user wrote them, not the planner's: the order carries the direction ("python bindings for rust"). */
+    private fun Reading.key(q: Question): ReadingKey {
+        val text = q.text.lowercase()
+        val inOrder = subjects.sortedBy { text.indexOf(it.lowercase()) }
+        return ReadingKey(intent, inOrder, constraints, window, allowReading, aboutEvent, askBackSubject != null)
+    }
 
     private fun answerByIntent(q: Question, progress: GuideProgress, asked: Asked, model: GuideModel?): GuideAnswer {
         val r = steps.step(q, "plan") { reader.read(q, progress, asked, model) }
