@@ -1,5 +1,5 @@
 # Flowchart: the two answers of a resource page's "Guide me": the setup options and client snippets from source data
-# (no model), and the step-by-step guide picked by the model and checked against the tool's own documents.
+# (no model), and the step-by-step guide the model writes from the tool's own documents, checked against them.
 # Source of truth: backend/src/main/java/ai/helper2/setup/usecase/GetResourceSetup.java, AskAboutResource.java,
 #   backend/src/main/kotlin/ai/helper2/setup/SetupGuides.kt, RunOptionRules.kt, Launch.kt, Clients.kt, ToolGuides.kt,
 #   ToolGuideValidator.kt, backend/src/main/java/ai/helper2/setup/internal/RegistryMcpServerSpecs.java,
@@ -52,7 +52,7 @@ guide: "POST /api/v1/resources/{id}/guide (limiter guide, AskAboutResource)" {
   noMat: "NO_MATERIAL" {class: end}
   cached: "Readable Redis tool-guide answer\n(resource, documents, question,\nprompt hash; 7 days)?" {class: decision}
   hit: "Cached answer,\nquestion added back" {class: end}
-  write: "ToolGuideModel.write: pick and order\npassages (fast model,\ntool-guide daily budget)" {class: ai}
+  write: "ToolGuideModel.write: an instruction\nper step, with its passage and command\n(fast model, tool-guide daily budget)" {class: ai}
   unav: "LLM_UNAVAILABLE\n(no model, budget, error)" {class: fail}
   check: "ToolGuideValidator: whole command lines\nor a found quote; risky commands\nmarked caution; ≤ 8 per section" {class: app}
   ok: "OK, cached" {class: end}

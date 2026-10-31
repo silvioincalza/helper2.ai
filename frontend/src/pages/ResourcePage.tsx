@@ -14,6 +14,7 @@ import { useRetry } from '@/hooks/useRetry';
 import { useTitle } from '@/hooks/useTitle';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
 import { formatDate } from '@/lib/format';
+import { resourcePath } from '@/lib/searchState';
 
 /** Page-only parts sit under the h1, at the level of the overview's part labels. */
 const LEVEL = 2;
@@ -171,7 +172,7 @@ function RelList({ items }: { items: Relationship[] }) {
       {items.map((r, i) => (
         <li key={`${r.kind}-${r.targetTitle}-${i}`}>
           <strong>{t(`relationship.${r.kind}`)}</strong>{' '}
-          {r.targetId ? <Link to={`/resource/${r.targetId}`}>{r.targetTitle}</Link> : r.targetTitle}{' '}
+          {r.targetId ? <Link to={resourcePath(r.targetId)}>{r.targetTitle}</Link> : r.targetTitle}{' '}
           <VerificationBadge verification={r.verification} />
           <EvidenceList evidence={r.evidence} />
         </li>

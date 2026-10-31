@@ -120,6 +120,9 @@ describe('the guide picks bar', () => {
     const items = within(checks).getAllByRole('listitem');
     expect(items[0]).toHaveTextContent('open source: confirmed by the source: MIT licensed, open source');
     expect(items[1]).toHaveTextContent('free: not confirmed by the source');
+    // Art. 50: the planner wrote the requirements, so the preview labels them on screen and marks them in the HTML.
+    expect(within(preview('Postgres MCP')).getByText('Requirements AI-written')).toBeVisible();
+    expect(within(items[0]!).getByText('open source')).toHaveAttribute('data-ai-generated', 'true');
   });
 
   it('with no pick, the bar shrinks to one line that says why', async () => {
@@ -182,6 +185,17 @@ describe('the guide picks bar', () => {
     await userEvent.click(within(bar()).getByRole('button', { name: /Try again/ }));
     expect(await screen.findByRole('button', { name: '#1 Postgres MCP' })).toBeInTheDocument();
     expect(m.callsTo('POST', '/guide/stream')).toHaveLength(2);
+  });
+
+  it('Try again keeps the reader in the bar: focus moves to its heading, not to the page body', async () => {
+    let n = 0;
+    mockApi({ 'GET /search': withPick, 'POST /guide/stream': () => (n++ === 0 ? problem(502, 'Bad gateway', 'The model timed out.') : sse(makeGuide())) });
+    renderApp(QUESTION);
+    expect(await within(bar()).findByRole('alert')).toHaveTextContent('The model timed out.');
+    within(bar()).getByRole('button', { name: /Try again/ }).focus();
+    await userEvent.keyboard('{Enter}');
+    expect(await screen.findByRole('button', { name: '#1 Postgres MCP' })).toBeInTheDocument();
+    expect(within(bar()).getByRole('heading', { name: 'Guide picks' })).toHaveFocus();
   });
 
   it('a stream that closes before the answer says so', async () => {

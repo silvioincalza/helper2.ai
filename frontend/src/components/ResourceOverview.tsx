@@ -7,6 +7,7 @@ import { ProofQuote } from '@/components/ui/ProofQuote';
 import { TypeTag } from '@/components/ui/TypeTag';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
 import { hostname } from '@/lib/format';
+import { resourcePath } from '@/lib/searchState';
 import { FreshnessBadge, ModeBadge, OriginLabel } from './Badges';
 import { BookmarkButton } from './BookmarkButton';
 import { FactList, WorksWith } from './CardFacts';
@@ -38,7 +39,7 @@ export function DetailsLink({ card }: { card: ResultCard }) {
   const { t } = useTranslation();
   const { pathname, search } = useLocation();
   const state: FromResults = { from: `${pathname}${search}` };
-  return <Link to={`/resource/${card.id}`} state={state}>{t('preview.details')} →</Link>;
+  return <Link to={resourcePath(card.id)} state={state}>{t('preview.details')} →</Link>;
 }
 
 /**
@@ -77,16 +78,20 @@ export function WhyItMatches({ card, pick }: { card: ResultCard; pick: GuidePick
       <p className="badge-checked"><Icon name="check" />{t('guide.quoteChecked')}</p>
       <ProofQuote text={rec.description ?? card.description ?? rec.quote} quote={rec.quote} source={listedBy(card)} />
       {(rec.checks?.length ?? 0) > 0 && (
-        <ul className="plain-list guide-checks" aria-label={t('guide.checksLabel')}>
-          {rec.checks!.map((c) => (
-            <li key={c.constraint} className={c.status === 'CONFIRMED' ? 'check-ok' : 'check-unknown'}>
-              {/* Status in words, never colour alone (WCAG 1.4.1). */}
-              <Icon name={c.status === 'CONFIRMED' ? 'check' : 'info'} />{' '}
-              <strong {...aiMark()}>{c.constraint}</strong>:{' '}
-              {c.status === 'CONFIRMED' ? <>{t('guide.checkConfirmed')} <q>{c.quote}</q></> : t('guide.checkNotConfirmed')}
-            </li>
-          ))}
-        </ul>
+        <>
+          {/* Art. 50: the planner wrote the requirements; labelled on screen once, marked on each. */}
+          <p className="muted small">{t('guide.checksLabel')} <span className="h2-picks__ai">{t('guide.requirementsAi')}</span></p>
+          <ul className="plain-list guide-checks" aria-label={t('guide.checksLabel')}>
+            {rec.checks!.map((c) => (
+              <li key={c.constraint} className={c.status === 'CONFIRMED' ? 'check-ok' : 'check-unknown'}>
+                {/* Status in words, never colour alone (WCAG 1.4.1). */}
+                <Icon name={c.status === 'CONFIRMED' ? 'check' : 'info'} />{' '}
+                <strong {...aiMark()}>{c.constraint}</strong>:{' '}
+                {c.status === 'CONFIRMED' ? <>{t('guide.checkConfirmed')} <q>{c.quote}</q></> : t('guide.checkNotConfirmed')}
+              </li>
+            ))}
+          </ul>
+        </>
       )}
       {rec.reasonCheck === 'REMOVED' && <p className="guide-reason muted small"><Icon name="info" /> {t('guide.reasonRemoved')}</p>}
       {rec.reasonCheck !== 'REMOVED' && rec.reason && (

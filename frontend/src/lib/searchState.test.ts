@@ -1,4 +1,4 @@
-import { askedQuestion, askedRefinement, askParams, clearFilters, hasResults, selectedId, withSelected, filterValue, resultsParams, MAX_QUERY, parseSearchParams, patchState, refinedParams, toApiParams, toggleFilter, toSearchParams } from './searchState';
+import { askedQuestion, askedRefinement, askParams, clearFilters, hasResults, selectedId, withSelected, filterValue, resultsParams, MAX_QUERY, parseSearchParams, patchState, refinedParams, resourcePath, toApiParams, toggleFilter, toSearchParams } from './searchState';
 
 describe('searchState', () => {
   const sp = new URLSearchParams('q=agents&type=MCP_SERVER&type=MODEL&license=unknown&openSource=true&updatedAfter=2026-01-01&sort=NEWEST&page=2');
@@ -121,5 +121,10 @@ describe('the results URL', () => {
   it('reads an untrusted id as text of at most 64 characters, never more', () => {
     expect(selectedId(new URLSearchParams())).toBe('');
     expect(selectedId(new URLSearchParams(`id=${'x'.repeat(500)}`))).toHaveLength(64);
+  });
+
+  it('builds a resource page path with the id encoded, so an id can never add a path segment or a query', () => {
+    expect(resourcePath('11111111-1111-5111-8111-111111111111')).toBe('/resource/11111111-1111-5111-8111-111111111111');
+    expect(resourcePath('../admin?x=1#y')).toBe('/resource/..%2Fadmin%3Fx%3D1%23y');
   });
 });

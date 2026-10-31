@@ -32,10 +32,12 @@ to the text.
    model is known (`src/lib/aiMark.ts`). The guide answer and the question back carry `data-ai-provider` and
    `data-ai-models`. Marked: reasons, requirements (chips and checks), the question back and its options, comparison
    aspects and cells, explanation sentences, the prompt, the planned search query, AI summaries and values extracted
-   by AI on the resource page. Quotes, titles and links are never marked: they come from the sources. Our own
-   labels and the subjects (the user's own words) are not marked.
+   by AI on the resource page, and the instructions of the setup guide's steps ([0031](0031-setup-guide.md),
+   `ToolGuide.model` names the model in the API). Quotes, titles, links and the setup guide's commands are never
+   marked: they come from the sources. Our own labels and the subjects (the user's own words) are not marked.
    Every marked group also has a label on screen (Art. 50(1)): "AI-written" on the picks bar, the requirements
-   ("Requirements AI-written") and the planner's search terms, "AI summary", "Extracted by AI", "Model's explanation".
+   ("Requirements AI-written", in the bar and over their checks in the preview) and the planner's search terms,
+   "AI summary", "Extracted by AI", "Model's explanation", "Steps written by AI" in the setup guide.
 4. **Explained in public.** The Mission page has a section "How we mark AI text".
 5. **No hidden characters in the text.** We do not add zero-width or other invisible characters.
 
@@ -45,8 +47,6 @@ to the text.
   is "enough" for text is not settled; a lawyer should confirm it.
 - A new AI-written field must be added to `AI_WRITTEN_FIELDS` and marked in the UI. A field that is missed is not
   marked; the tests cover the current fields only.
-- The setup guide ([0031](0031-setup-guide.md)) only picks and orders passages from the tool's own documents, so it
-  writes no new text and is not marked.
 
 ## Alternatives considered
 - **Invisible Unicode watermark in the text** — breaks copy and paste, search and screen readers, and anyone can
@@ -59,7 +59,7 @@ to the text.
 - `api/openapi.yaml` — `AiContentMarker`, `GuideResponse.aiContent`.
 - `backend/.../guide/web/GuideDtoMapper.java` — builds the marker.
 - `frontend/src/lib/aiMark.ts` — the page attributes; used in `GuidePicks.tsx`, `ui/PicksBar.tsx`, `ResultList.tsx`,
-  `ResourceOverview.tsx` (the results preview and the resource page), `ResourcePage.tsx`.
+  `ResourceOverview.tsx` (the results preview and the resource page), `ResourcePage.tsx`, `setup/StepsPart.tsx`.
 
 ## Diagrams
 [flow](../diagrams/flow-0038-ai-content-marking.svg) · [sequence](../diagrams/sequence-0038-ai-content-marking.svg)

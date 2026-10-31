@@ -184,6 +184,11 @@ export function refinedParams(sp: URLSearchParams, r: Partial<Refinement>): URLS
 /** The path of the results page (ADR 0040, 3). `/?q=…` shows the same page and names this one canonical. */
 export const RESULTS_PATH = '/search';
 
+/** The path of a resource page (ADR 0040, 4), the id encoded so it stays one path segment. */
+export function resourcePath(id: string): string {
+  return `/resource/${encodeURIComponent(id)}`;
+}
+
 /** A URL that asks for results: a search, a question for the guide, or both. Without either, `/` is the home page. */
 export function hasResults(sp: URLSearchParams): boolean {
   return Boolean(clampQuery(sp.get('q') ?? '') || askedQuestion(sp));

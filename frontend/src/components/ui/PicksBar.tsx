@@ -1,4 +1,4 @@
-import { useId, type ReactNode } from 'react';
+import { useId, type ReactNode, type Ref } from 'react';
 import { useTranslation } from 'react-i18next';
 import './ui.css';
 
@@ -20,15 +20,17 @@ export type PicksState =
  * The waiting and no-pick lines are a status, so a screen reader hears each once. The picks and the question back
  * ([children]) sit under an AI-written label, and [ai] names the provider and models of the whole answer (ADR 0038).
  * A pick shows a title from its source, so the bar does not mark it; the AI-written text in [children] marks itself. [question] is what the guide was asked, [onClose] closes the answer, and
- * [footer] (how the guide read the question, the answer's details) follows in every state.
+ * [footer] (how the guide read the question, the answer's details) follows in every state. The heading takes focus
+ * from [titleRef] (Try again, see useRetry).
  */
-export function PicksBar({ state, question, onClose, closeLabel, ai, footer, children }: {
+export function PicksBar({ state, question, onClose, closeLabel, ai, footer, titleRef, children }: {
   state: PicksState;
   question?: string;
   onClose?: () => void;
   closeLabel?: string;
   ai?: { provider: string; models: string[] } | null | undefined;
   footer?: ReactNode;
+  titleRef?: Ref<HTMLHeadingElement>;
   children?: ReactNode;
 }) {
   const { t } = useTranslation();
@@ -38,7 +40,7 @@ export function PicksBar({ state, question, onClose, closeLabel, ai, footer, chi
     <section className={`h2-picks is-${state.kind}`} aria-labelledby={titleId}
       data-ai-provider={ai?.provider} data-ai-models={ai?.models.join(' ')}>
       <div className="h2-picks__head">
-        <h2 id={titleId} className="h2-picks__title">{t('picks.title')}</h2>
+        <h2 id={titleId} ref={titleRef} tabIndex={-1} className="h2-picks__title">{t('picks.title')}</h2>
         {question && <q className="h2-picks__question">{question}</q>}
         {aiWritten && <span className="h2-picks__ai">{t('picks.aiWritten')}</span>}
         {onClose && (
