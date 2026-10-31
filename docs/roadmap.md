@@ -94,8 +94,8 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 ## 4. More than one replica
 
 Prod runs 3 replicas (`app.replicas`, staging 1). The Scout and the embedding indexer run on one replica at a
-time (ShedLock, table `shedlock` in Postgres); rate limits, sign-in sessions, query translations and query vectors
-are in Redis. Still per replica, on purpose:
+time (ShedLock, table `shedlock` in Postgres); rate limits and sign-in sessions are in Redis, query translations,
+query vectors and setup guide answers in the Postgres table `ai_cache`. Still per replica, on purpose:
 
 - **Guide answers: in-memory LRU and single-flight map.** Answers are also in Redis, so a replica only misses a
   question it has not seen; two replicas may answer the same new question once each.
@@ -112,8 +112,8 @@ Open items:
 - **preStop delay.** A pod gets SIGTERM while it is still being removed from the Service endpoints; a few
   seconds of `preStop` sleep would stop the last requests from reaching it during a rolling update.
 - **Redis memory.** Sign-in sessions, rate-limit windows and web-search counters share the 128 MB `allkeys-lru`
-  cache with the shared query vectors (about 5.5 kB each, kept 7 days): under pressure an admin is signed out, or a
-  client gets a fresh window or a fresh day early. Alert on Redis evictions (with the Redis exporter, section 3).
+  cache: under pressure an admin is signed out, or a client gets a fresh window or a fresh day early. Alert on
+  Redis evictions (with the Redis exporter, section 3).
 
 ## 5. AI quality and cost
 

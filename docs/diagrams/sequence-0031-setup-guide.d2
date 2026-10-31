@@ -5,7 +5,8 @@
 #   backend/src/main/java/ai/helper2/setup/usecase/GetResourceSetup.java, GetToolGuide.java,
 #   backend/src/main/kotlin/ai/helper2/setup/SetupGuides.kt, ToolGuides.kt, ToolGuideValidator.kt,
 #   backend/src/main/java/ai/helper2/setup/internal/RegistryMcpServerSpecs.java, HttpToolMaterials.java,
-#   HourlyFetchBudget.java, SpringAiToolGuideModel.java, RedisToolGuideCache.java, catalog/usecase/GetResourceDetail.java.
+#   HourlyFetchBudget.java, SpringAiToolGuideModel.java, SharedToolGuideCache.java,
+#   platform/cache/JdbcSharedCache.java, catalog/usecase/GetResourceDetail.java.
 # Render: cd docs/diagrams && d2 fmt sequence-0031-setup-guide.d2 && d2 sequence-0031-setup-guide.d2 sequence-0031-setup-guide.svg
 
 ...@style
@@ -20,6 +21,7 @@ setup: "SetupGuides /\nToolGuides" {class: app}
 registry: "Official MCP Registry" {class: ext}
 docs: "GitHub, jsDelivr,\nHugging Face" {class: ext}
 redis: "Redis\n(policy redis)" {class: data}
+pg: "PostgreSQL ai_cache\n(policy db-cache)" {class: data}
 model: "Fast model\n(Nemotron)" {class: ai}
 
 options: Setup options, no model {
@@ -42,12 +44,12 @@ walkthrough: Step-by-step guide {
   setup -> redis: "INCR h2:v1:setup:fetches:<hour>\n(one per document fetch)"
   setup -> docs: "README (setup's own GitHub token\nor anonymous), npm README,\nmodel or Space card"
   docs -> setup: "documents (kept in memory,\nbounded by total length)"
-  setup -> redis: "get(v1:<id>:<hash>)"
-  redis -> setup: "miss"
+  setup -> pg: "get(tool-guide, sha256(<id>:<hash>))"
+  pg -> setup: "miss"
   setup -> model: "write(ref, documents):\nan instruction per step, with\nits passage and command" {class: ai-call}
   model -> setup: "ProposedGuide"
   setup -> setup: "ToolGuideValidator.validate:\ndrop steps not in the documents"
-  setup -> redis: "put (7 days, no document text;\n10 min for two unreadable\nmodel answers)"
+  setup -> pg: "put (7 days, no document text;\n10 min for two unreadable\nmodel answers)"
   setup -> page: "200 ToolGuide: sections, steps,\ndocuments with read dates, model" {class: hot}
   page -> page: "instructions labelled \"Steps written by AI\"\nand marked data-ai-generated, data-ai-model"
 }

@@ -8,25 +8,26 @@
 #   setup/internal/SpringAiToolGuideModel.java, scout/internal/SpringAiEnrichmentModel.java,
 #   sources/classifier/SpringAiRepoClassifier.java (llm-chat),
 #   backend/src/main/java/ai/helper2/catalog/internal/NvidiaEmbedder.java (llm-embed), guide/web/GuideLimits.java (trySlot),
-#   backend/src/main/java/ai/helper2/platform/llm/ModelErrors.java (NotFromProvider).
+#   backend/src/main/java/ai/helper2/platform/llm/ModelErrors.java (NotFromProvider),
+#   backend/src/main/java/ai/helper2/platform/cache/JdbcSharedCache.java (db-cache).
 # Render: cd docs/diagrams && d2 fmt flow-0033-resilience-policies.d2 && d2 flow-0033-resilience-policies.d2 flow-0033-resilience-policies.svg
 
 ...@style
 
 direction: down
 
-call: "Resilience.call(policy, work)\nsource-<id>, collector-<id>, redis,\nllm-chat or llm-embed" {class: end}
+call: "Resilience.call(policy, work)\nsource-<id>, collector-<id>, redis,\ndb-cache, llm-chat or llm-embed" {class: end}
 named: "An instance with\nthis name exists?" {class: decision}
 unknown: "IllegalStateException\n(require at startup: no start)" {class: fail}
 
 policy: Decorators, outermost first {
   class: group
   direction: down
-  bulk: "Bulkhead (source-*):\na free slot? (20, catalog 6,\nno wait)" {class: decision}
+  bulk: "Bulkhead (source-*, db-cache):\na free slot? (20, catalog 6,\ndb-cache 2, no wait)" {class: decision}
   state: "Circuit breaker state?" {class: decision}
-  run: "Run the work\n(one HTTP request, Apache retries off,\nor one Redis command)" {class: app}
+  run: "Run the work\n(one HTTP request, Apache retries off,\none Redis command or\none shared cache statement)" {class: app}
   result: "Outcome?" {class: decision}
-  count: "Counted in the window\n(source 20, collector, redis, llm-* 10 calls):\n≥ 50 % failed or slow (> 2 s, Tavily 5 s)\nafter the minimum calls → OPEN" {class: app}
+  count: "Counted in the window\n(source 20, collector, redis, db-cache,\nllm-* 10 calls): ≥ 50 % failed or slow\n(> 2 s, Tavily 5 s, db-cache 250 ms)\nafter the minimum calls → OPEN" {class: app}
   retry: "Retry (collector-* only):\nTransientSourceFailure and\nattempts < 3?" {class: decision}
   wait: "Wait 1 s, then × 2,\n± 50 % jitter" {class: config}
 
@@ -51,6 +52,7 @@ callers: What the caller does {
   direction: down
   search: "SearchResources: refused → SKIPPED\n(CIRCUIT_OPEN \"Paused after repeated\nfailures\", BUSY \"Too many searches\nat once\"), stale cache entry if any;\nrate limited → paused until Retry-After" {class: app}
   redis: "Redis adapters: miss or\nin-memory fallback, no wait" {class: app}
+  dbcache: "Shared caches: miss,\nthe caller asks the model" {class: app}
   collector: "Collector: this run fails,\nthe next run tries again" {class: app}
   llm: "Guide: circuit_open → degraded answer\n(top search results), no budget unit;\ntranslator: untranslated search;\ntool guide: LLM_UNAVAILABLE \"error\";\nenrichment: LLM_UNAVAILABLE, stays in backlog;\nclassifier: keyword heuristic;\nembedder: EmbeddingFailure (keyword search,\nindexer retries next period)" {class: app}
 }
@@ -74,6 +76,8 @@ policy.retry -> thrown: no
 busy -> callers.search
 open -> callers.search
 open -> callers.redis
+open -> callers.dbcache
+busy -> callers.dbcache
 thrown -> callers.collector
 thrown -> callers.search
 open -> callers.collector

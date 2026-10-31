@@ -12,7 +12,7 @@ internals. Microservices would add network calls and deploys without a scaling n
 1. **One Spring Boot app, ten top-level packages.** Each is a Spring Modulith application module
    (`@ApplicationModule` in `package-info.java`):
    `search`, `catalog`, `guide`, `scout`, `setup`, `identity`, `sources`, and three open modules that every module
-   may use: `shared` (value types), `platform` (errors, rate limits, resilience policies, the Large Language Model (LLM) layer, prompts) and
+   may use: `shared` (value types), `platform` (errors, rate limits, resilience policies, the Large Language Model (LLM) layer, prompts, the shared caches of model answers and their table `ai_cache`) and
    `api` (generated contract types, see [0003](0003-contract-first-rest-api.md)). The open modules depend on no feature module: an adapter
    of a feature's port lives in that feature (the query translator, an LLM adapter of `search.QueryTranslator`, is
    in `search.internal`).

@@ -3,8 +3,7 @@
 **Status.** Accepted. **Builds on:** [0002](0002-modular-monolith-hexagonal.md), [0004](0004-persistence-and-provenance.md), [0033](0033-resilience-policies.md)
 
 ## Context
-Live sources are slow (seconds) and rate-limited. A guide answer costs three model calls; a query translation costs one
-model call and a query vector one embedding call, and each of the replicas would pay them for the same query. The daily
+Live sources are slow (seconds) and rate-limited. A guide answer costs three model calls. The daily
 model budgets must survive a restart. Guide answers are the most expensive entries, and a cold cache after
 every Redis restart would pay for them again. All of this is short-lived data: losing it costs time or money,
 never correctness. PostgreSQL ([0004](0004-persistence-and-provenance.md)) stays the only system of record,
@@ -28,9 +27,8 @@ so the cache must be optional: when Redis is down, the app still works, only slo
    6 hours for arXiv) answers without a live call. Every entry lives for `H2_SEARCH_STALE_FOR` (24 hours).
    When the live call fails, times out, is rate-limited, is in cooldown or is refused by the source's open circuit,
    an entry inside that window is served as `STALE_CACHE`, with the failure stated in the source status.
-4. **Circuit breaker.** Every Redis call of the search cache, the guide and tool guide answer stores, the shared
-   translations and query vectors, the budget counter, the web-search quota, the rate limiter, the outbound throttle
-   and the session reads runs under the one `redis` policy ([0033](0033-resilience-policies.md)):
+4. **Circuit breaker.** Every Redis call of the search cache, the guide answer store, the budget counter, the
+   web-search quota, the rate limiter, the outbound throttle and the session reads runs under the one `redis` policy ([0033](0033-resilience-policies.md)):
    once half of the last calls (at least 3) failed, the circuit opens for 30 seconds (`H2_RESILIENCE_REDIS_OPEN_FOR`)
    and callers get their fallback at once, without a Redis call. Then 2 trial calls decide whether it closes again.
    A search cache error or refusal adds the notice `CACHE_UNAVAILABLE`, and the sources are called live. A session
@@ -43,13 +41,9 @@ so the cache must be optional: when Redis is down, the app still works, only slo
 6. **Guide answers.** `GuideAnswerCache` keeps up to 500 answers in memory and reads through to
    `RedisGuideAnswerStore`: key `h2:v2:guide-answer:{build}:{sha256}`, one set per build ([0017](../guide/0017-guide-cost-guard.md)), Redis time to live (TTL) = `H2_GUIDE_CACHE_TTL` (24 hours),
    JavaScript Object Notation (JSON) in a versioned envelope. Only complete artificial intelligence (AI) answers are stored.
-7. **Shared model answers for a query.** `RedisSharedCache` (port `SharedCache`, `platform.cache`) keeps query translations
-   (`h2:v1:translation:{sha256}`, `H2_SEARCH_TRANSLATION_TTL`, 24 h, [0011](../search/0011-language-aware-search.md)) and query
-   vectors (`h2:v1:qvec:{sha256}`, `H2_SEARCH_QUERY_VECTOR_TTL`, 7 days, [0012](../search/0012-vector-search-pgvector.md)).
-   The hash covers the model and the normalised query (and, for a translation, the prompt version and the language), so no
-   query text is in a key. A Redis error or refusal is a miss and a write that does nothing; the caller calls the model.
-   Meter `helper2.shared.cache{cache, result}` counts hits and misses. No in-memory layer in front: a Redis read (about
-   1 ms) is small next to the model call it saves.
+7. **Other model answers are not in Redis.** Query translations, query vectors and setup guide answers are kept on
+   disk in the PostgreSQL table `ai_cache` ([0004](0004-persistence-and-provenance.md)): they are backed up, survive a
+   Redis restart and cost no Redis memory.
 8. **Shared state for the replicas.** Prod runs 3 replicas ([0027](../operations/0027-runtime-topology.md)). The same Redis also
    holds the rate-limit windows (`h2:v1:rate:{limiter}:{client}`, [0024](../edge/0024-http-edge-protection.md)), the sign-in
    sessions (namespace `helper2:session`, [0023](../edge/0023-identity-and-admin.md)) and the daily web-search counters
@@ -63,13 +57,14 @@ so the cache must be optional: when Redis is down, the app still works, only slo
 - Answers, counters, sessions and rate-limit windows survive app restarts, deploys and Redis restarts; guide answers
   survive restarts of the same build, and a deploy starts a new set (the old one expires with its TTL).
 - While Redis loads the AOF at start, the app treats it like a short outage (the `redis` circuit).
-- A query is translated and embedded once for the cluster, not once per replica.
-- `RedisSearchCacheTest`, `RedisGuideAnswerStoreTest`, `RedisCallCounterTest`, `RedisRateLimiterIT` and `RedisSharedCacheIT`
+- Redis memory holds source responses, guide answers, counters, rate-limit windows and sessions only.
+- `RedisSearchCacheTest`, `RedisGuideAnswerStoreTest`, `RedisCallCounterTest` and `RedisRateLimiterIT`
   cover the open window, the trial call and the fallbacks; `RedisDownIT` covers search with no Redis at all.
 
 ## Alternatives considered
 - Caffeine (in-process cache) only — lost on every deploy, and budgets would reset with each restart.
-- Cache in PostgreSQL — writes on the hot path to the system of record, and eviction by hand.
+- Source responses in PostgreSQL — a write on every live call of every search, and eviction by hand, for entries
+  that are stale after 24 hours.
 - One circuit per Redis adapter — each adapter would find the same outage on its own and pay its own timeouts.
 - A bypass after any single error, without a failure rate or a trial call — one slow command opens it, and the
   first call after the window meets a Redis that may still be down at full timeout.
@@ -86,8 +81,6 @@ so the cache must be optional: when Redis is down, the app still works, only slo
   fail-fast guard ([0033](0033-resilience-policies.md)).
 - `backend/src/main/java/ai/helper2/platform/llm/RedisCallCounter.java`, `DailyBudget.java` — counters.
 - `backend/src/main/java/ai/helper2/platform/quota/RedisQuotaCounter.java` — daily web-search counters.
-- `backend/src/main/java/ai/helper2/platform/cache/SharedCache.java`, `RedisSharedCache.java` — shared translations and
-  query vectors.
 - `backend/src/main/kotlin/ai/helper2/guide/GuideCost.kt` (`GuideAnswerCache`, `ClientQuota`) and
   `backend/src/main/java/ai/helper2/guide/internal/RedisGuideAnswerStore.java` — guide answers.
 - `deploy/helm/helper2/templates/redis.yaml` (StatefulSet, AOF, PVC), `compose.yaml` — Redis settings;

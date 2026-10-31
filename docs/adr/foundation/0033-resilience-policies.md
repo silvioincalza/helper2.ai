@@ -6,6 +6,7 @@
 ## Context
 Every search calls up to six public application programming interfaces (APIs) plus the catalog, the Scout calls seven
 more in the background, Redis sits on the path of every request (cache, budgets, rate limits, guide answers), the
+shared caches of model answers read PostgreSQL before a model call, the
 guide, the query translation, the setup guide, the Scout's enrichment and the awesome-list classifier call the model
 provider, and search queries and the indexer call the embedding API.
 Each of them fails in its own way: a provider is down for an hour, answers slowly, or sends a 503 for a few seconds;
@@ -33,7 +34,8 @@ The domain (Kotlin) must not depend on the library that implements them ([0002](
    |---|---|---|---|
    | `source-<id>` (github, hf-models, hf-spaces, npm, arxiv, tavily, helper2-index, helper2-semantic, curated) | count window 20, at least 10 calls, opens at 50% failed or slow (over 2 s; Tavily 5 s), open 30 s, 2 trial calls | 20 calls per replica, no wait; catalog sources 6 (below the database pool of 10) | none: the search deadline is the budget |
    | `collector-<id>` (the seven Scout collectors) | count window 10, at least 5 calls, 50%, open 1 min, 1 trial call | none: the Scout runs one collector at a time | 3 attempts, 1 s then ×2 with ±50% jitter, only on a transient failure |
-   | `redis` (search cache, guide answers, tool guide answers, shared translations and query vectors, budget counters, rate limits, outbound throttle, session reads) | count window 10, at least 3 calls, 50%, open 30 s, 2 trial calls | none | none |
+   | `redis` (search cache, guide answers, budget counters, rate limits, outbound throttle, session reads) | count window 10, at least 3 calls, 50%, open 30 s, 2 trial calls | none | none |
+   | `db-cache` (shared caches of model answers in `ai_cache`: translations, query vectors, setup guide answers, [0004](0004-persistence-and-provenance.md)) | count window 10, at least 3 calls, 50% failed or slow (over 250 ms), open 30 s, 2 trial calls; each statement also stops after 1 s | 2 calls per replica, no wait: with the catalog sources' 6, below the database pool of 10 | none: a miss costs one model call |
    | `llm-chat` (every chat-model call: guide, query translation, setup guide, Scout enrichment, awesome-list classifier) | count window 10, at least 5 calls, 50%, open 30 s, 2 trial calls; only provider errors count (`ModelErrors.NotFromProvider` ignores a malformed answer and a spent budget) | none | none: every attempt is charged to a daily budget ([0014](../guide/0014-llm-integration.md)) |
    | `llm-embed` (every embedding call: search queries and the indexer) | as `llm-chat`, every failure counts | none | none |
    | `guide` (guide questions) | none | 8 questions per replica, no wait, held per question with `trySlot` by `GuideLimits` from start to end or deadline ([0017](../guide/0017-guide-cost-guard.md)) | none |
@@ -48,11 +50,12 @@ The domain (Kotlin) must not depend on the library that implements them ([0002](
 4. **Owner overrides without a release**, all optional: `H2_RESILIENCE_SOURCE_FAILURE_RATE` (50),
    `H2_RESILIENCE_SOURCE_OPEN_FOR` (30s), `H2_RESILIENCE_SOURCE_MAX_CONCURRENT` (20),
    `H2_RESILIENCE_CATALOG_MAX_CONCURRENT` (6), `H2_RESILIENCE_COLLECTOR_OPEN_FOR` (1m),
-   `H2_RESILIENCE_COLLECTOR_MAX_ATTEMPTS` (3), `H2_RESILIENCE_REDIS_OPEN_FOR` (30s), `H2_RESILIENCE_LLM_OPEN_FOR` (30s),
+   `H2_RESILIENCE_COLLECTOR_MAX_ATTEMPTS` (3), `H2_RESILIENCE_REDIS_OPEN_FOR` (30s), `H2_RESILIENCE_DB_CACHE_OPEN_FOR` (30s),
+   `H2_RESILIENCE_DB_CACHE_MAX_CONCURRENT` (2), `H2_RESILIENCE_LLM_OPEN_FOR` (30s),
    `H2_GUIDE_MAX_CONCURRENT` (8).
 5. **No policy, no start.** `SearchResources` requires `source-<id>` for every enabled source and each collector
-   requires `collector-<id>` when it is enabled, the model adapters require `llm-chat` or `llm-embed` and `GuideLimits`
-   requires `guide`, so a call site added without its policy stops startup instead of running unguarded. The `demo` profile adds the policies of its fixture sources.
+   requires `collector-<id>` when it is enabled, the model adapters require `llm-chat` or `llm-embed`, `GuideLimits`
+   requires `guide` and `SharedCaches` requires `db-cache`, so a call site added without its policy stops startup instead of running unguarded. The `demo` profile adds the policies of its fixture sources.
 6. **Each outbound request is sent once.** The Apache client's own retries are off (`ObservedHttp`), so every attempt
    is one the circuit counts and the retry bounds.
 7. **Global limits stay in Redis.** Resilience4j's rate limiter counts in one Java virtual machine (JVM), so it cannot
@@ -72,6 +75,8 @@ The domain (Kotlin) must not depend on the library that implements them ([0002](
 - a provider that is down costs a few searches their deadline, then is `SKIPPED` ("Paused after repeated
   failures", `SkipReason.CIRCUIT_OPEN`) without a call until a trial call succeeds; its stale cache entry still answers.
 - a Redis outage costs at most a few 250 ms timeouts per 30 s for the whole replica, not per adapter.
+- a slow or failing database costs the shared caches a few lookups of at most 1 s per 30 s, then every lookup is a
+  miss at once; they never hold more than 2 connections of a replica's pool.
 - one source cannot hold every virtual thread or every database connection; one search too many for a source
   is `SKIPPED` ("Too many searches at once", `SkipReason.BUSY`) at once.
 - a Scout collector rides out a short 503 without losing its run; a permanent error fails at once.
@@ -88,7 +93,7 @@ The domain (Kotlin) must not depend on the library that implements them ([0002](
 - `Resilience4jPoliciesTest`, `ResiliencePoliciesConfigIT`, `SearchResourcesTest`, `SourceCircuitIT`, `GuideLimitsTest`,
   `SpringAiGuideModelTest`, `SpringAiQueryTranslatorTest`, `SpringAiToolGuideModelTest`, `SpringAiEnrichmentModelTest`,
   `SpringAiRepoClassifierTest`, `NvidiaEmbedderTest`,
-  `CollectorRetryIT`, `TransientSourceFailureTest`, `ObservedHttpRetryTest` and the Redis adapter tests cover the rules.
+  `CollectorRetryIT`, `TransientSourceFailureTest`, `ObservedHttpRetryTest`, `JdbcSharedCacheIT` and the Redis adapter tests cover the rules.
 
 ## Alternatives considered
 - Spring Framework 7 `@Retryable` and `@ConcurrencyLimit` — no circuit breaker and only basic metrics; annotations need
@@ -113,8 +118,8 @@ The domain (Kotlin) must not depend on the library that implements them ([0002](
 - `backend/src/main/java/ai/helper2/sources/*/*Collector.java`, `support/TransientSourceFailure.java` — `collector-<id>` and what
   it retries; `support/HttpClients.java` — transient failures.
 - `backend/src/main/java/ai/helper2/search/cache/RedisSearchCache.java`, `guide/internal/RedisGuideAnswerStore.java`,
-  `setup/internal/RedisToolGuideCache.java`, `platform/cache/RedisSharedCache.java`, `platform/llm/RedisCallCounter.java`,
-  `platform/RedisRateLimiter.java` — `redis`.
+  `platform/llm/RedisCallCounter.java`, `platform/RedisRateLimiter.java` — `redis`.
+- `backend/src/main/java/ai/helper2/platform/cache/SharedCaches.java`, `JdbcSharedCache.java` — `db-cache`.
 - `backend/src/main/java/ai/helper2/platform/http/ObservedHttp.java` — one request per attempt.
 - `backend/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java`, `search/internal/SpringAiQueryTranslator.java`,
   `setup/internal/SpringAiToolGuideModel.java`, `scout/internal/SpringAiEnrichmentModel.java`,

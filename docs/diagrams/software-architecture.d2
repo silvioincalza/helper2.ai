@@ -12,7 +12,7 @@
 #   backend/src/main/java/ai/helper2/platform/http/ObservedHttp.java (observed client of sources and embedder),
 #   backend/src/main/kotlin/ai/helper2/search/WebSearch.kt, search/internal/JdbcWebResultStore.java,
 #   search/internal/SpringAiQueryTranslator.java, TranslationConfiguration.java (query translation),
-#   platform/cache/RedisSharedCache.java (translations and query vectors shared by the replicas),
+#   platform/cache/SharedCaches.java, JdbcSharedCache.java (model answers shared by the replicas in ai_cache),
 #   backend/src/main/kotlin/ai/helper2/guide/usecase/ (AskGuide and its steps),
 #   backend/src/main/java/ai/helper2/platform/quota/ (Tavily store and daily quota, ADR 0037),
 #   backend/src/main/resources/application.yaml (base URLs, llm-nebius profile, helper2.embedding),
@@ -127,7 +127,7 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
     usecase: "GetResourceSetup\nGetToolGuide" {class: app}
     core: "SetupGuides · RunOptionRules\nToolGuides · ToolGuideValidator" {class: app}
     p_ports: "McpServerSpecs · ToolMaterials\nToolGuideModel · ToolGuideCache" {class: port}
-    adapters: "RegistryMcpServerSpecs · HttpToolMaterials\n(Caffeine, HourlyFetchBudget)\nSpringAiToolGuideModel · RedisToolGuideCache" {class: app}
+    adapters: "RegistryMcpServerSpecs · HttpToolMaterials\n(Caffeine, HourlyFetchBudget)\nSpringAiToolGuideModel · SharedToolGuideCache" {class: app}
     ctl -> usecase
     usecase -> core
     core -> p_ports
@@ -147,7 +147,7 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
     http: "http: ObservedHttp\n(pooled, observed RestClient;\nUser-Agent with build version)" {class: app}
     resilience: "resilience: Resilience (named\npolicies on Resilience4j: llm-chat,\nllm-embed, guide, …)\nOutboundThrottle (Redis)" {class: app}
     quota: "quota: QuotaCounter (Redis Lua)\nQuotaKeys (HMAC)" {class: app}
-    cache: "cache: SharedCache\n(RedisSharedCache)" {class: app}
+    cache: "cache: SharedCache\n(JdbcSharedCache, daily purge)" {class: app}
   }
 
   shared: "shared (open, Kotlin)\nCanonicalUrl · ResourceId · DateFact\nLanguageDetector · Vocabulary" {class: app}
@@ -213,8 +213,9 @@ app.guide.store -> stores.redis: "h2:v1:guide-answer:*"
 app.platform.llm -> stores.redis: "h2:v1:budget:*"
 app.search.translator -> app.platform.cache: "translations"
 app.catalog.semantic -> app.platform.cache: "query vectors"
-app.platform.cache -> stores.redis: "h2:v1:translation:*\nh2:v1:qvec:*"
-app.setup.adapters -> stores.redis: "h2:v2:tool-guide:*\nh2:v1:setup:fetches:*"
+app.setup.adapters -> app.platform.cache: "tool guide answers"
+app.platform.cache -> stores.pg: "ai_cache"
+app.setup.adapters -> stores.redis: "h2:v1:setup:fetches:*"
 app.catalog.store -> stores.pg: JDBC
 app.scout.jdbc -> stores.pg: JDBC
 app.identity.me -> stores.pg: "bookmarks, users"
