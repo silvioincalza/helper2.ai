@@ -65,10 +65,11 @@ and chose between options for each part.
    answering (the waiting line), no results (remove the filters, fewer words, ask the guide), some sources failed
    (a banner with the way to the sources and Try again), all sources failed (an alert with Try again), search or the
    guide unavailable (Try again), a board that cannot load (Try again), a resource not in the index (the way home), a
-   resource that cannot be loaded (Try again, the way home), and 404 (the way home and the box in the header). Each has
-   a next step. One component draws them: a heading that says what happened, the reason, the next step; an error is
-   an alert. Try again keeps the reader's place: focus goes to the heading that stays while the answer loads, then to
-   the heading of what loaded, or of the state when it comes back.
+   resource that cannot be loaded (Try again, the way home), Guide me's steps that cannot load (Try again), and 404
+   (the way home and the box in the header). Each has a next step. One component draws the error, empty and
+   not-found states (the picks bar keeps its error in the bar): a heading that says what happened, the reason, the
+   next step; an error is an alert. Try again keeps the reader's place: focus goes to the heading that stays while
+   the answer loads, then to the heading of what loaded, or of the state when it comes back.
 9. **The footer makes one claim: "No ads."** Next to it, in one row, the links: Mission, Sources, Privacy, Terms,
    the code on GitHub, its licence and the release notes. Tracking cookies are planned later. The footer makes no claim about
    tracking, so it does not need to change when they come. Mission and Privacy keep their text until then.
