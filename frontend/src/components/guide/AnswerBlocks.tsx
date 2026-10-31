@@ -2,6 +2,7 @@ import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import type { GuideResponse } from '@/api/types';
 import { aiMark } from '@/lib/aiMark';
+import { resourcePath } from '@/lib/searchState';
 
 /** One column per subject; each AI-written cell shows the quote from that subject's own text, or says it is not stated. */
 export function ComparisonTable({ comparison }: { comparison: NonNullable<GuideResponse['comparison']> }) {
@@ -15,7 +16,7 @@ export function ComparisonTable({ comparison }: { comparison: NonNullable<GuideR
             <th scope="col">{t('guide.comparison.aspect')}</th>
             {comparison.subjects.map((s) => (
               <th key={s.key} scope="col">
-                {s.resourceId ? <Link to={`/resource/${s.resourceId}`}>{s.title ?? s.name}</Link> : <>{s.name} <span className="muted small">({t('guide.comparison.notFound')})</span></>}
+                {s.resourceId ? <Link to={resourcePath(s.resourceId)}>{s.title ?? s.name}</Link> : <>{s.name} <span className="muted small">({t('guide.comparison.notFound')})</span></>}
               </th>
             ))}
           </tr>
@@ -50,7 +51,7 @@ export function ExplanationBlock({ explanation }: { explanation: NonNullable<Gui
       <ol className="plain-list">
         {explanation.sentences.map((x, i) => (
           <li key={i}>
-            <span {...aiMark()}>{x.text}</span> <Link to={`/resource/${x.resourceId}`} className="small">{x.title}</Link>
+            <span {...aiMark()}>{x.text}</span> <Link to={resourcePath(x.resourceId)} className="small">{x.title}</Link>
             <q>{x.quote}</q>
           </li>
         ))}

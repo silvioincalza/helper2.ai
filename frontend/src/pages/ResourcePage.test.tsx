@@ -108,6 +108,22 @@ describe('resource detail', () => {
     expect(await screen.findByText(/Runs locally with npx, copied from its README; not reviewed for safety/)).toBeInTheDocument();
   });
 
+  it('Try again on the steps keeps focus in the guide: on the steps heading, not the page body', async () => {
+    let n = 0;
+    mockApi({
+      [`GET /resources/${ID}`]: () => makeDetail({ card: makeCard({ type: 'LIBRARY', title: 'acme-lib' }) }),
+      [`GET /resources/${ID}/setup`]: () => ({ resourceId: ID, title: 'acme-lib', version: null, options: [], clients: [], sources: [] }),
+      [`POST /resources/${ID}/guide`]: () => (n++ === 0 ? problem(503, 'Unavailable') : STEPS),
+    });
+    renderApp(`/resource/${ID}`);
+    await userEvent.click(await screen.findByRole('button', { name: 'Guide me' }));
+    const retry = await screen.findByRole('button', { name: /Try again/ });
+    retry.focus();
+    await userEvent.keyboard('{Enter}');
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Step by step' })).toHaveFocus());
+    expect(screen.queryByRole('button', { name: /Try again/ })).not.toBeInTheDocument();
+  });
+
   it('without setup data or documents it says why', async () => {
     mockApi({
       [`GET /resources/${ID}`]: () => makeDetail({ card: makeCard({ type: 'LIBRARY', title: 'acme-lib' }) }),

@@ -6,20 +6,24 @@ import type { GuideResponse } from '@/api/types';
 import { Icon } from '@/components/Icon';
 import { PicksBar, type PicksState } from '@/components/ui/PicksBar';
 import type { GuideStream } from '@/hooks/useGuideStream';
+import { useRetry } from '@/hooks/useRetry';
 import { guidePicks } from '@/lib/selection';
 import { GuideAnswer } from './GuideAnswer';
 import { progressOf, readingParts } from './reading';
 import { WebSearchesLeft } from './WebSearchesLeft';
+import { resourcePath } from '@/lib/searchState';
 
 /**
  * The picks bar for the question in the URL: reading, then the picks, or one line when there is none. While the guide
  * works, the line says how it read the question and how many results it reads, as the steps arrive. An answer with
  * no AI pick but something to say (an explanation, a comparison, plain recommendations, notices) is shown in full
- * instead of the no-pick line. A pick that is not on this page of results links to its own page.
+ * instead of the no-pick line. A pick that is not on this page of results links to its own page. Try again moves
+ * focus to the bar's heading.
  */
 export function GuidePicks({ stream, loaded }: { stream: GuideStream; loaded: ReadonlySet<string> }) {
   const { t } = useTranslation();
-  const { answer, error, busy, refine, retry } = stream;
+  const { answer, error, busy, refine } = stream;
+  const { retry, focusRef } = useRetry(stream.retry, busy);
   const [, setSp] = useSearchParams();
   const picks = guidePicks(answer);
   const select = (id: string) => setSp((prev) => { const next = new URLSearchParams(prev); next.set('id', id); return next; }, { replace: true, preventScrollReset: true });
@@ -30,7 +34,7 @@ export function GuidePicks({ stream, loaded }: { stream: GuideStream; loaded: Re
   return (
     <div className="h2-results__guide">
       {error === null && !plainAnswer && (
-        <PicksBar state={state}>
+        <PicksBar state={state} titleRef={focusRef}>
           <ul className="h2-picks__chips">
             {picks.map((p) => (
               <li key={p.resourceId}>
@@ -39,7 +43,7 @@ export function GuidePicks({ stream, loaded }: { stream: GuideStream; loaded: Re
                     <b>#{p.rank}</b> {p.title}
                   </button>
                 ) : (
-                  <Link className="h2-pick-chip" to={`/resource/${encodeURIComponent(p.resourceId)}`}>
+                  <Link className="h2-pick-chip" to={resourcePath(p.resourceId)}>
                     <b>#{p.rank}</b> {p.title}
                   </Link>
                 )}

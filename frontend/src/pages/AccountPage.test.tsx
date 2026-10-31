@@ -61,6 +61,15 @@ describe('Feature: delete my account', () => {
     expect(reload).not.toHaveBeenCalled();
   });
 
+  it('Scenario: while the page asks who is signed in, it says it is loading', async () => {
+    let answer: (v: unknown) => void = () => {};
+    mockApi({ 'GET /me': () => new Promise((r) => { answer = r; }) });
+    renderApp('/account');
+    expect(within(screen.getByRole('main')).getByRole('status')).toHaveTextContent('Loading…');
+    answer(USER);
+    expect(await screen.findByRole('button', { name: 'Delete my account' })).toBeInTheDocument();
+  });
+
   it('Scenario: a visitor who is not signed in has no account to delete', async () => {
     mockApi({ 'GET /me': () => ANON });
     renderApp('/account');

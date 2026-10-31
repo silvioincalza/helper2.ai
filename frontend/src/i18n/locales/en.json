@@ -4,6 +4,8 @@
     "yes": "Yes",
     "no": "No",
     "retry": "Try again",
+    "copy": "Copy",
+    "copied": "Copied",
     "loading": "Loading…",
     "optional": "optional",
     "opensNewTab": "(opens in a new tab)"
@@ -567,11 +569,10 @@
     "noAi": "Top search result, no AI reasoning",
     "noFit": "The AI found nothing in the results that clearly fits your need. Showing the best search results instead.",
     "promptTitle": "Ready-to-use prompt",
-    "promptAi": "Written by AI",
+    "promptAi": "AI-written",
     "basedOn": "Adapted from catalog prompts:",
     "promptReview": "Third parties wrote the prompts it adapts. Read it before you paste it, and never add a password or key it asks for.",
     "copy": "Copy prompt",
-    "copied": "Copied",
     "answeredBy": "Planning: {{fast}} · Choosing: {{reasoning}} · on {{provider}}",
     "status": {
       "OK": "All AI suggestions passed the evidence check.",
@@ -608,6 +609,7 @@
     "askedFor": "You asked for:",
     "best": "Best match",
     "understood": "Understood as",
+    "requirementsAi": "Requirements AI-written",
     "remove": "Remove “{{part}}” and ask again",
     "intent": {
       "SUGGEST": "Suggestions",
@@ -694,7 +696,7 @@
       {
         "title": "How we mark AI text",
         "items": [
-          "On the screen, every text written by an AI model has a label, such as “AI”, “AI reasoning”, “AI summary” or “Extracted by AI”.",
+          "On the screen, every text written by an AI model has a label next to it: “AI-written” in the guide’s picks bar, on its requirements and search terms, on its reasons in the result list and the preview, and on its comparison, explanation and prompt; “Model’s explanation” over a reason in a pick; “AI summary” and “Extracted by AI” on a description or a value in the preview and on the resource page; and “Steps written by AI” in the setup guide.",
           "In the page, the same text carries the HTML attribute data-ai-generated=\"true\", and data-ai-model with the model name when we know it.",
           "In our API, a guide answer has an aiContent object that names the provider, the models and the fields they wrote. Catalog values carry an origin such as AI_SUMMARY or AI_EXTRACTED.",
           "Quotes, titles and links are never written by AI. They come from the sources."
@@ -915,8 +917,6 @@
     "docs": "{{client}} docs",
     "from": "From its Official MCP Registry entry, version {{version}}, read {{date}}.",
     "registryEntry": "Registry entry",
-    "copy": "Copy",
-    "copied": "Copied",
     "connectTitle": "Connect it to your AI tool",
     "command": "Runs locally with {{cmd}}, copied from its README; not reviewed for safety, so read it before you run it",
     "fromReadme": "From the config example in its README, read {{date}}.",
@@ -924,11 +924,11 @@
     "stepsTitle": "Step by step",
     "reading": "Reading its documentation… (up to half a minute)",
     "stepsError": "The guide could not be loaded now.",
-    "stepsNote": "Steps chosen by AI from the tool's own documentation. Every quote and command below is copied exactly from it; commands are not reviewed for safety, so read each one before you run it.",
+    "stepsNote": "Steps written by AI from the tool's own documentation. Every quote and command below is copied exactly from it; commands are not reviewed for safety, so read each one before you run it.",
     "caution": "This command runs a downloaded script, uses sudo, opens permissions to everyone or deletes files. Read it before you run it.",
     "quoteLabel": "Where the {{doc}} says this",
     "readOn": "read {{date}}",
-    "writtenBy": "steps chosen by {{model}}",
+    "writtenBy": "steps written by {{model}}",
     "section": {
       "REQUIREMENTS": "What you need first",
       "INSTALL": "Install",

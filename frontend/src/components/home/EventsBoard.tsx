@@ -5,6 +5,7 @@ import { useApi } from '@/hooks/useApi';
 import { countdown, daysUntil } from '@/lib/countdown';
 import { shortDay } from '@/lib/format';
 import { HomeBoard, type BoardRow } from './HomeBoard';
+import { resourcePath } from '@/lib/searchState';
 
 /** As many as the API gives (60, enough for three months); only those starting in the next three months are listed. */
 const EVENTS_SHOWN = 60;
@@ -41,7 +42,7 @@ export function EventsBoard() {
       status: left ? t(`board.countdown.${left.key}`, 'count' in left ? { count: left.count } : {}) : '',
       tone: i === 0 ? 'next' : 'later',
       title: card.title,
-      href: `/resource/${encodeURIComponent(card.id)}`,
+      href: resourcePath(card.id),
     };
   });
   return (

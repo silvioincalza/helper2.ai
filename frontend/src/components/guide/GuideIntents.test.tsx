@@ -147,10 +147,25 @@ describe('GuideAnswer marks every planner-written text (EU AI Act Art. 50(2), AD
     expect(screen.getByRole('button', { name: 'Remove “free” and ask again' }).closest('[data-ai-generated]')).toBeNull();
     expect(screen.getByText('Ollama', { selector: '.understood-chip' }).closest('[data-ai-generated]')).toBeNull();
     expect(screen.getByText('Licence')).toHaveAttribute('data-ai-generated', 'true');
+    // Art. 50: the AI-written requirements carry one label on screen for the group.
+    expect(screen.getAllByText('Requirements AI-written')).toHaveLength(1);
+  });
+
+  it('gives no requirements label when no requirement is AI-written', () => {
+    view({ ...base, constraints: [] });
+    expect(screen.queryByText('Requirements AI-written')).not.toBeInTheDocument();
+  });
+
+  it('labels the planner-written search terms in the proof strip as AI-written', () => {
+    view({ ...base, model: { provider: 'nebius-token-factory', fastModel: 'nvidia/nemotron-nano', reasoningModel: 'r' } });
+    const terms = screen.getByText(/AI tools/);
+    expect(terms).toHaveAttribute('data-ai-model', 'nvidia/nemotron-nano');
+    expect(terms.nextElementSibling).toHaveTextContent('AI-written');
   });
 
   it('marks the planner-written search query when the answering model failed', () => {
     view({ ...base, status: 'LLM_UNAVAILABLE', model: null, aiContent: planner, searchQuery: 'speech recognition' });
     expect(screen.getByText(/speech recognition/)).toHaveAttribute('data-ai-model', 'nvidia/nemotron-nano');
+    expect(screen.getByText(/speech recognition/).parentElement).toHaveTextContent('AI-written');
   });
 });

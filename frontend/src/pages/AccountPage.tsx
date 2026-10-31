@@ -31,7 +31,7 @@ export default function AccountPage() {
     return undefined;
   }, [confirming]);
 
-  if (!loaded) return null;
+  if (!loaded) return <p role="status">{t('common.loading')}</p>;
   if (!me.authenticated) {
     return (
       <div className="h2-text-page">

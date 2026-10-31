@@ -100,7 +100,7 @@ describe('design v2 resource page', () => {
     const step = await screen.findByText('Install it with npm.');
     expect(step).toHaveAttribute('data-ai-generated', 'true');
     expect(step).toHaveAttribute('data-ai-model', 'nemotron-nano');
-    expect(screen.getByText(/Steps chosen by AI/)).toBeInTheDocument();
+    expect(screen.getByText(/Steps written by AI/)).toBeInTheDocument();
   });
 
   it('has no axe violations', async () => {

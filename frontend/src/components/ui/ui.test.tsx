@@ -2,6 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axeViolations } from '@/test/a11y';
 import { makeStatus } from '@/test/fixtures';
+import { CopyButton } from './CopyButton';
 import { PicksBar } from './PicksBar';
 import { ProofQuote } from './ProofQuote';
 import { SelectableRow } from './SelectableRow';
@@ -124,5 +125,21 @@ describe('PicksBar', () => {
     expect(picks).toHaveAttribute('data-ai-model', 'nvidia/nemotron-3-super');
     expect(within(bar).queryByRole('status')).toBeNull();
     expect(await axeViolations(container)).toEqual([]);
+  });
+});
+
+describe('CopyButton', () => {
+  it('copies its text and says so on the button', async () => {
+    const user = userEvent.setup();
+    const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue();
+    render(<CopyButton text="npx server" label="Copy prompt" />);
+    await user.click(screen.getByRole('button', { name: 'Copy prompt' }));
+    expect(writeText).toHaveBeenCalledWith('npx server');
+    expect(screen.getByRole('button', { name: 'Copied' })).toBeInTheDocument();
+  });
+
+  it('is named Copy when the snippet needs no other name', () => {
+    render(<CopyButton text="x" />);
+    expect(screen.getByRole('button', { name: 'Copy' })).toBeInTheDocument();
   });
 });

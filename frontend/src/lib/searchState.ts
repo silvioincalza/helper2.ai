@@ -184,6 +184,11 @@ export function refinedParams(sp: URLSearchParams, r: Partial<Refinement>): URLS
 /** Where results live (ADR 0040, 3): / is only the home page; /?q=… keeps working and names /search as canonical. */
 export const RESULTS_PATH = '/search';
 
+/** The path of a resource page (ADR 0040, 4), the id encoded so it stays one path segment. */
+export function resourcePath(id: string): string {
+  return `/resource/${encodeURIComponent(id)}`;
+}
+
 /**
  * The home URL for [state] plus, optionally, the question the guide should answer. When that is the question
  * [current] already asks, its refinement stays; a new question starts without one.

@@ -12,6 +12,7 @@ import { useTitle } from '@/hooks/useTitle';
 import { formatDate } from '@/lib/format';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
 import { ResourceV2 } from '@/components/results/ResourceV2';
+import { resourcePath } from '@/lib/searchState';
 
 function RelList({ items }: { items: Relationship[] }) {
   const { t } = useTranslation();
@@ -20,7 +21,7 @@ function RelList({ items }: { items: Relationship[] }) {
       {items.map((r, i) => (
         <li key={`${r.kind}-${r.targetTitle}-${i}`}>
           <strong>{t(`relationship.${r.kind}`)}</strong>{' '}
-          {r.targetId ? <Link to={`/resource/${r.targetId}`}>{r.targetTitle}</Link> : r.targetTitle}{' '}
+          {r.targetId ? <Link to={resourcePath(r.targetId)}>{r.targetTitle}</Link> : r.targetTitle}{' '}
           <VerificationBadge verification={r.verification} />
           <EvidenceList evidence={r.evidence} />
         </li>

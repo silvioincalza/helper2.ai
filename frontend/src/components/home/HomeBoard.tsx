@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@/components/Icon';
 import { StatusPill, type StatusTone } from '@/components/ui/StatusPill';
+import { prefersReducedMotion, REDUCED_MOTION_QUERY } from '@/lib/motion';
 import './home-v2.css';
 
 /** One row of a board: when, what kind, from where, its status in words, and the name that opens it. */
@@ -20,17 +21,12 @@ export interface BoardRow {
 
 /** Fewer rows than this fit in view: the board does not loop. */
 const LOOP_MIN = 5;
-const REDUCE = '(prefers-reduced-motion: reduce)';
-
-function prefersReducedMotion(): boolean {
-  return typeof window.matchMedia === 'function' && window.matchMedia(REDUCE).matches;
-}
 
 function useReducedMotion(): boolean {
   const [reduce, setReduce] = useState(prefersReducedMotion);
   useEffect(() => {
     if (typeof window.matchMedia !== 'function') return;
-    const mq = window.matchMedia(REDUCE);
+    const mq = window.matchMedia(REDUCED_MOTION_QUERY);
     const onChange = () => setReduce(mq.matches);
     mq.addEventListener?.('change', onChange);
     return () => mq.removeEventListener?.('change', onChange);
