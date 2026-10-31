@@ -17,11 +17,12 @@ Node 24 (`.nvmrc`). On this machine: prefix commands with `PATH=/opt/homebrew/op
 ## Structure
 ```
 src/api        schema.ts (generated), types.ts (aliases), client.ts (typed fetch, CSRF, problem+json, guide stream)
-src/lib        searchState.ts (URL <-> state, guide refinement), locateQuote.ts, features.ts (flags), format.ts, bookmarks.ts (localStorage, try/catch)
+src/lib        searchState.ts (URL <-> state, guide refinement, RESULTS_PATH), selection.ts (selected result, picks), countdown.ts, locateQuote.ts, features.ts (SAVED_ENABLED), format.ts, bookmarks.ts (localStorage, try/catch)
 src/context    MeContext (GET /me), BookmarksContext (local, merged once to server on sign-in)
 src/hooks      useApi (keyed fetch with AbortController, recent-answers cache, ADR 0039), useGuideStream (guide SSE for the URL's question), useTitle
-src/components cards, badges, filter panel, source status panel, glossary Term, ...
-  ui/          design v2 shared components (ADR 0040, behind NEW_DESIGN_ENABLED): TypeTag, StatusPill, ProofQuote, SourceTiles, SelectableRow, PicksBar; own ui.css
+src/components layout, one box, guide answer, badges, filter panel, glossary Term, ...
+  ui/          shared parts of the design (ADR 0040): TypeTag, StatusPill, ProofQuote, SourceTiles, SelectableRow, PicksBar; own ui.css
+  home/        News and Events boards; results/ results page, preview, resource page; saved/, sources/
 src/pages      Home, Resource, Saved, Sources, Account, Admin, Mission, Privacy, Terms, NotFound (one entry chunk)
 src/i18n       index.ts + locales/{en,it}.json
 src/test       fixtures, fetch mock, render helper, axe helper

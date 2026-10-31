@@ -6,7 +6,6 @@ import { makeCard, makeDetail, makeSearch, makeStatus } from '@/test/fixtures';
 import { mockApi, sse } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
 
-vi.mock('@/lib/features', () => ({ SAVED_ENABLED: false, NEW_DESIGN_ENABLED: true }));
 
 const PG = makeCard({
   id: 'bbbbbbbb-bbbb-5bbb-8bbb-bbbbbbbbbbbb', title: 'Postgres MCP', type: 'MCP_SERVER', url: 'https://github.com/acme/postgres-mcp',
@@ -30,7 +29,7 @@ const STEPS: ToolGuide = {
   documents: [{ key: 'readme', kind: 'README', url: 'https://github.com/acme/postgres-mcp', retrievedAt: '2026-10-28T00:00:00Z' }],
 };
 
-describe('design v2 resource page (flag on)', () => {
+describe('design v2 resource page', () => {
   it('opened from a guide pick: shows the checked sentence highlighted, and the back link returns to the same search and result', async () => {
     mockApi({
       'GET /search': () => makeSearch({ results: [PG], total: 1, sources: [makeStatus()] }),

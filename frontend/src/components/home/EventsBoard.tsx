@@ -1,21 +1,29 @@
 import { useTranslation } from 'react-i18next';
 import { api } from '@/api/client';
-import type { UpcomingEventsResponse } from '@/api/types';
-import { EVENTS_SHOWN, startsSoon } from '@/components/NextEvents';
+import type { ResultCard, UpcomingEventsResponse } from '@/api/types';
 import { useApi } from '@/hooks/useApi';
 import { countdown, daysUntil } from '@/lib/countdown';
 import { shortDay } from '@/lib/format';
 import { HomeBoard, type BoardRow } from './HomeBoard';
 
+/** As many as the API gives (60, enough for three months); only those starting in the next three months are listed. */
+const EVENTS_SHOWN = 60;
+const WINDOW_DAYS = 90;
+
+/** Starts within WINDOW_DAYS of `now` (the server's `generatedAt`, so the window follows the server's clock). */
+function startsSoon(card: ResultCard, now: number): boolean {
+  const start = Date.parse(card.timeline.eventStart?.value ?? '');
+  return Number.isNaN(now) || Number.isNaN(start) || start <= now + WINDOW_DAYS * 86_400_000;
+}
+
 /**
- * Events: the next three months, soonest first, only events whose source states the dates (GET /events/upcoming, the
- * same request as the old Next events list). The status says how far away each one is; the next one stands out.
+ * Events: the next three months, soonest first, only events whose source states the dates (GET /events/upcoming). The status says how far away each one is; the next one stands out.
  */
 export function EventsBoard() {
   const { t, i18n } = useTranslation();
   const feed = useApi<UpcomingEventsResponse>('next-events', (signal) =>
     api.listUpcomingEvents(new URLSearchParams({ size: String(EVENTS_SHOWN) }), signal));
-  // The server's clock (generatedAt) decides the window and the countdown, as in the old Next events list.
+  // The server's clock (generatedAt) decides the window and the countdown.
   const now = Date.parse(feed.data?.generatedAt ?? '');
   const cards = (feed.data?.items ?? []).filter((card) => startsSoon(card, now));
   const rows: BoardRow[] = cards.map((card, i) => {

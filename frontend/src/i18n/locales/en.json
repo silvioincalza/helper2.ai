@@ -57,13 +57,10 @@
   },
   "home": {
     "title": "Describe what you need.",
-    "lede": "Tools, models, MCP servers, libraries and papers. NVIDIA Nemotron picks from real search results, and every pick shows the sentence that proves it.",
     "suggestGuide": "Sounds like a question — ask the guide: “{{q}}” →",
     "examples": "Try an example",
     "eyebrow": "AI on your radar",
     "titleAccent": "Get picks you can verify.",
-    "sourcesLine_one": "Searches {{count}} disclosed source",
-    "sourcesLine_other": "Searches {{count}} disclosed sources",
     "hint": "A few words search every source. A sentence, or Shift+Enter, asks the guide.",
     "example": {
       "postgres": {
@@ -95,7 +92,6 @@
     "queryingSource": "{{name}}: querying…",
     "errorTitle": "Search is unavailable",
     "errorBody": "We could not reach the Helper2.ai service. Nothing was searched.",
-    "partialTitle": "Partial results.",
     "partialBody": "Only {{ok}} of {{total}} queried sources responded, so these results may be incomplete.",
     "noticeInfo": "Notice",
     "noticeWarning": "Warning",
@@ -107,7 +103,6 @@
     "emptyTryOther": "Try different or fewer words.",
     "allFailedTitle": "No source responded",
     "allFailedBody": "None of the listed sources returned an answer, so nothing was actually searched. This is not the same as \"no results\". Try again in a moment.",
-    "emptySearched": "Sources searched:",
     "notice": {
       "CACHE_UNAVAILABLE": "Cache unavailable: every source was queried live for this search.",
       "INDEX_UNAVAILABLE": "Helper2 index unavailable: discovery dates are unknown for this search.",
@@ -153,33 +148,10 @@
     "openSource": "Open source"
   },
   "sources": {
-    "panelTitle": "Source status",
-    "summary": "{{ok}} of {{total}} sources responded",
-    "show": "Show details",
-    "hide": "Hide details",
-    "count": {
-      "FAILED_one": "{{count}} failed",
-      "FAILED_other": "{{count}} failed",
-      "TIMED_OUT_one": "{{count}} timed out",
-      "TIMED_OUT_other": "{{count}} timed out",
-      "RATE_LIMITED_one": "{{count}} rate limited",
-      "RATE_LIMITED_other": "{{count}} rate limited",
-      "SKIPPED_one": "{{count}} skipped",
-      "SKIPPED_other": "{{count}} skipped",
-      "STALE_one": "{{count}} from stale cache",
-      "STALE_other": "{{count}} from stale cache"
-    },
+    "latencyMs": "{{ms}} ms",
     "col": {
-      "source": "Source",
-      "mode": "Mode",
-      "outcome": "Outcome",
-      "servedFrom": "Served from",
-      "results": "Results",
-      "latency": "Latency",
-      "checkedAt": "Checked at",
-      "cachedAt": "Cached at"
-    },
-    "latencyMs": "{{ms}} ms"
+      "source": "Source"
+    }
   },
   "outcome": {
     "SUCCEEDED": "Succeeded",
@@ -435,11 +407,8 @@
     "terms": "Terms",
     "neverChecked": "Never checked",
     "col": {
-      "enabled": "Enabled",
-      "types": "Resource types",
       "terms": "Terms",
-      "attribution": "Attribution",
-      "lastOutcome": "Last outcome"
+      "attribution": "Attribution"
     }
   },
   "admin": {
@@ -622,37 +591,7 @@
       "ENDED_EARLY": "The connection closed before the answer arrived. Please try again."
     },
     "sources": "Sources searched",
-    "close": "Close the guide answer",
     "quoteChecked": "Quote checked",
-    "step": {
-      "plannedTitle": "Understanding your need",
-      "plannedRun": "Turning your words into search terms",
-      "plannedDone": "Search terms: “{{q}}”",
-      "retrievedTitle": "Searching the sources",
-      "retrievedRun": "Waiting for every source to answer",
-      "retrievedDone": "{{n}} real candidates · {{ok}} of {{all}} sources answered",
-      "chosenTitle": "Nemotron is choosing",
-      "chosenRun": "Reading the candidates",
-      "chosenDone_one": "{{count}} pick proposed",
-      "chosenDone_other": "{{count}} picks proposed",
-      "validatedTitle": "Checking each quote against the source",
-      "validatedRun": "Matching each quote with the resource’s own text",
-      "validatedDone": "{{kept}} kept · {{rejected}} rejected",
-      "checkedTitle": "Checking each reason against its quote",
-      "checkedRun": "A second model call checks that each explanation stays within its quote",
-      "checkedDone": "Checked the reasons: {{supported}} supported, {{removed}} removed",
-      "checkedNotChecked_one": "{{count}} not checked",
-      "checkedNotChecked_other": "{{count}} not checked",
-      "finishing": "Preparing the answer"
-    },
-    "stepState": {
-      "done": "done",
-      "active": "in progress",
-      "waiting": "not started"
-    },
-    "elapsed": "{{s}} s",
-    "progressLabel": "How the guide is answering",
-    "sourcesLabel": "Sources and their outcome",
     "howMade": "How this answer was made",
     "strip": {
       "planned": "1 · Planned",
@@ -703,8 +642,6 @@
     }
   },
   "events": {
-    "title": "Next events",
-    "lede": "AI conferences, hackathons, meetups, talks and workshops in the next three months, online or in person, soonest first. Only events whose source states the dates are listed.",
     "error": "Could not load the next events.",
     "empty": "No events with stated dates in the next three months.",
     "kind": {
@@ -729,10 +666,6 @@
     "noDate": "Date unknown",
     "empty": "Nothing with a stated publication date in the last 7 days.",
     "error": "Could not load what’s new right now."
-  },
-  "carousel": {
-    "pause": "Pause {{label}}",
-    "play": "Play {{label}}"
   },
   "textPage": {
     "onThisPage": "On this page"

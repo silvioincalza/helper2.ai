@@ -1,10 +1,12 @@
-import { act, screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockApi } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
-import { makeRecent } from '@/test/fixtures';
 
-describe('home: one page, one box', () => {
+/** The result list: a title also shows in the preview of the selected row. */
+const results = async () => within(await screen.findByRole('list', { name: 'Search results' }));
+
+describe('one box', () => {
   it('has one search box and one button whose job follows the text, with no mode switch', async () => {
     mockApi();
     renderApp('/');
@@ -31,28 +33,28 @@ describe('home: one page, one box', () => {
     await waitFor(() => expect(m.callsTo('POST', '/guide/stream')).toHaveLength(2));
   });
 
-  it('Enter searches on the same page', async () => {
+  it('Enter on the home page opens the results on /search, and focus lands on the results heading', async () => {
     const m = mockApi();
     const { router, params } = renderApp('/');
     await userEvent.type(screen.getByRole('searchbox'), 'mcp github{Enter}');
-    await waitFor(() => expect(params().get('q')).toBe('mcp github'));
-    expect(router.state.location.pathname).toBe('/');
-    expect(await screen.findByText('Acme Translator')).toBeInTheDocument();
+    await waitFor(() => expect(router.state.location.pathname).toBe('/search'));
+    expect(params().get('q')).toBe('mcp github');
+    expect(await (await results()).findByText('Acme Translator')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('heading', { level: 1 })).toHaveFocus());
     const own = m.callsTo('GET', '/search').find((c) => new URLSearchParams(c.search).get('q') === 'mcp github');
-    expect(own).toBeDefined();
     expect(new URLSearchParams(own?.search).get('path')).toBeNull();
+    await settle();
   });
 
-  it('typing searches live once the user pauses, not on every letter', async () => {
+  it('on the results, typing searches live once the user pauses, not on every letter', async () => {
     const m = mockApi();
-    const { params } = renderApp('/');
+    const { params } = renderApp('/search?q=mcp');
+    await (await results()).findByText('Acme Translator');
+    await userEvent.clear(screen.getByRole('searchbox'));
     await userEvent.type(screen.getByRole('searchbox'), 'rag library');
     await waitFor(() => expect(params().get('q')).toBe('rag library'), { timeout: 2000 });
-    await screen.findByText('Acme Translator');
-    // One search for the typed text (the Radar reads /recent, not /search).
-    const typed = m.callsTo('GET', '/search');
-    expect(typed).toHaveLength(1);
-    expect(new URLSearchParams(typed[0]?.search).get('q')).toBe('rag library');
+    await settle();
+    expect(m.callsTo('GET', '/search').map((c) => new URLSearchParams(c.search).get('q'))).toEqual(['mcp', 'rag library']);
   });
 
   it('an example both searches and asks the guide', async () => {
@@ -67,38 +69,16 @@ describe('home: one page, one box', () => {
     expect(params().get('ask')).toBe('translate documents between languages for free');
   });
 
-  it('the empty home shows the Radar from the index: no live search, the last 7 days, one request', async () => {
-    const m = mockApi();
-    renderApp('/');
-    expect(await screen.findByRole('heading', { name: 'What’s new' })).toBeInTheDocument();
-    expect(screen.queryByRole('combobox', { name: 'Topics' })).not.toBeInTheDocument();
-    await screen.findByRole('link', { name: 'Fresh MCP server' });
-    expect(m.callsTo('GET', '/search')).toHaveLength(0);
-    const first = new URLSearchParams(m.callsTo('GET', '/recent')[0]?.search);
-    expect(first.get('days')).toBe('7');
-    expect(first.getAll('type')).not.toContain('NEWS');
-    expect(m.callsTo('GET', '/recent')).toHaveLength(1);
-  });
 
-  it('the hero links to the sources in one line, and how the guide works lives on /mission', async () => {
-    mockApi();
-    renderApp('/');
-    expect(await screen.findByRole('link', { name: /^Searches \d+ disclosed sources?$/ })).toHaveAttribute('href', '/sources');
-    expect(screen.queryByRole('heading', { name: 'How the guide answers' })).not.toBeInTheDocument();
-  });
 
-  it('the Radar says so when nothing has a stated date, and offers retry on error', async () => {
-    mockApi({ 'GET /recent': () => makeRecent({ items: [] }) });
-    renderApp('/');
-    expect(await screen.findByText(/Nothing with a stated publication date/)).toBeInTheDocument();
-  });
 
-  it('the header box works from any page and takes you home', async () => {
+  it('the header box works from any page and opens the results', async () => {
     mockApi();
     const { router, params } = renderApp('/mission');
     await userEvent.type(screen.getByRole('searchbox'), 'vector database{Enter}');
-    await waitFor(() => expect(router.state.location.pathname).toBe('/'));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/search'));
     expect(params().get('q')).toBe('vector database');
+    await settle();
   });
 
   it('/saved goes home while Saved is on the roadmap', async () => {
@@ -126,10 +106,11 @@ describe('home: one page, one box', () => {
 
   it('live search does not rewrite the box: a trailing space survives the URL update', async () => {
     mockApi();
-    const { params } = renderApp('/');
+    const { params } = renderApp('/search?q=mcp');
+    await (await results()).findByText('Acme Translator');
+    await userEvent.clear(screen.getByRole('searchbox'));
     await userEvent.type(screen.getByRole('searchbox'), 'rag library ');
     await waitFor(() => expect(params().get('q')).toBe('rag library'), { timeout: 2000 });
-    await screen.findByText('Acme Translator');
     expect(screen.getByRole('searchbox')).toHaveValue('rag library ');
   });
 
@@ -161,22 +142,20 @@ describe('home: one page, one box', () => {
 
   it('clearing the box and pressing Enter returns to the empty home', async () => {
     mockApi();
-    const { router } = renderApp('/?q=translate&type=MODEL');
-    await screen.findByText('Acme Translator');
+    const { router } = renderApp('/search?q=translate&type=MODEL');
+    await (await results()).findByText('Acme Translator');
     await userEvent.clear(screen.getByRole('searchbox'));
     await userEvent.type(screen.getByRole('searchbox'), '{Enter}');
     await waitFor(() => expect(router.state.location.search).toBe(''));
     expect(await screen.findByRole('heading', { name: 'Try an example' })).toBeInTheDocument();
   });
 
-  it('the home strip, the search and the Sources page share one GET /sources', async () => {
+  it('the search and the Sources page share one GET /sources', async () => {
     const m = mockApi();
-    const { router } = renderApp('/');
-    await screen.findByRole('link', { name: /^Searches 2 disclosed sources$/ });
-    await act(() => router.navigate('/?q=translate'));
-    await screen.findByText('Acme Translator');
+    const { router } = renderApp('/search?q=translate');
+    await (await results()).findByText('Acme Translator');
     await act(() => router.navigate('/sources'));
-    await screen.findByRole('table');
+    await screen.findByRole('heading', { level: 1, name: /Sources/ });
     expect(m.callsTo('GET', '/sources')).toHaveLength(1);
     await settle();
   });
@@ -184,7 +163,7 @@ describe('home: one page, one box', () => {
   it('the loading feeds nest no status role inside their live regions', async () => {
     mockApi({ 'GET /recent': () => new Promise(() => undefined), 'GET /events/upcoming': () => new Promise(() => undefined) });
     renderApp('/');
-    expect(await screen.findByRole('heading', { name: 'What’s new' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /News/ })).toBeInTheDocument();
     expect(document.querySelectorAll('[aria-busy="true"]').length).toBeGreaterThanOrEqual(2);
     expect(document.querySelectorAll('[aria-live] [role="status"]')).toHaveLength(0);
   });

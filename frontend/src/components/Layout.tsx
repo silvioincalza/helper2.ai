@@ -5,7 +5,7 @@ import { signOut } from '@/api/client';
 import { useMe } from '@/context/MeContext';
 import { LANGUAGES, setLanguage } from '@/i18n';
 import { chooseTheme, currentChoice, nextChoice, subscribeTheme, type ThemeChoice } from '@/lib/theme';
-import { NEW_DESIGN_ENABLED, SAVED_ENABLED } from '@/lib/features';
+import { SAVED_ENABLED } from '@/lib/features';
 import { RESULTS_PATH } from '@/lib/searchState';
 import { Logo } from './Logo';
 import { OneBox } from './OneBox';
@@ -44,16 +44,14 @@ export function Header() {
       <div className="container header-row">
         <Link to="/" className="logo-link" aria-label={t('nav.home')}><Logo /></Link>
         {/* Search is the home page (the logo goes there); the menu only lists the pages that are on. */}
-        {(SAVED_ENABLED || isAdmin || NEW_DESIGN_ENABLED) && (
-          <nav aria-label={t('nav.main')} className="main-nav">
-            <ul className="plain-list">
-              {SAVED_ENABLED && <li><NavLink to="/saved">{t('nav.saved')}</NavLink></li>}
-              {NEW_DESIGN_ENABLED && <li><NavLink to="/sources">{t('nav.sources')}</NavLink></li>}
-              {NEW_DESIGN_ENABLED && <li><NavLink to="/mission">{t('nav.mission')}</NavLink></li>}
-              {isAdmin && <li><NavLink to="/admin">{t('nav.admin')}</NavLink></li>}
-            </ul>
-          </nav>
-        )}
+        <nav aria-label={t('nav.main')} className="main-nav">
+          <ul className="plain-list">
+            {SAVED_ENABLED && <li><NavLink to="/saved">{t('nav.saved')}</NavLink></li>}
+            <li><NavLink to="/sources">{t('nav.sources')}</NavLink></li>
+            <li><NavLink to="/mission">{t('nav.mission')}</NavLink></li>
+            {isAdmin && <li><NavLink to="/admin">{t('nav.admin')}</NavLink></li>}
+          </ul>
+        </nav>
         <div className="header-tools">
           <ThemeToggle />
           {LANGUAGES.length > 1 && (
@@ -134,7 +132,7 @@ export function Footer() {
       <div className="container footer-bottom small">
         {t('footer.copyright', { year: new Date().getFullYear() })}
         {/* Design v2: no claim about tracking, so the footer stays true when tracking cookies come (ADR 0040, 9). */}
-        {NEW_DESIGN_ENABLED && <span className="footer-no-ads"> · {t('footer.noAds')}</span>}
+        <span className="footer-no-ads"> · {t('footer.noAds')}</span>
       </div>
     </footer>
   );

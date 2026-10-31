@@ -1,9 +1,10 @@
-# Flowchart: design v2 from the home page to the guide picks. Built: the home page (empty box: hero and the News and
-# Events boards; a search opens /search, /?q= names /search as canonical). Planned: the results page. Shows the list shown at once, the reserved picks bar, the guide answer arriving over SSE (picks or no pick),
-# badges in place with no re-order, and the selected result kept in the URL with replaceState.
-# Source of truth: docs/adr/0040-frontend-design-v2.md (built: frontend/src/pages/HomePage.tsx, pages/HomeV2.tsx,
-#   components/home/HomeBoard.tsx, NewsBoard.tsx, EventsBoard.tsx, routes.tsx, components/ui/PicksBar.tsx,
-#   hooks/useGuideStream.ts; planned: SearchResults.tsx, GuideAnswer.tsx).
+# Flowchart: design v2 from the home page to the guide picks. An empty / is the home page (hero, News and Events
+# boards); a search opens /search, and /?q= names /search as canonical. The list shows at once; the guide runs only
+# for a question (4+ words or Shift+Enter): its picks bar is reserved, the answer arrives over SSE (picks or no pick),
+# badges stay in place with no re-order, and the selected result is kept in the URL with replace.
+# Source of truth: docs/adr/0040-frontend-design-v2.md; frontend/src/pages/HomePage.tsx, pages/HomeV2.tsx,
+#   components/home/HomeBoard.tsx, NewsBoard.tsx, EventsBoard.tsx, routes.tsx, components/OneBox.tsx,
+#   components/results/ResultsV2.tsx, lib/selection.ts, components/ui/PicksBar.tsx, hooks/useGuideStream.ts.
 # Render: cd docs/diagrams && d2 fmt flow-0040-frontend-design-v2.d2 && d2 flow-0040-frontend-design-v2.d2 flow-0040-frontend-design-v2.svg
 
 ...@style
@@ -13,7 +14,7 @@ direction: down
 open: "Open /" {class: app}
 empty: "Box empty?\n(no q, no ask)" {class: decision}
 
-home: Home (built) {
+home: Home {
   class: group
   direction: down
   hero: "Hero: the one box\nand three examples" {class: app}
@@ -25,7 +26,10 @@ home: Home (built) {
 canonical: "/?q=…: the results,\ncanonical link to /search" {class: app}
 start: "Search from the box or an example:\n/search?q=…" {class: app}
 results: "GET /api/v1/search" {class: ext}
-show: "Show the list at once.\nReserve the picks bar:\n\"Guide is reading N candidates…\"" {class: app}
+show: "Show the list at once" {class: app}
+question: "A question?\n(4+ words or Shift+Enter)" {class: decision}
+nobar: "No picks bar,\nno model call" {class: end}
+reserve: "Reserve the picks bar:\n\"Guide is reading…\"" {class: app}
 wide: "Screen wider than 860 px?" {class: decision}
 preview: "Preview on the right" {class: app}
 inline: "Preview inside the list,\nlink to /resource/:id" {class: app}
@@ -41,13 +45,13 @@ answer: Picks {
   bar -> badge -> still
 }
 
-none: "Bar shrinks to one line:\n\"No pick: no result had a sentence that proves it\"" {class: end}
+none: "Bar shrinks to one line;\nthe full answer opens under it" {class: end}
 
 select: Selecting a result {
   class: group
   direction: down
   tap: "Click a row or a pick chip" {class: app}
-  url: "replaceState ?q=…&id=…\n(no new Back step)" {class: app}
+  url: "replace ?q=…&id=…\n(no new Back step)" {class: app}
   known: "id in the results?" {class: decision}
   sel: "Select that row" {class: end}
   first: "Select the first row" {class: end}
@@ -60,7 +64,10 @@ start -> results -> show
 show -> wide
 wide -> preview: yes
 wide -> inline: no
-show -> guide: {class: hot}
+show -> question
+question -> nobar: no
+question -> reserve: yes {class: hot}
+reserve -> guide: {class: hot}
 guide -> picks
 picks -> answer.bar: yes {class: hot}
 picks -> none: no

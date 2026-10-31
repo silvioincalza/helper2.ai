@@ -195,29 +195,23 @@ describe('guide on the one page', () => {
     expect(m.callsTo('POST', '/guide/stream')[0]?.body).toEqual({ request: 'MCP server for Slack' });
   });
 
-  it('old /guide?q= links ask the guide on the one page', async () => {
+  it('old /guide?q= links ask the guide on the results page', async () => {
     const m = mockApi({ 'POST /guide/stream': () => sse(makeGuide()) });
     const { router } = renderApp('/guide?q=MCP+server+for+Slack&path=BUILD_WITH_AI');
     expect(await screen.findByRole('link', { name: 'Postgres MCP' })).toBeInTheDocument();
-    expect(router.state.location.pathname).toBe('/');
+    expect(router.state.location.pathname).toBe('/search');
     expect(m.callsTo('POST', '/guide/stream')[0]?.body).toEqual({ request: 'MCP server for Slack' });
   });
 
-  it('while the guide answers: spinner status and busy region, both cleared on success', async () => {
+  it('while the guide answers the picks bar says it is reading, and the line goes once the answer is in', async () => {
     let release!: (r: Response) => void;
     mockApi({ 'POST /guide/stream': () => new Promise((r) => { release = r; }) });
     renderApp('/');
     await ask('an MCP server for Postgres');
-
-    const status = await screen.findByRole('status');
-    expect(status).toHaveTextContent('Understanding your need');
-    expect(status.querySelector('.spinner')).toHaveAttribute('aria-hidden', 'true');
-    expect(document.querySelector('.guide-panel [aria-busy="true"]')).not.toBeNull();
-
+    expect(await screen.findByText(/Guide is reading the results/)).toBeInTheDocument();
     release(sse(makeGuide()));
     expect(await screen.findByRole('link', { name: 'Postgres MCP' })).toBeInTheDocument();
-    expect(screen.queryByText('Understanding your need')).not.toBeInTheDocument();
-    expect(document.querySelector('.guide-panel [aria-busy="true"]')).toBeNull();
+    expect(screen.queryByText(/Guide is reading/)).not.toBeInTheDocument();
   });
 
   it('a failed guide request clears the spinner and offers a retry that asks again', async () => {
@@ -226,9 +220,9 @@ describe('guide on the one page', () => {
     renderApp('/');
     await ask('an MCP server for Postgres');
     expect(await screen.findByRole('alert')).toHaveTextContent('The model timed out.');
-    expect(screen.queryByText('Understanding your need')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Guide is reading/)).not.toBeInTheDocument();
 
-    await userEvent.click(within(screen.getByRole('region', { name: /an MCP server for Postgres/ })).getByRole('button', { name: /Try again/ }));
+    await userEvent.click(screen.getAllByRole('button', { name: /Try again/ })[0] as HTMLElement);
     expect(await screen.findByRole('link', { name: 'Postgres MCP' })).toBeInTheDocument();
     expect(m.callsTo('POST', '/guide/stream')).toHaveLength(2);
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
@@ -238,72 +232,35 @@ describe('guide on the one page', () => {
     const m = mockApi({ 'POST /guide/stream': ({ body }) => ((body as { request: string }).request.includes('Slack') ? sse(makeGuide()) : new Promise(() => undefined)) });
     renderApp('/');
     await ask('an MCP server for Postgres');
-    await screen.findByRole('status');
+    await screen.findByText(/Guide is reading/);
     await userEvent.clear(screen.getByLabelText(BOX));
     await ask('an MCP server for Slack');
     expect(await screen.findByRole('link', { name: 'Postgres MCP' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /an MCP server for Slack/ })).toBeInTheDocument();
     expect(m.callsTo('POST', '/guide/stream')).toHaveLength(2);
     const firstSignal = (m.fetchMock.mock.calls.find(([, init]) => String(init?.body).includes('Postgres'))?.[1] as RequestInit).signal;
     expect(firstSignal?.aborted).toBe(true);
   });
 
-  it('closing the panel mid-request aborts the stream', async () => {
-    const m = mockApi({ 'POST /guide/stream': () => new Promise(() => undefined) });
-    renderApp('/');
-    await ask('an MCP server for Postgres');
-    await screen.findByRole('status');
-    await userEvent.click(screen.getByRole('button', { name: 'Close the guide answer' }));
-    expect(screen.queryByRole('status')).not.toBeInTheDocument();
-    const init = m.fetchMock.mock.calls.find(([input]) => String(input).endsWith('/guide/stream'))?.[1];
-    expect(init?.signal?.aborted).toBe(true);
-  });
 
-  it('Shift+Enter asks the guide; closing the answer keeps the search', async () => {
+  it('Shift+Enter asks the guide even for a short text, and keeps it as the search', async () => {
     const m = mockApi({ 'POST /guide/stream': () => sse(makeGuide()) });
     const { params } = renderApp('/');
-    await userEvent.type(await screen.findByLabelText(BOX), 'an MCP server for Postgres{Shift>}{Enter}{/Shift}');
+    await userEvent.type(await screen.findByLabelText(BOX), 'postgres mcp{Shift>}{Enter}{/Shift}');
     expect(await screen.findByRole('link', { name: 'Postgres MCP' })).toBeInTheDocument();
     expect(m.callsTo('POST', '/guide/stream')).toHaveLength(1);
-    await userEvent.click(screen.getByRole('button', { name: 'Close the guide answer' }));
-    expect(screen.queryByRole('link', { name: 'Postgres MCP' })).not.toBeInTheDocument();
-    expect(params().get('ask')).toBeNull();
-    expect(params().get('q')).toBe('an MCP server for Postgres');
+    expect(params().get('ask')).toBe('postgres mcp');
+    expect(params().get('q')).toBe('postgres mcp');
+  });
+
+  it('a name search does not ask the guide: no picks bar, no model call', async () => {
+    const m = mockApi();
+    renderApp('/search?q=pgvector');
+    await screen.findByRole('list', { name: 'Search results' });
+    expect(screen.queryByRole('region', { name: 'Guide picks' })).not.toBeInTheDocument();
+    expect(m.callsTo('POST', '/guide/stream')).toHaveLength(0);
   });
 
 
-  it('shows each real step from the stream while the guide works, then the answer', async () => {
-    const enc = new TextEncoder();
-    let push!: (text: string) => void;
-    let end!: () => void;
-    const body = new ReadableStream<Uint8Array>({
-      start(c) {
-        push = (text) => c.enqueue(enc.encode(text));
-        end = () => c.close();
-      },
-    });
-    mockApi({ 'POST /guide/stream': () => new Response(body, { headers: { 'content-type': 'text/event-stream' } }) });
-    renderApp('/');
-    await ask('an MCP server for Postgres');
-
-    push('event:planned\ndata:{"searchQuery":"mcp server postgres","constraints":[],"model":"nvidia/nemotron-nano"}\n\n');
-    expect(await screen.findByText('Search terms: “mcp server postgres”')).toBeInTheDocument();
-    expect(screen.getByRole('status')).toHaveTextContent('Searching the sources');
-
-    push(`event:retrieved\ndata:${JSON.stringify({ candidates: 12, sources: [makeStatus()] })}\n\n`);
-    expect(await screen.findByText('12 real candidates · 1 of 1 sources answered')).toBeInTheDocument();
-    push('event:chosen\ndata:{"proposed":3}\n\nevent:validated\ndata:{"kept":1,"rejected":2}\n\n');
-    expect(await screen.findByText('1 kept · 2 rejected')).toBeInTheDocument();
-    expect(screen.getByRole('status')).toHaveTextContent('Checking each reason against its quote');
-    push('event:checked\ndata:{"supported":1,"removed":0,"notChecked":0}\n\n');
-    expect(await screen.findByText('Checked the reasons: 1 supported, 0 removed')).toBeInTheDocument();
-    expect(screen.getByRole('status')).toHaveTextContent('Preparing the answer');
-
-    push(`event:answer\ndata:${JSON.stringify(makeGuide())}\n\n`);
-    end();
-    expect(await screen.findByRole('link', { name: 'Postgres MCP' })).toBeInTheDocument();
-    expect(screen.queryByRole('status')).not.toBeInTheDocument();
-  });
 
   it('highlights the checked quote inside the resource’s own description', async () => {
     const base = makeGuide();

@@ -18,7 +18,7 @@ function event(title: string, start: string, end: string | null, location: strin
   });
 }
 
-describe('home page next events', () => {
+describe('home page Events board', () => {
   it('lists upcoming events with their stated days, place and source', async () => {
     mockApi({ 'GET /events/upcoming': () => ({ generatedAt: '2026-10-27T09:00:00Z', items: [
       event('NeurIPS 2026', '2026-12-06T00:00:00Z', '2026-12-12T00:00:00Z', 'Sydney, Australia'),
@@ -26,13 +26,16 @@ describe('home page next events', () => {
       event('Far Future Conf', '2027-03-01T00:00:00Z', null, null),
     ] }) });
     renderApp('/');
-    const section = (await screen.findByRole('heading', { name: 'Next events' })).closest('section') as HTMLElement;
-    const rows = await within(section).findAllByRole('listitem');
+    const section = (await screen.findByRole('heading', { name: 'Events' })).closest('section') as HTMLElement;
+    const rows = await within(await within(section).findByRole('list', { name: 'Next events' })).findAllByRole('listitem');
     expect(rows[0]).toHaveTextContent('NeurIPS 2026');
     expect(rows[0]).toHaveTextContent('Sydney, Australia');
-    expect(rows[0]).toHaveTextContent(/Dec.*6.*12.*2026|6.*12 Dec 2026/);
+    expect(rows[0]).toHaveTextContent('Dec 6');
+    expect(rows[0]).toHaveTextContent('In 6 weeks');
+    expect(rows[1]).toHaveTextContent('Jan 15');
+    expect(rows[1]).toHaveTextContent('In 3 months');
     expect(within(rows[0] as HTMLElement).getByRole('link', { name: 'NeurIPS 2026' })).toHaveAttribute('href', expect.stringContaining('/resource/'));
-    expect(rows[1]).toHaveTextContent(/Jan 15, 2027|15 Jan 2027/);
+
     // More than three months after generatedAt (27 Oct 2026): not listed.
     expect(within(section).queryByText('Far Future Conf')).not.toBeInTheDocument();
   });
@@ -44,12 +47,12 @@ describe('home page next events', () => {
       event('Unlabelled Day', '2026-11-25T00:00:00Z', null, null),
     ] }) });
     renderApp('/');
-    const section = (await screen.findByRole('heading', { name: 'Next events' })).closest('section') as HTMLElement;
-    const rows = await within(section).findAllByRole('listitem');
+    const section = (await screen.findByRole('heading', { name: 'Events' })).closest('section') as HTMLElement;
+    const rows = await within(await within(section).findByRole('list', { name: 'Next events' })).findAllByRole('listitem');
     expect(rows[0]).toHaveTextContent('Hackathon · Online');
     expect(rows[1]).toHaveTextContent('Meetup');
     expect(rows[1]).not.toHaveTextContent('Meetup ·');
-    expect(rows[2]?.querySelector('.event-kind')).toBeNull();
+    expect(rows[2]).not.toHaveTextContent(/Hackathon|Meetup|Conference|Talk|Workshop/);
   });
 
   it('says so when no event has stated dates', async () => {

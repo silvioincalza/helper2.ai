@@ -6,7 +6,6 @@ import { makeCard, makeRecent } from '@/test/fixtures';
 import { mockApi } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
 
-vi.mock('@/lib/features', () => ({ SAVED_ENABLED: false, NEW_DESIGN_ENABLED: true }));
 
 const day = (value: string) => ({ value, precision: 'DAY' as const, status: 'KNOWN' as const, sourceId: 'github', alternatives: [] });
 
@@ -30,7 +29,7 @@ function event(i: number, start: string): ResultCard {
 
 const board = async (name: string) => (await screen.findByRole('heading', { name, level: 2 })).closest('section') as HTMLElement;
 
-describe('design v2 home (flag on): only the home page', () => {
+describe('design v2 home: only the home page', () => {
   it('shows the hero, the box and the two boards, and no results', async () => {
     mockApi();
     renderApp('/');

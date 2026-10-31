@@ -1,3 +1,5 @@
+import { ModeBadge } from '@/components/Badges';
+import { Icon } from '@/components/Icon';
 import type { ElementType } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ResultCard } from '@/api/types';
@@ -34,10 +36,16 @@ export function ResultFacts({ card, groupTag: GroupTag }: { card: ResultCard; gr
 }
 
 /** The sources that list a result, as chips. */
-export function ListedBy({ card }: { card: ResultCard }) {
+export function ListedBy({ card, stale = new Set<string>() }: { card: ResultCard; stale?: ReadonlySet<string> }) {
+  const { t } = useTranslation();
   return (
     <ul className="plain-list inline-list">
-      {card.sources.map((s) => <li key={s.sourceId} className="h2-pv__source">{s.sourceName}</li>)}
+      {card.sources.map((s) => (
+        <li key={s.sourceId} className="h2-pv__source">
+          {s.sourceName} <ModeBadge mode={s.mode} />
+          {stale.has(s.sourceId) && <span className="badge served served-stale_cache"><Icon name="warn" />{t('servedFrom.STALE_CACHE')}</span>}
+        </li>
+      ))}
     </ul>
   );
 }

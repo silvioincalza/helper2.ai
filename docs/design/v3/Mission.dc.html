@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>helper2.ai — Our mission</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;family=Space+Grotesk:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+.r{--bg:#f7f2e9;--surface:#fffdf8;--tint:#efe9dd;--quote:#fbefe2;--ink:#1b1c3f;--ink2:#35344f;--muted:#4f4b63;--border:#e7dfd0;--border2:#d3c7b2;--accent:#e06a1d;--on-accent:#1b1c3f;--accent-ink:#a8420a;--deep:#2d2e60;--mark:#fde68a;--ok-bg:#e3f3ee;--ok:#0f4d3c;--ns:#7a3e00;min-height:100vh;display:flex;flex-direction:column;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,sans-serif;font-size:16px;line-height:1.55}
+.r.dark{--bg:#15162f;--surface:#1d1e3d;--tint:#26274f;--quote:#2a2440;--ink:#f3f1ea;--ink2:#d4d2e4;--muted:#aeacc6;--border:#2f3058;--border2:#45477a;--accent:#f08a42;--on-accent:#15162f;--accent-ink:#f4a46a;--deep:#c9cae3;--mark:#6b5310;--ok-bg:#123528;--ok:#86efac;--ns:#fbbf77;color-scheme:dark}
+.r *{box-sizing:border-box}
+a{color:var(--deep)}a:hover{color:var(--accent-ink)}
+.r :focus-visible{outline:3px solid var(--deep);outline-offset:2px;border-radius:4px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.wrap{width:100%;max-width:1240px;margin:0 auto;padding:0 32px}
+.hdr{border-bottom:1px solid var(--border);background:var(--surface)}
+.hdr-row{display:flex;align-items:center;gap:24px;min-height:72px;flex-wrap:wrap;padding-top:10px;padding-bottom:10px}
+.logo{display:inline-flex;align-items:center;gap:16px;text-decoration:none;color:var(--ink);min-height:44px}
+.mark{width:40px;height:40px;border-radius:12px;background:var(--accent);color:var(--on-accent);display:inline-flex;align-items:center;justify-content:center;flex:none}
+.mark svg{width:60%;height:60%}
+.logo-text{display:inline-flex;flex-direction:column;gap:2px}
+.word{font:500 1.6rem/1 'Space Grotesk',sans-serif;letter-spacing:-0.02em}
+.tagline{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);line-height:1.2}
+.box{display:flex;align-items:center;gap:10px;height:52px;padding:0 6px 0 18px;border:1px solid var(--border2);border-radius:999px;background:var(--bg);flex:1 1 380px;max-width:680px;color:var(--muted)}
+.box:focus-within{border-color:var(--accent)}
+.box input{flex:1;min-width:0;border:0;background:transparent;font:inherit;font-size:16px;color:var(--ink);outline:none;height:100%}
+.go{height:40px;padding:0 18px;border-radius:999px;border:0;background:var(--accent);color:var(--on-accent);font:600 14px Inter,sans-serif;cursor:pointer}
+.tools{margin-left:auto;display:flex;align-items:center;gap:6px}
+.icon-btn{width:44px;height:44px;border-radius:999px;border:0;background:transparent;color:var(--ink2);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.icon-btn:hover{background:var(--tint)}
+.foot{border-top:1px solid var(--border);background:var(--tint);font-size:13px;color:var(--muted)}
+.foot .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;padding-top:14px;padding-bottom:14px}
+.foot a{color:var(--muted)}
+/* text page */
+.page{display:flex;flex-wrap:wrap;gap:56px;padding-top:48px;padding-bottom:72px;flex:1;align-items:flex-start}
+.toc{flex:0 1 220px;min-width:0}
+.toc h2,.toc-m summary{font:500 12px 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:0 0 8px}
+.toc ol,.toc-m ol{list-style:none;margin:0;padding:0;border-top:2px solid var(--ink)}
+.toc a,.toc-m a{display:flex;align-items:center;min-height:44px;padding:6px 0;border-bottom:1px solid var(--border);color:var(--ink2);text-decoration:none;font-size:14px;line-height:1.35}
+.toc a:hover,.toc-m a:hover{color:var(--accent-ink)}
+.toc-m{display:none}
+.article{flex:1 1 560px;min-width:0;max-width:68ch;font-size:17.5px;line-height:1.75;color:var(--ink2)}
+.eyebrow{margin:0 0 10px;font:500 12.5px 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink)}
+.article h1{font:400 clamp(2.2rem,2.5vw + 1.3rem,3.25rem)/1.05 'Space Grotesk',sans-serif;letter-spacing:-0.02em;color:var(--ink);margin:0 0 18px}
+.lede{font:400 clamp(1.2rem,.6vw + 1rem,1.45rem)/1.45 'Space Grotesk',sans-serif;color:var(--ink);margin:0 0 12px}
+.updated{font:400 13px 'JetBrains Mono',monospace;color:var(--muted);margin:0 0 8px}
+.article section{border-top:1px solid var(--border2);padding-top:22px;margin-top:40px;scroll-margin-top:16px}
+.article h2{font:500 1.6rem/1.2 'Space Grotesk',sans-serif;letter-spacing:-0.01em;color:var(--ink);margin:0 0 14px}
+.article p{margin:0 0 16px}
+.article ul{margin:0;padding:0;list-style:none}
+.article li{position:relative;padding:0 0 14px 26px}
+.article li::before{content:'';position:absolute;left:4px;top:.72em;width:8px;height:8px;border-radius:2px;background:var(--accent)}
+.article code{font:400 .86em 'JetBrains Mono',monospace;background:var(--tint);padding:1px 5px;border-radius:4px;color:var(--ink)}
+.howto{border:1px dashed var(--border2);border-radius:12px;padding:18px 20px;margin-top:40px;font-size:15px;color:var(--muted);background:var(--surface)}
+.cta{display:inline-flex;align-items:center;gap:8px;min-height:44px;margin-top:32px;padding:0 18px;border-radius:999px;border:1px solid var(--border2);background:var(--surface);color:var(--ink);font:600 15px Inter,sans-serif;text-decoration:none}
+.cta:hover{border-color:var(--accent);color:var(--ink)}
+@media (max-width:900px){.toc{display:none}.toc-m{display:block;margin:0 0 28px;border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:0 16px}.toc-m summary{display:flex;align-items:center;min-height:48px;margin:0;cursor:pointer}.toc-m ol{border-top:1px solid var(--border2);margin-bottom:8px}.page{gap:0;padding-top:28px}}
+@media (max-width:640px){.wrap{padding-left:16px;padding-right:16px}.hdr-row{gap:10px}.hdr .box{order:3;flex:1 1 100%}.article{font-size:17px}.foot .wrap span:last-child{margin-left:0}}
+</style>
+</helmet>
+<div class="{{rootClass}}">
+  <header class="hdr">
+    <div class="wrap hdr-row">
+      <a href="Mix.dc.html" class="logo" aria-label="helper2.ai home"><span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="4.2" stroke-width="1.4" opacity="0.5"></circle><path d="M12 12 18.4 5.6"></path><path d="M16.2 11.1Q16.2 15 20.1 15Q16.2 15 16.2 18.9Q16.2 15 12.3 15Q16.2 15 16.2 11.1Z" fill="currentColor" stroke-width="1"></path></svg></span><span class="logo-text"><span class="word">helper2.ai</span><span class="tagline">AI on your radar</span></span></a>
+      <form class="box" role="search" onSubmit="{{noop}}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+        <label for="qm" class="sr">Search AI resources</label>
+        <input id="qm" type="search" placeholder="Search tools, models, MCP servers…">
+        <button type="submit" class="go">Search</button>
+      </form>
+      <div class="tools">
+        <button type="button" class="icon-btn" aria-label="{{themeLabel}}" onClick="{{toggleTheme}}">
+          <sc-if value="{{isDark}}" hint-placeholder-val="{{false}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg></sc-if>
+          <sc-if value="{{isLight}}" hint-placeholder-val="{{true}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"></path></svg></sc-if>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="wrap page">
+    <nav class="toc" aria-labelledby="toc-h">
+      <h2 id="toc-h">On this page</h2>
+      <ol>
+        <li><a href="#why">Why Helper2.ai exists</a></li>
+        <li><a href="#promise">What we promise</a></li>
+        <li><a href="#ai-text">How we mark AI text</a></li>
+        <li><a href="#who">Who is behind it</a></li>
+        <li><a href="#how">How it works</a></li>
+      </ol>
+    </nav>
+
+    <article class="article">
+      <details class="toc-m">
+        <summary>On this page</summary>
+        <ol>
+          <li><a href="#why">Why Helper2.ai exists</a></li>
+          <li><a href="#promise">What we promise</a></li>
+          <li><a href="#ai-text">How we mark AI text</a></li>
+          <li><a href="#who">Who is behind it</a></li>
+          <li><a href="#how">How it works</a></li>
+        </ol>
+      </details>
+
+      <p class="eyebrow">Mission</p>
+      <h1>Our mission</h1>
+      <p class="lede">Help people find the right AI resource for their need, and show the proof behind every answer.</p>
+
+      <section id="why" aria-labelledby="why-h">
+        <h2 id="why-h">Why Helper2.ai exists</h2>
+        <p>New AI models, tools, agents, MCP servers and papers appear every day. General search engines mix them with marketing pages and old content, so it is hard to know what is real and current.</p>
+        <p>Helper2.ai searches only sources about AI, tells you which sources it searched, and shows where every result comes from and when it was checked.</p>
+      </section>
+
+      <section id="promise" aria-labelledby="promise-h">
+        <h2 id="promise-h">What we promise</h2>
+        <ul>
+          <li>Proof before opinion. The guide only recommends a resource when it can quote a real source that supports the choice.</li>
+          <li>Honest coverage. We list every source we search and show what each one returned. We do not claim to search the whole web.</li>
+          <li>No invented facts. We never fill in dates, popularity or other facts that no source stated.</li>
+          <li>Open by default. The source code is public under the Apache-2.0 license.</li>
+          <li>Privacy first. No ads, no tracking, and we never sell data.</li>
+        </ul>
+      </section>
+
+      <section id="ai-text" aria-labelledby="ai-h">
+        <h2 id="ai-h">How we mark AI text</h2>
+        <ul>
+          <li>On the screen, every text written by an AI model has a label, such as “AI”, “AI reasoning”, “AI summary” or “Extracted by AI”.</li>
+          <li>In the page, the same text carries the HTML attribute <code>data-ai-generated="true"</code>, and <code>data-ai-model</code> with the model name when we know it.</li>
+          <li>In our API, a guide answer has an <code>aiContent</code> object that names the provider, the models and the fields they wrote. Catalog values carry an origin such as <code>AI_SUMMARY</code> or <code>AI_EXTRACTED</code>.</li>
+          <li>Quotes, titles and links are never written by AI. They come from the sources.</li>
+        </ul>
+      </section>
+
+      <section id="who" aria-labelledby="who-h">
+        <h2 id="who-h">Who is behind it</h2>
+        <p>Helper2.ai is an independent project by Silvio Incalza, a software engineer based in Switzerland. The AI guide runs on NVIDIA Nemotron models served by Nebius Token Factory.</p>
+      </section>
+
+      <section id="how" aria-labelledby="how-h">
+        <h2 id="how-h">How it works</h2>
+        <div class="howto">[The existing “How it works” component goes here, restyled with the same tokens.]</div>
+      </section>
+
+      <a href="#" class="cta">Ideas, mistakes or missing sources? Open an issue on GitHub. <span aria-hidden="true">↗</span></a>
+    </article>
+  </div>
+
+  <footer class="foot"><div class="wrap"><span>helper2.ai · Switzerland · EU servers</span><a href="Mission.dc.html">Mission</a><a href="#">Sources</a><a href="Privacy.dc.html">Privacy</a><span style="margin-left:auto">No ads.</span></div></footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1900}}'>
+class Component extends DCLogic {
+  st(k, d) { return (this.state && this.state[k] !== undefined) ? this.state[k] : d; }
+  renderVals() {
+    var self = this;
+    var dark = this.st('dark', !!this.props.dark);
+    return {
+      rootClass: dark ? 'r dark' : 'r', isDark: dark, isLight: !dark,
+      themeLabel: dark ? 'Theme: dark. Change to light' : 'Theme: light. Change to dark',
+      toggleTheme: function () { self.setState({ dark: !dark }); },
+      noop: function (e) { e.preventDefault(); }
+    };
+  }
+}
+</script>
+</body>
+</html>

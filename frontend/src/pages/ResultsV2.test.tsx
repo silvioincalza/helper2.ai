@@ -6,7 +6,6 @@ import { makeCard, makeSearch, makeStatus } from '@/test/fixtures';
 import { mockApi, sse } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
 
-vi.mock('@/lib/features', () => ({ SAVED_ENABLED: false, NEW_DESIGN_ENABLED: true }));
 
 const A = makeCard({ id: 'aaaaaaaa-aaaa-5aaa-8aaa-aaaaaaaaaaaa', title: 'Alpha Search', url: 'https://www.alpha.example/x', license: null });
 const B = makeCard({
@@ -30,7 +29,7 @@ function guide(): GuideResponse {
 const row = (name: string) => screen.getAllByRole('button', { name: new RegExp(name) }).find((b) => b.classList.contains('h2-select-row'))!;
 const rowTitles = () => [...document.querySelectorAll('.h2-select-row .h2-row__title')].map((e) => e.textContent);
 
-describe('design v2 results (flag on): list and preview', () => {
+describe('design v2 results: list and preview', () => {
   it('selects the first result and shows its preview; a click selects another and writes its id to the URL', async () => {
     mockApi({ 'GET /search': () => search() });
     const { params } = renderApp('/search?q=postgres');

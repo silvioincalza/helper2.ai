@@ -1,5 +1,4 @@
 import type { GuideRequest, SearchQuery, SortOrder, TriState } from '@/api/types';
-import { NEW_DESIGN_ENABLED } from '@/lib/features';
 
 export const MULTI_KEYS = [
   'type',
@@ -182,16 +181,13 @@ export function refinedParams(sp: URLSearchParams, r: Partial<Refinement>): URLS
   return params;
 }
 
+/** Where results live (ADR 0040, 3): / is only the home page; /?q=… keeps working and names /search as canonical. */
+export const RESULTS_PATH = '/search';
+
 /**
  * The home URL for [state] plus, optionally, the question the guide should answer. When that is the question
  * [current] already asks, its refinement stays; a new question starts without one.
  */
-/**
- * Where results live. Design v2 (ADR 0040, 3) moves them to /search, so / is only the home page; /?q=… keeps
- * working and names /search as the canonical page. With the flag off, results stay on /.
- */
-export const RESULTS_PATH = NEW_DESIGN_ENABLED ? '/search' : '/';
-
 export function homeParams(state: SearchState, ask = '', current?: URLSearchParams): URLSearchParams {
   const params = toSearchParams(state);
   const question = clampQuestion(ask);
