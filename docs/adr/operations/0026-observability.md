@@ -1,4 +1,4 @@
-# 0026 — Observability: structured logs, OpenTelemetry traces, Prometheus meters, Grafana dashboard, alert rules
+# 0026 — Observability: structured logs, OpenTelemetry traces, Prometheus meters, Grafana dashboard, alert rules, guide latency target
 
 **Status.** Accepted. **Builds on:** [0001](../foundation/0001-stack-and-runtime.md), [0008](../search/0008-federated-search.md), [0014](../guide/0014-llm-integration.md), [0033](../foundation/0033-resilience-policies.md)
 
@@ -7,7 +7,8 @@ One search calls up to nine sources in parallel; one guide question calls a mode
 slow or partial, the owner must see which source, which model step or which budget caused it, and be told when
 something breaks without watching a dashboard. The cluster already runs Grafana Alloy, Prometheus, Loki and Tempo.
 Telemetry must not carry query text or user data, and logs, which hold client addresses, are personal data with a
-retention limit.
+retention limit. The guide needs one latency number to hold: a full answer takes about 6 s, but the asker sees
+the guide work long before that, and what makes the wait feel long is the first moment the page shows nothing real.
 
 ## Decision
 1. **Logs.** Spring Boot structured logging on stdout, format `H2_LOG_FORMAT` (`logstash` JavaScript Object Notation (JSON); the `dev` profile uses
@@ -26,12 +27,14 @@ retention limit.
 4. **Meters** (Prometheus, pulled from `/actuator/prometheus` on the management port, [0024](../edge/0024-http-edge-protection.md);
    OTLP metric push is off). Common tags `application=helper2`, `environment`. Histogram buckets for
    `http.server.requests`, `http.client.requests`, `helper2.scout.run`, `helper2.llm.call`,
-   `helper2.search.latency`, `helper2.source.latency`. Our meters:
+   `helper2.search.latency`, `helper2.source.latency` (`application.yaml`), and `helper2.guide.first_useful` (set on
+   the timer, with exact buckets at its 3 s and 8 s targets). Our meters:
    - search: `helper2.search.requests{partial}`, `helper2.search.latency`, `helper2.source.requests{source,outcome,served_from}`,
      `helper2.source.latency{source}`, `helper2.cache.events{event}`;
    - catalog: `helper2.catalog.observations{outcome}`, `helper2.catalog.observations.queued`,
      `helper2.embedding.backlog`, `helper2.embedding.failures{reason}`, `helper2.embedding.last.success`;
    - guide and models: `helper2.guide.ask{outcome}`, `helper2.guide.questions{outcome}`, `helper2.guide.cache{result}`,
+     `helper2.guide.step{step,intent}`, `helper2.guide.first_useful{intent}` (item 8),
      `helper2.llm.call{step,model,prompt,outcome}`, `helper2.llm.tokens{step,prompt,type}`, `helper2.guide.budget.remaining`,
      `helper2.search.translation.budget.remaining`;
    - Scout: `helper2.scout.run`, `helper2.scout.cycle`, `helper2.scout.items{source,kind}`, `helper2.scout.last.success{source}`,
@@ -47,8 +50,8 @@ retention limit.
    Tag values are fixed words, source ids, policy names and configured model ids; never a query, a prompt or a user.
 5. **Dashboard.** `deploy/grafana/helper2.json` (uid `helper2`, variable `environment`, datasource uid `prometheus`).
    Rows: overview, Hypertext Transfer Protocol (HTTP), search and sources, artificial intelligence (AI) guide, Scout,
-   embeddings, runtime. Latency panels (HTTP, search, source, model call, Scout run) use `histogram_quantile` over
-   the `_bucket` series, so they are percentiles across all pods; `helper2.guide.ask` has no buckets, so its panel
+   embeddings, runtime. Latency panels (HTTP, search, source, model call, Scout run, guide first useful event) use
+   `histogram_quantile` over the `_bucket` series, so they are percentiles across all pods; `helper2.guide.ask` has no buckets, so its panel
    shows the mean. One panel per daily budget (guide, translation, enrichment, classifier) shows the calls left, and
    "Rate-limit decisions in memory" shows `helper2.rate-limit.fallback`. Loaded by file provisioning or the Grafana
    application programming interface (API).
@@ -78,6 +81,8 @@ retention limit.
      `tavily-scout` 6, `course-scout` 8), over a 9-day lookback so a deploy does not lose the gauge;
    - `Helper2GuidePicksFromLowRanks`: more than 20% of the day's kept picks, and at least 3, from search rank 9+
      (`helper2.guide.picks{rank="9+"}`), the first sign of content poisoning ([0015](../guide/0015-ai-guide-evidence-gate.md));
+   - `Helper2GuideFirstUsefulSlow`: the p95 of `helper2.guide.first_useful` above its 8 s target for 15 min, above
+     3 questions in 15 min (item 8);
    - `Helper2BackupFailed` (critical): a `pg-backup` Job that started in the last 24 h failed;
      `Helper2PodRestarting`: more than 2 restarts of a container in an hour.
    `promtool check rules` and `promtool test rules` (unit tests in `deploy/monitoring/tests/`) run in CI; chart-check
@@ -90,6 +95,17 @@ retention limit.
      lookback. Meters carry no personal data, so this bound is cost, not privacy.
    Database backups: 7 days on the `pg-backup` volume (`backup.retentionDays`); the off-site copy, when on, by its
    bucket's lifecycle rule ([0027](0027-runtime-topology.md)).
+8. **Guide latency target: time to the first useful event.** The first useful event is the first `retrieved` (the
+   results the guide reads, with their count and sources) or `clarify` (the question back) on the stream
+   ([0015](../guide/0015-ai-guide-evidence-gate.md)): `retrieved` is the first step the page always shows, while
+   `planned` is not shown and `understood` shows nothing for a plain suggestion, the most common question.
+   `GuideStreamController` records `helper2.guide.first_useful{intent}` once per question, from the request to that
+   event reaching the connection; it covers the plan call and the search. A cached or shared answer has no step
+   events and is not timed; the end-to-end time stays in `helper2.guide.ask` and in the evaluation
+   ([0030](../quality/0030-guide-evaluation.md)). Targets: **p50 3 s, p95 8 s**, initial targets to confirm with
+   the first weeks of data. They come from the measured steps: planning 0.5–2.8 s with thinking off
+   ([0014](../guide/0014-llm-integration.md)), a search of 2.0–4.2 s when Tavily answers live and less from its stored
+   results, Tavily's 6 s timeout as the slow end. The p95 target has an alert; the p50 target is read on the dashboard.
 
 ## Consequences
 - A slow search shows per-source latency and outcome; a slow guide shows the model step and model.
@@ -97,6 +113,8 @@ retention limit.
 - A failing source, an open circuit, a spent budget, a stalled indexer or Scout, a failed backup or a poisoned
   pick raises an alert, and each alert says where to look first.
 - One rule file serves a plain Prometheus and the operator; the unit tests pin each threshold.
+- The guide's latency is held by one number the asker feels; the model step and the search behind a slow first
+  event are in `helper2.llm.call` and `helper2.source.latency`.
 - The rules look back over time windows, so a gauge kept by one replica (Scout, indexer) or a circuit open on any
   pod still raises its alert.
 
@@ -109,12 +127,19 @@ retention limit.
 - Rules only as a `PrometheusRule` template — ties the chart to the Prometheus Operator; a plain rule file works
   with any Prometheus.
 - A copy of the rules in the chart — two sources drift; the symlink and `.Files.Get` keep one.
+- End-to-end p50 as the guide's latency target — it adds the choose call and the reason check, which the asker
+  waits for while already seeing the results being read; the evaluation reports it.
+- `understood` as the first useful event — earlier, but empty on the page for a plain suggestion.
+- A `picked` event that shows the picks before the reason check — it does not move the first useful event and adds
+  a step whose picks can still disappear; it pays only when `helper2.guide.step` shows the reason check dominates
+  the answer time.
 
 ## Code
 - `backend/src/main/resources/application.yaml` — `management.*`, `logging.structured`, tracing settings.
 - `backend/src/main/java/ai/helper2/platform/observability/ObservabilityConfiguration.java` — actuator filter.
 - `backend/src/main/java/ai/helper2/search/config/MicrometerSearchMetrics.java`, `SearchConfiguration.java` — search meters, context executor.
 - `backend/src/main/java/ai/helper2/platform/llm/ModelCallMetrics.java` — model call span, timer, tokens.
+- `backend/src/main/java/ai/helper2/guide/web/GuideStreamController.java` — `helper2.guide.first_useful`.
 - `backend/src/main/java/ai/helper2/platform/http/ObservedHttp.java` — observed source and embedding clients.
 - `backend/src/main/java/ai/helper2/platform/llm/LlmConfiguration.java`, `sources/SourcesConfiguration.java` —
   translation and classifier budget gauges.

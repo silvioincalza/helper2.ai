@@ -23,6 +23,7 @@ import io.github.resilience4j.bulkhead.BulkheadConfig
 import io.github.resilience4j.bulkhead.BulkheadRegistry
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry
 import io.github.resilience4j.retry.RetryRegistry
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import java.time.Clock
 import java.time.Duration
 import java.time.ZoneOffset
@@ -90,7 +91,7 @@ class GuideLimitsTest {
         val policies = Resilience4jPolicies(CircuitBreakerRegistry.ofDefaults(), bulkheads, RetryRegistry.ofDefaults())
         val shared = GuideLimits(policies, deadline).also { limits += it }
         return MockMvcBuilders.standaloneSetup(
-            GuideStreamController(guide, mapper, shared, SignedInUser.ANONYMOUS, Duration.ofMillis(50)).also { streams += it },
+            GuideStreamController(guide, mapper, shared, SignedInUser.ANONYMOUS, SimpleMeterRegistry(), Duration.ofMillis(50)).also { streams += it },
             GuideController(guide, mapper, shared, MockHttpServletRequest(), SignedInUser.ANONYMOUS),
         ).build()
     }
