@@ -85,10 +85,41 @@ jobs:
           printf '\nImage: `harbor-i.infra.incalza.me/helper2/apps/helper2:%s`\n' "${SHA::12}" >> "$notes"
           gh release create "$TAG" --verify-tag --title "$TAG" --notes-file "$notes"
 
-  # Only after every check above: the image of that commit, built when it reached main and already run
-  # on staging, goes to prod. Never rebuilt (ADR 0028).
-  prod:
+  # The release commit must have reached staging: its CD run (push to main) finished with success, so its
+  # image exists and its staging rollout was healthy. Waits while that run is still going.
+  staged:
     needs: release
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SHA: ${{ needs.release.outputs.commit }}
+    steps:
+      - name: Wait for the commit's CD run to pass staging
+        run: |
+          set -euo pipefail
+          for _ in $(seq 1 80); do
+            run=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/cd.yml/runs?event=push&per_page=100" \
+              --jq "[.workflow_runs[] | select(.head_sha | startswith(\"$SHA\"))][0] // empty | [.status, (.conclusion // \"\"), .html_url] | @tsv")
+            if [[ -z $run ]]; then
+              echo "::error::no CD run for $SHA: the commit never went through staging"; exit 1
+            fi
+            IFS=$'\t' read -r status conclusion url <<< "$run"
+            if [[ $status == completed ]]; then
+              [[ $conclusion == success ]] && { echo "staging passed: $url"; exit 0; }
+              echo "::error::the CD run of $SHA ended '$conclusion' ($url): fix staging, then tag a new version"; exit 1
+            fi
+            echo "CD run of $SHA is $status, waiting ($url)"
+            sleep 30
+          done
+          echo "::error::the CD run of $SHA did not finish in 40 minutes"; exit 1
+
+  # Only after every check above: the image of that commit, built when it reached main and run on
+  # staging, goes to prod. Never rebuilt (ADR 0028).
+  prod:
+    needs: [release, staged]
     uses: ./.github/workflows/deploy.yml
     permissions:
       contents: read

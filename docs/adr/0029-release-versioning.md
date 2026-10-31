@@ -26,7 +26,7 @@ and the Helm chart. A published version must always mean the same code, so it ca
    - it checks the four files at that commit carry the same version as the tag;
    - it publishes the GitHub release with the tag message as notes plus the image name
      `<registry>/helper2/apps/helper2:<commit[0:12]>`. An existing release is left as is;
-   - then it deploys that commit to prod, after the approval on the `prod` environment ([0028](0028-ci-cd.md)).
+   - then it waits until the commit's CD run has passed staging, and deploys that commit to prod, after the approval on the `prod` environment ([0028](0028-ci-cd.md)).
      A release is the only automatic way to prod.
 6. **Tags are immutable.** A release tag is never moved or deleted; a fix is a new version. A GitHub tag ruleset
    on `refs/tags/v*` blocks moving and deleting release tags, with no bypass. Image tags are commits and are never
