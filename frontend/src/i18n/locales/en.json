@@ -984,7 +984,8 @@
     "reading_one": "Guide is reading {{count}} candidate… picks will appear here",
     "reading_other": "Guide is reading {{count}} candidates… picks will appear here",
     "readingResults": "Guide is reading the results… picks will appear here",
-    "none": "No pick: no result had a sentence that proves it"
+    "none": "No pick: no result had a sentence that proves it",
+    "understood": "Understood as {{parts}}"
   },
   "sourceTile": {
     "label": "Sources searched",
@@ -1054,5 +1055,13 @@
         "text": "A date is shown only when the source states it. Nothing is guessed."
       }
     }
+  },
+  "webSearches": {
+    "feature": {
+      "search": "search",
+      "guide": "the guide"
+    },
+    "left": "{{remaining}} of {{limit}} web searches left today for {{feature}}.",
+    "none": "No web searches left today for {{feature}}. Stored results still answer. Resets at {{time}} your time (00:00 UTC)."
   }
 }

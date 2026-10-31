@@ -335,7 +335,7 @@ exactly when expected ("new tools?", "Gemini", "what is Gemini?" are; "what is O
   `sources/npm/NpmSource.java`, `sources/tavily/CourseCollector.java`; `catalog/internal/ResourceStore.java` — date pushdown, npm dates, courses.
 - `backend/src/main/resources/db/migration/V2__npm_dates_are_updates.sql`, `V3__course_type.sql`, `R__courses.sql`.
 - `api/openapi.yaml` — request, response, status, stream events.
-- `frontend/src/components/GuideAnswer.tsx` — clarification chips, "Understood as", comparison table, explanation.
+- `frontend/src/components/guide/GuideAnswer.tsx` — clarification chips, "Understood as", comparison table, explanation.
 
 ## Diagrams
 [flow](../../diagrams/flow-0032-guide-intents.svg) · [sequence](../../diagrams/sequence-0032-guide-intents.svg)

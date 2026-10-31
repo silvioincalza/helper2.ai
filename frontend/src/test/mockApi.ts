@@ -47,3 +47,16 @@ export const sse = (answer: unknown, steps: { event: string; data: unknown }[] =
     [...steps, { event: 'answer', data: answer }].map((e) => `event:${e.event}\ndata:${JSON.stringify(e.data)}\n\n`).join(''),
     { status: 200, headers: { 'content-type': 'text/event-stream' } },
   );
+
+/** A POST /guide/stream that stays open: the test sends each step, then the answer, when it wants. */
+export function heldSse() {
+  let ctrl!: ReadableStreamDefaultController<Uint8Array>;
+  const enc = new TextEncoder();
+  const body = new ReadableStream<Uint8Array>({ start: (c) => { ctrl = c; } });
+  const send = (event: string, data: unknown) => ctrl.enqueue(enc.encode(`event:${event}\ndata:${JSON.stringify(data)}\n\n`));
+  return {
+    response: () => new Response(body, { status: 200, headers: { 'content-type': 'text/event-stream' } }),
+    step: send,
+    finish: (answer: unknown) => { send('answer', answer); ctrl.close(); },
+  };
+}

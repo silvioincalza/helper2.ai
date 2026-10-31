@@ -3,16 +3,20 @@ import { useTranslation } from 'react-i18next';
 import { aiMark } from '@/lib/aiMark';
 import './ui.css';
 
-/** reading: the guide works ([candidates] once the search is counted). none: no pick. picks: the picks are in. */
+/**
+ * reading: the guide works ([candidates] once the search is counted, [understood] once it has read the question).
+ * none: no pick. picks: the picks are in.
+ */
 export type PicksState =
-  | { kind: 'reading'; candidates?: number }
+  | { kind: 'reading'; candidates?: number | undefined; understood?: readonly string[] | undefined }
   | { kind: 'none' }
   | { kind: 'picks'; model?: string | null };
 
 /**
  * The box above the result list that holds the guide's picks (ADR 0040, 6). It is there from the first render with
  * its height reserved, so nothing below it moves when the answer arrives; with no pick it shrinks to one line.
- * The waiting and no-pick lines are a status, so a screen reader hears each once. The picks ([children]) sit under
+ * The waiting and no-pick lines are a status, so a screen reader hears each change once: how the question was read,
+ * then how many results the guide reads. The picks ([children]) sit under
  * an AI-written label and are marked machine-readable (ADR 0038).
  */
 export function PicksBar({ state, children }: { state: PicksState; children?: ReactNode }) {
@@ -31,6 +35,9 @@ export function PicksBar({ state, children }: { state: PicksState; children?: Re
           {state.kind === 'none'
             ? t('picks.none')
             : state.candidates === undefined ? t('picks.readingResults') : t('picks.reading', { count: state.candidates })}
+          {state.kind === 'reading' && (state.understood?.length ?? 0) > 0 && (
+            <span className="h2-picks__understood"> · {t('picks.understood', { parts: state.understood!.join(', ') })}</span>
+          )}
         </p>
       )}
     </section>
