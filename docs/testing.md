@@ -17,8 +17,8 @@ promtool test rules deploy/monitoring/tests/*.yaml
 cd frontend && npm test -- --run && npm run lint && npm run typecheck
 ```
 
-31 Oct 2026 (local run): backend 841 tests, 0 failed, 1 skipped by design; frontend 246 passed, 7 skipped,
-in 23 files. The 16 alert rules have promtool unit tests; CI runs them in the `monitoring` job.
+31 Oct 2026 (local run): backend 841 tests, 0 failed, 1 skipped by design; frontend 265 passed,
+in 25 files. The 16 alert rules have promtool unit tests; CI runs them in the `monitoring` job.
 `evalTest` and `evalRecord` are not part of `test`: see [docs/eval](eval/README.md).
 
 ## What exists
@@ -42,7 +42,7 @@ in 23 files. The 16 alert rules have promtool unit tests; CI runs them in the `m
 | Setup guide | RunOptionRulesTest, SnippetParseBackTest, RedisToolGuideCacheIT | only safe run commands (package runners, one Docker image, no shells or inline code), every client snippet parses back to the same values, guide answers cached in Redis without the question or document text |
 | Search evaluation | RelevanceMetricsTest, SearchEvaluationTest, CutoffSweepTest, SnapshotTakerTest | nDCG@10, reciprocal rank and recall on known cases; the vector cutoff sweep; offline replay of recorded snapshots and the nDCG@10 gate (`evalTest`) |
 | Live smoke | GitHubSourceLiveTest, HuggingFaceLiveTest, NpmSourceLiveTest, ArxivSourceLiveTest, TavilyLiveTest, McpRegistryCollectorLiveTest, AiDeadlinesCollectorLiveTest, GitHubAwesomeLiveTest | one per adapter, against the real API (the awesome-list collector with Nemotron classification); a test whose key is missing is skipped; runs only with `./gradlew liveTest`, once a week in the `live` workflow |
-| Frontend | 246 Vitest + RTL tests (AccountPage.test.tsx and others) | pages, client, bookmarks, account deletion, i18n, layout; axe smoke checks in jsdom |
+| Frontend | 265 Vitest + RTL tests (SavedPage.test.tsx, SourcesPage.test.tsx, AccountPage.test.tsx and others) | pages, client, bookmarks, account deletion, i18n, layout; axe checks in jsdom |
 | Alert rules | deploy/monitoring/tests | promtool unit tests: each of the 16 rules fires on its condition and stays quiet otherwise |
 
 ## Known gaps (not covered by automated tests)
