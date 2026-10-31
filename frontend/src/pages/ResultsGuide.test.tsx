@@ -184,6 +184,17 @@ describe('the guide picks bar', () => {
     expect(m.callsTo('POST', '/guide/stream')).toHaveLength(2);
   });
 
+  it('Try again keeps the reader in the bar: focus moves to its heading, not to the page body', async () => {
+    let n = 0;
+    mockApi({ 'GET /search': withPick, 'POST /guide/stream': () => (n++ === 0 ? problem(502, 'Bad gateway', 'The model timed out.') : sse(makeGuide())) });
+    renderApp(QUESTION);
+    expect(await within(bar()).findByRole('alert')).toHaveTextContent('The model timed out.');
+    within(bar()).getByRole('button', { name: /Try again/ }).focus();
+    await userEvent.keyboard('{Enter}');
+    expect(await screen.findByRole('button', { name: '#1 Postgres MCP' })).toBeInTheDocument();
+    expect(within(bar()).getByRole('heading', { name: 'Guide picks' })).toHaveFocus();
+  });
+
   it('a stream that closes before the answer says so', async () => {
     mockApi({
       'POST /guide/stream': () => new Response('event:planned\ndata:{"searchQuery":"mcp","constraints":[],"model":"m"}\n\n',

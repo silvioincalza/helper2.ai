@@ -253,6 +253,22 @@ describe('the resource page: Guide me (ADR 0031)', () => {
     expect(screen.getByLabelText('Ask about acme-lib')).toBeInTheDocument();
   });
 
+  it('Try again on the steps keeps focus in the guide: on the steps heading, not the page body', async () => {
+    let n = 0;
+    mockApi({
+      [`GET /resources/${ID}`]: tool('MCP_SERVER', 'pg-mcp-server'),
+      [`GET /resources/${ID}/setup`]: () => SETUP,
+      [`POST /resources/${ID}/guide`]: () => (n++ === 0 ? problem(503, 'Unavailable') : STEPS),
+    });
+    renderApp(PAGE);
+    await userEvent.click(await screen.findByRole('button', { name: 'Guide me: pg-mcp-server' }));
+    const retry = await screen.findByRole('button', { name: /Try again/ });
+    retry.focus();
+    await userEvent.keyboard('{Enter}');
+    expect(await screen.findByRole('heading', { name: 'Install' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Step by step' })).toHaveFocus();
+  });
+
   it('offers no Guide me on a paper', async () => {
     mockApi({ [`GET /resources/${ID}`]: tool('PAPER', 'A survey') });
     renderApp(PAGE);

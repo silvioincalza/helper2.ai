@@ -6,7 +6,9 @@ import { ApiError } from '@/api/client';
 import type { GuideRecommendation, GuideResponse, GuideStep } from '@/api/types';
 import { Icon } from '@/components/Icon';
 import { PicksBar, type PicksState } from '@/components/ui/PicksBar';
+import { RetryButton } from '@/components/ui/StatePanel';
 import type { GuideStream } from '@/hooks/useGuideStream';
+import { useRetry } from '@/hooks/useRetry';
 import { aiMark } from '@/lib/aiMark';
 import { resourcePath, type Refinement } from '@/lib/searchState';
 
@@ -60,7 +62,8 @@ function noPickReason(answer: GuideResponse, t: TFunction): string | undefined {
  * how many candidates it reads; then the picks as chips #1, #2, #3, or one line when there is none; its question back
  * when the need is vague (ADR 0032). A chip selects its row ([onPick]); a pick that is not among the results on the
  * page ([listed]) links to its resource page. How the guide read the question and the rest of the answer
- * (explanation, comparison, prompt) sit under the bar, the rest folded away so nothing moves by itself.
+ * (explanation, comparison, prompt) sit under the bar, the rest folded away so nothing moves by itself. Try again
+ * keeps focus on the bar's heading.
  */
 export function GuidePicks({ guide, picks, listed, onPick, onClose }: {
   guide: GuideStream;
@@ -70,7 +73,8 @@ export function GuidePicks({ guide, picks, listed, onPick, onClose }: {
   onClose: () => void;
 }) {
   const { t } = useTranslation();
-  const { question, steps, answer, error, busy, refine, retry } = guide;
+  const { question, steps, answer, error, busy, refine } = guide;
+  const { retry, focusRef } = useRetry(guide.retry, busy);
   const clarification = answer?.status === 'NEEDS_CLARIFICATION' ? answer.clarification : null;
   const step = found(steps);
 
@@ -84,7 +88,7 @@ export function GuidePicks({ guide, picks, listed, onPick, onClose }: {
   const reading = answer ?? { ...step.understood, constraints: step.planned?.constraints };
 
   return (
-    <PicksBar state={state} question={question} onClose={onClose} closeLabel={t('guide.close')} ai={answer?.aiContent}
+    <PicksBar state={state} question={question} onClose={onClose} closeLabel={t('guide.close')} ai={answer?.aiContent} titleRef={focusRef}
       footer={(
         <>
           {!clarification && <Understood reading={reading} onRefine={busy ? undefined : refine} />}
@@ -97,7 +101,7 @@ export function GuidePicks({ guide, picks, listed, onPick, onClose }: {
       {state.kind === 'error' && (
         <div className="h2-picks__error">
           <p role="alert"><Icon name="warn" /> {guideError(error, t)}</p>
-          <button type="button" className="btn btn-primary" onClick={retry}><Icon name="refresh" /> {t('common.retry')}</button>
+          <RetryButton onClick={retry} />
         </div>
       )}
       {clarification && <Clarify clarification={clarification} model={answer?.aiContent?.models[0]} onRefine={refine} />}
