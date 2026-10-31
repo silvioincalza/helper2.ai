@@ -145,7 +145,7 @@ $PSQL "SELECT coalesce(version, 'R'), description, success FROM flyway_schema_hi
 # Every foreign key states its delete rule: CASCADE, SET NULL, RESTRICT or NO ACTION, as in SchemaContractTest.
 $PSQL "SELECT delete_rule, count(*) FROM information_schema.referential_constraints
        WHERE constraint_schema = 'public' GROUP BY 1 ORDER BY 1"
-#   CASCADE|21, NO ACTION|4, RESTRICT|3, SET NULL|3
+#   CASCADE|20, NO ACTION|4, RESTRICT|3, SET NULL|3 (30 foreign keys)
 
 # The seeds are in; the Scout adds INDEXED rows over the next hours.
 $PSQL "SELECT data_origin, count(*) FROM resource GROUP BY 1 ORDER BY 1"
