@@ -8,7 +8,7 @@ The design system for every part of Helper2.ai: the search-and-ask box, results,
 2. **Show where every fact came from.** Each result, card, fact and pick names its source. A value no source stated reads **Unknown**, in `not-stated`. Dates are the source's own; otherwise "First seen" with the date Helper2.ai first saw it.
 3. **Checked versus not checked.** A guide quote the validator matched word for word sits on `quote-bg` with a **Quote checked** badge (`checked-bg` / `checked-ink`). The model's own reason is always labeled "Model's explanation (not checked)" and is never styled like the quote.
 4. **State in words, not color alone.** Every status (source answered, cached, rate-limited, failed; verified, conflicting, rejected) carries a word and an icon. Color only repeats it.
-5. **Editorial voice, tool behavior.** Space Grotesk (`display`) for page and section headings, feed titles and quotes. Inter (`sans`) for every control and all running text. JetBrains Mono (`mono`) for resource names and source status.
+5. **Editorial voice, tool behavior.** Space Grotesk (`display`) for page and section headings, board and result titles, and quotes. Inter (`sans`) for every control and all running text. JetBrains Mono (`mono`) for resource names and source status.
 6. **Quiet surfaces, one accent.** Saffron `accent` marks the one primary action per area. Selection uses `selected` (ink), so state and action never look alike.
 
 ## Content fundamentals
@@ -139,6 +139,8 @@ The first v3 parts are React components in `frontend/src/components/ui/` (ADR 00
 | SourcesGrid, its tiles | `SourceTiles` (the fan-out line comes with the results page) |
 | Guide picks bar | `PicksBar` |
 | NewsBoard (News and Events) | `HomeBoard`, filled by `NewsBoard` and `EventsBoard` (`components/home/`) |
+| States (error, empty, 404) | `StatePanel`, with `RetryButton` for Try again |
+| Copy button | `CopyButton` (setup snippets, the guide prompt) |
 
 `StatusPill` and `ProofQuote` keep their names.
 

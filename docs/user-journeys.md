@@ -83,6 +83,8 @@ Sign-in exists for administrators ([ADR 0023](adr/edge/0023-identity-and-admin.m
 
 **Failure case:** sign-in fails or the provider is down → `/admin?signin=failed` says "Sign-in did not complete. Try again."; anonymous use is unaffected.
 
+**Delete the account.** The signed-in name in the header opens the account page (`/account`): who is signed in, and **Delete my account**. A dialog asks to confirm, with focus on Cancel; Escape closes it and focus goes back to the button. On confirm the account and its saved items are deleted and the page reloads, signed out. If the deletion fails, an alert says so and the account stays. While the page asks who is signed in it says "Loading…". Signed out, the page says there is no account to delete and links to Privacy; it offers no sign-in.
+
 ## UJ-8 Understand coverage and sources
 
 1. **Sources** page lists every configured source: mode (LIVE, INDEXED, CURATED, DEMO), what it covers, homepage, terms, attribution, last outcome and check time.
@@ -94,7 +96,33 @@ Sign-in exists for administrators ([ADR 0023](adr/edge/0023-identity-and-admin.m
 2. Sees the review queue: enrichment outputs that failed validation, source conflicts, unverified relationship candidates, user reports. Accepts or rejects each with a note.
 3. Triggers a scout run for one source or all; sees run history with items seen/changed and failures.
 
+Each item is a row: the kind, the date and the resource in the meta line, the reason and the details, then **Accept** and **Reject**. A closed item, and each run, shows its status in words in a pill. One action runs at a time; the other buttons wait.
+
+| State | Behavior |
+|---|---|
+| Loading | "Loading…" in the queue and in the runs. |
+| Empty | "Nothing in this queue." / "No runs yet." |
+| Error | "Could not load the review queue." with Try again; focus stays on the queue's heading. An action that fails says so above the queue. |
+| Not an admin | A signed-in user without the role sees that an administrator account is needed, with a link to the home page. |
+
 **Failure cases:** LLM provider unavailable → runs complete with `LLM_UNAVAILABLE`, original source metadata stays published; one connector failing does not stop others.
+
+## UJ-10 See what is new (home boards)
+
+**Entry:** the home page, under the box and the examples.
+
+1. **News**: what came into the Helper2 index in the last 7 days, by the date each source states (Published, Updated), or First seen when no source states one. Tools and research only.
+2. **Events**: AI events in the next three months, soonest first, only those whose source states the dates. The status says how soon ("Today", "In 13 days"); the next one stands out.
+3. Each row: the date, the type tag, the source or the place, the status pill, and the name. The name opens the resource page (UJ-4).
+4. A board with five rows or more scrolls slowly on its own. Hover, keyboard focus and a tap pause it; a tap again plays. With reduced motion it stands still and scrolls by hand. A screen reader reads each row once.
+
+**Exit:** a row's name to its resource page, the box, the examples.
+
+| State | Behavior |
+|---|---|
+| Loading | Skeleton rows. |
+| Empty | The board says there is nothing in its window ("Nothing with a stated publication date in the last 7 days."). The box above is the next step. |
+| Error | An alert under the board's heading with Try again. |
 
 ## Success criteria (product level)
 

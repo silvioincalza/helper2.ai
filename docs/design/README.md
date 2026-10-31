@@ -27,7 +27,7 @@ One system for every feature. Start with [system/README.md](system/README.md) (p
 | Path | What |
 |---|---|
 | `tokens.json` | Colors (light and dark), type, spacing, radius, sizes. The frontend's `frontend/src/styles/tokens.css` mirrors it. |
-| `components/<Name>/README.md` | Guidelines per component: Header, Omnibox, Button, Pill, Badge, ResultCard, FactList, GuidePick, FeedRow, Banner, SourceStatus |
+| `components/<Name>/README.md` | Guidelines per component: Header, Omnibox, Button, Pill, Badge, ResultCard, FactList, GuidePick, Banner, SourceStatus, Footer, Cover |
 | `components/<Name>/preview.html` | Live preview markup (needs the artifact's generated `tokens.css`) |
 | `components/bundle.css` | The `h2-` component classes |
 | `assets/Logos/radar-mark.svg` | The radar mark |
@@ -39,7 +39,6 @@ Each `.dc.html` is one board; `canvas.json` lays them out. They render inside th
 | Board | What |
 |---|---|
 | `DS-Brand`, `DS-Colors`, `DS-Type`, `DS-Components` | Design system page: brand book, every color in light and dark, type scale with spacing and radius, all 11 components |
-| `One-Page` | Clickable prototype: one page, one box (search + guide + What's new) |
 | `Website` | One-page marketing website |
 | `S-Header` | Shared header used by every screen |
 | `S-Home` … `S-Admin` | Mockups of every app screen: Home, Search results, Guide answer, Resource page, Saved, Sources, Admin |
