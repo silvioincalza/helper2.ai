@@ -4,7 +4,8 @@
 #   backend/src/main/kotlin/ai/helper2/guide/GuideCost.kt (GuideAnswerCache), SimilarQuestions.kt,
 #   backend/src/main/java/ai/helper2/guide/internal/GuideConfiguration.java (embedder adapter),
 #   backend/src/main/java/ai/helper2/catalog/internal/NvidiaEmbedder.java,
-#   backend/src/main/java/ai/helper2/guide/internal/JdbcGuideAnswerStore.java, JdbcSimilarQuestionIndex.java.
+#   backend/src/main/java/ai/helper2/guide/internal/SharedGuideAnswerStore.java, JdbcSimilarQuestionIndex.java,
+#   backend/src/main/java/ai/helper2/platform/cache/JdbcSharedCache.java.
 # Render: cd docs/diagrams && d2 fmt sequence-0041-guide-answer-cache.d2 && d2 sequence-0041-guide-answer-cache.d2 sequence-0041-guide-answer-cache.svg
 
 ...@style
@@ -20,7 +21,7 @@ index: JdbcSimilarQuestionIndex {class: app}
 db: "PostgreSQL\n(pgvector)" {class: data}
 
 svc -> cache: "get(SHA-256 of the normalised question …)"
-cache -> db: "SELECT answer FROM guide_answer\nWHERE answer_key = <key> AND build = <build>"
+cache -> db: "SELECT value FROM ai_cache WHERE cache_name =\n'guide-answer' AND key_hash = <sha256 of build, key>"
 db -> cache: "no row"
 cache -> svc: "miss"
 svc -> model: "plan(question) — after single-flight\nand the client quota (ADR 0017)" {class: ai-call}

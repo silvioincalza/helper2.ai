@@ -1,4 +1,4 @@
-# 0041 — Guide answer cache: normalised keys in PostgreSQL, reuse for a near-identical question read the same way
+# 0041 — Guide answer cache: normalised keys, answers in the shared cache, reuse for a near-identical question read the same way
 
 **Status.** Accepted. **Builds on:** [0004](../foundation/0004-persistence-and-provenance.md), [0012](../search/0012-vector-search-pgvector.md), [0017](0017-guide-cost-guard.md), [0030](../quality/0030-guide-evaluation.md), [0032](0032-guide-intents.md), [0034](../operations/0034-data-retention.md), [0037](../search/0037-tavily-store-and-daily-quota.md), [0038](0038-ai-content-marking.md)
 
@@ -36,15 +36,16 @@ The key is the SHA-256 of normalised question | audience path | config hash ([00
 normalised clarification | removed parts of the reading. A clarification and removed parts stay in the key: they are
 part of the question ([0032](0032-guide-intents.md) §3, §9). No store sees the question text.
 
-### 2. Store: PostgreSQL
-`guide_answer (answer_key, build, answer jsonb, expires_at)` (`JdbcGuideAnswerStore`). One row per key; a new answer
-for the key replaces it. `build` is the running release (`H2_BUILD_VERSION`): a release reads only its own answers, so
-a deploy that changes how the guide reads or answers is seen at once. The answer is JSON in a versioned envelope; an
-entry that does not read is a miss. `expires_at` = the answer's `generatedAt` + its time to live: 24 h
-(`H2_GUIDE_CACHE_TTL`), 6 h for a dated question, never past its web results ([0037](../search/0037-tavily-store-and-daily-quota.md)).
-A read ignores an expired row; the guide purge deletes it the next night ([0034](../operations/0034-data-retention.md)).
-A database error is a miss, never a failed question. Single-flight stays in memory: it coordinates the work of one
-replica, it does not cache.
+### 2. Store: the shared cache in PostgreSQL
+`SharedGuideAnswerStore` keeps each answer in the shared cache `guide-answer` (`SharedCaches`, table `ai_cache`,
+[0005](../foundation/0005-redis-disposable-cache.md)), like the other model answers: one primary-key lookup, one upsert,
+the `db-cache` policy, the shared cache purge. The stored key is the SHA-256 of the running release
+(`H2_BUILD_VERSION`) and the guide's key: a release reads only its own answers, so a deploy that changes how the guide
+reads or answers is seen at once. The answer is JSON in a versioned envelope; an entry that does not read is a miss.
+It is kept for the answer's time to live counted from its `generatedAt`: 24 h (`H2_GUIDE_CACHE_TTL`), 6 h for a
+dated question, never past its web results ([0037](../search/0037-tavily-store-and-daily-quota.md)). A database error
+is a miss, never a failed question. Single-flight stays in memory: it coordinates the work of one replica, it does
+not cache.
 
 ### 3. Reuse for a near-identical question
 Off unless `H2_GUIDE_SIMILAR_THRESHOLD` is set. On an exact-key miss, after single-flight and the client quota, the
@@ -66,8 +67,9 @@ plan runs as for any fresh question. Then `AskGuide` looks for a stored question
 - The reused answer is stored under the new question's own key until the original expires, so the next identical
   question is an exact hit. It is not indexed: a chain of near twins would drift from the question that was answered.
 - A fresh answer that is cached is indexed in `guide_similar_question (answer_key, group_key, embedding vector(1024),
-  expires_at)` (`JdbcSimilarQuestionIndex`), with its answer's expiry. The row goes with its answer (`ON DELETE
-  CASCADE`) or at its own expiry (guide purge).
+  expires_at)` (`JdbcSimilarQuestionIndex`), with its answer's expiry. A read skips an expired row; the guide purge
+  deletes it the next night ([0034](../operations/0034-data-retention.md)). It is its own table, not the shared cache,
+  because the lookup is a distance search, not a key.
 
 The nearest-neighbour search is an exact scan of the group's live rows by cosine distance (`<=>`). A group holds a few
 rows at our size, so no approximate index is needed, and the result is exact.
@@ -123,12 +125,14 @@ A reused answer counts as outcome `cached` in `helper2.guide.questions`.
   A lawyer must confirm: whether a question embedding is personal data under the nFADP and the GDPR, the legal basis
   for keeping it, and the transfer of the question text to the NVIDIA API catalog in the United States.
 - Every read and write of the cache is a database call on the guide's path (a primary-key lookup; the group scan
-  reads a few rows).
+  reads a few rows), under the `db-cache` policy for the answers.
 
 ## Alternatives considered
 - **Redis for the answers and a Redis sorted set or Redis 8 vector set for the index** — per-entry time to live for
-  free, but AI answers are kept on disk and shared from PostgreSQL; a vector set has no time to live per element, and
-  its default 8-bit quantisation shifts scores near the threshold.
+  free, but model answers are kept on disk and shared from PostgreSQL; a vector set has no time to live per element,
+  and its default 8-bit quantisation shifts scores near the threshold.
+- **A table of its own for the answers** — a second cache table and a second purge for what the shared cache does.
+- **The question embeddings in the shared cache** — a key-value table cannot find the nearest vector.
 - **pgvector with an HNSW index on `guide_similar_question`** — approximate, and the filter on group and expiry would
   need an iterative scan ([0012](../search/0012-vector-search-pgvector.md)); an exact scan of a few rows per group is simpler and exact.
 - **Reuse before the plan, on the embedding alone** — saves the plan call, but the evaluation shows the embedding
@@ -141,17 +145,17 @@ A reused answer counts as outcome `cached` in `helper2.guide.questions`.
 
 ## Code
 - `backend/src/main/kotlin/ai/helper2/guide/GuideCost.kt` — `GuideAnswerCache` (`key`, `normalized`, `put`),
-  `GuideAnswerStore`, `GuideAnswerRetention`.
+  `GuideAnswerStore`.
 - `backend/src/main/kotlin/ai/helper2/guide/SimilarQuestions.kt` — `ReadingKey`, `SimilarQuestions`, `QuestionEmbedder`,
-  `SimilarQuestionIndex`.
+  `SimilarQuestionIndex`, `SimilarQuestionRetention`.
 - `backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt` — `ask`, `similarAnswer`; `PurgeExpiredData.kt`.
-- `backend/src/main/java/ai/helper2/guide/internal/JdbcGuideAnswerStore.java`, `JdbcSimilarQuestionIndex.java`,
+- `backend/src/main/java/ai/helper2/guide/internal/SharedGuideAnswerStore.java`, `JdbcSimilarQuestionIndex.java`,
   `GuideConfiguration.java` (`similarQuestions`), `GuideRetentionSchedule.java`; `platform/PgVectors.java`.
-- `backend/src/main/resources/db/migration/V1__schema.sql` — `guide_answer`, `guide_similar_question`.
+- `backend/src/main/resources/db/migration/V1__schema.sql` — `guide_similar_question`.
 - `docs/eval/guide-similar.json`, `guide-similar-vectors.json`; `backend/src/test/kotlin/ai/helper2/eval/GuideSimilarEvaluation.kt`,
   `GuideSimilarEvaluationTest.kt`, `GuideSimilarRecorder.kt`.
-- Tests: `GuideAnswerKeyTest`, `SimilarQuestionsTest`, `AskGuideSimilarTest`, `JdbcGuideAnswerStoreIT`,
-  `JdbcGuideAnswerStoreTest`, `GuideSimilarConfigurationTest`.
+- Tests: `GuideAnswerKeyTest`, `SimilarQuestionsTest`, `AskGuideSimilarTest`, `JdbcSimilarQuestionIndexIT`,
+  `SharedGuideAnswerStoreTest`, `GuideSimilarConfigurationTest`, `GuideApiIT`.
 
 ## Diagrams
 [flow](../../diagrams/flow-0041-guide-answer-cache.svg) · [sequence](../../diagrams/sequence-0041-guide-answer-cache.svg)

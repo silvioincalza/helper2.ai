@@ -24,7 +24,7 @@ guide: "guide (Kotlin domain)" {
   p_model: GuideModel {class: port}
   p_store: "GuideAnswerStore\nSimilarQuestionIndex" {class: port}
   model: "SpringAiGuideModel" {class: app}
-  store: "JdbcGuideAnswerStore\nJdbcSimilarQuestionIndex" {class: app}
+  store: "SharedGuideAnswerStore\nJdbcSimilarQuestionIndex" {class: app}
   ctl -> quota
   quota -> core: {class: hot}
   core -> p_model: {class: ai-call}
@@ -44,7 +44,7 @@ platform: "platform.llm" {
 }
 
 redis: "Redis\nh2:v1:budget:*" {shape: cylinder; class: data}
-pg: "PostgreSQL + pgvector\nguide_answer\nguide_similar_question" {shape: cylinder; class: data}
+pg: "PostgreSQL + pgvector\nai_cache (guide-answer)\nguide_similar_question" {shape: cylinder; class: data}
 embed: "NVIDIA API catalog\nnemotron-3.5-embed-1b\n(similar questions, ADR 0041)" {class: ai}
 nebius: "Nebius Token Factory\nNano: plan\nSuper: choose, reason check" {class: ai}
 

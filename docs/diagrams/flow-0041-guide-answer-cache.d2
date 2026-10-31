@@ -3,9 +3,10 @@
 # Source of truth: backend/src/main/kotlin/ai/helper2/guide/GuideCost.kt (GuideAnswerCache.key, normalized, put),
 #   backend/src/main/kotlin/ai/helper2/guide/SimilarQuestions.kt (ReadingKey, SimilarQuestions),
 #   backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (ask, similarAnswer),
-#   backend/src/main/java/ai/helper2/guide/internal/JdbcGuideAnswerStore.java, JdbcSimilarQuestionIndex.java,
+#   backend/src/main/java/ai/helper2/guide/internal/SharedGuideAnswerStore.java, JdbcSimilarQuestionIndex.java,
 #   GuideConfiguration.java (similarQuestions, H2_GUIDE_SIMILAR_THRESHOLD), GuideRetentionSchedule.java,
-#   backend/src/main/resources/db/migration/V1__schema.sql (guide_answer, guide_similar_question).
+#   backend/src/main/resources/db/migration/V1__schema.sql (ai_cache, guide_similar_question),
+#   backend/src/main/java/ai/helper2/platform/cache/JdbcSharedCache.java.
 #   Rate limit, slot, single-flight and quota between the two lookups: flow-0017.
 # Render: cd docs/diagrams && d2 fmt flow-0041-guide-answer-cache.d2 && d2 flow-0041-guide-answer-cache.d2 flow-0041-guide-answer-cache.svg
 
@@ -16,7 +17,7 @@ direction: down
 ask: "Guide question\n(+ clarification, drops)" {class: person}
 norm: "Normalise: NFKC, lower case,\nno quote marks or invisible\ncharacters, one space, no final\n. ? ! … (word order kept)" {class: app}
 key: "Key = SHA-256(normalised question |\npath | config hash |\nclarification | drops)" {class: app}
-exact: "guide_answer row for this key\nand build, not expired?" {class: decision}
+exact: "Shared cache guide-answer:\nrow for this key and build,\nnot expired?" {class: decision}
 cachedExact: "Cached answer\ncache result=exact" {class: end}
 guards: "Single-flight and\nclient quota (ADR 0017)" {class: app}
 plan: "Plan (fast model):\nintent, subjects, constraints,\nwindow (ADR 0032)" {class: ai}
@@ -30,7 +31,7 @@ reuse: "Reuse that answer\ncache result=similar,\nno search, no web search taken
 copy: "Store it under this key\nuntil the original expires;\nnot indexed" {class: data}
 fresh: "Search → choose → validate →\nreason check\ncache result=miss" {class: ai}
 cacheable: "Cacheable?\n(ADR 0017)" {class: decision}
-put: "guide_answer: expires_at =\ngeneratedAt + TTL" {class: data}
+put: "Shared cache (ai_cache):\nexpires at generatedAt + TTL" {class: data}
 probe: "Probe taken?" {class: decision}
 index: "guide_similar_question:\nembedding, group, same expiry" {class: data}
 answer: "Answer" {class: end}
@@ -58,5 +59,5 @@ put -> probe
 probe -> index: yes
 probe -> answer: no
 index -> answer
-purge: "Daily guide purge:\nDELETE rows past expires_at\n(ADR 0034)" {class: data}
+purge: "Daily purges (ADR 0034):\nshared cache, and the guide's\nfor guide_similar_question" {class: data}
 put -> purge: "later" {style.stroke-dash: 3}

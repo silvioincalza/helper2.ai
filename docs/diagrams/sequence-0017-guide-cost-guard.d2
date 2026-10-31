@@ -4,7 +4,7 @@
 #   backend/src/main/java/ai/helper2/guide/web/GuideLimits.java, GuideController.java,
 #   backend/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java (trySlot on the guide bulkhead),
 #   backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (AskGuide.ask), GuideCost.kt (ClientQuota, GuideAnswerCache),
-#   backend/src/main/java/ai/helper2/guide/internal/JdbcGuideAnswerStore.java.
+#   backend/src/main/java/ai/helper2/guide/internal/SharedGuideAnswerStore.java, backend/src/main/java/ai/helper2/platform/cache/JdbcSharedCache.java.
 # Render: cd docs/diagrams && d2 fmt sequence-0017-guide-cost-guard.d2 && d2 sequence-0017-guide-cost-guard.d2 sequence-0017-guide-cost-guard.svg
 
 ...@style
@@ -34,7 +34,7 @@ bulkhead -> limits: "slot (8 per replica)"
 limits -> limits: "deadline timer 90 s"
 limits -> svc: "ask(request, path, progress, client)\non a virtual thread"
 svc -> cache: "get(key)"
-cache -> db: "SELECT FROM guide_answer\nWHERE answer_key = <sha256>, this build"
+cache -> db: "SELECT value FROM ai_cache WHERE cache_name =\n'guide-answer' AND key_hash = <sha256 of build, key>"
 db -> cache: "no row"
 cache -> svc: "miss"
 svc -> svc: "inFlight.putIfAbsent(key)"
@@ -45,7 +45,7 @@ quota -> svc: "true"
 svc -> model: "plan, choose, verifyReasons\n(each attempt: llm-chat circuit,\nthen a guide budget unit)" {class: ai-call}
 model -> svc: "results"
 svc -> cache: "put(key, answer)\nif cacheable"
-cache -> db: "INSERT … ON CONFLICT DO UPDATE\nexpires_at ≤ 24 h"
+cache -> db: "INSERT INTO ai_cache … ON CONFLICT\nDO UPDATE, expires_at ≤ 24 h"
 svc -> svc: "inFlight.remove(key);\nwaiting askers get the answer"
 svc -> limits: "answer"
 limits -> bulkhead: "slot.release()"

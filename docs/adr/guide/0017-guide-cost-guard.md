@@ -27,7 +27,8 @@ The guards run in this order. Values are defaults; each has an `H2_` variable.
    characters of a Secure Hash Algorithm (SHA-256) hash over provider, both model ids, the rendered prompts, thinking
    flags, token limits, candidate text size, the validator's limits, the comparison and explanation limits
    (`AnswerLimits`) and `maxCandidates`. A new prompt or limit therefore never serves old answers. Answers live in
-   PostgreSQL (`guide_answer`, `JdbcGuideAnswerStore`, versioned JSON), shared by every replica, per build
+   the shared cache `guide-answer` in PostgreSQL (`ai_cache`, `SharedGuideAnswerStore`, versioned JSON), shared by
+   every replica, per build
    (`H2_BUILD_VERSION`, the image tag the chart passes): a restart keeps the answers, a deploy starts empty, so a
    change in how the guide reads or answers is seen at once and never hidden for 24 h by answers of the old code.
    Time to live (TTL) `H2_GUIDE_CACHE_TTL` (24 h), counted from the answer's `generatedAt`, which the page shows; an
@@ -80,7 +81,7 @@ The guards run in this order. Values are defaults; each has an `H2_` variable.
 - `backend/src/main/kotlin/ai/helper2/guide/AnswerLimits.kt` — comparison and explanation limits in the config hash.
 - `backend/src/main/java/ai/helper2/guide/web/GuideStreamController.java` — keep-alive comments.
 - `backend/src/main/java/ai/helper2/platform/ClientKey.java` — the client key for the rate limits and the quota.
-- `backend/src/main/java/ai/helper2/guide/internal/JdbcGuideAnswerStore.java`, `GuideConfiguration.java`.
+- `backend/src/main/java/ai/helper2/guide/internal/SharedGuideAnswerStore.java`, `GuideConfiguration.java`.
 - `backend/src/main/java/ai/helper2/platform/RateLimitInterceptor.java`, `RateLimiter.java`.
 
 ## Diagrams

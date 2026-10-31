@@ -65,7 +65,7 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
     p_model: GuideModel {class: port}
     p_store: "GuideAnswerStore\nSimilarQuestionIndex" {class: port}
     model: "SpringAiGuideModel\n(guide.internal)" {class: app}
-    store: "JdbcGuideAnswerStore\nJdbcSimilarQuestionIndex\n(guide.internal)" {class: app}
+    store: "SharedGuideAnswerStore\nJdbcSimilarQuestionIndex\n(guide.internal)" {class: app}
     ctl -> core: {class: hot}
     core -> p_model: {class: ai-call}
     core -> p_store
@@ -209,7 +209,8 @@ browser -> app.identity.me
 app.search.cache -> stores.redis: "h2:v1:src:*"
 app.search.web -> stores.pg: "tavily_query_result"
 app.platform.quota -> stores.redis: "h2:v1:quota:*"
-app.guide.store -> stores.pg: "guide_answer\nguide_similar_question"
+app.guide.store -> app.platform.cache: "guide answers"
+app.guide.store -> stores.pg: "guide_similar_question"
 app.platform.llm -> stores.redis: "h2:v1:budget:*"
 app.search.translator -> app.platform.cache: "translations"
 app.catalog.semantic -> app.platform.cache: "query vectors"
