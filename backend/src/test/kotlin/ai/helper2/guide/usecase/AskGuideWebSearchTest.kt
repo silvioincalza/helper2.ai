@@ -86,6 +86,7 @@ class AskGuideWebSearchTest {
             own?.let { counts[it] = used + 1 }
             return Result(Verdict.TAKEN, used + 1)
         }
+        override fun giveBack(counter: Counter) {}
         override fun used(counter: Counter) = counts[counter] ?: 0
         override fun delete(keys: Collection<String>) {}
     }

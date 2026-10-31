@@ -31,6 +31,10 @@ class WebSearchQuotaTest {
             return Result(Verdict.TAKEN, own?.let { counts[it] } ?: 0)
         }
 
+        override fun giveBack(counter: Counter) {
+            counts[counter] = maxOf(0, (counts[counter] ?: 0) - 1)
+        }
+
         override fun used(counter: Counter): Long = if (down) throw IllegalStateException("down") else counts[counter] ?: 0
 
         override fun delete(keys: Collection<String>) {}

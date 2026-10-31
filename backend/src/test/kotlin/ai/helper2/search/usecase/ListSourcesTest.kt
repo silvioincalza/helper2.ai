@@ -41,6 +41,7 @@ class ListSourcesTest {
     /** A counter with fixed counts; reading fails when [down]. */
     private class Counts(val counts: Map<Counter, Long>, val down: Boolean = false) : QuotaCounter {
         override fun take(own: Counter?, ownLimit: Int, global: Counter?, globalLimit: Long): Result = error("not counted here")
+        override fun giveBack(counter: Counter) = error("not counted here")
         override fun used(counter: Counter): Long = if (down) error("down") else counts[counter] ?: 0
         override fun delete(keys: Collection<String>) {}
     }

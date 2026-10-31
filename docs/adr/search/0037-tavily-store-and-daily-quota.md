@@ -42,7 +42,9 @@ used up. The counts must hold across 3 replicas, store no address and no query t
    calls of internal callers) counts on `h2:v1:quota:global:<UTC date>`, field `credits`: the credits of the day
    for the whole cluster. With `H2_TAVILY_GLOBAL_DAILY_CREDITS` set, the counter is capped; unset (the default) means
    no cap. The own and the global counter are checked and counted in **one Lua script** (`RedisQuotaCounter`), so
-   concurrent requests on any replica never pass a limit. Scout runs do not count here.
+   concurrent requests on any replica never pass a limit. The script counts before the `source-tavily` policy is
+   asked, so a live call that policy refuses (circuit open, bulkhead full) gives its credit back
+   (`WebSearchQuota.refund`); the asker's own web search stays taken. Scout runs do not count here.
 5. **Fail closed.** When Redis cannot answer or the `redis` policy refuses the call ([0033](../foundation/0033-resilience-policies.md)),
    no live Tavily call goes out (`SkipReason.QUOTA_UNAVAILABLE`, "Web search paused: the daily limit cannot be
    checked"); stored sets still answer. Credits are the only cost here that grows with traffic, and during a Redis

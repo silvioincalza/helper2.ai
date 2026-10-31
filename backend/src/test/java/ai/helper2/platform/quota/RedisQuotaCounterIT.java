@@ -75,6 +75,21 @@ class RedisQuotaCounterIT {
     }
 
     @Test
+    void givingBackTakesOneCountAwayButNeverGoesBelowZero() {
+        Counter global = new Counter(key(), "credits");
+        counter().take(null, 0, global, Long.MAX_VALUE);
+        counter().take(null, 0, global, Long.MAX_VALUE);
+
+        counter().giveBack(global);
+        assertThat(counter().used(global)).isEqualTo(1);
+        counter().giveBack(global);
+        counter().giveBack(global);
+        assertThat(counter().used(global)).isZero();
+        counter().giveBack(new Counter(key(), "credits"));
+        assertThat(counter().used(new Counter(key(), "credits"))).as("a key nobody counted").isZero();
+    }
+
+    @Test
     void aGlobalCounterWithoutACapCountsEveryCallAndRefusesNone() {
         Counter global = new Counter(key(), "credits");
 

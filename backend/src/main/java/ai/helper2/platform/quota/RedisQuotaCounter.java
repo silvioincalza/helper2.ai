@@ -45,6 +45,14 @@ public final class RedisQuotaCounter implements QuotaCounter {
         return {0, used}
         """, List.class);
 
+    /** KEYS: the key; ARGV: the field. Takes one off the field, never below 0. */
+    private static final RedisScript<Long> GIVE_BACK = RedisScript.of("""
+        if tonumber(redis.call('HGET', KEYS[1], ARGV[1]) or '0') > 0 then
+          return redis.call('HINCRBY', KEYS[1], ARGV[1], -1)
+        end
+        return 0
+        """, Long.class);
+
     private static final Verdict[] VERDICTS = {Verdict.TAKEN, Verdict.LIMIT_REACHED, Verdict.GLOBAL_LIMIT_REACHED};
 
     private final StringRedisTemplate redis;
@@ -69,6 +77,11 @@ public final class RedisQuotaCounter implements QuotaCounter {
             global == null ? "" : global.field(), Long.toString(globalLimit),
             Long.toString(KEEP.toMillis())));
         return new Result(VERDICTS[((Number) answer.get(0)).intValue()], ((Number) answer.get(1)).longValue());
+    }
+
+    @Override
+    public void giveBack(Counter counter) {
+        resilience.call("redis", () -> redis.execute(GIVE_BACK, List.of(counter.key()), counter.field()));
     }
 
     @Override

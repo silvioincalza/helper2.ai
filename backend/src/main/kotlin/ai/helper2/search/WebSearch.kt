@@ -153,6 +153,18 @@ class WebSearchQuota @JvmOverloads constructor(
         }
     }
 
+    /**
+     * Gives back the credit of the day [take] counted for a live call that did not go out (the source's circuit or
+     * bulkhead refused it). The asker's own web search stays taken. When the counter cannot answer, the credit stays
+     * counted: that errs towards the cap.
+     */
+    fun refund() {
+        try {
+            counter.giveBack(global())
+        } catch (_: RuntimeException) {
+        }
+    }
+
     /** The credits of the day for all of Helper2, without counting; null when the counter cannot be read. */
     fun creditsToday(): WebCredits? = try {
         WebCredits(counter.used(global()), globalDailyCredits)
