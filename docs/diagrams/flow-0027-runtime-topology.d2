@@ -1,7 +1,7 @@
 # Flowchart: what one Helm render of deploy/helm/helper2 decides from its values: the checks that fail the render,
 # then which workloads, PodDisruptionBudget and network policy rules it adds. Hosted values: values-staging.yaml,
 # values-prod.yaml. The resulting topology is drawn in infrastructure.d2.
-# Source of truth: deploy/helm/helper2/templates/_helpers.tpl, app.yaml, redis.yaml, cloudflared.yaml, ingress.yaml,
+# Source of truth: deploy/helm/helper2/templates/_helpers.tpl, app.yaml, redis.yaml,
 #   backup.yaml, networkpolicy.yaml, values.yaml, values-staging.yaml, values-prod.yaml.
 # Render: cd docs/diagrams && d2 fmt flow-0027-runtime-topology.d2 && d2 flow-0027-runtime-topology.d2 flow-0027-runtime-topology.svg
 
@@ -29,14 +29,12 @@ options: Per-environment values {
   direction: down
   replicas: "app.replicas > 1?\n(prod 3, staging 1)" {class: decision}
   pdb: "PodDisruptionBudget\nminAvailable = replicas − 1" {class: app}
-  edge: "cloudflared.enabled?\n(hosted: yes)" {class: decision}
-  tunnel: "cloudflared Deployment;\ningress-app allows it on 8080" {class: app}
-  ing: "ingress.enabled?\n(other clusters)" {class: decision}
-  ingress: "Ingress; ingress-app allows\nthe controller namespace on 8080" {class: app}
+  edge: "networkPolicy.ingressController\n.namespace set?\n(hosted: ingress-nginx)" {class: decision}
+  ingress: "ingress-app allows the controller's pods\non 8080 and the admin port\n(empty: no edge traffic)" {class: app}
   metrics: "networkPolicy.metricsNamespace?\n(hosted: observability)" {class: decision}
   scrape: "ingress-app allows it on 8081" {class: app}
   egress: "networkPolicy.egress.enabled?\n(default yes)" {class: decision}
-  out: "Egress per workload: app DNS, 5432, 6379,\nOTLP 4318, 443 without private ranges;\ncloudflared DNS, app 8080, 7844" {class: app}
+  out: "Egress per workload: app DNS, 5432, 6379,\nOTLP 4318, 443 without private ranges" {class: app}
   backup: "backup.enabled?\n(prod only)" {class: decision}
   cron: "pg-backup CronJob 02:30 Europe/Zurich,\nPVC kept on uninstall, 7 days;\npostgres accepts pg-backup" {class: app}
   offsite: "backup.offsite.enabled?\n(off unless configured)" {class: decision}
@@ -45,11 +43,8 @@ options: Per-environment values {
   replicas -> pdb: yes
   replicas -> edge: no
   pdb -> edge
-  edge -> tunnel: yes
-  edge -> ing: no
-  tunnel -> ing
-  ing -> ingress: yes
-  ing -> metrics: no
+  edge -> ingress: yes
+  edge -> metrics: no
   ingress -> metrics
   metrics -> scrape: yes
   metrics -> egress: no

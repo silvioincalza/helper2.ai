@@ -1,6 +1,6 @@
 apiVersion: v2
 name: helper2
-description: Helper2.ai on any Kubernetes cluster - app, Postgres, Redis, optional Ingress or Cloudflare tunnel, optional backup.
+description: Helper2.ai on any Kubernetes cluster - app, Postgres, Redis, network policies, optional backup.
 type: application
 version: 1.0.2
 # No appVersion: the image tag is passed per deploy (image.tag), and a fixed appVersion would show a

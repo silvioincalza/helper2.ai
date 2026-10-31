@@ -27,8 +27,11 @@ must load the app on a direct visit, and a new release must reach browsers at on
    evicted). Every such decision increments `helper2.rate-limit.fallback{limiter}`. Without Redis configured, only the
    in-memory limiter is used.
 4. **Client address.** `H2_FORWARD_HEADERS_STRATEGY` defaults to `none`, so `X-Forwarded-For` is ignored. The cluster
-   sets `native`: only `cloudflared` can reach the app's port 8080 (NetworkPolicy `ingress-app`), and Cloudflare sets
-   the header.
+   sets `native`: only the Ingress controller can reach the app's port 8080 (NetworkPolicy `ingress-app`). The chain
+   is Cloudflare (appends the visitor's address to `X-Forwarded-For`), the platform's tunnel, then ingress-nginx
+   (`compute-full-forwarded-for`: appends the tunnel pod's address). Tomcat's remote-IP handling reads the header from
+   the right and skips private and loopback addresses (its default `internalProxies`), so the first public address is the one
+   Cloudflare appended. A client can prepend addresses but cannot replace that one.
 5. **CSRF** (cross-site request forgery). `CookieCsrfTokenRepository.withHttpOnlyFalse()` with the SPA setup:
    cookie `XSRF-TOKEN`; `api/client.ts` sends it back as `X-XSRF-TOKEN` on every non-GET call. `CsrfCookieFilter` makes
    sure the cookie exists before the first POST.
@@ -37,8 +40,8 @@ must load the app on a direct visit, and a new release must reach browsers at on
    `Referrer-Policy: strict-origin-when-cross-origin`. The theme script is a file (`public/theme.js`), not inline.
 7. **Session cookie**: `SameSite=Lax`, `HttpOnly`, `Secure` by default (`H2_COOKIE_SECURE`, true; the `dev` profile sets false).
    The session itself is in Redis ([0023](0023-identity-and-admin.md)).
-8. **Management port.** `H2_MANAGEMENT_PORT` (empty = app port). The chart sets 8081; the Service and the tunnel route
-   only 8080. The NetworkPolicy `ingress-app` opens 8081 only to the `observability` namespace, so `H2_METRICS_PUBLIC=true` exposes
+8. **Management port.** `H2_MANAGEMENT_PORT` (empty = app port). The chart sets 8081; the Services and the Ingresses never route
+   it. The NetworkPolicy `ingress-app` opens 8081 only to the `observability` namespace, so `H2_METRICS_PUBLIC=true` exposes
    `/actuator/prometheus` only there; the other actuator endpoints, except health and info, stay ADMIN only. Health shows no details; Redis is left out of health.
 9. **SPA fallback and caching** (`SinglePageApp`, rules in [0001](../foundation/0001-stack-and-runtime.md)): hashed assets are cached
    for one year, `index.html` and other files are `no-cache`, so a new release reaches browsers at once. Search and guide

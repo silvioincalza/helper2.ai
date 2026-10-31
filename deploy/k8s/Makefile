@@ -1,12 +1,11 @@
 # helper2 on the incalza.me cluster, ENV=staging (helper2.incalza.me) or ENV=prod (helper2.ai).
 # Run from the workstation with the mesh (WireGuard) up.
 #
-# Required environment — the platform repo's .env / .secrets.env carry the first five:
-#   KUBECONFIG  R2_ACCESS_KEY_ID  R2_SECRET_ACCESS_KEY  TF_STATE_BUCKET  CF_ACCOUNT_ID  BAO_ADDR
+# Required environment: KUBECONFIG and BAO_ADDR, from the platform repo:
 #   set -a; . <incalza-me-infra>/.env; . <incalza-me-infra>/.secrets.env; set +a
 #   export KUBECONFIG=<incalza-me-infra>/.secrets/kubeconfig
+# The platform repo (incalza-me-infra) owns the namespaces, the Ingresses, DNS and the deployer RBAC.
 #
-#   make ENV=staging bootstrap   once per env: namespace + tunnel + DNS (+ www redirect in prod)
 #   make image                   build linux/amd64 image, push to Harbor (robot from OpenBao helper2/kv ci/harbor)
 #   make ENV=staging diff        what the next deploy would change
 #   make ENV=staging deploy      helm upgrade --install (chart ../helm/helper2) with TAG, wait, roll back on failure
@@ -15,7 +14,6 @@
 
 SHELL    := /bin/bash
 ROOT     := $(abspath ../..)
-TF       := terraform -chdir=terraform
 REGISTRY := harbor-i.infra.incalza.me
 IMAGE    := $(REGISTRY)/helper2/apps/helper2
 CHART    := ../helm/helper2
@@ -34,33 +32,14 @@ ifeq ($(filter $(ENV),staging prod),)
 $(error ENV must be staging or prod)
 endif
 
-export AWS_ACCESS_KEY_ID      = $(R2_ACCESS_KEY_ID)
-export AWS_SECRET_ACCESS_KEY  = $(R2_SECRET_ACCESS_KEY)
-export TF_VAR_kubeconfig_path = $(KUBECONFIG)
-export TF_VAR_environment     = $(ENV)
-
-.PHONY: help init plan bootstrap credentials backup-credentials image postgres-image chart-check check-env release-ready deploy diff rollback status
+.PHONY: help credentials backup-credentials image postgres-image chart-check check-env release-ready deploy diff rollback status
 
 help: ## this list
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
 
-# One state per environment (helper2-staging.tfstate, helper2-prod.tfstate); -reconfigure switches.
-init: ## terraform init against the state of ENV
-	@test -n "$(TF_STATE_BUCKET)" || { echo "TF_STATE_BUCKET is not set"; exit 1; }
-	@test -n "$(CF_ACCOUNT_ID)"   || { echo "CF_ACCOUNT_ID is not set"; exit 1; }
-	@printf 'bucket = "%s"\nkey = "$(NS).tfstate"\nregion = "auto"\nendpoints = { s3 = "https://%s.r2.cloudflarestorage.com" }\n' \
-		"$(TF_STATE_BUCKET)" "$(CF_ACCOUNT_ID)" > terraform/backend.hcl
-	$(TF) init -input=false -reconfigure -backend-config=backend.hcl
-
-plan: init ## what bootstrap would change
-	$(TF) plan -input=false
-
-bootstrap: init ## namespace + tunnel + DNS + tunnel token secret
-	$(TF) apply -input=false
-
 # What the CI deploy job of ENV reads (helper2/kv ci/<env>): the deployer's kubeconfig and app.env.
 # Needs a BAO_TOKEN with helper2-write: `export BAO_TOKEN=$(bao login -method=oidc -path=oidc -token-only role=helper2-operator)`.
-# Run after bootstrap, and again after an app.env change or a token rotation.
+# Run once per env, and again after an app.env change or a token rotation.
 API_SERVER ?= https://10.0.0.40:6443
 credentials: check-env ## write ENV's deployer kubeconfig + app.env to OpenBao for CI
 	@set -euo pipefail; \
@@ -140,7 +119,7 @@ HELM_ARGS = helper2 $(CHART) -n $(NS) -f $(CHART)/values-$(ENV).yaml \
 # PrometheusRule is checked against its CRD schema from the CRDs-catalog, pinned to a commit, and must hold the
 # alerts of deploy/monitoring/helper2-rules.yaml (read through the chart's files/ symlink).
 CRD_SCHEMAS := https://raw.githubusercontent.com/datreeio/CRDs-catalog/3eb90d47aba8d61919d4419dd38301536e32a94b/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json
-chart-check: ## helm lint + helm template | kubeconform, for staging and prod; Redis AOF + PVC; daily limits only where set; admin Service, tunnel never on the admin port; PrometheusRule = rule file; an envFile key without H2_ fails
+chart-check: ## helm lint + helm template | kubeconform, for staging and prod; Redis AOF + PVC; daily limits only where set; admin Service, ingress-nginx on 8080 and the admin port; PrometheusRule = rule file; an envFile key without H2_ fails
 	@set -euo pipefail; \
 	env=$$(mktemp); bad=$$(mktemp); trap 'rm -f "$$env" "$$bad"' EXIT; \
 	printf 'H2_DATABASE_PASSWORD=ci\nH2_REDIS_PASSWORD=00000000000000000000000000000000\n' > "$$env"; \
@@ -171,12 +150,12 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 		want=0; [ $$e = staging ] && want=4; \
 		[ "$$n" -eq "$$want" ] || { echo "$$e renders $$n daily limits, want $$want"; exit 1; }; \
 	done; \
-	echo "== admin port (ADR 0035): Service helper2-admin, never reachable through the tunnel"; \
+	echo "== edge (ADR 0035): Service helper2-admin; ingress-nginx may reach the app on 8080 and the admin port"; \
 	for e in prod staging; do \
 		r=(helm template helper2 $(CHART) -f $(CHART)/values-$$e.yaml --set image.tag=000000000000 --set-file envFile=$$env); \
 		if ! "$${r[@]}" --show-only templates/app.yaml | grep -q '^  name: helper2-admin$$'; then echo "$$e: no Service helper2-admin"; exit 1; fi; \
-		if "$${r[@]}" --show-only templates/networkpolicy.yaml | grep -A1 'app: cloudflared' | grep -q '8082'; then \
-			echo "$$e: cloudflared may reach the admin port"; exit 1; fi; \
+		"$${r[@]}" --show-only templates/networkpolicy.yaml | grep -A5 'kubernetes.io/metadata.name: ingress-nginx' \
+			| tr -d '\n' | grep -qE 'port: 8080, .*port: 8082, ' || { echo "$$e: ingress-nginx may not reach 8080 and 8082"; exit 1; }; \
 	done; \
 	echo "== PrometheusRule holds deploy/monitoring/helper2-rules.yaml"; \
 	rule=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --set-file envFile=$$env \
@@ -223,5 +202,5 @@ rollback: ## back to the previous helm revision of ENV
 
 status: ## ENV's pods (READY = the readiness probe) and the public site
 	kubectl -n $(NS) get pods -o wide
-	@# Actuator health is on the management port (8081), which the Service and the tunnel never route.
+	@# Actuator health is on the management port (8081), which the Services and the Ingresses never route.
 	curl -s -o /dev/null -w "https://$(HOST)/ -> %{http_code}\n" https://$(HOST)/

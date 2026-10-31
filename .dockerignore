@@ -6,5 +6,3 @@
 .env
 backend/bin
 deploy/k8s/**/app.env
-**/terraform.tfvars
-**/.terraform

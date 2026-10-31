@@ -1,11 +1,11 @@
-# Runtime infrastructure of the hosted helper2 on Kubernetes: the Cloudflare tunnel, the two
-# namespaces and their workloads (3 app pods on prod, 1 on staging, rolling updates, disruption budget),
+# Runtime infrastructure of the hosted helper2 on Kubernetes: Cloudflare and the platform's ingress-nginx, the
+# public and the in-network admin host, the two namespaces and their workloads (3 app pods on prod, 1 on staging, rolling updates, disruption budget),
 # what the per-workload network policies let each workload reach and accept, Redis auth and its AOF volume,
 # OpenBao and Harbor for delivery, Alloy -> Prometheus / Tempo for observability, and the prod backup
 # with its optional off-site copy to Cloudflare R2 (off today).
-# Not drawn yet: the admin host (ADR 0035) until its cutover to ingress-nginx is applied (roadmap).
-# Source of truth: deploy/helm/helper2 (values*.yaml, templates/*.yaml), deploy/k8s/terraform (main.tf,
-#   rbac.tf), deploy/k8s/Makefile, deploy/k8s/CI.md, .github/workflows/deploy.yml,
+# Source of truth: deploy/helm/helper2 (values*.yaml, templates/*.yaml), incalza-me-infra (DNS, tunnel,
+#   ingress-nginx, Ingresses helper2-public and helper2-admin, namespaces, deployer RBAC),
+#   deploy/k8s/Makefile, deploy/k8s/CI.md, .github/workflows/deploy.yml,
 #   backend/src/main/resources/application.yaml (management, tracing).
 # Render: cd docs/diagrams && d2 fmt infrastructure.d2 && d2 infrastructure.d2 infrastructure.svg
 
@@ -23,19 +23,22 @@ visitor: Visitor {class: person}
 
 cloudflare: CLOUDFLARE EDGE {
   class: group
-  dns: "DNS + TLS\nhelper2.ai · staging host" {class: ext}
-  redirect: "www.helper2.ai → apex\n(301, prod)" {class: ext}
-  tunnel: "Tunnels helper2-prod,\nhelper2-staging\n(remotely managed)" {class: ext}
+  dns: "Proxied DNS + TLS\nhelper2.ai · www.helper2.ai\nhelper2.incalza.me" {class: ext}
+  tunnel: "Platform tunnel\n(incalza-me-infra)" {class: ext}
   dns -> tunnel: {class: hot}
 }
 
-cluster: "KUBERNETES (no public ingress)" {
+cluster: KUBERNETES {
   class: group
 
-  prod: "ns helper2-prod · Pod Security restricted · ingress + egress default-deny\none policy per workload · ServiceAccount helper2: no RBAC, no token" {
+  ingress: "ns ingress-nginx" {
     class: group
-    cloudflared: "cloudflared\n--protocol http2\nout: Cloudflare edge TCP 7844" {class: app}
-    app: "helper2 Deployment · 3 pods\nRollingUpdate: maxSurge 1, maxUnavailable 0\nPDB minAvailable 2 · spread by node\nJava 25 JRE, heap 60% of 1Gi\n:8080 site + /api/v1 (Service)\n:8081 Actuator (not in Service)" {class: app}
+    nginx: "ingress-nginx\nIngress helper2-public → Service helper2\nIngress helper2-admin → Service helper2-admin\n(admin: vSwitch and mesh ranges only)" {class: app}
+  }
+
+  prod: "ns helper2-prod · ingress + egress default-deny\none policy per workload · ServiceAccount helper2: no RBAC, no token" {
+    class: group
+    app: "helper2 Deployment · 3 pods\nRollingUpdate: maxSurge 1, maxUnavailable 0\nPDB minAvailable 2 · spread by node\nJava 25 JRE, heap 60% of 1Gi\n:8080 site + /api/v1 (Service helper2)\n:8082 back office (Service helper2-admin)\n:8081 Actuator (in no Service)" {class: app}
     postgres: "postgres StatefulSet\nPostgreSQL 18.6 + pgvector 0.8.6\nPVC 5Gi local-path" {
       shape: cylinder
       class: data
@@ -53,12 +56,7 @@ cluster: "KUBERNETES (no public ingress)" {
       shape: page
       class: config
     }
-    token: "Secret cloudflared-token\n(Terraform)" {
-      shape: page
-      class: config
-    }
 
-    cloudflared -> app: ":8080 (only allowed caller)" {class: hot}
     app -> postgres: "JDBC :5432\n(data + shedlock locks)"
     app -> redis: ":6379 AUTH"
     backup -> postgres: ":5432"
@@ -66,7 +64,6 @@ cluster: "KUBERNETES (no public ingress)" {
     secret -> app: envFrom {class: config}
     secret -> redis: "requirepass via stdin" {class: config}
     secret -> postgres: {class: config}
-    token -> cloudflared: TUNNEL_TOKEN {class: config}
   }
 
   staging: "ns helper2-staging" {
@@ -84,6 +81,8 @@ cluster: "KUBERNETES (no public ingress)" {
     dns: "kube-dns :53\n(k8s-app=kube-dns)" {class: app}
   }
 
+  ingress.nginx -> prod.app: ":8080, :8082\n(only allowed caller)" {class: hot}
+  ingress.nginx -> staging.note: ":8080, :8082"
   observability.alloy -> prod.app: "scrape :8081" {class: config}
   prod.app -> observability.alloy: "traces OTLP/HTTP :4318"
   prod.app -> kubesystem.dns: "DNS (every workload)" {class: config}
@@ -127,8 +126,8 @@ delivery: "DELIVERY (WireGuard mesh)" {
 github: "GitHub Actions\n(cd.yml, deploy.yml)" {class: ext}
 
 visitor -> cloudflare.dns: HTTPS {class: hot}
-cloudflare.tunnel -> cluster.prod.cloudflared: "tunnel, dialled from the cluster" {class: hot}
-cloudflare.tunnel -> cluster.staging.note: "tunnel"
+cloudflare.tunnel -> cluster.ingress.nginx: "public hosts" {class: hot}
+delivery.workstation -> cluster.ingress.nginx: "admin hosts, DNS-only\n(LAN, WireGuard)"
 cluster.observability.alloy -> monitoring.prometheus: "remote write"
 cluster.observability.alloy -> monitoring.tempo: "traces"
 cluster.prod.app -> egress.nebius: "chat completions" {class: ai-call}

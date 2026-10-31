@@ -1,6 +1,6 @@
-# Ingress: nothing for any pod here (cloudflared and pg-backup stay at that), then allowed per workload
-# below. app <- the edge: cloudflared on 8080, the Ingress controller's namespace on 8080 and the admin port; <- the metrics
-# scraper's namespace (networkPolicy.metricsNamespace) on 8081; postgres <- app and pg-backup;
+# Ingress: nothing for any pod here (pg-backup stays at that), then allowed per workload below.
+# app <- the Ingress controller's pods (networkPolicy.ingressController) on 8080 and the admin port; <- the
+# metrics scraper's namespace (networkPolicy.metricsNamespace) on 8081; postgres <- app and pg-backup;
 # redis <- app.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -23,18 +23,13 @@ metadata:
 spec:
   podSelector: { matchLabels: { app: helper2 } }
   policyTypes: [Ingress]
-  {{- if .Values.ingress.enabled }}{{ $_ := required "ingress.controllerNamespace is required" .Values.ingress.controllerNamespace }}{{ end }}
-  {{- if or .Values.cloudflared.enabled .Values.ingress.controllerNamespace .Values.networkPolicy.metricsNamespace }}
+  {{- with .Values.networkPolicy }}
+  {{- if or .ingressController.namespace .metricsNamespace }}
   ingress:
-    {{- if .Values.cloudflared.enabled }}
-    # The tunnel is the public edge: the public port only, never the admin port.
-    - from: [{ podSelector: { matchLabels: { app: cloudflared } } }]
-      ports: [{ port: 8080, protocol: TCP }]
-    {{- end }}
-    {{- with .Values.ingress.controllerNamespace }}
+    {{- with .ingressController.namespace }}
     - from:
         - namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: {{ . }} } }
-          {{- with $.Values.ingress.controllerPodLabels }}
+          {{- with $.Values.networkPolicy.ingressController.podLabels }}
           podSelector: { matchLabels: {{ toJson . }} }
           {{- end }}
       ports:
@@ -43,10 +38,11 @@ spec:
         - { port: {{ $.Values.app.adminPort }}, protocol: TCP }
         {{- end }}
     {{- end }}
-    {{- with .Values.networkPolicy.metricsNamespace }}
+    {{- with .metricsNamespace }}
     - from: [{ namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: {{ . }} } } }]
       ports: [{ port: 8081, protocol: TCP }]
     {{- end }}
+  {{- end }}
   {{- end }}
 ---
 apiVersion: networking.k8s.io/v1
@@ -122,28 +118,6 @@ spec:
         {{- range .external.appPorts }}
         - { port: {{ . }}, protocol: TCP }
         {{- end }}
-{{- if $.Values.cloudflared.enabled }}
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: egress-cloudflared
-  namespace: {{ $.Release.Namespace }}
-  labels:
-    {{- include "helper2.labels" $ | nindent 4 }}
-spec:
-  podSelector: { matchLabels: { app: cloudflared } }
-  policyTypes: [Egress]
-  egress:
-    - {{ toJson $dns }}
-    - to: [{ podSelector: { matchLabels: { app: helper2 } } }]
-      ports: [{ port: 8080, protocol: TCP }]
-    - to: [{{ toJson $internet }}]
-      ports:
-        {{- range .external.cloudflaredPorts }}
-        - { port: {{ . }}, protocol: TCP }
-        {{- end }}
-{{- end }}
 {{- if $.Values.backup.enabled }}
 ---
 apiVersion: networking.k8s.io/v1

@@ -1,7 +1,7 @@
 # Sequence: a first visit to a client route, a search, a POST with the CSRF token, and a client over the limit.
-# Shows the path through the Cloudflare tunnel, the forwarded address, the cache headers of the SPA fallback,
+# Shows the path through Cloudflare and ingress-nginx, the forwarded address, the cache headers of the SPA fallback,
 # the CSRF cookie and header, the limiter counting in Redis (shared by all replicas), and the 429.
-# Source of truth: deploy/helm/helper2/templates/cloudflared.yaml, app.yaml,
+# Source of truth: deploy/helm/helper2/templates/app.yaml, networkpolicy.yaml,
 #   backend/src/main/java/ai/helper2/platform/SinglePageApp.java, RateLimitInterceptor.java, RateLimiter.java,
 #   RedisRateLimiter.java, ClientKey.java,
 #   backend/src/main/java/ai/helper2/identity/SecurityConfiguration.java, frontend/src/api/client.ts.
@@ -12,7 +12,7 @@
 shape: sequence_diagram
 
 browser: Browser {class: person}
-cf: "Cloudflare edge\n+ cloudflared" {class: ext}
+cf: "Cloudflare edge\n+ ingress-nginx" {class: ext}
 tomcat: "Tomcat\n(forward headers native)" {class: app}
 sec: "Security filters\n(CSRF, CSP)" {class: app}
 rl: "RateLimitInterceptor\n(RedisRateLimiter)" {class: app}

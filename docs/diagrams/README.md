@@ -14,7 +14,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [architecture-guide](architecture-guide.svg) | One guide question: AskGuide, the search it reuses, the evidence gate, the LLM layer. |
 | [architecture-index](architecture-index.svg) | How the index grows: Scout, collectors, enrichment, catalog storage and embeddings. |
 | [software-architecture](software-architecture.svg) | Software architecture of helper2: the Spring Modulith modules, their ports (pink hexagons) and the adapters that implement them, the two stores, and every external service the code calls. |
-| [infrastructure](infrastructure.svg) | Runtime infrastructure of the hosted helper2 on Kubernetes: the Cloudflare tunnel, the two namespaces and their workloads, what the network policy lets each workload reach (egress), Redis auth, OpenBao and Harbor for delivery, Alloy -> Prometheus / Tempo for observability, and the prod backup with its optional off-site copy to Cloudflare R2 (off today). |
+| [infrastructure](infrastructure.svg) | Runtime infrastructure of the hosted helper2 on Kubernetes: Cloudflare and ingress-nginx, the public and the admin host, the two namespaces and their workloads, what the network policy lets each workload reach (egress), Redis auth, OpenBao and Harbor for delivery, Alloy -> Prometheus / Tempo for observability, and the prod backup with its optional off-site copy to Cloudflare R2 (off today). |
 
 ## Per ADR
 
@@ -45,7 +45,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0024](../adr/edge/0024-http-edge-protection.md) | [flow](flow-0024-http-edge-protection.svg) | [sequence](sequence-0024-http-edge-protection.svg) | the checks a request meets at the HTTP edge of the app, in order. |
 | [0025](../adr/frontend/0025-frontend-one-box.md) | [flow](flow-0025-frontend-one-box.svg) | [sequence](sequence-0025-frontend-one-box.svg) | the one box. |
 | [0026](../adr/operations/0026-observability.md) | [flow](flow-0026-observability.svg) | [sequence](sequence-0026-observability.svg) | where each kind of telemetry goes, the switches that decide it, the Grafana dashboard and the alert rules. |
-| [0027](../adr/operations/0027-runtime-topology.md) | [flow](flow-0027-runtime-topology.svg) | [sequence](sequence-0027-runtime-topology.svg) | what one Helm render decides from its values, and the runtime paths: a request through the tunnel, probes and scrape on 8081, the nightly backup. |
+| [0027](../adr/operations/0027-runtime-topology.md) | [flow](flow-0027-runtime-topology.svg) | [sequence](sequence-0027-runtime-topology.svg) | what one Helm render decides from its values, and the runtime paths: a request through Cloudflare and ingress-nginx, probes and scrape on 8081, the nightly backup. |
 | [0028](../adr/operations/0028-ci-cd.md) | [flow](flow-0028-ci-cd.svg) | [sequence](sequence-0028-ci-cd.svg) | from a pull request to prod. |
 | [0029](../adr/operations/0029-release-versioning.md) | [flow](flow-0029-release-versioning.svg) | [sequence](sequence-0029-release-versioning.svg) | the release workflow, from a pushed v* tag to the published GitHub release. |
 | [0030](../adr/quality/0030-guide-evaluation.md) | [flow](flow-0030-guide-evaluation.svg) | [sequence](sequence-0030-guide-evaluation.svg) | scripts/eval-guide.mjs, from the fixed query set to docs/evaluation.md. |

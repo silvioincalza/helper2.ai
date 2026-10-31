@@ -48,7 +48,7 @@ signin: Sign-in {
 }
 
 req -> edge.host
-edge.host -> app.public: "public host\n(tunnel or ingress-nginx)" {class: hot}
+edge.host -> app.public: "public host\n(Cloudflare, ingress-nginx)" {class: hot}
 edge.allow -> app.admin: yes
 edge.allow -> edge.e403: no
 app.sec -> signin.listed: "GitHub sign-in\ncompleted"

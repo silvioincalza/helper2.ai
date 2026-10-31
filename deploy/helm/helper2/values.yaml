@@ -1,7 +1,9 @@
 # Generic defaults for any Kubernetes cluster. Per environment: a values file of your own
 # (values-staging.yaml and values-prod.yaml are the hosted helper2.ai environments).
-# Required: image.repository, image.tag, postgres.image.repository and envFile. Expose the app with
-# ingress.enabled or cloudflared.enabled (or your own route to the Service `helper2`, port 80).
+# Required: image.repository, image.tag, postgres.image.repository and envFile.
+# The chart creates no Ingress. Expose the app with your own Ingress or route: the public host to the Service
+# `helper2` (port 80), and an in-network host for the back office to the Service `helper2-admin` (port 80).
+# Then set networkPolicy.ingressController, so the controller's pods may reach the app.
 #
 # Object names are fixed (helper2, postgres, redis, ...), not prefixed with the release name: one
 # release per namespace, and the names had to stay identical when Helm adopted the kustomize objects.
@@ -106,37 +108,18 @@ redis:
     requests: { cpu: 20m, memory: 64Mi }
     limits: { memory: 192Mi }
 
-# Optional: expose the app through the cluster's Ingress controller.
-ingress:
-  enabled: false
-  # e.g. nginx, traefik. Empty = the cluster's default IngressClass.
-  className: ""
-  host: ""
-  # TLS Secret for host (e.g. issued by cert-manager through annotations). Empty = no TLS section.
-  tlsSecretName: ""
-  annotations: {}
-  # Namespace of the Ingress controller pods: the network policy lets only them reach the app, on the public port
-  # and the admin port. Set it also when the Ingress objects are managed outside this chart.
-  controllerNamespace: ""
-  # Optional pod labels that narrow the controller pods in that namespace, e.g. app.kubernetes.io/name: ingress-nginx.
-  controllerPodLabels: {}
-
-# Optional: expose the app through a remotely-managed Cloudflare tunnel. The token Secret
-# (tokenSecret, key `token`) is created outside the chart.
-cloudflared:
-  enabled: false
-  image: docker.io/cloudflare/cloudflared:2026.8.3
-  tokenSecret: cloudflared-token
-  resources:
-    requests: { cpu: 10m, memory: 32Mi }
-    limits: { memory: 128Mi }
-
 # templates/networkpolicy.yaml: ingress and egress denied for every pod in the namespace, then allowed
-# per workload. Ingress: app <- the edge on 8080 and the metrics scraper on 8081; postgres <- app and
-# pg-backup; redis <- app; cloudflared and pg-backup: nothing. Egress: app -> DNS, postgres, redis, the
-# OTLP collector, HTTPS to `external`; cloudflared -> DNS, the app, the Cloudflare edge; pg-backup ->
-# DNS, postgres, HTTPS to `external` when backup.offsite is on; postgres and redis: nothing.
+# per workload. Ingress: app <- the Ingress controller on 8080 and the admin port, the metrics scraper on 8081;
+# postgres <- app and pg-backup; redis <- app; pg-backup: nothing. Egress: app -> DNS, postgres, redis, the
+# OTLP collector, HTTPS to `external`; pg-backup -> DNS, postgres, HTTPS to `external` when backup.offsite
+# is on; postgres and redis: nothing.
 networkPolicy:
+  # The Ingress controller that serves your routes to the Services helper2 and helper2-admin. Its pods may reach
+  # the app on 8080 and on app.adminPort. Required to reach the app at all: empty namespace = no edge traffic.
+  ingressController:
+    namespace: ""
+    # Optional pod labels that narrow the controller pods in that namespace, e.g. app.kubernetes.io/name: ingress-nginx.
+    podLabels: {}
   # Namespace of the metrics scraper allowed on the management port 8081. Empty = no scraper access.
   metricsNamespace: ""
   egress:
@@ -155,8 +138,6 @@ networkPolicy:
       except: [10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10, 169.254.0.0/16]
       # The app speaks HTTPS only.
       appPorts: [443]
-      # cloudflared to the Cloudflare edge (--protocol http2 = TCP 7844).
-      cloudflaredPorts: [7844]
 
 # Nightly pg_dump to its own PVC, kept 7 days. Restore: deploy/k8s/README.md.
 backup:

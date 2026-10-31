@@ -78,8 +78,8 @@ traceable to that administrator.
 - ADMIN by GitHub login — logins can be renamed and taken by someone else.
 - An IP (Internet Protocol) address allow-list inside the app — the network edge decides who reaches the admin host ([0035](0035-admin-host.md)).
 - A shared admin password or API key — no per-person identity, and one more secret to rotate.
-- Sessions in each pod's memory with sticky routing — the Cloudflare tunnel and the Service do not pin a client
-  to one pod, and a deploy would sign the admin out.
+- Sessions in each pod's memory with sticky routing — the edge and the Service do not pin a client to one pod,
+  and a deploy would sign the admin out.
 - Sessions in PostgreSQL (Spring Session JDBC) — a durable store and cleanup job for short-lived data.
 
 ## Code

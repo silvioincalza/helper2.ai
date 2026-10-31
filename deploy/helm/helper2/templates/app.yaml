@@ -64,8 +64,8 @@ spec:
             {{- end }}
             {{- end }}
             - { name: H2_COOKIE_SECURE, value: "true" }
-            # Only the edge (cloudflared or the Ingress controller) reaches this pod (NetworkPolicy); the
-            # edge sets X-Forwarded-For, and Tomcat takes the right-most address that is not an internal proxy.
+            # Only the Ingress controller reaches this pod (NetworkPolicy); it sets X-Forwarded-For, and
+            # Tomcat takes the right-most address that is not an internal proxy.
             - { name: H2_FORWARD_HEADERS_STRATEGY, value: native }
             - { name: H2_LOG_FORMAT, value: logstash }
             # Tag on every metric and span; spans go by OTLP/HTTP to app.tracing.endpoint when export is on.
@@ -73,7 +73,7 @@ spec:
             - { name: H2_TRACING_EXPORT, value: {{ .Values.app.tracing.export | toString | quote }} }
             - { name: H2_TRACING_SAMPLING, value: {{ .Values.app.tracing.sampling | toString | quote }} }
             - { name: H2_OTLP_TRACES_ENDPOINT, value: {{ .Values.app.tracing.endpoint | quote }} }
-            # Actuator on its own port: the Service (and so the edge) only routes 8080, which keeps
+            # Actuator on its own port: the Services (and so the edge) never route 8081, which keeps
             # the metrics that are open on 8081 off the public site.
             - { name: H2_MANAGEMENT_PORT, value: "8081" }
             - { name: H2_METRICS_PUBLIC, value: "true" }
