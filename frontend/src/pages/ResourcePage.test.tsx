@@ -2,7 +2,8 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { makeCard, makeDetail } from '@/test/fixtures';
 import { mockApi, problem } from '@/test/mockApi';
-import { renderApp } from '@/test/render';
+import { axeViolations } from '@/test/a11y';
+import { renderApp, settle } from '@/test/render';
 import type { Evidence, Relationship, SetupGuide, ToolGuide } from '@/api/types';
 
 const ID = '11111111-1111-5111-8111-111111111111';
@@ -44,7 +45,7 @@ describe('resource detail', () => {
   };
 
   const STEPS: ToolGuide = {
-    resourceId: ID, title: 'pg-mcp-server', status: 'OK', question: null, rejected: 1, generatedAt: '2026-10-28T00:00:00Z', model: 'nemotron-nano',
+    resourceId: ID, title: 'pg-mcp-server', status: 'OK', rejected: 1, generatedAt: '2026-10-28T00:00:00Z', model: 'nemotron-nano',
     sections: [
       { kind: 'REQUIREMENTS', steps: [{ text: 'Install Node.js 20 or later.', quote: 'Requires Node.js 20 or later.', source: 'readme', caution: false }] },
       { kind: 'INSTALL', steps: [{ text: 'Install it with npm.', quote: 'Install globally:', source: 'readme', caution: false,
@@ -53,15 +54,13 @@ describe('resource detail', () => {
     documents: [{ key: 'readme', kind: 'README', url: 'https://github.com/acme/pg-mcp', retrievedAt: '2026-10-28T00:00:00Z' }],
   };
 
-  it('Guide me opens snippets per AI tool, checked steps from the README, and a follow-up box', async () => {
+  it('Guide me opens snippets per AI tool and checked steps from the README, with no question box', async () => {
     const m = mockApi({
       [`GET /resources/${ID}`]: () => makeDetail({ card: makeCard({ type: 'MCP_SERVER', title: 'pg-mcp-server' }) }),
       [`GET /resources/${ID}/setup`]: () => SETUP,
-      [`POST /resources/${ID}/guide`]: ({ body }) => (body as { question?: string }).question
-        ? { ...STEPS, question: 'Does it need an API key?', sections: [{ kind: 'ANSWER', steps: [{ text: 'No key; it needs a database URL.', quote: 'Pass the database URL', source: 'readme', caution: false }] }] }
-        : STEPS,
+      [`POST /resources/${ID}/guide`]: () => STEPS,
     });
-    renderApp(`/resource/${ID}`);
+    const { container } = renderApp(`/resource/${ID}`);
     const button = await screen.findByRole('button', { name: 'Guide me' });
     expect(button).toHaveAttribute('aria-expanded', 'false');
     expect(m.callsTo('GET', `/resources/${ID}/setup`)).toHaveLength(0);
@@ -82,12 +81,11 @@ describe('resource detail', () => {
     expect(screen.getByRole('heading', { name: 'What you need first' })).toBeInTheDocument();
     expect(screen.getByText('npm install -g @acme/pg-mcp')).toBeInTheDocument();
     expect(screen.getByText(/copied exactly from it; commands are not reviewed for safety/)).toBeInTheDocument();
-    expect(m.callsTo('POST', `/resources/${ID}/guide`)[0]?.body).toEqual({});
-
-    await userEvent.type(screen.getByLabelText('Ask about pg-mcp-server'), 'Does it need an API key?');
-    await userEvent.click(screen.getByRole('button', { name: 'Ask' }));
-    expect(await screen.findByText('No key; it needs a database URL.')).toBeInTheDocument();
-    expect(m.callsTo('POST', `/resources/${ID}/guide`)[1]?.body).toEqual({ question: 'Does it need an API key?' });
+    expect(m.callsTo('POST', `/resources/${ID}/guide`)).toHaveLength(1);
+    expect(m.callsTo('POST', `/resources/${ID}/guide`)[0]?.body).toBeUndefined();
+    expect(screen.queryByRole('textbox', { name: /Ask about/ })).not.toBeInTheDocument();
+    await settle();
+    expect(await axeViolations(container)).toEqual([]);
   });
 
   it('a run command copied from the README says it is not reviewed for safety', async () => {
@@ -108,7 +106,7 @@ describe('resource detail', () => {
     expect(await screen.findByText(/Runs locally with npx, copied from its README; not reviewed for safety/)).toBeInTheDocument();
   });
 
-  it('without setup data or documents it says why, and the follow-up box stays', async () => {
+  it('without setup data or documents it says why', async () => {
     mockApi({
       [`GET /resources/${ID}`]: () => makeDetail({ card: makeCard({ type: 'LIBRARY', title: 'acme-lib' }) }),
       [`GET /resources/${ID}/setup`]: () => ({ resourceId: ID, title: 'acme-lib', version: null, options: [], clients: [], sources: [] }),
@@ -118,7 +116,6 @@ describe('resource detail', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Guide me' }));
     expect(await screen.findByText(/acme-lib has no README or model card/)).toBeInTheDocument();
     expect(screen.queryByLabelText('Your AI tool')).not.toBeInTheDocument();
-    expect(screen.getByLabelText('Ask about acme-lib')).toBeInTheDocument();
   });
 
   it('offers no Guide me on a paper', async () => {

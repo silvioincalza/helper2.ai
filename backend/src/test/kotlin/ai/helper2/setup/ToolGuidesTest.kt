@@ -20,7 +20,7 @@ class ToolGuidesTest {
         var calls = 0
         override val model = "fake"
         override val configFingerprint = "fp"
-        override fun write(ref: ToolRef, materials: List<Material>, question: String?): ProposedGuide {
+        override fun write(ref: ToolRef, materials: List<Material>): ProposedGuide {
             calls++
             return reply()
         }
@@ -46,45 +46,47 @@ class ToolGuidesTest {
     private val good = ProposedGuide(listOf(ProposedSection("INSTALL", listOf(ProposedStep("Install it.", "readme", "Install with:", "npm install acme-x")))))
 
     @Test
-    fun `answers OK once, then from the cache, a question is its own entry`() {
+    fun `answers OK once, then from the cache`() {
         val model = Model { good }
         val cache = MemoryCache()
         val guides = guides(model, cache)
-        val a = guides.answer("id", ref, null)
+        val a = guides.answer("id", ref)
         assertEquals(Duration.ofDays(7), cache.ttls.values.single())
         assertEquals(ToolGuideStatus.OK, a.status)
-        guides.answer("id", ref, null)
+        assertEquals(a, guides.answer("id", ref))
         assertEquals(1, model.calls)
-        guides.answer("id", ref, "How do I  install it?")
-        guides.answer("id", ref, "how do i install it?")
-        assertEquals(2, model.calls)
     }
 
     @Test
-    fun `the kept answer holds neither the question nor the document text, a hit still answers with the question`() {
+    fun `the kept answer holds the checked steps and the document links, not the document text`() {
         val cache = MemoryCache()
         val guides = guides(Model { good }, cache)
-        val asked = guides.answer("id", ref, "How do I install it?")
-        assertEquals("How do I install it?", asked.question)
+        guides.answer("id", ref)
         val kept = cache.map.values.single()
-        assertNull(kept.question)
         assertEquals(listOf(MaterialRef("readme", MaterialKind.README, URI("https://github.com/acme/x"), clock.instant())), kept.materials)
-        assertEquals("how do I install it?", guides.answer("id", ref, "how do I install it?").question)
-        assertEquals(1, cache.map.size)
+        assertEquals("npm install acme-x", kept.sections.single().steps.single().code!!.text)
+    }
+
+    @Test
+    fun `a section the guide does not have is rejected, never shown`() {
+        val answer = ProposedGuide(listOf(ProposedSection("ANSWER", listOf(ProposedStep("Install it.", "readme", "Install with:", "npm install acme-x")))))
+        val a = guides(Model { answer }).answer("id", ref)
+        assertEquals(ToolGuideStatus.NO_STEPS, a.status)
+        assertEquals(mapOf("SECTION" to 1), a.rejectedBy)
     }
 
     @Test
     fun `no documents, no model, budget and nothing kept are told apart`() {
-        assertEquals(ToolGuideStatus.NO_MATERIAL, guides(Model { good }, ToolGuideCache.NONE, { emptyList() }).answer("id", ref, null).status)
+        assertEquals(ToolGuideStatus.NO_MATERIAL, guides(Model { good }, ToolGuideCache.NONE, { emptyList() }).answer("id", ref).status)
         val noRef = ToolRef.of("x", "PRODUCT", listOf("https://example.com"), emptyList())
-        assertEquals(ToolGuideStatus.NO_MATERIAL, guides(null, ToolGuideCache.NONE, { error("not called") }).answer("id", noRef, null).status)
-        val none = guides(null, ToolGuideCache.NONE).answer("id", ref, null)
+        assertEquals(ToolGuideStatus.NO_MATERIAL, guides(null, ToolGuideCache.NONE, { error("not called") }).answer("id", noRef).status)
+        val none = guides(null, ToolGuideCache.NONE).answer("id", ref)
         assertEquals(ToolGuideStatus.LLM_UNAVAILABLE, none.status)
-        val budget = guides(failing(ToolGuideUnavailable.Reason.BUDGET)).answer("id", ref, null)
+        val budget = guides(failing(ToolGuideUnavailable.Reason.BUDGET)).answer("id", ref)
         assertEquals(ToolGuideStatus.LLM_UNAVAILABLE, budget.status)
         assertEquals("budget", budget.unavailable)
         val invented = ProposedGuide(listOf(ProposedSection("INSTALL", listOf(ProposedStep("Install.", "readme", "Install with pip", "pip install acme-x")))))
-        val empty = guides(Model { invented }).answer("id", ref, null)
+        val empty = guides(Model { invented }).answer("id", ref)
         assertEquals(ToolGuideStatus.NO_STEPS, empty.status)
         assertEquals(1, empty.rejected)
     }
@@ -94,13 +96,12 @@ class ToolGuidesTest {
         val model = failing(ToolGuideUnavailable.Reason.UNREADABLE)
         val cache = MemoryCache()
         val guides = guides(model, cache)
-        val first = guides.answer("id", ref, "How do I install it?")
-        val again = guides.answer("id", ref, "how do I install it?")
+        val first = guides.answer("id", ref)
+        val again = guides.answer("id", ref)
         assertEquals(1, model.calls)
         assertEquals(ToolGuideStatus.LLM_UNAVAILABLE, first.status)
         assertEquals("error", first.unavailable)
-        assertEquals(first.copy(question = "how do I install it?"), again)
-        assertNull(cache.map.values.single().question)
+        assertEquals(first, again)
         assertEquals(Duration.ofMinutes(10), cache.ttls.values.single())
     }
 
@@ -110,8 +111,8 @@ class ToolGuidesTest {
             val model = failing(reason)
             val cache = MemoryCache()
             val guides = guides(model, cache)
-            guides.answer("id", ref, null)
-            val again = guides.answer("id", ref, null)
+            guides.answer("id", ref)
+            val again = guides.answer("id", ref)
             assertEquals(2, model.calls, reason.name)
             assertEquals(reason.shown, again.unavailable)
             assertEquals(emptyMap(), cache.map)
