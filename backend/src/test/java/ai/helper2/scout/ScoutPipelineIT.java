@@ -24,6 +24,7 @@ import net.javacrumbs.shedlock.core.LockConfiguration;
 import net.javacrumbs.shedlock.core.LockProvider;
 import net.javacrumbs.shedlock.core.SimpleLock;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
@@ -57,6 +58,8 @@ import org.springframework.test.web.servlet.MockMvc;
     "helper2.scout.max-enrichments-per-run=1",
     // Back-to-back admin runs test incremental sync; the hourly MCP interval is tested in McpRegistryCollectorTest.
     "helper2.scout.mcp-registry.interval=PT0S",
+    // No scheduled run (the default, said here): only the runs these tests start take the run lock.
+    "helper2.scout.enabled=false",
 })
 @AutoConfigureMockMvc
 @Import({TestcontainersConfiguration.class, ScoutPipelineIT.FakeLlm.class})
@@ -108,6 +111,22 @@ class ScoutPipelineIT {
 
     @Autowired
     JdbcClient jdbc;
+
+    /**
+     * The run lock is cluster-wide: every test context shares the one PostgreSQL, so a Scout run started by another
+     * test class may still hold it. Wait for it to end, so each test here starts with the lock free.
+     */
+    @BeforeEach
+    void runLockIsFree() throws InterruptedException {
+        Instant deadline = Instant.now().plusSeconds(60);
+        while (!runLockReleased()) {
+            if (Instant.now().isAfter(deadline)) {
+                throw new AssertionError("scout-run lock still held after 60 s: " + jdbc.sql(
+                    "SELECT locked_by, locked_at, lock_until FROM shedlock WHERE name = 'scout-run'").query().listOfRows());
+            }
+            Thread.sleep(50);
+        }
+    }
 
     @Test
     void collectsIndexesEnrichesAndOnlyPublishesEvidencedClaims() throws Exception {
@@ -217,9 +236,10 @@ class ScoutPipelineIT {
         throw new AssertionError("Scout run " + id + " still RUNNING after 30 s");
     }
 
+    /** No row yet (no run since the database was created) is free too. */
     private boolean runLockReleased() {
         return jdbc.sql("SELECT lock_until <= timezone('utc', now()) FROM shedlock WHERE name = 'scout-run'")
-            .query(Boolean.class).single();
+            .query(Boolean.class).optional().orElse(true);
     }
 
     private List<String> aiFields(String id) throws Exception {

@@ -71,6 +71,8 @@ class ReportAndReviewIT extends ApiTestBase {
         var admin = oauth2Login().authorities(new SimpleGrantedAuthority("ROLE_ADMIN"));
         mvc.perform(post("/api/v1/admin/scout-runs").with(admin).with(csrf()).contentType(MediaType.APPLICATION_JSON).content("{}"))
             .andExpect(status().isAccepted())
-            .andExpect(jsonPath("$[?(@.sourceId=='mcp-registry')].status").value("SKIPPED"));
+            .andExpect(jsonPath("$[?(@.sourceId=='mcp-registry')].status").value("SKIPPED"))
+            // Every collector: one left enabled here calls the network and holds the run lock other test classes need.
+            .andExpect(jsonPath("$[?(@.status != 'SKIPPED')]").isEmpty());
     }
 }
