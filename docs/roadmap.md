@@ -44,8 +44,8 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 - Turn on the registered Tavily tier (more web searches per day for signed-in users) once that sign-in is live
   ([ADR 0037](adr/search/0037-tavily-store-and-daily-quota.md)).
 - Admin host ([ADR 0035](adr/edge/0035-admin-host.md)): the app, the chart and the edge serve the admin port
-  (8082, Service `helper2-admin`, Ingress `helper2-admin` in incalza-me-infra). Left: add the admin callbacks to the
-  GitHub app, turn on `oauth-github` and `H2_ADMINS`. Staging first.
+  (8082, Service `helper2-admin`, Ingress `helper2-admin` in incalza-me-infra); staging signs in with GitHub. Left
+  for prod: the client secret and `H2_ADMINS` in its app_env, then the `oauth-github` profile in `values-prod.yaml`.
 
 ### Quality gates
 - **Browser end-to-end tests (skipped for now, owner decision 27 Oct 2026).** No browser journey is automated,
