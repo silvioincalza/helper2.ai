@@ -27,18 +27,18 @@ describe('resource detail', () => {
   const SETUP: SetupGuide = {
     resourceId: ID, title: 'pg-mcp-server', version: '1.2.0',
     options: [
-      { id: 'o1', kind: 'REMOTE', transport: 'STREAMABLE_HTTP', label: 'Hosted server (Streamable HTTP)', url: 'https://mcp.acme.dev/mcp', settings: [] },
+      { id: 'o1', kind: 'REMOTE', transport: 'SSE', label: 'Hosted server (SSE)', url: 'https://mcp.acme.dev/sse', settings: [] },
       { id: 'o2', kind: 'PACKAGE', transport: 'STDIO', label: 'npm package @acme/pg-mcp', registryType: 'npm', identifier: '@acme/pg-mcp', runtime: 'npx', requires: 'Node.js (npx)',
         settings: [{ name: 'DATABASE_URL', kind: 'ENV', description: 'Connection string', required: true, secret: true }] },
     ],
     clients: [
       { id: 'claude-code', name: 'Claude Code', docsUrl: 'https://code.claude.com/docs/en/mcp', snippets: [
-        { optionId: 'o1', supported: true, where: 'Terminal', language: 'shell', text: 'claude mcp add --transport http pg-mcp-server https://mcp.acme.dev/mcp' },
+        { optionId: 'o1', supported: true, where: 'Terminal', language: 'shell', text: 'claude mcp add --transport sse pg-mcp-server https://mcp.acme.dev/sse' },
         { optionId: 'o2', supported: true, where: 'Terminal', language: 'shell', text: "claude mcp add --env 'DATABASE_URL=<DATABASE_URL>' --transport stdio pg-mcp-server -- npx -y @acme/pg-mcp@1.2.0" },
       ] },
-      { id: 'goose', name: 'Goose', docsUrl: 'https://goose-docs.ai/docs/guides/config-files', snippets: [
-        { optionId: 'o1', supported: true, where: '~/.config/goose/config.yaml', language: 'yaml', text: 'extensions:' },
-        { optionId: 'o2', supported: false, note: 'This client\'s documentation does not describe a way to configure this.' },
+      { id: 'codex', name: 'OpenAI Codex', docsUrl: 'https://learn.chatgpt.com/docs/extend/mcp', snippets: [
+        { optionId: 'o1', supported: false, note: 'This client\'s documentation does not describe connecting to an SSE server.' },
+        { optionId: 'o2', supported: true, where: '~/.codex/config.toml', language: 'toml', text: '[mcp_servers.pg-mcp-server]' },
       ] },
     ],
     sources: [{ sourceId: 'mcp-registry', url: 'https://registry.modelcontextprotocol.io/v0.1/servers/io.acme%2Fpg/versions/latest', retrievedAt: '2026-10-27T20:00:00Z' }],
@@ -67,15 +67,17 @@ describe('resource detail', () => {
     await userEvent.click(button);
 
     expect(await screen.findByRole('heading', { name: 'Set up pg-mcp-server' })).toBeInTheDocument();
-    expect(await screen.findByText('claude mcp add --transport http pg-mcp-server https://mcp.acme.dev/mcp')).toBeInTheDocument();
+    expect(await screen.findByText('claude mcp add --transport sse pg-mcp-server https://mcp.acme.dev/sse')).toBeInTheDocument();
     expect(screen.getByText(/From its Official MCP Registry entry, version 1.2.0/)).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('radio', { name: 'npm package @acme/pg-mcp' }));
     expect(screen.getByText(/needs Node.js \(npx\)/)).toBeInTheDocument();
     expect(screen.getByText(/secret: fill in your own/)).toBeInTheDocument();
 
-    await userEvent.selectOptions(screen.getByLabelText('Your AI tool'), 'goose');
-    expect(screen.getByText(/Not available in Goose/)).toBeInTheDocument();
+    await userEvent.selectOptions(screen.getByLabelText('Your AI tool'), 'codex');
+    expect(screen.getByText('[mcp_servers.pg-mcp-server]')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('radio', { name: 'Hosted server (SSE)' }));
+    expect(screen.getByText(/Not available in OpenAI Codex/)).toBeInTheDocument();
 
     expect(await screen.findByRole('heading', { name: 'Install' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'What you need first' })).toBeInTheDocument();
