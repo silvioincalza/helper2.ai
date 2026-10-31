@@ -127,9 +127,6 @@ Open items:
   AI-written fields, so the origin survives outside our page and API. Today the marking is metadata only and is
   lost on copy ([ADR 0038](adr/0038-ai-content-marking.md)). Do it when a standard and tooling for text exist, or
   if a regulator finds metadata alone too weak.
-- Pass a prompt version from `SpringAiEnrichmentModel`, `SpringAiToolGuideModel` and `SpringAiRepoClassifier`, and
-  put them under the `llm-chat` circuit; then delete the "unversioned" methods of `ModelCallMetrics`
-  ([ADR 0014](adr/0014-llm-integration.md)).
 - Guide `WHEN` for a release: when our sources have no creation date, take the date quoted in a Tavily news item,
   through the evidence gate. Measure after the `WHEN` event filter ([ADR 0032](adr/0032-guide-intents.md)).
 - Run `scripts/eval-guide.mjs --adversarial` in a scheduled job after each deploy; today it is run by hand.

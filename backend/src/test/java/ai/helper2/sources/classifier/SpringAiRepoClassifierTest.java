@@ -1,9 +1,13 @@
 package ai.helper2.sources.classifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.ModelCallMetrics;
+import ai.helper2.platform.resilience.Resilience;
+import ai.helper2.scout.LlmUnavailable;
+import ai.helper2.testing.TestPolicies;
 import ai.helper2.shared.ResourceType;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.observation.DefaultMeterObservationHandler;
@@ -89,15 +93,46 @@ class SpringAiRepoClassifierTest {
             }
         };
         SpringAiRepoClassifier classifier = new SpringAiRepoClassifier(chat, "nano", 1000,
-            new DailyBudget(5, Clock.systemUTC(), "classifier"), new ModelCallMetrics(observations, meters));
+            new DailyBudget(5, Clock.systemUTC(), "classifier"), new ModelCallMetrics(observations, meters), Resilience.NONE);
 
         Map<String, RepoClassifier.Verdict> verdicts = classifier.classify(List.of(
             new RepoClassifier.Facts("r0", "acme/agent", "Agents", List.of("llm"), "An agent")));
 
         assertThat(verdicts).containsKey("r0");
-        var timer = meters.get(ModelCallMetrics.CALL).tag("step", "classify").tag("model", "nano").tag("outcome", "ok").timer();
+        String version = ModelCallMetrics.promptVersion(SpringAiRepoClassifier.systemPrompt());
+        var timer = meters.get(ModelCallMetrics.CALL).tag("step", "classify").tag("model", "nano").tag("prompt", version)
+            .tag("outcome", "ok").timer();
         assertThat(timer.count()).isEqualTo(1);
-        assertThat(meters.get(ModelCallMetrics.TOKENS).tag("step", "classify").tag("type", "prompt").counter().count()).isEqualTo(120);
-        assertThat(meters.get(ModelCallMetrics.TOKENS).tag("step", "classify").tag("type", "completion").counter().count()).isEqualTo(30);
+        assertThat(meters.get(ModelCallMetrics.TOKENS).tags("step", "classify", "prompt", version, "type", "prompt").counter().count())
+            .isEqualTo(120);
+        assertThat(meters.get(ModelCallMetrics.TOKENS).tags("step", "classify", "prompt", version, "type", "completion").counter().count())
+            .isEqualTo(30);
+    }
+
+    /** An open llm-chat circuit sends the batch to the keyword heuristic at once: no provider call, no unit of the budget. */
+    @Test
+    void anOpenCircuitIsLlmUnavailableWithoutTheProviderOrTheBudget() {
+        ChatModel chat = prompt -> {
+            throw new AssertionError("the provider must not be called");
+        };
+        DailyBudget budget = new DailyBudget(5, Clock.systemUTC(), "classifier");
+        SpringAiRepoClassifier classifier = new SpringAiRepoClassifier(chat, "nano", 1000, budget, ModelCallMetrics.none(),
+            TestPolicies.llmChatOpen());
+
+        assertThatThrownBy(() -> classifier.classify(List.of(new RepoClassifier.Facts("r0", "acme/agent", "Agents", List.of(), "An agent"))))
+            .isInstanceOf(LlmUnavailable.class);
+        assertThat(budget.usedToday()).isZero();
+    }
+
+    @Test
+    void aSpentBudgetIsLlmUnavailableWithoutTheProvider() {
+        ChatModel chat = prompt -> {
+            throw new AssertionError("the provider must not be called");
+        };
+        SpringAiRepoClassifier classifier = new SpringAiRepoClassifier(chat, "nano", 1000,
+            new DailyBudget(0, Clock.systemUTC(), "classifier"), ModelCallMetrics.none(), Resilience.NONE);
+
+        assertThatThrownBy(() -> classifier.classify(List.of(new RepoClassifier.Facts("r0", "acme/agent", "Agents", List.of(), "An agent"))))
+            .isInstanceOf(LlmUnavailable.class).hasMessageContaining("budget");
     }
 }

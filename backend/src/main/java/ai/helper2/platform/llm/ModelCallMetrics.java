@@ -23,9 +23,6 @@ public final class ModelCallMetrics {
     public static final String CALL = "helper2.llm.call";
     public static final String TOKENS = "helper2.llm.tokens";
 
-    /** The prompt tag of a caller that does not name its prompt's version. */
-    public static final String UNVERSIONED = "unversioned";
-
     private final ObservationRegistry observations;
     private final MeterRegistry meters;
 
@@ -72,11 +69,6 @@ public final class ModelCallMetrics {
         }
     }
 
-    /** {@link #observe(String, String, String, Supplier)} for a caller whose prompt has no version yet. */
-    public <T> T observe(String step, String model, Supplier<T> call) {
-        return observe(step, model, UNVERSIONED, call);
-    }
-
     /** Tokens the provider reports; nothing is counted when it reports none. */
     public void tokens(String step, String prompt, ChatResponse response) {
         Usage usage = response == null || response.getMetadata() == null ? null : response.getMetadata().getUsage();
@@ -85,11 +77,6 @@ public final class ModelCallMetrics {
         }
         count(step, prompt, "prompt", usage.getPromptTokens());
         count(step, prompt, "completion", usage.getCompletionTokens());
-    }
-
-    /** {@link #tokens(String, String, ChatResponse)} for a caller whose prompt has no version yet. */
-    public void tokens(String step, ChatResponse response) {
-        tokens(step, UNVERSIONED, response);
     }
 
     private void count(String step, String prompt, String type, Integer n) {

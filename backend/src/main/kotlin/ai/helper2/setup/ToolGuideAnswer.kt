@@ -52,5 +52,18 @@ data class ToolGuideAnswer(
     val unavailable: String? = null,
 )
 
-/** The model could not answer now: no model, a provider error, or the daily cap. */
-class ToolGuideUnavailable(val reason: String) : RuntimeException(reason)
+/** The model could not answer now, and why. */
+class ToolGuideUnavailable(val reason: Reason) : RuntimeException(reason.name) {
+
+    enum class Reason(
+        /** What [ToolGuideAnswer.unavailable] tells the user: "budget" or "error". */
+        val shown: String,
+    ) {
+        /** Today's model calls are used up. */
+        BUDGET("budget"),
+        /** No connection, a timeout, a 429, a 5xx, a rejected call or the open `llm-chat` circuit. */
+        PROVIDER("error"),
+        /** The provider answered twice, and neither answer was the requested JSON. */
+        UNREADABLE("error"),
+    }
+}

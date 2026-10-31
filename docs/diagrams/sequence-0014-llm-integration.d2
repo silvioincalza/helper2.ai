@@ -1,7 +1,7 @@
 # Sequence: one guide model call (the plan step) through the shared LLM layer.
 # Shows the llm-chat circuit, the budget unit taken in Redis inside it, the per-attempt observation with the prompt
-# version, the provider call and the answer clean-up. SpringAiQueryTranslator follows the same steps with its own
-# budget name; SpringAiEnrichmentModel and SpringAiRepoClassifier the same without the circuit.
+# version, the provider call and the answer clean-up. SpringAiQueryTranslator, SpringAiToolGuideModel,
+# SpringAiEnrichmentModel and SpringAiRepoClassifier follow the same steps with their own budget name and step tag.
 # Source of truth: backend/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java (plan, call),
 #   backend/src/main/java/ai/helper2/platform/llm/ (DailyBudget, RedisCallCounter, CallOptions, ModelCallMetrics, ModelAnswers),
 #   backend/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java.

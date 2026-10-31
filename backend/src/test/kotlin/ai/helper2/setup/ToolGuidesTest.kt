@@ -68,7 +68,7 @@ class ToolGuidesTest {
         assertEquals(ToolGuideStatus.NO_MATERIAL, ToolGuides({ error("not called") }, null, ToolGuideCache.NONE, clock).answer("id", noRef, null).status)
         val none = ToolGuides({ listOf(doc) }, null, ToolGuideCache.NONE, clock).answer("id", ref, null)
         assertEquals(ToolGuideStatus.LLM_UNAVAILABLE, none.status)
-        val budget = ToolGuides({ listOf(doc) }, Model { throw ToolGuideUnavailable("budget") }, MemoryCache(), clock).answer("id", ref, null)
+        val budget = ToolGuides({ listOf(doc) }, Model { throw ToolGuideUnavailable(ToolGuideUnavailable.Reason.BUDGET) }, MemoryCache(), clock).answer("id", ref, null)
         assertEquals(ToolGuideStatus.LLM_UNAVAILABLE, budget.status)
         assertEquals("budget", budget.unavailable)
         val invented = ProposedGuide(listOf(ProposedSection("INSTALL", listOf(ProposedStep("Install.", "readme", "Install with pip", "pip install acme-x")))))

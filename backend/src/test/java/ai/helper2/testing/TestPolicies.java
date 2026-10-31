@@ -1,5 +1,6 @@
 package ai.helper2.testing;
 
+import ai.helper2.platform.llm.LlmPolicies;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.platform.resilience.Resilience4jPolicies;
 import io.github.resilience4j.bulkhead.BulkheadRegistry;
@@ -22,6 +23,13 @@ public final class TestPolicies {
             .slidingWindowSize(1).minimumNumberOfCalls(1).failureRateThreshold(50)
             .waitDurationInOpenState(Duration.ofSeconds(30)).permittedNumberOfCallsInHalfOpenState(1)
             .clock(clock).build());
+        return new Resilience4jPolicies(circuits, BulkheadRegistry.ofDefaults(), RetryRegistry.ofDefaults());
+    }
+
+    /** An {@code llm-chat} circuit held open: every model call under it is refused. */
+    public static Resilience llmChatOpen() {
+        CircuitBreakerRegistry circuits = CircuitBreakerRegistry.ofDefaults();
+        circuits.circuitBreaker(LlmPolicies.CHAT).transitionToForcedOpenState();
         return new Resilience4jPolicies(circuits, BulkheadRegistry.ofDefaults(), RetryRegistry.ofDefaults());
     }
 }

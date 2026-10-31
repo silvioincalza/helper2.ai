@@ -8,6 +8,7 @@ import ai.helper2.platform.llm.CallCounter;
 import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.LlmSettings;
 import ai.helper2.platform.llm.ModelCallMetrics;
+import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CandidateReview;
 import ai.helper2.scout.CatalogIndex;
 import ai.helper2.scout.Collector;
@@ -60,7 +61,7 @@ class ScoutConfiguration {
      */
     @Bean
     EnrichmentModel enrichmentModel(ObjectProvider<ChatModel> chatModel, LlmSettings llm, Clock clock, CallCounter budgetCounter,
-                                    ModelCallMetrics metrics, MeterRegistry meters,
+                                    ModelCallMetrics metrics, MeterRegistry meters, Resilience resilience,
                                     @Value("${helper2.llm.enrich-max-tokens:" + SpringAiEnrichmentModel.DEFAULT_MAX_TOKENS + "}") int maxTokens,
                                     @Value("${helper2.scout.daily-enrichment-calls:300}") int dailyCalls) {
         ChatModel model = chatModel.getIfAvailable();
@@ -75,7 +76,7 @@ class ScoutConfiguration {
         // Recorded on every enrichment run, so provenance says which provider actually produced a proposal.
         log.info("LLM enrichment enabled: provider={}, model={}, maxTokens={}, dailyCalls={}",
             llm.provider(), llm.reasoningModel(), maxTokens, dailyCalls);
-        return new SpringAiEnrichmentModel(model, llm.provider(), llm.reasoningModel(), maxTokens, budget, metrics);
+        return new SpringAiEnrichmentModel(model, llm.provider(), llm.reasoningModel(), maxTokens, budget, metrics, resilience);
     }
 
     @Bean

@@ -28,7 +28,7 @@ class ToolGuides @JvmOverloads constructor(
         val proposal = try {
             model.write(ref, docs, q)
         } catch (e: ToolGuideUnavailable) {
-            return empty(ToolGuideStatus.LLM_UNAVAILABLE, q, docs, e.reason)
+            return empty(ToolGuideStatus.LLM_UNAVAILABLE, q, docs, e.reason.shown)
         }
         val result = validator.validate(proposal, docs)
         val answer = ToolGuideAnswer(if (result.sections.isEmpty()) ToolGuideStatus.NO_STEPS else ToolGuideStatus.OK, null,

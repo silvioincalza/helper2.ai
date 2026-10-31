@@ -2,11 +2,14 @@ package ai.helper2.scout.internal;
 
 import ai.helper2.platform.llm.CallOptions;
 import ai.helper2.platform.llm.DailyBudget;
+import ai.helper2.platform.llm.LlmPolicies;
 import ai.helper2.platform.llm.ModelAnswers;
 import ai.helper2.platform.llm.ModelCallMetrics;
 import ai.helper2.platform.llm.ModelErrors;
 import ai.helper2.platform.llm.UntrustedText;
 import ai.helper2.platform.prompt.PromptTemplate;
+import ai.helper2.platform.resilience.CallRefused;
+import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.Citation;
 import ai.helper2.scout.EnrichmentInput;
 import ai.helper2.scout.EnrichmentModel;
@@ -29,8 +32,8 @@ import org.springframework.ai.converter.BeanOutputConverter;
  * Spring AI adapter. Structured output is requested as a JSON schema derived from {@link Output};
  * the result is still only a proposal — {@code EvidenceValidator} decides what is published.
  * Thinking is off (ADR 0014): the task is extraction with a strict schema. Each call takes one unit of
- * the Scout's own daily budget; when it is spent the call is LLM_UNAVAILABLE, so the resource stays in
- * the backlog for a later day.
+ * the Scout's own daily budget inside the {@code llm-chat} circuit (ADR 0033); when the budget is spent or the
+ * circuit is open the call is LLM_UNAVAILABLE, so the resource stays in the backlog for a later run.
  */
 class SpringAiEnrichmentModel implements EnrichmentModel {
 
@@ -70,11 +73,13 @@ class SpringAiEnrichmentModel implements EnrichmentModel {
     private final BeanOutputConverter<Output> converter = new BeanOutputConverter<>(Output.class);
     private final ChatClient chat;
     private final String system;
+    private final String version;
     private final String provider;
     private final String model;
     private final int maxTokens;
     private final DailyBudget budget;
     private final ModelCallMetrics metrics;
+    private final Resilience resilience;
 
     /**
      * Same limit as the guide's choose call: Nemotron 3 Super's reasoning tokens count against max_tokens on
@@ -84,14 +89,17 @@ class SpringAiEnrichmentModel implements EnrichmentModel {
     static final int DEFAULT_MAX_TOKENS = 8192;
 
     SpringAiEnrichmentModel(ChatModel chatModel, String provider, String model, int maxTokens, DailyBudget budget,
-                            ModelCallMetrics metrics) {
+                            ModelCallMetrics metrics, Resilience resilience) {
+        resilience.require(LlmPolicies.CHAT);
         this.chat = ChatClient.builder(chatModel).build();
         this.system = systemPrompt();
+        this.version = ModelCallMetrics.promptVersion(system);
         this.provider = provider;
         this.model = model;
         this.maxTokens = maxTokens;
         this.budget = budget;
         this.metrics = metrics;
+        this.resilience = resilience;
     }
 
     @Override
@@ -129,24 +137,31 @@ class SpringAiEnrichmentModel implements EnrichmentModel {
     /**
      * Only provider-side trouble is LLM_UNAVAILABLE (retried on every later run): no connection, a
      * timeout, a 429 or a 5xx. Anything else the provider returns, e.g. a 400 for an over-long input,
-     * will not fix itself and is a FAILED attempt.
+     * will not fix itself and is a FAILED attempt. The budget unit is taken inside the {@code llm-chat} circuit,
+     * so a call the open circuit refuses costs nothing and is LLM_UNAVAILABLE too.
      */
     private String call(String title, String material) {
-        if (!budget.tryAcquire()) {
-            throw new LlmUnavailable("daily enrichment budget used up");
-        }
         try {
-            return metrics.observe("enrich", model, () -> {
-                var response = chat.prompt()
-                    .options(CallOptions.of(model, maxTokens, false))
-                    .system(system)
-                    .user(u -> u.text("Resource: {title}\n\nSOURCE MATERIAL:\n{material}\n\n{format}")
-                        .param("title", title).param("material", material).param("format", converter.getFormat()))
-                    .call()
-                    .chatResponse();
-                metrics.tokens("enrich", response);
-                return response == null || response.getResult() == null ? null : response.getResult().getOutput().getText();
+            return resilience.call(LlmPolicies.CHAT, () -> {
+                if (!budget.tryAcquire()) {
+                    throw new LlmUnavailable("daily enrichment budget used up");
+                }
+                return metrics.observe("enrich", model, version, () -> {
+                    var response = chat.prompt()
+                        .options(CallOptions.of(model, maxTokens, false))
+                        .system(system)
+                        .user(u -> u.text("Resource: {title}\n\nSOURCE MATERIAL:\n{material}\n\n{format}")
+                            .param("title", title).param("material", material).param("format", converter.getFormat()))
+                        .call()
+                        .chatResponse();
+                    metrics.tokens("enrich", version, response);
+                    return response == null || response.getResult() == null ? null : response.getResult().getOutput().getText();
+                });
             });
+        } catch (LlmUnavailable e) {
+            throw e;
+        } catch (CallRefused e) {
+            throw new LlmUnavailable("model call refused: " + e.policy() + " circuit is " + e.reason());
         } catch (RuntimeException e) {
             String what = e.getClass().getSimpleName() + ": " + abbreviate(e.getMessage());
             if (ModelErrors.isTransient(e)) {

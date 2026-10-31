@@ -4,7 +4,9 @@
 # Source of truth: backend/src/main/java/ai/helper2/platform/llm/ (LlmSettings, DailyBudget, RedisCallCounter,
 #   CallOptions, ModelCallMetrics, ModelErrors, ModelAnswers, UntrustedText, LlmPolicies),
 #   backend/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java (llm-chat circuit),
-#   backend/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java (call),
+#   backend/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java (call), search/internal/SpringAiQueryTranslator.java,
+#   setup/internal/SpringAiToolGuideModel.java, scout/internal/SpringAiEnrichmentModel.java,
+#   sources/classifier/SpringAiRepoClassifier.java (same steps, own budget),
 #   backend/src/main/resources/application.yaml (spring.ai.openai.chat.timeout / max-retries).
 # Render: cd docs/diagrams && d2 fmt flow-0014-llm-integration.d2 && d2 flow-0014-llm-integration.d2 flow-0014-llm-integration.svg
 
@@ -12,19 +14,19 @@
 
 direction: down
 
-caller: "Port call\n(GuideModel, EnrichmentModel,\nQueryTranslator, RepoClassifier)" {class: app}
+caller: "Port call\n(GuideModel, ToolGuideModel,\nEnrichmentModel, QueryTranslator,\nRepoClassifier)" {class: app}
 usable: "ChatModel bean and\nreasoning model set?" {class: decision}
 fallback: "Fallback without a model:\ntop search results, LLM_UNAVAILABLE,\nuntranslated query, heuristic" {class: end}
-circuit: "llm-chat circuit closed?\n(guide and translation)" {class: decision}
+circuit: "llm-chat circuit closed?\n(every chat-model call)" {class: decision}
 refused: "Refused at once:\ncircuit_open, no unit taken" {class: fail}
 budget: "DailyBudget.tryAcquire()\n(Redis counter, else memory)" {class: data}
-spent: "Budget spent for today\n(per use: guide, translation,\nenrichment, classifier)" {class: fail}
+spent: "Budget spent for today\n(per use: guide, translation,\ntool guide, enrichment,\nclassifier)" {class: fail}
 options: "CallOptions: temperature 0,\nmodel id, max tokens,\nenable_thinking=false" {class: app}
 untrusted: "Third-party text through\nUntrustedText (< > become ‹ ›)" {class: app}
 call: "ChatClient → OpenAI client\n→ Token Factory\ntimeout 40 s, no SDK retry\n(H2_LLM_MAX_RETRIES 0)" {class: ai}
 ok: "Answer received?" {class: decision}
 category: "ModelErrors.category:\ntimeout, rate_limited,\nunavailable, parse_error, error\n(provider errors count\nfor the circuit)" {class: fail}
-again: "Guide only: unusable answer\nand attempt 1?" {class: decision}
+again: "Guide or tool guide:\nunusable answer and attempt 1?" {class: decision}
 strip: "ModelAnswers: drop <think>,\ntake the JSON object" {class: app}
 gate: "Deterministic validator\ndecides what is shown" {class: end}
 

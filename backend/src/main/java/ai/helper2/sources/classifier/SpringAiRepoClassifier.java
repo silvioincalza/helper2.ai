@@ -2,9 +2,12 @@ package ai.helper2.sources.classifier;
 
 import ai.helper2.platform.llm.CallOptions;
 import ai.helper2.platform.llm.DailyBudget;
+import ai.helper2.platform.llm.LlmPolicies;
 import ai.helper2.platform.llm.ModelAnswers;
 import ai.helper2.platform.llm.ModelCallMetrics;
 import ai.helper2.platform.prompt.PromptTemplate;
+import ai.helper2.platform.resilience.CallRefused;
+import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.LlmUnavailable;
 import ai.helper2.shared.ResourceType;
 import java.util.EnumSet;
@@ -26,9 +29,9 @@ import tools.jackson.databind.json.JsonMapper;
  * sent as response_format: Nano loops on whitespace under guided decoding (see SpringAiGuideModel).
  * Measured 2026-10-26 on 25 real entries: 12-14 s per batch, 25/25 answered, non-AI repos of a Node.js
  * list rejected. Nemotron 3.5 Lightning spent all 4096 tokens reasoning and answered nothing.
- * Each batch takes one call from a daily budget; when it is spent the call fails with LlmUnavailable and the
- * collector classifies with its keyword heuristic instead. Calls are timed and their tokens counted with
- * step=classify (ModelCallMetrics).
+ * Each batch takes one call from a daily budget inside the {@code llm-chat} circuit (ADR 0033); when the budget is
+ * spent or the circuit is open the call fails with LlmUnavailable and the collector classifies with its keyword
+ * heuristic instead. Calls are timed and their tokens counted with step=classify (ModelCallMetrics).
  */
 public final class SpringAiRepoClassifier implements RepoClassifier {
 
@@ -47,18 +50,24 @@ public final class SpringAiRepoClassifier implements RepoClassifier {
 
     private final ChatClient chat;
     private final String system;
+    private final String version;
     private final String model;
     private final int maxTokens;
     private final DailyBudget budget;
     private final ModelCallMetrics metrics;
+    private final Resilience resilience;
 
-    public SpringAiRepoClassifier(ChatModel chatModel, String model, int maxTokens, DailyBudget budget, ModelCallMetrics metrics) {
+    public SpringAiRepoClassifier(ChatModel chatModel, String model, int maxTokens, DailyBudget budget, ModelCallMetrics metrics,
+                                  Resilience resilience) {
+        resilience.require(LlmPolicies.CHAT);
         this.chat = ChatClient.builder(chatModel).build();
         this.system = systemPrompt();
+        this.version = ModelCallMetrics.promptVersion(system);
         this.model = model;
         this.maxTokens = maxTokens;
         this.budget = budget;
         this.metrics = metrics;
+        this.resilience = resilience;
     }
 
     @Override
@@ -71,20 +80,27 @@ public final class SpringAiRepoClassifier implements RepoClassifier {
         if (repos.isEmpty()) {
             return Map.of();
         }
-        if (!budget.tryAcquire()) {
-            throw new LlmUnavailable("daily classifier budget used up");
-        }
         String user = repos.stream().map(SpringAiRepoClassifier::line).collect(Collectors.joining("\n"));
-        String answer = metrics.observe(STEP, model, () -> {
-            ChatResponse response = chat.prompt()
-                .options(CallOptions.of(model, maxTokens, false))
-                .system(system)
-                .user(user)
-                .call()
-                .chatResponse();
-            metrics.tokens(STEP, response);
-            return response == null || response.getResult() == null ? null : response.getResult().getOutput().getText();
-        });
+        String answer;
+        try {
+            answer = resilience.call(LlmPolicies.CHAT, () -> {
+                if (!budget.tryAcquire()) {
+                    throw new LlmUnavailable("daily classifier budget used up");
+                }
+                return metrics.observe(STEP, model, version, () -> {
+                    ChatResponse response = chat.prompt()
+                        .options(CallOptions.of(model, maxTokens, false))
+                        .system(system)
+                        .user(user)
+                        .call()
+                        .chatResponse();
+                    metrics.tokens(STEP, version, response);
+                    return response == null || response.getResult() == null ? null : response.getResult().getOutput().getText();
+                });
+            });
+        } catch (CallRefused e) {
+            throw new LlmUnavailable("model call refused: " + e.policy() + " circuit is " + e.reason());
+        }
         return parse(answer, repos.stream().map(Facts::id).collect(Collectors.toSet()));
     }
 

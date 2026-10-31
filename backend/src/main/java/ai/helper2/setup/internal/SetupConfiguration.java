@@ -109,7 +109,7 @@ class SetupConfiguration {
         Duration cacheTtl = setup.guide().cacheTtl();
         if (llm.usable(model)) {
             String name = setup.guide().reasoning() && llm.hasReasoningModel() ? llm.reasoningModel() : llm.fast();
-            guideModel = new SpringAiToolGuideModel(model, name, nativeSchema, toolGuideBudget, metrics);
+            guideModel = new SpringAiToolGuideModel(model, name, nativeSchema, toolGuideBudget, metrics, resilience);
             log.info("Tool guide enabled: model={}, cache {}", name, cacheTtl);
         } else {
             log.info("Tool guide without a model: Guide me shows registry and README config examples only");
