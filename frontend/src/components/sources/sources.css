@@ -1,4 +1,4 @@
-/* Design v2 sources page (ADR 0040, 10). Only semantic tokens. */
+/* Sources page (ADR 0040, 10). Only semantic tokens. */
 .h2-sources { padding: var(--space-5) 0 var(--space-7); }
 .h2-sources__h { margin: var(--space-6) 0 var(--space-3); font: 500 13px/1.3 var(--font-mono); text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink); }
 .h2-sources__steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-3); }

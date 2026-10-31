@@ -61,6 +61,10 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 
 ## 3. Operations
 
+- **Database reset for the single V1 schema:** staging right before the merge, prod in the maintenance window of the
+  release that ships it, never earlier ([deploy/k8s/RESET-DATABASE.md](../deploy/k8s/RESET-DATABASE.md)). After the
+  reset, migrations are forward-only: every schema change is a new `V2__…`
+  ([ADR 0004](adr/foundation/0004-persistence-and-provenance.md)).
 - **Exporters.** Postgres and Redis exporters in the Helm chart, and an alert on Redis evicted keys
   (`allkeys-lru` can drop sessions, rate-limit windows and web-search counters under memory pressure).
 - **Backups:**

@@ -2,7 +2,7 @@
 # Shows fetch + SseParser (no EventSource, no automatic reconnect), the idle timer re-armed on every chunk
 # (keep-alive comments included), the picks bar while the guide reads, a stream that goes quiet, the retry and the
 # refinement, both asked again by useGuideStream from the URL.
-# Source of truth: frontend/src/components/results/ResultsV2.tsx, frontend/src/components/guide/GuidePicks.tsx
+# Source of truth: frontend/src/components/results/Results.tsx, frontend/src/components/guide/GuidePicks.tsx
 #   (GuidePicks, guideError), frontend/src/components/guide/reading.ts (progressOf), frontend/src/components/ui/PicksBar.tsx,
 #   frontend/src/hooks/useGuideStream.ts, frontend/src/lib/searchState.ts (askedRefinement, refinedParams),
 #   frontend/src/api/client.ts (askGuideStream), frontend/src/lib/sse.ts, frontend/src/components/guide/GuideAnswer.tsx,
@@ -14,7 +14,7 @@
 shape: sequence_diagram
 
 user: User {class: person}
-gs: "GuidePicks\n(ResultsV2)" {class: app}
+gs: "GuidePicks\n(Results)" {class: app}
 hook: useGuideStream {class: app}
 client: "api.askGuideStream\n(client.ts)" {class: app}
 parser: SseParser {class: app}

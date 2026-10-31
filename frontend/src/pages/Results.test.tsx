@@ -29,7 +29,7 @@ function guide(): GuideResponse {
 const row = (name: string) => screen.getAllByRole('button', { name: new RegExp(name) }).find((b) => b.classList.contains('h2-select-row'))!;
 const rowTitles = () => [...document.querySelectorAll('.h2-select-row .h2-row__title')].map((e) => e.textContent);
 
-describe('design v2 results: list and preview', () => {
+describe('results: list and preview', () => {
   it('selects the first result and shows its preview; a click selects another and writes its id to the URL', async () => {
     mockApi({ 'GET /search': () => search() });
     const { params } = renderApp('/search?q=postgres');

@@ -131,7 +131,7 @@ export function Footer() {
       </div>
       <div className="container footer-bottom small">
         {t('footer.copyright', { year: new Date().getFullYear() })}
-        {/* Design v2: no claim about tracking, so the footer stays true when tracking cookies come (ADR 0040, 9). */}
+        {/* No claim about tracking, so the footer stays true when tracking cookies come (ADR 0040, 9). */}
         {/* Where it is run and hosted, as the Privacy page states it (Hosting: Germany). */}
         <span className="footer-place"> · {t('footer.place')}</span>
         <span className="footer-no-ads"> · {t('footer.noAds')}</span>

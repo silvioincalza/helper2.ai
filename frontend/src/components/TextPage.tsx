@@ -2,17 +2,17 @@ import { useId, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { sectionAnchor, TextSections, useTextSections } from '@/components/TextSections';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import '@/pages/text-v2.css';
+import '@/pages/text.css';
 
 /** The table of contents sits beside the text from this width; below it, it folds into a list under the head. */
 const WIDE = '(min-width: 861px)';
 
 /**
- * A design v2 text page (ADR 0040): the head ([head]: h1, date, lede, contact), the `<i18nKey>` sections in a
+ * A text page (ADR 0040): the head ([head]: h1, date, lede, contact), the `<i18nKey>` sections in a
  * readable column, then [after]. "On this page" links to every section: a list beside the text on a wide screen,
  * a collapsible list under the head on a phone. The text itself comes from the locale file, unchanged.
  */
-export function TextPageV2({ i18nKey, head, after }: { i18nKey: string; head: ReactNode; after?: ReactNode }) {
+export function TextPage({ i18nKey, head, after }: { i18nKey: string; head: ReactNode; after?: ReactNode }) {
   const { t } = useTranslation();
   const wide = useMediaQuery(WIDE);
   const tocId = useId();

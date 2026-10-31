@@ -51,7 +51,7 @@ search: "search purge" {
   sets: "search.usecase.PurgeExpiredData:\ntavily_query_result fetched > 7 d" {class: data}
 }
 
-cascade: "ON DELETE CASCADE: records, labels, embeddings,\nevidence, assertions, claims of a resource;\nON DELETE SET NULL: links that outlive their target" {class: data}
+cascade: "ON DELETE CASCADE: records, labels, embeddings,\nevidence, assertions, claims of a resource;\nON DELETE SET NULL: links that outlive their target;\nNO ACTION: a run a current row cites stays" {class: data}
 logged: "Each logs what it deleted;\na failure is logged, the next\nday's run catches up" {class: end}
 
 cron -> lock: {class: hot}

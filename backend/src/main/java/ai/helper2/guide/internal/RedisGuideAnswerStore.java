@@ -34,12 +34,21 @@ class RedisGuideAnswerStore implements GuideAnswerStore {
     static final int VERSION = 2;
     private static final Logger log = LoggerFactory.getLogger(RedisGuideAnswerStore.class);
 
+    /** A build id as the chart passes it (the image tag); anything else is "unknown", never free text in a key. */
+    private static final java.util.regex.Pattern BUILD = java.util.regex.Pattern.compile("[A-Za-z0-9._-]{1,40}");
+
     private final StringRedisTemplate redis;
     private final ObjectMapper json;
     private final Resilience resilience;
+    private final String build;
 
-    RedisGuideAnswerStore(StringRedisTemplate redis, ObjectMapper json, Resilience resilience) {
+    /**
+     * [build] is the running build (`H2_BUILD_VERSION`, the image tag): each build reads only its own answers, so a
+     * deploy that changes how the guide reads or answers is seen at once. A restart of the same build keeps them.
+     */
+    RedisGuideAnswerStore(StringRedisTemplate redis, ObjectMapper json, Resilience resilience, String build) {
         this.redis = redis;
+        this.build = build;
         this.json = json.rebuild()
             .addModule(new KotlinModule.Builder().build())
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
@@ -47,11 +56,12 @@ class RedisGuideAnswerStore implements GuideAnswerStore {
         this.resilience = resilience;
     }
 
-    /** The cache key holds the user's question, so Redis sees only its hash. */
-    static String redisKey(String cacheKey) {
+    /** The cache key holds the user's question, so Redis sees only its hash, under the build that answered it. */
+    static String redisKey(String build, String cacheKey) {
+        String id = build != null && BUILD.matcher(build).matches() ? build : "unknown";
         try {
             byte[] digest = MessageDigest.getInstance("SHA-256").digest(cacheKey.getBytes(StandardCharsets.UTF_8));
-            return "h2:v" + VERSION + ":guide-answer:" + HexFormat.of().formatHex(digest);
+            return "h2:v" + VERSION + ":guide-answer:" + id + ":" + HexFormat.of().formatHex(digest);
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException(e);
         }
@@ -61,7 +71,7 @@ class RedisGuideAnswerStore implements GuideAnswerStore {
     public GuideAnswer get(String key) {
         String raw;
         try {
-            raw = resilience.call("redis", () -> redis.opsForValue().get(redisKey(key)));
+            raw = resilience.call("redis", () -> redis.opsForValue().get(redisKey(build, key)));
         } catch (RuntimeException e) {
             log.debug("guide answer store unavailable: {}", e.getClass().getSimpleName());
             return null;
@@ -79,7 +89,7 @@ class RedisGuideAnswerStore implements GuideAnswerStore {
             return;
         }
         try {
-            resilience.run("redis", () -> redis.opsForValue().set(redisKey(key), encoded, ttl));
+            resilience.run("redis", () -> redis.opsForValue().set(redisKey(build, key), encoded, ttl));
         } catch (RuntimeException e) {
             log.debug("guide answer not stored, Redis unavailable: {}", e.getClass().getSimpleName());
         }
