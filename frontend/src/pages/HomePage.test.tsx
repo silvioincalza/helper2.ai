@@ -98,12 +98,6 @@ describe('home: one box', () => {
     expect(params().get('q')).toBe('vector database');
   });
 
-  it('/saved goes home while Saved is on the roadmap', async () => {
-    mockApi();
-    const { router } = renderApp('/saved');
-    await waitFor(() => expect(router.state.location.pathname).toBe('/'));
-  });
-
   it('typing then asking at once keeps the question: a pending live search must not drop `ask`', async () => {
     const m = mockApi();
     const { params } = renderApp('/search?q=mcp');

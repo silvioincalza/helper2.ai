@@ -6,7 +6,6 @@ import { Heading } from '@/components/ui/Heading';
 import { ProofQuote } from '@/components/ui/ProofQuote';
 import { TypeTag } from '@/components/ui/TypeTag';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
-import { SAVED_ENABLED } from '@/lib/features';
 import { hostname } from '@/lib/format';
 import { FreshnessBadge, ModeBadge, OriginLabel } from './Badges';
 import { BookmarkButton } from './BookmarkButton';
@@ -135,7 +134,7 @@ export function ResourceOverview({ card, pick, statuses = [], page = false, titl
       <Heading level={level} id={titleId} ref={titleRef} tabIndex={page ? -1 : undefined} className="resource-title">{card.title}</Heading>
       <div className="result-preview__actions">
         <ExternalLink url={card.url} showHost={false}>{t('preview.open')}</ExternalLink>
-        {SAVED_ENABLED && <BookmarkButton card={card} />}
+        <BookmarkButton card={card} />
         {canGuide(card) && <GuideMeButton title={card.title} open={guide.open} onToggle={toggleGuide} bodyId={guideBodyId} buttonRef={guideButton} />}
         {!page && <DetailsLink card={card} />}
       </div>

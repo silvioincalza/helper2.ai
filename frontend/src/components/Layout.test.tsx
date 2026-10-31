@@ -8,13 +8,14 @@ import { THEME_KEY } from '@/lib/theme';
 import pkg from '../../package.json';
 
 describe('layout', () => {
-  it('hides the Admin nav item and sign-in for anonymous users', async () => {
+  it('offers Saved but not Admin or sign-in to anonymous users', async () => {
     const m = mockApi({ 'GET /me': () => ANON });
     renderApp('/');
     await waitFor(() => expect(m.callsTo('GET', '/me')).toHaveLength(1));
     expect(within(screen.getByRole('banner')).queryByRole('link', { name: /Sign in/ })).not.toBeInTheDocument();
-    // Search is the home page and Saved is on the roadmap (lib/features.ts): no menu for visitors.
-    expect(screen.queryByRole('navigation', { name: 'Main' })).not.toBeInTheDocument();
+    // Search is the home page: the menu holds Saved only.
+    const nav = screen.getByRole('navigation', { name: 'Main' });
+    expect(within(nav).getAllByRole('link').map((a) => a.textContent)).toEqual(['Saved']);
     expect(screen.queryByRole('link', { name: 'Admin' })).not.toBeInTheDocument();
   });
 
@@ -108,9 +109,9 @@ describe('layout', () => {
     // Sources lives in the footer, not the header.
     expect(within(screen.getByRole('banner')).queryByRole('link', { name: 'Sources' })).not.toBeInTheDocument();
     await userEvent.click(within(screen.getByRole('contentinfo')).getByRole('link', { name: 'Sources' }));
-    const h1 = await screen.findByRole('heading', { level: 1, name: 'Sources' });
+    const h1 = await screen.findByRole('heading', { level: 1, name: 'Sources we search' });
     await waitFor(() => expect(h1).toHaveFocus());
-    expect(document.querySelector('[aria-live="polite"].sr-only')).toHaveTextContent('Sources');
+    expect(document.querySelector('[aria-live="polite"].sr-only')).toHaveTextContent('Sources we search');
 
     await act(() => router.navigate('/'));
     await screen.findByRole('heading', { level: 1, name: /Describe what you need/ });

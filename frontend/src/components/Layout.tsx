@@ -5,7 +5,6 @@ import { signOut } from '@/api/client';
 import { useMe } from '@/context/MeContext';
 import { LANGUAGES, setLanguage } from '@/i18n';
 import { chooseTheme, currentChoice, nextChoice, subscribeTheme, type ThemeChoice } from '@/lib/theme';
-import { SAVED_ENABLED } from '@/lib/features';
 import { hasResults } from '@/lib/searchState';
 import { Logo } from './Logo';
 import { OneBox } from './OneBox';
@@ -43,15 +42,13 @@ export function Header() {
     <header className="site-header">
       <div className="container header-row">
         <Link to="/" className="logo-link" aria-label={t('nav.home')}><Logo /></Link>
-        {/* Search is the home page (the logo goes there); the menu only lists the pages that are on. */}
-        {(SAVED_ENABLED || isAdmin) && (
-          <nav aria-label={t('nav.main')} className="main-nav">
-            <ul className="plain-list">
-              {SAVED_ENABLED && <li><NavLink to="/saved">{t('nav.saved')}</NavLink></li>}
-              {isAdmin && <li><NavLink to="/admin">{t('nav.admin')}</NavLink></li>}
-            </ul>
-          </nav>
-        )}
+        {/* Search is the home page: the logo goes there. */}
+        <nav aria-label={t('nav.main')} className="main-nav">
+          <ul className="plain-list">
+            <li><NavLink to="/saved">{t('nav.saved')}</NavLink></li>
+            {isAdmin && <li><NavLink to="/admin">{t('nav.admin')}</NavLink></li>}
+          </ul>
+        </nav>
         <div className="header-tools">
           <ThemeToggle />
           {LANGUAGES.length > 1 && (

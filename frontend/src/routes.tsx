@@ -10,7 +10,6 @@ import NotFoundPage from '@/pages/NotFoundPage';
 import PrivacyPage from '@/pages/PrivacyPage';
 import ResultsPage from '@/pages/ResultsPage';
 import ResourcePage from '@/pages/ResourcePage';
-import { SAVED_ENABLED } from '@/lib/features';
 import SavedPage from '@/pages/SavedPage';
 import SourcesPage from '@/pages/SourcesPage';
 import TermsPage from '@/pages/TermsPage';
@@ -35,7 +34,7 @@ export const routes: RouteObject[] = [
       { index: true, element: <HomeOrResults /> },
       { path: 'search', element: <SearchRoute /> },
       { path: 'resource/:id', element: <ResourcePage /> },
-      { path: 'saved', element: SAVED_ENABLED ? <SavedPage /> : <Navigate replace to="/" /> },
+      { path: 'saved', element: <SavedPage /> },
       { path: 'sources', element: <SourcesPage /> },
       { path: 'account', element: <AccountPage /> },
       { path: 'admin', element: <AdminPage /> },

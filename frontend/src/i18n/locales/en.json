@@ -387,14 +387,19 @@
   },
   "saved": {
     "title": "Saved resources",
-    "empty": "Nothing saved yet.",
-    "remove": "Remove",
-    "removeLabel": "Remove {{title}} from saved",
-    "savedAt": "saved {{date}}",
     "localNote": "Saved in this browser only.",
     "serverNote": "Saved on your account.",
+    "empty": "Nothing saved yet",
+    "emptyBody": "Use Save on any result to keep it here.",
+    "search": "Search",
+    "remove": "Remove",
+    "removeLabel": "Remove {{title}} from saved",
+    "removed": "Removed {{title}} from saved.",
+    "savedAt": "Saved {{date}}",
     "storageFailed": "Your browser blocked storage, so saved items will be lost when you leave this page.",
-    "serverError": "Could not sync with your account. Please try again later."
+    "listFailed": "Could not load your saved resources",
+    "listFailedBody": "We could not reach the Helper2.ai service.",
+    "syncFailed": "Could not update your account. Try again later."
   },
   "account": {
     "title": "Your account",
