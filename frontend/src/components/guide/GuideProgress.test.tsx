@@ -62,6 +62,12 @@ describe('web searches left today', () => {
     expect(line).toHaveTextContent(/Resets at \d\d:\d\d your time \(00:00 UTC\)\./);
   });
 
+  it('under a test ceiling (a limit of 100 or more) says only that none is left', async () => {
+    mockApi({ 'GET /search': () => makeSearch({ webSearches: { limit: 1000, remaining: 0 } }) });
+    renderApp('/search?q=postgres');
+    expect(await screen.findByText(/No web searches left today for search\./)).toBeInTheDocument();
+  });
+
   it('says nothing before the first one is used, or when the count is unknown', async () => {
     mockApi({
       'GET /search': () => makeSearch({ webSearches: { limit: 3, remaining: 3 } }),

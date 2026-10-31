@@ -80,7 +80,7 @@ describe('results: list and preview', () => {
 
   it('keeps a line for "web searches left" while the guide reads, and the count takes its place', async () => {
     let answer: (r: Response) => void = () => undefined;
-    mockApi({ 'GET /search': () => search(), 'POST /guide/stream': () => new Promise<Response>((r) => { answer = r; }) });
+    mockApi({ 'GET /search': () => ({ ...search(), webSearches: { limit: 3, remaining: 3 } }), 'POST /guide/stream': () => new Promise<Response>((r) => { answer = r; }) });
     renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
     await screen.findByRole('article');
     const blank = document.querySelector('.h2-results__guide .h2-web-left');
@@ -89,6 +89,17 @@ describe('results: list and preview', () => {
     await act(async () => { answer(sse({ ...guide(), webSearches: { limit: 3, remaining: 2 } })); });
     expect(await screen.findByText(/2 of 3 web searches left today for the guide/)).toBeInTheDocument();
     expect(document.querySelectorAll('.h2-results__guide .h2-web-left')).toHaveLength(1);
+  });
+
+  it('keeps no line for "web searches left" when the limit is a test ceiling (staging), so nothing moves either way', async () => {
+    let answer: (r: Response) => void = () => undefined;
+    mockApi({ 'GET /search': () => ({ ...search(), webSearches: { limit: 1000, remaining: 999 } }), 'POST /guide/stream': () => new Promise<Response>((r) => { answer = r; }) });
+    renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
+    await screen.findByRole('article');
+    expect(document.querySelector('.h2-web-left')).toBeNull();
+    await act(async () => { answer(sse({ ...guide(), webSearches: { limit: 1000, remaining: 998 } })); });
+    await screen.findByRole('button', { name: '#1 Postgres MCP' });
+    expect(document.querySelector('.h2-web-left')).toBeNull();
   });
 
   it('a pick chip keeps its full title for screen readers and on hover, however long', async () => {

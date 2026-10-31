@@ -8,7 +8,7 @@ import { FreshnessBadge, OriginLabel } from '@/components/Badges';
 import { BookmarkButton } from '@/components/BookmarkButton';
 import { FilterPanel } from '@/components/FilterPanel';
 import { GuidePicks } from '@/components/guide/GuidePicks';
-import { WebSearchesLeft } from '@/components/guide/WebSearchesLeft';
+import { WebSearchesLeft, webLineExpected } from '@/components/guide/WebSearchesLeft';
 import { canGuide } from '@/components/GuideMe';
 import { Icon } from '@/components/Icon';
 import { OneBox } from '@/components/OneBox';
@@ -69,7 +69,7 @@ export function Results() {
     <div className="h2-results">
       <h1 className="sr-only">{t('results.heading', { q: state.q })}</h1>
       <div className="h2-results__box"><OneBox /></div>
-      {asked ? <GuidePicks stream={stream} loaded={new Set((shown?.results ?? []).map((c) => c.id))} /> : words >= 4 && (
+      {asked ? <GuidePicks stream={stream} loaded={new Set((shown?.results ?? []).map((c) => c.id))} webLine={webLineExpected(shown?.webSearches)} /> : words >= 4 && (
         <button type="button" className="btn suggest-guide" onClick={() => ask(state.q)}>{t('home.suggestGuide', { q: state.q })}</button>
       )}
       {/* Each new search says so; the skeleton only on the first load, later the last results stay, dimmed. */}

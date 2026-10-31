@@ -59,6 +59,8 @@ used up. The counts must hold across 3 replicas, store no address and no query t
    (`{limit, remaining}`, null without an enabled metered source or a readable count) show the visitor's web searches
    left today for that feature. A cached guide answer, or one reused for a similar question
    ([0041](../guide/0041-guide-answer-cache.md)), takes no web search and gets the current asker's count, never the first asker's.
+   The page says the count from the first web search used. A limit of 100 or more is a test ceiling (staging), so the
+   page says only when none is left.
    `GET /api/v1/sources` shows the credits of the day and the cap on the metered source
    (`webCredits {usedToday, dailyCap}`, `WebSearchQuota.creditsToday`, [0008](0008-federated-search.md)): one read, no count.
 7. **Guide answers live no longer than their web results.** Guide answers are kept in PostgreSQL

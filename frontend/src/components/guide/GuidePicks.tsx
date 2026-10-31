@@ -18,9 +18,9 @@ import { resourcePath } from '@/lib/searchState';
  * works, the line says how it read the question and how many results it reads, as the steps arrive. An answer with
  * no AI pick but something to say (an explanation, a comparison, plain recommendations, notices) is shown in full
  * instead of the no-pick line. A pick that is not on this page of results links to its own page. Try again moves
- * focus to the bar's heading.
+ * focus to the bar's heading. [webLine] keeps the place of "web searches left" while the guide reads.
  */
-export function GuidePicks({ stream, loaded }: { stream: GuideStream; loaded: ReadonlySet<string> }) {
+export function GuidePicks({ stream, loaded, webLine }: { stream: GuideStream; loaded: ReadonlySet<string>; webLine: boolean }) {
   const { t } = useTranslation();
   const { answer, error, busy, refine } = stream;
   const { retry, focusRef } = useRetry(stream.retry, busy);
@@ -52,9 +52,10 @@ export function GuidePicks({ stream, loaded }: { stream: GuideStream; loaded: Re
           </ul>
         </PicksBar>
       )}
-      {/* While the guide reads, a blank line of the same style holds the place of "web searches left", which comes with the answer. */}
+      {/* While the guide reads, a blank line of the same style holds the place of "web searches left", which comes with
+          the answer ([webLine]: the search's count says the line will show). */}
       {busy && error === null
-        ? <p className="muted small h2-web-left" aria-hidden="true">&nbsp;</p>
+        ? webLine && <p className="muted small h2-web-left" aria-hidden="true">&nbsp;</p>
         : !busy && <WebSearchesLeft feature="guide" value={answer?.webSearches} />}
       {error !== null && (
         <StatePanel tone="error" level={2} title={guideError(error, t)} next={<RetryButton onClick={retry} />} />
