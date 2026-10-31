@@ -4,6 +4,7 @@ import ai.helper2.api.generated.SearchApi;
 import ai.helper2.api.generated.SourcesApi;
 import ai.helper2.api.generated.model.AudienceDto;
 import ai.helper2.api.generated.model.AudiencePathDto;
+import ai.helper2.api.generated.model.CircuitStateDto;
 import ai.helper2.api.generated.model.CoverageDto;
 import ai.helper2.api.generated.model.FacetValueDto;
 import ai.helper2.api.generated.model.FacetsDto;
@@ -20,21 +21,21 @@ import ai.helper2.api.generated.model.SourceOutcomeDto;
 import ai.helper2.api.generated.model.SourceStatusDto;
 import ai.helper2.api.generated.model.TechLevelFilterDto;
 import ai.helper2.api.generated.model.TriStateDto;
+import ai.helper2.api.generated.model.WebCreditsDto;
 import ai.helper2.platform.BadRequestException;
 import ai.helper2.platform.ClientKey;
 import ai.helper2.platform.SignedInUser;
 import ai.helper2.search.Asker;
 import ai.helper2.search.Feature;
-import ai.helper2.search.DescribedSource;
 import ai.helper2.search.FacetCount;
+import ai.helper2.search.usecase.ListSources;
 import ai.helper2.search.usecase.SearchResources;
+import ai.helper2.search.usecase.SourceOverview;
 import ai.helper2.search.SearchFilters;
 import ai.helper2.search.SearchOutcome;
 import ai.helper2.search.SearchRequest;
 import ai.helper2.search.SortOrder;
 import ai.helper2.search.SourceDescriptor;
-import ai.helper2.search.RecordedOutcomes;
-import ai.helper2.search.SourceHealth;
 import ai.helper2.search.SourceStatus;
 import ai.helper2.shared.Audience;
 import ai.helper2.shared.AudiencePath;
@@ -43,15 +44,12 @@ import ai.helper2.shared.UtcTimes;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDate;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -61,25 +59,18 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1")
 class SearchController implements SearchApi, SourcesApi {
 
-    private static final Logger log = LoggerFactory.getLogger(SearchController.class);
-
     static final String COVERAGE_NOTE =
         "Results come only from the sources listed here; Helper2.ai does not search the whole web.";
 
     private final SearchResources search;
-    private final List<DescribedSource> sources;
-    private final SourceHealth health;
-    private final RecordedOutcomes recorded;
+    private final ListSources sources;
     private final SignedInUser signedInUser;
     /** A proxy to the current request: the generated interface does not pass it. */
     private final HttpServletRequest http;
 
-    SearchController(SearchResources search, List<DescribedSource> sources, SourceHealth health, RecordedOutcomes recorded,
-                     SignedInUser signedInUser, HttpServletRequest http) {
+    SearchController(SearchResources search, ListSources sources, SignedInUser signedInUser, HttpServletRequest http) {
         this.search = search;
         this.sources = sources;
-        this.health = health;
-        this.recorded = recorded;
         this.signedInUser = signedInUser;
         this.http = http;
     }
@@ -115,30 +106,28 @@ class SearchController implements SearchApi, SourcesApi {
 
     @Override
     public ResponseEntity<List<SourceInfoDto>> listSources() {
-        Map<String, SourceHealth.Entry> fromScout = recordedOutcomes();
-        return ResponseEntity.ok(sources.stream().map(DescribedSource::getDescriptor)
-            .sorted(Comparator.comparingInt(SourceDescriptor::getPriority).thenComparing(SourceDescriptor::getId))
-            .map(d -> {
-                SourceInfoDto dto = new SourceInfoDto(d.getId(), d.getName(), SourceModeDto.fromValue(d.getMode().name()),
-                    d.getEnabled(), d.getHomepage(),
-                    d.getResourceTypes().stream().map(t -> ResourceTypeDto.fromValue(t.name())).sorted().toList())
-                    .termsUrl(d.getTermsUrl()).attribution(d.getAttribution());
-                SourceHealth.Entry e = health.lastFor(d.getId(), fromScout.get(d.getId()));
-                if (e != null) {
-                    dto.lastOutcome(SourceOutcomeDto.fromValue(e.getOutcome().name())).lastCheckedAt(UtcTimes.odt(e.getCheckedAt()));
-                }
-                return dto;
-            }).toList());
+        return ResponseEntity.ok(sources.list().stream().map(SearchController::info).toList());
     }
 
-    /** The page must still render when the database is down: fall back to what this instance saw. */
-    private Map<String, SourceHealth.Entry> recordedOutcomes() {
-        try {
-            return recorded.lastOutcomes();
-        } catch (RuntimeException e) {
-            log.warn("Recorded source outcomes unavailable: {}", e.toString());
-            return Map.of();
+    private static SourceInfoDto info(SourceOverview o) {
+        SourceDescriptor d = o.getDescriptor();
+        SourceInfoDto dto = new SourceInfoDto(d.getId(), d.getName(), SourceModeDto.fromValue(d.getMode().name()),
+            d.getEnabled(), d.getHomepage(),
+            d.getResourceTypes().stream().map(t -> ResourceTypeDto.fromValue(t.name())).sorted().toList())
+            .termsUrl(d.getTermsUrl()).attribution(d.getAttribution())
+            .responseTimeMs(o.getResponseTime() == null ? null : o.getResponseTime().toMillis());
+        if (o.getLast() != null) {
+            dto.lastOutcome(SourceOutcomeDto.fromValue(o.getLast().getOutcome().name()))
+                .lastCheckedAt(UtcTimes.odt(o.getLast().getCheckedAt()));
         }
+        if (o.getCircuit() != null) {
+            dto.circuit(CircuitStateDto.fromValue(o.getCircuit().state().name()))
+                .circuitOpenedAt(UtcTimes.odt(o.getCircuit().openedAt()));
+        }
+        if (o.getWebCredits() != null) {
+            dto.webCredits(new WebCreditsDto(o.getWebCredits().getUsedToday()).dailyCap(o.getWebCredits().getDailyCap()));
+        }
+        return dto;
     }
 
     private static SearchResponseDto toDto(SearchOutcome out) {

@@ -28,8 +28,9 @@ Load it, either:
 
 Latency panels for HTTP, `helper2.search.latency`, `helper2.source.latency`, model calls and Scout runs take
 `histogram_quantile` over the `_bucket` series (`management.metrics.distribution.percentiles-histogram` in
-`application.yaml`), so they are percentiles across all pods. `helper2.guide.ask` has no buckets: its panel
-shows the mean and Micrometer's rolling max.
+`application.yaml`), so they are percentiles across all pods. "Time to first useful event by intent" does the same
+with `helper2.guide.first_useful`, whose buckets (with exact ones at the 3 s and 8 s targets) are set on the timer.
+`helper2.guide.ask` has no buckets: its panel shows the mean and Micrometer's rolling max.
 Budget panels (guide, translation, enrichment, classifier) show the calls left under each daily cap;
 "Rate-limit decisions in memory" (`helper2.rate-limit.fallback`) should stay at 0 while Redis is up.
 Gauges with a base unit get it as a suffix in Prometheus: `helper2.embedding.last.success` is

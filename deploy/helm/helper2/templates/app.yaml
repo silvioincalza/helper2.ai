@@ -50,6 +50,13 @@ spec:
             - { name: H2_SCOUT_INITIAL_DELAY, value: {{ required "app.scoutInitialDelay" .Values.app.scoutInitialDelay | quote }} }
             - { name: H2_SCOUT_EVERY, value: {{ required "app.scoutEvery" .Values.app.scoutEvery | quote }} }
             - { name: H2_SCOUT_MAX_ENRICHMENTS, value: {{ .Values.app.scoutMaxEnrichments | toString | quote }} }
+            {{- /* Daily limits: only the ones set in values, so an unset one keeps the app default or the env Secret. */}}
+            {{- $limits := .Values.app.dailyLimits }}
+            {{- range $name, $value := dict "H2_TAVILY_GUEST_SEARCH" $limits.webSearches.search "H2_TAVILY_GUEST_GUIDE" $limits.webSearches.guide "H2_GUIDE_CLIENT_DAILY_QUESTIONS" $limits.guideQuestions "H2_TAVILY_GLOBAL_DAILY_CREDITS" $limits.webSearchCredits }}
+            {{- if not (kindIs "invalid" $value) }}
+            - { name: {{ $name }}, value: {{ $value | toString | quote }} }
+            {{- end }}
+            {{- end }}
             - { name: H2_COOKIE_SECURE, value: "true" }
             # Only the edge (cloudflared or the Ingress controller) reaches this pod (NetworkPolicy); the
             # edge sets X-Forwarded-For, and Tomcat takes the right-most address that is not an internal proxy.

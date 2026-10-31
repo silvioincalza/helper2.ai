@@ -33,6 +33,8 @@ Items are grouped by the order in which they matter. Inside a group, the first i
   `H2_GITHUB_OAUTH_CLIENT_SECRET` and `H2_ADMINS=github:<numeric id>` ([ADR 0023](adr/edge/0023-identity-and-admin.md)).
 - ADMIN is decided at sign-in, so a change to `H2_ADMINS` needs a new sign-in.
 - Optional `H2_HF_TOKEN` on prod.
+- `H2_SETUP_GITHUB_TOKEN` (read-only, public repositories) in `app_env` on staging and prod; without it Guide me reads
+  GitHub anonymously, 60 calls an hour ([ADR 0031](adr/guide/0031-setup-guide.md)).
 - **Sign-in for everyone.** Sign-in is offered only on `/admin`, so server-side bookmarks and account deletion
   (`DELETE /me`) reach only admins today. Add a public sign-in entry point in the page; it needs the
   `oauth-github` profile on prod ([ADR 0023](adr/edge/0023-identity-and-admin.md)).
@@ -79,6 +81,11 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 - Remove the unused duplicate `deploy/.dockerignore`.
 - The Cloudflare tunnel token lives in Terraform state and a Kubernetes Secret, not in OpenBao. Move it.
 - Confirm that trace and span ids appear in every log line (only a configuration comment says so today).
+- **Staging settings for the nightly guide evaluation** (owner): add `H2_GUIDE_CACHE_TTL=PT1S`,
+  `H2_GUIDE_CLIENT_DAILY_QUESTIONS=60` and `H2_GUIDE_DAILY_MODEL_CALLS=150` to staging's `app.env`, run
+  `make ENV=staging credentials`, set the repository variable `H2_STAGING_URL`, and check the first run of
+  `guide-eval.yml`
+  ([ADR 0030](adr/quality/0030-guide-evaluation.md)).
 
 ## 4. More than one replica
 
@@ -124,7 +131,9 @@ Open items:
   if a regulator finds metadata alone too weak.
 - Guide `WHEN` for a release: when our sources have no creation date, take the date quoted in a Tavily news item,
   through the evidence gate. Measure after the `WHEN` event filter ([ADR 0032](adr/guide/0032-guide-intents.md)).
-- Run `scripts/eval-guide.mjs --adversarial` in a scheduled job after each deploy; today it is run by hand.
+- Confirm the guide latency targets (first useful event p50 3 s, p95 8 s) with two weeks of
+  `helper2.guide.first_useful` on prod, and the nightly pass threshold (10 of 20) with two weeks of runs
+  ([ADR 0026](adr/operations/0026-observability.md), [ADR 0030](adr/quality/0030-guide-evaluation.md)).
 - A question from a shared `?ask=` link is asked on page load. Asking only after a click would stop a link from
   spending model calls for its visitors (one cached answer per question limits it today).
 
@@ -162,6 +171,9 @@ Open items:
 - **Saved** (bookmarks) is hidden until it is finished: the menu item, the Save buttons and `/saved` (which goes
   home). The bookmark code, its tests and the `/me/bookmarks` API stay; `SAVED_ENABLED` in
   `frontend/src/lib/features.ts` brings it back.
+- Sources page shows response time, circuit state and Tavily credits from GET /sources (`responseTimeMs`,
+  `circuit`, `circuitOpenedAt`, `webCredits`; [ADR 0008](adr/search/0008-federated-search.md)). Response time and
+  circuit are the answering replica's.
 - The shared `/sources` data is fetched once per page load, so the Sources page can show an old last outcome
   during a long visit.
 - If browser storage is blocked, a fixed theme choice can be overridden when the device theme changes.
@@ -204,7 +216,6 @@ Fix an item or accept it; when it no longer holds, remove it.
 
 - Startup is slower than a native binary: Flyway and the language models load first; the startup probe allows up to 300 s. ([ADR 0001](adr/foundation/0001-stack-and-runtime.md), [ADR 0027](adr/operations/0027-runtime-topology.md))
 - Two backend languages raise the entry cost for a new developer; Kotlin stays in the rule packages. ([ADR 0001](adr/foundation/0001-stack-and-runtime.md), [ADR 0002](adr/foundation/0002-modular-monolith-hexagonal.md))
-- The `setup` module has no `usecase` package yet; the split waits for the tool-guide work. ([ADR 0002](adr/foundation/0002-modular-monolith-hexagonal.md))
 - Generated API code is not committed: after a fresh checkout, run Gradle or npm once before the editor resolves the types. The guide SSE handler is hand-written, so the compiler checks only its event names. ([ADR 0003](adr/foundation/0003-contract-first-rest-api.md), [ADR 0015](adr/guide/0015-ai-guide-evidence-gate.md))
 - A resource seen for the first time has no discovery date in that first response (the write is still queued); a dropped write delays it until the resource is seen again. On shutdown the queue gets 5 s; later writes are lost. ([ADR 0004](adr/foundation/0004-persistence-and-provenance.md))
 - Bookmarks and reports are user data; the backup is the only copy. ([ADR 0004](adr/foundation/0004-persistence-and-provenance.md), [ADR 0027](adr/operations/0027-runtime-topology.md))
@@ -266,5 +277,5 @@ Fix an item or accept it; when it no longer holds, remove it.
 
 ### Quality
 
-- 20 guide questions is a small sample; the script measures the JSON endpoint, not the stream or the browser; an ungraded pick counts as not relevant; the hand-written notes describe the previous run until updated. ([ADR 0030](adr/quality/0030-guide-evaluation.md))
+- 20 guide questions is a small sample; the script measures the JSON endpoint, not the stream or the browser; an ungraded pick counts as not relevant; the hand-written notes describe the previous run until updated. The nightly run leaves out the intent cases; staging visitors share what it leaves of 150 guide calls a day; it needs the staging address reachable from GitHub's runners. ([ADR 0030](adr/quality/0030-guide-evaluation.md))
 - Frozen search snapshots age; pooled judging leaves results outside every top 20 unjudged; labelling takes about 5 hours per judge; Tavily credits are spent once per recorded query. ([ADR 0036](adr/quality/0036-search-evaluation-harness.md))

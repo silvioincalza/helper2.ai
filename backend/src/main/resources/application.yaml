@@ -605,8 +605,10 @@ helper2:
     cache-ttl: ${H2_SETUP_CACHE_TTL:PT1H}
     # The most document text kept in memory per replica.
     document-cache-mb: ${H2_SETUP_DOCUMENT_CACHE_MB:32}
-    # Documents fetched per UTC hour across replicas. GitHub fetches spend the Scout's token (5,000 calls an hour).
+    # Documents fetched per UTC hour across replicas.
     hourly-fetches: ${H2_SETUP_HOURLY_FETCHES:1000}
+    # The setup guide's own GitHub token for README fetches, apart from the Scout's; empty = anonymous (60 calls an hour).
+    github-token: ${H2_SETUP_GITHUB_TOKEN:}
     guide:
       # The step-by-step guide's own daily model-call cap, apart from the guide's and the Scout's.
       daily-model-calls: ${H2_SETUP_GUIDE_DAILY_MODEL_CALLS:300}
@@ -629,9 +631,10 @@ helper2:
     quota:
       # HMAC key of the guest counters and of the stored query keys (OpenBao). Required while Tavily is enabled.
       key-secret: ${H2_QUOTA_KEY_SECRET:}
+      # Per visitor and feature, per UTC day. Staging raises them for testing (chart app.dailyLimits).
       guest:
-        search: 3
-        guide: 3
+        search: ${H2_TAVILY_GUEST_SEARCH:3}
+        guide: ${H2_TAVILY_GUEST_GUIDE:3}
       registered:
         search: 10
         guide: 10

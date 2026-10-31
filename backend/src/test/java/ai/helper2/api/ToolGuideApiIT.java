@@ -23,7 +23,6 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
-import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 /**
@@ -62,8 +61,7 @@ class ToolGuideApiIT extends ApiTestBase {
     @Test
     void withoutAModelTheGuideSaysSoAndKeepsTheDocuments() throws Exception {
         UUID id = seed("https://github.com/acme/readme-mcp", "readme-mcp");
-        String body = mvc.perform(post("/api/v1/resources/{id}/guide", id).with(csrf())
-                .contentType(MediaType.APPLICATION_JSON).content("{}"))
+        String body = mvc.perform(post("/api/v1/resources/{id}/guide", id).with(csrf()))
             .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         ContractValidator.assertMatches("ToolGuide", body);
         assertThat((String) JsonPath.read(body, "$.status")).isEqualTo("LLM_UNAVAILABLE");
@@ -71,18 +69,14 @@ class ToolGuideApiIT extends ApiTestBase {
     }
 
     @Test
-    void noDocumentsIsNoMaterial_questionTooLongIs400_withoutCsrfIs403() throws Exception {
+    void noDocumentsIsNoMaterial_withoutCsrfIs403() throws Exception {
         UUID id = seed("https://example.com/plain-product", "plain-product");
-        String body = mvc.perform(post("/api/v1/resources/{id}/guide", id).with(csrf())
-                .contentType(MediaType.APPLICATION_JSON).content("{\"question\":\"How do I install it?\"}"))
+        String body = mvc.perform(post("/api/v1/resources/{id}/guide", id).with(csrf()))
             .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        ContractValidator.assertMatches("ToolGuide", body);
         assertThat((String) JsonPath.read(body, "$.status")).isEqualTo("NO_MATERIAL");
-        assertThat((String) JsonPath.read(body, "$.question")).isEqualTo("How do I install it?");
-        mvc.perform(post("/api/v1/resources/{id}/guide", id).with(csrf())
-                .contentType(MediaType.APPLICATION_JSON).content("{\"question\":\"" + "x".repeat(501) + "\"}"))
-            .andExpect(status().isBadRequest());
-        mvc.perform(post("/api/v1/resources/{id}/guide", id).contentType(MediaType.APPLICATION_JSON).content("{}"))
-            .andExpect(status().isForbidden());
+        assertThat(body).doesNotContain("question");
+        mvc.perform(post("/api/v1/resources/{id}/guide", id)).andExpect(status().isForbidden());
     }
 
     @Test

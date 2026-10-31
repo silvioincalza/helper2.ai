@@ -123,7 +123,7 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
   setup: "setup (Kotlin domain)" {
     class: group
     ctl: "SetupController\nGET /resources/{id}/setup\nPOST /resources/{id}/guide" {class: app}
-    usecase: "GetResourceSetup\nAskAboutResource" {class: app}
+    usecase: "GetResourceSetup\nGetToolGuide" {class: app}
     core: "SetupGuides · RunOptionRules\nToolGuides · ToolGuideValidator" {class: app}
     p_ports: "McpServerSpecs · ToolMaterials\nToolGuideModel · ToolGuideCache" {class: port}
     adapters: "RegistryMcpServerSpecs · HttpToolMaterials\n(Caffeine, HourlyFetchBudget)\nSpringAiToolGuideModel · RedisToolGuideCache" {class: app}

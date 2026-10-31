@@ -7,7 +7,8 @@ Helper2.ai answers a search from several sources: public application programming
 Each API has its own speed, rate limit and failure modes. One slow or failing source must not block the others, and
 a source that is down must not cost every search its full deadline.
 Users must see which sources answered, which did not, and why. Helper2.ai does not search the whole web,
-so the list of sources must be disclosed. Two sources can describe the same resource and can disagree on a fact.
+so the list of sources must be disclosed, with how each one is doing: how fast it answers, whether it is paused,
+and how many web credits the day has used. Two sources can describe the same resource and can disagree on a fact.
 
 ## Decision
 1. **One port.** Every source implements `SearchSource` with a `SourceDescriptor`: id, name, mode
@@ -57,12 +58,32 @@ so the list of sources must be disclosed. Two sources can describe the same reso
 9. **Catalog link** ([0004](../foundation/0004-persistence-and-provenance.md)). One read for first-discovered dates; only hits fetched
    live now are handed to `ResultObserver.record`, which queues the write (`helper2.catalog.observation-queue`, 256).
 10. Each source returns at most `H2_SEARCH_PER_SOURCE_LIMIT` (30) hits. The response has `Cache-Control: no-store`.
+11. **Sources page numbers.** `GET /api/v1/sources` (`ListSources`) lists every disclosed source by priority, with:
+    - `lastOutcome`, `lastCheckedAt`: the newer of this replica's last search (`SourceHealth`) and the Scout's last
+      run (`RecordedOutcomes`); when the database cannot answer, this replica's only.
+    - `responseTimeMs`: the median of this replica's last 20 calls to the source, failed and timed-out ones included.
+      A cache hit or a skipped call is not a call. A median of a short window is steadier than the last call and
+      needs no shared store.
+    - `circuit` (`CLOSED`, `OPEN`, `HALF_OPEN`) and `circuitOpenedAt` (only while `OPEN`): this replica's
+      `source-<id>` circuit (`Resilience.circuit`); null for a disabled source and for Scout collectors.
+    - `webCredits {usedToday, dailyCap}` on an enabled metered source: the credits of the day for the whole cluster
+      and the global cap, from Redis ([0037](0037-tavily-store-and-daily-quota.md)); null when Redis cannot answer.
+      A visitor's own web searches left stay in the search and guide responses.
+
+    Response time and circuit are per replica, like the circuits themselves; the field descriptions say so.
 
 ## Consequences
 - A slow or failed source costs only its own results. The user sees the outcome of every source.
 - A source that is down costs at most 10 searches its deadline per replica, then none until it recovers.
 - The merge is deterministic. Conflicts are shown, not resolved.
 - Each package of a monorepo is its own result and catalog resource; a package joins its repository only when the link is unambiguous.
+- Two loads of the Sources page can show different response times and circuit states when two replicas answer.
+- `SourceHealthTest`, `ListSourcesTest`, `Resilience4jPoliciesTest`, `SearchApiIT` and `WebSearchQuotaApiIT` cover the
+  Sources page numbers.
+- Security: the endpoint stays public and rate-limited like every API path ([0024](../edge/0024-http-edge-protection.md)).
+  Circuit state, response time and the credit count are operational, not secret: a search already shows a paused
+  source as `SKIPPED` ("Paused after repeated failures"), and a visitor over the cap already sees the refusal. The
+  response holds no host name, key or exception text, only numbers, enums and times.
 
 ## Alternatives considered
 - One global deadline for the whole search — a slow step (translation, a slow source) would eat the budget of the others.
@@ -79,7 +100,8 @@ so the list of sources must be disclosed. Two sources can describe the same reso
   policies, coverage, notices.
 - `backend/src/main/kotlin/ai/helper2/search/ResultMerger.kt` — grouping, conflicts, freshness.
 - `backend/src/main/kotlin/ai/helper2/search/Ports.kt`, `Model.kt` — ports, descriptors, statuses.
-- `backend/src/main/kotlin/ai/helper2/search/SourceHealth.kt` — last outcome per source for the Sources page.
+- `backend/src/main/kotlin/ai/helper2/search/SourceHealth.kt` — last outcome and recent response time per source.
+- `backend/src/main/kotlin/ai/helper2/search/usecase/ListSources.kt` — the Sources page list with its live numbers.
 - `backend/src/main/java/ai/helper2/search/config/SearchConfiguration.java` — executor, ordering, properties.
 - `backend/src/main/resources/application.yaml` (`resilience4j.*`) — the `source-<id>` policies.
 - `backend/src/main/java/ai/helper2/search/cache/RedisSearchCache.java` — Redis adapter on the `redis` policy.
@@ -92,5 +114,6 @@ so the list of sources must be disclosed. Two sources can describe the same reso
 [flow](../../diagrams/flow-0008-federated-search.svg) · [sequence](../../diagrams/sequence-0008-federated-search.svg)
 
 ## Roadmap
+- The Sources page shows response time, circuit state and Tavily credits: [roadmap](../../roadmap.md#7-frontend).
 - [Source cooldowns, circuits and source health stay per replica, on purpose](../../roadmap.md#4-more-than-one-replica).
 - Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

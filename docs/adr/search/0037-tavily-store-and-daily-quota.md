@@ -38,10 +38,17 @@ used up. The counts must hold across 3 replicas, store no address and no query t
    search: a guide question that searches several times takes it at its first live call. Over the limit the source
    is `SKIPPED` (`SkipReason.DAILY_LIMIT`, "Daily limit of web searches reached; back at 00:00 UTC"), with its stored
    set when it is not older than 7 days (`STALE_CACHE`); the other sources answer as usual.
-4. **Optional global cap.** With `H2_TAVILY_GLOBAL_DAILY_CREDITS` set, every live call (also the later calls of one
-   guide question) counts against `h2:v1:quota:global:<UTC date>` too; unset (the default) means no cap. The own and
-   the global counter are checked and counted in **one Lua script** (`RedisQuotaCounter`), so concurrent requests on
-   any replica never pass a limit.
+   The guest limits are `H2_TAVILY_GUEST_SEARCH` and `H2_TAVILY_GUEST_GUIDE` (default 3). The chart sets them, with
+   the guide's questions per client and the global cap, only where `app.dailyLimits` sets them: staging raises the
+   per-visitor limits to 1000, so a test is never cut off by earlier tests, and keeps a global cap of 200 live calls
+   a day, because staging is public. Prod keeps the defaults.
+4. **Credits of the day, optional global cap.** Every live call (also the later calls of one guide question and the
+   calls of internal callers) counts on `h2:v1:quota:global:<UTC date>`, field `credits`: the credits of the day
+   for the whole cluster. With `H2_TAVILY_GLOBAL_DAILY_CREDITS` set, the counter is capped; unset (the default) means
+   no cap. The own and the global counter are checked and counted in **one Lua script** (`RedisQuotaCounter`), so
+   concurrent requests on any replica never pass a limit. The script counts before the `source-tavily` policy is
+   asked, so a live call that policy refuses (circuit open, bulkhead full) gives its credit back
+   (`WebSearchQuota.refund`); the asker's own web search stays taken. Scout runs do not count here.
 5. **Fail closed.** When Redis cannot answer or the `redis` policy refuses the call ([0033](../foundation/0033-resilience-policies.md)),
    no live Tavily call goes out (`SkipReason.QUOTA_UNAVAILABLE`, "Web search paused: the daily limit cannot be
    checked"); stored sets still answer. Credits are the only cost here that grows with traffic, and during a Redis
@@ -51,6 +58,8 @@ used up. The counts must hold across 3 replicas, store no address and no query t
 6. **What is left, in every answer.** `SearchResponse.webSearches` and `GuideResponse.webSearches`
    (`{limit, remaining}`, null without an enabled metered source or a readable count) show the visitor's web searches
    left today for that feature. A cached guide answer gets the current asker's count, never the first asker's.
+   `GET /api/v1/sources` shows the credits of the day and the cap on the metered source
+   (`webCredits {usedToday, dailyCap}`, `WebSearchQuota.creditsToday`, [0008](0008-federated-search.md)): one read, no count.
 7. **Guide answers live no longer than their web results.** Answer TTL = min(24 h, freshness left of the web results
    it used); an answer built on stale web results is not cached ([0017](../guide/0017-guide-cost-guard.md)).
 8. **Credits are measured.** `helper2.tavily.credits{feature,tier}` counts every live call (`none` for internal
@@ -66,14 +75,17 @@ used up. The counts must hold across 3 replicas, store no address and no query t
   everyone.
 - One visitor spends at most 3 + 3 credits a day; the alert and the switchable cap bound the rest without a release.
 - No address and no query text are stored for this; the counters are gone after a day.
-- Security (STRIDE): the user id comes from the session only, never from the request. The HMAC secret lives in
+- Every live call costs one Redis script; a guide question that calls the web three times runs it three times.
+- Security (STRIDE): the user id comes from the session only, never from the request. The credits of the day and
+  the cap are public on the Sources page: they tell an abuser how much is left, which a visitor over the cap learns
+  anyway, and the cap still holds. The HMAC secret lives in
   OpenBao, so day keys and stored query keys cannot be tested against guesses; rotating it only resets the day's
   counters and the stored sets. A Redis outage stops fresh web results, not the search.
 - AI architecture check: covered are Tool & API (metered source behind a quota), Data (one table, retention), Cost &
   Reliability (quota, cap, alert, fail closed), Observability (credits meter), Security & Identity (HMAC keys,
   registered tier behind sign-in). Evaluation of whether near-duplicate queries could share a set is deferred (exact
   match until data shows it pays). The other layers are not touched.
-- `WebSearchQuotaTest`, `IntentClassTest`, `MeteredSourceTest`, `AskGuideWebSearchTest`, `QuotaKeysTest`,
+- `WebSearchQuotaTest`, `IntentClassTest`, `MeteredSourceTest`, `AskGuideWebSearchTest`, `QuotaKeysTest`, `ListSourcesTest`,
   `RedisQuotaCounterIT`, `JdbcWebResultStoreIT`, `WebSearchQuotaApiIT`, `AccountApiIT` and the promtool tests cover the rules.
 
 ## Alternatives considered
@@ -87,7 +99,7 @@ used up. The counts must hold across 3 replicas, store no address and no query t
 - Near-duplicate reuse by embeddings — more hits, but wrong answers when two questions only look alike.
 
 ## Code
-- `backend/src/main/kotlin/ai/helper2/search/WebSearch.kt` — `Asker`, `IntentClass`, `WebFreshness`, `WebSearchQuota`.
+- `backend/src/main/kotlin/ai/helper2/search/WebSearch.kt` — `Asker`, `IntentClass`, `WebFreshness`, `WebSearchQuota`, `WebCredits`.
 - `backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — store first, quota, `webSearchesLeft`.
 - `backend/src/main/kotlin/ai/helper2/search/Ports.kt` — `WebResultStore`, `WebResultRetention`, `ResultObserver.recordedHits`.
 - `backend/src/main/java/ai/helper2/search/internal/JdbcWebResultStore.java`, `catalog/ResourceCatalog.java` (`recordedHits`).

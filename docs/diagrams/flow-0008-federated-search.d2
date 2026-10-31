@@ -2,8 +2,9 @@
 # Shows disabled sources, the rate-limit cooldown, the fresh/stale Redis windows for LIVE sources, the source's
 # policy source-<id> (circuit breaker and bulkhead, no retry), the per-source deadline counted from the source's own
 # start, and the notices. A metered source (Tavily) reads its stored result set instead of Redis and calls live only
-# inside the daily quota: its own flow is flow-0037.
+# inside the daily quota: its own flow is flow-0037. Below: what GET /api/v1/sources shows of each source.
 # Source of truth: backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt (Run.start, Run.collect, stale, search),
+#   backend/src/main/kotlin/ai/helper2/search/usecase/ListSources.kt, search/SourceHealth.kt, search/WebSearch.kt (creditsToday),
 #   backend/src/main/kotlin/ai/helper2/search/ResultMerger.kt,
 #   backend/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java (resilience4j.* in application.yaml),
 #   backend/src/main/java/ai/helper2/search/cache/RedisSearchCache.java, search/internal/JdbcWebResultStore.java.
@@ -84,3 +85,30 @@ coverage -> allfail
 allfail -> notice: yes
 allfail -> resp: no {class: hot}
 notice -> resp
+
+health: "SourceHealth (per replica):\nlast outcome, durations of\nthe last 20 calls" {class: data}
+each.ok -> health
+each.failed -> health
+
+sources: "GET /api/v1/sources: each disclosed source, by priority" {
+  class: group
+  direction: down
+  last: "lastOutcome: the newer of this replica's\nlast search and the Scout's last run\n(record unreadable: this replica's only)" {class: app}
+  time: "responseTimeMs: median of this replica's\nlast 20 calls (cache hits and\nskipped calls are not calls)" {class: app}
+  enabled: "Enabled?" {class: decision}
+  circuit: "circuit: state of this replica's\nsource-<id>; circuitOpenedAt\nwhile OPEN (none: null)" {class: app}
+  metered: "Metered?" {class: decision}
+  credits: "webCredits: usedToday from the global\nRedis counter (whole cluster), dailyCap;\nnull when Redis cannot answer" {class: data}
+  out: "200 SourceInfo[]" {class: end}
+
+  last -> time
+  time -> enabled
+  enabled -> circuit: yes
+  enabled -> out: "no: no circuit,\nno credits"
+  circuit -> metered
+  metered -> credits: yes
+  metered -> out: no
+  credits -> out
+}
+
+health -> sources.last: read

@@ -140,7 +140,7 @@ HELM_ARGS = helper2 $(CHART) -n $(NS) -f $(CHART)/values-$(ENV).yaml \
 # PrometheusRule is checked against its CRD schema from the CRDs-catalog, pinned to a commit, and must hold the
 # alerts of deploy/monitoring/helper2-rules.yaml (read through the chart's files/ symlink).
 CRD_SCHEMAS := https://raw.githubusercontent.com/datreeio/CRDs-catalog/3eb90d47aba8d61919d4419dd38301536e32a94b/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json
-chart-check: ## helm lint + helm template | kubeconform, for staging and prod; Redis AOF + PVC; PrometheusRule = rule file; an envFile key without H2_ fails
+chart-check: ## helm lint + helm template | kubeconform, for staging and prod; Redis AOF + PVC; daily limits only where set; PrometheusRule = rule file; an envFile key without H2_ fails
 	@set -euo pipefail; \
 	env=$$(mktemp); bad=$$(mktemp); trap 'rm -f "$$env" "$$bad"' EXIT; \
 	printf 'H2_DATABASE_PASSWORD=ci\nH2_REDIS_PASSWORD=00000000000000000000000000000000\n' > "$$env"; \
@@ -162,6 +162,14 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 		grep -qF -- '--save "" --appendonly yes --appendfsync everysec' <<<"$$redis" \
 			|| { echo "Redis must run with AOF and no RDB snapshots (--save \"\" --appendonly yes --appendfsync everysec)"; exit 1; }; \
 		grep -q '^  volumeClaimTemplates:' <<<"$$redis" || { echo "Redis must keep /data on a PersistentVolumeClaim"; exit 1; }; \
+	done; \
+	echo "== daily limits are rendered only where set: prod none, staging all four"; \
+	limits='name: H2_(TAVILY_GUEST_SEARCH|TAVILY_GUEST_GUIDE|GUIDE_CLIENT_DAILY_QUESTIONS|TAVILY_GLOBAL_DAILY_CREDITS),'; \
+	for e in prod staging; do \
+		n=$$(helm template helper2 $(CHART) -f $(CHART)/values-$$e.yaml --set image.tag=000000000000 --set-file envFile=$$env \
+			--show-only templates/app.yaml | grep -cE "$$limits" || true); \
+		want=0; [ $$e = staging ] && want=4; \
+		[ "$$n" -eq "$$want" ] || { echo "$$e renders $$n daily limits, want $$want"; exit 1; }; \
 	done; \
 	echo "== PrometheusRule holds deploy/monitoring/helper2-rules.yaml"; \
 	rule=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --set-file envFile=$$env \

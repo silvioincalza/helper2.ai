@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Runs a fixed guide question set against a running backend and writes a report.
-// Usage: node scripts/eval-guide.mjs [baseUrl] [--adversarial | --intents]   (default http://localhost:8080)
+// Usage: node scripts/eval-guide.mjs [baseUrl] [--adversarial | --intents | --min-pass <share>]   (default http://localhost:8080)
 // Needs Node 18+ (global fetch). Respects the guide rate limit (10/min) with a pause between calls.
 //
 // Cache: every run must measure real model calls, so the backend under test runs with
@@ -12,6 +12,11 @@
 // per address per UTC day). The default set has 20 questions, --intents 22 and --adversarial 8; the staging backend
 // for scheduled runs sets a quota that covers all three. The script stops with an error as soon as an answer carries
 // the GUIDE_DAILY_QUOTA notice and leaves the report unchanged.
+//
+// Pass rate (default set): a question passes when a model answered it fresh (HTTP 200, not from the cache, not
+// LLM_UNAVAILABLE) with at least one AI pick, or with none when the query sets "expectNoPick" (the nonsense question).
+// --min-pass 0.5 exits with code 1 when fewer than half pass; the report is written either way. The scheduled run on
+// staging uses it (.github/workflows/guide-eval.yml, ADR 0030).
 //
 // Hand-written notes: the text between the HAND_WRITTEN_START and HAND_WRITTEN_END markers in
 // docs/evaluation.md is kept as it is; the rest of the file is regenerated. Update those notes after each run.
@@ -33,7 +38,11 @@ import { canonicalUrl, csrfToken, esc, fmt, mean, ndcgAt, postJson, precisionAt,
 const args = process.argv.slice(2);
 const adversarial = args.includes('--adversarial');
 const intents = args.includes('--intents');
-const base = (args.find((a) => !a.startsWith('--')) ?? 'http://localhost:8080').replace(/\/$/, '');
+const minPassAt = args.indexOf('--min-pass');
+const minPass = minPassAt >= 0 ? Number(args[minPassAt + 1]) : null;
+if (minPass != null && !(minPass >= 0 && minPass <= 1)) throw new Error('--min-pass takes a share between 0 and 1, for example 0.5');
+// The share after --min-pass is not the base URL; without the option, every bare argument may be.
+const base = (args.find((a, i) => !a.startsWith('--') && (minPassAt < 0 || i !== minPassAt + 1)) ?? 'http://localhost:8080').replace(/\/$/, '');
 const QUERY_FILE = adversarial ? 'guide-adversarial.json' : intents ? 'guide-intents.json' : 'guide-queries.json';
 const queries = JSON.parse(await readFile(new URL(`../docs/eval/${QUERY_FILE}`, import.meta.url), 'utf8'));
 const qrels = await readQrels(new URL('../docs/eval/guide-qrels.tsv', import.meta.url));
@@ -133,6 +142,9 @@ const aiChecks = (a) => a.recommendations.filter((x) => x.aiReasoned).flatMap((x
 const confirmed = ok.reduce((n, r) => n + aiChecks(r.a).filter((c) => c.status === 'CONFIRMED').length, 0);
 const notConfirmed = ok.reduce((n, r) => n + aiChecks(r.a).filter((c) => c.status === 'NOT_CONFIRMED').length, 0);
 const withConstraints = count((r) => (r.a.constraints ?? []).length > 0);
+/** A model answered the question fresh, with an AI pick exactly when one is expected. */
+const passes = (r) => Boolean(r.a) && !r.cached && r.a.status !== 'LLM_UNAVAILABLE' && (aiPicks(r.a) > 0) !== Boolean(r.q.expectNoPick);
+const passed = rows.filter(passes).length;
 const checkCell = (a) => {
   const c = aiChecks(a);
   return c.length ? `${c.filter((x) => x.status === 'CONFIRMED').length}/${c.length}` : '–';
@@ -305,6 +317,7 @@ Models: ${model ? `planning \`${model.fastModel}\`, choosing \`${model.reasoning
 | Metric | Value |
 |---|---|
 | Queries answered (HTTP 200) | ${ok.length} / ${rows.length} |
+| Passed: answered fresh by the model, AI pick as expected | ${passed} / ${rows.length} |
 | Status OK / PARTIAL / LLM_UNAVAILABLE / NO_CANDIDATES | ${count((r) => r.a.status === 'OK')} / ${count((r) => r.a.status === 'PARTIAL')} / ${count((r) => r.a.status === 'LLM_UNAVAILABLE')} / ${count((r) => r.a.status === 'NO_CANDIDATES')} |
 | AI picks kept by the validator | ${kept} |
 | AI suggestions rejected by the validator | ${rejected} |
@@ -340,6 +353,7 @@ The section under "Notes on this run" is hand-written and kept by the script; th
 - Previous runs are in [docs/eval/](eval/).
 - "(cache)" marks an answer served from the cache (the backend was not run with \`H2_GUIDE_CACHE_TTL=PT1S\`); its latency is left out of the percentiles.
 - P@3 is the share of the first three AI picks graded relevant (2 or 3) in [eval/guide-qrels.tsv](eval/guide-qrels.tsv); nDCG@3 weighs them by grade. Picks not graded yet are written to \`backend/eval-data/guide-pool.tsv\` and count as not relevant.
+- "Passed" needs a fresh model answer with at least one AI pick (none for \`x01\`); \`--min-pass\` fails the run below a share.
 - "Kept" counts only AI-reasoned picks that passed the evidence check. Plain search results shown as a fallback count 0.
 - "Top pick" is the first AI-reasoned pick; "no AI pick" means the model chose nothing or everything was rejected.
 - \`x01\` is a nonsense query. The honest result is NO_CANDIDATES or no AI picks.
@@ -353,4 +367,8 @@ ${HAND_WRITTEN_END}
 `;
 
 await writeFile(OUTPUT, md);
-console.log('wrote docs/evaluation.md');
+console.log(`wrote docs/evaluation.md: ${passed} / ${rows.length} passed`);
+if (minPass != null && passed < minPass * rows.length) {
+  console.error(`Pass rate ${passed} / ${rows.length} is below --min-pass ${minPass}.`);
+  process.exit(1);
+}

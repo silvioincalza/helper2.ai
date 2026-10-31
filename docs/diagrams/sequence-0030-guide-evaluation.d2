@@ -1,21 +1,24 @@
 # Sequence: one run of scripts/eval-guide.mjs against a backend under test: the CSRF token, one guide question per
 # step with its model calls, the stored record read back for --intents, and the report written at the end.
 # Source of truth: scripts/eval-guide.mjs, scripts/eval-lib.mjs (csrfToken, postJson, sleep),
-#   backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt, docs/eval/guide-queries.json, docs/eval/guide-qrels.tsv.
+#   backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt, docs/eval/guide-queries.json, docs/eval/guide-qrels.tsv,
+#   .github/workflows/guide-eval.yml (the nightly run on staging).
 # Render: cd docs/diagrams && d2 fmt sequence-0030-guide-evaluation.d2 && d2 sequence-0030-guide-evaluation.d2 sequence-0030-guide-evaluation.svg
 
 ...@style
 
 shape: sequence_diagram
 
+gha: "GitHub Actions\nguide-eval.yml\n(GitHub-hosted, nightly)" {class: ext}
 script: "eval-guide.mjs\n(Node)" {class: person}
 files: "docs/eval/*.json,\nguide-qrels.tsv" {class: data}
-api: "helper2 /api/v1\n(H2_GUIDE_CACHE_TTL=PT1S)" {class: app}
+api: "helper2 staging /api/v1\n(H2_GUIDE_CACHE_TTL=PT1S)" {class: app}
 guide: AskGuide {class: app}
 model: "Nemotron\n(Token Factory)" {class: ai}
 out: "docs/evaluation*.md,\neval-data/guide-pool.tsv" {class: data}
 
 start: Start {
+  gha -> script: "01:41 UTC: node scripts/eval-guide.mjs\nhttps://helper2.incalza.me --min-pass 0.5\n(then again with --adversarial)"
   script -> files: "read the question set and judgements"
   script -> api: "GET /api/v1/me"
   api -> script: "Set-Cookie XSRF-TOKEN"
@@ -38,4 +41,6 @@ each: Each question (7 s apart, below 10 per minute) {
 end: Report {
   script -> script: "totals, latency p50 / p90 / max,\nP@3 and nDCG@3 on judged queries"
   script -> out: "rewrite the report (hand-written notes kept);\nungraded picks to guide-pool.tsv" {class: hot}
+  script -> gha: "exit 0, or 1 below --min-pass\n(adversarial: on any failed case)"
+  gha -> out: "upload the reports as an artifact\n(retention 30 days)"
 }

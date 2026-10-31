@@ -165,3 +165,6 @@ kubectl -n $NS scale deployment/helper2 --replicas=3   # your app.replicas
 
 helper2.ai runs on this chart with [`values-staging.yaml`](../helm/helper2/values-staging.yaml) and
 [`values-prod.yaml`](../helm/helper2/values-prod.yaml), deployed by GitHub Actions: [CI.md](CI.md).
+Staging's `app.env` also sets `H2_GUIDE_CACHE_TTL=PT1S`, `H2_GUIDE_CLIENT_DAILY_QUESTIONS=60` and
+`H2_GUIDE_DAILY_MODEL_CALLS=150` for the nightly guide evaluation
+([ADR 0030](../../docs/adr/quality/0030-guide-evaluation.md)); prod keeps the defaults.

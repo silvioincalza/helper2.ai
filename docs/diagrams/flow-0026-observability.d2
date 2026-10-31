@@ -6,6 +6,7 @@
 #   backend/src/main/java/ai/helper2/search/config/SearchConfiguration.java, MicrometerSearchMetrics.java,
 #   backend/src/main/java/ai/helper2/platform/llm/ModelCallMetrics.java, LlmConfiguration.java,
 #   backend/src/main/java/ai/helper2/platform/http/ObservedHttp.java, backend/src/main/java/ai/helper2/sources/config/SourcesConfiguration.java,
+#   backend/src/main/java/ai/helper2/guide/web/GuideStreamController.java (helper2.guide.first_useful),
 #   deploy/helm/helper2/templates/app.yaml, prometheusrule.yaml, deploy/helm/helper2/values.yaml, deploy/grafana/helper2.json,
 #   deploy/monitoring/helper2-rules.yaml.
 # Render: cd docs/diagrams && d2 fmt flow-0026-observability.d2 && d2 flow-0026-observability.d2 flow-0026-observability.svg
@@ -26,6 +27,8 @@ work: Inside the request {
   client: "ObservedHttp RestClient\n(sources, embedder; bounded URI):\nclient span, http.client.requests,\ntrace headers" {class: app}
   model: "ModelCallMetrics.observe\n(guide steps, translate, tool-guide,\nenrich, classify): span +\nhelper2.llm.call, tokens" {class: app}
   meters: "Domain meters: helper2.search.*,\nhelper2.source.*, helper2.cache.events,\nhelper2.catalog.*, helper2.embedding.*,\n*.budget.remaining gauges …" {class: app}
+  useful: "Guide stream: first retrieved\nor clarify event sent?\n→ helper2.guide.first_useful{intent}\n(target p50 3 s, p95 8 s)" {class: app}
+  useful -> meters
   ctx -> client
   ctx -> meters
   model -> meters
@@ -53,7 +56,7 @@ metrics: Metrics {
   endpoint: "/actuator/prometheus on\nH2_MANAGEMENT_PORT 8081" {class: app}
   scrape: "Alloy scrapes (pod annotations)\n→ remote write to Prometheus" {class: ext}
   grafana: "Grafana dashboard helper2.json\n(rows: overview, HTTP, search,\nguide, Scout, embeddings, runtime;\nlatency from _bucket series)" {class: ext}
-  alerts: "Alert rules deploy/monitoring/helper2-rules.yaml\n(rule file, or PrometheusRule with\nmonitoring.prometheusRule.enabled):\nevaluated by Prometheus" {class: config}
+  alerts: "Alert rules deploy/monitoring/helper2-rules.yaml\n(rule file, or PrometheusRule with\nmonitoring.prometheusRule.enabled):\nevaluated by Prometheus; first useful\np95 > 8 s for 15 min warns" {class: config}
   registry -> endpoint
   endpoint -> scrape: {class: hot}
   scrape -> grafana: {class: hot}

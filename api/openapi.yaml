@@ -146,22 +146,16 @@ paths:
     post:
       tags: [setup]
       operationId: askResourceGuide
-      summary: Step-by-step guide for one tool from its own documentation, or the answer to a question about it.
+      summary: Step-by-step guide for one tool from its own documentation.
       description: |
         Reads the tool's own documents (GitHub README, npm package README, Hugging Face model or Space card) from
         fixed hosts. A model may only pick and order passages from them; a deterministic check keeps a step only
         when its quote is found in the cited document and its command is whole lines of one code block (or one
-        inline code span) of that document, exactly as written. Without a question the answer is the full guide
-        (requirements, install, configure, use, connect) and is the same for every visitor; with one, it starts
-        with the answer. POST because it can call a model: it shares the guide's rate limit and has its own
-        daily cap. `status` says when there is nothing to show and why.
+        inline code span) of that document, exactly as written. The answer is the full guide (requirements,
+        install, configure, use, connect) and is the same for every visitor. POST because it can call a model: it
+        shares the guide's rate limit and has its own daily cap. `status` says when there is nothing to show and why.
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/ToolGuideRequest' }
       responses:
         '200':
           description: Guide (possibly without steps; see status).
@@ -268,7 +262,10 @@ paths:
     get:
       tags: [sources]
       operationId: listSources
-      summary: Disclosed source registry with last known health.
+      summary: Disclosed source registry with last known health, response time, circuit state and web credits.
+      description: >-
+        Public and rate-limited like every API path. Response time and circuit state are measured by the replica that
+        answers (each replica calls the sources on its own); the web credits are counted in Redis for the whole cluster.
       responses:
         '200':
           description: All configured sources, enabled or not.
@@ -906,11 +903,6 @@ components:
               text: { type: [string, 'null'], description: Ready to paste; secrets are placeholders. }
               note: { type: [string, 'null'], description: Why it is not supported, or what to do after pasting. }
 
-    ToolGuideRequest:
-      type: object
-      properties:
-        question: { type: [string, 'null'], minLength: 3, maxLength: 500, description: A question about this tool; empty for the full guide. }
-
     ToolGuide:
       type: object
       required: [resourceId, title, status, sections, documents, rejected, generatedAt]
@@ -921,7 +913,6 @@ components:
           type: string
           enum: [OK, NO_STEPS, NO_MATERIAL, LLM_UNAVAILABLE]
           description: 'OK: steps passed the checks. NO_STEPS: documents read, nothing passed. NO_MATERIAL: no document to read. LLM_UNAVAILABLE: no model now (see unavailable).'
-        question: { type: [string, 'null'] }
         unavailable: { type: [string, 'null'], description: 'With LLM_UNAVAILABLE: "budget" (today''s model calls are used up) or "error".' }
         sections:
           type: array
@@ -929,7 +920,7 @@ components:
             type: object
             required: [kind, steps]
             properties:
-              kind: { type: string, enum: [ANSWER, REQUIREMENTS, INSTALL, CONFIGURE, USE, CONNECT] }
+              kind: { type: string, enum: [REQUIREMENTS, INSTALL, CONFIGURE, USE, CONNECT] }
               steps:
                 type: array
                 items:
@@ -1242,6 +1233,43 @@ components:
         resourceTypes: { type: array, items: { $ref: '#/components/schemas/ResourceType' } }
         lastOutcome: { oneOf: [{ $ref: '#/components/schemas/SourceOutcome' }, { type: 'null' }] }
         lastCheckedAt: { type: [string, 'null'], format: date-time }
+        responseTimeMs:
+          type: [integer, 'null']
+          format: int64
+          description: >-
+            Median duration of this replica's last 20 calls to the source (succeeded, failed or timed out; cache hits
+            and skipped calls are left out). Null before this replica's first call.
+        circuit:
+          oneOf: [{ $ref: '#/components/schemas/CircuitState' }, { type: 'null' }]
+          description: State of this replica's circuit breaker `source-<id>`; null for a disabled source or one without a circuit (Scout collectors).
+        circuitOpenedAt:
+          type: [string, 'null']
+          format: date-time
+          description: When this replica's circuit opened; set only while `circuit` is OPEN.
+        webCredits:
+          oneOf: [{ $ref: '#/components/schemas/WebCredits' }, { type: 'null' }]
+          description: Only on an enabled metered source (Tavily); null when the count cannot be read.
+
+    CircuitState:
+      type: string
+      description: |
+        CLOSED = calls go through. OPEN = too many recent calls failed or were slow; the source is skipped without a
+        call until the open window ends. HALF_OPEN = a few trial calls decide whether it closes again.
+      enum: [CLOSED, OPEN, HALF_OPEN]
+
+    WebCredits:
+      type: object
+      description: Web search credits of the metered source today (UTC), for the whole cluster. Not a visitor's own count.
+      required: [usedToday]
+      properties:
+        usedToday:
+          type: integer
+          format: int64
+          description: Credits taken today by live calls from search and the guide, counted in Redis by every replica (Scout runs are not included).
+        dailyCap:
+          type: [integer, 'null']
+          format: int64
+          description: The global daily cap (`H2_TAVILY_GLOBAL_DAILY_CREDITS`); null when no cap is set.
 
     Me:
       type: object
