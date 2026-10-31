@@ -80,6 +80,28 @@ describe('design v2 results (flag on): list and preview', () => {
     expect(await screen.findByText('No pick: no result had a sentence that proves it')).toBeInTheDocument();
   });
 
+  it('an answer with no AI pick but plain recommendations is shown in full, not as "no pick"', async () => {
+    const plain = { ...guide().recommendations[0]!, aiReasoned: false };
+    mockApi({ 'GET /search': () => search(), 'POST /guide/stream': () => sse({ ...guide(), recommendations: [plain] }) });
+    renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
+    expect(await screen.findByRole('link', { name: /Postgres MCP/, hidden: false })).toBeInTheDocument();
+    expect(screen.queryByText('No pick: no result had a sentence that proves it')).not.toBeInTheDocument();
+  });
+
+  it('a pick that is not on this page of results links to its own page', async () => {
+    const away = { ...guide().recommendations[0]!, resourceId: 'cccccccc-cccc-5ccc-8ccc-cccccccccccc', title: 'Elsewhere MCP' };
+    mockApi({ 'GET /search': () => search(), 'POST /guide/stream': () => sse({ ...guide(), recommendations: [away] }) });
+    renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
+    const chip = await screen.findByRole('link', { name: /#1\s*Elsewhere MCP/ });
+    expect(chip).toHaveAttribute('href', '/resource/cccccccc-cccc-5ccc-8ccc-cccccccccccc');
+  });
+
+  it('the timeline view pages too', async () => {
+    mockApi({ 'GET /search': () => makeSearch({ results, total: 120, size: 50, sources: [makeStatus()] }) });
+    renderApp('/search?q=postgres+mcp&view=timeline');
+    expect(await screen.findByRole('button', { name: /Next/ })).toBeInTheDocument();
+  });
+
   it('up to 860 px the preview opens inside the list, under the selected row, with a link to the full page', async () => {
     vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false, addEventListener: () => undefined, removeEventListener: () => undefined })));
     mockApi({ 'GET /search': () => search() });

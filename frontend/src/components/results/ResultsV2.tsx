@@ -66,7 +66,7 @@ export function ResultsV2() {
     <div className="h2-results">
       <h1 className="sr-only">{t('resultsV2.heading', { q: state.q })}</h1>
       <div className="h2-results__box"><OneBox /></div>
-      {asked ? <GuidePicks stream={stream} /> : words >= 4 && (
+      {asked ? <GuidePicks stream={stream} loaded={new Set((shown?.results ?? []).map((c) => c.id))} /> : words >= 4 && (
         <button type="button" className="btn suggest-guide" onClick={() => ask(state.q)}>{t('home.suggestGuide', { q: state.q })}</button>
       )}
       {search.loading && !shown && (
@@ -99,24 +99,37 @@ export function ResultsV2() {
   );
 }
 
-/** The picks bar for the question in the URL: reading, then the picks, or one line when there is none. */
-function GuidePicks({ stream }: { stream: GuideStream }) {
+/**
+ * The picks bar for the question in the URL: reading, then the picks, or one line when there is none. An answer with
+ * no AI pick but something to say (an explanation, a comparison, plain recommendations, notices) is shown in full
+ * instead of the no-pick line. A pick that is not on this page of results links to its own page.
+ */
+function GuidePicks({ stream, loaded }: { stream: GuideStream; loaded: ReadonlySet<string> }) {
   const { t } = useTranslation();
   const { answer, error, busy, refine, retry } = stream;
   const [, setSp] = useSearchParams();
   const picks = guidePicks(answer);
   const select = (id: string) => setSp((prev) => { const next = new URLSearchParams(prev); next.set('id', id); return next; }, { replace: true, preventScrollReset: true });
   const state: PicksState = busy ? { kind: 'reading' } : picks.length > 0 ? { kind: 'picks', model: answer?.model?.reasoningModel ?? null } : { kind: 'none' };
+  const answered = answer !== null && answer.status !== 'NEEDS_CLARIFICATION';
+  const plainAnswer = answered && picks.length === 0 && (answer.recommendations.length > 0 || !!answer.explanation
+    || !!answer.comparison || answer.notices.length > 0);
   return (
     <div className="h2-results__guide">
-      {error === null && (
+      {error === null && !plainAnswer && (
         <PicksBar state={state}>
           <ul className="h2-picks__chips">
             {picks.map((p) => (
               <li key={p.resourceId}>
-                <button type="button" className="h2-pick-chip" onClick={() => select(p.resourceId)}>
-                  <b>#{p.rank}</b> {p.title}
-                </button>
+                {loaded.has(p.resourceId) ? (
+                  <button type="button" className="h2-pick-chip" onClick={() => select(p.resourceId)}>
+                    <b>#{p.rank}</b> {p.title}
+                  </button>
+                ) : (
+                  <Link className="h2-pick-chip" to={`/resource/${encodeURIComponent(p.resourceId)}`}>
+                    <b>#{p.rank}</b> {p.title}
+                  </Link>
+                )}
               </li>
             ))}
           </ul>
@@ -129,7 +142,8 @@ function GuidePicks({ stream }: { stream: GuideStream }) {
         </div>
       )}
       {answer && answer.status === 'NEEDS_CLARIFICATION' && <GuideAnswer answer={answer} onRefine={refine} />}
-      {answer && picks.length > 0 && <FullAnswer answer={answer} onRefine={refine} />}
+      {answered && picks.length > 0 && <FullAnswer answer={answer} onRefine={refine} />}
+      {plainAnswer && <GuideAnswer answer={answer} onRefine={refine} />}
     </div>
   );
 }
@@ -239,7 +253,6 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
                 );
               })}
             </ul>
-            <Pagination page={res.page} size={res.size} total={res.total} onPage={(page) => update(patchState(state, { page }))} />
           </div>
           {wide && selected && (
             <article className="h2-preview" aria-labelledby="h2-preview-title">
@@ -247,6 +260,10 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
             </article>
           )}
         </div>
+      )}
+      {/* Under the list and under the timeline alike: the timeline asks for 50 per page, so it pages too. */}
+      {!nothingSearched && res.results.length > 0 && (
+        <Pagination page={res.page} size={res.size} total={res.total} onPage={(page) => update(patchState(state, { page }))} />
       )}
 
       <section className="h2-results__sources" aria-labelledby="h2-sources-h">
