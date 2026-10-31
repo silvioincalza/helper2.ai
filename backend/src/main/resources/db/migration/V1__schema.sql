@@ -410,7 +410,7 @@ CREATE TABLE tavily_query_result (
 );
 CREATE INDEX tavily_query_result_fetched_idx ON tavily_query_result (fetched_at);
 
--- Model answers shared by every replica (ADR 0005): query translations, query vectors, setup guide answers.
+-- Model answers shared by every replica (ADR 0005): query translations, query vectors, setup guide answers, guide answers.
 -- key_hash is a SHA-256 of the entry's parts (model, prompt version, normalised query...); the query text is never
 -- stored. A read ignores an expired row; the daily shared-cache purge deletes it (ADR 0034).
 CREATE TABLE ai_cache (

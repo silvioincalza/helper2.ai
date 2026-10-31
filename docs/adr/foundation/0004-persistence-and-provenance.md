@@ -57,7 +57,8 @@ the search down.
 8. **Model answers shared by the replicas in `ai_cache`.** One table, owned by the open `platform` module
    (`platform.cache`, [0002](0002-modular-monolith-hexagonal.md)), holds every cache of model answers: query translations
    (cache `translation`, [0011](../search/0011-language-aware-search.md)), query vectors (`query-vector`,
-   [0012](../search/0012-vector-search-pgvector.md)) and setup guide answers (`tool-guide`, [0031](../guide/0031-setup-guide.md)).
+   [0012](../search/0012-vector-search-pgvector.md)), setup guide answers (`tool-guide`, [0031](../guide/0031-setup-guide.md))
+   and guide answers (`guide-answer`, [0041](../guide/0041-guide-answer-cache.md)).
    Columns: `cache_name`, `key_hash` (SHA-256 of the entry's parts, never the query text), `value` (text), `expires_at`;
    primary key (`cache_name`, `key_hash`). Port `SharedCache`, adapter `JdbcSharedCache`, created by
    `SharedCaches.named(name)`. A read is one primary-key lookup with `expires_at > now()`; a write is an upsert
