@@ -1,4 +1,4 @@
-/* Design v2 resource page (ADR 0040, 4). Reuses the preview classes from results-v2.css. Only semantic tokens. */
+/* Resource page (ADR 0040, 4). Reuses the preview classes from results.css. Only semantic tokens. */
 .h2-res { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4) 0 var(--space-7); }
 .h2-res__back { margin: 0; }
 .h2-res__back a { min-height: var(--target-min); display: inline-flex; align-items: center; font-weight: 600; color: var(--accent-deep); text-decoration: none; }

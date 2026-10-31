@@ -25,7 +25,7 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [sp, setSp] = useSearchParams();
-  // The page that shows results (/, or /search in design v2) reads the box's state from the URL.
+  // The page that shows results (/, or /search) reads the box's state from the URL.
   const onHome = pathname === '/' || pathname === RESULTS_PATH;
   const state = parseSearchParams(onHome ? sp : new URLSearchParams());
   const asked = onHome ? askedQuestion(sp) : '';
@@ -63,7 +63,7 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
     if (q.length < MIN_LIVE_CHARS) return;
     timer.current = window.setTimeout(() => {
       const now = latest.current;
-      // Only on the results page: on the design v2 home page a search moves to /search, so it waits for Enter.
+      // Only on the results page: on the home page a search moves to /search, so it waits for Enter.
       if (now.pathname === RESULTS_PATH && q !== now.state.q) go(patchState(now.state, { q }), now.asked, now.sp, true);
     }, LIVE_SEARCH_MS);
   };

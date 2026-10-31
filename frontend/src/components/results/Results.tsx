@@ -32,17 +32,17 @@ import { displayHost, guidePicks, picksById, selectedResult, type GuidePick } fr
 import { activeFilterCount, askedQuestion, clampQuestion, clearFilters, homeParams, isSelected, parseSearchParams, patchState, toApiParams, toggleFilter, type ResultsView, type SearchState, resourcePath } from '@/lib/searchState';
 import { useSources } from '@/context/SourcesContext';
 import { ListedBy, ResultFacts } from './ResultFacts';
-import './results-v2.css';
+import './results.css';
 
 /** From this width the preview sits next to the list; below it opens inside the list (design system breakpoints). */
 const WIDE = '(min-width: 861px)';
 
 /**
- * Design v2 results page (ADR 0040, 3–7): the box, the guide picks bar, type tabs, the result list and a preview of
+ * Results page (ADR 0040, 3–7): the box, the guide picks bar, type tabs, the result list and a preview of
  * the selected result; the sources that answered at the bottom. The list is search ranking and never re-orders: the
  * guide's picks get a badge and their reason in their own rows. The selected result is `id` in the URL.
  */
-export function ResultsV2() {
+export function Results() {
   const { t } = useTranslation();
   const [sp, setSp] = useSearchParams();
   const state = parseSearchParams(sp);
@@ -67,7 +67,7 @@ export function ResultsV2() {
 
   return (
     <div className="h2-results">
-      <h1 className="sr-only">{t('resultsV2.heading', { q: state.q })}</h1>
+      <h1 className="sr-only">{t('results.heading', { q: state.q })}</h1>
       <div className="h2-results__box"><OneBox /></div>
       {asked ? <GuidePicks stream={stream} loaded={new Set((shown?.results ?? []).map((c) => c.id))} /> : words >= 4 && (
         <button type="button" className="btn suggest-guide" onClick={() => ask(state.q)}>{t('home.suggestGuide', { q: state.q })}</button>
@@ -136,9 +136,9 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
 
   return (
     <OpenGuideContext.Provider value={openGuide}>
-      <nav className="h2-tabs" aria-label={t('resultsV2.types')}>
+      <nav className="h2-tabs" aria-label={t('results.types')}>
         <button type="button" className="h2-tab" aria-pressed={activeType === null} onClick={() => setType(null)}>
-          {t('resultsV2.allTypes')} <span className="h2-tab__n">{res.total}</span>
+          {t('results.allTypes')} <span className="h2-tab__n">{res.total}</span>
         </button>
         {typeCounts.map((f) => (
           <button key={f.value} type="button" className="h2-tab" aria-pressed={activeType === f.value} onClick={() => setType(f.value)}>
@@ -209,7 +209,7 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
         <div role="status" className="banner banner-warn h2-partial">
           <p><Icon name="warn" /> {t('results.partialBody', { ok: res.coverage.sourcesSucceeded, total: res.coverage.sourcesQueried })}</p>
           <p className="h2-partial__next">
-            <a href="#h2-sources-h">{t('resultsV2.seeWhich')}</a>
+            <a href="#h2-sources-h">{t('results.seeWhich')}</a>
             <button type="button" className="btn" onClick={retry}><Icon name="refresh" /> {t('common.retry')}</button>
           </p>
         </div>
@@ -217,7 +217,7 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
 
       {nothingSearched ? (
         <StatePanel tone="error" level={2} title={t('results.allFailedTitle')}
-          next={<><RetryButton onClick={retry} /><Link to="/sources">{t('resultsV2.seeSources')}</Link></>}>
+          next={<><RetryButton onClick={retry} /><Link to="/sources">{t('results.seeSources')}</Link></>}>
           <p>{t('results.allFailedBody')}</p>
         </StatePanel>
       ) : res.results.length === 0 ? (
@@ -226,8 +226,8 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
             {activeFilterCount(state) > 0 && (
               <button type="button" className="btn" onClick={() => update(clearFilters(state))}>{t('results.emptyRemoveFilters')}</button>
             )}
-            {ask && <button type="button" className="btn btn-primary" onClick={ask}>{t('resultsV2.askGuide')}</button>}
-            <Link to="/sources">{t('resultsV2.seeSources')}</Link>
+            {ask && <button type="button" className="btn btn-primary" onClick={ask}>{t('results.askGuide')}</button>}
+            <Link to="/sources">{t('results.seeSources')}</Link>
           </>
         )}>
           <p>{t('results.emptyTryOther')}</p>
@@ -270,7 +270,7 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
 
       <section className="h2-results__sources" aria-labelledby="h2-sources-h">
         <h2 id="h2-sources-h" className="h2-results__fan">
-          {t('resultsV2.fanOut', { ok: okSources, total: res.sources.length, count: res.total })}
+          {t('results.fanOut', { ok: okSources, total: res.sources.length, count: res.total })}
         </h2>
         {/* Cache ages as of the search, so the tiles say what the search found. */}
         <SourceTiles sources={res.sources} now={Date.parse(res.executedAt)} />
@@ -287,7 +287,7 @@ function RowContent({ card, pick }: { card: ResultCard; pick: GuidePick | undefi
       <span className="h2-row__meta">
         <TypeTag type={card.type} />
         <span className="h2-row__host">{displayHost(card.url)}</span>
-        {pick && <StatusPill tone="next">{t('resultsV2.pick', { rank: pick.rank })}</StatusPill>}
+        {pick && <StatusPill tone="next">{t('results.pick', { rank: pick.rank })}</StatusPill>}
       </span>
       <span className="h2-row__title">{card.title}</span>
       {card.description && (
@@ -329,17 +329,17 @@ function Preview({ card, pick, stale, inline = false }: { card: ResultCard; pick
       </TitleTag>
       <div className="h2-pv__actions">
         <a className="btn btn-primary" href={card.url} target="_blank" rel="noopener noreferrer">
-          {t('resultsV2.openOn', { host })} <span aria-hidden="true">↗</span>
+          {t('results.openOn', { host })} <span aria-hidden="true">↗</span>
         </a>
         {SAVED_ENABLED && <BookmarkButton card={card} />}
         {canGuide(card) && <GuideMeButton title={card.title} open={guide.open} onToggle={guide.toggle} bodyId={bodyId} buttonRef={button} />}
-        {inline && <Link className="btn" to={detail} state={detailState}>{t('resultsV2.fullDetails')}</Link>}
+        {inline && <Link className="btn" to={detail} state={detailState}>{t('results.fullDetails')}</Link>}
       </div>
       {canGuide(card) && (
         <div id={bodyId} hidden={!guide.open}>{guide.open && <GuideBody id={card.id} title={card.title} level={3} />}</div>
       )}
 
-      <SecTag className="h2-pv__sec">{t('resultsV2.whyMatches')}</SecTag>
+      <SecTag className="h2-pv__sec">{t('results.whyMatches')}</SecTag>
       {pick ? (
         <>
           <ProofQuote text={card.description ?? ''} quote={pick.quote} source={host} />
@@ -351,13 +351,13 @@ function Preview({ card, pick, stale, inline = false }: { card: ResultCard; pick
         <p className="muted">{t('card.noDescription')}</p>
       )}
 
-      <SecTag className="h2-pv__sec">{t('resultsV2.facts')}</SecTag>
+      <SecTag className="h2-pv__sec">{t('results.facts')}</SecTag>
       <ResultFacts card={card} groupTag={GroupTag} />
 
-      <SecTag className="h2-pv__sec">{t('resultsV2.listedBy')}</SecTag>
+      <SecTag className="h2-pv__sec">{t('results.listedBy')}</SecTag>
       <ListedBy card={card} stale={stale} />
 
-      <SecTag className="h2-pv__sec">{t('resultsV2.timeline')}</SecTag>
+      <SecTag className="h2-pv__sec">{t('results.timeline')}</SecTag>
       <Timeline timeline={card.timeline} compact />
     </div>
   );

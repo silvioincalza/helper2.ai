@@ -1,7 +1,7 @@
 # Sequence: from the results to a resource and back, with the recent-answers cache and scroll restoration.
 # Shows the first search that asks the server and fills the cache, the resource page, the back move that shows the
 # results from the cache at the old scroll place with no request, and reload that always asks again.
-# Source of truth: frontend/src/hooks/useApi.ts, frontend/src/components/results/ResultsV2.tsx,
+# Source of truth: frontend/src/hooks/useApi.ts, frontend/src/components/results/Results.tsx,
 #   frontend/src/pages/ResourcePage.tsx, frontend/src/components/Layout.tsx (ScrollRestoration, RouteFocus).
 # Render: cd docs/diagrams && d2 fmt sequence-0039-frontend-recent-answers-cache.d2 && d2 sequence-0039-frontend-recent-answers-cache.d2 sequence-0039-frontend-recent-answers-cache.svg
 
@@ -11,14 +11,14 @@ shape: sequence_diagram
 
 user: User {class: person}
 router: "Router\n(ScrollRestoration, RouteFocus)" {class: app}
-page: "ResultsV2 /\nResourcePage" {class: app}
+page: "Results /\nResourcePage" {class: app}
 hook: useApi {class: app}
 cache: "Recent answers\n(memory, 50, 5 min)" {class: data}
 api: "GET /api/v1/…" {class: ext}
 
 first: First visit {
   user -> router: "/search?q=mcp postgres"
-  router -> page: "mount ResultsV2"
+  router -> page: "mount Results"
   page -> hook: "useApi('search?q=…')"
   hook -> cache: "peek(key)"
   cache -> hook: "miss"
@@ -34,7 +34,7 @@ first: First visit {
 
 back: Back {
   user -> router: "browser back"
-  router -> page: "mount ResultsV2"
+  router -> page: "mount Results"
   page -> hook: "useApi('search?q=…')"
   hook -> cache: "peek(key)"
   cache -> hook: "hit, 40 s old" {class: hot}

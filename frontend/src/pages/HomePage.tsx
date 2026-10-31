@@ -1,6 +1,6 @@
 import { Navigate, useLocation, useSearchParams } from 'react-router';
-import HomeV2 from '@/pages/HomeV2';
-import { ResultsV2 } from '@/components/results/ResultsV2';
+import Home from '@/pages/Home';
+import { Results } from '@/components/results/Results';
 import { askedQuestion, parseSearchParams } from '@/lib/searchState';
 
 /**
@@ -11,11 +11,11 @@ export default function HomePage() {
   const [sp] = useSearchParams();
   const { pathname } = useLocation();
   const empty = !parseSearchParams(sp).q && !askedQuestion(sp);
-  if (empty) return pathname === '/' ? <HomeV2 /> : <Navigate replace to="/" />;
+  if (empty) return pathname === '/' ? <Home /> : <Navigate replace to="/" />;
   return (
     <>
       {pathname === '/' && <link rel="canonical" href={`/search?${sp.toString()}`} />}
-      <ResultsV2 />
+      <Results />
     </>
   );
 }

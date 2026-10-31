@@ -14,7 +14,7 @@ const saved: Bookmark[] = [
   { resourceId: '22222222-2222-5222-8222-222222222222', title: 'pgvector', url: 'https://github.com/pgvector/pgvector', type: 'LIBRARY', savedAt: '2026-10-21T10:00:00Z' },
 ];
 
-describe('Feature: saved resources in design v2', () => {
+describe('Feature: saved resources', () => {
   beforeEach(() => window.localStorage.setItem(BOOKMARK_KEY, JSON.stringify(saved)));
   afterEach(() => window.localStorage.clear());
 
@@ -64,7 +64,7 @@ const sources: SourceInfo[] = [
   { id: 'npm', name: 'npm', mode: 'LIVE', enabled: true, homepage: 'https://www.npmjs.com', termsUrl: null, attribution: null, resourceTypes: ['LIBRARY'], lastOutcome: 'FAILED', lastCheckedAt: '2026-10-22T08:30:00Z' },
 ];
 
-describe('Feature: the sources page in design v2', () => {
+describe('Feature: the sources page', () => {
   it('Scenario: every source says its last check in words, and the summary counts them', async () => {
     mockApi({ 'GET /sources': () => sources });
     renderApp('/sources');
@@ -106,7 +106,7 @@ describe('Feature: the sources page in design v2', () => {
   });
 });
 
-describe('Feature: your account in design v2', () => {
+describe('Feature: your account', () => {
   it('Scenario: the delete flow is unchanged: confirm dialog, cancel deletes nothing', async () => {
     const m = mockApi({ 'GET /me': () => USER });
     renderApp('/account');

@@ -1,9 +1,9 @@
 import { useTranslation } from 'react-i18next';
 import { useTitle } from '@/hooks/useTitle';
-import { SourcesV2 } from '@/components/sources/SourcesV2';
+import { Sources } from '@/components/sources/Sources';
 
 export default function SourcesPage() {
   const { t } = useTranslation();
   useTitle(t('nav.sources'));
-  return <SourcesV2 />;
+  return <Sources />;
 }

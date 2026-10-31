@@ -1,4 +1,4 @@
-/* Design v2 text pages (ADR 0040): a readable column, display headings. Only semantic tokens. */
+/* Text pages (ADR 0040): a readable column, display headings. Only semantic tokens. */
 .h2-text-page { max-width: 68ch; padding: var(--space-5) 0 var(--space-7); font-size: 1.0625rem; line-height: 1.65; }
 .h2-text-page h1 { margin: 0 0 var(--space-3); padding-bottom: var(--space-3); border-bottom: 2px solid var(--ink); font: 400 clamp(1.9rem, 2vw + 1.1rem, 2.6rem)/1.1 var(--font-display); letter-spacing: -0.015em; }
 .h2-text-page h2 { margin: var(--space-6) 0 var(--space-2); font: 500 1.35rem/1.25 var(--font-display); }

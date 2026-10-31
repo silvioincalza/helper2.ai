@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { deleteMyAccount } from '@/api/client';
 import { useMe } from '@/context/MeContext';
 import { useTitle } from '@/hooks/useTitle';
-import './text-v2.css';
+import './text.css';
 
 /** The signed-in user's account: who they are signed in as, and deleting the account after a confirmation. */
 export default function AccountPage() {
