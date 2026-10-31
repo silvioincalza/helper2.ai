@@ -137,6 +137,15 @@ Built (step 6, Saved, Sources and your account; only while the flag is on):
 - `frontend/src/pages/AccountPage.tsx` — the same behaviour and words in the text-page look (`text-v2.css`).
 - `frontend/src/components/ui/ui.css` — the type tabs, now shared by results and saved.
 
+Built (step 7, Mission, Privacy and Terms; only while the flag is on):
+- `frontend/src/components/TextPageV2.tsx` — a text page: the head, the sections in a column of about 68
+  characters, and "On this page" with a link to every section, beside the text from 861 px and a closed list under
+  the head below. The text is the locale file's, word for word: no copy changed.
+- `frontend/src/components/TextSections.tsx` — `anchored` gives each section a stable id from its title
+  (`sectionAnchor`), so the table of contents can link to it. The flag-off pages keep their old ids.
+- `frontend/src/pages/MissionPage.tsx`, `PrivacyPage.tsx`, `TermsPage.tsx` — the same parts in the text-page look;
+  `text-v2.css`.
+
 Planned:
 - `frontend/src/components/SourceStatusPanel.tsx`, `Layout.tsx` — header and footer on the other pages.
 - `tokens.css` — the sizes (`content-wide`, `list-max`) and motion (`radar-sweep`) of `tokens.json` v3, with the
