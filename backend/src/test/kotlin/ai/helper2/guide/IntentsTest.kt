@@ -32,10 +32,18 @@ class IntentsTest {
     }
 
     @Test
-    fun `latest sets the intent but no window, and bare new sets nothing`() {
+    fun `latest sets the intent but no window, and new sets it only right before a kind of resource`() {
         assertEquals(GuideIntent.NEWEST, IntentRules.intentOf("latest MCP servers"))
         assertNull(IntentRules.windowOf("latest MCP servers"))
+        assertEquals(GuideIntent.NEWEST, IntentRules.intentOf("new mcp servers for postgres"))
+        assertEquals(GuideIntent.NEWEST, IntentRules.intentOf("any new open-source models?"))
+        assertEquals(GuideIntent.NEWEST, IntentRules.intentOf("nuovi modelli open source"))
+        assertNull(IntentRules.windowOf("new mcp servers for postgres"))
         assertNull(IntentRules.intentOf("I am new to AI, which tool helps me write?"))
+        assertNull(IntentRules.intentOf("I'm new to MCP, which server should I start with?"))
+        assertNull(IntentRules.intentOf("a new project with MCP servers"))
+        assertNull(IntentRules.intentOf("sono nuovo con gli agenti"))
+        assertNull(IntentRules.intentOf("a new way to summarise PDFs"))
         assertNull(IntentRules.windowOf("a new way to summarise PDFs"))
     }
 
