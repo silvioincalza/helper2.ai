@@ -287,6 +287,9 @@ helper2:
     heartbeat: ${H2_GUIDE_HEARTBEAT:PT15S}
     cache-ttl: ${H2_GUIDE_CACHE_TTL:PT24H}
     cache-max-entries: 500
+    # Reuse the cached answer of a question read the same way whose embedding is at least this close (cosine,
+    # ADR 0041). Empty: off, no question is embedded. Needs H2_NVIDIA_API_KEY and Redis.
+    similar-threshold: ${H2_GUIDE_SIMILAR_THRESHOLD:}
     # How many retrieved results Nemotron 3 Super chooses from (ADR 0015). 24 beat 12 in the 20-query
     # evaluation of 26 Oct 2026 (docs/eval/run-8-12-candidates.md vs docs/evaluation.md).
     max-candidates: ${H2_GUIDE_MAX_CANDIDATES:24}
