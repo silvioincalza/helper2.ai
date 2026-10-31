@@ -1,6 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axeViolations } from '@/test/a11y';
+import { CopyButton } from './CopyButton';
 import { SOURCES, makeStatus } from '@/test/fixtures';
 import { PicksBar } from './PicksBar';
 import { ProofQuote } from './ProofQuote';
@@ -197,3 +198,19 @@ describe('PicksBar', () => {
   });
 });
 
+
+describe('CopyButton', () => {
+  it('copies its text and says so on the button', async () => {
+    const user = userEvent.setup();
+    const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue();
+    render(<CopyButton text="npx server" label="Copy prompt" />);
+    await user.click(screen.getByRole('button', { name: 'Copy prompt' }));
+    expect(writeText).toHaveBeenCalledWith('npx server');
+    expect(screen.getByRole('button', { name: 'Copied' })).toBeInTheDocument();
+  });
+
+  it('is named Copy when the snippet needs no other name', () => {
+    render(<CopyButton text="x" />);
+    expect(screen.getByRole('button', { name: 'Copy' })).toBeInTheDocument();
+  });
+});

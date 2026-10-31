@@ -10,7 +10,7 @@ import { useApi } from '@/hooks/useApi';
 import { useRetry } from '@/hooks/useRetry';
 import { aiMark } from '@/lib/aiMark';
 import { formatDate } from '@/lib/format';
-import { CopyButton } from './CopyButton';
+import { CopyButton } from '@/components/ui/CopyButton';
 
 /**
  * Steps from the tool's README or model card (POST /guide): the model writes each instruction (labelled and marked,

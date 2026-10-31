@@ -171,6 +171,8 @@ describe('the guide picks bar', () => {
     await userEvent.click(summary);
     expect(details).toHaveAttribute('open');
     expect(within(details).getByText(/2 AI suggestions removed: no supporting evidence/)).toBeInTheDocument();
+    // Only the planner's words are marked, not our label in front of them.
+    expect(within(details).getByText('mcp server postgres')).toHaveAttribute('data-ai-generated', 'true');
     expect(within(details).getByText('Planning: nvidia/nemotron-nano · Choosing: nvidia/nemotron-3-super · on nebius-token-factory')).toBeInTheDocument();
     expect(within(details).getByText('Summarise [notes] into decisions and owners.')).toHaveAttribute('data-ai-generated', 'true');
     expect(within(details).getByRole('link', { name: 'Meeting summary prompt' })).toHaveAttribute('href', '/resource/33333333-3333-5333-8333-333333333333');

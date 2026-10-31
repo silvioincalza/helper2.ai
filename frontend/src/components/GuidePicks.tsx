@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { ApiError } from '@/api/client';
 import type { GuideRecommendation, GuideResponse, GuideStep } from '@/api/types';
 import { Icon } from '@/components/Icon';
+import { CopyButton } from '@/components/ui/CopyButton';
 import { PicksBar, type PicksState } from '@/components/ui/PicksBar';
 import { RetryButton } from '@/components/ui/StatePanel';
 import type { GuideStream } from '@/hooks/useGuideStream';
@@ -216,7 +217,8 @@ function AnswerDetails({ answer }: { answer: GuideResponse }) {
       <summary>{parts.length ? t('picks.detailsWith', { parts: parts.join(', ') }) : t('picks.details')}</summary>
       <p className="muted small">
         {/* The planner may have written the query even when the answering model failed (aiContent says so). */}
-        <span {...(answer.aiContent ? aiMark(answer.aiContent.models[0]) : {})}>{t('guide.searchedFor', { q: answer.searchQuery })}</span>
+        {t('guide.searchedFor')}{' '}
+        <span {...(answer.aiContent ? aiMark(answer.aiContent.models[0]) : {})}>{answer.searchQuery}</span>
         {answer.aiContent && <>{' '}<span className="h2-picks__ai">{t('picks.aiWritten')}</span></>}
         {' · '}{t('guide.considered', { n: answer.candidatesConsidered })}
         {answer.status !== 'NEEDS_CLARIFICATION' && <>{' · '}{t(`guide.status.${answer.status}`)}</>}
@@ -293,21 +295,11 @@ function ExplanationBlock({ explanation }: { explanation: NonNullable<GuideRespo
 
 function PromptBox({ text, basedOn }: { text: string; basedOn: { resourceId: string; title: string }[] }) {
   const { t } = useTranslation();
-  const [copied, setCopied] = useState(false);
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      /* clipboard unavailable: the text is still selectable */
-    }
-  }
   return (
     <section className="guide-prompt" aria-labelledby="guide-prompt-h">
       <div className="guide-prompt-head">
         <h3 id="guide-prompt-h">{t('guide.promptTitle')} <span className="badge">{t('guide.promptAi')}</span></h3>
-        <button type="button" className="btn btn-primary" onClick={() => void copy()}>{copied ? t('guide.copied') : t('guide.copy')}</button>
+        <CopyButton text={text} label={t('guide.copy')} primary />
       </div>
       <pre className="guide-prompt-text" {...aiMark()}>{text}</pre>
       {basedOn.length > 0 && (

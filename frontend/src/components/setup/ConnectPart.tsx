@@ -7,7 +7,7 @@ import { Icon } from '@/components/Icon';
 import { Heading } from '@/components/ui/Heading';
 import { useApi } from '@/hooks/useApi';
 import { formatDate } from '@/lib/format';
-import { CopyButton } from './CopyButton';
+import { CopyButton } from '@/components/ui/CopyButton';
 
 const CLIENT_KEY = 'h2.setup.client';
 

@@ -130,8 +130,8 @@ Built:
   button: selected outline, one tab stop, named by its title), `PicksBar` (reserved height, head with the question and
   close, waiting line, no-pick line, the AI-written label over the picks and the question back, footer) and
   `NewsBoard` (heading, states, the moving list and its Pause/Play button), `StatePanel` (a state's heading, reason
-  and next step; `RetryButton`) and `Heading` (a heading at the level that fits where it sits), with `ui.css` imported
-  by the components.
+  and next step; `RetryButton`), `Heading` (a heading at the level that fits where it sits) and `CopyButton` (a snippet
+  or the guide's prompt), with `ui.css` imported by the components.
 - `frontend/src/hooks/useRetry.ts` — Try again that keeps focus on the page.
 - `frontend/src/pages/HomePage.tsx`, `components/HomeBoards.tsx` — the radar hero, the box, the examples, and the News
   (`GET /api/v1/recent`, 7 days) and Events (`GET /api/v1/events/upcoming`, [0022](0022-next-events.md), 90 days)

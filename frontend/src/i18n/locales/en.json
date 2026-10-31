@@ -6,7 +6,9 @@
     "retry": "Try again",
     "loading": "Loading…",
     "optional": "optional",
-    "opensNewTab": "(opens in a new tab)"
+    "opensNewTab": "(opens in a new tab)",
+    "copy": "Copy",
+    "copied": "Copied"
   },
   "guideMe": {
     "label": "Guide me",
@@ -565,7 +567,7 @@
   },
   "guide": {
     "ask": "Ask the guide",
-    "searchedFor": "Searched the catalog for: {{q}}",
+    "searchedFor": "Searched the catalog for:",
     "considered": "{{n}} candidates considered",
     "rejected_one": "{{count}} AI suggestion removed: no supporting evidence",
     "rejected_other": "{{count}} AI suggestions removed: no supporting evidence",
@@ -580,7 +582,6 @@
     "basedOn": "Adapted from catalog prompts:",
     "promptReview": "Third parties wrote the prompts it adapts. Read it before you paste it, and never add a password or key it asks for.",
     "copy": "Copy prompt",
-    "copied": "Copied",
     "answeredBy": "Planning: {{fast}} · Choosing: {{reasoning}} · on {{provider}}",
     "status": {
       "OK": "All AI suggestions passed the evidence check.",
@@ -909,8 +910,6 @@
     "docs": "{{client}} docs",
     "from": "From its Official MCP Registry entry, version {{version}}, read {{date}}.",
     "registryEntry": "Registry entry",
-    "copy": "Copy",
-    "copied": "Copied",
     "connectTitle": "Connect it to your AI tool",
     "command": "Runs locally with {{cmd}}, copied from its README; not reviewed for safety, so read it before you run it",
     "fromReadme": "From the config example in its README, read {{date}}.",

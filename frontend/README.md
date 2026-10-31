@@ -23,9 +23,9 @@ src/hooks      useApi (keyed fetch with AbortController, recent-answers cache, A
 src/components OneBox, filter panel, badges, glossary Term, ...
   ResultList, ResultPreview, GuidePicks, SourcesSummary   the results page (ADR 0040): rows, preview, picks bar, sources
   ResourceOverview   what the preview and the resource page share (one component tree)
-  setup/       Guide me (ADR 0031): GuideMe, GuideBody, ConnectPart, StepsPart, CopyButton
+  setup/       Guide me (ADR 0031): GuideMe, GuideBody, ConnectPart, StepsPart
   HomeBoards   the home page's News (GET /recent) and Events (GET /events/upcoming) boards
-  ui/          design system components (ADR 0040): TypeTag, StatusPill, ProofQuote, SourceTiles, SelectableRow, PicksBar, NewsBoard, StatePanel, Heading; own ui.css
+  ui/          design system components (ADR 0040): TypeTag, StatusPill, ProofQuote, SourceTiles, SelectableRow, PicksBar, NewsBoard, StatePanel, Heading, CopyButton; own ui.css
 src/pages      Home, Results (/search), Resource, Saved, Sources, Account, Admin, Mission, Privacy, Terms, NotFound (one entry chunk)
   Saved        rows like the result rows; Remove moves focus to the next row's Remove, or to the empty state
   Sources      the last outcome per source as SourceTiles, the modes, what each source covers
