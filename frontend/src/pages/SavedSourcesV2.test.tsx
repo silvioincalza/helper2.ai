@@ -30,6 +30,15 @@ describe('Feature: saved resources in design v2 (flag on)', () => {
     expect(screen.getByRole('link', { name: 'pgvector' })).toBeInTheDocument();
   });
 
+  it('Scenario: removing the last item of the picked type shows all the others again', async () => {
+    mockApi();
+    renderApp('/saved');
+    const tabs = await screen.findByRole('navigation', { name: 'Saved by type' });
+    await userEvent.click(within(tabs).getByRole('button', { name: /Library/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Remove pgvector from saved' }));
+    expect(screen.getByRole('link', { name: 'Postgres MCP' })).toBeInTheDocument();
+  });
+
   it('Scenario: Remove takes the item out of the list and out of browser storage', async () => {
     mockApi();
     renderApp('/saved');

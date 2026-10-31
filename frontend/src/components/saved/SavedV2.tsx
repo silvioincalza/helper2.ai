@@ -15,8 +15,10 @@ import './saved-v2.css';
 export function SavedV2() {
   const { t, i18n } = useTranslation();
   const { items, remove, mode, storageFailed, serverError } = useBookmarks();
-  const [type, setType] = useState<ResourceType | null>(null);
+  const [picked, setType] = useState<ResourceType | null>(null);
   const types = [...new Set(items.map((b) => b.type).filter((x): x is ResourceType => x != null))];
+  // Removing the last item of the picked type falls back to All, so the other items never hide behind an empty tab.
+  const type = picked && types.includes(picked) ? picked : null;
   const shown = type ? items.filter((b) => b.type === type) : items;
   return (
     <div className="h2-saved">
