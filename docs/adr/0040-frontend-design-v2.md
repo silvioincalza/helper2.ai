@@ -119,6 +119,14 @@ Built (step 4, Resource; only while the flag is on):
 - `frontend/src/components/SetupGuide.tsx` — the setup steps written by AI are now also marked machine-readable
   (`data-ai-generated`, [0038](0038-ai-content-marking.md)), in both designs.
 
+Built (step 5, States; only while the flag is on):
+- `frontend/src/components/results/ResultsV2.tsx` — every state says what happened and offers a next step:
+  loading shows skeleton rows shaped like the list; while the guide answers, the list is already there and the picks
+  bar reads; no results offers "Ask the guide instead" and the sources page; some sources failed keeps the results,
+  links to the failed tiles and retries; no source answered is an alert with retry and the sources page; search
+  unavailable is an alert with retry. Status lines use `role=status`, failures `role=alert`.
+- `frontend/src/pages/NotFoundPage.tsx` — the 404 page points to the search box in the header and the home page.
+
 Planned:
 - `frontend/src/components/SourceStatusPanel.tsx`, `Layout.tsx` — header and footer on the other pages.
 - `tokens.css` — the sizes (`content-wide`, `list-max`) and motion (`radar-sweep`) of `tokens.json` v3, with the
