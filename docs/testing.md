@@ -17,8 +17,8 @@ promtool test rules deploy/monitoring/tests/*.yaml
 cd frontend && npm test -- --run && npm run lint && npm run typecheck
 ```
 
-31 Oct 2026 (local run): backend 852 tests, 0 failed, 1 skipped by design; frontend 299 passed, 7 skipped,
-in 32 files. The 16 alert rules have promtool unit tests; CI runs them in the `monitoring` job.
+31 Oct 2026 (local run): backend COUNT_B tests, 0 failed, 1 skipped by design; frontend COUNT_F passed, 7 skipped,
+in COUNT_FILES files. The 16 alert rules have promtool unit tests; CI runs them in the `monitoring` job.
 `evalTest` and `evalRecord` are not part of `test`: see [docs/eval](eval/README.md).
 
 ## What exists
@@ -39,10 +39,10 @@ in 32 files. The 16 alert rules have promtool unit tests; CI runs them in the `m
 | Architecture | ModularityTest | Spring Modulith `verify()`; ArchUnit: domain packages are framework-free and never depend on their web/cache/config/internal adapters |
 | Platform | InMemoryRateLimiterTest, RedisRateLimiterIT, Resilience4jPoliciesTest, ResiliencePoliciesConfigIT, RedisOutboundThrottleIT, ObservedHttpRetryTest, QuotaKeysTest, RedisQuotaCounterIT, NvidiaOnlyTest | limit, wait time, window reset, independent keys, IPv6 by /64; one count shared by replicas in Redis, in-memory fallback while Redis is down; retry, bulkhead and circuit breaker by policy name, every configured policy created at startup; daily quota keys without address or query text; startup stops on a configured model that is not an NVIDIA model |
 | Identity | AdminAllowListTest, FailSoftSessionRepositoryTest | GitHub sign-in through the real user service: `github:<numeric id>` grants ADMIN, `github:<login>` does not; session reads fail soft while Redis is down |
-| Setup guide | RunOptionRulesTest, SnippetParseBackTest, RedisToolGuideCacheIT | only safe run commands (package runners, one Docker image, no shells or inline code), every client snippet parses back to the same values, guide answers cached in Redis without the question or document text |
+| Setup guide | RunOptionRulesTest, SetupGuidesTest, SnippetParseBackTest, HttpToolMaterialsTest, RedisToolGuideCacheIT, ToolGuideApiIT | only safe run commands (package runners, one Docker image, no shells or inline code), snippets for the eight listed clients, every client snippet parses back to the same values, READMEs read with the setup guide's own GitHub token or anonymously, guide answers cached in Redis without document text, the guide endpoint takes no question |
 | Search evaluation | RelevanceMetricsTest, SearchEvaluationTest, CutoffSweepTest, SnapshotTakerTest | nDCG@10, reciprocal rank and recall on known cases; the vector cutoff sweep; offline replay of recorded snapshots and the nDCG@10 gate (`evalTest`) |
 | Live smoke | GitHubSourceLiveTest, HuggingFaceLiveTest, NpmSourceLiveTest, ArxivSourceLiveTest, TavilyLiveTest, McpRegistryCollectorLiveTest, AiDeadlinesCollectorLiveTest, GitHubAwesomeLiveTest | one per adapter, against the real API (the awesome-list collector with Nemotron classification); a test whose key is missing is skipped; runs only with `./gradlew liveTest`, once a week in the `live` workflow |
-| Frontend | 206 Vitest + RTL tests (AccountPage.test.tsx and others) | pages, client, bookmarks, account deletion, i18n, layout; axe smoke checks in jsdom |
+| Frontend | 303 Vitest + RTL tests (AccountPage.test.tsx and others) | pages, client, bookmarks, account deletion, i18n, layout; axe smoke checks in jsdom |
 | Alert rules | deploy/monitoring/tests | promtool unit tests: each of the 16 rules fires on its condition and stays quiet otherwise |
 
 ## Known gaps (not covered by automated tests)

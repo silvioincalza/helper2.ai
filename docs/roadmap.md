@@ -33,6 +33,8 @@ Items are grouped by the order in which they matter. Inside a group, the first i
   `H2_GITHUB_OAUTH_CLIENT_SECRET` and `H2_ADMINS=github:<numeric id>` ([ADR 0023](adr/edge/0023-identity-and-admin.md)).
 - ADMIN is decided at sign-in, so a change to `H2_ADMINS` needs a new sign-in.
 - Optional `H2_HF_TOKEN` on prod.
+- `H2_SETUP_GITHUB_TOKEN` (read-only, public repositories) in `app_env` on staging and prod; without it Guide me reads
+  GitHub anonymously, 60 calls an hour ([ADR 0031](adr/guide/0031-setup-guide.md)).
 - **Sign-in for everyone.** Sign-in is offered only on `/admin`, so server-side bookmarks and account deletion
   (`DELETE /me`) reach only admins today. Add a public sign-in entry point in the page; it needs the
   `oauth-github` profile on prod ([ADR 0023](adr/edge/0023-identity-and-admin.md)).
