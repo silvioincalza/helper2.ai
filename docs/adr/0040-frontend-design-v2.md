@@ -106,6 +106,19 @@ Built (step 3, Results; only while the flag is on):
 - `frontend/src/hooks/useMediaQuery.ts` — beside the list or inside it.
 - Filters and the timeline view keep working: the filters fold under a "Filters" line above the list for now.
 
+Built (step 4, Resource; only while the flag is on):
+- `frontend/src/components/results/ResourceV2.tsx` — the resource page: back link, title, actions, "Guide me", the
+  source's own text, the detail sections of the old page, and a side column with the facts, who lists it and its
+  dates; one column up to 860 px; `resource-v2.css`. Opened from a result, the page links back to that search with
+  that result selected, and shows the sentence the guide checked when the result was a pick. The back link only
+  takes a path inside the site.
+- `frontend/src/components/results/ResultFacts.tsx` — the Use and Build facts and "Listed by", shared by the preview
+  and the resource page.
+- `frontend/src/pages/ResourcePage.tsx` — loads the resource once; its detail sections (summary, recorded facts,
+  relationships, source records, report) are the same in both designs.
+- `frontend/src/components/SetupGuide.tsx` — the setup steps written by AI are now also marked machine-readable
+  (`data-ai-generated`, [0038](0038-ai-content-marking.md)), in both designs.
+
 Planned:
 - `frontend/src/components/SourceStatusPanel.tsx`, `Layout.tsx` — header and footer on the other pages.
 - `tokens.css` — the sizes (`content-wide`, `list-max`) and motion (`radar-sweep`) of `tokens.json` v3, with the

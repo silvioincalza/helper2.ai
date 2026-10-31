@@ -1072,5 +1072,10 @@
       "months_one": "In {{count}} month",
       "months_other": "In {{count}} months"
     }
+  },
+  "resourceV2": {
+    "backToResults": "Back to results",
+    "sourceText": "From the source",
+    "checkedNote": "Highlighted: the sentence the guide checked against this source."
   }
 }
