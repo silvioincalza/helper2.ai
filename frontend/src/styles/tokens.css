@@ -42,7 +42,7 @@
   --ring: #e2d6c2;
   --header-bg: rgba(255, 253, 248, 0.94);
 
-  /* Semantic tokens of design system v3 (tokens.json, `alias`): each follows its base token, in both themes. */
+  /* Semantic tokens (tokens.json, `alias`): each follows its base token, in both themes. */
   --proof-bg: var(--quote-bg);
   --proof-mark: var(--mark);
   --pill-ok-bg: var(--checked-bg);
@@ -60,21 +60,11 @@
   --source-tile-line: var(--border);
   --row-selected-line: var(--accent);
 
-  /* Older names used across app.css, mapped onto the design system. */
-  --text: var(--ink);
-  --text-muted: var(--muted);
-  --surface-1: var(--surface);
-  --surface-2: var(--surface-tint);
-  --cyan: var(--accent-ink);
-  --violet: var(--accent-deep);
-  --ok: var(--checked-ink);
-  --warn: var(--not-stated);
-
   --font-display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
   --font-sans: 'Inter Variable', Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  /* The app's own spacing steps (kept), plus the design system's sizes. */
+  /* Spacing steps and sizes. */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
@@ -87,11 +77,9 @@
   --radius-lg: 14px;
   --radius-xl: 18px;
   --radius-pill: 999px;
-  --radius: var(--radius-md);
   --target-min: 44px;
   --box-height: 56px;
-  --maxw: 1120px;
-  --content-wide: 1240px; /* the results page column */
+  --content-wide: 1240px; /* the page column */
   --list-max: 460px; /* the result list next to the preview */
   --board-height: 380px; /* a News or Events board; 340px on a phone (ui.css) */
   --motion: 160ms;

@@ -25,7 +25,7 @@ export default function HomePage() {
   useHeroFade(hero);
 
   return (
-    <div className="one-page">
+    <div className="home-page">
       <section ref={hero} className="home-hero" aria-labelledby="home-h">
         <RadarRings />
         <div className="home-hero-inner">
