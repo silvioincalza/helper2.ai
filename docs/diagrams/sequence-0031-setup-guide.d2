@@ -1,6 +1,6 @@
 # Sequence: a user opens "Guide me" on a resource page: the setup options from the MCP Registry (no model), then a
 # step-by-step guide from the tool's own documents, picked by the fast model and checked before it is shown.
-# Source of truth: frontend/src/components/SetupGuide.tsx, backend/src/main/java/ai/helper2/setup/web/SetupController.java,
+# Source of truth: frontend/src/components/setup/ (ConnectPart.tsx, StepsPart.tsx), backend/src/main/java/ai/helper2/setup/web/SetupController.java,
 #   backend/src/main/java/ai/helper2/setup/usecase/GetResourceSetup.java, AskAboutResource.java,
 #   backend/src/main/kotlin/ai/helper2/setup/SetupGuides.kt, ToolGuides.kt, ToolGuideValidator.kt,
 #   backend/src/main/java/ai/helper2/setup/internal/RegistryMcpServerSpecs.java, HttpToolMaterials.java,
@@ -11,7 +11,7 @@
 
 shape: sequence_diagram
 
-page: "SetupGuide.tsx" {class: person}
+page: "Guide me\n(components/setup)" {class: person}
 ctrl: SetupController {class: app}
 usecase: "GetResourceSetup /\nAskAboutResource" {class: app}
 detail: "GetResourceDetail\n(catalog.usecase)" {class: app}

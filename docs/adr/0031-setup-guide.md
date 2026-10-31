@@ -126,7 +126,8 @@ and a snippet copied into 19 clients' config files runs on the user's machine.
 - `backend/src/main/java/ai/helper2/setup/internal/` — `RegistryMcpServerSpecs`, `HttpToolMaterials`,
   `HourlyFetchBudget`, `ReadmeMcpConfigs`, `SpringAiToolGuideModel`, `RedisToolGuideCache`, `SetupConfiguration`.
 - `backend/src/main/java/ai/helper2/setup/web/SetupController.java`, `backend/src/main/resources/prompts/setup/tool-guide.txt`,
-  `frontend/src/components/SetupGuide.tsx`.
+  `frontend/src/components/setup/` — `GuideMe` (which types get it, the button), `GuideBody` (the panel),
+  `ConnectPart` (snippets per AI tool), `StepsPart` (checked steps and the follow-up question), `CopyButton`.
 
 ## Diagrams
 [flow](../diagrams/flow-0031-setup-guide.svg) · [sequence](../diagrams/sequence-0031-setup-guide.svg)

@@ -12,10 +12,10 @@ import { BookmarkButton } from './BookmarkButton';
 import { FactList, WorksWith } from './CardFacts';
 import { ExternalLink } from './ExternalLink';
 import type { GuidePick } from './GuidePicks';
-import { canGuide } from './GuideMe';
 import { Icon } from './Icon';
 import { Popularity } from './Popularity';
-import { GuideBody, GuideMeButton, useGuideToggle } from './SetupGuide';
+import { GuideBody } from './setup/GuideBody';
+import { canGuide, GuideMeButton, useGuideToggle } from './setup/GuideMe';
 import { Timeline } from './Timeline';
 
 /** The sources that listed [card], in words, for the proof quote's caption. */
