@@ -57,10 +57,10 @@ export default function AccountPage() {
   };
 
   return (
-    <div className="account-page">
+    <div className="page account-page">
       <h1>{t('account.title')}</h1>
       <p className="lede">{t('account.signedInAs', { name: me.displayName ?? t('nav.signedIn') })}</p>
-      <section className="account-page__part" aria-labelledby="account-delete-h">
+      <section className="page-part account-page__part" aria-labelledby="account-delete-h">
         <h2 id="account-delete-h" className="preview-label">{t('account.deleteTitle')}</h2>
         <p>{t('account.deleteText')} <Link to="/privacy">{t('account.privacyLink')}</Link></p>
         {failed && <p role="alert" className="warn-line"><Icon name="warn" /> {t('account.failed')}</p>}

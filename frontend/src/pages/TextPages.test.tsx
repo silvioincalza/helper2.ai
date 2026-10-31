@@ -31,7 +31,9 @@ describe('mission, privacy and terms pages', () => {
     expect(screen.getByRole('region', { name: 'What we promise' })).toHaveTextContent('Proof before opinion');
     expect(screen.getByRole('region', { name: 'How the guide answers' })).toHaveTextContent('A validator checks');
     expect(screen.getByRole('region', { name: 'Never guessed' })).toBeInTheDocument();
-    expect(screen.getByRole('region', { name: 'How we mark AI text' })).toHaveTextContent('data-ai-generated');
+    const marking = screen.getByRole('region', { name: 'How we mark AI text' });
+    expect(marking).toHaveTextContent('data-ai-generated');
+    expect(marking).toHaveTextContent('“AI-written” in the guide’s picks bar');
     const issues = screen.getByRole('link', { name: 'Open an issue on GitHub (opens in a new tab)' });
     expect(issues).toHaveAttribute('href', 'https://github.com/silvioincalza/helper2.ai/issues');
     expect(issues).toHaveAttribute('target', '_blank');
@@ -71,6 +73,7 @@ describe('mission, privacy and terms pages', () => {
     expect(document.title).toBe('Terms · Helper2.ai');
     expect(screen.getByRole('link', { name: 'helper2ai@incalza.me' })).toHaveAttribute('href', 'mailto:helper2ai@incalza.me');
     expect(screen.getByRole('region', { name: 'No guarantee on results and answers' })).toHaveTextContent('can be wrong');
+    expect(screen.getByRole('region', { name: 'The service' })).toHaveTextContent('on your account page');
     expect(screen.getByRole('region', { name: 'Liability' })).toHaveTextContent('gross negligence');
     expect(screen.getByRole('region', { name: 'Law and place of jurisdiction' })).toHaveTextContent('Swiss law');
 

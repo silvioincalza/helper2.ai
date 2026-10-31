@@ -8,12 +8,12 @@ export default function MissionPage() {
   const { t } = useTranslation();
   useTitle(t('nav.mission'));
   return (
-    <article className="text-page">
+    <article className="page text-page">
       <h1>{t('mission.title')}</h1>
       <p className="lede">{t('mission.lede')}</p>
       <TextSections i18nKey="mission.sections" />
       <HowItWorks />
-      <p>
+      <p className="page-part">
         <a href={`${REPO_URL}/issues`} target="_blank" rel="noopener noreferrer" aria-label={t('mission.feedbackLink')}>
           {t('mission.feedback')}
         </a>

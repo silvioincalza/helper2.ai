@@ -8,9 +8,9 @@ export default function PrivacyPage() {
   const { t } = useTranslation();
   useTitle(t('nav.privacy'));
   return (
-    <article className="text-page">
+    <article className="page text-page">
       <h1>{t('privacy.title')}</h1>
-      <p className="muted small">{t('privacy.updated')}</p>
+      <p className="text-page__updated">{t('privacy.updated')}</p>
       <p className="lede">{t('privacy.lede')}</p>
       <p>
         {t('privacy.contactIntro')} <a href={`mailto:${PRIVACY_CONTACT}`}>{PRIVACY_CONTACT}</a>.

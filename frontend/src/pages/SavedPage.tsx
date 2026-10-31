@@ -43,7 +43,7 @@ export default function SavedPage() {
   };
 
   return (
-    <div className="saved-page">
+    <div className="page">
       <h1 ref={focusRef} tabIndex={-1}>{t('saved.title')}</h1>
       <p className="lede">{b.mode === 'server' ? t('saved.serverNote') : t('saved.localNote')}</p>
       <p role="status" className="sr-only">{removed}</p>

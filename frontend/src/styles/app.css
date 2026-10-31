@@ -58,12 +58,34 @@ code { font-family: var(--font-mono); font-size: 0.85em; }
 .site-footer a { min-height: var(--target-min); color: var(--text-muted); display: inline-flex; align-items: center; gap: var(--space-1); text-decoration: none; text-underline-offset: 3px; }
 .site-footer a:hover, .site-footer a:focus-visible { color: var(--cyan); text-decoration: underline; }
 
-/* text pages (mission, privacy) */
-.text-page { max-width: 68ch; }
-.text-section { margin-top: var(--space-5); }
-.text-section h2 { font-size: 1.35rem; margin-bottom: var(--space-3); }
-.text-section ul { padding-left: var(--space-5); }
-.text-section li { margin-bottom: var(--space-2); }
+/* A page of parts (Saved, Sources, Account, Admin, Mission, Privacy, Terms): the h1, a lede, then parts with a rule on top. */
+.page { display: flex; flex-direction: column; gap: var(--space-4); }
+.page > * { margin: 0; }
+.page h1:focus:not(:focus-visible) { outline: none; }
+.page-part { display: flex; flex-direction: column; gap: var(--space-2); padding-top: var(--space-4); border-top: 1px solid var(--border); }
+.page-part > * { margin: 0; }
+.page-table { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); }
+.page-table table { min-width: 40rem; }
+.page-table th, .page-table td { padding: var(--space-3) var(--space-4); }
+.page-table thead th { font: 500 12px/16px var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.page-table tbody th { font: 500 0.95rem/1.4 var(--font-mono); }
+.page-table tbody tr:last-child > * { border-bottom: 0; }
+
+/* Mission, Privacy, Terms: one reading column, display headings, running text in ink-2. */
+.text-page { max-width: 46rem; }
+.text-page__updated { font: 400 12px/16px var(--font-mono); color: var(--muted); }
+.text-page .page-part { gap: var(--space-3); padding-top: var(--space-5); }
+.text-page h2 { font: 500 1.5rem/1.2 var(--font-display); letter-spacing: -0.02em; }
+.text-page .page-part p, .text-page li { line-height: 1.65; color: var(--ink-2); }
+.text-page ul { margin: 0; padding-left: var(--space-5); display: flex; flex-direction: column; gap: var(--space-2); }
+.text-page li::marker { color: var(--accent-ink); }
+.how-steps, .rules { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: var(--space-3); }
+.how-step { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-xl); background: var(--surface); }
+.how-step__n { font: 500 2.5rem/1 var(--font-display); color: var(--accent-ink); }
+.rule { display: flex; flex-direction: column; gap: var(--space-2); padding-top: var(--space-3); border-top: 2px solid var(--ink); }
+.how-step > *, .rule > * { margin: 0; }
+.how-step h3, .rule h3 { font: 600 1rem/1.35 var(--font-sans); color: var(--ink); }
+.how-step p, .rule p { font-size: 0.95rem; }
 
 /* controls */
 .btn { font: inherit; color: var(--text); background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-4); cursor: pointer; display: inline-flex; gap: var(--space-2); align-items: center; text-decoration: none; transition: border-color var(--motion), background var(--motion); }
@@ -244,19 +266,6 @@ tbody th { font-weight: 600; }
 .filter-legend { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
 input[type='checkbox'], input[type='radio'] { accent-color: var(--accent); }
 .tag { border-radius: var(--radius-pill); padding: 0 0.5rem; background: var(--surface-tint); border-color: transparent; color: var(--ink-2); }
-
-.section-head { display: flex; flex-direction: column; gap: var(--space-2); max-width: 46rem; }
-.section-head h2, .section-head p, .how-step h3, .how-step p, .rule h3, .rule p { margin: 0; }
-.how, .rules { display: flex; flex-direction: column; gap: var(--space-4); margin-top: var(--space-6); }
-.how h2, .rules h2 { font-size: 1.35rem; }
-.rules + p { margin-top: var(--space-6); }
-.how-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: var(--space-4); }
-.how-step { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 1.25rem; display: flex; flex-direction: column; gap: var(--space-2); }
-.how-n { font-family: var(--font-display); font-size: 2.5rem; line-height: 1; color: var(--accent); }
-.how-step h3, .rule h3 { font-size: 1.05rem; }
-.how-step p, .rule p { color: var(--ink-2); font-size: 0.95rem; }
-.rules-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: var(--space-4); }
-.rule { border-top: 2px solid var(--ink); padding-top: var(--space-3); display: flex; flex-direction: column; gap: var(--space-2); }
 
 /* ===== Look: warm paper, saffron accent, Space Grotesk headings ===== */
 h1, h2 { font-weight: 500; letter-spacing: -0.03em; }
@@ -484,26 +493,12 @@ h1.resource-title:focus:not(:focus-visible) { outline: none; }
 .resource-say__value { font: 400 1.1rem/1.4 var(--font-display); color: var(--ink); overflow-wrap: anywhere; }
 
 /* Sources page (ADR 0040, 10): the last outcome as tiles, the modes, then what each source covers. */
-.sources-page { display: flex; flex-direction: column; gap: var(--space-4); }
-.sources-page > * { margin: 0; }
-.sources-page h1:focus:not(:focus-visible) { outline: none; }
-.sources-page__part { display: flex; flex-direction: column; gap: var(--space-2); padding-top: var(--space-4); border-top: 1px solid var(--border); }
-.sources-page__part > * { margin: 0; }
 .sources-page__skeleton { height: 8rem; border-radius: var(--radius-lg); }
 .sources-page__modes { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: var(--space-2) var(--space-5); margin: 0; }
 .sources-page__modes div { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2); }
 .sources-page__modes dd { margin: 0; font-size: 0.9rem; color: var(--ink-2); }
-.sources-page__table { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); }
-.sources-page__table table { min-width: 40rem; }
-.sources-page__table th, .sources-page__table td { padding: var(--space-3) var(--space-4); }
-.sources-page__table thead th { font: 500 12px/16px var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
-.sources-page__table tbody th { font: 500 0.95rem/1.4 var(--font-mono); }
-.sources-page__table tbody tr:last-child > * { border-bottom: 0; }
 
 /* Saved page (ADR 0040, 10): rows like the result rows, each with its link to the source and Remove. */
-.saved-page { display: flex; flex-direction: column; gap: var(--space-4); }
-.saved-page > * { margin: 0; }
-.saved-page h1:focus:not(:focus-visible) { outline: none; }
 .saved-row { padding: var(--space-3) var(--space-4); }
 .saved-row > * { margin: 0; }
 .saved-row .result-row__title a { color: inherit; text-decoration: none; }
@@ -512,11 +507,8 @@ h1.resource-title:focus:not(:focus-visible) { outline: none; }
 .saved-row__actions a { min-height: var(--target-min); display: inline-flex; align-items: center; }
 
 /* Account page: who is signed in, and deleting the account after a confirmation. */
-.account-page { max-width: 46rem; display: flex; flex-direction: column; gap: var(--space-4); }
-.account-page > * { margin: 0; }
-.account-page h1:focus:not(:focus-visible) { outline: none; }
-.account-page__part { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-3); padding-top: var(--space-4); border-top: 1px solid var(--border); }
-.account-page__part > * { margin: 0; }
+.account-page { max-width: 46rem; }
+.account-page__part { align-items: flex-start; gap: var(--space-3); }
 .account-page__delete { min-height: var(--target-min); border-color: var(--danger); color: var(--danger); }
 .account-page__confirm { align-self: stretch; display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4) var(--space-5); border: 1px solid var(--danger); border-radius: var(--radius-lg); background: var(--surface); }
 .account-page__confirm > * { margin: 0; }

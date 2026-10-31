@@ -691,7 +691,7 @@
       {
         "title": "How we mark AI text",
         "items": [
-          "On the screen, every text written by an AI model has a label, such as “AI”, “AI reasoning”, “AI summary” or “Extracted by AI”.",
+          "On the screen, every text written by an AI model has a label next to it: “AI-written” in the guide’s picks bar and on the guide’s reasons in the result list, “Model’s explanation” over a reason in the preview, “AI summary” and “Extracted by AI” on the resource page, and “Steps written by AI” in the setup guide.",
           "In the page, the same text carries the HTML attribute data-ai-generated=\"true\", and data-ai-model with the model name when we know it.",
           "In our API, a guide answer has an aiContent object that names the provider, the models and the fields they wrote. Catalog values carry an origin such as AI_SUMMARY or AI_EXTRACTED.",
           "Quotes, titles and links are never written by AI. They come from the sources."
@@ -788,7 +788,7 @@
   },
   "terms": {
     "title": "Terms of use",
-    "updated": "Last updated: 30 October 2026",
+    "updated": "Last updated: 31 October 2026",
     "lede": "These terms apply when you use the Helper2.ai website. By using it, you accept them. If you do not accept them, please do not use the site.",
     "contactIntro": "Helper2.ai is run by Silvio Incalza, Switzerland. For any question about these terms, write to",
     "sections": [
@@ -798,7 +798,7 @@
           "Helper2.ai is a free search over public sources about the AI ecosystem, with an AI guide that answers questions from those results.",
           "We may change, limit or stop the service, or parts of it, at any time and without notice.",
           "Tavily web searches: 3 a day each for search and the guide; stored results are free. Limits reset at 00:00 UTC.",
-          "You can use Helper2.ai without an account. If you sign in with GitHub, you can delete your account at any time by writing to us."
+          "You can use Helper2.ai without an account. If you sign in with GitHub, you can delete your account at any time on your account page, or by writing to us."
         ]
       },
       {

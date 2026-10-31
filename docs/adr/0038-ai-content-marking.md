@@ -6,8 +6,8 @@
 The EU AI Act applies to Helper2.ai because people in the EU use it. Helper2.ai builds the guide on top of NVIDIA
 Nemotron and offers it under its own name, so it is most likely the provider of an AI system that writes text.
 Art. 50 has applied since 2 August 2026:
-- Art. 50(1): people must know they deal with AI. The UI already says so ("Ask the AI guide", "AI reasoning",
-  "AI summary", "Extracted by AI").
+- Art. 50(1): people must know they deal with AI. The UI says so ("Ask the guide", "AI-written", "AI summary",
+  "Extracted by AI").
 - Art. 50(2): AI-written text must also be marked in a machine-readable way, so it can be detected, as far as
   technically feasible. Nothing did this.
 

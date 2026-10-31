@@ -22,7 +22,7 @@ export default function SourcesPage() {
   const { retry, focusRef } = useRetry(q.reload, q.loading);
   useTitle(t('nav.sources'));
   return (
-    <div className="sources-page">
+    <div className="page">
       <h1 ref={focusRef} tabIndex={-1}>{t('sourcesPage.title')}</h1>
       <p className="lede">{t('sourcesPage.lede')}</p>
       {q.loading && (
@@ -51,12 +51,12 @@ function Registry({ sources }: { sources: SourceInfo[] }) {
   const [now] = useState(Date.now);
   return (
     <>
-      <section className="sources-page__part" aria-labelledby="sources-last-h">
+      <section className="page-part" aria-labelledby="sources-last-h">
         <h2 id="sources-last-h" className="preview-label">{t('sourcesPage.last')}</h2>
         <SourceTiles registry={sources} now={now} label={t('sourcesPage.last')} />
         <p className="muted small">{t('sourcesPage.lastNote')}</p>
       </section>
-      <section className="sources-page__part" aria-labelledby="sources-modes-h">
+      <section className="page-part" aria-labelledby="sources-modes-h">
         <h2 id="sources-modes-h" className="preview-label">{t('sourcesPage.modes')}</h2>
         <dl className="sources-page__modes">
           {MODES.map((m) => (
@@ -64,9 +64,9 @@ function Registry({ sources }: { sources: SourceInfo[] }) {
           ))}
         </dl>
       </section>
-      <section className="sources-page__part" aria-labelledby="sources-covers-h">
+      <section className="page-part" aria-labelledby="sources-covers-h">
         <h2 id="sources-covers-h" className="preview-label">{t('sourcesPage.covers')}</h2>
-        <div className="sources-page__table">
+        <div className="page-table">
           <table aria-labelledby="sources-covers-h">
             <thead>
               <tr>
