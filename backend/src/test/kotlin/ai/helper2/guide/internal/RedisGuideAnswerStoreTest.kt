@@ -27,6 +27,7 @@ import java.util.concurrent.Executors
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import org.springframework.data.redis.RedisConnectionFailureException
@@ -93,7 +94,7 @@ class RedisGuideAnswerStoreTest {
 
     @Test
     fun `an answer reads back equal to the one that was stored`() {
-        val store = RedisGuideAnswerStore(StringRedisTemplate(), json, Resilience.NONE)
+        val store = RedisGuideAnswerStore(StringRedisTemplate(), json, Resilience.NONE, "test")
         val original = answer()
         assertTrue(original.recommendations.any { it.aiReasoned }, "fixture must be a cacheable answer")
 
@@ -102,7 +103,7 @@ class RedisGuideAnswerStoreTest {
 
     @Test
     fun `an entry of another version or a corrupt entry is a miss`() {
-        val store = RedisGuideAnswerStore(StringRedisTemplate(), json, Resilience.NONE)
+        val store = RedisGuideAnswerStore(StringRedisTemplate(), json, Resilience.NONE, "test")
         val encoded = store.encode(answer())
 
         val v = RedisGuideAnswerStore.VERSION
@@ -114,7 +115,7 @@ class RedisGuideAnswerStoreTest {
     @Test
     fun `after a Redis failure the store is left alone for a while`() {
         val redis = DownRedis()
-        val store = RedisGuideAnswerStore(redis, json, TestPolicies.redis(clock))
+        val store = RedisGuideAnswerStore(redis, json, TestPolicies.redis(clock), "test")
 
         assertNull(store.get("k"))
         store.put("k", answer(), Duration.ofHours(24))
@@ -124,5 +125,19 @@ class RedisGuideAnswerStoreTest {
         clock.now = NOW.plusSeconds(31)
         assertNull(store.get("k"))
         assertEquals(2, redis.calls)
+    }
+
+    @Test
+    fun `Redis sees only a hash of the question, under the build that answered it`() {
+        val question = "speech to text i can self-host|-|fast|reasoning"
+        val key = RedisGuideAnswerStore.redisKey("b86eda2f1a2b", question)
+
+        assertTrue(key.startsWith("h2:v${RedisGuideAnswerStore.VERSION}:guide-answer:b86eda2f1a2b:"))
+        assertTrue(!key.contains("speech"))
+        assertEquals(key, RedisGuideAnswerStore.redisKey("b86eda2f1a2b", question))
+        // A new build reads its own answers: a fix in how the guide reads a question shows at once.
+        assertNotEquals(key, RedisGuideAnswerStore.redisKey("b6e6cd54aaaa", question))
+        // A build id is never free text in the key.
+        assertTrue(RedisGuideAnswerStore.redisKey("x y:*", question).startsWith("h2:v${RedisGuideAnswerStore.VERSION}:guide-answer:unknown:"))
     }
 }

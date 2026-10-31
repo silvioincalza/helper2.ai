@@ -1,4 +1,4 @@
-# 0004 — PostgreSQL as system of record; ids from canonical URLs; source records; dates never invented; one schema migration + repeatable seeds; catalog writes off the request path; the catalog owns its tables
+# 0004 — PostgreSQL as system of record; ids from canonical URLs; source records; dates never invented; one schema migration, forward-only once data must be kept, + repeatable seeds; catalog writes off the request path; the catalog owns its tables
 
 **Status.** Accepted. **Builds on:** [0001](0001-stack-and-runtime.md), [0002](0002-modular-monolith-hexagonal.md)
 
@@ -34,11 +34,16 @@ the search down.
    days for the same date; the merge rules are in [0010](../search/0010-filters-facets-dates-timeline.md). Date columns are nullable;
    `published_precision = 'UNKNOWN'` exactly when `published_at` is null (a table check).
    `first_discovered_at` is Helper2's own observation, labeled as such.
-5. **One base schema, additive changes, repeatable seeds.** `V1__schema.sql` is the base schema. It is never
-   edited: an edit changes its checksum, and Flyway then refuses to start. Every change is a new versioned migration (`V2__npm_dates_are_updates.sql`,
-   `V3__course_type.sql`, [0032](../guide/0032-guide-intents.md)). Flyway runs them, then `R__curated_seed.sql`
-   and `R__industry_events.sql`. The seeds upsert, so Flyway re-runs one whenever
-   it changes. The events seed also removes the curated events that are not in its research file ([0022](../scout/0022-next-events.md)).
+5. **One schema migration, then forward-only; repeatable seeds.** `V1__schema.sql` is the whole schema: the tables,
+   checks, indexes, triggers and functions the code needs, and nothing it does not use. Every foreign key states its
+   delete rule (`CASCADE`, `SET NULL`, `RESTRICT` or `NO ACTION`, [0034](../operations/0034-data-retention.md)).
+   `V1__schema.sql` is edited in place only while no environment holds data that must be kept; such an edit needs
+   an empty database in every environment ([deploy/k8s/RESET-DATABASE.md](../../../deploy/k8s/RESET-DATABASE.md)).
+   Once an environment holds data that must be kept, `V1__schema.sql` is never edited again: an edit changes its
+   checksum, and Flyway refuses to start. Every change is then a new versioned migration (`V2__…`), forward-only.
+   After the versioned migrations, Flyway runs the seeds `R__curated_seed.sql`, `R__industry_events.sql`,
+   `R__community_events.sql` and `R__courses.sql`. The seeds upsert, so Flyway re-runs one whenever it changes.
+   The events seed also removes the curated events that are not in its research file ([0022](../scout/0022-next-events.md)).
 6. **Catalog writes off the request path.** `SearchResources` reads first-discovery dates in one batched
    query (`ResultObserver.firstDiscovered`), then hands only the results fetched live in this search to
    `ResultObserver.record`. `ResourceCatalog.record` queues the write in `ObservationQueue`: one thread
@@ -60,6 +65,12 @@ the search down.
   the backup ([0027](../operations/0027-runtime-topology.md)).
 - How long each table keeps its rows, and the daily purges that enforce it, are in
   [0034](../operations/0034-data-retention.md); the foreign keys and indexes those purges use are part of `V1__schema.sql`.
+- One file holds the whole schema, so a reader sees every table as it is, not a chain of changes.
+- A deploy whose schema does not match the database's migration history stops at startup: the new pods never
+  become ready, the deploy rolls back and the old pods keep serving ([0028](../operations/0028-ci-cd.md)).
+- `SchemaContractTest` checks the migrated schema with plain JDBC: every foreign key's delete rule, an index on every
+  foreign key a delete follows, every check list equal to the domain vocabulary it stores, and no table or column
+  the code does not use.
 - A merge of two resources never loses a user report. A resource whose records were split over several resources
   stays, without records, until a reviewer handles its reports. `ResourceStoreIT` covers both cases.
 - `ObservationQueueTest` covers the queue (background write, a full queue drops the new write, shutdown). `SearchApiIT` checks the result: unknown
@@ -72,8 +83,10 @@ the search down.
 - Random ids — the same URL from two sources would become two resources, and links would not be stable.
 - A document store — the data is relational (records, evidence, labels, bookmarks), and PostgreSQL
   also gives full-text search and vectors.
-- One versioned migration per feature from the start — a longer chain to read and replay. One base schema
-  plus small additive changes is enough.
+- One versioned migration per feature from the start — a longer chain to read and replay, and a history of fixes to
+  rows that a new database never has.
+- A Flyway baseline on the old history — the files would no longer describe how the database was built, and
+  every environment would still carry the old columns and checks.
 
 ## Code
 - `backend/src/main/kotlin/ai/helper2/shared/CanonicalUrl.kt`, `ResourceId.kt`, `DateFact.kt` — identity and dates.
@@ -84,7 +97,9 @@ the search down.
 - `backend/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java`, `IssueReports.java`,
   `ReviewDecisions.java` — enrichment results, user reports and review decisions.
 - `backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — read dates, then `record`.
-- `backend/src/main/resources/db/migration/V1__schema.sql`, `V2__…`, `V3__…`, `R__*.sql` — schema, its changes and seeds.
+- `backend/src/main/resources/db/migration/V1__schema.sql`, `R__*.sql` — schema and seeds.
+- `backend/src/test/java/ai/helper2/SchemaContractTest.java` — the schema contract.
+- `deploy/k8s/RESET-DATABASE.md` — empty database for an in-place edit of `V1__schema.sql`.
 - `deploy/postgres/Dockerfile` — PostgreSQL with pgvector, pinned by commit and checksum.
 
 ## Diagrams

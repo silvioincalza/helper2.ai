@@ -259,6 +259,9 @@ logging:
       console: ${H2_LOG_FORMAT:logstash}
 
 helper2:
+  build:
+    # The running build (the chart passes the image tag). Guide answers in Redis are kept per build.
+    version: ${H2_BUILD_VERSION:local}
   # Where sign-in returns to (the SPA). "/" when the SPA is served by the backend itself.
   frontend-url: ${H2_FRONTEND_URL:/}
   # Vector search (ADR 0012): NVIDIA embeddings stored in Postgres (pgvector). Empty key = keyword search only.

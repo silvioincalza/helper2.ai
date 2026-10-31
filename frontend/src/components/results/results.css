@@ -1,4 +1,4 @@
-/* Design v2 results page (ADR 0040, 3–7): list and preview. Only semantic tokens. */
+/* Results page (ADR 0040, 3–7): list and preview. Only semantic tokens. */
 .h2-results { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4) 0 var(--space-7); }
 .h2-results__box { max-width: 680px; }
 .h2-results__guide { display: flex; flex-direction: column; gap: var(--space-3); }

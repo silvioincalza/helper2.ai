@@ -29,7 +29,7 @@ function event(i: number, start: string): ResultCard {
 
 const board = async (name: string) => (await screen.findByRole('heading', { name, level: 2 })).closest('section') as HTMLElement;
 
-describe('design v2 home: only the home page', () => {
+describe('home: only the home page', () => {
   it('shows the hero, the box and the two boards, and no results', async () => {
     mockApi();
     renderApp('/');

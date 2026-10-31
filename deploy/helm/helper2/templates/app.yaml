@@ -46,6 +46,8 @@ spec:
             - name: H2_REDIS_PASSWORD
               valueFrom: { {{ include "helper2.redisPasswordFrom" . }} }
             {{- end }}
+            # The running build: guide answers in Redis are kept per build, so a deploy is seen at once.
+            - { name: H2_BUILD_VERSION, value: {{ .Values.image.tag | quote }} }
             - { name: H2_SCOUT_ENABLED, value: {{ .Values.app.scoutEnabled | toString | quote }} }
             - { name: H2_SCOUT_INITIAL_DELAY, value: {{ required "app.scoutInitialDelay" .Values.app.scoutInitialDelay | quote }} }
             - { name: H2_SCOUT_EVERY, value: {{ required "app.scoutEvery" .Values.app.scoutEvery | quote }} }

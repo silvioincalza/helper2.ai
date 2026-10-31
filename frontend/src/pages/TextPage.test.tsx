@@ -17,7 +17,7 @@ function narrowScreen(matches: boolean) {
   vi.stubGlobal('matchMedia', vi.fn(() => ({ matches, addEventListener: () => undefined, removeEventListener: () => undefined })));
 }
 
-describe('Feature: text pages in design v2', () => {
+describe('Feature: text pages', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('sectionAnchor turns a title into a stable id', () => {

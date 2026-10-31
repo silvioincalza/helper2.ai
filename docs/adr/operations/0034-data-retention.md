@@ -31,7 +31,7 @@ The periods are a product decision the owner may change; changing one must not n
    | Postgres `issue_report.reporter_user_id` | link to the reporter | until the account goes | `ON DELETE SET NULL` |
    | Postgres `admin_audit` | admin id, action, target, time, outcome | 24 months after `at` | identity purge |
    | Redis `h2:v1:src:*` | source responses, keyed by a hash of the query | 24 h (`H2_SEARCH_STALE_FOR`) | Redis TTL |
-   | Redis `h2:v2:guide-answer:*` | guide answers, keyed by a hash of the question | 24 h (`H2_GUIDE_CACHE_TTL`), 6 h for a dated question | Redis TTL |
+   | Redis `h2:v2:guide-answer:<build>:*` | guide answers, keyed by a hash of the question | 24 h (`H2_GUIDE_CACHE_TTL`), 6 h for a dated question | Redis TTL |
    | Redis `h2:v2:tool-guide:*` | setup guide answers (checked steps, document links), no user text | 7 days (`helper2.setup.guide.cache-ttl`) | Redis TTL |
    | Redis `h2:v1:budget:*` | daily model-call counts, per-client counts under a hash of the address | 2 days | Redis TTL |
    | Redis `h2:v1:rate:*` | rate-limit windows, keyed by the client address | 1 minute or 1 hour (the window) | Redis TTL |
@@ -59,19 +59,24 @@ The periods are a product decision the owner may change; changing one must not n
    daily on `helper2.retention.cron` under its own cluster lock (`retention-catalog`, `retention-scout`,
    `retention-identity`, `retention-search`, `ClusterLocks.keptAlive`), so one replica runs it. A failed purge is logged and the next
    day's run catches up; each logs what it deleted.
-4. **Foreign keys carry the deletes.** A purge deletes the parent row; children go by `ON DELETE CASCADE`, links
-   that must outlive their target are `ON DELETE SET NULL` (`issue_report.reporter_user_id`,
-   `review_item.relationship_id`, `relationship.to_resource_id`, `enrichment_run.reprocess_of`). Each purge has an
-   index on the column it filters by (`resource_observed_seen_idx`, `review_item_resolved_idx`,
-   `app_user_last_signed_in_idx`, `admin_audit_at_idx`, `tavily_query_result_fetched_idx`, and the run and report
-   indexes on the citing tables).
+4. **Foreign keys carry the deletes.** Every foreign key states its delete rule. A purge deletes the parent row;
+   children go by `ON DELETE CASCADE`, links that must outlive their target are `ON DELETE SET NULL`
+   (`issue_report.reporter_user_id`, `review_item.relationship_id`, `relationship.to_resource_id`). A source is never
+   deleted while catalog data cites it (`ON DELETE RESTRICT` on `resource` and `source_record`); its cursor and run
+   history go with it. An enrichment run that a current assertion, relationship, summary claim or review item cites
+   is `ON DELETE NO ACTION`: it never goes on its own, and a resource delete that cascades to both the run and the
+   rows citing it passes, because the check runs at the end of the statement. Each purge has an index on the column
+   it filters by (`resource_observed_seen_idx`, `review_item_resolved_idx`, `app_user_last_signed_in_idx`,
+   `admin_audit_at_idx`, `tavily_query_result_fetched_idx`, and the run and report indexes on the citing tables),
+   and every foreign key a delete follows leads an index, so a cascade never scans a child table.
 
 ## Consequences
 - Every store has a stated period, and the privacy page states the ones that hold personal data.
 - The owner changes a period with one variable and a restart.
 - A purge never leaves a dangling row and never deletes a resource a reviewer still needs.
 - Each rule has an integration test with a fixed clock on the real schema: `CatalogPurgeExpiredDataIT`,
-  `ScoutPurgeExpiredDataIT`, `IdentityPurgeExpiredDataIT`, `JdbcWebResultStoreIT`.
+  `ScoutPurgeExpiredDataIT`, `IdentityPurgeExpiredDataIT`, `JdbcWebResultStoreIT`. `SchemaContractTest` checks
+  every foreign key's delete rule and its index.
 
 ## Alternatives considered
 - One purge job for every table — it would reach into every module's tables and break module ownership

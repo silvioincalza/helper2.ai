@@ -109,7 +109,26 @@
       "CACHE_UNAVAILABLE": "Cache unavailable: every source was queried live for this search.",
       "INDEX_UNAVAILABLE": "Helper2 index unavailable: discovery dates are unknown for this search.",
       "ALL_SOURCES_FAILED": "No source could be reached."
-    }
+    },
+    "heading": "Results for {{q}}",
+    "types": "Result types",
+    "allTypes": "All",
+    "pick": "Pick #{{rank}}",
+    "fullAnswer": "How the guide decided",
+    "openOn": "Open on {{host}}",
+    "fullDetails": "Full details",
+    "whyMatches": "Why it matches",
+    "facts": "Facts",
+    "use": "Use",
+    "build": "Build",
+    "notStated": "Not stated",
+    "listedBy": "Listed by",
+    "timeline": "Timeline",
+    "fanOut_one": "{{ok}} of {{total}} sources answered · {{count}} result after merging",
+    "fanOut_other": "{{ok}} of {{total}} sources answered · {{count}} results after merging",
+    "seeWhich": "See which sources failed",
+    "seeSources": "See the sources we search",
+    "askGuide": "Ask the guide instead"
   },
   "timeline": {
     "viewLabel": "Show results as",
@@ -153,6 +172,36 @@
     "latencyMs": "{{ms}} ms",
     "col": {
       "source": "Source"
+    },
+    "how": "How we search",
+    "all": "Every source",
+    "filter": "Show sources by mode",
+    "covers": "Covers",
+    "lastCheck": "Last check",
+    "summary": "{{ok}} of {{total}} sources answered at their last check",
+    "warn_one": "{{count}} rate limited or skipped",
+    "warn_other": "{{count}} rate limited or skipped",
+    "failed_one": "{{count}} failed",
+    "failed_other": "{{count}} failed",
+    "never_one": "{{count}} not checked yet",
+    "never_other": "{{count}} not checked yet",
+    "steps": {
+      "ask": {
+        "title": "One search, every source",
+        "text": "Your search goes to every enabled source at the same time."
+      },
+      "merge": {
+        "title": "Duplicates become one",
+        "text": "The same resource from several sources is shown once, with every source named."
+      },
+      "prove": {
+        "title": "Picks quote their source",
+        "text": "The guide only recommends what it found, and quotes the sentence that supports it."
+      },
+      "dates": {
+        "title": "Dates as stated",
+        "text": "A date is shown only when the source states it. Nothing is guessed."
+      }
     }
   },
   "outcome": {
@@ -384,7 +433,8 @@
     "localNote": "Saved in this browser only.",
     "serverNote": "Saved on your account.",
     "storageFailed": "Your browser blocked storage, so saved items will be lost when you leave this page.",
-    "serverError": "Could not sync with your account. Please try again later."
+    "serverError": "Could not sync with your account. Please try again later.",
+    "types": "Saved by type"
   },
   "account": {
     "title": "Your account",
@@ -949,27 +999,6 @@
       "OK": ""
     }
   },
-  "resultsV2": {
-    "heading": "Results for {{q}}",
-    "types": "Result types",
-    "allTypes": "All",
-    "pick": "Pick #{{rank}}",
-    "fullAnswer": "How the guide decided",
-    "openOn": "Open on {{host}}",
-    "fullDetails": "Full details",
-    "whyMatches": "Why it matches",
-    "facts": "Facts",
-    "use": "Use",
-    "build": "Build",
-    "notStated": "Not stated",
-    "listedBy": "Listed by",
-    "timeline": "Timeline",
-    "fanOut_one": "{{ok}} of {{total}} sources answered · {{count}} result after merging",
-    "fanOut_other": "{{ok}} of {{total}} sources answered · {{count}} results after merging",
-    "seeWhich": "See which sources failed",
-    "seeSources": "See the sources we search",
-    "askGuide": "Ask the guide instead"
-  },
   "picks": {
     "title": "Guide picks",
     "aiWritten": "AI-written",
@@ -1008,46 +1037,6 @@
       "months_other": "In {{count}} months"
     }
   },
-  "resourceV2": {
-    "backToResults": "Back to results",
-    "sourceText": "From the source",
-    "checkedNote": "Highlighted: the sentence the guide checked against this source."
-  },
-  "savedV2": {
-    "types": "Saved by type"
-  },
-  "sourcesV2": {
-    "how": "How we search",
-    "all": "Every source",
-    "filter": "Show sources by mode",
-    "covers": "Covers",
-    "lastCheck": "Last check",
-    "summary": "{{ok}} of {{total}} sources answered at their last check",
-    "warn_one": "{{count}} rate limited or skipped",
-    "warn_other": "{{count}} rate limited or skipped",
-    "failed_one": "{{count}} failed",
-    "failed_other": "{{count}} failed",
-    "never_one": "{{count}} not checked yet",
-    "never_other": "{{count}} not checked yet",
-    "steps": {
-      "ask": {
-        "title": "One search, every source",
-        "text": "Your search goes to every enabled source at the same time."
-      },
-      "merge": {
-        "title": "Duplicates become one",
-        "text": "The same resource from several sources is shown once, with every source named."
-      },
-      "prove": {
-        "title": "Picks quote their source",
-        "text": "The guide only recommends what it found, and quotes the sentence that supports it."
-      },
-      "dates": {
-        "title": "Dates as stated",
-        "text": "A date is shown only when the source states it. Nothing is guessed."
-      }
-    }
-  },
   "webSearches": {
     "feature": {
       "search": "search",
@@ -1055,5 +1044,10 @@
     },
     "left": "{{remaining}} of {{limit}} web searches left today for {{feature}}.",
     "none": "No web searches left today for {{feature}}. Stored results still answer. Resets at {{time}} your time (00:00 UTC)."
+  },
+  "resource": {
+    "backToResults": "Back to results",
+    "sourceText": "From the source",
+    "checkedNote": "Highlighted: the sentence the guide checked against this source."
   }
 }
