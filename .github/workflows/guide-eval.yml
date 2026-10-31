@@ -1,0 +1,49 @@
+# Guide evaluation: every night, the fixed guide questions and the hostile ones against staging, never prod
+# (ADR 0030). A run sends 28 questions: about 84 model calls (3 a question), at most 150 with retries under staging's
+# guide cap. No secret: the guide endpoints are public, so a GitHub-hosted runner calls the staging URL like a visitor.
+# Staging must run with H2_GUIDE_CACHE_TTL=PT1S, H2_GUIDE_CLIENT_DAILY_QUESTIONS=60 and H2_GUIDE_DAILY_MODEL_CALLS=150
+# (its app.env; deploy/k8s/README.md). The reports are kept as an artifact for 30 days; nothing is committed.
+# Never add `pull_request` or `pull_request_target`: every run spends model calls.
+name: guide-eval
+
+on:
+  schedule:
+    # 01:41 UTC: after the 00:00 UTC reset of the daily caps and quotas.
+    - cron: '41 1 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: guide-eval
+  cancel-in-progress: false
+
+jobs:
+  guide-eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      STAGING_URL: https://helper2.incalza.me
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+      # 20 questions; fails below 10 passed (the last published run: 11, ADR 0030).
+      - name: Fixed questions
+        run: node scripts/eval-guide.mjs "$STAGING_URL" --min-pass 0.5
+      # 8 hostile questions; fails on any case that does not pass.
+      - name: Hostile questions
+        if: ${{ !cancelled() }}
+        run: node scripts/eval-guide.mjs "$STAGING_URL" --adversarial
+      - if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: guide-eval
+          path: |
+            docs/evaluation.md
+            docs/evaluation-adversarial.md
+            backend/eval-data/guide-pool.tsv
+          if-no-files-found: warn
+          retention-days: 30
