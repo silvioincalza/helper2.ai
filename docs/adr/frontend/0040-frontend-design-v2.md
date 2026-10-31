@@ -80,30 +80,30 @@ and chose between options for each part.
 - `frontend/src/hooks/useRetry.ts` — Try again moves focus to a heading, so it never falls to the page body.
   `frontend/src/lib/motion.ts` — one `prefersReducedMotion` for the boards and the radar.
 - `frontend/src/hooks/useGuideStream.ts` — the guide stream for the question and refinement in the URL.
-- `frontend/src/pages/HomeV2.tsx` — the home page: radar hero, the one box, the examples, the two boards.
+- `frontend/src/pages/Home.tsx` — the home page: radar hero, the one box, the examples, the two boards.
 - `frontend/src/components/home/` — `HomeBoard` (the loop, the copy hidden from assistive tech and from Tab, pause
   on hover, focus and tap, still under reduced motion), `NewsBoard` (`GET /recent`) and `EventsBoard`
-  (`GET /events/upcoming`); `home-v2.css`. `frontend/src/lib/countdown.ts` — Today, Tomorrow, In N days, weeks or
+  (`GET /events/upcoming`); `home.css`. `frontend/src/lib/countdown.ts` — Today, Tomorrow, In N days, weeks or
   months.
 - `frontend/src/lib/searchState.ts` — `RESULTS_PATH` is `/search`; `resourcePath(id)` builds every link to a
   resource page with the id encoded. `OneBox` sends results there and searches live only
   on that page.
 - `frontend/src/pages/HomePage.tsx`, `routes.tsx` — `/` empty is the home page; `/search` shows results and goes home
   with no query; `/?q=` shows results with a canonical link to `/search`; there is no `/guide` route (the site was never public, so no old links exist).
-- `frontend/src/components/results/ResultsV2.tsx` — the results page: the box, the picks bar (questions only), type
+- `frontend/src/components/results/Results.tsx` — the results page: the box, the picks bar (questions only), type
   tabs, a "Filters" fold with sort, list or timeline and the filter panel, search notices and use-case hints, the list
   of `SelectableRow`s, the preview beside the list from 861 px and inside it below, the pager, and the sources at the
   bottom. Every state says what happened and offers a next step; after a page change, focus goes to the result count.
-  `results-v2.css`. `frontend/src/lib/selection.ts` — the selected result (`id` in the URL, else the first) and the
+  `results.css`. `frontend/src/lib/selection.ts` — the selected result (`id` in the URL, else the first) and the
   picks by resource id. `frontend/src/hooks/useMediaQuery.ts` — beside the list or inside it.
-- `frontend/src/components/results/ResourceV2.tsx`, `ResultFacts.tsx` — the resource page and the facts, "Listed by"
+- `frontend/src/components/results/Resource.tsx`, `ResultFacts.tsx` — the resource page and the facts, "Listed by"
   (with mode and stale-cache marks) shared with the preview; `frontend/src/pages/ResourcePage.tsx` loads it once.
 - `frontend/src/pages/NotFoundPage.tsx` — the 404 page.
-- `frontend/src/components/saved/SavedV2.tsx` (behind `SAVED_ENABLED`), `components/sources/SourcesV2.tsx`,
+- `frontend/src/components/saved/Saved.tsx` (behind `SAVED_ENABLED`), `components/sources/Sources.tsx`,
   `pages/AccountPage.tsx` — Saved, Sources and your account.
-- `frontend/src/components/TextPageV2.tsx`, `pages/MissionPage.tsx`, `PrivacyPage.tsx`, `TermsPage.tsx` — the text
+- `frontend/src/components/TextPage.tsx`, `pages/MissionPage.tsx`, `PrivacyPage.tsx`, `TermsPage.tsx` — the text
   pages with "On this page".
-- `frontend/src/pages/AdminPage.tsx`, `pages/admin-v2.css` — the admin back office ([0023](../edge/0023-identity-and-admin.md))
+- `frontend/src/pages/AdminPage.tsx`, `pages/admin.css` — the admin back office ([0023](../edge/0023-identity-and-admin.md))
   in the design: the review queue as rows like the saved rows, each status as a `StatusPill`, the Scout runs as a
   table.
 - `frontend/src/components/Layout.tsx` — Sources and Mission in the menu, "No ads." in the footer.

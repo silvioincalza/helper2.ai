@@ -9,7 +9,7 @@ import { renderApp, settle } from '@/test/render';
 const url = '/search?q=translate';
 const failed = makeStatus({ sourceId: 'b', name: 'Beta', outcome: 'FAILED', servedFrom: 'NONE', latencyMs: null });
 
-describe('design v2 states: every state says what happened and offers a next step', () => {
+describe('states: every state says what happened and offers a next step', () => {
   it('loading: a status with skeleton rows shaped like the list', async () => {
     let release: () => void = () => undefined;
     const gate = new Promise<void>((r) => { release = r; });

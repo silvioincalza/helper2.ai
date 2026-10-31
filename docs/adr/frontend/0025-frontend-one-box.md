@@ -15,7 +15,7 @@ screen reader, and in light and dark mode.
    All state is in the page address (URL): `q` (at most 200 characters), `ask` (at most 500), the refinement of the
    question (`clar`, the reply to the guide's question back, at most 300; `drop`, the parts of the reading the user
    removed, at most 8), filters, sort, page, view. A search change keeps the refinement; a new question starts without one.
-2. **Search results** (`ResultsV2`, `useApi`). A new query aborts the old request. While it loads, the previous
+2. **Search results** (`Results`, `useApi`). A new query aborts the old request. While it loads, the previous
    results stay on screen, dimmed, with `aria-busy`. Only the first load shows skeletons and one "querying" line per
    enabled source. A change of filter, sort or page keeps the scroll position.
    Back and forward show a recent answer at once, where the user left it: [0039](0039-frontend-recent-answers-cache.md).
@@ -75,7 +75,7 @@ screen reader, and in light and dark mode.
 - `frontend/src/components/OneBox.tsx`, `frontend/src/pages/HomePage.tsx` — box, live search, guide section.
 - `frontend/src/hooks/useGuideStream.ts`, `frontend/src/lib/searchState.ts` — the guide stream for the URL's question and refinement.
 - `frontend/src/components/guide/` — `GuidePicks` (picks bar and progress line), `reading.ts`, `GuideAnswer` and its parts, `WebSearchesLeft`.
-- `frontend/src/components/results/ResultsV2.tsx`, `frontend/src/hooks/useApi.ts` — previous results while loading.
+- `frontend/src/components/results/Results.tsx`, `frontend/src/hooks/useApi.ts` — previous results while loading.
 - `frontend/src/api/client.ts`, `frontend/src/lib/sse.ts` — guide stream, idle timeout, error codes.
 - `frontend/src/components/Layout.tsx`, `frontend/src/lib/theme.ts`, `frontend/public/theme.js` — `RouteFocus`, theme.
 - `frontend/src/context/SourcesContext.tsx`, `frontend/src/pages/PrivacyPage.tsx`.

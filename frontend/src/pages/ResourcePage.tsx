@@ -12,7 +12,7 @@ import { useApi } from '@/hooks/useApi';
 import { useTitle } from '@/hooks/useTitle';
 import { formatDate } from '@/lib/format';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
-import { ResourceV2 } from '@/components/results/ResourceV2';
+import { Resource } from '@/components/results/Resource';
 import { resourcePath } from '@/lib/searchState';
 
 function RelList({ items }: { items: Relationship[] }) {
@@ -47,7 +47,7 @@ export default function ResourcePage() {
     );
   }
 
-  return <ResourceV2 detail={d}><DetailSections detail={d} /></ResourceV2>;
+  return <Resource detail={d}><DetailSections detail={d} /></Resource>;
 }
 
 /** Summary, recorded facts, relationships, source records and the report form. */

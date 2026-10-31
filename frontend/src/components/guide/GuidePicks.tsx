@@ -77,7 +77,7 @@ function FullAnswer({ answer, onRefine, open }: { answer: GuideResponse; onRefin
   const { t } = useTranslation();
   return (
     <details className="h2-results__full" open={open}>
-      <summary>{t('resultsV2.fullAnswer')}</summary>
+      <summary>{t('results.fullAnswer')}</summary>
       <GuideAnswer answer={answer} onRefine={onRefine} />
     </details>
   );

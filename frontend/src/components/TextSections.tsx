@@ -23,7 +23,7 @@ export function useTextSections(i18nKey: string): TextSection[] {
 /**
  * Renders the `<key>.sections` array of a locale file as headed sections. Text pages keep their
  * copy in the locale file, so translating them needs no code change. [anchored]: each section gets the id of
- * [sectionAnchor], so a table of contents can link to it (design v2, ADR 0040).
+ * [sectionAnchor], so a table of contents can link to it (ADR 0040).
  */
 export function TextSections({ i18nKey, anchored = false }: { i18nKey: string; anchored?: boolean }) {
   const idPrefix = useId();

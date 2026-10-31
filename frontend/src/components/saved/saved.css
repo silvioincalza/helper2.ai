@@ -1,4 +1,4 @@
-/* Design v2 page head and saved page (ADR 0040, 10). Only semantic tokens. */
+/* Page head and saved page (ADR 0040, 10). Only semantic tokens. */
 .h2-page-head { border-bottom: 2px solid var(--ink); padding-bottom: var(--space-3); margin-bottom: var(--space-4); }
 .h2-page-head h1 { margin: 0 0 var(--space-2); font: 400 clamp(1.9rem, 2vw + 1.1rem, 2.6rem)/1.1 var(--font-display); letter-spacing: -0.015em; }
 .h2-page-head__lede { margin: 0; max-width: 60ch; font-size: 1.0625rem; color: var(--ink-2); }
