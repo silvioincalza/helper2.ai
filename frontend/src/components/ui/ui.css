@@ -41,7 +41,9 @@
 .h2-select-row:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 
 /* PicksBar: height reserved from the first render; one line when there is no pick. */
-.h2-picks { min-height: 110px; box-sizing: border-box; display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3) var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); }
+/* Reserved: the head, the line or the picks, and the footer (how the guide read it, the answer's details) each get
+   one row of target height, so neither the first steps nor the answer move the list under the bar. */
+.h2-picks { min-height: calc(2 * var(--space-3) + 3 * var(--target-min) + 2 * var(--space-2) + 2px); box-sizing: border-box; display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3) var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); }
 .h2-picks.is-none { min-height: 0; }
 .h2-picks > * { margin: 0; }
 .h2-picks__head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
@@ -49,7 +51,12 @@
 .h2-picks__question { flex: 1 1 12rem; min-width: 0; font: 400 16px/22px var(--font-display); color: var(--ink); overflow-wrap: anywhere; }
 .h2-picks__ai { padding: 2px 8px; border-radius: var(--radius-pill); border: 1px solid var(--border-strong); font: 500 12px/16px var(--font-sans); color: var(--ink-2); }
 .h2-picks__close { margin-left: auto; }
+.h2-picks__line, .h2-picks__list { min-height: var(--target-min); display: flex; flex-direction: column; justify-content: center; }
 .h2-picks__line { margin: 0; font: 400 14px/21px var(--font-sans); color: var(--ink-2); }
+.h2-picks__foot { min-height: var(--target-min); display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
+.h2-picks__foot > * { margin: 0; }
+.h2-picks__foot > :first-child { flex: 1 1 auto; }
+.h2-picks__foot > .h2-picks__note, .h2-picks__foot > details[open] { flex-basis: 100%; }
 .h2-picks__chips { display: flex; flex-wrap: wrap; gap: var(--space-2); list-style: none; margin: 0; padding: 0; }
 .h2-pick-chip { min-height: var(--target-min); text-decoration: none; }
 .h2-pick-chip__n { font: 600 12px/1 var(--font-mono); color: var(--accent-ink); }

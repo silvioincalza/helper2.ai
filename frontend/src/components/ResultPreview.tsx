@@ -38,7 +38,7 @@ function WhyItMatches({ card, pick }: { card: ResultCard; pick: GuidePick | unde
       </>
     ) : <p className="muted">{t('card.noDescription')}</p>;
   }
-  const { rec } = pick;
+  const { rec, model } = pick;
   return (
     <>
       <p className="badge-checked"><Icon name="check" />{t('guide.quoteChecked')}</p>
@@ -59,7 +59,7 @@ function WhyItMatches({ card, pick }: { card: ResultCard; pick: GuidePick | unde
       {rec.reasonCheck !== 'REMOVED' && rec.reason && (
         <details className="guide-reason" open>
           <summary>{t(rec.reasonCheck === 'SUPPORTED' ? 'guide.reasonSupported' : 'guide.reasonLabel')}</summary>
-          <p {...aiMark()}>{rec.reason}</p>
+          <p {...aiMark(model)}>{rec.reason}</p>
         </details>
       )}
     </>
