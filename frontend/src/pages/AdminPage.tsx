@@ -8,6 +8,7 @@ import { Pagination } from '@/components/Pagination';
 import { SignIn } from '@/components/SignIn';
 import { useMe } from '@/context/MeContext';
 import '@/components/saved/saved-v2.css';
+import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
 import { StatusPill, type StatusTone } from '@/components/ui/StatusPill';
 import { useApi } from '@/hooks/useApi';
 import { useRetry } from '@/hooks/useRetry';
@@ -73,8 +74,7 @@ export default function AdminPage() {
     return (
       <div className="h2-admin">
         <header className="h2-page-head"><h1>{t('admin.title')}</h1></header>
-        <p role="alert" className="state-box state-error"><Icon name="warn" /> {t('admin.forbidden')}</p>
-        <p><Link to="/" className="btn">{t('notFound.home')}</Link></p>
+        <StatePanel tone="error" level={2} title={t('admin.forbidden')} next={<Link to="/" className="btn">{t('notFound.home')}</Link>} />
       </div>
     );
   }
@@ -116,10 +116,7 @@ export default function AdminPage() {
           </label>
         </div>
         {items.loading ? <p role="status" className="muted">{t('common.loading')}</p> : items.error !== undefined ? (
-          <div role="alert" className="state-box state-error">
-            <p><Icon name="warn" /> {t('admin.loadError')}</p>
-            <button type="button" className="btn btn-primary" onClick={retryItems}><Icon name="refresh" /> {t('common.retry')}</button>
-          </div>
+          <StatePanel tone="error" level={3} title={t('admin.loadError')} next={<RetryButton onClick={retryItems} />} />
         ) : (items.data?.items ?? []).length === 0 ? <p className="muted">{t('admin.queueEmpty')}</p> : (
           <ul className="h2-saved__list" aria-labelledby="rq-h">
             {(items.data?.items ?? []).map((it) => (

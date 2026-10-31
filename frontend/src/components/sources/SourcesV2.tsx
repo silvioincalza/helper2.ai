@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { SourceInfo, SourceMode } from '@/api/types';
 import { ExternalLink } from '@/components/ExternalLink';
+import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
 import { TypeTag } from '@/components/ui/TypeTag';
 import { useSources } from '@/context/SourcesContext';
+import { useRetry } from '@/hooks/useRetry';
 import { formatDate } from '@/lib/format';
 import '@/components/saved/saved-v2.css';
 import './sources-v2.css';
@@ -29,6 +31,7 @@ export function sourceState(s: SourceInfo): SourceState {
 export function SourcesV2() {
   const { t, i18n } = useTranslation();
   const q = useSources();
+  const { retry, focusRef } = useRetry(q.reload, q.loading);
   const [mode, setMode] = useState<SourceMode | null>(null);
   const all = q.data ?? [];
   const modes = MODES.filter((m) => all.some((s) => s.mode === m));
@@ -72,13 +75,10 @@ export function SourcesV2() {
       )}
 
       <section aria-labelledby="all-h">
-        <h2 id="all-h" className="h2-sources__h">{t('sourcesV2.all')}</h2>
+        <h2 id="all-h" ref={focusRef} tabIndex={-1} className="h2-sources__h">{t('sourcesV2.all')}</h2>
         {q.loading && <p role="status">{t('common.loading')}</p>}
         {!q.loading && q.error !== undefined && (
-          <div role="alert" className="state-box state-error">
-            <p>{t('sourcesPage.error')}</p>
-            <button type="button" className="btn btn-primary" onClick={q.reload}>{t('common.retry')}</button>
-          </div>
+          <StatePanel tone="error" level={3} title={t('sourcesPage.error')} next={<RetryButton onClick={retry} />} />
         )}
         {q.data && (
           <>
