@@ -4,11 +4,11 @@ import './ui.css';
 
 /**
  * reading: the guide works ([candidates] once the search is counted, [understood] once it has read the question).
- * none: no pick. picks: the picks are in.
+ * none: no pick, with [reason] when the answer says why. picks: the picks are in.
  */
 export type PicksState =
   | { kind: 'reading'; candidates?: number | undefined; understood?: readonly string[] | undefined }
-  | { kind: 'none' }
+  | { kind: 'none'; reason?: string | undefined }
   | { kind: 'picks'; model?: string | null };
 
 /**
@@ -32,7 +32,7 @@ export function PicksBar({ state, titleRef, children }: { state: PicksState; tit
       ) : (
         <p className="h2-picks__line" role="status">
           {state.kind === 'none'
-            ? t('picks.none')
+            ? state.reason ?? t('picks.none')
             : state.candidates === undefined ? t('picks.readingResults') : t('picks.reading', { count: state.candidates })}
           {state.kind === 'reading' && (state.understood?.length ?? 0) > 0 && (
             <span className="h2-picks__understood"> · {t('picks.understood', { parts: state.understood!.join(', ') })}</span>
