@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>helper2.ai — When the guide answers</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;family=Space+Grotesk:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+.r{--bg:#f7f2e9;--surface:#fffdf8;--tint:#efe9dd;--quote:#fbefe2;--ink:#1b1c3f;--ink2:#35344f;--muted:#4f4b63;--border:#e7dfd0;--border2:#d3c7b2;--accent:#e06a1d;--on-accent:#1b1c3f;--accent-ink:#a8420a;--deep:#2d2e60;--ok-bg:#e3f3ee;--ok:#0f4d3c;--model-bg:#fdebd3;--model-ink:#7a3e00;--news-bg:#e6f0fb;--news-ink:#173f70;--lib-bg:#e6e7f5;--mcp-bg:#e3f3ee;min-height:100vh;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,sans-serif;font-size:16px;line-height:1.55}
+.r *{box-sizing:border-box}
+.r :focus-visible{outline:3px solid var(--deep);outline-offset:2px;border-radius:4px}
+.wrap{max-width:1240px;margin:0 auto;padding:32px 32px 56px}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;border-bottom:2px solid var(--ink);padding-bottom:14px}
+.top h1{font:400 clamp(1.6rem,1.5vw + 1rem,2.2rem)/1.1 'Space Grotesk',sans-serif;margin:0;letter-spacing:-0.01em}
+.replay{margin-left:auto;min-height:44px;display:inline-flex;align-items:center;gap:8px;padding:0 18px;border-radius:999px;border:0;background:var(--accent);color:var(--on-accent);font:600 14px Inter,sans-serif;cursor:pointer}
+.cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px;margin-top:24px}
+.slot{min-height:132px;margin-bottom:8px}
+.strip{border:1px solid var(--accent);background:var(--surface);border-radius:12px;padding:12px 14px}
+.strip-h{font:500 11px 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.1em;color:var(--ok);margin:0 0 8px}
+.pchips{display:flex;flex-wrap:wrap;gap:6px}
+.pchip{min-height:44px;display:inline-flex;align-items:center;gap:8px;padding:0 12px;border:1px solid var(--border2);border-radius:999px;background:var(--bg);color:var(--ink);font:500 13.5px Inter,sans-serif;cursor:pointer;text-align:left}
+.pchip:hover{border-color:var(--accent)}
+.pchip b{font:600 11px 'JetBrains Mono',monospace;color:var(--accent-ink)}
+.col.best{outline:2px dashed var(--accent);outline-offset:12px;border-radius:4px}
+button.row{cursor:pointer}
+.col-h{font:500 22px/1.2 'Space Grotesk',sans-serif;margin:0 0 4px}
+.col-sub{margin:0 0 12px;font-size:14px;color:var(--muted)}
+.status{display:flex;align-items:center;gap:10px;min-height:44px;padding:10px 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface);font-size:14px;color:var(--ink2);margin-bottom:12px}
+.status.done{border-color:var(--ok);background:var(--ok-bg);color:var(--ok);font-weight:600}
+.spin{width:14px;height:14px;border-radius:50%;border:2px solid var(--border2);border-top-color:var(--accent);animation:spin .9s linear infinite;flex:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+.bar{height:3px;background:var(--tint);border-radius:3px;overflow:hidden;margin:-6px 0 12px}
+.bar i{display:block;height:100%;width:40%;background:var(--accent);animation:slide 1.4s ease-in-out infinite}
+@keyframes slide{from{transform:translateX(-100%)}to{transform:translateX(250%)}}
+.divider{font:500 11px 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:14px 4px 6px}
+.row{display:flex;flex-direction:column;gap:6px;width:100%;text-align:left;padding:14px;border:1px solid transparent;border-radius:12px;background:none;color:inherit;font:inherit;margin-bottom:4px}
+.row.sel{background:var(--surface);border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.row.pick{background:var(--surface);border-color:var(--border2)}
+.row.flash{animation:flash 1.2s ease-out}
+@keyframes flash{from{background:var(--quote)}}
+.row-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tag{font:500 11px/1 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.06em;padding:5px 8px;border-radius:6px}
+.t-mcp{background:var(--mcp-bg);color:var(--ok)}.t-model{background:var(--model-bg);color:var(--model-ink)}.t-lib{background:var(--lib-bg);color:var(--deep)}.t-news{background:var(--news-bg);color:var(--news-ink)}
+.path{font:400 12px 'JetBrains Mono',monospace;color:var(--muted)}
+.badge{margin-left:auto;font:500 11px/1 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.06em;padding:5px 8px;border-radius:6px;background:var(--quote);color:var(--accent-ink);box-shadow:inset 0 0 0 1px var(--accent)}
+.row-h{font:500 18px/1.25 'Space Grotesk',sans-serif;color:var(--deep)}
+.why{font-size:13.5px;color:var(--ink2)}
+.you{font:600 11px Inter,sans-serif;color:var(--accent-ink)}
+@media (prefers-reduced-motion:reduce){.spin,.bar i,.row.flash{animation:none}}
+@media (max-width:1100px){.cols{grid-template-columns:minmax(0,1fr);gap:40px}}
+@media (max-width:640px){.wrap{padding:20px 16px 40px}.replay{margin-left:0}}
+</style>
+</helmet>
+<div class="r">
+  <main class="wrap">
+    <div class="top">
+      <h1>When the guide answers</h1>
+      <span style="font-size:14px;color:var(--muted)">Same search, two behaviours. The wait is cut from ~15 s to 4 s.</span>
+      <button type="button" class="replay" onClick="{{replay}}">↻ Replay</button>
+    </div>
+
+    <div class="cols">
+      <section aria-labelledby="a-h" class="col">
+        <h2 id="a-h" class="col-h">A · Move picks to the top</h2>
+        <p class="col-sub">The list re-orders when the answer arrives.</p>
+        <sc-if value="{{waiting}}" hint-placeholder-val="{{true}}"><div class="status" role="status"><span class="spin" aria-hidden="true"></span>Guide is reading 14 candidates…</div><div class="bar" aria-hidden="true"><i></i></div></sc-if>
+        <sc-if value="{{done}}" hint-placeholder-val="{{false}}"><div class="status done" role="status">✓ Guide answered · 3 picks moved to the top</div><p class="divider">Guide picks</p></sc-if>
+        <sc-for list="{{aRows}}" as="r" hint-placeholder-count="6">
+          <sc-if value="{{r.divBefore}}" hint-placeholder-val="{{false}}"><p class="divider">Other results</p></sc-if>
+          <div class="{{r.cls}}">
+            <span class="row-top"><span class="{{r.tag}}">{{r.typeLabel}}</span><span class="path">{{r.domain}}</span><sc-if value="{{r.isSel}}" hint-placeholder-val="{{false}}"><span class="you">You were reading this</span></sc-if><sc-if value="{{r.showBadge}}" hint-placeholder-val="{{false}}"><span class="badge">Pick #{{r.rank}}</span></sc-if></span>
+            <span class="row-h">{{r.title}}</span>
+            <sc-if value="{{r.showBadge}}" hint-placeholder-val="{{false}}"><span class="why">{{r.reason}}</span></sc-if>
+          </div>
+        </sc-for>
+      </section>
+
+      <section aria-labelledby="b-h" class="col">
+        <h2 id="b-h" class="col-h">B · Badge in place</h2>
+        <p class="col-sub">Nothing moves. Picks get a badge and a reason.</p>
+        <sc-if value="{{waiting}}" hint-placeholder-val="{{true}}"><div class="status" role="status"><span class="spin" aria-hidden="true"></span>Guide is reading 14 candidates…</div><div class="bar" aria-hidden="true"><i></i></div></sc-if>
+        <sc-if value="{{done}}" hint-placeholder-val="{{false}}"><div class="status done" role="status">✓ Guide answered · 3 picks marked below</div></sc-if>
+        <sc-for list="{{bRows}}" as="r" hint-placeholder-count="6">
+          <div class="{{r.cls}}">
+            <span class="row-top"><span class="{{r.tag}}">{{r.typeLabel}}</span><span class="path">{{r.domain}}</span><sc-if value="{{r.isSel}}" hint-placeholder-val="{{false}}"><span class="you">You were reading this</span></sc-if><sc-if value="{{r.showBadge}}" hint-placeholder-val="{{false}}"><span class="badge">Pick #{{r.rank}}</span></sc-if></span>
+            <span class="row-h">{{r.title}}</span>
+            <sc-if value="{{r.showBadge}}" hint-placeholder-val="{{false}}"><span class="why">{{r.reason}}</span></sc-if>
+          </div>
+        </sc-for>
+      </section>
+
+      <section aria-labelledby="c-h" class="col best">
+        <h2 id="c-h" class="col-h">C · Mix: badges + reserved picks bar</h2>
+        <p class="col-sub">Nothing moves. The status box is already there and turns into the picks bar.</p>
+        <div class="slot">
+          <sc-if value="{{waiting}}" hint-placeholder-val="{{true}}"><div class="status" role="status"><span class="spin" aria-hidden="true"></span>Guide is reading 14 candidates… picks will appear here</div><div class="bar" aria-hidden="true"><i></i></div></sc-if>
+          <sc-if value="{{done}}" hint-placeholder-val="{{false}}"><div class="strip" role="status"><p class="strip-h">✓ Guide picks · quotes checked</p><div class="pchips"><sc-for list="{{cPicks}}" as="p" hint-placeholder-count="3"><button type="button" class="pchip" onClick="{{p.go}}"><b>#{{p.rank}}</b>{{p.title}}</button></sc-for></div></div></sc-if>
+        </div>
+        <sc-for list="{{cRows}}" as="r" hint-placeholder-count="6">
+          <button type="button" class="{{r.cls}}" onClick="{{r.go}}" aria-current="{{r.cur}}">
+            <span class="row-top"><span class="{{r.tag}}">{{r.typeLabel}}</span><span class="path">{{r.domain}}</span><sc-if value="{{r.isSel}}" hint-placeholder-val="{{false}}"><span class="you">Selected</span></sc-if><sc-if value="{{r.showBadge}}" hint-placeholder-val="{{false}}"><span class="badge">Pick #{{r.rank}}</span></sc-if></span>
+            <span class="row-h">{{r.title}}</span>
+            <sc-if value="{{r.showBadge}}" hint-placeholder-val="{{false}}"><span class="why">{{r.reason}}</span></sc-if>
+          </button>
+        </sc-for>
+      </section>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1200}}'>
+var ITEMS = [
+  {id:'pgv',typeLabel:'Library',tag:'tag t-lib',title:'pgvector',domain:'github.com',rank:0,reason:''},
+  {id:'supa',typeLabel:'MCP server',tag:'tag t-mcp',title:'Supabase MCP server',domain:'github.com',rank:3,reason:'For projects that already run on Supabase.'},
+  {id:'pg',typeLabel:'MCP server',tag:'tag t-mcp',title:'PostgreSQL MCP server',domain:'github.com',rank:1,reason:'Read-only fits an agent that should query, never change, the data.'},
+  {id:'spec',typeLabel:'Article',tag:'tag t-news',title:'Model Context Protocol specification',domain:'modelcontextprotocol.io',rank:0,reason:''},
+  {id:'dbhub',typeLabel:'MCP server',tag:'tag t-mcp',title:'DBHub',domain:'github.com',rank:2,reason:'Pick it if you also need MySQL or SQL Server.'},
+  {id:'nomic',typeLabel:'Model',tag:'tag t-model',title:'nomic-embed-text-v1.5',domain:'huggingface.co',rank:0,reason:''}
+];
+var SELECTED = 'spec';
+class Component extends DCLogic {
+  componentDidMount() { this.start(); }
+  componentWillUnmount() { clearTimeout(this._t); }
+  start() { var self = this; clearTimeout(this._t); this.setState({ done: false, cSel: SELECTED }); this._t = setTimeout(function () { self.setState({ done: true }); }, 4000); }
+  renderVals() {
+    var self = this;
+    var done = !!(this.state && this.state.done);
+    var dress = function (i, moved) {
+      var isPick = i.rank > 0, isSel = i.id === SELECTED;
+      var cls = 'row' + (isSel ? ' sel' : '') + (done && isPick ? ' pick' : '') + (done && moved && isPick ? ' flash' : '');
+      return Object.assign({}, i, { isSel: isSel, showBadge: done && isPick, cls: cls, divBefore: false });
+    };
+    var a = ITEMS.slice();
+    if (done) {
+      var picks = a.filter(function (i) { return i.rank > 0; }).sort(function (x, y) { return x.rank - y.rank; });
+      var rest = a.filter(function (i) { return i.rank === 0; });
+      a = picks.concat(rest).map(function (i) { return dress(i, true); });
+      a[picks.length].divBefore = true;
+    } else {
+      a = a.map(function (i) { return dress(i, false); });
+    }
+    return {
+      waiting: !done, done: done,
+      replay: function () { self.start(); },
+      aRows: a,
+      bRows: ITEMS.map(function (i) { return dress(i, false); }),
+      cPicks: ITEMS.filter(function (i) { return i.rank > 0; }).sort(function (x, y) { return x.rank - y.rank; }).map(function (i) { return Object.assign({}, i, { go: function () { self.setState({ cSel: i.id }); } }); }),
+      cRows: ITEMS.map(function (i) {
+        var cSel = (self.state && self.state.cSel) || SELECTED;
+        var isPick = i.rank > 0, isSel = i.id === cSel;
+        return Object.assign({}, i, { isSel: isSel, cur: isSel ? 'true' : 'false', showBadge: done && isPick, cls: 'row' + (isSel ? ' sel' : '') + (done && isPick && !isSel ? ' pick' : ''), go: function () { self.setState({ cSel: i.id }); } });
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

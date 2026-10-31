@@ -1,7 +1,8 @@
 # 0040 — Frontend design v2: home page, results with preview, guide picks bar, design system v3
 
-**Status.** Accepted (2026-10-30). First decision for this design: it has never been deployed. Until it ships, the
-code still follows [0025](0025-frontend-one-box.md). **Builds on:** [0025](0025-frontend-one-box.md),
+**Status.** Accepted (2026-10-30), amended 2026-10-31 (points 6 and 10). Being built on `main`, page by page: staging
+shows each step, prod keeps the last release ([0028](0028-ci-cd.md)). Pages not built yet still follow
+[0025](0025-frontend-one-box.md). **Builds on:** [0025](0025-frontend-one-box.md),
 [0015](0015-ai-guide-evidence-gate.md), [0038](0038-ai-content-marking.md), [0039](0039-frontend-recent-answers-cache.md)
 
 ## Context
@@ -32,7 +33,9 @@ not a migration of something users already know.
 5. **The selected result is in the URL.** `?q=…&id=…`, changed with `history.replaceState`: a shared link opens the
    same result, and Back leaves the search instead of stepping through rows. An `id` that is not in the results
    selects the first row. The `id` is untrusted input: it only selects among results already on the page.
-6. **Guide picks bar, nothing moves.** A box above the list is there from the first render: "Guide is reading N
+6. **Guide picks bar, nothing moves.** The guide runs for a question, as in [0025](0025-frontend-one-box.md): four
+   words or more, or Shift+Enter. A name search ("pgvector") gets no picks bar and costs no model call
+   ([0017](0017-guide-cost-guard.md)). For a question, a box above the list is there from the first render: "Guide is reading N
    candidates… picks will appear here". Its height is reserved. When the answer arrives over SSE
    (`POST /api/v1/guide/stream`, [0015](0015-ai-guide-evidence-gate.md)), the same box shows the picks as chips
    (#1, #2, #3), labelled AI-written ([0038](0038-ai-content-marking.md)). The list never re-orders: each pick gets a
@@ -44,10 +47,10 @@ not a migration of something users already know.
    failed, all sources failed, 404. Each has a next step.
 9. **Footer says only "No ads."** Tracking cookies are planned later. The footer makes no claim about tracking, so it
    does not need to change when they come. Mission and Privacy keep their text until then.
-10. **Built behind `NEW_DESIGN_ENABLED`** in `frontend/src/lib/features.ts`, page by page: shared components and
-    tokens, Home, Results, Resource, States, Saved and Sources, Mission and Privacy. Nobody uses the old design yet,
-    so the flag does not protect users. It keeps `main` releasable while the pages are half done. When the last page
-    is done, the flag and the old components go in the same pull request.
+10. **Built on `main`, one pull request per step, no flag.** Shared components and tokens, Home, Results, Resource,
+    States, Saved and Sources, Mission and Privacy. Prod deploys only a release tag ([0028](0028-ci-cd.md)), so a
+    half-done design runs on staging and never reaches users before a release. The last step removes the old
+    components. The boards it follows are in `docs/design/v3/`.
 
 ## Consequences
 - Good: the user reads results at once and is never moved. The guide adds to the list, it does not reorder it.
@@ -57,7 +60,8 @@ not a migration of something users already know.
 - Bad: the picks bar takes about 110 px above the list, also when the guide has nothing to say (then one line).
 - Bad: two layouts for results (desktop preview, inline preview on a phone) to build and test.
 - Bad: the boards move. Hover, focus and tap pause them. A screen reader user gets a normal list.
-- Trade-off: while the flag lives, two designs sit in the code. Small pull requests per page keep that short.
+- Trade-off: until the last step, staging mixes new and old pages, and no release can be cut from `main` without
+  shipping that mix. Small pull requests per page keep that window short.
 
 ## Alternatives considered
 - **Look: minimal search page, editorial news front page, or developer console** — each drawn on its own. Minimal
@@ -70,30 +74,39 @@ not a migration of something users already know.
 - **Guide answer: move the picks to the top** — the best answer comes first, but the list jumps while the user reads.
 - **Guide answer: badges only** — nothing moves, but the best answer can sit at row 5, under the fold.
 - **Results only on `/`** — keeps one route, but home and results share a URL and a page component.
-- **Big-bang branch** without a flag — one review instead of seven, but a long-lived branch and one large merge.
+- **Big-bang branch** — one review instead of seven, but a long-lived branch and one large merge.
+- **A `NEW_DESIGN_ENABLED` flag** (the first plan) — `main` stays releasable, but the flag is a build constant and
+  staging and prod run the same image, so staging could not show the new design either.
 
 ## Code
-Built (step 1, shared parts; no page uses them while the flag is off):
-- `frontend/src/lib/features.ts` — `NEW_DESIGN_ENABLED`, off.
-- `frontend/src/styles/tokens.css` — the semantic tokens of `tokens.json` v3, each an alias of its base token.
+Built (step 1, shared parts):
+- `frontend/src/styles/tokens.css` — the semantic tokens of `tokens.json` v3, each an alias of its base token, and
+  its sizes (`content-wide` as `--maxw`, `header-height`, `list-max`, `board-height`) and motion (`board-loop`,
+  `radar-sweep`).
 - `frontend/src/components/ui/` — `TypeTag`, `StatusPill`, `ProofQuote`, `SourceTiles`, `SelectableRow` (the
   selected-row outline) and `PicksBar` (reserved height, waiting line, no-pick line, AI-written picks slot), with
   `ui.css` imported by the components, so a page without them loads none of it.
 - `frontend/src/hooks/useGuideStream.ts` — the guide stream for the question and refinement in the URL, shared by
   both designs.
 
+Built (step 2, Home):
+- `frontend/src/pages/HomePage.tsx` — the landing (radar hero, mark, title, the box, three examples) for an empty
+  box; the hero box does not search while typing. A search still shows the old results on `/` until step 3.
+- `frontend/src/components/Board.tsx`, `board.css` — a News or Events board: rows drawn twice for the loop, the copy
+  `aria-hidden` with its links out of the tab order; paused on hover, focus and tap; still under reduced motion.
+- `frontend/src/components/Radar.tsx` (`NewsBoard`), `NextEvents.tsx` (`EventsBoard`) — the two boards' rows.
+- `frontend/src/components/Layout.tsx` — header (a row of links on the landing; logo, box and tools elsewhere) and
+  the one-row footer.
+
 Planned:
 - `frontend/src/routes.tsx` — `/search`; `/` home only, `/?q=` shows results with a canonical link.
-- `frontend/src/pages/HomePage.tsx`, `components/Radar.tsx`, `components/NextEvents.tsx` — hero and the two boards.
 - `frontend/src/components/SearchResults.tsx`, `ResultCardView.tsx` — list, preview, inline preview, `id` in the URL.
 - `frontend/src/components/GuideAnswer.tsx` — the picks in `PicksBar` and the badges.
 - `frontend/src/components/SourceStatusPanel.tsx`, `Layout.tsx` — sources at the bottom, header, footer.
-- `tokens.css` — the sizes (`content-wide`, `board-height`, `list-max`) and motion (`board-loop`, `radar-sweep`) of
-  `tokens.json` v3, with the pages that use them.
 
 ## Diagrams
 [flow](../diagrams/flow-0040-frontend-design-v2.svg) · [sequence](../diagrams/sequence-0040-frontend-design-v2.svg)
 
 ## Roadmap
-[Frontend](../roadmap.md#7-frontend): build steps behind `NEW_DESIGN_ENABLED`; pause for touch users on the boards to
+[Frontend](../roadmap.md#7-frontend): the remaining build steps; pause for touch users on the boards to
 review against WCAG 2.2.2; consent banner and Privacy update before any tracking cookie.

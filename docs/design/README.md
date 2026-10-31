@@ -2,6 +2,24 @@
 
 Snapshot of the design work, saved next to the code. The live, editable version is one private Claude artifact, the design canvas **Helper2.ai**: https://claude.ai/artifact/87cNjechmtwvAm5snQeCtv. It has three pages: Design system, Prototype & website, App screens.
 
+## `v3/` — the agreed design (design v2, ADR 0040)
+
+The boards the frontend follows, saved from the canvas **helper2.ai — UI redesign proposals**
+(https://claude.ai/artifact/F8h6wJgm65oGymQRiy1Kzv), agreed on 30 October 2026. Each `.dc.html` is one board; `canvas.json`
+lays them out. Their colours and fonts are the design system's; the code takes them from `tokens.css` and the
+self-hosted fonts, never from the boards' hex values or Google Fonts links.
+
+| Board | What |
+|---|---|
+| `Mix` | Home: radar hero, the box, examples, News and Events boards |
+| `ResultsPreview` | Results: type tabs, list, guide picks bar, preview panel, sources grid |
+| `GuideArrival` | When the guide answers: option C (badges in place, reserved picks bar) was chosen |
+| `Resource` | Resource detail |
+| `States` | Loading, guide answering, empty, error, 404 |
+| `Saved`, `Sources`, `Mission`, `Privacy` | The other pages |
+
+The `canvas/` folder below is the older snapshot (v1, violet), kept for history.
+
 ## `system/` — the Helper2.ai design system
 
 One system for every feature. Start with [system/README.md](system/README.md) (principles, content rules, color roles, type tags, logo, pages, breakpoints, accessibility, components).

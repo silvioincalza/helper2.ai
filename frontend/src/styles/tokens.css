@@ -90,8 +90,14 @@
   --radius: var(--radius-md);
   --target-min: 44px;
   --box-height: 56px;
-  --maxw: 1120px;
+  --maxw: 1240px; /* content-wide */
+  --header-height: 72px;
+  --list-max: 460px;
+  --board-height: 380px;
+  --board-height-phone: 340px;
   --motion: 160ms;
+  --board-loop: 48s;
+  --radar-sweep: 7s;
 }
 
 :root[data-theme='dark'] {

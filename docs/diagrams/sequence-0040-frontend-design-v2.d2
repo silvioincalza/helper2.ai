@@ -1,5 +1,5 @@
 # Sequence: a search on the v2 results page, from the box to the guide picks and a shared link.
-# Shows results shown before the guide answers, the reserved picks bar, the SSE answer that adds badges without
+# Shows results shown before the guide answers (a question: four words or more), the reserved picks bar, the SSE answer that adds badges without
 # re-ordering, the selected result written to the URL with replaceState, and a shared link that opens the same result.
 # Source of truth: docs/adr/0040-frontend-design-v2.md, docs/adr/0015-ai-guide-evidence-gate.md (guide stream),
 #   frontend/src/hooks/useGuideStream.ts, frontend/src/components/ui/PicksBar.tsx.
@@ -16,11 +16,11 @@ search: "GET /api/v1/search" {class: ext}
 guide: "POST /api/v1/guide/stream\n(SSE)" {class: ext}
 
 search_first: Results first {
-  user -> page: "/search?q=postgres mcp server"
+  user -> page: "/search?q=an MCP server for my Postgres database"
   page -> search: "search"
   search -> page: "results"
   page -> user: "list at once; picks bar reserved:\n\"Guide is reading 14 candidates…\"" {class: hot}
-  page -> guide: "ask the guide (same query)"
+  page -> guide: "ask the guide (a question:\nfour words or more)"
 }
 
 reading: While the guide works {

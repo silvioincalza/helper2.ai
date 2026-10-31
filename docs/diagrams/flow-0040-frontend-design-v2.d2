@@ -1,5 +1,5 @@
 # Flowchart: what the results page does from the search to the guide picks, in design v2.
-# Shows the list shown at once, the reserved picks bar, the guide answer arriving over SSE (picks or no pick),
+# Shows the list shown at once, the guide asked only for a question, the reserved picks bar, the guide answer arriving over SSE (picks or no pick),
 # badges in place with no re-order, and the selected result kept in the URL with replaceState.
 # Source of truth: docs/adr/0040-frontend-design-v2.md (built: frontend/src/components/ui/PicksBar.tsx,
 #   frontend/src/hooks/useGuideStream.ts; planned: SearchResults.tsx, GuideAnswer.tsx, routes.tsx).
@@ -15,6 +15,8 @@ show: "Show the list at once.\nReserve the picks bar:\n\"Guide is reading N cand
 wide: "Screen wider than 860 px?" {class: decision}
 preview: "Preview on the right" {class: app}
 inline: "Preview inside the list,\nlink to /resource/:id" {class: app}
+question: "A question?\n(4+ words, or Shift+Enter)" {class: decision}
+noguide: "No picks bar,\nno model call" {class: end}
 guide: "POST /api/v1/guide/stream (SSE)" {class: ext}
 picks: "Guide found picks?" {class: decision}
 
@@ -46,7 +48,9 @@ start -> results -> show
 show -> wide
 wide -> preview: yes
 wide -> inline: no
-show -> guide: {class: hot}
+show -> question
+question -> noguide: no
+question -> guide: yes {class: hot}
 guide -> picks
 picks -> answer.bar: yes {class: hot}
 picks -> none: no

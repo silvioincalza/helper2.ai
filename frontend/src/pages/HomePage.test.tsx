@@ -10,13 +10,13 @@ describe('home: one page, one box', () => {
     renderApp('/');
     expect(screen.getAllByRole('search')).toHaveLength(1);
     expect(screen.queryByRole('radio')).not.toBeInTheDocument();
-    expect(screen.getByText(/A sentence, or Shift\+Enter, asks the guide/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Search' })).toBeDisabled();
     await userEvent.type(screen.getByRole('searchbox'), 'rag');
     expect(screen.getByRole('button', { name: 'Search' })).toBeEnabled();
     await userEvent.type(screen.getByRole('searchbox'), ' for my own notes');
     expect(screen.getByRole('button', { name: 'Ask the guide' })).toBeEnabled();
     expect(screen.queryByRole('button', { name: 'Search' })).not.toBeInTheDocument();
+    await settle();
   });
 
   it('a sentence asks the guide on Enter; Shift+Enter asks even for two words', async () => {
@@ -43,16 +43,28 @@ describe('home: one page, one box', () => {
     expect(new URLSearchParams(own?.search).get('path')).toBeNull();
   });
 
-  it('typing searches live once the user pauses, not on every letter', async () => {
+  it('on the results, typing searches live once the user pauses, not on every letter', async () => {
+    const m = mockApi();
+    const { params } = renderApp('/?q=mcp');
+    await screen.findByText('Acme Translator');
+    await userEvent.clear(screen.getByRole('searchbox'));
+    await userEvent.type(screen.getByRole('searchbox'), 'rag library');
+    await waitFor(() => expect(params().get('q')).toBe('rag library'), { timeout: 2000 });
+    await settle();
+    const typed = m.callsTo('GET', '/search').map((c) => new URLSearchParams(c.search).get('q'));
+    expect(typed).toEqual(['mcp', 'rag library']);
+  });
+
+  it('the home hero does not search while typing: Enter opens the results', async () => {
     const m = mockApi();
     const { params } = renderApp('/');
     await userEvent.type(screen.getByRole('searchbox'), 'rag library');
-    await waitFor(() => expect(params().get('q')).toBe('rag library'), { timeout: 2000 });
-    await screen.findByText('Acme Translator');
-    // One search for the typed text (the Radar reads /recent, not /search).
-    const typed = m.callsTo('GET', '/search');
-    expect(typed).toHaveLength(1);
-    expect(new URLSearchParams(typed[0]?.search).get('q')).toBe('rag library');
+    await new Promise((r) => setTimeout(r, 1000)); // past the live-search delay
+    expect(params().get('q')).toBeNull();
+    expect(m.callsTo('GET', '/search')).toHaveLength(0);
+    await userEvent.type(screen.getByRole('searchbox'), '{Enter}');
+    await waitFor(() => expect(params().get('q')).toBe('rag library'));
+    expect(await screen.findByText('Acme Translator')).toBeInTheDocument();
   });
 
   it('an example both searches and asks the guide', async () => {
@@ -67,10 +79,10 @@ describe('home: one page, one box', () => {
     expect(params().get('ask')).toBe('translate documents between languages for free');
   });
 
-  it('the empty home shows the Radar from the index: no live search, the last 7 days, one request', async () => {
+  it('the empty home shows News from the index: no live search, the last 7 days, one request', async () => {
     const m = mockApi();
     renderApp('/');
-    expect(await screen.findByRole('heading', { name: 'What’s new' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'News' })).toBeInTheDocument();
     expect(screen.queryByRole('combobox', { name: 'Topics' })).not.toBeInTheDocument();
     await screen.findByRole('link', { name: 'Fresh MCP server' });
     expect(m.callsTo('GET', '/search')).toHaveLength(0);
@@ -80,11 +92,15 @@ describe('home: one page, one box', () => {
     expect(m.callsTo('GET', '/recent')).toHaveLength(1);
   });
 
-  it('the hero links to the sources in one line, and how the guide works lives on /mission', async () => {
+  it('the landing is home only: hero, examples, News and Events; no source strip, no guide explainer', async () => {
     mockApi();
     renderApp('/');
-    expect(await screen.findByRole('link', { name: /^Searches \d+ disclosed sources?$/ })).toHaveAttribute('href', '/sources');
+    expect(await screen.findByRole('heading', { level: 1, name: /Describe what you need\. Get picks you can verify\./ })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'News' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Events' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /disclosed sources?/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'How the guide answers' })).not.toBeInTheDocument();
+    await settle();
   });
 
   it('the Radar says so when nothing has a stated date, and offers retry on error', async () => {
@@ -126,7 +142,9 @@ describe('home: one page, one box', () => {
 
   it('live search does not rewrite the box: a trailing space survives the URL update', async () => {
     mockApi();
-    const { params } = renderApp('/');
+    const { params } = renderApp('/?q=mcp');
+    await screen.findByText('Acme Translator');
+    await userEvent.clear(screen.getByRole('searchbox'));
     await userEvent.type(screen.getByRole('searchbox'), 'rag library ');
     await waitFor(() => expect(params().get('q')).toBe('rag library'), { timeout: 2000 });
     await screen.findByText('Acme Translator');
@@ -169,11 +187,9 @@ describe('home: one page, one box', () => {
     expect(await screen.findByRole('heading', { name: 'Try an example' })).toBeInTheDocument();
   });
 
-  it('the home strip, the search and the Sources page share one GET /sources', async () => {
+  it('the search and the Sources page share one GET /sources', async () => {
     const m = mockApi();
-    const { router } = renderApp('/');
-    await screen.findByRole('link', { name: /^Searches 2 disclosed sources$/ });
-    await act(() => router.navigate('/?q=translate'));
+    const { router } = renderApp('/?q=translate');
     await screen.findByText('Acme Translator');
     await act(() => router.navigate('/sources'));
     await screen.findByRole('table');
@@ -184,7 +200,7 @@ describe('home: one page, one box', () => {
   it('the loading feeds nest no status role inside their live regions', async () => {
     mockApi({ 'GET /recent': () => new Promise(() => undefined), 'GET /events/upcoming': () => new Promise(() => undefined) });
     renderApp('/');
-    expect(await screen.findByRole('heading', { name: 'What’s new' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'News' })).toBeInTheDocument();
     expect(document.querySelectorAll('[aria-busy="true"]').length).toBeGreaterThanOrEqual(2);
     expect(document.querySelectorAll('[aria-live] [role="status"]')).toHaveLength(0);
   });

@@ -15,7 +15,8 @@ export function actionFor(text: string): 'search' | 'ask' {
 }
 
 /**
- * The one entry point, in the header of every page. Typing searches every source live on the home page;
+ * The one entry point: the hero of the home page, in the header everywhere else. Typing searches every source live
+ * on the results;
  * "Ask the guide" (or Shift+Enter) also asks the AI guide. On any other page it takes you home with the query.
  * Everything lives in the URL: `q` = search, `ask` = the question the guide answered, plus the search filters.
  * `hero`: the large box at the top of the home page; elsewhere it sits in the header.
@@ -56,6 +57,8 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
   const onType = (value: string) => {
     setText(value);
     cancelLive();
+    // The home hero is home only: Enter or the button opens the results, typing does not.
+    if (hero) return;
     const q = clampQuery(value);
     if (q.length < MIN_LIVE_CHARS) return;
     timer.current = window.setTimeout(() => {

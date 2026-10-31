@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>helper2.ai — Privacy</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;family=Space+Grotesk:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+.r{--bg:#f7f2e9;--surface:#fffdf8;--tint:#efe9dd;--quote:#fbefe2;--ink:#1b1c3f;--ink2:#35344f;--muted:#4f4b63;--border:#e7dfd0;--border2:#d3c7b2;--accent:#e06a1d;--on-accent:#1b1c3f;--accent-ink:#a8420a;--deep:#2d2e60;--mark:#fde68a;--ok-bg:#e3f3ee;--ok:#0f4d3c;--ns:#7a3e00;min-height:100vh;display:flex;flex-direction:column;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,sans-serif;font-size:16px;line-height:1.55}
+.r.dark{--bg:#15162f;--surface:#1d1e3d;--tint:#26274f;--quote:#2a2440;--ink:#f3f1ea;--ink2:#d4d2e4;--muted:#aeacc6;--border:#2f3058;--border2:#45477a;--accent:#f08a42;--on-accent:#15162f;--accent-ink:#f4a46a;--deep:#c9cae3;--mark:#6b5310;--ok-bg:#123528;--ok:#86efac;--ns:#fbbf77;color-scheme:dark}
+.r *{box-sizing:border-box}
+a{color:var(--deep)}a:hover{color:var(--accent-ink)}
+.r :focus-visible{outline:3px solid var(--deep);outline-offset:2px;border-radius:4px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.wrap{width:100%;max-width:1240px;margin:0 auto;padding:0 32px}
+.hdr{border-bottom:1px solid var(--border);background:var(--surface)}
+.hdr-row{display:flex;align-items:center;gap:24px;min-height:72px;flex-wrap:wrap;padding-top:10px;padding-bottom:10px}
+.logo{display:inline-flex;align-items:center;gap:16px;text-decoration:none;color:var(--ink);min-height:44px}
+.mark{width:40px;height:40px;border-radius:12px;background:var(--accent);color:var(--on-accent);display:inline-flex;align-items:center;justify-content:center;flex:none}
+.mark svg{width:60%;height:60%}
+.logo-text{display:inline-flex;flex-direction:column;gap:2px}
+.word{font:500 1.6rem/1 'Space Grotesk',sans-serif;letter-spacing:-0.02em}
+.tagline{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);line-height:1.2}
+.box{display:flex;align-items:center;gap:10px;height:52px;padding:0 6px 0 18px;border:1px solid var(--border2);border-radius:999px;background:var(--bg);flex:1 1 380px;max-width:680px;color:var(--muted)}
+.box:focus-within{border-color:var(--accent)}
+.box input{flex:1;min-width:0;border:0;background:transparent;font:inherit;font-size:16px;color:var(--ink);outline:none;height:100%}
+.go{height:40px;padding:0 18px;border-radius:999px;border:0;background:var(--accent);color:var(--on-accent);font:600 14px Inter,sans-serif;cursor:pointer}
+.tools{margin-left:auto;display:flex;align-items:center;gap:6px}
+.icon-btn{width:44px;height:44px;border-radius:999px;border:0;background:transparent;color:var(--ink2);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.icon-btn:hover{background:var(--tint)}
+.foot{border-top:1px solid var(--border);background:var(--tint);font-size:13px;color:var(--muted)}
+.foot .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;padding-top:14px;padding-bottom:14px}
+.foot a{color:var(--muted)}
+/* text page */
+.page{display:flex;flex-wrap:wrap;gap:56px;padding-top:48px;padding-bottom:72px;flex:1;align-items:flex-start}
+.toc{flex:0 1 220px;min-width:0}
+.toc h2,.toc-m summary{font:500 12px 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:0 0 8px}
+.toc ol,.toc-m ol{list-style:none;margin:0;padding:0;border-top:2px solid var(--ink)}
+.toc a,.toc-m a{display:flex;align-items:center;min-height:44px;padding:6px 0;border-bottom:1px solid var(--border);color:var(--ink2);text-decoration:none;font-size:14px;line-height:1.35}
+.toc a:hover,.toc-m a:hover{color:var(--accent-ink)}
+.toc-m{display:none}
+.article{flex:1 1 560px;min-width:0;max-width:68ch;font-size:17.5px;line-height:1.75;color:var(--ink2)}
+.eyebrow{margin:0 0 10px;font:500 12.5px 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink)}
+.article h1{font:400 clamp(2.2rem,2.5vw + 1.3rem,3.25rem)/1.05 'Space Grotesk',sans-serif;letter-spacing:-0.02em;color:var(--ink);margin:0 0 10px}
+.lede{font:400 clamp(1.2rem,.6vw + 1rem,1.45rem)/1.45 'Space Grotesk',sans-serif;color:var(--ink);margin:0 0 16px}
+.updated{font:400 13px 'JetBrains Mono',monospace;color:var(--muted);margin:0 0 20px}
+.article section{border-top:1px solid var(--border2);padding-top:22px;margin-top:40px;scroll-margin-top:16px}
+.article h2{font:500 1.6rem/1.2 'Space Grotesk',sans-serif;letter-spacing:-0.01em;color:var(--ink);margin:0 0 14px}
+.article p{margin:0 0 16px}
+.article ul{margin:0;padding:0;list-style:none}
+.article li{position:relative;padding:0 0 14px 26px}
+.article li::before{content:'';position:absolute;left:4px;top:.72em;width:8px;height:8px;border-radius:2px;background:var(--accent)}
+.short{margin:8px 0 8px;padding:20px 22px 8px;border:1px solid var(--border);border-radius:14px;background:var(--surface)}
+.short h2{font:500 12px 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.1em;color:var(--accent-ink);margin:0 0 12px}
+.short ul{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 24px}
+.short li{font-size:15.5px;line-height:1.5;padding:0 0 12px 28px;color:var(--ink)}
+.short li::before{content:'';left:2px;top:.25em;width:16px;height:16px;border-radius:999px;background:var(--ok-bg);box-shadow:inset 0 0 0 5px var(--ok-bg),inset 0 0 0 16px var(--ok)}
+.contact{padding:14px 18px;border-radius:12px;background:var(--quote);font-size:16px;line-height:1.6;color:var(--ink)}
+.contact a{font-weight:600}
+@media (max-width:900px){.toc{display:none}.toc-m{display:block;margin:0 0 28px;border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:0 16px}.toc-m summary{display:flex;align-items:center;min-height:48px;margin:0;cursor:pointer}.toc-m ol{border-top:1px solid var(--border2);margin-bottom:8px}.page{gap:0;padding-top:28px}}
+@media (max-width:640px){.wrap{padding-left:16px;padding-right:16px}.hdr-row{gap:10px}.hdr .box{order:3;flex:1 1 100%}.article{font-size:17px}.short ul{grid-template-columns:minmax(0,1fr)}.short{padding:18px 16px 6px}}
+</style>
+</helmet>
+<div class="{{rootClass}}">
+  <header class="hdr">
+    <div class="wrap hdr-row">
+      <a href="Mix.dc.html" class="logo" aria-label="helper2.ai home"><span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="4.2" stroke-width="1.4" opacity="0.5"></circle><path d="M12 12 18.4 5.6"></path><path d="M16.2 11.1Q16.2 15 20.1 15Q16.2 15 16.2 18.9Q16.2 15 12.3 15Q16.2 15 16.2 11.1Z" fill="currentColor" stroke-width="1"></path></svg></span><span class="logo-text"><span class="word">helper2.ai</span><span class="tagline">AI on your radar</span></span></a>
+      <form class="box" role="search" onSubmit="{{noop}}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+        <label for="qp" class="sr">Search AI resources</label>
+        <input id="qp" type="search" placeholder="Search tools, models, MCP servers…">
+        <button type="submit" class="go">Search</button>
+      </form>
+      <div class="tools">
+        <button type="button" class="icon-btn" aria-label="{{themeLabel}}" onClick="{{toggleTheme}}">
+          <sc-if value="{{isDark}}" hint-placeholder-val="{{false}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg></sc-if>
+          <sc-if value="{{isLight}}" hint-placeholder-val="{{true}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"></path></svg></sc-if>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="wrap page">
+    <nav class="toc" aria-labelledby="toc-h">
+      <h2 id="toc-h">On this page</h2>
+      <ol>
+          <li><a href="#what">What we process and why</a></li>
+          <li><a href="#basis">Legal basis</a></li>
+          <li><a href="#cookies">Cookies and browser storage</a></li>
+          <li><a href="#who">Who receives data</a></li>
+          <li><a href="#keep">How long we keep data</a></li>
+          <li><a href="#delete">Deleting your account</a></li>
+          <li><a href="#rights">Your rights</a></li>
+          <li><a href="#changes">Changes</a></li>
+      </ol>
+    </nav>
+
+    <article class="article">
+      <details class="toc-m">
+        <summary>On this page</summary>
+        <ol>
+          <li><a href="#what">What we process and why</a></li>
+          <li><a href="#basis">Legal basis</a></li>
+          <li><a href="#cookies">Cookies and browser storage</a></li>
+          <li><a href="#who">Who receives data</a></li>
+          <li><a href="#keep">How long we keep data</a></li>
+          <li><a href="#delete">Deleting your account</a></li>
+          <li><a href="#rights">Your rights</a></li>
+          <li><a href="#changes">Changes</a></li>
+        </ol>
+      </details>
+
+      <p class="eyebrow">Privacy</p>
+      <h1>Privacy</h1>
+      <p class="updated">Last updated: 30 October 2026</p>
+      <p class="lede">Helper2.ai collects as little as possible. You can search and ask the guide without an account. There are no ads, no analytics and no tracking cookies, and we never sell data.</p>
+
+      <aside class="short" aria-labelledby="short-h">
+        <h2 id="short-h">In short</h2>
+        <ul>
+          <li>No account needed to search or ask the guide.</li>
+          <li>No ads, no analytics, no tracking cookies. We never sell data.</li>
+          <li>Search results cached up to 30 minutes, guide answers up to 24 hours.</li>
+          <li>Technical logs kept up to 3 months, then deleted.</li>
+          <li>Our servers are in Germany (European Union).</li>
+          <li>Guide questions go to NVIDIA Nemotron on Nebius Token Factory, processed in the EU. Some search sources are in the United States.</li>
+          <li>Some search text goes to Tavily in the United States, unless a stored result answers.</li>
+          <li>You can delete your account at any time. Unused accounts are deleted 24 months after the last sign-in.</li>
+        </ul>
+      </aside>
+
+      <p class="contact">Silvio Incalza, Switzerland, is responsible for this website. For any privacy question or request, write to <a href="mailto:helper2ai@incalza.me">helper2ai@incalza.me</a>.</p>
+
+      <section id="what" aria-labelledby="what-h">
+        <h2 id="what-h">What we process and why</h2>
+        <ul>
+          <li>Your searches and guide questions: the text you type, used only to answer you. It is not linked to your account. Search results are cached for up to 30 minutes and guide answers for up to 24 hours, keyed by the question. Please do not type personal or secret information.</li>
+          <li>Your account, if you sign in with GitHub: your GitHub user ID (a number), your display name and when you last signed in. We ask GitHub only for basic profile access. We never see your GitHub password or your e-mail address.</li>
+          <li>Saved items: if you are signed in, each saved resource (its link, title and type) and when you saved it, stored on our server with your account. If you are not signed in, they stay only in your browser; when you sign in, they move to your account.</li>
+          <li>Reports you send about a resource: the text you write, linked to your account if you are signed in.</li>
+          <li>Web search counters: Tavily searches per day and feature, under a keyed hash of your IP address and the date (no address stored; days cannot be linked), or your account ID once account limits are on.</li>
+          <li>Stored Tavily results, under a keyed hash of the question, not its text.</li>
+          <li>Technical data: your IP address is kept in memory for a short time to limit abuse (rate limits). Our servers and our web gateway also write technical logs, which can include your IP address and the pages you request. We keep these logs for up to 3 months to keep the service running and secure, then delete them.</li>
+        </ul>
+      </section>
+
+      <section id="basis" aria-labelledby="basis-h">
+        <h2 id="basis-h">Legal basis</h2>
+        <ul>
+          <li>Answering your searches and guide questions, your account and your saved items: to provide the service you ask for (Art. 6(1)(b) GDPR).</li>
+          <li>Rate limits, technical logs and the security cookie: our legitimate interest in keeping the service secure and available (Art. 6(1)(f) GDPR).</li>
+          <li>Web search counters and stored results: legitimate interest in a free service at bounded cost (Art. 6(1)(f) GDPR).</li>
+          <li>Reports you send: our legitimate interest in keeping the information on Helper2.ai correct (Art. 6(1)(f) GDPR).</li>
+        </ul>
+      </section>
+
+      <section id="cookies" aria-labelledby="cookies-h">
+        <h2 id="cookies-h">Cookies and browser storage</h2>
+        <ul>
+          <li>A session cookie, only when you sign in, so you stay signed in.</li>
+          <li>A security cookie (XSRF-TOKEN) that protects forms against cross-site request forgery.</li>
+          <li>Browser storage for your language, your light or dark theme, the AI tool you chose in the setup guide and, if you are not signed in, your saved items. This data stays in your browser and is not sent to us.</li>
+          <li>All of these are strictly necessary for the site to work. We use no advertising, analytics or third-party cookies.</li>
+        </ul>
+      </section>
+
+      <section id="who" aria-labelledby="who-h">
+        <h2 id="who-h">Who receives data</h2>
+        <ul>
+          <li>Search sources: to find results, your search text is sent to the sources that answer live, such as GitHub, Hugging Face, npm, arXiv and Tavily. The Sources page lists them all. Each provider handles the request under its own privacy policy, and some of them are in the United States.</li>
+          <li>Tavily (United States): your search text or the guide&#x27;s web query, unless a stored result answers.</li>
+          <li>AI models: guide questions, and searches written in a language other than English, are sent to NVIDIA Nemotron models on Nebius Token Factory, processed in the European Union. We send only the text, never your account data.</li>
+          <li>GitHub, when you choose to sign in with it.</li>
+          <li>Transfers abroad: some search sources, and GitHub, are in the United States. Where a provider is certified under the Swiss-US and EU-US Data Privacy Framework, the transfer relies on that certification. Otherwise, we send your search text abroad only because it is needed to give you the results you asked for (Art. 17(1)(b) FADP, Art. 49(1)(b) GDPR).</li>
+          <li>Hosting: our servers are in Germany (European Union).</li>
+        </ul>
+      </section>
+
+      <section id="keep" aria-labelledby="keep-h">
+        <h2 id="keep-h">How long we keep data</h2>
+        <ul>
+          <li>Cached searches and guide answers: up to 30 minutes and 24 hours.</li>
+          <li>Technical logs: up to 3 months.</li>
+          <li>Web search counters: 24 hours. Stored results: 7 days.</li>
+          <li>Your account and saved items: until you delete them, or 24 months after you last signed in. Then we delete the account and its saved items.</li>
+          <li>Reports: 12 months after they were handled. If your account is deleted, your reports stay without your name until then.</li>
+          <li>Database backups: 7 days. Anything deleted above is gone from the backups within 7 days.</li>
+        </ul>
+      </section>
+
+      <section id="delete" aria-labelledby="delete-h">
+        <h2 id="delete-h">Deleting your account</h2>
+        <p>When you are signed in, select your name at the top of the page, then &quot;Delete my account&quot;. We delete your account and your saved items at once and sign you out. Reports you sent stay, without your name. Signing in again later creates a new, empty account.</p>
+        <p>You can also write to the address above and we will delete it for you.</p>
+      </section>
+
+      <section id="rights" aria-labelledby="rights-h">
+        <h2 id="rights-h">Your rights</h2>
+        <p>Under the Swiss Federal Act on Data Protection (FADP) and, where it applies, the EU General Data Protection Regulation (GDPR), you can ask what data we hold about you, and ask us to correct, delete or export it. Write to the address above. You can also complain to the Swiss Federal Data Protection and Information Commissioner (FDPIC) or to the data protection authority in your country.</p>
+      </section>
+
+      <section id="changes" aria-labelledby="changes-h">
+        <h2 id="changes-h">Changes</h2>
+        <p>If this notice changes, we update this page and the date at the top.</p>
+      </section>
+
+    </article>
+  </div>
+
+  <footer class="foot"><div class="wrap"><span>helper2.ai · Switzerland · EU servers</span><a href="Mission.dc.html">Mission</a><a href="#">Sources</a><a href="Privacy.dc.html">Privacy</a><span style="margin-left:auto">No ads.</span></div></footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":3000}}'>
+class Component extends DCLogic {
+  st(k, d) { return (this.state && this.state[k] !== undefined) ? this.state[k] : d; }
+  renderVals() {
+    var self = this;
+    var dark = this.st('dark', !!this.props.dark);
+    return {
+      rootClass: dark ? 'r dark' : 'r', isDark: dark, isLight: !dark,
+      themeLabel: dark ? 'Theme: dark. Change to light' : 'Theme: light. Change to dark',
+      toggleTheme: function () { self.setState({ dark: !dark }); },
+      noop: function (e) { e.preventDefault(); }
+    };
+  }
+}
+</script>
+</body>
+</html>

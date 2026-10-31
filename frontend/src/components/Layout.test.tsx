@@ -12,9 +12,11 @@ describe('layout', () => {
     renderApp('/');
     await waitFor(() => expect(m.callsTo('GET', '/me')).toHaveLength(1));
     expect(within(screen.getByRole('banner')).queryByRole('link', { name: /Sign in/ })).not.toBeInTheDocument();
-    // Search is the home page and Saved is on the roadmap (lib/features.ts): no menu for visitors.
-    expect(screen.queryByRole('navigation', { name: 'Main' })).not.toBeInTheDocument();
+    // Saved is on the roadmap (lib/features.ts): the landing's menu has Sources and Mission only.
+    const nav = screen.getByRole('navigation', { name: 'Main' });
+    expect(within(nav).getAllByRole('link').map((a) => a.textContent)).toEqual(['Sources', 'Mission']);
     expect(screen.queryByRole('link', { name: 'Admin' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Saved' })).not.toBeInTheDocument();
   });
 
   it('the removed models page is not a route any more', async () => {
@@ -34,14 +36,19 @@ describe('layout', () => {
     expect(await screen.findByRole('link', { name: 'Admin' })).toBeInTheDocument();
   });
 
-  it('has skip link, landmarks and the coverage disclaimer', async () => {
+  it('has skip link, landmarks and the one-line footer', async () => {
     mockApi();
     renderApp('/');
     await settle();
     expect(screen.getByRole('link', { name: 'Skip to main content' })).toHaveAttribute('href', '#main');
     expect(screen.getByRole('banner')).toBeInTheDocument();
     expect(screen.getByRole('main')).toBeInTheDocument();
-    expect(screen.getByRole('contentinfo')).toHaveTextContent('searches the sources listed on the Sources page, not the whole web');
+    const footer = screen.getByRole('contentinfo');
+    expect(footer).toHaveTextContent('helper2.ai · Switzerland');
+    expect(footer).toHaveTextContent('No ads.');
+    for (const [name, href] of [['Mission', '/mission'], ['Sources', '/sources'], ['Privacy', '/privacy'], ['Terms', '/terms']] as const) {
+      expect(within(footer).getByRole('link', { name })).toHaveAttribute('href', href);
+    }
   });
 
   it('footer shows the release version and links to its notes in a new tab', async () => {
@@ -55,21 +62,29 @@ describe('layout', () => {
     expect(version).toHaveAttribute('target', '_blank');
   });
 
-  it('footer shows the copyright year and links to the repo and license in a new tab', async () => {
+  it('footer links to the source code in a new tab', async () => {
     mockApi();
     renderApp('/');
     await settle();
-    const footer = screen.getByRole('contentinfo');
-    expect(footer).toHaveTextContent(`© ${new Date().getFullYear()} Silvio Incalza`);
-    const repo = within(footer).getByRole('link', { name: /GitHub/ });
+    const repo = within(screen.getByRole('contentinfo')).getByRole('link', { name: /GitHub/ });
     expect(repo).toHaveAttribute('href', 'https://github.com/silvioincalza/helper2.ai');
     expect(repo).toHaveAccessibleName('Helper2.ai source code on GitHub (opens in a new tab)');
-    const license = within(footer).getByRole('link', { name: /Apache-2.0/ });
-    expect(license).toHaveAttribute('href', 'https://github.com/silvioincalza/helper2.ai/blob/main/LICENSE');
-    for (const link of [repo, license]) {
-      expect(link).toHaveAttribute('target', '_blank');
-      expect(link).toHaveAttribute('rel', 'noopener noreferrer');
-    }
+    expect(repo).toHaveAttribute('target', '_blank');
+    expect(repo).toHaveAttribute('rel', 'noopener noreferrer');
+  });
+
+  it('the landing header is a row of links; every other page has the logo and the one box', async () => {
+    mockApi();
+    const { router } = renderApp('/');
+    await settle();
+    const banner = screen.getByRole('banner');
+    expect(within(banner).queryByRole('searchbox')).not.toBeInTheDocument();
+    expect(within(banner).queryByRole('link', { name: 'Helper2.ai home' })).not.toBeInTheDocument();
+    await act(() => router.navigate('/mission'));
+    const next = screen.getByRole('banner');
+    expect(within(next).getByRole('link', { name: 'Helper2.ai home' })).toHaveAttribute('href', '/');
+    expect(within(next).getByRole('searchbox')).toBeInTheDocument();
+    await settle();
   });
 
   it('the theme button cycles follow system, light and dark, and remembers a fixed choice', async () => {
@@ -100,17 +115,15 @@ describe('layout', () => {
   it('moving to another page focuses its heading and announces it; new search params do not move focus', async () => {
     mockApi();
     const { router } = renderApp('/');
-    // Sources lives in the footer, not the header.
-    expect(within(screen.getByRole('banner')).queryByRole('link', { name: 'Sources' })).not.toBeInTheDocument();
     await userEvent.click(within(screen.getByRole('contentinfo')).getByRole('link', { name: 'Sources' }));
     const h1 = await screen.findByRole('heading', { level: 1, name: 'Sources' });
     await waitFor(() => expect(h1).toHaveFocus());
     expect(document.querySelector('[aria-live="polite"].sr-only')).toHaveTextContent('Sources');
 
-    await act(() => router.navigate('/'));
-    await screen.findByRole('heading', { level: 1, name: /Describe what you need/ });
-    await userEvent.type(screen.getByRole('searchbox'), 'rag{Enter}');
-    await waitFor(() => expect(router.state.location.search).toBe('?q=rag'));
+    await act(() => router.navigate('/?q=rag'));
+    await screen.findByText('Acme Translator');
+    await userEvent.type(screen.getByRole('searchbox'), ' db{Enter}');
+    await waitFor(() => expect(router.state.location.search).toBe('?q=rag+db'));
     expect(screen.getByRole('searchbox')).toHaveFocus();
     await settle();
   });

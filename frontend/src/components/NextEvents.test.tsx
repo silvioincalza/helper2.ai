@@ -26,13 +26,16 @@ describe('home page next events', () => {
       event('Far Future Conf', '2027-03-01T00:00:00Z', null, null),
     ] }) });
     renderApp('/');
-    const section = (await screen.findByRole('heading', { name: 'Next events' })).closest('section') as HTMLElement;
+    const section = (await screen.findByRole('heading', { name: 'Events' })).closest('section') as HTMLElement;
     const rows = await within(section).findAllByRole('listitem');
     expect(rows[0]).toHaveTextContent('NeurIPS 2026');
     expect(rows[0]).toHaveTextContent('Sydney, Australia');
-    expect(rows[0]).toHaveTextContent(/Dec.*6.*12.*2026|6.*12 Dec 2026/);
+    expect(rows[0]).toHaveTextContent('06.12');
+    expect(rows[0]).toHaveTextContent('In 6 weeks');
+    expect(within(rows[0] as HTMLElement).getByText('In 6 weeks').closest('.h2-status-pill')).toHaveClass('h2-status-pill--next');
     expect(within(rows[0] as HTMLElement).getByRole('link', { name: 'NeurIPS 2026' })).toHaveAttribute('href', expect.stringContaining('/resource/'));
-    expect(rows[1]).toHaveTextContent(/Jan 15, 2027|15 Jan 2027/);
+    expect(rows[1]).toHaveTextContent('15.01');
+    expect(within(rows[1] as HTMLElement).getByText('In 3 months').closest('.h2-status-pill')).toHaveClass('h2-status-pill--later');
     // More than three months after generatedAt (27 Oct 2026): not listed.
     expect(within(section).queryByText('Far Future Conf')).not.toBeInTheDocument();
   });
@@ -44,12 +47,15 @@ describe('home page next events', () => {
       event('Unlabelled Day', '2026-11-25T00:00:00Z', null, null),
     ] }) });
     renderApp('/');
-    const section = (await screen.findByRole('heading', { name: 'Next events' })).closest('section') as HTMLElement;
+    const section = (await screen.findByRole('heading', { name: 'Events' })).closest('section') as HTMLElement;
     const rows = await within(section).findAllByRole('listitem');
-    expect(rows[0]).toHaveTextContent('Hackathon · Online');
+    expect(rows[0]).toHaveTextContent('Hackathon');
+    expect(rows[0]).toHaveTextContent('Online');
     expect(rows[1]).toHaveTextContent('Meetup');
-    expect(rows[1]).not.toHaveTextContent('Meetup ·');
-    expect(rows[2]?.querySelector('.event-kind')).toBeNull();
+    expect(rows[1]).toHaveTextContent('Zurich, Switzerland');
+    expect(rows[1]).not.toHaveTextContent('Zurich, Switzerland ·');
+    // No stated kind: the resource type's own tag.
+    expect(rows[2]).toHaveTextContent('Event');
   });
 
   it('says so when no event has stated dates', async () => {

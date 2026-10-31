@@ -180,9 +180,11 @@ Open items:
   `typescript-eslint` 8.72 needs TypeScript <6.1 and `eslint-plugin-jsx-a11y` 6.10 needs ESLint <=9. Remove the
   ignore rules once both plugins support the new majors.
 
-- **Design v2** ([0040](adr/0040-frontend-design-v2.md)), built behind `NEW_DESIGN_ENABLED`, one pull request per step:
-  tokens and shared components, Home, Results, Resource, States, Saved and Sources, Mission and Privacy. The last
-  step removes the flag and the old components.
+- **Design v2** ([0040](adr/0040-frontend-design-v2.md)), built on `main` and shown on staging, one pull request per
+  step: tokens and shared components (done), Home (done), Results, Resource, States, Saved and Sources, Mission and
+  Privacy. The last step removes the old components. Cut no release from `main` until it is done.
+- The footer says "helper2.ai · Switzerland". The v3 board also says "EU servers": add it once the hosting region is
+  written down and checked.
 - The News and Events boards move on their own. Hover, focus and tap pause them; check this against WCAG 2.2.2 with
   a real touch and screen-reader test before launch.
 - Tracking cookies are planned. Before the first one: consent banner, cookie notice, Privacy page and record of
