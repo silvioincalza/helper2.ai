@@ -184,7 +184,7 @@ Open items:
   `typescript-eslint` 8.72 needs TypeScript <6.1 and `eslint-plugin-jsx-a11y` 6.10 needs ESLint <=9. Remove the
   ignore rules once both plugins support the new majors.
 
-- **Design v2** ([0040](adr/frontend/0040-frontend-design-v2.md)) is done and on staging. Prod gets it with the next release:
+- **Frontend design** ([0040](adr/frontend/0040-frontend-design.md)) is done and on staging. Prod gets it with the next release:
   cut one once staging looks right.
 - The News and Events boards move on their own. Hover, focus and tap pause them; check this against WCAG 2.2.2 with
   a real touch and screen-reader test before launch.
@@ -265,7 +265,7 @@ Fix an item or accept it; when it no longer holds, remove it.
 - The four-word rule sends a short question to search and a long keyword list to the guide; Shift+Enter always asks. ([ADR 0025](adr/frontend/0025-frontend-one-box.md))
 - No browser end-to-end tests: frontend tests run in jsdom only, also in CI. ([ADR 0025](adr/frontend/0025-frontend-one-box.md), [ADR 0028](adr/operations/0028-ci-cd.md))
 - A recent answer can be up to 5 minutes old (50 entries, 5 minutes, fixed). A new page that shows data the user changes must pass `cache: false`. ([ADR 0039](adr/frontend/0039-frontend-recent-answers-cache.md))
-- The picks bar takes about 110 px also when the guide has nothing to say, and shows no step-by-step progress; there is no button to close the guide's answer. Two result layouts to build and test. The boards move (hover, focus and tap pause them). ([ADR 0040](adr/frontend/0040-frontend-design-v2.md))
+- The picks bar takes about 110 px also when the guide has nothing to say, and shows no step-by-step progress; there is no button to close the guide's answer. Two result layouts to build and test. The boards move (hover, focus and tap pause them). ([ADR 0040](adr/frontend/0040-frontend-design.md))
 
 ### Operations
 
