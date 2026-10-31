@@ -146,6 +146,50 @@ class Resilience4jPoliciesTest {
         assertThat(calls).hasValue(2);
     }
 
+    @Test
+    void aClosedCircuitShowsItsStateWithoutAnOpeningTime() {
+        circuit("source-x");
+
+        assertThat(resilience.circuit("source-x")).contains(new Resilience.Circuit(Resilience.Circuit.State.CLOSED, null));
+    }
+
+    @Test
+    void anOpenCircuitShowsWhenItOpenedUntilItHalfOpens() {
+        circuit("source-x");
+        Instant opened = clock.now;
+        for (int i = 0; i < 2; i++) {
+            assertThatThrownBy(() -> resilience.call("source-x", this::failing));
+        }
+        clock.now = clock.now.plusSeconds(10);
+
+        assertThat(resilience.circuit("source-x")).contains(new Resilience.Circuit(Resilience.Circuit.State.OPEN, opened));
+
+        clock.now = clock.now.plusSeconds(21);
+        circuits.circuitBreaker("source-x").transitionToHalfOpenState();
+        assertThat(resilience.circuit("source-x")).contains(new Resilience.Circuit(Resilience.Circuit.State.HALF_OPEN, null));
+    }
+
+    @Test
+    void aCircuitCreatedBeforeThePoliciesIsWatchedToo() {
+        circuit("source-early");
+        Resilience late = new Resilience4jPolicies(circuits, bulkheads, retries);
+        Instant opened = clock.now;
+        for (int i = 0; i < 2; i++) {
+            assertThatThrownBy(() -> late.call("source-early", this::failing));
+        }
+
+        assertThat(late.circuit("source-early")).contains(new Resilience.Circuit(Resilience.Circuit.State.OPEN, opened));
+    }
+
+    @Test
+    void aPolicyWithoutACircuitHasNoCircuitState() {
+        bulkheads.bulkhead("guide", BulkheadConfig.custom().maxConcurrentCalls(1).build());
+
+        assertThat(resilience.circuit("guide")).isEmpty();
+        assertThat(resilience.circuit("source-nope")).isEmpty();
+        assertThat(Resilience.NONE.circuit("source-x")).isEmpty();
+    }
+
     private static void await(CountDownLatch latch) {
         try {
             latch.await(5, TimeUnit.SECONDS);

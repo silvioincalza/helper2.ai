@@ -1,7 +1,9 @@
 package ai.helper2.platform.resilience;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.function.Supplier;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Runs work under a named resilience policy (circuit breaker, bulkhead, retry; ADR 0033). The policy names are
@@ -31,6 +33,27 @@ public interface Resilience {
 
     /** Fails with {@link IllegalStateException} when no policy has this name, so a missing policy stops startup. */
     void require(String policy);
+
+    /**
+     * The state of the policy's circuit breaker in this replica, for the Sources page; empty when the policy has no
+     * circuit breaker. A circuit lives in one replica, so another replica can show another state.
+     */
+    default Optional<Circuit> circuit(String policy) {
+        return Optional.empty();
+    }
+
+    /** A circuit's state; {@code openedAt} is set only while it is {@link State#OPEN}. */
+    record Circuit(State state, @Nullable Instant openedAt) {
+
+        public enum State {
+            /** Calls go through. */
+            CLOSED,
+            /** Calls are refused without running until the open window ends. */
+            OPEN,
+            /** A few trial calls decide whether it closes again. */
+            HALF_OPEN,
+        }
+    }
 
     /** A place taken with {@link #trySlot}; releasing it again does nothing. */
     @FunctionalInterface
