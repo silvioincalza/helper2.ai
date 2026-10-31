@@ -714,7 +714,7 @@
   },
   "privacy": {
     "title": "Privacy",
-    "updated": "Last updated: 30 October 2026",
+    "updated": "Last updated: 31 October 2026",
     "lede": "Helper2.ai collects as little as possible. You can search and ask the guide without an account. There are no ads, no analytics and no tracking cookies, and we never sell data.",
     "contactIntro": "Silvio Incalza, Switzerland, is responsible for this website. For any privacy question or request, write to",
     "sections": [
@@ -766,6 +766,7 @@
           "Cached searches and guide answers: up to 30 minutes and 24 hours.",
           "Technical logs: up to 3 months.",
           "Web search counters: 24 hours. Stored results: 7 days.",
+          "English translations of searches typed in another language: 24 hours. Search vectors (the numbers we use to search by meaning): 7 days. Both are stored under a hash of the search, not its text.",
           "Your account and saved items: until you delete them, or 24 months after you last signed in. Then we delete the account and its saved items.",
           "Reports: 12 months after they were handled. If your account is deleted, your reports stay without your name until then.",
           "Database backups: 7 days. Anything deleted above is gone from the backups within 7 days."

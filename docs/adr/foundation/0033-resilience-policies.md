@@ -33,7 +33,7 @@ The domain (Kotlin) must not depend on the library that implements them ([0002](
    |---|---|---|---|
    | `source-<id>` (github, hf-models, hf-spaces, npm, arxiv, tavily, helper2-index, helper2-semantic, curated) | count window 20, at least 10 calls, opens at 50% failed or slow (over 2 s; Tavily 5 s), open 30 s, 2 trial calls | 20 calls per replica, no wait; catalog sources 6 (below the database pool of 10) | none: the search deadline is the budget |
    | `collector-<id>` (the seven Scout collectors) | count window 10, at least 5 calls, 50%, open 1 min, 1 trial call | none: the Scout runs one collector at a time | 3 attempts, 1 s then ×2 with ±50% jitter, only on a transient failure |
-   | `redis` (search cache, guide answers, tool guide answers, budget counters, rate limits, outbound throttle, session reads) | count window 10, at least 3 calls, 50%, open 30 s, 2 trial calls | none | none |
+   | `redis` (search cache, guide answers, tool guide answers, shared translations and query vectors, budget counters, rate limits, outbound throttle, session reads) | count window 10, at least 3 calls, 50%, open 30 s, 2 trial calls | none | none |
    | `llm-chat` (every chat-model call: guide, query translation, setup guide, Scout enrichment, awesome-list classifier) | count window 10, at least 5 calls, 50%, open 30 s, 2 trial calls; only provider errors count (`ModelErrors.NotFromProvider` ignores a malformed answer and a spent budget) | none | none: every attempt is charged to a daily budget ([0014](../guide/0014-llm-integration.md)) |
    | `llm-embed` (every embedding call: search queries and the indexer) | as `llm-chat`, every failure counts | none | none |
    | `guide` (guide questions) | none | 8 questions per replica, no wait, held per question with `trySlot` by `GuideLimits` from start to end or deadline ([0017](../guide/0017-guide-cost-guard.md)) | none |
@@ -113,7 +113,8 @@ The domain (Kotlin) must not depend on the library that implements them ([0002](
 - `backend/src/main/java/ai/helper2/sources/*/*Collector.java`, `support/TransientSourceFailure.java` — `collector-<id>` and what
   it retries; `support/HttpClients.java` — transient failures.
 - `backend/src/main/java/ai/helper2/search/cache/RedisSearchCache.java`, `guide/internal/RedisGuideAnswerStore.java`,
-  `setup/internal/RedisToolGuideCache.java`, `platform/llm/RedisCallCounter.java`, `platform/RedisRateLimiter.java` — `redis`.
+  `setup/internal/RedisToolGuideCache.java`, `platform/cache/RedisSharedCache.java`, `platform/llm/RedisCallCounter.java`,
+  `platform/RedisRateLimiter.java` — `redis`.
 - `backend/src/main/java/ai/helper2/platform/http/ObservedHttp.java` — one request per attempt.
 - `backend/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java`, `search/internal/SpringAiQueryTranslator.java`,
   `setup/internal/SpringAiToolGuideModel.java`, `scout/internal/SpringAiEnrichmentModel.java`,
