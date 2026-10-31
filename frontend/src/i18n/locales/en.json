@@ -596,6 +596,7 @@
     "close": "Close the guide answer",
     "quoteChecked": "Quote checked",
     "understood": "Understood as",
+    "requirementsAi": "Requirements AI-written",
     "remove": "Remove “{{part}}” and ask again",
     "intent": {
       "SUGGEST": "Suggestions",

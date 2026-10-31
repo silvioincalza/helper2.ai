@@ -49,7 +49,7 @@ describe('the guide picks bar', () => {
     s.end();
     const chips = await within(bar()).findByRole('list', { name: "The guide's picks, best first" });
     expect(within(chips).getByRole('button', { name: '#1 Postgres MCP' })).toBeInTheDocument();
-    expect(within(bar()).getByText('AI-written')).toBeInTheDocument();
+    expect(within(bar()).getByText('AI-written', { selector: '.h2-picks__head .h2-picks__ai' })).toBeInTheDocument();
     expect(within(bar()).queryByRole('status')).not.toBeInTheDocument();
   });
 
@@ -129,7 +129,8 @@ describe('the guide picks bar', () => {
     await waitFor(() => expect(within(bar()).getByRole('status')).toHaveTextContent('No pick: no result had a sentence that proves it'));
     expect(bar()).toHaveClass('is-none');
     expect(screen.queryByText(/Pick #/)).not.toBeInTheDocument();
-    expect(screen.queryByText('AI-written')).not.toBeInTheDocument();
+    // No pick, so no AI label on the bar; the planner's search terms, folded under it, carry their own.
+    expect(screen.queryByText('AI-written', { selector: '.h2-picks__head .h2-picks__ai' })).not.toBeInTheDocument();
   });
 
   it('when the model is not available, says so in the bar and marks nothing as AI-written', async () => {
@@ -267,6 +268,8 @@ describe('the guide intents in the bar (ADR 0032)', () => {
     s.push('event:understood\ndata:{"intent":"NEWEST","subjects":[],"window":null}\n\n');
     expect(await within(bar()).findByText('New resources')).toBeInTheDocument();
     expect(within(bar()).getByText('free')).toHaveAttribute('data-ai-generated', 'true');
+    // Marked in the HTML and labelled on screen (EU AI Act Art. 50): one label for the group.
+    expect(within(bar()).getByText('Requirements AI-written')).toBeVisible();
     // Nothing to remove while the guide works: the answer would replace the one it is writing.
     expect(within(bar()).queryByRole('button', { name: /Remove/ })).not.toBeInTheDocument();
     await act(async () => s.end());
@@ -278,6 +281,7 @@ describe('the guide intents in the bar (ADR 0032)', () => {
     expect(await within(bar()).findByText('New resources')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Remove “New resources” and ask again' })).not.toBeInTheDocument();
     expect(screen.getByText('Created 2026-09-28 – 2026-10-28').closest('[data-ai-generated]')).toBeNull();
+    expect(within(bar()).getByText('Requirements AI-written')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Remove “Created 2026-09-28 – 2026-10-28” and ask again' }));
     await waitFor(() => expect(params().getAll('drop')).toEqual(['window']));
     await waitFor(() => expect(m.callsTo('POST', '/guide/stream')[1]?.body).toEqual({ request: 'new tools', drop: ['window'] }));
@@ -287,6 +291,8 @@ describe('the guide intents in the bar (ADR 0032)', () => {
     const m = mockApi({ 'POST /guide/stream': () => sse({ ...BASE, intent: 'NEWEST' }) });
     renderApp('/search?q=new+tools&ask=new+tools');
     await userEvent.click(await screen.findByRole('button', { name: 'Remove “New resources” and ask again' }));
+    // No requirement, nothing the planner wrote among the chips: no AI label.
+    expect(within(bar()).queryByText('Requirements AI-written')).not.toBeInTheDocument();
     await waitFor(() => expect(m.callsTo('POST', '/guide/stream')[1]?.body).toEqual({ request: 'new tools', drop: ['intent'] }));
   });
 
@@ -335,7 +341,9 @@ describe('the guide intents in the bar (ADR 0032)', () => {
   it('marks the planner-written search query when the answering model failed', async () => {
     mockApi({ 'POST /guide/stream': () => sse({ ...BASE, status: 'LLM_UNAVAILABLE', aiContent: PLANNER, searchQuery: 'speech recognition' }) });
     renderApp('/search?q=speech&ask=speech+to+text');
-    expect(await screen.findByText(/speech recognition/)).toHaveAttribute('data-ai-model', 'nvidia/nemotron-nano');
+    const query = await screen.findByText(/speech recognition/);
+    expect(query).toHaveAttribute('data-ai-model', 'nvidia/nemotron-nano');
+    expect(query.nextElementSibling).toHaveTextContent('AI-written');
   });
 
   it('says in the bar when something the question names is not in our sources', async () => {

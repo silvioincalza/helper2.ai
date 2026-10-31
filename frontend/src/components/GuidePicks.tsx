@@ -161,6 +161,8 @@ function Understood({ reading, onRefine }: { reading: Reading; onRefine?: Refine
           )}
         </span>
       ))}
+      {/* Art. 50: the requirements are marked in the HTML and labelled on screen, once for the group. */}
+      {parts.some((p) => p.ai) && <span className="h2-picks__ai">{t('guide.requirementsAi')}</span>}
     </p>
   );
 }
@@ -211,6 +213,7 @@ function AnswerDetails({ answer }: { answer: GuideResponse }) {
       <p className="muted small">
         {/* The planner may have written the query even when the answering model failed (aiContent says so). */}
         <span {...(answer.aiContent ? aiMark(answer.aiContent.models[0]) : {})}>{t('guide.searchedFor', { q: answer.searchQuery })}</span>
+        {answer.aiContent && <>{' '}<span className="h2-picks__ai">{t('picks.aiWritten')}</span></>}
         {' · '}{t('guide.considered', { n: answer.candidatesConsidered })}
         {answer.status !== 'NEEDS_CLARIFICATION' && <>{' · '}{t(`guide.status.${answer.status}`)}</>}
         {rejected > 0 && <>{' · '}{t('guide.rejected', { count: rejected })}</>}
