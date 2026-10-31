@@ -1,4 +1,4 @@
-import { useId, type ReactNode } from 'react';
+import { useId, type ReactNode, type Ref } from 'react';
 import { useTranslation } from 'react-i18next';
 import { aiMark } from '@/lib/aiMark';
 import './ui.css';
@@ -17,14 +17,14 @@ export type PicksState =
  * its height reserved, so nothing below it moves when the answer arrives; with no pick it shrinks to one line.
  * The waiting and no-pick lines are a status, so a screen reader hears each change once: how the question was read,
  * then how many results the guide reads. The picks ([children]) sit under
- * an AI-written label and are marked machine-readable (ADR 0038).
+ * an AI-written label and are marked machine-readable (ADR 0038). [titleRef] lets Try again move focus to the heading.
  */
-export function PicksBar({ state, children }: { state: PicksState; children?: ReactNode }) {
+export function PicksBar({ state, titleRef, children }: { state: PicksState; titleRef?: Ref<HTMLHeadingElement>; children?: ReactNode }) {
   const { t } = useTranslation();
   const titleId = useId();
   return (
     <section className={`h2-picks is-${state.kind}`} aria-labelledby={titleId}>
-      <h2 id={titleId} className="h2-picks__title">{t('picks.title')}</h2>
+      <h2 id={titleId} ref={titleRef} tabIndex={-1} className="h2-picks__title">{t('picks.title')}</h2>
       {state.kind === 'picks' ? (
         <>
           <span className="h2-picks__ai">{t('picks.aiWritten')}</span>

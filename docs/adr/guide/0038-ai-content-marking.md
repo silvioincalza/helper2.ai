@@ -32,8 +32,14 @@ to the text.
    model is known (`src/lib/aiMark.ts`). The guide answer and the question back carry `data-ai-provider` and
    `data-ai-models`. Marked: reasons, requirements (chips and checks), the question back and its options, comparison
    aspects and cells, explanation sentences, the prompt, the planned search query, AI summaries and values extracted
-   by AI on the resource page. Quotes, titles and links are never marked: they come from the sources. Our own
-   labels and the subjects (the user's own words) are not marked.
+   by AI on the resource page, and the instructions of the setup guide's steps ([0031](0031-setup-guide.md);
+   `ToolGuide.model` names the model in the API). Quotes, titles, links and the setup guide's commands are never
+   marked: they come from the sources. Our own labels and the subjects (the user's own words) are not marked.
+   Every marked group also has a label on screen (Art. 50(1)): "AI-written" on the picks bar, on the reasons in the
+   result list and the preview, on the requirements ("Requirements AI-written", in the reading chips and over their
+   checks in a pick), on the planner's search terms, and on the comparison, the explanation and the prompt;
+   "Model's explanation" over a reason in a pick; "AI summary" and "Extracted by AI"; "Steps written by AI" in the
+   setup guide.
 4. **Explained in public.** The Mission page has a section "How we mark AI text".
 5. **No hidden characters in the text.** We do not add zero-width or other invisible characters.
 
@@ -41,8 +47,8 @@ to the text.
 - A crawler, a browser extension or a regulator can find AI-written text in the page and in the API without guessing.
 - The text itself stays clean: copy and paste, search and screen readers work as for any other text.
 - A new AI-written field goes into `AI_WRITTEN_FIELDS` and is marked in the UI.
-- The setup guide ([0031](0031-setup-guide.md)) only picks and orders passages from the tool's own documents, so it
-  writes no new text and is not marked.
+- The setup guide ([0031](0031-setup-guide.md)): the model writes each step's instruction, so the instruction is
+  labelled and marked; the quotes and commands it shows are copied from the tool's own documents and are not.
 
 ## Alternatives considered
 - **Invisible Unicode watermark in the text** — breaks copy and paste, search and screen readers, and anyone can

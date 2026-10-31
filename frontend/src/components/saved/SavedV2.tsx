@@ -7,6 +7,7 @@ import { TypeTag } from '@/components/ui/TypeTag';
 import { useBookmarks } from '@/context/BookmarksContext';
 import { formatDate, hostname } from '@/lib/format';
 import './saved-v2.css';
+import { resourcePath } from '@/lib/searchState';
 
 /**
  * Design v2 saved page (ADR 0040, 10): type tabs when there is more than one type, one row per saved resource
@@ -55,7 +56,7 @@ export function SavedV2() {
                   <span className="h2-saved__host">{hostname(b.url)}</span>
                   <span>{t('saved.savedAt', { date: formatDate(b.savedAt, i18n.language) })}</span>
                 </div>
-                <h2 className="h2-saved__title"><Link to={`/resource/${b.resourceId}`}>{b.title}</Link></h2>
+                <h2 className="h2-saved__title"><Link to={resourcePath(b.resourceId)}>{b.title}</Link></h2>
                 <div className="h2-saved__actions">
                   <ExternalLink url={b.url} showHost={false} />
                   <button type="button" className="btn" aria-label={t('saved.removeLabel', { title: b.title })} onClick={() => remove(b.resourceId)}>

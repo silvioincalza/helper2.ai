@@ -1,4 +1,4 @@
-import { askedQuestion, askedRefinement, askParams, clearFilters, filterValue, homeParams, MAX_QUERY, parseSearchParams, patchState, refinedParams, toApiParams, toggleFilter, toSearchParams } from './searchState';
+import { askedQuestion, askedRefinement, askParams, clearFilters, filterValue, homeParams, MAX_QUERY, parseSearchParams, patchState, refinedParams, resourcePath, toApiParams, toggleFilter, toSearchParams } from './searchState';
 
 describe('searchState', () => {
   const sp = new URLSearchParams('q=agents&type=MCP_SERVER&type=MODEL&license=unknown&openSource=true&updatedAfter=2026-01-01&sort=NEWEST&page=2');
@@ -100,5 +100,12 @@ describe('the guide refinement in the URL', () => {
     expect(askedRefinement(homeParams(state, 'new mcp servers', asked))).toEqual({ clarification: 'agents', drop: ['window', 'constraint:free'] });
     expect(askedRefinement(homeParams(state, 'old mcp servers', asked))).toEqual({ drop: [] });
     expect(homeParams(state, '', asked).has('clar')).toBe(false);
+  });
+});
+
+describe('the resource page path', () => {
+  it('encodes the id, so an id can never add a path segment or a query', () => {
+    expect(resourcePath('11111111-1111-5111-8111-111111111111')).toBe('/resource/11111111-1111-5111-8111-111111111111');
+    expect(resourcePath('../admin?x=1#y')).toBe('/resource/..%2Fadmin%3Fx%3D1%23y');
   });
 });

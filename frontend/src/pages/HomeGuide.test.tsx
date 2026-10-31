@@ -93,6 +93,8 @@ describe('guide on the one page', () => {
     const items = within(checks).getAllByRole('listitem');
     expect(items[0]).toHaveTextContent('open source: confirmed by the source: MIT licensed, open source');
     expect(items[1]).toHaveTextContent('free: not confirmed by the source');
+    // Art. 50: the planner wrote the requirements, so they carry a label over their checks.
+    expect(checks.previousElementSibling).toHaveTextContent('Requirements AI-written');
   });
 
   it('shows no requirement list when the need stated none', async () => {

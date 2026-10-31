@@ -5,7 +5,9 @@ import { api } from '@/api/client';
 import type { SetupClient, SetupGuide as Guide, SetupOption, ToolGuide } from '@/api/types';
 import { ExternalLink } from '@/components/ExternalLink';
 import { Icon } from '@/components/Icon';
+import { CopyButton } from '@/components/ui/CopyButton';
 import { useApi } from '@/hooks/useApi';
+import { useRetry } from '@/hooks/useRetry';
 import { formatDate } from '@/lib/format';
 
 const CLIENT_KEY = 'h2.setup.client';
@@ -24,26 +26,6 @@ function remember(id: string) {
   } catch {
     /* storage unavailable: the choice lasts for this page only */
   }
-}
-
-/** One copy button for a snippet or a command. */
-function CopyButton({ text, primary = false }: { text: string; primary?: boolean }) {
-  const { t } = useTranslation();
-  const [copied, setCopied] = useState(false);
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      /* clipboard unavailable: the text is still selectable */
-    }
-  }
-  return (
-    <button type="button" className={primary ? 'btn btn-primary' : 'btn btn-ghost'} onClick={() => void copy()}>
-      {copied ? t('setup.copied') : t('setup.copy')}
-    </button>
-  );
 }
 
 /** A heading at a level that fits where the panel sits (h2 on the detail page, h4 inside a result card). */
@@ -173,13 +155,14 @@ function SetupAnswer({ guide, locale, level }: { guide: Guide; locale: string; l
   );
 }
 
-/** The step-by-step guide, then the follow-up box; a question replaces the steps with its answer. */
+/** The step-by-step guide, then the follow-up box; a question replaces the steps with its answer. Try again keeps focus on the part's heading. */
 function StepsPart({ id, title, level }: { id: string; title: string; level: number }) {
   const { t } = useTranslation();
   const uid = useId();
   const [question, setQuestion] = useState('');
   const [asked, setAsked] = useState<string | null>(null);
   const q = useApi(`tool-guide/${id}/${asked ?? ''}`, (signal) => api.askResourceGuide(id, asked ? { question: asked } : {}, signal));
+  const { retry, focusRef } = useRetry(q.reload, q.loading);
   const name = { title, interpolation: { escapeValue: false } };
   function submit(e: FormEvent) {
     e.preventDefault();
@@ -188,13 +171,13 @@ function StepsPart({ id, title, level }: { id: string; title: string; level: num
   }
   return (
     <section className="setup-part" aria-labelledby={`${uid}-h`}>
-      <H level={level} id={`${uid}-h`} className="setup-part-h">{asked ? t('setup.answerTitle') : t('setup.stepsTitle')}</H>
+      <H level={level} id={`${uid}-h`} ref={focusRef} tabIndex={-1} className="setup-part-h">{asked ? t('setup.answerTitle') : t('setup.stepsTitle')}</H>
       {asked && <p className="small"><q>{asked}</q> · <button type="button" className="btn btn-ghost" onClick={() => { setAsked(null); setQuestion(''); }}>{t('setup.backToSteps')}</button></p>}
       <div aria-live="polite" aria-busy={q.loading}>
         {q.loading ? (
           <p className="muted" role="status">{t(asked ? 'setup.answering' : 'setup.reading')}</p>
         ) : q.error !== undefined || !q.data ? (
-          <div role="alert"><p>{t('setup.stepsError')}</p><button type="button" className="btn" onClick={q.reload}>{t('common.retry')}</button></div>
+          <div role="alert"><p>{t('setup.stepsError')}</p><button type="button" className="btn" onClick={retry}>{t('common.retry')}</button></div>
         ) : (
           <ToolSteps guide={q.data} title={title} level={level + 1} />
         )}

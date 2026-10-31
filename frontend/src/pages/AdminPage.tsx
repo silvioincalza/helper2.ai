@@ -9,6 +9,7 @@ import { useMe } from '@/context/MeContext';
 import { useApi } from '@/hooks/useApi';
 import { useTitle } from '@/hooks/useTitle';
 import { formatDate } from '@/lib/format';
+import { resourcePath } from '@/lib/searchState';
 
 /** How often the run listing is reloaded while a Scout run is RUNNING. */
 export const RUN_POLL_MS = 3000;
@@ -95,7 +96,7 @@ export default function AdminPage() {
             {(items.data?.items ?? []).map((it) => (
               <li key={it.id} className="card">
                 <p><span className="badge">{t(`admin.kind.${it.kind}`)}</span>{' '}
-                  {it.resourceId ? <Link to={`/resource/${it.resourceId}`}>{it.resourceTitle ?? it.resourceId}</Link> : null}
+                  {it.resourceId ? <Link to={resourcePath(it.resourceId)}>{it.resourceTitle ?? it.resourceId}</Link> : null}
                 </p>
                 <p>{it.reason}</p>
                 {it.details && <p className="muted small">{it.details}</p>}

@@ -28,7 +28,7 @@ import { useTitle } from '@/hooks/useTitle';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
 import { SAVED_ENABLED } from '@/lib/features';
 import { displayHost, guidePicks, picksById, selectedResult, type GuidePick } from '@/lib/selection';
-import { activeFilterCount, askedQuestion, clampQuestion, clearFilters, homeParams, isSelected, parseSearchParams, patchState, toApiParams, toggleFilter, type ResultsView, type SearchState } from '@/lib/searchState';
+import { activeFilterCount, askedQuestion, clampQuestion, clearFilters, homeParams, isSelected, parseSearchParams, patchState, toApiParams, toggleFilter, type ResultsView, type SearchState, resourcePath } from '@/lib/searchState';
 import { useSources } from '@/context/SourcesContext';
 import { ListedBy, ResultFacts } from './ResultFacts';
 import './results-v2.css';
@@ -318,7 +318,7 @@ function Preview({ card, pick, stale, inline = false }: { card: ResultCard; pick
   const button = useRef<HTMLButtonElement>(null);
   const location = useLocation();
   // The resource page links back to this search and shows the same checked sentence.
-  const detail = { pathname: `/resource/${card.id}` };
+  const detail = { pathname: resourcePath(card.id) };
   const back = new URLSearchParams(location.search);
   back.set('id', card.id);
   const detailState = { from: `${location.pathname}?${back.toString()}`, quote: pick?.quote ?? null };

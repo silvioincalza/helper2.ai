@@ -1,10 +1,11 @@
 # Flowchart: how one piece of text is marked as AI-written, in the API and in the page.
 # Shows the guide answer marker (aiContent only when a model wrote text), the catalog origins that already say
-# AI_SUMMARY or AI_EXTRACTED, and the page attributes that follow from them. Quotes, titles and links stay unmarked.
+# AI_SUMMARY or AI_EXTRACTED, the setup guide's step instructions, and the page attributes that follow from them.
+# Quotes, titles, links and the setup guide's commands stay unmarked.
 # Source of truth: backend/src/main/java/ai/helper2/guide/web/GuideDtoMapper.java (aiContent, AI_WRITTEN_FIELDS),
-#   api/openapi.yaml (AiContentMarker, GuideResponse.aiContent, ValueOrigin),
+#   api/openapi.yaml (AiContentMarker, GuideResponse.aiContent, ValueOrigin, ToolGuide.model),
 #   frontend/src/lib/aiMark.ts, frontend/src/components/guide/GuideAnswer.tsx, ResultCardView.tsx,
-#   frontend/src/pages/ResourcePage.tsx.
+#   frontend/src/pages/ResourcePage.tsx, frontend/src/components/SetupGuide.tsx.
 # Render: cd docs/diagrams && d2 fmt flow-0038-ai-content-marking.d2 && d2 flow-0038-ai-content-marking.d2 flow-0038-ai-content-marking.svg
 
 ...@style
@@ -34,7 +35,9 @@ catalog: Catalog value (card, assertion, summary) {
   origin -> plain: no
 }
 
-source: "Quote, title, link,\nsource URL" {class: ext}
+setup: "Setup guide step (ToolGuide):\nthe instruction is written by the model,\nToolGuide.model names it" {class: app}
+
+source: "Quote, title, link, source URL,\nsetup guide command" {class: ext}
 unmarked: "Never marked:\nit comes from the source" {class: end}
 
 page: Page (aiMark) {
@@ -50,7 +53,9 @@ page: Page (aiMark) {
 text -> kind
 kind -> guide.used: "guide"
 kind -> catalog.origin: "catalog"
+kind -> setup: "setup guide"
 kind -> source: "source"
 source -> unmarked
 guide.marker -> page.field: {class: hot}
 catalog.ai -> page.field
+setup -> page.field
