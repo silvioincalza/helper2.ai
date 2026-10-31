@@ -21,6 +21,10 @@ networkPolicy:
     otlp:
       namespace: observability
 app:
+  # GitHub sign-in (ADR 0023, 0035): end users on helper2.incalza.me, the owner on helper2-admin.incalza.me.
+  # Needs H2_GITHUB_OAUTH_CLIENT_ID, H2_GITHUB_OAUTH_CLIENT_SECRET and H2_ADMINS in OpenBao ci/staging, or the app
+  # does not start.
+  springProfiles: llm-nebius,oauth-github
   tracing:
     export: true
     endpoint: http://alloy.observability.svc:4318/v1/traces
