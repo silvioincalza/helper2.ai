@@ -8,7 +8,7 @@ import { Icon } from '@/components/Icon';
 import { PicksBar, type PicksState } from '@/components/ui/PicksBar';
 import type { GuideStream } from '@/hooks/useGuideStream';
 import { aiMark } from '@/lib/aiMark';
-import type { Refinement } from '@/lib/searchState';
+import { resourcePath, type Refinement } from '@/lib/searchState';
 
 /** One of the guide's picks: its place (#1, #2, #3), the recommendation behind it and the model that wrote its reason. */
 export interface GuidePick {
@@ -110,7 +110,7 @@ export function GuidePicks({ guide, picks, listed, onPick, onClose }: {
                   <span className="h2-pick-chip__n">#{n}</span> {rec.title}
                 </button>
               ) : (
-                <Link className="chip h2-pick-chip" to={`/resource/${rec.resourceId}`}>
+                <Link className="chip h2-pick-chip" to={resourcePath(rec.resourceId)}>
                   <span className="h2-pick-chip__n">#{n}</span> {rec.title}
                 </Link>
               )}
@@ -242,7 +242,7 @@ function ComparisonTable({ comparison }: { comparison: NonNullable<GuideResponse
             <th scope="col">{t('guide.comparison.aspect')}</th>
             {comparison.subjects.map((s) => (
               <th key={s.key} scope="col">
-                {s.resourceId ? <Link to={`/resource/${s.resourceId}`}>{s.title ?? s.name}</Link> : <>{s.name} <span className="muted small">({t('guide.comparison.notFound')})</span></>}
+                {s.resourceId ? <Link to={resourcePath(s.resourceId)}>{s.title ?? s.name}</Link> : <>{s.name} <span className="muted small">({t('guide.comparison.notFound')})</span></>}
               </th>
             ))}
           </tr>
@@ -277,7 +277,7 @@ function ExplanationBlock({ explanation }: { explanation: NonNullable<GuideRespo
       <ol className="plain-list">
         {explanation.sentences.map((x, i) => (
           <li key={i}>
-            <span {...aiMark()}>{x.text}</span> <Link to={`/resource/${x.resourceId}`} className="small">{x.title}</Link>
+            <span {...aiMark()}>{x.text}</span> <Link to={resourcePath(x.resourceId)} className="small">{x.title}</Link>
             <q>{x.quote}</q>
           </li>
         ))}
@@ -310,7 +310,7 @@ function PromptBox({ text, basedOn }: { text: string; basedOn: { resourceId: str
         <p className="small guide-prompt-based">
           {t('guide.basedOn')}{' '}
           {basedOn.map((b, i) => (
-            <span key={b.resourceId}>{i > 0 && ', '}<Link to={`/resource/${b.resourceId}`}>{b.title}</Link></span>
+            <span key={b.resourceId}>{i > 0 && ', '}<Link to={resourcePath(b.resourceId)}>{b.title}</Link></span>
           ))}
         </p>
       )}

@@ -8,6 +8,7 @@ import { TypeTag } from '@/components/ui/TypeTag';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
 import { SAVED_ENABLED } from '@/lib/features';
 import { hostname } from '@/lib/format';
+import { resourcePath } from '@/lib/searchState';
 import { FreshnessBadge, ModeBadge, OriginLabel } from './Badges';
 import { BookmarkButton } from './BookmarkButton';
 import { FactList, WorksWith } from './CardFacts';
@@ -39,7 +40,7 @@ export function DetailsLink({ card }: { card: ResultCard }) {
   const { t } = useTranslation();
   const { pathname, search } = useLocation();
   const state: FromResults = { from: `${pathname}${search}` };
-  return <Link to={`/resource/${card.id}`} state={state}>{t('preview.details')} →</Link>;
+  return <Link to={resourcePath(card.id)} state={state}>{t('preview.details')} →</Link>;
 }
 
 /**
