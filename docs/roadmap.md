@@ -40,9 +40,10 @@ Items are grouped by the order in which they matter. Inside a group, the first i
   `oauth-github` profile on prod ([ADR 0023](adr/edge/0023-identity-and-admin.md)).
 - Turn on the registered Tavily tier (more web searches per day for signed-in users) once that sign-in is live
   ([ADR 0037](adr/search/0037-tavily-store-and-daily-quota.md)).
-- Admin back office on `admin.helper2.ai`, reachable only through WireGuard via Traefik, with no app-level
-  network filter. Not built yet: today `/admin` is served on the public hosts and protected only by sign-in
-  ([ADR 0023](adr/edge/0023-identity-and-admin.md)).
+- Admin host cutover ([ADR 0035](adr/edge/0035-admin-host.md)): the app and the chart are ready (admin port 8082,
+  Service `helper2-admin`). Left: add the admin callbacks to the GitHub app, apply the platform's
+  `helper2-edge` branch (incalza-me-infra) with the DNS switch, turn on `oauth-github` and `H2_ADMINS`, then
+  remove `cloudflared` from the chart. Staging first.
 
 ### Quality gates
 - **Browser end-to-end tests (skipped for now, owner decision 27 Oct 2026).** No browser journey is automated,
@@ -185,7 +186,7 @@ Open items:
   `typescript-eslint` 8.72 needs TypeScript <6.1 and `eslint-plugin-jsx-a11y` 6.10 needs ESLint <=9. Remove the
   ignore rules once both plugins support the new majors.
 
-- **Design v2** ([0040](adr/frontend/0040-frontend-design-v2.md)) is done and on staging. Prod gets it with the next release:
+- **Frontend design** ([0040](adr/frontend/0040-frontend-design.md)) is done and on staging. Prod gets it with the next release:
   cut one once staging looks right.
 - The News and Events boards move on their own. Hover, focus and tap pause them; check this against WCAG 2.2.2 with
   a real touch and screen-reader test before launch.
@@ -266,7 +267,7 @@ Fix an item or accept it; when it no longer holds, remove it.
 - The four-word rule sends a short question to search and a long keyword list to the guide; Shift+Enter always asks. ([ADR 0025](adr/frontend/0025-frontend-one-box.md))
 - No browser end-to-end tests: frontend tests run in jsdom only, also in CI. ([ADR 0025](adr/frontend/0025-frontend-one-box.md), [ADR 0028](adr/operations/0028-ci-cd.md))
 - A recent answer can be up to 5 minutes old (50 entries, 5 minutes, fixed). A new page that shows data the user changes must pass `cache: false`. ([ADR 0039](adr/frontend/0039-frontend-recent-answers-cache.md))
-- The picks bar takes about 110 px also when the guide has nothing to say, and shows no step-by-step progress; there is no button to close the guide's answer. Two result layouts to build and test. The boards move (hover, focus and tap pause them). ([ADR 0040](adr/frontend/0040-frontend-design-v2.md))
+- The picks bar takes about 110 px also when the guide has nothing to say, and shows no step-by-step progress; there is no button to close the guide's answer. Two result layouts to build and test. The boards move (hover, focus and tap pause them). ([ADR 0040](adr/frontend/0040-frontend-design.md))
 
 ### Operations
 

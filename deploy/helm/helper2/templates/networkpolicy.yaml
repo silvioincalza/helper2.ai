@@ -1,5 +1,5 @@
 # Ingress: nothing for any pod here (cloudflared and pg-backup stay at that), then allowed per workload
-# below. app <- the edge (cloudflared, or the Ingress controller's namespace) on 8080, <- the metrics
+# below. app <- the edge: cloudflared on 8080, the Ingress controller's namespace on 8080 and the admin port; <- the metrics
 # scraper's namespace (networkPolicy.metricsNamespace) on 8081; postgres <- app and pg-backup;
 # redis <- app.
 apiVersion: networking.k8s.io/v1
@@ -23,15 +23,25 @@ metadata:
 spec:
   podSelector: { matchLabels: { app: helper2 } }
   policyTypes: [Ingress]
-  {{- if or .Values.cloudflared.enabled .Values.ingress.enabled .Values.networkPolicy.metricsNamespace }}
+  {{- if .Values.ingress.enabled }}{{ $_ := required "ingress.controllerNamespace is required" .Values.ingress.controllerNamespace }}{{ end }}
+  {{- if or .Values.cloudflared.enabled .Values.ingress.controllerNamespace .Values.networkPolicy.metricsNamespace }}
   ingress:
     {{- if .Values.cloudflared.enabled }}
+    # The tunnel is the public edge: the public port only, never the admin port.
     - from: [{ podSelector: { matchLabels: { app: cloudflared } } }]
       ports: [{ port: 8080, protocol: TCP }]
     {{- end }}
-    {{- if .Values.ingress.enabled }}
-    - from: [{ namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: {{ required "ingress.controllerNamespace is required" .Values.ingress.controllerNamespace }} } } }]
-      ports: [{ port: 8080, protocol: TCP }]
+    {{- with .Values.ingress.controllerNamespace }}
+    - from:
+        - namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: {{ . }} } }
+          {{- with $.Values.ingress.controllerPodLabels }}
+          podSelector: { matchLabels: {{ toJson . }} }
+          {{- end }}
+      ports:
+        - { port: 8080, protocol: TCP }
+        {{- if gt (int $.Values.app.adminPort) 0 }}
+        - { port: {{ $.Values.app.adminPort }}, protocol: TCP }
+        {{- end }}
     {{- end }}
     {{- with .Values.networkPolicy.metricsNamespace }}
     - from: [{ namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: {{ . }} } } }]

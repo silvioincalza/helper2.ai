@@ -36,13 +36,15 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
    Ingress controller's namespace reach the app. Platform settings (registry, storage classes, tunnel,
    tracing, scraper) are values, set for the hosted environments in `values-<env>.yaml`
    ([deploy/k8s/README.md](../../../deploy/k8s/README.md)).
-5. **Ports.** The app serves the site and API on 8080 (the only Service port) and Actuator on 8081
-   (`H2_MANAGEMENT_PORT`). Probes and the Prometheus scrape use 8081, which the tunnel never reaches.
+5. **Ports.** The app serves the site and API on 8080 (Service `helper2`), the back office on 8082 (Service
+   `helper2-admin`, `app.adminPort`, [0035](../edge/0035-admin-host.md)) and Actuator on 8081 (`H2_MANAGEMENT_PORT`).
+   Probes and the Prometheus scrape use 8081. The tunnel never reaches 8081 or 8082.
    Startup probe: every 5 s, up to `app.startupSeconds` (300 s); then readiness every 5 s and liveness
    every 10 s.
 6. **Network policy.** One policy per workload and direction, each naming only the peers that workload needs.
    Ingress is denied by default, then allowed per workload:
-   - app (`ingress-app`): `cloudflared` (or the Ingress controller's namespace) on 8080, namespace
+   - app (`ingress-app`): `cloudflared` on 8080; the Ingress controller's pods (`ingress.controllerNamespace`,
+     `controllerPodLabels`, also when the Ingresses live outside the chart) on 8080 and 8082; namespace
      `observability` on 8081;
    - Postgres (`ingress-postgres`): the app and `pg-backup` on 5432;
    - Redis (`ingress-redis`): the app on 6379;
@@ -102,6 +104,6 @@ The topology itself is in the [infrastructure](../../diagrams/infrastructure.svg
 - Postgres and Redis exporters; narrow `cloudflared` egress to Cloudflare ranges: [roadmap](../../roadmap.md#3-operations).
 - What stays per replica; `preStop` delay for rolling updates; Scout lock after a crash; Redis memory:
   [roadmap](../../roadmap.md#4-more-than-one-replica).
-- Admin back office on `admin.helper2.ai`, reachable only through WireGuard and Traefik; not in the chart
-  today: [roadmap](../../roadmap.md#domain-and-identity).
+- Cutover to the platform's ingress-nginx (DNS switch), then remove `cloudflared` from the chart:
+  [roadmap](../../roadmap.md#domain-and-identity).
 - Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

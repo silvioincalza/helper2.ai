@@ -45,14 +45,15 @@ Nothing long-lived is stored in GitHub.
   manual runs and releases); `prod` has a required reviewer.
   A missing environment is auto-created *without* protection rules, so they must exist first.
 - Actions → General → Fork pull request workflows: require approval for all outside collaborators.
-- Variable `BAO_ADDR` (the secrets store address); optional `IMAGE_ENGINE` (default `podman`).
+- Variables `BAO_ADDR` (the secrets store address) and `BAO_AUDIENCE` (the OIDC audience, equal to the
+  OpenBao role's `bound_audiences`); optional `IMAGE_ENGINE` (default `podman`).
 
 **Runner** — one just-in-time (JIT) registration per job: wipe the runner user's home and workspace, mint
 a JIT config for one job, run it, repeat. Every job starts clean and the registration dies with the job.
 The token that mints JIT configs (fine-grained, this repo only) is readable only by root; the job runs as
 an unprivileged user with rootless podman. No ambient credentials: no kubeconfig, no secrets-store token.
 
-**Secrets store** — OpenBao with GitHub OIDC login (audience = the OpenBao address). Roles:
+**Secrets store** — OpenBao with GitHub OIDC login (audience = `BAO_AUDIENCE`). Roles:
 
 | Role | Bound `sub` | Can read |
 |---|---|---|

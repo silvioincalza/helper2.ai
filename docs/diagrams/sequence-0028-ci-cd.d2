@@ -23,7 +23,7 @@ approval: Approval {
 }
 
 login: OpenBao login (OIDC) {
-  runner -> gha: "request OIDC token\n(audience = OpenBao address)"
+  runner -> gha: "request OIDC token\n(audience = BAO_AUDIENCE)"
   gha -> runner: "JWT, sub ...:environment:prod"
   runner -> bao: "auth/helper2/jwt/login role=deploy-prod"
   bao -> runner: "token (can read ci/prod only)"

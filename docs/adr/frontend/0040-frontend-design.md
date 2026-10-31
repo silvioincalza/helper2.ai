@@ -1,4 +1,4 @@
-# 0040 — Frontend design: home page, results with preview, guide picks bar, design system v3
+# 0040 — Frontend design: home page, results with preview, guide picks bar, design system
 
 **Status.** Accepted. **Builds on:** [0025](0025-frontend-one-box.md),
 [0015](../guide/0015-ai-guide-evidence-gate.md), [0038](../guide/0038-ai-content-marking.md), [0039](0039-frontend-recent-answers-cache.md)
@@ -15,8 +15,8 @@ We drew the design as clickable prototypes (Home, Results, Resource, States, Sav
 and chose between options for each part.
 
 ## Decision
-1. **Same palette and fonts, design system v3.** Paper, indigo ink, one saffron accent. Space Grotesk, Inter,
-   JetBrains Mono. `docs/design/system/tokens.json` v3 holds the base tokens, the semantic tokens (type tags, status
+1. **Same palette and fonts, one design system.** Paper, indigo ink, one saffron accent. Space Grotesk, Inter,
+   JetBrains Mono. `docs/design/system/tokens.json` holds the base tokens, the semantic tokens (type tags, status
    pills, proof quote, sources tile, selected row) and the breakpoints 560, 640, 860 and 1000 px.
 2. **Home is only the home page.** Radar hero, the one box and example searches. Below: **News** (last 7 days) and
    **Events** (next 3 months), two boards that scroll slowly on their own. Each row: date, type tag, source or place,
@@ -33,7 +33,7 @@ and chose between options for each part.
 6. **Guide picks bar, nothing moves.** The guide runs only for a question: four words or more, or Shift+Enter. A name
    search ("pgvector") gets no picks bar and no model call ([0017](../guide/0017-guide-cost-guard.md)). For a question, a box
    above the list is there from the first render: "Guide is reading N
-   candidates… picks will appear here". Its height is reserved. When the answer arrives over SSE
+   candidates… picks will appear here". Its height is reserved, and so is the row "How the guide decided" that comes with the answer; the chips stay on one line and scroll sideways when they do not fit. When the answer arrives over SSE
    (`POST /api/v1/guide/stream`, [0015](../guide/0015-ai-guide-evidence-gate.md)), the same box shows the picks as chips
    (#1, #2, #3), labelled AI-written ([0038](../guide/0038-ai-content-marking.md)). The list never re-orders: each pick gets a
    "Pick #n" badge and its reason in its own row. No pick: the box shrinks to one line, "No pick: no result had a
@@ -72,7 +72,7 @@ and chose between options for each part.
   environment, and staging would not test the image prod gets. Release-only prod deploys make it unneeded.
 
 ## Code
-- `frontend/src/styles/tokens.css` — the semantic tokens of `tokens.json` v3, each an alias of its base token, with
+- `frontend/src/styles/tokens.css` — the semantic tokens of `tokens.json`, each an alias of its base token, with
   `board-height` and `board-loop`.
 - `frontend/src/components/ui/` — `TypeTag`, `StatusPill`, `ProofQuote`, `SourceTiles`, `SelectableRow` (the
   selected-row outline), `PicksBar` (reserved height, waiting line, no-pick line, AI-written picks slot),
@@ -109,7 +109,7 @@ and chose between options for each part.
 - `frontend/src/components/Layout.tsx` — Sources and Mission in the menu, "No ads." in the footer.
 
 ## Diagrams
-[flow](../../diagrams/flow-0040-frontend-design-v2.svg) · [sequence](../../diagrams/sequence-0040-frontend-design-v2.svg)
+[flow](../../diagrams/flow-0040-frontend-design.svg) · [sequence](../../diagrams/sequence-0040-frontend-design.svg)
 
 ## Roadmap
 [Frontend](../../roadmap.md#7-frontend): pause for touch users on the boards to review against WCAG 2.2.2; consent banner

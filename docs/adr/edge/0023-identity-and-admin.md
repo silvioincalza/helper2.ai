@@ -16,11 +16,13 @@ traceable to that administrator.
    resources, sources and `/me`, and `POST` reports and guide, are open. `/api/v1/admin/**` and `/actuator/**` need
    `ADMIN` (health and info are open; see [0024](0024-http-edge-protection.md) for metrics). `/api/v1/me/bookmarks`
    and `DELETE /api/v1/me` need a signed-in user. Any other `/api/**` path is denied. Application programming interface (API) calls without a session get 401, not a redirect.
-2. **Sign-in only on /admin.** OAuth2 login exists only when a client registration exists: Spring profile
+2. **Sign-in.** OAuth2 login exists only when a client registration exists: Spring profile
    `oauth-github` with `H2_GITHUB_OAUTH_CLIENT_ID` and `H2_GITHUB_OAUTH_CLIENT_SECRET`, scope `read:user`.
-   Success returns to `<H2_FRONTEND_URL>/admin`, failure to `/admin?signin=failed`. The `SignIn` component is shown on
-   the admin page only.
-3. **ADMIN by immutable id.** `H2_ADMINS` is a comma-separated list of `registrationId:subject`. For GitHub the subject
+   With an admin port ([0035](0035-admin-host.md)) it works on both hosts: the admin host returns to
+   `<H2_FRONTEND_URL>/admin`, the public host to `<H2_FRONTEND_URL>/`; failure adds `?signin=failed`. Without one,
+   every sign-in returns to `/admin`.
+3. **ADMIN by immutable id.** `H2_ADMINS` is a comma-separated list of `registrationId:subject`; with an admin port,
+   only a sign-in on that port gets the role ([0035](0035-admin-host.md)). For GitHub the subject
    is the numeric user id, never the login. An OpenID Connect (OIDC) provider may also use `registrationId:email` when
    `email_verified` is true. Roles are set at sign-in; a change to `H2_ADMINS` needs a new sign-in.
 4. **User row on sign-in.** `CurrentUser.signedIn` (on `AuthenticationSuccessEvent`) calls `Users.signedIn`, an upsert
@@ -52,9 +54,8 @@ traceable to that administrator.
    saved its run records (or was refused), since the run itself goes on in the background. The table is append-only: a
    trigger refuses `UPDATE`, and only the 24-month retention deletes rows. `GET /api/v1/admin/audit` (ADMIN, paged
    like the review items, newest first, at most 100 per page) reads it for the back office.
-8. **Admin host.** The back office belongs on `admin.helper2.ai`, reachable only through the WireGuard network via
-   Traefik. The app adds no network filter of its own. `deploy/` routes `helper2.ai`, `www.helper2.ai` and the staging
-   host through the Cloudflare tunnel; each environment turns sign-in on with the `oauth-github` profile.
+8. **Admin host.** The back office is on its own port and host, reachable only from the LAN and WireGuard:
+   [0035](0035-admin-host.md). Each environment turns sign-in on with the `oauth-github` profile.
 9. **Sessions in Redis** (Spring Session Data Redis, namespace `helper2:session`), so every replica knows a signed-in
    admin. Timeout and cookie stay under `server.servlet.session`. Only sign-in creates a session: the saved-request
    cache is off (`NullRequestCache`), so an anonymous request never writes one. While Redis is down
@@ -75,7 +76,7 @@ traceable to that administrator.
   queryable and kept 24 months.
 - An audit table that references `app_user` — deleting the administrator's account would delete or orphan the trail.
 - ADMIN by GitHub login — logins can be renamed and taken by someone else.
-- An IP (Internet Protocol) address allow-list inside the app — the owner chose the network edge (WireGuard and Traefik) for this.
+- An IP (Internet Protocol) address allow-list inside the app — the network edge decides who reaches the admin host ([0035](0035-admin-host.md)).
 - A shared admin password or API key — no per-person identity, and one more secret to rotate.
 - Sessions in each pod's memory with sticky routing — the Cloudflare tunnel and the Service do not pin a client
   to one pod, and a deploy would sign the admin out.
