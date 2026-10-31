@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { askedQuestion, clampQuery, clampQuestion, homeParams, MAX_QUESTION, parseSearchParams, patchState, RESULTS_PATH, type SearchState } from '@/lib/searchState';
@@ -56,7 +56,9 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
   const timer = useRef<number | undefined>(undefined);
   const cancelLive = () => window.clearTimeout(timer.current);
   useEffect(() => cancelLive, []);
-  const onType = (value: string) => {
+  const onType = (typed: string) => {
+    // Enter searches or asks, so the box holds one line of text: a pasted line break becomes a space.
+    const value = typed.replace(/[\r\n]+/g, ' ');
     setText(value);
     cancelLive();
     const q = clampQuery(value);
@@ -90,18 +92,37 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
     if (action === 'ask') ask();
     else runSearch();
   };
-  const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key !== 'Enter') return;
-    if (e.shiftKey) {
-      e.preventDefault();
-      ask();
-    } else if (!text.trim()) {
-      // An empty box disables the submit button, so the form never submits: Enter is handled here.
-      e.preventDefault();
-      clear();
-    }
-  };
   const asking = action === 'ask';
+  const cannotSubmit = asking ? !clampQuestion(text) : !text.trim();
+  const onKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key !== 'Enter' || e.nativeEvent.isComposing) return;
+    // A textarea would add a line: Enter submits instead, as a one-line search field does.
+    e.preventDefault();
+    if (e.shiftKey) ask();
+    else if (!text.trim()) clear();
+    else if (!cannotSubmit) e.currentTarget.form?.requestSubmit();
+  };
+
+  // The box grows with the text. Measured at height auto with the transition off, then set back and moved to the
+  // new height with the transition on, so it animates from one pixel height to the next (CSS caps it at six lines).
+  const field = useRef<HTMLTextAreaElement>(null);
+  const fit = useCallback(() => {
+    const el = field.current;
+    if (!el) return;
+    const from = el.style.height;
+    el.style.transition = 'none';
+    el.style.height = 'auto';
+    const to = `${el.scrollHeight}px`;
+    el.style.height = from;
+    void el.offsetHeight;
+    el.style.transition = '';
+    el.style.height = to;
+  }, []);
+  useLayoutEffect(fit, [text, fit]);
+  useEffect(() => {
+    window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+  }, [fit]);
 
   return (
     <div className={`one-box${hero ? ' is-hero' : ''}`}>
@@ -112,11 +133,12 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
           </svg>
         </span>
         <label htmlFor="q" className="sr-only">{t('search.label')}</label>
-        <input id="q" name="q" type="search" value={text} maxLength={MAX_QUESTION} autoComplete="off"
+        <textarea ref={field} id="q" name="q" rows={1} className="searchbox-field"
+          value={text} maxLength={MAX_QUESTION} autoComplete="off" spellCheck={false}
           placeholder={t(hero ? 'search.heroPlaceholder' : 'search.placeholder')} onChange={(e) => onType(e.target.value)} onKeyDown={onKey} />
         {/* One button whose job follows the text: a few words search, a sentence asks. A new question replaces one
             still being answered. */}
-        <button type="submit" className="btn btn-primary" disabled={asking ? !clampQuestion(text) : !text.trim()}>
+        <button type="submit" className="btn btn-primary" disabled={cannotSubmit}>
           {asking ? t('guide.ask') : t('search.submit')}
           <kbd className="enter-key" aria-hidden="true">↵</kbd>
         </button>

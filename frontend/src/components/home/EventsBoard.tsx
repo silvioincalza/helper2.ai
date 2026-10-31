@@ -47,7 +47,7 @@ export function EventsBoard() {
   });
   return (
     <HomeBoard id="events" title={t('board.events.title')} sub={t('board.events.sub')} listLabel={t('board.events.list')}
-      foot={t('board.events.foot')} loading={feed.loading} error={feed.error !== undefined} errorText={t('events.error')}
+      loading={feed.loading} error={feed.error !== undefined} errorText={t('events.error')}
       emptyText={t('events.empty')} onRetry={feed.reload} rows={rows} />
   );
 }

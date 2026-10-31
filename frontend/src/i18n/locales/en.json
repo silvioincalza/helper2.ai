@@ -1022,14 +1022,12 @@
     "news": {
       "title": "News",
       "sub": "Last 7 days",
-      "list": "New resources",
-      "foot": "Dates as each source states them"
+      "list": "New resources"
     },
     "events": {
       "title": "Events",
       "sub": "Next 3 months",
-      "list": "Next events",
-      "foot": "Only events whose source states the dates"
+      "list": "Next events"
     },
     "countdown": {
       "today": "Today",

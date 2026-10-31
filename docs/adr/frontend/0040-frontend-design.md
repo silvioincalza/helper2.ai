@@ -21,7 +21,8 @@ and chose between options for each part.
 2. **Home is only the home page.** Radar hero, the one box and example searches. Below: **News** (last 7 days) and
    **Events** (next 3 months), two boards that scroll slowly on their own. Each row: date, type tag, source or place,
    status pill (Updated, Published, First seen, In 13 days…), name. A board pauses on hover, on keyboard focus and
-   on tap (tap again to play). Under `prefers-reduced-motion` it does not move and scrolls by hand.
+   on tap (tap again to play). Under `prefers-reduced-motion` it does not move and scrolls by hand. No footer line
+   under the boards.
 3. **Results on `/search`.** The box and the examples open `/search?q=…`. `/?q=…` shows the same page and declares
    `/search` as the canonical URL, so search engines see one page.
 4. **List and preview.** From 861 px: the result list on the left, a preview of the selected result on the right

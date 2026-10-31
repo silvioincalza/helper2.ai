@@ -12,6 +12,8 @@ screen reader, and in light and dark mode.
 1. **One box** (`OneBox`, `HomePage`). The box is the hero on `/` and sits at the top of the results on `/search`.
    On the results page, typing searches live: from 3 characters, 700 ms after the last key. One button follows the text: fewer than 4 words
    search, 4 or more ask the guide; Shift+Enter always asks; Enter in an empty box goes back to the empty home page.
+   The box is a one-row text area that grows with the text, up to six lines, then scrolls; the height animates
+   (160 ms, none under reduced motion). Enter never adds a line, and a pasted line break becomes a space.
    All state is in the page address (URL): `q` (at most 200 characters), `ask` (at most 500), the refinement of the
    question (`clar`, the reply to the guide's question back, at most 300; `drop`, the parts of the reading the user
    removed, at most 8), filters, sort, page, view. A search change keeps the refinement; a new question starts without one.

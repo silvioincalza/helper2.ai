@@ -108,9 +108,9 @@ describe('layout', () => {
 
     await act(() => router.navigate('/search?q=rag'));
     await screen.findByRole('list', { name: 'Search results' });
-    await userEvent.type(screen.getByRole('searchbox'), ' db{Enter}');
+    await userEvent.type(screen.getByRole('textbox', { name: 'Search AI resources' }), ' db{Enter}');
     await waitFor(() => expect(router.state.location.search).toBe('?q=rag+db'));
-    expect(screen.getByRole('searchbox')).toHaveFocus();
+    expect(screen.getByRole('textbox', { name: 'Search AI resources' })).toHaveFocus();
     await settle();
   });
 });

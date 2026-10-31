@@ -54,7 +54,7 @@ export function NewsBoard() {
   });
   return (
     <HomeBoard id="news" title={t('board.news.title')} sub={t('board.news.sub')} listLabel={t('board.news.list')}
-      foot={t('board.news.foot')} loading={feed.loading} error={feed.error !== undefined} errorText={t('radar.error')}
+      loading={feed.loading} error={feed.error !== undefined} errorText={t('radar.error')}
       emptyText={t('radar.empty')} onRetry={feed.reload} rows={rows} />
   );
 }
