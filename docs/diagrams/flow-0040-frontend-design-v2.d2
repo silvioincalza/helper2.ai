@@ -1,15 +1,29 @@
-# Flowchart: what the results page does from the search to the guide picks, in design v2.
-# Shows the list shown at once, the reserved picks bar, the guide answer arriving over SSE (picks or no pick),
+# Flowchart: design v2 from the home page to the guide picks. Built: the home page (empty box: hero and the News and
+# Events boards; a search opens /search, /?q= names /search as canonical). Planned: the results page. Shows the list shown at once, the reserved picks bar, the guide answer arriving over SSE (picks or no pick),
 # badges in place with no re-order, and the selected result kept in the URL with replaceState.
-# Source of truth: docs/adr/0040-frontend-design-v2.md (built: frontend/src/components/ui/PicksBar.tsx,
-#   frontend/src/hooks/useGuideStream.ts; planned: SearchResults.tsx, GuideAnswer.tsx, routes.tsx).
+# Source of truth: docs/adr/0040-frontend-design-v2.md (built: frontend/src/pages/HomePage.tsx, pages/HomeV2.tsx,
+#   components/home/HomeBoard.tsx, NewsBoard.tsx, EventsBoard.tsx, routes.tsx, components/ui/PicksBar.tsx,
+#   hooks/useGuideStream.ts; planned: SearchResults.tsx, GuideAnswer.tsx).
 # Render: cd docs/diagrams && d2 fmt flow-0040-frontend-design-v2.d2 && d2 flow-0040-frontend-design-v2.d2 flow-0040-frontend-design-v2.svg
 
 ...@style
 
 direction: down
 
-start: "Search from the box or an example:\n/search?q=…  (/?q=… is the same page)" {class: app}
+open: "Open /" {class: app}
+empty: "Box empty?\n(no q, no ask)" {class: decision}
+
+home: Home (built) {
+  class: group
+  direction: down
+  hero: "Hero: the one box\nand three examples" {class: app}
+  boards: "News and Events boards\n(loop; pause on hover,\nfocus and tap)" {class: app}
+  feeds: "GET /api/v1/recent\nGET /api/v1/events/upcoming" {class: ext}
+  hero -> boards -> feeds
+}
+
+canonical: "/?q=…: the results,\ncanonical link to /search" {class: app}
+start: "Search from the box or an example:\n/search?q=…" {class: app}
 results: "GET /api/v1/search" {class: ext}
 show: "Show the list at once.\nReserve the picks bar:\n\"Guide is reading N candidates…\"" {class: app}
 wide: "Screen wider than 860 px?" {class: decision}
@@ -51,3 +65,9 @@ guide -> picks
 picks -> answer.bar: yes {class: hot}
 picks -> none: no
 show -> select.tap
+
+open -> empty
+empty -> home.hero: yes {class: hot}
+empty -> canonical: no
+canonical -> results
+home.hero -> start: "Enter or an example" {class: hot}
