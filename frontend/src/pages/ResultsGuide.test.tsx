@@ -120,6 +120,9 @@ describe('the guide picks bar', () => {
     const items = within(checks).getAllByRole('listitem');
     expect(items[0]).toHaveTextContent('open source: confirmed by the source: MIT licensed, open source');
     expect(items[1]).toHaveTextContent('free: not confirmed by the source');
+    // Art. 50: the planner wrote the requirements, so the preview labels them on screen and marks them in the HTML.
+    expect(within(preview('Postgres MCP')).getByText('Requirements AI-written')).toBeVisible();
+    expect(within(items[0]!).getByText('open source')).toHaveAttribute('data-ai-generated', 'true');
   });
 
   it('with no pick, the bar shrinks to one line that says why', async () => {
