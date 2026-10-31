@@ -165,11 +165,12 @@ Open items:
 
 ## 7. Frontend
 
-- **Saved** (bookmarks) is hidden until it is finished: the menu item, the Save buttons and `/saved` (which goes
-  home). The bookmark code, its tests and the `/me/bookmarks` API stay; `SAVED_ENABLED` in
-  `frontend/src/lib/features.ts` brings it back.
 - The shared `/sources` data is fetched once per page load, so the Sources page can show an old last outcome
   during a long visit.
+- `GET /api/v1/sources` gives no response time, circuit state or web searches left today, so the Sources page
+  cannot show them; the results page shows them for each search. Extend the sources API if they are wanted there
+  ([ADR 0008](adr/0008-federated-search.md), [0033](adr/0033-resilience-policies.md),
+  [0037](adr/0037-tavily-store-and-daily-quota.md)).
 - If browser storage is blocked, a fixed theme choice can be overridden when the device theme changes.
 - The guide answer shows only its own notice (`GUIDE_DAILY_QUOTA`), not the search notices such as
   `CACHE_UNAVAILABLE`.
@@ -177,7 +178,6 @@ Open items:
 - TypeScript 7 and ESLint 10 (with `@eslint/js` 10) are held back in `.github/dependabot.yml`: on 27 Oct 2026
   `typescript-eslint` 8.72 needs TypeScript <6.1 and `eslint-plugin-jsx-a11y` 6.10 needs ESLint <=9. Remove the
   ignore rules once both plugins support the new majors.
-
 - The News and Events boards move on their own. Hover, focus and tap pause them; check this against WCAG 2.2.2 with
   a real touch and screen-reader test before launch.
 - Tracking cookies are planned. Before the first one: consent banner, cookie notice, Privacy page and record of
