@@ -5,7 +5,7 @@ import './ui.css';
 
 type Tone = 'paper' | 'model' | 'news' | 'mcp' | 'other';
 
-/** Design system v3, Type tags: fill and text differ in lightness, not only in hue. */
+/** Design system, Type tags: fill and text differ in lightness, not only in hue. */
 const TONE: Partial<Record<ResourceType, Tone>> = {
   PAPER: 'paper', LIBRARY: 'paper', MODEL: 'model', NEWS: 'news', ARTICLE: 'news', MCP_SERVER: 'mcp',
 };

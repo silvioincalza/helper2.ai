@@ -1,5 +1,5 @@
 /*
- * Shared components of design v2 (ADR 0040; docs/design/system/README.md, Components), prefix h2- like the design
+ * Shared components of the design (ADR 0040; docs/design/system/README.md, Components), prefix h2- like the design
  * system's bundle.css. Imported by the components themselves, so a page that uses none of them loads none of it.
  */
 

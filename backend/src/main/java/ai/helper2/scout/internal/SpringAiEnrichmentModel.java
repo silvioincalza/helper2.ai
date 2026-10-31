@@ -35,8 +35,8 @@ import org.springframework.ai.converter.BeanOutputConverter;
 class SpringAiEnrichmentModel implements EnrichmentModel {
 
     /**
-     * v3: the material is marked as untrusted data, the excerpt length comes from the validator, and
-     * license, openSource and platforms need the value in the excerpt. (v2 listed the allowed values.)
+     * The prompt marks the material as untrusted data, takes the excerpt length from the validator, and needs the
+     * value of license, openSource and platforms in the excerpt. Stored with every run.
      */
     static final String PROMPT_VERSION = "enrich-v3";
 

@@ -1,4 +1,4 @@
-# 0040 — Frontend design: home page, results with preview, resource page, guide picks bar, designed states, saved and sources pages, design system v3
+# 0040 — Frontend design: home page, results with preview, resource page, guide picks bar, designed states and the pages around them
 
 **Status.** Accepted (2026-10-30). **Builds on:** [0025](0025-frontend-one-box.md),
 [0015](0015-ai-guide-evidence-gate.md), [0031](0031-setup-guide.md), [0038](0038-ai-content-marking.md),
@@ -17,8 +17,8 @@ We drew the design as clickable prototypes (Home, Results, Resource, States, Sav
 and chose between options for each part.
 
 ## Decision
-1. **Palette and fonts: design system v3.** Paper, indigo ink, one saffron accent. Space Grotesk, Inter,
-   JetBrains Mono. `docs/design/system/tokens.json` v3 names semantic tokens on top of the base palette (type tags,
+1. **Palette and fonts: the design system.** Paper, indigo ink, one saffron accent. Space Grotesk, Inter,
+   JetBrains Mono. `docs/design/system/tokens.json` names semantic tokens on top of the base palette (type tags,
    status pills, proof quote, sources tile, selected row) and the breakpoints 560, 640, 860 and 1000 px.
 2. **Home is only the home page.** Radar hero, the one box and example searches. Below: **News** (last 7 days) and
    **Events** (next 3 months), two boards that scroll slowly on their own. Each row: date, type tag, source or place,
@@ -124,7 +124,7 @@ and chose between options for each part.
 
 ## Code
 Built:
-- `frontend/src/styles/tokens.css` — the semantic tokens of `tokens.json` v3, each an alias of its base token,
+- `frontend/src/styles/tokens.css` — the tokens of `tokens.json`; the semantic ones are each an alias of its base token,
   `board-height`, `content-wide` and `list-max`.
 - `frontend/src/components/ui/` — `TypeTag`, `StatusPill`, `ProofQuote`, `SourceTiles`, `SelectableRow` (the row
   button: selected outline, one tab stop, named by its title), `PicksBar` (reserved height, head with the question and
@@ -158,7 +158,7 @@ Built:
 - `frontend/src/pages/AccountPage.tsx` — who is signed in, delete the account after a confirmation.
 
 Planned:
-- `tokens.css` — `radar-sweep` of `tokens.json` v3, with the page that uses it.
+- `tokens.css` — `radar-sweep` of `tokens.json`, with the page that uses it.
 
 ## Diagrams
 [flow](../diagrams/flow-0040-frontend-design.svg) · [sequence](../diagrams/sequence-0040-frontend-design.svg)
