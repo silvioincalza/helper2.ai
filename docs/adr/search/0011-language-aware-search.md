@@ -23,8 +23,11 @@ A translation costs a model call and time, and it must not slow down sources tha
 4. **Translator** (`SpringAiQueryTranslator` in `search.internal`, the search module's adapter of its port
    `QueryTranslator`; model calls as in [0014](../guide/0014-llm-integration.md)): the fast model (`H2_NEBIUS_FAST_MODEL`), prompt
    `prompts/search/translate-query.txt`, at most 12 words (`QueryTranslator.MAX_WORDS`), 400 output tokens, thinking off.
-   Its own daily cap `H2_SEARCH_DAILY_TRANSLATIONS` (300 per day; days are in Coordinated Universal Time, UTC), separate from the guide's cap; gauge `helper2.search.translation.budget.remaining`. Answers are kept in each
-   replica's memory for 24 h (at most 2000). Off when no model is configured or `helper2.search.translate-queries=false`.
+   Its own daily cap `H2_SEARCH_DAILY_TRANSLATIONS` (300 per day; days are in Coordinated Universal Time, UTC), separate from the guide's cap; gauge `helper2.search.translation.budget.remaining`. Answers are shared by
+   every replica in the shared cache `translation` ([0004](../foundation/0004-persistence-and-provenance.md), table `ai_cache`):
+   key a SHA-256 of the model, the prompt version, the language and the normalised query (trimmed, spaces collapsed,
+   lower case), value the English words, kept `H2_SEARCH_TRANSLATION_TTL` (24 h). A failed, empty or refused translation
+   is not cached, and a database error or a lookup over its time limit is a miss, so a query any replica translated costs no model call on the others. Off when no model is configured or `helper2.search.translate-queries=false`.
    The call runs under the `llm-chat` circuit ([0033](../foundation/0033-resilience-policies.md)); the budget is taken inside it, so
    a call the open circuit refuses costs no translation.
 5. **Untrusted answer.** The answer is dropped if it looks like a link. Only letters, digits, spaces and hyphens stay;
@@ -37,19 +40,27 @@ A translation costs a model call and time, and it must not slow down sources tha
 - Queries in other languages find English resources, and the user sees the words that were added.
 - A model outage or a spent budget only removes the translation; search still answers.
 - English queries cost no model call and no wait.
+- A translated query is kept for 24 h, under a hash; the privacy page states it. The daily shared cache purge deletes it
+  afterwards ([0034](../operations/0034-data-retention.md)).
 
 ## Alternatives considered
 - Always translate — a model call for every English query too, and wrong guesses on short queries.
 - Translate before starting any source — the semantic source would wait for nothing.
 - Translate the catalog into many languages — storage and model cost for every resource.
 - Rely only on multilingual embeddings — keyword sources and live application programming interfaces (APIs) would still miss the query.
+- A cache in each replica's memory — each of the 3 prod replicas pays its own model call for the same query.
+- Translations in Redis — memory shared with sessions and rate limits, and not in the backups; a lookup by
+  primary key in PostgreSQL costs about a millisecond next to a model call of up to 2.5 s.
+- An in-memory cache in front of the table — it saves a lookup of about 1 ms next to a wait of up to 2.5 s, for a second
+  TTL and size bound to reason about.
 
 ## Code
 - `backend/src/main/kotlin/ai/helper2/shared/LanguageDetector.kt` — detection rules.
 - `backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — `startTranslation`, `awaitTranslation`, `withTranslation`, early and late sources.
 - `backend/src/main/kotlin/ai/helper2/search/Ports.kt` — `QueryTranslator`.
 - `backend/src/main/java/ai/helper2/search/internal/SpringAiQueryTranslator.java`, `TranslationConfiguration.java` — model
-  call, budget, cache.
+  call, budget, cache key.
+- `backend/src/main/java/ai/helper2/platform/cache/SharedCache.java`, `JdbcSharedCache.java` — the shared cache.
 - `backend/src/main/resources/prompts/search/translate-query.txt` — the prompt.
 - `backend/src/main/java/ai/helper2/catalog/internal/ResourceStore.java` — language stemmer in the index query.
 - `backend/src/main/resources/db/migration/V1__schema.sql` — `h2_ts_config`, `search_vector`.
@@ -60,5 +71,4 @@ A translation costs a model call and time, and it must not slow down sources tha
 ## Roadmap
 - [More user interface (UI) languages; the UI is English only](../../roadmap.md#7-frontend).
 - [Cross-language retrieval in vector search](../../roadmap.md#5-ai-quality-and-cost).
-- [Translation cache stays per replica, on purpose](../../roadmap.md#4-more-than-one-replica).
 - Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

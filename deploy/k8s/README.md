@@ -161,6 +161,9 @@ RCLONE_CONFIG_S3_ACCESS_KEY_ID=<id> RCLONE_CONFIG_S3_SECRET_ACCESS_KEY=<secret> 
 kubectl -n $NS scale deployment/helper2 --replicas=3   # your app.replicas
 ```
 
+**Reset** to an empty database on the single V1 schema (staging first, prod in one maintenance window):
+[RESET-DATABASE.md](RESET-DATABASE.md).
+
 ## The hosted helper2.ai
 
 helper2.ai runs on this chart with [`values-staging.yaml`](../helm/helper2/values-staging.yaml) and

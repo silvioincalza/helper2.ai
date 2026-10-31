@@ -1,4 +1,7 @@
 -- Helper2.ai schema. PostgreSQL is the system of record. Seed data lives in the repeatable R__ migrations.
+-- This file is the whole schema (ADR 0004 §5). Every foreign key states what a delete of its target does
+-- (ADR 0034): CASCADE for the facts of a row, SET NULL for links that outlive their target, RESTRICT or
+-- NO ACTION for rows that must never go while something cites them.
 -- Timestamp semantics: every *_at column is timestamptz (UTC instants).
 --   source_published_at / source_updated_at : what the SOURCE says (nullable = unknown, never guessed)
 --   first_discovered_at                     : when Helper2 first saw the resource (always known)
@@ -64,7 +67,7 @@ CREATE TABLE resource (
         ('simple','ar','hy','eu','ca','da','nl','en','fi','fr','de','el','hi','hu','id','ga','it','lt','no','pt','ro',
          'ru','sr','es','sv','ta','tr')),
     type                 text        NOT NULL CHECK (type IN
-        ('PRODUCT','MODEL','AGENT','PROMPT','SKILL','MCP_SERVER','LIBRARY','DATASET','ARTICLE','PAPER','NEWS','EVENT','OTHER')),
+        ('PRODUCT','MODEL','AGENT','PROMPT','SKILL','MCP_SERVER','LIBRARY','DATASET','ARTICLE','PAPER','NEWS','EVENT','COURSE','OTHER')),
     audience             text        NOT NULL CHECK (audience IN ('USE_AI','BUILD_WITH_AI','BOTH','UNKNOWN')),
     tech_level           text CHECK (tech_level IN ('BEGINNER','INTERMEDIATE','ADVANCED')),
     license              text,
@@ -72,9 +75,9 @@ CREATE TABLE resource (
     open_source          boolean,
     published_at         timestamptz,
     published_precision  text        NOT NULL DEFAULT 'UNKNOWN' CHECK (published_precision IN ('INSTANT','DAY','UNKNOWN')),
-    published_source_id  text REFERENCES source (id),
+    published_source_id  text REFERENCES source (id) ON DELETE RESTRICT,
     updated_at           timestamptz,
-    updated_source_id    text REFERENCES source (id),
+    updated_source_id    text REFERENCES source (id) ON DELETE RESTRICT,
     -- EVENT only: when it takes place, as its sources state it (earliest start / latest end across the
     -- resource's source records; DAY precision stored as 00:00 UTC). NULL = unknown or not an event.
     event_starts_at      timestamptz,
@@ -123,7 +126,7 @@ CREATE INDEX resource_label_value_idx ON resource_label (kind, value);
 -- One record per (source, external id): exactly what a source said, when we retrieved it.
 CREATE TABLE source_record (
     id                     uuid PRIMARY KEY,
-    source_id              text        NOT NULL REFERENCES source (id),
+    source_id              text        NOT NULL REFERENCES source (id) ON DELETE RESTRICT,
     external_id            text        NOT NULL,
     resource_id            uuid        NOT NULL REFERENCES resource (id) ON DELETE CASCADE,
     source_url             text        NOT NULL,
@@ -223,6 +226,7 @@ CREATE TABLE evidence (
     excerpt          text CHECK (length(excerpt) <= 500),
     created_at       timestamptz NOT NULL DEFAULT now()
 );
+CREATE INDEX evidence_source_record_idx ON evidence (source_record_id) WHERE source_record_id IS NOT NULL;
 
 -- Enrichment runs (AI Resource Scout). Kept while current rows cite them, plus the latest per resource (ADR 0034).
 CREATE TABLE enrichment_run (
@@ -235,20 +239,21 @@ CREATE TABLE enrichment_run (
     started_at        timestamptz NOT NULL,
     finished_at       timestamptz,
     outcome           text        NOT NULL CHECK (outcome IN ('VALIDATED','PARTIAL','REJECTED','LLM_UNAVAILABLE','FAILED')),
-    validation_errors jsonb       NOT NULL DEFAULT '[]'::jsonb,
-    reprocess_of      uuid REFERENCES enrichment_run (id) ON DELETE SET NULL
+    validation_errors jsonb       NOT NULL DEFAULT '[]'::jsonb
 );
 CREATE INDEX enrichment_run_resource_idx ON enrichment_run (resource_id, started_at DESC);
 
--- Field-level assertions not covered by source records: AI-extracted, community and curated values.
+-- Field-level assertions not covered by source records: AI-extracted values (Scout) and curated ones (seeds).
+-- A row that cites an enrichment run keeps it: NO ACTION, checked at the end of the statement, so a resource
+-- delete that cascades to both the run and the rows citing it goes through.
 CREATE TABLE field_assertion (
     id                uuid PRIMARY KEY,
     resource_id       uuid        NOT NULL REFERENCES resource (id) ON DELETE CASCADE,
     field             text        NOT NULL,
     value             text        NOT NULL,
-    origin            text        NOT NULL CHECK (origin IN ('AI_EXTRACTED','AI_SUMMARY','COMMUNITY','CURATED')),
+    origin            text        NOT NULL CHECK (origin IN ('AI_EXTRACTED','CURATED')),
     verification      text        NOT NULL CHECK (verification IN ('VERIFIED','UNVERIFIED','CONFLICTING','REJECTED')),
-    enrichment_run_id uuid REFERENCES enrichment_run (id),
+    enrichment_run_id uuid REFERENCES enrichment_run (id) ON DELETE NO ACTION,
     created_at        timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX field_assertion_resource_idx ON field_assertion (resource_id);
@@ -259,8 +264,9 @@ CREATE TABLE field_assertion_evidence (
     evidence_id  uuid NOT NULL REFERENCES evidence (id) ON DELETE CASCADE,
     PRIMARY KEY (assertion_id, evidence_id)
 );
+CREATE INDEX field_assertion_evidence_evidence_idx ON field_assertion_evidence (evidence_id);
 
--- Resource relationships. Verified only with evidence; candidates go to review.
+-- Resource relationships, all extracted by the Scout. Verified only with evidence; candidates go to review.
 CREATE TABLE relationship (
     id                uuid PRIMARY KEY,
     from_resource_id  uuid NOT NULL REFERENCES resource (id) ON DELETE CASCADE,
@@ -268,11 +274,12 @@ CREATE TABLE relationship (
     to_title          text NOT NULL,
     kind              text NOT NULL CHECK (kind IN ('INTEGRATES_WITH','USES','SUPPORTS','COMPATIBLE_WITH')),
     verification      text NOT NULL CHECK (verification IN ('VERIFIED','UNVERIFIED','CONFLICTING','REJECTED')),
-    origin            text NOT NULL CHECK (origin IN ('SOURCE_PROVIDED','AI_EXTRACTED','COMMUNITY','CURATED')),
-    enrichment_run_id uuid REFERENCES enrichment_run (id),
+    origin            text NOT NULL CHECK (origin IN ('AI_EXTRACTED')),
+    enrichment_run_id uuid REFERENCES enrichment_run (id) ON DELETE NO ACTION,
     created_at        timestamptz NOT NULL DEFAULT now(),
     UNIQUE (from_resource_id, kind, to_title)
 );
+CREATE INDEX relationship_to_resource_idx ON relationship (to_resource_id) WHERE to_resource_id IS NOT NULL;
 CREATE INDEX relationship_run_idx ON relationship (enrichment_run_id) WHERE enrichment_run_id IS NOT NULL;
 
 CREATE TABLE relationship_evidence (
@@ -280,22 +287,25 @@ CREATE TABLE relationship_evidence (
     evidence_id     uuid NOT NULL REFERENCES evidence (id) ON DELETE CASCADE,
     PRIMARY KEY (relationship_id, evidence_id)
 );
+CREATE INDEX relationship_evidence_evidence_idx ON relationship_evidence (evidence_id);
 
 -- AI summary: only claims that passed validation, each with evidence.
 CREATE TABLE summary_claim (
     id                uuid PRIMARY KEY,
     resource_id       uuid NOT NULL REFERENCES resource (id) ON DELETE CASCADE,
-    enrichment_run_id uuid NOT NULL REFERENCES enrichment_run (id),
+    enrichment_run_id uuid NOT NULL REFERENCES enrichment_run (id) ON DELETE NO ACTION,
     position          int  NOT NULL,
     text              text NOT NULL CHECK (length(text) <= 400),
     UNIQUE (enrichment_run_id, position)
 );
+CREATE INDEX summary_claim_resource_idx ON summary_claim (resource_id);
 
 CREATE TABLE summary_claim_evidence (
     claim_id    uuid NOT NULL REFERENCES summary_claim (id) ON DELETE CASCADE,
     evidence_id uuid NOT NULL REFERENCES evidence (id) ON DELETE CASCADE,
     PRIMARY KEY (claim_id, evidence_id)
 );
+CREATE INDEX summary_claim_evidence_evidence_idx ON summary_claim_evidence (evidence_id);
 
 -- Users who signed in via OAuth2. Anonymous use needs no row. Only what sign-in needs: the provider's immutable
 -- subject (GitHub: the numeric id), a name to show, and the last sign-in, which retention reads (ADR 0034).
@@ -331,18 +341,23 @@ CREATE TABLE issue_report (
     created_at       timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX issue_report_resource_idx ON issue_report (resource_id);
+CREATE INDEX issue_report_reporter_idx ON issue_report (reporter_user_id) WHERE reporter_user_id IS NOT NULL;
 
--- Human review queue.
+-- Human review queue. A COURSE_CANDIDATE is a course page the Scout's collector found (ADR 0032): it has no
+-- resource yet, so the item keeps the page's canonical URL, one item per URL ever, so a rejected page is not
+-- proposed again.
 CREATE TABLE review_item (
     id                uuid PRIMARY KEY,
-    kind              text        NOT NULL CHECK (kind IN ('ENRICHMENT_VALIDATION','SOURCE_CONFLICT','RELATIONSHIP_CANDIDATE','USER_REPORT')),
+    kind              text        NOT NULL CHECK (kind IN
+        ('ENRICHMENT_VALIDATION','SOURCE_CONFLICT','RELATIONSHIP_CANDIDATE','USER_REPORT','COURSE_CANDIDATE')),
     -- SUPERSEDED: closed by a newer enrichment run of the same resource, not by a person.
     status            text        NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN','ACCEPTED','REJECTED','SUPERSEDED')),
     resource_id       uuid REFERENCES resource (id) ON DELETE CASCADE,
-    enrichment_run_id uuid REFERENCES enrichment_run (id),
+    enrichment_run_id uuid REFERENCES enrichment_run (id) ON DELETE NO ACTION,
     -- SET NULL: a superseded candidate outlives the unreviewed relationship a newer run replaced.
     relationship_id   uuid REFERENCES relationship (id) ON DELETE SET NULL,
     report_id         uuid REFERENCES issue_report (id) ON DELETE CASCADE,
+    candidate_url     text,
     reason            text        NOT NULL,
     details           text,
     created_at        timestamptz NOT NULL DEFAULT now(),
@@ -355,6 +370,8 @@ CREATE INDEX review_item_open_idx ON review_item (status, created_at);
 CREATE INDEX review_item_resource_idx ON review_item (resource_id);
 CREATE INDEX review_item_run_idx ON review_item (enrichment_run_id) WHERE enrichment_run_id IS NOT NULL;
 CREATE INDEX review_item_report_idx ON review_item (report_id) WHERE report_id IS NOT NULL;
+CREATE INDEX review_item_relationship_idx ON review_item (relationship_id) WHERE relationship_id IS NOT NULL;
+CREATE UNIQUE INDEX review_item_candidate_idx ON review_item (kind, candidate_url) WHERE candidate_url IS NOT NULL;
 CREATE INDEX review_item_resolved_idx ON review_item (resolved_at) WHERE status <> 'OPEN';
 
 -- What administrators did, one row per admin action (ADR 0023): append-only, deleted only by retention (ADR 0034).
@@ -393,16 +410,45 @@ CREATE TABLE tavily_query_result (
 );
 CREATE INDEX tavily_query_result_fetched_idx ON tavily_query_result (fetched_at);
 
--- Scout collection checkpoints and run history.
+-- Model answers shared by every replica (ADR 0005): query translations, query vectors, setup guide answers, guide answers.
+-- key_hash is a SHA-256 of the entry's parts (model, prompt version, normalised query...); the query text is never
+-- stored. A read ignores an expired row; the daily shared-cache purge deletes it (ADR 0034).
+CREATE TABLE ai_cache (
+    cache_name text        NOT NULL,
+    key_hash   bytea       NOT NULL,
+    value      text        NOT NULL,
+    expires_at timestamptz NOT NULL,
+    PRIMARY KEY (cache_name, key_hash)
+);
+CREATE INDEX ai_cache_expires_idx ON ai_cache (expires_at);
+
+-- ===== Guide similar-question index (ADR 0041) =====
+-- Questions of cached guide answers (ai_cache, cache guide-answer), for reuse by a near-identical question read the same
+-- way (H2_GUIDE_SIMILAR_THRESHOLD). answer_key is the guide answer's cache key, a SHA-256 of the normalised question,
+-- path, config, clarification and removed parts; the question text is never stored. group_key is the SHA-256 of the
+-- embedding model, config hash, audience path and reading (intent, subjects, constraints, window); embedding is the
+-- query embedding of the normalised question, the model of resource_embedding. A row lives as long as its answer
+-- (expires_at); the guide purge deletes it after (ADR 0034). A group holds a few rows: exact cosine search.
+CREATE TABLE guide_similar_question (
+    answer_key text         PRIMARY KEY CHECK (answer_key ~ '^[0-9a-f]{64}$'),
+    group_key  text         NOT NULL,
+    embedding  vector(1024) NOT NULL,
+    expires_at timestamptz  NOT NULL
+);
+CREATE INDEX guide_similar_question_group_idx ON guide_similar_question (group_key, expires_at);
+CREATE INDEX guide_similar_question_expires_idx ON guide_similar_question (expires_at);
+-- ===== end guide similar-question index =====
+
+-- Scout collection checkpoints and run history: they go with their source.
 CREATE TABLE source_cursor (
-    source_id  text PRIMARY KEY REFERENCES source (id),
+    source_id  text PRIMARY KEY REFERENCES source (id) ON DELETE CASCADE,
     cursor     text        NOT NULL,
     updated_at timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE TABLE scout_run (
     id                 uuid PRIMARY KEY,
-    source_id          text        NOT NULL REFERENCES source (id),
+    source_id          text        NOT NULL REFERENCES source (id) ON DELETE CASCADE,
     status             text        NOT NULL CHECK (status IN ('RUNNING','SUCCEEDED','FAILED','SKIPPED')),
     started_at         timestamptz NOT NULL,
     finished_at        timestamptz,

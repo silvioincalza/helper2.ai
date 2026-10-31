@@ -6,6 +6,7 @@ import ai.helper2.catalog.internal.ObservationQueue;
 import ai.helper2.catalog.internal.ResourceStore;
 import ai.helper2.catalog.internal.ResourceStore.DataOrigin;
 import ai.helper2.platform.ClusterLock;
+import ai.helper2.platform.cache.SharedCaches;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.shared.ResourceType;
@@ -92,14 +93,17 @@ class CatalogConfiguration {
 
         @Bean
         SemanticSearchSource semanticSearchSource(ResourceStore store, Embedder embedder, Clock clock,
+                                                  SharedCaches caches,
                                                   @Value("${helper2.sources.semantic.timeout:3s}") Duration timeout,
-                                                  @Value("${helper2.sources.semantic.max-distance:0.65}") double maxDistance) {
+                                                  @Value("${helper2.sources.semantic.max-distance:0.65}") double maxDistance,
+                                                  @Value("${helper2.search.query-vector-ttl:7d}") Duration queryVectorTtl) {
             SourceDescriptor d = new SourceDescriptor(
                 "helper2-semantic", "Helper2 index (by meaning)", SourceMode.INDEXED, URI.create("https://helper2.ai/sources"), null,
                 "The Helper2 index searched by meaning with " + embedder.model() + " embeddings",
                 // Embeds the query as typed, so it never waits for the English translation.
                 EnumSet.allOf(ResourceType.class), timeout, Duration.ZERO, true, 55, false, false);
-            return new SemanticSearchSource(d, store, embedder,
+            var queryVectors = new QueryVectorCache(caches.named("query-vector"), embedder.model(), embedder.dimensions(), queryVectorTtl);
+            return new SemanticSearchSource(d, store, embedder, queryVectors,
                 Set.of(DataOrigin.INDEXED, DataOrigin.OBSERVED, DataOrigin.CURATED), maxDistance, clock);
         }
 

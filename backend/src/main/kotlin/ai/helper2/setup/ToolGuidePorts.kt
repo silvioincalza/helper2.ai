@@ -16,13 +16,6 @@ interface ToolGuideModel {
 interface ToolGuideCache {
     fun get(key: String): ToolGuideAnswer?
     fun put(key: String, answer: ToolGuideAnswer, ttl: Duration)
-
-    companion object {
-        val NONE = object : ToolGuideCache {
-            override fun get(key: String): ToolGuideAnswer? = null
-            override fun put(key: String, answer: ToolGuideAnswer, ttl: Duration) {}
-        }
-    }
 }
 
 /**

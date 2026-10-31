@@ -22,7 +22,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-/** The answer cache reads through to a durable store, so a restart does not cost the model calls again. */
+/** The answer cache lives in a durable store (the shared cache), so a restart does not cost the model calls again. */
 class GuideAnswerCacheStoreTest {
 
     private val executor = Executors.newVirtualThreadPerTaskExecutor()
@@ -31,20 +31,9 @@ class GuideAnswerCacheStoreTest {
     @AfterTest
     fun shutdown() = executor.shutdownNow().let { }
 
-    /** What Redis would hold: survives a new GuideAnswerCache, as it survives a pod restart. */
-    private class MapStore : GuideAnswerStore {
-        val entries = mutableMapOf<String, GuideAnswer>()
-        var puts = 0
-        override fun get(key: String) = entries[key]
-        override fun put(key: String, answer: GuideAnswer, ttl: Duration) {
-            puts++
-            entries[key] = answer
-        }
-    }
-
     private class DownStore : GuideAnswerStore {
-        override fun get(key: String): GuideAnswer = throw IllegalStateException("redis down")
-        override fun put(key: String, answer: GuideAnswer, ttl: Duration) = throw IllegalStateException("redis down")
+        override fun get(key: String): GuideAnswer = throw IllegalStateException("database down")
+        override fun put(key: String, answer: GuideAnswer, ttl: Duration) = throw IllegalStateException("database down")
     }
 
     private class CountingModel : GuideModel {
@@ -87,12 +76,12 @@ class GuideAnswerCacheStoreTest {
 
     @Test
     fun `an answer stored before a restart is served after it without calling the model`() {
-        val store = MapStore()
+        val store = MemoryAnswerStore()
         val model = CountingModel()
-        val before = AskGuide(search, model, clock, cache = GuideAnswerCache(ttl, 10, clock, store))
+        val before = AskGuide(search, model, clock, cache = GuideAnswerCache(ttl, clock, store))
         val first = before.ask(need, null)
 
-        val afterRestart = AskGuide(search, model, clock, cache = GuideAnswerCache(ttl, 10, clock, store))
+        val afterRestart = AskGuide(search, model, clock, cache = GuideAnswerCache(ttl, clock, store))
         val second = afterRestart.ask(need, null)
 
         assertEquals(2, model.calls)
@@ -101,24 +90,24 @@ class GuideAnswerCacheStoreTest {
 
     @Test
     fun `a stored answer expires ttl after it was generated, not after it was read back`() {
-        val store = MapStore()
-        GuideAnswerCache(ttl, 10, clock, store).put("k", AskGuide(search, CountingModel(), clock).ask(need, null))
+        val store = MemoryAnswerStore()
+        GuideAnswerCache(ttl, clock, store).put("k", AskGuide(search, CountingModel(), clock).ask(need, null))
 
         clock.now = NOW.plus(Duration.ofHours(23))
-        val freshCache = GuideAnswerCache(ttl, 10, clock, store)
+        val freshCache = GuideAnswerCache(ttl, clock, store)
         assertTrue(freshCache.get("k") != null)
 
         clock.now = NOW.plus(Duration.ofHours(24))
         assertNull(freshCache.get("k"))
-        assertNull(GuideAnswerCache(ttl, 10, clock, store).get("k"))
+        assertNull(GuideAnswerCache(ttl, clock, store).get("k"))
     }
 
     @Test
     fun `a degraded answer is never written to the store`() {
-        val store = MapStore()
+        val store = MemoryAnswerStore()
         val degraded = AskGuide(search, null, clock).ask(need, null)
 
-        GuideAnswerCache(ttl, 10, clock, store).put("k", degraded)
+        GuideAnswerCache(ttl, clock, store).put("k", degraded)
 
         assertEquals(0, store.puts)
     }
@@ -126,13 +115,13 @@ class GuideAnswerCacheStoreTest {
     @Test
     fun `a failing store is a miss and never breaks the guide`() {
         val model = CountingModel()
-        val guide = AskGuide(search, model, clock, cache = GuideAnswerCache(ttl, 10, clock, DownStore()))
+        val guide = AskGuide(search, model, clock, cache = GuideAnswerCache(ttl, clock, DownStore()))
 
         val first = guide.ask(need, null)
         val second = guide.ask(need, null)
 
         assertTrue(first.recommendations.any { it.aiReasoned })
-        assertEquals(first, second)
-        assertEquals(2, model.calls)
+        assertTrue(second.recommendations.any { it.aiReasoned })
+        assertEquals(4, model.calls, "each question answered fresh")
     }
 }

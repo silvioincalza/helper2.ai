@@ -94,11 +94,12 @@ and a snippet copied into an AI client's config file runs on the user's machine.
    The fixed setup set of [0030](../quality/0030-guide-evaluation.md)
    (point 6) measures steps kept and rejected, snippet coverage and latency on every run.
 11. **One guide per tool, no free-form questions.** The guide answers only what the page is for: setup options,
-   client snippets and checked steps. It is the same for every visitor and cached in Redis for 7 days, keyed by a
-   hash of resource, documents and prompt. A cached answer holds the checked steps and the documents' links and
+   client snippets and checked steps. It is the same for every visitor and kept for 7 days in the shared cache
+   `tool-guide` (table `ai_cache`, [0004](../foundation/0004-persistence-and-provenance.md)), keyed by a hash of resource,
+   documents and prompt. A cached answer holds the checked steps and the documents' links and
    read dates, never a document's text. The endpoint takes no input but the resource id, shares the guide's rate
-   limit and has its own daily cap (`H2_SETUP_GUIDE_DAILY_MODEL_CALLS`, 300); the Redis TTL is
-   `H2_SETUP_GUIDE_CACHE_TTL`. An entry that does not decode is logged and treated as a miss, and the next answer
+   limit and has its own daily cap (`H2_SETUP_GUIDE_DAILY_MODEL_CALLS`, 300); an answer is kept for
+   `H2_SETUP_GUIDE_CACHE_TTL`. A database error or a lookup over its time limit is a miss. An entry that does not decode is logged and treated as a miss, and the next answer
    replaces it, so it costs one model call, not one per request. Each model call runs under the `llm-chat` circuit
    ([0033](../foundation/0033-resilience-policies.md)); a malformed answer is asked for once more. When both answers are not the
    requested JSON, the "unavailable" answer is cached for `H2_SETUP_UNREADABLE_TTL` (10 minutes), so the same
@@ -142,7 +143,7 @@ and a snippet copied into an AI client's config file runs on the user's machine.
   `ToolGuideValidator.kt`, `ToolGuides.kt`.
 - `backend/src/main/java/ai/helper2/setup/usecase/` — `GetResourceSetup`, `GetToolGuide`.
 - `backend/src/main/java/ai/helper2/setup/internal/` — `RegistryMcpServerSpecs`, `HttpToolMaterials`,
-  `HourlyFetchBudget`, `ReadmeMcpConfigs`, `SpringAiToolGuideModel`, `RedisToolGuideCache`, `SetupConfiguration`.
+  `HourlyFetchBudget`, `ReadmeMcpConfigs`, `SpringAiToolGuideModel`, `SharedToolGuideCache`, `SetupConfiguration`.
 - `backend/src/main/java/ai/helper2/setup/web/SetupController.java`, `backend/src/main/resources/prompts/setup/tool-guide.txt`,
   `frontend/src/components/SetupGuide.tsx`.
 

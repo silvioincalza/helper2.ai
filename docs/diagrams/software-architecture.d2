@@ -12,6 +12,7 @@
 #   backend/src/main/java/ai/helper2/platform/http/ObservedHttp.java (observed client of sources and embedder),
 #   backend/src/main/kotlin/ai/helper2/search/WebSearch.kt, search/internal/JdbcWebResultStore.java,
 #   search/internal/SpringAiQueryTranslator.java, TranslationConfiguration.java (query translation),
+#   platform/cache/SharedCaches.java, JdbcSharedCache.java (model answers shared by the replicas in ai_cache),
 #   backend/src/main/kotlin/ai/helper2/guide/usecase/ (AskGuide and its steps),
 #   backend/src/main/java/ai/helper2/platform/quota/ (Tavily store and daily quota, ADR 0037),
 #   backend/src/main/resources/application.yaml (base URLs, llm-nebius profile, helper2.embedding),
@@ -62,9 +63,9 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
     ctl: "GuideController (JSON)\nGuideStreamController (SSE)" {class: app}
     core: "AskGuide (QuestionReader, PickAnswer,\nCompareAnswer, ExplainAnswer,\nDateAnswer, ReasonCheckStep)\nGuideValidator · GuideAnswerCache\nClientQuota · GuideLimits" {class: app}
     p_model: GuideModel {class: port}
-    p_store: GuideAnswerStore {class: port}
+    p_store: "GuideAnswerStore\nSimilarQuestionIndex" {class: port}
     model: "SpringAiGuideModel\n(guide.internal)" {class: app}
-    store: "RedisGuideAnswerStore\n(guide.internal)" {class: app}
+    store: "SharedGuideAnswerStore\nJdbcSimilarQuestionIndex\n(guide.internal)" {class: app}
     ctl -> core: {class: hot}
     core -> p_model: {class: ai-call}
     core -> p_store
@@ -126,7 +127,7 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
     usecase: "GetResourceSetup\nGetToolGuide" {class: app}
     core: "SetupGuides · RunOptionRules\nToolGuides · ToolGuideValidator" {class: app}
     p_ports: "McpServerSpecs · ToolMaterials\nToolGuideModel · ToolGuideCache" {class: port}
-    adapters: "RegistryMcpServerSpecs · HttpToolMaterials\n(Caffeine, HourlyFetchBudget)\nSpringAiToolGuideModel · RedisToolGuideCache" {class: app}
+    adapters: "RegistryMcpServerSpecs · HttpToolMaterials\n(Caffeine, HourlyFetchBudget)\nSpringAiToolGuideModel · SharedToolGuideCache" {class: app}
     ctl -> usecase
     usecase -> core
     core -> p_ports
@@ -146,6 +147,7 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
     http: "http: ObservedHttp\n(pooled, observed RestClient;\nUser-Agent with build version)" {class: app}
     resilience: "resilience: Resilience (named\npolicies on Resilience4j: llm-chat,\nllm-embed, guide, …)\nOutboundThrottle (Redis)" {class: app}
     quota: "quota: QuotaCounter (Redis Lua)\nQuotaKeys (HMAC)" {class: app}
+    cache: "cache: SharedCache\n(JdbcSharedCache, daily purge)" {class: app}
   }
 
   shared: "shared (open, Kotlin)\nCanonicalUrl · ResourceId · DateFact\nLanguageDetector · Vocabulary" {class: app}
@@ -207,9 +209,14 @@ browser -> app.identity.me
 app.search.cache -> stores.redis: "h2:v1:src:*"
 app.search.web -> stores.pg: "tavily_query_result"
 app.platform.quota -> stores.redis: "h2:v1:quota:*"
-app.guide.store -> stores.redis: "h2:v1:guide-answer:*"
+app.guide.store -> app.platform.cache: "guide answers"
+app.guide.store -> stores.pg: "guide_similar_question"
 app.platform.llm -> stores.redis: "h2:v1:budget:*"
-app.setup.adapters -> stores.redis: "h2:v2:tool-guide:*\nh2:v1:setup:fetches:*"
+app.search.translator -> app.platform.cache: "translations"
+app.catalog.semantic -> app.platform.cache: "query vectors"
+app.setup.adapters -> app.platform.cache: "tool guide answers"
+app.platform.cache -> stores.pg: "ai_cache"
+app.setup.adapters -> stores.redis: "h2:v1:setup:fetches:*"
 app.catalog.store -> stores.pg: JDBC
 app.scout.jdbc -> stores.pg: JDBC
 app.identity.me -> stores.pg: "bookmarks, users"
@@ -221,6 +228,7 @@ app.setup.adapters -> nvidia.nebius: "tool guide steps" {class: ai-call}
 app.search.translator -> nvidia.nebius: "translate query" {class: ai-call}
 app.sources.classifier -> nvidia.nebius: "classify repos" {class: ai-call}
 app.catalog.embed -> nvidia.embeddings: "/embeddings" {class: ai-call}
+app.guide.core -> nvidia.embeddings: "question embedding\n(similar questions, ADR 0041)" {class: ai-call}
 
 app.sources.live -> hosts: "HTTPS: search calls"
 app.sources.collectors -> hosts: "HTTPS: Scout collection"

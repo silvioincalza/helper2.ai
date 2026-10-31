@@ -14,6 +14,7 @@ import ai.helper2.guide.GuideSearchPlan
 import ai.helper2.guide.GuideStatus
 import ai.helper2.guide.GuideUnavailable
 import ai.helper2.guide.Recommendation
+import ai.helper2.guide.SimilarQuestions
 import ai.helper2.search.Asker
 import ai.helper2.search.IntentClass
 import ai.helper2.search.Notice
@@ -55,8 +56,14 @@ internal class Question(val text: String, val path: AudiencePath?, val clarifica
     val counts = mutableListOf<String>()
 }
 
-/** Set while answering, for the question metric: the status alone cannot tell a spent budget from an outage. */
-internal class Asked(var budgetExhausted: Boolean = false)
+/**
+ * Set while answering, for the question metric (the status alone cannot tell a spent budget from an outage) and for
+ * the similar-question index (ADR 0041): the question's probe, and whether the answer is a near twin's.
+ */
+internal class Asked(var budgetExhausted: Boolean = false) {
+    var probe: SimilarQuestions.Probe? = null
+    var reused: Boolean = false
+}
 
 /** How the question was read: the plan (or the backup rules alone), with the user's removals applied. */
 internal class Reading(

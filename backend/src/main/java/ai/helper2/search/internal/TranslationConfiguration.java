@@ -1,5 +1,6 @@
 package ai.helper2.search.internal;
 
+import ai.helper2.platform.cache.SharedCaches;
 import ai.helper2.platform.llm.CallCounter;
 import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.LlmSettings;
@@ -27,12 +28,15 @@ class TranslationConfiguration {
     /**
      * Non-English search queries in English words, with the fast model; off without a configured model.
      * Its own daily cap, separate from the guide's: search allows far more requests per client than the
-     * guide, so a flood of unique foreign-language queries must not spend the guide's budget.
+     * guide, so a flood of unique foreign-language queries must not spend the guide's budget. Translations are shared
+     * by the replicas for {@code translationTtl}.
      */
     @Bean
     QueryTranslator queryTranslator(ObjectProvider<ChatModel> chatModel, LlmSettings llm, Clock clock,
                                     CallCounter budgetCounter, ModelCallMetrics metrics, MeterRegistry meters, Resilience resilience,
+                                    SharedCaches caches,
                                     @Value("${helper2.search.daily-translations:300}") int dailyTranslations,
+                                    @Value("${helper2.search.translation-ttl:24h}") Duration translationTtl,
                                     @Value("${helper2.search.translate-queries:true}") boolean enabled) {
         ChatModel model = chatModel.getIfAvailable();
         if (!enabled || !llm.usable(model) || !llm.hasReasoningModel()) {
@@ -44,6 +48,6 @@ class TranslationConfiguration {
         Gauge.builder("helper2.search.translation.budget.remaining", budget, DailyBudget::remaining)
             .description("Search query translations left under today's cap (UTC day)")
             .register(meters);
-        return new SpringAiQueryTranslator(model, llm.fast(), budget, clock, Duration.ofHours(24), 2000, metrics, resilience);
+        return new SpringAiQueryTranslator(model, llm.fast(), budget, caches.named("translation"), translationTtl, metrics, resilience);
     }
 }

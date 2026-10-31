@@ -4,12 +4,14 @@ import ai.helper2.platform.llm.CallCounter
 import ai.helper2.platform.llm.DailyBudget
 import ai.helper2.shared.AudiencePath
 import java.security.MessageDigest
+import java.text.Normalizer
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.HexFormat
+import java.util.Locale
 
 /**
  * Fresh (not cached) guide questions per client per UTC day. The per-minute rate limit alone lets one client
@@ -61,21 +63,15 @@ internal fun sha256Hex(text: String): String =
     HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(text.toByteArray(Charsets.UTF_8)))
 
 /**
- * Durable copy of the guide answer cache, so a restart or a deploy does not throw away answers that
- * cost three model calls each. An unavailable store or an unreadable entry is a miss, never an error.
+ * Where guide answers are kept (the shared cache in PostgreSQL, ADR 0041): on disk and shared by every replica, so a
+ * restart does not throw away answers that cost three model calls each. An unavailable store or an unreadable entry
+ * is a miss, never an error.
  */
 interface GuideAnswerStore {
     fun get(key: String): GuideAnswer?
-    fun put(key: String, answer: GuideAnswer, ttl: Duration)
 
-    companion object {
-        /** No durable copy (no Redis): the cache works in memory only. */
-        @JvmField
-        val NONE: GuideAnswerStore = object : GuideAnswerStore {
-            override fun get(key: String): GuideAnswer? = null
-            override fun put(key: String, answer: GuideAnswer, ttl: Duration) {}
-        }
-    }
+    /** Keeps [answer] under [key] for [ttl], replacing what the key held. */
+    fun put(key: String, answer: GuideAnswer, ttl: Duration)
 }
 
 /**
@@ -84,43 +80,29 @@ interface GuideAnswerStore {
  * original generatedAt, so the page stays honest about its age. Degraded answers are never cached:
  * they would hide a provider recovery.
  *
- * In memory first; on a memory miss it reads through to [store] (Redis), so entries survive restarts.
- * An answer read from the store expires [ttl] after its generatedAt, the same moment as in the store.
+ * Kept in [store]; an answer expires [ttl] after its generatedAt.
  */
-class GuideAnswerCache @JvmOverloads constructor(
+class GuideAnswerCache(
     private val ttl: Duration,
-    private val maxEntries: Int,
     private val clock: Clock,
-    private val store: GuideAnswerStore? = null,
+    private val store: GuideAnswerStore,
 ) {
-    private data class Entry(val answer: GuideAnswer, val expiresAt: Instant)
-
-    private val entries = object : LinkedHashMap<String, Entry>(16, 0.75f, true) {
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Entry>?) = size > maxEntries
-    }
-
     fun get(key: String): GuideAnswer? {
-        val now = clock.instant()
-        synchronized(this) {
-            val e = entries[key]
-            if (e != null) {
-                if (now.isBefore(e.expiresAt)) return e.answer
-                entries.remove(key)
-            }
-        }
-        // Outside the lock: a slow store must not queue every caller behind it.
-        val durable = store?.let { runCatching { it.get(key) }.getOrNull() } ?: return null
-        val expiresAt = durable.generatedAt.plus(ttlOf(durable))
-        if (!now.isBefore(expiresAt) || !isCacheable(durable)) return null
-        synchronized(this) { entries[key] = Entry(durable, expiresAt) }
-        return durable
+        val stored = runCatching { store.get(key) }.getOrNull() ?: return null
+        val expiresAt = stored.generatedAt.plus(ttlOf(stored))
+        return stored.takeIf { clock.instant().isBefore(expiresAt) && isCacheable(it) }
     }
 
-    fun put(key: String, answer: GuideAnswer) {
-        val ttl = ttlOf(answer)
-        if (!isCacheable(answer) || !ttl.isPositive) return
-        synchronized(this) { entries[key] = Entry(answer, clock.instant().plus(ttl)) }
-        store?.let { runCatching { it.put(key, answer, ttl) } }
+    /**
+     * Caches [answer] under [key] until [ttl] after its generatedAt, also when it is an older answer reused for a
+     * similar question (ADR 0041): a copy never outlives the original. Returns when it expires; null when the answer
+     * is not cached.
+     */
+    fun put(key: String, answer: GuideAnswer): Instant? {
+        val expiresAt = answer.generatedAt.plus(ttlOf(answer))
+        val left = Duration.between(clock.instant(), expiresAt)
+        if (!isCacheable(answer) || !left.isPositive) return null
+        return expiresAt.takeIf { runCatching { store.put(key, answer, left) }.isSuccess }
     }
 
     /**
@@ -158,17 +140,42 @@ class GuideAnswerCache @JvmOverloads constructor(
         private const val SHAPE = "v2"
 
         /**
-         * Same question, different casing or spacing, same [config] (models, prompts, limits) → same key. A
-         * clarification answer and removed parts of the reading ([drops]) are part of the question.
+         * Same [normalized] question, same [config] (models, prompts, limits) → same key. A clarification answer and
+         * removed parts of the reading ([drops]) are part of the question. The key is a SHA-256 hash, so no store
+         * sees the question.
          */
         @JvmStatic
         @JvmOverloads
         fun key(request: String, path: AudiencePath?, config: String, clarification: String? = null, drops: Drops = Drops.NONE): String =
-            listOf(
-                SHAPE, normalized(request), path?.name ?: "-", config,
-                clarification?.let { "c:" + normalized(it) } ?: "-", drops.key.ifEmpty { "-" },
-            ).joinToString("|")
+            sha256Hex(
+                listOf(
+                    SHAPE, normalized(request), path?.name ?: "-", config,
+                    clarification?.let { "c:" + normalized(it) } ?: "-", drops.key.ifEmpty { "-" },
+                ).joinToString("|"),
+            )
 
-        private fun normalized(text: String) = text.trim().lowercase().replace(Regex("\\s+"), " ")
+        private val QUOTES = Regex("[\"`«»‹›“”„‟]")
+        private val APOSTROPHES = Regex("[‘’‚‛ʼ]")
+        private val QUOTING_APOSTROPHE = Regex("(?<![\\p{L}\\p{N}])'|'(?![\\p{L}\\p{N}])")
+        private val INVISIBLE = Regex("[​-‍⁠﻿]")
+        private val SPACES = Regex("[\\p{Z}\\s]+")
+        private val TRAILING_PUNCTUATION = Regex("[\\s.?!,;:…¿¡]+$")
+
+        /**
+         * The question as the cache key and the similar-question index see it: only changes that cannot change the
+         * answer. Unicode compatibility form (NFKC: full-width letters, ligatures, no-break spaces), lower case, quote
+         * marks removed (an apostrophe inside a word stays), invisible characters removed, spaces collapsed, and the
+         * punctuation that ends the sentence removed. Word order, inner punctuation ("c++", "node.js", "gpt-4") and
+         * every word stay: "python bindings for rust" is not "rust bindings for python".
+         */
+        @JvmStatic
+        fun normalized(text: String): String {
+            val plain = Normalizer.normalize(text, Normalizer.Form.NFKC).lowercase(Locale.ROOT)
+                .replace(INVISIBLE, "")
+                .replace(APOSTROPHES, "'")
+                .replace(QUOTES, " ")
+                .replace(QUOTING_APOSTROPHE, " ")
+            return plain.replace(SPACES, " ").replace(TRAILING_PUNCTUATION, "").trim()
+        }
     }
 }
