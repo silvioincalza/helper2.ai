@@ -4,11 +4,14 @@ import { ExternalLink } from '@/components/ExternalLink';
 import { useBookmarks } from '@/context/BookmarksContext';
 import { useTitle } from '@/hooks/useTitle';
 import { formatDate } from '@/lib/format';
+import { NEW_DESIGN_ENABLED } from '@/lib/features';
+import { SavedV2 } from '@/components/saved/SavedV2';
 
 export default function SavedPage() {
   const { t, i18n } = useTranslation();
   const { items, remove, mode, storageFailed, serverError } = useBookmarks();
   useTitle(t('nav.saved'));
+  if (NEW_DESIGN_ENABLED) return <SavedV2 />;
   return (
     <div>
       <h1>{t('saved.title')}</h1>
