@@ -614,6 +614,9 @@ helper2:
       reasoning: ${H2_SETUP_GUIDE_REASONING:false}
       # How long checked answers stay in Redis.
       cache-ttl: ${H2_SETUP_GUIDE_CACHE_TTL:P7D}
+      # How long the "unavailable" answer stays in Redis after two model answers that could not be read, so the same
+      # ask does not spend two model calls again at once. Provider errors and a spent budget are never kept.
+      unreadable-ttl: ${H2_SETUP_UNREADABLE_TTL:PT10M}
 
 ---
 # Tavily (ADR 0037): store first, then a live call inside the visitor's daily web searches, per feature.

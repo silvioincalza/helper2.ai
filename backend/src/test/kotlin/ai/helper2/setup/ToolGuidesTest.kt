@@ -2,6 +2,7 @@ package ai.helper2.setup
 
 import java.net.URI
 import java.time.Clock
+import java.time.Duration
 import java.time.Instant
 import java.time.ZoneOffset
 import kotlin.test.Test
@@ -27,19 +28,30 @@ class ToolGuidesTest {
 
     private class MemoryCache : ToolGuideCache {
         val map = mutableMapOf<String, ToolGuideAnswer>()
+        val ttls = mutableMapOf<String, Duration>()
         override fun get(key: String) = map[key]
-        override fun put(key: String, answer: ToolGuideAnswer) {
+        override fun put(key: String, answer: ToolGuideAnswer, ttl: Duration) {
             map[key] = answer
+            ttls[key] = ttl
         }
     }
+
+    private val ttls = ToolGuideTtls(answer = Duration.ofDays(7), unreadable = Duration.ofMinutes(10))
+
+    private fun guides(model: ToolGuideModel?, cache: ToolGuideCache = MemoryCache(), materials: ToolMaterials = ToolMaterials { listOf(doc) }) =
+        ToolGuides(materials, model, cache, clock, ttls)
+
+    private fun failing(reason: ToolGuideUnavailable.Reason) = Model { throw ToolGuideUnavailable(reason) }
 
     private val good = ProposedGuide(listOf(ProposedSection("INSTALL", listOf(ProposedStep("Install it.", "readme", "Install with:", "npm install acme-x")))))
 
     @Test
     fun `answers OK once, then from the cache, a question is its own entry`() {
         val model = Model { good }
-        val guides = ToolGuides({ listOf(doc) }, model, MemoryCache(), clock)
+        val cache = MemoryCache()
+        val guides = guides(model, cache)
         val a = guides.answer("id", ref, null)
+        assertEquals(Duration.ofDays(7), cache.ttls.values.single())
         assertEquals(ToolGuideStatus.OK, a.status)
         guides.answer("id", ref, null)
         assertEquals(1, model.calls)
@@ -51,7 +63,7 @@ class ToolGuidesTest {
     @Test
     fun `the kept answer holds neither the question nor the document text, a hit still answers with the question`() {
         val cache = MemoryCache()
-        val guides = ToolGuides({ listOf(doc) }, Model { good }, cache, clock)
+        val guides = guides(Model { good }, cache)
         val asked = guides.answer("id", ref, "How do I install it?")
         assertEquals("How do I install it?", asked.question)
         val kept = cache.map.values.single()
@@ -63,18 +75,47 @@ class ToolGuidesTest {
 
     @Test
     fun `no documents, no model, budget and nothing kept are told apart`() {
-        assertEquals(ToolGuideStatus.NO_MATERIAL, ToolGuides({ emptyList() }, Model { good }, ToolGuideCache.NONE, clock).answer("id", ref, null).status)
+        assertEquals(ToolGuideStatus.NO_MATERIAL, guides(Model { good }, ToolGuideCache.NONE, { emptyList() }).answer("id", ref, null).status)
         val noRef = ToolRef.of("x", "PRODUCT", listOf("https://example.com"), emptyList())
-        assertEquals(ToolGuideStatus.NO_MATERIAL, ToolGuides({ error("not called") }, null, ToolGuideCache.NONE, clock).answer("id", noRef, null).status)
-        val none = ToolGuides({ listOf(doc) }, null, ToolGuideCache.NONE, clock).answer("id", ref, null)
+        assertEquals(ToolGuideStatus.NO_MATERIAL, guides(null, ToolGuideCache.NONE, { error("not called") }).answer("id", noRef, null).status)
+        val none = guides(null, ToolGuideCache.NONE).answer("id", ref, null)
         assertEquals(ToolGuideStatus.LLM_UNAVAILABLE, none.status)
-        val budget = ToolGuides({ listOf(doc) }, Model { throw ToolGuideUnavailable(ToolGuideUnavailable.Reason.BUDGET) }, MemoryCache(), clock).answer("id", ref, null)
+        val budget = guides(failing(ToolGuideUnavailable.Reason.BUDGET)).answer("id", ref, null)
         assertEquals(ToolGuideStatus.LLM_UNAVAILABLE, budget.status)
         assertEquals("budget", budget.unavailable)
         val invented = ProposedGuide(listOf(ProposedSection("INSTALL", listOf(ProposedStep("Install.", "readme", "Install with pip", "pip install acme-x")))))
-        val empty = ToolGuides({ listOf(doc) }, Model { invented }, MemoryCache(), clock).answer("id", ref, null)
+        val empty = guides(Model { invented }).answer("id", ref, null)
         assertEquals(ToolGuideStatus.NO_STEPS, empty.status)
         assertEquals(1, empty.rejected)
+    }
+
+    @Test
+    fun `an unreadable model answer is kept briefly, so asking again soon costs no model call`() {
+        val model = failing(ToolGuideUnavailable.Reason.UNREADABLE)
+        val cache = MemoryCache()
+        val guides = guides(model, cache)
+        val first = guides.answer("id", ref, "How do I install it?")
+        val again = guides.answer("id", ref, "how do I install it?")
+        assertEquals(1, model.calls)
+        assertEquals(ToolGuideStatus.LLM_UNAVAILABLE, first.status)
+        assertEquals("error", first.unavailable)
+        assertEquals(first.copy(question = "how do I install it?"), again)
+        assertNull(cache.map.values.single().question)
+        assertEquals(Duration.ofMinutes(10), cache.ttls.values.single())
+    }
+
+    @Test
+    fun `a provider error and a spent budget are not kept, they recover by themselves`() {
+        for (reason in listOf(ToolGuideUnavailable.Reason.PROVIDER, ToolGuideUnavailable.Reason.BUDGET)) {
+            val model = failing(reason)
+            val cache = MemoryCache()
+            val guides = guides(model, cache)
+            guides.answer("id", ref, null)
+            val again = guides.answer("id", ref, null)
+            assertEquals(2, model.calls, reason.name)
+            assertEquals(reason.shown, again.unavailable)
+            assertEquals(emptyMap(), cache.map)
+        }
     }
 
     @Test

@@ -120,9 +120,6 @@ Open items:
   [ADR 0037](adr/0037-tavily-store-and-daily-quota.md)). The API already returns them (`webSearches`).
 - Write the Scout's Tavily news and events to the same stored sets as searches, with their own share of credits
   ([ADR 0037](adr/0037-tavily-store-and-daily-quota.md)).
-- Setup guide: a model answer that stays unreadable after two attempts is not cached, so the same resource and
-  question cost two model calls on every request until the daily cap. Give it its own reason and a short negative
-  cache ([ADR 0031](adr/0031-setup-guide.md)).
 - **Signed provenance manifest for AI-written text** (C2PA-style): sign each guide answer with its model, time and
   AI-written fields, so the origin survives outside our page and API. Today the marking is metadata only and is
   lost on copy ([ADR 0038](adr/0038-ai-content-marking.md)). Do it when a standard and tooling for text exist, or

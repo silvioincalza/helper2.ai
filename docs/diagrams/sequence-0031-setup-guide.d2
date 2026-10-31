@@ -46,6 +46,6 @@ walkthrough: Step-by-step guide (optional question) {
   setup -> model: "write(ref, documents, question):\npick and order passages" {class: ai-call}
   model -> setup: "ProposedGuide"
   setup -> setup: "ToolGuideValidator.validate:\ndrop steps not in the documents"
-  setup -> redis: "put (7 days, no question,\nno document text)"
+  setup -> redis: "put (7 days, no question,\nno document text; 10 min for\ntwo unreadable model answers)"
   setup -> page: "200 ToolGuide: sections, steps,\ndocuments with read dates" {class: hot}
 }
