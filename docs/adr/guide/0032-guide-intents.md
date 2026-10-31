@@ -260,7 +260,7 @@ either, and most platform courses end with a certificate.
 - Card fields, on existing columns (no new table): platform is a `PLATFORM` label shown as the source badge; level is
   `tech_level`; pricing is `pricing`, set only where the page states it; credential (`certification`, `certificate`)
   and format (`exam-only`, `self-paced`, `instructor-led`, `live-event`) are tags, also kept typed in
-  `source_record.extra`. Migration `V3__course_type.sql` adds the type and the `COURSE_CANDIDATE` review kind.
+  `source_record.extra`. The schema (`V1__schema.sql`) holds the type and the `COURSE_CANDIDATE` review kind.
 - **Curated seed** (`R__courses.sql`): official programmes and the core courses of platforms without an open API
   (DeepLearning.AI, Hugging Face Learn, fast.ai, vendor certifications of Google Cloud, AWS, Microsoft, NVIDIA DLI,
   IBM, Databricks). Each entry links the provider's own page.
@@ -337,7 +337,7 @@ exactly when expected ("new tools?", "Gemini", "what is Gemini?" are; "what is O
   `SourceQuery.publishedAfter`, `browse`, cache key.
 - `backend/src/main/java/ai/helper2/sources/github/GitHubSource.java`, `sources/tavily/TavilySource.java`,
   `sources/npm/NpmSource.java`, `sources/tavily/CourseCollector.java`; `catalog/internal/ResourceStore.java` — date pushdown, npm dates, courses.
-- `backend/src/main/resources/db/migration/V2__npm_dates_are_updates.sql`, `V3__course_type.sql`, `R__courses.sql`.
+- `backend/src/main/resources/db/migration/V1__schema.sql` (`COURSE`, `COURSE_CANDIDATE`, `review_item.candidate_url`), `R__courses.sql`.
 - `api/openapi.yaml` — request, response, status, stream events.
 - `frontend/src/components/guide/GuideAnswer.tsx` — clarification chips, "Understood as", comparison table, explanation.
 
