@@ -51,18 +51,30 @@ The success criteria at the end say which tests verify each journey today. What 
 **Key decision:** include or exclude unknowns. Selecting a value excludes unknowns; selecting "Unknown" includes them explicitly.
 **Failure case:** filters produce zero results → empty state lists the active filters with one-click removal.
 
-## UJ-4 Evaluate a result (card → detail)
+## UJ-4 Evaluate a result (preview → resource page)
 
-1. Card shows: title, concise description (+ where the text came from), type, tags, audience, source badges, the three dates (published / last updated / discovered by Helper2), freshness, real popularity metrics with their source, link to the original.
-2. User opens the detail page: metadata per field with origin and verification, evidence (source URL, retrieval time, excerpt), relationships (verified vs unverified candidates kept apart), optional AI summary with citations per claim, source records (provenance).
-3. User follows "Open original" (new tab, `noopener noreferrer`), hostname visible before clicking.
+**Entry:** a row on the results page (the preview), "Full details" in the preview, a News or Events row on the home page, a pick chip for a resource outside the list, or a shared `/resource/:id` link.
+
+1. The preview shows the selected result without a page load: type, site, title, Open on source (new tab, `noopener noreferrer nofollow`), Guide me for tools, why it matches or its description (and where the text came from), Use and Build facts (Unknown when no source says), Listed by, and the three dates (published / last updated / discovered by Helper2).
+2. "Full details" opens `/resource/:id`: the same parts, from the same component, with the title as the page heading, plus what the type means, the tags, the AI summary with citations per claim (labelled and marked AI-written), what each source says (value, origin, verification, evidence), relationships (verified apart from unverified candidates; rejected never shown), the source records (provenance) and the report form (UJ-5).
+3. Guide me opens under the actions with focus on its heading: snippets per AI tool, checked steps from the tool's own documents, a follow-up question.
+
+**Exit:** "Back to results" (shown when the page was opened from the results) works like the browser's Back: the same search, the same selected row, the same scroll position. Otherwise the box in the header and the logo.
+
+| State | Behavior |
+|---|---|
+| Loading | "Loading…" and skeleton blocks. |
+| Not in the index | "Resource not found" as the page heading, why, and the way home; the box stays in the header. No Try again. |
+| Error (network, server) | An alert "Could not load this resource" with Try again and the way home. After Try again focus lands on the resource title, or on the error heading when it fails again. |
+| No AI summary | Says why, from the enrichment status (not run, unavailable model, rejected). |
+| No relationships | "No verified relationships."; the candidates part is left out. |
 
 **Success:** user can answer "who says so, and when?" for every displayed fact.
-**Failure cases:** sources disagree → "Sources disagree on license: MIT (GitHub) vs Apache-2.0 (npm)" — never silently resolved; resource not yet indexed → 404 with link back to search.
+**Failure case:** sources disagree → "Sources disagree on license: MIT (GitHub) vs Apache-2.0 (npm)", with each source named — never silently resolved.
 
 ## UJ-5 Report wrong or outdated information
 
-1. On a detail page, "Report a problem" → kind (wrong / outdated / broken link / other), optional field, message.
+1. On the resource page, "Report wrong or outdated info" → kind (wrong / outdated / broken link / other), optional field, message.
 2. Submit → 202 "Thanks — a human will review it". Report enters the review queue; nothing on the page changes automatically.
 
 **Failure cases:** validation error inline; rate-limited → friendly message; network error → retry with text preserved.

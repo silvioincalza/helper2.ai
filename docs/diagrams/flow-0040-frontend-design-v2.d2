@@ -2,8 +2,11 @@
 # Shows the News and Events boards (move one row at a time, hold still on hover, focus, tap or Pause, never with
 # reduced motion), the list shown at once, the reserved picks bar, the guide answer arriving over SSE (picks or
 # no pick), badges in place with no re-order, a chip for a pick outside the list, the sources and web searches left
-# under the results, and the selected result kept in the URL with replaceState.
-# Source of truth: docs/adr/0040-frontend-design-v2.md, frontend/src/components/ui/NewsBoard.tsx,
+# under the results, the selected result kept in the URL with replaceState, and the resource page: the preview's
+# overview as a page, its states, and Try again that keeps focus on a heading.
+# Source of truth: docs/adr/0040-frontend-design-v2.md, frontend/src/components/ui/NewsBoard.tsx, StatePanel.tsx,
+#   frontend/src/hooks/useRetry.ts, frontend/src/pages/ResourcePage.tsx, NotFoundPage.tsx,
+#   frontend/src/components/ResourceOverview.tsx,
 #   frontend/src/components/HomeBoards.tsx, frontend/src/routes.tsx, frontend/src/pages/ResultsPage.tsx,
 #   frontend/src/components/ResultList.tsx, ResultPreview.tsx, GuidePicks.tsx, SourcesSummary.tsx,
 #   frontend/src/components/ui/PicksBar.tsx, frontend/src/hooks/useGuideStream.ts, useNarrow.ts.
@@ -20,7 +23,7 @@ home: Home boards {
   state: "Rows?" {class: decision}
   skeleton: "Loading: skeleton rows" {class: app}
   empty: "Empty: says so" {class: end}
-  error: "Error: says so, Try again" {class: fail}
+  error: "Error: says so, Try again\n(focus stays on the board heading)" {class: fail}
   fits: "More rows than fit,\nno reduced motion?" {class: decision}
   still: "Normal list, scrolls by hand,\nno Pause button" {class: end}
   hold: "Hover, focus inside,\ntap or Pause?" {class: decision}
@@ -44,6 +47,24 @@ sources: "Under the results: fan-out line,\none tile per source,\nweb searches l
 wide: "Screen wider than 860 px?" {class: decision}
 preview: "Preview on the right" {class: app}
 inline: "Preview under the selected row,\nlink to /resource/:id" {class: app}
+
+resource: Resource page /resource/:id {
+  class: group
+  direction: down
+  open: "Full details, a board row or a link" {class: app}
+  get: "GET /api/v1/resources/{id}" {class: ext}
+  found: "Answer?" {class: decision}
+  page: "The preview's overview as a page (h1),\nthen AI summary, what the sources say,\nrelationships, records, report" {class: end}
+  missing: "Not found: says so,\nthe way home" {class: end}
+  failed: "Error: Try again,\nthe way home" {class: fail}
+  back: "Came from the results?\nBack to results = browser Back" {class: app}
+  open -> get -> found
+  found -> page: 200 {class: hot}
+  found -> missing: 404
+  found -> failed: other
+  failed -> get: "Try again: focus on the title\nor the error heading" {class: hot}
+  page -> back
+}
 guide: "POST /api/v1/guide/stream (SSE)" {class: ext}
 picks: "Guide found picks?" {class: decision}
 
@@ -87,4 +108,6 @@ picks -> answer.bar: yes {class: hot}
 picks -> none: no
 show -> select.tap
 show -> sources
+preview -> resource.open: Full details
+inline -> resource.open: Full details
 answer.chip -> select.url

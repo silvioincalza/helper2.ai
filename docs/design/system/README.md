@@ -85,6 +85,21 @@ One list, one preview.
 - **Sources grid** under everything, then the footer.
 - Below `bp-split` the preview panel hides. The selected row opens an inline preview under it (proof quote, three facts, Open and Full details). Full details goes to `/resource/:id`.
 
+## Resource page
+
+`/resource/:id` is the ResultPreview as a page: the same parts in the same order, from the same component, with the
+title as the page's `h1`. Under them, with the same mono labels: AI summary (claims with their citations), What the
+sources say (each value with its origin, verification and evidence), Verified relationships, Unverified candidates
+(only when there are any), Source records and the report form. Opened from the results, a "← Back to results" link
+goes back to the same search and selection.
+
+## States
+
+Every state has a heading that says what happened, the reason, and a next step: Try again, the way home, fewer words,
+remove the filters or ask the guide. An error has a `danger` border and is an alert; nothing found or no page here is
+a plain notice. After Try again, focus lands on the heading of what loaded, or on the state's heading when it comes
+back. The 404 page offers the home page and the box in the header.
+
 ## Layout and breakpoints
 
 | Token | Width | What changes |
@@ -138,7 +153,8 @@ The shared React components are in `frontend/src/components/ui/`, the results pa
 |---|---|
 | Badge (type tag) | `TypeTag` |
 | ResultRow | `ResultList` (the rows), `SelectableRow` (the row button and its selected outline) |
-| ResultPreview, InlinePreview | `ResultPreview`, `InlinePreview` |
+| ResultPreview, InlinePreview | `ResultPreview`, `InlinePreview`; the parts they share with the resource page in `ResourceOverview` |
+| Banner (empty, error and not-found states) | `StatePanel` |
 | FactList | `FactList` in `CardFacts` |
 | SourcesGrid | `SourcesSummary` (the fan-out line, the web searches left), `SourceTiles` (the tiles) |
 | Guide picks bar | `PicksBar` (the box), `GuidePicks` (the guide's answer in it) |

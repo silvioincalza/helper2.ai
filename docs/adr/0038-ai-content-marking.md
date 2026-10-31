@@ -34,6 +34,8 @@ to the text.
    aspects and cells, explanation sentences, the prompt, the planned search query, AI summaries and values extracted
    by AI on the resource page. Quotes, titles and links are never marked: they come from the sources. Our own
    labels and the subjects (the user's own words) are not marked.
+   Every marked group also has a label on screen (Art. 50(1)): "AI-written" on the picks bar, the requirements
+   ("Requirements AI-written") and the planner's search terms, "AI summary", "Extracted by AI", "Model's explanation".
 4. **Explained in public.** The Mission page has a section "How we mark AI text".
 5. **No hidden characters in the text.** We do not add zero-width or other invisible characters.
 
@@ -57,7 +59,7 @@ to the text.
 - `api/openapi.yaml` — `AiContentMarker`, `GuideResponse.aiContent`.
 - `backend/.../guide/web/GuideDtoMapper.java` — builds the marker.
 - `frontend/src/lib/aiMark.ts` — the page attributes; used in `GuidePicks.tsx`, `ui/PicksBar.tsx`, `ResultList.tsx`,
-  `ResultPreview.tsx`, `ResultCardView.tsx`, `ResourcePage.tsx`.
+  `ResourceOverview.tsx` (the results preview and the resource page), `ResourcePage.tsx`.
 
 ## Diagrams
 [flow](../diagrams/flow-0038-ai-content-marking.svg) · [sequence](../diagrams/sequence-0038-ai-content-marking.svg)

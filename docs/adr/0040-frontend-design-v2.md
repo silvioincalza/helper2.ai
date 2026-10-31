@@ -1,7 +1,8 @@
-# 0040 — Frontend design: home page, results with preview, guide picks bar, design system v3
+# 0040 — Frontend design: home page, results with preview, resource page, guide picks bar, designed states, design system v3
 
 **Status.** Accepted (2026-10-30). **Builds on:** [0025](0025-frontend-one-box.md),
-[0015](0015-ai-guide-evidence-gate.md), [0038](0038-ai-content-marking.md), [0039](0039-frontend-recent-answers-cache.md)
+[0015](0015-ai-guide-evidence-gate.md), [0031](0031-setup-guide.md), [0038](0038-ai-content-marking.md),
+[0039](0039-frontend-recent-answers-cache.md)
 
 ## Context
 The one box ([0025](0025-frontend-one-box.md)) searches and asks the guide. Three things decide how the pages around it
@@ -35,6 +36,12 @@ and chose between options for each part.
    source and to `/resource/:id`. Both come from the search answer, with no request of their own. A row is a button
    named by its title; one row is in the tab order, and the arrow keys, Home and End move between rows and select.
    Filters fold away above the list, so the list and the preview share the row.
+   **The resource page `/resource/:id` is the preview as a page**: one component tree draws both, with the title as
+   the page's h1. The page adds what the type means, the tags, the AI summary with its citations, what each source
+   says (value, origin, verification, evidence), relationships (verified apart from unverified candidates), the source
+   records, Guide me ([0031](0031-setup-guide.md)) and the report form. AI-written text is labelled and marked
+   ([0038](0038-ai-content-marking.md)). Followed from the results ("Full details"), "Back to results" steps back like
+   the browser's Back, to the same search, selection and scroll position.
 5. **The selected result is in the URL.** `?q=…&id=…`, replaced, not pushed (`history.replaceState`): a shared link
    opens the same result, and Back leaves the search instead of stepping through rows. An `id` that is not in the results
    selects the first row. The `id` is untrusted input: it only selects among results already on the page.
@@ -57,7 +64,11 @@ and chose between options for each part.
 8. **States are designed, not left to chance.** Loading (skeleton rows and the sources being asked), guide
    answering (the waiting line), no results (remove the filters, fewer words, ask the guide), some sources failed
    (a banner with the way to the sources and Try again), all sources failed (an alert with Try again), search or the
-   guide unavailable (Try again), 404. Each has a next step.
+   guide unavailable (Try again), a board that cannot load (Try again), a resource not in the index (the way home), a
+   resource that cannot be loaded (Try again, the way home), and 404 (the way home and the box in the header). Each has
+   a next step. One component draws them: a heading that says what happened, the reason, the next step; an error is
+   an alert. Try again keeps the reader's place: focus goes to the heading that stays while the answer loads, then to
+   the heading of what loaded, or of the state when it comes back.
 9. **The footer makes one claim: "No ads."** Next to it, in one row, the links: Mission, Sources, Privacy, Terms,
    the code on GitHub, its licence and the release notes. Tracking cookies are planned later. The footer makes no claim about
    tracking, so it does not need to change when they come. Mission and Privacy keep their text until then.
@@ -68,6 +79,8 @@ and chose between options for each part.
 - Good: the user reads results at once and is never moved. The guide adds to the list, it does not reorder it.
 - Good: checking a result is one click, not a page load and a Back.
 - Good: a shared link opens the same search and the same result.
+- Good: the preview and the resource page cannot drift apart: one component tree draws what they share.
+- Good: every state names a next step, and Try again never drops focus to the page body.
 - Good: search ranking and the guide's opinion stay visibly separate: the list is ranking, the badges are the guide.
 - Bad: the picks bar takes about 175 px above the list (head, picks, how the guide read the question) while the guide
   works and when it picks; with no pick it is shorter.
@@ -104,14 +117,23 @@ Built:
 - `frontend/src/components/ui/` — `TypeTag`, `StatusPill`, `ProofQuote`, `SourceTiles`, `SelectableRow` (the row
   button: selected outline, one tab stop, named by its title), `PicksBar` (reserved height, head with the question and
   close, waiting line, no-pick line, the AI-written label over the picks and the question back, footer) and
-  `NewsBoard` (heading, states, the moving list and its Pause/Play button), with `ui.css` imported by the components.
+  `NewsBoard` (heading, states, the moving list and its Pause/Play button), `StatePanel` (a state's heading, reason
+  and next step; `RetryButton`) and `Heading` (a heading at the level that fits where it sits), with `ui.css` imported
+  by the components.
+- `frontend/src/hooks/useRetry.ts` — Try again that keeps focus on the page.
 - `frontend/src/pages/HomePage.tsx`, `components/HomeBoards.tsx` — the radar hero, the box, the examples, and the News
   (`GET /api/v1/recent`, 7 days) and Events (`GET /api/v1/events/upcoming`, [0022](0022-next-events.md), 90 days)
   boards.
 - `frontend/src/routes.tsx` — `/search`; `/` is the home page, `/?q=` shows the results page.
 - `frontend/src/pages/ResultsPage.tsx` — the canonical link, the search, the selection (`id`), the states.
 - `frontend/src/components/ResultList.tsx` — the rows, the pick badges and reasons, the arrow keys, the timeline view.
+- `frontend/src/components/ResourceOverview.tsx` — what the preview and the resource page share: meta, title,
+  actions, Guide me, why it matches, facts, listed by, timeline; `DetailsLink` (Full details, with the way back).
 - `frontend/src/components/ResultPreview.tsx` — `ResultPreview` and `InlinePreview`; `CardFacts.tsx` — Use and Build.
+- `frontend/src/pages/ResourcePage.tsx` — the overview as a page, then the AI summary, what the sources say,
+  relationships, source records, the report form; Back to results; its states.
+- `frontend/src/components/setup/` — Guide me ([0031](0031-setup-guide.md)).
+- `frontend/src/pages/NotFoundPage.tsx` — 404.
 - `frontend/src/hooks/useNarrow.ts` — `bp-split`: preview panel or inline preview.
 - `frontend/src/components/GuidePicks.tsx` — the guide's answer in `PicksBar`; `hooks/useGuideStream.ts` — the guide
   stream for the question and refinement in the URL.
