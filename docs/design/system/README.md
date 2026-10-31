@@ -27,7 +27,7 @@ The design system for every part of Helper2.ai: the search-and-ask box, results,
 | Page | `bg` | Everything sits on it. |
 | Objects | `surface` + `border` | Cards, lists, panels. `radius-xl` for cards, `radius-lg` for lists and panels. |
 | Idle chips | `surface-tint` + `accent-deep` | Filter, topic and example pills. |
-| Selected | `selected` + `on-selected` | The active pill or tab. |
+| Selected | `selected` + `on-selected` | The active pill. |
 | Primary action | `accent` + `on-accent` | One per area: Ask the guide, Copy prompt. |
 | Links | `accent-ink` | Text links and text buttons. |
 | Caution | `not-stated` | Unknown values, First seen dates, cached or rate-limited sources. |
@@ -79,7 +79,7 @@ No source strip on the home page. It belongs to a search.
 
 One list, one preview.
 
-- **Header:** logo with tagline, the search box, theme and Saved buttons. Under it the type tabs with counts.
+- **Header:** logo with tagline, the search box, theme and Saved buttons.
 - **List** (left, at most `list-max`): result rows in search order; a guide pick gets a "Pick #n" badge in its row. The selected row has a `row-selected-line` outline.
 - **Preview** (right): type tag and path, the title in `display`, the actions, then four parts with a mono section label each: Why it matches, Facts, Listed by, Timeline.
 - **Sources grid** under everything, then the footer.
@@ -126,10 +126,9 @@ Components are plain HTML plus the classes in `components/bundle.css` (prefix `h
 
 | Component | Used for |
 |---|---|
-| **Header** | Logo with tagline, the search box, theme and Saved buttons. Type tabs under it on the results page. 72px min height. |
+| **Header** | Logo with tagline, the search box, theme and Saved buttons. 72px min height. |
 | **Footer** | One row: the one claim "No ads.", then Mission, Sources, Privacy, Terms, GitHub, the licence and the release version. |
 | **Omnibox** | The search box. A 999px pill, 52px (58px in the hero), search icon, input, saffron **Search** button. No keyboard-shortcut hint unless the shortcut works. |
-| **TypeTabs** | All, MCP servers, Libraries, Models, Articles, each with a mono count. Active tab: ink text, 3px `accent` underline. Scrolls sideways on phones. |
 | **Button** | 44px high, 999px corners, label on one line. Primary in `accent`. An external link ends with `↗`. |
 | **Pill** | Example needs and filters. |
 | **Badge** | Type tags, Quote checked, verification. |
