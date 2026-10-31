@@ -5,7 +5,7 @@
 | [`ci.yml`](../../.github/workflows/ci.yml) | pull request, called by `cd` | GitHub-hosted | frontend lint, typecheck, vitest, build; backend `gradlew test` (Testcontainers); `make chart-check` (helm lint, `helm template \| kubeconform`). PRs only: app image build (no push), Postgres image build + tag-bump check when `deploy/postgres` changes, `terraform fmt -check` + `validate` (no backend), D2 diagrams re-rendered with d2 v0.9.0 and diffed |
 | [`cd.yml`](../../.github/workflows/cd.yml) | push to `main`, manual | self-hosted | CI → `make postgres-image` + `make image` (each only if its tag is not in the registry yet) → staging. Never prod on its own |
 | [`deploy.yml`](../../.github/workflows/deploy.yml) | called by `cd` and `release` only | self-hosted | `make diff`, `make deploy`, `make status` for one env |
-| [`release.yml`](../../.github/workflows/release.yml) | push of a `v*` tag | GitHub-hosted | refuses a moved or deleted tag; checks annotated, on `main`, same version in the four files (ADR 0029); publishes the GitHub release → **approval** → prod, the tag's commit |
+| [`release.yml`](../../.github/workflows/release.yml) | push of a `v*` tag | GitHub-hosted | refuses a moved or deleted tag; checks annotated, on `main`, same version in the four files (ADR 0029); publishes the GitHub release → waits for the commit's CD run to pass staging → **approval** → prod, the tag's commit |
 
 Third-party actions are pinned to commit SHAs with the version as a comment;
 [Dependabot](../../.github/dependabot.yml) bumps them weekly, along with Gradle, npm and the Dockerfiles' base images.
@@ -17,7 +17,7 @@ commit, image built from `git archive` of it.
 
 ```
 push main      ─► ci ─► image ─► staging
-push tag vX.Y.Z ─► release checks ─► GitHub release ─► (prod reviewer approves) ─► prod, that commit
+push tag vX.Y.Z ─► release checks ─► GitHub release ─► staging passed? ─► (prod reviewer approves) ─► prod
 manual:         environment=staging|prod, tag=<12-char commit> ─► deploy
                 prod with empty tag = what staging runs now (promote)
 ```

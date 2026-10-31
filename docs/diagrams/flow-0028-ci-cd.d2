@@ -58,6 +58,8 @@ release: release.yml (push of a tag vX.Y.Z) {
   valid: "All pass?" {class: decision}
   refused: "Fail: no release,\nno deploy" {class: fail}
   publish: "GitHub release\npublished" {class: app}
+  staged: "CD run of the commit\npassed staging?\n(waits while it runs)" {class: decision}
+  blocked: "Fail: no prod deploy" {class: fail}
   approve: "Prod reviewer\napproves?" {class: decision}
   wait: "Prod waits\n(not deployed)" {class: end}
   prod: "deploy.yml env prod:\nthe tag's commit\n(image built on main)" {class: app}
@@ -66,7 +68,9 @@ release: release.yml (push of a tag vX.Y.Z) {
   checks -> valid
   valid -> refused: no
   valid -> publish: yes {class: hot}
-  publish -> approve: {class: hot}
+  publish -> staged: {class: hot}
+  staged -> blocked: no
+  staged -> approve: yes {class: hot}
   approve -> wait: no
   approve -> prod: yes {class: hot}
   prod -> live: {class: hot}
