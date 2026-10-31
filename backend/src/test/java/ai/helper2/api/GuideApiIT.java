@@ -119,7 +119,7 @@ class GuideApiIT extends ApiTestBase {
     }
 
     @org.springframework.beans.factory.annotation.Autowired
-    org.springframework.data.redis.core.StringRedisTemplate redis;
+    org.springframework.jdbc.core.simple.JdbcClient jdbc;
 
     private static RequestPostProcessor from(String ip) {
         return r -> {
@@ -173,22 +173,29 @@ class GuideApiIT extends ApiTestBase {
     }
 
     @Test
-    void anAnswerIsKeptInRedisSoARestartDoesNotLoseIt() throws Exception {
+    void anAnswerIsKeptInPostgresSoARestartDoesNotLoseIt() throws Exception {
         String question = "translate a rental agreement to Portuguese";
-        java.util.Set<String> before = redis.keys("h2:v2:guide-answer:*");
+        Set<String> before = keys();
 
         mvc.perform(post("/api/v1/guide").with(csrf()).with(from("10.0.0.7"))
                 .contentType(MediaType.APPLICATION_JSON).content(body(question)))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.recommendations[0].aiReasoned").value(true));
 
-        java.util.Set<String> added = new java.util.HashSet<>(redis.keys("h2:v2:guide-answer:*"));
+        Set<String> added = new java.util.HashSet<>(keys());
         added.removeAll(before);
         assertThat(added).hasSize(1);
         String key = added.iterator().next();
-        assertThat(key).doesNotContain("portuguese");
-        assertThat(redis.getExpire(key)).isBetween(23 * 3600L, 24 * 3600L);
-        assertThat(redis.opsForValue().get(key)).contains(QUOTE);
+        assertThat(key).matches("[0-9a-f]{64}");
+        Instant expiresAt = jdbc.sql("SELECT expires_at FROM guide_answer WHERE answer_key = :k").param("k", key)
+            .query(java.sql.Timestamp.class).single().toInstant();
+        assertThat(java.time.Duration.between(Instant.now(), expiresAt).toHours()).isBetween(23L, 24L);
+        assertThat(jdbc.sql("SELECT answer::text FROM guide_answer WHERE answer_key = :k").param("k", key)
+            .query(String.class).single()).contains(QUOTE);
+    }
+
+    private Set<String> keys() {
+        return Set.copyOf(jdbc.sql("SELECT answer_key FROM guide_answer").query(String.class).list());
     }
 
     /** One IPv6 subscriber holds a whole /64: rotating addresses inside it does not reset the quota. */
