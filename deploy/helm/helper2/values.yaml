@@ -41,6 +41,16 @@ app:
   # container. A multiple of 5 (the probe period). A deploy starts the replicas one after another, and
   # all of them must be ready within the `helm --wait` timeout (12m in the hosted deploy).
   startupSeconds: 300
+  # Daily limits, per UTC day. Per visitor: live web searches per feature (ADR 0037) and fresh guide questions
+  # (ADR 0015); past them the visitor still gets stored results and search results. For the whole site: live web
+  # searches. Unset (null) = the app's own default (3, 3, 30, no site cap) or the value in the env Secret; a value
+  # here wins over the Secret, so set each one in one place only.
+  dailyLimits:
+    webSearches:
+      search: null
+      guide: null
+    guideQuestions: null
+    webSearchCredits: null
   # prod | staging, set per environment; the `environment` tag on metrics and spans.
   environment: ""
   # OTLP traces. Off by default; set export: true and your collector's endpoint, and

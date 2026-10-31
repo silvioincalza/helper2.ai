@@ -25,3 +25,12 @@ app:
   # No Scout on staging: it would spend Nemotron calls on the same sources prod already indexes.
   # Search and the AI guide still work; staging's catalog stays as last indexed.
   scoutEnabled: false
+  # No per-visitor limits on staging, so a test is never cut off by its own earlier tests. Staging is public, so
+  # the whole site keeps a cap on live web searches (the Tavily plan may be shared with prod) and on model calls
+  # (H2_GUIDE_DAILY_MODEL_CALLS, 600 a day by default).
+  dailyLimits:
+    webSearches:
+      search: 1000
+      guide: 1000
+    guideQuestions: 1000
+    webSearchCredits: "200"
