@@ -82,6 +82,9 @@ The domain (Kotlin) must not depend on the library that implements them ([0002](
 - the guide's concurrency limit is one more named, metered bulkhead (`resilience4j.bulkhead.available.concurrent.calls{name="guide"}`).
 - the state of every circuit and every refused call is a meter and an alert (`Helper2CircuitOpen`,
   `Helper2CallsNotPermitted`, [0026](../operations/0026-observability.md)).
+- the Sources page shows each enabled source's circuit and when it opened, as the answering replica sees it
+  (`Resilience.circuit`, [0008](../search/0008-federated-search.md)). Resilience4j keeps no opening time, so
+  `Resilience4jPolicies` watches each circuit's state transitions on the circuit's own clock.
 - `Resilience4jPoliciesTest`, `ResiliencePoliciesConfigIT`, `SearchResourcesTest`, `SourceCircuitIT`, `GuideLimitsTest`,
   `SpringAiGuideModelTest`, `SpringAiQueryTranslatorTest`, `SpringAiToolGuideModelTest`, `SpringAiEnrichmentModelTest`,
   `SpringAiRepoClassifierTest`, `NvidiaEmbedderTest`,

@@ -5,6 +5,8 @@ import ai.helper2.platform.quota.QuotaCounter.Counter
 import ai.helper2.platform.quota.QuotaCounter.Result
 import ai.helper2.platform.quota.QuotaCounter.Verdict
 import ai.helper2.platform.quota.QuotaKeys
+import ai.helper2.platform.resilience.CallRefused
+import ai.helper2.platform.resilience.Resilience
 import ai.helper2.search.Asker
 import ai.helper2.search.CachedHits
 import ai.helper2.search.Feature
@@ -74,8 +76,12 @@ class MeteredSourceTest {
             if (down) throw IllegalStateException("down")
             val used = own?.let { counts[it] ?: 0 } ?: 0
             if (own != null && used >= ownLimit) return Result(Verdict.LIMIT_REACHED, used)
+            global?.let { counts[it] = (counts[it] ?: 0) + 1 }
             own?.let { counts[it] = used + 1 }
             return Result(Verdict.TAKEN, used + 1)
+        }
+        override fun giveBack(counter: Counter) {
+            counts[counter] = maxOf(0, (counts[counter] ?: 0) - 1)
         }
         override fun used(counter: Counter) = if (down) throw IllegalStateException("down") else counts[counter] ?: 0
         override fun delete(keys: Collection<String>) {}
@@ -99,9 +105,11 @@ class MeteredSourceTest {
     private val counter = MapCounter()
     private val credits = Credits()
 
-    private fun service(vararg others: SearchSource) = SearchResources(
+    private val quota = WebSearchQuota(counter, QuotaKeys("test-secret", clock))
+
+    private fun service(vararg others: SearchSource, resilience: Resilience = Resilience.NONE) = SearchResources(
         listOf(web) + others, NoCache, ResultObserver { emptyMap() }, executor, clock, metrics = credits,
-        webResults = store, quota = WebSearchQuota(counter, QuotaKeys("test-secret", clock)),
+        resilience = resilience, webResults = store, quota = quota,
     )
 
     private fun req(text: String = "rag frameworks", client: String = "203.0.113.7") =
@@ -264,5 +272,21 @@ class MeteredSourceTest {
 
         assertEquals(2, svc.webSearchesLeft(Asker(Feature.SEARCH, "203.0.113.7"))!!.remaining)
         assertTrue(svc.webSearchesLeft(Asker(Feature.GUIDE, "203.0.113.7"))!!.remaining == 3)
+    }
+
+    @Test
+    fun `a live call the circuit refuses gives its credit of the day back`() {
+        val open = object : Resilience {
+            override fun <T> call(policy: String, work: java.util.function.Supplier<T>): T =
+                throw CallRefused(policy, CallRefused.Reason.CIRCUIT_OPEN, null)
+            override fun require(policy: String) {}
+        }
+
+        val status = service(resilience = open).search(req()).statuses.single()
+
+        assertEquals(SourceOutcome.SKIPPED, status.outcome)
+        assertEquals(0, web.calls.get())
+        assertEquals(0, quota.creditsToday()!!.usedToday, "no live call went out, so no credit was spent")
+        assertTrue(credits.spent.isEmpty())
     }
 }

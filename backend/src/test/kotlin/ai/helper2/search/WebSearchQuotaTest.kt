@@ -31,6 +31,10 @@ class WebSearchQuotaTest {
             return Result(Verdict.TAKEN, own?.let { counts[it] } ?: 0)
         }
 
+        override fun giveBack(counter: Counter) {
+            counts[counter] = maxOf(0, (counts[counter] ?: 0) - 1)
+        }
+
         override fun used(counter: Counter): Long = if (down) throw IllegalStateException("down") else counts[counter] ?: 0
 
         override fun delete(keys: Collection<String>) {}
@@ -63,7 +67,7 @@ class WebSearchQuotaTest {
         val question = Asker(Feature.GUIDE, "203.0.113.7")
         repeat(3) { assertIs<QuotaDecision.Allowed>(q.take(question)) }
         assertEquals(2, q.left(Asker(Feature.GUIDE, "203.0.113.7"))!!.remaining)
-        assertEquals(1, counter.calls.size, "no store call after the first")
+        assertEquals(listOf(true, false, false), counter.calls.map { it.first != null }, "the own counter only at the first call")
     }
 
     @Test
@@ -93,9 +97,14 @@ class WebSearchQuotaTest {
     }
 
     @Test
-    fun `without a global cap no global counter is touched`() {
-        quota().take(Asker(Feature.SEARCH, "c"))
-        assertNull(counter.calls.single().second)
+    fun `without a global cap every call still counts on the global counter and none is refused for it`() {
+        val q = quota()
+        val question = Asker(Feature.GUIDE, "a")
+        repeat(2) { assertIs<QuotaDecision.Allowed>(q.take(question)) }
+        assertIs<QuotaDecision.Allowed>(q.take(null))
+
+        assertEquals(3L, counter.counts[Counter(keys.global(), "credits")])
+        assertEquals(WebCredits(3, null), q.creditsToday())
     }
 
     @Test
@@ -112,9 +121,18 @@ class WebSearchQuotaTest {
     }
 
     @Test
-    fun `internal callers without a global cap are never limited and never call the store`() {
-        assertIs<QuotaDecision.Allowed>(quota().take(null))
-        assertEquals(0, counter.calls.size)
+    fun `the credits of the day come with the global cap`() {
+        val q = quota(globalDailyCredits = 50)
+        q.take(Asker(Feature.SEARCH, "c"))
+
+        assertEquals(WebCredits(1, 50), q.creditsToday())
+    }
+
+    @Test
+    fun `the credits of the day are unknown while the store cannot answer`() {
+        counter.down = true
+
+        assertNull(quota().creditsToday())
     }
 
     @Test

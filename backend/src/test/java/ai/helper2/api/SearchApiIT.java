@@ -197,4 +197,26 @@ class SearchApiIT extends ApiTestBase {
             .andExpect(jsonPath("$[?(@.id == 'mcp-registry')].lastOutcome").value("SUCCEEDED"))
             .andExpect(jsonPath("$[?(@.id == 'mcp-registry')].lastCheckedAt").exists());
     }
+
+    @Test
+    void sourcesEndpointShowsThisReplicasResponseTimeAndCircuitsWithoutInternals() throws Exception {
+        mvc.perform(get("/api/v1/search").param("q", unique("timing"))).andExpect(status().isOk());
+
+        String body = mvc.perform(get("/api/v1/sources")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+
+        ContractValidator.assertArrayMatches("SourceInfo", body);
+        assertThat(source(body, "fake-live").get("responseTimeMs")).isInstanceOf(Number.class);
+        assertThat(source(body, "curated").get("circuit")).isEqualTo("CLOSED");
+        assertThat(source(body, "curated").get("circuitOpenedAt")).isNull();
+        assertThat(source(body, "github").get("circuit")).as("disabled").isNull();
+        assertThat(source(body, "mcp-registry").get("circuit")).as("a Scout collector has no source circuit").isNull();
+        assertThat(source(body, "tavily").get("webCredits")).as("disabled").isNull();
+        assertThat(body).doesNotContainIgnoringCase("exception").doesNotContain("localhost").doesNotContain("redis");
+    }
+
+    private static java.util.Map<String, Object> source(String body, String id) {
+        List<java.util.Map<String, Object>> found = com.jayway.jsonpath.JsonPath.read(body, "$[?(@.id == '" + id + "')]");
+        assertThat(found).as(id).hasSize(1);
+        return found.getFirst();
+    }
 }

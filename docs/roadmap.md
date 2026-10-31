@@ -164,6 +164,9 @@ Open items:
 - **Saved** (bookmarks) is hidden until it is finished: the menu item, the Save buttons and `/saved` (which goes
   home). The bookmark code, its tests and the `/me/bookmarks` API stay; `SAVED_ENABLED` in
   `frontend/src/lib/features.ts` brings it back.
+- Sources page shows response time, circuit state and Tavily credits from GET /sources (`responseTimeMs`,
+  `circuit`, `circuitOpenedAt`, `webCredits`; [ADR 0008](adr/search/0008-federated-search.md)). Response time and
+  circuit are the answering replica's.
 - The shared `/sources` data is fetched once per page load, so the Sources page can show an old last outcome
   during a long visit.
 - If browser storage is blocked, a fixed theme choice can be overridden when the device theme changes.

@@ -1,8 +1,9 @@
 # Sequence: one search across a LIVE source (GitHub), the Helper2 index, a slow source and a source whose circuit is
 # open, with merge and catalog link. Shows the cache read, the parallel calls on virtual threads under each source's
 # policy, a timeout and an open circuit rescued by stale entries, the merge, the one-read discovery dates and the
-# background write of live hits.
+# background write of live hits. Then the Sources page reads each source's live numbers.
 # Source of truth: backend/src/main/java/ai/helper2/search/web/SearchController.java,
+#   backend/src/main/kotlin/ai/helper2/search/usecase/ListSources.kt, search/SourceHealth.kt, search/WebSearch.kt (creditsToday),
 #   backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt, ResultMerger.kt, Ranking.kt, Filtering.kt,
 #   backend/src/main/java/ai/helper2/search/cache/RedisSearchCache.java,
 #   backend/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java,
@@ -23,6 +24,10 @@ hf: "HuggingFaceModelsSource\n(slow today)" {class: app}
 npm: "NpmSource\n(down for an hour)" {class: app}
 merger: ResultMerger {class: app}
 catalog: ResourceCatalog {class: app}
+health: "SourceHealth\n(this replica)" {class: data}
+list: ListSources {class: app}
+policies: Resilience4jPolicies {class: app}
+quota: WebSearchQuota {class: app}
 
 browser -> ctl: "GET /api/v1/search?q=mcp postgres" {class: hot}
 ctl -> fs: "search(SearchRequest)" {class: hot}
@@ -56,6 +61,22 @@ fs -> catalog: "firstDiscovered(results): one read"
 catalog -> fs: "first-seen dates"
 fs -> catalog: "record(LIVE hits only)"
 catalog -> catalog: "ObservationQueue.offer\n(write in background, or drop)"
+fs -> health: "sourceCompleted(status) per source:\noutcome, duration of each call"
 fs -> fs: "rank, filter, sort, facets, page,\ncoverage.partial = true"
 fs -> ctl: "SearchOutcome"
 ctl -> browser: "200, Cache-Control: no-store\nsources[], coverage, notices" {class: hot}
+
+page: Sources page {
+  browser -> ctl: "GET /api/v1/sources"
+  ctl -> list: "list()"
+  list -> catalog: "lastOutcomes() (Scout runs)"
+  catalog -> list: "outcome per collector"
+  list -> health: "lastFor(id), responseTime(id)"
+  health -> list: "newer outcome, median of\nthe last 20 calls"
+  list -> policies: "circuit(source-<id>)\n(enabled sources)"
+  policies -> list: "npm: OPEN since 10:02:07"
+  list -> quota: "creditsToday()"
+  quota -> list: "HGET h2:v1:quota:global:<date>:\nusedToday 41, dailyCap null"
+  list -> ctl: "SourceOverview[]"
+  ctl -> browser: "200 SourceInfo[]: responseTimeMs,\ncircuit, circuitOpenedAt, webCredits"
+}
