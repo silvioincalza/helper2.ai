@@ -33,14 +33,15 @@ class GuideConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(GuideConfiguration.class);
 
-    /** Guide answers survive restarts and deploys in Redis; without Redis the cache is in memory only. */
+    /** Guide answers survive restarts in Redis, per build; without Redis the cache is in memory only. */
     @Bean
-    GuideAnswerStore guideAnswerStore(ObjectProvider<StringRedisTemplate> redis, ObjectMapper json, Resilience resilience) {
+    GuideAnswerStore guideAnswerStore(ObjectProvider<StringRedisTemplate> redis, ObjectMapper json, Resilience resilience,
+                                      @Value("${helper2.build.version:local}") String build) {
         StringRedisTemplate template = redis.getIfAvailable();
         if (template == null) {
             return GuideAnswerStore.NONE;
         }
-        return new RedisGuideAnswerStore(template, json, resilience);
+        return new RedisGuideAnswerStore(template, json, resilience, build);
     }
 
     /** Daily model-call cap of the guide (ADR 0017); every provider attempt takes one call. */

@@ -31,7 +31,7 @@ The periods are a product decision the owner may change; changing one must not n
    | Postgres `issue_report.reporter_user_id` | link to the reporter | until the account goes | `ON DELETE SET NULL` |
    | Postgres `admin_audit` | admin id, action, target, time, outcome | 24 months after `at` | identity purge |
    | Redis `h2:v1:src:*` | source responses, keyed by a hash of the query | 24 h (`H2_SEARCH_STALE_FOR`) | Redis TTL |
-   | Redis `h2:v2:guide-answer:*` | guide answers, keyed by a hash of the question | 24 h (`H2_GUIDE_CACHE_TTL`), 6 h for a dated question | Redis TTL |
+   | Redis `h2:v2:guide-answer:<build>:*` | guide answers, keyed by a hash of the question | 24 h (`H2_GUIDE_CACHE_TTL`), 6 h for a dated question | Redis TTL |
    | Redis `h2:v2:tool-guide:*` | setup guide answers (checked steps, document links), no user text | 7 days (`helper2.setup.guide.cache-ttl`) | Redis TTL |
    | Redis `h2:v1:budget:*` | daily model-call counts, per-client counts under a hash of the address | 2 days | Redis TTL |
    | Redis `h2:v1:rate:*` | rate-limit windows, keyed by the client address | 1 minute or 1 hour (the window) | Redis TTL |

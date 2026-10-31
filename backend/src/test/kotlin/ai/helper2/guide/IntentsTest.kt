@@ -39,6 +39,10 @@ class IntentsTest {
         assertEquals(GuideIntent.NEWEST, IntentRules.intentOf("any new open-source models?"))
         assertEquals(GuideIntent.NEWEST, IntentRules.intentOf("nuovi modelli open source"))
         assertNull(IntentRules.windowOf("new mcp servers for postgres"))
+        // A question shape at the start wins over "new" later on; "latest" still wins, as before.
+        assertEquals(GuideIntent.HOW_TO, IntentRules.intentOf("how to set up new MCP servers"))
+        assertEquals(GuideIntent.WHAT_IS, IntentRules.intentOf("what is the new agents SDK"))
+        assertEquals(GuideIntent.NEWEST, IntentRules.intentOf("how to find the latest MCP servers"))
         assertNull(IntentRules.intentOf("I am new to AI, which tool helps me write?"))
         assertNull(IntentRules.intentOf("I'm new to MCP, which server should I start with?"))
         assertNull(IntentRules.intentOf("a new project with MCP servers"))

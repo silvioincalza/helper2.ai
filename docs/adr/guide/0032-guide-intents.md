@@ -76,7 +76,8 @@ The plan call (fast model, `prompts/guide/plan.txt`) returns:
 plan has no grounded intent or window, or there is no model, rules on the user's text set them, so the degraded answer
 for "tools from last month" is still the newest tools. Narrow on purpose, because a false hit changes the whole answer:
 - the intent, most specific shape first: comparison words, then alternatives, courses and certifications, "when",
-  a period, "latest/newest/recent" or "new" right before a kind of resource, "what is", "how to";
+  a period or "latest/newest/recent", "what is", "how to", then "new" right before a kind of resource (so
+  "how to set up new MCP servers" stays `HOW_TO`);
 - a window only from an explicit time expression ("last 3 weeks", "next month", "this year", "today");
 - "latest" alone sets `NEWEST` with sort only, no window. "new" sets `NEWEST` only right before a kind of resource,
   with at most one word between ("new MCP servers", "any new open-source models", "nuovi modelli"). Elsewhere it sets
