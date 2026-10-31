@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { api, ApiError } from '@/api/client';
-import type { ReviewStatus } from '@/api/types';
+import type { ReviewStatus, ScoutRun } from '@/api/types';
+import { Icon } from '@/components/Icon';
 import { Pagination } from '@/components/Pagination';
 import { SignIn } from '@/components/SignIn';
 import { useMe } from '@/context/MeContext';
 import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
+import { StatusPill, type StatusTone } from '@/components/ui/StatusPill';
 import { useApi } from '@/hooks/useApi';
 import { useRetry } from '@/hooks/useRetry';
 import { useTitle } from '@/hooks/useTitle';
@@ -16,6 +18,8 @@ import { resourcePath } from '@/lib/searchState';
 /** How often the run listing is reloaded while a Scout run is RUNNING. */
 export const RUN_POLL_MS = 3000;
 const REVIEW_PAGE_SIZE = 20;
+const REVIEW_TONE: Record<ReviewStatus, StatusTone> = { OPEN: 'next', ACCEPTED: 'ok', REJECTED: 'warn', SUPERSEDED: 'later' };
+const RUN_TONE: Record<ScoutRun['status'], StatusTone> = { RUNNING: 'next', SUCCEEDED: 'ok', FAILED: 'warn', SKIPPED: 'later' };
 
 export default function AdminPage() {
   const { t, i18n } = useTranslation();
@@ -48,15 +52,21 @@ export default function AdminPage() {
   if (!loaded) return <p role="status">{t('common.loading')}</p>;
   if (!isAdmin && !me.authenticated && me.loginProviders.length > 0) {
     return (
-      <div>
+      <div className="page admin-page">
         <h1>{t('admin.title')}</h1>
-        {params.get('signin') === 'failed' && <p role="alert" className="banner banner-warn">{t('admin.signInFailed')}</p>}
-        <p>{t('admin.signInPrompt')}</p>
-        <SignIn />
+        {params.get('signin') === 'failed' && <p role="alert" className="warn-line"><Icon name="warn" /> {t('admin.signInFailed')}</p>}
+        <p className="lede">{t('admin.signInPrompt')}</p>
+        <div className="admin-page__tools"><SignIn /></div>
       </div>
     );
   }
-  if (!isAdmin) return <p role="alert" className="state-box state-error">{t('admin.forbidden')}</p>;
+  if (!isAdmin) {
+    return (
+      <StatePanel tone="error" level={1} title={t('admin.title')} next={<Link to="/" className="btn">{t('notFound.home')}</Link>}>
+        <p>{t('admin.forbidden')}</p>
+      </StatePanel>
+    );
+  }
 
   /**
    * One action at a time: while a request runs, every action button is aria-disabled (it keeps focus) and a second
@@ -80,36 +90,44 @@ export default function AdminPage() {
   const disabled = busy || undefined;
 
   return (
-    <div>
+    <div className="page admin-page">
       <h1>{t('admin.title')}</h1>
-      {actionError && <p role="alert" className="banner banner-warn">{t(actionError === 'runInProgress' ? 'admin.runInProgress' : 'admin.actionFailed')}</p>}
+      {actionError && <p role="alert" className="warn-line"><Icon name="warn" /> {t(actionError === 'runInProgress' ? 'admin.runInProgress' : 'admin.actionFailed')}</p>}
 
-      <section aria-labelledby="rq-h" className="panel">
-        <h2 id="rq-h" ref={queueHeading} tabIndex={-1}>{t('admin.reviewQueue')}</h2>
-        <label>
-          {t('admin.status')}{' '}
-          <select value={status} onChange={(e) => { setStatus(e.target.value as ReviewStatus); setPage(0); }}>
-            {(['OPEN', 'ACCEPTED', 'REJECTED', 'SUPERSEDED'] as const).map((s) => <option key={s} value={s}>{t(`admin.reviewStatus.${s}`)}</option>)}
-          </select>
-        </label>
-        {items.loading ? <p role="status">{t('common.loading')}</p> : items.error !== undefined ? (
+      <section aria-labelledby="rq-h" className="page-part">
+        <h2 id="rq-h" ref={queueHeading} tabIndex={-1} className="preview-label">{t('admin.reviewQueue')}</h2>
+        <div className="admin-page__tools">
+          <label>
+            {t('admin.status')}
+            <select value={status} onChange={(e) => { setStatus(e.target.value as ReviewStatus); setPage(0); }}>
+              {(['OPEN', 'ACCEPTED', 'REJECTED', 'SUPERSEDED'] as const).map((s) => <option key={s} value={s}>{t(`admin.reviewStatus.${s}`)}</option>)}
+            </select>
+          </label>
+        </div>
+        {items.loading ? (
+          <div aria-busy="true">
+            <span className="sr-only">{t('common.loading')}</span>
+            {[0, 1, 2].map((i) => <div key={i} className="skeleton-row result-skeleton" aria-hidden="true" />)}
+          </div>
+        ) : items.error !== undefined ? (
           <StatePanel tone="error" level={3} title={t('admin.loadError')} next={<RetryButton onClick={retryItems} />} />
         ) : (items.data?.items ?? []).length === 0 ? <p className="muted">{t('admin.queueEmpty')}</p> : (
-          <ul className="plain-list review-list">
+          <ul className="result-list" aria-labelledby="rq-h">
             {(items.data?.items ?? []).map((it) => (
-              <li key={it.id} className="card">
-                <p><span className="badge">{t(`admin.kind.${it.kind}`)}</span>{' '}
-                  {it.resourceId ? <Link to={resourcePath(it.resourceId)}>{it.resourceTitle ?? it.resourceId}</Link> : null}
+              <li key={it.id} className="result-row item-row">
+                <p className="result-row__meta">
+                  <span>{t(`admin.kind.${it.kind}`)}</span>
+                  <span>{formatDate(it.createdAt, i18n.language, 'INSTANT')}</span>
+                  {it.resourceId && <Link to={resourcePath(it.resourceId)}>{it.resourceTitle ?? it.resourceId}</Link>}
                 </p>
-                <p>{it.reason}</p>
-                {it.details && <p className="muted small">{it.details}</p>}
-                <p className="muted small">{formatDate(it.createdAt, i18n.language, 'INSTANT')}</p>
+                <p className="admin-page__reason">{it.reason}</p>
+                {it.details && <p className="admin-page__details">{it.details}</p>}
                 {it.status === 'OPEN' ? (
-                  <div className="card-actions">
+                  <div className="item-row__actions">
                     <button type="button" className="btn btn-primary" aria-disabled={disabled} onClick={() => void resolve(it.id, 'ACCEPTED')}>{t('admin.accept')}<span className="sr-only"> {it.reason}</span></button>
                     <button type="button" className="btn" aria-disabled={disabled} onClick={() => void resolve(it.id, 'REJECTED')}>{t('admin.reject')}<span className="sr-only"> {it.reason}</span></button>
                   </div>
-                ) : <p>{t(`admin.reviewStatus.${it.status}`)}</p>}
+                ) : <p><StatusPill tone={REVIEW_TONE[it.status]}>{t(`admin.reviewStatus.${it.status}`)}</StatusPill></p>}
               </li>
             ))}
           </ul>
@@ -117,12 +135,14 @@ export default function AdminPage() {
         {items.data && <Pagination page={page} size={REVIEW_PAGE_SIZE} total={items.data.total} onPage={setPage} />}
       </section>
 
-      <section aria-labelledby="sr-h" className="panel">
-        <h2 id="sr-h">{t('admin.scoutRuns')}</h2>
-        <button type="button" className="btn btn-primary" aria-disabled={disabled} onClick={() => void runNow()}>{t('admin.runNow')}</button>
+      <section aria-labelledby="sr-h" className="page-part">
+        <h2 id="sr-h" className="preview-label">{t('admin.scoutRuns')}</h2>
+        <div className="admin-page__tools">
+          <button type="button" className="btn btn-primary" aria-disabled={disabled} onClick={() => void runNow()}>{t('admin.runNow')}</button>
+        </div>
         {runs.loading && runs.previous === undefined ? <p role="status">{t('common.loading')}</p> : runList.length === 0 ? <p className="muted">{t('admin.noRuns')}</p> : (
-          <div className="table-wrap">
-            <table>
+          <div className="page-table">
+            <table aria-labelledby="sr-h">
               <thead>
                 <tr>
                   <th scope="col">{t('sources.col.source')}</th>
@@ -137,7 +157,7 @@ export default function AdminPage() {
                 {runList.map((r) => (
                   <tr key={r.id}>
                     <th scope="row">{r.sourceId}</th>
-                    <td>{t(`admin.runStatus.${r.status}`)}</td>
+                    <td><StatusPill tone={RUN_TONE[r.status]}>{t(`admin.runStatus.${r.status}`)}</StatusPill></td>
                     <td>{formatDate(r.startedAt, i18n.language, 'INSTANT')}</td>
                     <td>{r.itemsSeen}</td>
                     <td>{r.itemsChanged}</td>

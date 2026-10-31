@@ -52,9 +52,16 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
 
   // Saved, Sources and Account run axe in their own feature tests.
   it('admin', async () => {
-    mockApi({ 'GET /me': () => ADMIN, 'GET /admin/review-items': () => ({ items: [], total: 0 }), 'GET /admin/scout-runs': () => [], 'GET /me/bookmarks': () => [] });
+    mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/review-items': () => ({ items: [{ id: '66666666-6666-5666-8666-666666666666', kind: 'USER_REPORT', status: 'OPEN', reason: 'Wrong price', details: 'It is free', resourceId: ID, resourceTitle: 'Acme', createdAt: '2026-10-21T10:00:00Z' }], total: 1 }),
+      'GET /admin/scout-runs': () => [{ id: '77777777-7777-5777-8777-777777777777', sourceId: 'github', status: 'FAILED', startedAt: '2026-10-21T10:00:00Z', finishedAt: null, itemsSeen: 0, itemsChanged: 0, message: 'rate limited' }],
+      'GET /me/bookmarks': () => [],
+    });
     const ad = renderApp('/admin');
-    await within(await screen.findByRole('main')).findByText('Nothing in this queue.');
+    const main = await screen.findByRole('main');
+    await within(main).findByText('Wrong price', { selector: 'p' });
+    await within(main).findByText('Failed');
     expect(await axeViolations(ad.container)).toEqual([]);
   });
 });
