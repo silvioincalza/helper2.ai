@@ -139,8 +139,9 @@ management:
 #   collector-<id>  circuit breaker + retry with exponential backoff and jitter, only on 429, 503, network error or
 #                   timeout (TransientSourceFailure); Scout runs are background work and can wait.
 #   redis           circuit breaker shared by every Redis adapter: cache, guide answers, budgets, rate limits.
-#   llm-chat        circuit breaker on every chat-model call of the guide and the query translation; only provider
-#                   errors count (no connection, timeout, 429, 5xx, a rejected call), never an answer we could not parse.
+#   llm-chat        circuit breaker on every chat-model call (guide, translation, setup guide, enrichment, classifier);
+#                   only provider errors count (no connection, timeout, 429, 5xx, a rejected call), never an answer we
+#                   could not parse.
 #   llm-embed       circuit breaker on every embedding call (search queries and the background indexer).
 #   guide           bulkhead: guide questions at once in this replica, held per question (GuideLimits), not per call.
 resilience4j:
@@ -613,6 +614,9 @@ helper2:
       reasoning: ${H2_SETUP_GUIDE_REASONING:false}
       # How long checked answers stay in Redis.
       cache-ttl: ${H2_SETUP_GUIDE_CACHE_TTL:P7D}
+      # How long the "unavailable" answer stays in Redis after two model answers that could not be read, so the same
+      # ask does not spend two model calls again at once. Provider errors and a spent budget are never kept.
+      unreadable-ttl: ${H2_SETUP_UNREADABLE_TTL:PT10M}
 
 ---
 # Tavily (ADR 0037): store first, then a live call inside the visitor's daily web searches, per feature.

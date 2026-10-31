@@ -118,16 +118,10 @@ Open items:
   `Helper2GuidePicksFromLowRanks` ([ADR 0015](adr/guide/0015-ai-guide-evidence-gate.md)).
 - Write the Scout's Tavily news and events to the same stored sets as searches, with their own share of credits
   ([ADR 0037](adr/search/0037-tavily-store-and-daily-quota.md)).
-- Setup guide: a model answer that stays unreadable after two attempts is not cached, so the same resource and
-  question cost two model calls on every request until the daily cap. Give it its own reason and a short negative
-  cache ([ADR 0031](adr/guide/0031-setup-guide.md)).
 - **Signed provenance manifest for AI-written text** (C2PA-style): sign each guide answer with its model, time and
   AI-written fields, so the origin survives outside our page and API. Today the marking is metadata only and is
   lost on copy ([ADR 0038](adr/guide/0038-ai-content-marking.md)). Do it when a standard and tooling for text exist, or
   if a regulator finds metadata alone too weak.
-- Pass a prompt version from `SpringAiEnrichmentModel`, `SpringAiToolGuideModel` and `SpringAiRepoClassifier`, and
-  put them under the `llm-chat` circuit; then delete the "unversioned" methods of `ModelCallMetrics`
-  ([ADR 0014](adr/guide/0014-llm-integration.md)).
 - Guide `WHEN` for a release: when our sources have no creation date, take the date quoted in a Tavily news item,
   through the evidence gate. Measure after the `WHEN` event filter ([ADR 0032](adr/guide/0032-guide-intents.md)).
 - Run `scripts/eval-guide.mjs --adversarial` in a scheduled job after each deploy; today it is run by hand.

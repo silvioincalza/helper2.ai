@@ -141,7 +141,7 @@ class SourcesConfiguration {
             Gauge.builder("helper2.scout.classifier.budget.remaining", budget, DailyBudget::remaining)
                 .description("Awesome-list classifier model calls left under today's cap (UTC day)")
                 .register(meters);
-            classifier = new SpringAiRepoClassifier(model, llm.fast(), c.classifyMaxTokens(), budget, metrics);
+            classifier = new SpringAiRepoClassifier(model, llm.fast(), c.classifyMaxTokens(), budget, metrics, resilience);
         }
         log.info("GitHub awesome lists: enabled={}, classifier={}", s.enabled() && s.hasToken(), classifier.name());
         return new GitHubAwesomeCollector(s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock, resilience, new RunInterval(c.interval()),

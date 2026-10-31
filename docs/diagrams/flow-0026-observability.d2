@@ -24,7 +24,7 @@ work: Inside the request {
   direction: down
   ctx: "searchExecutor wrapped by\nContextExecutorService:\nsource calls keep the trace" {class: app}
   client: "ObservedHttp RestClient\n(sources, embedder; bounded URI):\nclient span, http.client.requests,\ntrace headers" {class: app}
-  model: "ModelCallMetrics.observe\n(guide steps, translate, enrich,\nclassify): span +\nhelper2.llm.call, tokens" {class: app}
+  model: "ModelCallMetrics.observe\n(guide steps, translate, tool-guide,\nenrich, classify): span +\nhelper2.llm.call, tokens" {class: app}
   meters: "Domain meters: helper2.search.*,\nhelper2.source.*, helper2.cache.events,\nhelper2.catalog.*, helper2.embedding.*,\n*.budget.remaining gauges …" {class: app}
   ctx -> client
   ctx -> meters

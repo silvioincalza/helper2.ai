@@ -10,6 +10,7 @@ import ai.helper2.setup.McpServerSpecs;
 import ai.helper2.setup.ReadmeConfigs;
 import ai.helper2.setup.SetupGuides;
 import ai.helper2.setup.ToolGuideCache;
+import ai.helper2.setup.ToolGuideTtls;
 import ai.helper2.setup.ToolGuideModel;
 import ai.helper2.setup.ToolGuides;
 import ai.helper2.setup.ToolMaterials;
@@ -51,8 +52,11 @@ class SetupConfiguration {
     record SetupProperties(Duration documentTimeout, String npmReadmeBaseUrl, Duration cacheTtl, int documentCacheMb,
                            int hourlyFetches, Guide guide) {
 
-        /** [dailyModelCalls] the guide's own cap; [cacheTtl] how long answers stay in Redis. */
-        record Guide(int dailyModelCalls, boolean reasoning, Duration cacheTtl) {
+        /**
+         * [dailyModelCalls] the guide's own cap; [cacheTtl] how long answers stay in Redis; [unreadableTtl] how long the
+         * "unavailable" answer after two unreadable model answers stays there.
+         */
+        record Guide(int dailyModelCalls, boolean reasoning, Duration cacheTtl, Duration unreadableTtl) {
         }
     }
 
@@ -109,13 +113,13 @@ class SetupConfiguration {
         Duration cacheTtl = setup.guide().cacheTtl();
         if (llm.usable(model)) {
             String name = setup.guide().reasoning() && llm.hasReasoningModel() ? llm.reasoningModel() : llm.fast();
-            guideModel = new SpringAiToolGuideModel(model, name, nativeSchema, toolGuideBudget, metrics);
+            guideModel = new SpringAiToolGuideModel(model, name, nativeSchema, toolGuideBudget, metrics, resilience);
             log.info("Tool guide enabled: model={}, cache {}", name, cacheTtl);
         } else {
             log.info("Tool guide without a model: Guide me shows registry and README config examples only");
         }
         StringRedisTemplate template = redis.getIfAvailable();
-        ToolGuideCache cache = template == null ? ToolGuideCache.Companion.getNONE() : new RedisToolGuideCache(template, json, resilience, cacheTtl);
-        return new ToolGuides(materials, guideModel, cache, clock);
+        ToolGuideCache cache = template == null ? ToolGuideCache.Companion.getNONE() : new RedisToolGuideCache(template, json, resilience);
+        return new ToolGuides(materials, guideModel, cache, clock, new ToolGuideTtls(cacheTtl, setup.guide().unreadableTtl()));
     }
 }

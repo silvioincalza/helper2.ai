@@ -43,8 +43,8 @@ Without a configured model the application must still work.
    `H2_SCOUT_AWESOME_CLASSIFIER_DAILY_CALLS` (300). The counts live in Redis, with a fallback to memory
    ([0005](../foundation/0005-redis-disposable-cache.md)): `RedisCallCounter` runs `INCR` and `PEXPIRE` in one Lua script, so a
    counter key always has its expiry.
-7. **A circuit on the provider** ([0033](../foundation/0033-resilience-policies.md)). The guide's and the translator's calls run
-   under the `llm-chat` circuit breaker; the budget unit is taken inside it. Only provider errors count (no
+7. **A circuit on the provider** ([0033](../foundation/0033-resilience-policies.md)). Every chat-model call (guide, translation,
+   setup guide, enrichment, classifier) runs under the `llm-chat` circuit breaker; the budget unit is taken inside it. Only provider errors count (no
    connection, timeout, 429, 5xx, a rejected call); a malformed answer or a spent budget counts as neither success nor
    failure (`ModelErrors.NotFromProvider`). When at least half of the last 10 counted calls failed (5 calls at least), the circuit opens for 30 s
    (`H2_RESILIENCE_LLM_OPEN_FOR`): each call fails at once with category `circuit_open`, without reaching the provider
@@ -57,14 +57,15 @@ Without a configured model the application must still work.
 9. **Errors and metrics.** `ModelErrors.category` maps a failure to `timeout`, `rate_limited`, `unavailable`,
    `parse_error` or `error`; a call the open circuit refused is `circuit_open`. `ModelCallMetrics` records one
    observation per attempt (span and timer `helper2.llm.call`, tags step, model, prompt, outcome) and the token
-   counter `helper2.llm.tokens` (tags step, prompt, type), for every adapter (the classifier uses step `classify`).
+   counter `helper2.llm.tokens` (tags step, prompt, type), for every adapter (the setup guide uses step `tool-guide`,
+   the classifier step `classify`).
    The prompt tag is the prompt's version: the first 8 hex characters of the SHA-256 of the rendered system prompt
    (`ModelCallMetrics.promptVersion`), so an edited prompt or limit shows as a new series with no number to keep by
    hand. Gauges show the calls left under each daily cap ([0026](../operations/0026-observability.md)).
 10. **Degraded mode.** `spring.ai.model.chat=none` is the default. Without a model, or with the budget spent, each
    feature falls back: the guide shows top search results (`LLM_UNAVAILABLE`), enrichment records `LLM_UNAVAILABLE`
-   and retries later, search runs untranslated, the classifier uses keyword rules. An open `llm-chat` circuit gives
-   the guide and search the same fallback at once.
+   and retries later, search runs untranslated, the classifier uses keyword rules, the setup guide shows registry and
+   README config examples only. An open `llm-chat` circuit gives every feature the same fallback at once.
 
 ## Consequences
 - The daily spend has a ceiling per feature, and a restart does not reset it while Redis is up.
@@ -95,7 +96,8 @@ Without a configured model the application must still work.
   `setup/tool-guide.txt`.
 - `backend/src/main/resources/application.yaml` — profile `llm-nebius`, timeout, retries, budgets.
 - `backend/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java`, `search/internal/SpringAiQueryTranslator.java`,
-  `scout/internal/SpringAiEnrichmentModel.java`, `sources/classifier/SpringAiRepoClassifier.java` — the adapters.
+  `setup/internal/SpringAiToolGuideModel.java`, `scout/internal/SpringAiEnrichmentModel.java`,
+  `sources/classifier/SpringAiRepoClassifier.java` — the adapters.
 
 ## Diagrams
 [flow](../../diagrams/flow-0014-llm-integration.svg) · [sequence](../../diagrams/sequence-0014-llm-integration.svg)

@@ -42,7 +42,7 @@ class GitHubAwesomeLiveTest {
             .build();
         ChatModel chat = OpenAiChatModel.builder().options(options).build();
         RepoClassifier nano = new SpringAiRepoClassifier(chat, NANO, 8192, new DailyBudget(300, Clock.systemUTC(), "classifier"),
-            ai.helper2.platform.llm.ModelCallMetrics.none());
+            ai.helper2.platform.llm.ModelCallMetrics.none(), Resilience.NONE);
         GitHubAwesomeCollector collector = new GitHubAwesomeCollector(
             new SourceSettings(true, "https://api.github.com", System.getenv("H2_GITHUB_TOKEN"), Duration.ofSeconds(30), Duration.ZERO),
             ObservedHttp.restClientBuilder(Duration.ofSeconds(30), io.micrometer.observation.ObservationRegistry.NOOP), Clock.systemUTC(), Resilience.NONE, new RunInterval(Duration.ofDays(1)),

@@ -7,13 +7,15 @@ import java.util.HexFormat
 /**
  * The tool guide: the resource's own documents, a model that may only pick and order passages from them, and the
  * validator. One answer per resource, documents and question, cached; the plain guide (no question) is the same
- * for every visitor.
+ * for every visitor. When the model's answers could not be read, that "unavailable" answer is cached too, for
+ * [ToolGuideTtls.unreadable]; a provider error or a spent budget is not, since both recover by themselves.
  */
 class ToolGuides @JvmOverloads constructor(
     private val materials: ToolMaterials,
     private val model: ToolGuideModel?,
     private val cache: ToolGuideCache,
     private val clock: Clock,
+    private val ttls: ToolGuideTtls,
     private val validator: ToolGuideValidator = ToolGuideValidator(),
 ) {
 
@@ -28,12 +30,14 @@ class ToolGuides @JvmOverloads constructor(
         val proposal = try {
             model.write(ref, docs, q)
         } catch (e: ToolGuideUnavailable) {
-            return empty(ToolGuideStatus.LLM_UNAVAILABLE, q, docs, e.reason)
+            val unavailable = empty(ToolGuideStatus.LLM_UNAVAILABLE, null, docs, e.reason.shown)
+            if (e.reason == ToolGuideUnavailable.Reason.UNREADABLE) cache.put(key, unavailable, ttls.unreadable)
+            return unavailable.copy(question = q)
         }
         val result = validator.validate(proposal, docs)
         val answer = ToolGuideAnswer(if (result.sections.isEmpty()) ToolGuideStatus.NO_STEPS else ToolGuideStatus.OK, null,
             result.sections, docs.map { it.ref }, model.model, result.rejected, clock.instant(), result.rejectedBy)
-        cache.put(key, answer)
+        cache.put(key, answer, ttls.answer)
         return answer.copy(question = q)
     }
 

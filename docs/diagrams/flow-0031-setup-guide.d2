@@ -50,10 +50,11 @@ guide: "POST /api/v1/resources/{id}/guide (limiter guide, AskAboutResource)" {
   skipped: "Document skipped;\nanswer not cached" {class: fail}
   hasDocs: "Any document?" {class: decision}
   noMat: "NO_MATERIAL" {class: end}
-  cached: "Readable Redis tool-guide answer\n(resource, documents, question,\nprompt hash; 7 days)?" {class: decision}
+  cached: "Readable Redis tool-guide answer\n(resource, documents, question,\nprompt hash; 7 days, or 10 min\nfor an unreadable model answer)?" {class: decision}
   hit: "Cached answer,\nquestion added back" {class: end}
   write: "ToolGuideModel.write: pick and order\npassages (fast model,\ntool-guide daily budget)" {class: ai}
-  unav: "LLM_UNAVAILABLE\n(no model, budget, error)" {class: fail}
+  unav: "LLM_UNAVAILABLE, not cached\n(no model, budget spent, provider\nerror or open llm-chat circuit)" {class: fail}
+  unreadable: "LLM_UNAVAILABLE \"error\", cached\nH2_SETUP_UNREADABLE_TTL (10 min)" {class: fail}
   check: "ToolGuideValidator: whole command lines\nor a found quote; risky commands\nmarked caution; ≤ 8 per section" {class: app}
   ok: "OK, cached" {class: end}
   nosteps: "NO_STEPS, cached" {class: end}
@@ -69,6 +70,7 @@ guide: "POST /api/v1/resources/{id}/guide (limiter guide, AskAboutResource)" {
   cached -> hit: yes
   cached -> write: no {class: hot}
   write -> unav: "fails"
+  write -> unreadable: "two answers\nnot the requested JSON"
   write -> check: {class: ai-call}
   check -> anyKept
   anyKept -> ok: yes {class: hot}

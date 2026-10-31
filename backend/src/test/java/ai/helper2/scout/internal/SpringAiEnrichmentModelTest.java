@@ -5,6 +5,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.ModelCallMetrics;
+import ai.helper2.platform.resilience.Resilience;
+import ai.helper2.testing.TestPolicies;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.observation.DefaultMeterObservationHandler;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.micrometer.observation.ObservationRegistry;
 import ai.helper2.scout.EnrichmentInput;
 import ai.helper2.scout.EnrichmentProposal;
 import ai.helper2.scout.EvidenceValidator;
@@ -21,6 +27,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -59,7 +67,7 @@ class SpringAiEnrichmentModelTest {
             }
         };
         return new SpringAiEnrichmentModel(chat, "fake", "m", 8192, new DailyBudget(100, Clock.systemUTC(), "enrichment"),
-            ModelCallMetrics.none());
+            ModelCallMetrics.none(), Resilience.NONE);
     }
 
     @Test
@@ -68,9 +76,41 @@ class SpringAiEnrichmentModelTest {
             throw new AssertionError("the provider must not be called");
         };
         SpringAiEnrichmentModel spent = new SpringAiEnrichmentModel(chat, "fake", "m", 8192,
-            new DailyBudget(0, Clock.systemUTC(), "enrichment"), ModelCallMetrics.none());
+            new DailyBudget(0, Clock.systemUTC(), "enrichment"), ModelCallMetrics.none(), Resilience.NONE);
 
         assertThatThrownBy(() -> spent.propose(INPUT)).isInstanceOf(LlmUnavailable.class).hasMessageContaining("budget");
+    }
+
+    /** An open llm-chat circuit is an outage: the resource stays in the backlog, no provider call, no unit of the budget. */
+    @Test
+    void anOpenCircuitIsAnOutageWithoutTheProviderOrTheBudget() {
+        ChatModel chat = prompt -> {
+            throw new AssertionError("the provider must not be called");
+        };
+        DailyBudget budget = new DailyBudget(10, Clock.systemUTC(), "enrichment");
+        SpringAiEnrichmentModel open = new SpringAiEnrichmentModel(chat, "fake", "m", 8192, budget, ModelCallMetrics.none(),
+            TestPolicies.llmChatOpen());
+
+        assertThatThrownBy(() -> open.propose(INPUT)).isInstanceOf(LlmUnavailable.class).hasMessageContaining("circuit");
+        assertThat(budget.usedToday()).isZero();
+    }
+
+    /** The prompt tag tells two prompt versions apart in the latency, outcome and token series. */
+    @Test
+    void theCallAndItsTokensAreTaggedWithTheVersionOfThePrompt() {
+        MeterRegistry meters = new SimpleMeterRegistry();
+        ObservationRegistry observations = ObservationRegistry.create();
+        observations.observationConfig().observationHandler(new DefaultMeterObservationHandler(meters));
+        ChatModel chat = prompt -> new ChatResponse(List.of(new Generation(new AssistantMessage("{}"))),
+            ChatResponseMetadata.builder().usage(new DefaultUsage(120, 30)).build());
+        new SpringAiEnrichmentModel(chat, "fake", "m", 8192, new DailyBudget(10, Clock.systemUTC(), "enrichment"),
+            new ModelCallMetrics(observations, meters), Resilience.NONE).propose(INPUT);
+
+        String version = ModelCallMetrics.promptVersion(SpringAiEnrichmentModel.systemPrompt());
+        assertThat(meters.get(ModelCallMetrics.CALL).tags("step", "enrich", "prompt", version, "outcome", "ok").timer().count())
+            .isEqualTo(1);
+        assertThat(meters.get(ModelCallMetrics.TOKENS).tags("step", "enrich", "prompt", version, "type", "prompt").counter().count())
+            .isEqualTo(120);
     }
 
     /** The thinking flag reaching the HTTP body is shown with the real client in ThinkingOnTheWireTest. */

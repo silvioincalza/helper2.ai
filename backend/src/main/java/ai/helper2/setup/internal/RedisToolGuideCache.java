@@ -30,11 +30,9 @@ class RedisToolGuideCache implements ToolGuideCache {
     private final StringRedisTemplate redis;
     private final ObjectMapper json;
     private final Resilience resilience;
-    private final Duration ttl;
 
-    RedisToolGuideCache(StringRedisTemplate redis, ObjectMapper json, Resilience resilience, Duration ttl) {
+    RedisToolGuideCache(StringRedisTemplate redis, ObjectMapper json, Resilience resilience) {
         this.redis = redis;
-        this.ttl = ttl;
         this.json = json.rebuild()
             .addModule(new KotlinModule.Builder().build())
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
@@ -65,7 +63,7 @@ class RedisToolGuideCache implements ToolGuideCache {
     }
 
     @Override
-    public void put(String key, ToolGuideAnswer answer) {
+    public void put(String key, ToolGuideAnswer answer, Duration ttl) {
         String encoded;
         try {
             ObjectNode root = json.createObjectNode();

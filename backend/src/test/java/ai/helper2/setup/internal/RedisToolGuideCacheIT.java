@@ -13,6 +13,9 @@ import ai.helper2.setup.MaterialKind;
 import ai.helper2.setup.ToolGuideAnswer;
 import ai.helper2.setup.ToolGuideCache;
 import ai.helper2.setup.ToolGuideModel;
+import ai.helper2.setup.ToolGuideStatus;
+import ai.helper2.setup.ToolGuideTtls;
+import ai.helper2.setup.ToolGuideUnavailable;
 import ai.helper2.setup.ProposedGuide;
 import ai.helper2.setup.ProposedSection;
 import ai.helper2.setup.ProposedStep;
@@ -41,6 +44,7 @@ class RedisToolGuideCacheIT {
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-30T10:00:00Z"), ZoneOffset.UTC);
     private static final String QUESTION = "Does it work with my secret project zebra-42?";
     private static final String README_ONLY = "Unrelated paragraph that only the README holds.";
+    private static final ToolGuideTtls TTLS = new ToolGuideTtls(Duration.ofDays(7), Duration.ofMinutes(10));
 
     @Autowired
     StringRedisTemplate redis;
@@ -49,9 +53,9 @@ class RedisToolGuideCacheIT {
     void storesTheAnswerWithoutTheQuestionOrTheDocumentText_andReadsItBack() {
         Material readme = new Material("readme", MaterialKind.README, URI.create("https://github.com/acme/x"), CLOCK.instant(),
             "Install with:\n\n```bash\nnpm install acme-x\n```\n\n" + README_ONLY + "\n");
-        RedisToolGuideCache store = new RedisToolGuideCache(redis, JsonMapper.builder().build(), Resilience.NONE, Duration.ofDays(7));
+        RedisToolGuideCache store = new RedisToolGuideCache(redis, JsonMapper.builder().build(), Resilience.NONE);
         RecordingCache recording = new RecordingCache(store);
-        ToolGuides guides = new ToolGuides(ref -> List.of(readme), new Model(), recording, CLOCK);
+        ToolGuides guides = new ToolGuides(ref -> List.of(readme), new Model(), recording, CLOCK, TTLS);
         String resourceId = UUID.randomUUID().toString();
         ToolRef ref = ToolRef.Companion.of("acme-x", "LIBRARY", List.of("https://github.com/acme/x"), List.of());
 
@@ -71,8 +75,8 @@ class RedisToolGuideCacheIT {
     @Test
     void theNextAskIsServedFromRedisWithoutAModelCall() {
         Model model = new Model();
-        RecordingCache cache = new RecordingCache(new RedisToolGuideCache(redis, JsonMapper.builder().build(), Resilience.NONE, Duration.ofDays(7)));
-        ToolGuides guides = new ToolGuides(ref -> List.of(readme()), model, cache, CLOCK);
+        RecordingCache cache = new RecordingCache(new RedisToolGuideCache(redis, JsonMapper.builder().build(), Resilience.NONE));
+        ToolGuides guides = new ToolGuides(ref -> List.of(readme()), model, cache, CLOCK, TTLS);
         String resourceId = UUID.randomUUID().toString();
 
         ToolGuideAnswer first = guides.answer(resourceId, REF, null);
@@ -85,8 +89,8 @@ class RedisToolGuideCacheIT {
     @Test
     void anUnreadableEntryCostsOneModelCall_thenTheRewrittenEntryServes() {
         Model model = new Model();
-        RecordingCache cache = new RecordingCache(new RedisToolGuideCache(redis, JsonMapper.builder().build(), Resilience.NONE, Duration.ofDays(7)));
-        ToolGuides guides = new ToolGuides(ref -> List.of(readme()), model, cache, CLOCK);
+        RecordingCache cache = new RecordingCache(new RedisToolGuideCache(redis, JsonMapper.builder().build(), Resilience.NONE));
+        ToolGuides guides = new ToolGuides(ref -> List.of(readme()), model, cache, CLOCK, TTLS);
         String resourceId = UUID.randomUUID().toString();
         guides.answer(resourceId, REF, null);
         redis.opsForValue().set(RedisToolGuideCache.redisKey(cache.key), "{\"v\":2,\"answer\":{\"status\":\"NOT_A_STATUS\"}}");
@@ -98,6 +102,24 @@ class RedisToolGuideCacheIT {
         assertThat(model.calls).isEqualTo(2);
     }
 
+    @Test
+    void anUnreadableModelAnswerIsKeptForTheShortTtl_andServesTheNextAsk() {
+        Model model = new Model(new ToolGuideUnavailable(ToolGuideUnavailable.Reason.UNREADABLE));
+        RecordingCache cache = new RecordingCache(new RedisToolGuideCache(redis, JsonMapper.builder().build(), Resilience.NONE));
+        ToolGuides guides = new ToolGuides(ref -> List.of(readme()), model, cache, CLOCK, TTLS);
+        String resourceId = UUID.randomUUID().toString();
+
+        ToolGuideAnswer first = guides.answer(resourceId, REF, null);
+        ToolGuideAnswer second = guides.answer(resourceId, REF, null);
+
+        assertThat(redis.getExpire(RedisToolGuideCache.redisKey(cache.key), TimeUnit.SECONDS))
+            .isBetween(Duration.ofMinutes(10).minusMinutes(1).toSeconds(), Duration.ofMinutes(10).toSeconds());
+        assertThat(model.calls).isEqualTo(1);
+        assertThat(second).isEqualTo(first);
+        assertThat(second.getStatus()).isEqualTo(ToolGuideStatus.LLM_UNAVAILABLE);
+        assertThat(second.getUnavailable()).isEqualTo("error");
+    }
+
     private static Material readme() {
         return new Material("readme", MaterialKind.README, URI.create("https://github.com/acme/x"), CLOCK.instant(),
             "Install with:\n\n```bash\nnpm install acme-x\n```\n\n" + README_ONLY + "\n");
@@ -106,7 +128,16 @@ class RedisToolGuideCacheIT {
     private static final ToolRef REF = ToolRef.Companion.of("acme-x", "LIBRARY", List.of("https://github.com/acme/x"), List.of());
 
     private static final class Model implements ToolGuideModel {
+        private final RuntimeException failure;
         int calls;
+
+        Model() {
+            this(null);
+        }
+
+        Model(RuntimeException failure) {
+            this.failure = failure;
+        }
 
         @Override
         public String getModel() {
@@ -121,6 +152,9 @@ class RedisToolGuideCacheIT {
         @Override
         public ProposedGuide write(ToolRef ref, List<Material> materials, String question) {
             calls++;
+            if (failure != null) {
+                throw failure;
+            }
             return new ProposedGuide(List.of(new ProposedSection("INSTALL",
                 List.of(new ProposedStep("Install it.", "readme", "Install with:", "npm install acme-x", null)))));
         }
@@ -140,9 +174,9 @@ class RedisToolGuideCacheIT {
         }
 
         @Override
-        public void put(String key, ToolGuideAnswer answer) {
+        public void put(String key, ToolGuideAnswer answer, Duration ttl) {
             this.key = key;
-            delegate.put(key, answer);
+            delegate.put(key, answer, ttl);
         }
     }
 }

@@ -94,10 +94,15 @@ and a snippet copied into 19 clients' config files runs on the user's machine.
    dates, never the question or a document's text; the question is added back to the response only. The endpoint
    shares the guide's rate limit and has its own daily cap (`H2_SETUP_GUIDE_DAILY_MODEL_CALLS`, 300); the Redis TTL is
    `H2_SETUP_GUIDE_CACHE_TTL`. An entry that does not decode is logged and treated as a miss, and the next answer
-   replaces it, so it costs one model call, not one per request.
+   replaces it, so it costs one model call, not one per request. Each model call runs under the `llm-chat` circuit
+   ([0033](../foundation/0033-resilience-policies.md)); a malformed answer is asked for once more. When both answers are not the
+   requested JSON, the "unavailable" answer is cached for `H2_SETUP_UNREADABLE_TTL` (10 minutes), so the same
+   resource and question do not spend two model calls on every request. A provider error, an open circuit or a spent
+   budget is not cached: each recovers by itself. The user sees the same "unavailable" answer in every case but the
+   budget.
 12. **Settings.** Every knob is an `H2_SETUP_*` variable in the `helper2.setup` block of `application.yaml`:
    `DOCUMENT_TIMEOUT` (10 s), `NPM_README_BASE_URL`, `CACHE_TTL`, `DOCUMENT_CACHE_MB`, `HOURLY_FETCHES`,
-   `GUIDE_DAILY_MODEL_CALLS`, `GUIDE_REASONING` (false), `GUIDE_CACHE_TTL` (7 days).
+   `GUIDE_DAILY_MODEL_CALLS`, `GUIDE_REASONING` (false), `GUIDE_CACHE_TTL` (7 days), `UNREADABLE_TTL` (10 minutes).
 
 ## Consequences
 - Every MCP server with a registry entry or a README config example gets copy-paste setup for 19 clients without a

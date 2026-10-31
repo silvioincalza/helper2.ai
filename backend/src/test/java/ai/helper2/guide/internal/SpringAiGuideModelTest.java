@@ -11,12 +11,8 @@ import ai.helper2.guide.GuideValidator;
 import ai.helper2.guide.GuideBudgetExhausted;
 import ai.helper2.guide.PlannedQueries;
 import ai.helper2.platform.llm.DailyBudget;
-import ai.helper2.platform.llm.LlmPolicies;
 import ai.helper2.platform.resilience.Resilience;
-import ai.helper2.platform.resilience.Resilience4jPolicies;
-import io.github.resilience4j.bulkhead.BulkheadRegistry;
-import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
-import io.github.resilience4j.retry.RetryRegistry;
+import ai.helper2.testing.TestPolicies;
 import ai.helper2.platform.llm.ModelCallMetrics;
 import java.time.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -204,9 +200,7 @@ class SpringAiGuideModelTest {
     /** An open llm-chat circuit degrades the answer at once: no provider call, no unit of the daily budget. */
     @Test
     void anOpenCircuitFailsTheCallAtOnceWithoutTheProviderOrTheBudget() {
-        CircuitBreakerRegistry circuits = CircuitBreakerRegistry.ofDefaults();
-        circuits.circuitBreaker(LlmPolicies.CHAT).transitionToForcedOpenState();
-        Resilience resilience = new Resilience4jPolicies(circuits, BulkheadRegistry.ofDefaults(), RetryRegistry.ofDefaults());
+        Resilience resilience = TestPolicies.llmChatOpen();
         DailyBudget budget = new DailyBudget(10, Clock.systemUTC(), "guide");
         ChatModel chat = prompt -> {
             calls.incrementAndGet();

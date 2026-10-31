@@ -19,8 +19,9 @@ retention limit.
 3. **Context across threads.** The search executor is wrapped with `ContextExecutorService`, so each source call runs
    in the request's trace. Source and embedding clients share `ObservedHttp` ([0006](../foundation/0006-outbound-http.md)):
    `http.client.requests`, a client span and trace headers, with a bounded Uniform Resource Identifier (URI) tag
-   and no query string. Every model call (guide steps, translation, enrichment, classifier with step `classify`) is
-   observed by `ModelCallMetrics` (span and timer `helper2.llm.call`).
+   and no query string. Every model call (guide steps, translation, setup guide with step `tool-guide`, enrichment, classifier with step
+   `classify`) is observed by `ModelCallMetrics` (span and timer `helper2.llm.call`), tagged with the version of its
+   prompt.
    `ObservabilityConfiguration` drops observations of `/actuator/**` (probes and scrapes).
 4. **Meters** (Prometheus, pulled from `/actuator/prometheus` on the management port, [0024](../edge/0024-http-edge-protection.md);
    OTLP metric push is off). Common tags `application=helper2`, `environment`. Histogram buckets for

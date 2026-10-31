@@ -4,7 +4,9 @@
 # Source of truth: backend/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java, CallRefused.java,
 #   backend/src/main/resources/application.yaml (resilience4j.*), backend/src/main/java/ai/helper2/sources/support/TransientSourceFailure.java,
 #   backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt, backend/src/main/java/ai/helper2/sources/*/*Collector.java,
-#   backend/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java, search/internal/SpringAiQueryTranslator.java (llm-chat),
+#   backend/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java, search/internal/SpringAiQueryTranslator.java,
+#   setup/internal/SpringAiToolGuideModel.java, scout/internal/SpringAiEnrichmentModel.java,
+#   sources/classifier/SpringAiRepoClassifier.java (llm-chat),
 #   backend/src/main/java/ai/helper2/catalog/internal/NvidiaEmbedder.java (llm-embed), guide/web/GuideLimits.java (trySlot),
 #   backend/src/main/java/ai/helper2/platform/llm/ModelErrors.java (NotFromProvider).
 # Render: cd docs/diagrams && d2 fmt flow-0033-resilience-policies.d2 && d2 flow-0033-resilience-policies.d2 flow-0033-resilience-policies.svg
@@ -50,7 +52,7 @@ callers: What the caller does {
   search: "SearchResources: refused → SKIPPED\n(CIRCUIT_OPEN \"Paused after repeated\nfailures\", BUSY \"Too many searches\nat once\"), stale cache entry if any;\nrate limited → paused until Retry-After" {class: app}
   redis: "Redis adapters: miss or\nin-memory fallback, no wait" {class: app}
   collector: "Collector: this run fails,\nthe next run tries again" {class: app}
-  llm: "Guide: circuit_open → degraded answer\n(top search results), no budget unit;\ntranslator: untranslated search;\nembedder: EmbeddingFailure (keyword search,\nindexer retries next period)" {class: app}
+  llm: "Guide: circuit_open → degraded answer\n(top search results), no budget unit;\ntranslator: untranslated search;\ntool guide: LLM_UNAVAILABLE \"error\";\nenrichment: LLM_UNAVAILABLE, stays in backlog;\nclassifier: keyword heuristic;\nembedder: EmbeddingFailure (keyword search,\nindexer retries next period)" {class: app}
 }
 
 slot: "Resilience.trySlot(guide)\n(GuideLimits, per question)" {class: end}

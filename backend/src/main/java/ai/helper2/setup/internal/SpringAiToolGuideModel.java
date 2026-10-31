@@ -2,11 +2,14 @@ package ai.helper2.setup.internal;
 
 import ai.helper2.platform.llm.CallOptions;
 import ai.helper2.platform.llm.DailyBudget;
+import ai.helper2.platform.llm.LlmPolicies;
 import ai.helper2.platform.llm.ModelAnswers;
 import ai.helper2.platform.llm.ModelCallMetrics;
 import ai.helper2.platform.llm.ModelErrors;
 import ai.helper2.platform.llm.UntrustedText;
 import ai.helper2.platform.prompt.PromptTemplate;
+import ai.helper2.platform.resilience.CallRefused;
+import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.setup.Markdown;
 import ai.helper2.setup.Material;
 import ai.helper2.setup.ProposedGuide;
@@ -14,6 +17,7 @@ import ai.helper2.setup.ProposedSection;
 import ai.helper2.setup.ProposedStep;
 import ai.helper2.setup.ToolGuideModel;
 import ai.helper2.setup.ToolGuideUnavailable;
+import ai.helper2.setup.ToolGuideUnavailable.Reason;
 import ai.helper2.setup.ToolRef;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +33,7 @@ import org.springframework.ai.converter.BeanOutputConverter;
 /**
  * Spring AI adapter for the tool guide: one structured-output call with the tool's documents (the useful
  * sections of long READMEs, see {@link Markdown#relevant}). ToolGuideValidator decides what is shown. Every
- * attempt takes one call from the tool guide's own daily budget.
+ * attempt takes one call from the tool guide's own daily budget, inside the {@code llm-chat} circuit (ADR 0033).
  */
 class SpringAiToolGuideModel implements ToolGuideModel {
 
@@ -48,20 +52,30 @@ class SpringAiToolGuideModel implements ToolGuideModel {
         }
     }
 
+    static String systemPrompt() {
+        return PromptTemplate.fromClasspath("setup/tool-guide.txt").render(Map.of());
+    }
+
     private final ChatClient chat;
     private final String system;
+    private final String version;
     private final String model;
     private final boolean nativeSchema;
     private final DailyBudget budget;
     private final ModelCallMetrics metrics;
+    private final Resilience resilience;
 
-    SpringAiToolGuideModel(ChatModel chatModel, String model, boolean nativeSchema, DailyBudget budget, ModelCallMetrics metrics) {
+    SpringAiToolGuideModel(ChatModel chatModel, String model, boolean nativeSchema, DailyBudget budget, ModelCallMetrics metrics,
+                           Resilience resilience) {
+        resilience.require(LlmPolicies.CHAT);
         this.chat = ChatClient.builder(chatModel).build();
-        this.system = PromptTemplate.fromClasspath("setup/tool-guide.txt").render(Map.of());
+        this.system = systemPrompt();
+        this.version = ModelCallMetrics.promptVersion(system);
         this.model = model;
         this.nativeSchema = nativeSchema;
         this.budget = budget;
         this.metrics = metrics;
+        this.resilience = resilience;
     }
 
     @Override
@@ -99,33 +113,45 @@ class SpringAiToolGuideModel implements ToolGuideModel {
             .toList());
     }
 
+    /**
+     * One retry, only for an answer we could not use: a provider error is not retried. The budget unit is taken
+     * inside the circuit, so a call the open circuit refuses costs nothing. Two unusable answers are UNREADABLE
+     * (ToolGuides keeps that briefly); a provider error or the open circuit is PROVIDER and recovers by itself.
+     */
     private Answer call(String user) {
         BeanOutputConverter<Answer> converter = new BeanOutputConverter<>(Answer.class, null,
             text -> ModelAnswers.jsonObject(text).orElse(""));
         for (int attempt = 1; attempt <= 2; attempt++) {
-            if (!budget.tryAcquire()) {
-                throw new ToolGuideUnavailable("budget");
-            }
             try {
-                var prompt = chat.prompt().options(CallOptions.of(model, MAX_TOKENS, false)).system(system).user(user);
-                if (nativeSchema) {
-                    prompt = prompt.advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT);
-                }
-                var spec = prompt.call();
-                return metrics.observe("tool-guide", model, () -> {
-                    var response = spec.responseEntity(converter);
-                    metrics.tokens("tool-guide", response.response());
-                    return response.entity();
+                return resilience.call(LlmPolicies.CHAT, () -> {
+                    if (!budget.tryAcquire()) {
+                        throw new ToolGuideUnavailable(Reason.BUDGET);
+                    }
+                    var prompt = chat.prompt().options(CallOptions.of(model, MAX_TOKENS, false)).system(system).user(user);
+                    if (nativeSchema) {
+                        prompt = prompt.advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT);
+                    }
+                    var spec = prompt.call();
+                    return metrics.observe("tool-guide", model, version, () -> {
+                        var response = spec.responseEntity(converter);
+                        metrics.tokens("tool-guide", version, response.response());
+                        return response.entity();
+                    });
                 });
+            } catch (ToolGuideUnavailable e) {
+                throw e;
+            } catch (CallRefused e) {
+                log.info("tool guide model call refused: {} is {}", e.policy(), e.reason());
+                throw new ToolGuideUnavailable(Reason.PROVIDER);
             } catch (RuntimeException e) {
                 log.warn("tool guide model call failed (attempt {} of 2, model {}): {} ({})", attempt, model,
                     ModelErrors.category(e), e.getClass().getSimpleName());
                 if (ModelErrors.isProviderError(e)) {
-                    break;
+                    throw new ToolGuideUnavailable(Reason.PROVIDER);
                 }
             }
         }
-        throw new ToolGuideUnavailable("error");
+        throw new ToolGuideUnavailable(Reason.UNREADABLE);
     }
 
     private static String nz(String s) {
