@@ -46,6 +46,14 @@ describe('design v2 states (flag on): every state says what happened and offers 
     await waitFor(() => expect(n).toBe(1));
   });
 
+  it('no results for a search too short to ask: no guide button that would do nothing', async () => {
+    mockApi({ 'GET /search': () => makeSearch({ results: [], total: 0 }) });
+    renderApp('/search?q=ai');
+    const empty = (await screen.findByText('No results from the sources searched')).closest('[role="status"]') as HTMLElement;
+    expect(within(empty).queryByRole('button', { name: 'Ask the guide instead' })).not.toBeInTheDocument();
+    expect(within(empty).getByRole('link', { name: 'See the sources we search' })).toBeInTheDocument();
+  });
+
   it('some sources failed: results stay, the line says so, links to the tiles and retries', async () => {
     let n = 0;
     mockApi({
