@@ -1,7 +1,7 @@
 import { useEffect, useState, type MouseEvent, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { Icon } from '@/components/Icon';
+import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
 import { StatusPill, type StatusTone } from '@/components/ui/StatusPill';
 import { prefersReducedMotion, REDUCED_MOTION_QUERY } from '@/lib/motion';
 import './home-v2.css';
@@ -80,12 +80,9 @@ export function HomeBoard({ id, title, sub, listLabel, foot, loading, error, err
           </div>
         )}
         {!loading && error && (
-          <div role="alert" className="state-box state-error">
-            <p><Icon name="warn" /> {errorText}</p>
-            <button type="button" className="btn" onClick={onRetry}><Icon name="refresh" /> {t('common.retry')}</button>
-          </div>
+          <StatePanel tone="error" level={3} title={errorText} next={<RetryButton onClick={onRetry} />} />
         )}
-        {!loading && !error && rows.length === 0 && <p className="state-box">{emptyText}</p>}
+        {!loading && !error && rows.length === 0 && <StatePanel tone="notice" level={3} title={emptyText} />}
       </div>
       {rows.length > 0 && (
         // A tap pauses or plays the loop; it is a touch extra, as hover and keyboard focus already pause it.

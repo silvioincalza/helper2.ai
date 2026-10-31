@@ -58,6 +58,7 @@ describe('home page Events board', () => {
   it('says so when no event has stated dates', async () => {
     mockApi();
     renderApp('/');
-    expect(await screen.findByText('No events with stated dates in the next three months.')).toBeInTheDocument();
+    // The empty board is a designed state: a heading, with no next step (the box above it is one).
+    expect(await screen.findByRole('heading', { level: 3, name: 'No events with stated dates in the next three months.' })).toBeInTheDocument();
   });
 });

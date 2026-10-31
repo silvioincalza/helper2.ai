@@ -84,7 +84,7 @@ and chose between options for each part.
 - `frontend/src/lib/searchState.ts` — `RESULTS_PATH` is `/search`. `OneBox` sends results there and searches live only
   on that page.
 - `frontend/src/pages/HomePage.tsx`, `routes.tsx` — `/` empty is the home page; `/search` shows results and goes home
-  with no query; `/?q=` shows results with a canonical link to `/search`; `/guide?q=` links go to `/search`.
+  with no query; `/?q=` shows results with a canonical link to `/search`; there is no `/guide` route (the site was never public, so no old links exist).
 - `frontend/src/components/results/ResultsV2.tsx` — the results page: the box, the picks bar (questions only), type
   tabs, a "Filters" fold with sort, list or timeline and the filter panel, search notices and use-case hints, the list
   of `SelectableRow`s, the preview beside the list from 861 px and inside it below, the pager, and the sources at the

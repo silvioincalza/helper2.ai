@@ -6,6 +6,7 @@ import type { SetupClient, SetupGuide as Guide, SetupOption, ToolGuide } from '@
 import { ExternalLink } from '@/components/ExternalLink';
 import { Icon } from '@/components/Icon';
 import { CopyButton } from '@/components/ui/CopyButton';
+import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
 import { useApi } from '@/hooks/useApi';
 import { useRetry } from '@/hooks/useRetry';
 import { formatDate } from '@/lib/format';
@@ -167,7 +168,7 @@ function StepsPart({ id, title, level }: { id: string; title: string; level: num
         {q.loading ? (
           <p className="muted" role="status">{t('setup.reading')}</p>
         ) : q.error !== undefined || !q.data ? (
-          <div role="alert"><p>{t('setup.stepsError')}</p><button type="button" className="btn" onClick={retry}>{t('common.retry')}</button></div>
+          <StatePanel tone="error" level={level + 1} title={t('setup.stepsError')} next={<RetryButton onClick={retry} />} />
         ) : (
           <ToolSteps guide={q.data} title={title} level={level + 1} />
         )}

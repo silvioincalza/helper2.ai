@@ -3,8 +3,8 @@ import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { ApiError } from '@/api/client';
 import type { GuideResponse } from '@/api/types';
-import { Icon } from '@/components/Icon';
 import { PicksBar, type PicksState } from '@/components/ui/PicksBar';
+import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
 import type { GuideStream } from '@/hooks/useGuideStream';
 import { useRetry } from '@/hooks/useRetry';
 import { guidePicks } from '@/lib/selection';
@@ -54,10 +54,7 @@ export function GuidePicks({ stream, loaded }: { stream: GuideStream; loaded: Re
       )}
       {!busy && <WebSearchesLeft feature="guide" value={answer?.webSearches} />}
       {error !== null && (
-        <div className="state-box state-error">
-          <p role="alert"><Icon name="warn" /> {guideError(error, t)}</p>
-          <button type="button" className="btn btn-primary" onClick={retry}><Icon name="refresh" /> {t('common.retry')}</button>
-        </div>
+        <StatePanel tone="error" level={2} title={guideError(error, t)} next={<RetryButton onClick={retry} />} />
       )}
       {answer && answer.status === 'NEEDS_CLARIFICATION' && <GuideAnswer answer={answer} onRefine={refine} />}
       {/* No pick: the answer opens under the one-line bar, so how the guide read the question can be refined. */}

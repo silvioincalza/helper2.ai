@@ -4,7 +4,7 @@ import type { Bookmark, SourceInfo } from '@/api/types';
 import { BOOKMARK_KEY } from '@/lib/bookmarks';
 import { axeViolations } from '@/test/a11y';
 import { SOURCES, USER } from '@/test/fixtures';
-import { mockApi } from '@/test/mockApi';
+import { mockApi, problem } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
 
 vi.mock('@/lib/features', () => ({ SAVED_ENABLED: true }));
@@ -117,5 +117,20 @@ describe('Feature: your account in design v2', () => {
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
     expect(m.callsTo('DELETE', '/me')).toHaveLength(0);
     expect(await axeViolations(document.body)).toEqual([]);
+  });
+});
+
+describe('Feature: the source list cannot load', () => {
+  it('Scenario: Try again keeps focus on the list heading and shows the sources', async () => {
+    let fail = true;
+    mockApi({ 'GET /sources': () => (fail ? problem(503, 'Service Unavailable') : sources) });
+    renderApp('/sources');
+    const alert = await screen.findByRole('alert');
+    expect(within(alert).getByRole('heading', { name: 'Could not load the source list.' })).toBeInTheDocument();
+    fail = false;
+    within(alert).getByRole('button', { name: /Try again/ }).focus();
+    await userEvent.keyboard('{Enter}');
+    expect(await screen.findByText('1 of 4 sources answered at their last check')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('heading', { level: 2, name: 'Every source' })).toHaveFocus());
   });
 });

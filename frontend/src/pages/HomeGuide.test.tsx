@@ -197,12 +197,11 @@ describe('guide on the one page', () => {
     expect(m.callsTo('POST', '/guide/stream')[0]?.body).toEqual({ request: 'MCP server for Slack' });
   });
 
-  it('old /guide?q= links ask the guide on the results page', async () => {
+  it('/guide is not a page: it shows the not-found page and asks no guide', async () => {
     const m = mockApi({ 'POST /guide/stream': () => sse(makeGuide()) });
-    const { router } = renderApp('/guide?q=MCP+server+for+Slack&path=BUILD_WITH_AI');
-    expect(await screen.findByRole('link', { name: 'Postgres MCP' })).toBeInTheDocument();
-    expect(router.state.location.pathname).toBe('/search');
-    expect(m.callsTo('POST', '/guide/stream')[0]?.body).toEqual({ request: 'MCP server for Slack' });
+    renderApp('/guide?q=MCP+server+for+Slack');
+    expect(await screen.findByRole('heading', { level: 1 })).toBeInTheDocument();
+    expect(m.callsTo('POST', '/guide/stream')).toHaveLength(0);
   });
 
   it('while the guide answers the picks bar says it is reading, and the line goes once the answer is in', async () => {
