@@ -60,6 +60,7 @@ All diagrams: [docs/diagrams](../diagrams/README.md).
 | # | Decision | Builds on | Diagrams |
 |---|---|---|---|
 | [0023](edge/0023-identity-and-admin.md) | Identity: anonymous-first; GitHub sign-in; ADMIN by numeric id; bookmarks and account deletion for signed-in users; admin audit trail | 0003, 0004, 0005, 0007, 0034 | [flow](../diagrams/flow-0023-identity-and-admin.svg) · [sequence](../diagrams/sequence-0023-identity-and-admin.svg) |
+| [0035](edge/0035-admin-host.md) | Admin host: a second port for the back office, ADMIN only there, sign-in on both hosts | 0023, 0024, 0027 | [flow](../diagrams/flow-0035-admin-host.svg) · [sequence](../diagrams/sequence-0035-admin-host.svg) |
 | [0024](edge/0024-http-edge-protection.md) | HTTP edge: rate limits (IPv6 /64), CSRF, CSP, forwarded headers, management port, SPA fallback and caching | 0001, 0005, 0007, 0023, 0033 | [flow](../diagrams/flow-0024-http-edge-protection.svg) · [sequence](../diagrams/sequence-0024-http-edge-protection.svg) |
 
 ## Frontend — [`frontend/`](frontend/)
@@ -68,7 +69,7 @@ All diagrams: [docs/diagrams](../diagrams/README.md).
 |---|---|---|---|
 | [0025](frontend/0025-frontend-one-box.md) | Frontend: one box, state in the URL, guide stream, accessibility, theme (system/light/dark) | 0001, 0003, 0008, 0015 | [flow](../diagrams/flow-0025-frontend-one-box.svg) · [sequence](../diagrams/sequence-0025-frontend-one-box.svg) |
 | [0039](frontend/0039-frontend-recent-answers-cache.md) | Frontend recent-answers cache: back and forward without a new request | 0025 | [flow](../diagrams/flow-0039-frontend-recent-answers-cache.svg) · [sequence](../diagrams/sequence-0039-frontend-recent-answers-cache.svg) |
-| [0040](frontend/0040-frontend-design-v2.md) | Frontend design: home page, results with preview, guide picks bar, design system v3 | 0015, 0025, 0038, 0039 | [flow](../diagrams/flow-0040-frontend-design-v2.svg) · [sequence](../diagrams/sequence-0040-frontend-design-v2.svg) |
+| [0040](frontend/0040-frontend-design.md) | Frontend design: home page, results with preview, guide picks bar, design system | 0015, 0025, 0038, 0039 | [flow](../diagrams/flow-0040-frontend-design.svg) · [sequence](../diagrams/sequence-0040-frontend-design.svg) |
 
 ## Operations — [`operations/`](operations/)
 

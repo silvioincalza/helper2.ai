@@ -57,6 +57,8 @@ export function GuidePicks({ stream, loaded }: { stream: GuideStream; loaded: Re
         <StatePanel tone="error" level={2} title={guideError(error, t)} next={<RetryButton onClick={retry} />} />
       )}
       {answer && answer.status === 'NEEDS_CLARIFICATION' && <GuideAnswer answer={answer} onRefine={refine} />}
+      {/* While the guide reads, the row of "How the guide decided" is kept, so the list does not move when it comes. */}
+      {busy && error === null && <div className="h2-results__full-slot" aria-hidden="true" />}
       {/* No pick: the answer opens under the one-line bar, so how the guide read the question can be refined. */}
       {answered && !plainAnswer && <FullAnswer answer={answer} onRefine={refine} open={picks.length === 0} />}
       {plainAnswer && <GuideAnswer answer={answer} onRefine={refine} />}

@@ -1,0 +1,54 @@
+# Flowchart: which port answers a request for the back office, and when a sign-in gets ADMIN (ADR 0035).
+# Source of truth: backend/src/main/java/ai/helper2/identity/AdminPort.java, AdminPortConfiguration.java,
+#   SecurityConfiguration.java (roles, afterSignIn), SessionConfiguration.java,
+#   deploy/helm/helper2/templates/app.yaml (Service helper2-admin), networkpolicy.yaml,
+#   incalza-me-infra terraform/k8s/helper2.tf (Ingresses, allow-list).
+# Render: cd docs/diagrams && d2 fmt flow-0035-admin-host.d2 && d2 flow-0035-admin-host.d2 flow-0035-admin-host.svg
+
+...@style
+
+direction: down
+
+req: "Request" {class: end}
+
+edge: Network edge {
+  class: group
+  direction: down
+  host: "Which host?" {class: decision}
+  allow: "Client in the vSwitch\nor mesh range?" {class: decision}
+  e403: "403 from ingress-nginx" {class: fail}
+  host -> allow: "admin host"
+}
+
+app: App (one image, two ports) {
+  class: group
+  direction: down
+  public: "Public port 8080" {class: app}
+  admin: "Admin port 8082" {class: app}
+  bo: "Back office path?\n/admin, /api/v1/admin/**\n(decoded, normalised)" {class: decision}
+  e404: "404, before session\nand security" {class: fail}
+  sec: "Security rules\n(ADR 0023)" {class: app}
+  public -> bo
+  bo -> e404: yes
+  bo -> sec: no {class: hot}
+  admin -> sec
+}
+
+signin: Sign-in {
+  class: group
+  direction: down
+  listed: "Id in H2_ADMINS?" {class: decision}
+  onadmin: "Sign-in made on\nthe admin port?" {class: decision}
+  user: "ROLE_USER,\nback to /" {class: end}
+  adm: "ROLE_USER + ROLE_ADMIN,\nback to /admin" {class: end}
+  listed -> onadmin: yes
+  listed -> user: no
+  onadmin -> adm: yes
+  onadmin -> user: no
+}
+
+req -> edge.host
+edge.host -> app.public: "public host\n(tunnel or ingress-nginx)" {class: hot}
+edge.allow -> app.admin: yes
+edge.allow -> edge.e403: no
+app.sec -> signin.listed: "GitHub sign-in\ncompleted"

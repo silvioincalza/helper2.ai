@@ -33,7 +33,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
  *   <li>reading a session finds none, so a request with a session cookie is served as anonymous instead of
  *       failing (Spring MVC looks the session up on every such request);</li>
  *   <li>saving one fails, so sign-in fails: the filter just outside Spring Session's sends the sign-in flow back
- *       to the admin page with {@code ?signin=failed}, and anything else gets a 503, instead of a server error
+ *       to where the sign-in started (admin page or site, per port) with {@code ?signin=failed}, and anything else gets a 503, instead of a server error
  *       that fails again on the error page.</li>
  * </ul>
  */
@@ -54,9 +54,10 @@ class SessionConfiguration {
     }
 
     @Bean
-    FilterRegistrationBean<SessionStoreFailureFilter> sessionStoreFailureFilter(@Value("${helper2.frontend-url:/}") String frontendUrl) {
-        FilterRegistrationBean<SessionStoreFailureFilter> registration =
-            new FilterRegistrationBean<>(new SessionStoreFailureFilter(SecurityConfiguration.adminPage(frontendUrl) + "?signin=failed"));
+    FilterRegistrationBean<SessionStoreFailureFilter> sessionStoreFailureFilter(@Value("${helper2.frontend-url:/}") String frontendUrl,
+                                                                               AdminPort adminPort) {
+        FilterRegistrationBean<SessionStoreFailureFilter> registration = new FilterRegistrationBean<>(new SessionStoreFailureFilter(
+            req -> SecurityConfiguration.afterSignIn(frontendUrl, adminPort.admits(req)) + "?signin=failed"));
         registration.setOrder(SessionRepositoryFilter.DEFAULT_ORDER - 1);
         return registration;
     }
@@ -104,9 +105,10 @@ class SessionConfiguration {
 
         private static final Logger log = LoggerFactory.getLogger(SessionStoreFailureFilter.class);
 
-        private final String signInFailed;
+        /** Where a failed sign-in returns, per port (ADR 0035). */
+        private final java.util.function.Function<HttpServletRequest, String> signInFailed;
 
-        SessionStoreFailureFilter(String signInFailed) {
+        SessionStoreFailureFilter(java.util.function.Function<HttpServletRequest, String> signInFailed) {
             this.signInFailed = signInFailed;
         }
 
@@ -124,7 +126,7 @@ class SessionConfiguration {
                 res.resetBuffer();
                 String path = req.getRequestURI();
                 if (path.startsWith("/oauth2/") || path.startsWith("/login/")) {
-                    res.sendRedirect(signInFailed);
+                    res.sendRedirect(signInFailed.apply(req));
                 } else {
                     res.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
                     res.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);

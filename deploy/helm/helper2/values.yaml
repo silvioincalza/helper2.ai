@@ -51,6 +51,9 @@ app:
       guide: null
     guideQuestions: null
     webSearchCredits: null
+  # Second port for the back office (ADR 0035): /admin, /api/v1/admin/** and the ADMIN role only there, behind the
+  # Service helper2-admin. Route it only from an in-network host. 0 = one port for everything (admin on the public host).
+  adminPort: 8082
   # prod | staging, set per environment; the `environment` tag on metrics and spans.
   environment: ""
   # OTLP traces. Off by default; set export: true and your collector's endpoint, and
@@ -112,8 +115,11 @@ ingress:
   # TLS Secret for host (e.g. issued by cert-manager through annotations). Empty = no TLS section.
   tlsSecretName: ""
   annotations: {}
-  # Namespace of the Ingress controller pods: the network policy lets only them reach the app.
+  # Namespace of the Ingress controller pods: the network policy lets only them reach the app, on the public port
+  # and the admin port. Set it also when the Ingress objects are managed outside this chart.
   controllerNamespace: ""
+  # Optional pod labels that narrow the controller pods in that namespace, e.g. app.kubernetes.io/name: ingress-nginx.
+  controllerPodLabels: {}
 
 # Optional: expose the app through a remotely-managed Cloudflare tunnel. The token Secret
 # (tokenSecret, key `token`) is created outside the chart.

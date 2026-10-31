@@ -1,0 +1,39 @@
+# Sequence: the owner signs in on the admin host and opens the review queue; the same id on the public host is a plain
+# user, and the back office is not there (ADR 0035).
+# Source of truth: backend/src/main/java/ai/helper2/identity/AdminPortConfiguration.java (BackOfficeOffPublicPort),
+#   AdminPort.java, SecurityConfiguration.java (oauthUsers, roles, afterSignIn),
+#   incalza-me-infra terraform/k8s/helper2.tf (helper2-admin Ingress, whitelist-source-range).
+# Render: cd docs/diagrams && d2 fmt sequence-0035-admin-host.d2 && d2 sequence-0035-admin-host.d2 sequence-0035-admin-host.svg
+
+...@style
+
+shape: sequence_diagram
+
+owner: "Owner\n(on WireGuard)" {class: person}
+nginx: "ingress-nginx\n(allow-list)" {class: app}
+apub: "App public port\n8080" {class: app}
+aadm: "App admin port\n8082" {class: app}
+gh: GitHub {class: ext}
+
+adminhost: Admin host {
+  owner -> nginx: "GET admin.helper2.ai/admin" {class: hot}
+  nginx -> aadm: "vSwitch address: allowed" {class: hot}
+  aadm -> owner: "admin page, not signed in"
+  owner -> aadm: "/oauth2/authorization/github"
+  aadm -> owner: "302 to GitHub, callback\nadmin.helper2.ai/login/oauth2/code/github"
+  owner -> gh: "sign in"
+  gh -> owner: "302 back with code"
+  owner -> aadm: "callback (admin port)"
+  aadm -> gh: "token + user info" {class: ai-call}
+  aadm -> aadm: "id allow-listed and admin port:\nROLE_ADMIN; session cookie for this host only"
+  aadm -> owner: "302 /admin"
+  owner -> aadm: "GET /api/v1/admin/review-items"
+  aadm -> owner: "200"
+}
+
+publichost: Public host {
+  owner -> apub: "GET helper2.ai/api/v1/admin/review-items"
+  apub -> owner: "404 (no back office here)"
+  owner -> apub: "sign in on the public site"
+  apub -> owner: "ROLE_USER only, 302 /"
+}
