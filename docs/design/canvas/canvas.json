@@ -38,16 +38,6 @@
       "expand": "fill",
       "page": "system"
     },
-    "One-Page.dc.html": {
-      "expand": "fill",
-      "h": 1100,
-      "is_interactive": true,
-      "title": "Prototype · One page, one box",
-      "w": 1440,
-      "x": 0,
-      "y": 0,
-      "page": "proto"
-    },
     "S-Admin.dc.html": {
       "expand": "fill",
       "h": 1200,
@@ -170,7 +160,6 @@
     "DS-Colors.dc.html",
     "DS-Type.dc.html",
     "DS-Components.dc.html",
-    "One-Page.dc.html",
     "Website.dc.html",
     "S-Header.dc.html",
     "S-Home.dc.html",

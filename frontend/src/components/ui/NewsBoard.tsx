@@ -64,7 +64,7 @@ export function NewsBoard({ title, lede, rows, failed, onRetry, emptyText, error
         {failed && (
           <StatePanel tone="error" level={3} title={errorText} next={<RetryButton onClick={retry} />} />
         )}
-        {!failed && rows?.length === 0 && <p className="state-box">{emptyText}</p>}
+        {!failed && rows?.length === 0 && <StatePanel tone="notice" level={3} title={emptyText} />}
         {!failed && rows !== undefined && rows.length > 0 && <MovingList rows={rows} label={title} />}
       </div>
     </section>

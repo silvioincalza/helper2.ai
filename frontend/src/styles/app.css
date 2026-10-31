@@ -202,7 +202,7 @@ textarea { width: 100%; resize: vertical; }
 .pagination { display: flex; gap: var(--space-4); align-items: center; justify-content: center; margin-top: var(--space-5); }
 
 /* panels & states */
-.panel, .state-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); margin-bottom: var(--space-4); }
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); margin-bottom: var(--space-4); }
 .banner { display: flex; gap: var(--space-3); align-items: flex-start; padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); border: 1px solid var(--border-strong); background: var(--surface); margin-bottom: var(--space-3); }
 .banner-warn { border-color: var(--not-stated); }
 .banner-ok { border-color: var(--checked-ink); }

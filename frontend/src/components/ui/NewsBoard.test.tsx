@@ -142,10 +142,12 @@ describe('a News or Events board', () => {
     expect(await axeViolations(container)).toEqual([]);
   });
 
-  it('when empty, says so', () => {
-    renderBoard({ rows: [] });
-    expect(screen.getByText('Nothing new.')).toBeInTheDocument();
+  it('when empty, says so as a state under the board heading, not as an alert', async () => {
+    const { container } = renderBoard({ rows: [] });
+    expect(screen.getByRole('heading', { level: 3, name: 'Nothing new.' })).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     expect(screen.queryByRole('list')).not.toBeInTheDocument();
+    expect(await axeViolations(container)).toEqual([]);
   });
 
   it('on error, says so and offers to try again', async () => {
