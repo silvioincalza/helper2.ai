@@ -46,3 +46,16 @@
 .h2-results .is-stale { opacity: 0.55; transition: opacity var(--motion); }
 @media (max-width: 860px) { .h2-list { max-width: none; } }
 @media (max-width: 640px) { .h2-facts { grid-template-columns: minmax(0, 1fr); } .h2-pv__actions > * { flex: 1 1 auto; } }
+
+/* States (ADR 0040, 8). Skeleton rows have the list's shape, so the page does not jump when results arrive. */
+.h2-skeleton { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-3); }
+.h2-skeleton__row { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-radius: var(--radius-lg); background: var(--surface); }
+.h2-skeleton__line { display: block; height: 12px; width: 90%; border-radius: 6px; background: var(--surface-tint); animation: pulse 1.4s ease-in-out infinite; }
+.h2-skeleton__line.is-short { width: 30%; }
+.h2-skeleton__line.is-title { height: 18px; width: 60%; }
+@media (prefers-reduced-motion: reduce) { .h2-skeleton__line { animation: none; } }
+.h2-partial { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-4); }
+.h2-partial p { margin: 0; }
+.h2-partial__next, .h2-state__next { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); margin: var(--space-3) 0 0; }
+.h2-partial__next { margin: 0; }
+.h2-partial__next a, .h2-state__next a { min-height: var(--target-min); display: inline-flex; align-items: center; }
