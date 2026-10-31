@@ -76,11 +76,15 @@ The plan call (fast model, `prompts/guide/plan.txt`) returns:
 plan has no grounded intent or window, or there is no model, rules on the user's text set them, so the degraded answer
 for "tools from last month" is still the newest tools. Narrow on purpose, because a false hit changes the whole answer:
 - the intent, most specific shape first: comparison words, then alternatives, courses and certifications, "when",
-  a period or "latest/newest/recent", "what is", "how to";
+  a period, "latest/newest/recent" or "new" right before a kind of resource, "what is", "how to";
 - a window only from an explicit time expression ("last 3 weeks", "next month", "this year", "today");
-- "latest" alone sets `NEWEST` with sort only, no window. Bare "new" sets nothing: "new to AI" is not about age.
+- "latest" alone sets `NEWEST` with sort only, no window. "new" sets `NEWEST` only right before a kind of resource,
+  with at most one word between ("new MCP servers", "any new open-source models", "nuovi modelli"). Elsewhere it sets
+  nothing: "new to AI", "a new way to…", "a new project with MCP servers" are not about age.
 
-A period with intent `SUGGEST` becomes `NEWEST`. The user's removals (§9) apply last: a dropped intent is `SUGGEST`, a
+The planner's `SUGGEST` is its "nothing special": when the rules read `NEWEST` in the user's words, `NEWEST` wins
+("new MCP servers for Postgres" came back as `SUGGEST`). Any other planner intent stays. A period with intent `SUGGEST`
+becomes `NEWEST`. The user's removals (§9) apply last: a dropped intent is `SUGGEST`, a
 dropped window or constraint is gone. When the plan call succeeded the stream sends `planned` (search query,
 constraints, model); then, always, `understood` (intent, subjects, window).
 

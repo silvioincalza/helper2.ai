@@ -3,6 +3,8 @@
   {"id": "suggest-2", "request": "an open-source MCP server so my agent can query a Postgres database", "expect": {"intent": "SUGGEST"}},
   {"id": "newest-1", "request": "what are the last ai tools born in the last month?", "expect": {"intent": "NEWEST", "window": true}},
   {"id": "newest-2", "request": "latest MCP servers", "expect": {"intent": "NEWEST"}},
+  {"id": "newest-3", "request": "new mcp servers for postgres", "expect": {"intent": "NEWEST"}},
+  {"id": "suggest-new-to", "request": "I'm new to MCP, which server should I start with?", "expect": {"intent": "SUGGEST"}},
   {"id": "alternatives-1", "request": "alternatives to Cursor", "expect": {"intent": "ALTERNATIVES", "subjects": ["Cursor"]}},
   {"id": "alternatives-2", "request": "open source alternatives to ChatGPT", "expect": {"intent": "ALTERNATIVES", "subjects": ["ChatGPT"]}},
   {"id": "compare-1", "request": "Ollama vs LM Studio", "expect": {"intent": "COMPARE", "subjects": ["Ollama", "LM Studio"]}},

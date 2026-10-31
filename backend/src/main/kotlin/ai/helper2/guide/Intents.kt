@@ -194,6 +194,12 @@ object IntentRules {
     private val TODAY = anywhere("period.today")
 
     private val NEWEST = anywhere("intent.newest")
+
+    /** "new MCP servers", "any new open-source models", "nuovi modelli": new right before a kind of resource. */
+    private val NEW_KIND = Regex(
+        "(?i)\\b(?:${alternation("intent.new-word")})\\s+" +
+            "(?:(?!(?:${alternation("intent.new-skip")})\\b)[\\p{L}\\d.'-]+\\s+)?(?:${alternation("intent.new-kind")})\\b",
+    )
     private val ALTERNATIVES = anywhere("intent.alternatives")
     private val COMPARE = anywhere("intent.compare")
     private val WHAT_IS = atStart("intent.what-is")
@@ -223,7 +229,7 @@ object IntentRules {
         ALTERNATIVES.containsMatchIn(request) -> GuideIntent.ALTERNATIVES
         LEARN.containsMatchIn(request) -> GuideIntent.LEARN
         WHEN.containsMatchIn(request) -> GuideIntent.WHEN
-        windowOf(request) != null || NEWEST.containsMatchIn(request) -> GuideIntent.NEWEST
+        windowOf(request) != null || NEWEST.containsMatchIn(request) || NEW_KIND.containsMatchIn(request) -> GuideIntent.NEWEST
         WHAT_IS.containsMatchIn(request) -> GuideIntent.WHAT_IS
         HOW_TO.containsMatchIn(request) -> GuideIntent.HOW_TO
         else -> null
