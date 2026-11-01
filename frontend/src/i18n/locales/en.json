@@ -89,7 +89,8 @@
     "clear": "Clear the box",
     "slashHint": "Press / to search",
     "charsLeft_one": "{{count}} character left",
-    "charsLeft_other": "{{count}} characters left"
+    "charsLeft_other": "{{count}} characters left",
+    "charsLeftShort": "{{count}} left"
   },
   "results": {
     "title": "Search results",

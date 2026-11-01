@@ -16,7 +16,7 @@ screen reader, and in light and dark mode.
    (160 ms, none under reduced motion). Enter never adds a line, and a pasted line break becomes a space.
    × (or Esc) empties the box and keeps the results; "/" from anywhere on the page puts the cursor in the box (not
    while typing in another field), with a "/" hint on keyboard devices; from 50 characters left the box says how
-   many remain.
+   many remain, inside the box ("20 left"; the full sentence for screen readers). No scrollbar while it grows; past six lines a thin bar in the theme, on hover or focus only.
    All state is in the page address (URL): `q` (at most 200 characters), `ask` (at most 500), the refinement of the
    question (`clar`, the reply to the guide's question back, at most 300; `drop`, the parts of the reading the user
    removed, at most 8), filters, sort, page, view. A search change keeps the refinement; a new question starts without one.

@@ -52,6 +52,9 @@ describe('Feature: a better search box', () => {
     fireEvent.change(box(), { target: { value: 'a '.repeat(220) } });
     expect(screen.queryByText(/characters left/)).toBeNull();
     fireEvent.change(box(), { target: { value: 'a '.repeat(240) } });
-    expect(screen.getByText('20 characters left')).toBeInTheDocument();
+    // Inside the box: short on screen, the full sentence for screen readers.
+    const left = screen.getByText('20 characters left').closest('.searchbox-left')!;
+    expect(left.closest('form')).not.toBeNull();
+    expect(left).toHaveTextContent('20 left');
   });
 });

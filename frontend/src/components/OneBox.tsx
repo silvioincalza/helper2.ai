@@ -131,7 +131,11 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
     const from = el.style.height;
     el.style.transition = 'none';
     el.style.height = 'auto';
-    const to = `${el.scrollHeight}px`;
+    const content = el.scrollHeight;
+    const to = `${content}px`;
+    // Scrolling only past the CSS cap: no scrollbar flashes while the box grows towards a height it can reach.
+    const cap = parseFloat(getComputedStyle(el).maxHeight);
+    el.style.overflowY = Number.isFinite(cap) && content > cap ? 'auto' : 'hidden';
     el.style.height = from;
     void el.offsetHeight;
     el.style.transition = '';
@@ -168,6 +172,12 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
           value={text} maxLength={MAX_QUESTION} autoComplete="off" spellCheck={false}
           placeholder={t(hero ? 'search.heroPlaceholder' : 'search.placeholder')} onChange={(e) => onType(e.target.value)} onKeyDown={onKey}
           aria-describedby={left <= SHOW_LEFT_FROM ? 'q-left' : undefined} />
+        {left <= SHOW_LEFT_FROM && (
+          <span id="q-left" className={`searchbox-left${left === 0 ? ' is-full' : ''}`} aria-live="polite">
+            <span aria-hidden="true">{t('search.charsLeftShort', { count: left })}</span>
+            <span className="sr-only">{t('search.charsLeft', { count: left })}</span>
+          </span>
+        )}
         {text ? (
           <button type="button" className="searchbox-clear" aria-label={t('search.clear')} onClick={emptyBox}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
@@ -182,11 +192,6 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
           <kbd className="enter-key" aria-hidden="true">↵</kbd>
         </button>
       </form>
-      {left <= SHOW_LEFT_FROM && (
-        <p id="q-left" className={`searchbox-left small${left === 0 ? ' is-full' : ''}`} aria-live="polite">
-          {t('search.charsLeft', { count: left })}
-        </p>
-      )}
     </div>
   );
 }

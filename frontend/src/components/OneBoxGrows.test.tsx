@@ -30,8 +30,20 @@ describe('Feature: the box grows with the text', () => {
     await userEvent.type(box, 'an open source MCP server so my agent can query a Postgres database');
     expect(box.style.height).toBe('104px');
 
+    // Below the cap there is nothing to scroll, so no scrollbar while it grows.
+    expect(box.style.overflowY).toBe('hidden');
+
     await userEvent.clear(box);
     expect(box.style.height).toBe('48px');
+  });
+
+  it('Scenario: past the six-line cap the box scrolls', async () => {
+    mockApi();
+    renderApp('/');
+    const box = await screen.findByRole('textbox', { name: 'Search AI resources' }) as HTMLTextAreaElement;
+    box.style.maxHeight = '100px';
+    fireEvent.change(box, { target: { value: 'x'.repeat(200) } });
+    expect(box.style.overflowY).toBe('auto');
   });
 
   it('Scenario: a pasted line break becomes a space, because Enter searches or asks', async () => {
