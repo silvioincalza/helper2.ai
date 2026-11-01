@@ -84,11 +84,6 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 - Redis with `redis.auth.existingSecret` has no restart checksum, so a password rotation needs a manual restart.
 - Remove the unused duplicate `deploy/.dockerignore`.
 - Confirm that trace and span ids appear in every log line (only a configuration comment says so today).
-- **Staging settings for the nightly guide evaluation** (owner): add `H2_GUIDE_CACHE_TTL=PT1S`,
-  `H2_GUIDE_CLIENT_DAILY_QUESTIONS=60` and `H2_GUIDE_DAILY_MODEL_CALLS=150` to staging's `app.env`, run
-  `make ENV=staging credentials`, set the repository variable `H2_STAGING_URL`, and check the first run of
-  `guide-eval.yml`
-  ([ADR 0030](adr/quality/0030-guide-evaluation.md)).
 
 ## 4. More than one replica
 
@@ -121,10 +116,9 @@ Open items:
 - Watch whether the source `type`, now a source fact in enrichment, sends many proposals to CONFLICTING review
   (for example GitHub LIBRARY versus MCP_SERVER) ([ADR 0019](adr/scout/0019-evidence-gated-enrichment.md)).
 - Cross-language retrieval in vector search.
-- Similar-question reuse of guide answers ([ADR 0041](adr/guide/0041-guide-answer-cache.md)): record
-  `docs/eval/guide-similar.json` again through the NVIDIA API with the production key, run the planner on its
-  direction and negation pairs to confirm the readings the set assumes, then set `H2_GUIDE_SIMILAR_THRESHOLD=0.96` on
-  staging and watch `helper2.guide.cache{result="similar"}`.
+- Similar-question reuse of guide answers ([ADR 0041](adr/guide/0041-guide-answer-cache.md)): set
+  `H2_GUIDE_SIMILAR_THRESHOLD=0.96` on prod after the release and watch `helper2.guide.cache{result="similar"}`;
+  live, the planner's readings of two wordings differ more often than the evaluation set assumes.
 - A Grafana panel for the share of kept picks ranked 9+ (`helper2.guide.picks{rank="9+"}`), next to the alert
   `Helper2GuidePicksFromLowRanks` ([ADR 0015](adr/guide/0015-ai-guide-evidence-gate.md)).
 - Write the Scout's Tavily news and events to the same stored sets as searches, with their own share of credits

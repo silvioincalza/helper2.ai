@@ -142,19 +142,20 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 			|| { echo "Redis must run with AOF and no RDB snapshots (--save \"\" --appendonly yes --appendfsync everysec)"; exit 1; }; \
 		grep -q '^  volumeClaimTemplates:' <<<"$$redis" || { echo "Redis must keep /data on a PersistentVolumeClaim"; exit 1; }; \
 	done; \
-	echo "== daily limits are rendered only where set: prod none, staging all four"; \
-	limits='name: H2_(TAVILY_GUEST_SEARCH|TAVILY_GUEST_GUIDE|GUIDE_CLIENT_DAILY_QUESTIONS|TAVILY_GLOBAL_DAILY_CREDITS),'; \
+	echo "== daily limits and the guide cache TTL are rendered only where set: prod none, staging all six"; \
+	limits='name: H2_(TAVILY_GUEST_SEARCH|TAVILY_GUEST_GUIDE|GUIDE_CLIENT_DAILY_QUESTIONS|TAVILY_GLOBAL_DAILY_CREDITS|GUIDE_DAILY_MODEL_CALLS|GUIDE_CACHE_TTL),'; \
 	for e in prod staging; do \
 		n=$$(helm template helper2 $(CHART) -f $(CHART)/values-$$e.yaml --set image.tag=000000000000 --set-file envFile=$$env \
 			--show-only templates/app.yaml | grep -cE "$$limits" || true); \
-		want=0; [ $$e = staging ] && want=4; \
-		[ "$$n" -eq "$$want" ] || { echo "$$e renders $$n daily limits, want $$want"; exit 1; }; \
+		want=0; [ $$e = staging ] && want=6; \
+		[ "$$n" -eq "$$want" ] || { echo "$$e renders $$n daily limits and cache TTL, want $$want"; exit 1; }; \
 	done; \
 	echo "== edge (ADR 0035): Service helper2-admin; ingress-nginx may reach the app on 8080 and the admin port"; \
 	for e in prod staging; do \
 		r=(helm template helper2 $(CHART) -f $(CHART)/values-$$e.yaml --set image.tag=000000000000 --set-file envFile=$$env); \
-		if ! "$${r[@]}" --show-only templates/app.yaml | grep -q '^  name: helper2-admin$$'; then echo "$$e: no Service helper2-admin"; exit 1; fi; \
-		"$${r[@]}" --show-only templates/networkpolicy.yaml | grep -A5 'kubernetes.io/metadata.name: ingress-nginx' \
+		app=$$("$${r[@]}" --show-only templates/app.yaml); np=$$("$${r[@]}" --show-only templates/networkpolicy.yaml); \
+		grep -q '^  name: helper2-admin$$' <<< "$$app" || { echo "$$e: no Service helper2-admin"; exit 1; }; \
+		grep -A5 'kubernetes.io/metadata.name: ingress-nginx' <<< "$$np" \
 			| tr -d '\n' | grep -qE 'port: 8080, .*port: 8082, ' || { echo "$$e: ingress-nginx may not reach 8080 and 8082"; exit 1; }; \
 	done; \
 	echo "== PrometheusRule holds deploy/monitoring/helper2-rules.yaml"; \

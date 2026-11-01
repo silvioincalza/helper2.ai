@@ -85,8 +85,8 @@ Each side carries the reading a correct plan gives it. Their query embeddings ar
 (`./gradlew evalRecord --tests '*GuideSimilarRecorder'`) into `docs/eval/guide-similar-vectors.json`, and
 `GuideSimilarEvaluationTest` computes the sweep in every build, so the table below cannot drift from the code.
 
-The recorded vectors come from the open weights of the same model (`nvidia/Nemotron-3.5-Embed-1B-BF16`, query prompt,
-first 1024 dimensions, re-normalised, as the API serves them), through the same recorder and `NvidiaEmbedder`.
+The vectors are recorded through the NVIDIA API with the production model (`nvidia/nemotron-3.5-embed-1b`), through
+the same recorder and `NvidiaEmbedder` the index uses.
 
 | Threshold | Reused (of 25) | False reuses (of 30) | Precision | Embedding alone: reused / false |
 |---|---|---|---|---|
@@ -108,8 +108,17 @@ first 1024 dimensions, re-normalised, as the API serves them), through the same 
   take place" are 0.77 apart.
 
 The threshold that meets the rule (no false reuse on the set) is **0.96**, with 36 % of the paraphrases reused. The
-default stays off. Before it is set on staging: record the vectors again through the API with the production key, and
-run the planner on the direction and negation pairs, to confirm the readings the set assumes.
+default stays off.
+
+Checked live on staging (1 Nov 2026, the planner of the running release):
+- Every negation and direction pair gets two different readings, except "a model to translate english to italian"
+  and its reverse (no subject, no constraint): only their cosine (0.931) keeps them apart.
+- With `H2_GUIDE_SIMILAR_THRESHOLD=0.96`, 1 of 6 paraphrase pairs that reuse on the set was reused live
+  (`helper2.guide.cache{result="similar"}`): the live planner reads two wordings of one need differently more often
+  than the set assumes (another intent, a subject named or not). That lowers reuse, not precision.
+
+Staging runs the nightly guide evaluation with answers kept one second ([0030](../quality/0030-guide-evaluation.md)),
+so reuse is measured on prod, through the same metric.
 
 ### 5. Metrics
 `helper2.guide.cache{result}`: `exact` (key hit), `similar` (reused), `miss`, once per question when the cache is on.
@@ -161,4 +170,4 @@ A reused answer counts as outcome `cached` in `helper2.guide.questions`.
 [flow](../../diagrams/flow-0041-guide-answer-cache.svg) · [sequence](../../diagrams/sequence-0041-guide-answer-cache.svg)
 
 ## Roadmap
-- [Similar-question reuse on staging at 0.96, after recording the set through the API](../../roadmap.md#5-ai-quality-and-cost).
+- [Similar-question reuse on prod at 0.96, watched through its metric](../../roadmap.md#5-ai-quality-and-cost).
