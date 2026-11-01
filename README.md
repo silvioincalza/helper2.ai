@@ -16,7 +16,7 @@ Helper2.ai is a product, built and run by Silvio Incalza. The only instance is *
 | What is built and why | [ADRs, one per feature](docs/adr/README.md) · [architecture and diagrams](docs/architecture.md) |
 | What is still open | [roadmap](docs/roadmap.md) |
 | Product | [user journeys](docs/user-journeys.md) · [sources](docs/sources.md) · [costs](docs/cost-analysis.md) |
-| Quality | [testing](docs/testing.md) · [guide evaluation](docs/evaluation.md) |
+| Quality | [testing](docs/testing.md) · [guide evaluation](docs/evaluation.md) · [AI literacy](docs/ai-literacy.md) |
 | Stack | Spring Boot 4.1, Spring AI 2.0, Spring Modulith, Java 25 + Kotlin · React 19, Vite · PostgreSQL 18 (full-text + pgvector) · Redis 8 · contract-first [OpenAPI 3.1](api/openapi.yaml) |
 
 ## How Nemotron and Token Factory are used
