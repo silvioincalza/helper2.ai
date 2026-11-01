@@ -41,6 +41,16 @@ describe('Feature: end users sign in on the public site (ADR 0035)', () => {
     expect(window.sessionStorage.getItem(SIGN_IN_RETURN_KEY)).toBeNull();
   });
 
+  it('Scenario: a retry after a failed sign-in does not bring the failure back', async () => {
+    mockApi({ 'GET /me': () => ANON });
+    renderApp('/saved?signin=failed&x=1');
+    const link = await within(header()).findByRole('link', { name: 'Sign in with GitHub' });
+    link.addEventListener('click', (e) => e.preventDefault(), { once: true });
+    await userEvent.click(link);
+    // Only the page and its own parameters: the marker of the earlier attempt is not kept.
+    expect(window.sessionStorage.getItem(SIGN_IN_RETURN_KEY)).toBe('/saved?x=1');
+  });
+
   it('Scenario: a stored return that is not a path on this site is ignored', async () => {
     window.sessionStorage.setItem(SIGN_IN_RETURN_KEY, '//evil.example/x');
     mockApi({ 'GET /me': () => USER });

@@ -7,9 +7,16 @@ export const SIGN_IN_RETURN_KEY = 'h2.signInReturn';
 
 const isLocalPath = (p: string) => p.startsWith('/') && !p.startsWith('//') && !p.startsWith('/\\');
 
+/** The path without `signin`: the marker of an earlier failed attempt must not come back after a success. */
+function withoutSignInMarker(path: string): string {
+  const url = new URL(path, 'https://local.invalid');
+  url.searchParams.delete('signin');
+  return url.pathname + url.search + url.hash;
+}
+
 export function rememberSignInReturn(path: string): void {
   try {
-    if (isLocalPath(path)) window.sessionStorage.setItem(SIGN_IN_RETURN_KEY, path);
+    if (isLocalPath(path)) window.sessionStorage.setItem(SIGN_IN_RETURN_KEY, withoutSignInMarker(path));
   } catch {
     /* storage blocked: the visitor lands on the home page, which still works */
   }
