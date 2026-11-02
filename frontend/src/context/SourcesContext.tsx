@@ -7,7 +7,7 @@ const SourcesContext = createContext<ApiState<SourceInfo[]> | null>(null);
 
 /**
  * The disclosed source registry (GET /sources), fetched once per page load and shared by the home strip, the
- * per-source "querying…" lines and the Sources page, instead of one request each.
+ * results page and the Sources page, instead of one request each.
  */
 export function SourcesProvider({ children }: { children: ReactNode }) {
   const sources = useApi('sources', (signal) => api.listSources(signal));

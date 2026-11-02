@@ -351,6 +351,8 @@ describe('results: list and preview', () => {
     await userEvent.click(screen.getByText('How the guide decided'));
     await userEvent.click(screen.getByRole('button', { name: 'Filters' }));
     await settle();
+    // One Filters button: the panel has no second toggle inside it.
+    expect(screen.getAllByRole('button', { name: 'Filters' })).toHaveLength(1);
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
     expect(await axeViolations(container)).toEqual([]);
   });

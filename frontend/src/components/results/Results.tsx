@@ -1,4 +1,4 @@
-import { useId, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import { useId, useLayoutEffect, useMemo, useRef, useState, type FocusEvent, type RefObject } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { api, ApiError } from '@/api/client';
@@ -30,9 +30,9 @@ import { aiMark, isAiOrigin } from '@/lib/aiMark';
 import { SAVED_ENABLED } from '@/lib/features';
 import { displayHost, guidePicks, picksById, picksFirst, selectedResult, type GuidePick } from '@/lib/selection';
 import { activeFilterCount, askedQuestion, clampQuestion, clearFilters, homeParams, isSelected, parseSearchParams, patchState, toApiParams, toggleFilter, type ResultsView, type SearchState, resourcePath } from '@/lib/searchState';
-import { useSources } from '@/context/SourcesContext';
 import { ListedBy, ResultFacts } from './ResultFacts';
 import './results.css';
+import { OpenButton } from './OpenButton';
 
 /** From this width the preview sits next to the list; below it opens inside the list (design system breakpoints). */
 const WIDE = '(min-width: 861px)';
@@ -65,7 +65,6 @@ export function Results() {
   const key = apiParams.toString();
   const search = useApi<SearchResponse | null>(`search?${key}`, (signal) => (state.q ? api.search(apiParams, signal) : Promise.resolve(null)));
   const shown = search.loading ? (search.previous ?? undefined) : (search.data ?? undefined);
-  const registry = useSources();
 
   return (
     <div className="h2-results">
@@ -78,12 +77,8 @@ export function Results() {
       {search.loading && (
         <div role="status" className="h2-results__loading">
           <p>{t('results.loading')}</p>
+          {/* No per-source lines: they arrived after the skeleton and pushed it down (layout shift). */}
           {!shown && (<>
-          <ul className="plain-list h2-results__querying">
-            {(registry.data ?? []).filter((s) => s.enabled).map((s) => (
-              <li key={s.id} className="muted small"><Icon name="clock" /> {t('results.queryingSource', { name: s.name })}</li>
-            ))}
-          </ul>
           <ul className="plain-list h2-skeleton" aria-hidden="true">
             {[0, 1, 2, 3].map((i) => (
               <li key={i} className="h2-skeleton__row">
@@ -138,7 +133,7 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
     count.current?.focus();
   };
   const list = useRef<HTMLDivElement>(null);
-  useKeepRowFocus(list, [...picked, ...rest].map((c) => c.id).join(' '));
+  const keepFocus = useKeepRowFocus(list, [...picked, ...rest].map((c) => c.id).join(' '));
   const filtersId = useId();
   const hintsId = useId();
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -253,7 +248,7 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
         <ResultsTimeline cards={res.results} sourceStatuses={res.sources} />
       ) : (
         <div className="h2-split">
-          <div className="h2-list" ref={list}>
+          <div className="h2-list" ref={list} onFocus={keepFocus.onFocus} onBlur={keepFocus.onBlur}>
             <p ref={count} tabIndex={-1} className="h2-list__count" aria-live="polite">{t('results.count', { count: res.total })}</p>
             {/* Here from the first render, so the move of the picks to the top is said once, politely. */}
             <p className="sr-only" role="status">{picked.length > 0 ? t('results.picksOnTop', { count: picked.length }) : ''}</p>
@@ -299,21 +294,20 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
  */
 function useKeepRowFocus(list: RefObject<HTMLDivElement | null>, order: string) {
   const focused = useRef<string | null>(null);
-  useLayoutEffect(() => {
-    const el = list.current;
-    if (!el) return undefined;
-    const onIn = (e: FocusEvent) => { focused.current = (e.target as HTMLElement).closest('li[data-id]')?.getAttribute('data-id') ?? null; };
-    const onOut = (e: FocusEvent) => { if (e.relatedTarget instanceof Node && !el.contains(e.relatedTarget)) focused.current = null; };
-    el.addEventListener('focusin', onIn);
-    el.addEventListener('focusout', onOut);
-    return () => { el.removeEventListener('focusin', onIn); el.removeEventListener('focusout', onOut); };
-  }, [list]);
+  // React focus handlers on the list element: they work however late the list mounts, and after a view switch.
+  const onFocus = (e: FocusEvent<HTMLDivElement>) => {
+    focused.current = (e.target as HTMLElement).closest('li[data-id]')?.getAttribute('data-id') ?? null;
+  };
+  const onBlur = (e: FocusEvent<HTMLDivElement>) => {
+    if (e.relatedTarget instanceof Node && !e.currentTarget.contains(e.relatedTarget)) focused.current = null;
+  };
   useLayoutEffect(() => {
     const id = focused.current;
     const active = document.activeElement;
     if (!id || (active && active !== document.body)) return;
     list.current?.querySelector<HTMLElement>(`li[data-id="${CSS.escape(id)}"] .h2-select-row`)?.focus({ preventScroll: true });
   }, [list, order]);
+  return { onFocus, onBlur };
 }
 
 /** A result in the list: its row, and under it the preview when the preview opens inside the list (narrow screens). */
@@ -384,9 +378,7 @@ function Preview({ card, pick, stale, inline = false }: { card: ResultCard; pick
         <Link to={detail} state={detailState}>{card.title}</Link>
       </TitleTag>
       <div className="h2-pv__actions">
-        <a className="btn btn-primary" href={card.url} target="_blank" rel="noopener noreferrer">
-          {t('results.openOn', { host })} <span aria-hidden="true">↗</span>
-        </a>
+        <OpenButton url={card.url} host={host} />
         {SAVED_ENABLED && <BookmarkButton card={card} />}
         {canGuide(card) && <GuideMeButton title={card.title} open={guide.open} onToggle={guide.toggle} bodyId={bodyId} buttonRef={button} />}
         {inline && <Link className="btn" to={detail} state={detailState}>{t('results.fullDetails')}</Link>}

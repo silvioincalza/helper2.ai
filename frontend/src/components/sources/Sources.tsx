@@ -4,7 +4,8 @@ import type { SourceInfo, SourceMode } from '@/api/types';
 import { ExternalLink } from '@/components/ExternalLink';
 import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
 import { TypeTag } from '@/components/ui/TypeTag';
-import { useSources } from '@/context/SourcesContext';
+import { api } from '@/api/client';
+import { useApi } from '@/hooks/useApi';
 import { useRetry } from '@/hooks/useRetry';
 import { formatDate } from '@/lib/format';
 import '@/components/saved/saved.css';
@@ -30,7 +31,8 @@ export function sourceState(s: SourceInfo): SourceState {
  */
 export function Sources() {
   const { t, i18n } = useTranslation();
-  const q = useSources();
+  // Its own request, not the copy the app loaded at start: the last checks shown here are at most CACHE_TTL_MS old.
+  const q = useApi('sources', (signal) => api.listSources(signal));
   const { retry, focusRef } = useRetry(q.reload, q.loading);
   const [mode, setMode] = useState<SourceMode | null>(null);
   const all = q.data ?? [];

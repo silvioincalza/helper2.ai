@@ -32,13 +32,13 @@ describe('search results', () => {
     expect(new URLSearchParams(call?.search).get('q')).toBe('translate');
   });
 
-  it('shows a loading state with per-source querying', async () => {
+  it('shows a loading state with a skeleton', async () => {
     let release: () => void = () => undefined;
     const gate = new Promise<void>((r) => { release = r; });
     mockApi({ 'GET /search': async () => { await gate; return makeSearch(); } });
     renderApp(url);
     expect(await screen.findByText('Searching the listed sources…')).toBeInTheDocument();
-    expect(await screen.findByText(/GitHub: querying…/)).toBeInTheDocument();
+    expect(document.querySelector('.h2-skeleton')).toBeInTheDocument();
     release();
     await (await results()).findByText('Acme Translator');
   });
@@ -218,7 +218,8 @@ describe('search results', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Timeline' }));
 
     await waitFor(() => expect(params().get('view')).toBe('timeline'));
-    expect(params().get('sort')).toBeNull();
+    // The chosen sort stays in the URL for the list; the API gets NEWEST for the timeline.
+    expect(params().get('sort')).toBe('RECENTLY_UPDATED');
     const call = new URLSearchParams(m.callsTo('GET', '/search').at(-1)?.search);
     expect(call.get('sort')).toBe('NEWEST');
     expect(call.get('size')).toBe('50');
@@ -233,7 +234,8 @@ describe('search results', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'List' }));
     await waitFor(() => expect(params().get('view')).toBeNull());
-    expect(await screen.findByRole('combobox', { name: /Sort by/ })).toBeInTheDocument();
+    expect(await screen.findByRole('combobox', { name: /Sort by/ })).toHaveValue('RECENTLY_UPDATED');
+    expect(params().get('sort')).toBe('RECENTLY_UPDATED');
   });
 
   it('sort change updates URL and request', async () => {

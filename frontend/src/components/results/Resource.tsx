@@ -14,6 +14,7 @@ import { displayHost } from '@/lib/selection';
 import { ListedBy, ResultFacts } from './ResultFacts';
 import './results.css';
 import './resource.css';
+import { OpenButton } from './OpenButton';
 
 /** What the results page passes on: where to go back to, and the sentence the guide checked. */
 interface FromResults { from?: string | undefined; quote?: string | null }
@@ -47,9 +48,7 @@ export function Resource({ detail: d, children }: { detail: ResourceDetail; chil
           <div className="h2-pv__top"><TypeTag type={card.type} /><span className="h2-row__host">{host}</span></div>
           <h1 className="h2-pv__title">{card.title}</h1>
           <div className="h2-pv__actions">
-            <a className="btn btn-primary" href={card.url} target="_blank" rel="noopener noreferrer">
-              {t('results.openOn', { host })} <span aria-hidden="true">↗</span>
-            </a>
+            <OpenButton url={card.url} host={host} />
             {SAVED_ENABLED && <BookmarkButton card={card} />}
           </div>
           {canGuide(card) && <SetupGuidePanel id={card.id} title={card.title} />}

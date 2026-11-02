@@ -74,7 +74,9 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
     timer.current = window.setTimeout(() => {
       const now = latest.current;
       // Only on the results page: on the home page a search moves to /search, so it waits for Enter.
-      if (now.pathname === RESULTS_PATH && q !== now.state.q) go(patchState(now.state, { q }), now.asked, now.sp, true);
+      // New words drop the old question: the guide's picks answered that question, not these words. Enter (or
+      // "Ask the guide") asks again.
+      if (now.pathname === RESULTS_PATH && q !== now.state.q) go(patchState(now.state, { q }), '', now.sp, true);
     }, LIVE_SEARCH_MS);
   };
 

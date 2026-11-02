@@ -79,7 +79,8 @@ export function toSearchParams(s: SearchState): URLSearchParams {
   const q = clampQuery(s.q);
   if (q) sp.set('q', q);
   if (s.view === 'timeline') sp.set('view', 'timeline');
-  else if (s.sort !== 'RELEVANCE') sp.set('sort', s.sort);
+  // Kept in the timeline too (toApiParams asks for NEWEST there), so List gets the chosen sort back.
+  if (s.sort !== 'RELEVANCE') sp.set('sort', s.sort);
   for (const k of MULTI_KEYS) for (const v of s.filters[k]) sp.append(k, v);
   if (s.openSource) sp.set('openSource', s.openSource);
   if (s.updatedAfter) sp.set('updatedAfter', s.updatedAfter);
@@ -150,7 +151,7 @@ export type Refinement = Pick<GuideRequest, 'clarification'> & { drop: string[] 
 /** GuideRequest bounds: a reply of at most 300 characters, at most 8 removed parts of at most 80 characters. */
 const MAX_CLARIFICATION = 300;
 const MAX_DROPS = 8;
-const MAX_DROP = 80;
+export const MAX_DROP = 80;
 
 function drops(list: string[]): string[] {
   return [...new Set(list.filter((d) => d && d.length <= MAX_DROP))].slice(0, MAX_DROPS);

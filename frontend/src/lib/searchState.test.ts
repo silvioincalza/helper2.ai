@@ -29,12 +29,15 @@ describe('searchState', () => {
     expect(s.filters.pricing).toEqual([]);
     expect(clearFilters(parseSearchParams(sp)).filters.type).toEqual([]);
   });
-  it('timeline view lives in the URL, drops the sort and resets the page', () => {
+  it('timeline view lives in the URL, keeps the chosen sort for the list and resets the page', () => {
     const next = patchState(parseSearchParams(sp), { view: 'timeline' });
     expect(toSearchParams(next).toString()).toBe(
-      'q=agents&view=timeline&type=MCP_SERVER&type=MODEL&license=unknown&openSource=true&updatedAfter=2026-01-01',
+      'q=agents&view=timeline&sort=NEWEST&type=MCP_SERVER&type=MODEL&license=unknown&openSource=true&updatedAfter=2026-01-01',
     );
     expect(parseSearchParams(toSearchParams(next)).view).toBe('timeline');
+    // Back to the list: the sort chosen before the timeline is still there.
+    const back = patchState(parseSearchParams(toSearchParams(patchState(parseSearchParams(new URLSearchParams('q=a&sort=RECENTLY_UPDATED')), { view: 'timeline' }))), { view: 'list' });
+    expect(back.sort).toBe('RECENTLY_UPDATED');
     expect(parseSearchParams(new URLSearchParams('view=grid')).view).toBe('list');
   });
   it('the timeline asks the API for creation-date order and big pages; the list sends the chosen sort', () => {

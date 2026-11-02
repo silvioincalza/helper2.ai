@@ -246,4 +246,25 @@ describe('report form', () => {
     expect(await screen.findByText('Too many reports, slow down.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Send report' })).toBeEnabled();
   });
+
+  it('starts fresh when it moves to another resource: a report sent on one does not show on the next', async () => {
+    const OTHER = '22222222-2222-5222-8222-222222222222';
+    const to = (targetId: string, targetTitle: string): Relationship => ({ kind: 'INTEGRATES_WITH', targetTitle, targetId, verification: 'VERIFIED', evidence: [ev] });
+    mockApi({
+      [`GET /resources/${ID}`]: () => makeDetail({ card: makeCard({ id: ID, title: 'First tool' }), relationships: [to(OTHER, 'Other tool')] }),
+      [`GET /resources/${OTHER}`]: () => makeDetail({ card: makeCard({ id: OTHER, title: 'Other tool' }), relationships: [to(ID, 'First tool')] }),
+      [`POST /resources/${OTHER}/reports`]: () => ({ id: '55555555-5555-5555-8555-555555555555' }),
+    });
+    renderApp(`/resource/${ID}`);
+    await userEvent.click(await screen.findByRole('link', { name: 'Other tool' }));
+    await userEvent.type(await screen.findByLabelText('Describe the problem'), 'The price is wrong.');
+    await userEvent.click(screen.getByRole('button', { name: 'Send report' }));
+    expect(await screen.findByText(/Your report was sent/)).toBeInTheDocument();
+
+    // Back to the first one, which is still in the response cache, so it renders at once.
+    await userEvent.click(screen.getByRole('link', { name: 'First tool' }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'First tool' })).toBeInTheDocument();
+    expect(screen.queryByText(/Your report was sent/)).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Describe the problem')).toHaveValue('');
+  });
 });

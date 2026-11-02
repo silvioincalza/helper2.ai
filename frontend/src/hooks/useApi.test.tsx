@@ -31,6 +31,24 @@ describe('useApi recent-answers cache', () => {
     expect(b.result.current.data).toBe('new');
   });
 
+  it('after a reload on one key, a cached answer for another key is still shown without a request', async () => {
+    const b1 = fetcher('b');
+    const first = renderHook(() => useApi('b', b1));
+    await waitFor(() => expect(first.result.current.data).toBe('b'));
+    first.unmount();
+
+    const f = fetcher('a');
+    const h = renderHook(({ k }) => useApi(k, k === 'a' ? f : b1), { initialProps: { k: 'a' } });
+    await waitFor(() => expect(h.result.current.data).toBe('a'));
+    act(() => h.result.current.reload());
+    await waitFor(() => expect(f).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(h.result.current.loading).toBe(false));
+
+    h.rerender({ k: 'b' });
+    expect(h.result.current).toMatchObject({ data: 'b', loading: false });
+    expect(b1).toHaveBeenCalledTimes(1);
+  });
+
   it('cache: false always asks', async () => {
     const f = fetcher('x');
     renderHook(() => useApi('k', f, { cache: false })).unmount();

@@ -62,7 +62,9 @@ export function clearApiCache() {
  */
 export function useApi<T>(key: string, fetcher: (signal: AbortSignal) => Promise<T>, options: ApiOptions = {}): ApiState<T> {
   const useCache = options.cache ?? true;
-  const [nonce, setNonce] = useState(0);
+  // Reloads count per key: a new key starts at 0 again, so a retry on one page does not turn the cache off for the rest.
+  const [reloads, setReloads] = useState<{ key: string; n: number }>({ key, n: 0 });
+  const nonce = reloads.key === key ? reloads.n : 0;
   const fullKey = `${key}#${nonce}`;
   const [settled, setSettled] = useState<Settled<T> | null>(null);
   const [lastData, setLastData] = useState<T | undefined>(undefined);
@@ -96,7 +98,7 @@ export function useApi<T>(key: string, fetcher: (signal: AbortSignal) => Promise
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fullKey]);
 
-  const reload = useCallback(() => setNonce((n) => n + 1), []);
+  const reload = useCallback(() => setReloads((r) => ({ key, n: (r.key === key ? r.n : 0) + 1 })), [key]);
   const current = settled?.key === fullKey ? settled : null;
   if (!current && hit) {
     return { data: hit.data, previous: hit.data, error: undefined, loading: false, reload };

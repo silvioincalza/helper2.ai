@@ -31,8 +31,13 @@ function RelList({ items }: { items: Relationship[] }) {
   );
 }
 
+/** Keyed by id: a new resource starts with fresh state (report form, Guide me panel), not the previous one's. */
 export default function ResourcePage() {
   const { id = '' } = useParams();
+  return <ResourceView key={id} id={id} />;
+}
+
+function ResourceView({ id }: { id: string }) {
   const { t } = useTranslation();
   const q = useApi(`resource/${id}`, (signal) => api.getResource(id, signal));
   const d = q.data;
