@@ -7,14 +7,14 @@ import { THEME_KEY } from '@/lib/theme';
 import pkg from '../../package.json';
 
 describe('layout', () => {
-  it('hides the Admin nav item and sign-in for anonymous users', async () => {
+  it('offers sign-in to anonymous users and hides the Admin nav item', async () => {
     const m = mockApi({ 'GET /me': () => ANON });
     renderApp('/');
     await waitFor(() => expect(m.callsTo('GET', '/me')).toHaveLength(1));
-    expect(within(screen.getByRole('banner')).queryByRole('link', { name: /Sign in/ })).not.toBeInTheDocument();
-    // Saved is on the roadmap (lib/features.ts): the menu has Sources and Mission only.
+    const header = document.querySelector<HTMLElement>('header.site-header')!;
+    expect(await within(header).findByRole('link', { name: 'Sign in with GitHub' })).toBeInTheDocument();
     const nav = screen.getByRole('navigation', { name: 'Main' });
-    expect(within(nav).getAllByRole('link').map((a) => a.textContent)).toEqual(['Sources', 'Mission']);
+    expect(within(nav).getAllByRole('link').map((a) => a.textContent)).toEqual(['Saved', 'Sources', 'Mission']);
     expect(screen.queryByRole('link', { name: 'Admin' })).not.toBeInTheDocument();
   });
 

@@ -5,6 +5,8 @@ import type { ResourceType } from '@/api/types';
 import { ExternalLink } from '@/components/ExternalLink';
 import { TypeTag } from '@/components/ui/TypeTag';
 import { useBookmarks } from '@/context/BookmarksContext';
+import { useMe } from '@/context/MeContext';
+import { SignIn } from '@/components/SignIn';
 import { formatDate, hostname } from '@/lib/format';
 import './saved.css';
 import { resourcePath } from '@/lib/searchState';
@@ -16,6 +18,9 @@ import { resourcePath } from '@/lib/searchState';
 export function Saved() {
   const { t, i18n } = useTranslation();
   const { items, remove, mode, storageFailed, serverError } = useBookmarks();
+  const { me } = useMe();
+  // Signed out on a site that offers sign-in: the list lives in this browser, an account keeps it everywhere.
+  const canSignIn = mode !== 'server' && !me.authenticated && me.loginProviders.length > 0;
   const [picked, setType] = useState<ResourceType | null>(null);
   const types = [...new Set(items.map((b) => b.type).filter((x): x is ResourceType => x != null))];
   // Removing the last item of the picked type falls back to All, so the other items never hide behind an empty tab.
@@ -25,7 +30,10 @@ export function Saved() {
     <div className="h2-saved">
       <header className="h2-page-head">
         <h1>{t('saved.title')}</h1>
-        <p className="h2-page-head__lede">{mode === 'server' ? t('saved.serverNote') : t('saved.localNote')}</p>
+        <p className="h2-page-head__lede">
+          {mode === 'server' ? t('saved.serverNote') : canSignIn ? t('saved.localNoteSignIn') : t('saved.localNote')}
+        </p>
+        {canSignIn && <div className="h2-saved__signin"><SignIn /></div>}
       </header>
       {storageFailed && <p role="alert" className="banner banner-warn">{t('saved.storageFailed')}</p>}
       {serverError && <p role="alert" className="banner banner-warn">{t('saved.serverError')}</p>}

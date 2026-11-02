@@ -99,7 +99,7 @@ and chose between options for each part.
 - `frontend/src/components/results/Resource.tsx`, `ResultFacts.tsx` — the resource page and the facts, "Listed by"
   (with mode and stale-cache marks) shared with the preview; `frontend/src/pages/ResourcePage.tsx` loads it once.
 - `frontend/src/pages/NotFoundPage.tsx` — the 404 page.
-- `frontend/src/components/saved/Saved.tsx` (behind `SAVED_ENABLED`), `components/sources/Sources.tsx`,
+- `frontend/src/components/saved/Saved.tsx` (with sign-in when signed out, ADR 0035), `components/sources/Sources.tsx`,
   `pages/AccountPage.tsx` — Saved, Sources and your account.
 - `frontend/src/components/TextPage.tsx`, `pages/MissionPage.tsx`, `PrivacyPage.tsx`, `TermsPage.tsx` — the text
   pages with "On this page".

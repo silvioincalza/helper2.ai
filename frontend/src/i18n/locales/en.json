@@ -39,7 +39,8 @@
       "dark": "dark"
     },
     "terms": "Terms",
-    "account": "Your account"
+    "account": "Your account",
+    "signInFailed": "Sign-in did not work. Please try again."
   },
   "footer": {
     "coverage": "Helper2.ai searches the sources listed on the Sources page, not the whole web.",
@@ -434,7 +435,8 @@
     "serverNote": "Saved on your account.",
     "storageFailed": "Your browser blocked storage, so saved items will be lost when you leave this page.",
     "serverError": "Could not sync with your account. Please try again later.",
-    "types": "Saved by type"
+    "types": "Saved by type",
+    "localNoteSignIn": "Saved in this browser only. Sign in to keep them on every device."
   },
   "account": {
     "title": "Your account",
@@ -795,7 +797,7 @@
         "items": [
           "A session cookie, only when you sign in, so you stay signed in.",
           "A security cookie (XSRF-TOKEN) that protects forms against cross-site request forgery.",
-          "Browser storage for your language, your light or dark theme, the AI tool you chose in the setup guide and, if you are not signed in, your saved items. This data stays in your browser and is not sent to us.",
+          "Browser storage for your language, your light or dark theme, the AI tool you chose in the setup guide and, if you are not signed in, your saved items. When you sign in, the page you were on is kept in this tab until you are back on it, then removed. This data stays in your browser and is not sent to us.",
           "All of these are strictly necessary for the site to work. We use no advertising, analytics or third-party cookies."
         ]
       },
