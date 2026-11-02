@@ -36,10 +36,10 @@ to the text.
    `ToolGuide.model` names the model in the API). Quotes, titles, links and the setup guide's commands are never
    marked: they come from the sources. Our own labels and the subjects (the user's own words) are not marked.
    Every marked group also has a label on screen (Art. 50(1)): "AI-written" on the picks bar, on the reasons in the
-   result list and the preview, on the requirements ("Requirements AI-written", in the reading chips and over their
-   checks in a pick), on the planner's search terms, and on the comparison, the explanation and the prompt;
-   "Model's explanation" over a reason in a pick; "AI summary" and "Extracted by AI"; "Steps written by AI" in the
-   setup guide.
+   result list and the preview, on the requirements ("Requirements AI-written", in the reading chips, over their
+   checks in the preview and next to "Ask without" when nothing fits), on the planner's search terms, and on the
+   comparison, the explanation and the prompt; "AI summary" and "Extracted by AI"; "Steps written by AI" in the
+   setup guide. An AI-written label never shows without its text: a reason the check removed shows neither.
 4. **Explained in public.** The Mission page has a section "How we mark AI text".
 5. **No hidden characters in the text.** We do not add zero-width or other invisible characters.
 

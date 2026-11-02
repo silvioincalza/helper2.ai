@@ -36,15 +36,17 @@ The success criteria at the end say which tests verify each journey today. What 
 ## UJ-2 Ask the guide without losing the search
 
 1. With a query and filters on the page, the user clicks **Ask the guide** (or presses Shift+Enter, or follows the "Sounds like a question" hint after 4+ words).
-2. The guide's answer appears above the results; query, filters, sort and page persist (they live in the URL: `q`, `ask`, filters).
-3. Closing the answer keeps the search; back/forward and shared links reproduce the same state. `/search` and `/guide` links land on the one page.
+2. The results show at once; the picks bar above them says the guide is reading. Query, filters, sort and page persist (they live in the URL: `q`, `ask`, filters).
+3. The answer arrives: the picks show as chips in the bar and move to a **Guide picks** group at the top of the list, and the preview opens on pick #1. It says **Why the guide picked it** (AI-written) with the source's own sentence as proof. A result the user already opened stays open. Other results keep the search order under **More results**; their preview says **About**.
+4. Nothing fits: the bar says why in one line and offers **Ask without “…”** for each requirement the guide read, and **Rephrase**. **How the guide decided** stays folded under the bar: the steps, and how the guide read the question.
+5. Back/forward and shared links reproduce the same state. `/search` and `/guide` links land on the one page.
 
 **Success:** zero re-typing; URL fully describes the state. A new question while one is being answered replaces it.
 **Failure case:** the guide fails or is unavailable, or its stream stalls for 45 s or ends without an answer → the search results stay, the answer area says what went wrong and offers **Try again**.
 
 ## UJ-3 Refine: filter and sort
 
-1. User opens filters (drawer on mobile): type, audience, use case, tech level, source, license, pricing, platform, open-source, updated-after.
+1. User opens **Filters** (drawer on mobile); the use cases the search detected sit next to it as one-tap chips. Filters: type, audience, use case, tech level, source, license, pricing, platform, open-source, updated-after.
 2. Each facet shows counts and an **Unknown** bucket for results where the source did not say.
 3. Sort: Relevance (default), Newest (publication date), Recently updated. Results with unknown dates sort last and are labeled "date unknown".
 
