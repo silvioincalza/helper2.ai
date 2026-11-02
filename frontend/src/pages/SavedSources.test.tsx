@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Bookmark, SourceInfo } from '@/api/types';
 import { BOOKMARK_KEY } from '@/lib/bookmarks';
@@ -6,6 +6,7 @@ import { axeViolations } from '@/test/a11y';
 import { SOURCES, USER } from '@/test/fixtures';
 import { mockApi, problem } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
+import { CACHE_TTL_MS } from '@/hooks/useApi';
 
 vi.mock('@/lib/features', () => ({ SAVED_ENABLED: true }));
 
@@ -132,5 +133,17 @@ describe('Feature: the source list cannot load', () => {
     await userEvent.keyboard('{Enter}');
     expect(await screen.findByText('1 of 4 sources answered at their last check')).toBeInTheDocument();
     await waitFor(() => expect(screen.getByRole('heading', { level: 2, name: 'Every source' })).toHaveFocus());
+  });
+
+  it('the Sources page asks again when the copy loaded with the app is older than the cache limit', async () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(1_000);
+    const m = mockApi();
+    const { router } = renderApp('/');
+    await waitFor(() => expect(m.callsTo('GET', '/sources')).toHaveLength(1));
+    await settle();
+    now.mockReturnValue(1_000 + CACHE_TTL_MS + 1);
+    await act(() => router.navigate('/sources'));
+    await waitFor(() => expect(m.callsTo('GET', '/sources')).toHaveLength(2));
+    await settle();
   });
 });
