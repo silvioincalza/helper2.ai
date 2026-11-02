@@ -33,7 +33,7 @@ describe('home: only the home page', () => {
   it('shows the hero, the box and the two boards, and no results', async () => {
     mockApi();
     renderApp('/');
-    expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent('Describe what you need.');
+    expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent('Find the right AI tool.');
     expect(screen.getAllByRole('search')).toHaveLength(1);
     await board('News');
     await board('Events');

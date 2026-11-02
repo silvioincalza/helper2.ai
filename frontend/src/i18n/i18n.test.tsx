@@ -12,7 +12,7 @@ describe('i18n', () => {
     expect(LANGUAGES.map((l) => l.code)).toEqual(['en']);
     expect(screen.queryByLabelText('Language')).not.toBeInTheDocument();
     expect(document.documentElement.lang).toBe('en');
-    expect(screen.getByRole('heading', { name: /Describe what you need/ })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Find the right AI tool/ })).toBeInTheDocument();
   });
 
   it('falls back to the raw slug for unknown use cases', async () => {

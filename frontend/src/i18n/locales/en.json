@@ -59,11 +59,11 @@
     "noAds": "No ads."
   },
   "home": {
-    "title": "Describe what you need.",
+    "title": "Find the right AI tool.",
     "suggestGuide": "Sounds like a question — ask the guide: “{{q}}” →",
     "examples": "Try an example",
     "eyebrow": "AI on your radar",
-    "titleAccent": "Get picks you can verify.",
+    "titleAccent": "See why it fits.",
     "hint": "A few words search every source. A sentence, or Shift+Enter, asks the guide.",
     "example": {
       "postgres": {
