@@ -54,7 +54,7 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("tools.jackson.module:jackson-module-kotlin")
     // Annotations referenced by generated OpenAPI code.
-    implementation("io.swagger.core.v3:swagger-annotations:2.2.55")
+    implementation("io.swagger.core.v3:swagger-annotations:3.0.0")
     // Language of queries and catalog text, for the matching Postgres stemmer (LanguageDetector).
     implementation("com.github.pemistahl:lingua:1.2.2")
     // Parses the YAML conference files of huggingface/ai-deadlines (version from the Spring Boot BOM).
