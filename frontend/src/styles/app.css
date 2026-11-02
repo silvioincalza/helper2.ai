@@ -45,7 +45,7 @@ code { font-family: var(--font-mono); font-size: 0.85em; }
 .main-nav a.active { color: var(--text); border-bottom-color: var(--cyan); }
 .header-tools { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-left: auto; }
 .auth { display: inline-flex; align-items: center; gap: var(--space-3); }
-/* Tablet widths: the menu stays on the logo's row. Tighter gaps, a long account name ends in "…", and up to 900 px
+/* Tablet widths: from 721 px the menu stays on the logo's row. Tighter gaps, a long account name ends in "…", and up to 900 px
    the tagline under the logo hides (the logo link keeps its name). */
 @media (min-width: 521px) and (max-width: 1024px) {
   .header-row, .header-tools, .auth { gap: var(--space-2); }
@@ -54,6 +54,8 @@ code { font-family: var(--font-mono); font-size: 0.85em; }
   .auth a { max-width: 9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
 @media (min-width: 521px) and (max-width: 900px) { .logo-tagline { display: none; } }
+/* Up to 720 px the menu does not fit beside the logo and the sign-in button: it takes its own row, never two. */
+@media (max-width: 720px) { .main-nav { order: 3; flex-basis: 100%; } }
 .menu { position: relative; }
 .menu summary { list-style: none; cursor: pointer; }
 .menu-list { position: absolute; right: 0; margin-top: var(--space-1); background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: var(--space-2); min-width: 10rem; z-index: 30; }
@@ -258,7 +260,6 @@ tbody th { font-weight: 600; }
   /* Phone: the one box stays compact and scrolls away instead of covering half the screen. */
   .site-header { position: static; }
   .header-row { gap: var(--space-2) var(--space-4); }
-  .main-nav { order: 3; flex-basis: 100%; }
   .searchbox.large { flex-flow: row wrap; }
   /* The field shares its row with the clear button; only the submit button takes a row of its own. */
   .searchbox.large .searchbox-field { flex: 1 1 0; }
