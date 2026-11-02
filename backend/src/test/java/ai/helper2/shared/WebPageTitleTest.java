@@ -1,4 +1,4 @@
-package ai.helper2.sources.support;
+package ai.helper2.shared;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -53,7 +53,7 @@ class WebPageTitleTest {
     @ParameterizedTest
     @MethodSource("titles")
     void cleansThePageTitle(String raw, String host, String expected) {
-        assertThat(WebPageTitle.of(raw, host).title()).isEqualTo(expected);
+        assertThat(WebPageTitle.of(raw, host).getTitle()).isEqualTo(expected);
     }
 
     @Test
@@ -61,25 +61,35 @@ class WebPageTitleTest {
         WebPageTitle cleaned = WebPageTitle.of("GitHub - crystaldba/postgres-mcp: Postgres MCP Pro provides configurable read/write "
             + "access. · GitHub", "github.com");
 
-        assertThat(cleaned.title()).isEqualTo("crystaldba/postgres-mcp");
-        assertThat(cleaned.description()).isEqualTo("Postgres MCP Pro provides configurable read/write access.");
+        assertThat(cleaned.getTitle()).isEqualTo("crystaldba/postgres-mcp");
+        assertThat(cleaned.getDescription()).isEqualTo("Postgres MCP Pro provides configurable read/write access.");
     }
 
     @Test
     void otherTitlesHaveNoDescription() {
-        assertThat(WebPageTitle.of("GitHub - ollama/ollama · GitHub", "github.com").description()).isNull();
-        assertThat(WebPageTitle.of("Building agents with MCP - Medium", "medium.com").description()).isNull();
+        assertThat(WebPageTitle.of("GitHub - ollama/ollama · GitHub", "github.com").getDescription()).isNull();
+        assertThat(WebPageTitle.of("Building agents with MCP - Medium", "medium.com").getDescription()).isNull();
     }
 
     @Test
     void cleaningTwiceChangesNothing() {
-        String once = WebPageTitle.of("Chat with PDF | Ask your PDF | allpdf.com", "allpdf.com").title();
+        String once = WebPageTitle.of("Chat with PDF | Ask your PDF | allpdf.com", "allpdf.com").getTitle();
 
-        assertThat(WebPageTitle.of(once, "allpdf.com").title()).isEqualTo(once);
+        assertThat(WebPageTitle.of(once, "allpdf.com").getTitle()).isEqualTo(once);
+    }
+
+    @Test
+    void onlyPageTitleSourcesAreCleanedByName() {
+        CanonicalUrl repo = CanonicalUrl.of("https://github.com/crystaldba/postgres-mcp");
+        String raw = "GitHub - crystaldba/postgres-mcp: Postgres MCP Pro · GitHub";
+
+        assertThat(WebPageTitle.forSource("tavily", raw, repo)).isEqualTo("crystaldba/postgres-mcp");
+        assertThat(WebPageTitle.forSource("github", raw, repo)).isEqualTo(raw);
+        assertThat(WebPageTitle.forSource("tavily", "crystaldba/postgres-mcp", repo)).isEqualTo("crystaldba/postgres-mcp");
     }
 
     @Test
     void withoutAHostOnlyWhitespaceIsCleaned() {
-        assertThat(WebPageTitle.of("Building  agents - Medium", null).title()).isEqualTo("Building agents - Medium");
+        assertThat(WebPageTitle.of("Building  agents - Medium", null).getTitle()).isEqualTo("Building agents - Medium");
     }
 }

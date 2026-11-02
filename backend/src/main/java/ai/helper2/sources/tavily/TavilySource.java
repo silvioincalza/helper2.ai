@@ -10,10 +10,10 @@ import ai.helper2.shared.DateFact;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.SourceMode;
 import ai.helper2.shared.ValueOrigin;
+import ai.helper2.shared.WebPageTitle;
 import ai.helper2.sources.support.Classification;
 import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.SourceSettings;
-import ai.helper2.sources.support.WebPageTitle;
 import java.net.URI;
 import java.time.Clock;
 import java.time.Duration;
@@ -113,8 +113,8 @@ public class TavilySource implements SearchSource {
         }
         ResourceType type = EVENT.matcher(title).find() ? ResourceType.EVENT : ResourceType.NEWS;
         WebPageTitle page = WebPageTitle.of(title, canonical.getHost());
-        String snippet = snippet(content != null ? content : page.description());
-        return new SourceHit(sourceId, canonical.getValue(), HttpClients.link(url, canonical), canonical, null, page.title(), snippet,
+        String snippet = snippet(content != null ? content : page.getDescription());
+        return new SourceHit(sourceId, canonical.getValue(), HttpClients.link(url, canonical), canonical, null, page.getTitle(), snippet,
             ValueOrigin.SOURCE_PROVIDED, type, Audience.BOTH, null, Set.of(), Set.of(), null, null, Set.of(), null,
             DateFact.fromSource(date(HttpClients.text(r, "published_date")), sourceId, now),
             DateFact.unknown(), List.of(), now, position);

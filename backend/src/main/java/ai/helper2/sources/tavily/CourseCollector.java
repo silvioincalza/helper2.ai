@@ -8,11 +8,11 @@ import ai.helper2.search.SourceDescriptor;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.SourceMode;
+import ai.helper2.shared.WebPageTitle;
 import ai.helper2.sources.support.Classification;
 import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
-import ai.helper2.sources.support.WebPageTitle;
 import java.net.URI;
 import java.time.Clock;
 import java.time.Instant;
@@ -150,6 +150,6 @@ public class CourseCollector implements Collector {
         if (!COURSE_WORDS.matcher(text).find()) {
             return null;
         }
-        return new Candidate(url, WebPageTitle.of(title, url.getHost()).title(), TavilySource.snippet(content), p.name());
+        return new Candidate(url, WebPageTitle.of(title, url.getHost()).getTitle(), TavilySource.snippet(content), p.name());
     }
 }

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.platform.http.ObservedHttp;
 import ai.helper2.search.SourceQuery;
+import ai.helper2.shared.WebPageTitle;
 import ai.helper2.sources.SourceFixtures;
 import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.testing.FixtureServer;
@@ -68,6 +69,12 @@ class TavilySourceTest {
         assertThat(hits.get(1).getDescription()).isEqualTo("A ranking of vector databases for RAG.");
         // The identity stays the page URL.
         assertThat(hits.getFirst().getExternalId()).isEqualTo("https://github.com/crystaldba/postgres-mcp");
+    }
+
+    @Test
+    void theTavilySourcesAreTheOnesWhoseTitlesAreCleanedOnRead() {
+        assertThat(WebPageTitle.SOURCES)
+            .containsExactlyInAnyOrder(source().getDescriptor().getId(), TavilyCollector.ID, CourseCollector.ID);
     }
 
     @Test
