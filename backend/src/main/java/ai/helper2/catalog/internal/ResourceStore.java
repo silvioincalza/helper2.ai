@@ -17,6 +17,7 @@ import ai.helper2.shared.Pricing;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.TechLevel;
 import ai.helper2.shared.ValueOrigin;
+import ai.helper2.shared.WebPageTitle;
 import java.net.URI;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -72,6 +73,15 @@ public class ResourceStore {
                 license, pricing, openSource, publishedAt, publishedPrecision, publishedSourceId, updatedAt, updatedSourceId,
                 firstDiscoveredAt, lastSeenAt, dataOrigin, enrichmentStatus, labels.getOrDefault("TAG", Set.of()),
                 labels.getOrDefault("USE_CASE", Set.of()), labels.getOrDefault("PLATFORM", Set.of()), metrics);
+        }
+
+        /** The row with its title cleaned as a web page title ({@link WebPageTitle}); unchanged when already clean. */
+        ResourceRow withPageTitle() {
+            CanonicalUrl page = CanonicalUrl.of(canonicalUrl);
+            String clean = WebPageTitle.of(title, page == null ? null : page.getHost()).getTitle();
+            return clean.equals(title) ? this : new ResourceRow(id, canonicalUrl, url, clean, description, descriptionOrigin, type,
+                audience, techLevel, license, pricing, openSource, publishedAt, publishedPrecision, publishedSourceId, updatedAt,
+                updatedSourceId, firstDiscoveredAt, lastSeenAt, dataOrigin, enrichmentStatus, tags, useCases, platforms, popularity);
         }
     }
 
@@ -739,7 +749,11 @@ public class ResourceStore {
             Set.of(), Set.of(), Set.of(), List.of());
     }
 
-    /** Labels and popularity for all [rows] in two queries (not two per row). */
+    /**
+     * Labels and popularity for all [rows] in two queries (not two per row), and a third that finds the rows whose
+     * records all come from web page sources: their title is a page title, cleaned on read ({@link WebPageTitle}), so
+     * rows stored before titles were cleaned on write show clean too. Curated rows keep their editorial title.
+     */
     private List<ResourceRow> withFacts(List<ResourceRow> rows) {
         if (rows.isEmpty()) {
             return rows;
@@ -752,9 +766,21 @@ public class ResourceStore {
                 .computeIfAbsent(rs.getString(2), k -> new LinkedHashSet<>()).add(rs.getString(3)))
             .list();
         Map<UUID, List<PopularityMetric>> popularity = popularity(ids);
+        Set<UUID> pageTitled = pageTitled(ids);
         return rows.stream()
             .map(r -> r.withFacts(labels.getOrDefault(r.id(), Map.of()), popularity.getOrDefault(r.id(), List.of())))
+            .map(r -> pageTitled.contains(r.id()) && r.dataOrigin() != DataOrigin.CURATED ? r.withPageTitle() : r)
             .toList();
+    }
+
+    /** Resources of [ids] whose records all come from {@link WebPageTitle#SOURCES}: their title is a page title. */
+    private Set<UUID> pageTitled(UUID[] ids) {
+        return new HashSet<>(jdbc.sql("""
+                SELECT resource_id FROM source_record WHERE resource_id = ANY(:ids)
+                GROUP BY resource_id HAVING bool_and(source_id = ANY(:web))
+                """)
+            .param("ids", ids).param("web", WebPageTitle.SOURCES.toArray(String[]::new))
+            .query(UUID.class).list());
     }
 
     /**
@@ -834,11 +860,13 @@ public class ResourceStore {
         x.path("popularity").forEach(p -> popularity.add(new PopularityMetric(
             PopularityKind.valueOf(p.path("kind").asString()), p.path("value").asLong(), sourceId,
             Instant.parse(p.path("asOf").asString()))));
+        CanonicalUrl canonical = CanonicalUrl.of(rs.getString("canonical_url"));
         return new SourceHit(
             sourceId, rs.getString("external_id"), URI.create(rs.getString("source_url")),
-            CanonicalUrl.of(rs.getString("canonical_url")),
+            canonical,
             CanonicalUrl.of(rs.getString("repository_url")),
-            rs.getString("title"), rs.getString("description"),
+            // A page title stored before titles were cleaned on write reads back clean (idempotent on clean ones).
+            WebPageTitle.forSource(sourceId, rs.getString("title"), canonical), rs.getString("description"),
             ValueOrigin.valueOf(x.path("descriptionOrigin").asString("SOURCE_PROVIDED")),
             ResourceType.valueOf(rs.getString("type")),
             Audience.valueOf(x.path("audience").asString("UNKNOWN")),

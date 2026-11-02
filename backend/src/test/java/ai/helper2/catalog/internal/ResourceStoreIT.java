@@ -84,6 +84,55 @@ class ResourceStoreIT {
             .param("id", id).query(String.class).list());
     }
 
+    private SourceHit titled(String source, String url, String title) {
+        return new SourceHit(source, source + ":" + url, URI.create(url), CanonicalUrl.of(url), null, title, "An AI tool",
+            ValueOrigin.SOURCE_PROVIDED, ResourceType.LIBRARY, Audience.BUILD_WITH_AI, null, Set.of(), Set.of(), null, null,
+            Set.of(), null, DateFact.unknown(), DateFact.unknown(), List.of(), now, 0);
+    }
+
+    private String storedTitle(UUID id) {
+        return jdbc.sql("SELECT title FROM resource WHERE id = :id").param("id", id).query(String.class).single();
+    }
+
+    @Test
+    void aRawPageTitleStoredFromTavilyReadsBackClean() {
+        String repo = "https://github.com/acme/paged-" + run;
+        String raw = "GitHub - acme/paged-" + run + ": An AI agent framework for everyone. · GitHub";
+        UUID id = ResourceId.of(CanonicalUrl.of(repo)).getValue();
+        // A row stored before titles were cleaned on write.
+        store.upsert(merge(titled("tavily", repo, raw)), DataOrigin.OBSERVED, Set.of("tavily"));
+
+        assertThat(store.findResource(id).orElseThrow().title()).isEqualTo("acme/paged-" + run);
+        assertThat(store.recordsOf(id)).singleElement().satisfies(r -> assertThat(r.hit().getTitle()).isEqualTo("acme/paged-" + run));
+        assertThat(details.find(id).orElseThrow().card().getTitle()).isEqualTo("acme/paged-" + run);
+        // Read-time only: the stored row is not changed.
+        assertThat(storedTitle(id)).isEqualTo(raw);
+    }
+
+    @Test
+    void aTitleFromAStructuredSourceIsNeverCleaned() {
+        String repo = "https://github.com/acme/named-" + run;
+        String name = "GitHub - acme/named-" + run + ": a name as the source states it · GitHub";
+        UUID id = ResourceId.of(CanonicalUrl.of(repo)).getValue();
+        store.upsert(merge(titled("github", repo, name)), DataOrigin.OBSERVED, LIVE);
+
+        assertThat(store.findResource(id).orElseThrow().title()).isEqualTo(name);
+        assertThat(store.recordsOf(id)).singleElement().satisfies(r -> assertThat(r.hit().getTitle()).isEqualTo(name));
+    }
+
+    @Test
+    void aResourceWithAStructuredRecordKeepsItsTitleEvenWithATavilyRecord() {
+        String repo = "https://github.com/acme/mixed-" + run;
+        String name = "Mixed tool - acme";
+        UUID id = ResourceId.of(CanonicalUrl.of(repo)).getValue();
+        store.upsert(merge(titled("github", repo, name), titled("tavily", repo, "GitHub - acme/mixed-" + run + " · GitHub")),
+            DataOrigin.OBSERVED, Set.of("github", "tavily"));
+
+        assertThat(store.findResource(id).orElseThrow().title()).isEqualTo(name);
+        assertThat(store.recordsOf(id)).filteredOn(r -> r.sourceId().equals("tavily"))
+            .singleElement().satisfies(r -> assertThat(r.hit().getTitle()).isEqualTo("acme/mixed-" + run));
+    }
+
     @Test
     void labelsFollowWhatTheSourceSaysNow() {
         String repo = "https://github.com/acme/labels-" + run;

@@ -96,6 +96,23 @@ class JdbcWebResultStoreIT {
     }
 
     @Test
+    void aStoredSetWithAnOldRawPageTitleComesBackClean() {
+        String url = "https://scored.tools/" + run + "/vector-databases";
+        SourceHit raw = new SourceHit("tavily", url, URI.create(url), CanonicalUrl.of(url), null,
+            "Best Open Source Vector Databases for Production RAG 2026 | scored.tools", "A ranking of vector databases for RAG.",
+            ValueOrigin.SOURCE_PROVIDED, ResourceType.NEWS, Audience.BOTH, null, Set.of(), Set.of(), null, null, Set.of(), null,
+            DateFact.unknown(), DateFact.unknown(), List.of(), now, 0);
+        recordInCatalog(raw);
+        store.replace("tavily", "vector db " + run, IntentClass.GENERAL, now, List.of(raw));
+
+        CachedHits found = store.find("tavily", "vector db " + run, IntentClass.GENERAL);
+
+        assertThat(found.getHits()).extracting(SourceHit::getTitle)
+            .containsExactly("Best Open Source Vector Databases for Production RAG 2026");
+        assertThat(found.getHits().getFirst().getCanonicalUrl()).isEqualTo(CanonicalUrl.of(url));
+    }
+
+    @Test
     void theKeyIsTheSourceTheQueryAndTheIntentClassExactly() {
         recordInCatalog(hit("a", 0));
         store.replace("tavily", "agents " + run, IntentClass.TIME_BOUND, now, List.of(hit("a", 0)));
