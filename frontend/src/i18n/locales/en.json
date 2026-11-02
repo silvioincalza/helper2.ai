@@ -101,7 +101,6 @@
     "picksOnTop_one": "The guide’s pick is now at the top of the list.",
     "picksOnTop_other": "The guide’s {{count}} picks are now at the top of the list.",
     "loading": "Searching the listed sources…",
-    "queryingSource": "{{name}}: querying…",
     "errorTitle": "Search is unavailable",
     "errorBody": "We could not reach the Helper2.ai service. Nothing was searched.",
     "partialBody": "Only {{ok}} of {{total}} queried sources responded, so these results may be incomplete.",

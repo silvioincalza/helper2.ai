@@ -32,13 +32,13 @@ describe('search results', () => {
     expect(new URLSearchParams(call?.search).get('q')).toBe('translate');
   });
 
-  it('shows a loading state with per-source querying', async () => {
+  it('shows a loading state with a skeleton', async () => {
     let release: () => void = () => undefined;
     const gate = new Promise<void>((r) => { release = r; });
     mockApi({ 'GET /search': async () => { await gate; return makeSearch(); } });
     renderApp(url);
     expect(await screen.findByText('Searching the listed sources…')).toBeInTheDocument();
-    expect(await screen.findByText(/GitHub: querying…/)).toBeInTheDocument();
+    expect(document.querySelector('.h2-skeleton')).toBeInTheDocument();
     release();
     await (await results()).findByText('Acme Translator');
   });

@@ -30,7 +30,6 @@ import { aiMark, isAiOrigin } from '@/lib/aiMark';
 import { SAVED_ENABLED } from '@/lib/features';
 import { displayHost, guidePicks, picksById, picksFirst, selectedResult, type GuidePick } from '@/lib/selection';
 import { activeFilterCount, askedQuestion, clampQuestion, clearFilters, homeParams, isSelected, parseSearchParams, patchState, toApiParams, toggleFilter, type ResultsView, type SearchState, resourcePath } from '@/lib/searchState';
-import { useSources } from '@/context/SourcesContext';
 import { ListedBy, ResultFacts } from './ResultFacts';
 import './results.css';
 import { OpenButton } from './OpenButton';
@@ -66,7 +65,6 @@ export function Results() {
   const key = apiParams.toString();
   const search = useApi<SearchResponse | null>(`search?${key}`, (signal) => (state.q ? api.search(apiParams, signal) : Promise.resolve(null)));
   const shown = search.loading ? (search.previous ?? undefined) : (search.data ?? undefined);
-  const registry = useSources();
 
   return (
     <div className="h2-results">
@@ -79,12 +77,8 @@ export function Results() {
       {search.loading && (
         <div role="status" className="h2-results__loading">
           <p>{t('results.loading')}</p>
+          {/* No per-source lines: they arrived after the skeleton and pushed it down (layout shift). */}
           {!shown && (<>
-          <ul className="plain-list h2-results__querying">
-            {(registry.data ?? []).filter((s) => s.enabled).map((s) => (
-              <li key={s.id} className="muted small"><Icon name="clock" /> {t('results.queryingSource', { name: s.name })}</li>
-            ))}
-          </ul>
           <ul className="plain-list h2-skeleton" aria-hidden="true">
             {[0, 1, 2, 3].map((i) => (
               <li key={i} className="h2-skeleton__row">
