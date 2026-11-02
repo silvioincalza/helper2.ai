@@ -1,7 +1,7 @@
 /*
  * Helper2.ai design system: warm paper, deep indigo ink, one saffron accent (spiritual editorial colour);
  * Space Grotesk for headings, Inter for reading, JetBrains Mono for names that came from a source (tech type).
- * Light on :root, dark under [data-theme="dark"] (public/theme.js sets it from the saved choice or the device). Saffron is a fill, never small text on paper (2.9:1):
+ * Light on :root, dark under [data-theme="dark"] (public/theme.js sets it from the saved choice; light is the default). Saffron is a fill, never small text on paper (2.9:1):
  * text on it is indigo, and saffron-coloured text uses --accent-ink.
  */
 :root {

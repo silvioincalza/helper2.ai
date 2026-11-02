@@ -1,10 +1,10 @@
-import { useEffect, useRef, useSyncExternalStore, type ReactNode } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { NavLink, Outlet, Link, ScrollRestoration, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { signOut } from '@/api/client';
 import { useMe } from '@/context/MeContext';
 import { LANGUAGES, setLanguage } from '@/i18n';
-import { chooseTheme, currentChoice, nextChoice, subscribeTheme, type ThemeChoice } from '@/lib/theme';
+import { chooseTheme, currentTheme, otherTheme, subscribeTheme, type Theme } from '@/lib/theme';
 import { SAVED_ENABLED } from '@/lib/features';
 import { RESULTS_PATH } from '@/lib/searchState';
 import { takeSignInReturn } from '@/lib/signInReturn';
@@ -12,24 +12,41 @@ import { Logo } from './Logo';
 import { OneBox } from './OneBox';
 import { SignIn } from './SignIn';
 
-/** Each choice's 18px stroke icon: the device for "follow system", else the sun or the moon. */
-const THEME_ICON: Record<ThemeChoice, ReactNode> = {
-  system: <><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M8 20h8M12 16v4" /></>,
+/** Each theme's 18px stroke icon: the sun or the moon. */
+const THEME_ICON: Record<Theme, ReactNode> = {
   light: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></>,
   dark: <path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z" />,
 };
 
-/** One button that shows the current theme choice and moves to the next: follow system → light → dark. */
+/** One button that shows the current theme and switches to the other: light ↔ dark. Light is the default. */
 function ThemeToggle() {
   const { t } = useTranslation();
-  const choice = useSyncExternalStore(subscribeTheme, currentChoice);
-  const next = nextChoice(choice);
-  const label = t('nav.theme.label', { current: t(`nav.theme.${choice}`), next: t(`nav.theme.${next}`) });
+  const theme = useSyncExternalStore(subscribeTheme, currentTheme);
+  const next = otherTheme(theme);
+  const label = t('nav.theme.label', { current: t(`nav.theme.${theme}`), next: t(`nav.theme.${next}`) });
   return (
     <button type="button" className="btn btn-icon theme-toggle" aria-label={label} title={label} onClick={() => chooseTheme(next)}>
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
         strokeLinejoin="round" aria-hidden="true" focusable="false">
-        {THEME_ICON[choice]}
+        {THEME_ICON[theme]}
+      </svg>
+    </button>
+  );
+}
+
+/**
+ * On a small screen (up to 720 px) the menu folds behind one button: the logo, the theme and the menu button share
+ * one row, and the pages and sign-in open in a panel below. Escape closes it and returns focus to the button; moving
+ * to another page closes it. From 721 px the button is hidden and the panel is the normal header row (CSS only).
+ */
+function MenuButton({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <button type="button" className="btn btn-icon menu-toggle" aria-expanded={open} aria-controls="site-menu"
+      aria-label={t('nav.menu')} onClick={onToggle}>
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+        aria-hidden="true" focusable="false">
+        {open ? <path d="M6 6l12 12M18 6L6 18" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
       </svg>
     </button>
   );
@@ -41,10 +58,29 @@ export function Header() {
   // The home page has the box as its hero; every other page keeps it in the header.
   const { pathname } = useLocation();
   const onHome = pathname === '/' || pathname === RESULTS_PATH;
+  // Open on the page it was opened on: moving to another page closes it without an effect.
+  const [openOn, setOpenOn] = useState<string | null>(null);
+  const open = openOn === pathname;
+  const toggle = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      setOpenOn(null);
+      toggle.current?.querySelector<HTMLButtonElement>('.menu-toggle')?.focus();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open]);
   return (
     <header className="site-header">
       <div className="container header-row">
         <Link to="/" className="logo-link" aria-label={t('nav.home')}><Logo /></Link>
+        <div className="header-quick" ref={toggle}>
+          <ThemeToggle />
+          <MenuButton open={open} onToggle={() => setOpenOn(open ? null : pathname)} />
+        </div>
+        <div id="site-menu" className={open ? 'header-menu is-open' : 'header-menu'}>
         {/* Search is the home page (the logo goes there); the menu only lists the pages that are on. */}
         <nav aria-label={t('nav.main')} className="main-nav">
           <ul className="plain-list">
@@ -55,7 +91,6 @@ export function Header() {
           </ul>
         </nav>
         <div className="header-tools">
-          <ThemeToggle />
           {LANGUAGES.length > 1 && (
             <label className="lang">
               <span className="sr-only">{t('nav.language')}</span>
@@ -72,6 +107,7 @@ export function Header() {
               <button type="button" className="btn" onClick={() => void signOut()}>{t('nav.signOut')}</button>
             </span>
           )}
+        </div>
         </div>
       </div>
       {!onHome && (

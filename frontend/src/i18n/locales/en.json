@@ -19,6 +19,7 @@
   },
   "nav": {
     "main": "Main",
+    "menu": "Menu",
     "home": "Helper2.ai home",
     "search": "Search",
     "saved": "Saved",
@@ -34,7 +35,6 @@
     "privacy": "Privacy",
     "theme": {
       "label": "Theme: {{current}}. Change to {{next}}",
-      "system": "follow system",
       "light": "light",
       "dark": "dark"
     },

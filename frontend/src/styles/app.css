@@ -43,7 +43,7 @@ code { font-family: var(--font-mono); font-size: 0.85em; }
 .main-nav a { color: var(--text-muted); text-decoration: none; padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); display: inline-block; border-bottom: 2px solid transparent; }
 .main-nav a:hover { color: var(--text); }
 .main-nav a.active { color: var(--text); border-bottom-color: var(--cyan); }
-.header-tools { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-left: auto; }
+.header-tools { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; order: 4; }
 .auth { display: inline-flex; align-items: center; gap: var(--space-3); }
 /* Tablet widths: from 721 px the menu stays on the logo's row. Tighter gaps, a long account name ends in "…", and up to 900 px
    the tagline under the logo hides (the logo link keeps its name). */
@@ -54,8 +54,22 @@ code { font-family: var(--font-mono); font-size: 0.85em; }
   .auth a { max-width: 9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
 @media (min-width: 521px) and (max-width: 900px) { .logo-tagline { display: none; } }
-/* Up to 720 px the menu does not fit beside the logo and the sign-in button: it takes its own row, never two. */
-@media (max-width: 720px) { .main-nav { order: 3; flex-basis: 100%; } }
+/* The menu button and the panel (Header): from 721 px the panel is the header row itself and the button is hidden;
+   up to 720 px the logo, theme and menu button share one row and the pages and sign-in open below. */
+.header-quick .menu-toggle { display: none; }
+.header-menu { display: contents; }
+.header-quick { display: flex; align-items: center; gap: var(--space-2); order: 3; margin-left: auto; }
+@media (max-width: 720px) {
+  .header-quick .menu-toggle { display: inline-flex; }
+  .header-quick { order: 0; }
+  .header-menu { display: none; order: 4; flex-basis: 100%; flex-direction: column; gap: var(--space-3);
+    border-top: 1px solid var(--border); padding: var(--space-3) 0; }
+  .header-menu.is-open { display: flex; }
+  .header-menu .main-nav ul { flex-direction: column; gap: 0; }
+  .header-menu .main-nav a { display: block; padding: var(--space-3) var(--space-2); min-height: var(--target-min); }
+  .header-menu .main-nav a.active { border-bottom-color: transparent; border-left: 3px solid var(--cyan); }
+  .header-menu .header-tools > .btn, .header-menu .auth { width: 100%; justify-content: center; }
+}
 .menu { position: relative; }
 .menu summary { list-style: none; cursor: pointer; }
 .menu-list { position: absolute; right: 0; margin-top: var(--space-1); background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: var(--space-2); min-width: 10rem; z-index: 30; }

@@ -129,8 +129,10 @@ and chose between options for each part.
 - `frontend/src/pages/AdminPage.tsx`, `pages/admin.css` — the admin back office ([0023](../edge/0023-identity-and-admin.md))
   in the design: the review queue as rows like the saved rows, each status as a `StatusPill`, the Scout runs as a
   table.
-- `frontend/src/components/Layout.tsx` — Sources and Mission in the menu, "No ads." in the footer. From 521 to
-  1024 px the menu stays on the logo's row (`styles/app.css`: tighter gaps, the tagline hides up to 900 px).
+- `frontend/src/components/Layout.tsx` — Sources and Mission in the menu, "No ads." in the footer. Up to 720 px the
+  menu folds behind a menu button (☰, `aria-expanded`): the logo, the theme and the button share one row, and the
+  pages and sign-in open in a panel below; Escape or a new page closes it. From 721 px the menu is the header row
+  (`styles/app.css`: tighter gaps up to 1024 px, the tagline hides up to 900 px).
 
 ## Diagrams
 [flow](../../diagrams/flow-0040-frontend-design.svg) · [sequence](../../diagrams/sequence-0040-frontend-design.svg)

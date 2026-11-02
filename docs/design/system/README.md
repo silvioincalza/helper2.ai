@@ -40,7 +40,7 @@ The design system for every part of Helper2.ai: the search-and-ask box, results,
 - **Focus:** a 3px `focus` outline with 2px offset on every control.
 - **Elevation:** none. Objects are set apart by `border`, never by shadow.
 - **Width:** the page column stops at `content-wide` (1240px), with 32px gutters, 16px below `bp-small`.
-- **Themes:** light and dark; every token has both values. The header button cycles system → light → dark: "system" follows the device setting and is the default.
+- **Themes:** light and dark; every token has both values. The header button switches light ↔ dark; light is the default, and the device setting is not followed.
 
 ## Type tags
 
