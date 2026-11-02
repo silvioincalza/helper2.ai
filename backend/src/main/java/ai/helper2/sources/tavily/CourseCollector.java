@@ -12,6 +12,7 @@ import ai.helper2.sources.support.Classification;
 import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
+import ai.helper2.sources.support.WebPageTitle;
 import java.net.URI;
 import java.time.Clock;
 import java.time.Instant;
@@ -149,7 +150,6 @@ public class CourseCollector implements Collector {
         if (!COURSE_WORDS.matcher(text).find()) {
             return null;
         }
-        String snippet = content == null ? null : content.length() > 400 ? content.substring(0, 397) + "…" : content;
-        return new Candidate(url, title, snippet, p.name());
+        return new Candidate(url, WebPageTitle.of(title, url.getHost()).title(), TavilySource.snippet(content), p.name());
     }
 }
