@@ -74,17 +74,17 @@ Changing the words in the box searches again and drops the old question with its
 
 1. Anonymous user bookmarks a card → stored in `localStorage`; visible on **Saved**.
 2. If storage is unavailable (private mode), the toggle explains saving is unavailable in this browser.
-3. The public site never asks for an account: the Saved page says "Saved in this browser only." A user who signed in (only possible on `/admin`, UJ-7) gets local bookmarks merged into the account once; they then follow the account across devices.
+3. Signed out, the Saved page says "Saved in this browser only." and offers sign-in. After sign-in (UJ-7) the browser's saved items move to the account once and are removed from the browser; from then on they follow the account across devices. If the merge fails, the browser's items stay on screen with **Try again**.
 
-## UJ-7 Sign in (admin only)
+## UJ-7 Sign in
 
-Sign-in exists for administrators ([ADR 0023](adr/edge/0023-identity-and-admin.md)); the header never offers it.
+Anyone can sign in, to keep saved items on the account and get a larger daily quota. Nothing needs an account: search, the guide and saving in the browser work signed out. Administrators use the same sign-in on the back office host ([ADR 0023](adr/edge/0023-identity-and-admin.md), [ADR 0035](adr/edge/0035-admin-host.md)).
 
-1. An anonymous visitor to `/admin` sees a prompt and the configured OAuth2 provider (a GitHub OAuth App, profile `oauth-github`); without a provider the app is anonymous-only and `/admin` says an administrator account is needed.
-2. After login the user returns to `/admin`; the header shows the display name and **Sign out**; bookmarks merge (UJ-6). A signed-in user without the `ADMIN` role sees the forbidden message.
-3. Sign-out returns to anonymous mode; search keeps working.
+1. Signed out, the header shows **Sign in with GitHub** on every page (a **Sign in** menu when more than one provider is configured; nothing when none is). The Saved page offers it too.
+2. The page the user was on is kept in this tab. After the provider, the user comes back to that page, signed in; saved items merge (UJ-6).
+3. Signed in, the header shows the display name, which opens the account page, and **Sign out**. Sign-out returns to anonymous mode; search keeps working.
 
-**Failure case:** sign-in fails or the provider is down → `/admin?signin=failed` says "Sign-in did not complete. Try again."; anonymous use is unaffected.
+**Failure case:** sign-in fails or the provider is down → the user lands back with `?signin=failed`, and the page says "Sign-in did not work. Please try again."; anonymous use is unaffected.
 
 **Delete the account.** The signed-in name in the header opens the account page (`/account`): who is signed in, and **Delete my account**. A dialog asks to confirm, with focus on Cancel; Escape closes it and focus goes back to the button. On confirm the account and its saved items are deleted and the page reloads, signed out. If the deletion fails, an alert says so and the account stays. While the page asks who is signed in it says "Loading…". Signed out, the page says there is no account to delete and links to Privacy; it offers no sign-in.
 
