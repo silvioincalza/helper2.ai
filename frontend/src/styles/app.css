@@ -413,7 +413,9 @@ details.guide-reason p { margin: 0 0 var(--space-2); color: var(--ink-2); }
 }
 @media (max-width: 520px) {
   .home-hero { padding-top: var(--space-6); }
-  .one-box.is-hero .searchbox.large { flex-flow: row wrap; padding: 6px; }
+  /* The same inset as the box on the results page, so the question starts at the same place on both pages. */
+  .one-box.is-hero .searchbox.large { flex-flow: row wrap; padding: 6px 6px 6px var(--space-4); }
+  .one-box.is-hero .searchbox.large .searchbox-field { padding-left: var(--space-3); }
   .searchbox-icon { display: none; }
   .searchbox.large .searchbox-field { padding-left: var(--space-3); }
   .searchbox.large .btn { flex-basis: 100%; justify-content: center; }
