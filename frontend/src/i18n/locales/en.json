@@ -21,7 +21,6 @@
     "main": "Main",
     "menu": "Menu",
     "home": "Helper2.ai home",
-    "search": "Search",
     "saved": "Saved",
     "sources": "Sources",
     "admin": "Admin",
@@ -84,7 +83,6 @@
     "label": "Search AI resources",
     "placeholder": "Search tools, models, MCP servers… or ask in plain words",
     "submit": "Search",
-    "enterQuery": "Type what you are looking for to search the listed sources.",
     "heroPlaceholder": "Describe what you need, or type a name",
     "clear": "Clear the box",
     "slashHint": "Press / to search",
@@ -225,10 +223,7 @@
     "SKIPPED": "Skipped"
   },
   "servedFrom": {
-    "LIVE": "Live",
-    "CACHE": "From cache",
-    "STALE_CACHE": "Stale cache",
-    "NONE": "No data"
+    "STALE_CACHE": "Stale cache"
   },
   "freshness": {
     "LIVE": "Live",
@@ -321,13 +316,6 @@
     "video": "Video",
     "audio": "Audio"
   },
-  "popularity": {
-    "line": "{{value}} {{metric}} · {{source}} · as of {{date}}",
-    "GITHUB_STARS": "GitHub stars",
-    "HF_LIKES": "Hugging Face likes",
-    "HF_DOWNLOADS": "Hugging Face downloads",
-    "NPM_DOWNLOADS_WEEKLY": "npm weekly downloads"
-  },
   "date": {
     "published": "Published",
     "updated": "Last updated",
@@ -339,25 +327,14 @@
   "card": {
     "openOriginal": "Open original",
     "noDescription": "No description available.",
-    "descriptionOrigin": "Description",
     "pricing": "Pricing",
     "platforms": "Platforms",
     "useCases": "Use cases",
-    "audience": "Audience",
     "license": "License",
     "openSource": "Open source",
     "techLevel": "Technical level",
-    "sourceRecords": "Source records",
-    "unknownFacts_one": "{{count}} fact not stated by any source",
-    "unknownFacts_other": "{{count}} facts not stated by any source",
-    "allFacts": "All facts",
-    "tags": "Tags",
-    "compatibleWith": "Works with",
-    "sources": "Sources",
     "timeline": "Dates",
-    "popularity": "Popularity metrics",
-    "conflicts": "Conflicts between sources",
-    "conflictOn": "Sources disagree on {{field}}"
+    "compatibleWith": "Works with"
   },
   "compat": {
     "basis": {
@@ -611,8 +588,6 @@
   },
   "guide": {
     "ask": "Ask the guide",
-    "asking": "Searching and thinking…",
-    "askingHint": "This usually takes about 15 seconds.",
     "searchedFor": "Searched the catalog for: {{q}}",
     "considered": "{{n}} candidates considered",
     "rejected_one": "{{count}} AI suggestion removed: no supporting evidence",
@@ -637,8 +612,7 @@
       "NEEDS_CLARIFICATION": "The question needs one more detail."
     },
     "notice": {
-      "GUIDE_DAILY_QUOTA": "You have used today's AI answers, so this answer shows the top search results without AI picks. AI answers are available again after midnight UTC.",
-      "GUIDE_SUBJECT_NOT_FOUND": "Something you named is not in our sources."
+      "GUIDE_DAILY_QUOTA": "You have used today's AI answers, so this answer shows the top search results without AI picks. AI answers are available again after midnight UTC."
     },
     "error": "The guide could not answer. Please try again.",
     "streamFailure": {
@@ -659,7 +633,6 @@
     "kept_one": "{{count}} pick kept",
     "kept_other": "{{count}} picks kept",
     "noneRejected": "No pick rejected",
-    "askedFor": "You asked for:",
     "understood": "Understood as",
     "requirementsAi": "Requirements AI-written",
     "remove": "Remove “{{part}}” and ask again",
@@ -675,7 +648,6 @@
     },
     "window": "Created {{from}} – {{to}}",
     "windowNext": "From {{from}} to {{to}}",
-    "newestFirst": "newest first",
     "clarify": {
       "label": "Pick one, or answer in your own words",
       "other": "Your answer",
@@ -691,8 +663,7 @@
     },
     "explanation": {
       "title": "What it is",
-      "aiNote": "AI-written. Each sentence quotes the resource it links to.",
-      "source": "Source"
+      "aiNote": "AI-written. Each sentence quotes the resource it links to."
     }
   },
   "events": {
@@ -954,7 +925,6 @@
   "setup": {
     "title": "Set up {{title}}",
     "loading": "Reading how to set it up…",
-    "error": "The setup data could not be read now.",
     "howToRun": "How to run it",
     "yourTool": "Your AI tool",
     "remote": "Hosted server, nothing to install. Endpoint:",

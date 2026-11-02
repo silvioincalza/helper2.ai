@@ -27,7 +27,6 @@ import { useGuideStream } from '@/hooks/useGuideStream';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useTitle } from '@/hooks/useTitle';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
-import { SAVED_ENABLED } from '@/lib/features';
 import { displayHost, guidePicks, picksById, picksFirst, selectedResult, type GuidePick } from '@/lib/selection';
 import { activeFilterCount, askedQuestion, clampQuestion, clearFilters, homeParams, isSelected, parseSearchParams, patchState, toApiParams, toggleFilter, type ResultsView, type SearchState, resourcePath } from '@/lib/searchState';
 import { ListedBy, ResultFacts } from './ResultFacts';
@@ -245,7 +244,7 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
           <p>{t('results.emptyTryOther')}</p>
         </StatePanel>
       ) : state.view === 'timeline' ? (
-        <ResultsTimeline cards={res.results} sourceStatuses={res.sources} />
+        <ResultsTimeline cards={res.results} />
       ) : (
         <div className="h2-split">
           <div className="h2-list" ref={list} onFocus={keepFocus.onFocus} onBlur={keepFocus.onBlur}>
@@ -379,7 +378,7 @@ function Preview({ card, pick, stale, inline = false }: { card: ResultCard; pick
       </TitleTag>
       <div className="h2-pv__actions">
         <OpenButton url={card.url} host={host} />
-        {SAVED_ENABLED && <BookmarkButton card={card} />}
+        <BookmarkButton card={card} />
         {canGuide(card) && <GuideMeButton title={card.title} open={guide.open} onToggle={guide.toggle} bodyId={bodyId} buttonRef={button} />}
         {inline && <Link className="btn" to={detail} state={detailState}>{t('results.fullDetails')}</Link>}
       </div>

@@ -37,7 +37,7 @@ traceable to that administrator.
    most 2000 characters, and an account holds at most 500; adding or merging is idempotent (the first `savedAt`
    stays), and a merge is all or nothing (400). A bookmark keeps the resource id, title, link, type and `savedAt`, so it
    renders even when the resource left the catalog. `MeController` only maps requests; `Bookmarks` and `Users` only
-   run SQL. The Saved page is behind `SAVED_ENABLED`, off while sign-in is offered on /admin only.
+   run SQL.
 6. **Delete my account.** The signed-in user's name in the header opens `/account`, where "Delete my account" asks
    for confirmation, then calls `DELETE /api/v1/me` (CSRF token required). `DeleteMyAccount` deletes the `app_user`
    row; its bookmarks go by `ON DELETE CASCADE`, and the user's issue reports stay with `reporter_user_id` set to null

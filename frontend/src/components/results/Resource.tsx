@@ -9,7 +9,6 @@ import { Timeline } from '@/components/Timeline';
 import { ProofQuote } from '@/components/ui/ProofQuote';
 import { TypeTag } from '@/components/ui/TypeTag';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
-import { SAVED_ENABLED } from '@/lib/features';
 import { displayHost } from '@/lib/selection';
 import { ListedBy, ResultFacts } from './ResultFacts';
 import './results.css';
@@ -49,7 +48,7 @@ export function Resource({ detail: d, children }: { detail: ResourceDetail; chil
           <h1 className="h2-pv__title">{card.title}</h1>
           <div className="h2-pv__actions">
             <OpenButton url={card.url} host={host} />
-            {SAVED_ENABLED && <BookmarkButton card={card} />}
+            <BookmarkButton card={card} />
           </div>
           {canGuide(card) && <SetupGuidePanel id={card.id} title={card.title} />}
 

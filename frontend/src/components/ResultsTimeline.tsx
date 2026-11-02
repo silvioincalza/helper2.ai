@@ -1,15 +1,21 @@
+import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import type { ResultCard, SourceStatus } from '@/api/types';
+import type { ResultCard } from '@/api/types';
+import { OriginLabel } from '@/components/Badges';
+import { TypeTag } from '@/components/ui/TypeTag';
+import { aiMark, isAiOrigin } from '@/lib/aiMark';
 import { formatDate } from '@/lib/format';
+import { resourcePath } from '@/lib/searchState';
+import { displayHost } from '@/lib/selection';
 import { creationDate, formatMonth, groupByCreationMonth } from '@/lib/timeline';
-import { ResultCardView } from './ResultCardView';
 
 /**
  * Search results on a time axis, newest first, by the date each item was CREATED as its source states it.
  * Helper2's discovery date (when we scanned it) is never used here; items with no stated creation date sit in
- * their own group at the end instead of being placed by a guess.
+ * their own group at the end instead of being placed by a guess. One line per result, as in the list; the
+ * resource page has the rest.
  */
-export function ResultsTimeline({ cards, sourceStatuses }: { cards: ResultCard[]; sourceStatuses: SourceStatus[] }) {
+export function ResultsTimeline({ cards }: { cards: ResultCard[] }) {
   const { t, i18n } = useTranslation();
   return (
     <ol className="plain-list results-timeline" aria-label={t('timeline.label')}>
@@ -35,7 +41,18 @@ export function ResultsTimeline({ cards, sourceStatuses }: { cards: ResultCard[]
                         </>
                       ) : t('timeline.noDate')}
                     </p>
-                    <ResultCardView card={card} sourceStatuses={sourceStatuses} />
+                    <Link to={resourcePath(card.id)} className="h2-row tl-row">
+                      <span className="h2-row__meta">
+                        <TypeTag type={card.type} />
+                        <span className="h2-row__host">{displayHost(card.url)}</span>
+                      </span>
+                      <span className="h2-row__title">{card.title}</span>
+                      {card.description && (
+                        isAiOrigin(card.descriptionOrigin)
+                          ? <span className="h2-row__text"><span className="h2-row__ai"><OriginLabel origin={card.descriptionOrigin} /></span> <span {...aiMark()}>{card.description}</span></span>
+                          : <span className="h2-row__text">{card.description}</span>
+                      )}
+                    </Link>
                   </li>
                 );
               })}

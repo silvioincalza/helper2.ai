@@ -59,6 +59,9 @@
 .h2-facts__group dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px var(--space-3); margin: 0; font-size: 0.875rem; }
 .h2-facts__group dl > div { display: contents; }
 .h2-facts__group dt { color: var(--muted); }
+.h2-facts__tools { display: flex; flex-wrap: wrap; gap: 2px var(--space-2); }
+.h2-facts__tools li { cursor: help; }
+.h2-facts__tools li:not(:last-child)::after { content: ","; }
 .h2-facts__group dd { margin: 0; color: var(--ink); }
 .h2-facts__group dd.is-not-stated { color: var(--not-stated); font-style: italic; }
 .h2-facts__group dd.is-conflict { color: var(--not-stated); }

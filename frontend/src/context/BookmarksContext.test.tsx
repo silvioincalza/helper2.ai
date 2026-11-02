@@ -4,12 +4,10 @@ import { BOOKMARK_KEY, readLocalBookmarks, writeLocalBookmarks } from '@/lib/boo
 import { ANON, USER, makeSearch } from '@/test/fixtures';
 import { mockApi, problem } from '@/test/mockApi';
 import { renderApp } from '@/test/render';
-import { SAVED_ENABLED } from '@/lib/features';
 
 const bm = { resourceId: '22222222-2222-5222-8222-222222222222', title: 'Local one', url: 'https://l.example', type: 'MODEL' as const, savedAt: '2026-10-01T00:00:00.000Z' };
 
-// Saved is on the roadmap (lib/features.ts): these drive the hidden UI and run again when it comes back.
-describe.skipIf(!SAVED_ENABLED)('bookmarks (local)', () => {
+describe('bookmarks (local)', () => {
   it('reads and writes localStorage', () => {
     expect(writeLocalBookmarks([bm])).toBe(true);
     expect(readLocalBookmarks()).toEqual([bm]);
@@ -55,7 +53,7 @@ describe.skipIf(!SAVED_ENABLED)('bookmarks (local)', () => {
   });
 });
 
-describe.skipIf(!SAVED_ENABLED)('bookmarks (signed in)', () => {
+describe('bookmarks (signed in)', () => {
   it('merges local bookmarks into the server once, then uses the server list', async () => {
     writeLocalBookmarks([bm]);
     const server = [{ resourceId: bm.resourceId, title: 'Local one', url: bm.url, type: 'MODEL', savedAt: '2026-10-22T00:00:00Z' }, { resourceId: '33333333-3333-5333-8333-333333333333', title: 'Server only', url: 'https://s.example', type: null, savedAt: '2026-10-21T00:00:00Z' }];

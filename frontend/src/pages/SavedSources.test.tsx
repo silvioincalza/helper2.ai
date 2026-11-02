@@ -8,8 +8,6 @@ import { mockApi, problem } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
 import { CACHE_TTL_MS } from '@/hooks/useApi';
 
-vi.mock('@/lib/features', () => ({ SAVED_ENABLED: true }));
-
 const saved: Bookmark[] = [
   { resourceId: '11111111-1111-5111-8111-111111111111', title: 'Postgres MCP', url: 'https://github.com/a/pg', type: 'MCP_SERVER', savedAt: '2026-10-20T10:00:00Z' },
   { resourceId: '22222222-2222-5222-8222-222222222222', title: 'pgvector', url: 'https://github.com/pgvector/pgvector', type: 'LIBRARY', savedAt: '2026-10-21T10:00:00Z' },
