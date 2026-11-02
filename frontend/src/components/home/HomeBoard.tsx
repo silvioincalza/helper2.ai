@@ -39,7 +39,6 @@ interface Props {
   title: string;
   sub: string;
   listLabel: string;
-  foot: string;
   loading: boolean;
   error: boolean;
   errorText: string;
@@ -54,7 +53,7 @@ interface Props {
  * The loop shows the rows twice; the second copy is hidden from assistive tech and from the Tab key, so each row is
  * read and reached once.
  */
-export function HomeBoard({ id, title, sub, listLabel, foot, loading, error, errorText, emptyText, onRetry, rows }: Props) {
+export function HomeBoard({ id, title, sub, listLabel, loading, error, errorText, emptyText, onRetry, rows }: Props) {
   const { t } = useTranslation();
   const reduce = useReducedMotion();
   const [paused, setPaused] = useState(false);
@@ -100,7 +99,6 @@ export function HomeBoard({ id, title, sub, listLabel, foot, loading, error, err
           </div>
         </div>
       )}
-      <p className="h2-board__foot">{foot}</p>
     </section>
   );
 }

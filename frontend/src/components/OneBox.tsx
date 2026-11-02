@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { askedQuestion, clampQuery, clampQuestion, homeParams, MAX_QUESTION, parseSearchParams, patchState, RESULTS_PATH, type SearchState } from '@/lib/searchState';
@@ -6,6 +6,14 @@ import { askedQuestion, clampQuery, clampQuestion, homeParams, MAX_QUESTION, par
 /** Waits this long after the last keystroke before searching: live, but not one request per letter. */
 const LIVE_SEARCH_MS = 700;
 const MIN_LIVE_CHARS = 3;
+/** From this many characters left, the box says how many remain. */
+const SHOW_LEFT_FROM = 50;
+
+/** True while the keyboard is in a field, where "/" is a character and not the shortcut to the box. */
+function typingIn(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
+}
 /** A need of this many words or more is a question for the guide; fewer words are a search. */
 export const AUTO_ASK_WORDS = 4;
 
@@ -56,7 +64,9 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
   const timer = useRef<number | undefined>(undefined);
   const cancelLive = () => window.clearTimeout(timer.current);
   useEffect(() => cancelLive, []);
-  const onType = (value: string) => {
+  const onType = (typed: string) => {
+    // Enter searches or asks, so the box holds one line of text: a pasted line break becomes a space.
+    const value = typed.replace(/[\r\n]+/g, ' ');
     setText(value);
     cancelLive();
     const q = clampQuery(value);
@@ -90,18 +100,64 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
     if (action === 'ask') ask();
     else runSearch();
   };
-  const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key !== 'Enter') return;
-    if (e.shiftKey) {
-      e.preventDefault();
-      ask();
-    } else if (!text.trim()) {
-      // An empty box disables the submit button, so the form never submits: Enter is handled here.
-      e.preventDefault();
-      clear();
-    }
-  };
   const asking = action === 'ask';
+  const cannotSubmit = asking ? !clampQuestion(text) : !text.trim();
+  /** × and Esc: empty the box and keep the results on the page; the cursor stays in the box. */
+  const emptyBox = () => {
+    cancelLive();
+    setText('');
+    field.current?.focus();
+  };
+  const onKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Escape' && text) {
+      e.preventDefault();
+      emptyBox();
+      return;
+    }
+    if (e.key !== 'Enter' || e.nativeEvent.isComposing) return;
+    // A textarea would add a line: Enter submits instead, as a one-line search field does.
+    e.preventDefault();
+    if (e.shiftKey) ask();
+    else if (!text.trim()) clear();
+    else if (!cannotSubmit) e.currentTarget.form?.requestSubmit();
+  };
+
+  // The box grows with the text. Measured at height auto with the transition off, then set back and moved to the
+  // new height with the transition on, so it animates from one pixel height to the next (CSS caps it at six lines).
+  const field = useRef<HTMLTextAreaElement>(null);
+  const fit = useCallback(() => {
+    const el = field.current;
+    if (!el) return;
+    const from = el.style.height;
+    el.style.transition = 'none';
+    el.style.height = 'auto';
+    const content = el.scrollHeight;
+    const to = `${content}px`;
+    // Scrolling only past the CSS cap: no scrollbar flashes while the box grows towards a height it can reach.
+    const cap = parseFloat(getComputedStyle(el).maxHeight);
+    el.style.overflowY = Number.isFinite(cap) && content > cap ? 'auto' : 'hidden';
+    el.style.height = from;
+    void el.offsetHeight;
+    el.style.transition = '';
+    el.style.height = to;
+  }, []);
+  useLayoutEffect(fit, [text, fit]);
+  useEffect(() => {
+    window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+  }, [fit]);
+
+  // "/" from anywhere on the page puts the cursor in the box, as on most search sites.
+  useEffect(() => {
+    const onSlash = (e: globalThis.KeyboardEvent) => {
+      if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey || typingIn(e.target)) return;
+      e.preventDefault();
+      field.current?.focus();
+    };
+    document.addEventListener('keydown', onSlash);
+    return () => document.removeEventListener('keydown', onSlash);
+  }, []);
+  const left = MAX_QUESTION - text.length;
 
   return (
     <div className={`one-box${hero ? ' is-hero' : ''}`}>
@@ -112,11 +168,26 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
           </svg>
         </span>
         <label htmlFor="q" className="sr-only">{t('search.label')}</label>
-        <input id="q" name="q" type="search" value={text} maxLength={MAX_QUESTION} autoComplete="off"
-          placeholder={t(hero ? 'search.heroPlaceholder' : 'search.placeholder')} onChange={(e) => onType(e.target.value)} onKeyDown={onKey} />
+        <textarea ref={field} id="q" name="q" rows={1} className="searchbox-field"
+          value={text} maxLength={MAX_QUESTION} autoComplete="off" spellCheck={false}
+          placeholder={t(hero ? 'search.heroPlaceholder' : 'search.placeholder')} onChange={(e) => onType(e.target.value)} onKeyDown={onKey}
+          aria-describedby={left <= SHOW_LEFT_FROM ? 'q-left' : undefined} />
+        {left <= SHOW_LEFT_FROM && (
+          <span id="q-left" className={`searchbox-left${left === 0 ? ' is-full' : ''}`} aria-live="polite">
+            <span aria-hidden="true">{t('search.charsLeftShort', { count: left })}</span>
+            <span className="sr-only">{t('search.charsLeft', { count: left })}</span>
+          </span>
+        )}
+        {text ? (
+          <button type="button" className="searchbox-clear" aria-label={t('search.clear')} onClick={emptyBox}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+          </button>
+        ) : (
+          <kbd className="searchbox-slash" aria-hidden="true" title={t('search.slashHint')}>/</kbd>
+        )}
         {/* One button whose job follows the text: a few words search, a sentence asks. A new question replaces one
             still being answered. */}
-        <button type="submit" className="btn btn-primary" disabled={asking ? !clampQuestion(text) : !text.trim()}>
+        <button type="submit" className="btn btn-primary" disabled={cannotSubmit}>
           {asking ? t('guide.ask') : t('search.submit')}
           <kbd className="enter-key" aria-hidden="true">↵</kbd>
         </button>

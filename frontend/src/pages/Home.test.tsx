@@ -45,7 +45,7 @@ describe('home: only the home page', () => {
   it('Enter in the box opens the results on /search', async () => {
     const m = mockApi();
     const { router, params } = renderApp('/');
-    await userEvent.type(screen.getByRole('searchbox'), 'mcp github{Enter}');
+    await userEvent.type(screen.getByRole('textbox', { name: 'Search AI resources' }), 'mcp github{Enter}');
     await waitFor(() => expect(router.state.location.pathname).toBe('/search'));
     expect(params().get('q')).toBe('mcp github');
     expect(await screen.findByRole('link', { name: 'Acme Translator' })).toBeInTheDocument();
@@ -55,7 +55,7 @@ describe('home: only the home page', () => {
   it('typing on the home page does not move to /search before Enter', async () => {
     mockApi();
     const { router } = renderApp('/');
-    await userEvent.type(screen.getByRole('searchbox'), 'rag library');
+    await userEvent.type(screen.getByRole('textbox', { name: 'Search AI resources' }), 'rag library');
     await act(async () => { await new Promise((r) => setTimeout(r, 900)); });
     expect(router.state.location.pathname).toBe('/');
   });
