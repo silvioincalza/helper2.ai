@@ -1,4 +1,4 @@
-import { useId, useMemo, useRef, useState } from 'react';
+import { useId, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { api, ApiError } from '@/api/client';
@@ -28,7 +28,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useTitle } from '@/hooks/useTitle';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
 import { SAVED_ENABLED } from '@/lib/features';
-import { displayHost, guidePicks, picksById, selectedResult, type GuidePick } from '@/lib/selection';
+import { displayHost, guidePicks, picksById, picksFirst, selectedResult, type GuidePick } from '@/lib/selection';
 import { activeFilterCount, askedQuestion, clampQuestion, clearFilters, homeParams, isSelected, parseSearchParams, patchState, toApiParams, toggleFilter, type ResultsView, type SearchState, resourcePath } from '@/lib/searchState';
 import { useSources } from '@/context/SourcesContext';
 import { ListedBy, ResultFacts } from './ResultFacts';
@@ -39,8 +39,10 @@ const WIDE = '(min-width: 861px)';
 
 /**
  * Results page (ADR 0040, 3–7): the box, the guide picks bar, type tabs, the result list and a preview of
- * the selected result; the sources that answered at the bottom. The list is search ranking and never re-orders: the
- * guide's picks get a badge and their reason in their own rows. The selected result is `id` in the URL.
+ * the selected result; the sources that answered at the bottom. When the guide answers, its picks on this page move
+ * to a "Guide picks" group at the top of the list, in the guide's order, each with its badge and reason; the other
+ * results keep the search order under them. The selected result is `id` in the URL, else the guide's pick #1, else
+ * the first row.
  */
 export function Results() {
   const { t } = useTranslation();
@@ -57,7 +59,7 @@ export function Results() {
   const words = state.q.split(/\s+/).filter(Boolean).length;
   // One guide stream for the page: the bar shows it, the rows read their badges from it.
   const stream = useGuideStream();
-  const picks = useMemo(() => picksById(guidePicks(stream.answer)), [stream.answer]);
+  const picks = useMemo(() => guidePicks(stream.answer), [stream.answer]);
 
   const apiParams = toApiParams(state);
   const key = apiParams.toString();
@@ -109,14 +111,17 @@ export function Results() {
 }
 
 function ResultsBody({ res, state, update, retry, picks, ask }: {
-  res: SearchResponse; state: SearchState; update: (s: SearchState) => void; retry: () => void; picks: ReadonlyMap<string, GuidePick>;
+  res: SearchResponse; state: SearchState; update: (s: SearchState) => void; retry: () => void; picks: readonly GuidePick[];
   /** Asks the guide the same words; absent when the guide is already asked. */
   ask?: (() => void) | undefined;
 }) {
   const { t } = useTranslation();
   const [sp, setSp] = useSearchParams();
   const wide = useMediaQuery(WIDE);
-  const selected = selectedResult(res.results, sp.get('id'));
+  const byId = useMemo(() => picksById(picks), [picks]);
+  const { picked, rest } = useMemo(() => picksFirst(res.results, picks), [res.results, picks]);
+  // An id the user chose (a click, a shared link, a reload) wins; otherwise the guide's pick #1 opens in the preview.
+  const selected = selectedResult(res.results, sp.get('id'), picked[0]?.id);
   const select = (id: string) => setSp((prev) => { const next = new URLSearchParams(prev); next.set('id', id); return next; }, { replace: true, preventScrollReset: true });
   const [guide, setGuide] = useState<string | null>(null);
   const openGuide = useMemo(() => ({ openId: guide, setOpenId: setGuide }), [guide]);
@@ -132,6 +137,10 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
     update(patchState(state, { page }));
     count.current?.focus();
   };
+  const list = useRef<HTMLDivElement>(null);
+  useKeepRowFocus(list, [...picked, ...rest].map((c) => c.id).join(' '));
+  const pickedId = useId();
+  const restId = useId();
   const nothingSearched = res.results.length === 0 && (res.coverage.sourcesSucceeded === 0 || res.notices.some((n) => n.code === 'ALL_SOURCES_FAILED'));
 
   return (
@@ -148,7 +157,7 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
       </nav>
 
       <details className="h2-results__filters">
-        <summary>{t('filters.title')}</summary>
+        <summary className="h2-fold-toggle">{t('filters.title')} <Icon name="chevron" /></summary>
         <div className="results-head">
           <div className="view-switch" role="group" aria-label={t('timeline.viewLabel')}>
             {(['list', 'timeline'] as ResultsView[]).map((v) => (
@@ -192,6 +201,7 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
           <span>({t('results.lexiconNote')})</span>
         </p>
       )}
+
       {useCaseHints.length > 0 && (
         <div className="hints">
           <span className="muted small">{t('results.suggestUseCase')}</span>{' '}
@@ -236,29 +246,26 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
         <ResultsTimeline cards={res.results} sourceStatuses={res.sources} />
       ) : (
         <div className="h2-split">
-          <div className="h2-list">
+          <div className="h2-list" ref={list}>
             <p ref={count} tabIndex={-1} className="h2-list__count" aria-live="polite">{t('results.count', { count: res.total })}</p>
-            <ul className="plain-list" aria-label={t('results.title')}>
-              {res.results.map((c) => {
-                const on = c.id === selected?.id;
-                return (
-                  <li key={c.id}>
-                    <SelectableRow selected={on} onSelect={() => select(c.id)}>
-                      <RowContent card={c} pick={picks.get(c.id)} />
-                    </SelectableRow>
-                    {on && !wide && (
-                      <div className="h2-inline-preview">
-                        <Preview card={c} pick={picks.get(c.id)} stale={stale} inline />
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
+            {/* Here from the first render, so the move of the picks to the top is said once, politely. */}
+            <p className="sr-only" role="status">{picked.length > 0 ? t('results.picksOnTop', { count: picked.length }) : ''}</p>
+            {picked.length > 0 && (
+              <>
+                <p id={pickedId} className="h2-list__group">{t('results.picksGroup')}</p>
+                <ul className="plain-list" aria-labelledby={pickedId}>
+                  {picked.map((c) => <ResultRow key={c.id} card={c} pick={byId.get(c.id)} selected={c.id === selected?.id} onSelect={select} inline={!wide} stale={stale} />)}
+                </ul>
+                <p id={restId} className="h2-list__group">{t('results.moreResults')}</p>
+              </>
+            )}
+            <ul className="plain-list" {...(picked.length > 0 ? { 'aria-labelledby': restId } : { 'aria-label': t('results.title') })}>
+              {rest.map((c) => <ResultRow key={c.id} card={c} pick={undefined} selected={c.id === selected?.id} onSelect={select} inline={!wide} stale={stale} />)}
             </ul>
           </div>
           {wide && selected && (
             <article className="h2-preview" aria-labelledby="h2-preview-title">
-              <Preview card={selected} pick={picks.get(selected.id)} stale={stale} />
+              <Preview card={selected} pick={byId.get(selected.id)} stale={stale} />
             </article>
           )}
         </div>
@@ -279,6 +286,47 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
   );
 }
 
+/**
+ * When the list changes order (the guide's picks move to the top), React moves or remounts the rows and the focused
+ * row can lose focus. Focus goes back to the row that had it, without scrolling, so a keyboard user keeps their place.
+ */
+function useKeepRowFocus(list: RefObject<HTMLDivElement | null>, order: string) {
+  const focused = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    const el = list.current;
+    if (!el) return undefined;
+    const onIn = (e: FocusEvent) => { focused.current = (e.target as HTMLElement).closest('li[data-id]')?.getAttribute('data-id') ?? null; };
+    const onOut = (e: FocusEvent) => { if (e.relatedTarget instanceof Node && !el.contains(e.relatedTarget)) focused.current = null; };
+    el.addEventListener('focusin', onIn);
+    el.addEventListener('focusout', onOut);
+    return () => { el.removeEventListener('focusin', onIn); el.removeEventListener('focusout', onOut); };
+  }, [list]);
+  useLayoutEffect(() => {
+    const id = focused.current;
+    const active = document.activeElement;
+    if (!id || (active && active !== document.body)) return;
+    list.current?.querySelector<HTMLElement>(`li[data-id="${CSS.escape(id)}"] .h2-select-row`)?.focus({ preventScroll: true });
+  }, [list, order]);
+}
+
+/** A result in the list: its row, and under it the preview when the preview opens inside the list (narrow screens). */
+function ResultRow({ card, pick, selected, onSelect, inline, stale }: {
+  card: ResultCard; pick: GuidePick | undefined; selected: boolean; onSelect: (id: string) => void; inline: boolean; stale: ReadonlySet<string>;
+}) {
+  return (
+    <li data-id={card.id}>
+      <SelectableRow selected={selected} onSelect={() => onSelect(card.id)}>
+        <RowContent card={card} pick={pick} />
+      </SelectableRow>
+      {selected && inline && (
+        <div className="h2-inline-preview">
+          <Preview card={card} pick={pick} stale={stale} inline />
+        </div>
+      )}
+    </li>
+  );
+}
+
 /** One row: type, host, the pick badge, the title and two lines of the source's own text; a pick adds its reason. */
 function RowContent({ card, pick }: { card: ResultCard; pick: GuidePick | undefined }) {
   const { t } = useTranslation();
@@ -295,7 +343,8 @@ function RowContent({ card, pick }: { card: ResultCard; pick: GuidePick | undefi
           ? <span className="h2-row__text"><span className="h2-row__ai"><OriginLabel origin={card.descriptionOrigin} /></span> <span {...aiMark()}>{card.description}</span></span>
           : <span className="h2-row__text">{card.description}</span>
       )}
-      {pick && (
+      {/* The AI-written label only ever comes with the text it labels. */}
+      {pick?.reason && (
         <span className="h2-row__reason">
           <span className="h2-row__ai">{t('picks.aiWritten')}</span> <span {...aiMark()}>{pick.reason}</span>
         </span>
@@ -339,16 +388,23 @@ function Preview({ card, pick, stale, inline = false }: { card: ResultCard; pick
         <div id={bodyId} hidden={!guide.open}>{guide.open && <GuideBody id={card.id} title={card.title} level={3} />}</div>
       )}
 
-      <SecTag className="h2-pv__sec">{t('results.whyMatches')}</SecTag>
       {pick ? (
         <>
+          <SecTag className="h2-pv__sec">{t('results.whyPicked')}</SecTag>
+          <PickReason pick={pick} />
+          <p className="h2-pv__proof-label">{t('guide.evidence')}</p>
           <ProofQuote text={card.description ?? ''} quote={pick.quote} source={host} />
-          <p className="h2-pv__reason"><span className="h2-row__ai">{t('picks.aiWritten')}</span> <span {...aiMark()}>{pick.reason}</span></p>
+          <PickChecks checks={pick.checks} />
         </>
-      ) : card.description ? (
-        <p className="h2-pv__text" {...(isAiOrigin(card.descriptionOrigin) ? aiMark() : {})}>{card.description}</p>
       ) : (
-        <p className="muted">{t('card.noDescription')}</p>
+        <>
+          <SecTag className="h2-pv__sec">{t('results.about')}</SecTag>
+          {card.description ? (
+            <p className="h2-pv__text" {...(isAiOrigin(card.descriptionOrigin) ? aiMark() : {})}>{card.description}</p>
+          ) : (
+            <p className="muted">{t('card.noDescription')}</p>
+          )}
+        </>
       )}
 
       <SecTag className="h2-pv__sec">{t('results.facts')}</SecTag>
@@ -360,5 +416,44 @@ function Preview({ card, pick, stale, inline = false }: { card: ResultCard; pick
       <SecTag className="h2-pv__sec">{t('results.timeline')}</SecTag>
       <Timeline timeline={card.timeline} compact />
     </div>
+  );
+}
+
+/**
+ * The guide's reason for a pick, AI-written: labelled on screen and marked in the HTML (ADR 0038), with what the
+ * second model call made of it. A reason that call removed is not shown; the line says why.
+ */
+function PickReason({ pick }: { pick: GuidePick }) {
+  const { t } = useTranslation();
+  if (pick.reasonCheck === 'REMOVED' || !pick.reason) {
+    return <p className="h2-pv__check">{t(pick.reasonCheck === 'REMOVED' ? 'guide.reasonRemoved' : 'results.noReason')}</p>;
+  }
+  return (
+    <>
+      <p className="h2-pv__reason"><span className="h2-row__ai">{t('picks.aiWritten')}</span> <span {...aiMark()}>{pick.reason}</span></p>
+      <p className="h2-pv__check">{t(pick.reasonCheck === 'SUPPORTED' ? 'results.reasonChecked' : 'results.reasonNotChecked')}</p>
+    </>
+  );
+}
+
+/** The user's requirements, checked against the source: confirmed with the source's words, or not confirmed. */
+function PickChecks({ checks }: { checks: GuidePick['checks'] }) {
+  const { t } = useTranslation();
+  if (checks.length === 0) return null;
+  return (
+    <>
+      {/* Art. 50: the planner wrote the requirements; labelled on screen once, marked on each. */}
+      <p className="h2-pv__proof-label">{t('guide.checksLabel')} <span className="h2-row__ai">{t('guide.requirementsAi')}</span></p>
+      <ul className="plain-list h2-pv__checks" aria-label={t('guide.checksLabel')}>
+        {checks.map((c) => (
+          <li key={c.constraint} className={c.status === 'CONFIRMED' ? 'check-ok' : 'check-unknown'}>
+            {/* Status in words, never colour alone (WCAG 1.4.1). */}
+            <Icon name={c.status === 'CONFIRMED' ? 'check' : 'info'} />{' '}
+            <strong {...aiMark()}>{c.constraint}</strong>:{' '}
+            {c.status === 'CONFIRMED' ? <>{t('guide.checkConfirmed')} <q>{c.quote}</q></> : t('guide.checkNotConfirmed')}
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }

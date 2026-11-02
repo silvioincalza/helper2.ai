@@ -1,24 +1,29 @@
+import { useId } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { ApiError } from '@/api/client';
 import type { GuideResponse } from '@/api/types';
 import { PicksBar, type PicksState } from '@/components/ui/PicksBar';
+import { Icon } from '@/components/Icon';
 import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
 import type { GuideStream } from '@/hooks/useGuideStream';
 import { useRetry } from '@/hooks/useRetry';
+import { aiMark } from '@/lib/aiMark';
 import { guidePicks } from '@/lib/selection';
 import { GuideAnswer, noPickReason } from './GuideAnswer';
 import { progressOf, readingParts } from './reading';
+import type { Refine } from './types';
 import { WebSearchesLeft } from './WebSearchesLeft';
 import { resourcePath } from '@/lib/searchState';
 
 /**
  * The picks bar for the question in the URL: reading, then the picks, or one line when there is none. While the guide
  * works, the line says how it read the question and how many results it reads, as the steps arrive. With no AI pick
- * the line says why (ADR 0040, 6), and the whole answer stays folded under "How the guide decided", so the results
- * stay in view. A pick that is not on this page of results links to its own page. Try again moves
- * focus to the bar's heading. [webLine] keeps the place of "web searches left" while the guide reads.
+ * the line says why in a few words (ADR 0040, 6), with the next steps: ask again without one of the requirements, or
+ * rephrase. How the guide decided stays folded under the bar. A pick that is not on this page of results links to its
+ * own page. Try again moves focus to the bar's heading. [webLine] keeps the place of "web searches left" while the
+ * guide reads.
  */
 export function GuidePicks({ stream, loaded, webLine }: { stream: GuideStream; loaded: ReadonlySet<string>; webLine: boolean }) {
   const { t } = useTranslation();
@@ -33,6 +38,7 @@ export function GuidePicks({ stream, loaded, webLine }: { stream: GuideStream; l
     <div className="h2-results__guide">
       {error === null && (
         <PicksBar state={state} titleRef={focusRef}>
+          {state.kind === 'none' ? answer?.model != null && <NoPickNext answer={answer} onRefine={refine} /> : (
           <ul className="h2-picks__chips">
             {picks.map((p) => (
               <li key={p.resourceId}>
@@ -48,6 +54,7 @@ export function GuidePicks({ stream, loaded, webLine }: { stream: GuideStream; l
               </li>
             ))}
           </ul>
+          )}
         </PicksBar>
       )}
       {/* While the guide reads, a blank line of the same style holds the place of "web searches left", which comes with
@@ -77,13 +84,42 @@ function picksState(stream: GuideStream, pickCount: number, t: TFunction): Picks
   return { kind: 'reading', candidates, understood };
 }
 
-/** The whole answer (checks, comparison, how it was made), folded away under the picks bar. */
-function FullAnswer({ answer, onRefine }: { answer: GuideResponse; onRefine: Parameters<typeof GuideAnswer>[0]['onRefine'] }) {
+/**
+ * The next steps when the guide found nothing that fits: ask again without one requirement (the same structured
+ * removal as ✕ in "Understood as"), or rephrase in the box. The requirements are AI-written: marked on each, labelled
+ * once (ADR 0038).
+ */
+function NoPickNext({ answer, onRefine }: { answer: GuideResponse; onRefine: Refine }) {
   const { t } = useTranslation();
+  const requirements = readingParts(answer, answer.generatedAt.slice(0, 10), t).filter((p) => p.ai && p.drop);
+  const rephrase = () => {
+    const box = document.getElementById('q');
+    if (box instanceof HTMLTextAreaElement) { box.focus(); box.select(); }
+  };
+  return (
+    <div className="h2-picks__next">
+      {requirements.map((p) => (
+        <button key={p.key} type="button" className="btn" onClick={() => onRefine({ drop: [p.drop!] })}>
+          {/* One text run: the button lays out its children with a gap. */}
+          <span>{t('picks.askWithout')} “<span {...aiMark()}>{p.label}</span>”</span>
+        </button>
+      ))}
+      <button type="button" className="btn" onClick={rephrase}>{t('picks.rephrase')}</button>
+      {requirements.length > 0 && <span className="h2-row__ai">{t('guide.requirementsAi')}</span>}
+    </div>
+  );
+}
+
+/** How the guide decided, folded away under the picks bar. */
+function FullAnswer({ answer, onRefine }: { answer: GuideResponse; onRefine: Refine }) {
+  const { t } = useTranslation();
+  const summaryId = useId();
   return (
     <details className="h2-results__full">
-      <summary>{t('results.fullAnswer')}</summary>
-      <GuideAnswer answer={answer} onRefine={onRefine} />
+      <summary id={summaryId} className="h2-fold-toggle">{t('results.fullAnswer')} <Icon name="chevron" /></summary>
+      <section aria-labelledby={summaryId}>
+        <GuideAnswer answer={answer} onRefine={onRefine} />
+      </section>
     </details>
   );
 }
