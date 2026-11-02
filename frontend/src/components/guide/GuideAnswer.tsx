@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import type { GuideResponse } from '@/api/types';
 import { Icon } from '@/components/Icon';
@@ -8,6 +9,21 @@ import { Pick } from './Pick';
 import { PromptBox } from './PromptBox';
 import type { Refine } from './types';
 import { Understood } from './Understood';
+
+/**
+ * Why an answer has no AI pick, in the words the full answer uses: today's AI answers are used, the model is not
+ * available, it found nothing that fits, or the subject was not found. Undefined: no reason beyond "no pick".
+ */
+export function noPickReason(answer: GuideResponse, t: TFunction): string | undefined {
+  if (answer.notices.some((n) => n.code === 'GUIDE_DAILY_QUOTA') && answer.status === 'LLM_UNAVAILABLE') {
+    return t('guide.notice.GUIDE_DAILY_QUOTA');
+  }
+  if (answer.status === 'LLM_UNAVAILABLE') return t('guide.status.LLM_UNAVAILABLE');
+  const notFound = answer.notices.find((n) => n.code === 'GUIDE_SUBJECT_NOT_FOUND');
+  if (notFound) return notFound.message;
+  if (answer.model != null && answer.recommendations.length > 0) return t('guide.noFit');
+  return undefined;
+}
 
 /**
  * The AI guide's answer, proof first: how the answer was made (from the response's own counts), then the

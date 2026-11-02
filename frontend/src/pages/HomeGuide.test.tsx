@@ -134,7 +134,10 @@ describe('guide on the one page', () => {
     mockApi({ 'POST /guide/stream': () => sse(makeGuide({ status: 'LLM_UNAVAILABLE', model: null, aiContent: null, prompt: null, recommendations: [fallback] })) });
     renderApp('/');
     await ask('an MCP server for Postgres');
-    expect(await screen.findByText(/The AI model is not available right now/)).toBeInTheDocument();
+    // No pick: the bar's one line says why; the whole answer stays folded, so the results stay in view.
+    const bar = await screen.findByRole('region', { name: 'Guide picks' });
+    expect(await within(bar).findByText(/The AI model is not available right now/)).toBeInTheDocument();
+    expect(screen.getByText('How the guide decided').closest('details')).not.toHaveAttribute('open');
     const card = screen.getByRole('link', { name: 'Postgres MCP' }).closest('li');
     expect(card).not.toBeNull();
     expect(within(card as HTMLElement).getByText('Top search result, no AI reasoning')).toBeInTheDocument();
@@ -154,7 +157,8 @@ describe('guide on the one page', () => {
     });
     renderApp('/');
     await ask('an MCP server for Postgres');
-    expect(await screen.findByText(/You have used today's AI answers/)).toBeInTheDocument();
+    const bar = await screen.findByRole('region', { name: 'Guide picks' });
+    expect(await within(bar).findByText(/You have used today's AI answers/)).toBeInTheDocument();
     expect(screen.queryByText(/The AI model is not available right now/)).not.toBeInTheDocument();
     expect(screen.getByText('Top search result, no AI reasoning')).toBeInTheDocument();
   });
@@ -165,7 +169,8 @@ describe('guide on the one page', () => {
     mockApi({ 'POST /guide/stream': () => sse(makeGuide({ status: 'PARTIAL', rejected: 0, recommendations: [fallback] })) });
     renderApp('/');
     await ask('a quantum blockchain toaster that writes poems');
-    expect(await screen.findByText(/The AI found nothing in the results that clearly fits/)).toBeInTheDocument();
+    const bar = await screen.findByRole('region', { name: 'Guide picks' });
+    expect(await within(bar).findByText(/The AI found nothing in the results that clearly fits/)).toBeInTheDocument();
     expect(screen.getByText('Top search result, no AI reasoning')).toBeInTheDocument();
     expect(screen.queryByText(/Model's explanation/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Some AI suggestions were removed/)).not.toBeInTheDocument();

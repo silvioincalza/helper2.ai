@@ -138,12 +138,14 @@ describe('results: list and preview', () => {
     expect(await screen.findByText('No pick: no result had a sentence that proves it')).toBeInTheDocument();
   });
 
-  it('an answer with no AI pick but plain recommendations is shown in full, not as "no pick"', async () => {
+  it('an answer with no AI pick says why in the bar\'s one line and keeps the rest folded, so the results stay in view', async () => {
     const plain = { ...guide().recommendations[0]!, aiReasoned: false };
     mockApi({ 'GET /search': () => search(), 'POST /guide/stream': () => sse({ ...guide(), recommendations: [plain] }) });
     renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
-    expect(await screen.findByRole('link', { name: /Postgres MCP/, hidden: false })).toBeInTheDocument();
-    expect(screen.queryByText('No pick: no result had a sentence that proves it')).not.toBeInTheDocument();
+    const bar = await screen.findByRole('region', { name: 'Guide picks' });
+    expect(await within(bar).findByText(/The AI found nothing in the results that clearly fits/)).toBeInTheDocument();
+    expect(bar).toHaveClass('is-none');
+    expect(screen.getByText('How the guide decided').closest('details')).not.toHaveAttribute('open');
   });
 
   it('a pick that is not on this page of results links to its own page', async () => {
