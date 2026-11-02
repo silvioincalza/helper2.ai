@@ -6,7 +6,7 @@ The design system for every part of Helper2.ai: the search-and-ask box, results,
 
 1. **One entry point.** One box: the hero of the home page, in the header everywhere else. Typing searches live; one button changes its job with the text (a few words search, four or more ask the guide), and Shift+Enter always asks. Never add a second search field, a scope switch or a mode switch.
 2. **Show where every fact came from.** Each result, card, fact and pick names its source. A value no source stated reads **Unknown**, in `not-stated`. Dates are the source's own; otherwise "First seen" with the date Helper2.ai first saw it.
-3. **Checked versus not checked.** A guide quote the validator matched word for word sits on `quote-bg` with a **Quote checked** badge (`checked-bg` / `checked-ink`). The model's own reason is always labeled "Model's explanation (not checked)" and is never styled like the quote.
+3. **Checked versus not checked.** A guide quote the validator matched word for word sits on `quote-bg` under "Evidence, checked word for word in the resource's own text". The model's own reason is always labelled "AI-written", says if a second model call checked it, and is never styled like the quote.
 4. **State in words, not color alone.** Every status (source answered, cached, rate-limited, failed; verified, conflicting, rejected) carries a word and an icon. Color only repeats it.
 5. **Editorial voice, tool behavior.** Space Grotesk (`display`) for page and section headings, board and result titles, and quotes. Inter (`sans`) for every control and all running text. JetBrains Mono (`mono`) for resource names and source status.
 6. **Quiet surfaces, one accent.** Saffron `accent` marks the one primary action per area. Selection uses `selected` (ink), so state and action never look alike.
@@ -40,7 +40,7 @@ The design system for every part of Helper2.ai: the search-and-ask box, results,
 - **Focus:** a 3px `focus` outline with 2px offset on every control.
 - **Elevation:** none. Objects are set apart by `border`, never by shadow.
 - **Width:** the page column stops at `content-wide` (1240px), with 32px gutters, 16px below `bp-small`.
-- **Themes:** light and dark; every token has both values. The header button cycles system → light → dark: "system" follows the device setting and is the default.
+- **Themes:** light and dark; every token has both values. The header button switches light ↔ dark; light is the default, and the device setting is not followed.
 
 ## Type tags
 
@@ -101,7 +101,7 @@ Layout is flex and grid with `gap`. No fixed heights except the boards.
 - **Targets:** every control is at least `target-min` (44px). Calendar days are 40px; they sit in a grid with 2px gaps.
 - **One copy for assistive tech.** The board repeats its rows to loop; the copy is `aria-hidden` and its links are out of the tab order.
 - **Headings:** one `h1` per page. On the results page it is "Results for …" (visually hidden); the preview title is an `h2`.
-- **AI-written text is labelled** (EU AI Act Art. 50). The guide's reason sits next to a **Quote checked** badge or the "Model's explanation (not checked)" label, never alone. The HTML marks it machine-readable, as ADR 0038 says.
+- **AI-written text is labelled** (EU AI Act Art. 50). The guide's reason always carries its "AI-written" label, and the label never shows without the reason. The HTML marks it machine-readable, as ADR 0038 says.
 - **Colour is never alone.** Every pill has a word.
 
 ## Components

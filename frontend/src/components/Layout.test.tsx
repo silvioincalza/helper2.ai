@@ -18,6 +18,34 @@ describe('layout', () => {
     expect(screen.queryByRole('link', { name: 'Admin' })).not.toBeInTheDocument();
   });
 
+  it('on a small screen the menu button opens and closes the pages and sign-in; Escape and a new page close it', async () => {
+    mockApi({ 'GET /me': () => ANON });
+    const user = userEvent.setup();
+    renderApp('/');
+    const header = document.querySelector<HTMLElement>('header.site-header')!;
+    const button = within(header).getByRole('button', { name: 'Menu' });
+    const panel = document.getElementById('site-menu')!;
+    expect(button).toHaveAttribute('aria-expanded', 'false');
+    expect(button).toHaveAttribute('aria-controls', 'site-menu');
+    expect(panel).not.toHaveClass('is-open');
+    // The panel holds the pages and the sign-in.
+    expect(within(panel).getByRole('navigation', { name: 'Main' })).toBeInTheDocument();
+    expect(await within(panel).findByRole('link', { name: 'Sign in with GitHub' })).toBeInTheDocument();
+
+    await user.click(button);
+    expect(button).toHaveAttribute('aria-expanded', 'true');
+    expect(panel).toHaveClass('is-open');
+    await user.keyboard('{Escape}');
+    expect(button).toHaveAttribute('aria-expanded', 'false');
+    expect(button).toHaveFocus();
+
+    await user.click(button);
+    await user.click(within(panel).getByRole('link', { name: 'Mission' }));
+    await screen.findByRole('heading', { level: 1, name: 'Our mission' });
+    expect(button).toHaveAttribute('aria-expanded', 'false');
+    expect(panel).not.toHaveClass('is-open');
+  });
+
   it('the removed models page is not a route any more', async () => {
     mockApi();
     renderApp('/models');
@@ -73,20 +101,16 @@ describe('layout', () => {
     }
   });
 
-  it('the theme button cycles follow system, light and dark, and remembers a fixed choice', async () => {
+  it('the theme is light by default; the button switches light and dark and remembers the choice', async () => {
     mockApi();
     document.documentElement.dataset.theme = 'light';
     renderApp('/');
-    await userEvent.click(screen.getByRole('button', { name: 'Theme: follow system. Change to light' }));
-    expect(document.documentElement.dataset.theme).toBe('light');
-    expect(window.localStorage.getItem(THEME_KEY)).toBe('light');
     await userEvent.click(screen.getByRole('button', { name: 'Theme: light. Change to dark' }));
     expect(document.documentElement.dataset.theme).toBe('dark');
     expect(window.localStorage.getItem(THEME_KEY)).toBe('dark');
-    await userEvent.click(screen.getByRole('button', { name: 'Theme: dark. Change to follow system' }));
-    expect(window.localStorage.getItem(THEME_KEY)).toBeNull();
-    expect(document.documentElement.dataset.theme).toBe('light'); // jsdom's device setting
-    expect(screen.getByRole('button', { name: 'Theme: follow system. Change to light' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Theme: dark. Change to light' }));
+    expect(document.documentElement.dataset.theme).toBe('light');
+    expect(window.localStorage.getItem(THEME_KEY)).toBe('light');
     delete document.documentElement.dataset.theme;
   });
 
@@ -95,7 +119,7 @@ describe('layout', () => {
     window.localStorage.setItem(THEME_KEY, 'dark');
     renderApp('/');
     await settle();
-    expect(screen.getByRole('button', { name: 'Theme: dark. Change to follow system' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Theme: dark. Change to light' })).toBeInTheDocument();
   });
 
   it('moving to another page focuses its heading and announces it; new search params do not move focus', async () => {

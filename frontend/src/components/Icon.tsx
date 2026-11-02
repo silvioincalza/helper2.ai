@@ -12,6 +12,7 @@ const PATHS: Record<string, string> = {
   link: 'M14 5h5v5M19 5l-8 8M18 14v5H5V6h5',
   refresh: 'M20 5v5h-5M4 19v-5h5M5.6 9A7 7 0 0118 7l2 3M18.4 15A7 7 0 016 17l-2-3',
   filter: 'M4 5h16l-6 8v6l-4-2v-4L4 5z',
+  chevron: 'M6 9l6 6 6-6',
   sparkle: 'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3zM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15z',
 };
 

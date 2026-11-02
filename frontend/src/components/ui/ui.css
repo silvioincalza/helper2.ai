@@ -49,6 +49,8 @@
 .h2-picks__line { flex-basis: 100%; margin: 0; font: 400 14px/21px var(--font-sans); color: var(--ink-2); }
 .h2-picks.is-none .h2-picks__line { flex-basis: auto; }
 .h2-picks__list { flex-basis: 100%; min-width: 0; }
+/* No pick: the next steps follow the line, on the same row when they fit. */
+.h2-picks__next { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 
 /* Type tabs: a row of filter buttons with counts; the pressed one is underlined (results, saved). */
 .h2-tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--border); }

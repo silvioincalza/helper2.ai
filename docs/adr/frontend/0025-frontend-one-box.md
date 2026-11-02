@@ -50,8 +50,9 @@ screen reader, and in light and dark mode.
    WCAG 1.4.11. The home boards pause on hover, focus and tap and never move with reduced motion
    ([0040](0040-frontend-design.md)). Vitest runs axe-core smoke tests (`a11y.test.tsx`,
    color contrast excluded because jsdom cannot compute it).
-6. **Theme: system, light, dark.** One button cycles system → light → dark. A fixed choice is saved as `h2.theme`;
-   "system" removes it. `public/theme.js` sets `data-theme` before the first paint and follows the device while no choice is saved.
+6. **Theme: light and dark, light by default.** One button switches light ↔ dark; the choice is saved as `h2.theme`.
+   `public/theme.js` sets `data-theme` before the first paint: dark only when it was chosen, else light. The device
+   setting is not followed: the site looks the same for everyone until a visitor picks dark.
 7. **Shared data.** `SourcesContext` fetches `GET /api/v1/sources` once per page load for all pages. `PrivacyPage` names
    the contact `helper2ai@incalza.me`.
 8. **Bundle.** `routes.tsx` imports every page eagerly: the first visit loads one entry chunk, with no blank first
@@ -71,7 +72,8 @@ screen reader, and in light and dark mode.
 ## Alternatives considered
 - Separate search and guide pages — the user must choose a mode before typing.
 - `EventSource` for the stream — it only supports GET and reconnects by itself, which would ask the question again.
-- Only light and dark — users who follow the device setting would lose that.
+- Following the device setting ("system") — the first visit then depends on the device, and a third state on the
+  button is one more thing to read; the owner chose light for everyone by default.
 - Lazy pages (react-router `lazy`) — about 1.9 kB gzipped less on the home page, but only with a rolldown-specific
   chunk group in `vite.config.ts`; without it the first visit is larger than with eager pages. It also needs a
   hydrate fallback (a blank page until the chunk arrives) and one more request on a page's first visit.

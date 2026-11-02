@@ -1,7 +1,8 @@
 # Flowchart: the design from the home page to the guide picks. An empty / is the home page (hero, News and Events
 # boards); a search opens /search, and /?q= names /search as canonical. The list shows at once; the guide runs only
 # for a question (4+ words or Shift+Enter): its picks bar is reserved, the answer arrives over SSE (picks or no pick),
-# badges stay in place with no re-order, and the selected result is kept in the URL with replace.
+# the picks move to the top of the list in one update and the preview opens on pick #1 unless the URL names a result;
+# with no pick the bar offers the next steps. The selected result is kept in the URL with replace.
 # Source of truth: docs/adr/frontend/0040-frontend-design.md; frontend/src/pages/HomePage.tsx, pages/Home.tsx,
 #   components/home/HomeBoard.tsx, NewsBoard.tsx, EventsBoard.tsx, routes.tsx, components/OneBox.tsx,
 #   components/results/Results.tsx, lib/selection.ts, components/ui/PicksBar.tsx, hooks/useGuideStream.ts.
@@ -40,12 +41,12 @@ answer: Picks {
   class: group
   direction: down
   bar: "Bar shows #1 #2 #3,\nlabelled AI-written" {class: app}
-  badge: "Each pick gets \"Pick #n\"\nand its reason in its row" {class: app}
-  still: "List order unchanged" {class: end}
-  bar -> badge -> still
+  moved: "Picks move to a \"Guide picks\" group\nat the top, in the guide's order;\nthe rest follow in search order" {class: app}
+  onpick: "Preview opens on pick #1\n(an id in the URL wins)" {class: end}
+  bar -> moved -> onpick
 }
 
-none: "Bar shrinks to one line that says why;\nthe full answer stays folded" {class: end}
+none: "Bar: one line that says why,\n\"Ask without …\" per requirement,\n\"Rephrase\"; list order unchanged" {class: end}
 
 select: Selecting a result {
   class: group
@@ -54,7 +55,7 @@ select: Selecting a result {
   url: "replace ?q=…&id=…\n(no new Back step)" {class: app}
   known: "id in the results?" {class: decision}
   sel: "Select that row" {class: end}
-  first: "Select the first row" {class: end}
+  first: "Select pick #1,\nelse the first row" {class: end}
   tap -> url -> known
   known -> sel: yes
   known -> first: no
