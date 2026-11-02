@@ -21,6 +21,9 @@
 .h2-fold-toggle[aria-expanded='true'] .icon, details[open] > .h2-fold-toggle .icon { transform: rotate(180deg); }
 @media (prefers-reduced-motion: reduce) { .h2-fold-toggle .icon { transition: none; } }
 .h2-results__full > section { margin-top: var(--space-3); }
+/* Filters and the detected use cases share one row. */
+.h2-results__tools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-5); }
+.h2-results__tools .hints { margin: 0; }
 .h2-split { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-5); }
 .h2-list { flex: 1 1 380px; min-width: 0; max-width: 460px; }
 .h2-list > ul > li { margin-bottom: var(--space-1); }

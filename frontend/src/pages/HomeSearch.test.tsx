@@ -8,6 +8,8 @@ const url = '/search?q=translate&type=MODEL&license=unknown';
 
 /** The result list: a title also shows in the preview of the selected row, so find rows inside the list. */
 const results = async () => within(await screen.findByRole('list', { name: 'Search results' }));
+/** The filters are folded under "Filters", on the row with the use cases. */
+const openFilters = async () => userEvent.click(await screen.findByRole('button', { name: 'Filters', expanded: false }));
 
 describe('search results', () => {
   it('/?q= links still show the results, with the same query and filters, without the old path, and name /search as canonical', async () => {
@@ -71,6 +73,7 @@ describe('search results', () => {
       }),
     });
     renderApp('/search?q=translate');
+    await openFilters();
     const box = await within(await screen.findByRole('group', { name: /License/ })).findByRole('checkbox', { name: /Apache 2\.0/ });
     expect(box.id).toMatch(/^[^\s"/]+$/);
     expect(screen.getAllByText('Cache unavailable: every source was queried live for this search.')).toHaveLength(2);
@@ -129,6 +132,7 @@ describe('search results', () => {
     mockApi({ 'GET /search': async () => { if (n++ > 0) await gate; return makeSearch(); } });
     renderApp('/search?q=translate');
     await (await results()).findByText('Acme Translator');
+    await openFilters();
     await userEvent.click(within(screen.getByRole('group', { name: /Type/ })).getByRole('checkbox', { name: /Model/ }));
     await screen.findByText('Searching the listed sources…');
     expect(screen.getByRole('group', { name: /License/ })).toBeInTheDocument();
@@ -166,6 +170,7 @@ describe('search results', () => {
   it('filters update the URL and the unknown bucket is labelled Unknown', async () => {
     const { params } = (mockApi(), renderApp('/search?q=translate'));
     await (await results()).findByText('Acme Translator');
+    await openFilters();
     const licenseGroup = screen.getByRole('group', { name: /License/ });
     const unknownBox = within(licenseGroup).getByRole('checkbox', { name: /Unknown/ });
     await userEvent.click(unknownBox);
@@ -194,6 +199,7 @@ describe('search results', () => {
   it('updatedAfter date filter writes the URL', async () => {
     const { params } = (mockApi(), renderApp('/search?q=translate'));
     await (await results()).findByText('Acme Translator');
+    await openFilters();
     const input = screen.getByLabelText('Updated after');
     await userEvent.type(input, '2026-05-06');
     await waitFor(() => expect(params().get('updatedAfter')).toBe('2026-05-06'));
@@ -208,6 +214,7 @@ describe('search results', () => {
     const m = mockApi({ 'GET /search': () => makeSearch({ results: cards, total: 3 }) });
     const { params } = renderApp('/search?q=translate&sort=RECENTLY_UPDATED');
     await (await results()).findByText('New MCP');
+    await openFilters();
     await userEvent.click(screen.getByRole('button', { name: 'Timeline' }));
 
     await waitFor(() => expect(params().get('view')).toBe('timeline'));
@@ -233,6 +240,7 @@ describe('search results', () => {
     const m = mockApi();
     const { params } = renderApp('/search?q=translate');
     await (await results()).findByText('Acme Translator');
+    await openFilters();
     await userEvent.selectOptions(screen.getByLabelText('Sort by'), 'RECENTLY_UPDATED');
     await waitFor(() => expect(params().get('sort')).toBe('RECENTLY_UPDATED'));
     await waitFor(() => expect(m.callsTo('GET', '/search').some((c) => c.search.includes('sort=RECENTLY_UPDATED'))).toBe(true));
@@ -245,6 +253,7 @@ describe('search results', () => {
     mockApi({ 'GET /search': async () => { if (n++ > 0) await gate; return makeSearch(); } });
     renderApp('/search?q=translate');
     await (await results()).findByText('Acme Translator');
+    await openFilters();
     const select = screen.getByLabelText('Sort by');
     await userEvent.selectOptions(select, 'NEWEST');
     await screen.findByText('Searching the listed sources…');
@@ -286,6 +295,9 @@ describe('search results', () => {
     // Notices are localized by code; the backend message is only a fallback.
     expect(await screen.findByText('Cache unavailable: every source was queried live for this search.')).toBeInTheDocument();
     expect(screen.getByText(/Also searched for: translation, writing/)).toBeInTheDocument();
+    // The use cases are a labelled group on the same row as the Filters toggle.
+    const useCases = screen.getByRole('group', { name: 'Narrow by use case:' });
+    expect(useCases.parentElement).toContainElement(screen.getByRole('button', { name: 'Filters' }));
     await userEvent.click(screen.getByRole('button', { name: 'Translation' }));
     await waitFor(() => expect(params().getAll('useCase')).toEqual(['translation']));
   });

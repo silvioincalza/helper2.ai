@@ -349,6 +349,7 @@ describe('results: list and preview', () => {
     const { container } = renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
     await screen.findByRole('button', { name: '#1 Postgres MCP' });
     await userEvent.click(screen.getByText('How the guide decided'));
+    await userEvent.click(screen.getByRole('button', { name: 'Filters' }));
     await settle();
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
     expect(await axeViolations(container)).toEqual([]);

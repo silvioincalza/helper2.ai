@@ -139,6 +139,9 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
   };
   const list = useRef<HTMLDivElement>(null);
   useKeepRowFocus(list, [...picked, ...rest].map((c) => c.id).join(' '));
+  const filtersId = useId();
+  const hintsId = useId();
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const pickedId = useId();
   const restId = useId();
   const nothingSearched = res.results.length === 0 && (res.coverage.sourcesSucceeded === 0 || res.notices.some((n) => n.code === 'ALL_SOURCES_FAILED'));
@@ -156,8 +159,23 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
         ))}
       </nav>
 
-      <details className="h2-results__filters">
-        <summary className="h2-fold-toggle">{t('filters.title')} <Icon name="chevron" /></summary>
+      {/* One row: the Filters toggle, and the use cases the search detected as one-tap chips. */}
+      <div className="h2-results__tools">
+        <button type="button" className="h2-fold-toggle" aria-expanded={filtersOpen} aria-controls={filtersId} onClick={() => setFiltersOpen((o) => !o)}>
+          {t('filters.title')} <Icon name="chevron" />
+        </button>
+        {useCaseHints.length > 0 && (
+          <div className="hints" role="group" aria-labelledby={hintsId}>
+            <span id={hintsId} className="muted small">{t('results.suggestUseCase')}</span>
+            {useCaseHints.map((u) => (
+              <button key={u} type="button" className="chip" onClick={() => update(toggleFilter(state, 'useCase', u))}>
+                {t(`useCase.${u}`, { defaultValue: u })}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      <div id={filtersId} className="h2-results__filters" hidden={!filtersOpen}>
         <div className="results-head">
           <div className="view-switch" role="group" aria-label={t('timeline.viewLabel')}>
             {(['list', 'timeline'] as ResultsView[]).map((v) => (
@@ -180,7 +198,7 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
           )}
         </div>
         <FilterPanel facets={res.facets} state={state} sources={res.sources} onChange={update} />
-      </details>
+      </div>
       <ActiveFilters state={state} sources={res.sources} onChange={update} />
 
       {/* QUERY_EXPANDED is shown by the interpretation line below; other notices are localized by code. */}
@@ -200,17 +218,6 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
           {t('results.alsoSearched', { terms: res.interpretation.expandedTerms.join(', ') })}{' '}
           <span>({t('results.lexiconNote')})</span>
         </p>
-      )}
-
-      {useCaseHints.length > 0 && (
-        <div className="hints">
-          <span className="muted small">{t('results.suggestUseCase')}</span>{' '}
-          {useCaseHints.map((u) => (
-            <button key={u} type="button" className="chip" onClick={() => update(toggleFilter(state, 'useCase', u))}>
-              {t(`useCase.${u}`, { defaultValue: u })}
-            </button>
-          ))}
-        </div>
       )}
 
       <WebSearchesLeft feature="search" value={res.webSearches} />
