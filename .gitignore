@@ -49,3 +49,6 @@ deploy/k8s/*/app.env
 .claude/launch.json
 .claude/worktrees/
 CLAUDE.local.md
+
+# Local Terraform leftovers (the real config lives in incalza-me-infra); terraform.tfvars holds a Cloudflare token.
+deploy/k8s/terraform/
