@@ -36,10 +36,10 @@ the cluster with an address from the vSwitch range (the Proxmox node masquerades
 7. **Network policy.** Only the ingress controller's pods (`networkPolicy.ingressController`) may reach the app:
    the public port and the admin port.
 
-| Host | Port | Back office | Sign-in | ADMIN |
-|---|---|---|---|---|
-| helper2.ai, helper2.incalza.me (public) | 8080 | 404 | yes, returns to `/` | never |
-| admin.helper2.ai, helper2-admin.incalza.me (LAN and WireGuard) | 8082 | yes | yes, returns to `/admin` | allow-listed ids |
+| Host                                                           | Port | Back office | Sign-in                  | ADMIN            |
+|----------------------------------------------------------------|------|-------------|--------------------------|------------------|
+| helper2.ai, helper2.incalza.me (public)                        | 8080 | 404         | yes, returns to `/`      | never            |
+| admin.helper2.ai, helper2-admin.incalza.me (LAN and WireGuard) | 8082 | yes         | yes, returns to `/admin` | allow-listed ids |
 
 ## Consequences
 - The back office is closed at three layers: the network edge, the port filter and the role. Each one alone keeps
