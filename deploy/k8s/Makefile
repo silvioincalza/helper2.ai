@@ -38,11 +38,16 @@ help: ## this list
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
 
 # What the CI deploy job of ENV reads (helper2/kv ci/<env>): the deployer's kubeconfig and app.env.
-# Needs a BAO_TOKEN with helper2-write: `export BAO_TOKEN=$(bao login -method=oidc -path=oidc -token-only role=helper2-operator)`.
+# Needs helper2-write: uses BAO_TOKEN when set, else logs in (OIDC, browser) as helper2-operator.
+# BAO_ADDR must be a node over the mesh (the platform .env sets bao-01): the public bao.infra name
+# sits behind Cloudflare Access, which answers the CLI with 403.
 # Run once per env, and again after an app.env change or a token rotation.
 API_SERVER ?= https://10.0.0.40:6443
 credentials: check-env ## write ENV's deployer kubeconfig + app.env to OpenBao for CI
 	@set -euo pipefail; \
+	if [ -z "$${BAO_TOKEN:-}" ]; then \
+		BAO_TOKEN=$$(bao login -method=oidc -path=oidc -token-only role=helper2-operator); export BAO_TOKEN; \
+	fi; \
 	kc=$$(mktemp); trap 'rm -f $$kc' EXIT; \
 	sec=$$(kubectl -n $(NS) get secret deployer-token -o json); \
 	jq -r '.data["ca.crt"]' <<<"$$sec" | base64 -d > $$kc.ca; trap 'rm -f $$kc $$kc.ca' EXIT; \
