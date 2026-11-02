@@ -123,7 +123,7 @@ class GuideLimitsTest {
     }
 
     @Test
-    fun `a second question waits for no slot: it is told at once that the guide is busy`() {
+    fun `a second question while every slot is taken is told at once that the guide is busy`() {
         val mvc = mvc(maxConcurrent = 1, deadline = Duration.ofMillis(500))
         val running = mvc.perform(
             post("/api/v1/guide/stream").contentType(MediaType.APPLICATION_JSON).content("{\"request\":\"speech to text\"}"),
