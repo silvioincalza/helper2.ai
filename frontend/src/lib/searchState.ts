@@ -151,7 +151,7 @@ export type Refinement = Pick<GuideRequest, 'clarification'> & { drop: string[] 
 /** GuideRequest bounds: a reply of at most 300 characters, at most 8 removed parts of at most 80 characters. */
 const MAX_CLARIFICATION = 300;
 const MAX_DROPS = 8;
-const MAX_DROP = 80;
+export const MAX_DROP = 80;
 
 function drops(list: string[]): string[] {
   return [...new Set(list.filter((d) => d && d.length <= MAX_DROP))].slice(0, MAX_DROPS);

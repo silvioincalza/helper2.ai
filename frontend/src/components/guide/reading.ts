@@ -1,3 +1,4 @@
+import { MAX_DROP } from '@/lib/searchState';
 import type { TFunction } from 'i18next';
 import type { GuideResponse, GuideStep } from '@/api/types';
 
@@ -35,7 +36,11 @@ export function readingParts(reading: Reading, today: string, t: TFunction): Rea
       drop: 'window',
     });
   }
-  for (const c of reading.constraints ?? []) parts.push({ key: `c:${c}`, label: c, drop: `constraint:${c}`, ai: true });
+  for (const c of reading.constraints ?? []) {
+    // The URL keeps a removed part only up to MAX_DROP characters: a longer one could not be removed, so no ✕.
+    const drop = `constraint:${c}`;
+    parts.push({ key: `c:${c}`, label: c, drop: drop.length <= MAX_DROP ? drop : undefined, ai: true });
+  }
   return parts;
 }
 

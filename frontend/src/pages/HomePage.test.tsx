@@ -104,6 +104,17 @@ describe('one box', () => {
     expect(m.callsTo('POST', '/guide/stream')).toHaveLength(1);
   });
 
+  it('new words in the box drop the old question, so the picks never answer something else', async () => {
+    mockApi();
+    const { params } = renderApp('/search?q=translate+my+newsletter+for+free&ask=translate+my+newsletter+for+free');
+    await (await results()).findByText('Acme Translator');
+    await userEvent.clear(screen.getByRole('textbox', { name: 'Search AI resources' }));
+    await userEvent.type(screen.getByRole('textbox', { name: 'Search AI resources' }), 'postgres mcp');
+    await waitFor(() => expect(params().get('q')).toBe('postgres mcp'), { timeout: 2000 });
+    expect(params().get('ask')).toBeNull();
+    await settle();
+  });
+
   it('live search does not rewrite the box: a trailing space survives the URL update', async () => {
     mockApi();
     const { params } = renderApp('/search?q=mcp');
