@@ -27,6 +27,19 @@ to another host while `Authorization` is set); a body is read up to 2 MB (awesom
 source is `FAILED` ("response too large"); a malformed item is dropped and counted in
 `helper2.source.items.dropped{source,reason}` while the other items are kept.
 
+**Web page titles** (`tavily`, `tavily-scout`, `course-scout`, listed once in `WebPageTitle.SOURCES`): the title is the
+page's HTML title, cleaned by `WebPageTitle` when it is stored and again when it is read. On read, a source record from
+one of these sources, and a resource whose records all come from them, show the clean title; a curated resource keeps its
+editorial title. Cleaning a clean title changes nothing, so stored rows are never rewritten for it, and rows stored
+before cleaning (an old catalog, a stored Tavily set) read back clean too. Whitespace is trimmed and collapsed. A final ` | Site`, ` - Site`, ` · Site`,
+` — Site` or ` – Site` goes when Site names the result's own host: the host itself (`scored.tools`), its registrable
+domain (`Kaily.ai` on kaily.ai) or its name without spaces and punctuation (`Medium` on medium.com, `Hugging Face` on
+huggingface.co). One segment at most, so `Chat with PDF | Ask your PDF | allpdf.com` keeps its first two parts. A leading
+name stays (`Ollama - Get up and running`), and so does a segment that is not the site (`LangChain | Docs`). On github.com,
+`GitHub - owner/repo: description · GitHub` becomes `owner/repo`; its description is used only when Tavily gives no
+content. A title is never empty: when nothing is left, the title stays as it was. The relevance gate and the event check
+read the title as Tavily sent it. Identity is the page URL, so cleaning changes no result id or merge.
+
 **Not connected (and why):** Hacker News via Algolia (no readable terms of use found), PyPI (no search API), Product Hunt (API forbids commercial use),
 There's An AI For That (terms not obtainable), paid web-search APIs other than Tavily.
 

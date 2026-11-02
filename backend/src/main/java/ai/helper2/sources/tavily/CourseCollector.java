@@ -8,6 +8,7 @@ import ai.helper2.search.SourceDescriptor;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.SourceMode;
+import ai.helper2.shared.WebPageTitle;
 import ai.helper2.sources.support.Classification;
 import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.RunInterval;
@@ -149,7 +150,6 @@ public class CourseCollector implements Collector {
         if (!COURSE_WORDS.matcher(text).find()) {
             return null;
         }
-        String snippet = content == null ? null : content.length() > 400 ? content.substring(0, 397) + "…" : content;
-        return new Candidate(url, title, snippet, p.name());
+        return new Candidate(url, WebPageTitle.of(title, url.getHost()).getTitle(), TavilySource.snippet(content), p.name());
     }
 }

@@ -65,6 +65,17 @@ class CourseCollectorTest {
     }
 
     @Test
+    void candidateTitlesLoseThePlatformSiteName() {
+        server.route("/search", FixtureServer.Reply.ok("""
+            {"results":[{"url":"https://www.coursera.org/learn/generative-ai","title":"Generative AI for Everyone | Coursera",
+              "content":"An AI course with a certificate."}]}"""));
+
+        CollectedBatch batch = collector("tvly-test", List.of("coursera.org=Coursera")).collect(null, null, 500);
+
+        assertThat(batch.getCandidates()).extracting(c -> c.getTitle()).containsExactly("Generative AI for Everyone");
+    }
+
+    @Test
     void laterRunsAskOnlyForPagesPublishedSinceThePreviousPass() {
         server.route("/search", FixtureServer.Reply.ok("{\"results\":[]}"));
         collector("tvly-test", List.of("deeplearning.ai=DeepLearning.AI")).collect("2026-10-15T09:00:00Z", null, 500);

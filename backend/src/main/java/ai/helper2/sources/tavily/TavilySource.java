@@ -10,6 +10,7 @@ import ai.helper2.shared.DateFact;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.SourceMode;
 import ai.helper2.shared.ValueOrigin;
+import ai.helper2.shared.WebPageTitle;
 import ai.helper2.sources.support.Classification;
 import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.SourceSettings;
@@ -33,7 +34,8 @@ import tools.jackson.databind.JsonNode;
  * Tavily web search (topic "news") for AI news, articles and events. Docs:
  * https://docs.tavily.com/documentation/api-reference/endpoint/search — needs H2_TAVILY_API_KEY; without a
  * key the source is disabled and reported as SKIPPED. One credit per call: the source is metered (ADR 0037). published_date is Tavily's own estimate and stays
- * unknown when Tavily has none. Event dates are never inferred.
+ * unknown when Tavily has none. Event dates are never inferred. Titles are page titles, cleaned by {@link WebPageTitle};
+ * the relevance gate and the event check read the title as Tavily sent it.
  */
 public class TavilySource implements SearchSource {
 
@@ -110,11 +112,17 @@ public class TavilySource implements SearchSource {
             return null;
         }
         ResourceType type = EVENT.matcher(title).find() ? ResourceType.EVENT : ResourceType.NEWS;
-        String snippet = content == null ? null : content.length() > 400 ? content.substring(0, 397) + "…" : content;
-        return new SourceHit(sourceId, canonical.getValue(), HttpClients.link(url, canonical), canonical, null, title, snippet,
+        WebPageTitle page = WebPageTitle.of(title, canonical.getHost());
+        String snippet = snippet(content != null ? content : page.getDescription());
+        return new SourceHit(sourceId, canonical.getValue(), HttpClients.link(url, canonical), canonical, null, page.getTitle(), snippet,
             ValueOrigin.SOURCE_PROVIDED, type, Audience.BOTH, null, Set.of(), Set.of(), null, null, Set.of(), null,
             DateFact.fromSource(date(HttpClients.text(r, "published_date")), sourceId, now),
             DateFact.unknown(), List.of(), now, position);
+    }
+
+    /** At most 400 characters; null stays null. */
+    static String snippet(String text) {
+        return text == null ? null : text.length() > 400 ? text.substring(0, 397) + "…" : text;
     }
 
     /** ISO-8601 or RFC 1123 ("Mon, 20 Oct 2026 14:00:00 GMT"); anything else is unknown. */
