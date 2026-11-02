@@ -3,8 +3,6 @@ package ai.helper2.api;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import ai.helper2.search.SearchSource;
@@ -29,7 +27,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
@@ -108,12 +105,10 @@ class WebSearchQuotaApiIT extends ApiTestBase {
     void theGuideCountsItsOwnWebSearches() throws Exception {
         search("agents " + UUID.randomUUID());
 
-        String json = mvc.perform(post("/api/v1/guide").with(csrf()).with(visitor).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"request\":\"open source agent frameworks " + UUID.randomUUID() + "\"}"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.webSearches.limit").value(3))
-            .andExpect(jsonPath("$.webSearches.remaining").value(2))
-            .andReturn().getResponse().getContentAsString();
+        String json = GuideAnswers.ask(mvc, "{\"request\":\"open source agent frameworks " + UUID.randomUUID() + "\"}", csrf(), visitor)
+            .value("$.webSearches.limit", 3)
+            .value("$.webSearches.remaining", 2)
+            .json();
         ContractValidator.assertMatches("GuideResponse", json);
     }
 

@@ -1,7 +1,7 @@
 # Sequence: the cost guard around one guide question that misses the cache and is answered fresh.
 # Source of truth: backend/src/main/java/ai/helper2/platform/RateLimitInterceptor.java, RedisRateLimiter.java,
 #   backend/src/main/java/ai/helper2/platform/ClientKey.java (shared by the rate limiters and the quota),
-#   backend/src/main/java/ai/helper2/guide/web/GuideLimits.java, GuideController.java,
+#   backend/src/main/java/ai/helper2/guide/web/GuideLimits.java,
 #   backend/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java (trySlot on the guide bulkhead),
 #   backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (AskGuide.ask), GuideCost.kt (ClientQuota, GuideAnswerCache),
 #   backend/src/main/java/ai/helper2/guide/internal/SharedGuideAnswerStore.java, backend/src/main/java/ai/helper2/platform/cache/JdbcSharedCache.java.
@@ -13,7 +13,7 @@ shape: sequence_diagram
 
 browser: Browser {class: person}
 rl: RateLimitInterceptor {class: app}
-ctrl: "GuideController /\nGuideStreamController" {class: app}
+ctrl: "GuideStreamController" {class: app}
 limits: GuideLimits {class: app}
 bulkhead: "guide bulkhead\n(Resilience)" {class: app}
 svc: AskGuide {class: app}
@@ -23,7 +23,7 @@ redis: Redis {class: data}
 db: PostgreSQL {class: data}
 model: SpringAiGuideModel {class: app}
 
-browser -> rl: "POST /api/v1/guide"
+browser -> rl: "POST /api/v1/guide/stream"
 rl -> redis: "limiter.acquire(remote address): Lua\nINCR + PEXPIRE h2:v1:rate:guide:<ClientKey>"
 redis -> rl: "count ≤ 10 per minute"
 rl -> ctrl: "allowed"

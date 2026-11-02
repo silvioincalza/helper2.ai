@@ -32,17 +32,15 @@ import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
 import org.springframework.http.MediaType
-import org.springframework.mock.web.MockHttpServletRequest
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.request
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
 
 /**
- * The guide's bounds, the same on both endpoints: concurrent questions (the `guide` bulkhead) and a deadline per
- * question. The full pipeline runs in GuideApiIT.
+ * The guide's bounds: concurrent questions (the `guide` bulkhead) and a deadline per question. The full pipeline
+ * runs in GuideApiIT.
  */
 class GuideLimitsTest {
 
@@ -92,13 +90,8 @@ class GuideLimitsTest {
         val shared = GuideLimits(policies, deadline).also { limits += it }
         return MockMvcBuilders.standaloneSetup(
             GuideStreamController(guide, mapper, shared, SignedInUser.ANONYMOUS, SimpleMeterRegistry(), Duration.ofMillis(50)).also { streams += it },
-            GuideController(guide, mapper, shared, MockHttpServletRequest(), SignedInUser.ANONYMOUS),
         ).build()
     }
-
-    private fun json(mvc: MockMvc) = mvc.perform(
-        post("/api/v1/guide").contentType(MediaType.APPLICATION_JSON).content("{\"request\":\"speech to text\"}"),
-    )
 
     private fun stream(mvc: MockMvc): String {
         val result = mvc.perform(
@@ -130,27 +123,16 @@ class GuideLimitsTest {
     }
 
     @Test
-    fun `the JSON endpoint answers 503 at once when every slot is taken`() {
-        json(mvc(maxConcurrent = 0, deadline = Duration.ofSeconds(90))).andExpect(status().isServiceUnavailable)
-    }
-
-    @Test
-    fun `the JSON endpoint answers 504 when its question passes the deadline`() {
-        val started = System.nanoTime()
-
-        json(mvc(maxConcurrent = 1, deadline = Duration.ofMillis(300))).andExpect(status().isGatewayTimeout)
-
-        assertTrue(Duration.ofNanos(System.nanoTime() - started) < Duration.ofSeconds(10))
-    }
-
-    @Test
-    fun `both endpoints share the slots`() {
+    fun `a second question waits for no slot: it is told at once that the guide is busy`() {
         val mvc = mvc(maxConcurrent = 1, deadline = Duration.ofMillis(500))
         val running = mvc.perform(
             post("/api/v1/guide/stream").contentType(MediaType.APPLICATION_JSON).content("{\"request\":\"speech to text\"}"),
         ).andReturn()
 
-        json(mvc).andExpect(status().isServiceUnavailable)
+        val events = stream(mvc)
+
+        assertTrue(events.startsWith("event:error"), events)
+        assertTrue(events.contains("\"status\":503"), events)
         running.getAsyncResult(10_000)
     }
 

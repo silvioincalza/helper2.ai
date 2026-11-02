@@ -5,7 +5,6 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -42,7 +41,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 /**
- * POST /api/v1/guide end to end with a scripted ChatModel (no network): plan → federated search →
+ * POST /api/v1/guide/stream end to end with a scripted ChatModel (no network): plan → federated search →
  * choose → validator, against real PostgreSQL and Redis; and the questions back and event dates of ADR 0032.
  */
 @TestPropertySource(properties = {
@@ -134,27 +133,25 @@ class GuideApiIT extends ApiTestBase {
 
     @Test
     void recommendationsAreValidatedAndEachCallUsesTheRightModel() throws Exception {
-        String json = mvc.perform(post("/api/v1/guide").with(csrf()).with(from("10.0.0.1"))
-                .contentType(MediaType.APPLICATION_JSON).content(body("traduci un documento in tedesco")))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.status").value("PARTIAL"))
-            .andExpect(jsonPath("$.searchQuery").value("document translation"))
-            .andExpect(jsonPath("$.recommendations.length()").value(1))
-            .andExpect(jsonPath("$.recommendations[0].title").value(TITLE))
-            .andExpect(jsonPath("$.recommendations[0].quote").value(QUOTE))
-            .andExpect(jsonPath("$.recommendations[0].aiReasoned").value(true))
-            .andExpect(jsonPath("$.recommendations[0].reasonCheck").value("SUPPORTED"))
-            .andExpect(jsonPath("$.model.provider").value("nebius-token-factory"))
-            .andExpect(jsonPath("$.model.fastModel").value("fake-nano"))
-            .andExpect(jsonPath("$.model.reasoningModel").value("fake-super"))
-            .andExpect(jsonPath("$.aiContent.aiGenerated").value(true))
-            .andExpect(jsonPath("$.aiContent.provider").value("nebius-token-factory"))
-            .andExpect(jsonPath("$.aiContent.models[0]").value("fake-nano"))
-            .andExpect(jsonPath("$.aiContent.models[1]").value("fake-super"))
-            .andExpect(jsonPath("$.aiContent.fields").value(org.hamcrest.Matchers.hasItems(
-                "recommendations[].reason", "recommendations[].checks[].constraint", "comparison.rows[].aspect")))
-            .andExpect(jsonPath("$.aiContent.policy").value("/mission"))
-            .andReturn().getResponse().getContentAsString();
+        String json = GuideAnswers.ask(mvc, body("traduci un documento in tedesco"), csrf(), from("10.0.0.1"))
+            .value("$.status", "PARTIAL")
+            .value("$.searchQuery", "document translation")
+            .value("$.recommendations.length()", 1)
+            .value("$.recommendations[0].title", TITLE)
+            .value("$.recommendations[0].quote", QUOTE)
+            .value("$.recommendations[0].aiReasoned", true)
+            .value("$.recommendations[0].reasonCheck", "SUPPORTED")
+            .value("$.model.provider", "nebius-token-factory")
+            .value("$.model.fastModel", "fake-nano")
+            .value("$.model.reasoningModel", "fake-super")
+            .value("$.aiContent.aiGenerated", true)
+            .value("$.aiContent.provider", "nebius-token-factory")
+            .value("$.aiContent.models[0]", "fake-nano")
+            .value("$.aiContent.models[1]", "fake-super")
+            .value("$.aiContent.fields", org.hamcrest.Matchers.hasItems(
+                "recommendations[].reason", "recommendations[].checks[].constraint", "comparison.rows[].aspect"))
+            .value("$.aiContent.policy", "/mission")
+            .json();
 
         ContractValidator.assertMatches("GuideResponse", json);
         assertThat(json).doesNotContain("10,000");
@@ -164,10 +161,8 @@ class GuideApiIT extends ApiTestBase {
     @Test
     void aRepeatedQuestionIsServedFromTheCacheWithoutModelCalls() throws Exception {
         for (int i = 0; i < 2; i++) {
-            mvc.perform(post("/api/v1/guide").with(csrf()).with(from("10.0.0.2"))
-                    .contentType(MediaType.APPLICATION_JSON).content(body("translate my contract to French")))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.recommendations[0].aiReasoned").value(true));
+            GuideAnswers.ask(mvc, body("translate my contract to French"), csrf(), from("10.0.0.2"))
+                .value("$.recommendations[0].aiReasoned", true);
         }
         assertThat(MODELS_CALLED).containsExactly("fake-nano", "fake-super", "fake-super");
     }
@@ -177,10 +172,8 @@ class GuideApiIT extends ApiTestBase {
         String question = "translate a rental agreement to Portuguese";
         Set<String> before = keys();
 
-        mvc.perform(post("/api/v1/guide").with(csrf()).with(from("10.0.0.7"))
-                .contentType(MediaType.APPLICATION_JSON).content(body(question)))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.recommendations[0].aiReasoned").value(true));
+        GuideAnswers.ask(mvc, body(question), csrf(), from("10.0.0.7"))
+            .value("$.recommendations[0].aiReasoned", true);
 
         Set<String> added = new java.util.HashSet<>(keys());
         added.removeAll(before);
@@ -202,26 +195,21 @@ class GuideApiIT extends ApiTestBase {
     @Test
     void pastItsDailyQuotaAClientGetsSearchResultsInsteadOfAnError() throws Exception {
         for (String ip : List.of("2001:db8:0:7::1", "2001:db8:0:7::2")) {
-            mvc.perform(post("/api/v1/guide").with(csrf()).with(from(ip))
-                    .contentType(MediaType.APPLICATION_JSON).content(body("quota question from " + ip)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.recommendations[0].aiReasoned").value(true));
+            GuideAnswers.ask(mvc, body("quota question from " + ip), csrf(), from(ip))
+                .value("$.recommendations[0].aiReasoned", true);
         }
         int callsBefore = MODELS_CALLED.size();
 
-        String json = mvc.perform(post("/api/v1/guide").with(csrf()).with(from("2001:db8:0:7::3"))
-                .contentType(MediaType.APPLICATION_JSON).content(body("one quota question too many")))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.status").value("LLM_UNAVAILABLE"))
-            .andExpect(jsonPath("$.recommendations[0].aiReasoned").value(false))
-            .andExpect(jsonPath("$.notices[?(@.code == 'GUIDE_DAILY_QUOTA')]").exists())
-            .andReturn().getResponse().getContentAsString();
+        String json = GuideAnswers.ask(mvc, body("one quota question too many"), csrf(), from("2001:db8:0:7::3"))
+            .value("$.status", "LLM_UNAVAILABLE")
+            .value("$.recommendations[0].aiReasoned", false)
+            .exists("$.notices[?(@.code == 'GUIDE_DAILY_QUOTA')]")
+            .json();
 
         ContractValidator.assertMatches("GuideResponse", json);
         assertThat(MODELS_CALLED).hasSize(callsBefore);
-        mvc.perform(post("/api/v1/guide").with(csrf()).with(from("2001:db8:0:8::1"))
-                .contentType(MediaType.APPLICATION_JSON).content(body("one quota question too many")))
-            .andExpect(jsonPath("$.recommendations[0].aiReasoned").value(true));
+        GuideAnswers.ask(mvc, body("one quota question too many"), csrf(), from("2001:db8:0:8::1"))
+            .value("$.recommendations[0].aiReasoned", true);
     }
 
     @Test
@@ -229,12 +217,10 @@ class GuideApiIT extends ApiTestBase {
         REPLY.set(prompt -> {
             throw new IllegalStateException("provider down");
         });
-        String json = mvc.perform(post("/api/v1/guide").with(csrf()).with(from("10.0.0.3"))
-                .contentType(MediaType.APPLICATION_JSON).content(body("translate a user manual to Spanish")))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.status").value("LLM_UNAVAILABLE"))
-            .andExpect(jsonPath("$.recommendations[0].aiReasoned").value(false))
-            .andReturn().getResponse().getContentAsString();
+        String json = GuideAnswers.ask(mvc, body("translate a user manual to Spanish"), csrf(), from("10.0.0.3"))
+            .value("$.status", "LLM_UNAVAILABLE")
+            .value("$.recommendations[0].aiReasoned", false)
+            .json();
         ContractValidator.assertMatches("GuideResponse", json);
     }
 
@@ -349,23 +335,6 @@ class GuideApiIT extends ApiTestBase {
     }
 
     @Test
-    void streamNeedsCsrfAndSharesTheGuideRateLimit() throws Exception {
-        mvc.perform(post("/api/v1/guide/stream").with(from("10.0.1.3"))
-                .contentType(MediaType.APPLICATION_JSON).content(body("no csrf token")))
-            .andExpect(status().isForbidden());
-
-        for (int i = 0; i < 2; i++) {
-            mvc.perform(post("/api/v1/guide").with(csrf()).with(from("10.0.1.4"))
-                    .contentType(MediaType.APPLICATION_JSON).content(body("shared limit question " + i)))
-                .andExpect(status().isOk());
-        }
-        stream("10.0.1.4", "shared limit question 2");
-        mvc.perform(post("/api/v1/guide/stream").with(csrf()).with(from("10.0.1.4"))
-                .contentType(MediaType.APPLICATION_JSON).content(body("shared limit question 3")))
-            .andExpect(status().isTooManyRequests());
-    }
-
-    @Test
     void streamRejectsAQuestionOutsideTheContractBeforeStreaming() throws Exception {
         mvc.perform(post("/api/v1/guide/stream").with(csrf()).with(from("10.0.1.5"))
                 .contentType(MediaType.APPLICATION_JSON).content("{\"request\":\"hi\"}"))
@@ -379,7 +348,7 @@ class GuideApiIT extends ApiTestBase {
     /** Blank padding passes the contract's minLength, but what is left after stripping it is too short. */
     @Test
     void guideRejectsARequestThatIsTooShortOnceStrippedWith400() throws Exception {
-        mvc.perform(post("/api/v1/guide").with(csrf()).with(from("10.0.1.9"))
+        mvc.perform(post("/api/v1/guide/stream").with(csrf()).with(from("10.0.1.9"))
                 .contentType(MediaType.APPLICATION_JSON).content("{\"request\":\"   a   \"}"))
             .andExpect(status().isBadRequest());
         assertThat(MODELS_CALLED).isEmpty();
@@ -397,21 +366,17 @@ class GuideApiIT extends ApiTestBase {
 
     @Test
     void guideNeedsCsrfAndIsRateLimitedPerClient() throws Exception {
-        mvc.perform(post("/api/v1/guide").with(from("10.0.0.4"))
+        mvc.perform(post("/api/v1/guide/stream").with(from("10.0.0.4"))
                 .contentType(MediaType.APPLICATION_JSON).content(body("no csrf token")))
             .andExpect(status().isForbidden());
 
         for (int i = 0; i < 3; i++) {
-            mvc.perform(post("/api/v1/guide").with(csrf()).with(from("10.0.0.5"))
-                    .contentType(MediaType.APPLICATION_JSON).content(body("rate limited question " + i)))
-                .andExpect(status().isOk());
+            GuideAnswers.ask(mvc, body("rate limited question " + i), csrf(), from("10.0.0.5"));
         }
-        mvc.perform(post("/api/v1/guide").with(csrf()).with(from("10.0.0.5"))
+        mvc.perform(post("/api/v1/guide/stream").with(csrf()).with(from("10.0.0.5"))
                 .contentType(MediaType.APPLICATION_JSON).content(body("rate limited question 3")))
             .andExpect(status().isTooManyRequests());
-        mvc.perform(post("/api/v1/guide").with(csrf()).with(from("10.0.0.6"))
-                .contentType(MediaType.APPLICATION_JSON).content(body("another client")))
-            .andExpect(status().isOk());
+        GuideAnswers.ask(mvc, body("another client"), csrf(), from("10.0.0.6"));
     }
 
     // ADR 0032 §3 and §5: an ambiguous name asked back once, and a WHEN question about an event over events only.
@@ -450,9 +415,7 @@ class GuideApiIT extends ApiTestBase {
     }
 
     private String askJson(String ip, String json) throws Exception {
-        return mvc.perform(post("/api/v1/guide").with(csrf()).with(from(ip)).contentType(MediaType.APPLICATION_JSON).content(json))
-            .andExpect(status().isOk())
-            .andReturn().getResponse().getContentAsString();
+        return GuideAnswers.ask(mvc, json, csrf(), from(ip)).json();
     }
 
     @Test
@@ -468,9 +431,9 @@ class GuideApiIT extends ApiTestBase {
         // One option per kind: the model, and the first tool named Gemini (the curated seed holds one too).
         assertThat(asked).contains("\"status\":\"NEEDS_CLARIFICATION\"", "\"question\":\"Which Gemini do you mean?\"",
             "\"Gemini (model)\"", " (tool)\"");
-        mvc.perform(post("/api/v1/guide").with(csrf()).with(from("10.0.9.2")).contentType(MediaType.APPLICATION_JSON).content(question))
-            .andExpect(jsonPath("$.aiContent.fields").value(org.hamcrest.Matchers.hasItems("clarification.question", "clarification.options[]")))
-            .andExpect(jsonPath("$.aiContent.models[0]").value("fake-nano"));
+        GuideAnswers.ask(mvc, question, csrf(), from("10.0.9.2"))
+            .value("$.aiContent.fields", org.hamcrest.Matchers.hasItems("clarification.question", "clarification.options[]"))
+            .value("$.aiContent.models[0]", "fake-nano");
         assertThat(MODELS_CALLED).as("a plan call each, nothing else").containsExactly("fake-nano", "fake-nano");
 
         MODELS_CALLED.clear();

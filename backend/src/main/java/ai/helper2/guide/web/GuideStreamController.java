@@ -16,6 +16,7 @@ import ai.helper2.api.generated.model.GuideStreamValidatedDto;
 import ai.helper2.api.generated.model.ProblemDto;
 import ai.helper2.guide.GuideProgress;
 import ai.helper2.guide.usecase.AskGuide;
+import ai.helper2.platform.BadRequestException;
 import ai.helper2.platform.ClientKey;
 import ai.helper2.platform.SignedInUser;
 import ai.helper2.search.SearchOutcome;
@@ -51,7 +52,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
  * SseEmitter return type. Each step of the guide becomes one event, named by the contract's {@code GuideStreamEvent};
  * the last event is always {@code answer} or {@code error}. The work runs on a virtual thread so the servlet thread is released at once.
  *
- * <p>Under the same {@link GuideLimits} as {@code POST /guide}: when every slot is taken the client gets an
+ * <p>Under {@link GuideLimits}: when every slot is taken the client gets an
  * {@code error} event "busy" at once (status 503), and past the deadline the worker is cancelled and the
  * client gets an {@code error} event (status 504).
  *
@@ -97,18 +98,18 @@ class GuideStreamController implements DisposableBean {
     }
 
     /**
-     * The method name is the rate-limit key: it shares the budget of askGuide (see RateLimitInterceptor).
+     * The method name is the rate-limit key: it shares the guide budget with askResourceGuide (see RateLimitInterceptor).
      * {@code @Valid} applies the contract's bounds (500 characters at most) before any model work starts.
      */
     @PostMapping(path = "/guide/stream", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     ResponseEntity<SseEmitter> askGuideStream(@Valid @RequestBody GuideRequestDto body, HttpServletRequest http) {
-        String request = GuideController.validRequest(body);
-        AudiencePath path = GuideController.path(body);
+        String request = validRequest(body);
+        AudiencePath path = path(body);
         String client = ClientKey.of(http.getRemoteAddr());
         UUID userId = signedInUser.id().orElse(null);
         Events events = new Events(new SseEmitter(limits.deadline().plus(EMITTER_GRACE).toMillis()));
-        String clarification = GuideController.clarification(body);
-        Drops drops = GuideController.drops(body);
+        String clarification = clarification(body);
+        Drops drops = drops(body);
         boolean started = limits.tryStart(() -> run(events, request, path, client, userId, clarification, drops),
             () -> events.fail(504, "Guide timed out", GuideLimits.TIMED_OUT));
         if (started) {
@@ -121,6 +122,27 @@ class GuideStreamController implements DisposableBean {
             // nginx-style proxies buffer responses by default, which would deliver every event at the end.
             .header("X-Accel-Buffering", "no")
             .body(events.emitter);
+    }
+
+    static String validRequest(GuideRequestDto body) {
+        String request = body.getRequest() == null ? "" : body.getRequest().strip();
+        if (request.length() < 3) {
+            throw new BadRequestException("request too short");
+        }
+        return request;
+    }
+
+    /** The answer to a clarification, trimmed; null when the request is not one ("" = "search anyway"). */
+    static String clarification(GuideRequestDto body) {
+        return body.getClarification() == null ? null : body.getClarification().strip();
+    }
+
+    static Drops drops(GuideRequestDto body) {
+        return Drops.of(body.getDrop());
+    }
+
+    static AudiencePath path(GuideRequestDto body) {
+        return body.getPath() == null ? null : AudiencePath.valueOf(body.getPath().getValue());
     }
 
     private void run(Events events, String request, AudiencePath path, String client, UUID userId, String clarification, Drops drops) {

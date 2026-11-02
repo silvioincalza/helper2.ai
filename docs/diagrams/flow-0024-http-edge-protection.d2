@@ -31,7 +31,7 @@ api: "Path under /api/**?" {class: decision}
 limit: RateLimitInterceptor {
   class: group
   direction: down
-  limited: "Handler is search, reportResource,\naskGuide(Stream) or listRecent?\n(async re-dispatch not charged)" {class: decision}
+  limited: "Handler is search, reportResource,\naskGuideStream, askResourceGuide\nor listRecent?\n(async re-dispatch not charged)" {class: decision}
   key: "ClientKey: IPv4, or IPv6 /64\n(zone id dropped,\nIPv4-mapped → IPv4)" {class: app}
   breaker: "redis circuit lets it through?\n(open 30 s after half of\nthe last calls failed)" {class: decision}
   redis: "Redis Lua: INCR h2:v1:rate:<limiter>:<key>,\nPEXPIRE window on count 1; PTTL" {class: data}

@@ -60,7 +60,7 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
 
   guide: "guide (Kotlin domain)" {
     class: group
-    ctl: "GuideController (JSON)\nGuideStreamController (SSE)" {class: app}
+    ctl: "GuideStreamController (SSE)" {class: app}
     core: "AskGuide (QuestionReader, PickAnswer,\nCompareAnswer, ExplainAnswer,\nDateAnswer, ReasonCheckStep)\nGuideValidator · GuideAnswerCache\nClientQuota · GuideLimits" {class: app}
     p_model: GuideModel {class: port}
     p_store: "GuideAnswerStore\nSimilarQuestionIndex" {class: port}
