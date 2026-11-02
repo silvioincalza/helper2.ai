@@ -33,6 +33,7 @@ import { activeFilterCount, askedQuestion, clampQuestion, clearFilters, homePara
 import { useSources } from '@/context/SourcesContext';
 import { ListedBy, ResultFacts } from './ResultFacts';
 import './results.css';
+import { OpenButton } from './OpenButton';
 
 /** From this width the preview sits next to the list; below it opens inside the list (design system breakpoints). */
 const WIDE = '(min-width: 861px)';
@@ -384,9 +385,7 @@ function Preview({ card, pick, stale, inline = false }: { card: ResultCard; pick
         <Link to={detail} state={detailState}>{card.title}</Link>
       </TitleTag>
       <div className="h2-pv__actions">
-        <a className="btn btn-primary" href={card.url} target="_blank" rel="noopener noreferrer">
-          {t('results.openOn', { host })} <span aria-hidden="true">↗</span>
-        </a>
+        <OpenButton url={card.url} host={host} />
         {SAVED_ENABLED && <BookmarkButton card={card} />}
         {canGuide(card) && <GuideMeButton title={card.title} open={guide.open} onToggle={guide.toggle} bodyId={bodyId} buttonRef={button} />}
         {inline && <Link className="btn" to={detail} state={detailState}>{t('results.fullDetails')}</Link>}
