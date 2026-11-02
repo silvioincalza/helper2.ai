@@ -79,7 +79,8 @@ export function toSearchParams(s: SearchState): URLSearchParams {
   const q = clampQuery(s.q);
   if (q) sp.set('q', q);
   if (s.view === 'timeline') sp.set('view', 'timeline');
-  else if (s.sort !== 'RELEVANCE') sp.set('sort', s.sort);
+  // Kept in the timeline too (toApiParams asks for NEWEST there), so List gets the chosen sort back.
+  if (s.sort !== 'RELEVANCE') sp.set('sort', s.sort);
   for (const k of MULTI_KEYS) for (const v of s.filters[k]) sp.append(k, v);
   if (s.openSource) sp.set('openSource', s.openSource);
   if (s.updatedAfter) sp.set('updatedAfter', s.updatedAfter);

@@ -1,8 +1,7 @@
-import { useId, useState } from 'react';
+import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { FacetValue, Facets, SourceStatus } from '@/api/types';
 import { filterValue, isSelected, patchState, toggleFilter, type MultiKey, type SearchState } from '@/lib/searchState';
-import { Icon } from './Icon';
 import { Term, type GlossaryKey } from './Term';
 
 type FacetKey = MultiKey | 'openSource';
@@ -20,7 +19,6 @@ interface Props {
 
 export function FilterPanel({ facets, state, sources, onChange }: Props) {
   const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
   // Checkbox ids come from the facet and the value's position: values are raw source text (spaces, slashes, quotes).
   const idBase = useId();
 
@@ -61,10 +59,8 @@ export function FilterPanel({ facets, state, sources, onChange }: Props) {
 
   return (
     <aside className="filters" aria-label={t('filters.title')}>
-      <button type="button" className="btn filters-toggle" aria-expanded={open} aria-controls="filter-groups" onClick={() => setOpen(!open)}>
-        <Icon name="filter" /> {t('filters.title')}
-      </button>
-      <div id="filter-groups" className={`filter-groups${open ? ' is-open' : ''}`}>
+      {/* The results page's Filters button shows and hides this panel; it has no toggle of its own. */}
+      <div className="filter-groups">
         <div className="filter-group">
           <label htmlFor="updatedAfter" className="filter-legend">{t('filters.updatedAfter')}</label>
           <input id="updatedAfter" type="date" value={state.updatedAfter}

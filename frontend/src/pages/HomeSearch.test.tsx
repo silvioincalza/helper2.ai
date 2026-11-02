@@ -218,7 +218,8 @@ describe('search results', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Timeline' }));
 
     await waitFor(() => expect(params().get('view')).toBe('timeline'));
-    expect(params().get('sort')).toBeNull();
+    // The chosen sort stays in the URL for the list; the API gets NEWEST for the timeline.
+    expect(params().get('sort')).toBe('RECENTLY_UPDATED');
     const call = new URLSearchParams(m.callsTo('GET', '/search').at(-1)?.search);
     expect(call.get('sort')).toBe('NEWEST');
     expect(call.get('size')).toBe('50');
@@ -233,7 +234,8 @@ describe('search results', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'List' }));
     await waitFor(() => expect(params().get('view')).toBeNull());
-    expect(await screen.findByRole('combobox', { name: /Sort by/ })).toBeInTheDocument();
+    expect(await screen.findByRole('combobox', { name: /Sort by/ })).toHaveValue('RECENTLY_UPDATED');
+    expect(params().get('sort')).toBe('RECENTLY_UPDATED');
   });
 
   it('sort change updates URL and request', async () => {

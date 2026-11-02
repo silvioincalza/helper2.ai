@@ -1,4 +1,4 @@
-import { useId, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import { useId, useLayoutEffect, useMemo, useRef, useState, type FocusEvent, type RefObject } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { api, ApiError } from '@/api/client';
@@ -139,7 +139,7 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
     count.current?.focus();
   };
   const list = useRef<HTMLDivElement>(null);
-  useKeepRowFocus(list, [...picked, ...rest].map((c) => c.id).join(' '));
+  const keepFocus = useKeepRowFocus(list, [...picked, ...rest].map((c) => c.id).join(' '));
   const filtersId = useId();
   const hintsId = useId();
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -254,7 +254,7 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
         <ResultsTimeline cards={res.results} sourceStatuses={res.sources} />
       ) : (
         <div className="h2-split">
-          <div className="h2-list" ref={list}>
+          <div className="h2-list" ref={list} onFocus={keepFocus.onFocus} onBlur={keepFocus.onBlur}>
             <p ref={count} tabIndex={-1} className="h2-list__count" aria-live="polite">{t('results.count', { count: res.total })}</p>
             {/* Here from the first render, so the move of the picks to the top is said once, politely. */}
             <p className="sr-only" role="status">{picked.length > 0 ? t('results.picksOnTop', { count: picked.length }) : ''}</p>
@@ -300,21 +300,20 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
  */
 function useKeepRowFocus(list: RefObject<HTMLDivElement | null>, order: string) {
   const focused = useRef<string | null>(null);
-  useLayoutEffect(() => {
-    const el = list.current;
-    if (!el) return undefined;
-    const onIn = (e: FocusEvent) => { focused.current = (e.target as HTMLElement).closest('li[data-id]')?.getAttribute('data-id') ?? null; };
-    const onOut = (e: FocusEvent) => { if (e.relatedTarget instanceof Node && !el.contains(e.relatedTarget)) focused.current = null; };
-    el.addEventListener('focusin', onIn);
-    el.addEventListener('focusout', onOut);
-    return () => { el.removeEventListener('focusin', onIn); el.removeEventListener('focusout', onOut); };
-  }, [list]);
+  // React focus handlers on the list element: they work however late the list mounts, and after a view switch.
+  const onFocus = (e: FocusEvent<HTMLDivElement>) => {
+    focused.current = (e.target as HTMLElement).closest('li[data-id]')?.getAttribute('data-id') ?? null;
+  };
+  const onBlur = (e: FocusEvent<HTMLDivElement>) => {
+    if (e.relatedTarget instanceof Node && !e.currentTarget.contains(e.relatedTarget)) focused.current = null;
+  };
   useLayoutEffect(() => {
     const id = focused.current;
     const active = document.activeElement;
     if (!id || (active && active !== document.body)) return;
     list.current?.querySelector<HTMLElement>(`li[data-id="${CSS.escape(id)}"] .h2-select-row`)?.focus({ preventScroll: true });
   }, [list, order]);
+  return { onFocus, onBlur };
 }
 
 /** A result in the list: its row, and under it the preview when the preview opens inside the list (narrow screens). */
