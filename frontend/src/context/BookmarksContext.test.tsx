@@ -2,7 +2,7 @@ import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BOOKMARK_KEY, readLocalBookmarks, writeLocalBookmarks } from '@/lib/bookmarks';
 import { ANON, USER, makeSearch } from '@/test/fixtures';
-import { mockApi } from '@/test/mockApi';
+import { mockApi, problem } from '@/test/mockApi';
 import { renderApp } from '@/test/render';
 import { SAVED_ENABLED } from '@/lib/features';
 
@@ -81,5 +81,48 @@ describe.skipIf(!SAVED_ENABLED)('bookmarks (signed in)', () => {
     expect(m.callsTo('GET', '/me/bookmarks')).toHaveLength(1);
     await waitFor(() => expect(m.callsTo('DELETE', `/me/bookmarks/${bm.resourceId}`)).toHaveLength(1));
     expect(screen.getByText(/Nothing saved yet/)).toBeInTheDocument();
+  });
+
+  const ACME = '11111111-1111-5111-8111-111111111111';
+  const stored = { resourceId: ACME, title: 'Acme Translator', url: 'https://acme.example', type: 'PRODUCT', savedAt: '2026-10-22T00:00:00Z' };
+
+  it('shows Saved at once, before the account answers, so a second click cannot save twice', async () => {
+    let answer: (v: unknown) => void = () => {};
+    const m = mockApi({ 'GET /me': () => USER, 'GET /me/bookmarks': () => [], [`PUT /me/bookmarks/${ACME}`]: () => new Promise((r) => { answer = r; }) });
+    const { router } = renderApp('/search?q=translate');
+    const save = (await screen.findAllByRole('button', { name: /Save Acme Translator/ }))[0] as HTMLElement;
+    await waitFor(() => expect(m.callsTo('GET', '/me/bookmarks')).toHaveLength(1));
+    await userEvent.click(save);
+    expect(save).toHaveAttribute('aria-pressed', 'true');
+    await act(async () => answer(stored));
+    expect(m.callsTo('PUT', `/me/bookmarks/${ACME}`)).toHaveLength(1);
+    await act(() => router.navigate('/saved'));
+    expect(await screen.findAllByRole('link', { name: 'Acme Translator' })).toHaveLength(1);
+  });
+
+  it('a failed save is undone and says so', async () => {
+    const m = mockApi({ 'GET /me': () => USER, 'GET /me/bookmarks': () => [], [`PUT /me/bookmarks/${ACME}`]: () => problem(500, 'Boom') });
+    renderApp('/search?q=translate');
+    const save = (await screen.findAllByRole('button', { name: /Save Acme Translator/ }))[0] as HTMLElement;
+    await waitFor(() => expect(m.callsTo('GET', '/me/bookmarks')).toHaveLength(1));
+    await userEvent.click(save);
+    await waitFor(() => expect(save).toHaveAttribute('aria-pressed', 'false'));
+  });
+
+  it('when the merge after sign-in fails, the browser list stays and Try again merges it', async () => {
+    writeLocalBookmarks([bm]);
+    let fail = true;
+    const server = [{ resourceId: bm.resourceId, title: 'Local one', url: bm.url, type: 'MODEL', savedAt: '2026-10-22T00:00:00Z' }];
+    const m = mockApi({ 'GET /me': () => USER, 'POST /me/bookmarks': () => (fail ? problem(500, 'Boom') : server) });
+    renderApp('/saved');
+    expect(await screen.findByText('Could not sync with your account.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Local one' })).toBeInTheDocument();
+
+    fail = false;
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    await waitFor(() => expect(m.callsTo('POST', '/me/bookmarks')).toHaveLength(2));
+    await waitFor(() => expect(screen.queryByText('Could not sync with your account.')).not.toBeInTheDocument());
+    expect(screen.getByRole('link', { name: 'Local one' })).toBeInTheDocument();
+    await waitFor(() => expect(readLocalBookmarks()).toEqual([]));
   });
 });

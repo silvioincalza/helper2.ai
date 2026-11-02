@@ -17,7 +17,7 @@ import { resourcePath } from '@/lib/searchState';
  */
 export function Saved() {
   const { t, i18n } = useTranslation();
-  const { items, remove, mode, storageFailed, serverError } = useBookmarks();
+  const { items, remove, mode, storageFailed, serverError, retry } = useBookmarks();
   const { me } = useMe();
   // Signed out on a site that offers sign-in: the list lives in this browser, an account keeps it everywhere.
   const canSignIn = mode !== 'server' && !me.authenticated && me.loginProviders.length > 0;
@@ -36,7 +36,11 @@ export function Saved() {
         {canSignIn && <div className="h2-saved__signin"><SignIn /></div>}
       </header>
       {storageFailed && <p role="alert" className="banner banner-warn">{t('saved.storageFailed')}</p>}
-      {serverError && <p role="alert" className="banner banner-warn">{t('saved.serverError')}</p>}
+      {serverError && (
+        <p role="alert" className="banner banner-warn">
+          {t('saved.serverError')} <button type="button" className="btn" onClick={retry}>{t('common.retry')}</button>
+        </p>
+      )}
       {items.length === 0 ? (
         <div className="h2-saved__empty">
           <p>{t('saved.empty')}</p>
