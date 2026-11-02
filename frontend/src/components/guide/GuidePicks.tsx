@@ -99,12 +99,12 @@ function NoPickNext({ answer, onRefine }: { answer: GuideResponse; onRefine: Ref
   return (
     <div className="h2-picks__next">
       {requirements.map((p) => (
-        <button key={p.key} type="button" className="btn" onClick={() => onRefine({ drop: [p.drop!] })}>
+        <button key={p.key} type="button" className="btn btn-ghost" onClick={() => onRefine({ drop: [p.drop!] })}>
           {/* One text run: the button lays out its children with a gap. */}
           <span>{t('picks.askWithout')} “<span {...aiMark()}>{p.label}</span>”</span>
         </button>
       ))}
-      <button type="button" className="btn" onClick={rephrase}>{t('picks.rephrase')}</button>
+      <button type="button" className="btn btn-ghost" onClick={rephrase}>{t('picks.rephrase')}</button>
       {requirements.length > 0 && <span className="h2-row__ai">{t('guide.requirementsAi')}</span>}
     </div>
   );
