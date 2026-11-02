@@ -23,6 +23,20 @@ export async function postJson(base, token, path, body) {
   });
 }
 
+/**
+ * The last event of a guide stream (POST /api/v1/guide/stream): `answer` with its GuideResponse, or `error` with its
+ * Problem. Null when the stream ended without either.
+ */
+export function lastGuideEvent(text) {
+  let last = null;
+  for (const block of text.split(/\n\n+/)) {
+    const event = /^event:(.*)$/m.exec(block)?.[1]?.trim();
+    const data = /^data:(.*)$/m.exec(block)?.[1];
+    if ((event === 'answer' || event === 'error') && data) last = { event, data: JSON.parse(data) };
+  }
+  return last;
+}
+
 const TRACKING = new Set(['ref', 'ref_src', 'fbclid', 'gclid', 'mc_cid', 'mc_eid', 'source']);
 
 /** Same rules as the backend's CanonicalUrl: identity of a resource URL. Null when it is not an http(s) URL. */

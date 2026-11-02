@@ -33,7 +33,7 @@
 // reports add P@3 and nDCG@3 of the AI picks. Picks no judge has graded are written to
 // backend/eval-data/guide-pool.tsv (git-ignored), ready to be graded and copied into the qrels.
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { canonicalUrl, csrfToken, esc, fmt, mean, ndcgAt, postJson, precisionAt, readQrels, resourceId, sleep } from './eval-lib.mjs';
+import { canonicalUrl, csrfToken, esc, fmt, lastGuideEvent, mean, ndcgAt, postJson, precisionAt, readQrels, resourceId, sleep } from './eval-lib.mjs';
 
 const args = process.argv.slice(2);
 const adversarial = args.includes('--adversarial');
@@ -60,10 +60,15 @@ async function ask(token, q) {
   const startedAt = Date.now();
   const started = performance.now();
   // The UI sends no audience path; `path` in the query file is only a group label.
-  const res = await postJson(base, token, '/api/v1/guide', { request: q.request });
+  // The stream is the only guide endpoint: the answer is its last event, so the time is to the whole answer.
+  const res = await postJson(base, token, '/api/v1/guide/stream', { request: q.request });
+  const text = res.ok ? await res.text() : '';
   const ms = Math.round(performance.now() - started);
   if (!res.ok) return { q, ms, error: `HTTP ${res.status}` };
-  const a = await res.json();
+  const last = lastGuideEvent(text);
+  if (!last) return { q, ms, error: 'stream ended without an answer' };
+  if (last.event === 'error') return { q, ms, error: `HTTP ${last.data.status ?? 500}` };
+  const a = last.data;
   // A cached answer keeps its original generatedAt, so an answer older than the request came from the cache.
   const cached = Date.parse(a.generatedAt) < startedAt - 1000;
   return { q, ms, a, cached };

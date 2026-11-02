@@ -12,7 +12,7 @@ must load the app on a direct visit, and a new release must reach browsers at on
 1. **Rate limits per client** (`RateLimitInterceptor` on `/api/**`). The key is the handler method the request was
    routed to (the contract operationId), not the raw path, so path tricks (`;param`, encoding, double slashes) do not
    bypass it. Limits: `search` 60/min (`H2_RATE_LIMIT_SEARCH_PER_MINUTE`), `reportResource` 20/hour
-   (`H2_RATE_LIMIT_REPORT_PER_HOUR`), `askGuide` and `askGuideStream` share 10/min (`H2_RATE_LIMIT_GUIDE_PER_MINUTE`),
+   (`H2_RATE_LIMIT_REPORT_PER_HOUR`), `askGuideStream` and `askResourceGuide` share 10/min (`H2_RATE_LIMIT_GUIDE_PER_MINUTE`),
    `listRecent` 60/min (`H2_RATE_LIMIT_RECENT_PER_MINUTE`). Over the limit: 429, `Retry-After`, problem+json. The second (async)
    dispatch of the streamed guide is not charged again.
 2. **Limiter in Redis, shared by all replicas** (port `RateLimiter`, adapter `RedisRateLimiter`). Fixed window: one

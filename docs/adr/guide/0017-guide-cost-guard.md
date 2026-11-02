@@ -11,7 +11,7 @@ break the page.
 ## Decision
 The guards run in this order. Values are defaults; each has an `H2_` variable.
 1. **Per-minute rate limit** (`RateLimitInterceptor`, [0024](../edge/0024-http-edge-protection.md)): 10 questions per minute per
-   client (`helper2.rate-limit.guide-per-minute`), one limiter shared by `askGuide` and `askGuideStream`. The client
+   client (`helper2.rate-limit.guide-per-minute`), one limiter shared by `askGuideStream` and the tool guide `askResourceGuide`. The client
    is `platform.ClientKey`: the remote address, Internet Protocol version 4 (IPv4) as is, Internet Protocol version 6
    (IPv6) by its /64 (zone id dropped, IPv4-mapped becomes IPv4). The rate limiters and the daily quota use the same
    key. Counted in Redis, so the limit holds across all replicas. Over the limit: 429 with `Retry-After`.

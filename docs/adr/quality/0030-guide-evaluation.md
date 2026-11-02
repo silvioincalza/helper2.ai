@@ -13,7 +13,7 @@ drop in quality must be seen the next day, not at the next run by hand.
    (`n01`) and one nonsense question (`x01`, whose honest answer is no AI pick: `"expectNoPick": true`).
 2. **Script.** `node scripts/eval-guide.mjs [baseUrl] [--intents | --adversarial | --min-pass <share>]` (Node 18 or
    newer; default `http://localhost:8080`):
-   - gets a cross-site request forgery (CSRF) token from `GET /api/v1/me`, then sends each query to `POST /api/v1/guide`, the JavaScript Object Notation (JSON) endpoint, exactly as written;
+   - gets a cross-site request forgery (CSRF) token from `GET /api/v1/me`, then sends each query to `POST /api/v1/guide/stream` exactly as written and reads the answer from its last event (`answer`, or `error` counted as a failed question);
    - runs against a backend started with `H2_GUIDE_CACHE_TTL=PT1S` (staging), so every answer is a real model call
      and a rerun of the set is never served from the answer cache;
    - waits 7 s between questions, below the guide's 10-per-minute limit;

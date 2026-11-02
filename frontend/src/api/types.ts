@@ -5,20 +5,15 @@ type S = components['schemas'];
 /** Query parameters of GET /search, from the contract. */
 export type SearchQuery = NonNullable<operations['search']['parameters']['query']>;
 
-export type AudiencePath = S['AudiencePath'];
-export type Audience = S['Audience'];
 export type ResourceType = S['ResourceType'];
 export type SortOrder = S['SortOrder'];
 export type TriState = S['TriState'];
 export type SourceMode = S['SourceMode'];
-export type SourceOutcome = S['SourceOutcome'];
-export type ServedFrom = S['ServedFrom'];
 export type Freshness = S['Freshness'];
 export type ValueOrigin = S['ValueOrigin'];
 export type Verification = S['Verification'];
 export type DateFact = S['DateFact'];
 export type ResultCard = S['ResultCard'];
-export type PopularityMetric = S['PopularityMetric'];
 export type SourceStatus = S['SourceStatus'];
 export type SearchResponse = S['SearchResponse'];
 export type RecentResponse = S['RecentResponse'];
@@ -60,6 +55,4 @@ interface GuideStepData {
 export type GuideStepEvent = Exclude<S['GuideStreamEvent'], 'answer' | 'error'>;
 /** One real step of the guide, as streamed by POST /guide/stream. */
 export type GuideStep = { [K in GuideStepEvent]: { kind: K; data: GuideStepData[K] } }[GuideStepEvent];
-export type GuideStreamChecked = S['GuideStreamChecked'];
 export type GuideResponse = S['GuideResponse'];
-export type GuideRecommendation = S['GuideRecommendation'];

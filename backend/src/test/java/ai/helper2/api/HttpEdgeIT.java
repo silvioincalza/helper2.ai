@@ -163,7 +163,7 @@ class HttpEdgeIT {
         String body = "{\"request\":\"translate a document\"}";
         // "%67" is "g": Tomcat decodes it and Spring routes it to the same guide handler.
         java.util.List<Integer> statuses = new java.util.ArrayList<>();
-        for (String path : java.util.List.of("/api/v1/%67uide", "/api/v1/guide", "/api/v1/%67uide", "/api/v1/%67uide", "/api/v1/guide", "/api/v1/%67uide")) {
+        for (String path : java.util.List.of("/api/v1/%67uide/stream", "/api/v1/guide/stream", "/api/v1/%67uide/stream", "/api/v1/%67uide/stream", "/api/v1/guide/stream", "/api/v1/%67uide/stream")) {
             HttpResponse<String> r = send(HttpRequest.newBuilder(uri(path)).header("Content-Type", "application/json")
                 .header("Cookie", "XSRF-TOKEN=" + token).header("X-XSRF-TOKEN", token).POST(HttpRequest.BodyPublishers.ofString(body)));
             statuses.add(r.statusCode());

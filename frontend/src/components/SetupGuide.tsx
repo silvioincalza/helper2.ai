@@ -64,7 +64,7 @@ export function GuideMeButton({ title, open, onToggle, bodyId, primary = false, 
 /**
  * "Guide me" on a tool: how to install, configure, use and connect it, from its own sources only. Two parts,
  * loaded when opened: snippets per AI tool from its registry entry or README config example (GET /setup, no AI),
- * steps from its README or model card (POST /guide, AI-picked, every quote and command checked against the
+ * steps from its README or model card (POST /resources/{id}/guide, AI-picked, every quote and command checked against the
  * document). Focus moves to its heading when it opens.
  */
 export function GuideBody({ id, title, level }: { id: string; title: string; level: number }) {

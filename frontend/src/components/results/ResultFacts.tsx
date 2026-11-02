@@ -1,6 +1,6 @@
 import { ModeBadge } from '@/components/Badges';
 import { Icon } from '@/components/Icon';
-import type { ElementType } from 'react';
+import type { ElementType, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ResultCard } from '@/api/types';
 
@@ -40,17 +40,33 @@ export function ResultFacts({ card, groupTag: GroupTag }: { card: ResultCard; gr
     }
     return <dd className={f.value === null ? 'is-not-stated' : undefined}>{f.value ?? t('results.notStated')}</dd>;
   };
-  const group = (title: string, list: Fact[]) => (
+  const group = (title: string, list: Fact[], extra?: ReactNode) => (
     <div className="h2-facts__group">
       <GroupTag>{title}</GroupTag>
       <dl>
         {list.map((f) => (
           <div key={f.key}><dt>{f.label}</dt>{shown(f)}</div>
         ))}
+        {extra}
       </dl>
     </div>
   );
-  return <div className="h2-facts">{group(t('results.use'), use)}{group(t('results.build'), build)}</div>;
+  // "Works with" (ADR 0013): derived by disclosed rules from what sources said; each tool says why, on hover and to
+  // screen readers. No row when no rule matched: that is not a fact a source left out.
+  const worksWith = card.compatibleWith.length > 0 && (
+    <div key="worksWith">
+      <dt>{t('card.compatibleWith')}</dt>
+      <dd>
+        <ul className="plain-list h2-facts__tools">
+          {card.compatibleWith.map((f) => {
+            const why = t(`compat.basis.${f.basis}`, { evidence: f.evidence, source: f.sourceId ?? '' });
+            return <li key={f.tool} data-tool={f.tool} title={why}>{f.label}<span className="sr-only"> ({why})</span></li>;
+          })}
+        </ul>
+      </dd>
+    </div>
+  );
+  return <div className="h2-facts">{group(t('results.use'), use)}{group(t('results.build'), build, worksWith)}</div>;
 }
 
 /** The sources that list a result, as chips. */

@@ -21,7 +21,6 @@ servers:
 tags:
   - name: search
   - name: resources
-  - name: guide
   - name: guide-stream
   - name: setup
   - name: sources
@@ -188,11 +187,12 @@ paths:
         '404': { $ref: '#/components/responses/Problem' }
         '429': { $ref: '#/components/responses/Problem' }
 
-  /guide:
+  /guide/stream:
     post:
-      tags: [guide]
-      operationId: askGuide
-      summary: Ask the AI guide which catalog resources fit a need, with citations and a ready-to-use prompt.
+      # Own tag: the stream is a hand-written SseEmitter handler (the generator has no SseEmitter return type).
+      tags: [guide-stream]
+      operationId: askGuideStream
+      summary: Ask the AI guide which catalog resources fit a need, and receive each step as a server-sent event while it works.
       description: |
         Retrieval first, AI second. The request is turned into search terms (fast model), real
         candidates are retrieved with the normal federated search, and the reasoning model may only
@@ -200,33 +200,7 @@ paths:
         not a candidate or whose quote does not appear in the candidate's own text. Without a model
         the guide degrades to the top search results with status LLM_UNAVAILABLE.
 
-        Shares its bounds with `/guide/stream`: 503 at once when too many questions are running,
-        504 when the question passes its deadline (it is cancelled).
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/GuideRequest' }
-      responses:
-        '200':
-          description: Guide answer (possibly degraded; see status).
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/GuideResponse' }
-        '400': { $ref: '#/components/responses/Problem' }
-        '429': { $ref: '#/components/responses/Problem' }
-        '503': { $ref: '#/components/responses/Problem' }
-        '504': { $ref: '#/components/responses/Problem' }
-
-  /guide/stream:
-    post:
-      # Own tag: the generated GuideApi stays JSON-only; the stream is a hand-written SseEmitter handler.
-      tags: [guide-stream]
-      operationId: askGuideStream
-      summary: Ask the AI guide and receive each step as a server-sent event while it works.
-      description: |
-        Same answer as `POST /guide`, sent as `text/event-stream` so the client can show real progress.
-        Events, in this order (a step that does not happen is skipped; nothing is invented). The event
+        The answer comes as `text/event-stream` so the client can show real progress. Events, in this order (a step that does not happen is skipped; nothing is invented). The event
         names are the values of `GuideStreamEvent`:
 
         | event | data | when |
@@ -238,12 +212,14 @@ paths:
         | `chosen` | `GuideStreamChosen` | the reasoning model proposed its picks |
         | `validated` | `GuideStreamValidated` | the validator kept or rejected each pick |
         | `checked` | `GuideStreamChecked` | a second model call checked each kept pick's reason against its quote |
-        | `answer` | `GuideResponse` | always last on success; the same body `POST /guide` returns |
+        | `answer` | `GuideResponse` | always last on success |
         | `error` | `Problem` | always last on failure |
 
         A cached answer is sent as a single `answer` event. There is no retry on the server: a client
-        must not reconnect automatically, because each question costs model calls. Shares the rate
-        limit of `POST /guide`.
+        must not reconnect automatically, because each question costs model calls. When too many
+        questions are running, the stream is one `error` event with status 503; past the deadline the
+        question is cancelled and the last event is an `error` with status 504. Shares the rate limit
+        of `POST /resources/{id}/guide`.
       requestBody:
         required: true
         content:

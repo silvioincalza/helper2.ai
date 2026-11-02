@@ -25,7 +25,7 @@ start: Start {
 }
 
 each: Each question (7 s apart, below 10 per minute) {
-  script -> api: "POST /api/v1/guide {request}\nx-xsrf-token + cookie" {class: hot}
+  script -> api: "POST /api/v1/guide/stream {request}\nx-xsrf-token + cookie" {class: hot}
   api -> guide: "answer(request)"
   guide -> model: "plan" {class: ai-call}
   guide -> guide: "federated search, evidence gate"

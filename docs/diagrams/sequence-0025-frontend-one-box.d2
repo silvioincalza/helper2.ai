@@ -72,7 +72,7 @@ retry: Retry (no automatic reconnect) {
   user -> gs: "click Retry"
   gs -> hook: "retry(): attempt + 1"
   hook -> client: "askGuideStream(same request) again" {class: hot}
-  client -> server: "new POST (rate limit: 10/min,\nshared with POST /guide)" {class: hot}
+  client -> server: "new POST (rate limit: 10/min,\nshared with the tool guide)" {class: hot}
 }
 
 refine: Refine (reply to the question back, or remove a part) {

@@ -43,7 +43,7 @@ show progress, and every claim on the page must be traceable to a real result.
 5. **Streamed over Server-Sent Events (SSE).** `POST /api/v1/guide/stream` (`GuideStreamController`, hand-written
    `SseEmitter`) sends `planned`, `retrieved`, `chosen`, `validated`, `checked` and, always last, `answer` or `error`
    (`Problem`). A step that did not happen sends no event; a cached answer is one `answer` event. Headers:
-   `Cache-Control: no-store`, `X-Accel-Buffering: no`. `POST /api/v1/guide` returns the same answer as JSON.
+   `Cache-Control: no-store`, `X-Accel-Buffering: no`. The stream is the only guide endpoint.
    The work runs on a virtual thread under `GuideLimits` ([0017](0017-guide-cost-guard.md)). No server retry.
 6. **Keep-alive comments.** While a question runs, the stream sends the SSE comment `:keep-alive` every
    `H2_GUIDE_HEARTBEAT` (15 s). One model step can be silent for longer than the client's idle timeout (45 s,
@@ -73,7 +73,7 @@ show progress, and every claim on the page must be traceable to a real result.
   `QuestionReader.kt` (plan), `PickAnswer.kt` (retrieve, choose, gate) in the same package.
 - `backend/src/main/kotlin/ai/helper2/guide/Guide.kt` — `GuideValidator`, `GuideModel`, `GuideProgress`.
 - `backend/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java` — plan and choose calls.
-- `backend/src/main/java/ai/helper2/guide/web/GuideStreamController.java`, `GuideController.java`, `GuideDtoMapper.java`.
+- `backend/src/main/java/ai/helper2/guide/web/GuideStreamController.java`, `GuideDtoMapper.java`.
 - `backend/src/main/resources/prompts/guide/plan.txt`, `choose.txt`.
 - `api/openapi.yaml` — `/guide`, `/guide/stream` (tag `guide-stream`), `GuideStream*` schemas.
 

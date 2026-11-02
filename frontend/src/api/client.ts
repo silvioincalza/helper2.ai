@@ -186,7 +186,6 @@ export const api = {
     request<ToolGuide>('POST', `/resources/${encodeURIComponent(id)}/guide`, { signal }),
   reportResource: (id: string, body: IssueReportRequest) =>
     request<IssueReportAccepted>('POST', `/resources/${encodeURIComponent(id)}/reports`, { body }),
-  askGuide: (body: GuideRequest, signal?: AbortSignal) => request<GuideResponse>('POST', '/guide', { body, signal }),
   askGuideStream,
   listSources: (signal?: AbortSignal) => request<SourceInfo[]>('GET', '/sources', { signal }),
   getMe: (signal?: AbortSignal) => request<Me>('GET', '/me', { signal }),

@@ -5,7 +5,6 @@ import { signOut } from '@/api/client';
 import { useMe } from '@/context/MeContext';
 import { LANGUAGES, setLanguage } from '@/i18n';
 import { chooseTheme, currentTheme, otherTheme, subscribeTheme, type Theme } from '@/lib/theme';
-import { SAVED_ENABLED } from '@/lib/features';
 import { RESULTS_PATH } from '@/lib/searchState';
 import { takeSignInReturn } from '@/lib/signInReturn';
 import { Logo } from './Logo';
@@ -84,7 +83,7 @@ export function Header() {
         {/* Search is the home page (the logo goes there); the menu only lists the pages that are on. */}
         <nav aria-label={t('nav.main')} className="main-nav">
           <ul className="plain-list">
-            {SAVED_ENABLED && <li><NavLink to="/saved">{t('nav.saved')}</NavLink></li>}
+            <li><NavLink to="/saved">{t('nav.saved')}</NavLink></li>
             <li><NavLink to="/sources">{t('nav.sources')}</NavLink></li>
             <li><NavLink to="/mission">{t('nav.mission')}</NavLink></li>
             {isAdmin && <li><NavLink to="/admin">{t('nav.admin')}</NavLink></li>}

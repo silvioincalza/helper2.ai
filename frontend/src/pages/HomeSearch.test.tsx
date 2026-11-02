@@ -230,6 +230,8 @@ describe('search results', () => {
     expect(months.map((h) => h.textContent)).toEqual(['October 2026', 'July 2023', 'Creation date unknown']);
     expect(within(timeline).getByText('Oct 17, 2026')).toBeInTheDocument();
     expect(within(timeline).getByText('Creation date not stated')).toBeInTheDocument();
+    // One line per result, linking to its resource page.
+    expect(within(timeline).getByRole('link', { name: /New MCP/ })).toHaveAttribute('href', '/resource/11111111-1111-5111-8111-000000000001');
     expect(screen.queryByRole('combobox', { name: /Sort by/ })).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'List' }));

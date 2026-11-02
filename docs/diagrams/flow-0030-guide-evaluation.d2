@@ -18,7 +18,7 @@ loop: For each query, in order {
   class: group
   direction: down
   pause: "Wait 7 s after the first\n(guide limit: 10 per minute)" {class: config}
-  post: "POST /api/v1/guide\n(JSON endpoint, no path,\nquestion as written)" {class: app}
+  post: "POST /api/v1/guide/stream\n(no path, question as written;\nanswer = last event)" {class: app}
   ok: "HTTP 200?" {class: decision}
   err: "Row: HTTP <status>" {class: fail}
   quota: "Notice GUIDE_DAILY_QUOTA?" {class: decision}

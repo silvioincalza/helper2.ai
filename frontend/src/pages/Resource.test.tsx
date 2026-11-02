@@ -89,6 +89,19 @@ describe('the resource page', () => {
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
   });
 
+  it('Build facts say what it works with, and why, from the disclosed rules', async () => {
+    const card = { ...PG, compatibleWith: [
+      { tool: 'mcp', label: 'Any MCP client', basis: 'TYPE' as const, evidence: 'MCP_SERVER', sourceId: null },
+      { tool: 'ollama', label: 'Ollama', basis: 'TAG' as const, evidence: 'ollama', sourceId: 'github' },
+    ] };
+    mockApi({ [`GET /resources/${PG.id}`]: () => makeDetail({ card }) });
+    renderApp(`/resource/${PG.id}`);
+    const facts = await screen.findByRole('complementary', { name: 'Facts' });
+    expect(within(facts).getByText('Works with')).toBeInTheDocument();
+    expect(within(facts).getByText('Ollama').closest('li')).toHaveAttribute('title', 'github lists the tag “ollama”');
+    expect(within(facts).getByText(/MCP servers work with any MCP client/)).toBeInTheDocument();
+  });
+
   it('the setup steps written by AI are marked machine-readable', async () => {
     mockApi({
       [`GET /resources/${PG.id}`]: () => makeDetail({ card: PG }),
