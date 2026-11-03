@@ -26,7 +26,8 @@ import org.springframework.jdbc.core.simple.JdbcClient
  * (docs/eval/README.md).
  */
 @Tag("eval-record")
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+// MOCK, not NONE: the web beans (MeController takes the request) are part of the context.
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 class SearchSnapshotRecorder {
 
   @Autowired lateinit var sources: List<SearchSource>
