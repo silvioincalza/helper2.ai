@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,8 +31,12 @@ import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.csrf.CsrfTokenRequestHandler;
+import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.savedrequest.NullRequestCache;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
@@ -46,6 +51,9 @@ class SecurityConfiguration {
     /** Strict CSP that still lets the same-origin SPA run (no inline scripts, no third-party origins). */
     static final String CSP = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; "
         + "connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
+
+    /** The site uses no camera, microphone, location, payment or USB: no page, and no script on it, may ask. */
+    static final String PERMISSIONS_POLICY = "camera=(), microphone=(), geolocation=(), payment=(), usb=()";
 
     @Bean
     SecurityFilterChain api(HttpSecurity http, ObjectProvider<ClientRegistrationRepository> registrations,
@@ -66,7 +74,7 @@ class SecurityConfiguration {
                     .requestMatchers("/api/v1/me/bookmarks", "/api/v1/me/bookmarks/**").authenticated()
                     .requestMatchers(HttpMethod.DELETE, "/api/v1/me").authenticated()
                     .requestMatchers(HttpMethod.GET, "/api/v1/search", "/api/v1/recent", "/api/v1/events/upcoming", "/api/v1/resources/**", "/api/v1/sources", "/api/v1/me").permitAll()
-                    .requestMatchers(HttpMethod.POST, "/api/v1/resources/*/reports", "/api/v1/resources/*/guide", "/api/v1/guide", "/api/v1/guide/stream").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/v1/resources/*/reports", "/api/v1/resources/*/guide", "/api/v1/guide/stream").permitAll()
                     .requestMatchers("/api/**").denyAll()
                     .anyRequest().permitAll();
             })
@@ -74,13 +82,17 @@ class SecurityConfiguration {
             // one. A refused anonymous request would otherwise be saved in a new session for after sign-in, which
             // always returns to the admin page anyway (defaultSuccessUrl below).
             .requestCache(r -> r.requestCache(new NullRequestCache()))
-            .csrf(c -> c.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()).spa())
+            // The SPA setup of .spa(), but deferred: .spa() loads the token on every request, so every response
+            // without the cookie would set it. CsrfCookieFilter loads it on GET /api/v1/me only.
+            .csrf(c -> c.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                .csrfTokenRequestHandler(new DeferredSpaCsrfTokenRequestHandler()))
             .addFilterAfter(new CsrfCookieFilter(), org.springframework.security.web.csrf.CsrfFilter.class)
             .exceptionHandling(e -> e.defaultAuthenticationEntryPointFor(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
                 PathPatternRequestMatcher.withDefaults().matcher("/api/**")))
             .logout(l -> l.logoutUrl("/logout").logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler(HttpStatus.NO_CONTENT)))
             .headers(h -> h
                 .contentSecurityPolicy(csp -> csp.policyDirectives(CSP))
+                .permissionsPolicyHeader(p -> p.policy(PERMISSIONS_POLICY))
                 .referrerPolicy(r -> r.policy(org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)));
         if (registrations.getIfAvailable() != null) {
             // Sign-in on both ports, each host with its own callback ({baseUrl}): end users on the public host, the
@@ -138,8 +150,42 @@ class SecurityConfiguration {
         return roles;
     }
 
-    /** Forces the deferred CSRF token to load so the XSRF-TOKEN cookie exists before the SPA's first POST. */
+    /**
+     * Checks a token as Spring's SPA handler does: the raw cookie value when it comes in the {@code X-XSRF-TOKEN}
+     * header (what the SPA sends), the masked value when it comes as a form parameter. Unlike that handler it never
+     * loads the token itself, so a response only gets the cookie when something asks for the token.
+     */
+    static final class DeferredSpaCsrfTokenRequestHandler implements CsrfTokenRequestHandler {
+        private final CsrfTokenRequestHandler plain = new CsrfTokenRequestAttributeHandler();
+        private final CsrfTokenRequestHandler xor = new XorCsrfTokenRequestAttributeHandler();
+
+        @Override
+        public void handle(jakarta.servlet.http.HttpServletRequest request, jakarta.servlet.http.HttpServletResponse response,
+                           Supplier<CsrfToken> csrfToken) {
+            xor.handle(request, response, csrfToken);
+        }
+
+        @Override
+        public String resolveCsrfTokenValue(jakarta.servlet.http.HttpServletRequest request, CsrfToken csrfToken) {
+            String header = request.getHeader(csrfToken.getHeaderName());
+            return (StringUtils.hasText(header) ? plain : xor).resolveCsrfTokenValue(request, csrfToken);
+        }
+    }
+
+    /**
+     * Forces the deferred CSRF token to load on {@code GET /api/v1/me}, which the SPA calls when it starts, so the
+     * XSRF-TOKEN cookie exists before its first POST. Only there: on every other response (static files, the public
+     * cacheable GETs) a Set-Cookie would stop a CDN from caching it, and could share one token between visitors.
+     * A POST that comes without the cookie is refused (403) and gets a fresh cookie with the refusal.
+     */
     static final class CsrfCookieFilter extends OncePerRequestFilter {
+        static final String WRITES_COOKIE = "/api/v1/me";
+
+        @Override
+        protected boolean shouldNotFilter(jakarta.servlet.http.HttpServletRequest req) {
+            return !("GET".equals(req.getMethod()) && WRITES_COOKIE.equals(req.getRequestURI()));
+        }
+
         @Override
         protected void doFilterInternal(jakarta.servlet.http.HttpServletRequest req, jakarta.servlet.http.HttpServletResponse res,
                                         jakarta.servlet.FilterChain chain) throws jakarta.servlet.ServletException, java.io.IOException {

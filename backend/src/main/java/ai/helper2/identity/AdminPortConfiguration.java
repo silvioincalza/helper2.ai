@@ -44,6 +44,9 @@ class AdminPortConfiguration {
     }
 
     static final class BackOfficeOffPublicPort extends OncePerRequestFilter {
+        /** The same problem body as any unknown path, without the path: it runs before the security filters. */
+        static final String NOT_FOUND = "{\"type\":\"about:blank\",\"title\":\"Not Found\",\"status\":404}";
+
         private final AdminPort adminPort;
 
         BackOfficeOffPublicPort(AdminPort adminPort) {
@@ -54,10 +57,25 @@ class AdminPortConfiguration {
         protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
             if (!adminPort.admits(request) && AdminPort.isBackOffice(request)) {
-                response.sendError(HttpServletResponse.SC_NOT_FOUND);
+                notFound(response);
                 return;
             }
             chain.doFilter(request, response);
+        }
+
+        /**
+         * A plain 404 with the security headers the filter chain would add: this filter answers before it runs, and
+         * the container's error page would echo the path and a timestamp.
+         */
+        static void notFound(HttpServletResponse response) throws IOException {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            response.setContentType("application/problem+json");
+            response.setHeader("Cache-Control", "no-store");
+            response.setHeader("X-Content-Type-Options", "nosniff");
+            response.setHeader("X-Frame-Options", "DENY");
+            response.setHeader("Content-Security-Policy", SecurityConfiguration.CSP);
+            response.setHeader("Permissions-Policy", SecurityConfiguration.PERMISSIONS_POLICY);
+            response.getWriter().write(NOT_FOUND);
         }
     }
 }

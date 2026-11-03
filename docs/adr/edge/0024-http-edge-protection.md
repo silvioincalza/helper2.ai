@@ -34,10 +34,13 @@ must load the app on a direct visit, and a new release must reach browsers at on
    Cloudflare appended. A client can prepend addresses but cannot replace that one.
 5. **CSRF** (cross-site request forgery). `CookieCsrfTokenRepository.withHttpOnlyFalse()` with the SPA setup:
    cookie `XSRF-TOKEN`; `api/client.ts` sends it back as `X-XSRF-TOKEN` on every non-GET call. `CsrfCookieFilter` makes
-   sure the cookie exists before the first POST.
+   sure the cookie exists before the first POST: it writes it on `GET /api/v1/me`, which the SPA calls when it starts,
+   and nowhere else. A `Set-Cookie` on a static file or a public cacheable GET would stop Cloudflare from caching it.
+   A POST that comes without the cookie gets 403 and a fresh cookie.
 6. **Headers.** Content Security Policy (CSP): `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:;
    connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'`.
-   `Referrer-Policy: strict-origin-when-cross-origin`. The theme script is a file (`public/theme.js`), not inline.
+   `Referrer-Policy: strict-origin-when-cross-origin`. `Permissions-Policy: camera=(), microphone=(), geolocation=(),
+   payment=(), usb=()`: the site uses none of them. The theme script is a file (`public/theme.js`), not inline.
 7. **Session cookie**: `SameSite=Lax`, `HttpOnly`, `Secure` by default (`H2_COOKIE_SECURE`, true; the `dev` profile sets false).
    The session itself is in Redis ([0023](0023-identity-and-admin.md)).
 8. **Management port.** `H2_MANAGEMENT_PORT` (empty = app port). The chart sets 8081; the Services and the Ingresses never route

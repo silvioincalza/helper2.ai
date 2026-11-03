@@ -17,6 +17,8 @@ the cluster with an address from the vSwitch range (the Proxmox node masquerades
 2. **The public port has no back office.** `/admin`, `/admin/**`, `/api/v1/admin` and `/api/v1/admin/**` answer 404 on
    the public port (`BackOfficeOffPublicPort`, before the session and security filters). The check reads the decoded,
    normalised path the container maps, so `%61dmin` or `x/../admin` cannot pass as another path.
+   The 404 is a plain problem body with the same security headers as any other response (CSP, `nosniff`, `DENY`,
+   `Permissions-Policy`, `no-store`); it does not echo the path.
 3. **ADMIN only for a sign-in on the admin port.** The allow-list (`H2_ADMINS`, [0023](0023-identity-and-admin.md))
    still decides who is an admin, but the role is given only when the sign-in itself runs on the admin port. An admin
    who signs in on the public site is a plain user there. A stolen public session never carries ADMIN.
