@@ -56,6 +56,9 @@ app:
     guideModelCalls: null
   # How long a guide answer is kept (H2_GUIDE_CACHE_TTL, ISO-8601 duration; ADR 0041). Unset = 24 hours.
   guideCacheTtl: null
+  # Reuse the cached answer of a near-identical guide question at this cosine or above
+  # (H2_GUIDE_SIMILAR_THRESHOLD; ADR 0041). Unset = off. 0.96 is the measured threshold.
+  guideSimilarThreshold: null
   # Second port for the back office (ADR 0035): /admin, /api/v1/admin/** and the ADMIN role only there, behind the
   # Service helper2-admin. Route it only from an in-network host. 0 = one port for everything (admin on the public host).
   adminPort: 8082

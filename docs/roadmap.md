@@ -32,20 +32,12 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 
 ### Domain and identity
 - DNS: `CAA` record for the edge's certificate authority; `v=spf1 -all` and DMARC `p=reject` if no mail is sent.
-- Register a production GitHub OAuth App, add profile `oauth-github`, set `H2_GITHUB_OAUTH_CLIENT_ID`,
-  `H2_GITHUB_OAUTH_CLIENT_SECRET` and `H2_ADMINS=github:<numeric id>` ([ADR 0023](adr/edge/0023-identity-and-admin.md)).
 - ADMIN is decided at sign-in, so a change to `H2_ADMINS` needs a new sign-in.
 - Optional `H2_HF_TOKEN` on prod.
 - `H2_SETUP_GITHUB_TOKEN` (read-only, public repositories) in `app_env` on staging and prod; without it Guide me reads
   GitHub anonymously, 60 calls an hour ([ADR 0031](adr/guide/0031-setup-guide.md)).
-- **Sign-in on prod.** The site offers "Sign in with GitHub" wherever the server has a provider: turn on the
-  `oauth-github` profile on prod with its own GitHub App (helper2.ai and admin.helper2.ai callbacks)
-  ([ADR 0035](adr/edge/0035-admin-host.md)).
 - Turn on the registered Tavily tier (more web searches per day for signed-in users) once that sign-in is live
   ([ADR 0037](adr/search/0037-tavily-store-and-daily-quota.md)).
-- Admin host ([ADR 0035](adr/edge/0035-admin-host.md)): the app, the chart and the edge serve the admin port
-  (8082, Service `helper2-admin`, Ingress `helper2-admin` in incalza-me-infra); staging signs in with GitHub. Left
-  for prod: the client secret and `H2_ADMINS` in its app_env, then the `oauth-github` profile in `values-prod.yaml`.
 
 ### Quality gates
 - **Browser end-to-end tests (skipped for now, owner decision 27 Oct 2026).** No browser journey is automated,
@@ -116,9 +108,9 @@ Open items:
 - Watch whether the source `type`, now a source fact in enrichment, sends many proposals to CONFLICTING review
   (for example GitHub LIBRARY versus MCP_SERVER) ([ADR 0019](adr/scout/0019-evidence-gated-enrichment.md)).
 - Cross-language retrieval in vector search.
-- Similar-question reuse of guide answers ([ADR 0041](adr/guide/0041-guide-answer-cache.md)): set
-  `H2_GUIDE_SIMILAR_THRESHOLD=0.96` on prod after the release and watch `helper2.guide.cache{result="similar"}`;
-  live, the planner's readings of two wordings differ more often than the evaluation set assumes.
+- Similar-question reuse of guide answers ([ADR 0041](adr/guide/0041-guide-answer-cache.md)): prod runs it at 0.96;
+  watch `helper2.guide.cache{result="similar"}`, and raise or lower the threshold only with a new sweep. Live, the
+  planner's readings of two wordings differ more often than the evaluation set assumes.
 - A Grafana panel for the share of kept picks ranked 9+ (`helper2.guide.picks{rank="9+"}`), next to the alert
   `Helper2GuidePicksFromLowRanks` ([ADR 0015](adr/guide/0015-ai-guide-evidence-gate.md)).
 - Write the Scout's Tavily news and events to the same stored sets as searches, with their own share of credits
@@ -203,7 +195,7 @@ Open items:
 ## 10. Known limits
 
 What each decision leaves open. The ADRs describe only what the code does; their limits live here. Limits that
-already have a task above are not repeated: sign-in for everyone and SEO (section 2), backups, exporters and
+already have a task above are not repeated: SEO (section 2), backups, exporters and
 tokens (section 3), per-replica state (section 4), the labeled query set (section 2) and module coupling (section 8).
 Fix an item or accept it; when it no longer holds, remove it.
 

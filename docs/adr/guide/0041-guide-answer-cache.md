@@ -117,8 +117,9 @@ Checked live on staging (1 Nov 2026, the planner of the running release):
   (`helper2.guide.cache{result="similar"}`): the live planner reads two wordings of one need differently more often
   than the set assumes (another intent, a subject named or not). That lowers reuse, not precision.
 
-Staging runs the nightly guide evaluation with answers kept one second ([0030](../quality/0030-guide-evaluation.md)),
-so reuse is measured on prod, through the same metric.
+Prod sets the threshold to 0.96 (`app.guideSimilarThreshold` in `values-prod.yaml`). Staging runs the nightly guide
+evaluation with answers kept one second ([0030](../quality/0030-guide-evaluation.md)), so reuse is measured on prod,
+through the same metric.
 
 ### 5. Metrics
 `helper2.guide.cache{result}`: `exact` (key hit), `similar` (reused), `miss`, once per question when the cache is on.
@@ -170,4 +171,4 @@ A reused answer counts as outcome `cached` in `helper2.guide.questions`.
 [flow](../../diagrams/flow-0041-guide-answer-cache.svg) · [sequence](../../diagrams/sequence-0041-guide-answer-cache.svg)
 
 ## Roadmap
-- [Similar-question reuse on prod at 0.96, watched through its metric](../../roadmap.md#5-ai-quality-and-cost).
+- [Watch similar-question reuse on prod; change the threshold only with a new sweep](../../roadmap.md#5-ai-quality-and-cost).
