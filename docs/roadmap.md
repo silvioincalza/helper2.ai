@@ -25,6 +25,7 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 - Lawyer review of guide question embeddings ([ADR 0041](adr/guide/0041-guide-answer-cache.md)): whether an embedding of a
   question is personal data, the basis for keeping it up to a day, and the transfer of search and guide text to the
   NVIDIA API catalog in the US (not yet listed under transfers abroad).
+- Make server and Traefik logs delete after 3 months, as the Privacy page states.
 - Review each source's terms again for commercial use.
 - SEO: `robots.txt`, `sitemap.xml`, metadata and JSON-LD for detail pages. Detail pages are not crawlable
   today, because the frontend is a single-page app ([ADR 0025](adr/frontend/0025-frontend-one-box.md)).
