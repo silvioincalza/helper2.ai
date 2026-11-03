@@ -67,5 +67,4 @@ or in GitHub settings, and the deploy must not need a person to copy them.
 - Rewrite `app_env` in OpenBao with the `H2_` names: [roadmap](../../roadmap.md#1-before-the-hackathon-deadline-30-oct-2026-1800-zurich).
 - Short-lived deployer token from the OpenBao Kubernetes secrets engine: [roadmap](../../roadmap.md#3-operations).
 - Restart Redis on rotation when `redis.auth.existingSecret` is used: [roadmap](../../roadmap.md#3-operations).
-- Production GitHub OAuth App and `H2_ADMINS`: [roadmap](../../roadmap.md#domain-and-identity).
 - Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).
