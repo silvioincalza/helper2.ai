@@ -21,8 +21,9 @@ and chose between options for each part.
    pills, proof quote, sources tile, selected row) and the breakpoints 560, 640, 860 and 1000 px.
 2. **Home is only the home page, and says what the site is for.** One headline ("Find the right AI tool for your
    task."), one line on what it searches and how many sources (from the registry, never a fixed number), the one
-   box and four example needs for every kind of user. Then **What helper2 does** in three steps, and **News** (last
-   7 days) and **Events** (next 3 months) as still lists. Each row: date, type tag, source or place, status pill
+   box and four example needs for every kind of user. Right under them, so they show at first sight with the box,
+   **New this week** (last 7 days) and **Coming up** (next 3 months) as still lists. **What helper2 does** follows
+   as a quiet strip of three steps. Each row: date, type tag, source or place, status pill
    (Updated, Published, First seen, In 13 days…), name, and for News the source's own line (never an AI-written
    one). A list shows six rows; **Show all** opens the rest in place. Nothing on the page moves on its own. The
    header links to the two lists (`/#news`, `/#events`); Sources, Mission and the theme are in the footer.

@@ -1007,12 +1007,12 @@
   },
   "board": {
     "news": {
-      "title": "News",
-      "sub": "Last 7 days",
+      "title": "New this week",
+      "sub": "Newest first",
       "list": "New resources"
     },
     "events": {
-      "title": "Events",
+      "title": "Coming up",
       "sub": "Next 3 months",
       "list": "Next events"
     },

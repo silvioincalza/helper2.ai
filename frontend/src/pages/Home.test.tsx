@@ -39,8 +39,10 @@ describe('home: only the home page', () => {
     const does = (screen.getByRole('heading', { name: 'What helper2 does for you' })).closest('section') as HTMLElement;
     expect(within(does).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Searches for you', 'Recommends up to three', 'Shows its proof']);
     expect(screen.getAllByRole('search')).toHaveLength(1);
-    await board('News');
-    await board('Events');
+    // What is new comes before what helper2 does: the lists are what the page is about.
+    const newList = await board('New this week');
+    await board('Coming up');
+    expect(newList.compareDocumentPosition(does) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.queryByText('Acme Translator')).not.toBeInTheDocument();
     expect(screen.getByText(/No ads\./)).toBeInTheDocument();
     expect(screen.getByRole('contentinfo')).toHaveTextContent('Switzerland · EU servers');
@@ -77,7 +79,7 @@ describe('home: only the home page', () => {
   it('a list shows its first six rows and opens the rest in place', async () => {
     mockApi({ 'GET /recent': () => makeRecent({ items: news(8) }) });
     renderApp('/');
-    const section = await board('News');
+    const section = await board('New this week');
     await within(section).findByRole('link', { name: 'News item 0' });
     expect(within(section).getAllByRole('listitem')).toHaveLength(6);
     expect(within(section).getAllByText('Published')[0]).toBeInTheDocument();
@@ -91,7 +93,7 @@ describe('home: only the home page', () => {
   it('a list that fits shows no button, and nothing moves on its own', async () => {
     mockApi({ 'GET /recent': () => makeRecent({ items: news(6) }) });
     renderApp('/');
-    const section = await board('News');
+    const section = await board('New this week');
     await within(section).findByRole('link', { name: 'News item 5' });
     expect(within(section).queryByRole('button', { name: /Show all/ })).not.toBeInTheDocument();
     expect(section.querySelector('ul[aria-hidden="true"]')).toBeNull();
@@ -104,7 +106,7 @@ describe('home: only the home page', () => {
       { ...ai!, description: 'A summary a model wrote.', descriptionOrigin: 'AI_SUMMARY' },
     ] }) });
     renderApp('/');
-    const section = await board('News');
+    const section = await board('New this week');
     expect(await within(section).findByText('Connects an agent to Slack.')).toBeInTheDocument();
     expect(within(section).queryByText('A summary a model wrote.')).not.toBeInTheDocument();
   });
@@ -115,14 +117,14 @@ describe('home: only the home page', () => {
     const nav = await screen.findByRole('navigation', { name: 'Main' });
     expect(within(nav).getByRole('link', { name: 'News' })).toHaveAttribute('href', '/#news');
     expect(within(nav).getByRole('link', { name: 'Events' })).toHaveAttribute('href', '/#events');
-    expect((await board('News')).id).toBe('news');
-    expect((await board('Events')).id).toBe('events');
+    expect((await board('New this week')).id).toBe('news');
+    expect((await board('Coming up')).id).toBe('events');
   });
 
   it('/#events scrolls to the Events list', async () => {
     mockApi();
     renderApp('/#events');
-    const events = await board('Events');
+    const events = await board('Coming up');
     await waitFor(() => expect(Element.prototype.scrollIntoView).toHaveBeenCalled());
     expect(vi.mocked(Element.prototype.scrollIntoView).mock.contexts[0]).toBe(events);
   });
@@ -132,7 +134,7 @@ describe('home: only the home page', () => {
       event(1, '2026-11-12T00:00:00Z'), event(2, '2026-11-19T00:00:00Z'), event(3, '2027-01-21T00:00:00Z'),
     ] }) });
     renderApp('/');
-    const section = await board('Events');
+    const section = await board('Coming up');
     const rows = await within(section).findAllByRole('listitem');
     expect(rows[0]).toHaveTextContent('In 13 days');
     expect(rows[0]?.querySelector('.h2-status-pill--next')).not.toBeNull();

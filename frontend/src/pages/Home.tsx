@@ -15,8 +15,8 @@ const EXAMPLES = ['emails', 'pdf', 'laptop', 'postgres'] as const;
 const DOES = ['search', 'recommend', 'proof'] as const;
 
 /**
- * Home page (ADR 0040, 2): one headline that says what the site is for, the box, example needs for every kind of
- * user, what helper2 does in three steps, and the News and Events lists. The box and the examples open the results
+ * Home page (ADR 0040, 2): what you see first is the search and what is new: one headline, the box, example needs,
+ * then "New this week" and "Coming up" right under them. What helper2 does follows as a quiet strip. The box and the examples open the results
  * on /search. The header's News and Events links land on their lists (#news, #events).
  */
 export default function Home() {
@@ -59,6 +59,12 @@ export default function Home() {
         </section>
       </section>
 
+
+      <div className="h2-boards">
+        <NewsBoard />
+        <EventsBoard />
+      </div>
+
       <section className="home-does" aria-labelledby="does-h">
         <h2 id="does-h" className="home-does__title">{t('home.does.title')}</h2>
         <ol className="plain-list home-does__list">
@@ -71,11 +77,6 @@ export default function Home() {
           ))}
         </ol>
       </section>
-
-      <div className="h2-boards">
-        <NewsBoard />
-        <EventsBoard />
-      </div>
     </div>
   );
 }

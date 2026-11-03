@@ -173,7 +173,7 @@ describe('one box', () => {
   it('the loading feeds nest no status role inside their live regions', async () => {
     mockApi({ 'GET /recent': () => new Promise(() => undefined), 'GET /events/upcoming': () => new Promise(() => undefined) });
     renderApp('/');
-    expect(await screen.findByRole('heading', { name: /News/ })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /New this week/ })).toBeInTheDocument();
     expect(document.querySelectorAll('[aria-busy="true"]').length).toBeGreaterThanOrEqual(2);
     expect(document.querySelectorAll('[aria-live] [role="status"]')).toHaveLength(0);
   });
