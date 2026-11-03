@@ -89,12 +89,17 @@ the guide work long before that, and what makes the wait feel long is the first 
      `Helper2PodRestarting`: more than 2 restarts of a container in an hour.
    `promtool check rules` and `promtool test rules` (unit tests in `deploy/monitoring/tests/`) run in CI; chart-check
    renders the `PrometheusRule` once and validates it against its CRD schema.
-7. **Retention.** Required of the observability stack, which lives outside this repository and must use these values:
-   - logs (Loki: the app's stdout and the Traefik access logs): deleted after 3 months (`retention_period: 2160h`,
-     90 days), the period the privacy page states;
-   - traces (Tempo): deleted after 3 months (`block_retention: 2160h`), never kept longer than the logs they link to;
-   - metrics (Prometheus): 90 days (`--storage.tsdb.retention.time=90d`), at least 9 days for the Scout rule's
-     lookback. Meters carry no personal data, so this bound is cost, not privacy.
+7. **Retention.** The observability stack lives outside this repository. It must delete within these bounds, and
+   it does (read from the running stack on 3 November 2026):
+   - logs (Loki: the app's stdout and the ingress access logs, which hold IP addresses): at most 3 months, the
+     period the privacy page states. It runs `retention_enabled: true` with `retention_period: 1w`: 7 days;
+   - traces (Tempo): at most 3 months. It runs `block_retention: 336h`: 14 days, a week longer than the logs, so
+     the last week of traces links to logs already gone;
+   - metrics (Prometheus): at most 90 days, at least 9 days for the Scout rule's lookback. It runs
+     `--storage.tsdb.retention.time=60d` with a 12 GiB cap. Meters carry no personal data, so this bound is cost,
+     not privacy.
+   Shorter is allowed: less personal data held, less history for an incident. A longer period must stay inside the
+   bound, or the privacy page changes first.
    Database backups: 7 days on the `pg-backup` volume (`backup.retentionDays`); the off-site copy, when on, by its
    bucket's lifecycle rule ([0027](0027-runtime-topology.md)).
 8. **Guide latency target: time to the first useful event.** The first useful event is the first `retrieved` (the
