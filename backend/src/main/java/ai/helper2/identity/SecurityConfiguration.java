@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,8 +31,12 @@ import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.csrf.CsrfTokenRequestHandler;
+import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.savedrequest.NullRequestCache;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
@@ -77,7 +82,10 @@ class SecurityConfiguration {
             // one. A refused anonymous request would otherwise be saved in a new session for after sign-in, which
             // always returns to the admin page anyway (defaultSuccessUrl below).
             .requestCache(r -> r.requestCache(new NullRequestCache()))
-            .csrf(c -> c.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()).spa())
+            // The SPA setup of .spa(), but deferred: .spa() loads the token on every request, so every response
+            // without the cookie would set it. CsrfCookieFilter loads it on GET /api/v1/me only.
+            .csrf(c -> c.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                .csrfTokenRequestHandler(new DeferredSpaCsrfTokenRequestHandler()))
             .addFilterAfter(new CsrfCookieFilter(), org.springframework.security.web.csrf.CsrfFilter.class)
             .exceptionHandling(e -> e.defaultAuthenticationEntryPointFor(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
                 PathPatternRequestMatcher.withDefaults().matcher("/api/**")))
@@ -140,6 +148,28 @@ class SecurityConfiguration {
             roles.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
         }
         return roles;
+    }
+
+    /**
+     * Checks a token as Spring's SPA handler does: the raw cookie value when it comes in the {@code X-XSRF-TOKEN}
+     * header (what the SPA sends), the masked value when it comes as a form parameter. Unlike that handler it never
+     * loads the token itself, so a response only gets the cookie when something asks for the token.
+     */
+    static final class DeferredSpaCsrfTokenRequestHandler implements CsrfTokenRequestHandler {
+        private final CsrfTokenRequestHandler plain = new CsrfTokenRequestAttributeHandler();
+        private final CsrfTokenRequestHandler xor = new XorCsrfTokenRequestAttributeHandler();
+
+        @Override
+        public void handle(jakarta.servlet.http.HttpServletRequest request, jakarta.servlet.http.HttpServletResponse response,
+                           Supplier<CsrfToken> csrfToken) {
+            xor.handle(request, response, csrfToken);
+        }
+
+        @Override
+        public String resolveCsrfTokenValue(jakarta.servlet.http.HttpServletRequest request, CsrfToken csrfToken) {
+            String header = request.getHeader(csrfToken.getHeaderName());
+            return (StringUtils.hasText(header) ? plain : xor).resolveCsrfTokenValue(request, csrfToken);
+        }
     }
 
     /**
