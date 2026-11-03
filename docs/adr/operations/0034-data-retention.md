@@ -42,7 +42,7 @@ The periods are a product decision the owner may change; changing one must not n
    | Redis `helper2:session:*` | sign-in sessions | 30 minutes idle | Spring Session expiry |
    | In-memory caches (setup materials and registry specs) | copies of the above | 1 h; bounded entries; lost on restart | TTL and size bound |
    | Browser `localStorage` | language, theme, chosen AI client, bookmarks while signed out | until the user clears it; bookmarks move to the account at sign-in | the user's browser |
-   | Logs (Loki), traces (Tempo), metrics (Prometheus) | technical logs with addresses, traces, meters | 90 days | [0026](0026-observability.md) |
+   | Logs (Loki), traces (Tempo), metrics (Prometheus) | technical logs with addresses, traces, meters | at most 90 days (now 7 days, 14 days, 60 days) | [0026](0026-observability.md) |
    | Database backups (`pg-backup`) | full dumps | 7 days; the off-site copy by its bucket's lifecycle rule | [0026](0026-observability.md), [0027](0027-runtime-topology.md) |
 
    A resource is never purged while an issue report or a review item still points at it, nor (for an observed one)
