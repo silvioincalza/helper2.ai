@@ -1,8 +1,9 @@
 /* Home (ADR 0040, 2): headline, box, examples, the New this week and Coming up lists, then what helper2 does. Only semantic tokens. */
 
 /* Hero: compact and left-aligned with the lists under it, so the search and what is new both show at first sight. */
-.home-hero { max-width: 46rem; padding: var(--space-6) 0 var(--space-5); display: flex; flex-direction: column; gap: var(--space-3); }
-.home-title { margin: 0; font: 500 clamp(2rem, 2.4vw + 1rem, 3rem)/1.08 var(--font-display); letter-spacing: -0.03em; color: var(--ink); }
+/* The box spans the page, as wide as the lists under it; the headline and the line under it keep a reading width. */
+.home-hero { padding: var(--space-6) 0 var(--space-5); display: flex; flex-direction: column; gap: var(--space-3); }
+.home-title { margin: 0; max-width: 46rem; font: 500 clamp(2rem, 2.4vw + 1rem, 3rem)/1.08 var(--font-display); letter-spacing: -0.03em; color: var(--ink); }
 .home-lede { margin: 0 0 var(--space-2); max-width: 38rem; font-size: 1.0625rem; line-height: 1.55; color: var(--ink-2); }
 .home-hero .one-box { width: 100%; }
 .home-examples { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
