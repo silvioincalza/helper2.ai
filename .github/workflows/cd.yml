@@ -17,6 +17,10 @@ on:
         description: 12-char commit already built. Empty = HEAD of main for staging, what staging runs for prod
         type: string
         default: ''
+      rollback:
+        description: the tag is older than what the environment runs, on purpose
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -69,3 +73,4 @@ jobs:
     with:
       environment: ${{ inputs.environment }}
       tag: ${{ inputs.tag }}
+      rollback: ${{ inputs.rollback }}

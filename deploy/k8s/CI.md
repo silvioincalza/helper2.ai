@@ -26,7 +26,8 @@ manual:         environment=staging|prod, tag=<12-char commit> ─► deploy
 Prod runs only released versions. Staging runs every commit of `main`, so unfinished work (for example
 a new design built page by page) can sit on `main` and on staging while prod stays on the last release.
 
-Rollback: run `cd` manually with the previous tag (`helm -n helper2-<env> history helper2`), or
+Rollback: run `cd` manually with the previous tag (`helm -n helper2-<env> history helper2`) and
+`rollback` ticked (a deploy refuses a commit older than the one running without it), or
 `helm rollback`. The platform repo (incalza-me-infra) owns the namespaces, DNS, the Ingresses and the
 `deployer` ServiceAccounts of the hosted environments; CD never changes them.
 

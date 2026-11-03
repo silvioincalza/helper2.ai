@@ -14,6 +14,10 @@ on:
         description: image tag = 12-char commit. Empty = the caller's commit; for prod, what staging runs
         type: string
         default: ''
+      rollback:
+        description: allow a commit older than the one the environment runs (a deliberate rollback)
+        type: boolean
+        default: false
     outputs:
       tag:
         description: the tag that was deployed
@@ -70,6 +74,7 @@ jobs:
         id: tag
         env:
           INPUT_TAG: ${{ inputs.tag }}
+          ROLLBACK: ${{ inputs.rollback }}
         run: |
           set -euo pipefail
           tag=$INPUT_TAG
@@ -91,6 +96,16 @@ jobs:
           # Only commits that reached main (and so passed CI) may run with deploy secrets.
           git fetch --quiet origin +refs/heads/main:refs/remotes/origin/main
           git merge-base --is-ancestor "$sha" refs/remotes/origin/main || { echo "$tag is not on main"; exit 1; }
+          # Never go back by accident: a run left waiting at the prod approval for days deploys its own,
+          # older commit when approved (3 Nov 2026, prod). Older than what runs = rollback: true only.
+          running=$(kubectl -n "helper2-$ENV" get deployment helper2 \
+            -o jsonpath='{.spec.template.spec.containers[?(@.name=="app")].image}' 2>/dev/null || true)
+          running=${running##*:}
+          if [[ $running =~ ^[0-9a-f]{12}$ && $running != "$tag" && $ROLLBACK != true ]] \
+            && git rev-parse --verify --quiet "$running^{commit}" >/dev/null \
+            && git merge-base --is-ancestor "$sha" "$running"; then
+            echo "::error::$tag is older than $running, which $ENV runs; a rollback needs rollback: true"; exit 1
+          fi
           # Chart and image from the same commit, so an old image never runs with a newer chart.
           git checkout --quiet --detach "$sha"
           echo "TAG=$tag" >> "$GITHUB_ENV"
