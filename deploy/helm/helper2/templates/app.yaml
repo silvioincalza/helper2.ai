@@ -66,6 +66,9 @@ spec:
             {{- with .Values.app.guideCacheTtl }}
             - { name: H2_GUIDE_CACHE_TTL, value: {{ . | quote }} }
             {{- end }}
+            {{- with .Values.app.guideSimilarThreshold }}
+            - { name: H2_GUIDE_SIMILAR_THRESHOLD, value: {{ . | toString | quote }} }
+            {{- end }}
             - { name: H2_COOKIE_SECURE, value: "true" }
             # Only the Ingress controller reaches this pod (NetworkPolicy); it sets X-Forwarded-For, and
             # Tomcat takes the right-most address that is not an internal proxy.
