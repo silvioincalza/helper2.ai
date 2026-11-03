@@ -1,6 +1,6 @@
 # Helper2.ai
 
-The design system for every part of Helper2.ai: the search box, results, the AI guide, New this week and Coming up, resource pages, saved resources, sign-in, the sources page and admin. Version 4, from the November 2026 redesign: minimal and editorial, warm paper with one saffron accent, one tech font for the interface and a calm font for reading. The reference is the redesign canvas, saved in [../redesign](../redesign). Every page, its states and the dark theme are drawn there.
+The design system for every part of Helper2.ai: the search box, results, the AI guide, New this week and Coming up, resource pages, saved resources, sign-in, the sources page and admin. Version 4, from the November 2026 redesign ([ADR 0042](../../adr/frontend/0042-redesign-design-system-v4.md)): minimal and editorial, warm paper with one saffron accent, one tech font for the interface and a calm font for reading. The reference is the redesign canvas, saved in [../redesign](../redesign). Every page, its states and the dark theme are drawn there.
 
 The frontend still runs version 3 (`frontend/src/styles/tokens.css`). It moves to version 4 page by page when the redesign is built.
 
@@ -12,7 +12,7 @@ The frontend still runs version 3 (`frontend/src/styles/tokens.css`). It moves t
 4. **State in words, not color alone.** Every status (answered, slow, rate limited, timed out, failed, sources disagree) has a word and an icon: ✓ ! × ○ …. Color only repeats it.
 5. **One tech font, one reading font.** Geist Mono for the logo, headings, controls, labels, meta lines and the terminals. Geist for running text: paragraphs, list items, quotes, descriptions.
 6. **Quiet surfaces, one accent.** Saffron `accent` marks the one primary action per area. Selection uses `selected` (ink), so state and action never look alike.
-7. **Nothing moves on its own for long.** Lines print in once. The radar sweep turns 3 times and stops. No auto-rotating lists, so no Pause button is needed.
+7. **Nothing moves on its own for more than 5 seconds.** Lines print in once. The radar sweeps once and the cursor blinks three times. No auto-rotating lists, so no Pause button is needed.
 
 ## Content fundamentals
 
@@ -108,7 +108,7 @@ Layout is flex and grid with `gap`. Side menus wrap above the content on phones 
 
 ## Accessibility
 
-- **Moving content.** Terminal lines print in once (250ms each). The cursor blinks 6 times, then stays on. The radar sweep turns 3 times, then stops. Under `prefers-reduced-motion` nothing moves and nothing folds with animation. Nothing moves for more than 5 seconds, so WCAG 2.2.2 needs no Pause button.
+- **Moving content.** All automatic motion ends within 5 seconds of the page opening: terminal lines print in once (about 1 second), the radar sweeps once (4.5 seconds) and each dot lights up once as it passes, the cursor blinks 3 times (4.8 seconds) and stays on. So WCAG 2.2.2 needs no Pause button. Under `prefers-reduced-motion` nothing moves and nothing folds with animation. Dots that move when GET /sources changes are updates, not animation loops.
 - **Targets:** every control is at least 44px, also chips, toggles, Remove, admin buttons and terminal buttons.
 - **Contrast:** text 4.5:1, control borders and focus 3:1. Saffron `accent` text on `bg` is 3:1, so small saffron text uses `accent-ink` (5.5:1).
 - **Headings:** one `h1` per page.

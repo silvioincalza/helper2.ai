@@ -1,6 +1,6 @@
 # 0040 — Frontend design: home page, results with preview, guide picks bar, design system
 
-**Status.** Accepted. **Builds on:** [0025](0025-frontend-one-box.md),
+**Status.** Accepted. Decisions 1, 2, 4 and 7 are replaced by [0042](0042-redesign-design-system-v4.md) as each page moves to it. **Builds on:** [0025](0025-frontend-one-box.md),
 [0015](../guide/0015-ai-guide-evidence-gate.md), [0038](../guide/0038-ai-content-marking.md), [0039](0039-frontend-recent-answers-cache.md)
 
 ## Context
