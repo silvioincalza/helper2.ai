@@ -21,7 +21,7 @@ metrics: "/actuator/prometheus, health" {class: end}
 
 app: "8080 app (from the Ingress\ncontroller only)" {class: app}
 addr: "remoteAddr: X-Forwarded-For used only when\nH2_FORWARD_HEADERS_STRATEGY=native\n(default none)" {class: app}
-headers: "Response headers: CSP 'self' only,\nReferrer-Policy strict-origin-when-cross-origin" {class: app}
+headers: "Response headers: CSP 'self' only,\nReferrer-Policy strict-origin-when-cross-origin,\nPermissions-Policy (no camera, mic,\nlocation, payment, USB)" {class: app}
 
 csrf: "Not GET and no matching\nX-XSRF-TOKEN header?" {class: decision}
 e403: "403" {class: fail}

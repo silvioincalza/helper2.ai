@@ -94,6 +94,32 @@ class HttpEdgeIT {
     }
 
     @Test
+    void onlyMeWritesTheCsrfCookieSoCacheableResponsesCarryNoSetCookie() throws Exception {
+        for (String path : java.util.List.of("/api/v1/recent", "/api/v1/sources", "/", "/assets/missing.js")) {
+            HttpResponse<String> r = send(HttpRequest.newBuilder(uri(path)));
+            assertThat(r.headers().allValues("Set-Cookie")).as(path).noneMatch(c -> c.startsWith("XSRF-TOKEN="));
+        }
+        HttpResponse<String> me = send(HttpRequest.newBuilder(uri("/api/v1/me")));
+        assertThat(me.headers().allValues("Set-Cookie")).anyMatch(c -> c.startsWith("XSRF-TOKEN="));
+    }
+
+    @Test
+    void aPostWithoutTheCookieIsRefusedAndGetsOneForTheRetry() throws Exception {
+        HttpResponse<String> r = send(HttpRequest.newBuilder(uri("/api/v1/resources/00000000-0000-0000-0000-000000000000/reports"))
+            .header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString("{\"kind\":\"WRONG\",\"message\":\"definitely wrong\"}")));
+        assertThat(r.statusCode()).isEqualTo(403);
+        assertThat(r.headers().allValues("Set-Cookie")).anyMatch(c -> c.startsWith("XSRF-TOKEN="));
+    }
+
+    @Test
+    void everyResponseSaysTheSiteUsesNoCameraMicrophoneLocationPaymentOrUsb() throws Exception {
+        for (String path : java.util.List.of("/api/v1/me", "/api/v1/sources")) {
+            assertThat(send(HttpRequest.newBuilder(uri(path))).headers().firstValue("Permissions-Policy")).as(path)
+                .contains("camera=(), microphone=(), geolocation=(), payment=(), usb=()");
+        }
+    }
+
+    @Test
     void searchIsRateLimitedWithRetryAfter() throws Exception {
         int last = 0;
         HttpResponse<String> r = null;
@@ -182,7 +208,14 @@ class HttpEdgeIT {
 
     @Test
     void thePublicPortHasNoBackOffice() throws Exception {
-        assertThat(getAt(port, "/api/v1/admin/audit").statusCode()).isEqualTo(404);
+        HttpResponse<String> audit = getAt(port, "/api/v1/admin/audit");
+        assertThat(audit.statusCode()).isEqualTo(404);
+        // Answered before the security filters: the same headers, and a body that does not echo the path.
+        assertThat(audit.body()).isEqualTo("{\"type\":\"about:blank\",\"title\":\"Not Found\",\"status\":404}");
+        assertThat(audit.headers().firstValue("Content-Type")).hasValueSatisfying(v -> assertThat(v).startsWith("application/problem+json"));
+        assertThat(audit.headers().firstValue("X-Content-Type-Options")).contains("nosniff");
+        assertThat(audit.headers().firstValue("Cache-Control")).contains("no-store");
+        assertThat(audit.headers().firstValue("Content-Security-Policy")).hasValueSatisfying(v -> assertThat(v).contains("frame-ancestors 'none'"));
         assertThat(getAt(port, "/api/v1/admin").statusCode()).isEqualTo(404);
         assertThat(getAt(port, "/admin").statusCode()).isEqualTo(404);
         assertThat(getAt(port, "/admin/review").statusCode()).isEqualTo(404);

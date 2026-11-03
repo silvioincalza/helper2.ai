@@ -25,9 +25,11 @@ visit: Direct visit to /sources {
   cf -> tomcat: "GET /sources, X-Forwarded-For: client" {class: hot}
   tomcat -> sec: "remoteAddr = client address"
   sec -> spa: "no controller matched"
-  spa -> browser: "index.html, Cache-Control: no-cache,\nCSP, Set-Cookie XSRF-TOKEN" {class: hot}
+  spa -> browser: "index.html, Cache-Control: no-cache,\nCSP, Permissions-Policy" {class: hot}
   browser -> spa: "GET /assets/index-<hash>.js"
-  spa -> browser: "max-age 1 year, public, immutable"
+  spa -> browser: "max-age 1 year, public, immutable,\nno Set-Cookie (Cloudflare can cache it)"
+  browser -> sec: "GET /api/v1/me (the SPA starts)"
+  sec -> browser: "Set-Cookie XSRF-TOKEN\n(only this response writes it)" {class: hot}
 }
 
 search: Search {
