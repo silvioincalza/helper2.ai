@@ -172,7 +172,7 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
         <label htmlFor="q" className="sr-only">{t('search.label')}</label>
         <textarea ref={field} id="q" name="q" rows={1} className="searchbox-field"
           value={text} maxLength={MAX_QUESTION} autoComplete="off" spellCheck={false}
-          placeholder={t(hero ? 'search.heroPlaceholder' : 'search.placeholder')} onChange={(e) => onType(e.target.value)} onKeyDown={onKey}
+          placeholder={t('search.placeholder')} onChange={(e) => onType(e.target.value)} onKeyDown={onKey}
           aria-describedby={left <= SHOW_LEFT_FROM ? 'q-left' : undefined} />
         {left <= SHOW_LEFT_FROM && (
           <span id="q-left" className={`searchbox-left${left === 0 ? ' is-full' : ''}`} aria-live="polite">

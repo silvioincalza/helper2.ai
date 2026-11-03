@@ -14,13 +14,12 @@
     "label": "Guide me",
     "aria": "Guide me: {{title}}"
   },
-  "logo": {
-    "tagline": "AI on your radar"
-  },
   "nav": {
     "main": "Main",
     "menu": "Menu",
     "home": "Helper2.ai home",
+    "news": "News",
+    "events": "Events",
     "saved": "Saved",
     "sources": "Sources",
     "admin": "Admin",
@@ -58,32 +57,49 @@
     "noAds": "No ads."
   },
   "home": {
-    "title": "Find the right AI tool.",
+    "title": "Find the right AI tool for your task.",
+    "lede": "Search models, apps, MCP servers and papers from {{count}} sources at once. Ask in plain words and get a recommendation, with a quote that proves it.",
+    "ledeNoCount": "Search models, apps, MCP servers and papers from many sources at once. Ask in plain words and get a recommendation, with a quote that proves it.",
     "suggestGuide": "Sounds like a question — ask the guide: “{{q}}” →",
-    "examples": "Try an example",
-    "eyebrow": "AI on your radar",
-    "titleAccent": "See why it fits.",
-    "hint": "A few words search every source. A sentence, or Shift+Enter, asks the guide.",
+    "examples": "Try:",
     "example": {
+      "emails": {
+        "label": "Write emails faster",
+        "need": "an AI assistant that helps me write emails faster"
+      },
+      "pdf": {
+        "label": "Summarise long PDFs",
+        "need": "summarise long PDF documents with AI"
+      },
+      "laptop": {
+        "label": "Run a model on my laptop",
+        "need": "a small open model that runs on my laptop"
+      },
       "postgres": {
         "label": "Postgres MCP server",
         "need": "an MCP server so my agent can query a Postgres database"
+      }
+    },
+    "does": {
+      "title": "What helper2 does for you",
+      "search": {
+        "title": "Searches for you",
+        "text": "One question goes to every source at once: Hugging Face, GitHub, npm, arXiv and more. You get one clean list."
       },
-      "embeddings": {
-        "label": "Laptop embedding model",
-        "need": "a small open model for text embeddings that runs on a laptop"
+      "recommend": {
+        "title": "Recommends up to three",
+        "text": "Describe your task in a sentence. helper2 picks the best fits and says why."
       },
-      "translation": {
-        "label": "Free document translation",
-        "need": "translate documents between languages for free"
+      "proof": {
+        "title": "Shows its proof",
+        "text": "Every fact links to where it comes from. AI-written text is always labelled."
       }
     }
   },
   "search": {
     "label": "Search AI resources",
-    "placeholder": "Search tools, models, MCP servers… or ask in plain words",
+    "placeholder": "e.g. translate a newsletter for free",
     "submit": "Search",
-    "heroPlaceholder": "Describe what you need, or type a name",
     "clear": "Clear the box",
     "slashHint": "Press / to search",
     "charsLeft_one": "{{count}} character left",
@@ -990,7 +1006,6 @@
     "cached": "cached {{age}}"
   },
   "board": {
-    "paused": "Paused · tap to play",
     "news": {
       "title": "News",
       "sub": "Last 7 days",
@@ -1010,7 +1025,9 @@
       "weeks_other": "In {{count}} weeks",
       "months_one": "In {{count}} month",
       "months_other": "In {{count}} months"
-    }
+    },
+    "showAll": "Show all {{count}}",
+    "showFewer": "Show fewer"
   },
   "webSearches": {
     "feature": {

@@ -1,11 +1,10 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router';
-import '@fontsource-variable/inter';
+// One font for the whole site (the redesign): Space Grotesk, three weights. Code uses the system's monospace font.
+import '@fontsource/space-grotesk/400.css';
 import '@fontsource/space-grotesk/500.css';
 import '@fontsource/space-grotesk/600.css';
-import '@fontsource/jetbrains-mono/400.css';
-import '@fontsource/jetbrains-mono/500.css';
 import './i18n';
 import { routes } from './routes';
 import './styles/tokens.css';

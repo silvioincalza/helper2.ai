@@ -15,14 +15,17 @@ We drew the design as clickable prototypes (Home, Results, Resource, States, Sav
 and chose between options for each part.
 
 ## Decision
-1. **Same palette and fonts, one design system.** Paper, indigo ink, one saffron accent. Space Grotesk, Inter,
-   JetBrains Mono. `docs/design/system/tokens.json` holds the base tokens, the semantic tokens (type tags, status
+1. **Same palette, one font, one design system.** Paper, indigo ink, one saffron accent. One font, Space Grotesk
+   (400, 500, 600), for text and titles; code and commands in the system's monospace font, so nothing else downloads.
+   `docs/design/system/tokens.json` holds the base tokens, the semantic tokens (type tags, status
    pills, proof quote, sources tile, selected row) and the breakpoints 560, 640, 860 and 1000 px.
-2. **Home is only the home page.** Radar hero, the one box and example searches. Below: **News** (last 7 days) and
-   **Events** (next 3 months), two boards that scroll slowly on their own. Each row: date, type tag, source or place,
-   status pill (Updated, Published, First seen, In 13 days…), name. A board pauses on hover, on keyboard focus and
-   on tap (tap again to play). Under `prefers-reduced-motion` it does not move and scrolls by hand. No footer line
-   under the boards.
+2. **Home is only the home page, and says what the site is for.** One headline ("Find the right AI tool for your
+   task."), one line on what it searches and how many sources (from the registry, never a fixed number), the one
+   box and four example needs for every kind of user. Then **What helper2 does** in three steps, and **News** (last
+   7 days) and **Events** (next 3 months) as still lists. Each row: date, type tag, source or place, status pill
+   (Updated, Published, First seen, In 13 days…), name, and for News the source's own line (never an AI-written
+   one). A list shows six rows; **Show all** opens the rest in place. Nothing on the page moves on its own. The
+   header links to the two lists (`/#news`, `/#events`); Sources, Mission and the theme are in the footer.
 3. **Results on `/search`.** The box and the examples open `/search?q=…`. `/?q=…` shows the same page and declares
    `/search` as the canonical URL, so search engines see one page.
 4. **List and preview.** From 861 px: the result list on the left, a preview of the selected result on the right
@@ -74,7 +77,7 @@ and chose between options for each part.
 - A shared link opens the same search and the same result.
 - Search ranking and the guide's opinion stay visibly separate: "Guide picks" is the guide, "More results" is
   ranking.
-- A screen reader user gets the boards as a normal list.
+- A newcomer reads what the site does before scrolling; nothing moves, so there is nothing to pause.
 
 ## Alternatives considered
 - **Look: minimal search page, editorial news front page, or developer console** — each drawn on its own. Minimal
@@ -92,17 +95,15 @@ and chose between options for each part.
   environment, and staging would not test the image prod gets. Release-only prod deploys make it unneeded.
 
 ## Code
-- `frontend/src/styles/tokens.css` — the semantic tokens of `tokens.json`, each an alias of its base token, with
-  `board-height` and `board-loop`.
+- `frontend/src/styles/tokens.css` — the semantic tokens of `tokens.json`, each an alias of its base token.
 - `frontend/src/components/ui/` — `TypeTag`, `StatusPill`, `ProofQuote`, `SourceTiles`, `SelectableRow` (the
   selected-row outline), `PicksBar` (reserved height, waiting line, no-pick line, AI-written picks slot),
   `StatePanel` and `RetryButton` (every error, empty and 404 state), `CopyButton` and the type tabs; `ui.css`.
 - `frontend/src/hooks/useRetry.ts` — Try again moves focus to a heading, so it never falls to the page body.
-  `frontend/src/lib/motion.ts` — one `prefersReducedMotion` for the boards and the radar.
 - `frontend/src/hooks/useGuideStream.ts` — the guide stream for the question and refinement in the URL.
-- `frontend/src/pages/Home.tsx` — the home page: radar hero, the one box, the examples, the two boards.
-- `frontend/src/components/home/` — `HomeBoard` (the loop, the copy hidden from assistive tech and from Tab, pause
-  on hover, focus and tap, still under reduced motion), `NewsBoard` (`GET /recent`) and `EventsBoard`
+- `frontend/src/pages/Home.tsx` — the home page: headline, the one box, the examples, what helper2 does, the two
+  lists, and the scroll to `#news` or `#events`.
+- `frontend/src/components/home/` — `HomeBoard` (a still list, six rows, Show all), `NewsBoard` (`GET /recent`) and `EventsBoard`
   (`GET /events/upcoming`); `home.css`. `frontend/src/lib/countdown.ts` — Today, Tomorrow, In N days, weeks or
   months.
 - `frontend/src/lib/searchState.ts` — `RESULTS_PATH` is `/search`; `resourcePath(id)` builds every link to a
@@ -138,6 +139,6 @@ and chose between options for each part.
 [flow](../../diagrams/flow-0040-frontend-design.svg) · [sequence](../../diagrams/sequence-0040-frontend-design.svg)
 
 ## Roadmap
-[Frontend](../../roadmap.md#7-frontend): pause for touch users on the boards to review against WCAG 2.2.2; consent banner
+[Frontend](../../roadmap.md#7-frontend): consent banner
 and Privacy update before any tracking cookie; a release to take the design to prod.
 - Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

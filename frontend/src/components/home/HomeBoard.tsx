@@ -1,12 +1,11 @@
-import { useEffect, useState, type MouseEvent, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
 import { StatusPill, type StatusTone } from '@/components/ui/StatusPill';
-import { prefersReducedMotion, REDUCED_MOTION_QUERY } from '@/lib/motion';
 import './home.css';
 
-/** One row of a board: when, what kind, from where, its status in words, and the name that opens it. */
+/** One row of a list: when, what kind, from where, its status in words, the name that opens it, and a line about it. */
 export interface BoardRow {
   id: string;
   date: string;
@@ -17,22 +16,12 @@ export interface BoardRow {
   tone: StatusTone;
   title: string;
   href: string;
+  /** One line from the source, when it gives one. */
+  text?: string | null | undefined;
 }
 
-/** Fewer rows than this fit in view: the board does not loop. */
-const LOOP_MIN = 5;
-
-function useReducedMotion(): boolean {
-  const [reduce, setReduce] = useState(prefersReducedMotion);
-  useEffect(() => {
-    if (typeof window.matchMedia !== 'function') return;
-    const mq = window.matchMedia(REDUCED_MOTION_QUERY);
-    const onChange = () => setReduce(mq.matches);
-    mq.addEventListener?.('change', onChange);
-    return () => mq.removeEventListener?.('change', onChange);
-  }, []);
-  return reduce;
-}
+/** Rows shown before "Show all": a short list reads at a glance. */
+export const BOARD_FIRST = 6;
 
 interface Props {
   id: string;
@@ -48,28 +37,20 @@ interface Props {
 }
 
 /**
- * A News or Events board (ADR 0040, 2): the rows scroll slowly on their own, like a station board. Hover, keyboard
- * focus and a tap pause it (a tap again plays); under prefers-reduced-motion it stands still and scrolls by hand.
- * The loop shows the rows twice; the second copy is hidden from assistive tech and from the Tab key, so each row is
- * read and reached once.
+ * A News or Events list on the home page (ADR 0040, 2): a still list, newest or soonest first. The first rows show;
+ * "Show all" opens the rest in place. The section's id is the header link's target (#news, #events).
  */
 export function HomeBoard({ id, title, sub, listLabel, loading, error, errorText, emptyText, onRetry, rows }: Props) {
   const { t } = useTranslation();
-  const reduce = useReducedMotion();
-  const [paused, setPaused] = useState(false);
-  const loop = !reduce && rows.length >= LOOP_MIN;
-  const toggle = (e: MouseEvent<HTMLDivElement>) => {
-    if ((e.target as Element).closest('a')) return;
-    setPaused((p) => !p);
-  };
-  const cls = `h2-board${loop ? ' is-loop' : ' is-static'}${paused ? ' is-paused' : ''}`;
+  const [all, setAll] = useState(false);
+  const shown = all ? rows : rows.slice(0, BOARD_FIRST);
+  const listId = `${id}-list`;
 
   return (
-    <section className={cls} aria-labelledby={`${id}-h`}>
+    <section id={id} className="h2-board" aria-labelledby={`${id}-h`}>
       <div className="h2-board__head">
         <h2 id={`${id}-h`} className="h2-board__title">{title}</h2>
         <span className="h2-board__sub">{sub}</span>
-        {loop && paused && <span className="h2-board__state" role="status">{t('board.paused')}</span>}
       </div>
       <div aria-live="polite" aria-busy={loading}>
         {loading && (
@@ -84,26 +65,23 @@ export function HomeBoard({ id, title, sub, listLabel, loading, error, errorText
         {!loading && !error && rows.length === 0 && <StatePanel tone="notice" level={3} title={emptyText} />}
       </div>
       {rows.length > 0 && (
-        // A tap pauses or plays the loop; it is a touch extra, as hover and keyboard focus already pause it.
-        // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
-        <div className="h2-board__body" onClick={loop ? toggle : undefined}>
-          <div className="h2-board__track">
-            <ul className="plain-list h2-board__list" aria-label={listLabel}>
-              {rows.map((row) => <Row key={row.id} row={row} />)}
-            </ul>
-            {loop && (
-              <ul className="plain-list h2-board__list" aria-hidden="true">
-                {rows.map((row) => <Row key={row.id} row={row} copy />)}
-              </ul>
-            )}
-          </div>
-        </div>
+        <>
+          <ul id={listId} className="plain-list h2-board__list" aria-label={listLabel}>
+            {shown.map((row) => <Row key={row.id} row={row} />)}
+          </ul>
+          {rows.length > BOARD_FIRST && (
+            <button type="button" className="btn btn-ghost h2-board__more" aria-expanded={all} aria-controls={listId}
+              onClick={() => setAll((a) => !a)}>
+              {all ? t('board.showFewer') : t('board.showAll', { count: rows.length })}
+            </button>
+          )}
+        </>
       )}
     </section>
   );
 }
 
-function Row({ row, copy = false }: { row: BoardRow; copy?: boolean }) {
+function Row({ row }: { row: BoardRow }) {
   return (
     <li className="h2-board__row">
       <div className="h2-board__meta">
@@ -112,7 +90,8 @@ function Row({ row, copy = false }: { row: BoardRow; copy?: boolean }) {
         {row.where && <span className="h2-board__where">{row.where}</span>}
       </div>
       {row.status ? <StatusPill tone={row.tone}>{row.status}</StatusPill> : <span />}
-      <Link className="h2-board__name" to={row.href} tabIndex={copy ? -1 : undefined}>{row.title}</Link>
+      <Link className="h2-board__name" to={row.href}>{row.title}</Link>
+      {row.text && <p className="h2-board__text">{row.text}</p>}
     </li>
   );
 }
