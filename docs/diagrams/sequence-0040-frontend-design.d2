@@ -24,7 +24,7 @@ landing: Home {
   user -> home: "/"
   home -> feeds: "news of the last 7 days,\nevents of the next 3 months"
   feeds -> home: "rows"
-  home -> user: "headline, box, what helper2 does,\nthe two lists"
+  home -> user: "headline, box, the two lists,\nwhat helper2 does"
   user -> home: "types a question, presses Enter"
   home -> page: "navigate /search?q=…" {class: hot}
 }
