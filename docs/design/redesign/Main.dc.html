@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>helper2.ai home</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&amp;family=Geist:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+html{scroll-padding-top:96px}
+body{margin:0;background:#f7f2e9}
+*{box-sizing:border-box}
+a{color:#a8420a}a:hover{color:#1b1c3f}
+p,li,dd,dt,blockquote,.prose{font-family:'Geist', ui-sans-serif, system-ui, sans-serif}
+.mono,.term,.term *{font-family:'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace!important}
+summary{cursor:pointer;min-height:44px;display:flex;align-items:center}
+:focus-visible{outline:3px solid #1b1c3f;outline-offset:2px;border-radius:4px}
+.term :focus-visible{outline-color:#f7f2e9}
+.site-header{position:sticky;top:0;z-index:5}
+.search-bar{border-bottom:1px solid transparent}
+.search-bar.is-stuck{box-shadow:0 8px 20px rgba(27,28,63,.12);border-bottom-color:#e7dfd0}
+.search-bar.is-stuck .hero-ex,.search-bar.is-stuck .radar-legend{max-height:0!important;opacity:0;overflow:hidden;margin:0!important}
+.search-bar.is-stuck .wrap{padding-bottom:12px!important;padding-top:12px!important}
+.hero-ex,.radar-legend{max-height:200px;transition:max-height .35s ease,opacity .25s ease}
+.hero-text{transition:max-height .45s ease,opacity .3s ease,transform .45s ease,margin .45s ease}
+.tbl-scroll{overflow-x:auto}
+.tline:hover .tname{text-decoration:underline;text-underline-offset:3px}
+.rowlink:hover .rtitle{text-decoration:underline;text-underline-offset:3px}
+@media (max-width: 900px){
+  .radar-dots,.radar-legend{display:none!important}
+  .grid4{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .grid2{grid-template-columns:minmax(0,1fr)!important}
+}
+@media (max-width: 720px){
+  html{scroll-padding-top:150px}
+  .wrap,.narrow{padding-left:16px!important;padding-right:16px!important}
+  .narrow{padding-top:28px!important}
+  .site-header .wrap{padding-top:10px!important;padding-bottom:10px!important;column-gap:12px!important;row-gap:10px!important}
+  .site-nav{gap:12px!important;flex-wrap:nowrap}
+  .nav-secondary{display:none!important}
+  .site-search{order:3;flex-basis:100%!important}
+  .hero{padding-top:24px!important;padding-bottom:12px!important}
+  .search-bar{top:65px!important}
+  .search-bar .wrap{padding-top:8px!important;padding-bottom:12px!important}
+  .hero-text.is-collapsed{max-height:0!important;opacity:0;transform:translateY(-16px);overflow:hidden;margin:0!important}
+  .hero-text{max-height:420px}
+  .hero-input,.hero-btn{height:50px!important;font-size:16px!important}
+  .hero-btn{flex:0 0 auto!important;padding:0 16px!important}
+  .card{padding:22px!important}
+  .side-wrap{gap:24px!important}
+}
+@media (max-width: 420px){
+  .site-header .logo-tag{display:none}
+  .site-header .logo-word{font-size:20px!important}
+  .signin{padding:0 12px!important}
+  .acct-name{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+}
+@media (max-width: 560px){
+  .grid4{grid-template-columns:minmax(0,1fr)!important}
+  .tl-grid{grid-template-columns:minmax(0,1fr)!important;gap:8px!important}
+  .tline{grid-template-columns:auto minmax(0,1fr)!important;row-gap:0!important}
+  .tname{grid-column:1/-1}
+  .cards [role=rowgroup]:first-child{display:none!important}
+  .cards [role=table],.cards [role=rowgroup]{display:block!important;min-width:0!important;width:100%!important}
+  .cards [role=row]{display:grid!important;grid-template-columns:1fr auto;gap:2px 12px;padding:12px 0;border-top:1px solid #e7dfd0}
+  .cards [role=cell]{display:block!important;padding:0!important;border:0!important}
+  .cards .tbl-scroll{overflow:visible}
+}
+@keyframes line{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}}
+.line{animation:line .25s ease-out both}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}.blink{animation:blink 1.8s ease-in-out 6}
+@keyframes sweep{to{transform:rotate(360deg)}}.sweep{animation:sweep 8s linear 3}
+@keyframes blip{0%,100%{opacity:.55;box-shadow:0 0 0 0 rgba(224,106,29,0)}12%{opacity:1;box-shadow:0 0 0 0 rgba(224,106,29,.55)}40%{opacity:.9;box-shadow:0 0 0 14px rgba(224,106,29,0)}}.blip{animation:blip 4s ease-out 6}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<div style="min-height: 2000px; background: #f7f2e9; color: #1b1c3f; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace; display: flex; flex-direction: column;">
+<header class="site-header" style="border-bottom: 1px solid #e7dfd0; background: #f7f2e9;"><div class="wrap" style="max-width: 1040px; margin: 0 auto; padding-left: 24px; padding-right: 24px; box-sizing: border-box; width: 100%; padding-top: 16px; padding-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px 28px; flex-wrap: wrap;"><a href="Main.dc.html" aria-label="helper2.ai home" style="display: inline-flex; align-items: center; gap: 14px; text-decoration: none; color: #1b1c3f; flex: none; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;"><span aria-hidden="true" style="display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: #e06a1d; color: #1b1c3f;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="4.2" stroke-width="1.4" opacity="0.5"></circle><path d="M12 12 18.4 5.6"></path><path d="M16.2 11.1Q16.2 15 20.1 15Q16.2 15 16.2 18.9Q16.2 15 12.3 15Q16.2 15 16.2 11.1Z" fill="currentColor" stroke-width="1"></path></svg></span><span style="display: inline-flex; flex-direction: column; gap: 4px;"><span class="logo-word" style="font-size: 24px; font-weight: 500; line-height: 1; letter-spacing: -0.03em;">helper2.ai</span><span class="logo-tag" style="font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #4f4b63; line-height: 1.2;">AI on your radar</span></span></a><nav aria-label="Main" class="site-nav" style="display: flex; gap: 20px; align-items: center; font-size: 15px; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;"><a href="Main.dc.html#news-h" class="nav-secondary" style="display: inline-flex; align-items: center; min-height: 44px; color: #35344f; text-decoration: none;">News</a><a href="Main.dc.html#ev-h" class="nav-secondary" style="display: inline-flex; align-items: center; min-height: 44px; color: #35344f; text-decoration: none;">Events</a><a href="Saved.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; color: #35344f; text-decoration: none;">Saved</a><a href="SignIn.dc.html" class="signin" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 18px; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 15px; border-radius: 10px; text-decoration: none; cursor: pointer; box-sizing: border-box; color: #1b1c3f; background: transparent; border: 1px solid #8f8470; border-color: #1b1c3f; font-weight: 500;">Sign in</a></nav></div></header><main style="flex-grow: 1;">
+  <section class="wrap hero" style="max-width: 1040px; margin: 0 auto; padding-left: 24px; padding-right: 24px; box-sizing: border-box; width: 100%; max-width: none; position: relative; overflow: hidden; padding-top: 64px; padding-bottom: 24px; display: flex; flex-direction: column; align-items: center; text-align: center;">
+    <svg aria-hidden="true" viewBox="0 0 1440 420" preserveAspectRatio="xMidYMin slice" style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none;"><defs><linearGradient id="hsw" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#e06a1d" stop-opacity="0"></stop><stop offset="1" stop-color="#e06a1d" stop-opacity=".16"></stop></linearGradient></defs><circle cx="720" cy="170" r="140" fill="none" stroke="#d3c7b2" stroke-width="1"></circle><circle cx="720" cy="170" r="280" fill="none" stroke="#d3c7b2" stroke-width="1"></circle><circle cx="720" cy="170" r="420" fill="none" stroke="#d3c7b2" stroke-width="1"></circle><circle cx="720" cy="170" r="560" fill="none" stroke="#d3c7b2" stroke-width="1"></circle><circle cx="720" cy="170" r="680" fill="none" stroke="#d3c7b2" stroke-width="1"></circle><path d="M720 -530V870M20 170H1420" stroke="#e7dfd0"></path><g class="sweep" style="transform-origin: 720px 170px;"><path d="M720 170 L1420 170 A700 700 0 0 0 1215 -325 Z" fill="url(#hsw)"></path><path d="M720 170 L1420 170" stroke="#e06a1d" stroke-opacity=".45" stroke-width="1.5"></path></g></svg><div aria-hidden="true" style="position: absolute; left: 50%; top: 20px; width: 900px; height: 420px; transform: translateX(-50%); z-index: 0; pointer-events: none; background: radial-gradient(ellipse at center, rgba(247,242,233,.96) 0%, rgba(247,242,233,.9) 45%, rgba(247,242,233,0) 72%);"></div><div aria-hidden="true" class="radar-dots" style="position: absolute; inset: 0; z-index: 0;">
+      <sc-for list="{{radarDots}}" as="d" hint-placeholder-count="12">
+        <span title="{{d.tip}}" style="position: absolute; left: calc(50% + {{d.x}}px); top: {{d.y}}px; transition: left .8s ease, top .8s ease;">
+          <span class="blip" style="position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); width: {{d.size}}px; height: {{d.size}}px; border-radius: 50%; box-sizing: border-box; background: {{d.fill}}; border: 2px solid {{d.stroke}}; animation-delay: {{d.delay}}s; transition: width .8s ease, height .8s ease, background .4s;"></span>
+          <span style="position: absolute; top: 0; transform: {{d.labelT}}; white-space: nowrap; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.3; color: #4f4b63; text-align: center;">{{d.name}}<br><span style="color: {{d.noteColor}};">{{d.note}}</span></span>
+        </span>
+      </sc-for>
+    </div>
+    <div class="{{heroCls}}" style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 18px;">
+      <p style="margin: 0; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #a8420a;">One search · 12 AI sources</p>
+      <h1 style="margin: 0; font-weight: 500; font-size: clamp(30px, 3.6vw + 14px, 52px); line-height: 1.08; letter-spacing: -0.04em; max-width: 820px;">The metasearch for the AI&nbsp;ecosystem.</h1>
+      <p style="margin: 0; font-size: 18px; line-height: 1.6; color: #35344f; max-width: 640px;">Models, apps, agents, MCP servers and papers from Hugging Face, GitHub, arXiv and more, in one search. Ask in plain words and get a recommendation with a quote that proves it.</p>
+    </div>
+  </section>
+  <div class="{{barCls}}" style="position: sticky; top: 74px; z-index: 4; background: #f7f2e9; transition: box-shadow .3s ease, border-color .3s ease;">
+    <div class="wrap" style="max-width: 1040px; margin: 0 auto; padding-left: 24px; padding-right: 24px; box-sizing: border-box; width: 100%; padding-top: 4px; padding-bottom: 20px;">
+      <form role="search" class="hero-search" style="width: 100%; max-width: 820px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 12px;">
+        <label for="q" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;">What do you want to do?</label>
+        <div style="width: 100%; display: flex; gap: 10px; flex-wrap: wrap;">
+          <input id="q" class="hero-input" type="search" placeholder="e.g. translate a newsletter for free" style="height: 60px; box-sizing: border-box; padding: 0 16px; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 16px; color: #1b1c3f; background: #fffdf8; border: 1px solid #8f8470; border-radius: 10px; min-width: 0; flex: 999 1 200px; font-size: 18px; padding: 0 20px;">
+          <button type="submit" class="hero-btn" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 60px; padding: 0 18px; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 15px; border-radius: 10px; text-decoration: none; cursor: pointer; box-sizing: border-box; font-weight: 600; color: #1b1c3f; background: #e06a1d; border: 0; flex: 1 0 auto; padding: 0 32px; font-size: 16px;">Search</button>
+        </div>
+        <p class="hero-ex" style="margin: 0; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; color: #4f4b63;">A few words search. A question of 4 words or more also gets the guide's picks.</p>
+        <div class="hero-ex" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 10px; align-items: center; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;">
+          <span style="color: #4f4b63; font-size: 14px;">Try:</span><a href="Results.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border: 1px solid #8f8470; border-radius: 999px; color: #1b1c3f; background: transparent; text-decoration: none; font-size: 14px;">Write emails faster</a><a href="Results.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border: 1px solid #8f8470; border-radius: 999px; color: #1b1c3f; background: transparent; text-decoration: none; font-size: 14px;">Summarise long PDFs</a><a href="Results.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border: 1px solid #8f8470; border-radius: 999px; color: #1b1c3f; background: transparent; text-decoration: none; font-size: 14px;">Run a model on my laptop</a><a href="Results.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border: 1px solid #8f8470; border-radius: 999px; color: #1b1c3f; background: transparent; text-decoration: none; font-size: 14px;">Postgres MCP server</a>
+        </div>
+        <p class="radar-legend" style="margin: 2px 0 0; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: #4f4b63; display: flex; gap: 6px 16px; justify-content: center; flex-wrap: wrap;"><span>Each dot is a source.</span><span><span aria-hidden="true" style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #e06a1d; vertical-align: -1px;"></span> live, answered</span><span><span aria-hidden="true" style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; border: 2px solid #e06a1d; vertical-align: -1px;"></span> from our index</span><span style="color: #8a5a00;">! slow or limited</span><span style="color: #a4262c;">× failed</span><span>bigger = more new this week · closer = faster (live) or fresher (index)</span><a href="Sources.dc.html" style="color: #a8420a;">Sources page</a></p>
+      </form>
+    </div>
+  </div>
+  <div class="wrap" style="max-width: 1040px; margin: 0 auto; padding-left: 24px; padding-right: 24px; box-sizing: border-box; width: 100%; padding-top: 8px; padding-bottom: 56px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: 24px;"><section class="term" aria-labelledby="news-h" style="min-width: 0; background: #1b1c3f; border: 1px solid #1b1c3f; border-radius: 14px; overflow: hidden; box-shadow: 0 10px 30px rgba(27,28,63,0.18); font-size: 14px; line-height: 1.6; color: #f7f2e9;">
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 14px; background: #2d2e60;">
+        <span style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+          <span aria-hidden="true" style="display: flex; gap: 6px;"><span style="width: 11px; height: 11px; border-radius: 50%; background: #e06a1d;"></span><span style="width: 11px; height: 11px; border-radius: 50%; background: #f0a868;"></span><span style="width: 11px; height: 11px; border-radius: 50%; background: #f7f2e9;"></span></span>
+          <h2 id="news-h" style="margin: 0; font-size: 15px; font-weight: 600; color: #f7f2e9;">New this week</h2>
+        </span>
+        <span style="font-size: 12px; color: #b9b4cc;">newest first</span>
+      </div>
+      <div style="padding: 16px 18px 18px;">
+        <div aria-hidden="true" style="color: #e06a1d; margin-bottom: 8px;">$ <span style="color: #f7f2e9;">helper2 news --this-week</span></div>
+        <ul id="news-list" style="margin: 0; padding: 0; list-style: none;">
+          <sc-for list="{{news}}" as="r" hint-placeholder-count="6">
+            <li class="line" style="animation-delay: {{r.d}}ms;"><a href="Resource.dc.html" class="tline" aria-label="{{r.label}}" style="display: grid; grid-template-columns: 64px 128px minmax(0, 1fr); gap: 4px 12px; padding: 5px 0; min-height: 34px; text-decoration: none; color: #f7f2e9;">
+              <span style="color: #b9b4cc;">{{r.day}}</span>
+              <span style="color: #f0a868; white-space: nowrap;">{{r.tag}}</span>
+              <span class="tname" style="min-width: 0;">{{r.title}} <span style="color: #b9b4cc;">{{r.tail}}</span></span>
+            </a></li>
+          </sc-for>
+        </ul>
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 12px; flex-wrap: wrap;">
+          <span aria-hidden="true" style="color: #e06a1d;">$ <span class="blink" style="display: inline-block; width: 9px; height: 16px; background: #f7f2e9; vertical-align: -2px;"></span></span>
+          <button type="button" aria-expanded="{{newsOpen}}" aria-controls="news-list" onClick="{{newsToggle}}" style="min-height: 44px; padding: 0 14px; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; color: #f7f2e9; background: transparent; border: 1px solid #8587bd; border-radius: 8px; cursor: pointer;"><span aria-hidden="true" style="color: #e06a1d;">$ </span>helper2 news --all <span style="color: #b9b4cc;">· {{newsBtn}}</span></button>
+        </div>
+      </div>
+    </section><section class="term" aria-labelledby="ev-h" style="min-width: 0; background: #1b1c3f; border: 1px solid #1b1c3f; border-radius: 14px; overflow: hidden; box-shadow: 0 10px 30px rgba(27,28,63,0.18); font-size: 14px; line-height: 1.6; color: #f7f2e9;">
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 14px; background: #2d2e60;">
+        <span style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+          <span aria-hidden="true" style="display: flex; gap: 6px;"><span style="width: 11px; height: 11px; border-radius: 50%; background: #e06a1d;"></span><span style="width: 11px; height: 11px; border-radius: 50%; background: #f0a868;"></span><span style="width: 11px; height: 11px; border-radius: 50%; background: #f7f2e9;"></span></span>
+          <h2 id="ev-h" style="margin: 0; font-size: 15px; font-weight: 600; color: #f7f2e9;">Coming up</h2>
+        </span>
+        <span style="font-size: 12px; color: #b9b4cc;">next 3 months</span>
+      </div>
+      <div style="padding: 16px 18px 18px;">
+        <div aria-hidden="true" style="color: #e06a1d; margin-bottom: 8px;">$ <span style="color: #f7f2e9;">helper2 events --next 3mo</span></div>
+        <ul id="events-list" style="margin: 0; padding: 0; list-style: none;">
+          <sc-for list="{{events}}" as="r" hint-placeholder-count="6">
+            <li class="line" style="animation-delay: {{r.d}}ms;"><a href="Resource.dc.html" class="tline" aria-label="{{r.label}}" style="display: grid; grid-template-columns: 64px 128px minmax(0, 1fr); gap: 4px 12px; padding: 5px 0; min-height: 34px; text-decoration: none; color: #f7f2e9;">
+              <span style="color: #b9b4cc;">{{r.day}}</span>
+              <span style="color: #e06a1d; white-space: nowrap;">{{r.tag}}</span>
+              <span class="tname" style="min-width: 0;">{{r.title}} <span style="color: #b9b4cc;">{{r.tail}}</span></span>
+            </a></li>
+          </sc-for>
+        </ul>
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 12px; flex-wrap: wrap;">
+          <span aria-hidden="true" style="color: #e06a1d;">$ <span class="blink" style="display: inline-block; width: 9px; height: 16px; background: #f7f2e9; vertical-align: -2px;"></span></span>
+          <button type="button" aria-expanded="{{eventsOpen}}" aria-controls="events-list" onClick="{{eventsToggle}}" style="min-height: 44px; padding: 0 14px; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; color: #f7f2e9; background: transparent; border: 1px solid #8587bd; border-radius: 8px; cursor: pointer;"><span aria-hidden="true" style="color: #e06a1d;">$ </span>helper2 events --all <span style="color: #b9b4cc;">· {{eventsBtn}}</span></button>
+        </div>
+      </div>
+    </section></div>
+  <section aria-labelledby="what-h" style="border-top: 1px solid #e7dfd0;">
+    <div class="wrap" style="max-width: 1040px; margin: 0 auto; padding-left: 24px; padding-right: 24px; box-sizing: border-box; width: 100%; padding-top: 32px; padding-bottom: 48px; display: flex; flex-direction: column; gap: 16px;">
+      <h2 id="what-h" style="margin: 0; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #4f4b63;">What helper2 does for you</h2>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px 32px; font-size: 15px; line-height: 1.55;">
+        <p style="margin: 0; color: #4f4b63;"><span style="color: #a8420a; font-weight: 600;">1</span> <strong style="color: #1b1c3f; font-weight: 600;">Searches for you.</strong> One question goes to 12 AI sources at once.</p>
+        <p style="margin: 0; color: #4f4b63;"><span style="color: #a8420a; font-weight: 600;">2</span> <strong style="color: #1b1c3f; font-weight: 600;">Recommends up to three.</strong> Describe your task in 4 words or more; helper2 picks the best fits and says why.</p>
+        <p style="margin: 0; color: #4f4b63;"><span style="color: #a8420a; font-weight: 600;">3</span> <strong style="color: #1b1c3f; font-weight: 600;">Shows its proof.</strong> Every fact links to its source. AI-written text is labelled.</p>
+      </div>
+    </div>
+  </section>
+</main><footer style="border-top: 1px solid #e7dfd0; margin-top: auto;"><div class="wrap" style="max-width: 1040px; margin: 0 auto; padding-left: 24px; padding-right: 24px; box-sizing: border-box; width: 100%; padding-top: 28px; padding-bottom: 28px; display: flex; flex-direction: column; gap: 12px; font-size: 14px; color: #4f4b63;"><div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;"><a href="Main.dc.html" aria-label="helper2.ai home" style="display: inline-flex; align-items: center; gap: 14px; text-decoration: none; color: #1b1c3f; flex: none; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;"><span aria-hidden="true" style="display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: #e06a1d; color: #1b1c3f;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="4.2" stroke-width="1.4" opacity="0.5"></circle><path d="M12 12 18.4 5.6"></path><path d="M16.2 11.1Q16.2 15 20.1 15Q16.2 15 16.2 18.9Q16.2 15 12.3 15Q16.2 15 16.2 11.1Z" fill="currentColor" stroke-width="1"></path></svg></span><span style="display: inline-flex; flex-direction: column; gap: 4px;"><span class="logo-word" style="font-size: 20px; font-weight: 500; line-height: 1; letter-spacing: -0.03em;">helper2.ai</span><span class="logo-tag" style="font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #4f4b63; line-height: 1.2;">AI on your radar</span></span></a><div style="display: flex; flex-wrap: wrap; gap: 0 22px; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;"><a href="Mission.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; color: #4f4b63;">Mission</a><a href="Sources.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; color: #4f4b63;">Sources</a><a href="Privacy.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; color: #4f4b63;">Privacy</a><a href="Terms.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; color: #4f4b63;">Terms</a><a href="#" style="display: inline-flex; align-items: center; min-height: 44px; color: #4f4b63;">GitHub ↗</a><a href="#" style="display: inline-flex; align-items: center; min-height: 44px; color: #4f4b63;">Apache-2.0 ↗</a><button type="button" aria-pressed="false" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 18px; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 15px; border-radius: 10px; text-decoration: none; cursor: pointer; box-sizing: border-box; min-height: 44px; padding: 0 4px; color: #a8420a; background: none; border: 0; text-decoration: underline; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace; color: #4f4b63; font-size: 14px;">Dark theme</button></div></div><p style="margin: 0;">helper2.ai searches the sources listed on the <a href="Sources.dc.html" style="color: #4f4b63;">Sources</a> page, not the whole web. No ads. © 2026 Silvio Incalza · Switzerland · EU servers</p></div></footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2000}}'>
+const DATA = {"news": [{"day": "Oct 31", "tag": "[model]", "title": "[Model name]", "tail": "\u2190 Hugging Face", "d": 200, "label": "Oct 31, Model: [Model name], from Hugging Face"}, {"day": "Oct 31", "tag": "[library]", "title": "[Library name]", "tail": "\u2190 GitHub", "d": 320, "label": "Oct 31, Library: [Library name], from GitHub"}, {"day": "Oct 30", "tag": "[mcp server]", "title": "[MCP server name]", "tail": "\u2190 MCP Registry", "d": 440, "label": "Oct 30, MCP server: [MCP server name], from MCP Registry"}, {"day": "Oct 30", "tag": "[article]", "title": "[Headline]", "tail": "\u2190 Tavily", "d": 560, "label": "Oct 30, Article: [Headline], from Tavily"}, {"day": "Oct 29", "tag": "[paper]", "title": "[Paper title]", "tail": "\u2190 arXiv", "d": 680, "label": "Oct 29, Paper: [Paper title], from arXiv"}, {"day": "Oct 29", "tag": "[agent]", "title": "[Agent name]", "tail": "\u2190 GitHub", "d": 800, "label": "Oct 29, Agent: [Agent name], from GitHub"}, {"day": "Oct 28", "tag": "[model]", "title": "[Model name]", "tail": "\u2190 Hugging Face", "d": 200, "label": "Oct 28, Model: [Model name], from Hugging Face"}, {"day": "Oct 28", "tag": "[library]", "title": "[Package name]", "tail": "\u2190 npm", "d": 320, "label": "Oct 28, Library: [Package name], from npm"}, {"day": "Oct 27", "tag": "[mcp server]", "title": "[MCP server name]", "tail": "\u2190 MCP Registry", "d": 440, "label": "Oct 27, MCP server: [MCP server name], from MCP Registry"}, {"day": "Oct 27", "tag": "[prompt]", "title": "[Prompt name]", "tail": "\u2190 helper2 index", "d": 560, "label": "Oct 27, Prompt: [Prompt name], from helper2 index"}], "events": [{"day": "Nov 5", "tag": "[tomorrow]", "title": "Vultr Agent Rush Hackathon", "tail": "Hackathon \u00b7 Salt Lake City and online", "d": 200, "label": "Nov 5, Vultr Agent Rush Hackathon, Hackathon in Salt Lake City and online, Tomorrow"}, {"day": "Nov 6", "tag": "[in 2 days]", "title": "AI Policy Meetup", "tail": "Meetup \u00b7 Los Angeles", "d": 320, "label": "Nov 6, AI Policy Meetup, Meetup in Los Angeles, In 2 days"}, {"day": "Nov 6", "tag": "[in 2 days]", "title": "Smart Orchestration: Multi-Agent Systems", "tail": "Talk \u00b7 Online", "d": 440, "label": "Nov 6, Smart Orchestration: Multi-Agent Systems, Talk in Online, In 2 days"}, {"day": "Nov 7", "tag": "[in 3 days]", "title": "Visual AI Agriculture Meetup", "tail": "Meetup \u00b7 Online", "d": 560, "label": "Nov 7, Visual AI Agriculture Meetup, Meetup in Online, In 3 days"}, {"day": "Nov 12", "tag": "[in 8 days]", "title": "[Conference name]", "tail": "Conference \u00b7 Zurich", "d": 680, "label": "Nov 12, [Conference name], Conference in Zurich, In 8 days"}, {"day": "Nov 14", "tag": "[in 10 days]", "title": "[Hackathon name]", "tail": "Hackathon \u00b7 Online", "d": 800, "label": "Nov 14, [Hackathon name], Hackathon in Online, In 10 days"}, {"day": "Nov 18", "tag": "[in 14 days]", "title": "[Meetup name]", "tail": "Meetup \u00b7 Milan", "d": 200, "label": "Nov 18, [Meetup name], Meetup in Milan, In 14 days"}, {"day": "Nov 20", "tag": "[in 16 days]", "title": "[Talk title]", "tail": "Talk \u00b7 Online", "d": 320, "label": "Nov 20, [Talk title], Talk in Online, In 16 days"}, {"day": "Dec 2", "tag": "[in 28 days]", "title": "[Conference name]", "tail": "Conference \u00b7 Berlin", "d": 440, "label": "Dec 2, [Conference name], Conference in Berlin, In 28 days"}, {"day": "Dec 9", "tag": "[in 35 days]", "title": "[Workshop name]", "tail": "Workshop \u00b7 Geneva", "d": 560, "label": "Dec 9, [Workshop name], Workshop in Geneva, In 35 days"}]};
+const RADAR = [["GitHub", "LIVE", "SUCCEEDED", 410, 2, 38, [1, -150]], ["Hugging Face models", "LIVE", "SUCCEEDED", 240, 2, 64, [1, -30]], ["Hugging Face Spaces", "LIVE", "SUCCEEDED", 520, 2, 21, [1, 90]], ["arXiv", "LIVE", "SUCCEEDED", 620, 3, 47, [-1, -150]], ["npm", "LIVE", "TIMED_OUT", 2900, 3, 9, [-1, -30]], ["Tavily web", "LIVE", "RATE_LIMITED", null, 5, 12, [-1, 90]], ["MCP Registry", "INDEXED", "SUCCEEDED", null, 40, 17, [1, -90]], ["HF trending", "INDEXED", "SUCCEEDED", null, 55, 25, [1, 30]], ["HF providers", "INDEXED", "SUCCEEDED", null, 300, 6, [1, 140]], ["Awesome lists", "INDEXED", "FAILED", null, 720, 0, [-1, -90]], ["AI deadlines", "INDEXED", "SUCCEEDED", null, 180, 4, [-1, 30]], ["helper2 index", "CURATED", null, null, null, 3, [-1, 140]]];
+const COLORS = { SUCCEEDED: '#e06a1d', RATE_LIMITED: '#8a5a00', TIMED_OUT: '#8a5a00', SKIPPED: '#8a5a00', FAILED: '#a4262c' };
+const NOTE = { SUCCEEDED: '#a8420a', RATE_LIMITED: '#8a5a00', TIMED_OUT: '#8a5a00', SKIPPED: '#8a5a00', FAILED: '#a4262c' };
+function ago(m) { return m == null ? 'not checked' : m < 60 ? m + ' min ago' : Math.round(m / 60) + ' h ago'; }
+function radarDots(data) {
+  return data.map(([name, mode, outcome, ms, mins, fresh, slot]) => {
+    const live = mode === 'LIVE';
+    // Live sources: inner band, faster answer = closer. Index and curated: outer band, fresher check = closer.
+    const t = live ? Math.min((ms == null ? 3000 : ms) / 3000, 1) : Math.min((mins == null ? 1440 : mins) / 1440, 1);
+    const r = live ? 440 + t * 60 : 560 + t * 60;
+    const [side, dy] = slot;
+    const x = Math.round(side * Math.sqrt(r * r - dy * dy)), y = 170 + dy;
+    const color = outcome ? COLORS[outcome] : '#4f4b63';
+    const size = Math.round(10 + Math.sqrt(fresh) * 2.4);
+    const state = outcome == null ? 'curated' : outcome === 'SUCCEEDED' ? (live ? ms + ' ms' : ago(mins)) : outcome.toLowerCase().replace('_', ' ');
+    return {
+      name, x, y, size, delay: ((Math.atan2(dy, x) * 180 / Math.PI + 360) % 360 / 360 * 8).toFixed(2),
+      fill: live && outcome === 'SUCCEEDED' ? color : '#f7f2e9', stroke: color,
+      note: state, noteColor: outcome ? NOTE[outcome] : '#4f4b63',
+      labelT: 'translate(-50%, ' + (size / 2 + 4) + 'px)',
+      tip: name + ' · ' + (live ? 'searched live' : 'from our index') + ' · last check: ' + state + ' · ' + fresh + ' new this week'
+    };
+  });
+}
+// Canvas only: a fake refresh every 10 s so the dots move. The app reloads GET /sources once a minute while the tab is visible.
+function jitter(data) {
+  return data.map((s) => {
+    const [name, mode, outcome, ms, mins, fresh, slot] = s;
+    if (mode !== 'LIVE' || outcome !== 'SUCCEEDED') return s;
+    return [name, mode, outcome, Math.max(120, Math.min(2800, Math.round(ms * (0.6 + Math.random() * 0.8)))), mins, fresh + (Math.random() < 0.4 ? 1 : 0), slot];
+  });
+}
+
+class Component extends DCLogic {
+  termVals() {
+    const s = this.state || {};
+    const v = {};
+    [['news', 10], ['events', 10]].forEach(([k, total]) => {
+      const open = !!s[k + 'Open'];
+      v[k] = open ? DATA[k] : DATA[k].slice(0, 6);
+      v[k + 'Open'] = open ? 'true' : 'false';
+      v[k + 'Btn'] = open ? 'show fewer' : 'show all ' + total;
+      v[k + 'Toggle'] = () => this.setState({ [k + 'Open']: !open });
+    });
+    return v;
+  }
+  renderVals() {
+    const s = this.state || {};
+    const c = !!s.collapsed;
+    return Object.assign({
+      radarDots: radarDots(s.radar || RADAR),
+      heroCls: 'hero-text' + (c ? ' is-collapsed' : ''),
+      barCls: 'search-bar' + (c ? ' is-stuck' : '')
+    }, this.termVals());
+  }
+  componentDidMount() {
+    // Phones fold the title away after 24 px; wider screens only compact the pinned box once the title is gone.
+    this._onScroll = () => {
+      const c = window.scrollY > (window.innerWidth <= 720 ? 24 : 300);
+      if (c !== !!(this.state && this.state.collapsed)) this.setState({ collapsed: c });
+    };
+    window.addEventListener('scroll', this._onScroll, { passive: true });
+    this._timer = setInterval(() => this.setState({ radar: jitter((this.state && this.state.radar) || RADAR) }), 10000);
+  }
+  componentWillUnmount() { window.removeEventListener('scroll', this._onScroll); clearInterval(this._timer); }
+}
+</script>
+</body>
+</html>

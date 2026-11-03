@@ -1,23 +1,28 @@
 # Helper2.ai
 
-The design system for every part of Helper2.ai: the search-and-ask box, results, the AI guide, the News and Events boards, resource pages, saved resources, the sources page and admin. The look is warm paper with one saffron accent, a geometric display face for headings, a sans for doing things, and a mono for names that came from a source. The reference design is the boards in [../boards](../boards) (Home and Results — list + preview), agreed on 30 October 2026.
+The design system for every part of Helper2.ai: the search box, results, the AI guide, New this week and Coming up, resource pages, saved resources, sign-in, the sources page and admin. Version 4, from the November 2026 redesign: minimal and editorial, warm paper with one saffron accent, one tech font for the interface and a calm font for reading. The reference is the redesign canvas, saved in [../redesign](../redesign). Every page, its states and the dark theme are drawn there.
+
+The frontend still runs version 3 (`frontend/src/styles/tokens.css`). It moves to version 4 page by page when the redesign is built.
 
 ## Principles
 
-1. **One entry point.** One box: the hero of the home page, in the header everywhere else. Typing searches live; one button changes its job with the text (a few words search, four or more ask the guide), and Shift+Enter always asks. Never add a second search field, a scope switch or a mode switch.
-2. **Show where every fact came from.** Each result, card, fact and pick names its source. A value no source stated reads **Unknown**, in `not-stated`. Dates are the source's own; otherwise "First seen" with the date Helper2.ai first saw it.
-3. **Checked versus not checked.** A guide quote the validator matched word for word sits on `quote-bg` under "Evidence, checked word for word in the resource's own text". The model's own reason is always labelled "AI-written", says if a second model call checked it, and is never styled like the quote.
-4. **State in words, not color alone.** Every status (source answered, cached, rate-limited, failed; verified, conflicting, rejected) carries a word and an icon. Color only repeats it.
-5. **Editorial voice, tool behavior.** Space Grotesk (`display`) for page and section headings, board and result titles, and quotes. Inter (`sans`) for every control and all running text. JetBrains Mono (`mono`) for resource names and source status.
+1. **One entry point.** One search box: in the middle of the home page, in the header everywhere else. A few words search. A question of 4 words or more also starts the guide. Short searches show **Ask the guide**. Never add a second search field, a scope switch or a mode switch.
+2. **Show where every fact came from.** Each result, fact and pick names its source. A value no source stated is **not stated**, in `status-warn-ink`, grouped in one line. Dates are the source's own; otherwise "First seen" with the date Helper2.ai first saw it.
+3. **Checked versus not checked.** A guide quote the validator matched word for word sits on `quote-bg` under "Checked word for word in the source". The model's own reason carries its own "AI-written reason" label and is never styled like the quote.
+4. **State in words, not color alone.** Every status (answered, slow, rate limited, timed out, failed, sources disagree) has a word and an icon: ✓ ! × ○ …. Color only repeats it.
+5. **One tech font, one reading font.** Geist Mono for the logo, headings, controls, labels, meta lines and the terminals. Geist for running text: paragraphs, list items, quotes, descriptions.
 6. **Quiet surfaces, one accent.** Saffron `accent` marks the one primary action per area. Selection uses `selected` (ink), so state and action never look alike.
+7. **Nothing moves on its own for long.** Lines print in once. The radar sweep turns 3 times and stops. No auto-rotating lists, so no Pause button is needed.
 
 ## Content fundamentals
 
-- Write the way a knowledgeable colleague talks: "Typing searches every source", "No results. Try fewer words, or ask the guide in plain words."
-- Buttons say what happens: **Search**, **Ask the guide**, **Save**, **Copy prompt**, **Try again**.
+- Write the way a knowledgeable colleague talks: "A few words search. A question of 4 words or more also gets the guide's picks."
+- Buttons say what happens: **Search**, **Ask the guide**, **Save**, **Remove**, **Send report**, **Try again**.
 - Errors say what went wrong and what to do next, without apology.
-- Never invent popularity, dates or facts. Mock content uses brackets: `[stated date]`.
-- Metadata reads source first, then date: "GitHub · Oct 21, 2026".
+- Never invent popularity, dates, limits or facts. Mock content uses brackets: `[stated date]`, `[Numbers set in the limits ADR]`.
+- Every count comes from data: "10 of 12 sources answered", never a number typed into the page.
+- Metadata reads type first, then source, then date: "Library · github.com · updated Oct 2026".
+- Proper names keep their real case, also in the terminals.
 - English UI; the guide accepts any language.
 
 ## Visual foundations
@@ -25,134 +30,145 @@ The design system for every part of Helper2.ai: the search-and-ask box, results,
 | Role | Token | Use |
 |---|---|---|
 | Page | `bg` | Everything sits on it. |
-| Objects | `surface` + `border` | Cards, lists, panels. `radius-xl` for cards, `radius-lg` for lists and panels. |
-| Idle chips | `surface-tint` + `accent-deep` | Filter, topic and example pills. |
-| Selected | `selected` + `on-selected` | The active pill or tab. |
-| Primary action | `accent` + `on-accent` | One per area: Ask the guide, Copy prompt. |
-| Links | `accent-ink` | Text links and text buttons. |
-| Caution | `not-stated` | Unknown values, First seen dates, cached or rate-limited sources. |
-| Error | `danger` | Failed sources and requests, rejected claims, form errors. |
-| Sources grid | `source-tile-bg` + `source-tile-line`, dots in `status-ok` / `status-warn` | The sources that answered a search, under the results. No dark band any more. |
-| Status pills | `pill-ok-*`, `pill-warn-*`, `pill-next-*`, `pill-later-*` | Updated or Published, First seen, the next event, later events. |
+| Objects | `surface` + `border` | Cards, panels, callouts, the sign-in card. |
+| Controls | `border-strong` | Inputs, selects, ghost buttons, chips, toggles. 3:1 on `bg`. |
+| Selected | `selected` + `on-selected` | The active chip or view (List, Timeline). |
+| Primary action | `accent` + `on-accent` | One per area: Search, Open on source ↗, Send report. |
+| Links | `accent-ink` | Text links, dates, ranks, the eyebrow. Saffron `accent` is never used for small text on `bg` (3:1 only). |
+| Checked | `quote-bg`, `status-ok-ink` | Checked quotes, answered sources. |
+| Caution | `status-warn-ink` | Not stated, sources disagree, slow, rate limited, timed out. |
+| Error | `danger` | Failed sources and requests, form errors, delete. |
+| Terminals | `term-*` | New this week and Coming up. Navy in light, near-black with an outline in dark. |
+| Radar | `ring`, `accent`, `status-*` | The decorative radar behind the home title. |
 
-- **Spacing:** 4-based steps `space-1` to `space-7` (4, 8, 12, 16, 24, 32, 48px). Pills `space-2` apart, card parts `space-3`, page sections `space-5`, gutters `space-6`, the home hero `space-7`.
-- **Controls:** at least `target-min` (44px) tall. The search box and its buttons are `box-height` (56px).
-- **Focus:** a 3px `focus` outline with 2px offset on every control.
-- **Elevation:** none. Objects are set apart by `border`, never by shadow.
-- **Width:** the page column stops at `content-wide` (1240px), with 32px gutters, 16px below `bp-small`.
-- **Themes:** light and dark; every token has both values. The header button switches light ↔ dark; light is the default, and the device setting is not followed.
+- **Spacing:** 4-based steps `space-1` to `space-7` (4, 8, 12, 16, 24, 32, 48px).
+- **Controls:** at least `target-min` (44px) tall, also chips, toggles and buttons inside terminals. The home search box is `box-height` (60px).
+- **Focus:** a 3px `focus` outline with 2px offset on every control. `scroll-padding-top` keeps a focused item below the sticky header and the pinned search box.
+- **Elevation:** three shadows only: `shadow-raised` (terminals), `shadow-pinned` (the pinned search box), `shadow-overlay` (dialogs, the account panel, the phone menu). Everything else is set apart by `border`.
+- **Width:** the page column stops at `content-wide` (1040px); one-column pages at `reading-max` (808px). Gutters 24px, 16px on phones.
+- **Themes:** light and dark; every token has both values. The footer button switches light ↔ dark; light is the default.
 
 ## Type tags
 
-Every resource carries one type tag. Fill and text differ in lightness, not just hue.
-
-| Type | Fill | Text |
-|---|---|---|
-| Paper | `tag-paper-bg` | `accent-deep` |
-| Model | `tag-model-bg` | `tag-model-ink` |
-| News, Article | `tag-news-bg` | `tag-news-ink` |
-| MCP server | `tag-mcp-bg` | `checked-ink` |
-| Library | `tag-paper-bg` | `accent-deep` |
-| Product, Agent, Prompt, Skill, Dataset, Event, Other | `tag-other-bg` | `ink-2` |
-
-The tag text is the type name in `mono`, 11px, uppercase, 0.06em tracking, 5px by 8px padding, 6px corners.
+Type is a word, not a coloured badge. In lists and on resource pages it is the first word of the meta line, in `ink-2`, weight 600. In terminals it is `[model]` in `term-tag`. The type names are the API's: Product, Model, Agent, Prompt, Skill, MCP server, Library, Dataset, Article, Paper, News, Event, Course, Other. The `tag-*` color tokens stay for the current code until the redesign replaces it.
 
 ## Logo
 
-The mark is an ink-stroke radar (outer ring, faint inner ring, one sweep line, one filled four-point AI spark: "AI on your radar") on a 40px `accent` tile with 12px corners (`assets/Logos/radar-mark.svg`). In the header it sits 16px (`space-4`) left of the wordmark "helper2.ai", set in `display` at 32px in `ink`. Under the wordmark, 2px below, sits the tagline **AI ON YOUR RADAR**: `sans` 12px, weight 600, uppercase, 0.08em tracking, in `muted`. The radar strokes and spark follow `on-accent` (ink), on the `accent` tile in both themes. Never recolor the radar, add effects, or drop the wordmark in the header.
+The mark is an ink-stroke radar (outer ring, faint inner ring, one sweep line, one filled four-point AI spark) on a 40px `accent` tile with 12px corners (`assets/Logos/radar-mark.svg`). It sits 14px left of the wordmark "helper2.ai" in Geist Mono 24px, weight 500. Under it, 4px below, the tagline **AI ON YOUR RADAR**: Geist Mono 11px, weight 600, uppercase, 0.1em tracking, in `muted`. Below 420px the tagline hides and the wordmark is 20px. Never recolor the radar, add effects, or drop the wordmark in the header.
 
 ## Iconography
 
-Apart from the radar mark, icons are small 14px stroke glyphs that sit beside words, never alone: check, cross, clock, pause, warn, info, bookmark, external link, refresh. Use `→` for "go further" and `↗` for an external source. Never emoji. An icon-only button (close `×`) carries an `aria-label`.
+Apart from the radar mark, icons are small stroke glyphs beside words, never alone: check, cross, warn, clock, external link, menu, close. Use `→` for "go further" and `↗` for an external source. Never emoji. An icon-only button (menu, close) carries an `aria-label`.
 
 ## Home page
 
-Home only: the hero, then two boards. The results live on their own page.
+1. **Hero**, centred: the eyebrow "One search · N AI sources" (N from GET /sources), the title "The metasearch for the AI ecosystem.", one line on what it does. Behind it the radar (see Radar).
+2. **Pinned search box**, full width up to 820px: box, Search, one hint line, example chips, the radar legend. It sticks under the header while the page scrolls; once the title is gone, the hints and legend fold away and it gets `shadow-pinned`.
+3. **New this week** and **Coming up**: two terminals side by side, stacked below 920px. See TerminalList.
+4. **What helper2 does for you**: a quiet strip of three steps.
 
-1. **Hero** on `hero-bg`: radar rings, slow sweep and blips behind, the mark and wordmark, the eyebrow **AI ON YOUR RADAR**, the two-part `display` title (second half in `accent-ink`), the search box and three example Pills. The search and the examples open the results page.
-2. **News** and **Events**, side by side, one column below `bp-two-col`. See NewsBoard.
-
-No source strip on the home page. It belongs to a search.
+On phones (below 720px) the title and text fold away after 24px of scroll; the search box stays pinned; the terminals scroll under it. Back at the top, everything opens again. News and Events move from the header into the menu.
 
 ## Results page
 
-One list, one preview.
+One column, `reading-max`.
 
-- **Header:** logo with tagline, the search box, theme and Saved buttons. Under it the type tabs with counts.
-- **List** (left, at most `list-max`): result rows, guide picks first. The selected row has a `row-selected-line` outline.
-- **Preview** (right): type tag and path, the title in `display`, the actions, then four parts with a mono section label each: Why it matches, Facts, Listed by, Timeline.
-- **Sources grid** under everything, then the footer.
-- Below `bp-split` the preview panel hides. The selected row opens an inline preview under it (proof quote, three facts, Open and Full details). Full details goes to `/resource/:id`.
+- **Header:** logo, the search box with the query, Saved, Sign in. News and Events are not in this header.
+- **A question (4 words or more):** "Recommended for you", then up to 3 PickCards, then "How the guide decided" (a disclosure: search terms, candidates, removed suggestions, models).
+- **A few words:** an **Ask the guide** bar above the list instead of picks.
+- **Guide states**, drawn where the picks sit: working (streamed steps), needs one more detail, no pick, AI model not available (top 3 by search score, no AI label because no AI wrote it), busy (503), timeout or stalled stream (504, 45 seconds), daily AI answers used up.
+- **All results:** count, Filters (opens a panel: Type, Price, Licence, Updated, each with counts and an Unknown bucket), Sort (Best match, Newest, Recently updated), List or Timeline. A partial-results notice when some sources did not answer. Rows link to the resource page. Guide picks carry "Guide pick #n" in the meta line.
+- **Coverage** under the list: "This search: N of M sources answered · cached 14 min ago", opening to one line per source with its outcome.
+- The URL keeps the search and the filters: `?q=…&type=…`. Back leaves the search.
+
+## Radar
+
+Behind the home title, hidden from screen readers. One dot per enabled source from GET /sources:
+
+| Encodes | How |
+|---|---|
+| Mode | Inner band: live sources. Outer band: index and curated. |
+| Last check | Filled saffron: live, answered. Hollow saffron: index. Amber: slow, rate limited, timed out. Red: failed. Grey: curated, not checked. |
+| Distance in the band | Live: faster answer = closer. Index: fresher check = closer. |
+| Size | New this week from that source (proposed API field `newThisWeek`). |
+
+Each dot has a fixed slot left or right of the text and moves only inside its band. The label under it says the name and the response time or age, in `accent-ink` or the status color. Below 900px the dots and legend hide; the rings stay. The Sources page shows the same data as a table.
 
 ## Layout and breakpoints
 
-| Token | Width | What changes |
-|---|---|---|
-| `bp-two-col` | 1000px | News and Events stack. |
-| `bp-split` | 860px | Results: the preview panel hides, the inline preview takes over. |
-| `bp-small` | 640px | Gutter 16px. The search box takes its own row under the logo. Action buttons share the row. |
-| `bp-phone` | 560px | Boards get shorter (340px) and rows get less padding. |
+| Width | What changes |
+|---|---|
+| 920px | The two terminals stack. |
+| 900px | Radar dots and legend hide. Four-column steps become two; two-column grids become one. |
+| 720px | Gutter 16px. The header sticks with logo, Saved and Sign in only; News and Events move to the menu. The header search takes its own row. The home title folds on scroll. |
+| 560px | Steps and tables become cards. Terminal rows put the name under the date and tag. The timeline puts the month above its items. |
+| 420px | The tagline hides; the wordmark is 20px; the account button shows only its avatar. |
 
-Layout is flex and grid with `gap`. No fixed heights except the boards.
+Layout is flex and grid with `gap`. Side menus wrap above the content on phones and are never sticky.
 
 ## Accessibility
 
-- **Moving content.** The News and Events boards scroll by themselves. They pause on hover and on keyboard focus. Under `prefers-reduced-motion` nothing moves and the board is a normal scrollable list. The radar sweep stops too. There is no Pause button. Open point: touch users cannot pause the boards (WCAG 2.2.2). See the rollout plan.
-- **Targets:** every control is at least `target-min` (44px). Calendar days are 40px; they sit in a grid with 2px gaps.
-- **One copy for assistive tech.** The board repeats its rows to loop; the copy is `aria-hidden` and its links are out of the tab order.
-- **Headings:** one `h1` per page. On the results page it is "Results for …" (visually hidden); the preview title is an `h2`.
-- **AI-written text is labelled** (EU AI Act Art. 50). The guide's reason always carries its "AI-written" label, and the label never shows without the reason. The HTML marks it machine-readable, as ADR 0038 says.
-- **Colour is never alone.** Every pill has a word.
+- **Moving content.** Terminal lines print in once (250ms each). The cursor blinks 6 times, then stays on. The radar sweep turns 3 times, then stops. Under `prefers-reduced-motion` nothing moves and nothing folds with animation. Nothing moves for more than 5 seconds, so WCAG 2.2.2 needs no Pause button.
+- **Targets:** every control is at least 44px, also chips, toggles, Remove, admin buttons and terminal buttons.
+- **Contrast:** text 4.5:1, control borders and focus 3:1. Saffron `accent` text on `bg` is 3:1, so small saffron text uses `accent-ink` (5.5:1).
+- **Headings:** one `h1` per page.
+- **AI-written text is labelled** (EU AI Act Art. 50): each AI field has its own label ("AI-written", "AI-written reason", "AI summary") and its own `data-ai-generated="true"` and `data-ai-model`. Checked quotes and buttons are never inside a marked element.
+- **Patterns:** the account panel is a disclosure (`aria-expanded`), not a menu. Sign-in tabs have tab panels. List / Timeline are links with `aria-current`. Show all expands the list in place (`aria-expanded`, `aria-controls`). Dialogs start focus on the safe action.
+- **Colour is never alone.** Every status has a word and an icon.
 
 ## Components
 
-Components are plain HTML plus the classes in `components/bundle.css` (prefix `h2-`). There is no JavaScript bundle. Each folder has a live preview. Where a `preview.html` differs from this table, the table and the boards are the reference.
+The redesign boards in [../redesign](../redesign) are the reference. The component folders below still show version 3.
 
 | Component | Used for |
 |---|---|
-| **Header** | Logo with tagline, the search box, theme and Saved buttons. Type tabs under it on the results page. 72px min height. |
-| **Footer** | One row: place and servers, Mission, Sources, Privacy, Terms. |
-| **Omnibox** | The search box. A 999px pill, 52px (58px in the hero), search icon, input, saffron **Search** button. No keyboard-shortcut hint unless the shortcut works. |
-| **TypeTabs** | All, MCP servers, Libraries, Models, Articles, each with a mono count. Active tab: ink text, 3px `accent` underline. Scrolls sideways on phones. |
-| **Button** | 44px high, 999px corners, label on one line. Primary in `accent`. An external link ends with `↗`. |
-| **Pill** | Example needs and filters. |
-| **Badge** | Type tags, Quote checked, verification. |
-| **StatusPill** | `mono` 11px uppercase pill: ok (Updated, Published), warn (First seen), next (the next event, outlined in `accent`), later (outlined in `border-strong`). |
-| **ResultRow** | One row in the result list: tag, domain, Guide pick label, title in `display` 18px, the proof quote cut at two lines. A real button; selected has an `accent` outline. |
-| **ResultPreview** | The right panel: title, actions (Open on source ↗, Save, Guide me through setup when the type has a setup), Why it matches, Facts, Listed by, Timeline. |
-| **InlinePreview** | The phone version of ResultPreview, under the selected row: proof, three facts, Open and Full details. |
-| **ProofQuote** | The source text on `proof-bg`, with the checked sentence on `proof-mark`, and a mono caption naming the source. |
-| **FactList** | Two groups, Use and Build, as a `dl`. A value no source stated reads **Not stated** in `not-stated`, italic. |
-| **GuidePick** | One of the guide's picks with its checked quote. |
-| **NewsBoard** | News or Events on the home page. 2px `ink` rule on top, `display` heading, a short subtitle, "All … →" on the right. No Pause button. Each row: date in mono `accent-ink`, type tag, source or place, a StatusPill on the right; the name under it in `display`, two lines at most. The rows scroll up in a `board-loop` loop. |
-| **SourcesGrid** | Under the results: one mono line "fan-out · N sources · N hits → N after merge", then a tile per source with a status dot, the name and the time or cache age. |
-| **Banner** | Notices, partial results, empty and error states. |
+| **Header** | Logo with tagline, News, Events, Saved, Sign in or the account button. With a search box on Results and Timeline. Sticky. |
+| **AccountPanel** | Under the account button: signed in with, searches left today, Your account, Sign out. A disclosure. |
+| **AdminHeader** | Ink band: "helper2.ai admin", VPN note, who is signed in. No public links. |
+| **Footer** | Logo, Mission, Sources, Privacy, Terms, GitHub, licence, the theme switch, the coverage line. |
+| **SearchBox** | Box and Search button. Pinned on Home; in the header elsewhere. |
+| **PinnedSearchBar** | The home box with hint, chips and legend; sticks under the header; compact once scrolled. |
+| **Radar** | See Radar. |
+| **TerminalList** | New this week, Coming up: title bar with three dots, a `$` command, rows (date, `[tag]`, name, source or place), a blinking cursor, and a `$ … --all · show all N` button that expands in place. Rows open the resource page. Loading, empty and error states print as terminal lines. |
+| **PickCard** | Rank, name, AI-written reason with its label and check note, the checked quote, Open ↗, Details, Save. |
+| **AskGuideBar** | On short searches: "Want a recommendation?" and **Ask the guide about "…"**. |
+| **GuideSteps** | The streamed steps while the guide works. |
+| **ResultRow** | Meta line, title, one-line description, "From source". The whole row is a link. |
+| **FiltersPanel** | Checkbox groups with counts and an Unknown bucket; Show N results; Remove all filters. |
+| **CoverageDetails** | "This search: N of M sources answered" and one line per source. |
+| **FactList** | Known facts as a `dl`; one line for what no source stated; a callout when sources disagree. |
+| **ProofQuote** | Source text with the checked sentence on `mark`. |
+| **ReportForm** | Opens in place on the resource page: reason, optional text, Send report. |
+| **Callout** | Notice, warning, error, success: a 4px left line, a title, one sentence, one action. |
+| **ConfirmDialog** | Delete account. Focus starts on Cancel. |
+| **PhoneMenu** | Full-width menu under the header on phones. |
+| **Chip** | Example needs, filters, saved-by-type. 44px. |
+| **Button** | Primary, ghost, ink, danger, text. 44px; an external link ends with `↗`. |
+| **AiLabel** | "AI-written", "AI-written reason", "AI summary". Geist Mono 12px, uppercase, outlined. |
 
 ### In the frontend
 
 The shared parts are React components in `frontend/src/components/ui/` (ADR 0040). Where the code name differs:
 
-| Design system | Code |
+| Design system | Code today |
 |---|---|
-| Badge (type tag) | `TypeTag` |
-| ResultRow, its selected outline | `SelectableRow` (the row button; the row content comes with the results page) |
-| SourcesGrid, its tiles | `SourceTiles` (the fan-out line comes with the results page) |
-| Guide picks bar | `PicksBar` |
-| NewsBoard (News and Events) | `HomeBoard`, filled by `NewsBoard` and `EventsBoard` (`components/home/`) |
-| States (error, empty, 404) | `StatePanel`, with `RetryButton` for Try again |
-| Copy button | `CopyButton` (setup snippets, the guide prompt) |
+| TerminalList (New this week, Coming up) | `HomeBoard`, filled by `NewsBoard` and `EventsBoard` (`components/home/`) |
+| PickCard | `PicksBar` and the pick rows |
+| CoverageDetails | `SourceTiles` |
+| Callout (error, empty, 404) | `StatePanel`, with `RetryButton` for Try again |
 
-`StatusPill` and `ProofQuote` keep their names.
+New components are added with the page that first needs them.
 
-## Guide picks bar (results page)
+## API features the design needs
 
-The bar sits above the result list from the first render. While the guide works it says "Guide is reading N candidates… picks will appear here". When the answer arrives, the same box shows the picks as chips: #1, #2, #3. It is labelled AI-written.
-The list never moves. Each pick gets a "Pick #n" badge and its reason in its own row.
-No pick: the bar shrinks to one line, "No pick: no result had a sentence that proves it".
-Keep the bar's height reserved, so nothing jumps when the answer arrives.
+These are drawn in the redesign and are not in the API yet. They are on the roadmap (section 7).
 
-## Selected result in the URL
-
-The URL keeps the search and the selected result: `?q=…&id=…`. It works on `/` and `/search`.
-Change it with replaceState, so Back leaves the search and does not step through rows.
-If the id is not in the results, select the first row. On phones a row opens `/resource/:id`.
+| Feature | Where | API change |
+|---|---|---|
+| New this week per source | Radar dot size, Sources table | `newThisWeek` on `SourceInfo` in GET /sources |
+| Searches left today | Account, account panel | `limits` (web searches and AI answers left, reset time) on GET /me |
+| Totals for Show all | Home terminals | `total` on the recent and upcoming responses |
+| Sign-in with Google | Sign in | a second OAuth2 provider (phase 1) |
+| Passkey, email link, password | Sign in, sign-in states | sign-in ADR, threat model, Privacy page (phase 2) |
+| Unknown bucket and Updated filter | Filters panel | `facets` already has counts; add an `unknown` count per facet and an updated-date facet |
+| Per-source outcome of a search | Coverage details | already in `SourceStatus` per search; the page needs to show it |
