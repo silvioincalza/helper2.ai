@@ -19,6 +19,11 @@ networkPolicy:
     otlp:
       namespace: observability
 app:
+  # Sign-in (ADR 0023/0035): GitHub App helper2-prod. H2_GITHUB_OAUTH_CLIENT_ID, H2_GITHUB_OAUTH_CLIENT_SECRET and
+  # H2_ADMINS are in app_env; without them the app does not start.
+  springProfiles: llm-nebius,oauth-github
+  # Reuse a cached answer for a near-identical guide question (ADR 0041, measured on the evaluation set).
+  guideSimilarThreshold: 0.96
   tracing:
     export: true
     endpoint: http://alloy.observability.svc:4318/v1/traces

@@ -155,6 +155,10 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 		want=0; [ $$e = staging ] && want=6; \
 		[ "$$n" -eq "$$want" ] || { echo "$$e renders $$n daily limits and cache TTL, want $$want"; exit 1; }; \
 	done; \
+	echo "== prod signs in with GitHub and reuses similar guide answers at 0.96"; \
+	prod=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --set-file envFile=$$env --show-only templates/app.yaml); \
+	grep -qE 'oauth-github' <<< "$$prod" || { echo "prod: no oauth-github profile"; exit 1; }; \
+	grep -qE 'name: H2_GUIDE_SIMILAR_THRESHOLD, value: "0.96"' <<< "$$prod" || { echo "prod: no similar threshold 0.96"; exit 1; }; \
 	echo "== edge (ADR 0035): Service helper2-admin; ingress-nginx may reach the app on 8080 and the admin port"; \
 	for e in prod staging; do \
 		r=(helm template helper2 $(CHART) -f $(CHART)/values-$$e.yaml --set image.tag=000000000000 --set-file envFile=$$env); \
