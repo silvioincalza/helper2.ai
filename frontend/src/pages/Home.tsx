@@ -22,7 +22,7 @@ const DOES = ['search', 'recommend', 'proof'] as const;
 export default function Home() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { hash } = useLocation();
+  const { hash, key } = useLocation();
   const sources = useSources();
   useTitle('');
   const ask = (need: string) => {
@@ -31,11 +31,12 @@ export default function Home() {
   };
   const count = (sources.data ?? []).filter((s) => s.enabled).length;
 
-  // A header link to #news or #events: the lists sit below the fold, and the router does not scroll to a hash.
+  // A header link to #news or #events: the lists sit below the fold, and the router does not scroll to a hash. On the
+  // key too, so a second click on the same link scrolls again. The list's scroll-margin keeps it below the sticky header.
   useEffect(() => {
     const id = hash.slice(1);
     if (id) document.getElementById(id)?.scrollIntoView({ block: 'start' });
-  }, [hash]);
+  }, [hash, key]);
 
   return (
     <div className="one-page home">

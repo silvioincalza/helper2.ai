@@ -119,6 +119,14 @@ describe('home: only the home page', () => {
     expect((await board('Events')).id).toBe('events');
   });
 
+  it('/#events scrolls to the Events list', async () => {
+    mockApi();
+    renderApp('/#events');
+    const events = await board('Events');
+    await waitFor(() => expect(Element.prototype.scrollIntoView).toHaveBeenCalled());
+    expect(vi.mocked(Element.prototype.scrollIntoView).mock.contexts[0]).toBe(events);
+  });
+
   it('events say how far away they are; the next one stands out', async () => {
     mockApi({ 'GET /events/upcoming': () => ({ generatedAt: '2026-10-30T09:00:00Z', items: [
       event(1, '2026-11-12T00:00:00Z'), event(2, '2026-11-19T00:00:00Z'), event(3, '2027-01-21T00:00:00Z'),

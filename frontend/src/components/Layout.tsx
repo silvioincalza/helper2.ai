@@ -83,8 +83,9 @@ export function Header() {
             theme are in the footer. */}
         <nav aria-label={t('nav.main')} className="main-nav">
           <ul className="plain-list">
-            <li><Link to={{ pathname: '/', hash: 'news' }}>{t('nav.news')}</Link></li>
-            <li><Link to={{ pathname: '/', hash: 'events' }}>{t('nav.events')}</Link></li>
+            {/* A hash link keeps the pathname, so it closes the menu itself. */}
+            <li><Link to={{ pathname: '/', hash: 'news' }} onClick={() => setOpenOn(null)}>{t('nav.news')}</Link></li>
+            <li><Link to={{ pathname: '/', hash: 'events' }} onClick={() => setOpenOn(null)}>{t('nav.events')}</Link></li>
             <li><NavLink to="/saved">{t('nav.saved')}</NavLink></li>
             {isAdmin && <li><NavLink to="/admin">{t('nav.admin')}</NavLink></li>}
           </ul>

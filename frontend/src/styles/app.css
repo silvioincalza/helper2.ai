@@ -236,6 +236,7 @@ tbody th { font-weight: 600; }
   .searchbox.large .btn { padding: var(--space-3); justify-content: center; }
   /* Phone: the one box stays compact and scrolls away instead of covering half the screen. */
   .site-header { position: static; }
+  :root { --header-height: 0px; }
   .header-row { gap: var(--space-2) var(--space-4); }
   .searchbox.large { flex-flow: row wrap; }
   /* The field shares its row with the clear button; only the submit button takes a row of its own. */

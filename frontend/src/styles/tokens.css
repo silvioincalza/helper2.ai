@@ -91,6 +91,8 @@
   --target-min: 44px;
   --box-height: 56px;
   --maxw: 1120px;
+  /* The sticky header row, so a jump to an anchor (#news) lands below it, not under it. */
+  --header-height: 64px;
   --motion: 160ms;
 }
 

@@ -39,6 +39,12 @@ describe('layout', () => {
     expect(button).toHaveAttribute('aria-expanded', 'false');
     expect(button).toHaveFocus();
 
+    // A link to a list on the home page keeps the pathname; it closes the menu anyway.
+    await user.click(button);
+    await user.click(within(panel).getByRole('link', { name: 'News' }));
+    expect(button).toHaveAttribute('aria-expanded', 'false');
+    expect(panel).not.toHaveClass('is-open');
+
     await user.click(button);
     await user.click(within(panel).getByRole('link', { name: 'Saved' }));
     await screen.findByRole('heading', { level: 1, name: 'Saved resources' });
