@@ -22,7 +22,8 @@ import org.springframework.jdbc.core.simple.JdbcClient
  * `./gradlew evalRecord` with the repo-root .env (GitHub token, Tavily key, H2_NVIDIA_API_KEY for
  * vector search) and H2_DATABASE_URL pointing at a database that holds the catalog to measure.
  * H2_EVAL_PAUSE (ISO duration, default PT4S) is the pause between queries, for the sources' rate
- * limits.
+ * limits. H2_EVAL_ONLY (comma-separated query ids) records only those queries, for a starter set
+ * (docs/eval/README.md).
  */
 @Tag("eval-record")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
@@ -43,10 +44,16 @@ class SearchSnapshotRecorder {
         translator.getIfAvailable { QueryTranslator.NONE },
       )
     val pause = Duration.parse(System.getenv("H2_EVAL_PAUSE") ?: "PT4S")
+    val only =
+      System.getenv("H2_EVAL_ONLY")
+        ?.split(',')
+        ?.map { it.trim() }
+        ?.filter { it.isNotEmpty() }
+        ?.toSet()
     val queries =
-      (EvalFiles.searchQueries() + EvalFiles.semanticQueries()).filterNot {
-        EvalFiles.snapshotFile(it.id).exists()
-      }
+      (EvalFiles.searchQueries() + EvalFiles.semanticQueries())
+        .filter { only == null || it.id in only }
+        .filterNot { EvalFiles.snapshotFile(it.id).exists() }
     println("recording ${queries.size} queries into ${EvalFiles.snapshots}")
     queries.forEachIndexed { i, q ->
       if (i > 0) Thread.sleep(pause)
