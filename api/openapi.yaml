@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Helper2.ai API
-  version: 1.0.2
+  version: 2.0.0
   summary: Federated metasearch for AI resources, with explicit provenance and source status.
   description: |
     Contract-first REST API for Helper2.ai. This file is the source of truth:

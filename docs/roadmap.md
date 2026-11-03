@@ -3,7 +3,7 @@
 Every open item lives here, so open work is tracked in one place. ADRs link to this page
 from their "Roadmap" section. The code has no TODO or FIXME comments.
 
-The baseline is v1.0.0, the first release (27 Oct 2026); the current release is v1.0.1; the next is v1.0.2.
+The baseline is v1.0.0, the first release (27 Oct 2026); the current release is v2.0.0, a major version because prod got an empty database for the single V1 schema.
 Items are grouped by the order in which they matter. Inside a group, the first item is the most useful.
 
 ## 1. Before the hackathon deadline (30 Oct 2026, 18:00 Zurich)
