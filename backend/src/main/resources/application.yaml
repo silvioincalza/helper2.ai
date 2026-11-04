@@ -346,6 +346,8 @@ helper2:
     # Second port for the back office (ADR 0035). Set: /admin and /api/v1/admin/** answer only there, and only a
     # sign-in made there carries ADMIN; the public port keeps end-user sign-in. 0 = one port for everything.
     port: ${H2_ADMIN_PORT:0}
+    # The metrics dashboard (Grafana) the back office overview links to for trends. Empty: no link.
+    grafana-url: ${H2_ADMIN_GRAFANA_URL:}
   scout:
     enabled: ${H2_SCOUT_ENABLED:false}
     # Each replica checks shortly after startup, then every tick; the Scout runs when the last scheduled run

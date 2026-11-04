@@ -122,7 +122,7 @@ at the same time. Prod runs 3 replicas ([0027](../operations/0027-runtime-topolo
   while another replica holds the lock.
 - `frontend/src/pages/AdminPage.tsx` — "Run now", polling of the run listing.
 - `backend/src/main/java/ai/helper2/scout/internal/JdbcScoutStore.java` — `source_cursor`, `scout_run`, `scout_schedule`.
-- `backend/src/main/java/ai/helper2/scout/web/AdminController.java` — `startScoutRun`, `listScoutRuns`.
+- `backend/src/main/java/ai/helper2/admin/web/AdminController.java` — `startScoutRun`, `listScoutRuns`.
 - `backend/src/main/java/ai/helper2/sources/support/RunInterval.java`.
 
 ## Diagrams

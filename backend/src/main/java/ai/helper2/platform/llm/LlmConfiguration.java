@@ -2,6 +2,7 @@ package ai.helper2.platform.llm;
 
 import ai.helper2.platform.resilience.Resilience;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.time.Clock;
 import io.micrometer.observation.ObservationRegistry;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,11 +26,14 @@ class LlmConfiguration {
         return new LlmSettings(chatProvider, providerLabel, fastModel, reasoningModel);
     }
 
-    /** Daily budgets survive restarts in Redis; without Redis they count in memory. */
+    /**
+     * Daily budgets survive restarts in Redis; without Redis they count in memory. The ledger is also what the back
+     * office reads: every budget declares itself there.
+     */
     @Bean
-    CallCounter budgetCounter(ObjectProvider<StringRedisTemplate> redis, Resilience resilience) {
+    BudgetLedger budgetCounter(ObjectProvider<StringRedisTemplate> redis, Resilience resilience, Clock clock) {
         StringRedisTemplate template = redis.getIfAvailable();
-        return template == null ? CallCounter.NONE : new RedisCallCounter(template, resilience);
+        return new BudgetLedger(template == null ? null : new RedisCallCounter(template, resilience), clock);
     }
 
     /** One metrics recorder for every model call, whichever module makes it. */

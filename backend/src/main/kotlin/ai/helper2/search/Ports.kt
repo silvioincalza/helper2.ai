@@ -85,7 +85,8 @@ fun interface RecordedOutcomes {
 interface SearchMetrics {
     fun sourceCompleted(status: SourceStatus) {}
     fun cacheEvent(event: String) {}
-    fun searchCompleted(partial: Boolean, latency: Duration) {}
+    /** One search answered: [partial] when an enabled source failed, [empty] when nothing matched (no query text). */
+    fun searchCompleted(partial: Boolean, empty: Boolean, latency: Duration) {}
 
     /** One live call of the metered source [sourceId], for [asker] (null: an internal caller) in [tier]. */
     fun creditSpent(sourceId: String, asker: Asker?, tier: QuotaTier?) {}

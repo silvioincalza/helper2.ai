@@ -25,6 +25,7 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
   catalog: "catalog\nindex, resource pages, events" {class: app}
   sources: "sources\nlive adapters, collectors" {class: app}
   identity: "identity\nsign-in, bookmarks" {class: app}
+  backoffice: "admin\nback office: review, runs, overview" {class: app}
   platform: "platform\nLLM layer, HTTP, edge" {class: app}
 
   guide -> search: "retrieve candidates" {class: hot}
@@ -34,6 +35,9 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
   scout -> catalog: "CatalogIndex" {class: config}
   guide -> platform: "model calls" {class: ai-call}
   scout -> platform: "model calls" {class: ai-call}
+  backoffice -> catalog: "review queue"
+  backoffice -> scout: "runs, backlog"
+  backoffice -> platform: "budgets today"
 }
 
 pg: "PostgreSQL 18 + pgvector\nsystem of record" {shape: cylinder; class: data}
@@ -46,7 +50,8 @@ oauth: "github.com OAuth" {class: ext}
 browser -> app.search: "search" {class: hot}
 browser -> app.guide: "ask (SSE)" {class: hot}
 browser -> app.catalog: "resource, events"
-admin -> app.identity: "/admin"
+admin -> app.identity: "sign-in on the admin host"
+admin -> app.backoffice: "/admin"
 
 app.catalog -> pg: JDBC
 app.scout -> pg: JDBC

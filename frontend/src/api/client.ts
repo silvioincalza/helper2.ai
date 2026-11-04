@@ -1,4 +1,4 @@
-import type { UpcomingEventsResponse, Bookmark, BookmarkRequest, GuideRequest, GuideResponse, GuideStep, GuideStepEvent, IssueReportAccepted, IssueReportRequest, Me, Problem, RecentResponse, ResourceDetail, ReviewItem, ReviewItemPage, SetupGuide, ToolGuide, ReviewResolution, ReviewStatus, ReviewKind, ScoutRun, AuditEntryPage, SearchResponse, SourceInfo } from './types';
+import type { UpcomingEventsResponse, Bookmark, BookmarkRequest, GuideRequest, GuideResponse, GuideStep, GuideStepEvent, IssueReportAccepted, IssueReportRequest, Me, Problem, RecentResponse, ResourceDetail, ReviewItem, ReviewItemPage, SetupGuide, ToolGuide, ReviewResolution, ReviewStatus, ReviewKind, ScoutRun, AuditEntryPage, AdminOverview, SearchResponse, SourceInfo } from './types';
 
 import { guideStreamEventValues } from './schema';
 import { SseParser } from '@/lib/sse';
@@ -213,6 +213,8 @@ export const api = {
   /** Answers at once with the started run's records (RUNNING); follow them with listScoutRuns. 409 while a run holds the lock. */
   startScoutRun: (sourceId?: string) =>
     request<ScoutRun[]>('POST', '/admin/scout-runs', { body: sourceId ? { sourceId } : {} }),
+  /** Counts for the back office landing page; the server computes them at most once a minute. */
+  getAdminOverview: (signal?: AbortSignal) => request<AdminOverview>('GET', '/admin/overview', { signal }),
   listAuditEntries: (page: number, size: number, signal?: AbortSignal) =>
     request<AuditEntryPage>('GET', '/admin/audit', { query: new URLSearchParams({ page: String(page), size: String(size) }), signal }),
 };

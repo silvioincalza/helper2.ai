@@ -1,0 +1,41 @@
+# Flowchart: how the back office overview is answered (ADR 0045).
+# Source of truth: backend/src/main/java/ai/helper2/admin/usecase/GetOverview.java, admin/web/OverviewController.java,
+#   platform/llm/BudgetLedger.java, RedisCallCounter.java, frontend/src/pages/admin/AdminOverview.tsx.
+# Render: cd docs/diagrams && d2 fmt flow-0045-back-office.d2 && d2 flow-0045-back-office.d2 flow-0045-back-office.svg
+
+...@style
+
+direction: down
+
+req: "GET /api/v1/admin/overview\n(admin port, ADMIN)" {class: end}
+
+uc: GetOverview {
+  class: group
+  direction: down
+  fresh: "Last overview younger\nthan one minute?" {class: decision}
+  again: "Same overview again" {class: end}
+  compute: "Compute, one at a time" {class: app}
+  fresh -> again: yes {class: hot}
+  fresh -> compute: no
+}
+
+parts: Counts {
+  class: group
+  direction: down
+  kinds: "Open items per kind\n(catalog, every kind)" {class: data}
+  backlog: "Enrichment backlog\n(the Scout's rule, counted)" {class: data}
+  runs: "Last runs; FAILED\nin the last 24 h" {class: data}
+  budget: "Each declared budget:\ncount in Redis?" {class: decision}
+  used: "used of limit" {class: end}
+  unknown: "unknown" {class: fail}
+  credits: "Web credits today\n(null when off or unreadable)" {class: data}
+  budget -> used: yes
+  budget -> unknown: "no Redis, or it cannot answer"
+}
+
+req -> uc.fresh
+uc.compute -> parts.kinds
+uc.compute -> parts.backlog
+uc.compute -> parts.runs
+uc.compute -> parts.budget
+uc.compute -> parts.credits

@@ -38,6 +38,16 @@ public final class RedisCallCounter implements CallCounter {
         return "h2:v1:budget:" + name + ":" + day;
     }
 
+    /** Today's shared count, without adding one; null when nothing was counted or Redis cannot answer. */
+    Long current(String name, LocalDate day) {
+        try {
+            String value = resilience.call("redis", () -> redis.opsForValue().get(key(name, day)));
+            return value == null ? null : Long.valueOf(value);
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
     @Override
     public Long increment(String name, LocalDate day) {
         try {

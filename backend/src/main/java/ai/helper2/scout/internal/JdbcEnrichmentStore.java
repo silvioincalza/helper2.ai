@@ -71,23 +71,34 @@ class JdbcEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
      */
     @Override
     public List<UUID> pending(int limit) {
-        return jdbc.sql("""
-                SELECT r.id FROM resource r
-                WHERE r.data_origin IN ('INDEXED', 'OBSERVED', 'CURATED')
-                  AND EXISTS (SELECT 1 FROM source_record s
-                              WHERE s.resource_id = r.id AND length(coalesce(s.description, '')) >= :minText)
-                  AND (r.enrichment_status IN ('NOT_RUN', 'LLM_UNAVAILABLE')
-                       OR (r.enrichment_status = 'REJECTED'
-                           AND (SELECT e.outcome FROM enrichment_run e WHERE e.resource_id = r.id
-                                ORDER BY e.started_at DESC LIMIT 1) = 'FAILED'
-                           AND (SELECT count(*) FROM enrichment_run e
-                                WHERE e.resource_id = r.id AND e.outcome = 'FAILED') < :maxFailed))
+        return jdbc.sql("SELECT r.id FROM resource r WHERE " + PENDING + """
                 ORDER BY (r.enrichment_status = 'NOT_RUN') DESC, r.first_discovered_at DESC
                 LIMIT :limit
                 """)
             .param("maxFailed", MAX_FAILED_ATTEMPTS).param("minText", MIN_DESCRIPTION).param("limit", limit)
             .query(UUID.class).list();
     }
+
+    /** The same rule as {@link #pending}, counted. A full pass over the backlog: the overview caches it. */
+    @Override
+    public long pendingCount() {
+        return jdbc.sql("SELECT count(*) FROM resource r WHERE " + PENDING)
+            .param("maxFailed", MAX_FAILED_ATTEMPTS).param("minText", MIN_DESCRIPTION)
+            .query(Long.class).single();
+    }
+
+    /** Which resources wait for enrichment; one rule for the backlog and its count. */
+    private static final String PENDING = """
+            r.data_origin IN ('INDEXED', 'OBSERVED', 'CURATED')
+              AND EXISTS (SELECT 1 FROM source_record s
+                          WHERE s.resource_id = r.id AND length(coalesce(s.description, '')) >= :minText)
+              AND (r.enrichment_status IN ('NOT_RUN', 'LLM_UNAVAILABLE')
+                   OR (r.enrichment_status = 'REJECTED'
+                       AND (SELECT e.outcome FROM enrichment_run e WHERE e.resource_id = r.id
+                            ORDER BY e.started_at DESC LIMIT 1) = 'FAILED'
+                       AND (SELECT count(*) FROM enrichment_run e
+                            WHERE e.resource_id = r.id AND e.outcome = 'FAILED') < :maxFailed))
+            """;
 
     /**
      * The source records as material, and what the sources themselves state (licence, type, open source),

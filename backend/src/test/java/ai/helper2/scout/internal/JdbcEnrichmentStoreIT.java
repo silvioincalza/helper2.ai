@@ -117,6 +117,14 @@ class JdbcEnrichmentStoreIT {
             .param("id", resource).param("k", kind.name()).query(String.class).list();
     }
 
+    /** The overview's backlog count follows the same rule as the backlog the Scout takes. */
+    @Test
+    void theBacklogCountIsTheBacklog() {
+        List<UUID> backlog = store.pending(Integer.MAX_VALUE);
+        assertThat(backlog).contains(resource);
+        assertThat(store.pendingCount()).isEqualTo(backlog.size());
+    }
+
     @Test
     void readmeEvidenceKeepsItsOwnPlaceAndBelongsToTheRecord() {
         URI readme = URI.create("https://github.com/acme/tool#readme");

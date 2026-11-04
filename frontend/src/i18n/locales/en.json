@@ -525,8 +525,28 @@
       "audit": "Audit"
     },
     "overview": {
-      "open": "Open review items",
-      "lastRun": "Last Scout run",
+      "title": "What needs you now",
+      "loadError": "Could not load the overview.",
+      "updated": "Counted at {{at}}.",
+      "refresh": "Refresh",
+      "trends": "Trends in Grafana (opens in a new tab)",
+      "open_one": "{{count}} open review item",
+      "open_other": "{{count}} open review items",
+      "scout": "Scout",
+      "backlog": "resources waiting for enrichment",
+      "failed": "failed runs in the last 24 hours",
+      "budgets": "Model budgets today (UTC)",
+      "col": {
+        "budget": "Budget",
+        "used": "Used today"
+      },
+      "webCredits": "Web search credits",
+      "notCounted": "Not counted",
+      "off": "Off",
+      "unknown": "Unknown (counter not reachable)",
+      "noCap": "{{used}}, no daily cap",
+      "usedOf": "{{used}} of {{limit}}",
+      "lastRuns": "Last Scout runs",
       "allRuns": "All runs"
     },
     "audit": {
@@ -542,6 +562,14 @@
         "RESOLVE_REVIEW_ITEM": "Review decision",
         "START_SCOUT_RUN": "Scout run started"
       }
+    },
+    "budget": {
+      "guide": "Guide",
+      "translation": "Query translation",
+      "enrichment": "Enrichment",
+      "enrichment-gap": "Enrichment gap round",
+      "classifier": "Awesome-list classifier",
+      "tool-guide": "Setup guide"
     }
   },
   "notFound": {
@@ -811,6 +839,7 @@
           "Web search counters: Tavily searches per day and feature, under a keyed hash of your IP address and the date (no address stored; days cannot be linked), or your account ID once account limits are on.",
           "Stored Tavily results, under a keyed hash of the question, not its text.",
           "Guide question fingerprints, only when similar-question reuse is on: a list of numbers (an embedding) computed from your guide question, kept with its cached answer so a later question with the same meaning can get that answer. Not linked to you or your account.",
+          "Usage totals: how many searches we answer, how many had results from only some sources, and how many found nothing. They are counts only: never the text you typed, your IP address or your account.",
           "Technical data: your IP address is kept in memory for a short time to limit abuse (rate limits). Our servers and our web gateway also write technical logs, which can include your IP address and the pages you request. We keep these logs for up to 3 months to keep the service running and secure, then delete them."
         ]
       },
@@ -818,7 +847,7 @@
         "title": "Legal basis",
         "items": [
           "Answering your searches and guide questions, your account and your saved items: to provide the service you ask for (Art. 6(1)(b) GDPR).",
-          "Rate limits, technical logs and the security cookie: our legitimate interest in keeping the service secure and available (Art. 6(1)(f) GDPR).",
+          "Rate limits, technical logs, usage totals and the security cookie: our legitimate interest in keeping the service secure and available (Art. 6(1)(f) GDPR).",
           "Web search counters and stored results: legitimate interest in a free service at bounded cost (Art. 6(1)(f) GDPR).",
           "Reports you send: our legitimate interest in keeping the information on Helper2.ai correct (Art. 6(1)(f) GDPR).",
           "Describing public AI resources with names and short quotes from their public pages: our legitimate interest in showing what a resource is and where each fact comes from (Art. 6(1)(f) GDPR)."
@@ -859,7 +888,7 @@
         "title": "How long we keep data",
         "items": [
           "Cached searches: up to 30 minutes. Cached guide answers and their question fingerprints: up to 24 hours, deleted by the next daily clean-up.",
-          "Technical logs: up to 3 months.",
+          "Technical logs: up to 3 months. Usage totals: 90 days.",
           "Web search counters: 24 hours. Stored results: 7 days.",
           "English translations of searches typed in another language: 24 hours. Search vectors (the numbers we use to search by meaning): 7 days. Both are stored under a hash of the search, not its text, and deleted from the database within a day after they expire.",
           "Your account and saved items: until you delete them, or 24 months after you last signed in. Then we delete the account and its saved items.",

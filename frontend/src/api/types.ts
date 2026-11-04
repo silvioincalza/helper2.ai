@@ -42,6 +42,7 @@ export type ReviewResolution = S['ReviewResolution'];
 export type ScoutRun = S['ScoutRun'];
 export type AuditEntry = S['AuditEntry'];
 export type AuditEntryPage = S['AuditEntryPage'];
+export type AdminOverview = S['AdminOverview'];
 export type Problem = S['Problem'];
 export type Notice = S['Notice'];
 export type GuideRequest = S['GuideRequest'];

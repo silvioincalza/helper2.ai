@@ -28,6 +28,7 @@ public final class DailyBudget {
         this.name = name;
         this.counter = counter == null ? CallCounter.NONE : counter;
         this.day = today();
+        this.counter.declare(name, dailyCalls);
     }
 
     /** In memory only: for a budget that does not need to survive a restart. */

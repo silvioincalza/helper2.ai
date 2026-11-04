@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { ADMIN, ANON, USER } from '@/test/fixtures';
 import { mockApi, problem } from '@/test/mockApi';
 import { renderApp } from '@/test/render';
-import type { ReviewItem, ScoutRun } from '@/api/types';
+import type { AdminOverview, ReviewItem, ScoutRun } from '@/api/types';
 import { RUN_POLL_MS } from '@/pages/admin/ScoutRunsPage';
 
 const item: ReviewItem = { id: '66666666-6666-5666-8666-666666666666', kind: 'USER_REPORT', status: 'OPEN', reason: 'Wrong price', details: null, resourceId: null, resourceTitle: 'Acme', createdAt: '2026-10-21T10:00:00Z' };
@@ -43,24 +43,79 @@ describe('admin: sign-in and role', () => {
   });
 });
 
-describe('Feature: the back office has a part per page', () => {
-  it('Scenario: the overview counts open items per kind, and a count opens the queue filtered by that kind', async () => {
+const overview = (over: Partial<AdminOverview> = {}): AdminOverview => ({
+  generatedAt: '2026-11-04T09:00:00Z',
+  openReviewItems: [
+    { kind: 'ENRICHMENT_VALIDATION', count: 3 },
+    { kind: 'RELATIONSHIP_CANDIDATE', count: 0 },
+    { kind: 'USER_REPORT', count: 12 },
+    { kind: 'COURSE_CANDIDATE', count: 1 },
+  ],
+  enrichmentBacklog: 420,
+  budgets: [
+    { name: 'enrichment', dailyLimit: 500, usedToday: 120 },
+    { name: 'guide', dailyLimit: 200, usedToday: null },
+    { name: 'tool-guide', dailyLimit: 0, usedToday: 0 },
+  ],
+  webCredits: { usedToday: 7 },
+  recentRuns: [{ ...run, status: 'FAILED' }],
+  failedRunsLast24h: 2,
+  grafanaUrl: 'https://grafana.example/d/helper2',
+  ...over,
+});
+
+describe('Feature: the overview says what needs a person now', () => {
+  it('Scenario: counts per kind open the queue filtered by that kind', async () => {
     const m = mockApi({
       'GET /me': () => ADMIN,
-      'GET /admin/review-items': ({ url }) => page([], url.searchParams.get('kind') === 'USER_REPORT' ? 12 : 0),
-      'GET /admin/scout-runs': () => [{ ...run, status: 'FAILED' }],
+      'GET /admin/overview': () => overview(),
+      'GET /admin/review-items': () => page([]),
     });
     renderApp('/admin');
     const nav = await screen.findByRole('navigation', { name: 'Back office' });
     expect(within(nav).getByRole('link', { name: 'Overview' })).toHaveAttribute('aria-current', 'page');
-    const reports = await screen.findByRole('link', { name: /12 User report/ });
+    expect(await screen.findByRole('heading', { name: '16 open review items' })).toBeInTheDocument();
+    const reports = screen.getByRole('link', { name: /12 User report/ });
     expect(reports).toHaveAttribute('href', '/admin/review?kind=USER_REPORT');
-    expect(await screen.findByText('Failed')).toHaveClass('h2-status-pill--warn');
 
     await userEvent.click(reports);
     expect(await screen.findByRole('heading', { name: 'Review queue' })).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: 'Kind' })).toHaveValue('USER_REPORT');
     await waitFor(() => expect(m.callsTo('GET', '/admin/review-items').at(-1)?.search).toBe('?status=OPEN&kind=USER_REPORT&page=0&size=20'));
+  });
+
+  it('Scenario: budgets say used of limit in words, off at 0, unknown when not counted; failures link to the runs', async () => {
+    mockApi({ 'GET /me': () => ADMIN, 'GET /admin/overview': () => overview() });
+    renderApp('/admin');
+    const budgets = await screen.findByRole('table', { name: 'Model budgets today (UTC)' });
+    expect(within(budgets).getByRole('row', { name: /Enrichment 120 of 500/ })).toBeInTheDocument();
+    expect(within(budgets).getByRole('row', { name: /Guide Unknown/ })).toBeInTheDocument();
+    expect(within(budgets).getByRole('row', { name: /Setup guide Off/ })).toBeInTheDocument();
+    expect(within(budgets).getByRole('row', { name: /Web search credits 7, no daily cap/ })).toBeInTheDocument();
+    expect(screen.getByText('420')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /2 failed runs in the last 24 hours/ })).toHaveAttribute('href', '/admin/runs');
+    expect(screen.getByRole('link', { name: /Trends in Grafana/ })).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(screen.getByText('Failed')).toHaveClass('h2-status-pill--warn');
+  });
+
+  it('Scenario: without a Grafana link and web credits the overview says so', async () => {
+    mockApi({ 'GET /me': () => ADMIN, 'GET /admin/overview': () => overview({ grafanaUrl: null, webCredits: null, recentRuns: [] }) });
+    renderApp('/admin');
+    expect(await screen.findByRole('row', { name: /Web search credits Not counted/ })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Grafana/ })).not.toBeInTheDocument();
+    expect(screen.getByText('No runs yet.')).toBeInTheDocument();
+  });
+
+  it('Scenario: Refresh asks again and the overview cannot load says so with Try again', async () => {
+    let fail = true;
+    const m = mockApi({ 'GET /me': () => ADMIN, 'GET /admin/overview': () => (fail ? problem(503, 'Service Unavailable') : overview()) });
+    renderApp('/admin');
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Could not load the overview.');
+    fail = false;
+    await userEvent.click(within(alert).getByRole('button', { name: /Try again/ }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Refresh' }));
+    await waitFor(() => expect(m.callsTo('GET', '/admin/overview')).toHaveLength(3));
   });
 });
 

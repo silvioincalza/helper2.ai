@@ -1,4 +1,4 @@
-package ai.helper2.scout.web;
+package ai.helper2.admin.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

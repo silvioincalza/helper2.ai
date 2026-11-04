@@ -52,6 +52,9 @@ spec:
             # The back office and the ADMIN role only on this port (ADR 0035); the public port answers 404 there.
             - { name: H2_ADMIN_PORT, value: {{ .Values.app.adminPort | toString | quote }} }
             {{- end }}
+            {{- with .Values.app.adminGrafanaUrl }}
+            - { name: H2_ADMIN_GRAFANA_URL, value: {{ . | quote }} }
+            {{- end }}
             - { name: H2_SCOUT_ENABLED, value: {{ .Values.app.scoutEnabled | toString | quote }} }
             - { name: H2_SCOUT_INITIAL_DELAY, value: {{ required "app.scoutInitialDelay" .Values.app.scoutInitialDelay | quote }} }
             - { name: H2_SCOUT_EVERY, value: {{ required "app.scoutEvery" .Values.app.scoutEvery | quote }} }

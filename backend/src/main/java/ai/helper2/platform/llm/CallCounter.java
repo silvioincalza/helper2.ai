@@ -13,4 +13,8 @@ public interface CallCounter {
     CallCounter NONE = (name, day) -> null;
 
     Long increment(String name, LocalDate day);
+
+    /** A budget declares its name and daily limit once, so the back office can list every budget. */
+    default void declare(String name, int dailyCalls) {
+    }
 }

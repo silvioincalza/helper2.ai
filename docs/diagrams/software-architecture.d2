@@ -3,6 +3,7 @@
 # Kotlin domain packages (search, guide, scout, shared) hold the rules; Java adapters sit in web,
 # cache, config and internal sub-packages and in the sources and catalog modules.
 # Source of truth: backend/src/main/java/ai/helper2/*/package-info.java (modules),
+#   backend/src/main/java/ai/helper2/admin/ (back office),
 #   backend/src/main/kotlin/ai/helper2/search/Ports.kt, scout/Ports.kt, scout/Scout.kt, scout/Enrichment.kt,
 #   guide/Guide.kt, guide/GuideCost.kt (ports),
 #   backend/src/main/java/ai/helper2/sources/config/SourcesConfiguration.java (sources, collectors, ReadmeEvidence),
@@ -75,7 +76,6 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
 
   scout: "scout (Kotlin domain)" {
     class: group
-    ctl: "AdminController\nPOST /admin/scout-runs\nreview items" {class: app}
     core: "RunScout · EnrichResource\nEvidenceValidator\nGapTargets · ReadmeText (gap round)" {class: app}
     p_collector: Collector {class: port}
     p_extra: "ExtraEvidence\nGapBudget" {class: port}
@@ -84,7 +84,6 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
     p_stores: "ScoutStore\nEnrichmentStore\nEnrichmentBacklog" {class: port}
     model: "SpringAiEnrichmentModel\n(scout.internal)" {class: app}
     jdbc: "JdbcScoutStore\nJdbcEnrichmentStore" {class: app}
-    ctl -> core
     core -> p_collector
     core -> p_extra: "gap round (ADR 0043)"
     core -> p_index
@@ -137,6 +136,13 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
     adapters -> p_ports: implements {class: config}
   }
 
+  admin: "admin (Java, back office)" {
+    class: group
+    ctl: "AdminController · OverviewController\nreview items, Scout runs, overview\n(admin port only)" {class: app}
+    usecase: "GetOverview\n(counts, one a minute)" {class: app}
+    ctl -> usecase
+  }
+
   identity: "identity (Java)" {
     class: group
     sec: "SecurityConfiguration\nCSRF · ADMIN allow-list" {class: app}
@@ -145,7 +151,7 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
 
   platform: "platform (open module)" {
     class: group
-    llm: "llm: LlmSettings · NvidiaOnly\nDailyBudget · RedisCallCounter\nModelCallMetrics (helper2.llm.*)" {class: app}
+    llm: "llm: LlmSettings · NvidiaOnly\nDailyBudget · BudgetLedger · RedisCallCounter\nModelCallMetrics (helper2.llm.*)" {class: app}
     edge: "RateLimitInterceptor · RateLimiter\nApiExceptionHandler · SinglePageApp\nPromptTemplate" {class: app}
     http: "http: ObservedHttp\n(pooled, observed RestClient;\nUser-Agent with build version)" {class: app}
     resilience: "resilience: Resilience (named\npolicies on Resilience4j: llm-chat,\nllm-embed, guide, …)\nOutboundThrottle (Redis)" {class: app}
@@ -170,6 +176,12 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
   identity.me -> platform.quota: "delete counters\nwith the account"
   scout.jdbc -> catalog.p_results: "record runs" {class: config}
   setup.usecase -> catalog.catalog: "resource detail"
+  admin.ctl -> catalog.catalog: "review decisions"
+  admin.ctl -> scout.core: "start a run"
+  admin.usecase -> catalog.catalog: "open items per kind"
+  admin.usecase -> scout.p_stores: "backlog count, runs"
+  admin.usecase -> platform.llm: "budgets today"
+  admin.usecase -> search.core: "web credits today"
 }
 
 stores: STORES {
@@ -208,6 +220,7 @@ browser -> app.search.ctl: "search" {class: hot}
 browser -> app.guide.ctl: "ask (SSE)" {class: hot}
 browser -> app.catalog.ctl
 browser -> app.setup.ctl: "Guide me"
+browser -> app.admin.ctl: "back office (admin host)"
 browser -> app.identity.me
 
 app.search.cache -> stores.redis: "h2:v1:src:*"
