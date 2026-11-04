@@ -85,5 +85,5 @@ decides where the extra text comes from, and the same evidence gate judges it.
 [flow](../../diagrams/flow-0043-enrichment-gap-round.svg) · [sequence](../../diagrams/sequence-0043-enrichment-gap-round.svg)
 
 ## Roadmap
-- [Gap round for resources enriched before it](../../roadmap.md#5-ai-quality-and-cost)
+- [Gap round for resources enriched before it](../../roadmap.md#4-ai-quality-and-cost)
 - [Lawyer review of README and model-card quotes](../../roadmap.md#product-and-legal)

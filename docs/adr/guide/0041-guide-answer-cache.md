@@ -171,4 +171,4 @@ A reused answer counts as outcome `cached` in `helper2.guide.questions`.
 [flow](../../diagrams/flow-0041-guide-answer-cache.svg) · [sequence](../../diagrams/sequence-0041-guide-answer-cache.svg)
 
 ## Roadmap
-- [Watch similar-question reuse on prod; change the threshold only with a new sweep](../../roadmap.md#5-ai-quality-and-cost).
+- [Watch similar-question reuse on prod; change the threshold only with a new sweep](../../roadmap.md#4-ai-quality-and-cost).

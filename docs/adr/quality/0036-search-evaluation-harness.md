@@ -86,4 +86,4 @@ absence costs no measurable quality for a group is not called for that group.
 [flow](../../diagrams/flow-0036-search-evaluation-harness.svg) · [sequence](../../diagrams/sequence-0036-search-evaluation-harness.svg)
 
 ## Roadmap
-- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).
+- Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

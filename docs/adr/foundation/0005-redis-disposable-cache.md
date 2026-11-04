@@ -81,6 +81,6 @@ so the cache must be optional: when Redis is down, the app still works, only slo
 [flow](../../diagrams/flow-0005-redis-disposable-cache.svg) · [sequence](../../diagrams/sequence-0005-redis-disposable-cache.svg)
 
 ## Roadmap
-- A Redis exporter and alerts on cache errors: [roadmap](../../roadmap.md#3-operations).
-- Redis memory shared by cache, sessions and rate limits; alert on evictions: [roadmap](../../roadmap.md#4-more-than-one-replica).
-- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).
+- A Redis exporter and alerts on cache errors: [roadmap](../../roadmap.md#2-operations).
+- Redis memory shared by cache, sessions and rate limits; alert on evictions: [roadmap](../../roadmap.md#3-more-than-one-replica).
+- Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

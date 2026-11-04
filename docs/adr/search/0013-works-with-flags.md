@@ -50,4 +50,4 @@ must also remove the flag.
 
 ## Roadmap
 Nothing open.
-- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).
+- Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

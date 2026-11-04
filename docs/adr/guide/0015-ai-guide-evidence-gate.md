@@ -82,4 +82,4 @@ show progress, and every claim on the page must be traceable to a real result.
 
 ## Roadmap
 - [Browser end-to-end test of the streamed guide](../../roadmap.md#quality-gates)
-- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).
+- Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).
