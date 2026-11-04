@@ -543,25 +543,43 @@ public class ResourceStore {
     /** Text the embedding is made from, and its hash; SQL and Java must agree, so it is defined once here. */
     private static final String EMBEDDED_TEXT = "r.title || E'\\n' || coalesce(r.description, '')";
 
+    /**
+     * A resource whose embedding for :model is missing or stale (its text changed since): the indexer's work list
+     * and its backlog. Needs `resource r` LEFT JOIN `resource_embedding e` on the resource and the model.
+     */
+    private static final String EMBEDDING_PENDING =
+        "r.data_origin <> 'DEMO' AND (e.resource_id IS NULL OR e.text_hash <> md5(" + EMBEDDED_TEXT + "))";
+
     public record EmbeddingTask(UUID resourceId, String text, String textHash) {
+    }
+
+    /** One batch of [tasks] and the [backlog]: every resource still to embed, this batch included. */
+    public record PendingEmbeddings(List<EmbeddingTask> tasks, long backlog) {
     }
 
     /**
      * Resources without a current embedding for [model] (none yet, or title/description changed since),
      * most popular first, so a partly built index already covers what people look for. DEMO rows are skipped.
+     * The backlog comes from the same scan (`count(*) OVER ()` before the limit): a separate count costs a second
+     * pass over every row and its md5 (about 70-130 ms on 25k rows), the window adds about 10-25 ms.
      */
-    public List<EmbeddingTask> pendingEmbeddings(String model, int limit) {
-        return jdbc.sql("""
-                SELECT r.id, %1$s AS text, md5(%1$s) AS hash
+    public PendingEmbeddings pendingEmbeddings(String model, int limit) {
+        long[] backlog = {0};
+        List<EmbeddingTask> tasks = jdbc.sql("""
+                SELECT r.id, %1$s AS text, md5(%1$s) AS hash, count(*) OVER () AS backlog
                 FROM resource r
                 LEFT JOIN resource_embedding e ON e.resource_id = r.id AND e.model = :model
-                WHERE r.data_origin <> 'DEMO' AND (e.resource_id IS NULL OR e.text_hash <> md5(%1$s))
+                WHERE %2$s
                 ORDER BY r.popularity DESC, r.id
                 LIMIT :limit
-                """.formatted(EMBEDDED_TEXT))
+                """.formatted(EMBEDDED_TEXT, EMBEDDING_PENDING))
             .param("model", model).param("limit", limit)
-            .query((rs, i) -> new EmbeddingTask(rs.getObject("id", UUID.class), rs.getString("text"), rs.getString("hash")))
+            .query((rs, i) -> {
+                backlog[0] = rs.getLong("backlog");
+                return new EmbeddingTask(rs.getObject("id", UUID.class), rs.getString("text"), rs.getString("hash"));
+            })
             .list();
+        return new PendingEmbeddings(tasks, backlog[0]);
     }
 
     /**

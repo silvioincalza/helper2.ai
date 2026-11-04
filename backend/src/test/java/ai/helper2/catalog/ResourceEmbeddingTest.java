@@ -93,7 +93,7 @@ class ResourceEmbeddingTest {
     }
 
     private List<EmbeddingTask> pendingOfThisRun() {
-        return store.pendingEmbeddings(model, 100_000).stream().filter(t -> created.contains(t.resourceId())).toList();
+        return store.pendingEmbeddings(model, 100_000).tasks().stream().filter(t -> created.contains(t.resourceId())).toList();
     }
 
     @Test
@@ -113,6 +113,31 @@ class ResourceEmbeddingTest {
         jdbc.sql("UPDATE resource SET description = 'changed' WHERE id = :id").param("id", beta).update();
 
         assertThat(pendingOfThisRun()).extracting(EmbeddingTask::resourceId).containsExactly(beta);
+    }
+
+    /**
+     * A row whose text changed after it was embedded is still backlog: it has a vector, but not a current one.
+     * The model is unique to this run, so the first tick embeds every row in the database and the backlog then
+     * holds only what this test changes.
+     */
+    @Test
+    void theBacklogCountsRowsWhoseTextChangedAfterTheyWereEmbedded() {
+        UUID alpha = insert("alpha", "first");
+        UUID beta = insert("beta", "second");
+        SimpleMeterRegistry registry = new SimpleMeterRegistry();
+        new EmbeddingIndexer(store, new FakeEmbedder(), 100_000, Duration.ofMinutes(1), Clock.systemUTC(), registry).tick();
+        assertThat(registry.get("helper2.embedding.backlog").gauge().value()).isZero();
+        assertThat(store.pendingEmbeddings(model, 1).backlog()).isZero();
+
+        jdbc.sql("UPDATE resource SET description = 'changed' WHERE id = :id").param("id", beta).update();
+
+        assertThat(store.pendingEmbeddings(model, 1).backlog()).isEqualTo(1);
+
+        jdbc.sql("UPDATE resource SET description = 'changed too' WHERE id = :id").param("id", alpha).update();
+        SimpleMeterRegistry oneAtATime = new SimpleMeterRegistry();
+        new EmbeddingIndexer(store, new FakeEmbedder(), 1, Duration.ofMinutes(1), Clock.systemUTC(), oneAtATime).tick();
+
+        assertThat(oneAtATime.get("helper2.embedding.backlog").gauge().value()).as("one of the two changed rows is left").isEqualTo(1);
     }
 
     @Test

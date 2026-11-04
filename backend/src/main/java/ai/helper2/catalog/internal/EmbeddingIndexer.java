@@ -2,8 +2,8 @@ package ai.helper2.catalog.internal;
 
 import ai.helper2.catalog.Embedder;
 import ai.helper2.catalog.Embedder.EmbeddingFailure;
-import ai.helper2.catalog.internal.ResourceStore.EmbeddingCoverage;
 import ai.helper2.catalog.internal.ResourceStore.EmbeddingTask;
+import ai.helper2.catalog.internal.ResourceStore.PendingEmbeddings;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -22,7 +22,9 @@ import org.springframework.dao.DataAccessException;
  * keeps it current afterwards, so there is no upsert hook and no separate reindex job. After a rate
  * limit it pauses; any other failure is logged and retried on the next tick.
  *
- * Meters: helper2.embedding.backlog (resources without a vector for the model, read after each batch),
+ * Meters: helper2.embedding.backlog (resources without a current vector for the model: none yet, or one made
+ * from text that has changed since; counted by the same query that picks the batch, minus the batch once it is
+ * stored, so a failed batch still updates it),
  * helper2.embedding.failures{reason} and helper2.embedding.last.success (epoch seconds of the last batch
  * that stored vectors or found nothing to do; 0 until then).
  */
@@ -51,7 +53,7 @@ public class EmbeddingIndexer {
         this.pauseAfterRateLimit = pauseAfterRateLimit;
         this.clock = clock;
         Gauge.builder("helper2.embedding.backlog", backlog, AtomicLong::get)
-            .description("Resources without an embedding for the current model").register(registry);
+            .description("Resources without a current embedding for the model (none yet, or the text changed since)").register(registry);
         Gauge.builder("helper2.embedding.last.success", lastSuccessEpochSeconds, AtomicLong::get)
             .description("Epoch seconds of the last successful indexer batch").baseUnit("seconds").register(registry);
         this.rateLimited = failures(registry, "rate_limited");
@@ -70,9 +72,10 @@ public class EmbeddingIndexer {
             return 0;
         }
         try {
-            List<EmbeddingTask> tasks = store.pendingEmbeddings(embedder.model(), batch);
+            PendingEmbeddings pending = store.pendingEmbeddings(embedder.model(), batch);
+            List<EmbeddingTask> tasks = pending.tasks();
+            backlog.set(pending.backlog());
             if (tasks.isEmpty()) {
-                backlog.set(0);
                 succeeded();
                 if (!caughtUp) {
                     caughtUp = true;
@@ -84,8 +87,7 @@ public class EmbeddingIndexer {
             List<float[]> vectors = embedder.embed(tasks.stream().map(EmbeddingTask::text).toList(), Embedder.Kind.PASSAGE);
             store.saveEmbeddings(embedder.model(), tasks, vectors);
             succeeded();
-            EmbeddingCoverage coverage = store.embeddingCoverage(embedder.model());
-            backlog.set(Math.max(0, coverage.total() - coverage.embedded()));
+            backlog.set(pending.backlog() - tasks.size());
             return tasks.size();
         } catch (EmbeddingFailure e) {
             if (e.rateLimited()) {
