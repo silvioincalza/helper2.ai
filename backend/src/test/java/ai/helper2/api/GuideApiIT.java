@@ -141,6 +141,7 @@ class GuideApiIT extends ApiTestBase {
             .value("$.recommendations[0].quote", QUOTE)
             .value("$.recommendations[0].aiReasoned", true)
             .value("$.recommendations[0].reasonCheck", "SUPPORTED")
+            .value("$.recommendations[0].compatibleWith.length()", 0)
             .value("$.model.provider", "nebius-token-factory")
             .value("$.model.fastModel", "fake-nano")
             .value("$.model.reasoningModel", "fake-super")
@@ -220,6 +221,23 @@ class GuideApiIT extends ApiTestBase {
         String json = GuideAnswers.ask(mvc, body("translate a user manual to Spanish"), csrf(), from("10.0.0.3"))
             .value("$.status", "LLM_UNAVAILABLE")
             .value("$.recommendations[0].aiReasoned", false)
+            .json();
+        ContractValidator.assertMatches("GuideResponse", json);
+    }
+
+    /** "Works with" flags (ADR 0013) come with every pick, also a plain search result shown when the model is down. */
+    @Test
+    void aFallbackPickCarriesItsWorksWithFlags() throws Exception {
+        FAKE.set(q -> List.of(fakeHit("https://github.com/acme/flaggedsrv", "Flaggedsrv Quuxconnector",
+            "Flaggedsrv Quuxconnector lets an assistant read your files.", ResourceType.MCP_SERVER, "MIT", null, null, 0)));
+        REPLY.set(prompt -> {
+            throw new IllegalStateException("provider down");
+        });
+        String json = GuideAnswers.ask(mvc, body("flaggedsrv quuxconnector MCP server to build an agent"), csrf(), from("10.0.0.31"))
+            .value("$.recommendations[*].aiReasoned", org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is(false)))
+            .value("$.recommendations[?(@.title == 'Flaggedsrv Quuxconnector')].compatibleWith[*].tool", org.hamcrest.Matchers.contains("mcp"))
+            .value("$.recommendations[?(@.title == 'Flaggedsrv Quuxconnector')].compatibleWith[*].basis", org.hamcrest.Matchers.contains("TYPE"))
+            .value("$.recommendations[*].compatibleWith", org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.notNullValue()))
             .json();
         ContractValidator.assertMatches("GuideResponse", json);
     }

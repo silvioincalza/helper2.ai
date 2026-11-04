@@ -24,10 +24,14 @@ must also remove the flag.
 4. **Current tags only.** For catalog hits, tags come from `resource_label`. `ResourceStore.replaceLabels` rebuilds
    these rows from the current `source_record.extra` on every upsert, so a dropped tag drops the flag. At most 20 tags
    per resource are kept (alphabetical), each cut to 60 characters.
-5. **On every card.** `CardMapper.card` (named interface `cards` of the search module) adds `compatibleWith`, so
-   search results, resource pages, the "new" list and upcoming events show the same flags.
-   Guide recommendations (`GuideRecommendation`) do not carry flags. The contract states they are never
-   model-generated.
+5. **On every card and every guide pick.** `CardMapper.compatibility` (named interface `cards` of the search module)
+   maps the flags once. `CardMapper.card` adds them as `compatibleWith`, so search results, resource pages, the "new"
+   list and upcoming events show the same flags. `GuideDtoMapper` adds the same list to every guide recommendation
+   (`GuideRecommendation.compatibleWith`), the AI picks and the plain top results shown when no AI pick survived.
+   The server always sends the list, `[]` when no rule matched. The flags are not AI-written: they are outside
+   `aiContent.fields` ([0038](../guide/0038-ai-content-marking.md)). The contract states they are never
+   model-generated. In the web app a pick is shown as its result card (row and preview) or links to its resource
+   page, so the flags show there, outside the AI-labelled reason.
 
 ## Consequences
 - Every flag can be traced to a tag, a type or a format; the rules are public.
@@ -40,9 +44,10 @@ must also remove the flag.
 
 ## Code
 - `backend/src/main/kotlin/ai/helper2/search/Compatibility.kt` — tools, rules, flags.
-- `backend/src/main/java/ai/helper2/search/web/CardMapper.java` — adds `compatibleWith` to each card.
+- `backend/src/main/java/ai/helper2/search/web/CardMapper.java` — `compatibility`, and `compatibleWith` on each card.
+- `backend/src/main/java/ai/helper2/guide/web/GuideDtoMapper.java` — `compatibleWith` on each guide recommendation.
 - `backend/src/main/java/ai/helper2/catalog/internal/ResourceStore.java` — `replaceLabels`, `MAX_TAGS`.
-- `api/openapi.yaml` — `CompatibilityFlag`, `ResultCard.compatibleWith`.
+- `api/openapi.yaml` — `CompatibilityFlag`, `ResultCard.compatibleWith`, `GuideRecommendation.compatibleWith`.
 - `frontend/src/components/results/ResultFacts.tsx` — "Works with" in the Build facts of the preview and the resource page; the reason as tooltip and screen-reader text.
 
 ## Diagrams

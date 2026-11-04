@@ -24,11 +24,14 @@ import ai.helper2.search.WebSearchesLeft;
 import ai.helper2.shared.DateFact;
 import ai.helper2.shared.UtcTimes;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.springframework.modulith.NamedInterface;
 
 /**
  * Maps search-domain results to contract DTOs: the search module's "cards" named interface. Result cards
- * ({@link #card}) are shown by search and catalog; the guide and admin adapters use only {@link #odt}.
+ * ({@link #card}) are shown by search and catalog; the guide adds the same "works with" flags to its picks
+ * ({@link #compatibility}).
  */
 @NamedInterface("cards")
 public final class CardMapper {
@@ -69,10 +72,18 @@ public final class CardMapper {
             PopularityMetricDto.MetricEnum.fromValue(p.getKind().name()), p.getValue(), p.getSourceId(), UtcTimes.odt(p.getAsOf()))));
         r.getConflicts().forEach(c -> dto.addConflictsItem(new FieldConflictDto(c.getField(),
             c.getValues().stream().map(v -> new SourcedValueDto(v.getValue(), v.getSourceId())).toList())));
-        Compatibility.INSTANCE.of(r).forEach(f -> dto.addCompatibleWithItem(new CompatibilityFlagDto(
-            f.getTool(), f.getLabel(), CompatibilityFlagDto.BasisEnum.fromValue(f.getBasis().name()), f.getEvidence())
-            .sourceId(f.getSourceId())));
+        dto.compatibleWith(compatibility(r));
         return dto;
+    }
+
+    /**
+     * The "works with" flags of [r] (ADR 0013), in the order of the rules' tool list; empty when no rule matched.
+     * Shared by result cards and guide picks, so both show the same flags.
+     */
+    public static List<CompatibilityFlagDto> compatibility(MergedResult r) {
+        return Compatibility.INSTANCE.of(r).stream().map(f -> new CompatibilityFlagDto(
+                f.getTool(), f.getLabel(), CompatibilityFlagDto.BasisEnum.fromValue(f.getBasis().name()), f.getEvidence())
+            .sourceId(f.getSourceId())).collect(Collectors.toCollection(ArrayList::new));
     }
 
     public static DateFactDto date(DateFact f) {

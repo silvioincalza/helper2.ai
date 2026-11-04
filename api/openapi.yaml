@@ -1013,6 +1013,13 @@ components:
           type: [string, 'null']
           description: The resource's own description, the text the quote was checked against, so a client can show the quote in context.
         sourceIds: { type: array, items: { type: string } }
+        compatibleWith:
+          type: array
+          description: |
+            AI tools this pick works with, by the same disclosed rules as ResultCard.compatibleWith. Never model-generated.
+            The server always sends it, `[]` when no rule matched; an answer cached by a client before the field existed
+            may lack it.
+          items: { $ref: '#/components/schemas/CompatibilityFlag' }
         aiReasoned:
           type: boolean
           description: True when the model chose this pick and it passed the evidence check; false for a plain top search result shown because no AI pick survived.

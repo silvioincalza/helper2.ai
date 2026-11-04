@@ -81,6 +81,7 @@ class GuideDtoMapper {
                 ResourceTypeDto.fromValue(r.getResult().getType().name()), r.getReason(), r.getQuote(),
                 r.getResult().getSources().stream().map(s -> s.getSourceId()).toList(), r.getAiReasoned())
                 .description(r.getResult().getDescription())
+                .compatibleWith(CardMapper.compatibility(r.getResult()))
                 .checks(r.getChecks().stream().map(GuideDtoMapper::check).toList())
                 .reasonCheck(GuideRecommendationDto.ReasonCheckEnum.fromValue(r.getReasonCheck().name()))).toList())
             .constraints(a.getConstraints())
