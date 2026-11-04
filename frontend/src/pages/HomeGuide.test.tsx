@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import type { GuideResponse } from '@/api/types';
 import { mockApi as mockAll, problem, sse, type Handler } from '@/test/mockApi';
 import { renderApp } from '@/test/render';
+import { axeViolations } from '@/test/a11y';
 import { makeCard, makeSearch, makeStatus } from '@/test/fixtures';
 
 /** The guide's pick is on the page of results, so the list shows it first and the preview opens on it. */
@@ -221,6 +222,63 @@ describe('guide on the one page', () => {
     expect(within(found).getByText(/Helper2 index unavailable/)).toBeInTheDocument();
     expect(within(fold).queryByText('expanded')).not.toBeInTheDocument();
     for (const n of found.querySelectorAll('.notice')) expect(n.closest('[data-ai-generated]')).toBeNull();
+  });
+
+  it('a name not in our sources: the bar builds the sentence, and only the name and the search are AI-marked and labelled', async () => {
+    mockApi({
+      'POST /guide/stream': () => sse(makeGuide({
+        status: 'PARTIAL', recommendations: [], intent: 'ALTERNATIVES', subjects: ['Frobnicator'],
+        notices: [{
+          code: 'GUIDE_SUBJECT_NOT_FOUND', message: 'The name in the question was not found in our sources.',
+          subject: 'Frobnicator', query: 'local llm runner',
+        }],
+      })),
+    });
+    const { container } = renderApp('/');
+    await ask('an alternative to Frobnicator for local models');
+    const bar = await screen.findByRole('region', { name: 'Guide picks' });
+    const line = await within(bar).findByRole('status');
+    await within(line).findByText('Frobnicator');
+    expect(line).toHaveTextContent('Frobnicator was not found in our sources; showing tools for: local llm runner Name and search AI-written');
+    const marked = [...line.querySelectorAll('[data-ai-generated="true"]')];
+    expect(marked.map((m) => m.textContent)).toEqual(['Frobnicator', 'local llm runner']);
+    for (const m of marked) expect(m).toHaveAttribute('data-ai-model', 'nvidia/nemotron-nano');
+    expect(line.closest('[data-ai-generated]')).toBeNull();
+    expect(within(line).getByText(/was not found in our sources; showing tools for:/).closest('[data-ai-generated]')).toBeNull();
+    expect(within(line).queryByText(/The name in the question/)).not.toBeInTheDocument();
+    expect(await axeViolations(container)).toEqual([]);
+  });
+
+  it('a name not in our sources next to picks: the fold says it with the same marking', async () => {
+    mockApi({
+      'POST /guide/stream': () => sse(makeGuide({
+        notices: [{ code: 'GUIDE_SUBJECT_NOT_FOUND', message: 'A name to compare was not found in our sources.', subject: 'LM Studio', query: null }],
+      })),
+    });
+    renderApp('/');
+    await ask('Postgres MCP vs LM Studio');
+    await answered();
+    const fold = screen.getByText('How the guide decided').closest('details')!;
+    await userEvent.click(within(fold).getByText('How the guide decided'));
+    const notice = within(fold).getByText(/was not found in our sources\./).closest('p')!;
+    expect(notice).toHaveTextContent('LM Studio was not found in our sources. Name AI-written');
+    expect([...notice.querySelectorAll('[data-ai-generated]')].map((m) => m.textContent)).toEqual(['LM Studio']);
+    expect(within(fold).queryByText(/A name to compare/)).not.toBeInTheDocument();
+  });
+
+  it('an older cached answer without the fields: the bar says it without the planner\'s words and without the AI label', async () => {
+    mockApi({
+      'POST /guide/stream': () => sse(makeGuide({
+        status: 'PARTIAL', recommendations: [],
+        notices: [{ code: 'GUIDE_SUBJECT_NOT_FOUND', message: 'Frobnicator was not found in our sources; showing tools for: local llm runner' }],
+      })),
+    });
+    renderApp('/');
+    await ask('an alternative to Frobnicator for local models');
+    const bar = await screen.findByRole('region', { name: 'Guide picks' });
+    expect(await within(bar).findByText('A name in the question was not found in our sources; showing the closest results.')).toBeInTheDocument();
+    expect(within(bar).queryByText(/Frobnicator/)).not.toBeInTheDocument();
+    expect(within(bar).queryByText(/AI-written$/)).not.toBeInTheDocument();
   });
 
   it('model chose nothing: the bar says nothing fits, no row is a pick, and the preview only says what the result is', async () => {

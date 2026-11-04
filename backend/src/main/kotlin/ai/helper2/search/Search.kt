@@ -24,7 +24,16 @@ data class SearchRequest @JvmOverloads constructor(
 /** GUIDE_SUBJECT_NOT_FOUND: the thing the question names (to compare, to find alternatives to, to date) is not in our sources. */
 enum class NoticeCode { CACHE_UNAVAILABLE, INDEX_UNAVAILABLE, QUERY_EXPANDED, ALL_SOURCES_FAILED, GUIDE_DAILY_QUOTA, GUIDE_SUBJECT_NOT_FOUND }
 
-data class Notice(val code: NoticeCode, val message: String)
+/**
+ * [message] is always our own words. GUIDE_SUBJECT_NOT_FOUND carries the planner's words apart, so the page can mark
+ * them AI-written (ADR 0038): [subject] is the name not found, [query] the planned search shown instead (alternatives).
+ */
+data class Notice @JvmOverloads constructor(
+    val code: NoticeCode,
+    val message: String,
+    val subject: String? = null,
+    val query: String? = null,
+)
 
 data class Coverage(
     val partial: Boolean,

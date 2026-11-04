@@ -379,6 +379,25 @@ class GuideApiIT extends ApiTestBase {
         GuideAnswers.ask(mvc, body("another client"), csrf(), from("10.0.0.6"));
     }
 
+    @Test
+    void aNameNotInOurSourcesComesAsAMarkedFieldOfItsNoticeNeverInsideTheMessage() throws Exception {
+        REPLY.set(prompt -> "fake-nano".equals(prompt.getOptions().getModel())
+            ? """
+                {"intent":"ALTERNATIVES","subjects":["Frobnicator"],"searchQuery":"document translation","constraints":[],
+                 "wantsReading":false,"webQuery":"","window":null,"clarify":null}"""
+            : prompt.getContents().contains("PICKS:") ? supportAll(prompt.getContents()) : choose(prompt.getContents()));
+
+        String json = GuideAnswers.ask(mvc, "{\"request\":\"alternatives to Frobnicator\",\"path\":\"USE_AI\"}", csrf(), from("10.0.9.9"))
+            .value("$.notices[?(@.code == 'GUIDE_SUBJECT_NOT_FOUND')].subject", org.hamcrest.Matchers.contains("Frobnicator"))
+            .value("$.notices[?(@.code == 'GUIDE_SUBJECT_NOT_FOUND')].query", org.hamcrest.Matchers.contains("document translation"))
+            .value("$.aiContent.fields", org.hamcrest.Matchers.hasItems("notices[].subject", "notices[].query"))
+            .json();
+
+        ContractValidator.assertMatches("GuideResponse", json);
+        assertThat(com.jayway.jsonpath.JsonPath.<List<String>>read(json, "$.notices[*].message"))
+            .noneMatch(m -> m.contains("Frobnicator") || m.contains("document translation"));
+    }
+
     // ADR 0032 §3 and §5: an ambiguous name asked back once, and a WHEN question about an event over events only.
     // Dates come from records, so the plan call is the only model call.
 

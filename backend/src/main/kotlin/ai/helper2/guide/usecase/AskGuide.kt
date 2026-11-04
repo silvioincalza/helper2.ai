@@ -223,9 +223,13 @@ class AskGuide(
         asked.probe = probe
         val answer = similar.nearest(probe)?.let(cache::get) ?: return null
         asked.reused = true
-        // Its queries came from another asker's words (ADR 0044), the planned search query too; this copy is also what
-        // is stored under this key.
-        return answer.copy(searchQuery = "", trail = answer.trail.withoutQueries())
+        // Its queries came from another asker's words (ADR 0044), the planned search query too, also the one a not-found
+        // notice shows tools for; this copy is also what is stored under this key.
+        return answer.copy(
+            searchQuery = "", trail = answer.trail.withoutQueries(), notices = answer.notices.map { it.copy(query = null) },
+            // "Also searched for" lists terms from the other asker's planned query (and maybe a model translation of it).
+            search = answer.search.copy(notices = answer.search.notices.filter { it.code != NoticeCode.QUERY_EXPANDED }),
+        )
     }
 
     /** Subjects in the order the user wrote them, not the planner's: the order carries the direction ("python bindings for rust"). */

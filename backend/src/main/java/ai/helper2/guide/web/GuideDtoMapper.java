@@ -33,6 +33,7 @@ import ai.helper2.guide.GuideAnswer;
 import ai.helper2.guide.ResearchTrail;
 import ai.helper2.platform.llm.LlmSettings;
 import ai.helper2.search.MergedResult;
+import ai.helper2.search.Notice;
 import ai.helper2.search.SearchOutcome;
 import ai.helper2.search.web.CardMapper;
 import ai.helper2.shared.UtcTimes;
@@ -48,7 +49,7 @@ class GuideDtoMapper {
     static final List<String> AI_WRITTEN_FIELDS = List.of(
         "searchQuery", "constraints[]", "recommendations[].reason", "recommendations[].checks[].constraint", "prompt.text",
         "clarification.question", "clarification.options[]", "comparison.rows[].aspect", "comparison.rows[].cells[].text",
-        "explanation.sentences[].text", "trail.queries[]");
+        "explanation.sentences[].text", "trail.queries[]", "notices[].subject", "notices[].query");
 
     /** The public page that explains the marking. A path, so the same build works on any host. */
     static final String AI_MARKING_POLICY = "/mission";
@@ -91,7 +92,7 @@ class GuideDtoMapper {
             .rejected(a.getRejected())
             .sources(statuses(a.getSearch()))
             .notices(Stream.concat(a.getSearch().getNotices().stream(), a.getNotices().stream())
-                .map(n -> new NoticeDto(NoticeDto.CodeEnum.fromValue(n.getCode().name()), n.getMessage())).toList())
+                .map(GuideDtoMapper::notice).toList())
             .generatedAt(UtcTimes.odt(a.getGeneratedAt()))
             .intent(GuideIntentDto.fromValue(a.getIntent().name()))
             .subjects(a.getSubjects())
@@ -160,6 +161,11 @@ class GuideDtoMapper {
                 s.getResultCount(), UtcTimes.odt(s.getCheckedAt()))
             .latencyMs(s.getLatency() == null ? null : s.getLatency().toMillis())
             .cachedAt(UtcTimes.odt(s.getCachedAt())).message(s.getMessage())).toList();
+    }
+
+    /** The message is ours; a not-found notice's name and query are the planner's, so they are fields of their own. */
+    static NoticeDto notice(Notice n) {
+        return new NoticeDto(NoticeDto.CodeEnum.fromValue(n.getCode().name()), n.getMessage()).subject(n.getSubject()).query(n.getQuery());
     }
 
     private static GuideCheckDto check(ConstraintCheck c) {

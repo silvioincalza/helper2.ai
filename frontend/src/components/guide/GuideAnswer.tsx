@@ -1,4 +1,5 @@
 import type { TFunction } from 'i18next';
+import { Fragment, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { GuideResponse, Notice, TrailRemoved } from '@/api/types';
 import { Icon } from '@/components/Icon';
@@ -29,16 +30,52 @@ export function noPickCode(answer: GuideResponse): NoPickCode | undefined {
  * model is not available, the catalog had nothing, the subject was not found, or the model found nothing that fits.
  * Undefined: no reason beyond "no pick".
  */
-export function noPickReason(answer: GuideResponse, t: TFunction): string | undefined {
+export function noPickReason(answer: GuideResponse, t: TFunction): ReactNode {
   switch (noPickCode(answer)) {
     case 'GUIDE_DAILY_QUOTA': return t('guide.notice.GUIDE_DAILY_QUOTA');
     case 'ALL_SOURCES_FAILED': return t('guide.notice.ALL_SOURCES_FAILED');
     case 'LLM_UNAVAILABLE': return t('guide.status.LLM_UNAVAILABLE');
     case 'NO_CANDIDATES': return t('guide.status.NO_CANDIDATES');
-    case 'GUIDE_SUBJECT_NOT_FOUND': return answer.notices.find((n) => n.code === 'GUIDE_SUBJECT_NOT_FOUND')?.message;
+    case 'GUIDE_SUBJECT_NOT_FOUND': {
+      const notice = answer.notices.find((n) => n.code === 'GUIDE_SUBJECT_NOT_FOUND')!;
+      return <SubjectNotFound notice={notice} model={plannerModel(answer)} />;
+    }
     case 'NO_FIT': return t('guide.noFit');
     default: return undefined;
   }
+}
+
+/** The model that read the question: the planner (fast model), when one ran. */
+function plannerModel(answer: GuideResponse): string | undefined {
+  return answer.model?.fastModel ?? answer.aiContent?.models[0];
+}
+
+const SLOT = '\u0001';
+
+/**
+ * A translated sentence with [parts] put in its {{name}} slots as elements. The values never pass through the
+ * translation, so a name stays plain text whatever it holds.
+ */
+function fill(t: TFunction, key: string, parts: Record<string, ReactNode>): ReactNode[] {
+  const slots = Object.fromEntries(Object.keys(parts).map((name) => [name, `${SLOT}${name}${SLOT}`]));
+  return t(key, slots).split(new RegExp(`${SLOT}(\\w+)${SLOT}`)).map((piece, i) => (i % 2 === 1 ? <Fragment key={i}>{parts[piece]}</Fragment> : piece));
+}
+
+/**
+ * "X was not found in our sources; showing tools for: Y". The sentence is ours; the name and the search are the
+ * planner's words, so each is marked AI-written and the line carries the label (ADR 0038). The server's message is
+ * never shown: an older answer (browser cache, ADR 0039) put the planner's words in it, so without the fields the
+ * line says it without them.
+ */
+export function SubjectNotFound({ notice, model }: { notice: Notice; model?: string | undefined }) {
+  const { t } = useTranslation();
+  const { subject, query } = notice;
+  if (!subject) return <>{t('guide.notice.GUIDE_SUBJECT_NOT_FOUND')}</>;
+  const marked = (text: string) => <span {...aiMark(model)}>{text}</span>;
+  const sentence = query
+    ? fill(t, 'guide.notice.subjectNotFoundShowing', { subject: marked(subject), query: marked(query) })
+    : fill(t, 'guide.notice.subjectNotFound', { subject: marked(subject) });
+  return <>{sentence}{' '}<span className="badge">{t(query ? 'guide.notice.subjectAndSearchAi' : 'guide.notice.subjectAi')}</span></>;
 }
 
 /**
@@ -148,8 +185,8 @@ export function GuideAnswer({ answer, onRefine }: { answer: GuideResponse; onRef
         </p>
       )}
 
-      {kept > 0 && (answer.notices ?? []).filter((n) => n.code === 'GUIDE_SUBJECT_NOT_FOUND').map((n) => (
-        <p key={n.message} className="notice notice-warn"><Icon name="info" /> {n.message}</p>
+      {kept > 0 && (answer.notices ?? []).filter((n) => n.code === 'GUIDE_SUBJECT_NOT_FOUND').map((n, i) => (
+        <p key={`${i}-${n.subject ?? ''}`} className="notice notice-warn"><Icon name="info" /> <SubjectNotFound notice={n} model={plannerModel(answer)} /></p>
       ))}
 
       <Understood answer={answer} onRefine={onRefine} />

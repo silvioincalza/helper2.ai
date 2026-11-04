@@ -33,12 +33,18 @@ to the text.
    `data-ai-models`. Marked: reasons, requirements (chips and checks), the question back and its options, comparison
    aspects and cells, explanation sentences, the prompt, the planned search query and the research trail's queries ([0044](0044-research-trail.md)), AI summaries and values extracted
    by AI on the resource page, and the instructions of the setup guide's steps ([0031](0031-setup-guide.md);
-   `ToolGuide.model` names the model in the API). Quotes, titles, links and the setup guide's commands are never
+   `ToolGuide.model` names the model in the API). Also the name and the search in the "not found" notice
+   (`GUIDE_SUBJECT_NOT_FOUND`): the planner picked them, so they are their own fields (`notices[].subject`,
+   `notices[].query`), and the page puts them in our sentence ("X was not found in our sources; showing tools for:
+   Y"), each in a marked element. A notice's `message` is our own words (except `QUERY_EXPANDED`, whose terms can hold a model translation: see the roadmap): the page never shows it for this
+   code, so an older answer from the browser cache ([0039](../frontend/0039-frontend-recent-answers-cache.md)) says the sentence without the
+   planner's words. Quotes, titles, links and the setup guide's commands are never
    marked: they come from the sources. Our own labels and the subjects (the user's own words) are not marked.
    Every marked group also has a label on screen (Art. 50(1)): "AI-written" on the picks bar, on the reasons in the
    result list and the preview, on the requirements ("Requirements AI-written", in the reading chips, over their
-   checks in the preview and next to "Ask without" when nothing fits), on the planner's search terms, and on the
-   comparison, the explanation and the prompt; "AI summary" and "Extracted by AI"; "Steps written by AI" in the
+   checks in the preview and next to "Ask without" when nothing fits), on the planner's search terms, on the
+   comparison, the explanation and the prompt, and "Name AI-written" or "Name and search AI-written" on the "not found"
+   notice; "AI summary" and "Extracted by AI"; "Steps written by AI" in the
    setup guide. An AI-written label never shows without its text: a reason the check removed shows neither.
 4. **Explained in public.** The Mission page has a section "How we mark AI text".
 5. **No hidden characters in the text.** We do not add zero-width or other invisible characters.

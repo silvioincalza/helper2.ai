@@ -1,12 +1,15 @@
 package ai.helper2.guide.web
 
 import ai.helper2.api.generated.model.GuideTrailRemovedDto
+import ai.helper2.api.generated.model.NoticeDto
 import ai.helper2.guide.GuideAnswer
 import ai.helper2.guide.RemovedSuggestion
 import ai.helper2.guide.ResearchTrail
 import ai.helper2.guide.TrailCheck
 import ai.helper2.guide.GuideStatus
 import ai.helper2.platform.llm.LlmSettings
+import ai.helper2.search.Notice
+import ai.helper2.search.NoticeCode
 import ai.helper2.search.SearchOutcome
 import java.time.Instant
 import kotlin.test.Test
@@ -54,6 +57,28 @@ class GuideDtoMapperTest {
         assertEquals(listOf("speech recognition"), dto.trail!!.queries)
         assertEquals("promo", dto.trail!!.removed.single().title)
         assertEquals(GuideTrailRemovedDto.CheckEnum.CONSTRAINT_NOT_MET, dto.trail!!.removed.single().check)
+    }
+
+    @Test
+    fun `the name and the search of a not-found notice are their own fields, marked AI-written, the message is not`() {
+        val notice = Notice(NoticeCode.GUIDE_SUBJECT_NOT_FOUND, "The name in the question was not found.", subject = "Frobnicator", query = "pdf chat")
+        val dto = mapper.toDto(answer(modelUsed = true, planned = true).copy(notices = listOf(notice)))
+
+        val n = dto.notices.single()
+        assertEquals(NoticeDto.CodeEnum.GUIDE_SUBJECT_NOT_FOUND, n.code)
+        assertEquals("Frobnicator", n.subject)
+        assertEquals("pdf chat", n.query)
+        assertEquals("The name in the question was not found.", n.message)
+        assertTrue(dto.aiContent!!.fields.containsAll(listOf("notices[].subject", "notices[].query")))
+        assertTrue("notices[].message" !in dto.aiContent!!.fields)
+    }
+
+    @Test
+    fun `a search notice has no name and no search`() {
+        val dto = mapper.toDto(answer(modelUsed = true, planned = true).copy(notices = listOf(Notice(NoticeCode.CACHE_UNAVAILABLE, "cache down"))))
+
+        assertNull(dto.notices.single().subject)
+        assertNull(dto.notices.single().query)
     }
 
     @Test

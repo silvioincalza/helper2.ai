@@ -513,6 +513,42 @@ class AskGuideIntentsTest {
             .ask("Ollama vs LM Studio", null)
 
         assertNull(a.comparison)
-        assertTrue(a.notices.any { it.code == NoticeCode.GUIDE_SUBJECT_NOT_FOUND && it.message.startsWith("LM Studio") })
+        val notice = a.notices.single { it.code == NoticeCode.GUIDE_SUBJECT_NOT_FOUND }
+        assertEquals("LM Studio", notice.subject, "the planner's name, apart, so the page can mark it AI-written")
+        assertNull(notice.query)
+        assertFalse(notice.message.contains("LM Studio"), "the message holds only our own words")
+    }
+
+    @Test
+    fun `alternatives to a name not in our sources - the notice carries the planner's name and search apart from its message`() {
+        val model = Model(GuideSearchPlan("local LLM runner", intent = GuideIntent.ALTERNATIVES, subjects = listOf("Frobnicator")), choose = ::pickAll)
+
+        val a = guide(model).ask("alternatives to Frobnicator", null)
+
+        val notice = a.notices.single { it.code == NoticeCode.GUIDE_SUBJECT_NOT_FOUND }
+        assertEquals("Frobnicator", notice.subject)
+        assertEquals(a.searchQuery, notice.query, "the planned search it shows tools for")
+        assertTrue(notice.query!!.isNotBlank())
+        assertFalse(notice.message.contains("Frobnicator") || notice.message.contains(notice.query!!), notice.message)
+    }
+
+    @Test
+    fun `without a planned search the not-found notice has no query - the user's own words are never marked AI-written`() {
+        val model = Model(GuideSearchPlan("", intent = GuideIntent.ALTERNATIVES, subjects = listOf("Frobnicator")), choose = ::pickAll)
+
+        val a = guide(model).ask("alternatives to Frobnicator", null)
+
+        val notice = a.notices.single { it.code == NoticeCode.GUIDE_SUBJECT_NOT_FOUND }
+        assertEquals("Frobnicator", notice.subject)
+        assertNull(notice.query)
+    }
+
+    @Test
+    fun `alternatives to a name in our sources say nothing about it`() {
+        val model = Model(GuideSearchPlan("local LLM runner", intent = GuideIntent.ALTERNATIVES, subjects = listOf("Ollama")), choose = ::pickAll)
+
+        val a = guide(model).ask("alternatives to Ollama", null)
+
+        assertTrue(a.notices.none { it.code == NoticeCode.GUIDE_SUBJECT_NOT_FOUND })
     }
 }

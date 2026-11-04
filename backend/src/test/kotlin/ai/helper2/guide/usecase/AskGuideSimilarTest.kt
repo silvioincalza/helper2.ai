@@ -3,6 +3,7 @@ package ai.helper2.guide.usecase
 import ai.helper2.guide.Candidate
 import ai.helper2.guide.Drops
 import ai.helper2.guide.GuideAnswerCache
+import ai.helper2.guide.GuideIntent
 import ai.helper2.guide.MemoryAnswerStore
 import ai.helper2.guide.GuideModel
 import ai.helper2.guide.GuideProposal
@@ -19,6 +20,7 @@ import ai.helper2.platform.quota.QuotaCounter.Verdict
 import ai.helper2.platform.quota.QuotaKeys
 import ai.helper2.search.CachedHits
 import ai.helper2.search.NOW
+import ai.helper2.search.NoticeCode
 import ai.helper2.search.ResultObserver
 import ai.helper2.search.SearchCache
 import ai.helper2.search.SearchSource
@@ -38,6 +40,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /** A question worded differently but read the same way gets the cached answer of its near twin (ADR 0041). */
@@ -150,6 +153,61 @@ class AskGuideSimilarTest {
         assertEquals(1.0, cache("exact"), "the second paraphrase is an exact hit")
         assertEquals(emptyList(), again.trail.queries)
         assertEquals("", again.searchQuery)
+    }
+
+    @Test
+    fun `a reused answer keeps the name not found but not the planned search shown instead, which came from another asker's words`() {
+        val alternatives = object : GuideModel {
+            override val provider = "fake"
+            override val fastModel = "fast"
+            override val reasoningModel = "reasoning"
+            override fun plan(request: String, path: AudiencePath?) =
+                GuideSearchPlan("pdf chat", intent = GuideIntent.ALTERNATIVES, subjects = listOf("Frobnicator"))
+            override fun choose(request: String, candidates: List<Candidate>, constraints: List<String>) =
+                GuideProposal(candidates.map { ProposedPick(it.key, "Chats with PDFs.", it.result.description!!) }, null, emptyList())
+            override fun verifyReasons(request: String, claims: List<ReasonClaim>) = claims.associate { it.key to true }
+        }
+        val embedder = TableEmbedder(mapOf(
+            "alternatives to frobnicator" to floatArrayOf(1f, 0f, 0f), // the cache embeds the normalized question
+            "frobnicator alternatives" to floatArrayOf(0.96f, 0.28f, 0f),
+        ))
+        val guide = AskGuide(search, alternatives, clock, cache = GuideAnswerCache(Duration.ofHours(24), clock, MemoryAnswerStore()),
+            meters = meters, similar = SimilarQuestions(0.95, "embed", embedder, MemoryQuestionIndex(), clock))
+        val first = guide.ask("alternatives to Frobnicator", null).notices.single { it.code == NoticeCode.GUIDE_SUBJECT_NOT_FOUND }
+
+        val reused = guide.ask("Frobnicator alternatives", null).notices.single { it.code == NoticeCode.GUIDE_SUBJECT_NOT_FOUND }
+
+        assertEquals(1.0, cache("similar"))
+        assertEquals("pdf chat", first.query, "the original asker sees the search of their own question")
+        assertEquals("Frobnicator", reused.subject, "the same name: it is part of how both questions were read")
+        assertNull(reused.query)
+    }
+
+    @Test
+    fun `a reused answer drops the other asker's "also searched for" terms`() {
+        val alternatives = object : GuideModel {
+            override val provider = "fake"
+            override val fastModel = "fast"
+            override val reasoningModel = "reasoning"
+            override fun plan(request: String, path: AudiencePath?) =
+                GuideSearchPlan("riassunto pdf", intent = GuideIntent.ALTERNATIVES, subjects = listOf("Frobnicator"))
+            override fun choose(request: String, candidates: List<Candidate>, constraints: List<String>) =
+                GuideProposal(candidates.map { ProposedPick(it.key, "Chats with PDFs.", it.result.description!!) }, null, emptyList())
+            override fun verifyReasons(request: String, claims: List<ReasonClaim>) = claims.associate { it.key to true }
+        }
+        val embedder = TableEmbedder(mapOf(
+            "alternatives to frobnicator" to floatArrayOf(1f, 0f, 0f),
+            "frobnicator alternatives" to floatArrayOf(0.96f, 0.28f, 0f),
+        ))
+        val guide = AskGuide(search, alternatives, clock, cache = GuideAnswerCache(Duration.ofHours(24), clock, MemoryAnswerStore()),
+            meters = meters, similar = SimilarQuestions(0.95, "embed", embedder, MemoryQuestionIndex(), clock))
+        val first = guide.ask("alternatives to Frobnicator", null)
+        assertTrue(first.search.notices.any { it.code == NoticeCode.QUERY_EXPANDED }, "the planned Italian search gets its English terms")
+
+        val reused = guide.ask("Frobnicator alternatives", null)
+
+        assertEquals(1.0, cache("similar"))
+        assertTrue(reused.search.notices.none { it.code == NoticeCode.QUERY_EXPANDED }, "the terms came from the other asker's search")
     }
 
     @Test

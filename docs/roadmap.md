@@ -96,6 +96,12 @@ Open items:
 
 ## 4. AI quality and cost
 
+- "Also searched for" (`QUERY_EXPANDED`, `interpretation.expandedTerms`) can hold the model's English translation of a
+  non-English query ([ADR 0011](adr/search/0011-language-aware-search.md)), but the search page labels the list "added
+  from a fixed word list, not AI" and the API calls it deterministic. Split the translation into its own field, marked
+  AI-written in the API and the page ([ADR 0038](adr/guide/0038-ai-content-marking.md)), and keep the word-list note for
+  lexicon terms. LAWYER: does a model translation of the user's own query fall under the Art. 50(2) exemption for
+  assistive or standard-editing functions? Even if it does, a "not AI" label on model text must go.
 - The guide reason check is a model judgment and can miss a claim. Only the quote is proven
   ([ADR 0016](adr/guide/0016-guide-reason-check.md)).
 - Watch whether the source `type`, now a source fact in enrichment, sends many proposals to CONFLICTING review

@@ -1,6 +1,6 @@
 import type { TFunction } from 'i18next';
 import type { GuideResponse, Notice } from '@/api/types';
-import { foldNoticeExclusions, noPickReason } from './GuideAnswer';
+import { foldNoticeExclusions, noPickCode, noPickReason } from './GuideAnswer';
 
 const t = ((key: string) => key) as unknown as TFunction;
 const notice = (code: Notice['code']): Notice => ({ code, message: code });
@@ -29,8 +29,8 @@ describe('noPickReason: quota > all sources failed > model unavailable > no cand
   });
 
   it('otherwise the subject not found, then "nothing fits" when a model chose, then no reason', () => {
-    expect(noPickReason({ ...answer('PARTIAL', [], true), notices: [{ code: 'GUIDE_SUBJECT_NOT_FOUND', message: 'X was not found.' }] }, t))
-      .toBe('X was not found.');
+    expect(noPickCode({ ...answer('PARTIAL', [], true), notices: [{ code: 'GUIDE_SUBJECT_NOT_FOUND', message: 'not found', subject: 'X' }] }))
+      .toBe('GUIDE_SUBJECT_NOT_FOUND');
     expect(noPickReason(answer('PARTIAL', [], true), t)).toBe('guide.noFit');
     expect(noPickReason(answer('PARTIAL'), t)).toBeUndefined();
   });

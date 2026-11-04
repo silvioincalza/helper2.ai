@@ -704,7 +704,19 @@ components:
             GUIDE_DAILY_QUOTA (guide only) = this client's AI answers for the UTC day are used up; the answer is search results only.
             GUIDE_SUBJECT_NOT_FOUND (guide only) = a thing the question names (to compare, to find alternatives to, to date) is not in our sources.
           enum: [CACHE_UNAVAILABLE, INDEX_UNAVAILABLE, QUERY_EXPANDED, ALL_SOURCES_FAILED, GUIDE_DAILY_QUOTA, GUIDE_SUBJECT_NOT_FOUND]
-        message: { type: string }
+        message: { type: string, description: "Plain-language text in our own words, except QUERY_EXPANDED: its list of terms can hold a model translation of the query (ADR 0011). Model-written parts of other notices are their own fields (subject, query)." }
+        subject:
+          type: [string, 'null']
+          description: |
+            GUIDE_SUBJECT_NOT_FOUND only: the name that was not found, as the planner read it from the question.
+            AI-written (`notices[].subject` in `GuideResponse.aiContent.fields`, ADR 0038). Null on other codes and on a
+            not-found date.
+        query:
+          type: [string, 'null']
+          description: |
+            GUIDE_SUBJECT_NOT_FOUND only: the planner's search the guide shows tools for instead (alternatives). AI-written
+            (`notices[].query` in `GuideResponse.aiContent.fields`). Null on a comparison and on an answer reused from a
+            similar question (ADR 0041): it came from another asker's words.
 
     QueryInterpretation:
       type: object
