@@ -138,7 +138,6 @@ Open items:
 - Indexed resources left without source records are not deleted (only observed ones are).
 - The Apache client's response timeout applies per read, not as a total deadline per call
   ([ADR 0006](adr/foundation/0006-outbound-http.md)).
-- The embedding backlog gauge does not count rows whose text changed after they were embedded.
 - Conference files that the ai-deadlines collector skips are logged, not counted in a metric.
 - On a resource's first search, the discovery date is unknown, because catalog writes run off the request path
   ([ADR 0004](adr/foundation/0004-persistence-and-provenance.md)).
@@ -222,7 +221,7 @@ Fix an item or accept it; when it no longer holds, remove it.
 - The popularity formula exists twice, in SQL (`h2_resource_popularity`) and Kotlin (`Ranking.popularity`); change them together. Index stage 1 can cut partial matches when more than 300 rows match. ([ADR 0009](adr/search/0009-ranking.md))
 - The timeline pages 50 results at a time, so a month can split across pages. A wrong early date from one source moves the result; the badge shows the dispute. ([ADR 0010](adr/search/0010-filters-facets-dates-timeline.md))
 - The English/Italian lexicon still runs next to translation, so Italian gets two kinds of help and other languages rely on the model. ([ADR 0011](adr/search/0011-language-aware-search.md))
-- A new or changed resource has no current vector until the indexer reaches it; the backlog gauge does not count changed text. The 0.65 cutoff comes from one set of measurements. ([ADR 0012](adr/search/0012-vector-search-pgvector.md))
+- A new or changed resource has no current vector until the indexer reaches it. The 0.65 cutoff comes from one set of measurements. ([ADR 0012](adr/search/0012-vector-search-pgvector.md))
 - “Works with” tag lists are kept by hand; no tag means no flag (not “does not work”); index hits name `helper2-index`; the 20-tag limit can drop a tag. ([ADR 0013](adr/search/0013-works-with-flags.md))
 - Accepted risk (owner, 30 Oct 2026): rotating addresses can drain the monthly Tavily credits while no cap is set; searches then answer from stored sets and other sources. Failing closed loses fresh web results for a Redis outage. ([ADR 0037](adr/search/0037-tavily-store-and-daily-quota.md))
 - The web-search quota is taken before the call, so a call the circuit refuses still counts. A stored hit is read back with two short queries; a set not yet stored is a miss. ([ADR 0037](adr/search/0037-tavily-store-and-daily-quota.md))

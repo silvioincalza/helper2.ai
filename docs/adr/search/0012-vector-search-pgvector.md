@@ -30,6 +30,9 @@ never break keyword search.
    the period (13.5 s) and at most 3 × the timeout + 1 min (2 min 30 s). So the cluster embeds one batch per
    period, as with one replica; a replica whose tick finds the lock taken skips that period.
    Meters: `helper2.embedding.backlog`, `helper2.embedding.failures{reason}`, `helper2.embedding.last.success`.
+   The backlog counts what the indexer still has to do: rows with no vector for the model and rows whose text changed
+   since their vector was made. The query that picks the batch counts it too (`count(*) OVER ()` before the limit),
+   so the two always agree and there is no second scan; after a stored batch the gauge drops by the batch size.
 5. **One more source** (`SemanticSearchSource`, id `helper2-semantic`, mode `INDEXED`, priority 55). It embeds the
    query as typed (`usesTranslation = false`, [0011](0011-language-aware-search.md)) and returns the nearest rows of the index, curated list and observed resources with cosine distance at most
    `H2_SOURCE_SEMANTIC_MAX_DISTANCE` (0.65), within `H2_SOURCE_SEMANTIC_TIMEOUT` (3 s).
@@ -72,14 +75,13 @@ never break keyword search.
 - `backend/src/main/java/ai/helper2/catalog/internal/NvidiaEmbedder.java`, `catalog/Embedder.java` — API client and port.
 - `backend/src/main/java/ai/helper2/catalog/CatalogConfiguration.java` — conditional beans, `IndexerSchedule`, indexer lock.
 - `backend/src/main/java/ai/helper2/platform/ClusterLock.java` — lock shared by every replica.
-- `backend/src/main/java/ai/helper2/catalog/internal/ResourceStore.java` — `pendingEmbeddings`, `saveEmbeddings` (drops other models' vectors), `semanticSearch` (iterative scan).
+- `backend/src/main/java/ai/helper2/catalog/internal/ResourceStore.java` — `pendingEmbeddings` (batch and backlog), `saveEmbeddings` (drops other models' vectors), `semanticSearch` (iterative scan).
 - `backend/src/main/resources/db/migration/V1__schema.sql` — `resource_embedding`, HNSW index.
 
 ## Diagrams
 [flow](../../diagrams/flow-0012-vector-search-pgvector.svg) · [sequence](../../diagrams/sequence-0012-vector-search-pgvector.svg)
 
 ## Roadmap
-- [The embedding backlog gauge does not count rows whose text changed](../../roadmap.md#5-search-and-catalog).
 - [Cross-language retrieval in vector search](../../roadmap.md#4-ai-quality-and-cost).
 - [Rate-limit pause stays per replica, on purpose](../../roadmap.md#3-more-than-one-replica).
 - Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).
