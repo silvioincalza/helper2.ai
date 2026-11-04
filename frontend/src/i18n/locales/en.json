@@ -797,6 +797,7 @@
           "Search sources: to find results, your search text is sent to the sources that answer live, such as GitHub, Hugging Face, npm, arXiv and Tavily. The Sources page lists them all. Each provider handles the request under its own privacy policy, and some of them are in the United States.",
           "Tavily (United States): your search text or the guide's web query, unless a stored result answers.",
           "AI models: guide questions, and searches written in a language other than English, are sent to NVIDIA Nemotron models on Nebius Token Factory, processed in the European Union. We send only the text, never your account data.",
+          "AI models also read public text about AI resources (source descriptions, README files and model cards) to describe them, on NVIDIA Nemotron models on Nebius Token Factory in the European Union. It is public text about the resources, not about our visitors.",
           "Embeddings: your search text, and your guide question when similar-question reuse is on, is sent to the NVIDIA API catalog (United States) to compute its embedding. We send only the text, never your IP address or account data. NVIDIA is certified under the Data Privacy Framework (see Transfers abroad).",
           "GitHub, when you choose to sign in with it.",
           "Network edge: every request to helper2.ai passes through Cloudflare (United States), which routes traffic to our servers. Cloudflare sees your IP address and the request.",
@@ -808,8 +809,8 @@
         "title": "Public data about AI resources",
         "items": [
           "To describe the AI resources we list, we read public pages about them, such as GitHub repositories, their README files and Hugging Face model cards.",
-          "From them we keep names of projects, organisations and authors, and short quotes of up to 300 characters, each with its source named and a link to it. We do not keep the rest of the text, and we remove email addresses before we quote.",
-          "This data is about the resources, not about you. If a quote names you and you want it removed, or you object, write to us at the address above."
+          "From README files and model cards we keep names of projects, organisations and authors, and short quotes of up to 300 characters, each with its source named and a link to it. We do not keep the rest of their text, and we replace email addresses with \"[email]\" before anything is quoted.",
+          "This data is about the resources. If a quote names you, you can object or ask us to remove it: write to us at the address above."
         ]
       },
       {
@@ -822,7 +823,7 @@
           "Your account and saved items: until you delete them, or 24 months after you last signed in. Then we delete the account and its saved items.",
           "Reports: 12 months after they were handled. If your account is deleted, your reports stay without your name until then.",
           "Database backups: 7 days. Anything deleted above is gone from the backups within 7 days.",
-          "Quotes from public pages about AI resources: as long as we list the resource, with the source record they belong to."
+          "Quotes from public pages about AI resources: as long as we keep the source record they were read for, and never longer than we list the resource."
         ]
       },
       {

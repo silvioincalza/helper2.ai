@@ -87,6 +87,14 @@ class ReadmeEvidenceTest {
     }
 
     @Test
+    void aRedirectThatWasNotFollowedIsAFailureNotText() {
+        server.route("/acme/tool/raw/main/README.md", new FixtureServer.Reply(302, "<html>moved</html>",
+            Map.of("Location", "https://other-host.example/x"), 0));
+
+        assertThatThrownBy(() -> evidence().fetch(target(GapKind.HF_MODEL_CARD))).isInstanceOf(SourceFailure.class);
+    }
+
+    @Test
     void readsTheModelCardAndItsLicence() {
         server.route("/acme/tool/raw/main/README.md", FixtureServer.Reply.ok("---\nlicense: apache-2.0\ntags: [asr]\n---\n# Tool\n"));
 
@@ -101,5 +109,6 @@ class ReadmeEvidenceTest {
         assertThat(ReadmeEvidence.cardLicense("# Tool\nlicense: mit\n")).isNull();
         assertThat(ReadmeEvidence.cardLicense("---\nlicense: other\n---\n")).isNull();
         assertThat(ReadmeEvidence.cardLicense("---\nlicense: \"llama3.1\"\n---\n")).isEqualTo("llama3.1");
+        assertThat(ReadmeEvidence.cardLicense("---\nbase_model:\n  license: mit\nlicense: apache-2.0\n---\n")).isEqualTo("apache-2.0");
     }
 }

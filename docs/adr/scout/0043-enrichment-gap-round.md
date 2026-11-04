@@ -25,8 +25,10 @@ decides where the extra text comes from, and the same evidence gate judges it.
    - Hugging Face: `GET /{owner}/{name}/raw/main/README.md`; the licence is the `license:` line of the card's front matter.
    - Owner and name are URI template variables. At most 512 KB. Policy `collector-gap-evidence` (circuit breaker and
      retry, like a collector). A missing README is no text; any other failure leaves the first run as it is.
-4. **Cleaning** (`ReadmeText`, before the model or the validator sees it): Unicode NFKC; HTML comments, tags, images and
-   link targets removed; zero-width, direction and tag characters removed; email addresses replaced by `[email]`. A
+4. **Cleaning** (`ReadmeText`, before the model or the validator sees it): the first 64 KB only; zero-width, direction
+   and tag characters removed first; Unicode NFKC; HTML comments, scripts, styles, tags, images, inline and reference
+   link targets removed; email addresses replaced by `[email]`. Every pattern is bounded, so a hostile README cannot
+   make cleaning slow. A
    window of 4000 characters keeps the top, then the licence, install and platform sections, then the rest.
 5. **Second run.** The model gets the source records plus the README as one more `Material` with its own evidence id.
    The licence the GitHub API or the card states is a source fact, so a README that says something else is
@@ -54,6 +56,9 @@ decides where the extra text comes from, and the same evidence gate judges it.
 - Fewer unproven fields and fewer review items, at most 60 extra model calls a day.
 - A resource is read again only when its source records change, or the prompt or model changes.
 - The demo profile has no adapter, so it has no gap round.
+- A README that fails to load (timeout, 5xx) is not tried again until the source records change: the run is saved
+  under the same fingerprint. A redirect to another host is refused and counts as a failure.
+- A gap slot is spent when the second model call fails.
 - Resources enriched before this change get a gap round only when their fingerprint changes (a new prompt version
   re-enriches the catalog). See the roadmap.
 

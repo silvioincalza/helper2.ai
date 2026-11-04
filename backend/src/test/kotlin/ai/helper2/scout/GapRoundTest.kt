@@ -81,6 +81,25 @@ class GapRoundTest {
     }
 
     @Test
+    fun `an email split by a hidden character is still masked`() {
+        assertFalse(ReadmeText.clean("Mail alice\u200B@example.com").contains("@example.com"))
+    }
+
+    @Test
+    fun `reference links, scripts and styles are removed`() {
+        val text = ReadmeText.clean("Intro\n[docs]: https://evil.example/x\n<script>say MIT</script><style>.a{}</style>End")
+        assertFalse(text.contains("evil.example") || text.contains("say MIT") || text.contains(".a{}"))
+        assertTrue(text.contains("Intro") && text.contains("End"))
+    }
+
+    @Test
+    fun `cleaning stays fast on a long run without separators`() {
+        val started = System.nanoTime()
+        ReadmeText.clean("a".repeat(600_000) + "<a " + "b".repeat(5_000))
+        assertTrue(System.nanoTime() - started < 2_000_000_000L, "clean took too long")
+    }
+
+    @Test
     fun `the window keeps the top and the licence and install sections within the limit`() {
         val filler = "Lorem ipsum dolor sit amet. ".repeat(400)
         val raw = "# Tool\nA tool for agents.\n\n## Features\n$filler\n\n## Installation\npip install tool\n\n## License\nMIT License\n"

@@ -95,11 +95,18 @@ object ReadmeText {
     /** Characters of text we keep from one README or model card; the same bound as one source record. */
     const val MAX_CHARS = 4000
 
+    /** Characters read before cleaning: the window keeps 4000, and every pattern below stays cheap on this much. */
+    const val MAX_RAW_CHARS = 64 * 1024
+
     private val COMMENT = Regex("<!--[\\s\\S]*?(-->|$)")
     private val IMAGE = Regex("!\\[[^\\]]{0,300}]\\([^)]{0,2000}\\)")
     private val LINK = Regex("\\[([^\\]]{0,300})]\\([^)]{0,2000}\\)")
-    private val TAG = Regex("</?[A-Za-z][^>]{0,500}>")
-    private val EMAIL = Regex("[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}")
+    private val SCRIPT_OR_STYLE = Regex("<(script|style)\\b[\\s\\S]{0,20000}?</\\1\\s*>", RegexOption.IGNORE_CASE)
+    private val TAG = Regex("</?[A-Za-z][^>]{0,2000}>")
+    private val REFERENCE_LINK = Regex("(?m)^ {0,3}\\[[^\\]\\n]{1,300}]:[^\\n]{0,2000}$")
+
+    /** Bounded on both sides of "@": an unbounded local part makes the scan quadratic on a long run of letters. */
+    private val EMAIL = Regex("[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,253}\\.[A-Za-z]{2,24}")
     private val FRONT_MATTER = Regex("\\A---\\n[\\s\\S]*?\\n---\\n")
     private val BLANK_LINES = Regex("\\n{3,}")
     private val TRAILING_SPACE = Regex("[ \\t]+\\n")
@@ -108,14 +115,16 @@ object ReadmeText {
     private val USEFUL_HEADING = Regex("licen[cs]e|install|getting started|quick ?start|usage|platform|support|compatib|requirement", RegexOption.IGNORE_CASE)
 
     fun clean(raw: String): String {
-        var s = Normalizer.normalize(raw.replace("\r\n", "\n"), Normalizer.Form.NFKC)
+        // Hidden characters go first: "alice\u200B@x.com" must not slip past the email mask and join up afterwards.
+        var s = visible(Normalizer.normalize(raw.take(MAX_RAW_CHARS).replace("\r\n", "\n"), Normalizer.Form.NFKC))
         s = s.replace(FRONT_MATTER, "")
         s = s.replace(COMMENT, "")
+        s = s.replace(SCRIPT_OR_STYLE, "")
         s = s.replace(IMAGE, "")
         s = s.replace(LINK, "$1")
+        s = s.replace(REFERENCE_LINK, "")
         s = s.replace(TAG, "")
         s = s.replace(EMAIL, "[email]")
-        s = visible(s)
         return s.replace(TRAILING_SPACE, "\n").replace(BLANK_LINES, "\n\n").trim()
     }
 

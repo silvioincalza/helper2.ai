@@ -14,6 +14,7 @@ import java.time.Clock;
 import java.util.Locale;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
 
@@ -32,6 +33,14 @@ public class ReadmeEvidence implements ExtraEvidence {
 
     /** "No licence file GitHub could identify" and "a licence GitHub does not know": not a licence. */
     private static final Set<String> NOT_A_LICENSE = Set.of("NOASSERTION", "OTHER");
+
+    /**
+     * A redirect the transport did not follow (to another host while a token is set) arrives as a 3xx: its body is not
+     * the README.
+     */
+    private static final RestClient.ResponseSpec.ErrorHandler REDIRECT_REFUSED = (request, response) -> {
+        throw new SourceFailure.Unavailable("redirect not followed");
+    };
 
     private final @Nullable RestClient github;
     private final @Nullable RestClient hub;
@@ -65,7 +74,7 @@ public class ReadmeEvidence implements ExtraEvidence {
             .uri("/repos/{owner}/{repo}/readme", t.getOwner(), t.getName())
             .header("Accept", "application/vnd.github.raw+json")
             .attributes(ObservedHttp.maxResponseBytes(MAX_BYTES))
-            .retrieve().body(String.class), clock)));
+            .retrieve().onStatus(HttpStatusCode::is3xxRedirection, REDIRECT_REFUSED).body(String.class), clock)));
         if (readme == null || readme.isBlank()) {
             return null;
         }
@@ -84,7 +93,7 @@ public class ReadmeEvidence implements ExtraEvidence {
         String card = notFoundIsNull(() -> resilience.call(POLICY, () -> HttpClients.getText(() -> hub.get()
             .uri("/{owner}/{model}/raw/main/README.md", t.getOwner(), t.getName())
             .attributes(ObservedHttp.maxResponseBytes(MAX_BYTES))
-            .retrieve().body(String.class), clock)));
+            .retrieve().onStatus(HttpStatusCode::is3xxRedirection, REDIRECT_REFUSED).body(String.class), clock)));
         if (card == null || card.isBlank()) {
             return null;
         }
@@ -101,9 +110,9 @@ public class ReadmeEvidence implements ExtraEvidence {
             return null;
         }
         for (String line : card.substring(3, end).split("\n")) {
-            String l = line.strip();
-            if (l.toLowerCase(Locale.ROOT).startsWith("license:")) {
-                return spdx(l.substring("license:".length()).strip().replace("\"", "").replace("'", ""));
+            // Only the top-level key: an indented "license:" belongs to something nested (a dataset, a base model).
+            if (line.toLowerCase(Locale.ROOT).startsWith("license:")) {
+                return spdx(line.substring("license:".length()).strip().replace("\"", "").replace("'", ""));
             }
         }
         return null;
