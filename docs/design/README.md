@@ -2,6 +2,12 @@
 
 Snapshot of the design work, saved next to the code. The live, editable version is one private Claude artifact, the design canvas **Helper2.ai**: https://claude.ai/artifact/87cNjechmtwvAm5snQeCtv. It has three pages: Design system, Prototype & website, App screens.
 
+## The redesign (November 2026)
+
+Minimal and editorial, one font (Space Grotesk), page by page: https://claude.ai/artifact/6VErfaJsgEtyNU7gyxSVZE.
+Home follows it (headline, box, examples, what helper2 does, still News and Events lists). Results, Resource, the
+timeline and sign-in come next; until then they follow the boards below.
+
 ## `boards/` — the agreed design (ADR 0040)
 
 The boards the frontend follows, saved from the design canvas
@@ -11,7 +17,7 @@ self-hosted fonts, never from the boards' hex values or Google Fonts links.
 
 | Board | What |
 |---|---|
-| `Mix` | Home: radar hero, the box, examples, News and Events boards |
+| `Mix` | Home as agreed in October: radar hero, the box, examples, moving News and Events boards. Replaced by the redesign below |
 | `ResultsPreview` | Results: type tabs, list, guide picks bar, preview panel, sources grid |
 | `GuideArrival` | When the guide answers: option C (badges in place, reserved picks bar) was chosen |
 | `Resource` | Resource detail |

@@ -13,7 +13,7 @@
 shape: sequence_diagram
 
 user: User {class: person}
-home: "Home page\n(hero, boards)" {class: app}
+home: "Home page\n(headline, box, lists)" {class: app}
 feeds: "GET /api/v1/recent\nGET /api/v1/events/upcoming" {class: ext}
 page: "Results page\n(list, preview, picks bar)" {class: app}
 history: "Browser history" {class: data}
@@ -24,7 +24,7 @@ landing: Home {
   user -> home: "/"
   home -> feeds: "news of the last 7 days,\nevents of the next 3 months"
   feeds -> home: "rows"
-  home -> user: "hero and the two boards"
+  home -> user: "headline, box, the two lists,\nwhat helper2 does"
   user -> home: "types a question, presses Enter"
   home -> page: "navigate /search?q=…" {class: hot}
 }

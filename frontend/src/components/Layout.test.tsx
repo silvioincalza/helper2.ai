@@ -14,7 +14,7 @@ describe('layout', () => {
     const header = document.querySelector<HTMLElement>('header.site-header')!;
     expect(await within(header).findByRole('link', { name: 'Sign in with GitHub' })).toBeInTheDocument();
     const nav = screen.getByRole('navigation', { name: 'Main' });
-    expect(within(nav).getAllByRole('link').map((a) => a.textContent)).toEqual(['Saved', 'Sources', 'Mission']);
+    expect(within(nav).getAllByRole('link').map((a) => a.textContent)).toEqual(['News', 'Events', 'Saved']);
     expect(screen.queryByRole('link', { name: 'Admin' })).not.toBeInTheDocument();
   });
 
@@ -39,9 +39,15 @@ describe('layout', () => {
     expect(button).toHaveAttribute('aria-expanded', 'false');
     expect(button).toHaveFocus();
 
+    // A link to a list on the home page keeps the pathname; it closes the menu anyway.
     await user.click(button);
-    await user.click(within(panel).getByRole('link', { name: 'Mission' }));
-    await screen.findByRole('heading', { level: 1, name: 'Our mission' });
+    await user.click(within(panel).getByRole('link', { name: 'News' }));
+    expect(button).toHaveAttribute('aria-expanded', 'false');
+    expect(panel).not.toHaveClass('is-open');
+
+    await user.click(button);
+    await user.click(within(panel).getByRole('link', { name: 'Saved' }));
+    await screen.findByRole('heading', { level: 1, name: 'Saved resources' });
     expect(button).toHaveAttribute('aria-expanded', 'false');
     expect(panel).not.toHaveClass('is-open');
   });
@@ -125,7 +131,8 @@ describe('layout', () => {
   it('moving to another page focuses its heading and announces it; new search params do not move focus', async () => {
     mockApi();
     const { router } = renderApp('/');
-    await userEvent.click(within(screen.getByRole('contentinfo')).getByRole('link', { name: 'Sources' }));
+    // The footer names Sources twice (the coverage line and the page list): either opens the page.
+    await userEvent.click(within(screen.getByRole('contentinfo')).getAllByRole('link', { name: 'Sources' })[0]!);
     const h1 = await screen.findByRole('heading', { level: 1, name: 'Sources' });
     await waitFor(() => expect(h1).toHaveFocus());
     expect(document.querySelector('[aria-live="polite"].sr-only')).toHaveTextContent('Sources');

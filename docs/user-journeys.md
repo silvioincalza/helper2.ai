@@ -15,7 +15,7 @@ The success criteria at the end say which tests verify each journey today. What 
 
 ## UJ-1 Search once (one box)
 
-1. User lands on the home page; the search box sits in the middle of the hero, above the News and Events boards.
+1. User lands on the home page: one headline says what the site is for, the search box sits under it, and the New this week and Coming up lists show at first sight; what helper2 does follows below them.
 2. There is one box and no scope to choose: the same search covers tools, models, MCP servers, libraries, papers and news.
 3. Types a name ("ollama"), keywords ("mcp postgres"), an intent ("I want to summarise PDFs"), or a use case ("traduzione").
 4. On the home page, Enter (or the button) opens the results on `/search`; focus moves to the results. There, results follow typing when it pauses (or on Enter). The first search shows skeleton rows and a per-source "querying…" line; a later search keeps the previous results on screen, dimmed, until the new ones arrive.
@@ -110,22 +110,22 @@ Each item is a row: the kind, the date and the resource in the meta line, the re
 
 **Failure cases:** LLM provider unavailable → runs complete with `LLM_UNAVAILABLE`, original source metadata stays published; one connector failing does not stop others.
 
-## UJ-10 See what is new (home boards)
+## UJ-10 See what is new (home lists)
 
-**Entry:** the home page, under the box and the examples.
+**Entry:** the home page, right under the box and the examples; or **News** or **Events** in the header (`/#news`, `/#events`).
 
-1. **News**: what came into the Helper2 index in the last 7 days, by the date each source states (Published, Updated), or First seen when no source states one. Tools and research only.
-2. **Events**: AI events in the next three months, soonest first, only those whose source states the dates. The status says how soon ("Today", "In 13 days"); the next one stands out.
-3. Each row: the date, the type tag, the source or the place, the status pill, and the name. The name opens the resource page (UJ-4).
-4. A board with five rows or more scrolls slowly on its own. Hover, keyboard focus and a tap pause it; a tap again plays. With reduced motion it stands still and scrolls by hand. A screen reader reads each row once.
+1. **New this week**: what came into the Helper2 index in the last 7 days, by the date each source states (Published, Updated), or First seen when no source states one. Tools and research only.
+2. **Coming up**: AI events in the next three months, soonest first, only those whose source states the dates. The status says how soon ("Today", "In 13 days"); the next one stands out.
+3. Each row: the date, the type tag, the source or the place, the status pill, and the name; a News row also has the source's own line (an AI-written summary is left out). The name opens the resource page (UJ-4).
+4. A list shows its first six rows. **Show all** opens the rest in place; **Show fewer** closes them. Nothing moves on its own.
 
 **Exit:** a row's name to its resource page, the box, the examples.
 
 | State | Behavior |
 |---|---|
 | Loading | Skeleton rows. |
-| Empty | The board says there is nothing in its window ("Nothing with a stated publication date in the last 7 days."). The box above is the next step. |
-| Error | An alert under the board's heading with Try again. |
+| Empty | The list says there is nothing in its window ("Nothing with a stated publication date in the last 7 days."). The box above is the next step. |
+| Error | An alert under the list's heading with Try again. |
 
 ## Success criteria (product level)
 

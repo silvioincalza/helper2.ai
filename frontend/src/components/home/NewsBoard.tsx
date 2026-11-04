@@ -6,6 +6,7 @@ import { useApi } from '@/hooks/useApi';
 import { shortDay } from '@/lib/format';
 import { HomeBoard, type BoardRow } from './HomeBoard';
 import { resourcePath } from '@/lib/searchState';
+import { isAiOrigin } from '@/lib/aiMark';
 
 /**
  * Tools and research only: news and events come from a web-search API whose terms do not clearly allow
@@ -50,6 +51,8 @@ export function NewsBoard() {
       tone: date && date.key !== 'firstSeen' ? 'ok' : 'warn',
       title: card.title,
       href: resourcePath(card.id),
+      // The source's own line only: an AI-written summary would need its label (ADR 0038), and the list stays short.
+      text: isAiOrigin(card.descriptionOrigin) ? null : card.description,
     };
   });
   return (

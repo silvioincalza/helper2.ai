@@ -19,6 +19,8 @@ beforeEach(async () => {
   clearApiCache();
   // jsdom has no layout: <ScrollRestoration/> scrolls through this spy.
   vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
+  // Nor scrollIntoView (the home page's jump to #news and #events): a stub a test can watch.
+  Element.prototype.scrollIntoView = vi.fn();
   await i18n.changeLanguage('en');
 });
 

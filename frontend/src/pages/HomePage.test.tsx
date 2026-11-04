@@ -12,7 +12,6 @@ describe('one box', () => {
     renderApp('/');
     expect(screen.getAllByRole('search')).toHaveLength(1);
     expect(screen.queryByRole('radio')).not.toBeInTheDocument();
-    expect(screen.getByText(/A sentence, or Shift\+Enter, asks the guide/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Search' })).toBeDisabled();
     await userEvent.type(screen.getByRole('textbox', { name: 'Search AI resources' }), 'rag');
     expect(screen.getByRole('button', { name: 'Search' })).toBeEnabled();
@@ -60,13 +59,13 @@ describe('one box', () => {
   it('an example both searches and asks the guide', async () => {
     const m = mockApi();
     const { params } = renderApp('/');
-    await userEvent.click(screen.getByRole('button', { name: 'Free document translation' }));
-    await waitFor(() => expect(params().get('ask')).toBe('translate documents between languages for free'));
-    expect(params().get('q')).toBe('translate documents between languages for free');
+    await userEvent.click(screen.getByRole('button', { name: 'Summarise long PDFs' }));
+    await waitFor(() => expect(params().get('ask')).toBe('summarise long PDF documents with AI'));
+    expect(params().get('q')).toBe('summarise long PDF documents with AI');
     await waitFor(() => expect(m.callsTo('POST', '/guide/stream')).toHaveLength(1));
     // Regression: a stale live-search timer used to drop `ask` (and the guide answer) ~700 ms later.
     await new Promise((r) => setTimeout(r, 1000));
-    expect(params().get('ask')).toBe('translate documents between languages for free');
+    expect(params().get('ask')).toBe('summarise long PDF documents with AI');
   });
 
 
@@ -158,7 +157,7 @@ describe('one box', () => {
     await userEvent.clear(screen.getByRole('textbox', { name: 'Search AI resources' }));
     await userEvent.type(screen.getByRole('textbox', { name: 'Search AI resources' }), '{Enter}');
     await waitFor(() => expect(router.state.location.search).toBe(''));
-    expect(await screen.findByRole('heading', { name: 'Try an example' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Try:' })).toBeInTheDocument();
   });
 
   it('the search and the Sources page share one GET /sources', async () => {
@@ -174,7 +173,7 @@ describe('one box', () => {
   it('the loading feeds nest no status role inside their live regions', async () => {
     mockApi({ 'GET /recent': () => new Promise(() => undefined), 'GET /events/upcoming': () => new Promise(() => undefined) });
     renderApp('/');
-    expect(await screen.findByRole('heading', { name: /News/ })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /New this week/ })).toBeInTheDocument();
     expect(document.querySelectorAll('[aria-busy="true"]').length).toBeGreaterThanOrEqual(2);
     expect(document.querySelectorAll('[aria-live] [role="status"]')).toHaveLength(0);
   });

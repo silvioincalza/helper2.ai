@@ -26,7 +26,7 @@ describe('home page Events board', () => {
       event('Far Future Conf', '2027-03-01T00:00:00Z', null, null),
     ] }) });
     renderApp('/');
-    const section = (await screen.findByRole('heading', { name: 'Events' })).closest('section') as HTMLElement;
+    const section = (await screen.findByRole('heading', { name: 'Coming up' })).closest('section') as HTMLElement;
     const rows = await within(await within(section).findByRole('list', { name: 'Next events' })).findAllByRole('listitem');
     expect(rows[0]).toHaveTextContent('NeurIPS 2026');
     expect(rows[0]).toHaveTextContent('Sydney, Australia');
@@ -47,7 +47,7 @@ describe('home page Events board', () => {
       event('Unlabelled Day', '2026-11-25T00:00:00Z', null, null),
     ] }) });
     renderApp('/');
-    const section = (await screen.findByRole('heading', { name: 'Events' })).closest('section') as HTMLElement;
+    const section = (await screen.findByRole('heading', { name: 'Coming up' })).closest('section') as HTMLElement;
     const rows = await within(await within(section).findByRole('list', { name: 'Next events' })).findAllByRole('listitem');
     expect(rows[0]).toHaveTextContent('Hackathon · Online');
     expect(rows[1]).toHaveTextContent('Meetup');
@@ -60,7 +60,7 @@ describe('home page Events board', () => {
       event('NeurIPS 2026', '2026-12-06T00:00:00Z', null, 'Sydney, Australia'),
     ] }) });
     renderApp('/');
-    const section = (await screen.findByRole('heading', { name: 'Events' })).closest('section') as HTMLElement;
+    const section = (await screen.findByRole('heading', { name: 'Coming up' })).closest('section') as HTMLElement;
     const list = await within(section).findByRole('list', { name: 'Next events' });
     expect(list.closest('[aria-live]')).toBeNull();
     expect(section.querySelector('[aria-live]')).not.toBeNull();

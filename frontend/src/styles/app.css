@@ -36,7 +36,6 @@ code { font-family: var(--font-mono); font-size: 0.85em; }
 .logo { display: inline-flex; align-items: center; gap: var(--space-4); }
 .logo-text { display: inline-flex; flex-direction: column; gap: 2px; }
 .logo-word { font-family: var(--font-display); font-size: 1.85rem; line-height: 1; }
-.logo-tagline { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); line-height: 1.2; }
 .logo-mark { width: 40px; height: 40px; border-radius: 12px; background: var(--accent); color: var(--on-accent); display: inline-flex; align-items: center; justify-content: center; flex: none; }
 .main-nav { flex: 1; }
 .main-nav ul { display: flex; gap: var(--space-1); flex-wrap: wrap; }
@@ -53,7 +52,6 @@ code { font-family: var(--font-mono); font-size: 0.85em; }
   .main-nav a { padding-inline: var(--space-2); }
   .auth a { max-width: 9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
-@media (min-width: 521px) and (max-width: 900px) { .logo-tagline { display: none; } }
 /* The menu button and the panel (Header): from 721 px the panel is the header row itself and the button is hidden;
    up to 720 px the logo, theme and menu button share one row and the pages and sign-in open below. */
 .header-quick .menu-toggle { display: none; }
@@ -86,6 +84,7 @@ code { font-family: var(--font-mono); font-size: 0.85em; }
 /* The Sources link sits inside a sentence, so it keeps its underline there. */
 .site-footer .footer-coverage a { display: inline; text-decoration: underline; }
 .footer-bottom { margin-top: var(--space-5); padding-top: var(--space-3); border-top: 1px solid var(--divider); }
+.footer-bottom .theme-toggle { margin-left: var(--space-2); vertical-align: middle; }
 
 /* text pages (mission, privacy) */
 .text-page { max-width: 68ch; }
@@ -131,9 +130,6 @@ textarea { width: 100%; resize: vertical; }
 .term-hint { color: var(--violet); margin-left: 0.2em; }
 .term-def { display: block; font-size: 0.85rem; font-weight: 400; color: var(--text); background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); margin: var(--space-1) 0; max-width: 28rem; }
 
-/* example needs under the box */
-.examples { text-align: left; }
-
 /* one page, one box */
 .one-page { display: flex; flex-direction: column; gap: var(--space-5); }
 .one-box { display: flex; flex-direction: column; gap: var(--space-2); }
@@ -141,11 +137,7 @@ textarea { width: 100%; resize: vertical; }
 .one-box > .muted { margin: 0; }
 .searchbox.large .searchbox-field { min-height: var(--box-height); background: var(--bg); border-radius: var(--radius-lg); }
 .searchbox.large .btn { min-height: var(--box-height); border-radius: var(--radius-lg); }
-.examples .inline-list { justify-content: flex-start; }
-.examples h2 { margin-bottom: var(--space-2); }
 
-/* radar: what is new, by topic */
-.radar { display: flex; flex-direction: column; gap: var(--space-4); }
 .guide-me { text-decoration: none; }
 .setup-heading:focus { outline: none; }
 .setup-heading:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
@@ -244,6 +236,7 @@ tbody th { font-weight: 600; }
   .searchbox.large .btn { padding: var(--space-3); justify-content: center; }
   /* Phone: the one box stays compact and scrolls away instead of covering half the screen. */
   .site-header { position: static; }
+  :root { --header-height: 0px; }
   .header-row { gap: var(--space-2) var(--space-4); }
   .searchbox.large { flex-flow: row wrap; }
   /* The field shares its row with the clear button; only the submit button takes a row of its own. */
@@ -280,46 +273,8 @@ input[type='checkbox'], input[type='radio'] { accent-color: var(--accent); }
 h1, h2 { font-weight: 500; letter-spacing: -0.03em; }
 .logo-word { font-weight: 500; letter-spacing: -0.02em; }
 .logo-word { font-size: 1.6rem; }
-.eyebrow { margin: 0; font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-ink); }
 .main-nav a.active { border-bottom-color: var(--accent); }
 
-/* home hero: the box on the radar */
-.main:has(.home-hero) { padding-top: 0; }
-.home-hero { position: relative; overflow: hidden; margin: 0 calc(50% - 50vw); padding: var(--space-7) var(--space-4) var(--space-6); background: var(--hero-bg); border-bottom: 1px solid var(--border); }
-.home-hero-inner { position: relative; z-index: 1; max-width: 52rem; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: var(--space-4); text-align: center; }
-.home-hero h1 { margin: 0; font-size: clamp(2.4rem, 4.6vw + 1rem, 4.25rem); line-height: 1.04; max-width: 18ch; }
-.title-accent { display: block; color: var(--accent-ink); }
-.home-hero .lede { margin: 0 auto var(--space-3); max-width: 38rem; font-size: 1.15rem; color: var(--ink-2); }
-.home-hero .one-box { width: 100%; }
-.home-hero .examples .inline-list { justify-content: center; }
-.chip-ghost { background: transparent; border: 1px solid var(--border-strong); color: var(--accent-deep); }
-.chip-ghost:hover { background: var(--surface); }
-
-.radar-rings { position: absolute; left: 50%; top: 50%; width: 1100px; height: 1100px; margin: -550px 0 0 -550px; pointer-events: none; }
-.radar-rings svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-.radar-rings circle, .radar-rings line { fill: none; stroke: var(--ring); stroke-width: 1; }
-.radar-sweep { animation: sweep 7s linear infinite; transform-origin: 50% 50%; }
-.radar-sweep path { fill: var(--accent); fill-opacity: 0.1; }
-.radar-sweep line { stroke: var(--accent); stroke-opacity: 0.55; stroke-width: 1.5; }
-.radar-blip { position: absolute; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
-.radar-blip::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: inherit; animation: ping 2.6s ease-out infinite; }
-.radar-blip.blip-a { left: 72%; top: 30%; }
-.radar-blip.blip-b { background: var(--status-ok); animation: blip-in 0.5s ease-out both; animation-delay: var(--blip-delay, 0s); }
-.radar-blip.blip-b::after { animation-delay: var(--blip-delay, 0s); }
-@keyframes blip-in { from { opacity: 0; transform: scale(0.3); } }
-@keyframes sweep { to { transform: rotate(360deg); } }
-@keyframes ping { 0% { transform: scale(0.6); opacity: 0.9; } 100% { transform: scale(2.6); opacity: 0; } }
-/* As the full hero scrolls away, the rings drift outward. Pure CSS: browsers without scroll-driven animations,
-   and anyone who asked for reduced motion, just see them scroll. */
-@supports (animation-timeline: view()) {
-  @media (prefers-reduced-motion: no-preference) {
-    /* The inset is the sticky header. */
-    .home-hero { view-timeline: --hero block; view-timeline-inset: 4rem 0; }
-    .home-hero .radar-rings { animation: hero-rings linear both; animation-timeline: --hero; animation-range: exit 0% exit 100%; }
-  }
-}
-@keyframes hero-rings { to { opacity: 0; transform: scale(1.25); } }
-@media (prefers-reduced-motion: reduce) { .radar-sweep, .radar-blip::after, .radar-blip.blip-b { animation: none; } }
 
 /* the one box */
 .searchbox.large { align-items: center; gap: var(--space-3); background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-lg); padding: 6px 6px 6px var(--space-4); }
@@ -329,12 +284,11 @@ h1, h2 { font-weight: 500; letter-spacing: -0.03em; }
 .searchbox-icon { display: inline-flex; color: var(--accent-ink); flex: none; }
 .searchbox.large .btn { min-height: 48px; border-radius: var(--radius-md); padding: 0 var(--space-5); }
 .enter-key { font-family: var(--font-mono); font-size: 0.75rem; border-radius: 6px; padding: 2px 6px; background: color-mix(in srgb, var(--on-accent) 12%, transparent); }
-.one-box.is-hero .searchbox.large { padding: 10px 10px 10px var(--space-5); border-radius: 22px; box-shadow: 0 24px 60px color-mix(in srgb, var(--accent) 22%, transparent); }
-.one-box.is-hero .searchbox.large .searchbox-field { font-size: 1.35rem; font-weight: 500; padding: var(--space-4) 0; }
-.one-box.is-hero .searchbox.large .btn { min-height: 62px; border-radius: 15px; font-size: 1.05rem; }
+.one-box.is-hero .searchbox.large { padding: 8px 8px 8px var(--space-5); border-radius: var(--radius-lg); }
+.one-box.is-hero .searchbox.large .searchbox-field { font-size: 1.15rem; padding: var(--space-3) 0; }
+.one-box.is-hero .searchbox.large .btn { min-height: 52px; border-radius: var(--radius-md); font-size: 1rem; }
 @keyframes pin-in { from { transform: translateY(-12px); opacity: 0.4; } }
 
-.box-hint { margin: 0; text-align: center; }
 @keyframes slide { from { background-position: -40% 0; } to { background-position: 140% 0; } }
 
 /* guide answer: proof first */
@@ -361,7 +315,6 @@ h1, h2 { font-weight: 500; letter-spacing: -0.03em; }
   .proof-strip li:nth-child(-n+2) { border-bottom: 1px solid var(--border); }
 }
 @media (max-width: 520px) {
-  .home-hero { padding-top: var(--space-6); }
   /* The same inset as the box on the results page, so the question starts at the same place on both pages. */
   .one-box.is-hero .searchbox.large { flex-flow: row wrap; padding: 6px 6px 6px var(--space-4); }
   .one-box.is-hero .searchbox.large .searchbox-field { padding-left: var(--space-3); }

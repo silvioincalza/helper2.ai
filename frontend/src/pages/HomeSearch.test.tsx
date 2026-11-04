@@ -309,7 +309,7 @@ describe('search results', () => {
   it('without a query it shows examples and makes no search call at all (the Radar reads /recent)', async () => {
     const m = mockApi();
     renderApp('/');
-    expect(await screen.findByRole('heading', { name: 'Try an example' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Try:' })).toBeInTheDocument();
     await screen.findByRole('link', { name: 'Fresh MCP server' });
     expect(m.callsTo('GET', '/search')).toHaveLength(0);
     expect(screen.queryByRole('region', { name: 'Search results' })).not.toBeInTheDocument();

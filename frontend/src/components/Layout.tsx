@@ -76,16 +76,17 @@ export function Header() {
       <div className="container header-row">
         <Link to="/" className="logo-link" aria-label={t('nav.home')}><Logo /></Link>
         <div className="header-quick" ref={toggle}>
-          <ThemeToggle />
           <MenuButton open={open} onToggle={() => setOpenOn(open ? null : pathname)} />
         </div>
         <div id="site-menu" className={open ? 'header-menu is-open' : 'header-menu'}>
-        {/* Search is the home page (the logo goes there); the menu only lists the pages that are on. */}
+        {/* Search is the home page (the logo goes there). News and Events are lists on it; Sources, Mission and the
+            theme are in the footer. */}
         <nav aria-label={t('nav.main')} className="main-nav">
           <ul className="plain-list">
+            {/* A hash link keeps the pathname, so it closes the menu itself. */}
+            <li><Link to={{ pathname: '/', hash: 'news' }} onClick={() => setOpenOn(null)}>{t('nav.news')}</Link></li>
+            <li><Link to={{ pathname: '/', hash: 'events' }} onClick={() => setOpenOn(null)}>{t('nav.events')}</Link></li>
             <li><NavLink to="/saved">{t('nav.saved')}</NavLink></li>
-            <li><NavLink to="/sources">{t('nav.sources')}</NavLink></li>
-            <li><NavLink to="/mission">{t('nav.mission')}</NavLink></li>
             {isAdmin && <li><NavLink to="/admin">{t('nav.admin')}</NavLink></li>}
           </ul>
         </nav>
@@ -142,6 +143,7 @@ export function Footer() {
         <div className="footer-col">
           <h2 className="footer-h">{t('footer.colSite')}</h2>
           <ul className="plain-list">
+            <li><Link to="/sources">{t('nav.sources')}</Link></li>
             <li><Link to="/mission">{t('footer.mission')}</Link></li>
             <li><Link to="/privacy">{t('footer.privacy')}</Link></li>
             <li><Link to="/terms">{t('footer.terms')}</Link></li>
@@ -174,6 +176,7 @@ export function Footer() {
         {/* Where it is run and hosted, as the Privacy page states it (Hosting: Germany). */}
         <span className="footer-place"> · {t('footer.place')}</span>
         <span className="footer-no-ads"> · {t('footer.noAds')}</span>
+        <ThemeToggle />
       </div>
     </footer>
   );
