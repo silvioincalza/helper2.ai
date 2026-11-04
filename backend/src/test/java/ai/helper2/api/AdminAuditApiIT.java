@@ -45,7 +45,8 @@ class AdminAuditApiIT extends ApiTestBase {
 
         mvc.perform(put("/api/v1/admin/review-items/" + item + "/resolution").with(admin).with(csrf())
                 .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"ACCEPTED\"}"))
-            .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("REJECTED"));
+            .andExpect(status().isConflict());
+        assertThat(queue.find(item).orElseThrow().status()).isEqualTo(ReviewQueue.Status.REJECTED);
         assertThat(jdbc.sql("SELECT count(*) FROM admin_audit WHERE admin_id = :a AND outcome = 'NOT_OPEN'")
             .param("a", adminId).query(Long.class).single()).isOne();
     }

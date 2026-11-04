@@ -13,6 +13,7 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
+import org.springframework.core.env.Environment;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /** The second connector and the filter that keeps the back office off the public port (ADR 0035). */
@@ -20,8 +21,22 @@ import org.springframework.web.filter.OncePerRequestFilter;
 class AdminPortConfiguration {
 
     @Bean
-    AdminPort adminPort(@Value("${helper2.admin.port:0}") int port) {
-        return new AdminPort(port);
+    AdminPort adminPort(@Value("${helper2.admin.port:0}") int port, Environment environment) {
+        AdminPort adminPort = new AdminPort(port);
+        requireAdminPortWithRealSignIn(adminPort, environment);
+        return adminPort;
+    }
+
+    /**
+     * Fail closed (ADR 0035): with a real sign-in provider and no admin port, the back office and ADMIN would be back
+     * on the public host. That is allowed only on a developer's machine (profile dev).
+     */
+    static void requireAdminPortWithRealSignIn(AdminPort adminPort, Environment environment) {
+        if (!adminPort.enabled() && environment.matchesProfiles("oauth-github") && !environment.matchesProfiles("dev")) {
+            throw new IllegalStateException(
+                "H2_ADMIN_PORT is not set while GitHub sign-in is on: the back office would answer on the public host. "
+                    + "Set H2_ADMIN_PORT (ADR 0035), or use the dev profile on a developer machine.");
+        }
     }
 
     @Bean

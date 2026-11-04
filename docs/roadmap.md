@@ -267,7 +267,7 @@ Fix an item or accept it; when it no longer holds, remove it.
 
 ### Edge and identity
 
-- `/admin` and `/api/v1/admin/**` are on the public host, protected only by the role check. Roles live in the session: removing an admin takes effect at the next sign-in; a Redis outage signs the admin out. ([ADR 0023](adr/edge/0023-identity-and-admin.md))
+- Roles live in the session: removing an admin takes effect at the next sign-in; a Redis outage signs the admin out. ([ADR 0023](adr/edge/0023-identity-and-admin.md))
 - While Redis is down each replica counts alone (up to 3× the limit on prod). Clients behind one shared address share one limit. ([ADR 0024](adr/edge/0024-http-edge-protection.md))
 
 ### Frontend

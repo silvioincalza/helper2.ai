@@ -3,6 +3,7 @@ package ai.helper2.scout.web;
 import ai.helper2.api.generated.AdminApi;
 import ai.helper2.api.generated.model.ReviewItemDto;
 import ai.helper2.api.generated.model.ReviewItemPageDto;
+import ai.helper2.api.generated.model.ReviewKindDto;
 import ai.helper2.api.generated.model.ReviewResolutionDto;
 import ai.helper2.api.generated.model.ReviewStatusDto;
 import ai.helper2.api.generated.model.ScoutRunDto;
@@ -42,17 +43,22 @@ class AdminController implements AdminApi {
     }
 
     @Override
-    public ResponseEntity<ReviewItemPageDto> listReviewItems(@Nullable ReviewStatusDto status, Integer page, Integer size) {
-        ReviewQueue.Page found = items.list(status == null ? null : ReviewQueue.Status.valueOf(status.getValue()), page, size);
+    public ResponseEntity<ReviewItemPageDto> listReviewItems(@Nullable ReviewStatusDto status, @Nullable ReviewKindDto kind,
+                                                            Integer page, Integer size) {
+        ReviewQueue.Page found = items.list(status == null ? null : ReviewQueue.Status.valueOf(status.getValue()),
+            kind == null ? null : ReviewQueue.Kind.valueOf(kind.getValue()), page, size);
         return ResponseEntity.ok(new ReviewItemPageDto(found.items().stream().map(AdminController::dto).toList(),
             Math.toIntExact(found.total())));
     }
 
     @Override
     public ResponseEntity<ReviewItemDto> resolveReviewItem(UUID id, ReviewResolutionDto body) {
-        return resolve.resolve(id, ReviewQueue.Status.valueOf(body.getStatus().getValue()), adminId(), body.getNote())
-            .map(i -> ResponseEntity.ok(dto(i)))
-            .orElseThrow(() -> new NotFoundException("Review item not found."));
+        return switch (resolve.resolve(id, ReviewQueue.Status.valueOf(body.getStatus().getValue()), adminId(), body.getNote())) {
+            case ResolveReviewItem.Outcome.Resolved r -> ResponseEntity.ok(dto(r.item()));
+            case ResolveReviewItem.Outcome.NotOpen n -> throw new ResponseStatusException(HttpStatus.CONFLICT,
+                "This item was already decided: " + n.item().status() + ".");
+            case ResolveReviewItem.Outcome.NotFound f -> throw new NotFoundException("Review item not found.");
+        };
     }
 
     @Override
@@ -75,7 +81,7 @@ class AdminController implements AdminApi {
     }
 
     private static ReviewItemDto dto(ReviewQueue.Item i) {
-        return new ReviewItemDto(i.id(), ReviewItemDto.KindEnum.fromValue(i.kind().name()), ReviewStatusDto.fromValue(i.status().name()),
+        return new ReviewItemDto(i.id(), ReviewKindDto.fromValue(i.kind().name()), ReviewStatusDto.fromValue(i.status().name()),
             i.reason(), UtcTimes.odt(i.createdAt()))
             .resourceId(i.resourceId()).resourceTitle(i.resourceTitle()).details(i.details())
             .resolvedAt(UtcTimes.odt(i.resolvedAt())).resolvedBy(i.resolvedBy());

@@ -56,6 +56,7 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
       'GET /me': () => ADMIN,
       'GET /admin/review-items': () => ({ items: [{ id: '66666666-6666-5666-8666-666666666666', kind: 'USER_REPORT', status: 'OPEN', reason: 'Wrong price', details: 'It is free', resourceId: ID, resourceTitle: 'Acme', createdAt: '2026-10-21T10:00:00Z' }], total: 1 }),
       'GET /admin/scout-runs': () => [{ id: '77777777-7777-5777-8777-777777777777', sourceId: 'github', status: 'FAILED', startedAt: '2026-10-21T10:00:00Z', finishedAt: null, itemsSeen: 0, itemsChanged: 0, message: 'rate limited' }],
+      'GET /admin/audit': () => ({ items: [{ id: '99999999-9999-5999-8999-999999999999', adminId: '12345', action: 'RESOLVE_REVIEW_ITEM', targetId: null, at: '2026-11-01T09:00:00Z', outcome: 'ACCEPTED' }], total: 1 }),
       'GET /me/bookmarks': () => [],
     });
     const s = renderApp('/sources');
@@ -63,11 +64,22 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
     await settle();
     expect(await axeViolations(s.container)).toEqual([]);
     s.unmount();
-    const ad = renderApp('/admin');
-    const main = await screen.findByRole('main');
-    await within(main).findByText('Wrong price', { selector: 'p' });
-    await within(main).findByText('Failed');
-    expect(await axeViolations(ad.container)).toEqual([]);
+    const ov = renderApp('/admin');
+    await within(await screen.findByRole('main')).findByText('Failed');
+    await settle();
+    expect(await axeViolations(ov.container)).toEqual([]);
+    ov.unmount();
+    const review = renderApp('/admin/review');
+    await within(await screen.findByRole('main')).findByText('Wrong price', { selector: 'p' });
+    expect(await axeViolations(review.container)).toEqual([]);
+    review.unmount();
+    const runs = renderApp('/admin/runs');
+    await within(await screen.findByRole('main')).findByText('Failed');
+    expect(await axeViolations(runs.container)).toEqual([]);
+    runs.unmount();
+    const audit = renderApp('/admin/audit');
+    await within(await screen.findByRole('main')).findByText('Review decision');
+    expect(await axeViolations(audit.container)).toEqual([]);
   });
 
   it('account, with the delete confirmation open', async () => {
