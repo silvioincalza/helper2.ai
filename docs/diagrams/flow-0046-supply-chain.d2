@@ -1,0 +1,46 @@
+# Flowchart: the supply-chain checks in CI (ADR 0046): an SBOM and a Grype scan per image, report-only until 18 Nov 2026.
+# Source of truth: .github/workflows/ci.yml (image, postgres-image), cd.yml (image), release.yml (sbom),
+#   image-scan.yml, .github/actions/install-scanners, grype-db, upload-sarif, deploy/k8s/Makefile (sbom), .grype.yaml.
+# Render: cd docs/diagrams && d2 fmt flow-0046-supply-chain.d2 && d2 flow-0046-supply-chain.d2 flow-0046-supply-chain.svg
+
+...@style
+
+direction: down
+
+pr: "Pull request" {class: end}
+push: "Push to main (cd.yml)" {class: end}
+tag: "Release tag vX.Y.Z (release.yml)" {class: end}
+weekly: "Monday (image-scan.yml)" {class: end}
+
+install: "install-scanners: Syft tarball (SHA-256),\nGrype go install (Go checksum database)" {class: app}
+db: "grype-db: today's database\n(cache; one retry)" {class: app}
+
+build: "Build the image, not pushed\n(app; Postgres when deploy/postgres changed)" {class: app}
+syft: "syft → sbom.cdx.json\n(CycloneDX)" {class: app}
+grype: "grype sbom:sbom.cdx.json --only-fixed\n(.grype.yaml exceptions)" {class: app}
+report: "Job log + code scanning (SARIF,\nimage/app, image/postgres)" {class: data}
+gate: "Critical with a fix?" {class: decision}
+pass: "Build continues\n(report-only until 18 Nov 2026)" {class: end}
+
+pushed: "make image: pushed to Harbor" {class: app}
+sbomcd: "make sbom: Syft reads the pushed image\nfrom Harbor" {class: app}
+artifact: "Artifact sbom, 90 days" {class: data}
+
+staged: "The commit's CD run passed staging" {class: app}
+attach: "helper2-vX.Y.Z.cdx.json\nattached to the GitHub release" {class: data}
+
+latest: "SBOM of the latest release" {class: app}
+fresh: "Fresh database (no cache)" {class: app}
+weeklyreport: "Job summary + code scanning\n(release/app, on the tag)" {class: data}
+
+pr -> build -> install -> syft: {class: hot}
+syft -> db -> grype -> report -> gate
+gate -> pass: "report-only: yes or no"
+
+push -> pushed -> sbomcd -> artifact
+tag -> staged -> attach
+artifact -> attach: "download from that run"
+
+weekly -> latest
+attach -> latest: "release asset"
+latest -> fresh -> weeklyreport

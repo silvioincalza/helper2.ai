@@ -61,10 +61,15 @@ jobs:
           retention-days: 7
 
   # The app image as `make image` builds it, not pushed. Pull requests only: on main, CD builds it.
+  # Supply chain (ADR 0046): an SBOM (Syft, CycloneDX) and a Grype scan of it, REPORT-ONLY until 18 Nov 2026:
+  # findings go to code scanning and the job log, nothing fails the build yet.
   image:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
@@ -74,15 +79,42 @@ jobs:
           file: deploy/Dockerfile
           platforms: linux/amd64
           push: false
+          load: true
+          tags: helper2:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - uses: ./.github/actions/install-scanners
+        with:
+          grype: 'true'
+      - uses: ./.github/actions/grype-db
+      - name: SBOM and vulnerability scan (report-only)
+        run: |
+          set -euo pipefail
+          syft docker:helper2:ci -o cyclonedx-json=sbom.cdx.json
+          grype sbom:sbom.cdx.json --only-fixed -o table -o sarif=grype.sarif
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: sbom-app
+          path: sbom.cdx.json
+          retention-days: 7
+      - uses: ./.github/actions/upload-sarif
+        continue-on-error: true
+        with:
+          sarif: grype.sarif
+          category: image/app
+          ref: ${{ github.ref }}
+          sha: ${{ github.sha }}
 
   # A pushed Postgres tag is never rebuilt (make postgres-image), so a change under deploy/postgres must
-  # come with a new postgres.image.tag; the image is built here (not pushed) to prove it builds.
+  # come with a new postgres.image.tag; the image is built here (not pushed) to prove it builds, and scanned like
+  # the app image (report-only).
   postgres-image:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -105,7 +137,33 @@ jobs:
           fi
           echo "postgres.image.tag $old -> $new"
       - if: steps.changed.outputs.changed == 'true'
-        run: docker build --platform linux/amd64 deploy/postgres
+        run: docker build --platform linux/amd64 -t helper2-postgres:ci deploy/postgres
+      - if: steps.changed.outputs.changed == 'true'
+        uses: ./.github/actions/install-scanners
+        with:
+          grype: 'true'
+      - if: steps.changed.outputs.changed == 'true'
+        uses: ./.github/actions/grype-db
+      - name: SBOM and vulnerability scan (report-only)
+        if: steps.changed.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          syft docker:helper2-postgres:ci -o cyclonedx-json=sbom.cdx.json
+          grype sbom:sbom.cdx.json --only-fixed -o table -o sarif=grype.sarif
+      - if: steps.changed.outputs.changed == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: sbom-postgres
+          path: sbom.cdx.json
+          retention-days: 7
+      - if: steps.changed.outputs.changed == 'true'
+        uses: ./.github/actions/upload-sarif
+        continue-on-error: true
+        with:
+          sarif: grype.sarif
+          category: image/postgres
+          ref: ${{ github.ref }}
+          sha: ${{ github.sha }}
 
   # Lint and render the chart for staging and prod and validate it against the Kubernetes schemas.
   chart:

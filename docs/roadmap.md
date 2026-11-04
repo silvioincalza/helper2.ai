@@ -65,7 +65,9 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 - **Supply chain:**
   - pin base images by digest (`deploy/Dockerfile`, `deploy/postgres/Dockerfile`);
   - set `postgres.image.digest`;
-  - add an image scan and an SBOM.
+  - **18 Nov 2026:** end of the report-only period. Look at the findings in code scanning, add the exceptions that
+    are justified to `.grype.yaml`, then let the pull-request scans fail on a Critical finding with a fix
+    (`--fail-on critical` in `ci.yml`, [ADR 0046](adr/operations/0046-supply-chain.md)).
 - Redis with `redis.auth.existingSecret` has no restart checksum, so a password rotation needs a manual restart.
 
 ## 3. More than one replica
@@ -256,6 +258,7 @@ Fix an item or accept it; when it no longer holds, remove it.
 - Alert delivery is configured in the observability stack, not here. A collector disabled on purpose keeps alerting until its value is 9 days old. Histogram buckets add series per timer. ([ADR 0026](adr/operations/0026-observability.md))
 - A guide stream or any request still running 30 s after SIGTERM is cut during a deploy (`app.shutdown.drainSeconds`); the guide's own deadline is 90 s. ([ADR 0027](adr/operations/0027-runtime-topology.md))
 - Staging (1 replica) has no failover; a prod deploy starts pods one after another (up to 300 s each). Plain HTTP inside the cluster; sign-in for everyone changes that. Never run `helm uninstall`: it deletes the Postgres and Redis StatefulSets. ([ADR 0027](adr/operations/0027-runtime-topology.md))
+- The scanner versions (Syft, Grype in `.github/actions/install-scanners`) are pinned by hand: Dependabot does not see them. Grype is built from source in each scan job (about 2 minutes); the weekly scan reads only the latest release, not an older one still on prod after a rollback. ([ADR 0046](adr/operations/0046-supply-chain.md))
 - Deleting an old image needs the Harbor immutability rule disabled first, and enabled again after. ([ADR 0029](adr/operations/0029-release-versioning.md))
 - A deleted row stays in the backups for up to 7 days; purges run daily, so a row can outlive its period by a day; a purged observed resource seen again comes back with a new `first_discovered_at`. ([ADR 0034](adr/operations/0034-data-retention.md))
 

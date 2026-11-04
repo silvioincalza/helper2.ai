@@ -29,6 +29,10 @@ jobs:
   ci:
     if: github.event_name == 'push'
     uses: ./.github/workflows/ci.yml
+    # The ceiling for ci.yml's jobs: only its pull-request image scans ask for security-events (skipped here).
+    permissions:
+      contents: read
+      security-events: write
 
   image:
     needs: ci
@@ -54,6 +58,14 @@ jobs:
       - env:
           ENGINE: ${{ vars.IMAGE_ENGINE || 'podman' }}
         run: make -C deploy/k8s image TAG="${GITHUB_SHA::12}" ENGINE="$ENGINE"
+      # SBOM of the pushed image (ADR 0046), read from Harbor; release.yml attaches it to the GitHub release.
+      - uses: ./.github/actions/install-scanners
+      - run: make -C deploy/k8s sbom TAG="${GITHUB_SHA::12}" SBOM="$GITHUB_WORKSPACE/sbom.cdx.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: sbom
+          path: sbom.cdx.json
+          retention-days: 90
 
   staging:
     needs: image
