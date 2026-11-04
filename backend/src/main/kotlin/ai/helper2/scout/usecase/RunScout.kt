@@ -1,7 +1,9 @@
 package ai.helper2.scout.usecase
 
+import ai.helper2.scout.Candidate
 import ai.helper2.scout.CandidateReview
 import ai.helper2.scout.CatalogIndex
+import ai.helper2.scout.CollectedBatch
 import ai.helper2.scout.Collector
 import ai.helper2.scout.EnrichmentBacklog
 import ai.helper2.scout.EnrichmentOutcome
@@ -15,6 +17,8 @@ import ai.helper2.scout.ScoutStore
 import ai.helper2.search.ResultMerger
 import ai.helper2.search.ServedFrom
 import ai.helper2.search.SourceContext
+import ai.helper2.search.SourceDescriptor
+import ai.helper2.search.SourceHit
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.observation.DefaultMeterObservationHandler
@@ -23,6 +27,7 @@ import io.micrometer.observation.Observation
 import io.micrometer.observation.ObservationRegistry
 import java.time.Clock
 import java.time.Duration
+import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
@@ -69,6 +74,9 @@ private class EnrichmentBudget(private var remaining: Int) {
 /** A collector of a run and its record as saved when the run started. */
 private class Planned(val collector: Collector, val summary: RunSummary)
 
+/** What enriching the changed resources of one collector did. */
+private class EnrichmentCounts(val queued: Int, val failed: Int)
+
 /**
  * Scheduled, deterministic collection. Each collector runs in isolation: one failure never stops
  * the others. Hits are indexed; candidates go to the review list. Checkpoints advance only after a
@@ -114,31 +122,43 @@ class RunScout(
    */
   fun tryStart(onlySourceId: String? = null): List<RunSummary>? {
     val started = CompletableFuture<List<RunSummary>?>()
-    launcher.execute {
-      try {
-        lock.runExclusively(
-          Supplier {
-            closeInterrupted()
-            val runs = plan(onlySourceId)
-            started.complete(runs.map { it.summary })
-            runAll(runs)
-          }
-        )
-        started.complete(null)
-      } catch (e: Throwable) {
-        log.warn("scout run failed: ${e.javaClass.simpleName}: ${e.message.orEmpty().take(300)}")
-        started.completeExceptionally(e)
-      }
-    }
-    val runs =
-      try {
-        started.join()
-      } catch (e: CompletionException) {
-        throw e.cause ?: e
-      }
+    launcher.execute { runReportingStart(onlySourceId, started) }
+    val runs = awaitStart(started)
     if (runs == null) log.info("scout run refused: a run is already in progress")
     return runs
   }
+
+  /**
+   * Runs under the lock and completes [started] with the planned records as soon as they are saved;
+   * with null when the lock is taken, exceptionally when the run fails before that.
+   */
+  private fun runReportingStart(
+    onlySourceId: String?,
+    started: CompletableFuture<List<RunSummary>?>,
+  ) {
+    try {
+      lock.runExclusively(
+        Supplier {
+          closeInterrupted()
+          val runs = plan(onlySourceId)
+          started.complete(runs.map { it.summary })
+          runAll(runs)
+        }
+      )
+      started.complete(null)
+    } catch (e: Throwable) {
+      log.warn("scout run failed: ${e.javaClass.simpleName}: ${e.message.orEmpty().take(300)}")
+      started.completeExceptionally(e)
+    }
+  }
+
+  /** Waits for the run to start (or be refused), rethrowing what made it fail. */
+  private fun awaitStart(started: CompletableFuture<List<RunSummary>?>): List<RunSummary>? =
+    try {
+      started.join()
+    } catch (e: CompletionException) {
+      throw e.cause ?: e
+    }
 
   /**
    * Closes as FAILED the run records still RUNNING: taken under the [RunLock], so no run is in
@@ -165,19 +185,17 @@ class RunScout(
    * lock taken changes nothing.
    */
   fun tryRunScheduled(every: Duration, schedule: ScheduledRunStore): ScheduledRun =
-    lock.runExclusively(
-      Supplier {
-        val last = schedule.lastScheduledRunEnd()
-        if (last != null && last.plus(every).isAfter(clock.instant())) {
-          ScheduledRun.NOT_DUE
-        } else {
-          closeInterrupted()
-          runAll(plan(null))
-          schedule.scheduledRunEnded(clock.instant())
-          ScheduledRun.RAN
-        }
-      }
-    ) ?: ScheduledRun.BUSY
+    lock.runExclusively(Supplier { runIfDue(every, schedule) }) ?: ScheduledRun.BUSY
+
+  /** Called under the run lock. */
+  private fun runIfDue(every: Duration, schedule: ScheduledRunStore): ScheduledRun {
+    val last = schedule.lastScheduledRunEnd()
+    if (last != null && last.plus(every).isAfter(clock.instant())) return ScheduledRun.NOT_DUE
+    closeInterrupted()
+    runAll(plan(null))
+    schedule.scheduledRunEnded(clock.instant())
+    return ScheduledRun.RAN
+  }
 
   /**
    * One record per selected collector: SKIPPED when disabled, otherwise RUNNING until its
@@ -188,25 +206,27 @@ class RunScout(
     return collectors
       .filter { onlySourceId == null || it.descriptor.id == onlySourceId }
       .map { collector ->
-        val d = collector.descriptor
-        val summary =
-          if (d.enabled)
-            RunSummary(UUID.randomUUID(), d.id, RunStatus.RUNNING, started, null, 0, 0, 0, null)
-          else
-            RunSummary(
-              UUID.randomUUID(),
-              d.id,
-              RunStatus.SKIPPED,
-              started,
-              started,
-              0,
-              0,
-              0,
-              "Disabled in configuration",
-            )
+        val summary = startRecord(collector.descriptor, started)
         saveQuietly(summary)
         Planned(collector, summary)
       }
+  }
+
+  private fun startRecord(d: SourceDescriptor, started: Instant): RunSummary {
+    if (d.enabled) {
+      return RunSummary(UUID.randomUUID(), d.id, RunStatus.RUNNING, started, null, 0, 0, 0, null)
+    }
+    return RunSummary(
+      UUID.randomUUID(),
+      d.id,
+      RunStatus.SKIPPED,
+      started,
+      started,
+      0,
+      0,
+      0,
+      "Disabled in configuration",
+    )
   }
 
   private fun runAll(planned: List<Planned>): List<RunSummary> =
@@ -298,26 +318,26 @@ class RunScout(
   private fun record(summary: RunSummary) {
     if (summary.status != RunStatus.SUCCEEDED) return
     val source = summary.sourceId
-    meters
-      .counter("helper2.scout.items", "source", source, "kind", "seen")
-      .increment(summary.itemsSeen.toDouble())
-    meters
-      .counter("helper2.scout.items", "source", source, "kind", "changed")
-      .increment(summary.itemsChanged.toDouble())
-    meters
-      .counter("helper2.scout.items", "source", source, "kind", "queued")
-      .increment(summary.enrichmentsQueued.toDouble())
-    val finished = (summary.finishedAt ?: summary.startedAt).epochSecond
-    lastSuccess
-      .computeIfAbsent(source) {
-        AtomicLong().also {
-          Gauge.builder("helper2.scout.last.success", it, AtomicLong::toDouble)
-            .tag("source", source)
-            .register(meters)
-        }
-      }
-      .set(finished)
+    countItems(source, "seen", summary.itemsSeen)
+    countItems(source, "changed", summary.itemsChanged)
+    countItems(source, "queued", summary.enrichmentsQueued)
+    lastSuccessOf(source).set((summary.finishedAt ?: summary.startedAt).epochSecond)
   }
+
+  private fun countItems(source: String, kind: String, count: Int) =
+    meters
+      .counter("helper2.scout.items", "source", source, "kind", kind)
+      .increment(count.toDouble())
+
+  /** The gauge's value for [source], registered on first use. */
+  private fun lastSuccessOf(source: String): AtomicLong =
+    lastSuccess.computeIfAbsent(source) {
+      AtomicLong().also {
+        Gauge.builder("helper2.scout.last.success", it, AtomicLong::toDouble)
+          .tag("source", source)
+          .register(meters)
+      }
+    }
 
   private fun runCollector(
     collector: Collector,
@@ -325,107 +345,153 @@ class RunScout(
     budget: EnrichmentBudget,
     observation: Observation,
   ): RunSummary {
-    val d = collector.descriptor
-    val id = running.id
-    val started = running.startedAt
     val summary =
       try {
-        val cursor = store.cursor(d.id) ?: ScoutCursor(null, null, null)
-        val passStartedAt = cursor.passStartedAt ?: started.toString()
-        val batch = collector.collect(cursor.checkpoint, cursor.resumeCursor, maxItemsPerRun)
-        if (batch.notDue) {
-          return RunSummary(
-              id,
-              d.id,
-              RunStatus.SKIPPED,
-              started,
-              clock.instant(),
-              0,
-              0,
-              0,
-              "Not due yet (run interval)",
-            )
-            .also(::saveQuietly)
-        }
-        val merged = merger.merge(batch.hits, mapOf(d.id to SourceContext(d, ServedFrom.LIVE)))
-        val changed = catalog.index(merged, d.id).distinct()
-        if (batch.candidates.isNotEmpty()) {
-          checkNotNull(review) { "${d.id} proposed candidates but no review list is configured" }
-            .propose(d.id, batch.candidates)
-        }
-        store.saveCursor(
-          d.id,
-          if (batch.nextCursor != null)
-            ScoutCursor(cursor.checkpoint, batch.nextCursor, passStartedAt)
-          else
-            ScoutCursor(
-              if (batch.checkpoint != null) passStartedAt else cursor.checkpoint,
-              null,
-              null,
-            ),
-        )
-        // From here the pass is indexed and its cursor saved: nothing below may turn the run into
-        // FAILED.
-        var queued = 0
-        var failed = 0
-        if (enrichment != null) {
-          val candidates =
-            try {
-              if (backlog == null || changed.isEmpty()) changed else backlog.eligible(changed)
-            } catch (e: RuntimeException) {
-              log.warn("enrichment eligibility for ${d.id} failed: ${e.javaClass.simpleName}")
-              emptyList()
-            }
-          for (resourceId in candidates) {
-            if (!budget.take(resourceId)) continue
-            when (enrichQuietly(enrichment, resourceId, budget)) {
-              null -> failed++
-              EnrichmentOutcome.UNCHANGED,
-              EnrichmentOutcome.LLM_UNAVAILABLE -> {}
-              else -> queued++
-            }
-          }
-        }
-        val note =
-          listOfNotNull(
-              "Stopped at item budget; next run resumes from the saved cursor"
-                .takeIf { batch.nextCursor != null },
-              "$failed enrichment${if (failed == 1) "" else "s"} failed; the backlog retries ${if (failed == 1) "it" else "them"}"
-                .takeIf { failed > 0 },
-            )
-            .joinToString(". ")
-            .ifEmpty { null }
-        RunSummary(
-          id,
-          d.id,
-          RunStatus.SUCCEEDED,
-          started,
-          clock.instant(),
-          batch.hits.size,
-          changed.size,
-          queued,
-          note,
-        )
+        collect(collector, running, budget)
       } catch (e: RuntimeException) {
         // The message tells apart failures that share a class (timeout, HTTP status, malformed
         // body).
         log.warn(
-          "scout run for ${d.id} failed: ${e.javaClass.simpleName}: ${e.message.orEmpty().take(300)}"
+          "scout run for ${running.sourceId} failed: ${e.javaClass.simpleName}: ${e.message.orEmpty().take(300)}"
         )
         observation.error(e)
-        RunSummary(
-          id,
-          d.id,
-          RunStatus.FAILED,
-          started,
-          clock.instant(),
-          0,
-          0,
-          0,
-          "Collection failed: ${e.javaClass.simpleName}",
-        )
+        failedRun(running, e)
       }
     saveQuietly(summary)
     return summary
   }
+
+  /**
+   * One pass of [collector]: index the hits, propose the candidates, save the cursor, then enrich
+   * what changed. Throws when the pass fails before its cursor is saved.
+   */
+  private fun collect(
+    collector: Collector,
+    running: RunSummary,
+    budget: EnrichmentBudget,
+  ): RunSummary {
+    val d = collector.descriptor
+    val cursor = store.cursor(d.id) ?: ScoutCursor(null, null, null)
+    val batch = collector.collect(cursor.checkpoint, cursor.resumeCursor, maxItemsPerRun)
+    if (batch.notDue) return notDueRun(running)
+    val changed = index(d, batch.hits)
+    proposeCandidates(d.id, batch.candidates)
+    store.saveCursor(d.id, cursorAfter(cursor, batch, running.startedAt))
+    // From here the pass is indexed and its cursor saved: nothing below may turn the run into
+    // FAILED.
+    val enriched = enrichChanged(d.id, changed, budget)
+    return succeededRun(running, batch, changed.size, enriched)
+  }
+
+  /** The distinct resources the [hits] changed. */
+  private fun index(d: SourceDescriptor, hits: List<SourceHit>): List<UUID> {
+    val merged = merger.merge(hits, mapOf(d.id to SourceContext(d, ServedFrom.LIVE)))
+    return catalog.index(merged, d.id).distinct()
+  }
+
+  private fun proposeCandidates(sourceId: String, candidates: List<Candidate>) {
+    if (candidates.isEmpty()) return
+    checkNotNull(review) { "$sourceId proposed candidates but no review list is configured" }
+      .propose(sourceId, candidates)
+  }
+
+  /**
+   * Where the next run starts: the resume cursor while the pass is unfinished; once it completes,
+   * the pass start becomes the checkpoint (when the collector keeps one).
+   */
+  private fun cursorAfter(
+    cursor: ScoutCursor,
+    batch: CollectedBatch,
+    started: Instant,
+  ): ScoutCursor {
+    val passStartedAt = cursor.passStartedAt ?: started.toString()
+    if (batch.nextCursor != null) {
+      return ScoutCursor(cursor.checkpoint, batch.nextCursor, passStartedAt)
+    }
+    val checkpoint = if (batch.checkpoint != null) passStartedAt else cursor.checkpoint
+    return ScoutCursor(checkpoint, null, null)
+  }
+
+  private fun enrichChanged(
+    sourceId: String,
+    changed: List<UUID>,
+    budget: EnrichmentBudget,
+  ): EnrichmentCounts {
+    if (enrichment == null) return EnrichmentCounts(0, 0)
+    var queued = 0
+    var failed = 0
+    for (resourceId in eligibleForEnrichment(sourceId, changed)) {
+      if (!budget.take(resourceId)) continue
+      when (enrichQuietly(enrichment, resourceId, budget)) {
+        null -> failed++
+        EnrichmentOutcome.UNCHANGED,
+        EnrichmentOutcome.LLM_UNAVAILABLE -> {}
+        else -> queued++
+      }
+    }
+    return EnrichmentCounts(queued, failed)
+  }
+
+  /** The [changed] resources the backlog still wants enriched; none when it cannot tell. */
+  private fun eligibleForEnrichment(sourceId: String, changed: List<UUID>): List<UUID> =
+    try {
+      if (backlog == null || changed.isEmpty()) changed else backlog.eligible(changed)
+    } catch (e: RuntimeException) {
+      log.warn("enrichment eligibility for $sourceId failed: ${e.javaClass.simpleName}")
+      emptyList()
+    }
+
+  private fun notDueRun(running: RunSummary) =
+    RunSummary(
+      running.id,
+      running.sourceId,
+      RunStatus.SKIPPED,
+      running.startedAt,
+      clock.instant(),
+      0,
+      0,
+      0,
+      "Not due yet (run interval)",
+    )
+
+  private fun succeededRun(
+    running: RunSummary,
+    batch: CollectedBatch,
+    changed: Int,
+    enriched: EnrichmentCounts,
+  ) =
+    RunSummary(
+      running.id,
+      running.sourceId,
+      RunStatus.SUCCEEDED,
+      running.startedAt,
+      clock.instant(),
+      batch.hits.size,
+      changed,
+      enriched.queued,
+      successNote(batch, enriched.failed),
+    )
+
+  private fun successNote(batch: CollectedBatch, failed: Int): String? =
+    listOfNotNull(
+        "Stopped at item budget; next run resumes from the saved cursor"
+          .takeIf { batch.nextCursor != null },
+        "$failed enrichment${if (failed == 1) "" else "s"} failed; the backlog retries ${if (failed == 1) "it" else "them"}"
+          .takeIf { failed > 0 },
+      )
+      .joinToString(". ")
+      .ifEmpty { null }
+
+  private fun failedRun(running: RunSummary, e: RuntimeException) =
+    RunSummary(
+      running.id,
+      running.sourceId,
+      RunStatus.FAILED,
+      running.startedAt,
+      clock.instant(),
+      0,
+      0,
+      0,
+      "Collection failed: ${e.javaClass.simpleName}",
+    )
 }

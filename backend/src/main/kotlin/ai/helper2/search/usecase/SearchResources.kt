@@ -131,52 +131,71 @@ constructor(
     /** Skips [source], answers it from the cache, or calls it with [query] in the background. */
     fun start(source: SearchSource, query: SourceQuery) {
       val d = source.descriptor
-      if (!d.enabled) {
-        attempts += skipped(d, startedAt, SkipReason.DISABLED, "Disabled in configuration")
+      val skipped = skippedAttempt(d, query)
+      if (skipped != null) {
+        attempts += skipped
         return
       }
-      if (query.browse && !d.browses) {
-        attempts += skipped(d, startedAt, SkipReason.NOT_BROWSABLE, "No subject to search")
-        return
-      }
-      val cooldown = cooldownUntil[d.id]
-      if (cooldown != null && startedAt.isBefore(cooldown)) {
-        attempts +=
-          stale(
-            d,
-            startedAt,
-            null,
-            SourceOutcome.SKIPPED,
-            "Paused after a rate limit until $cooldown",
-            lookup(d, query),
-            SkipReason.RATE_LIMIT_PAUSE,
-          )
-        return
-      }
-      if (d.mode == SourceMode.LIVE) {
-        val cached = lookup(d, query)
-        cachedFor[d.id] = cached
-        val event = if (d.metered) "store_" else ""
-        if (cached != null && Duration.between(cached.fetchedAt, startedAt) < freshFor(d)) {
-          attempts +=
-            Attempt(
-              SourceStatus(
-                d,
-                SourceOutcome.SUCCEEDED,
-                ServedFrom.CACHE,
-                cached.hits.size,
-                Duration.ZERO,
-                startedAt,
-                cached.fetchedAt,
-              ),
-              cached.hits,
-            )
-          metrics.cacheEvent(event + "hit")
-          return
-        }
-        metrics.cacheEvent(event + if (cached == null) "miss" else "expired")
-      }
+      if (d.mode == SourceMode.LIVE && answerFromFreshCache(d, query)) return
       if (d.metered && !quotaAllows(d)) return
+      submitLive(source, query)
+    }
+
+    /**
+     * The attempt of a source that must not run now (disabled, nothing to browse, paused after a
+     * rate limit); null when it may run.
+     */
+    private fun skippedAttempt(d: SourceDescriptor, query: SourceQuery): Attempt? {
+      if (!d.enabled) return skipped(d, startedAt, SkipReason.DISABLED, "Disabled in configuration")
+      if (query.browse && !d.browses) {
+        return skipped(d, startedAt, SkipReason.NOT_BROWSABLE, "No subject to search")
+      }
+      val pausedUntil = cooldownUntil[d.id]?.takeIf { startedAt.isBefore(it) } ?: return null
+      return stale(
+        d,
+        startedAt,
+        null,
+        SourceOutcome.SKIPPED,
+        "Paused after a rate limit until $pausedUntil",
+        lookup(d, query),
+        SkipReason.RATE_LIMIT_PAUSE,
+      )
+    }
+
+    /**
+     * Answers a LIVE source from a fresh cache entry; false when there is none. The entry, fresh or
+     * not, is kept as the fallback for a failing live call.
+     */
+    private fun answerFromFreshCache(d: SourceDescriptor, query: SourceQuery): Boolean {
+      val cached = lookup(d, query)
+      cachedFor[d.id] = cached
+      val event = if (d.metered) "store_" else ""
+      if (cached != null && Duration.between(cached.fetchedAt, startedAt) < freshFor(d)) {
+        attempts += servedFromCache(d, cached)
+        metrics.cacheEvent(event + "hit")
+        return true
+      }
+      metrics.cacheEvent(event + if (cached == null) "miss" else "expired")
+      return false
+    }
+
+    private fun servedFromCache(d: SourceDescriptor, cached: CachedHits) =
+      Attempt(
+        SourceStatus(
+          d,
+          SourceOutcome.SUCCEEDED,
+          ServedFrom.CACHE,
+          cached.hits.size,
+          Duration.ZERO,
+          startedAt,
+          cached.fetchedAt,
+        ),
+        cached.hits,
+      )
+
+    /** Calls [source] in the background under its resilience policy, to be collected later. */
+    private fun submitLive(source: SearchSource, query: SourceQuery) {
+      val d = source.descriptor
       // Each task records its own completion time so latency is per source, not per collection
       // order.
       val finished = AtomicLong(0)
@@ -212,7 +231,7 @@ constructor(
           QuotaDecision.Unavailable ->
             SkipReason.QUOTA_UNAVAILABLE to "Web search paused: the daily limit cannot be checked"
         }
-      attempts += stale(d, startedAt, null, SourceOutcome.SKIPPED, message, cachedFor[d.id], reason)
+      attempts += fallBackToCache(d, null, SourceOutcome.SKIPPED, message, reason)
       return false
     }
 
@@ -263,14 +282,10 @@ constructor(
 
     private fun collect(p: Pending): Attempt {
       val d = p.source.descriptor
-      fun latency(): Duration =
-        Duration.ofNanos(
-          (p.finishedNanos.get().takeIf { it > 0 } ?: System.nanoTime()) - p.startedNanos
-        )
       val deadlineNanos = p.startedNanos + d.timeout.toNanos()
       return try {
         val hits = p.future.get(maxOf(0, deadlineNanos - System.nanoTime()), TimeUnit.NANOSECONDS)
-        val latency = latency()
+        val latency = latencyOf(p)
         if (d.mode == SourceMode.LIVE) save(d, p.query, hits)
         Attempt(
           SourceStatus(d, SourceOutcome.SUCCEEDED, ServedFrom.LIVE, hits.size, latency, startedAt),
@@ -278,77 +293,61 @@ constructor(
         )
       } catch (_: TimeoutException) {
         p.future.cancel(true)
-        stale(
+        fallBackToCache(
           d,
-          startedAt,
           d.timeout,
           SourceOutcome.TIMED_OUT,
           "No response within ${d.timeout.toMillis()} ms",
-          cachedFor[d.id],
         )
       } catch (e: ExecutionException) {
-        val latency = latency()
-        when (val cause = e.cause) {
-          is CallRefused ->
-            when (cause.reason()) {
-              CallRefused.Reason.CIRCUIT_OPEN ->
-                stale(
-                  d,
-                  startedAt,
-                  null,
-                  SourceOutcome.SKIPPED,
-                  "Paused after repeated failures",
-                  cachedFor[d.id],
-                  SkipReason.CIRCUIT_OPEN,
-                )
-              CallRefused.Reason.BUSY ->
-                stale(
-                  d,
-                  startedAt,
-                  null,
-                  SourceOutcome.SKIPPED,
-                  "Too many searches at once",
-                  cachedFor[d.id],
-                  SkipReason.BUSY,
-                )
-            }
-          is SourceFailure.RateLimited -> {
-            cooldownUntil[d.id] = startedAt.plus(cause.retryAfter ?: Duration.ofMinutes(1))
-            stale(
-              d,
-              startedAt,
-              latency,
-              SourceOutcome.RATE_LIMITED,
-              "Source rate limit reached",
-              cachedFor[d.id],
-            )
-          }
-          is SourceFailure.Unavailable ->
-            stale(
-              d,
-              startedAt,
-              latency,
-              SourceOutcome.FAILED,
-              "Source unavailable",
-              cachedFor[d.id],
-            )
-          else -> {
-            log.warn("source ${d.id} failed: ${cause?.javaClass?.simpleName}")
-            stale(
-              d,
-              startedAt,
-              latency,
-              SourceOutcome.FAILED,
-              "Source returned an error",
-              cachedFor[d.id],
-            )
-          }
-        }
+        failedAttempt(d, e.cause, latencyOf(p))
       } catch (_: InterruptedException) {
         Thread.currentThread().interrupt()
-        stale(d, startedAt, null, SourceOutcome.FAILED, "Interrupted", cachedFor[d.id])
+        fallBackToCache(d, null, SourceOutcome.FAILED, "Interrupted")
       }
     }
+
+    /** From the call's own start to its end, or to now while it still runs. */
+    private fun latencyOf(p: Pending): Duration =
+      Duration.ofNanos(
+        (p.finishedNanos.get().takeIf { it > 0 } ?: System.nanoTime()) - p.startedNanos
+      )
+
+    /** The attempt of a call that threw [cause]; a rate limit also pauses the source. */
+    private fun failedAttempt(d: SourceDescriptor, cause: Throwable?, latency: Duration): Attempt =
+      when (cause) {
+        is CallRefused -> refusedAttempt(d, cause.reason())
+        is SourceFailure.RateLimited -> {
+          cooldownUntil[d.id] = startedAt.plus(cause.retryAfter ?: Duration.ofMinutes(1))
+          fallBackToCache(d, latency, SourceOutcome.RATE_LIMITED, "Source rate limit reached")
+        }
+        is SourceFailure.Unavailable ->
+          fallBackToCache(d, latency, SourceOutcome.FAILED, "Source unavailable")
+        else -> {
+          log.warn("source ${d.id} failed: ${cause?.javaClass?.simpleName}")
+          fallBackToCache(d, latency, SourceOutcome.FAILED, "Source returned an error")
+        }
+      }
+
+    /** A call the resilience policy refused never reached the source: SKIPPED. */
+    private fun refusedAttempt(d: SourceDescriptor, reason: CallRefused.Reason): Attempt {
+      val (message, skipReason) =
+        when (reason) {
+          CallRefused.Reason.CIRCUIT_OPEN ->
+            "Paused after repeated failures" to SkipReason.CIRCUIT_OPEN
+          CallRefused.Reason.BUSY -> "Too many searches at once" to SkipReason.BUSY
+        }
+      return fallBackToCache(d, null, SourceOutcome.SKIPPED, message, skipReason)
+    }
+
+    /** A failed attempt for [d], rescued by the entry looked up when it started, if any. */
+    private fun fallBackToCache(
+      d: SourceDescriptor,
+      latency: Duration?,
+      outcome: SourceOutcome,
+      message: String,
+      skipReason: SkipReason? = null,
+    ): Attempt = stale(d, startedAt, latency, outcome, message, cachedFor[d.id], skipReason)
   }
 
   fun search(request: SearchRequest): SearchOutcome {
@@ -358,6 +357,57 @@ constructor(
     val untranslated = analyzer.analyze(request.text)
     val translation = language?.let { startTranslation(request.text, it) }
     val run = Run(startedAt, request.asker, IntentClass.of(request, untranslated))
+    val analyzed = runSources(run, request, untranslated, language, translation)
+
+    val statuses = statusesOf(run.attempts)
+    statuses.forEach(metrics::sourceCompleted)
+    val merged = mergeHits(run.attempts)
+    val dated = withDiscoveryDates(merged)
+    val results = dated ?: merged
+    record(results, statuses)
+
+    val ranked = rank(results, request, analyzed)
+    val sorted = Sorting.sort(Filtering.apply(ranked, request.filters), request.sort)
+    val coverage = coverageOf(statuses)
+    val notices =
+      listOfNotNull(
+        indexUnavailableNotice(dated),
+        cacheUnavailableNotice(run),
+        queryExpandedNotice(analyzed),
+        allSourcesFailedNotice(statuses),
+      )
+
+    metrics.searchCompleted(
+      coverage.partial,
+      sorted.isEmpty(),
+      Duration.ofNanos(System.nanoTime() - startedNanos),
+    )
+    return SearchOutcome(
+      request = request,
+      interpretation = analyzed,
+      executedAt = startedAt,
+      statuses = statuses,
+      results = pageOf(sorted, request),
+      total = sorted.size,
+      facets = Facets.compute(ranked, request.filters),
+      coverage = coverage,
+      notices = notices,
+      webSearches = request.asker?.let(::webSearchesLeft),
+      webFreshUntil = run.webFreshUntil(),
+    )
+  }
+
+  /**
+   * Starts the sources that never read the translation first, the others once it is in, and
+   * collects them all. Returns the query as searched: translated when a translation came back.
+   */
+  private fun runSources(
+    run: Run,
+    request: SearchRequest,
+    untranslated: AnalyzedQuery,
+    language: String?,
+    translation: Future<String?>?,
+  ): AnalyzedQuery {
     val (early, late) = sources.partition { translation == null || !it.descriptor.usesTranslation }
     val untranslatedQuery = sourceQuery(request, untranslated, language)
     early.forEach { run.start(it, untranslatedQuery) }
@@ -367,87 +417,83 @@ constructor(
       if (analyzed === untranslated) untranslatedQuery else sourceQuery(request, analyzed, language)
     late.forEach { run.start(it, query) }
     run.collectAll()
+    return analyzed
+  }
 
-    val attempts = run.attempts
-    val notices = mutableListOf<Notice>()
-    val statuses = sources.map { s ->
-      attempts.first { it.status.source.id == s.descriptor.id }.status
-    }
-    statuses.forEach(metrics::sourceCompleted)
+  /** One status per configured source, in configuration order. */
+  private fun statusesOf(attempts: List<Attempt>): List<SourceStatus> = sources.map { s ->
+    attempts.first { it.status.source.id == s.descriptor.id }.status
+  }
 
+  private fun mergeHits(attempts: List<Attempt>): List<MergedResult> {
     val contexts = attempts.associate {
       it.status.source.id to SourceContext(it.status.source, it.status.servedFrom)
     }
-    var merged = merger.merge(attempts.flatMap { it.hits }, contexts)
+    return merger.merge(attempts.flatMap { it.hits }, contexts)
+  }
 
+  /** [merged] with the date the index first saw each result; null when the index is down. */
+  private fun withDiscoveryDates(merged: List<MergedResult>): List<MergedResult>? =
     try {
       val discovered = observer.firstDiscovered(merged)
-      merged = merged.map { r -> r.copy(discovered = DateFact.observed(discovered[r.id])) }
+      merged.map { r -> r.copy(discovered = DateFact.observed(discovered[r.id])) }
     } catch (e: RuntimeException) {
       log.warn("result observation failed: ${e.javaClass.simpleName}")
-      notices +=
-        Notice(
-          NoticeCode.INDEX_UNAVAILABLE,
-          "Helper2 index unavailable; discovery dates are unknown for this search.",
-        )
+      null
     }
-    record(merged, statuses)
 
-    val ranked =
-      ranking.rank(
-        merged,
-        request.text,
-        request.path,
-        analyzed.typeHints,
-        analyzed.requiredVariants.first().split(' '),
-      )
-    val filtered = Filtering.apply(ranked, request.filters)
-    val sorted = Sorting.sort(filtered, request.sort)
-    val pageItems = sorted.drop(request.page * request.size).take(request.size)
+  private fun rank(
+    results: List<MergedResult>,
+    request: SearchRequest,
+    analyzed: AnalyzedQuery,
+  ): List<MergedResult> =
+    ranking.rank(
+      results,
+      request.text,
+      request.path,
+      analyzed.typeHints,
+      analyzed.requiredVariants.first().split(' '),
+    )
 
-    val enabled = statuses.filter { it.source.enabled }
+  private fun pageOf(sorted: List<MergedResult>, request: SearchRequest): List<MergedResult> =
+    sorted.drop(request.page * request.size).take(request.size)
+
+  private fun coverageOf(statuses: List<SourceStatus>): Coverage {
     val queried = statuses.count {
       it.outcome != SourceOutcome.SKIPPED || it.servedFrom != ServedFrom.NONE
     }
     val succeeded = statuses.count { it.outcome == SourceOutcome.SUCCEEDED }
-    val partial = enabled.any { it.outcome != SourceOutcome.SUCCEEDED }
+    val partial = statuses.any { it.source.enabled && it.outcome != SourceOutcome.SUCCEEDED }
+    return Coverage(partial, sources.size, queried, succeeded)
+  }
 
-    if (run.cacheDown)
-      notices +=
-        Notice(NoticeCode.CACHE_UNAVAILABLE, "Cache unavailable; all sources were queried live.")
-    if (analyzed.expandedTerms.isNotEmpty()) {
-      notices +=
-        Notice(
-          NoticeCode.QUERY_EXPANDED,
-          "Also searched for: ${analyzed.expandedTerms.joinToString(", ")}",
-        )
-    }
-    if (
-      enabled.isNotEmpty() &&
-        succeeded == 0 &&
-        enabled.none { it.servedFrom == ServedFrom.STALE_CACHE }
-    ) {
-      notices += Notice(NoticeCode.ALL_SOURCES_FAILED, "No source could be reached.")
-    }
+  private fun indexUnavailableNotice(dated: List<MergedResult>?): Notice? =
+    if (dated != null) null
+    else
+      Notice(
+        NoticeCode.INDEX_UNAVAILABLE,
+        "Helper2 index unavailable; discovery dates are unknown for this search.",
+      )
 
-    metrics.searchCompleted(
-      partial,
-      sorted.isEmpty(),
-      Duration.ofNanos(System.nanoTime() - startedNanos),
-    )
-    return SearchOutcome(
-      request = request,
-      interpretation = analyzed,
-      executedAt = startedAt,
-      statuses = statuses,
-      results = pageItems,
-      total = sorted.size,
-      facets = Facets.compute(ranked, request.filters),
-      coverage = Coverage(partial, sources.size, queried, succeeded),
-      notices = notices,
-      webSearches = request.asker?.let(::webSearchesLeft),
-      webFreshUntil = run.webFreshUntil(),
-    )
+  private fun cacheUnavailableNotice(run: Run): Notice? =
+    if (!run.cacheDown) null
+    else Notice(NoticeCode.CACHE_UNAVAILABLE, "Cache unavailable; all sources were queried live.")
+
+  private fun queryExpandedNotice(analyzed: AnalyzedQuery): Notice? =
+    if (analyzed.expandedTerms.isEmpty()) null
+    else
+      Notice(
+        NoticeCode.QUERY_EXPANDED,
+        "Also searched for: ${analyzed.expandedTerms.joinToString(", ")}",
+      )
+
+  /** Every enabled source failed and none could be rescued from the cache. */
+  private fun allSourcesFailedNotice(statuses: List<SourceStatus>): Notice? {
+    val enabled = statuses.filter { it.source.enabled }
+    if (enabled.isEmpty()) return null
+    if (statuses.any { it.outcome == SourceOutcome.SUCCEEDED }) return null
+    if (enabled.any { it.servedFrom == ServedFrom.STALE_CACHE }) return null
+    return Notice(NoticeCode.ALL_SOURCES_FAILED, "No source could be reached.")
   }
 
   /**

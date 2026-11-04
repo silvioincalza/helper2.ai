@@ -19,6 +19,12 @@ final class ResourceToolRefs {
    * Where the resource's own documents are: identifiers parsed from its links and source records.
    */
   static ToolRef ref(ResourceDetail d) {
+    return ToolRef.Companion.of(
+        d.card().getTitle(), d.card().getType().name(), documentUrls(d), npmNames(d));
+  }
+
+  /** The resource's link, then each hit's link and repository, then each source record's link. */
+  private static List<String> documentUrls(ResourceDetail d) {
     List<String> urls = new ArrayList<>();
     urls.add(d.card().getUrl().toString());
     for (SourceHit h : d.card().getHits()) {
@@ -28,12 +34,14 @@ final class ResourceToolRefs {
       }
     }
     d.sourceRecords().forEach(r -> urls.add(r.url().toString()));
-    List<String> npm =
-        d.sourceRecords().stream()
-            .filter(r -> "npm".equals(r.sourceId()))
-            .map(ResourceDetail.SourceRecordInfo::externalId)
-            .toList();
-    return ToolRef.Companion.of(d.card().getTitle(), d.card().getType().name(), urls, npm);
+    return urls;
+  }
+
+  private static List<String> npmNames(ResourceDetail d) {
+    return d.sourceRecords().stream()
+        .filter(r -> "npm".equals(r.sourceId()))
+        .map(ResourceDetail.SourceRecordInfo::externalId)
+        .toList();
   }
 
   /**

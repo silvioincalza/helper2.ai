@@ -5,6 +5,7 @@
 #   backend/src/main/java/ai/helper2/sources/config/SourcesConfiguration.java (collectors, ReadmeEvidence),
 #   backend/src/main/java/ai/helper2/catalog/internal/CatalogConfiguration.java (index, embedder),
 #   backend/src/main/java/ai/helper2/catalog/enrichment/ (EnrichmentCandidates, EnrichmentResults: the Scout's way in),
+#   backend/src/main/java/ai/helper2/catalog/EnrichmentFacts.java, catalog/usecase/GetResourceDetail.java (the detail page's way out),
 #   backend/src/main/java/ai/helper2/scout/internal/CatalogEnrichmentStore.java.
 # Render: cd docs/diagrams && d2 fmt architecture-index.d2 && d2 architecture-index.d2 architecture-index.svg
 
@@ -54,6 +55,11 @@ catalog: "catalog (Java)" {
   enrichment: "JdbcEnrichmentCandidates\nJdbcEnrichmentResults" {class: app}
   store: ResourceStore {class: app}
   enrichment -> p_enrichment: implements {class: config}
+  detail: GetResourceDetail {class: app}
+  p_facts: "EnrichmentFacts\n(detail page)" {class: port}
+  detail -> p_facts
+  detail -> store
+  enrichment -> p_facts: implements {class: config}
   embed: "EmbeddingIndexer\nNvidiaEmbedder" {class: app}
   catalog -> store
   embed -> store: "pending texts, vectors"

@@ -83,6 +83,21 @@ class ModularityTest {
   }
 
   /**
+   * Every use case reaches a JDBC adapter through a port, never by its class. The Java use cases
+   * are not in {@link #DOMAIN} yet: they still read their module's internal stores (roadmap).
+   */
+  @Test
+  void useCasesDoNotNameJdbcAdapters() {
+    noClasses()
+        .that()
+        .resideInAPackage("ai.helper2..usecase..")
+        .should()
+        .dependOnClassesThat()
+        .haveSimpleNameStartingWith("Jdbc")
+        .check(CLASSES);
+  }
+
+  /**
    * sources has no API: its base package is empty, and its adapters are wired by its own
    * configuration into the ports of search and scout. So no class outside it may name one of its
    * classes.

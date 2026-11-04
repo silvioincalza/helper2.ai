@@ -6,6 +6,7 @@ import ai.helper2.guide.GuideAnswer
 import ai.helper2.guide.GuideBudgetExhausted
 import ai.helper2.guide.GuideModel
 import ai.helper2.guide.GuideProgress
+import ai.helper2.guide.GuideProposal
 import ai.helper2.guide.GuideStatus
 import ai.helper2.guide.GuideValidator
 import ai.helper2.guide.IntentRules
@@ -23,6 +24,7 @@ import ai.helper2.search.MergedResult
 import ai.helper2.search.Notice
 import ai.helper2.search.NoticeCode
 import ai.helper2.search.SearchFilters
+import ai.helper2.search.SearchOutcome
 import ai.helper2.search.SearchRequest
 import ai.helper2.search.SortOrder
 import ai.helper2.shared.ResourceType
@@ -102,6 +104,16 @@ internal class PickAnswer(
     asked: Asked,
     model: GuideModel?,
   ): GuideAnswer {
+    val answer = picks(q, r, progress, asked, model, newestRetrieval(r))
+    return answer.copy(
+      recommendations =
+        answer.recommendations.sortedWith(
+          compareByDescending(nullsLast()) { it.result.published.value }
+        )
+    )
+  }
+
+  private fun newestRetrieval(r: Reading): Retrieval {
     val subject = IntentRules.subjectWords(r.query)
     // Web announcements count: "new AI tools last month" is answered as much by an article
     // launching one as by a
@@ -110,28 +122,20 @@ internal class PickAnswer(
     val filters =
       SearchFilters(types = types, publishedAfter = r.window?.from, publishedBefore = r.window?.to)
     val browse = r.window != null && subject.isBlank()
-    val retrieval =
-      Retrieval(
-        // Browsing ranks by popularity inside the window: words like "AI tools" would favour
-        // projects named "tool".
-        text = if (browse) "" else subject.ifBlank { r.query },
-        filters = filters,
-        // No period: "latest" orders by date. With a period, relevance inside it; the picks are
-        // dated below.
-        sort = if (r.window == null) SortOrder.NEWEST else SortOrder.RELEVANCE,
-        browse = browse,
-        // A new entry without a description cannot be quoted, so it can never be chosen; it would
-        // only take a slot.
-        exclude = { it.description.isNullOrBlank() },
-        allowReading = true,
-        think = browse,
-      )
-    val answer = picks(q, r, progress, asked, model, retrieval)
-    return answer.copy(
-      recommendations =
-        answer.recommendations.sortedWith(
-          compareByDescending(nullsLast()) { it.result.published.value }
-        )
+    return Retrieval(
+      // Browsing ranks by popularity inside the window: words like "AI tools" would favour
+      // projects named "tool".
+      text = if (browse) "" else subject.ifBlank { r.query },
+      filters = filters,
+      // No period: "latest" orders by date. With a period, relevance inside it; the picks are
+      // dated in [newest].
+      sort = if (r.window == null) SortOrder.NEWEST else SortOrder.RELEVANCE,
+      browse = browse,
+      // A new entry without a description cannot be quoted, so it can never be chosen; it would
+      // only take a slot.
+      exclude = { it.description.isNullOrBlank() },
+      allowReading = true,
+      think = browse,
     )
   }
 
@@ -149,47 +153,13 @@ internal class PickAnswer(
     val name =
       r.subjects.firstOrNull()
         ?: return picks(q, r, progress, asked, model, Retrieval(r.query, readingFilter(r)))
-    val found =
-      steps.step(q, "search") {
-        steps.find(
-          q,
-          r,
-          SearchRequest(
-            text = name,
-            path = q.path,
-            filters = SearchFilters(types = TOOL_TYPES),
-            size = SUBJECT_SEARCH_SIZE,
-          ),
-        )
-      }
+    val found = steps.step(q, "search") { searchSubject(q, r, name) }
     namesakes(r, found)?.let {
       return askBack(clock, r, it, found, progress)
     }
     val own = found.results.firstOrNull { isSubject(it, name) }
-    val category = own?.let {
-      listOfNotNull(
-          it.useCases.joinToString(" ").ifBlank { null },
-          it.type.name.lowercase().replace('_', ' '),
-        )
-        .joinToString(" ")
-    }
-    // The name and the query are the planner's words: fields of their own, so the page marks them
-    // AI-written (ADR 0038).
-    // Only a query the planner wrote: without one, r.query is the user's own text, which must not
-    // be marked AI-written.
-    val plannedQuery =
-      r.plan?.let { PlannedQueries.searchQueryOf(it.searchQuery) }?.ifBlank { null }
-    val notices =
-      if (own == null)
-        listOf(
-          Notice(
-            NoticeCode.GUIDE_SUBJECT_NOT_FOUND,
-            NOT_FOUND_ALTERNATIVES,
-            subject = name,
-            query = plannedQuery,
-          )
-        )
-      else emptyList()
+    val category = own?.let { categoryOf(it) }
+    val notices = if (own == null) subjectNotFound(name, r) else emptyList()
     val text = category?.takeIf { IntentRules.subjectWords(it).isNotBlank() } ?: r.query
     return picks(
       q,
@@ -207,6 +177,43 @@ internal class PickAnswer(
     )
   }
 
+  private fun searchSubject(q: Question, r: Reading, name: String): SearchOutcome =
+    steps.find(
+      q,
+      r,
+      SearchRequest(
+        text = name,
+        path = q.path,
+        filters = SearchFilters(types = TOOL_TYPES),
+        size = SUBJECT_SEARCH_SIZE,
+      ),
+    )
+
+  /** What the subject is for: its use cases and its kind, as search words. */
+  private fun categoryOf(own: MergedResult): String =
+    listOfNotNull(
+        own.useCases.joinToString(" ").ifBlank { null },
+        own.type.name.lowercase().replace('_', ' '),
+      )
+      .joinToString(" ")
+
+  private fun subjectNotFound(name: String, r: Reading): List<Notice> {
+    // The name and the query are the planner's words: fields of their own, so the page marks them
+    // AI-written (ADR 0038).
+    // Only a query the planner wrote: without one, r.query is the user's own text, which must not
+    // be marked AI-written.
+    val plannedQuery =
+      r.plan?.let { PlannedQueries.searchQueryOf(it.searchQuery) }?.ifBlank { null }
+    return listOf(
+      Notice(
+        NoticeCode.GUIDE_SUBJECT_NOT_FOUND,
+        NOT_FOUND_ALTERNATIVES,
+        subject = name,
+        query = plannedQuery,
+      )
+    )
+  }
+
   /**
    * Retrieval first, AI second, validator last: the guide as it was before intents, parameterised
    * by [retrieval]. Works (degraded) without a model.
@@ -219,24 +226,7 @@ internal class PickAnswer(
     model: GuideModel?,
     retrieval: Retrieval,
   ): GuideAnswer {
-    val text = q.fullText
-    val outcome =
-      steps.step(q, "search") {
-        steps.find(
-          q,
-          r,
-          SearchRequest(
-            text = retrieval.text,
-            path = q.path,
-            filters = retrieval.filters,
-            sort = retrieval.sort,
-            size = maxCandidates,
-            webQuery = r.webQuery,
-            browse = retrieval.browse,
-          ),
-          planned = retrieval.planned,
-        )
-      }
+    val outcome = steps.step(q, "search") { searchFor(q, r, retrieval) }
     if (retrieval.askBack)
       namesakes(r, outcome)?.let {
         return askBack(clock, r, it, outcome, progress)
@@ -251,75 +241,43 @@ internal class PickAnswer(
     val choosable =
       if (allowReading) candidates else candidates.filter { it.result.type !in READING_TYPES }
     progress.retrieved(candidates.size, outcome)
-    if (log.isDebugEnabled)
-      log.debug(
-        "guide candidates: {}",
-        candidates.map {
-          "${it.key} ${it.result.type} ${it.result.title.take(60)} ${it.result.published.value} desc=${it.result.description?.length ?: 0}"
-        },
-      )
-    val query = retrieval.text
+    logCandidates(candidates)
     val constraints = r.constraints
-    if (candidates.isEmpty()) {
-      return GuideAnswer(
-        GuideStatus.NO_CANDIDATES,
-        query,
-        emptyList(),
-        null,
-        !r.modelFailed,
-        0,
-        0,
+    if (candidates.isEmpty()) return noCandidates(retrieval, r, outcome)
+    if (model == null) {
+      return topResults(
+        GuideStatus.LLM_UNAVAILABLE,
+        retrieval,
+        candidates,
         outcome,
-        clock.instant(),
-        constraints,
-        notices = retrieval.notices,
+        modelUsed = false,
+        constraints = emptyList(),
       )
     }
-    if (model == null) {
-      return degraded(
-          clock,
-          GuideStatus.LLM_UNAVAILABLE,
-          query,
-          candidates,
-          outcome,
-          0,
-          modelUsed = false,
-        )
-        .withNotices(retrieval.notices)
+    if (choosable.isEmpty()) {
+      return topResults(
+        GuideStatus.PARTIAL,
+        retrieval,
+        candidates,
+        outcome,
+        modelUsed = true,
+        constraints = constraints,
+      )
     }
     val proposal =
       try {
-        if (choosable.isEmpty()) {
-          return degraded(
-              clock,
-              GuideStatus.PARTIAL,
-              query,
-              candidates,
-              outcome,
-              0,
-              modelUsed = true,
-              constraints,
-            )
-            .withNotices(retrieval.notices)
-        }
-        steps.step(q, "choose") {
-          if (retrieval.think) model.choose(text, choosable, constraints, true)
-          else model.choose(text, choosable, constraints)
-        }
+        steps.step(q, "choose") { chooseAmong(q, model, retrieval, choosable, constraints) }
       } catch (e: RuntimeException) {
         log.warn("guide choose failed: ${failure(e)}")
         asked.budgetExhausted = e is GuideBudgetExhausted
-        return degraded(
-            clock,
-            GuideStatus.LLM_UNAVAILABLE,
-            query,
-            candidates,
-            outcome,
-            0,
-            modelUsed = false,
-            constraints,
-          )
-          .withNotices(retrieval.notices)
+        return topResults(
+          GuideStatus.LLM_UNAVAILABLE,
+          retrieval,
+          candidates,
+          outcome,
+          modelUsed = false,
+          constraints = constraints,
+        )
       }
     progress.chosen(proposal.picks.size)
     val checked =
@@ -329,13 +287,7 @@ internal class PickAnswer(
           .insideWindow(retrieval.filters)
       }
     progress.validated(checked.picks.size, checked.rejected)
-    // Search rank of each kept pick. A pick far down the list is the first sign of text written to
-    // be chosen
-    // (content poisoning): its quote is genuine, so the gate cannot catch it.
-    val keptRanks = checked.picks.map { candidates.indexOf(it.candidate) + 1 }
-    keptRanks.forEach {
-      meters.counter("helper2.guide.picks", "rank", AskGuide.rankBand(it)).increment()
-    }
+    val keptRanks = countKeptRanks(checked, candidates)
     val verdicts =
       if (checked.picks.isEmpty()) emptyMap()
       else reasonCheck.verdicts(q, model, claimsOf(checked), progress)
@@ -344,22 +296,122 @@ internal class PickAnswer(
         "rejectedBy=${checked.rejectedBy} reasons=${verdicts.values.groupingBy { it }.eachCount()}"
     val trail = ResearchTrail(removed = validator.removedOf(checked))
     if (checked.picks.isEmpty()) {
-      return degraded(
-          clock,
+      return topResults(
           GuideStatus.PARTIAL,
-          query,
+          retrieval,
           candidates,
           outcome,
-          checked.rejected,
+          rejected = checked.rejected,
           modelUsed = true,
-          constraints,
+          constraints = constraints,
         )
-        .withNotices(retrieval.notices)
         .copy(trail = trail)
     }
-    return GuideAnswer(
+    return pickedAnswer(retrieval, candidates, outcome, checked, verdicts, constraints, trail)
+  }
+
+  private fun searchFor(q: Question, r: Reading, retrieval: Retrieval): SearchOutcome =
+    steps.find(
+      q,
+      r,
+      SearchRequest(
+        text = retrieval.text,
+        path = q.path,
+        filters = retrieval.filters,
+        sort = retrieval.sort,
+        size = maxCandidates,
+        webQuery = r.webQuery,
+        browse = retrieval.browse,
+      ),
+      planned = retrieval.planned,
+    )
+
+  private fun logCandidates(candidates: List<Candidate>) {
+    if (log.isDebugEnabled)
+      log.debug(
+        "guide candidates: {}",
+        candidates.map {
+          "${it.key} ${it.result.type} ${it.result.title.take(60)} ${it.result.published.value} desc=${it.result.description?.length ?: 0}"
+        },
+      )
+  }
+
+  private fun noCandidates(retrieval: Retrieval, r: Reading, outcome: SearchOutcome) =
+    GuideAnswer(
+      GuideStatus.NO_CANDIDATES,
+      retrieval.text,
+      emptyList(),
+      null,
+      !r.modelFailed,
+      0,
+      0,
+      outcome,
+      clock.instant(),
+      r.constraints,
+      notices = retrieval.notices,
+    )
+
+  /** The top search results instead of picks, with the retrieval's notices. */
+  private fun topResults(
+    status: GuideStatus,
+    retrieval: Retrieval,
+    candidates: List<Candidate>,
+    outcome: SearchOutcome,
+    rejected: Int = 0,
+    modelUsed: Boolean,
+    constraints: List<String>,
+  ) =
+    degraded(
+        clock,
+        status,
+        retrieval.text,
+        candidates,
+        outcome,
+        rejected,
+        modelUsed = modelUsed,
+        constraints = constraints,
+      )
+      .withNotices(retrieval.notices)
+
+  /** The thinking form only for a broad browse ([Retrieval.think]). */
+  private fun chooseAmong(
+    q: Question,
+    model: GuideModel,
+    retrieval: Retrieval,
+    choosable: List<Candidate>,
+    constraints: List<String>,
+  ): GuideProposal =
+    if (retrieval.think) model.choose(q.fullText, choosable, constraints, true)
+    else model.choose(q.fullText, choosable, constraints)
+
+  /**
+   * Search rank of each kept pick, counted by band. A pick far down the list is the first sign of
+   * text written to be chosen (content poisoning): its quote is genuine, so the gate cannot catch
+   * it.
+   */
+  private fun countKeptRanks(
+    checked: GuideValidator.Result,
+    candidates: List<Candidate>,
+  ): List<Int> {
+    val keptRanks = checked.picks.map { candidates.indexOf(it.candidate) + 1 }
+    keptRanks.forEach {
+      meters.counter("helper2.guide.picks", "rank", AskGuide.rankBand(it)).increment()
+    }
+    return keptRanks
+  }
+
+  private fun pickedAnswer(
+    retrieval: Retrieval,
+    candidates: List<Candidate>,
+    outcome: SearchOutcome,
+    checked: GuideValidator.Result,
+    verdicts: Map<String, ReasonCheck>,
+    constraints: List<String>,
+    trail: ResearchTrail,
+  ) =
+    GuideAnswer(
       status = if (checked.rejected == 0) GuideStatus.OK else GuideStatus.PARTIAL,
-      searchQuery = query,
+      searchQuery = retrieval.text,
       recommendations =
         checked.picks.map { (c, p) ->
           val verdict = verdicts[c.key] ?: ReasonCheck.NOT_CHECKED
@@ -382,7 +434,6 @@ internal class PickAnswer(
       notices = retrieval.notices,
       trail = trail,
     )
-  }
 
   /**
    * A pick born outside the window is rejected by code, not left to the model: the search filter
