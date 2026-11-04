@@ -4,11 +4,11 @@ import './ui.css';
 
 /**
  * reading: the guide works ([candidates] once the search is counted, [understood] once it has read the question).
- * none: no pick, with [reason] when the answer says why. picks: the picks are in.
+ * none: no pick, with [reason] when the answer says why (an element when part of it is AI-marked). picks: the picks are in.
  */
 export type PicksState =
   | { kind: 'reading'; candidates?: number | undefined; understood?: readonly string[] | undefined }
-  | { kind: 'none'; reason?: string | undefined }
+  | { kind: 'none'; reason?: ReactNode }
   | { kind: 'picks'; model?: string | null };
 
 /**

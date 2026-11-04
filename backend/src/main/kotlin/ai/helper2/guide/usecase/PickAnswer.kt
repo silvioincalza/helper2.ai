@@ -10,6 +10,7 @@ import ai.helper2.guide.GuideStatus
 import ai.helper2.guide.GuideValidator
 import ai.helper2.guide.IntentRules
 import ai.helper2.guide.LEARN_TYPES
+import ai.helper2.guide.PlannedQueries
 import ai.helper2.guide.READING_TYPES
 import ai.helper2.guide.ReasonCheck
 import ai.helper2.guide.ReasonClaim
@@ -34,6 +35,10 @@ import org.slf4j.LoggerFactory
 /** Tools only, unless the user asked for something to read (seen in evaluation run 4: papers filled the slots). */
 internal fun readingFilter(r: Reading) =
     if (r.allowReading) SearchFilters(types = ResourceType.entries.toSet() - LEARN_TYPES) else SearchFilters(types = TOOL_TYPES)
+
+/** The not-found notices' messages: our own words only; the name and the query travel apart (ADR 0038). */
+internal const val NOT_FOUND_ALTERNATIVES = "The name in the question was not found in our sources; showing tools for the planned search instead."
+internal const val NOT_FOUND_COMPARED = "A name to compare was not found in our sources."
 
 /** One search for the pick pipeline: text, filters, order, and what must not be picked. */
 internal data class Retrieval(
@@ -101,7 +106,10 @@ internal class PickAnswer(
         namesakes(r, found)?.let { return askBack(clock, r, it, found, progress) }
         val own = found.results.firstOrNull { isSubject(it, name) }
         val category = own?.let { listOfNotNull(it.useCases.joinToString(" ").ifBlank { null }, it.type.name.lowercase().replace('_', ' ')).joinToString(" ") }
-        val notices = if (own == null) listOf(Notice(NoticeCode.GUIDE_SUBJECT_NOT_FOUND, "$name was not found in our sources; showing tools for: ${r.query}")) else emptyList()
+        // The name and the query are the planner's words: fields of their own, so the page marks them AI-written (ADR 0038).
+        // Only a query the planner wrote: without one, r.query is the user's own text, which must not be marked AI-written.
+        val plannedQuery = r.plan?.let { PlannedQueries.searchQueryOf(it.searchQuery) }?.ifBlank { null }
+        val notices = if (own == null) listOf(Notice(NoticeCode.GUIDE_SUBJECT_NOT_FOUND, NOT_FOUND_ALTERNATIVES, subject = name, query = plannedQuery)) else emptyList()
         val text = category?.takeIf { IntentRules.subjectWords(it).isNotBlank() } ?: r.query
         return picks(q, r, progress, asked, model, Retrieval(text, readingFilter(r), exclude = { isSubject(it, name) }, notices = notices, planned = text == r.query))
     }

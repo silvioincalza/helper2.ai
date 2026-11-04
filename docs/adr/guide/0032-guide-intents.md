@@ -194,7 +194,8 @@ its title or the last segment of its link, in lower case without punctuation or 
 equals the subject, or the subject plus a type word ("Ollama app"). The first such result in search order wins. When
 none is the subject:
 - `ALTERNATIVES`: the planned query is searched instead, with the notice "Cursor was not found in our sources; showing
-  tools for: …" (`GUIDE_SUBJECT_NOT_FOUND`).
+  tools for: …" (`GUIDE_SUBJECT_NOT_FOUND`). The name and the query are the notice's own fields, marked AI-written;
+  the page builds the sentence ([0038](0038-ai-content-marking.md)).
 - `COMPARE`: a subject whose search finds no own entry, fails or misses its deadline (10 s for all subjects
   together) is not found. With fewer than 2 found, the answer is the picks of the found subject (or of the query),
   with one `GUIDE_SUBJECT_NOT_FOUND` notice per missing subject.

@@ -66,8 +66,10 @@ Its rejection maps to one code (`Rejection.trailCheck`):
 
 ### 4. Reused answers
 An answer reused from a similar question carries no `queries` (`ResearchTrail.withoutQueries`, in
-`AskGuide.similarAnswer`), and its `searchQuery` is empty: the planner wrote both from another asker's words. The copy
-stored under the new question's key has neither, so a later exact hit shows neither. The removed titles stay: they come from the sources. An exact-key hit keeps its queries: its question has the
+`AskGuide.similarAnswer`), and its `searchQuery` is empty: the planner wrote both from another asker's words. The same
+goes for the search in a "not found" notice (`notices[].query`, [0038](0038-ai-content-marking.md)); its name stays, as
+it is part of how both questions were read. The copy stored under the new question's key has none of them, so a later
+exact hit shows none. The removed titles stay: they come from the sources. An exact-key hit keeps its queries: its question has the
 same normalised text.
 
 ### 5. Marking (amends 0038)
