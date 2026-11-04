@@ -17,14 +17,24 @@ export function SignIn({ className = 'btn btn-primary' }: { className?: string }
   const remember = () => rememberSignInReturn(pathname + search);
   const [only] = me.loginProviders;
   if (me.loginProviders.length === 1 && only) {
-    return <a className={className} href={loginUrl(only.id)} onClick={remember}>{t('nav.signInWith', { provider: only.name })}</a>;
+    return (
+      <a className={className} href={loginUrl(only.id)} onClick={remember}>
+        {t('nav.signInWith', { provider: only.name })}
+      </a>
+    );
   }
   if (me.loginProviders.length > 1) {
     return (
       <details className="menu">
         <summary className="btn">{t('nav.signIn')}</summary>
         <ul className="plain-list menu-list">
-          {me.loginProviders.map((p) => <li key={p.id}><a href={loginUrl(p.id)} onClick={remember}>{p.name}</a></li>)}
+          {me.loginProviders.map((p) => (
+            <li key={p.id}>
+              <a href={loginUrl(p.id)} onClick={remember}>
+                {p.name}
+              </a>
+            </li>
+          ))}
         </ul>
       </details>
     );

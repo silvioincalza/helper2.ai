@@ -1,4 +1,13 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { api } from '@/api/client';
 import type { Bookmark, BookmarkRequest } from '@/api/types';
 import { readLocalBookmarks, writeLocalBookmarks } from '@/lib/bookmarks';
@@ -51,7 +60,8 @@ export function BookmarksProvider({ children }: { children: ReactNode }) {
       : api.listBookmarks();
     run.then(
       // Keep what was saved or removed while the list was on its way.
-      (list) => setRemote((r) => (r === null ? list : r.reduce((acc, b) => withFirst(acc, b), list))),
+      (list) =>
+        setRemote((r) => (r === null ? list : r.reduce((acc, b) => withFirst(acc, b), list))),
       () => setServerError(true),
     );
   }, [server, attempt]);
@@ -63,7 +73,10 @@ export function BookmarksProvider({ children }: { children: ReactNode }) {
     setStorageFailed(!writeLocalBookmarks(list));
   }, []);
 
-  const items = useMemo(() => (server && remote !== null ? remote : local), [server, remote, local]);
+  const items = useMemo(
+    () => (server && remote !== null ? remote : local),
+    [server, remote, local],
+  );
 
   const remove = useCallback(
     (id: string) => {
@@ -91,7 +104,10 @@ export function BookmarksProvider({ children }: { children: ReactNode }) {
         // Shown as saved at once, so a second click removes it instead of saving it twice.
         setRemote((r) => withFirst(r ?? [], entry));
         api.addBookmark(b).then(
-          (stored) => setRemote((r) => (r ?? []).map((i) => (i.resourceId === stored.resourceId ? stored : i))),
+          (stored) =>
+            setRemote((r) =>
+              (r ?? []).map((i) => (i.resourceId === stored.resourceId ? stored : i)),
+            ),
           () => {
             setRemote((r) => (r ?? []).filter((i) => i.resourceId !== b.resourceId));
             setServerError(true);

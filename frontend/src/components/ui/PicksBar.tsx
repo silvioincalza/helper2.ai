@@ -19,12 +19,22 @@ export type PicksState =
  * source titles, so they carry no machine-readable mark (ADR 0038): only the guide's reasons do, in the rows. With no
  * pick, [children] are the next steps, after the line. [titleRef] lets Try again move focus to the heading.
  */
-export function PicksBar({ state, titleRef, children }: { state: PicksState; titleRef?: Ref<HTMLHeadingElement>; children?: ReactNode }) {
+export function PicksBar({
+  state,
+  titleRef,
+  children,
+}: {
+  state: PicksState;
+  titleRef?: Ref<HTMLHeadingElement>;
+  children?: ReactNode;
+}) {
   const { t } = useTranslation();
   const titleId = useId();
   return (
     <section className={`h2-picks is-${state.kind}`} aria-labelledby={titleId}>
-      <h2 id={titleId} ref={titleRef} tabIndex={-1} className="h2-picks__title">{t('picks.title')}</h2>
+      <h2 id={titleId} ref={titleRef} tabIndex={-1} className="h2-picks__title">
+        {t('picks.title')}
+      </h2>
       {state.kind === 'picks' ? (
         <>
           <span className="h2-picks__ai">{t('picks.aiWritten')}</span>
@@ -34,10 +44,15 @@ export function PicksBar({ state, titleRef, children }: { state: PicksState; tit
         <>
           <p className="h2-picks__line" role="status">
             {state.kind === 'none'
-              ? state.reason ?? t('picks.none')
-              : state.candidates === undefined ? t('picks.readingResults') : t('picks.reading', { count: state.candidates })}
+              ? (state.reason ?? t('picks.none'))
+              : state.candidates === undefined
+                ? t('picks.readingResults')
+                : t('picks.reading', { count: state.candidates })}
             {state.kind === 'reading' && (state.understood?.length ?? 0) > 0 && (
-              <span className="h2-picks__understood"> · {t('picks.understood', { parts: state.understood!.join(', ') })}</span>
+              <span className="h2-picks__understood">
+                {' '}
+                · {t('picks.understood', { parts: state.understood!.join(', ') })}
+              </span>
             )}
           </p>
           {state.kind === 'none' && children}

@@ -16,11 +16,15 @@ export function DateFactValue({ fact }: { fact: DateFact }) {
     const alts = [...stated, ...(fact.alternatives ?? [])];
     return (
       <span className="date-conflict">
-        <span className="badge verif verif-conflicting"><Icon name="warn" />{t('date.conflicting')}</span>
+        <span className="badge verif verif-conflicting">
+          <Icon name="warn" />
+          {t('date.conflicting')}
+        </span>
         <ul className="plain-list">
           {alts.map((a) => (
             <li key={`${a.sourceId}-${a.value}`}>
-              {fmtAlt(a.value, i18n.language)} <span className="muted">({t('date.fromSource', { source: a.sourceId })})</span>
+              {fmtAlt(a.value, i18n.language)}{' '}
+              <span className="muted">({t('date.fromSource', { source: a.sourceId })})</span>
             </li>
           ))}
         </ul>
@@ -31,7 +35,9 @@ export function DateFactValue({ fact }: { fact: DateFact }) {
     return (
       <span>
         <time dateTime={fact.value}>{formatDate(fact.value, i18n.language, fact.precision)}</time>
-        {fact.sourceId && <span className="muted"> ({t('date.fromSource', { source: fact.sourceId })})</span>}
+        {fact.sourceId && (
+          <span className="muted"> ({t('date.fromSource', { source: fact.sourceId })})</span>
+        )}
       </span>
     );
   }
@@ -42,7 +48,9 @@ export function DateFactRow({ label, fact }: { label: string; fact: DateFact }) 
   return (
     <div className="date-row">
       <dt>{label}</dt>
-      <dd><DateFactValue fact={fact} /></dd>
+      <dd>
+        <DateFactValue fact={fact} />
+      </dd>
     </div>
   );
 }

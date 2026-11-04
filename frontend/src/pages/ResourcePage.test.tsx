@@ -7,15 +7,39 @@ import { renderApp, settle } from '@/test/render';
 import type { Evidence, Relationship, SetupGuide, ToolGuide } from '@/api/types';
 
 const ID = '11111111-1111-5111-8111-111111111111';
-const ev: Evidence = { id: '44444444-4444-5444-8444-444444444444', sourceUrl: 'https://github.com/acme/translator/README.md', retrievedAt: '2026-10-20T10:00:00Z', excerpt: 'Supports 40 languages.' };
-const rel = (title: string, verification: Relationship['verification']): Relationship => ({ kind: 'INTEGRATES_WITH', targetTitle: title, targetId: null, verification, evidence: [ev] });
+const ev: Evidence = {
+  id: '44444444-4444-5444-8444-444444444444',
+  sourceUrl: 'https://github.com/acme/translator/README.md',
+  retrievedAt: '2026-10-20T10:00:00Z',
+  excerpt: 'Supports 40 languages.',
+};
+const rel = (title: string, verification: Relationship['verification']): Relationship => ({
+  kind: 'INTEGRATES_WITH',
+  targetTitle: title,
+  targetId: null,
+  verification,
+  evidence: [ev],
+});
 
 describe('resource detail', () => {
   it('separates verified relationships from unverified candidates', async () => {
-    mockApi({ [`GET /resources/${ID}`]: () => makeDetail({ relationships: [rel('Slack', 'VERIFIED'), rel('Notion', 'UNVERIFIED'), rel('Bogus', 'REJECTED')] }) });
+    mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({
+          relationships: [
+            rel('Slack', 'VERIFIED'),
+            rel('Notion', 'UNVERIFIED'),
+            rel('Bogus', 'REJECTED'),
+          ],
+        }),
+    });
     renderApp(`/resource/${ID}`);
-    const verified = (await screen.findByRole('heading', { name: 'Verified relationships' })).closest('section') as HTMLElement;
-    const cand = screen.getByRole('heading', { name: /Unverified candidates/ }).closest('section') as HTMLElement;
+    const verified = (
+      await screen.findByRole('heading', { name: 'Verified relationships' })
+    ).closest('section') as HTMLElement;
+    const cand = screen
+      .getByRole('heading', { name: /Unverified candidates/ })
+      .closest('section') as HTMLElement;
     expect(within(verified).getByText('Slack')).toBeInTheDocument();
     expect(within(verified).queryByText('Notion')).not.toBeInTheDocument();
     expect(within(cand).getByText('Notion')).toBeInTheDocument();
@@ -25,38 +49,135 @@ describe('resource detail', () => {
   });
 
   const SETUP: SetupGuide = {
-    resourceId: ID, title: 'pg-mcp-server', version: '1.2.0',
+    resourceId: ID,
+    title: 'pg-mcp-server',
+    version: '1.2.0',
     options: [
-      { id: 'o1', kind: 'REMOTE', transport: 'SSE', label: 'Hosted server (SSE)', url: 'https://mcp.acme.dev/sse', settings: [] },
-      { id: 'o2', kind: 'PACKAGE', transport: 'STDIO', label: 'npm package @acme/pg-mcp', registryType: 'npm', identifier: '@acme/pg-mcp', runtime: 'npx', requires: 'Node.js (npx)',
-        settings: [{ name: 'DATABASE_URL', kind: 'ENV', description: 'Connection string', required: true, secret: true }] },
+      {
+        id: 'o1',
+        kind: 'REMOTE',
+        transport: 'SSE',
+        label: 'Hosted server (SSE)',
+        url: 'https://mcp.acme.dev/sse',
+        settings: [],
+      },
+      {
+        id: 'o2',
+        kind: 'PACKAGE',
+        transport: 'STDIO',
+        label: 'npm package @acme/pg-mcp',
+        registryType: 'npm',
+        identifier: '@acme/pg-mcp',
+        runtime: 'npx',
+        requires: 'Node.js (npx)',
+        settings: [
+          {
+            name: 'DATABASE_URL',
+            kind: 'ENV',
+            description: 'Connection string',
+            required: true,
+            secret: true,
+          },
+        ],
+      },
     ],
     clients: [
-      { id: 'claude-code', name: 'Claude Code', docsUrl: 'https://code.claude.com/docs/en/mcp', snippets: [
-        { optionId: 'o1', supported: true, where: 'Terminal', language: 'shell', text: 'claude mcp add --transport sse pg-mcp-server https://mcp.acme.dev/sse' },
-        { optionId: 'o2', supported: true, where: 'Terminal', language: 'shell', text: "claude mcp add --env 'DATABASE_URL=<DATABASE_URL>' --transport stdio pg-mcp-server -- npx -y @acme/pg-mcp@1.2.0" },
-      ] },
-      { id: 'codex', name: 'OpenAI Codex', docsUrl: 'https://learn.chatgpt.com/docs/extend/mcp', snippets: [
-        { optionId: 'o1', supported: false, note: 'This client\'s documentation does not describe connecting to an SSE server.' },
-        { optionId: 'o2', supported: true, where: '~/.codex/config.toml', language: 'toml', text: '[mcp_servers.pg-mcp-server]' },
-      ] },
+      {
+        id: 'claude-code',
+        name: 'Claude Code',
+        docsUrl: 'https://code.claude.com/docs/en/mcp',
+        snippets: [
+          {
+            optionId: 'o1',
+            supported: true,
+            where: 'Terminal',
+            language: 'shell',
+            text: 'claude mcp add --transport sse pg-mcp-server https://mcp.acme.dev/sse',
+          },
+          {
+            optionId: 'o2',
+            supported: true,
+            where: 'Terminal',
+            language: 'shell',
+            text: "claude mcp add --env 'DATABASE_URL=<DATABASE_URL>' --transport stdio pg-mcp-server -- npx -y @acme/pg-mcp@1.2.0",
+          },
+        ],
+      },
+      {
+        id: 'codex',
+        name: 'OpenAI Codex',
+        docsUrl: 'https://learn.chatgpt.com/docs/extend/mcp',
+        snippets: [
+          {
+            optionId: 'o1',
+            supported: false,
+            note: "This client's documentation does not describe connecting to an SSE server.",
+          },
+          {
+            optionId: 'o2',
+            supported: true,
+            where: '~/.codex/config.toml',
+            language: 'toml',
+            text: '[mcp_servers.pg-mcp-server]',
+          },
+        ],
+      },
     ],
-    sources: [{ sourceId: 'mcp-registry', url: 'https://registry.modelcontextprotocol.io/v0.1/servers/io.acme%2Fpg/versions/latest', retrievedAt: '2026-10-27T20:00:00Z' }],
+    sources: [
+      {
+        sourceId: 'mcp-registry',
+        url: 'https://registry.modelcontextprotocol.io/v0.1/servers/io.acme%2Fpg/versions/latest',
+        retrievedAt: '2026-10-27T20:00:00Z',
+      },
+    ],
   };
 
   const STEPS: ToolGuide = {
-    resourceId: ID, title: 'pg-mcp-server', status: 'OK', rejected: 1, generatedAt: '2026-10-28T00:00:00Z', model: 'nemotron-nano',
+    resourceId: ID,
+    title: 'pg-mcp-server',
+    status: 'OK',
+    rejected: 1,
+    generatedAt: '2026-10-28T00:00:00Z',
+    model: 'nemotron-nano',
     sections: [
-      { kind: 'REQUIREMENTS', steps: [{ text: 'Install Node.js 20 or later.', quote: 'Requires Node.js 20 or later.', source: 'readme', caution: false }] },
-      { kind: 'INSTALL', steps: [{ text: 'Install it with npm.', quote: 'Install globally:', source: 'readme', caution: false,
-        code: { language: 'bash', text: 'npm install -g @acme/pg-mcp' } }] },
+      {
+        kind: 'REQUIREMENTS',
+        steps: [
+          {
+            text: 'Install Node.js 20 or later.',
+            quote: 'Requires Node.js 20 or later.',
+            source: 'readme',
+            caution: false,
+          },
+        ],
+      },
+      {
+        kind: 'INSTALL',
+        steps: [
+          {
+            text: 'Install it with npm.',
+            quote: 'Install globally:',
+            source: 'readme',
+            caution: false,
+            code: { language: 'bash', text: 'npm install -g @acme/pg-mcp' },
+          },
+        ],
+      },
     ],
-    documents: [{ key: 'readme', kind: 'README', url: 'https://github.com/acme/pg-mcp', retrievedAt: '2026-10-28T00:00:00Z' }],
+    documents: [
+      {
+        key: 'readme',
+        kind: 'README',
+        url: 'https://github.com/acme/pg-mcp',
+        retrievedAt: '2026-10-28T00:00:00Z',
+      },
+    ],
   };
 
   it('Guide me opens snippets per AI tool and checked steps from the README, with no question box', async () => {
     const m = mockApi({
-      [`GET /resources/${ID}`]: () => makeDetail({ card: makeCard({ type: 'MCP_SERVER', title: 'pg-mcp-server' }) }),
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({ card: makeCard({ type: 'MCP_SERVER', title: 'pg-mcp-server' }) }),
       [`GET /resources/${ID}/setup`]: () => SETUP,
       [`POST /resources/${ID}/guide`]: () => STEPS,
     });
@@ -66,9 +187,17 @@ describe('resource detail', () => {
     expect(m.callsTo('GET', `/resources/${ID}/setup`)).toHaveLength(0);
     await userEvent.click(button);
 
-    expect(await screen.findByRole('heading', { name: 'Set up pg-mcp-server' })).toBeInTheDocument();
-    expect(await screen.findByText('claude mcp add --transport sse pg-mcp-server https://mcp.acme.dev/sse')).toBeInTheDocument();
-    expect(screen.getByText(/From its Official MCP Registry entry, version 1.2.0/)).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'Set up pg-mcp-server' }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        'claude mcp add --transport sse pg-mcp-server https://mcp.acme.dev/sse',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/From its Official MCP Registry entry, version 1.2.0/),
+    ).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('radio', { name: 'npm package @acme/pg-mcp' }));
     expect(screen.getByText(/needs Node.js \(npx\)/)).toBeInTheDocument();
@@ -82,7 +211,9 @@ describe('resource detail', () => {
     expect(await screen.findByRole('heading', { name: 'Install' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'What you need first' })).toBeInTheDocument();
     expect(screen.getByText('npm install -g @acme/pg-mcp')).toBeInTheDocument();
-    expect(screen.getByText(/copied exactly from it; commands are not reviewed for safety/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/copied exactly from it; commands are not reviewed for safety/),
+    ).toBeInTheDocument();
     expect(m.callsTo('POST', `/resources/${ID}/guide`)).toHaveLength(1);
     expect(m.callsTo('POST', `/resources/${ID}/guide`)[0]?.body).toBeUndefined();
     expect(screen.queryByRole('textbox', { name: /Ask about/ })).not.toBeInTheDocument();
@@ -92,27 +223,69 @@ describe('resource detail', () => {
 
   it('a run command copied from the README says it is not reviewed for safety', async () => {
     mockApi({
-      [`GET /resources/${ID}`]: () => makeDetail({ card: makeCard({ type: 'MCP_SERVER', title: 'pg-mcp-server' }) }),
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({ card: makeCard({ type: 'MCP_SERVER', title: 'pg-mcp-server' }) }),
       [`GET /resources/${ID}/setup`]: () => ({
         ...SETUP,
-        options: [{ id: 'o1', kind: 'COMMAND', transport: 'STDIO', label: 'npx @acme/pg-mcp', runtime: 'npx', requires: 'Node.js (npx)', settings: [] }],
-        clients: [{ id: 'claude-code', name: 'Claude Code', docsUrl: 'https://code.claude.com/docs/en/mcp', snippets: [
-          { optionId: 'o1', supported: true, where: 'Terminal', language: 'shell', text: 'claude mcp add --transport stdio pg-mcp-server -- npx -y @acme/pg-mcp' },
-        ] }],
-        sources: [{ sourceId: 'readme', url: 'https://github.com/acme/pg-mcp', retrievedAt: '2026-10-27T20:00:00Z' }],
+        options: [
+          {
+            id: 'o1',
+            kind: 'COMMAND',
+            transport: 'STDIO',
+            label: 'npx @acme/pg-mcp',
+            runtime: 'npx',
+            requires: 'Node.js (npx)',
+            settings: [],
+          },
+        ],
+        clients: [
+          {
+            id: 'claude-code',
+            name: 'Claude Code',
+            docsUrl: 'https://code.claude.com/docs/en/mcp',
+            snippets: [
+              {
+                optionId: 'o1',
+                supported: true,
+                where: 'Terminal',
+                language: 'shell',
+                text: 'claude mcp add --transport stdio pg-mcp-server -- npx -y @acme/pg-mcp',
+              },
+            ],
+          },
+        ],
+        sources: [
+          {
+            sourceId: 'readme',
+            url: 'https://github.com/acme/pg-mcp',
+            retrievedAt: '2026-10-27T20:00:00Z',
+          },
+        ],
       }),
       [`POST /resources/${ID}/guide`]: () => STEPS,
     });
     renderApp(`/resource/${ID}`);
     await userEvent.click(await screen.findByRole('button', { name: 'Guide me' }));
-    expect(await screen.findByText(/Runs locally with npx, copied from its README; not reviewed for safety/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        /Runs locally with npx, copied from its README; not reviewed for safety/,
+      ),
+    ).toBeInTheDocument();
   });
 
   it('Try again on the steps keeps focus in the guide: on the steps heading, not the page body', async () => {
     let n = 0;
     mockApi({
-      [`GET /resources/${ID}`]: () => makeDetail({ card: makeCard({ type: 'LIBRARY', title: 'acme-lib' }) }),
-      [`GET /resources/${ID}/setup`]: () => ({ resourceId: ID, title: 'acme-lib', version: null, options: [], clients: [], sources: [] }),
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({ card: makeCard({ type: 'LIBRARY', title: 'acme-lib' }) }),
+      [`GET /resources/${ID}/setup`]: () => ({
+        resourceId: ID,
+        title: 'acme-lib',
+        version: null,
+        options: [],
+        clients: [],
+        sources: [],
+      }),
       [`POST /resources/${ID}/guide`]: () => (n++ === 0 ? problem(503, 'Unavailable') : STEPS),
     });
     renderApp(`/resource/${ID}`);
@@ -120,15 +293,33 @@ describe('resource detail', () => {
     const retry = await screen.findByRole('button', { name: /Try again/ });
     retry.focus();
     await userEvent.keyboard('{Enter}');
-    await waitFor(() => expect(screen.getByRole('heading', { name: 'Step by step' })).toHaveFocus());
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Step by step' })).toHaveFocus(),
+    );
     expect(screen.queryByRole('button', { name: /Try again/ })).not.toBeInTheDocument();
   });
 
   it('without setup data or documents it says why', async () => {
     mockApi({
-      [`GET /resources/${ID}`]: () => makeDetail({ card: makeCard({ type: 'LIBRARY', title: 'acme-lib' }) }),
-      [`GET /resources/${ID}/setup`]: () => ({ resourceId: ID, title: 'acme-lib', version: null, options: [], clients: [], sources: [] }),
-      [`POST /resources/${ID}/guide`]: () => ({ ...STEPS, title: 'acme-lib', status: 'NO_MATERIAL', sections: [], documents: [], model: null, rejected: 0 }),
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({ card: makeCard({ type: 'LIBRARY', title: 'acme-lib' }) }),
+      [`GET /resources/${ID}/setup`]: () => ({
+        resourceId: ID,
+        title: 'acme-lib',
+        version: null,
+        options: [],
+        clients: [],
+        sources: [],
+      }),
+      [`POST /resources/${ID}/guide`]: () => ({
+        ...STEPS,
+        title: 'acme-lib',
+        status: 'NO_MATERIAL',
+        sections: [],
+        documents: [],
+        model: null,
+        rejected: 0,
+      }),
     });
     renderApp(`/resource/${ID}`);
     await userEvent.click(await screen.findByRole('button', { name: 'Guide me' }));
@@ -137,7 +328,10 @@ describe('resource detail', () => {
   });
 
   it('offers no Guide me on a paper', async () => {
-    mockApi({ [`GET /resources/${ID}`]: () => makeDetail({ card: makeCard({ type: 'PAPER', title: 'A survey' }) }) });
+    mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({ card: makeCard({ type: 'PAPER', title: 'A survey' }) }),
+    });
     renderApp(`/resource/${ID}`);
     await screen.findByRole('heading', { name: 'A survey' });
     expect(screen.queryByRole('button', { name: 'Guide me' })).not.toBeInTheDocument();
@@ -147,24 +341,64 @@ describe('resource detail', () => {
     mockApi({ [`GET /resources/${ID}`]: () => makeDetail() });
     renderApp(`/resource/${ID}`);
     await screen.findByRole('heading', { name: 'Verified relationships' });
-    expect(screen.queryByRole('heading', { name: /Unverified candidates/ })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: /Unverified candidates/ }),
+    ).not.toBeInTheDocument();
     expect(screen.getByText('No verified relationships.')).toBeInTheDocument();
   });
 
   it('marks values extracted by AI as AI-generated and values stated by the source not (ADR 0038)', async () => {
-    mockApi({ [`GET /resources/${ID}`]: () => makeDetail({ assertions: [
-      { field: 'license', value: 'MIT', origin: 'AI_EXTRACTED', verification: 'VERIFIED', sourceId: 'github', evidence: [ev] },
-      { field: 'stars', value: '120', origin: 'SOURCE_PROVIDED', verification: 'VERIFIED', sourceId: 'github', evidence: [] },
-    ] }) });
+    mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({
+          assertions: [
+            {
+              field: 'license',
+              value: 'MIT',
+              origin: 'AI_EXTRACTED',
+              verification: 'VERIFIED',
+              sourceId: 'github',
+              evidence: [ev],
+            },
+            {
+              field: 'stars',
+              value: '120',
+              origin: 'SOURCE_PROVIDED',
+              verification: 'VERIFIED',
+              sourceId: 'github',
+              evidence: [],
+            },
+          ],
+        }),
+    });
     renderApp(`/resource/${ID}`);
     const license = await screen.findByRole('rowheader', { name: 'license' });
     const stars = screen.getByRole('rowheader', { name: 'stars' });
-    expect(within(license.closest('tr') as HTMLElement).getByText('MIT')).toHaveAttribute('data-ai-generated', 'true');
-    expect(within(stars.closest('tr') as HTMLElement).getByText('120')).not.toHaveAttribute('data-ai-generated');
+    expect(within(license.closest('tr') as HTMLElement).getByText('MIT')).toHaveAttribute(
+      'data-ai-generated',
+      'true',
+    );
+    expect(within(stars.closest('tr') as HTMLElement).getByText('120')).not.toHaveAttribute(
+      'data-ai-generated',
+    );
   });
 
   it('renders assertions with origin, verification and evidence excerpt', async () => {
-    mockApi({ [`GET /resources/${ID}`]: () => makeDetail({ assertions: [{ field: 'license', value: 'MIT', origin: 'AI_EXTRACTED', verification: 'VERIFIED', sourceId: 'github', evidence: [ev] }] }) });
+    mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({
+          assertions: [
+            {
+              field: 'license',
+              value: 'MIT',
+              origin: 'AI_EXTRACTED',
+              verification: 'VERIFIED',
+              sourceId: 'github',
+              evidence: [ev],
+            },
+          ],
+        }),
+    });
     renderApp(`/resource/${ID}`);
     const table = await screen.findByRole('table', { name: '' }).catch(() => null);
     expect(table ?? true).toBeTruthy();
@@ -175,14 +409,27 @@ describe('resource detail', () => {
   });
 
   it('explains missing AI summary by enrichment status', async () => {
-    mockApi({ [`GET /resources/${ID}`]: () => makeDetail({ enrichmentStatus: 'LLM_UNAVAILABLE' }) });
+    mockApi({
+      [`GET /resources/${ID}`]: () => makeDetail({ enrichmentStatus: 'LLM_UNAVAILABLE' }),
+    });
     renderApp(`/resource/${ID}`);
     expect(await screen.findByText('No AI summary')).toBeInTheDocument();
     expect(screen.getByText(/language model was unavailable/)).toBeInTheDocument();
   });
 
   it('shows summary claims with citations', async () => {
-    mockApi({ [`GET /resources/${ID}`]: () => makeDetail({ enrichmentStatus: 'VALIDATED', summary: { claims: [{ text: 'It translates PDFs.', evidence: [ev] }], model: 'm1', promptVersion: 'v3', generatedAt: '2026-10-21T00:00:00Z' } }) });
+    mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({
+          enrichmentStatus: 'VALIDATED',
+          summary: {
+            claims: [{ text: 'It translates PDFs.', evidence: [ev] }],
+            model: 'm1',
+            promptVersion: 'v3',
+            generatedAt: '2026-10-21T00:00:00Z',
+          },
+        }),
+    });
     renderApp(`/resource/${ID}`);
     const claim = await screen.findByText('It translates PDFs.');
     expect(claim).toHaveAttribute('data-ai-generated', 'true');
@@ -207,7 +454,14 @@ describe('resource detail', () => {
 
 describe('report form', () => {
   const open = async () => {
-    const m = mockApi({ [`GET /resources/${ID}`]: () => makeDetail() , [`POST /resources/${ID}/reports`]: () => new Response(JSON.stringify({ reportId: '55555555-5555-5555-8555-555555555555' }), { status: 202, headers: { 'content-type': 'application/json' } }) });
+    const m = mockApi({
+      [`GET /resources/${ID}`]: () => makeDetail(),
+      [`POST /resources/${ID}/reports`]: () =>
+        new Response(JSON.stringify({ reportId: '55555555-5555-5555-8555-555555555555' }), {
+          status: 202,
+          headers: { 'content-type': 'application/json' },
+        }),
+    });
     renderApp(`/resource/${ID}`);
     await screen.findByRole('heading', { name: 'Report wrong or outdated info' });
     return m;
@@ -225,23 +479,42 @@ describe('report form', () => {
     const m = await open();
     await userEvent.selectOptions(screen.getByLabelText('What is the problem?'), 'OUTDATED');
     await userEvent.type(screen.getByLabelText(/Which field/), 'license');
-    await userEvent.type(screen.getByLabelText('Describe the problem'), 'License changed to Apache.');
+    await userEvent.type(
+      screen.getByLabelText('Describe the problem'),
+      'License changed to Apache.',
+    );
     await userEvent.click(screen.getByRole('button', { name: 'Send report' }));
     expect(await screen.findByRole('status')).toHaveTextContent('Thank you');
-    expect(m.callsTo('POST', `/resources/${ID}/reports`)[0]?.body).toEqual({ kind: 'OUTDATED', field: 'license', message: 'License changed to Apache.' });
+    expect(m.callsTo('POST', `/resources/${ID}/reports`)[0]?.body).toEqual({
+      kind: 'OUTDATED',
+      field: 'license',
+      message: 'License changed to Apache.',
+    });
   });
 
   it('sends field as null when left empty', async () => {
     const m = await open();
     await userEvent.type(screen.getByLabelText('Describe the problem'), 'Wrong price shown');
     await userEvent.click(screen.getByRole('button', { name: 'Send report' }));
-    await waitFor(() => expect(m.callsTo('POST', `/resources/${ID}/reports`)[0]?.body).toMatchObject({ kind: 'WRONG', field: null }));
+    await waitFor(() =>
+      expect(m.callsTo('POST', `/resources/${ID}/reports`)[0]?.body).toMatchObject({
+        kind: 'WRONG',
+        field: null,
+      }),
+    );
   });
 
   it('shows the server problem detail on failure and allows retry', async () => {
-    mockApi({ [`GET /resources/${ID}`]: () => makeDetail(), [`POST /resources/${ID}/reports`]: () => problem(429, 'Too many', 'Too many reports, slow down.') });
+    mockApi({
+      [`GET /resources/${ID}`]: () => makeDetail(),
+      [`POST /resources/${ID}/reports`]: () =>
+        problem(429, 'Too many', 'Too many reports, slow down.'),
+    });
     renderApp(`/resource/${ID}`);
-    await userEvent.type(await screen.findByLabelText('Describe the problem'), 'Something wrong here');
+    await userEvent.type(
+      await screen.findByLabelText('Describe the problem'),
+      'Something wrong here',
+    );
     await userEvent.click(screen.getByRole('button', { name: 'Send report' }));
     expect(await screen.findByText('Too many reports, slow down.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Send report' })).toBeEnabled();
@@ -249,21 +522,40 @@ describe('report form', () => {
 
   it('starts fresh when it moves to another resource: a report sent on one does not show on the next', async () => {
     const OTHER = '22222222-2222-5222-8222-222222222222';
-    const to = (targetId: string, targetTitle: string): Relationship => ({ kind: 'INTEGRATES_WITH', targetTitle, targetId, verification: 'VERIFIED', evidence: [ev] });
+    const to = (targetId: string, targetTitle: string): Relationship => ({
+      kind: 'INTEGRATES_WITH',
+      targetTitle,
+      targetId,
+      verification: 'VERIFIED',
+      evidence: [ev],
+    });
     mockApi({
-      [`GET /resources/${ID}`]: () => makeDetail({ card: makeCard({ id: ID, title: 'First tool' }), relationships: [to(OTHER, 'Other tool')] }),
-      [`GET /resources/${OTHER}`]: () => makeDetail({ card: makeCard({ id: OTHER, title: 'Other tool' }), relationships: [to(ID, 'First tool')] }),
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({
+          card: makeCard({ id: ID, title: 'First tool' }),
+          relationships: [to(OTHER, 'Other tool')],
+        }),
+      [`GET /resources/${OTHER}`]: () =>
+        makeDetail({
+          card: makeCard({ id: OTHER, title: 'Other tool' }),
+          relationships: [to(ID, 'First tool')],
+        }),
       [`POST /resources/${OTHER}/reports`]: () => ({ id: '55555555-5555-5555-8555-555555555555' }),
     });
     renderApp(`/resource/${ID}`);
     await userEvent.click(await screen.findByRole('link', { name: 'Other tool' }));
-    await userEvent.type(await screen.findByLabelText('Describe the problem'), 'The price is wrong.');
+    await userEvent.type(
+      await screen.findByLabelText('Describe the problem'),
+      'The price is wrong.',
+    );
     await userEvent.click(screen.getByRole('button', { name: 'Send report' }));
     expect(await screen.findByText(/Your report was sent/)).toBeInTheDocument();
 
     // Back to the first one, which is still in the response cache, so it renders at once.
     await userEvent.click(screen.getByRole('link', { name: 'First tool' }));
-    expect(await screen.findByRole('heading', { level: 1, name: 'First tool' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'First tool' }),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/Your report was sent/)).not.toBeInTheDocument();
     expect(screen.getByLabelText('Describe the problem')).toHaveValue('');
   });

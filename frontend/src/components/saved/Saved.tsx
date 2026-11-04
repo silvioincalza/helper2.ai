@@ -31,31 +31,60 @@ export function Saved() {
       <header className="h2-page-head">
         <h1>{t('saved.title')}</h1>
         <p className="h2-page-head__lede">
-          {mode === 'server' ? t('saved.serverNote') : canSignIn ? t('saved.localNoteSignIn') : t('saved.localNote')}
+          {mode === 'server'
+            ? t('saved.serverNote')
+            : canSignIn
+              ? t('saved.localNoteSignIn')
+              : t('saved.localNote')}
         </p>
-        {canSignIn && <div className="h2-saved__signin"><SignIn /></div>}
+        {canSignIn && (
+          <div className="h2-saved__signin">
+            <SignIn />
+          </div>
+        )}
       </header>
-      {storageFailed && <p role="alert" className="banner banner-warn">{t('saved.storageFailed')}</p>}
+      {storageFailed && (
+        <p role="alert" className="banner banner-warn">
+          {t('saved.storageFailed')}
+        </p>
+      )}
       {serverError && (
         <p role="alert" className="banner banner-warn">
-          {t('saved.serverError')} <button type="button" className="btn" onClick={retry}>{t('common.retry')}</button>
+          {t('saved.serverError')}{' '}
+          <button type="button" className="btn" onClick={retry}>
+            {t('common.retry')}
+          </button>
         </p>
       )}
       {items.length === 0 ? (
         <div className="h2-saved__empty">
           <p>{t('saved.empty')}</p>
-          <Link className="btn btn-primary" to="/">{t('detail.backToSearch')}</Link>
+          <Link className="btn btn-primary" to="/">
+            {t('detail.backToSearch')}
+          </Link>
         </div>
       ) : (
         <>
           {types.length > 1 && (
             <nav className="h2-tabs" aria-label={t('saved.types')}>
-              <button type="button" className="h2-tab" aria-pressed={type === null} onClick={() => setType(null)}>
+              <button
+                type="button"
+                className="h2-tab"
+                aria-pressed={type === null}
+                onClick={() => setType(null)}
+              >
                 {t('results.allTypes')} <span className="h2-tab__n">{items.length}</span>
               </button>
               {types.map((ty) => (
-                <button key={ty} type="button" className="h2-tab" aria-pressed={type === ty} onClick={() => setType(ty)}>
-                  {t(`type.${ty}`)} <span className="h2-tab__n">{items.filter((b) => b.type === ty).length}</span>
+                <button
+                  key={ty}
+                  type="button"
+                  className="h2-tab"
+                  aria-pressed={type === ty}
+                  onClick={() => setType(ty)}
+                >
+                  {t(`type.${ty}`)}{' '}
+                  <span className="h2-tab__n">{items.filter((b) => b.type === ty).length}</span>
                 </button>
               ))}
             </nav>
@@ -68,10 +97,17 @@ export function Saved() {
                   <span className="h2-saved__host">{hostname(b.url)}</span>
                   <span>{t('saved.savedAt', { date: formatDate(b.savedAt, i18n.language) })}</span>
                 </div>
-                <h2 className="h2-saved__title"><Link to={resourcePath(b.resourceId)}>{b.title}</Link></h2>
+                <h2 className="h2-saved__title">
+                  <Link to={resourcePath(b.resourceId)}>{b.title}</Link>
+                </h2>
                 <div className="h2-saved__actions">
                   <ExternalLink url={b.url} showHost={false} />
-                  <button type="button" className="btn" aria-label={t('saved.removeLabel', { title: b.title })} onClick={() => remove(b.resourceId)}>
+                  <button
+                    type="button"
+                    className="btn"
+                    aria-label={t('saved.removeLabel', { title: b.title })}
+                    onClick={() => remove(b.resourceId)}
+                  >
                     {t('saved.remove')}
                   </button>
                 </div>

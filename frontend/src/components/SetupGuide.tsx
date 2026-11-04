@@ -1,4 +1,13 @@
-import { createContext, type HTMLAttributes, type Ref, useContext, useEffect, useId, useRef, useState } from 'react';
+import {
+  createContext,
+  type HTMLAttributes,
+  type Ref,
+  useContext,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from 'react';
 import { aiMark } from '@/lib/aiMark';
 import { useTranslation } from 'react-i18next';
 import { api } from '@/api/client';
@@ -30,13 +39,19 @@ function remember(id: string) {
 }
 
 /** A heading at a level that fits where the panel sits (h2 on the detail page, h4 inside a result card). */
-function H({ level, ...props }: { level: number } & HTMLAttributes<HTMLHeadingElement> & { ref?: Ref<HTMLHeadingElement> }) {
+function H({
+  level,
+  ...props
+}: { level: number } & HTMLAttributes<HTMLHeadingElement> & { ref?: Ref<HTMLHeadingElement> }) {
   const Tag = `h${Math.min(Math.max(level, 2), 6)}` as 'h2';
   return <Tag {...props} />;
 }
 
 /** One open guide per list: opening a card's guide closes the one that was open. */
-export const OpenGuideContext = createContext<{ openId: string | null; setOpenId: (id: string | null) => void } | null>(null);
+export const OpenGuideContext = createContext<{
+  openId: string | null;
+  setOpenId: (id: string | null) => void;
+} | null>(null);
 
 /** Open state of one tool's guide: shared through [OpenGuideContext] in a list, local elsewhere. */
 export function useGuideToggle(id: string) {
@@ -48,15 +63,35 @@ export function useGuideToggle(id: string) {
 }
 
 /** The "Guide me" button; [bodyId] is the panel it opens. */
-export function GuideMeButton({ title, open, onToggle, bodyId, primary = false, buttonRef }: {
-  title: string; open: boolean; onToggle: () => void; bodyId: string; primary?: boolean; buttonRef?: Ref<HTMLButtonElement>;
+export function GuideMeButton({
+  title,
+  open,
+  onToggle,
+  bodyId,
+  primary = false,
+  buttonRef,
+}: {
+  title: string;
+  open: boolean;
+  onToggle: () => void;
+  bodyId: string;
+  primary?: boolean;
+  buttonRef?: Ref<HTMLButtonElement>;
 }) {
   const { t } = useTranslation();
   const name = { title, interpolation: { escapeValue: false } };
   return (
-    <button ref={buttonRef} type="button" className={`btn ${primary ? 'btn-primary' : 'btn-ghost'} guide-me`} aria-expanded={open}
-      aria-controls={bodyId} aria-label={primary ? undefined : t('guideMe.aria', name)} onClick={onToggle}>
-      {!primary && <Icon name="sparkle" />}{t('guideMe.label')}
+    <button
+      ref={buttonRef}
+      type="button"
+      className={`btn ${primary ? 'btn-primary' : 'btn-ghost'} guide-me`}
+      aria-expanded={open}
+      aria-controls={bodyId}
+      aria-label={primary ? undefined : t('guideMe.aria', name)}
+      onClick={onToggle}
+    >
+      {!primary && <Icon name="sparkle" />}
+      {t('guideMe.label')}
     </button>
   );
 }
@@ -88,9 +123,14 @@ export function SetupGuidePanel({ id, title }: { id: string; title: string }) {
   const { open, toggle } = useGuideToggle(id);
   const bodyId = `setup-${useId()}`;
   return (
-    <section className="setup" aria-label={t('setup.title', { title, interpolation: { escapeValue: false } })}>
+    <section
+      className="setup"
+      aria-label={t('setup.title', { title, interpolation: { escapeValue: false } })}
+    >
       <GuideMeButton title={title} open={open} onToggle={toggle} bodyId={bodyId} primary />
-      <div id={bodyId} hidden={!open}>{open && <GuideBody id={id} title={title} level={2} />}</div>
+      <div id={bodyId} hidden={!open}>
+        {open && <GuideBody id={id} title={title} level={2} />}
+      </div>
     </section>
   );
 }
@@ -98,7 +138,12 @@ export function SetupGuidePanel({ id, title }: { id: string; title: string }) {
 function ConnectPart({ id, level }: { id: string; level: number }) {
   const { t, i18n } = useTranslation();
   const q = useApi(`setup/${id}`, (signal) => api.getResourceSetup(id, signal));
-  if (q.loading) return <p className="muted small" role="status">{t('setup.loading')}</p>;
+  if (q.loading)
+    return (
+      <p className="muted small" role="status">
+        {t('setup.loading')}
+      </p>
+    );
   // Without registry or README config data there is nothing to connect; the steps below still help.
   if (q.error !== undefined || !q.data || q.data.options.length === 0) return null;
   return <SetupAnswer guide={q.data} locale={i18n.language} level={level} />;
@@ -118,13 +163,21 @@ function SetupAnswer({ guide, locale, level }: { guide: Guide; locale: string; l
 
   return (
     <section className="setup-part" aria-labelledby={`${uid}-h`}>
-      <H level={level} id={`${uid}-h`} className="setup-part-h">{t('setup.connectTitle')}</H>
+      <H level={level} id={`${uid}-h`} className="setup-part-h">
+        {t('setup.connectTitle')}
+      </H>
       {guide.options.length > 1 && (
         <fieldset className="setup-options">
           <legend className="filter-legend">{t('setup.howToRun')}</legend>
           {guide.options.map((o) => (
             <label key={o.id} className="chip">
-              <input type="radio" name={`${uid}-option`} value={o.id} checked={o.id === option.id} onChange={() => setOptionId(o.id)} />
+              <input
+                type="radio"
+                name={`${uid}-option`}
+                value={o.id}
+                checked={o.id === option.id}
+                onChange={() => setOptionId(o.id)}
+              />
               {o.label}
             </label>
           ))}
@@ -134,9 +187,22 @@ function SetupAnswer({ guide, locale, level }: { guide: Guide; locale: string; l
       <OptionFacts option={option} />
 
       <div className="setup-client">
-        <label htmlFor={`${uid}-client`} className="filter-legend">{t('setup.yourTool')}</label>
-        <select id={`${uid}-client`} value={client.id} onChange={(e) => { setClientId(e.target.value); remember(e.target.value); }}>
-          {guide.clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+        <label htmlFor={`${uid}-client`} className="filter-legend">
+          {t('setup.yourTool')}
+        </label>
+        <select
+          id={`${uid}-client`}
+          value={client.id}
+          onChange={(e) => {
+            setClientId(e.target.value);
+            remember(e.target.value);
+          }}
+        >
+          {guide.clients.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
         </select>
       </div>
 
@@ -147,8 +213,13 @@ function SetupAnswer({ guide, locale, level }: { guide: Guide; locale: string; l
           <Icon name="info" />{' '}
           {source.sourceId === 'readme'
             ? t('setup.fromReadme', { date: formatDate(source.retrievedAt, locale) })
-            : t('setup.from', { version: guide.version ?? t('common.unknown'), date: formatDate(source.retrievedAt, locale) })}{' '}
-          <ExternalLink url={source.url} showHost={false}>{source.sourceId === 'readme' ? t('setup.readme') : t('setup.registryEntry')}</ExternalLink>
+            : t('setup.from', {
+                version: guide.version ?? t('common.unknown'),
+                date: formatDate(source.retrievedAt, locale),
+              })}{' '}
+          <ExternalLink url={source.url} showHost={false}>
+            {source.sourceId === 'readme' ? t('setup.readme') : t('setup.registryEntry')}
+          </ExternalLink>
         </p>
       )}
     </section>
@@ -163,12 +234,21 @@ function StepsPart({ id, title, level }: { id: string; title: string; level: num
   const { retry, focusRef } = useRetry(q.reload, q.loading);
   return (
     <section className="setup-part" aria-labelledby={`${uid}-h`}>
-      <H level={level} id={`${uid}-h`} ref={focusRef} tabIndex={-1} className="setup-part-h">{t('setup.stepsTitle')}</H>
+      <H level={level} id={`${uid}-h`} ref={focusRef} tabIndex={-1} className="setup-part-h">
+        {t('setup.stepsTitle')}
+      </H>
       <div aria-live="polite" aria-busy={q.loading}>
         {q.loading ? (
-          <p className="muted" role="status">{t('setup.reading')}</p>
+          <p className="muted" role="status">
+            {t('setup.reading')}
+          </p>
         ) : q.error !== undefined || !q.data ? (
-          <StatePanel tone="error" level={level + 1} title={t('setup.stepsError')} next={<RetryButton onClick={retry} />} />
+          <StatePanel
+            tone="error"
+            level={level + 1}
+            title={t('setup.stepsError')}
+            next={<RetryButton onClick={retry} />}
+          />
         ) : (
           <ToolSteps guide={q.data} title={title} level={level + 1} />
         )}
@@ -181,31 +261,52 @@ function ToolSteps({ guide, title, level }: { guide: ToolGuide; title: string; l
   const { t, i18n } = useTranslation();
   const name = { title, interpolation: { escapeValue: false } };
   if (guide.status !== 'OK') {
-    const key = guide.status === 'LLM_UNAVAILABLE' && guide.unavailable === 'budget' ? 'setup.status.BUDGET' : `setup.status.${guide.status}`;
-    return <p className="notice"><Icon name="info" /> {t(key, name)}</p>;
+    const key =
+      guide.status === 'LLM_UNAVAILABLE' && guide.unavailable === 'budget'
+        ? 'setup.status.BUDGET'
+        : `setup.status.${guide.status}`;
+    return (
+      <p className="notice">
+        <Icon name="info" /> {t(key, name)}
+      </p>
+    );
   }
   const docs = new Map(guide.documents.map((d) => [d.key, d]));
   return (
     <>
-      <p className="small muted"><Icon name="info" /> {t('setup.stepsNote')}</p>
+      <p className="small muted">
+        <Icon name="info" /> {t('setup.stepsNote')}
+      </p>
       {guide.sections.map((s) => (
         <div key={s.kind} className="setup-section">
-          <H level={level} className="setup-section-h">{t(`setup.section.${s.kind}`)}</H>
+          <H level={level} className="setup-section-h">
+            {t(`setup.section.${s.kind}`)}
+          </H>
           <ol className="setup-steps">
             {s.steps.map((st, i) => {
               const doc = docs.get(st.source);
               return (
                 <li key={i}>
-                  <p className="setup-step-text" {...aiMark(guide.model)}>{st.text}</p>
+                  <p className="setup-step-text" {...aiMark(guide.model)}>
+                    {st.text}
+                  </p>
                   {st.code && (
                     <div className="setup-step-code">
-                      <pre className="setup-code" data-language={st.code.language ?? undefined}><code>{st.code.text}</code></pre>
+                      <pre className="setup-code" data-language={st.code.language ?? undefined}>
+                        <code>{st.code.text}</code>
+                      </pre>
                       <CopyButton text={st.code.text} />
                     </div>
                   )}
-                  {st.caution && <p className="notice notice-warn small"><Icon name="warn" /> {t('setup.caution')}</p>}
+                  {st.caution && (
+                    <p className="notice notice-warn small">
+                      <Icon name="warn" /> {t('setup.caution')}
+                    </p>
+                  )}
                   <details className="setup-quote">
-                    <summary>{t('setup.quoteLabel', { doc: doc ? t(`setup.doc.${doc.kind}`) : st.source })}</summary>
+                    <summary>
+                      {t('setup.quoteLabel', { doc: doc ? t(`setup.doc.${doc.kind}`) : st.source })}
+                    </summary>
                     <blockquote>{st.quote}</blockquote>
                   </details>
                 </li>
@@ -216,7 +317,13 @@ function ToolSteps({ guide, title, level }: { guide: ToolGuide; title: string; l
       ))}
       <p className="muted small setup-source">
         {guide.documents.map((d, i) => (
-          <span key={d.key}>{i > 0 && ' · '}<ExternalLink url={d.url} showHost={false}>{t(`setup.doc.${d.kind}`)}</ExternalLink> {t('setup.readOn', { date: formatDate(d.retrievedAt, i18n.language) })}</span>
+          <span key={d.key}>
+            {i > 0 && ' · '}
+            <ExternalLink url={d.url} showHost={false}>
+              {t(`setup.doc.${d.kind}`)}
+            </ExternalLink>{' '}
+            {t('setup.readOn', { date: formatDate(d.retrievedAt, i18n.language) })}
+          </span>
         ))}
         {guide.model && <> · {t('setup.writtenBy', { model: guide.model })}</>}
       </p>
@@ -229,15 +336,25 @@ function OptionFacts({ option }: { option: SetupOption }) {
   return (
     <div className="setup-facts">
       {option.kind === 'REMOTE' ? (
-        <p>{t('setup.remote')} <code>{option.url}</code></p>
+        <p>
+          {t('setup.remote')} <code>{option.url}</code>
+        </p>
       ) : option.kind === 'COMMAND' ? (
-        <p>{t('setup.command', { cmd: option.runtime })}{option.requires && <> · {t('setup.requires', { what: option.requires })}</>}</p>
+        <p>
+          {t('setup.command', { cmd: option.runtime })}
+          {option.requires && <> · {t('setup.requires', { what: option.requires })}</>}
+        </p>
       ) : (
-        <p>{t('setup.package', { type: option.registryType, id: option.identifier })}{option.requires && <> · {t('setup.requires', { what: option.requires })}</>}</p>
+        <p>
+          {t('setup.package', { type: option.registryType, id: option.identifier })}
+          {option.requires && <> · {t('setup.requires', { what: option.requires })}</>}
+        </p>
       )}
       {option.settings.length > 0 && (
         <>
-          <p className="small"><strong>{option.kind === 'REMOTE' ? t('setup.headers') : t('setup.env')}</strong></p>
+          <p className="small">
+            <strong>{option.kind === 'REMOTE' ? t('setup.headers') : t('setup.env')}</strong>
+          </p>
           <ul className="plain-list setup-settings">
             {option.settings.map((s) => (
               <li key={s.name}>
@@ -266,17 +383,28 @@ function ClientSnippet({ client, optionId }: { client: SetupClient; optionId: st
       {s.supported && s.text ? (
         <>
           <div className="setup-snippet-head">
-            <span className="small">{s.where && <>{t('setup.where')} <strong>{s.where}</strong></>}</span>
+            <span className="small">
+              {s.where && (
+                <>
+                  {t('setup.where')} <strong>{s.where}</strong>
+                </>
+              )}
+            </span>
             <CopyButton text={s.text} primary />
           </div>
-          <pre className="setup-code" data-language={s.language ?? undefined}><code>{s.text}</code></pre>
+          <pre className="setup-code" data-language={s.language ?? undefined}>
+            <code>{s.text}</code>
+          </pre>
           {s.note && <p className="small muted">{s.note}</p>}
         </>
       ) : (
-        <p className="notice notice-warn"><Icon name="info" /> {t('setup.unsupported', { client: client.name })} {s.note}</p>
+        <p className="notice notice-warn">
+          <Icon name="info" /> {t('setup.unsupported', { client: client.name })} {s.note}
+        </p>
       )}
       <p className="small muted">
-        {t('setup.placeholders')} <ExternalLink url={client.docsUrl}>{t('setup.docs', { client: client.name })}</ExternalLink>
+        {t('setup.placeholders')}{' '}
+        <ExternalLink url={client.docsUrl}>{t('setup.docs', { client: client.name })}</ExternalLink>
       </p>
     </div>
   );

@@ -10,7 +10,10 @@ describe('api client', () => {
     await api.mergeLocalBookmarks([]);
     expect(m.calls[0]?.headers.get('X-XSRF-TOKEN')).toBeNull();
     expect(m.calls[1]?.headers.get('X-XSRF-TOKEN')).toBe('abc=123');
-    expect(m.fetchMock.mock.calls[1]?.[1]).toMatchObject({ credentials: 'same-origin', method: 'POST' });
+    expect(m.fetchMock.mock.calls[1]?.[1]).toMatchObject({
+      credentials: 'same-origin',
+      method: 'POST',
+    });
     document.cookie = 'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT';
   });
   it('sends Accept-Language from the document language', async () => {
@@ -21,7 +24,10 @@ describe('api client', () => {
   });
   it('parses problem+json into ApiError', async () => {
     mockApi({ 'GET /sources': () => problem(429, 'Too many requests', 'Slow down') });
-    await expect(api.listSources()).rejects.toMatchObject({ status: 429, problem: { detail: 'Slow down' } });
+    await expect(api.listSources()).rejects.toMatchObject({
+      status: 429,
+      problem: { detail: 'Slow down' },
+    });
   });
   it('wraps network failures as status 0', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('x')));
@@ -66,8 +72,12 @@ function liveStream() {
   const state = { cancelled: false };
   let ctrl!: ReadableStreamDefaultController<Uint8Array>;
   const body = new ReadableStream<Uint8Array>({
-    start(c) { ctrl = c; },
-    cancel() { state.cancelled = true; },
+    start(c) {
+      ctrl = c;
+    },
+    cancel() {
+      state.cancelled = true;
+    },
   });
   return {
     state,
@@ -77,8 +87,20 @@ function liveStream() {
   };
 }
 
-const ANSWER = { status: 'OK', searchQuery: 'q', recommendations: [], prompt: null, model: null, candidatesConsidered: 0, rejected: 0, sources: [], notices: [], generatedAt: '2026-10-27T09:00:00Z' };
-const ask = (onStep: (s: GuideStep) => void = () => undefined, signal?: AbortSignal) => api.askGuideStream({ request: 'an MCP server' }, onStep, signal);
+const ANSWER = {
+  status: 'OK',
+  searchQuery: 'q',
+  recommendations: [],
+  prompt: null,
+  model: null,
+  candidatesConsidered: 0,
+  rejected: 0,
+  sources: [],
+  notices: [],
+  generatedAt: '2026-10-27T09:00:00Z',
+};
+const ask = (onStep: (s: GuideStep) => void = () => undefined, signal?: AbortSignal) =>
+  api.askGuideStream({ request: 'an MCP server' }, onStep, signal);
 
 describe('guide answer stream', () => {
   afterEach(() => vi.useRealTimers());
@@ -103,7 +125,9 @@ describe('guide answer stream', () => {
     const answer = ask((st) => steps.push(st));
     s.push('event:understood\ndata:{"intent":"SUGGEST","subjects":["mcp"],"window":null}\n\n');
     s.push('event:clarify\ndata:{"question":"Which database?","options":["Postgres","MySQL"]}\n\n');
-    s.push(`event:answer\ndata:${JSON.stringify({ ...ANSWER, status: 'NEEDS_CLARIFICATION' })}\n\n`);
+    s.push(
+      `event:answer\ndata:${JSON.stringify({ ...ANSWER, status: 'NEEDS_CLARIFICATION' })}\n\n`,
+    );
     await expect(answer).resolves.toMatchObject({ status: 'NEEDS_CLARIFICATION' });
     expect(steps).toEqual([
       { kind: 'understood', data: { intent: 'SUGGEST', subjects: ['mcp'], window: null } },
@@ -128,7 +152,9 @@ describe('guide answer stream', () => {
     mockApi({ 'POST /guide/stream': () => s.response() });
     const result = ask().catch((e: unknown) => e);
     let settled = false;
-    void result.then(() => { settled = true; });
+    void result.then(() => {
+      settled = true;
+    });
     await vi.advanceTimersByTimeAsync(30_000);
     s.push('event:planned\ndata:{"searchQuery":"mcp","constraints":[],"model":"m"}\n\n');
     await vi.advanceTimersByTimeAsync(40_000); // 70 s in, 40 s after the last chunk

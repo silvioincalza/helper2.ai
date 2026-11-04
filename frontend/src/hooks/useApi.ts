@@ -60,7 +60,11 @@ export function clearApiCache() {
  * responses can never overwrite fresh ones. `fetcher` must depend only on `key`.
  * A recent answer for the same key is shown at once without a request; `reload` always asks again.
  */
-export function useApi<T>(key: string, fetcher: (signal: AbortSignal) => Promise<T>, options: ApiOptions = {}): ApiState<T> {
+export function useApi<T>(
+  key: string,
+  fetcher: (signal: AbortSignal) => Promise<T>,
+  options: ApiOptions = {},
+): ApiState<T> {
   const useCache = options.cache ?? true;
   // Reloads count per key: a new key starts at 0 again, so a retry on one page does not turn the cache off for the rest.
   const [reloads, setReloads] = useState<{ key: string; n: number }>({ key, n: 0 });
@@ -98,10 +102,19 @@ export function useApi<T>(key: string, fetcher: (signal: AbortSignal) => Promise
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fullKey]);
 
-  const reload = useCallback(() => setReloads((r) => ({ key, n: (r.key === key ? r.n : 0) + 1 })), [key]);
+  const reload = useCallback(
+    () => setReloads((r) => ({ key, n: (r.key === key ? r.n : 0) + 1 })),
+    [key],
+  );
   const current = settled?.key === fullKey ? settled : null;
   if (!current && hit) {
     return { data: hit.data, previous: hit.data, error: undefined, loading: false, reload };
   }
-  return { data: current?.data, previous: lastData, error: current?.error, loading: current === null, reload };
+  return {
+    data: current?.data,
+    previous: lastData,
+    error: current?.error,
+    loading: current === null,
+    reload,
+  };
 }

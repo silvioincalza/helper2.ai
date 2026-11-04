@@ -24,7 +24,13 @@ function resetTime(now = new Date()): string {
  * A limit of [TEST_CEILING] or more is a test environment's ceiling, not a limit a visitor plans around: the count is
  * not said, only that none is left.
  */
-export function WebSearchesLeft({ feature, value }: { feature: 'search' | 'guide'; value: WebSearches | undefined }) {
+export function WebSearchesLeft({
+  feature,
+  value,
+}: {
+  feature: 'search' | 'guide';
+  value: WebSearches | undefined;
+}) {
   const { t } = useTranslation();
   if (!value || value.limit === 0 || value.remaining >= value.limit) return null;
   if (value.limit >= TEST_CEILING && value.remaining > 0) return null;

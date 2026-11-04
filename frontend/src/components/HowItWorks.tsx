@@ -17,7 +17,9 @@ export function HowItWorks() {
         <ol className="plain-list how-steps">
           {HOW_STEPS.map((k, i) => (
             <li key={k} className="how-step">
-              <span className="how-n" aria-hidden="true">{i + 1}</span>
+              <span className="how-n" aria-hidden="true">
+                {i + 1}
+              </span>
               <h3>{t(`how.steps.${k}.title`)}</h3>
               <p>{t(`how.steps.${k}.body`)}</p>
             </li>

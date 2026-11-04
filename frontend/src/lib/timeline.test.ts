@@ -2,7 +2,14 @@ import { known, makeCard, unknownDate } from '@/test/fixtures';
 import { creationDate, formatMonth, groupByCreationMonth } from './timeline';
 
 const card = (id: string, published: ReturnType<typeof known> | typeof unknownDate) =>
-  makeCard({ id, timeline: { published, updated: known('2026-10-25T00:00:00Z'), discovered: known('2026-10-26T00:00:00Z', 'helper2') } });
+  makeCard({
+    id,
+    timeline: {
+      published,
+      updated: known('2026-10-25T00:00:00Z'),
+      discovered: known('2026-10-26T00:00:00Z', 'helper2'),
+    },
+  });
 
 describe('timeline', () => {
   it('uses the creation date the source states, never the discovery (scan) date', () => {
@@ -11,7 +18,13 @@ describe('timeline', () => {
   });
 
   it('keeps a disputed creation date in place, as the API sorts by it', () => {
-    const disputed = { value: '2025-05-01T00:00:00Z', precision: 'DAY' as const, status: 'CONFLICTING' as const, sourceId: null, alternatives: [] };
+    const disputed = {
+      value: '2025-05-01T00:00:00Z',
+      precision: 'DAY' as const,
+      status: 'CONFLICTING' as const,
+      sourceId: null,
+      alternatives: [],
+    };
     expect(creationDate(card('c', disputed))).toBe('2025-05-01T00:00:00Z');
   });
 

@@ -17,7 +17,11 @@ export function ResponseTime({ ms }: { ms: number }) {
 /** The median of the last calls, or "No calls yet" on a live source not called yet. */
 export function ResponseTimeValue({ source }: { source: SourceInfo }) {
   const { t } = useTranslation();
-  return source.responseTimeMs != null ? <ResponseTime ms={source.responseTimeMs} /> : <>{t('sourcesPage.noCalls')}</>;
+  return source.responseTimeMs != null ? (
+    <ResponseTime ms={source.responseTimeMs} />
+  ) : (
+    <>{t('sourcesPage.noCalls')}</>
+  );
 }
 
 /** Today's web credits on the metered source, in words. Nothing on the other sources. */
@@ -27,7 +31,8 @@ export function WebCreditsValue({ source }: { source: SourceInfo }) {
   if (!credits) return null;
   const n = (v: number) => new Intl.NumberFormat(i18n.language).format(v);
   if (credits.kind === 'unavailable') return <>{t('sourcesPage.credits.unavailable')}</>;
-  if (credits.kind === 'uncapped') return <>{t('sourcesPage.credits.uncapped', { used: n(credits.used) })}</>;
+  if (credits.kind === 'uncapped')
+    return <>{t('sourcesPage.credits.uncapped', { used: n(credits.used) })}</>;
   return <>{t('sourcesPage.credits.capped', { used: n(credits.used), cap: n(credits.cap) })}</>;
 }
 
@@ -36,10 +41,11 @@ export function SourceNotes({ source }: { source: SourceInfo }) {
   const { t, i18n } = useTranslation();
   const pause = pauseOf(source);
   if (!pause) return null;
-  const text = pause.kind === 'trying'
-    ? t('sourcesPage.pause.trying')
-    : pause.since
-      ? t('sourcesPage.pause.since', { time: clockTime(pause.since, i18n.language) })
-      : t('sourcesPage.pause.paused');
+  const text =
+    pause.kind === 'trying'
+      ? t('sourcesPage.pause.trying')
+      : pause.since
+        ? t('sourcesPage.pause.since', { time: clockTime(pause.since, i18n.language) })
+        : t('sourcesPage.pause.paused');
   return <p className={`h2-src-card__note is-${pause.kind}`}>{text}</p>;
 }

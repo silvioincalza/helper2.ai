@@ -5,7 +5,13 @@ import { ANON, USER, makeSearch } from '@/test/fixtures';
 import { mockApi, problem } from '@/test/mockApi';
 import { renderApp } from '@/test/render';
 
-const bm = { resourceId: '22222222-2222-5222-8222-222222222222', title: 'Local one', url: 'https://l.example', type: 'MODEL' as const, savedAt: '2026-10-01T00:00:00.000Z' };
+const bm = {
+  resourceId: '22222222-2222-5222-8222-222222222222',
+  title: 'Local one',
+  url: 'https://l.example',
+  type: 'MODEL' as const,
+  savedAt: '2026-10-01T00:00:00.000Z',
+};
 
 describe('bookmarks (local)', () => {
   it('reads and writes localStorage', () => {
@@ -22,8 +28,12 @@ describe('bookmarks (local)', () => {
   });
 
   it('survives localStorage throwing on read and write', () => {
-    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('denied'); });
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('quota'); });
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('denied');
+    });
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('quota');
+    });
     expect(readLocalBookmarks()).toEqual([]);
     expect(writeLocalBookmarks([bm])).toBe(false);
   });
@@ -36,17 +46,24 @@ describe('bookmarks (local)', () => {
     await act(() => router.navigate('/saved'));
     await screen.findByRole('heading', { name: 'Saved resources' });
     expect(screen.getByRole('link', { name: 'Acme Translator' })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: /Remove Acme Translator from saved/ }));
+    await userEvent.click(
+      screen.getByRole('button', { name: /Remove Acme Translator from saved/ }),
+    );
     expect(screen.getByText(/Nothing saved yet/)).toBeInTheDocument();
     expect(readLocalBookmarks()).toEqual([]);
   });
 
   it('keeps working in memory and warns when storage throws', async () => {
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('quota'); });
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('quota');
+    });
     mockApi();
     const { router } = renderApp('/search?q=translate');
     await userEvent.click(await screen.findByRole('button', { name: /Save Acme Translator/ }));
-    expect(screen.getByRole('button', { name: /Save Acme Translator/ })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: /Save Acme Translator/ })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
     await act(() => router.navigate('/saved'));
     expect(await screen.findByRole('alert')).toHaveTextContent(/blocked storage/);
     expect(screen.getByRole('link', { name: 'Acme Translator' })).toBeInTheDocument();
@@ -56,14 +73,35 @@ describe('bookmarks (local)', () => {
 describe('bookmarks (signed in)', () => {
   it('merges local bookmarks into the server once, then uses the server list', async () => {
     writeLocalBookmarks([bm]);
-    const server = [{ resourceId: bm.resourceId, title: 'Local one', url: bm.url, type: 'MODEL', savedAt: '2026-10-22T00:00:00Z' }, { resourceId: '33333333-3333-5333-8333-333333333333', title: 'Server only', url: 'https://s.example', type: null, savedAt: '2026-10-21T00:00:00Z' }];
-    const m = mockApi({ 'GET /me': () => USER, 'POST /me/bookmarks': () => server, 'GET /search': () => makeSearch() });
+    const server = [
+      {
+        resourceId: bm.resourceId,
+        title: 'Local one',
+        url: bm.url,
+        type: 'MODEL',
+        savedAt: '2026-10-22T00:00:00Z',
+      },
+      {
+        resourceId: '33333333-3333-5333-8333-333333333333',
+        title: 'Server only',
+        url: 'https://s.example',
+        type: null,
+        savedAt: '2026-10-21T00:00:00Z',
+      },
+    ];
+    const m = mockApi({
+      'GET /me': () => USER,
+      'POST /me/bookmarks': () => server,
+      'GET /search': () => makeSearch(),
+    });
     const { router } = renderApp('/saved');
     expect(await screen.findByRole('link', { name: 'Server only' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Local one' })).toBeInTheDocument();
     const posts = m.callsTo('POST', '/me/bookmarks');
     expect(posts).toHaveLength(1);
-    expect(posts[0]?.body).toEqual([{ resourceId: bm.resourceId, title: 'Local one', url: bm.url, type: 'MODEL' }]);
+    expect(posts[0]?.body).toEqual([
+      { resourceId: bm.resourceId, title: 'Local one', url: bm.url, type: 'MODEL' },
+    ]);
     await waitFor(() => expect(readLocalBookmarks()).toEqual([]));
     await act(() => router.navigate('/sources'));
     await act(() => router.navigate('/saved'));
@@ -72,23 +110,52 @@ describe('bookmarks (signed in)', () => {
   });
 
   it('uses GET when there is nothing to merge, and DELETE on remove', async () => {
-    const list = [{ resourceId: bm.resourceId, title: 'Srv', url: bm.url, type: null, savedAt: '2026-10-22T00:00:00Z' }];
-    const m = mockApi({ 'GET /me': () => USER, 'GET /me/bookmarks': () => list, 'DELETE /me/bookmarks/*': () => undefined });
+    const list = [
+      {
+        resourceId: bm.resourceId,
+        title: 'Srv',
+        url: bm.url,
+        type: null,
+        savedAt: '2026-10-22T00:00:00Z',
+      },
+    ];
+    const m = mockApi({
+      'GET /me': () => USER,
+      'GET /me/bookmarks': () => list,
+      'DELETE /me/bookmarks/*': () => undefined,
+    });
     renderApp('/saved');
     await userEvent.click(await screen.findByRole('button', { name: /Remove Srv from saved/ }));
     expect(m.callsTo('GET', '/me/bookmarks')).toHaveLength(1);
-    await waitFor(() => expect(m.callsTo('DELETE', `/me/bookmarks/${bm.resourceId}`)).toHaveLength(1));
+    await waitFor(() =>
+      expect(m.callsTo('DELETE', `/me/bookmarks/${bm.resourceId}`)).toHaveLength(1),
+    );
     expect(screen.getByText(/Nothing saved yet/)).toBeInTheDocument();
   });
 
   const ACME = '11111111-1111-5111-8111-111111111111';
-  const stored = { resourceId: ACME, title: 'Acme Translator', url: 'https://acme.example', type: 'PRODUCT', savedAt: '2026-10-22T00:00:00Z' };
+  const stored = {
+    resourceId: ACME,
+    title: 'Acme Translator',
+    url: 'https://acme.example',
+    type: 'PRODUCT',
+    savedAt: '2026-10-22T00:00:00Z',
+  };
 
   it('shows Saved at once, before the account answers, so a second click cannot save twice', async () => {
     let answer: (v: unknown) => void = () => {};
-    const m = mockApi({ 'GET /me': () => USER, 'GET /me/bookmarks': () => [], [`PUT /me/bookmarks/${ACME}`]: () => new Promise((r) => { answer = r; }) });
+    const m = mockApi({
+      'GET /me': () => USER,
+      'GET /me/bookmarks': () => [],
+      [`PUT /me/bookmarks/${ACME}`]: () =>
+        new Promise((r) => {
+          answer = r;
+        }),
+    });
     const { router } = renderApp('/search?q=translate');
-    const save = (await screen.findAllByRole('button', { name: /Save Acme Translator/ }))[0] as HTMLElement;
+    const save = (
+      await screen.findAllByRole('button', { name: /Save Acme Translator/ })
+    )[0] as HTMLElement;
     await waitFor(() => expect(m.callsTo('GET', '/me/bookmarks')).toHaveLength(1));
     await userEvent.click(save);
     expect(save).toHaveAttribute('aria-pressed', 'true');
@@ -99,9 +166,15 @@ describe('bookmarks (signed in)', () => {
   });
 
   it('a failed save is undone and says so', async () => {
-    const m = mockApi({ 'GET /me': () => USER, 'GET /me/bookmarks': () => [], [`PUT /me/bookmarks/${ACME}`]: () => problem(500, 'Boom') });
+    const m = mockApi({
+      'GET /me': () => USER,
+      'GET /me/bookmarks': () => [],
+      [`PUT /me/bookmarks/${ACME}`]: () => problem(500, 'Boom'),
+    });
     renderApp('/search?q=translate');
-    const save = (await screen.findAllByRole('button', { name: /Save Acme Translator/ }))[0] as HTMLElement;
+    const save = (
+      await screen.findAllByRole('button', { name: /Save Acme Translator/ })
+    )[0] as HTMLElement;
     await waitFor(() => expect(m.callsTo('GET', '/me/bookmarks')).toHaveLength(1));
     await userEvent.click(save);
     await waitFor(() => expect(save).toHaveAttribute('aria-pressed', 'false'));
@@ -110,8 +183,19 @@ describe('bookmarks (signed in)', () => {
   it('when the merge after sign-in fails, the browser list stays and Try again merges it', async () => {
     writeLocalBookmarks([bm]);
     let fail = true;
-    const server = [{ resourceId: bm.resourceId, title: 'Local one', url: bm.url, type: 'MODEL', savedAt: '2026-10-22T00:00:00Z' }];
-    const m = mockApi({ 'GET /me': () => USER, 'POST /me/bookmarks': () => (fail ? problem(500, 'Boom') : server) });
+    const server = [
+      {
+        resourceId: bm.resourceId,
+        title: 'Local one',
+        url: bm.url,
+        type: 'MODEL',
+        savedAt: '2026-10-22T00:00:00Z',
+      },
+    ];
+    const m = mockApi({
+      'GET /me': () => USER,
+      'POST /me/bookmarks': () => (fail ? problem(500, 'Boom') : server),
+    });
     renderApp('/saved');
     expect(await screen.findByText('Could not sync with your account.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Local one' })).toBeInTheDocument();
@@ -119,7 +203,9 @@ describe('bookmarks (signed in)', () => {
     fail = false;
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(m.callsTo('POST', '/me/bookmarks')).toHaveLength(2));
-    await waitFor(() => expect(screen.queryByText('Could not sync with your account.')).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByText('Could not sync with your account.')).not.toBeInTheDocument(),
+    );
     expect(screen.getByRole('link', { name: 'Local one' })).toBeInTheDocument();
     await waitFor(() => expect(readLocalBookmarks()).toEqual([]));
   });

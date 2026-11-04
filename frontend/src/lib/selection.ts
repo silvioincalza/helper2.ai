@@ -5,7 +5,11 @@ import type { GuideResponse } from '@/api/types';
  * guide's pick #1), else the first. An id the user chose always wins. The id only picks among results already loaded,
  * so an unknown or old id never fetches anything.
  */
-export function selectedResult<T extends { id: string }>(results: readonly T[], id: string | null, preferred?: string): T | undefined {
+export function selectedResult<T extends { id: string }>(
+  results: readonly T[],
+  id: string | null,
+  preferred?: string,
+): T | undefined {
   const find = (x: string | null | undefined) => (x ? results.find((r) => r.id === x) : undefined);
   return find(id) ?? find(preferred) ?? results[0];
 }
@@ -33,8 +37,13 @@ export function guidePicks(answer: GuideResponse | null): GuidePick[] {
   return answer.recommendations
     .filter((r) => r.aiReasoned)
     .map((r, i) => ({
-      rank: i + 1, resourceId: r.resourceId, title: r.title, reason: r.reason.trim(), quote: r.quote,
-      reasonCheck: r.reasonCheck, checks: r.checks ?? [],
+      rank: i + 1,
+      resourceId: r.resourceId,
+      title: r.title,
+      reason: r.reason.trim(),
+      quote: r.quote,
+      reasonCheck: r.reasonCheck,
+      checks: r.checks ?? [],
     }));
 }
 
@@ -47,7 +56,10 @@ export function picksById(picks: readonly GuidePick[]): ReadonlyMap<string, Guid
  * The list of a results page with the guide's picks first (ADR 0040, 6): [picked] holds the picks found among
  * [results], in the guide's order; [rest] the other results, in search order. Each result is in one of the two, once.
  */
-export function picksFirst<T extends { id: string }>(results: readonly T[], picks: readonly GuidePick[]): { picked: T[]; rest: T[] } {
+export function picksFirst<T extends { id: string }>(
+  results: readonly T[],
+  picks: readonly GuidePick[],
+): { picked: T[]; rest: T[] } {
   const byId = new Map(results.map((r) => [r.id, r]));
   const picked = picks.map((p) => byId.get(p.resourceId)).filter((r): r is T => r !== undefined);
   const taken = new Set(picked.map((r) => r.id));

@@ -16,7 +16,8 @@ function withoutSignInMarker(path: string): string {
 
 export function rememberSignInReturn(path: string): void {
   try {
-    if (isLocalPath(path)) window.sessionStorage.setItem(SIGN_IN_RETURN_KEY, withoutSignInMarker(path));
+    if (isLocalPath(path))
+      window.sessionStorage.setItem(SIGN_IN_RETURN_KEY, withoutSignInMarker(path));
   } catch {
     /* storage blocked: the visitor lands on the home page, which still works */
   }

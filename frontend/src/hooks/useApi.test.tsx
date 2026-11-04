@@ -114,7 +114,9 @@ describe('useApi recent-answers cache', () => {
     renderHook(() => useApi('k0', oldest));
     await waitFor(() => expect(oldest).toHaveBeenCalledTimes(1));
     const newest = fetcher('unused');
-    expect(renderHook(() => useApi(`k${CACHE_MAX}`, newest)).result.current.data).toBe(`v${CACHE_MAX}`);
+    expect(renderHook(() => useApi(`k${CACHE_MAX}`, newest)).result.current.data).toBe(
+      `v${CACHE_MAX}`,
+    );
     expect(newest).not.toHaveBeenCalled();
   });
 

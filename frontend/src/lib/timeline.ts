@@ -41,5 +41,7 @@ function utcMonth(iso: string): string | null {
 export function formatMonth(month: string, lang: string): string {
   const d = new Date(`${month}-01T00:00:00Z`);
   if (Number.isNaN(d.getTime())) return month;
-  return new Intl.DateTimeFormat(lang, { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(d);
+  return new Intl.DateTimeFormat(lang, { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(
+    d,
+  );
 }

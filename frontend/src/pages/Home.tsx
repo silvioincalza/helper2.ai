@@ -41,17 +41,28 @@ export default function Home() {
   return (
     <div className="one-page home">
       <section className="home-hero" aria-labelledby="home-h">
-        <h1 id="home-h" className="home-title">{t('home.title')}</h1>
+        <h1 id="home-h" className="home-title">
+          {t('home.title')}
+        </h1>
         <p className="home-lede">{count > 0 ? t('home.lede', { count }) : t('home.ledeNoCount')}</p>
         <OneBox hero />
         <section aria-labelledby="examples-h" className="home-examples">
-          <h2 id="examples-h" className="home-examples__label">{t('home.examples')}</h2>
+          <h2 id="examples-h" className="home-examples__label">
+            {t('home.examples')}
+          </h2>
           <ul className="plain-list inline-list">
             {EXAMPLES.map((id) => {
               const need = t(`home.example.${id}.need`);
               return (
                 <li key={id}>
-                  <button type="button" className="chip chip-ghost" title={need} onClick={() => ask(need)}>{t(`home.example.${id}.label`)}</button>
+                  <button
+                    type="button"
+                    className="chip chip-ghost"
+                    title={need}
+                    onClick={() => ask(need)}
+                  >
+                    {t(`home.example.${id}.label`)}
+                  </button>
                 </li>
               );
             })}
@@ -59,18 +70,21 @@ export default function Home() {
         </section>
       </section>
 
-
       <div className="h2-boards">
         <NewsBoard />
         <EventsBoard />
       </div>
 
       <section className="home-does" aria-labelledby="does-h">
-        <h2 id="does-h" className="home-does__title">{t('home.does.title')}</h2>
+        <h2 id="does-h" className="home-does__title">
+          {t('home.does.title')}
+        </h2>
         <ol className="plain-list home-does__list">
           {DOES.map((id, i) => (
             <li key={id} className="home-does__item">
-              <span className="home-does__step" aria-hidden="true">{i + 1}</span>
+              <span className="home-does__step" aria-hidden="true">
+                {i + 1}
+              </span>
               <h3>{t(`home.does.${id}.title`)}</h3>
               <p>{t(`home.does.${id}.text`)}</p>
             </li>

@@ -15,7 +15,14 @@ export default function PrivacyPage() {
   return (
     <TextPage
       i18nKey="privacy.sections"
-      head={<><h1>{t('privacy.title')}</h1><p className="updated">{t('privacy.updated')}</p><p className="lede">{t('privacy.lede')}</p>{contact}</>}
+      head={
+        <>
+          <h1>{t('privacy.title')}</h1>
+          <p className="updated">{t('privacy.updated')}</p>
+          <p className="lede">{t('privacy.lede')}</p>
+          {contact}
+        </>
+      }
     />
   );
 }

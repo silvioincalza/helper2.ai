@@ -12,7 +12,13 @@ import type { Refine } from './types';
 import { Understood } from './Understood';
 
 /** Why an answer has no AI pick, as one code. Order: quota, then no source answered, then model down, then empty catalog. */
-export type NoPickCode = 'GUIDE_DAILY_QUOTA' | 'ALL_SOURCES_FAILED' | 'LLM_UNAVAILABLE' | 'NO_CANDIDATES' | 'GUIDE_SUBJECT_NOT_FOUND' | 'NO_FIT';
+export type NoPickCode =
+  | 'GUIDE_DAILY_QUOTA'
+  | 'ALL_SOURCES_FAILED'
+  | 'LLM_UNAVAILABLE'
+  | 'NO_CANDIDATES'
+  | 'GUIDE_SUBJECT_NOT_FOUND'
+  | 'NO_FIT';
 
 export function noPickCode(answer: GuideResponse): NoPickCode | undefined {
   const has = (code: string) => answer.notices.some((n) => n.code === code);
@@ -32,16 +38,22 @@ export function noPickCode(answer: GuideResponse): NoPickCode | undefined {
  */
 export function noPickReason(answer: GuideResponse, t: TFunction): ReactNode {
   switch (noPickCode(answer)) {
-    case 'GUIDE_DAILY_QUOTA': return t('guide.notice.GUIDE_DAILY_QUOTA');
-    case 'ALL_SOURCES_FAILED': return t('guide.notice.ALL_SOURCES_FAILED');
-    case 'LLM_UNAVAILABLE': return t('guide.status.LLM_UNAVAILABLE');
-    case 'NO_CANDIDATES': return t('guide.status.NO_CANDIDATES');
+    case 'GUIDE_DAILY_QUOTA':
+      return t('guide.notice.GUIDE_DAILY_QUOTA');
+    case 'ALL_SOURCES_FAILED':
+      return t('guide.notice.ALL_SOURCES_FAILED');
+    case 'LLM_UNAVAILABLE':
+      return t('guide.status.LLM_UNAVAILABLE');
+    case 'NO_CANDIDATES':
+      return t('guide.status.NO_CANDIDATES');
     case 'GUIDE_SUBJECT_NOT_FOUND': {
       const notice = answer.notices.find((n) => n.code === 'GUIDE_SUBJECT_NOT_FOUND')!;
       return <SubjectNotFound notice={notice} model={plannerModel(answer)} />;
     }
-    case 'NO_FIT': return t('guide.noFit');
-    default: return undefined;
+    case 'NO_FIT':
+      return t('guide.noFit');
+    default:
+      return undefined;
   }
 }
 
@@ -57,8 +69,12 @@ const SLOT = '\u0001';
  * translation, so a name stays plain text whatever it holds.
  */
 function fill(t: TFunction, key: string, parts: Record<string, ReactNode>): ReactNode[] {
-  const slots = Object.fromEntries(Object.keys(parts).map((name) => [name, `${SLOT}${name}${SLOT}`]));
-  return t(key, slots).split(new RegExp(`${SLOT}(\\w+)${SLOT}`)).map((piece, i) => (i % 2 === 1 ? <Fragment key={i}>{parts[piece]}</Fragment> : piece));
+  const slots = Object.fromEntries(
+    Object.keys(parts).map((name) => [name, `${SLOT}${name}${SLOT}`]),
+  );
+  return t(key, slots)
+    .split(new RegExp(`${SLOT}(\\w+)${SLOT}`))
+    .map((piece, i) => (i % 2 === 1 ? <Fragment key={i}>{parts[piece]}</Fragment> : piece));
 }
 
 /**
@@ -73,9 +89,19 @@ export function SubjectNotFound({ notice, model }: { notice: Notice; model?: str
   if (!subject) return <>{t('guide.notice.GUIDE_SUBJECT_NOT_FOUND')}</>;
   const marked = (text: string) => <span {...aiMark(model)}>{text}</span>;
   const sentence = query
-    ? fill(t, 'guide.notice.subjectNotFoundShowing', { subject: marked(subject), query: marked(query) })
+    ? fill(t, 'guide.notice.subjectNotFoundShowing', {
+        subject: marked(subject),
+        query: marked(query),
+      })
     : fill(t, 'guide.notice.subjectNotFound', { subject: marked(subject) });
-  return <>{sentence}{' '}<span className="badge">{t(query ? 'guide.notice.subjectAndSearchAi' : 'guide.notice.subjectAi')}</span></>;
+  return (
+    <>
+      {sentence}{' '}
+      <span className="badge">
+        {t(query ? 'guide.notice.subjectAndSearchAi' : 'guide.notice.subjectAi')}
+      </span>
+    </>
+  );
 }
 
 /**
@@ -83,7 +109,11 @@ export function SubjectNotFound({ notice, model }: { notice: Notice; model?: str
  * notices (the bar and the status line say them), and not "no source answered" when it is already the bar's reason.
  */
 export function foldNoticeExclusions(answer: GuideResponse, kept: number): Notice['code'][] {
-  const exclude: Notice['code'][] = ['QUERY_EXPANDED', 'GUIDE_DAILY_QUOTA', 'GUIDE_SUBJECT_NOT_FOUND'];
+  const exclude: Notice['code'][] = [
+    'QUERY_EXPANDED',
+    'GUIDE_DAILY_QUOTA',
+    'GUIDE_SUBJECT_NOT_FOUND',
+  ];
   if (kept === 0 && noPickCode(answer) === 'ALL_SOURCES_FAILED') exclude.push('ALL_SOURCES_FAILED');
   return exclude;
 }
@@ -99,9 +129,15 @@ function PlannedQueries({ queries, model }: { queries: string[]; model: string }
     <>
       <strong>{t('guide.trail.searchedFor')}</strong>
       <ul className="plain-list proof-trail" aria-label={t('guide.trail.queries')}>
-        {queries.map((q) => <li key={q}><span {...aiMark(model)}>{q}</span></li>)}
+        {queries.map((q) => (
+          <li key={q}>
+            <span {...aiMark(model)}>{q}</span>
+          </li>
+        ))}
       </ul>
-      <span><span className="badge">{t('picks.aiWritten')}</span></span>
+      <span>
+        <span className="badge">{t('picks.aiWritten')}</span>
+      </span>
     </>
   );
 }
@@ -111,7 +147,14 @@ function RemovedList({ removed }: { removed: TrailRemoved[] }) {
   const { t } = useTranslation();
   return (
     <ul className="plain-list proof-trail proof-sub" aria-label={t('guide.trail.removed')}>
-      {removed.map((r, i) => <li key={`${i}-${r.title}`}>{t('guide.trail.removedLine', { title: r.title, check: t(`guide.trail.check.${r.check}`) })}</li>)}
+      {removed.map((r, i) => (
+        <li key={`${i}-${r.title}`}>
+          {t('guide.trail.removedLine', {
+            title: r.title,
+            check: t(`guide.trail.check.${r.check}`),
+          })}
+        </li>
+      ))}
     </ul>
   );
 }
@@ -122,25 +165,46 @@ function RemovedList({ removed }: { removed: TrailRemoved[] }) {
  * explanation, prompt). The picks themselves are in the result list and the preview, never repeated here; with no
  * pick, the bar says why, so this does not say it again.
  */
-export function GuideAnswer({ answer, onRefine }: { answer: GuideResponse; onRefine?: Refine | undefined }) {
+export function GuideAnswer({
+  answer,
+  onRefine,
+}: {
+  answer: GuideResponse;
+  onRefine?: Refine | undefined;
+}) {
   const { t } = useTranslation();
   if (answer.status === 'NEEDS_CLARIFICATION' && answer.clarification) {
-    return <Clarify clarification={answer.clarification} aiContent={answer.aiContent} onRefine={onRefine} />;
+    return (
+      <Clarify
+        clarification={answer.clarification}
+        aiContent={answer.aiContent}
+        onRefine={onRefine}
+      />
+    );
   }
   const kept = answer.recommendations.filter((r) => r.aiReasoned).length;
   const rejected = answer.rejected ?? 0;
   const sourcesOk = answer.sources.filter((s) => s.outcome === 'SUCCEEDED').length;
-  const searchNotices = <NoticeList notices={answer.notices} exclude={foldNoticeExclusions(answer, kept)} />;
+  const searchNotices = (
+    <NoticeList notices={answer.notices} exclude={foldNoticeExclusions(answer, kept)} />
+  );
   return (
-    <div className="guide-answer" data-ai-provider={answer.aiContent?.provider} data-ai-models={answer.aiContent?.models.join(' ')}>
-
+    <div
+      className="guide-answer"
+      data-ai-provider={answer.aiContent?.provider}
+      data-ai-models={answer.aiContent?.models.join(' ')}
+    >
       {answer.model ? (
         <ol className="plain-list proof-strip" aria-label={t('guide.howMade')}>
           <li>
             <span className="proof-n">{t('guide.strip.planned')}</span>
-            {answer.trail ? <PlannedQueries queries={answer.trail.queries} model={answer.model.fastModel} /> : (
+            {answer.trail ? (
+              <PlannedQueries queries={answer.trail.queries} model={answer.model.fastModel} />
+            ) : (
               <>
-                <strong {...aiMark(answer.model.fastModel)}>{t('guide.searchedFor', { q: answer.searchQuery })}</strong>{' '}
+                <strong {...aiMark(answer.model.fastModel)}>
+                  {t('guide.searchedFor', { q: answer.searchQuery })}
+                </strong>{' '}
                 <span className="badge">{t('picks.aiWritten')}</span>
               </>
             )}
@@ -149,7 +213,9 @@ export function GuideAnswer({ answer, onRefine }: { answer: GuideResponse; onRef
           <li>
             <span className="proof-n">{t('guide.strip.found')}</span>
             <strong>{t('guide.considered', { n: answer.candidatesConsidered })}</strong>
-            <span className="proof-sub">{t('guide.sourcesAnswered', { ok: sourcesOk, all: answer.sources.length })}</span>
+            <span className="proof-sub">
+              {t('guide.sourcesAnswered', { ok: sourcesOk, all: answer.sources.length })}
+            </span>
             {searchNotices}
           </li>
           <li>
@@ -159,10 +225,17 @@ export function GuideAnswer({ answer, onRefine }: { answer: GuideResponse; onRef
           </li>
           <li className={kept > 0 ? 'is-checked' : undefined}>
             <span className="proof-n">{t('guide.strip.checked')}</span>
-            <strong>{kept > 0 && <Icon name="check" />}{t('guide.kept', { count: kept })}</strong>
-            {answer.trail && answer.trail.removed.length > 0 ? <RemovedList removed={answer.trail.removed} /> : (
+            <strong>
+              {kept > 0 && <Icon name="check" />}
+              {t('guide.kept', { count: kept })}
+            </strong>
+            {answer.trail && answer.trail.removed.length > 0 ? (
+              <RemovedList removed={answer.trail.removed} />
+            ) : (
               <span className="proof-sub">
-                {rejected > 0 ? t('guide.rejected', { count: rejected }) : t(answer.trail ? 'guide.trail.noneRemoved' : 'guide.noneRejected')}
+                {rejected > 0
+                  ? t('guide.rejected', { count: rejected })
+                  : t(answer.trail ? 'guide.trail.noneRemoved' : 'guide.noneRejected')}
               </span>
             )}
           </li>
@@ -170,9 +243,17 @@ export function GuideAnswer({ answer, onRefine }: { answer: GuideResponse; onRef
       ) : (
         <p className="muted small">
           {/* The planner may have written the query even when the answering model failed (aiContent says so). */}
-          <span {...(answer.aiContent ? aiMark(answer.aiContent.models[0]) : {})}>{t('guide.searchedFor', { q: answer.searchQuery })}</span>
-          {answer.aiContent && <>{' '}<span className="badge">{t('picks.aiWritten')}</span></>}
-          {' · '}{t('guide.considered', { n: answer.candidatesConsidered })}
+          <span {...(answer.aiContent ? aiMark(answer.aiContent.models[0]) : {})}>
+            {t('guide.searchedFor', { q: answer.searchQuery })}
+          </span>
+          {answer.aiContent && (
+            <>
+              {' '}
+              <span className="badge">{t('picks.aiWritten')}</span>
+            </>
+          )}
+          {' · '}
+          {t('guide.considered', { n: answer.candidatesConsidered })}
         </p>
       )}
       {/* Without the steps, the search notices follow the one line; never inside an AI-marked element (ADR 0038). */}
@@ -181,24 +262,38 @@ export function GuideAnswer({ answer, onRefine }: { answer: GuideResponse; onRef
       {/* With no pick the bar already says why; with picks, this says how the check went. */}
       {kept > 0 && (
         <p className={`notice ${answer.status === 'OK' ? '' : 'notice-warn'}`}>
-          <Icon name={answer.status === 'OK' ? 'check' : 'info'} /> {t(`guide.status.${answer.status}`)}
+          <Icon name={answer.status === 'OK' ? 'check' : 'info'} />{' '}
+          {t(`guide.status.${answer.status}`)}
         </p>
       )}
 
-      {kept > 0 && (answer.notices ?? []).filter((n) => n.code === 'GUIDE_SUBJECT_NOT_FOUND').map((n, i) => (
-        <p key={`${i}-${n.subject ?? ''}`} className="notice notice-warn"><Icon name="info" /> <SubjectNotFound notice={n} model={plannerModel(answer)} /></p>
-      ))}
+      {kept > 0 &&
+        (answer.notices ?? [])
+          .filter((n) => n.code === 'GUIDE_SUBJECT_NOT_FOUND')
+          .map((n, i) => (
+            <p key={`${i}-${n.subject ?? ''}`} className="notice notice-warn">
+              <Icon name="info" /> <SubjectNotFound notice={n} model={plannerModel(answer)} />
+            </p>
+          ))}
 
       <Understood answer={answer} onRefine={onRefine} />
 
-      {answer.explanation && answer.explanation.sentences.length > 0 && <ExplanationBlock explanation={answer.explanation} />}
-      {answer.comparison && answer.comparison.rows.length > 0 && <ComparisonTable comparison={answer.comparison} />}
+      {answer.explanation && answer.explanation.sentences.length > 0 && (
+        <ExplanationBlock explanation={answer.explanation} />
+      )}
+      {answer.comparison && answer.comparison.rows.length > 0 && (
+        <ComparisonTable comparison={answer.comparison} />
+      )}
 
       {answer.prompt && <PromptBox text={answer.prompt.text} basedOn={answer.prompt.basedOn} />}
 
       {answer.model && (
         <p className="muted small guide-model">
-          {t('guide.answeredBy', { reasoning: answer.model.reasoningModel, fast: answer.model.fastModel, provider: answer.model.provider })}
+          {t('guide.answeredBy', {
+            reasoning: answer.model.reasoningModel,
+            fast: answer.model.fastModel,
+            provider: answer.model.provider,
+          })}
         </p>
       )}
     </div>

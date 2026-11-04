@@ -6,7 +6,9 @@ import en from './locales/en.json';
  * The UI ships in English only. To add a locale: drop `<code>.json` next to en.json (same keys),
  * add it to LANGUAGES and RESOURCES. The language switcher appears automatically once there are two.
  */
-export const LANGUAGES: readonly { code: string; label: string }[] = [{ code: 'en', label: 'English' }];
+export const LANGUAGES: readonly { code: string; label: string }[] = [
+  { code: 'en', label: 'English' },
+];
 const RESOURCES = { en: { translation: en } };
 export const LANG_KEY = 'h2.lang';
 
