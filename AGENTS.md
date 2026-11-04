@@ -88,6 +88,8 @@ Run the relevant tests before calling a change done.
 - Every session works in its own git worktree, on its own branch from the latest `origin/main`:
   `git worktree add .claude/worktrees/<branch> -b <branch> origin/main` (git-ignored folder).
   The main checkout stays on `main` and clean: no session edits or switches branches there.
+- Do not use `git stash` in a worktree: the stash list is shared by every worktree of the repo, so another
+  session can pop your changes. Set work aside with a temporary commit instead.
 - A branch that needs another unmerged branch is stacked on it. Say so in the PR description:
   `Depends on #N`.
 - After a PR merges, update every open worktree that depends on it, direct dependents first:
