@@ -32,7 +32,11 @@ Run the relevant tests before calling a change done.
   One explicit use case per business action. Lightweight DDD: ubiquitous language, clear modules.
 - TDD for domain logic, BDD for user-visible behaviour, integration tests for adapters.
 - Before adding a library or tool: compare 2-3 candidates (fit, maintenance, licence, lock-in,
-  operational cost), recommend one, state the trade-off.
+  operational cost), recommend one, state the trade-off. Revisit an existing feature's choice
+  only when the feature changes or has a real problem.
+- Architecture choices: compare 2-3 realistic options on simplicity, coupling, testability,
+  operational cost, failure modes, security, reversibility and cognitive load for a one-person
+  team. Recommend one.
 - Lasting decision → new ADR in `docs/adr/<category>/` (next number), linked from `docs/adr/README.md`.
   Written in the present tense, as the code is; known limits go to the roadmap.
 - Every ADR has a flowchart (the decisions in the code) and a sequence diagram (the call path),
@@ -46,10 +50,21 @@ Run the relevant tests before calling a change done.
 - Orchestration for multi-step flows with compensation; choreography for loose side effects.
   SSE for server streaming; WebSocket only for real two-way interaction.
 - Adopt new storage, queues or streaming only for a concrete, named need.
+- Every data flow: decide storage (relational, vector, graph), caching and retention period.
 - Performance: measure first (profile, JMH, load test, EXPLAIN ANALYZE), set latency budgets
   (p50/p95/p99), show numbers before and after. No optimisation without a measured problem.
 - Privacy and terms: apply GDPR, Swiss nFADP, ePrivacy, EU AI Act, DSA and source/API terms.
-  Draft and review legal texts, but mark every point that needs a qualified lawyer.
+  Draft and review legal texts, but mark every point that needs a qualified lawyer, and list
+  those points before the text is published.
+- A change to a data flow (new field, source, processor, cookie, browser-storage key, log or
+  retention period) updates the Privacy page in the same change. A new rule for users updates
+  the Terms page. The feature is not done until the pages match the code.
+- EU AI Act Art. 50: every AI-written text shown to users is labelled in the UI and marked
+  machine-readable in the API and the HTML. A new AI feature without both is not done.
+- No fine-tuning or substantial model change without a new scope check: it can make helper2.ai
+  a general-purpose AI model provider, with much heavier duties.
+- Keep the AI regulation gap analysis current. Re-run it when the EU AI Act, its guidance or the
+  Code of Practice change, and when the Swiss AI act goes to consultation (planned spring 2027).
 - Security: STRIDE threat model per new feature; OWASP Top 10 and OWASP LLM Top 10
   (prompt injection, data leakage); dependency scanning, SBOM, image signing; checks in CI.
   Least privilege, validation at every boundary, no secrets in code or logs.
@@ -111,6 +126,9 @@ deferred (safe for now, say why).
 
 - Config and secrets: `H2_` prefix; secrets live in OpenBao, never in the repo.
 - The deploy stays generic: no dependency on a specific cluster or infra repo.
+- Infra baseline (do not reopen without a concrete reason): Kubernetes, Helm charts for staging
+  and prod, own image registry, OpenBao for secrets, ingress-nginx, GitHub as identity
+  provider, servers in the EU, admin back office only over VPN.
 - No backward compatibility with removed code or migrations unless asked.
 - Never add AI attribution, "Generated with" footers or Co-Authored-By to commits, PRs,
   comments, docs or code.
@@ -121,4 +139,4 @@ deferred (safe for now, say why).
   `.claude/agents/`, `.claude/commands/`). AI notes, reviews, plans, memory and machine-local
   settings never are: they go in the git-ignored `.private/` folder (or `CLAUDE.local.md`,
   `.claude/settings.local.json`). Plans, including the refactor plan and the AI scaffold map,
-  live in `.private/plans/`.
+  live in `.private/plans/`. Product prompts the app runs are code and stay in the repo.

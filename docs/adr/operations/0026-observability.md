@@ -90,7 +90,7 @@ the guide work long before that, and what makes the wait feel long is the first 
    `promtool check rules` and `promtool test rules` (unit tests in `deploy/monitoring/tests/`) run in CI; chart-check
    renders the `PrometheusRule` once and validates it against its CRD schema.
 7. **Retention.** Required of the observability stack, which lives outside this repository and must use these values:
-   - logs (Loki: the app's stdout and the Traefik access logs): deleted after 3 months (`retention_period: 2160h`,
+   - logs (Loki: the app's stdout and the ingress-nginx access logs): deleted after 3 months (`retention_period: 2160h`,
      90 days), the period the privacy page states;
    - traces (Tempo): deleted after 3 months (`block_retention: 2160h`), never kept longer than the logs they link to;
    - metrics (Prometheus): 90 days (`--storage.tsdb.retention.time=90d`), at least 9 days for the Scout rule's
