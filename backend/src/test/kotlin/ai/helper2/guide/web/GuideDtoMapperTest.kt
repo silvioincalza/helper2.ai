@@ -7,17 +7,25 @@ import ai.helper2.guide.RemovedSuggestion
 import ai.helper2.guide.ResearchTrail
 import ai.helper2.guide.TrailCheck
 import ai.helper2.guide.GuideStatus
+import ai.helper2.guide.Recommendation
 import ai.helper2.platform.llm.LlmSettings
 import ai.helper2.search.Notice
 import ai.helper2.search.NoticeCode
+import ai.helper2.search.ResultMerger
 import ai.helper2.search.SearchOutcome
+import ai.helper2.search.contexts
+import ai.helper2.search.hit
+import ai.helper2.shared.ResourceType
 import java.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-/** The AI-content marker (ADR 0038): present whenever a model wrote text in the answer, naming only the models that did. */
+/**
+ * The AI-content marker (ADR 0038): present whenever a model wrote text in the answer, naming only the models that did.
+ * "Works with" flags on every pick (ADR 0013), from the same rules as the result cards.
+ */
 class GuideDtoMapperTest {
 
     private val mapper = GuideDtoMapper(LlmSettings("openai", "nebius-token-factory", "nano", "super"))
@@ -84,5 +92,29 @@ class GuideDtoMapperTest {
     @Test
     fun `no model wrote anything, so there is no marker`() {
         assertNull(mapper.toDto(answer(modelUsed = false, planned = false)).aiContent)
+    }
+
+    private fun merged(url: String, tags: Set<String> = emptySet(), type: ResourceType = ResourceType.LIBRARY) =
+        ResultMerger().merge(listOf(hit("github", url, tags = tags, type = type)), contexts("github")).single()
+
+    @Test
+    fun `every pick carries its works-with flags, an AI pick and a fallback pick alike`() {
+        val server = merged("https://github.com/a/server", tags = setOf("mcp"))
+        val model = merged("https://github.com/a/model", type = ResourceType.MODEL)
+        val withPicks = answer(modelUsed = true, planned = true).copy(status = GuideStatus.OK, recommendations = listOf(
+            Recommendation(server, "Connects tools", "An MCP server", aiReasoned = true),
+            Recommendation(model, "", "", aiReasoned = false),
+        ))
+
+        val picks = mapper.toDto(withPicks).recommendations
+
+        assertEquals(listOf("mcp"), picks[0].compatibleWith.map { it.tool })
+        assertEquals("mcp", picks[0].compatibleWith.single().evidence)
+        assertEquals(emptyList(), picks[1].compatibleWith, "no flag is an empty list, always sent")
+    }
+
+    @Test
+    fun `the flags are not AI-written fields`() {
+        assertTrue(GuideDtoMapper.AI_WRITTEN_FIELDS.none { "compatibleWith" in it })
     }
 }

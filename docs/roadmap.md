@@ -140,7 +140,6 @@ Open items:
   ([ADR 0004](adr/foundation/0004-persistence-and-provenance.md)).
 - "Works with" flags on index hits name `helper2-index` as their source, not the source that set the tag, and only
   the first 20 tags (alphabetical) are kept, which can drop a flag ([ADR 0013](adr/search/0013-works-with-flags.md)).
-- Guide recommendations carry no "works with" flags (they are not built with `CardMapper.card()`).
 - The MCP Registry asks for hourly polling, but the Scout runs once a day in the cluster, so the registry is
   read daily ([ADR 0018](adr/scout/0018-scout-runner.md)).
 - More registries, if their terms allow it. Consumer AI-tool coverage is thin.
