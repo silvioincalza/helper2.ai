@@ -161,9 +161,24 @@ async function candidates(answer) {
 const aiPicks = (a) => a.recommendations.filter((x) => x.aiReasoned).length;
 /** The model gave an answer of the question's kind: picks, a comparison, an explanation, or a dated record (WHEN). */
 const answered = (a) => aiPicks(a) > 0 || Boolean(a.comparison) || (a.explanation?.sentences?.length ?? 0) > 0
-  || (a.intent === 'WHEN' && a.recommendations.length > 0);
+  || (a.intent === 'WHEN' && a.status === 'OK' && a.recommendations.length > 0);
 /** Answered fresh by a model, as the question expects (empty for "expectNoPick"). */
 const passes = (r) => Boolean(r.a) && !r.cached && r.a.status !== 'LLM_UNAVAILABLE' && answered(r.a) !== Boolean(r.q.expectNoPick);
+
+/** Grades written into the pool itself are never overwritten: they must reach docs/eval/guide-qrels.tsv first. */
+async function stopOnGradedPool() {
+  try {
+    const graded = (await readFile(POOL, 'utf8')).split('\n').slice(1).filter((l) => l.split('\t')[2]?.trim());
+    if (graded.length) {
+      console.error(`backend/eval-data/guide-pool.tsv has ${graded.length} graded rows: copy their first three columns ` +
+        'to docs/eval/guide-qrels.tsv (or clear the grade column), then run again. Nothing was sent.');
+      process.exit(1);
+    }
+  } catch (e) {
+    if (e.code !== 'ENOENT') throw e;
+  }
+}
+if (!adversarial) await stopOnGradedPool();
 
 const runs = [];
 let runAt = new Date().toISOString();
@@ -176,7 +191,7 @@ for (let run = 1; run <= (rescore ? 0 : repeat); run++) {
   for (const [i, q] of queries.entries()) {
     if (i > 0 || run > 1) await sleep(PAUSE_MS);
     const r = await ask(token, q);
-    if (r.a && !r.cached && !answered(r.a) && !adversarial && !intents) r.pool = await candidates(r.a);
+    if (r.a && !r.cached && !answered(r.a) && !q.expectNoPick && !adversarial && !intents) r.pool = await candidates(r.a);
     rows.push(r);
     console.log(`${q.id} ${r.error ?? r.a.status} ${r.ms}ms${r.a ? ` | ${sourceLine(r.a.sources)}` : ''}${r.pool ? ` | pool ${r.pool.error ?? r.pool.results.length}` : ''}`);
     if (r.a?.notices?.some((n) => n.code === 'GUIDE_DAILY_QUOTA')) {
@@ -513,7 +528,8 @@ Before the run, for that day only, in staging's \`app.env\` or chart values (bac
 | \`H2_GUIDE_CACHE_TTL\` (\`app.guideCacheTtl\`) | \`PT1S\` | \`PT1S\` | every answer is a real model call |
 | \`H2_GUIDE_DAILY_MODEL_CALLS\` (\`app.dailyLimits.guideModelCalls\`) | 1000 | 150 | 50 questions x 3 runs x 3 calls = 450, up to 900 with retries |
 | \`H2_GUIDE_CLIENT_DAILY_QUESTIONS\` (\`app.dailyLimits.guideQuestions\`) | at least 200 | 1000 | 150 questions from one address |
-| \`H2_TAVILY_GUEST_GUIDE\` (\`app.dailyLimits.webSearches.guide\`) | at least 200 | 1000 | n01 hit the guest limit of 3 on 29 Oct |
+| \`H2_TAVILY_GUEST_GUIDE\` (\`app.dailyLimits.webSearches.guide\`) | at least 200 | 1000 | n01 probably hit the guest limit of 3 on 29 Oct |
+| \`H2_TAVILY_GUEST_SEARCH\` (\`app.dailyLimits.webSearches.search\`) | at least 200 | 1000 | the pool searches of questions with no answer |
 | \`H2_TAVILY_GLOBAL_DAILY_CREDITS\` (\`app.dailyLimits.webSearchCredits\`) | 400 | 200 | web searches of the guide and of the pool searches |
 
 The backend needs its GitHub token (\`H2_GITHUB_TOKEN\`): the script keeps to 25 live GitHub searches a minute, which only
@@ -528,7 +544,8 @@ node scripts/eval-guide.mjs "$H2_STAGING_URL" --repeat 3
 Then:
 
 1. Grade \`backend/eval-data/guide-pool.tsv\` with the grades of [eval/README.md](eval/README.md): the AI picks, and the
-   candidates of every question with no answer. Append the first three columns to \`docs/eval/guide-qrels.tsv\`.
+   candidates of every question with no answer. Append the first three columns to \`docs/eval/guide-qrels.tsv\`,
+   then delete the pool: the script never overwrites a pool with grades in it.
 2. \`node scripts/eval-guide.mjs --rescore\` rebuilds this report from the saved answers
    (\`backend/eval-data/guide-runs.json\`) with the new grades, with no new request.
 3. Write the notes, and move the report to \`docs/eval/\` when a new run takes its place.

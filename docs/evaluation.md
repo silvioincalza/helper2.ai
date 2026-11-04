@@ -67,7 +67,8 @@ Before the run, for that day only, in staging's `app.env` or chart values (back 
 | `H2_GUIDE_CACHE_TTL` (`app.guideCacheTtl`) | `PT1S` | `PT1S` | every answer is a real model call |
 | `H2_GUIDE_DAILY_MODEL_CALLS` (`app.dailyLimits.guideModelCalls`) | 1000 | 150 | 50 questions x 3 runs x 3 calls = 450, up to 900 with retries |
 | `H2_GUIDE_CLIENT_DAILY_QUESTIONS` (`app.dailyLimits.guideQuestions`) | at least 200 | 1000 | 150 questions from one address |
-| `H2_TAVILY_GUEST_GUIDE` (`app.dailyLimits.webSearches.guide`) | at least 200 | 1000 | n01 hit the guest limit of 3 on 29 Oct |
+| `H2_TAVILY_GUEST_GUIDE` (`app.dailyLimits.webSearches.guide`) | at least 200 | 1000 | n01 probably hit the guest limit of 3 on 29 Oct |
+| `H2_TAVILY_GUEST_SEARCH` (`app.dailyLimits.webSearches.search`) | at least 200 | 1000 | the pool searches of questions with no answer |
 | `H2_TAVILY_GLOBAL_DAILY_CREDITS` (`app.dailyLimits.webSearchCredits`) | 400 | 200 | web searches of the guide and of the pool searches |
 
 The backend needs its GitHub token (`H2_GITHUB_TOKEN`): the script keeps to 25 live GitHub searches a minute, which only
@@ -82,7 +83,8 @@ node scripts/eval-guide.mjs "$H2_STAGING_URL" --repeat 3
 Then:
 
 1. Grade `backend/eval-data/guide-pool.tsv` with the grades of [eval/README.md](eval/README.md): the AI picks, and the
-   candidates of every question with no answer. Append the first three columns to `docs/eval/guide-qrels.tsv`.
+   candidates of every question with no answer. Append the first three columns to `docs/eval/guide-qrels.tsv`,
+   then delete the pool: the script never overwrites a pool with grades in it.
 2. `node scripts/eval-guide.mjs --rescore` rebuilds this report from the saved answers
    (`backend/eval-data/guide-runs.json`) with the new grades, with no new request.
 3. Write the notes, and move the report to `docs/eval/` when a new run takes its place.

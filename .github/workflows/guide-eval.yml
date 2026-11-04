@@ -48,5 +48,6 @@ jobs:
             docs/evaluation.md
             docs/evaluation-adversarial.md
             backend/eval-data/guide-pool.tsv
+            backend/eval-data/guide-runs.json
           if-no-files-found: warn
           retention-days: 30
