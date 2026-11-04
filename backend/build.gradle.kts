@@ -84,6 +84,8 @@ dependencies {
     // TOML: parse-back test of the Codex setup snippet. YAML: ContractValidator reads the OpenAPI contract.
     testImplementation("tools.jackson.dataformat:jackson-dataformat-toml")
     testImplementation("tools.jackson.dataformat:jackson-dataformat-yaml")
+    // Counts SQL statements per test (StatementCounting): N+1 regressions fail a test, not a page view. MIT.
+    testImplementation("net.ttddyy:datasource-proxy:1.11.1")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

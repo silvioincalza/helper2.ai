@@ -133,8 +133,7 @@ Open items:
 
 ## 5. Search and catalog
 
-- `ListRecentResources` and `ListUpcomingEvents` make two queries per item, and the evidence loaders make one
-  query per assertion. Batch them.
+- `ListRecentResources` and `ListUpcomingEvents` make two queries per item. Batch them.
 - Indexed resources left without source records are not deleted (only observed ones are).
 - The Apache client's response timeout applies per read, not as a total deadline per call
   ([ADR 0006](adr/foundation/0006-outbound-http.md)).
