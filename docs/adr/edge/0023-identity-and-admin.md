@@ -85,11 +85,11 @@ traceable to that administrator.
 - Sessions in PostgreSQL (Spring Session JDBC) — a durable store and cleanup job for short-lived data.
 
 ## Code
-- `backend/src/main/java/ai/helper2/identity/SecurityConfiguration.java` — access rules, OAuth2 login, roles.
-- `backend/src/main/java/ai/helper2/identity/SessionConfiguration.java` — session reads and writes while Redis is down.
+- `backend/src/main/java/ai/helper2/identity/config/SecurityConfiguration.java` — access rules, OAuth2 login, roles.
+- `backend/src/main/java/ai/helper2/identity/config/SessionConfiguration.java` — session reads and writes while Redis is down.
 - `backend/src/test/java/ai/helper2/api/RedisDownIT.java` — anonymous use and sign-in with Redis unreachable.
-- `backend/src/main/java/ai/helper2/identity/CurrentUser.java` — user row on sign-in, current user id.
-- `backend/src/main/java/ai/helper2/identity/MeController.java` — `/api/v1/me`, bookmarks endpoints, account deletion.
+- `backend/src/main/java/ai/helper2/identity/internal/CurrentUser.java` — user row on sign-in, current user id.
+- `backend/src/main/java/ai/helper2/identity/web/MeController.java` — `/api/v1/me`, bookmarks endpoints, account deletion.
 - `backend/src/main/java/ai/helper2/identity/usecase/` — `AddBookmark`, `RemoveBookmark`, `ListBookmarks`,
   `MergeLocalBookmarks`, `BookmarkRules` (http(s), 2000 characters, the 500 cap), `DeleteMyAccount`, `ListAuditEntries`.
 - `backend/src/main/java/ai/helper2/identity/internal/Users.java`, `Bookmarks.java`, `AuditLog.java` — `app_user`,

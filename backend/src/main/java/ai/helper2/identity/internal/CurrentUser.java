@@ -1,6 +1,5 @@
-package ai.helper2.identity;
+package ai.helper2.identity.internal;
 
-import ai.helper2.identity.internal.Users;
 import ai.helper2.platform.SignedInUser;
 import java.util.Optional;
 import java.util.UUID;
@@ -46,7 +45,7 @@ public class CurrentUser implements SignedInUser {
     }
   }
 
-  static String displayName(OAuth2AuthenticationToken t) {
+  public static String displayName(OAuth2AuthenticationToken t) {
     Object name = t.getPrincipal().getAttributes().get("name");
     if (name == null) {
       name = t.getPrincipal().getAttributes().get("preferred_username");

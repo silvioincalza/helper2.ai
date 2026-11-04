@@ -21,9 +21,9 @@ import ai.helper2.catalog.usecase.GetResourceDetail;
 import ai.helper2.catalog.usecase.ListRecentResources;
 import ai.helper2.catalog.usecase.ListUpcomingEvents;
 import ai.helper2.catalog.usecase.ReportIssue;
-import ai.helper2.identity.CurrentUser;
 import ai.helper2.platform.BadRequestException;
 import ai.helper2.platform.NotFoundException;
+import ai.helper2.platform.SignedInUser;
 import ai.helper2.search.web.CardMapper;
 import ai.helper2.shared.UtcTimes;
 import java.time.Clock;
@@ -48,7 +48,7 @@ class ResourcesController implements ResourcesApi {
   private final ListRecentResources recent;
   private final ListUpcomingEvents upcoming;
   private final ReportIssue reports;
-  private final CurrentUser currentUser;
+  private final SignedInUser currentUser;
   private final Clock clock;
 
   ResourcesController(
@@ -56,7 +56,7 @@ class ResourcesController implements ResourcesApi {
       ListRecentResources recent,
       ListUpcomingEvents upcoming,
       ReportIssue reports,
-      CurrentUser currentUser,
+      SignedInUser currentUser,
       Clock clock) {
     this.details = details;
     this.recent = recent;

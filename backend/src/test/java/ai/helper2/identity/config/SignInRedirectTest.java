@@ -1,4 +1,4 @@
-package ai.helper2.identity;
+package ai.helper2.identity.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

@@ -1,4 +1,4 @@
-package ai.helper2.identity;
+package ai.helper2.identity.config;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Optional;

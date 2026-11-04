@@ -1,7 +1,7 @@
 # Flowchart: who may call what, how a sign-in becomes ADMIN, where bookmarks are kept, how an account is deleted and
 # what the admin audit trail records.
 # The admin host is in ADR 0035 (flow-0035-admin-host.d2): admin port, port filter, ADMIN only on that port.
-# Source of truth: backend/src/main/java/ai/helper2/identity/SecurityConfiguration.java, CurrentUser.java, MeController.java,
+# Source of truth: backend/src/main/java/ai/helper2/identity/config/SecurityConfiguration.java, identity/internal/CurrentUser.java, identity/web/MeController.java,
 #   backend/src/main/java/ai/helper2/identity/usecase/*.java, identity/internal/Users.java, Bookmarks.java, AuditLog.java,
 #   backend/src/main/java/ai/helper2/catalog/usecase/ResolveReviewItem.java, scout/usecase/StartScoutRun.kt,
 #   frontend/src/context/BookmarksContext.tsx, frontend/src/pages/AccountPage.tsx, frontend/src/pages/AdminPage.tsx,

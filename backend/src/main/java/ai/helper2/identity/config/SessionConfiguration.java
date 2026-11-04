@@ -1,4 +1,4 @@
-package ai.helper2.identity;
+package ai.helper2.identity.config;
 
 import ai.helper2.platform.resilience.Resilience;
 import jakarta.servlet.FilterChain;
