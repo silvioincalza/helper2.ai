@@ -161,7 +161,6 @@ Open items:
   circuit are the answering replica's.
 - The shared `/sources` data is fetched once per page load, so the Sources page can show an old last outcome
   during a long visit.
-- If browser storage is blocked, a fixed theme choice can be overridden when the device theme changes.
 - The guide answer shows only its own notice (`GUIDE_DAILY_QUOTA`), not the search notices such as
   `CACHE_UNAVAILABLE`.
 - More UI languages. The UI is English only; queries work in any language.
