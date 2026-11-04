@@ -47,8 +47,12 @@ internal class Facet(
 internal val FACETS: List<Facet> = listOf(
     Facet("type", { f -> f.types.map { it.name }.toSet() }, { setOf(it.type.name) }),
     Facet("source", { it.sources }, { r -> r.sources.map { it.sourceId }.toSet() }),
-    Facet("license", { it.licenses }, { r -> r.assertedLicenses.mapNotNull(ResultMerger::normalizeLicense).toSet().ifEmpty { setOf(UNKNOWN) } },
-        ignoreCase = true),
+    Facet(
+        "license",
+        { it.licenses },
+        { r -> r.assertedLicenses.mapNotNull(ResultMerger::normalizeLicense).toSet().ifEmpty { setOf(UNKNOWN) } },
+        ignoreCase = true
+    ),
     Facet("openSource", { it.openSource }, { r -> setOf(r.openSource?.toString() ?: UNKNOWN) }),
     Facet("pricing", { it.pricing }, { r -> setOf(r.pricing?.name ?: UNKNOWN) }),
     Facet("platform", { it.platforms }, { r -> r.platforms.ifEmpty { setOf(UNKNOWN) } }),
@@ -80,8 +84,14 @@ object Filtering {
         }
         if (filters.publishedAfter != null || filters.publishedBefore != null) {
             val published = r.published.value ?: return false
-            if (filters.publishedAfter != null && published.isBefore(filters.publishedAfter.atStartOfDay(ZoneOffset.UTC).toInstant())) return false
-            if (filters.publishedBefore != null && !published.isBefore(filters.publishedBefore.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant())) return false
+            if (filters.publishedAfter != null && published.isBefore(
+                    filters.publishedAfter.atStartOfDay(ZoneOffset.UTC).toInstant()
+                )
+            ) return false
+            if (filters.publishedBefore != null && !published.isBefore(
+                    filters.publishedBefore.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()
+                )
+            ) return false
         }
         return true
     }

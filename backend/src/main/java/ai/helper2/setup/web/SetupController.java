@@ -14,19 +14,17 @@ import ai.helper2.api.generated.model.ToolGuideSectionsInnerStepsInnerCodeDto;
 import ai.helper2.api.generated.model.ToolGuideSectionsInnerStepsInnerDto;
 import ai.helper2.platform.NotFoundException;
 import ai.helper2.setup.ClientGuide;
+import ai.helper2.setup.GuideStep;
 import ai.helper2.setup.RunOption;
 import ai.helper2.setup.Setting;
 import ai.helper2.setup.SetupGuide;
 import ai.helper2.setup.SetupGuides;
 import ai.helper2.setup.SetupUnavailable;
 import ai.helper2.setup.ShownOption;
-import ai.helper2.setup.GuideStep;
 import ai.helper2.setup.ToolGuideAnswer;
 import ai.helper2.setup.usecase.GetResourceSetup;
 import ai.helper2.setup.usecase.GetToolGuide;
 import ai.helper2.shared.UtcTimes;
-import java.time.Duration;
-import java.util.UUID;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,11 +32,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Duration;
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/v1")
 class SetupController implements SetupApi {
 
-    /** The registry asks aggregators to read it infrequently; an hour is how often the Scout reads it too. */
+    /**
+     * The registry asks aggregators to read it infrequently; an hour is how often the Scout reads it too.
+     */
     private static final CacheControl CACHE = CacheControl.maxAge(Duration.ofHours(1)).cachePublic();
 
     private final GetResourceSetup setup;
@@ -47,23 +50,6 @@ class SetupController implements SetupApi {
     SetupController(GetResourceSetup setup, GetToolGuide toolGuide) {
         this.setup = setup;
         this.toolGuide = toolGuide;
-    }
-
-    @Override
-    public ResponseEntity<SetupGuideDto> getResourceSetup(UUID id) {
-        SetupGuide guide;
-        try {
-            guide = setup.setup(id).orElseThrow(() -> new NotFoundException("Resource not found."));
-        } catch (SetupUnavailable e) {
-            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "The setup data could not be read now. Try again later.");
-        }
-        return ResponseEntity.ok().cacheControl(CACHE).body(dto(id, guide));
-    }
-
-    @Override
-    public ResponseEntity<ToolGuideDto> askResourceGuide(UUID id) {
-        GetToolGuide.Guided a = toolGuide.guide(id).orElseThrow(() -> new NotFoundException("Resource not found."));
-        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(dto(id, a.title(), a.answer()));
     }
 
     static ToolGuideDto dto(UUID id, String title, ToolGuideAnswer a) {
@@ -117,5 +103,22 @@ class SetupController implements SetupApi {
         return new SetupClientDto(c.getClient().getId(), c.getClient().getName(), c.getClient().getDocsUrl(),
             c.getSnippets().stream().map(s -> new SetupClientSnippetsInnerDto(s.getOptionId(), s.getSupported())
                 .where(s.getWhere()).language(s.getLanguage()).text(s.getText()).note(s.getNote())).toList());
+    }
+
+    @Override
+    public ResponseEntity<SetupGuideDto> getResourceSetup(UUID id) {
+        SetupGuide guide;
+        try {
+            guide = setup.setup(id).orElseThrow(() -> new NotFoundException("Resource not found."));
+        } catch (SetupUnavailable e) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "The setup data could not be read now. Try again later.");
+        }
+        return ResponseEntity.ok().cacheControl(CACHE).body(dto(id, guide));
+    }
+
+    @Override
+    public ResponseEntity<ToolGuideDto> askResourceGuide(UUID id) {
+        GetToolGuide.Guided a = toolGuide.guide(id).orElseThrow(() -> new NotFoundException("Resource not found."));
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(dto(id, a.title(), a.answer()));
     }
 }

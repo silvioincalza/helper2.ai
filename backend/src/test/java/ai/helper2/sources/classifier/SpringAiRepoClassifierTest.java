@@ -1,23 +1,15 @@
 package ai.helper2.sources.classifier;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.ModelCallMetrics;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.LlmUnavailable;
-import ai.helper2.testing.TestPolicies;
 import ai.helper2.shared.ResourceType;
+import ai.helper2.testing.TestPolicies;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.observation.DefaultMeterObservationHandler;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
-import java.time.Clock;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
@@ -26,6 +18,15 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
+
+import java.time.Clock;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class SpringAiRepoClassifierTest {
 
@@ -109,7 +110,9 @@ class SpringAiRepoClassifierTest {
             .isEqualTo(30);
     }
 
-    /** An open llm-chat circuit sends the batch to the keyword heuristic at once: no provider call, no unit of the budget. */
+    /**
+     * An open llm-chat circuit sends the batch to the keyword heuristic at once: no provider call, no unit of the budget.
+     */
     @Test
     void anOpenCircuitIsLlmUnavailableWithoutTheProviderOrTheBudget() {
         ChatModel chat = prompt -> {

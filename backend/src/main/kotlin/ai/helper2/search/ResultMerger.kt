@@ -52,9 +52,11 @@ class ResultMerger(private val analyzer: QueryAnalyzer = QueryAnalyzer()) {
             parent[x] = root
             return root
         }
+
         fun union(a: CanonicalUrl, b: CanonicalUrl) {
             parent.putIfAbsent(a, a); parent.putIfAbsent(b, b)
-            val ra = find(a); val rb = find(b)
+            val ra = find(a);
+            val rb = find(b)
             if (ra != rb) parent[ra] = rb
         }
         hits.forEach { parent.putIfAbsent(it.canonicalUrl, it.canonicalUrl) }
@@ -159,7 +161,8 @@ class ResultMerger(private val analyzer: QueryAnalyzer = QueryAnalyzer()) {
             val t = raw.trim()
             // npm "SEE LICENSE IN <file>" and "UNLICENSED" do not state a license value we can show.
             if (t.isEmpty() || t.equals("noassertion", true) || t.equals("other", true) ||
-                t.startsWith("SEE LICENSE", true) || t.equals("UNLICENSED", true)) return null
+                t.startsWith("SEE LICENSE", true) || t.equals("UNLICENSED", true)
+            ) return null
             return LICENSE_ALIASES[t.lowercase()] ?: t
         }
     }

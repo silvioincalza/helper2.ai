@@ -1,10 +1,5 @@
 package ai.helper2.api;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import ai.helper2.setup.McpServerSpec;
 import ai.helper2.setup.McpServerSpecs;
 import ai.helper2.setup.RunOption;
@@ -14,11 +9,6 @@ import ai.helper2.setup.SetupUnavailable;
 import ai.helper2.setup.Transport;
 import ai.helper2.shared.ResourceType;
 import com.jayway.jsonpath.JsonPath;
-import java.net.URI;
-import java.time.Instant;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,21 +18,24 @@ import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
-/** GET /resources/{id}/setup: snippets from the resource's MCP Registry entry, or none when it has no entry. */
+import java.net.URI;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+/**
+ * GET /resources/{id}/setup: snippets from the resource's MCP Registry entry, or none when it has no entry.
+ */
 @Import(SetupApiIT.FakeRegistry.class)
 class SetupApiIT extends ApiTestBase {
 
     static final AtomicReference<McpServerSpecs> REGISTRY = new AtomicReference<>();
-
-    @TestConfiguration(proxyBeanMethods = false)
-    static class FakeRegistry {
-        @Bean
-        @Primary
-        McpServerSpecs fakeMcpServerSpecs() {
-            return name -> REGISTRY.get().latest(name);
-        }
-    }
-
     @Autowired
     JdbcClient jdbc;
 
@@ -93,17 +86,21 @@ class SetupApiIT extends ApiTestBase {
     void registryDownIs503AndUnknownResourceIs404() throws Exception {
         UUID id = seed("https://github.com/acme/down-mcp", "Down MCP");
         registryRecord(id, "io.acme/down");
-        REGISTRY.set(name -> { throw new SetupUnavailable("down"); });
+        REGISTRY.set(name -> {
+            throw new SetupUnavailable("down");
+        });
         mvc.perform(get("/api/v1/resources/{id}/setup", id)).andExpect(status().isServiceUnavailable());
         mvc.perform(get("/api/v1/resources/{id}/setup", UUID.randomUUID())).andExpect(status().isNotFound());
     }
 
-    /** Adds an MCP Registry record to the resource, copied from the record the search stored. */
+    /**
+     * Adds an MCP Registry record to the resource, copied from the record the search stored.
+     */
     private void registryRecord(UUID id, String name) {
         jdbc.sql("""
-                INSERT INTO source (id, name, mode, homepage, attribution)
-                VALUES ('mcp-registry', 'Official MCP Registry', 'INDEXED', 'https://registry.modelcontextprotocol.io', 'CC0')
-                ON CONFLICT (id) DO NOTHING""").update();
+            INSERT INTO source (id, name, mode, homepage, attribution)
+            VALUES ('mcp-registry', 'Official MCP Registry', 'INDEXED', 'https://registry.modelcontextprotocol.io', 'CC0')
+            ON CONFLICT (id) DO NOTHING""").update();
         jdbc.sql("""
                 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, type,
                                            retrieved_at, fingerprint)
@@ -112,7 +109,9 @@ class SetupApiIT extends ApiTestBase {
             .param("rid", UUID.randomUUID()).param("name", name).param("id", id).update();
     }
 
-    /** Stores a resource the way a search does, and returns its id. */
+    /**
+     * Stores a resource the way a search does, and returns its id.
+     */
     private UUID seed(String url, String title) throws Exception {
         FAKE.set(q -> List.of(fakeHit(url, title, title + " for Postgres", ResourceType.MCP_SERVER, "MIT", null, null, 0)));
         mvc.perform(get("/api/v1/search").param("q", title)).andExpect(status().isOk());
@@ -123,5 +122,14 @@ class SetupApiIT extends ApiTestBase {
             id.set(ids.getFirst());
         });
         return id.get();
+    }
+
+    @TestConfiguration(proxyBeanMethods = false)
+    static class FakeRegistry {
+        @Bean
+        @Primary
+        McpServerSpecs fakeMcpServerSpecs() {
+            return name -> REGISTRY.get().latest(name);
+        }
     }
 }

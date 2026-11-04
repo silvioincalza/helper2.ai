@@ -4,8 +4,10 @@ package ai.helper2.shared
 
 enum class ResourceType {
     PRODUCT, MODEL, AGENT, PROMPT, SKILL, MCP_SERVER, LIBRARY, DATASET,
+
     /** Knowledge about AI rather than tools. */
     ARTICLE, PAPER, NEWS, EVENT,
+
     /**
      * A course or a certification (ADR 0032 §8): neither a tool type nor a reading type. Its platform is a
      * PLATFORM label; credential and format are tags (see R__courses.sql).

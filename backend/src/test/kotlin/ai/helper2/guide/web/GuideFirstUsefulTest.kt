@@ -26,6 +26,11 @@ import io.github.resilience4j.bulkhead.BulkheadRegistry
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry
 import io.github.resilience4j.retry.RetryRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
+import org.springframework.http.MediaType
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.request
+import org.springframework.test.web.servlet.setup.MockMvcBuilders
 import java.time.Clock
 import java.time.Duration
 import java.time.ZoneOffset
@@ -35,11 +40,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import org.springframework.http.MediaType
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.request
-import org.springframework.test.web.servlet.setup.MockMvcBuilders
 
 /**
  * The guide's latency target (ADR 0026): `helper2.guide.first_useful{intent}`, the time from the request to the
@@ -62,7 +62,14 @@ class GuideFirstUsefulTest {
     private val source = object : SearchSource {
         override val descriptor = descriptor("hf")
         override fun search(query: SourceQuery): List<SourceHit> =
-            listOf(hit("hf", "https://huggingface.co/acme/whisper-small", title = "whisper-small", description = "Speech recognition model"))
+            listOf(
+                hit(
+                    "hf",
+                    "https://huggingface.co/acme/whisper-small",
+                    title = "whisper-small",
+                    description = "Speech recognition model"
+                )
+            )
     }
 
     private val noCache = object : SearchCache {
@@ -80,12 +87,19 @@ class GuideFirstUsefulTest {
     }
 
     private fun stream(plan: GuideSearchPlan, maxConcurrent: Int = 1, question: String = "speech to text"): String {
-        val guide = AskGuide(SearchResources(listOf(source), noCache, ResultObserver { emptyMap() }, executor, clock), model(plan), clock)
-        val bulkheads = BulkheadRegistry.of(BulkheadConfig.custom().maxConcurrentCalls(maxConcurrent).maxWaitDuration(Duration.ZERO).build())
+        val guide =
+            AskGuide(SearchResources(listOf(source), noCache, ResultObserver { emptyMap() }, executor, clock), model(plan), clock)
+        val bulkheads =
+            BulkheadRegistry.of(BulkheadConfig.custom().maxConcurrentCalls(maxConcurrent).maxWaitDuration(Duration.ZERO).build())
         bulkheads.bulkhead("guide")
-        val limits = GuideLimits(Resilience4jPolicies(CircuitBreakerRegistry.ofDefaults(), bulkheads, RetryRegistry.ofDefaults()), Duration.ofSeconds(90))
-        val controller = GuideStreamController(guide, GuideDtoMapper(LlmSettings("fake", "", "fast", "reasoning")), limits,
-            SignedInUser.ANONYMOUS, meters, Duration.ofSeconds(15))
+        val limits = GuideLimits(
+            Resilience4jPolicies(CircuitBreakerRegistry.ofDefaults(), bulkheads, RetryRegistry.ofDefaults()),
+            Duration.ofSeconds(90)
+        )
+        val controller = GuideStreamController(
+            guide, GuideDtoMapper(LlmSettings("fake", "", "fast", "reasoning")), limits,
+            SignedInUser.ANONYMOUS, meters, Duration.ofSeconds(15)
+        )
         closers += { limits.destroy(); controller.destroy() }
         val mvc = MockMvcBuilders.standaloneSetup(controller).build()
         val result = mvc.perform(
@@ -110,7 +124,11 @@ class GuideFirstUsefulTest {
     @Test
     fun `a question asked back is timed at its clarify event`() {
         val events = stream(
-            GuideSearchPlan("AI tools", intent = GuideIntent.NEWEST, clarify = Clarification("New tools for what?", listOf("coding", "agents"))),
+            GuideSearchPlan(
+                "AI tools",
+                intent = GuideIntent.NEWEST,
+                clarify = Clarification("New tools for what?", listOf("coding", "agents"))
+            ),
             question = "new tools?",
         )
 

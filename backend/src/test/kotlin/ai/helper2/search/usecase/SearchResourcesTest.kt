@@ -85,11 +85,16 @@ class SearchResourcesTest {
         val circuits = CircuitBreakerRegistry.ofDefaults()
         val bulkheads = BulkheadRegistry.ofDefaults()
         ids.forEach {
-            circuits.circuitBreaker("source-$it", CircuitBreakerConfig.custom()
-                .slidingWindowSize(4).minimumNumberOfCalls(2).failureRateThreshold(50f)
-                .waitDurationInOpenState(Duration.ofSeconds(30)).permittedNumberOfCallsInHalfOpenState(1)
-                .ignoreExceptions(SourceFailure.RateLimited::class.java).clock(clock).build())
-            bulkheads.bulkhead("source-$it", BulkheadConfig.custom().maxConcurrentCalls(concurrent).maxWaitDuration(Duration.ZERO).build())
+            circuits.circuitBreaker(
+                "source-$it", CircuitBreakerConfig.custom()
+                    .slidingWindowSize(4).minimumNumberOfCalls(2).failureRateThreshold(50f)
+                    .waitDurationInOpenState(Duration.ofSeconds(30)).permittedNumberOfCallsInHalfOpenState(1)
+                    .ignoreExceptions(SourceFailure.RateLimited::class.java).clock(clock).build()
+            )
+            bulkheads.bulkhead(
+                "source-$it",
+                BulkheadConfig.custom().maxConcurrentCalls(concurrent).maxWaitDuration(Duration.ZERO).build()
+            )
         }
         return Resilience4jPolicies(circuits, bulkheads, RetryRegistry.ofDefaults())
     }
@@ -231,11 +236,14 @@ class SearchResourcesTest {
     @Test
     fun `discovered date comes from the observer and its outage is disclosed`() {
         val firstSeen = Instant.parse("2026-01-05T00:00:00Z")
-        val ok = service(listOf(ok("github", "https://github.com/a/x")), observer = ResultObserver { r -> r.associate { it.id to firstSeen } })
+        val ok = service(
+            listOf(ok("github", "https://github.com/a/x")),
+            observer = ResultObserver { r -> r.associate { it.id to firstSeen } })
             .search(req())
         assertEquals(firstSeen, ok.results.single().discovered.value)
 
-        val down = service(listOf(ok("github", "https://github.com/a/x")), observer = ResultObserver { error("db down") }).search(req())
+        val down =
+            service(listOf(ok("github", "https://github.com/a/x")), observer = ResultObserver { error("db down") }).search(req())
         assertEquals(null, down.results.single().discovered.value)
         assertTrue(down.notices.any { it.code == NoticeCode.INDEX_UNAVAILABLE })
     }
@@ -286,7 +294,14 @@ class SearchResourcesTest {
         val gh = FakeSource(descriptor("github")) {
             (0 until 25).map { hit("github", "https://github.com/a/r$it", rank = it, license = if (it % 2 == 0) "MIT" else null) }
         }
-        val out = service(listOf(gh)).search(SearchRequest(text = "x", filters = SearchFilters(licenses = setOf("MIT")), page = 1, size = 10))
+        val out = service(listOf(gh)).search(
+            SearchRequest(
+                text = "x",
+                filters = SearchFilters(licenses = setOf("MIT")),
+                page = 1,
+                size = 10
+            )
+        )
         assertEquals(13, out.total)
         assertEquals(3, out.results.size)
         assertNotNull(out.facets["license"])
@@ -300,7 +315,8 @@ class SearchResourcesTest {
 
     @Test
     fun `latency is measured per source, not by collection order`() {
-        val slowFirst = FakeSource(descriptor("a-slow", timeout = Duration.ofSeconds(2), priority = 1)) { Thread.sleep(300); emptyList() }
+        val slowFirst =
+            FakeSource(descriptor("a-slow", timeout = Duration.ofSeconds(2), priority = 1)) { Thread.sleep(300); emptyList() }
         val fast = FakeSource(descriptor("b-fast", priority = 2)) { emptyList() }
         val out = service(listOf(slowFirst, fast)).search(req())
         val fastLatency = out.statuses.single { it.source.id == "b-fast" }.latency!!
@@ -331,7 +347,14 @@ class SearchResourcesTest {
     @Test
     fun `a source that keeps failing is skipped without a call while its circuit is open, then tried again`() {
         var down = true
-        val flaky = FakeSource(descriptor("npm")) { if (down) throw SourceFailure.Unavailable("HTTP 502") else listOf(hit("npm", "https://www.npmjs.com/package/x")) }
+        val flaky = FakeSource(descriptor("npm")) {
+            if (down) throw SourceFailure.Unavailable("HTTP 502") else listOf(
+                hit(
+                    "npm",
+                    "https://www.npmjs.com/package/x"
+                )
+            )
+        }
         val svc = service(listOf(flaky), resilience = policies("npm"))
 
         repeat(2) { assertEquals(SourceOutcome.FAILED, svc.search(req("q$it")).statuses.single().outcome) }
@@ -350,7 +373,14 @@ class SearchResourcesTest {
     @Test
     fun `an open circuit still serves the stale cache entry`() {
         var down = false
-        val gh = FakeSource(descriptor("github")) { if (down) throw SourceFailure.Unavailable("HTTP 500") else listOf(hit("github", "https://github.com/a/x")) }
+        val gh = FakeSource(descriptor("github")) {
+            if (down) throw SourceFailure.Unavailable("HTTP 500") else listOf(
+                hit(
+                    "github",
+                    "https://github.com/a/x"
+                )
+            )
+        }
         val svc = service(listOf(gh), resilience = policies("github"))
         svc.search(req())
         down = true

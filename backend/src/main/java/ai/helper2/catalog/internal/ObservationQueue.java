@@ -2,12 +2,13 @@ package ai.helper2.catalog.internal;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Writes what searches observed off the request path: one background thread and a bounded queue. One
@@ -41,7 +42,9 @@ public class ObservationQueue implements AutoCloseable {
             .tag("outcome", outcome).register(registry);
     }
 
-    /** Queues [write]; returns false (and counts a drop) when the queue is full or shut down. */
+    /**
+     * Queues [write]; returns false (and counts a drop) when the queue is full or shut down.
+     */
     public boolean offer(Runnable write) {
         try {
             executor.execute(() -> run(write));
@@ -62,7 +65,9 @@ public class ObservationQueue implements AutoCloseable {
         }
     }
 
-    /** Finishes queued writes for a few seconds on shutdown, then gives up on the rest. */
+    /**
+     * Finishes queued writes for a few seconds on shutdown, then gives up on the rest.
+     */
     @Override
     public void close() {
         executor.shutdown();

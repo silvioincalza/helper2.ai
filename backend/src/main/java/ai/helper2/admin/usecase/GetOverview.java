@@ -8,14 +8,15 @@ import ai.helper2.scout.RunSummary;
 import ai.helper2.scout.ScoutStore;
 import ai.helper2.search.WebCredits;
 import ai.helper2.search.WebSearchQuota;
+import org.jspecify.annotations.Nullable;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.stereotype.Service;
+
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import org.jspecify.annotations.Nullable;
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.stereotype.Service;
 
 /**
  * What needs a person now (ADR 0045): open review items per kind, the enrichment backlog, today's model budgets and web
@@ -25,17 +26,15 @@ import org.springframework.stereotype.Service;
 @Service
 public class GetOverview {
 
-    /** How long one computed overview is shown again. */
+    /**
+     * How long one computed overview is shown again.
+     */
     public static final Duration FRESH = Duration.ofMinutes(1);
     static final int RECENT_RUNS = 10;
-    /** Runs read to count the failures of the last day; a day has far fewer runs (one per collector and period). */
+    /**
+     * Runs read to count the failures of the last day; a day has far fewer runs (one per collector and period).
+     */
     static final int RUNS_FOR_FAILURES = 200;
-
-    public record Overview(Instant generatedAt, Map<ReviewQueue.Kind, Long> openReviewItems, long enrichmentBacklog,
-                           List<BudgetLedger.Reading> budgets, @Nullable WebCredits webCredits, List<RunSummary> recentRuns,
-                           int failedRunsLast24h) {
-    }
-
     private final ReviewQueue reviewQueue;
     private final EnrichmentBacklog backlog;
     private final ScoutStore runs;
@@ -43,7 +42,6 @@ public class GetOverview {
     private final ObjectProvider<WebSearchQuota> webSearchQuota;
     private final Clock clock;
     private @Nullable Overview last;
-
     public GetOverview(ReviewQueue reviewQueue, EnrichmentBacklog backlog, ScoutStore runs, BudgetLedger budgets,
                        ObjectProvider<WebSearchQuota> webSearchQuota, Clock clock) {
         this.reviewQueue = reviewQueue;
@@ -54,7 +52,16 @@ public class GetOverview {
         this.clock = clock;
     }
 
-    /** The overview, computed again when the last one is older than {@link #FRESH}. One computation at a time. */
+    /**
+     * Runs that FAILED and started at or after [since].
+     */
+    static int failedSince(List<RunSummary> runs, Instant since) {
+        return (int) runs.stream().filter(r -> r.getStatus() == RunStatus.FAILED && !r.getStartedAt().isBefore(since)).count();
+    }
+
+    /**
+     * The overview, computed again when the last one is older than {@link #FRESH}. One computation at a time.
+     */
     public synchronized Overview get() {
         Instant now = clock.instant();
         if (last == null || !now.isBefore(last.generatedAt().plus(FRESH))) {
@@ -71,8 +78,8 @@ public class GetOverview {
             failedSince(recent, now.minus(Duration.ofDays(1))));
     }
 
-    /** Runs that FAILED and started at or after [since]. */
-    static int failedSince(List<RunSummary> runs, Instant since) {
-        return (int) runs.stream().filter(r -> r.getStatus() == RunStatus.FAILED && !r.getStartedAt().isBefore(since)).count();
+    public record Overview(Instant generatedAt, Map<ReviewQueue.Kind, Long> openReviewItems, long enrichmentBacklog,
+                           List<BudgetLedger.Reading> budgets, @Nullable WebCredits webCredits, List<RunSummary> recentRuns,
+                           int failedRunsLast24h) {
     }
 }

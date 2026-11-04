@@ -1,15 +1,13 @@
 package ai.helper2.search.internal;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.TestcontainersConfiguration;
 import ai.helper2.catalog.internal.ResourceStore;
 import ai.helper2.catalog.internal.ResourceStore.DataOrigin;
-import ai.helper2.search.CachedHits;
 import ai.helper2.platform.quota.QuotaKeys;
+import ai.helper2.search.CachedHits;
 import ai.helper2.search.IntentClass;
-import ai.helper2.search.ResultObserver;
 import ai.helper2.search.ResultMerger;
+import ai.helper2.search.ResultObserver;
 import ai.helper2.search.ServedFrom;
 import ai.helper2.search.SourceContext;
 import ai.helper2.search.SourceDescriptor;
@@ -21,6 +19,13 @@ import ai.helper2.shared.DateFact;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.SourceMode;
 import ai.helper2.shared.ValueOrigin;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.simple.JdbcClient;
+
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
@@ -33,36 +38,30 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
-import org.springframework.jdbc.core.simple.JdbcClient;
 
-/** Stored Tavily result sets on the real schema: keyed by an HMAC of the query, hits read back from the catalog. */
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * Stored Tavily result sets on the real schema: keyed by an HMAC of the query, hits read back from the catalog.
+ */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 class JdbcWebResultStoreIT {
 
+    private final String run = UUID.randomUUID().toString().substring(0, 8);
+    private final Instant now = Instant.now().truncatedTo(ChronoUnit.MILLIS);
     @Autowired
     ResourceStore catalog;
-
     @Autowired
     ResultObserver observer;
-
     @Autowired
     JdbcClient jdbc;
-
     private JdbcWebResultStore store;
 
     @BeforeEach
     void store() {
         store = new JdbcWebResultStore(jdbc, new QuotaKeys("test-secret", Clock.systemUTC()), observer);
     }
-
-    private final String run = UUID.randomUUID().toString().substring(0, 8);
-    private final Instant now = Instant.now().truncatedTo(ChronoUnit.MILLIS);
 
     private SourceHit hit(String path, int rank) {
         String url = "https://news.example/" + run + "/" + path;
@@ -71,7 +70,9 @@ class JdbcWebResultStoreIT {
             Set.of(), Set.of(), null, null, Set.of(), null, DateFact.unknown(), DateFact.unknown(), List.of(), now, rank);
     }
 
-    /** What the background observation of a live search writes. */
+    /**
+     * What the background observation of a live search writes.
+     */
     private void recordInCatalog(SourceHit... hits) {
         SourceDescriptor tavily = new SourceDescriptor("tavily", "Tavily", SourceMode.LIVE, URI.create("https://tavily.com"), null, null,
             EnumSet.allOf(ResourceType.class), Duration.ofSeconds(6), Duration.ZERO);

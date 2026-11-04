@@ -9,16 +9,20 @@ import java.util.List;
  */
 public interface Embedder {
 
-    enum Kind { QUERY, PASSAGE }
-
-    /** Stored next to every vector, so a model change re-embeds everything instead of mixing spaces. */
+    /**
+     * Stored next to every vector, so a model change re-embeds everything instead of mixing spaces.
+     */
     String model();
 
     int dimensions();
 
     List<float[]> embed(List<String> texts, Kind kind);
 
-    /** [rateLimited] lets callers pause instead of retrying at once. */
+    enum Kind {QUERY, PASSAGE}
+
+    /**
+     * [rateLimited] lets callers pause instead of retrying at once.
+     */
     final class EmbeddingFailure extends RuntimeException {
         private final boolean rateLimited;
 

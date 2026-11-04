@@ -2,7 +2,7 @@ package ai.helper2.scout
 
 import ai.helper2.search.MergedResult
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 import java.util.function.Supplier
 
 enum class RunStatus { RUNNING, SUCCEEDED, FAILED, SKIPPED }
@@ -103,6 +103,8 @@ interface EnrichmentStore {
      * [failure] is the short technical reason when no model output was validated (null otherwise). [extraEvidence]
      * names the text the gap round read when the saved result used it ("github-readme:owner/name"), else null.
      */
-    fun save(resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: Instant, result: ValidationResult?,
-             outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?)
+    fun save(
+        resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: Instant, result: ValidationResult?,
+        outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?
+    )
 }

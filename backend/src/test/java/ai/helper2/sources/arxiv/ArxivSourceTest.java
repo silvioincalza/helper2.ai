@@ -1,8 +1,5 @@
 package ai.helper2.sources.arxiv;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 import ai.helper2.platform.http.ObservedHttp;
 import ai.helper2.platform.resilience.OutboundThrottle;
 import ai.helper2.search.SourceFailure;
@@ -14,6 +11,9 @@ import ai.helper2.sources.SourceFixtures;
 import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.testing.FixtureServer;
 import io.micrometer.observation.ObservationRegistry;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+
 import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -22,19 +22,16 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ArxivSourceTest {
 
     final FixtureServer server = new FixtureServer();
-
-    @AfterEach
-    void stop() {
-        server.close();
-    }
-
-    /** One arXiv slot for every replica: what the shared throttle answers, and every interval it was asked for. */
+    /**
+     * One arXiv slot for every replica: what the shared throttle answers, and every interval it was asked for.
+     */
     final List<Duration> asked = new ArrayList<>();
     boolean slotFree = true;
     final OutboundThrottle throttle = (host, interval) -> {
@@ -42,6 +39,15 @@ class ArxivSourceTest {
         asked.add(interval);
         return slotFree;
     };
+
+    static SourceQuery query(String text) {
+        return new SourceQuery(text, List.of(), null, 10);
+    }
+
+    @AfterEach
+    void stop() {
+        server.close();
+    }
 
     ArxivSource source() {
         return new ArxivSource(new SourceSettings(true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ofHours(6)),
@@ -65,10 +71,6 @@ class ArxivSourceTest {
         assertThatThrownBy(() -> source().search(query("agents")))
             .isInstanceOfSatisfying(SourceFailure.RateLimited.class, e -> assertThat(e.getRetryAfter()).isEqualTo(Duration.ofSeconds(3)));
         assertThat(server.requests).isEmpty();
-    }
-
-    static SourceQuery query(String text) {
-        return new SourceQuery(text, List.of(), null, 10);
     }
 
     @Test

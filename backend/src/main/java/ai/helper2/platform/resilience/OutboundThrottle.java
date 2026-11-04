@@ -9,6 +9,8 @@ import java.time.Duration;
 @FunctionalInterface
 public interface OutboundThrottle {
 
-    /** True when the caller may call {@code host} now; the next caller waits {@code interval}. False also when unsure. */
+    /**
+     * True when the caller may call {@code host} now; the next caller waits {@code interval}. False also when unsure.
+     */
     boolean tryAcquire(String host, Duration interval);
 }

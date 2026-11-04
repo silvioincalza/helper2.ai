@@ -26,22 +26,28 @@ import ai.helper2.platform.BadRequestException;
 import ai.helper2.platform.ClientKey;
 import ai.helper2.platform.SignedInUser;
 import ai.helper2.search.Asker;
-import ai.helper2.search.Feature;
 import ai.helper2.search.FacetCount;
-import ai.helper2.search.usecase.ListSources;
-import ai.helper2.search.usecase.SearchResources;
-import ai.helper2.search.usecase.SourceOverview;
+import ai.helper2.search.Feature;
 import ai.helper2.search.SearchFilters;
 import ai.helper2.search.SearchOutcome;
 import ai.helper2.search.SearchRequest;
 import ai.helper2.search.SortOrder;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.SourceStatus;
+import ai.helper2.search.usecase.ListSources;
+import ai.helper2.search.usecase.SearchResources;
+import ai.helper2.search.usecase.SourceOverview;
 import ai.helper2.shared.Audience;
 import ai.helper2.shared.AudiencePath;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.UtcTimes;
 import jakarta.servlet.http.HttpServletRequest;
+import org.jspecify.annotations.Nullable;
+import org.springframework.http.CacheControl;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
@@ -49,11 +55,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.jspecify.annotations.Nullable;
-import org.springframework.http.CacheControl;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -65,7 +66,9 @@ class SearchController implements SearchApi, SourcesApi {
     private final SearchResources search;
     private final ListSources sources;
     private final SignedInUser signedInUser;
-    /** A proxy to the current request: the generated interface does not pass it. */
+    /**
+     * A proxy to the current request: the generated interface does not pass it.
+     */
     private final HttpServletRequest http;
 
     SearchController(SearchResources search, ListSources sources, SignedInUser signedInUser, HttpServletRequest http) {
@@ -73,40 +76,6 @@ class SearchController implements SearchApi, SourcesApi {
         this.sources = sources;
         this.signedInUser = signedInUser;
         this.http = http;
-    }
-
-    @Override
-    public ResponseEntity<SearchResponseDto> search(String q, @Nullable AudiencePathDto path,
-                                                    @Nullable List<ResourceTypeDto> type, @Nullable List<String> source,
-                                                    @Nullable List<String> license, @Nullable TriStateDto openSource,
-                                                    @Nullable List<PricingFilterDto> pricing, @Nullable List<String> platform,
-                                                    @Nullable List<String> useCase, @Nullable List<TechLevelFilterDto> techLevel,
-                                                    @Nullable List<AudienceDto> audience, @Nullable LocalDate updatedAfter,
-                                                    @Nullable SortOrderDto sort, Integer page, Integer size) {
-        if (q.isBlank()) {
-            throw new BadRequestException("Query must not be blank");
-        }
-        SearchFilters filters = new SearchFilters(
-            set(type, t -> ResourceType.valueOf(t.getValue())),
-            set(source, Function.identity()),
-            set(license, l -> l.equalsIgnoreCase("unknown") ? "unknown" : l),
-            openSource == null ? Set.of() : Set.of(openSource.getValue()),
-            set(pricing, p -> p == PricingFilterDto.UNKNOWN ? "unknown" : p.getValue()),
-            set(platform, Function.identity()),
-            set(useCase, Function.identity()),
-            set(techLevel, t -> t == TechLevelFilterDto.UNKNOWN ? "unknown" : t.getValue()),
-            set(audience, a -> Audience.valueOf(a.getValue())),
-            updatedAfter);
-        Asker asker = new Asker(Feature.SEARCH, ClientKey.of(http.getRemoteAddr()), signedInUser.id().orElse(null));
-        SearchOutcome out = search.search(new SearchRequest(
-            q, path == null ? null : AudiencePath.valueOf(path.getValue()), filters,
-            sort == null ? SortOrder.RELEVANCE : SortOrder.valueOf(sort.getValue()), page, size, null, false, asker, null));
-        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(toDto(out));
-    }
-
-    @Override
-    public ResponseEntity<List<SourceInfoDto>> listSources() {
-        return ResponseEntity.ok(sources.list().stream().map(SearchController::info).toList());
     }
 
     private static SourceInfoDto info(SourceOverview o) {
@@ -174,5 +143,39 @@ class SearchController implements SearchApi, SourcesApi {
 
     private static <T, R> Set<R> set(@Nullable Collection<T> in, Function<T, R> f) {
         return in == null ? Set.of() : in.stream().map(f).collect(Collectors.toUnmodifiableSet());
+    }
+
+    @Override
+    public ResponseEntity<SearchResponseDto> search(String q, @Nullable AudiencePathDto path,
+                                                    @Nullable List<ResourceTypeDto> type, @Nullable List<String> source,
+                                                    @Nullable List<String> license, @Nullable TriStateDto openSource,
+                                                    @Nullable List<PricingFilterDto> pricing, @Nullable List<String> platform,
+                                                    @Nullable List<String> useCase, @Nullable List<TechLevelFilterDto> techLevel,
+                                                    @Nullable List<AudienceDto> audience, @Nullable LocalDate updatedAfter,
+                                                    @Nullable SortOrderDto sort, Integer page, Integer size) {
+        if (q.isBlank()) {
+            throw new BadRequestException("Query must not be blank");
+        }
+        SearchFilters filters = new SearchFilters(
+            set(type, t -> ResourceType.valueOf(t.getValue())),
+            set(source, Function.identity()),
+            set(license, l -> l.equalsIgnoreCase("unknown") ? "unknown" : l),
+            openSource == null ? Set.of() : Set.of(openSource.getValue()),
+            set(pricing, p -> p == PricingFilterDto.UNKNOWN ? "unknown" : p.getValue()),
+            set(platform, Function.identity()),
+            set(useCase, Function.identity()),
+            set(techLevel, t -> t == TechLevelFilterDto.UNKNOWN ? "unknown" : t.getValue()),
+            set(audience, a -> Audience.valueOf(a.getValue())),
+            updatedAfter);
+        Asker asker = new Asker(Feature.SEARCH, ClientKey.of(http.getRemoteAddr()), signedInUser.id().orElse(null));
+        SearchOutcome out = search.search(new SearchRequest(
+            q, path == null ? null : AudiencePath.valueOf(path.getValue()), filters,
+            sort == null ? SortOrder.RELEVANCE : SortOrder.valueOf(sort.getValue()), page, size, null, false, asker, null));
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(toDto(out));
+    }
+
+    @Override
+    public ResponseEntity<List<SourceInfoDto>> listSources() {
+        return ResponseEntity.ok(sources.list().stream().map(SearchController::info).toList());
     }
 }

@@ -16,6 +16,9 @@ import ai.helper2.shared.ValueOrigin;
 import ai.helper2.sources.support.Classification;
 import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.SourceSettings;
+import org.springframework.web.client.RestClient;
+import tools.jackson.databind.JsonNode;
+
 import java.net.URI;
 import java.time.Clock;
 import java.time.Instant;
@@ -23,10 +26,10 @@ import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import org.springframework.web.client.RestClient;
-import tools.jackson.databind.JsonNode;
 
-/** npm registry search API (not the website, whose crawling is forbidden). Docs: https://github.com/npm/registry/blob/main/docs/REGISTRY-API.md */
+/**
+ * npm registry search API (not the website, whose crawling is forbidden). Docs: https://github.com/npm/registry/blob/main/docs/REGISTRY-API.md
+ */
 public class NpmSource implements SearchSource {
 
     private final RestClient http;
@@ -40,20 +43,6 @@ public class NpmSource implements SearchSource {
             URI.create("https://docs.npmjs.com/policies/open-source-terms"), "Package metadata from the npm registry API",
             EnumSet.of(ResourceType.LIBRARY, ResourceType.MCP_SERVER, ResourceType.AGENT),
             settings.timeout(), settings.cacheTtl(), settings.enabled(), 40);
-    }
-
-    @Override
-    public SourceDescriptor getDescriptor() {
-        return descriptor;
-    }
-
-    @Override
-    public List<SourceHit> search(SourceQuery query) {
-        String text = HttpClients.queryText(query);
-        JsonNode root = HttpClients.getJson(() -> http.get()
-            .uri(u -> u.path("/-/v1/search").queryParam("text", text).queryParam("size", Math.min(query.getLimit(), 50)).build())
-            .retrieve().body(String.class), clock);
-        return HttpClients.hits("npm", root.path("objects"), clock.instant(), NpmSource::toHit);
     }
 
     private static SourceHit toHit(JsonNode o, Instant now, int position) {
@@ -92,5 +81,19 @@ public class NpmSource implements SearchSource {
             // The search API has no creation date; `date` is the latest publish time.
             DateFact.unknown(),
             DateFact.fromSource(HttpClients.instant(p, "date"), "npm", now), pop, now, position);
+    }
+
+    @Override
+    public SourceDescriptor getDescriptor() {
+        return descriptor;
+    }
+
+    @Override
+    public List<SourceHit> search(SourceQuery query) {
+        String text = HttpClients.queryText(query);
+        JsonNode root = HttpClients.getJson(() -> http.get()
+            .uri(u -> u.path("/-/v1/search").queryParam("text", text).queryParam("size", Math.min(query.getLimit(), 50)).build())
+            .retrieve().body(String.class), clock);
+        return HttpClients.hits("npm", root.path("objects"), clock.instant(), NpmSource::toHit);
     }
 }

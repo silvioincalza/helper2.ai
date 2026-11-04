@@ -1,21 +1,24 @@
 package ai.helper2.api;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import ai.helper2.search.SourceHit;
 import ai.helper2.shared.DateFact;
 import ai.helper2.shared.EventFormat;
 import ai.helper2.shared.EventKind;
 import ai.helper2.shared.ResourceType;
 import com.jayway.jsonpath.JsonPath;
+import org.junit.jupiter.api.Test;
+
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
-import org.junit.jupiter.api.Test;
 
-/** Home page "Next events": only events whose source states when they take place, soonest first, not ended. */
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+/**
+ * Home page "Next events": only events whose source states when they take place, soonest first, not ended.
+ */
 class UpcomingEventsApiIT extends ApiTestBase {
 
     private static SourceHit event(String slug, String title, Integer startInDays, Integer endInDays, int rank) {

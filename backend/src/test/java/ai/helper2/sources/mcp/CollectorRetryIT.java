@@ -1,8 +1,5 @@
 package ai.helper2.sources.mcp;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 import ai.helper2.platform.http.ObservedHttp;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.platform.resilience.Resilience4jPolicies;
@@ -17,12 +14,18 @@ import io.github.resilience4j.core.IntervalFunction;
 import io.github.resilience4j.retry.RetryConfig;
 import io.github.resilience4j.retry.RetryRegistry;
 import io.micrometer.observation.ObservationRegistry;
-import java.time.Duration;
-import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-/** A collector behind its policy over HTTP: a 503 is retried with backoff, a 404 is not. */
+import java.time.Duration;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+/**
+ * A collector behind its policy over HTTP: a 503 is retried with backoff, a 404 is not.
+ */
 class CollectorRetryIT {
 
     private final FixtureServer server = new FixtureServer();
@@ -62,7 +65,9 @@ class CollectorRetryIT {
         assertThat(server.requests).hasSize(1);
     }
 
-    /** A body still arriving at the deadline is cut and retried like a timeout: it may be quick next time. */
+    /**
+     * A body still arriving at the deadline is cut and retried like a timeout: it may be quick next time.
+     */
     @Test
     void aCallPastItsDeadlineIsRetried() {
         server.route("/v0.1/servers", FixtureServer.Reply.drip("{\"servers\":[],\"metadata\":{}}", 50));

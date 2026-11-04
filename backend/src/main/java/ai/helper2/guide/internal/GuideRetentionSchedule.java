@@ -4,15 +4,18 @@ import ai.helper2.guide.SimilarQuestionRetention;
 import ai.helper2.guide.usecase.PurgeExpiredData;
 import ai.helper2.platform.ClusterLock;
 import ai.helper2.platform.ClusterLocks;
-import java.time.Clock;
-import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Scheduled;
 
-/** Runs the guide module's retention once a day (helper2.retention.cron, UTC), on one replica at a time. */
+import java.time.Clock;
+import java.time.Duration;
+
+/**
+ * Runs the guide module's retention once a day (helper2.retention.cron, UTC), on one replica at a time.
+ */
 @Configuration(proxyBeanMethods = false)
 class GuideRetentionSchedule {
 

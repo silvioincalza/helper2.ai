@@ -12,9 +12,9 @@ import ai.helper2.search.IntentClass
 import ai.helper2.search.MergedResult
 import ai.helper2.search.Notice
 import ai.helper2.search.NoticeCode
-import ai.helper2.search.QuotaDecision
 import ai.helper2.search.QueryAnalyzer
 import ai.helper2.search.QueryTranslator
+import ai.helper2.search.QuotaDecision
 import ai.helper2.search.Ranking
 import ai.helper2.search.ResultMerger
 import ai.helper2.search.ResultObserver
@@ -37,15 +37,15 @@ import ai.helper2.search.WebFreshness
 import ai.helper2.search.WebResultStore
 import ai.helper2.search.WebSearchQuota
 import ai.helper2.search.WebSearchesLeft
-import ai.helper2.shared.AudiencePath
 import ai.helper2.shared.DateFact
 import ai.helper2.shared.LanguageDetector
 import ai.helper2.shared.SourceMode
+import org.slf4j.LoggerFactory
 import java.security.MessageDigest
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
-import java.util.HexFormat
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.ExecutorService
@@ -53,7 +53,6 @@ import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicLong
-import org.slf4j.LoggerFactory
 
 /**
  * Federated search orchestration. Queries every enabled source in parallel with its own timeout,
@@ -135,8 +134,10 @@ class SearchResources @JvmOverloads constructor(
             }
             val cooldown = cooldownUntil[d.id]
             if (cooldown != null && startedAt.isBefore(cooldown)) {
-                attempts += stale(d, startedAt, null, SourceOutcome.SKIPPED, "Paused after a rate limit until $cooldown",
-                    lookup(d, query), SkipReason.RATE_LIMIT_PAUSE)
+                attempts += stale(
+                    d, startedAt, null, SourceOutcome.SKIPPED, "Paused after a rate limit until $cooldown",
+                    lookup(d, query), SkipReason.RATE_LIMIT_PAUSE
+                )
                 return
             }
             if (d.mode == SourceMode.LIVE) {
@@ -145,7 +146,15 @@ class SearchResources @JvmOverloads constructor(
                 val event = if (d.metered) "store_" else ""
                 if (cached != null && Duration.between(cached.fetchedAt, startedAt) < freshFor(d)) {
                     attempts += Attempt(
-                        SourceStatus(d, SourceOutcome.SUCCEEDED, ServedFrom.CACHE, cached.hits.size, Duration.ZERO, startedAt, cached.fetchedAt),
+                        SourceStatus(
+                            d,
+                            SourceOutcome.SUCCEEDED,
+                            ServedFrom.CACHE,
+                            cached.hits.size,
+                            Duration.ZERO,
+                            startedAt,
+                            cached.fetchedAt
+                        ),
                         cached.hits,
                     )
                     metrics.cacheEvent(event + "hit")
@@ -227,7 +236,9 @@ class SearchResources @JvmOverloads constructor(
 
         private fun collect(p: Pending): Attempt {
             val d = p.source.descriptor
-            fun latency(): Duration = Duration.ofNanos((p.finishedNanos.get().takeIf { it > 0 } ?: System.nanoTime()) - p.startedNanos)
+            fun latency(): Duration =
+                Duration.ofNanos((p.finishedNanos.get().takeIf { it > 0 } ?: System.nanoTime()) - p.startedNanos)
+
             val deadlineNanos = p.startedNanos + d.timeout.toNanos()
             return try {
                 val hits = p.future.get(maxOf(0, deadlineNanos - System.nanoTime()), TimeUnit.NANOSECONDS)
@@ -236,22 +247,37 @@ class SearchResources @JvmOverloads constructor(
                 Attempt(SourceStatus(d, SourceOutcome.SUCCEEDED, ServedFrom.LIVE, hits.size, latency, startedAt), hits)
             } catch (_: TimeoutException) {
                 p.future.cancel(true)
-                stale(d, startedAt, d.timeout, SourceOutcome.TIMED_OUT, "No response within ${d.timeout.toMillis()} ms", cachedFor[d.id])
+                stale(
+                    d,
+                    startedAt,
+                    d.timeout,
+                    SourceOutcome.TIMED_OUT,
+                    "No response within ${d.timeout.toMillis()} ms",
+                    cachedFor[d.id]
+                )
             } catch (e: ExecutionException) {
                 val latency = latency()
                 when (val cause = e.cause) {
                     is CallRefused -> when (cause.reason()) {
-                        CallRefused.Reason.CIRCUIT_OPEN -> stale(d, startedAt, null, SourceOutcome.SKIPPED,
-                            "Paused after repeated failures", cachedFor[d.id], SkipReason.CIRCUIT_OPEN)
-                        CallRefused.Reason.BUSY -> stale(d, startedAt, null, SourceOutcome.SKIPPED,
-                            "Too many searches at once", cachedFor[d.id], SkipReason.BUSY)
+                        CallRefused.Reason.CIRCUIT_OPEN -> stale(
+                            d, startedAt, null, SourceOutcome.SKIPPED,
+                            "Paused after repeated failures", cachedFor[d.id], SkipReason.CIRCUIT_OPEN
+                        )
+
+                        CallRefused.Reason.BUSY -> stale(
+                            d, startedAt, null, SourceOutcome.SKIPPED,
+                            "Too many searches at once", cachedFor[d.id], SkipReason.BUSY
+                        )
                     }
+
                     is SourceFailure.RateLimited -> {
                         cooldownUntil[d.id] = startedAt.plus(cause.retryAfter ?: Duration.ofMinutes(1))
                         stale(d, startedAt, latency, SourceOutcome.RATE_LIMITED, "Source rate limit reached", cachedFor[d.id])
                     }
+
                     is SourceFailure.Unavailable ->
                         stale(d, startedAt, latency, SourceOutcome.FAILED, "Source unavailable", cachedFor[d.id])
+
                     else -> {
                         log.warn("source ${d.id} failed: ${cause?.javaClass?.simpleName}")
                         stale(d, startedAt, latency, SourceOutcome.FAILED, "Source returned an error", cachedFor[d.id])
@@ -292,12 +318,17 @@ class SearchResources @JvmOverloads constructor(
             merged = merged.map { r -> r.copy(discovered = DateFact.observed(discovered[r.id])) }
         } catch (e: RuntimeException) {
             log.warn("result observation failed: ${e.javaClass.simpleName}")
-            notices += Notice(NoticeCode.INDEX_UNAVAILABLE, "Helper2 index unavailable; discovery dates are unknown for this search.")
+            notices += Notice(
+                NoticeCode.INDEX_UNAVAILABLE,
+                "Helper2 index unavailable; discovery dates are unknown for this search."
+            )
         }
         record(merged, statuses)
 
-        val ranked = ranking.rank(merged, request.text, request.path, analyzed.typeHints,
-            analyzed.requiredVariants.first().split(' '))
+        val ranked = ranking.rank(
+            merged, request.text, request.path, analyzed.typeHints,
+            analyzed.requiredVariants.first().split(' ')
+        )
         val filtered = Filtering.apply(ranked, request.filters)
         val sorted = Sorting.sort(filtered, request.sort)
         val pageItems = sorted.drop(request.page * request.size).take(request.size)
@@ -336,9 +367,11 @@ class SearchResources @JvmOverloads constructor(
         if (quota == null || sources.none { it.descriptor.metered && it.descriptor.enabled }) null else quota.left(asker)
 
     private fun sourceQuery(request: SearchRequest, analyzed: AnalyzedQuery, language: String?) =
-        SourceQuery(request.text.trim(), analyzed.expandedTerms, request.path, perSourceLimit,
+        SourceQuery(
+            request.text.trim(), analyzed.expandedTerms, request.path, perSourceLimit,
             analyzed.requiredVariants, analyzed.synonyms, language, request.webQuery?.trim()?.ifBlank { null },
-            request.filters.publishedAfter, request.browse, request.filters.types)
+            request.filters.publishedAfter, request.browse, request.filters.types
+        )
 
     /** Hands the catalog only what was fetched live now: hits replayed from the cache were recorded when fetched. */
     private fun record(merged: List<MergedResult>, statuses: List<SourceStatus>) {
@@ -411,7 +444,17 @@ class SearchResources @JvmOverloads constructor(
         return if (usable != null) {
             metrics.cacheEvent("stale_served")
             Attempt(
-                SourceStatus(d, outcome, ServedFrom.STALE_CACHE, usable.hits.size, latency, at, usable.fetchedAt, "$message; showing cached results", skipReason),
+                SourceStatus(
+                    d,
+                    outcome,
+                    ServedFrom.STALE_CACHE,
+                    usable.hits.size,
+                    latency,
+                    at,
+                    usable.fetchedAt,
+                    "$message; showing cached results",
+                    skipReason
+                ),
                 usable.hits,
             )
         } else {

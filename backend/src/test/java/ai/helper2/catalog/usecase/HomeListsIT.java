@@ -1,7 +1,5 @@
 package ai.helper2.catalog.usecase;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.TestcontainersConfiguration;
 import ai.helper2.catalog.internal.ResourceCards;
 import ai.helper2.catalog.internal.ResourceStore;
@@ -22,6 +20,14 @@ import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.SourceMode;
 import ai.helper2.shared.ValueOrigin;
 import ai.helper2.testing.StatementCounting;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.simple.JdbcClient;
+
 import java.net.URI;
 import java.sql.Timestamp;
 import java.time.Duration;
@@ -33,13 +39,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
-import org.springframework.jdbc.core.simple.JdbcClient;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * The home page lists ("Today" and "Next events") read their cards in a fixed number of statements, and the batched
@@ -52,29 +53,32 @@ class HomeListsIT {
     static final Instant SINCE = Instant.parse("2099-01-01T00:00:00Z");
     static final Instant UNTIL = Instant.parse("2099-02-01T00:00:00Z");
     static final Set<String> LIVE = Set.of("github", "npm");
-
-    @Autowired
-    ResourceStore store;
-
-    @Autowired
-    ResourceCards cards;
-
-    @Autowired
-    ListRecentResources recent;
-
-    @Autowired
-    ListUpcomingEvents upcoming;
-
-    @Autowired
-    JdbcClient jdbc;
-
     final String run = UUID.randomUUID().toString().substring(0, 8);
     final Instant now = Instant.now();
     final List<UUID> created = new ArrayList<>();
-    /** An npm package of a monorepo: its record names the repository, so its hits merge to the repository's identity. */
+    @Autowired
+    ResourceStore store;
+    @Autowired
+    ResourceCards cards;
+    @Autowired
+    ListRecentResources recent;
+    @Autowired
+    ListUpcomingEvents upcoming;
+    @Autowired
+    JdbcClient jdbc;
+    /**
+     * An npm package of a monorepo: its record names the repository, so its hits merge to the repository's identity.
+     */
     UUID monorepoPackage;
-    /** A resource row whose records are gone: no card. */
+    /**
+     * A resource row whose records are gone: no card.
+     */
     UUID withoutRecords;
+
+    private static SourceContext context(String id) {
+        return new SourceContext(new SourceDescriptor(id, id, SourceMode.LIVE, URI.create("https://" + id + ".example"), null,
+            null, EnumSet.allOf(ResourceType.class), Duration.ofSeconds(1), Duration.ZERO), ServedFrom.LIVE);
+    }
 
     private SourceHit hit(String source, String url, String repo, int stars) {
         return new SourceHit(source, source + ":" + url, URI.create(url), CanonicalUrl.of(url), CanonicalUrl.of(repo),
@@ -82,11 +86,6 @@ class HomeListsIT {
             ResourceType.LIBRARY, Audience.BUILD_WITH_AI, null, Set.of(), Set.of("mcp", "python"), null, null, Set.of(), null,
             DateFact.unknown(), DateFact.unknown(),
             stars == 0 ? List.of() : List.of(new PopularityMetric(PopularityKind.GITHUB_STARS, stars, source, now)), now, 0);
-    }
-
-    private static SourceContext context(String id) {
-        return new SourceContext(new SourceDescriptor(id, id, SourceMode.LIVE, URI.create("https://" + id + ".example"), null,
-            null, EnumSet.allOf(ResourceType.class), Duration.ofSeconds(1), Duration.ZERO), ServedFrom.LIVE);
     }
 
     private List<UUID> upsert(SourceHit... hits) {
@@ -134,7 +133,9 @@ class HomeListsIT {
         jdbc.sql("DELETE FROM resource WHERE id = ANY(:ids)").param("ids", created.toArray(UUID[]::new)).update();
     }
 
-    /** The card as the home lists built it before batching: one resource, then its records. */
+    /**
+     * The card as the home lists built it before batching: one resource, then its records.
+     */
     private Optional<MergedResult> oneByOne(UUID id) {
         return store.findResource(id).flatMap(row -> cards.card(row, store.recordsOf(id)));
     }

@@ -9,7 +9,7 @@ import java.util.LinkedHashMap;
 /**
  * Fixed-window rate limiter in this replica's memory: the fallback of RedisRateLimiter while Redis is down, when
  * each replica counts on its own (so the effective limit multiplies by the number of replicas).
- *
+ * <p>
  * Bounded: windows are kept in the order they started, so expired ones are always at the head and are
  * dropped as they expire (O(1) amortised per call); above {@code maxClients} the oldest window is evicted,
  * which at worst gives that client a fresh window early.
@@ -17,22 +17,11 @@ import java.util.LinkedHashMap;
 public class InMemoryRateLimiter implements RateLimiter {
 
     static final int DEFAULT_MAX_CLIENTS = 50_000;
-
-    private static final class Window {
-        final Instant start;
-        int count = 1;
-
-        Window(Instant start) {
-            this.start = start;
-        }
-    }
-
     private final int limit;
     private final Duration window;
     private final Clock clock;
     private final int maxClients;
     private final LinkedHashMap<String, Window> windows = new LinkedHashMap<>();
-
     public InMemoryRateLimiter(int limit, Duration window, Clock clock) {
         this(limit, window, clock, DEFAULT_MAX_CLIENTS);
     }
@@ -79,5 +68,14 @@ public class InMemoryRateLimiter implements RateLimiter {
 
     private boolean expired(Window w, Instant now) {
         return !now.isBefore(w.start.plus(window));
+    }
+
+    private static final class Window {
+        final Instant start;
+        int count = 1;
+
+        Window(Instant start) {
+            this.start = start;
+        }
     }
 }

@@ -1,13 +1,14 @@
 package ai.helper2.catalog;
 
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.stereotype.Service;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.stereotype.Service;
 
 /**
  * Human review queue: anything that must not be shown as verified without a person deciding. Items are
@@ -16,27 +17,21 @@ import org.springframework.stereotype.Service;
 @Service
 public class ReviewQueue {
 
-    public enum Kind {
-        ENRICHMENT_VALIDATION, RELATIONSHIP_CANDIDATE, USER_REPORT,
-        /** A page a collector proposes for the catalog (ADR 0032 §8): no resource yet, only its URL. */
-        COURSE_CANDIDATE
-    }
-
-    /** SUPERSEDED: a newer enrichment run of the same resource replaced the run the item was about. */
-    public enum Status { OPEN, ACCEPTED, REJECTED, SUPERSEDED }
-
-    public record Item(UUID id, Kind kind, Status status, UUID resourceId, String resourceTitle, String reason,
-                       String details, Instant createdAt, Instant resolvedAt, String resolvedBy) {
-    }
-
-    public record Links(UUID enrichmentRunId, UUID relationshipId, UUID reportId) {
-        public static final Links NONE = new Links(null, null, null);
-    }
-
+    private static final String SELECT_ITEMS =
+        "SELECT i.*, r.title AS resource_title FROM review_item i LEFT JOIN resource r ON r.id = i.resource_id";
     private final JdbcClient jdbc;
 
     public ReviewQueue(JdbcClient jdbc) {
         this.jdbc = jdbc;
+    }
+
+    private static Item item(ResultSet rs, int n) throws SQLException {
+        return new Item(
+            rs.getObject("id", UUID.class), Kind.valueOf(rs.getString("kind")), Status.valueOf(rs.getString("status")),
+            rs.getObject("resource_id", UUID.class), rs.getString("resource_title"), rs.getString("reason"),
+            rs.getString("details"), rs.getTimestamp("created_at").toInstant(),
+            rs.getTimestamp("resolved_at") == null ? null : rs.getTimestamp("resolved_at").toInstant(),
+            rs.getString("resolved_by"));
     }
 
     public UUID open(Kind kind, UUID resourceId, String reason, String details, Links links) {
@@ -82,14 +77,9 @@ public class ReviewQueue {
             .update() == 1;
     }
 
-    private static final String SELECT_ITEMS =
-        "SELECT i.*, r.title AS resource_title FROM review_item i LEFT JOIN resource r ON r.id = i.resource_id";
-
-    /** One page of items: [items] in the page, [total] across every page. */
-    public record Page(List<Item> items, long total) {
-    }
-
-    /** Newest first; all statuses when [status] is null, all kinds when [kind] is null. */
+    /**
+     * Newest first; all statuses when [status] is null, all kinds when [kind] is null.
+     */
     public Page list(Status status, Kind kind, int page, int size) {
         String wantedStatus = status == null ? null : status.name();
         String wantedKind = kind == null ? null : kind.name();
@@ -110,7 +100,9 @@ public class ReviewQueue {
         return new Page(items, total);
     }
 
-    /** Open items per kind, every kind listed (0 when none waits); for the back office overview. */
+    /**
+     * Open items per kind, every kind listed (0 when none waits); for the back office overview.
+     */
     public java.util.Map<Kind, Long> openCountsByKind() {
         java.util.Map<Kind, Long> counts = new java.util.EnumMap<>(Kind.class);
         for (Kind kind : Kind.values()) {
@@ -122,7 +114,9 @@ public class ReviewQueue {
         return counts;
     }
 
-    /** Items waiting for a person; for the review backlog gauge. */
+    /**
+     * Items waiting for a person; for the review backlog gauge.
+     */
     public long openCount() {
         return jdbc.sql("SELECT count(*) FROM review_item WHERE status = 'OPEN'").query(Long.class).single();
     }
@@ -131,12 +125,30 @@ public class ReviewQueue {
         return jdbc.sql(SELECT_ITEMS + " WHERE i.id = :id").param("id", id).query(ReviewQueue::item).optional();
     }
 
-    private static Item item(ResultSet rs, int n) throws SQLException {
-        return new Item(
-            rs.getObject("id", UUID.class), Kind.valueOf(rs.getString("kind")), Status.valueOf(rs.getString("status")),
-            rs.getObject("resource_id", UUID.class), rs.getString("resource_title"), rs.getString("reason"),
-            rs.getString("details"), rs.getTimestamp("created_at").toInstant(),
-            rs.getTimestamp("resolved_at") == null ? null : rs.getTimestamp("resolved_at").toInstant(),
-            rs.getString("resolved_by"));
+    public enum Kind {
+        ENRICHMENT_VALIDATION, RELATIONSHIP_CANDIDATE, USER_REPORT,
+        /**
+         * A page a collector proposes for the catalog (ADR 0032 §8): no resource yet, only its URL.
+         */
+        COURSE_CANDIDATE
+    }
+
+    /**
+     * SUPERSEDED: a newer enrichment run of the same resource replaced the run the item was about.
+     */
+    public enum Status {OPEN, ACCEPTED, REJECTED, SUPERSEDED}
+
+    public record Item(UUID id, Kind kind, Status status, UUID resourceId, String resourceTitle, String reason,
+                       String details, Instant createdAt, Instant resolvedAt, String resolvedBy) {
+    }
+
+    public record Links(UUID enrichmentRunId, UUID relationshipId, UUID reportId) {
+        public static final Links NONE = new Links(null, null, null);
+    }
+
+    /**
+     * One page of items: [items] in the page, [total] across every page.
+     */
+    public record Page(List<Item> items, long total) {
     }
 }

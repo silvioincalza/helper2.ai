@@ -1,7 +1,8 @@
 package ai.helper2.platform.llm;
 
-import java.util.Map;
 import org.springframework.ai.openai.OpenAiChatOptions;
+
+import java.util.Map;
 
 /**
  * Options for one model call: temperature 0, a model id, an optional token limit, and whether the model

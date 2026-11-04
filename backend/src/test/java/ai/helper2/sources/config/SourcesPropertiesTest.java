@@ -1,13 +1,16 @@
 package ai.helper2.sources.config;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.sources.support.SourceSettings;
-import java.time.Duration;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-/** A collector's deadline (ADR 0006 §2): twice its timeout unless H2_SOURCE_<ID>_DEADLINE says otherwise. */
+import java.time.Duration;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * A collector's deadline (ADR 0006 §2): twice its timeout unless H2_SOURCE_<ID>_DEADLINE says otherwise.
+ */
 class SourcesPropertiesTest {
 
     @Test

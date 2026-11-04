@@ -1,10 +1,6 @@
 package ai.helper2.catalog;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 import ai.helper2.TestcontainersConfiguration;
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +8,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.simple.JdbcClient;
+
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
@@ -38,7 +39,9 @@ class SchemaMigrationTest {
         return id;
     }
 
-    /** Same shape as ResourceStore.search: English + simple + the query language's stemmer (null = none). */
+    /**
+     * Same shape as ResourceStore.search: English + simple + the query language's stemmer (null = none).
+     */
     private long matches(String query, String language) {
         return jdbc.sql("""
                 SELECT count(*) FROM resource
@@ -78,11 +81,11 @@ class SchemaMigrationTest {
     private UUID record(UUID resourceId, String extra) {
         UUID id = UUID.randomUUID();
         jdbc.sql("""
-                INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title,
-                                           type, retrieved_at, fingerprint, extra)
-                VALUES (:id, 'curated', :id::text, :rid, 'https://demo.example/r', 'https://demo.example/r', 'r',
-                        'PRODUCT', now(), 'fp', CAST(:extra AS jsonb))
-                """).param("id", id).param("rid", resourceId).param("extra", extra).update();
+            INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title,
+                                       type, retrieved_at, fingerprint, extra)
+            VALUES (:id, 'curated', :id::text, :rid, 'https://demo.example/r', 'https://demo.example/r', 'r',
+                    'PRODUCT', now(), 'fp', CAST(:extra AS jsonb))
+            """).param("id", id).param("rid", resourceId).param("extra", extra).update();
         return id;
     }
 
@@ -146,11 +149,11 @@ class SchemaMigrationTest {
     @Test
     void unknownPublicationDateCannotClaimAPrecision() {
         assertThatThrownBy(() -> jdbc.sql("""
-                INSERT INTO resource (id, canonical_url, url, title, description_origin, type, audience, data_origin,
-                                      published_precision)
-                VALUES (gen_random_uuid(), 'https://demo.example/bad', 'https://demo.example/bad', 'x', 'DEMO',
-                        'PRODUCT', 'USE_AI', 'DEMO', 'DAY')
-                """).update())
+            INSERT INTO resource (id, canonical_url, url, title, description_origin, type, audience, data_origin,
+                                  published_precision)
+            VALUES (gen_random_uuid(), 'https://demo.example/bad', 'https://demo.example/bad', 'x', 'DEMO',
+                    'PRODUCT', 'USE_AI', 'DEMO', 'DAY')
+            """).update())
             .isInstanceOf(DataIntegrityViolationException.class);
     }
 }

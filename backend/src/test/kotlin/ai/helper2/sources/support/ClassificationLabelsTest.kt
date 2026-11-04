@@ -1,10 +1,10 @@
 package ai.helper2.sources.support
 
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import org.junit.jupiter.api.Assumptions.assumeTrue
 
 /**
  * Precision and recall of the AI-relevance gate ([Classification.isAiRelated], used by GitHub, npm, Tavily and the
@@ -37,14 +37,16 @@ class ClassificationLabelsTest {
 
     @Test
     fun `counts each gate decision against its label`() {
-        val items = parse(listOf(
-            HEADER,
-            "github\tacme/llm-router\tRoute prompts between models\t\t1", // gate yes, label yes: tp
-            "npm\tleft-pad\tPad a string\t\t0", // gate no, label no: tn
-            "github\tacme/agentur\tWebsite of a travel agent\tagent\t0", // "agent" matches: fp
-            "github\tacme/sd-ui\tA web UI for image synthesis\t\t1", // no listed word: fn
-            "# min-precision 0.9",
-        ))
+        val items = parse(
+            listOf(
+                HEADER,
+                "github\tacme/llm-router\tRoute prompts between models\t\t1", // gate yes, label yes: tp
+                "npm\tleft-pad\tPad a string\t\t0", // gate no, label no: tn
+                "github\tacme/agentur\tWebsite of a travel agent\tagent\t0", // "agent" matches: fp
+                "github\tacme/sd-ui\tA web UI for image synthesis\t\t1", // no listed word: fn
+                "# min-precision 0.9",
+            )
+        )
         assertEquals(Confusion(tp = 1, fp = 1, fn = 1, tn = 1), confusion(items))
         assertEquals(0.5, confusion(items).precision, 1e-9)
         assertEquals(0.9, gate(listOf("# min-precision 0.9"), "min-precision")!!, 1e-9)
@@ -52,7 +54,8 @@ class ClassificationLabelsTest {
 
     private fun confusion(items: List<Labelled>): Confusion {
         val decided = items.map { Classification.isAiRelated(it.title, it.description, it.labels) to it.aiRelated }
-        return Confusion(decided.count { it == true to true }, decided.count { it == true to false },
+        return Confusion(
+            decided.count { it == true to true }, decided.count { it == true to false },
             decided.count { it == false to true }, decided.count { it == false to false })
     }
 
@@ -71,7 +74,13 @@ class ClassificationLabelsTest {
                 require(c.size == 5) { "classifier-labels.tsv line ${i + 2}: expected 5 tab-separated columns" }
                 when (c[4].trim()) {
                     "" -> null
-                    "1", "0" -> Labelled(c[1], c[2].ifBlank { null }, c[3].split(',').map(String::trim).filter(String::isNotEmpty), c[4].trim() == "1")
+                    "1", "0" -> Labelled(
+                        c[1],
+                        c[2].ifBlank { null },
+                        c[3].split(',').map(String::trim).filter(String::isNotEmpty),
+                        c[4].trim() == "1"
+                    )
+
                     else -> throw IllegalArgumentException("classifier-labels.tsv line ${i + 2}: ai_related must be 0, 1 or empty")
                 }
             }

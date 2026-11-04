@@ -2,7 +2,7 @@ package ai.helper2.shared
 
 import java.nio.ByteBuffer
 import java.security.MessageDigest
-import java.util.UUID
+import java.util.*
 
 /** Stable resource identifier: RFC 9562 UUIDv5 of the canonical URL in a fixed Helper2 namespace. */
 data class ResourceId(val value: UUID) {

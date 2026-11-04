@@ -7,21 +7,22 @@ import ai.helper2.catalog.internal.ResourceStore.PendingEmbeddings;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
+
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.dao.DataAccessException;
 
 /**
  * Keeps resource_embedding in step with resource: each tick embeds one batch of resources that have no
  * vector for the current model or whose text changed. The same loop builds the index the first time and
  * keeps it current afterwards, so there is no upsert hook and no separate reindex job. After a rate
  * limit it pauses; any other failure is logged and retried on the next tick.
- *
+ * <p>
  * Meters: helper2.embedding.backlog (resources without a current vector for the model: none yet, or one made
  * from text that has changed since; counted by the same query that picks the batch, minus the batch once it is
  * stored, so a failed batch still updates it),
@@ -66,7 +67,9 @@ public class EmbeddingIndexer {
             .tag("reason", reason).register(registry);
     }
 
-    /** One batch. Returns how many resources were embedded (0 when paused, idle or failed). */
+    /**
+     * One batch. Returns how many resources were embedded (0 when paused, idle or failed).
+     */
     public synchronized int tick() {
         if (clock.instant().isBefore(pausedUntil)) {
             return 0;

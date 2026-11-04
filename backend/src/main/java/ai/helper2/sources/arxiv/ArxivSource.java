@@ -14,6 +14,13 @@ import ai.helper2.shared.SourceMode;
 import ai.helper2.shared.ValueOrigin;
 import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.SourceSettings;
+import org.springframework.web.client.RestClient;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+
+import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -25,12 +32,6 @@ import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import javax.xml.XMLConstants;
-import javax.xml.parsers.DocumentBuilderFactory;
-import org.springframework.web.client.RestClient;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
 
 /**
  * arXiv papers in AI categories. API: https://info.arxiv.org/help/api/ — metadata is CC0; no more than
@@ -59,6 +60,36 @@ public class ArxivSource implements SearchSource {
             settings.timeout(), settings.cacheTtl(), settings.enabled(), 45, false, true, true, true);
     }
 
+    /**
+     * Words AND the AI categories; a window adds arXiv's documented {@code submittedDate:[from TO to]} range.
+     */
+    static String searchQuery(SourceQuery query) {
+        String terms = HttpClients.queryText(query)
+            .replaceAll("[^\\p{L}\\p{N} -]", " ").trim().replaceAll("\\s+", " ");
+        String q = query.getBrowse() || terms.isEmpty() ? AI_CATEGORIES : "all:(" + terms + ") AND " + AI_CATEGORIES;
+        if (query.getPublishedAfter() != null) {
+            q += " AND submittedDate:[" + query.getPublishedAfter().toString().replace("-", "") + "0000 TO 299912312359]";
+        }
+        return q;
+    }
+
+    private static String text(Element parent, String local) {
+        NodeList n = parent.getElementsByTagNameNS(ATOM, local);
+        return n.getLength() == 0 ? null : n.item(0).getTextContent();
+    }
+
+    private static String clean(String s) {
+        return s == null ? null : s.replaceAll("\\s+", " ").trim();
+    }
+
+    private static Instant instant(String s) {
+        try {
+            return s == null ? null : Instant.parse(s.trim());
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
     @Override
     public SourceDescriptor getDescriptor() {
         return descriptor;
@@ -77,17 +108,6 @@ public class ArxivSource implements SearchSource {
                 .queryParam("max_results", Math.min(query.getLimit(), 20)).queryParam("sortBy", sortBy).build())
             .retrieve().body(String.class), clock);
         return parse(xml, now);
-    }
-
-    /** Words AND the AI categories; a window adds arXiv's documented {@code submittedDate:[from TO to]} range. */
-    static String searchQuery(SourceQuery query) {
-        String terms = HttpClients.queryText(query)
-            .replaceAll("[^\\p{L}\\p{N} -]", " ").trim().replaceAll("\\s+", " ");
-        String q = query.getBrowse() || terms.isEmpty() ? AI_CATEGORIES : "all:(" + terms + ") AND " + AI_CATEGORIES;
-        if (query.getPublishedAfter() != null) {
-            q += " AND submittedDate:[" + query.getPublishedAfter().toString().replace("-", "") + "0000 TO 299912312359]";
-        }
-        return q;
     }
 
     List<SourceHit> parse(String xml, Instant now) {
@@ -127,22 +147,5 @@ public class ArxivSource implements SearchSource {
                 DateFact.fromSource(instant(text(e, "updated")), "arxiv", now), List.of(), now, i));
         }
         return hits;
-    }
-
-    private static String text(Element parent, String local) {
-        NodeList n = parent.getElementsByTagNameNS(ATOM, local);
-        return n.getLength() == 0 ? null : n.item(0).getTextContent();
-    }
-
-    private static String clean(String s) {
-        return s == null ? null : s.replaceAll("\\s+", " ").trim();
-    }
-
-    private static Instant instant(String s) {
-        try {
-            return s == null ? null : Instant.parse(s.trim());
-        } catch (RuntimeException e) {
-            return null;
-        }
     }
 }

@@ -3,11 +3,11 @@ package ai.helper2.guide.web
 import ai.helper2.api.generated.model.GuideTrailRemovedDto
 import ai.helper2.api.generated.model.NoticeDto
 import ai.helper2.guide.GuideAnswer
+import ai.helper2.guide.GuideStatus
+import ai.helper2.guide.Recommendation
 import ai.helper2.guide.RemovedSuggestion
 import ai.helper2.guide.ResearchTrail
 import ai.helper2.guide.TrailCheck
-import ai.helper2.guide.GuideStatus
-import ai.helper2.guide.Recommendation
 import ai.helper2.platform.llm.LlmSettings
 import ai.helper2.search.Notice
 import ai.helper2.search.NoticeCode
@@ -61,7 +61,10 @@ class GuideDtoMapperTest {
         val dto = mapper.toDto(answer(modelUsed = true, planned = true).copy(trail = trail))
 
         assertTrue("trail.queries[]" in dto.aiContent!!.fields)
-        assertTrue(dto.aiContent!!.fields.none { it.startsWith("trail.removed") }, "titles come from the sources, checks are codes")
+        assertTrue(
+            dto.aiContent!!.fields.none { it.startsWith("trail.removed") },
+            "titles come from the sources, checks are codes"
+        )
         assertEquals(listOf("speech recognition"), dto.trail!!.queries)
         assertEquals("promo", dto.trail!!.removed.single().title)
         assertEquals(GuideTrailRemovedDto.CheckEnum.CONSTRAINT_NOT_MET, dto.trail!!.removed.single().check)
@@ -69,7 +72,12 @@ class GuideDtoMapperTest {
 
     @Test
     fun `the name and the search of a not-found notice are their own fields, marked AI-written, the message is not`() {
-        val notice = Notice(NoticeCode.GUIDE_SUBJECT_NOT_FOUND, "The name in the question was not found.", subject = "Frobnicator", query = "pdf chat")
+        val notice = Notice(
+            NoticeCode.GUIDE_SUBJECT_NOT_FOUND,
+            "The name in the question was not found.",
+            subject = "Frobnicator",
+            query = "pdf chat"
+        )
         val dto = mapper.toDto(answer(modelUsed = true, planned = true).copy(notices = listOf(notice)))
 
         val n = dto.notices.single()
@@ -83,7 +91,16 @@ class GuideDtoMapperTest {
 
     @Test
     fun `a search notice has no name and no search`() {
-        val dto = mapper.toDto(answer(modelUsed = true, planned = true).copy(notices = listOf(Notice(NoticeCode.CACHE_UNAVAILABLE, "cache down"))))
+        val dto = mapper.toDto(
+            answer(modelUsed = true, planned = true).copy(
+                notices = listOf(
+                    Notice(
+                        NoticeCode.CACHE_UNAVAILABLE,
+                        "cache down"
+                    )
+                )
+            )
+        )
 
         assertNull(dto.notices.single().subject)
         assertNull(dto.notices.single().query)
@@ -101,10 +118,12 @@ class GuideDtoMapperTest {
     fun `every pick carries its works-with flags, an AI pick and a fallback pick alike`() {
         val server = merged("https://github.com/a/server", tags = setOf("mcp"))
         val model = merged("https://github.com/a/model", type = ResourceType.MODEL)
-        val withPicks = answer(modelUsed = true, planned = true).copy(status = GuideStatus.OK, recommendations = listOf(
-            Recommendation(server, "Connects tools", "An MCP server", aiReasoned = true),
-            Recommendation(model, "", "", aiReasoned = false),
-        ))
+        val withPicks = answer(modelUsed = true, planned = true).copy(
+            status = GuideStatus.OK, recommendations = listOf(
+                Recommendation(server, "Connects tools", "An MCP server", aiReasoned = true),
+                Recommendation(model, "", "", aiReasoned = false),
+            )
+        )
 
         val picks = mapper.toDto(withPicks).recommendations
 

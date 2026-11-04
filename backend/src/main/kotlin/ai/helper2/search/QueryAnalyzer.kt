@@ -31,17 +31,67 @@ class QueryAnalyzer {
     private data class Entry(val useCase: String, val english: String, val en: Set<String>, val it: Set<String>)
 
     private val lexicon = listOf(
-        Entry("writing", "writing", setOf("write", "writing", "copywriting", "blog", "essay"), setOf("scrivere", "scrittura", "testi", "articoli")),
-        Entry("translation", "translation", setOf("translate", "translation", "translator"), setOf("tradurre", "traduzione", "traduttore", "traduzioni")),
-        Entry("summarization", "summarize", setOf("summarize", "summarise", "summary", "summarization", "tldr"), setOf("riassumere", "riassunto", "riassunti", "sintesi")),
-        Entry("image-generation", "image generation", setOf("image", "images", "illustration", "picture", "text-to-image"), setOf("immagine", "immagini", "illustrazione", "foto")),
-        Entry("coding", "coding", setOf("code", "coding", "programming", "developer"), setOf("codice", "programmare", "programmazione", "sviluppo")),
-        Entry("research", "research", setOf("research", "papers", "literature", "study"), setOf("ricerca", "articoli scientifici", "studio")),
-        Entry("transcription", "transcription", setOf("transcribe", "transcription", "speech-to-text", "subtitles"), setOf("trascrivere", "trascrizione", "sottotitoli")),
-        Entry("automation", "automation", setOf("automate", "automation", "workflow", "workflows"), setOf("automatizzare", "automazione", "flussi")),
+        Entry(
+            "writing",
+            "writing",
+            setOf("write", "writing", "copywriting", "blog", "essay"),
+            setOf("scrivere", "scrittura", "testi", "articoli")
+        ),
+        Entry(
+            "translation",
+            "translation",
+            setOf("translate", "translation", "translator"),
+            setOf("tradurre", "traduzione", "traduttore", "traduzioni")
+        ),
+        Entry(
+            "summarization",
+            "summarize",
+            setOf("summarize", "summarise", "summary", "summarization", "tldr"),
+            setOf("riassumere", "riassunto", "riassunti", "sintesi")
+        ),
+        Entry(
+            "image-generation",
+            "image generation",
+            setOf("image", "images", "illustration", "picture", "text-to-image"),
+            setOf("immagine", "immagini", "illustrazione", "foto")
+        ),
+        Entry(
+            "coding",
+            "coding",
+            setOf("code", "coding", "programming", "developer"),
+            setOf("codice", "programmare", "programmazione", "sviluppo")
+        ),
+        Entry(
+            "research",
+            "research",
+            setOf("research", "papers", "literature", "study"),
+            setOf("ricerca", "articoli scientifici", "studio")
+        ),
+        Entry(
+            "transcription",
+            "transcription",
+            setOf("transcribe", "transcription", "speech-to-text", "subtitles"),
+            setOf("trascrivere", "trascrizione", "sottotitoli")
+        ),
+        Entry(
+            "automation",
+            "automation",
+            setOf("automate", "automation", "workflow", "workflows"),
+            setOf("automatizzare", "automazione", "flussi")
+        ),
         Entry("design", "design", setOf("design", "logo", "ui", "mockup"), setOf("grafica", "progettazione", "loghi")),
-        Entry("learning", "learning", setOf("learn", "learning", "tutor", "education"), setOf("imparare", "studiare", "apprendimento", "scuola")),
-        Entry("data-analysis", "data analysis", setOf("analytics", "spreadsheet", "data", "analysis"), setOf("analisi", "dati", "foglio di calcolo")),
+        Entry(
+            "learning",
+            "learning",
+            setOf("learn", "learning", "tutor", "education"),
+            setOf("imparare", "studiare", "apprendimento", "scuola")
+        ),
+        Entry(
+            "data-analysis",
+            "data analysis",
+            setOf("analytics", "spreadsheet", "data", "analysis"),
+            setOf("analisi", "dati", "foglio di calcolo")
+        ),
         Entry("chat", "chatbot", setOf("chat", "chatbot", "assistant"), setOf("assistente", "conversazione")),
         Entry("video", "video", setOf("video", "videos", "editing"), setOf("filmati", "montaggio")),
         Entry("audio", "audio", setOf("audio", "music", "voice", "podcast"), setOf("musica", "voce")),
@@ -87,6 +137,7 @@ class QueryAnalyzer {
     private companion object {
         const val MAX_VARIANTS = 4
         val SERVER_WORDS = setOf("server", "servers")
+
         /** Words that name what kind of resource is wanted, not what it is about. */
         val TYPE_WORDS = mapOf(
             "library" to ResourceType.LIBRARY, "libraries" to ResourceType.LIBRARY, "package" to ResourceType.LIBRARY,
@@ -94,6 +145,7 @@ class QueryAnalyzer {
             "model" to ResourceType.MODEL, "models" to ResourceType.MODEL, "modello" to ResourceType.MODEL,
             "dataset" to ResourceType.DATASET, "datasets" to ResourceType.DATASET,
         )
+
         /** Same thing, different spelling. Kept small and explicit: each group is a deterministic, visible rule. */
         val SYNONYMS = listOf(
             setOf("postgres", "postgresql"),

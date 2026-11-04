@@ -1,7 +1,5 @@
 package ai.helper2.setup.internal;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.platform.http.ObservedHttp;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.setup.Material;
@@ -11,15 +9,20 @@ import ai.helper2.setup.internal.RegistryMcpServerSpecsTest.MutableClock;
 import ai.helper2.testing.FixtureServer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 
-/** The tool's own documents, read from fixed hosts with the right headers, kept for an hour within a size bound. */
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * The tool's own documents, read from fixed hosts with the right headers, kept for an hour within a size bound.
+ */
 class HttpToolMaterialsTest {
 
     private static final String README = "# acme-x\n\nInstall with `npm install acme-x`.\n";
@@ -27,6 +30,10 @@ class HttpToolMaterialsTest {
     final FixtureServer server = new FixtureServer();
     final MutableClock clock = new MutableClock(Instant.parse("2026-10-30T10:00:00Z"));
     final SimpleMeterRegistry meters = new SimpleMeterRegistry();
+
+    private static ToolRef ref(String repo, String npm, String hfModel) {
+        return new ToolRef("Acme X", "MCP_SERVER", repo, npm, hfModel, null);
+    }
 
     @AfterEach
     void stop() {
@@ -43,10 +50,6 @@ class HttpToolMaterialsTest {
         return new HttpToolMaterials(ObservedHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP),
             new HttpToolMaterials.Hosts(server.baseUrl(), server.baseUrl() + "/jsdelivr", server.baseUrl() + "/hf", githubToken, "hf-token"),
             clock, budget, new HttpToolMaterials.CacheSettings(Duration.ofHours(1), maxCacheChars));
-    }
-
-    private static ToolRef ref(String repo, String npm, String hfModel) {
-        return new ToolRef("Acme X", "MCP_SERVER", repo, npm, hfModel, null);
     }
 
     @Test

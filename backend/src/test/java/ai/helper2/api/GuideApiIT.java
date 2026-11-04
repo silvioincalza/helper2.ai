@@ -1,13 +1,5 @@
 package ai.helper2.api;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import ai.helper2.search.SourceHit;
 import ai.helper2.search.SourceQuery;
 import ai.helper2.shared.Audience;
@@ -15,17 +7,6 @@ import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.DateFact;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.ValueOrigin;
-import java.net.URI;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneOffset;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -39,6 +20,26 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
+
+import java.net.URI;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * POST /api/v1/guide/stream end to end with a scripted ChatModel (no network): plan → federated search →
@@ -63,32 +64,14 @@ class GuideApiIT extends ApiTestBase {
     static final List<String> MODELS_CALLED = new CopyOnWriteArrayList<>();
     static final AtomicReference<Function<Prompt, String>> REPLY = new AtomicReference<>();
     private static final Pattern CANDIDATE = Pattern.compile("<candidate key=\"(c\\d+)\"[^>]*>\\n([^\\n]*)");
+    private static final Pattern NEED = Pattern.compile("<need>\\n(.*?)\\n</need>", Pattern.DOTALL);
+    private static final Pattern ANSWER = Pattern.compile("<answer>\\n(.*?)\\n</answer>", Pattern.DOTALL);
+    @org.springframework.beans.factory.annotation.Autowired
+    org.springframework.jdbc.core.simple.JdbcClient jdbc;
 
-    @TestConfiguration(proxyBeanMethods = false)
-    static class FakeLlm {
-        @Bean
-        ChatModel chatModel() {
-            return new ChatModel() {
-                @Override
-                public ChatResponse call(Prompt prompt) {
-                    MODELS_CALLED.add(prompt.getOptions().getModel());
-                    return new ChatResponse(List.of(new Generation(new AssistantMessage(REPLY.get().apply(prompt)))));
-                }
-            };
-        }
-    }
-
-    @BeforeEach
-    void scriptTheModelAndTheSource() {
-        MODELS_CALLED.clear();
-        FAKE.set(q -> List.of(fakeHit("https://github.com/acme/polyglot", TITLE,
-            TITLE + " " + QUOTE + ", free for personal use.", ResourceType.PRODUCT, "MIT", null, null, 0)));
-        REPLY.set(prompt -> "fake-nano".equals(prompt.getOptions().getModel())
-            ? "{\"searchQuery\":\"document translation\",\"constraints\":[],\"wantsReading\":false}"
-            : prompt.getContents().contains("PICKS:") ? supportAll(prompt.getContents()) : choose(prompt.getContents()));
-    }
-
-    /** The reason check: every pick's reason is supported. */
+    /**
+     * The reason check: every pick's reason is supported.
+     */
     private static String supportAll(String promptText) {
         Matcher m = Pattern.compile("<pick key=\"(c\\d+)\">").matcher(promptText);
         List<String> verdicts = new java.util.ArrayList<>();
@@ -98,7 +81,9 @@ class GuideApiIT extends ApiTestBase {
         return "{\"verdicts\":[" + String.join(",", verdicts) + "]}";
     }
 
-    /** One real pick, one invented candidate key, one invented quote on the real candidate. */
+    /**
+     * One real pick, one invented candidate key, one invented quote on the real candidate.
+     */
     private static String choose(String promptText) {
         String key = null;
         Matcher m = CANDIDATE.matcher(promptText);
@@ -117,9 +102,6 @@ class GuideApiIT extends ApiTestBase {
             """.formatted(key, QUOTE);
     }
 
-    @org.springframework.beans.factory.annotation.Autowired
-    org.springframework.jdbc.core.simple.JdbcClient jdbc;
-
     private static RequestPostProcessor from(String ip) {
         return r -> {
             r.setRemoteAddr(ip);
@@ -129,6 +111,60 @@ class GuideApiIT extends ApiTestBase {
 
     private static String body(String request) {
         return "{\"request\":\"" + request + "\",\"path\":\"USE_AI\"}";
+    }
+
+    /**
+     * The data line of the first event with this name.
+     */
+    private static String data(String stream, String event) {
+        Matcher m = Pattern.compile("event:" + event + "\\ndata:(.*)\\n").matcher(stream);
+        assertThat(m.find()).as("event " + event + " in " + stream).isTrue();
+        return m.group(1);
+    }
+
+    private static List<String> events(String stream) {
+        return Pattern.compile("event:(\\w+)").matcher(stream).results().map(r -> r.group(1)).toList();
+    }
+
+    /**
+     * The planner of a date question: a reply to our question back names the chosen thing.
+     */
+    private static String datePlan(String prompt) {
+        Matcher need = NEED.matcher(prompt);
+        assertThat(need.find()).as("only the plan call is expected").isTrue();
+        if (need.group(1).contains("hackathon")) {
+            return """
+                {"intent":"WHEN","subjects":[],"searchQuery":"AI hackathon","constraints":[],"wantsReading":true,
+                 "webQuery":"upcoming AI hackathons","window":null,"clarify":null}""";
+        }
+        String subject = ANSWER.matcher(prompt).find() ? "gemini cli" : "Gemini";
+        return """
+            {"intent":"WHEN","subjects":["%1$s"],"searchQuery":"%1$s","constraints":[],"wantsReading":false,
+             "webQuery":"%1$s release date","window":null,"clarify":null}""".formatted(subject);
+    }
+
+    private static SourceHit dated(String url, String title, ResourceType type, DateFact published, DateFact eventStart, int rank) {
+        return new SourceHit("fake-live", url, URI.create(url), CanonicalUrl.of(url), null, title, title + " for developers",
+            ValueOrigin.SOURCE_PROVIDED, type, Audience.BUILD_WITH_AI, null, Set.of(), Set.of("ai"), null, null, Set.of(), null,
+            published, DateFact.unknown(), List.of(), Instant.now(), rank, eventStart, DateFact.unknown(), "Zurich");
+    }
+
+    private static SourceHit created(String url, String title, ResourceType type, String published, int rank) {
+        return dated(url, title, type, DateFact.fromSource(Instant.parse(published), "fake-live", Instant.now()), DateFact.unknown(), rank);
+    }
+
+    private static SourceHit event(String url, String title, LocalDate start, int rank) {
+        return dated(url, title, ResourceType.EVENT, DateFact.unknown(), DateFact.scheduledDay(start, "fake-live"), rank);
+    }
+
+    @BeforeEach
+    void scriptTheModelAndTheSource() {
+        MODELS_CALLED.clear();
+        FAKE.set(q -> List.of(fakeHit("https://github.com/acme/polyglot", TITLE,
+            TITLE + " " + QUOTE + ", free for personal use.", ResourceType.PRODUCT, "MIT", null, null, 0)));
+        REPLY.set(prompt -> "fake-nano".equals(prompt.getOptions().getModel())
+            ? "{\"searchQuery\":\"document translation\",\"constraints\":[],\"wantsReading\":false}"
+            : prompt.getContents().contains("PICKS:") ? supportAll(prompt.getContents()) : choose(prompt.getContents()));
     }
 
     @Test
@@ -192,7 +228,9 @@ class GuideApiIT extends ApiTestBase {
             .query(String.class).list());
     }
 
-    /** One IPv6 subscriber holds a whole /64: rotating addresses inside it does not reset the quota. */
+    /**
+     * One IPv6 subscriber holds a whole /64: rotating addresses inside it does not reset the quota.
+     */
     @Test
     void pastItsDailyQuotaAClientGetsSearchResultsInsteadOfAnError() throws Exception {
         for (String ip : List.of("2001:db8:0:7::1", "2001:db8:0:7::2")) {
@@ -225,7 +263,9 @@ class GuideApiIT extends ApiTestBase {
         ContractValidator.assertMatches("GuideResponse", json);
     }
 
-    /** "Works with" flags (ADR 0013) come with every pick, also a plain search result shown when the model is down. */
+    /**
+     * "Works with" flags (ADR 0013) come with every pick, also a plain search result shown when the model is down.
+     */
     @Test
     void aFallbackPickCarriesItsWorksWithFlags() throws Exception {
         FAKE.set(q -> List.of(fakeHit("https://github.com/acme/flaggedsrv", "Flaggedsrv Quuxconnector",
@@ -242,7 +282,9 @@ class GuideApiIT extends ApiTestBase {
         ContractValidator.assertMatches("GuideResponse", json);
     }
 
-    /** Runs the streamed guide and returns the raw event stream once the emitter completed. */
+    /**
+     * Runs the streamed guide and returns the raw event stream once the emitter completed.
+     */
     private String stream(String ip, String question) throws Exception {
         return finish(start(ip, question));
     }
@@ -260,13 +302,6 @@ class GuideApiIT extends ApiTestBase {
         // The completed emitter is dispatched again, as on a real servlet container (interceptors run again too).
         mvc.perform(asyncDispatch(result)).andExpect(status().isOk());
         return result.getResponse().getContentAsString();
-    }
-
-    /** The data line of the first event with this name. */
-    private static String data(String stream, String event) {
-        Matcher m = Pattern.compile("event:" + event + "\\ndata:(.*)\\n").matcher(stream);
-        assertThat(m.find()).as("event " + event + " in " + stream).isTrue();
-        return m.group(1);
     }
 
     @Test
@@ -289,11 +324,9 @@ class GuideApiIT extends ApiTestBase {
         assertThat(data(stream, "answer")).contains(QUOTE).doesNotContain("10,000");
     }
 
-    private static List<String> events(String stream) {
-        return Pattern.compile("event:(\\w+)").matcher(stream).results().map(r -> r.group(1)).toList();
-    }
-
-    /** The plan call takes a while: the model step is silent, the stream is not. */
+    /**
+     * The plan call takes a while: the model step is silent, the stream is not.
+     */
     private void slowPlan(long millis) {
         Function<Prompt, String> scripted = REPLY.get();
         REPLY.set(prompt -> {
@@ -352,6 +385,9 @@ class GuideApiIT extends ApiTestBase {
         assertThat(MODELS_CALLED).containsExactly("fake-nano", "fake-super", "fake-super");
     }
 
+    // ADR 0032 §3 and §5: an ambiguous name asked back once, and a WHEN question about an event over events only.
+    // Dates come from records, so the plan call is the only model call.
+
     @Test
     void streamRejectsAQuestionOutsideTheContractBeforeStreaming() throws Exception {
         mvc.perform(post("/api/v1/guide/stream").with(csrf()).with(from("10.0.1.5"))
@@ -363,7 +399,9 @@ class GuideApiIT extends ApiTestBase {
         assertThat(MODELS_CALLED).isEmpty();
     }
 
-    /** Blank padding passes the contract's minLength, but what is left after stripping it is too short. */
+    /**
+     * Blank padding passes the contract's minLength, but what is left after stripping it is too short.
+     */
     @Test
     void guideRejectsARequestThatIsTooShortOnceStrippedWith400() throws Exception {
         mvc.perform(post("/api/v1/guide/stream").with(csrf()).with(from("10.0.1.9"))
@@ -401,8 +439,8 @@ class GuideApiIT extends ApiTestBase {
     void aNameNotInOurSourcesComesAsAMarkedFieldOfItsNoticeNeverInsideTheMessage() throws Exception {
         REPLY.set(prompt -> "fake-nano".equals(prompt.getOptions().getModel())
             ? """
-                {"intent":"ALTERNATIVES","subjects":["Frobnicator"],"searchQuery":"document translation","constraints":[],
-                 "wantsReading":false,"webQuery":"","window":null,"clarify":null}"""
+            {"intent":"ALTERNATIVES","subjects":["Frobnicator"],"searchQuery":"document translation","constraints":[],
+             "wantsReading":false,"webQuery":"","window":null,"clarify":null}"""
             : prompt.getContents().contains("PICKS:") ? supportAll(prompt.getContents()) : choose(prompt.getContents()));
 
         String json = GuideAnswers.ask(mvc, "{\"request\":\"alternatives to Frobnicator\",\"path\":\"USE_AI\"}", csrf(), from("10.0.9.9"))
@@ -414,41 +452,6 @@ class GuideApiIT extends ApiTestBase {
         ContractValidator.assertMatches("GuideResponse", json);
         assertThat(com.jayway.jsonpath.JsonPath.<List<String>>read(json, "$.notices[*].message"))
             .noneMatch(m -> m.contains("Frobnicator") || m.contains("document translation"));
-    }
-
-    // ADR 0032 §3 and §5: an ambiguous name asked back once, and a WHEN question about an event over events only.
-    // Dates come from records, so the plan call is the only model call.
-
-    private static final Pattern NEED = Pattern.compile("<need>\\n(.*?)\\n</need>", Pattern.DOTALL);
-    private static final Pattern ANSWER = Pattern.compile("<answer>\\n(.*?)\\n</answer>", Pattern.DOTALL);
-
-    /** The planner of a date question: a reply to our question back names the chosen thing. */
-    private static String datePlan(String prompt) {
-        Matcher need = NEED.matcher(prompt);
-        assertThat(need.find()).as("only the plan call is expected").isTrue();
-        if (need.group(1).contains("hackathon")) {
-            return """
-                {"intent":"WHEN","subjects":[],"searchQuery":"AI hackathon","constraints":[],"wantsReading":true,
-                 "webQuery":"upcoming AI hackathons","window":null,"clarify":null}""";
-        }
-        String subject = ANSWER.matcher(prompt).find() ? "gemini cli" : "Gemini";
-        return """
-            {"intent":"WHEN","subjects":["%1$s"],"searchQuery":"%1$s","constraints":[],"wantsReading":false,
-             "webQuery":"%1$s release date","window":null,"clarify":null}""".formatted(subject);
-    }
-
-    private static SourceHit dated(String url, String title, ResourceType type, DateFact published, DateFact eventStart, int rank) {
-        return new SourceHit("fake-live", url, URI.create(url), CanonicalUrl.of(url), null, title, title + " for developers",
-            ValueOrigin.SOURCE_PROVIDED, type, Audience.BUILD_WITH_AI, null, Set.of(), Set.of("ai"), null, null, Set.of(), null,
-            published, DateFact.unknown(), List.of(), Instant.now(), rank, eventStart, DateFact.unknown(), "Zurich");
-    }
-
-    private static SourceHit created(String url, String title, ResourceType type, String published, int rank) {
-        return dated(url, title, type, DateFact.fromSource(Instant.parse(published), "fake-live", Instant.now()), DateFact.unknown(), rank);
-    }
-
-    private static SourceHit event(String url, String title, LocalDate start, int rank) {
-        return dated(url, title, ResourceType.EVENT, DateFact.unknown(), DateFact.scheduledDay(start, "fake-live"), rank);
     }
 
     private String askJson(String ip, String json) throws Exception {
@@ -502,5 +505,19 @@ class GuideApiIT extends ApiTestBase {
         assertThat(json).contains("\"status\":\"OK\"", "\"intent\":\"WHEN\"").doesNotContain("\"title\":\"ai-hackathon\"");
         assertThat(json.indexOf("AI Hackathon Milan")).isLessThan(json.indexOf("AI Hackathon Zurich"));
         assertThat(MODELS_CALLED).containsExactly("fake-nano");
+    }
+
+    @TestConfiguration(proxyBeanMethods = false)
+    static class FakeLlm {
+        @Bean
+        ChatModel chatModel() {
+            return new ChatModel() {
+                @Override
+                public ChatResponse call(Prompt prompt) {
+                    MODELS_CALLED.add(prompt.getOptions().getModel());
+                    return new ChatResponse(List.of(new Generation(new AssistantMessage(REPLY.get().apply(prompt)))));
+                }
+            };
+        }
     }
 }

@@ -16,7 +16,13 @@ public record LlmSettings(String chatProvider, String providerLabel, String fast
         reasoningModel = nz(reasoningModel);
     }
 
-    /** False without a ChatModel bean or with {@code spring.ai.model.chat=none}: callers fall back to their non-LLM path. */
+    private static String nz(String value) {
+        return value == null ? "" : value.strip();
+    }
+
+    /**
+     * False without a ChatModel bean or with {@code spring.ai.model.chat=none}: callers fall back to their non-LLM path.
+     */
     public boolean usable(ChatModel model) {
         return model != null && !chatProvider.isEmpty() && !"none".equals(chatProvider);
     }
@@ -25,17 +31,17 @@ public record LlmSettings(String chatProvider, String providerLabel, String fast
         return !reasoningModel.isEmpty();
     }
 
-    /** The fast model, or the reasoning model when no fast one is set; empty when neither is. */
+    /**
+     * The fast model, or the reasoning model when no fast one is set; empty when neither is.
+     */
     public String fast() {
         return fastModel.isEmpty() ? reasoningModel : fastModel;
     }
 
-    /** Shown to users and recorded with every enrichment run. */
+    /**
+     * Shown to users and recorded with every enrichment run.
+     */
     public String provider() {
         return providerLabel.isEmpty() ? chatProvider : providerLabel;
-    }
-
-    private static String nz(String value) {
-        return value == null ? "" : value.strip();
     }
 }

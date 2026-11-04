@@ -1,11 +1,12 @@
 package ai.helper2.platform.llm;
 
 import ai.helper2.platform.resilience.Resilience;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.RedisScript;
+
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.List;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.script.RedisScript;
 
 /**
  * Redis adapter for the daily budgets: one counter per budget name and UTC day, kept two days so the
@@ -38,7 +39,9 @@ public final class RedisCallCounter implements CallCounter {
         return "h2:v1:budget:" + name + ":" + day;
     }
 
-    /** Today's shared count, without adding one: 0 when Redis has no key yet (nothing used today), null only when Redis cannot answer. */
+    /**
+     * Today's shared count, without adding one: 0 when Redis has no key yet (nothing used today), null only when Redis cannot answer.
+     */
     Long current(String name, LocalDate day) {
         try {
             String value = resilience.call("redis", () -> redis.opsForValue().get(key(name, day)));

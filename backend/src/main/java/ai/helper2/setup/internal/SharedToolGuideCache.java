@@ -3,7 +3,6 @@ package ai.helper2.setup.internal;
 import ai.helper2.platform.cache.SharedCache;
 import ai.helper2.setup.ToolGuideAnswer;
 import ai.helper2.setup.ToolGuideCache;
-import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tools.jackson.databind.DeserializationFeature;
@@ -11,6 +10,8 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
 import tools.jackson.module.kotlin.KotlinModule;
+
+import java.time.Duration;
 
 /**
  * Tool guide answers in the shared cache {@code tool-guide} (ADR 0031), shared by every replica and kept across deploys.

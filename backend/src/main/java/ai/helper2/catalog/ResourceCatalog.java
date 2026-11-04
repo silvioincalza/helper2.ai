@@ -13,6 +13,9 @@ import ai.helper2.search.SourceHit;
 import ai.helper2.search.SourceOutcome;
 import ai.helper2.shared.ResourceId;
 import ai.helper2.shared.SourceMode;
+import org.springframework.beans.factory.SmartInitializingSingleton;
+import org.springframework.stereotype.Service;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,15 +24,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.springframework.beans.factory.SmartInitializingSingleton;
-import org.springframework.stereotype.Service;
 
 /**
  * Catalog entry point. Implements the search module's {@link ResultObserver}: every resource seen in
  * a live search is recorded so Helper2 can state when it was first discovered, and detail pages
  * work for live results, and the hits a source gave can be read back for a stored web result set (ADR 0037). Also
  * {@link RecordedOutcomes}: the Scout's last run outcome per source.
- *
+ * <p>
  * Recording is asynchronous ({@link ObservationQueue}), so a search costs one batched read of discovery
  * dates and no writes. The trade-off: a resource seen for the first time has no discovery date in that
  * first response (it is not recorded yet); every later search shows it.
@@ -51,7 +52,9 @@ public class ResourceCatalog implements ResultObserver, RecordedOutcomes, SmartI
         this.demoSources = idsWithMode(SourceMode.DEMO);
     }
 
-    /** Make sure every configured source exists in the registry table before anything references it. */
+    /**
+     * Make sure every configured source exists in the registry table before anything references it.
+     */
     @Override
     public void afterSingletonsInstantiated() {
         store.registerSources(sources.stream().map(DescribedSource::getDescriptor).toList());
@@ -110,12 +113,16 @@ public class ResourceCatalog implements ResultObserver, RecordedOutcomes, SmartI
             .filter(d -> d.getMode() == mode).map(SourceDescriptor::getId).collect(Collectors.toSet());
     }
 
-    /** Scout path: persist collected results; returns changed source-record ids. */
+    /**
+     * Scout path: persist collected results; returns changed source-record ids.
+     */
     public List<UUID> index(List<MergedResult> results, String sourceId) {
         return store.upsert(results, DataOrigin.INDEXED, Set.of(sourceId));
     }
 
-    /** Resource ids owning the given source records. */
+    /**
+     * Resource ids owning the given source records.
+     */
     public List<UUID> resourcesOfRecords(List<UUID> recordIds) {
         return store.resourcesOfRecords(recordIds);
     }

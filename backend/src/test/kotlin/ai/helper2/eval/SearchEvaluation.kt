@@ -1,7 +1,7 @@
 package ai.helper2.eval
 
 import ai.helper2.search.MergedResult
-import java.util.Locale
+import java.util.*
 
 /** Metrics of one ranked list for one query. Null where the query has no graded judgement. */
 data class QueryScore(
@@ -66,16 +66,31 @@ class SearchEvaluation(
             val seen = mutableListOf<MergedResult>()
             val covered = HashSet<String>()
             variants.forEach { v ->
-                ranked(q.id, v).take(20).forEach { r -> urlsOf(r).let { urls -> if (covered.none(urls::contains)) seen += r; covered += urls } }
+                ranked(q.id, v).take(20)
+                    .forEach { r -> urlsOf(r).let { urls -> if (covered.none(urls::contains)) seen += r; covered += urls } }
             }
             val judged = qrels.of(q.id)
             seen.filter { grade(q.id, it) == null }.forEach { r ->
-                appendLine(listOf(q.id, r.canonicalUrl.value, "", q.text, r.title.replace('\t', ' '),
-                    r.sources.joinToString(",") { it.sourceId }).joinToString("\t"))
+                appendLine(
+                    listOf(
+                    q.id, r.canonicalUrl.value, "", q.text, r.title.replace('\t', ' '),
+                    r.sources.joinToString(",") { it.sourceId }).joinToString("\t")
+                )
             }
             snapshots.getValue(q.id).semantic.orEmpty().take(10)
                 .filter { it.canonicalUrl !in covered && it.canonicalUrl !in judged }
-                .forEach { appendLine(listOf(q.id, it.canonicalUrl, "", q.text, "", "vector distance ${fmt(it.distance)}").joinToString("\t")) }
+                .forEach {
+                    appendLine(
+                        listOf(
+                            q.id,
+                            it.canonicalUrl,
+                            "",
+                            q.text,
+                            "",
+                            "vector distance ${fmt(it.distance)}"
+                        ).joinToString("\t")
+                    )
+                }
         }
     }
 
@@ -106,20 +121,25 @@ class SearchEvaluation(
         appendLine("| group | queries | nDCG@10 | MRR | Recall@20 | dup@10 | unjudged@10 |")
         appendLine("|---|---|---|---|---|---|---|")
         appendLine(row("all", base))
-        recorded.groupBy { it.group }.forEach { (g, qs) -> appendLine(row(g, base.filter { s -> qs.any { it.id == s.queryId } })) }
+        recorded.groupBy { it.group }
+            .forEach { (g, qs) -> appendLine(row(g, base.filter { s -> qs.any { it.id == s.queryId } })) }
         appendLine("\n## Ablation: each source left out\n")
-        appendLine("Marginal Recall@20 = Recall@20 with every source minus Recall@20 without this one. " +
-            "ΔnDCG@10 = without minus with; 95 % CI by paired bootstrap over judged queries.\n")
+        appendLine(
+            "Marginal Recall@20 = Recall@20 with every source minus Recall@20 without this one. " +
+                "ΔnDCG@10 = without minus with; 95 % CI by paired bootstrap over judged queries.\n"
+        )
         appendLine("| source | in top 10 (queries) | marginal Recall@20 | ΔnDCG@10 | 95 % CI | p50 latency ms |")
         appendLine("|---|---|---|---|---|---|")
         for (id in sourceIds) {
             val ablated = scores(setOf(id))
             val pairs = base.zip(ablated).filter { (a, b) -> a.ndcg10 != null && b.ndcg10 != null }
-            val ci = pairs.takeIf { it.isNotEmpty() }?.let { p -> RelevanceMetrics.pairedBootstrap(p.map { it.first.ndcg10!! }, p.map { it.second.ndcg10!! }) }
+            val ci = pairs.takeIf { it.isNotEmpty() }
+                ?.let { p -> RelevanceMetrics.pairedBootstrap(p.map { it.first.ndcg10!! }, p.map { it.second.ndcg10!! }) }
             val inTop = recorded.count { q -> ranked(q.id).take(10).any { r -> r.hits.any { it.sourceId == id } } }
             val marginal = mean(base.mapNotNull { it.recall20 }) - mean(ablated.mapNotNull { it.recall20 })
             val latencies = snapshots.values.mapNotNull { s -> s.sources.firstOrNull { it.id == id }?.latencyMs }.sorted()
-            appendLine("| $id | $inTop | ${fmt(marginal)} | ${fmt(ci?.meanDifference)} | " +
+            appendLine(
+                "| $id | $inTop | ${fmt(marginal)} | ${fmt(ci?.meanDifference)} | " +
                 "${ci?.let { "${fmt(it.low)} … ${fmt(it.high)}" } ?: "–"} | ${latencies.getOrNull(latencies.size / 2) ?: "–"} |")
         }
     }
@@ -131,7 +151,12 @@ class SearchEvaluation(
 
     companion object {
         fun urlsOf(r: MergedResult): Set<String> =
-            (listOf(r.canonicalUrl.value) + r.hits.flatMap { listOfNotNull(it.canonicalUrl.value, it.repositoryUrl?.value) }).toSet()
+            (listOf(r.canonicalUrl.value) + r.hits.flatMap {
+                listOfNotNull(
+                    it.canonicalUrl.value,
+                    it.repositoryUrl?.value
+                )
+            }).toSet()
 
         fun mean(xs: List<Double>) = meanOrNull(xs) ?: 0.0
         fun meanOrNull(xs: List<Double>) = if (xs.isEmpty()) null else xs.average()

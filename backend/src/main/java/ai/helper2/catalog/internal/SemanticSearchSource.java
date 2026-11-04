@@ -8,17 +8,18 @@ import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.SourceFailure;
 import ai.helper2.search.SourceHit;
 import ai.helper2.search.SourceQuery;
+import org.springframework.dao.DataAccessException;
+
 import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
 import java.util.Set;
-import org.springframework.dao.DataAccessException;
 
 /**
  * The Helper2 catalog searched by meaning: the query is embedded and the nearest stored resources are
  * returned. It is one more federated source, so SearchResources fuses it with keyword search by rank
  * (Ranking), and a failure here (embedding API down, rate limit) only removes its results.
- *
+ * <p>
  * Query vectors are shared by every replica ({@link QueryVectorCache}), so a repeated query costs no embedding call.
  */
 public class SemanticSearchSource implements SearchSource {

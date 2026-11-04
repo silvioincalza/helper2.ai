@@ -1,12 +1,13 @@
 package ai.helper2.platform.http;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.net.URI;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.http.message.BasicHttpRequest;
 import org.apache.hc.core5.http.message.BasicHttpResponse;
 import org.junit.jupiter.api.Test;
+
+import java.net.URI;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class ObservedHttpRedirectTest {
 

@@ -4,11 +4,12 @@ import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
-import java.time.Duration;
-import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
+
+import java.time.Duration;
+import java.util.List;
 
 /**
  * The settings of each Scout collector, bound from {@code helper2.scout.<collector>} (environment variables in
@@ -20,7 +21,13 @@ final class CollectorProperties {
     private CollectorProperties() {
     }
 
-    /** Every collector has a run interval (RunInterval): how long after a complete pass the next one is due. */
+    private static List<String> clean(List<String> values) {
+        return values == null ? List.of() : values.stream().map(String::strip).filter(v -> !v.isEmpty()).toList();
+    }
+
+    /**
+     * Every collector has a run interval (RunInterval): how long after a complete pass the next one is due.
+     */
     interface Scheduled {
         Duration interval();
 
@@ -32,7 +39,8 @@ final class CollectorProperties {
 
     @Validated
     @ConfigurationProperties("helper2.scout.hf-trending")
-    record HfTrending(@DefaultValue("P1D") @NotNull Duration interval, @DefaultValue("20") @PositiveOrZero int minLikes) implements Scheduled {
+    record HfTrending(@DefaultValue("P1D") @NotNull Duration interval,
+                      @DefaultValue("20") @PositiveOrZero int minLikes) implements Scheduled {
     }
 
     @Validated
@@ -92,9 +100,5 @@ final class CollectorProperties {
     @Validated
     @ConfigurationProperties("helper2.scout.mcp-registry")
     record McpRegistry(@DefaultValue("PT1H") @NotNull Duration interval) implements Scheduled {
-    }
-
-    private static List<String> clean(List<String> values) {
-        return values == null ? List.of() : values.stream().map(String::strip).filter(v -> !v.isEmpty()).toList();
     }
 }

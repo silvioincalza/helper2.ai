@@ -2,10 +2,11 @@ package ai.helper2.identity.usecase;
 
 import ai.helper2.identity.internal.Bookmarks;
 import ai.helper2.identity.internal.Bookmarks.Bookmark;
-import java.util.List;
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.UUID;
 
 /**
  * Right after sign-in, the bookmarks kept in the browser join the account's. Idempotent: a resource already saved
@@ -20,7 +21,9 @@ public class MergeLocalBookmarks {
         this.bookmarks = bookmarks;
     }
 
-    /** Returns the account's full list after the merge, newest first. */
+    /**
+     * Returns the account's full list after the merge, newest first.
+     */
     @Transactional
     public List<Bookmark> merge(UUID userId, List<Bookmark> local) {
         local.forEach(b -> BookmarkRules.requireWebUrl(b.url()));

@@ -27,13 +27,13 @@ import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.micrometer.observation.Observation
 import io.micrometer.observation.ObservationRegistry
+import org.slf4j.LoggerFactory
 import java.time.Clock
 import java.time.Duration
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutionException
-import org.slf4j.LoggerFactory
 
 /**
  * Retrieval first, AI second, validator last. Works (degraded) without a model.
@@ -63,7 +63,15 @@ class AskGuide(
 
     /** Everything that changes an answer besides the question: a change gives new cache keys. */
     private val configHash: String = sha256Hex(
-        listOf(model?.provider, model?.fastModel, model?.reasoningModel, model?.configFingerprint, validator.fingerprint, limits.fingerprint, maxCandidates)
+        listOf(
+            model?.provider,
+            model?.fastModel,
+            model?.reasoningModel,
+            model?.configFingerprint,
+            validator.fingerprint,
+            limits.fingerprint,
+            maxCandidates
+        )
             .joinToString("\u0000"),
     ).take(16)
 
@@ -256,14 +264,27 @@ class AskGuide(
             GuideIntent.LEARN -> picks.picks(
                 q, r, progress, asked, usable,
                 // A stated period ("courses from last month") filters like it does for newest: undated courses drop out.
-                Retrieval(r.query, SearchFilters(types = LEARN_TYPES, publishedAfter = r.window?.from, publishedBefore = r.window?.to)),
+                Retrieval(
+                    r.query,
+                    SearchFilters(types = LEARN_TYPES, publishedAfter = r.window?.from, publishedBefore = r.window?.to)
+                ),
             )
-            GuideIntent.HOW_TO, GuideIntent.SUGGEST -> picks.picks(q, r, progress, asked, usable, Retrieval(r.query, readingFilter(r), askBack = true))
+
+            GuideIntent.HOW_TO, GuideIntent.SUGGEST -> picks.picks(
+                q,
+                r,
+                progress,
+                asked,
+                usable,
+                Retrieval(r.query, readingFilter(r), askBack = true)
+            )
         }
         val planned = r.plan != null && !r.modelFailed
         // Only the planner's words are AI-written queries; without a plan the searches ran with the asker's own text.
         val trail = ResearchTrail.of(if (planned) q.queriesRun() else emptyList(), answer.trail.removed)
-        return answer.copy(intent = r.intent, subjects = r.subjects, window = r.window, webFreshUntil = q.webFreshUntil,
-            planned = planned, trail = trail)
+        return answer.copy(
+            intent = r.intent, subjects = r.subjects, window = r.window, webFreshUntil = q.webFreshUntil,
+            planned = planned, trail = trail
+        )
     }
 }

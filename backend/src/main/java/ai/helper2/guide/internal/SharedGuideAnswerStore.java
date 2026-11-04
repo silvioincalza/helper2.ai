@@ -3,8 +3,6 @@ package ai.helper2.guide.internal;
 import ai.helper2.guide.GuideAnswer;
 import ai.helper2.guide.GuideAnswerStore;
 import ai.helper2.platform.cache.SharedCache;
-import java.time.Duration;
-import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tools.jackson.databind.DeserializationFeature;
@@ -12,6 +10,9 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
 import tools.jackson.module.kotlin.KotlinModule;
+
+import java.time.Duration;
+import java.util.regex.Pattern;
 
 /**
  * Guide answers in the shared cache {@code guide-answer} (ADR 0041), on disk and shared by every replica. The guide's
@@ -27,7 +28,9 @@ class SharedGuideAnswerStore implements GuideAnswerStore {
     static final int VERSION = 2;
     private static final Logger log = LoggerFactory.getLogger(SharedGuideAnswerStore.class);
 
-    /** A build id as the chart passes it (the image tag); anything else is "unknown". */
+    /**
+     * A build id as the chart passes it (the image tag); anything else is "unknown".
+     */
     private static final Pattern BUILD = Pattern.compile("[A-Za-z0-9._-]{1,40}");
 
     private final SharedCache cache;
@@ -68,7 +71,9 @@ class SharedGuideAnswerStore implements GuideAnswerStore {
         return json.writeValueAsString(root);
     }
 
-    /** Null for another version or an entry that no longer reads: both are a miss. */
+    /**
+     * Null for another version or an entry that no longer reads: both are a miss.
+     */
     GuideAnswer decode(String raw) {
         try {
             JsonNode root = json.readTree(raw);

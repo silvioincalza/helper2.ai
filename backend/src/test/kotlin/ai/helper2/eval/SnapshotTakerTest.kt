@@ -22,13 +22,19 @@ class SnapshotTakerTest {
     @Test
     fun `keeps each source's own ranked hits and outcome, and replays to the live order`() {
         val github = source("github") {
-            listOf(hit("github", "https://github.com/o/pg-mcp", rank = 0, type = ResourceType.MCP_SERVER),
-                hit("github", "https://github.com/o/other", rank = 1))
+            listOf(
+                hit("github", "https://github.com/o/pg-mcp", rank = 0, type = ResourceType.MCP_SERVER),
+                hit("github", "https://github.com/o/other", rank = 1)
+            )
         }
-        val npm = source("npm") { listOf(hit("npm", "https://www.npmjs.com/package/pg-mcp", repo = "https://github.com/o/pg-mcp")) }
+        val npm =
+            source("npm") { listOf(hit("npm", "https://www.npmjs.com/package/pg-mcp", repo = "https://github.com/o/pg-mcp")) }
         val failing = source("arxiv") { throw SourceFailure.Unavailable("down") }
 
-        val (snapshot, outcome) = SnapshotTaker(listOf(github, npm, failing), null, QueryTranslator.NONE).take("mcp01", "mcp server postgres")
+        val (snapshot, outcome) = SnapshotTaker(listOf(github, npm, failing), null, QueryTranslator.NONE).take(
+            "mcp01",
+            "mcp server postgres"
+        )
 
         assertEquals(listOf("github" to 2, "npm" to 1, "arxiv" to 0), snapshot.sources.map { it.id to it.hits.size })
         assertEquals(SourceOutcome.FAILED, snapshot.sources.last().outcome)

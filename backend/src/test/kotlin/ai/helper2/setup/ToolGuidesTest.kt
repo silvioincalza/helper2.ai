@@ -12,8 +12,10 @@ import kotlin.test.assertNull
 class ToolGuidesTest {
 
     private val clock = Clock.fixed(Instant.parse("2026-10-28T00:00:00Z"), ZoneOffset.UTC)
-    private val doc = Material("readme", MaterialKind.README, URI("https://github.com/acme/x"), clock.instant(),
-        "Install with:\n\n```bash\nnpm install acme-x\n```\n")
+    private val doc = Material(
+        "readme", MaterialKind.README, URI("https://github.com/acme/x"), clock.instant(),
+        "Install with:\n\n```bash\nnpm install acme-x\n```\n"
+    )
     private val ref = ToolRef.of("acme-x", "LIBRARY", listOf("https://github.com/acme/x"), emptyList())
 
     private class Model(val reply: () -> ProposedGuide) : ToolGuideModel {
@@ -38,12 +40,23 @@ class ToolGuidesTest {
 
     private val ttls = ToolGuideTtls(answer = Duration.ofDays(7), unreadable = Duration.ofMinutes(10))
 
-    private fun guides(model: ToolGuideModel?, cache: ToolGuideCache = MemoryCache(), materials: ToolMaterials = ToolMaterials { listOf(doc) }) =
+    private fun guides(
+        model: ToolGuideModel?,
+        cache: ToolGuideCache = MemoryCache(),
+        materials: ToolMaterials = ToolMaterials { listOf(doc) }
+    ) =
         ToolGuides(materials, model, cache, clock, ttls)
 
     private fun failing(reason: ToolGuideUnavailable.Reason) = Model { throw ToolGuideUnavailable(reason) }
 
-    private val good = ProposedGuide(listOf(ProposedSection("INSTALL", listOf(ProposedStep("Install it.", "readme", "Install with:", "npm install acme-x")))))
+    private val good = ProposedGuide(
+        listOf(
+            ProposedSection(
+                "INSTALL",
+                listOf(ProposedStep("Install it.", "readme", "Install with:", "npm install acme-x"))
+            )
+        )
+    )
 
     @Test
     fun `answers OK once, then from the cache`() {
@@ -63,13 +76,23 @@ class ToolGuidesTest {
         val guides = guides(Model { good }, cache)
         guides.answer("id", ref)
         val kept = cache.map.values.single()
-        assertEquals(listOf(MaterialRef("readme", MaterialKind.README, URI("https://github.com/acme/x"), clock.instant())), kept.materials)
+        assertEquals(
+            listOf(MaterialRef("readme", MaterialKind.README, URI("https://github.com/acme/x"), clock.instant())),
+            kept.materials
+        )
         assertEquals("npm install acme-x", kept.sections.single().steps.single().code!!.text)
     }
 
     @Test
     fun `a section the guide does not have is rejected, never shown`() {
-        val answer = ProposedGuide(listOf(ProposedSection("ANSWER", listOf(ProposedStep("Install it.", "readme", "Install with:", "npm install acme-x")))))
+        val answer = ProposedGuide(
+            listOf(
+                ProposedSection(
+                    "ANSWER",
+                    listOf(ProposedStep("Install it.", "readme", "Install with:", "npm install acme-x"))
+                )
+            )
+        )
         val a = guides(Model { answer }).answer("id", ref)
         assertEquals(ToolGuideStatus.NO_STEPS, a.status)
         assertEquals(mapOf("SECTION" to 1), a.rejectedBy)
@@ -85,7 +108,14 @@ class ToolGuidesTest {
         val budget = guides(failing(ToolGuideUnavailable.Reason.BUDGET)).answer("id", ref)
         assertEquals(ToolGuideStatus.LLM_UNAVAILABLE, budget.status)
         assertEquals("budget", budget.unavailable)
-        val invented = ProposedGuide(listOf(ProposedSection("INSTALL", listOf(ProposedStep("Install.", "readme", "Install with pip", "pip install acme-x")))))
+        val invented = ProposedGuide(
+            listOf(
+                ProposedSection(
+                    "INSTALL",
+                    listOf(ProposedStep("Install.", "readme", "Install with pip", "pip install acme-x"))
+                )
+            )
+        )
         val empty = guides(Model { invented }).answer("id", ref)
         assertEquals(ToolGuideStatus.NO_STEPS, empty.status)
         assertEquals(1, empty.rejected)
@@ -121,8 +151,12 @@ class ToolGuidesTest {
 
     @Test
     fun `tool ref keeps identifiers only, from known hosts`() {
-        val r = ToolRef.of("x", "MCP_SERVER", listOf("https://evil.example/a/b", "https://github.com/acme/pg-mcp.git", "https://huggingface.co/spaces/a/b"),
-            listOf("@acme/pg-mcp", "../etc/passwd"))
+        val r = ToolRef.of(
+            "x",
+            "MCP_SERVER",
+            listOf("https://evil.example/a/b", "https://github.com/acme/pg-mcp.git", "https://huggingface.co/spaces/a/b"),
+            listOf("@acme/pg-mcp", "../etc/passwd")
+        )
         assertEquals("acme/pg-mcp", r.githubRepo)
         assertEquals("@acme/pg-mcp", r.npmPackage)
         assertEquals("a/b", r.hfSpace)

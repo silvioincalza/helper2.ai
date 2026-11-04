@@ -18,7 +18,8 @@ internal class ReasonCheckStep(private val steps: GuideSteps) {
             log.warn("guide reason check failed: ${failure(e)}")
             emptyMap()
         }
-        val verdicts = claims.mapNotNull { c -> raw[c.key]?.let { c.key to if (it) ReasonCheck.SUPPORTED else ReasonCheck.REMOVED } }.toMap()
+        val verdicts =
+            claims.mapNotNull { c -> raw[c.key]?.let { c.key to if (it) ReasonCheck.SUPPORTED else ReasonCheck.REMOVED } }.toMap()
         progress.reasonsChecked(
             supported = verdicts.values.count { it == ReasonCheck.SUPPORTED },
             removed = verdicts.values.count { it == ReasonCheck.REMOVED },

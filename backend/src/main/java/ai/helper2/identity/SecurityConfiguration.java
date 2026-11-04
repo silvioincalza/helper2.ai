@@ -1,12 +1,5 @@
 package ai.helper2.identity;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.BooleanSupplier;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -39,6 +32,13 @@ import org.springframework.security.web.servlet.util.matcher.PathPatternRequestM
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
 /**
  * Anonymous use is the default: search, details, sources and reports need no account.
  * Sign-in (OAuth2/OIDC, any configured provider) adds server-side bookmarks and lets the user delete the account;
@@ -48,12 +48,64 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Configuration(proxyBeanMethods = false)
 class SecurityConfiguration {
 
-    /** Strict CSP that still lets the same-origin SPA run (no inline scripts, no third-party origins). */
+    /**
+     * Strict CSP that still lets the same-origin SPA run (no inline scripts, no third-party origins).
+     */
     static final String CSP = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; "
         + "connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
 
-    /** The site uses no camera, microphone, location, payment or USB: no page, and no script on it, may ask. */
+    /**
+     * The site uses no camera, microphone, location, payment or USB: no page, and no script on it, may ask.
+     */
     static final String PERMISSIONS_POLICY = "camera=(), microphone=(), geolocation=(), payment=(), usb=()";
+
+    /**
+     * The admin page under the frontend URL ("/" → "/admin").
+     */
+    static String adminPage(String frontendUrl) {
+        return (frontendUrl.endsWith("/") ? frontendUrl : frontendUrl + "/") + "admin";
+    }
+
+    /**
+     * Where a sign-in returns: the back office on the admin port, the site on the public port.
+     */
+    static String afterSignIn(String frontendUrl, boolean onAdminPort) {
+        return onAdminPort ? adminPage(frontendUrl) : (frontendUrl.endsWith("/") ? frontendUrl : frontendUrl + "/");
+    }
+
+    static OAuth2UserService<OAuth2UserRequest, OAuth2User> oauthUsers(Set<String> admins, BooleanSupplier onAdminPort) {
+        DefaultOAuth2UserService delegate = new DefaultOAuth2UserService();
+        return req -> {
+            OAuth2User user = delegate.loadUser(req);
+            String reg = req.getClientRegistration().getRegistrationId();
+            String key = req.getClientRegistration().getProviderDetails().getUserInfoEndpoint().getUserNameAttributeName();
+            // Match only the immutable subject (GitHub: numeric id). Logins can be renamed and re-registered.
+            Set<GrantedAuthority> roles = roles(admins, reg, user.getName(), null, onAdminPort.getAsBoolean());
+            return new DefaultOAuth2User(roles, user.getAttributes(), key == null || key.isBlank() ? "id" : key);
+        };
+    }
+
+    static OAuth2UserService<OidcUserRequest, OidcUser> oidcUsers(Set<String> admins, BooleanSupplier onAdminPort) {
+        OidcUserService delegate = new OidcUserService();
+        return req -> {
+            OidcUser user = delegate.loadUser(req);
+            String reg = req.getClientRegistration().getRegistrationId();
+            Boolean verified = user.getEmailVerified();
+            String email = Boolean.TRUE.equals(verified) ? user.getEmail() : null;
+            return new DefaultOidcUser(roles(admins, reg, user.getSubject(), email, onAdminPort.getAsBoolean()), user.getIdToken(), user.getUserInfo());
+        };
+    }
+
+    static Set<GrantedAuthority> roles(Set<String> admins, String registrationId, String subject, String alias, boolean onAdminPort) {
+        Set<GrantedAuthority> roles = new HashSet<>();
+        roles.add(new SimpleGrantedAuthority("ROLE_USER"));
+        boolean allowListed = admins.contains(registrationId + ":" + subject)
+            || (alias != null && admins.contains(registrationId + ":" + alias));
+        if (onAdminPort && allowListed) {
+            roles.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+        }
+        return roles;
+    }
 
     @Bean
     SecurityFilterChain api(HttpSecurity http, ObjectProvider<ClientRegistrationRepository> registrations,
@@ -104,50 +156,6 @@ class SecurityConfiguration {
                 .userInfoEndpoint(u -> u.userService(oauthUsers(adminSet, onAdminPort)).oidcUserService(oidcUsers(adminSet, onAdminPort))));
         }
         return http.build();
-    }
-
-    /** The admin page under the frontend URL ("/" → "/admin"). */
-    static String adminPage(String frontendUrl) {
-        return (frontendUrl.endsWith("/") ? frontendUrl : frontendUrl + "/") + "admin";
-    }
-
-    /** Where a sign-in returns: the back office on the admin port, the site on the public port. */
-    static String afterSignIn(String frontendUrl, boolean onAdminPort) {
-        return onAdminPort ? adminPage(frontendUrl) : (frontendUrl.endsWith("/") ? frontendUrl : frontendUrl + "/");
-    }
-
-    static OAuth2UserService<OAuth2UserRequest, OAuth2User> oauthUsers(Set<String> admins, BooleanSupplier onAdminPort) {
-        DefaultOAuth2UserService delegate = new DefaultOAuth2UserService();
-        return req -> {
-            OAuth2User user = delegate.loadUser(req);
-            String reg = req.getClientRegistration().getRegistrationId();
-            String key = req.getClientRegistration().getProviderDetails().getUserInfoEndpoint().getUserNameAttributeName();
-            // Match only the immutable subject (GitHub: numeric id). Logins can be renamed and re-registered.
-            Set<GrantedAuthority> roles = roles(admins, reg, user.getName(), null, onAdminPort.getAsBoolean());
-            return new DefaultOAuth2User(roles, user.getAttributes(), key == null || key.isBlank() ? "id" : key);
-        };
-    }
-
-    static OAuth2UserService<OidcUserRequest, OidcUser> oidcUsers(Set<String> admins, BooleanSupplier onAdminPort) {
-        OidcUserService delegate = new OidcUserService();
-        return req -> {
-            OidcUser user = delegate.loadUser(req);
-            String reg = req.getClientRegistration().getRegistrationId();
-            Boolean verified = user.getEmailVerified();
-            String email = Boolean.TRUE.equals(verified) ? user.getEmail() : null;
-            return new DefaultOidcUser(roles(admins, reg, user.getSubject(), email, onAdminPort.getAsBoolean()), user.getIdToken(), user.getUserInfo());
-        };
-    }
-
-    static Set<GrantedAuthority> roles(Set<String> admins, String registrationId, String subject, String alias, boolean onAdminPort) {
-        Set<GrantedAuthority> roles = new HashSet<>();
-        roles.add(new SimpleGrantedAuthority("ROLE_USER"));
-        boolean allowListed = admins.contains(registrationId + ":" + subject)
-            || (alias != null && admins.contains(registrationId + ":" + alias));
-        if (onAdminPort && allowListed) {
-            roles.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
-        }
-        return roles;
     }
 
     /**

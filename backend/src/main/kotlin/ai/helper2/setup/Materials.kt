@@ -35,7 +35,8 @@ data class ToolRef(
     val hasDocs: Boolean get() = githubRepo != null || npmPackage != null || hfModel != null || hfSpace != null
 
     companion object {
-        private val GITHUB = Regex("^https?://(?:www\\.)?github\\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+?)(?:\\.git)?(?:[/?#].*)?$")
+        private val GITHUB =
+            Regex("^https?://(?:www\\.)?github\\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+?)(?:\\.git)?(?:[/?#].*)?$")
         private val HF_SPACE = Regex("^https?://huggingface\\.co/spaces/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)(?:[/?#].*)?$")
         private val HF_MODEL = Regex("^https?://huggingface\\.co/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)(?:[/?#].*)?$")
         private val NPM_NAME = Regex("^(@[a-z0-9][a-z0-9._-]*/)?[a-z0-9][a-z0-9._-]*$")

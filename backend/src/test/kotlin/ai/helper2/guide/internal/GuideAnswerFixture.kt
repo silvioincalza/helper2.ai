@@ -5,10 +5,9 @@ import ai.helper2.guide.GuideAnswer
 import ai.helper2.guide.GuideModel
 import ai.helper2.guide.GuideProposal
 import ai.helper2.guide.GuideSearchPlan
-import ai.helper2.guide.usecase.AskGuide
 import ai.helper2.guide.ProposedPick
+import ai.helper2.guide.usecase.AskGuide
 import ai.helper2.search.CachedHits
-import ai.helper2.search.usecase.SearchResources
 import ai.helper2.search.NOW
 import ai.helper2.search.ResultObserver
 import ai.helper2.search.SearchCache
@@ -17,6 +16,7 @@ import ai.helper2.search.SourceHit
 import ai.helper2.search.SourceQuery
 import ai.helper2.search.descriptor
 import ai.helper2.search.hit
+import ai.helper2.search.usecase.SearchResources
 import ai.helper2.shared.AudiencePath
 import ai.helper2.shared.ResourceType
 import ai.helper2.testing.MovableClock

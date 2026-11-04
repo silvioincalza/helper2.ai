@@ -1,7 +1,5 @@
 package ai.helper2.search.cache;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.search.CachedHits;
 import ai.helper2.search.PopularityKind;
 import ai.helper2.search.PopularityMetric;
@@ -13,13 +11,16 @@ import ai.helper2.shared.EventFormat;
 import ai.helper2.shared.EventKind;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.ValueOrigin;
+import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
+
 import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
-import org.junit.jupiter.api.Test;
-import tools.jackson.databind.json.JsonMapper;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class SourceHitCodecTest {
 

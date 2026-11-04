@@ -2,14 +2,15 @@ package ai.helper2.setup.internal;
 
 import ai.helper2.platform.resilience.Resilience;
 import io.micrometer.core.instrument.Counter;
+import org.jspecify.annotations.Nullable;
+import org.springframework.data.redis.core.StringRedisTemplate;
+
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import org.jspecify.annotations.Nullable;
-import org.springframework.data.redis.core.StringRedisTemplate;
 
 /**
  * Ceiling on the documents the setup guide fetches per UTC hour, across every replica. The GitHub token is the one
@@ -29,7 +30,9 @@ final class HourlyFetchBudget {
     private Instant hour = Instant.EPOCH;
     private int used;
 
-    /** [redis] null counts in memory only. [refused] counts the fetches the budget turned down. */
+    /**
+     * [redis] null counts in memory only. [refused] counts the fetches the budget turned down.
+     */
     HourlyFetchBudget(int perHour, Clock clock, @Nullable StringRedisTemplate redis, Resilience resilience, Counter refused) {
         this.perHour = perHour;
         this.clock = clock;
@@ -42,7 +45,9 @@ final class HourlyFetchBudget {
         return "h2:v1:setup:fetches:" + HOUR.format(at);
     }
 
-    /** Takes one fetch from this hour's budget; false when it is used up (or set to 0). */
+    /**
+     * Takes one fetch from this hour's budget; false when it is used up (or set to 0).
+     */
     boolean tryAcquire() {
         Instant now = clock.instant().truncatedTo(ChronoUnit.HOURS);
         // Outside the lock: a slow Redis must not queue every caller behind it.
@@ -69,7 +74,9 @@ final class HourlyFetchBudget {
         return ok;
     }
 
-    /** This hour's count after taking one, or null when Redis cannot answer. The key outlives its hour by one. */
+    /**
+     * This hour's count after taking one, or null when Redis cannot answer. The key outlives its hour by one.
+     */
     private @Nullable Long sharedCount(String key) {
         if (redis == null) {
             return null;

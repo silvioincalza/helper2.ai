@@ -10,14 +10,15 @@ import ai.helper2.shared.SourceMode;
 import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
+import org.springframework.web.client.RestClient;
+import tools.jackson.databind.JsonNode;
+
 import java.net.URI;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
-import org.springframework.web.client.RestClient;
-import tools.jackson.databind.JsonNode;
 
 /**
  * Hugging Face Hub models sorted by trending score, filtered by a minimum like count. The Hub has
@@ -30,7 +31,9 @@ import tools.jackson.databind.JsonNode;
 public class HuggingFaceTrendingCollector implements Collector {
 
     static final String ID = "hf-trending";
-    /** Circuit breaker and retry of this collector\'s calls (ADR 0033). */
+    /**
+     * Circuit breaker and retry of this collector\'s calls (ADR 0033).
+     */
     static final String POLICY = "collector-" + ID;
     private static final int MAX_PAGE = 100;
 

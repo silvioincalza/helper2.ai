@@ -3,12 +3,15 @@ package ai.helper2.catalog;
 import ai.helper2.search.MergedResult;
 import ai.helper2.shared.ValueOrigin;
 import ai.helper2.shared.Verification;
+
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/** A resource for its detail page: every fact with its origin, verification and evidence. */
+/**
+ * A resource for its detail page: every fact with its origin, verification and evidence.
+ */
 public record ResourceDetail(MergedResult card, List<Assertion> assertions, List<Relationship> relationships,
                              Summary summary, List<SourceRecordInfo> sourceRecords, String enrichmentStatus) {
 

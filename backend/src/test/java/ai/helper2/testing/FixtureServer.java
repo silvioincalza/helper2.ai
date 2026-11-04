@@ -1,6 +1,7 @@
 package ai.helper2.testing;
 
 import com.sun.net.httpserver.HttpServer;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -11,34 +12,16 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-/** Tiny HTTP server replaying recorded API responses. Boundary tests only; no network. */
+/**
+ * Tiny HTTP server replaying recorded API responses. Boundary tests only; no network.
+ */
 public final class FixtureServer implements AutoCloseable {
-
-    /**
-     * [delayMs] before the headers; [dripMs] &gt; 0 sends the body one byte at a time with that pause before each byte,
-     * so every read gets data quickly while the whole body takes long (a per-read timeout never fires).
-     */
-    public record Reply(int status, String body, Map<String, String> headers, long delayMs, long dripMs) {
-        public Reply(int status, String body, Map<String, String> headers, long delayMs) {
-            this(status, body, headers, delayMs, 0);
-        }
-
-        public static Reply ok(String body) {
-            return new Reply(200, body, Map.of(), 0);
-        }
-
-        /** 200 with [body] sent byte by byte, [dripMs] apart. */
-        public static Reply drip(String body, long dripMs) {
-            return new Reply(200, body, Map.of(), 0, dripMs);
-        }
-    }
 
     public final List<String> requests = new CopyOnWriteArrayList<>();
     public final List<Map<String, List<String>>> requestHeaders = new CopyOnWriteArrayList<>();
     public final List<String> requestBodies = new CopyOnWriteArrayList<>();
     private final Map<String, Reply> routes = new ConcurrentHashMap<>();
     private final HttpServer server;
-
     public FixtureServer() {
         try {
             server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
@@ -84,6 +67,14 @@ public final class FixtureServer implements AutoCloseable {
         server.start();
     }
 
+    public static String fixture(String name) {
+        try (InputStream in = FixtureServer.class.getResourceAsStream("/fixtures/" + name)) {
+            return new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException | NullPointerException e) {
+            throw new IllegalStateException("missing fixture " + name, e);
+        }
+    }
+
     public FixtureServer route(String pathPrefix, Reply reply) {
         routes.put(pathPrefix, reply);
         return this;
@@ -93,16 +84,29 @@ public final class FixtureServer implements AutoCloseable {
         return "http://127.0.0.1:" + server.getAddress().getPort();
     }
 
-    public static String fixture(String name) {
-        try (InputStream in = FixtureServer.class.getResourceAsStream("/fixtures/" + name)) {
-            return new String(in.readAllBytes(), StandardCharsets.UTF_8);
-        } catch (IOException | NullPointerException e) {
-            throw new IllegalStateException("missing fixture " + name, e);
-        }
-    }
-
     @Override
     public void close() {
         server.stop(0);
+    }
+
+    /**
+     * [delayMs] before the headers; [dripMs] &gt; 0 sends the body one byte at a time with that pause before each byte,
+     * so every read gets data quickly while the whole body takes long (a per-read timeout never fires).
+     */
+    public record Reply(int status, String body, Map<String, String> headers, long delayMs, long dripMs) {
+        public Reply(int status, String body, Map<String, String> headers, long delayMs) {
+            this(status, body, headers, delayMs, 0);
+        }
+
+        public static Reply ok(String body) {
+            return new Reply(200, body, Map.of(), 0);
+        }
+
+        /**
+         * 200 with [body] sent byte by byte, [dripMs] apart.
+         */
+        public static Reply drip(String body, long dripMs) {
+            return new Reply(200, body, Map.of(), 0, dripMs);
+        }
     }
 }

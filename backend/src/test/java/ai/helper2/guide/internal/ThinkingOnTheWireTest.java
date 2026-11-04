@@ -1,22 +1,23 @@
 package ai.helper2.guide.internal;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.ModelCallMetrics;
 import ai.helper2.platform.resilience.Resilience;
 import com.sun.net.httpserver.HttpServer;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openai.OpenAiChatOptions;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.ai.openai.OpenAiChatModel;
-import org.springframework.ai.openai.OpenAiChatOptions;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * The thinking switch must survive ChatClient's option merging and reach the HTTP body: a fake ChatModel
@@ -24,8 +25,12 @@ import org.springframework.ai.openai.OpenAiChatOptions;
  */
 class ThinkingOnTheWireTest {
 
-    HttpServer server;
     final List<String> bodies = new CopyOnWriteArrayList<>();
+    HttpServer server;
+
+    private static String quote(String s) {
+        return "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
+    }
 
     @BeforeEach
     void start() throws IOException {
@@ -49,10 +54,6 @@ class ThinkingOnTheWireTest {
     @AfterEach
     void stop() {
         server.stop(0);
-    }
-
-    private static String quote(String s) {
-        return "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
     }
 
     private SpringAiGuideModel model(SpringAiGuideModel.Thinking thinking) {

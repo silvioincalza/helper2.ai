@@ -7,14 +7,17 @@ import kotlin.test.assertNull
 
 class CutoffSweepTest {
 
-    private fun snapshot(id: String, vararg nearest: Pair<String, Double>) = SearchSnapshot(id, id, Instant.EPOCH, listOf(id),
+    private fun snapshot(id: String, vararg nearest: Pair<String, Double>) = SearchSnapshot(
+        id, id, Instant.EPOCH, listOf(id),
         emptySet(), emptyList(), nearest.map { SemanticHit(it.first, it.second) })
 
-    private val qrels = Qrels.parse("""
+    private val qrels = Qrels.parse(
+        """
         query_id	url	grade
         q1	https://x.org/a	3
         q1	https://x.org/b	2
-    """.trimIndent().lines())
+    """.trimIndent().lines()
+    )
 
     private val snapshots = listOf(
         snapshot("q1", "https://x.org/a" to 0.30, "https://x.org/c" to 0.50, "https://x.org/b" to 0.70),

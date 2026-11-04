@@ -1,16 +1,20 @@
 package ai.helper2.sources.support;
 
-import java.time.Duration;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
+
+import java.time.Duration;
 
 /**
  * Per-source configuration. Tokens are server-side only and never logged. [deadline] is the total time a Scout
  * collector's call may take (ADR 0006 §2); search sources use their [timeout] as the deadline. Null until
  * {@code SourcesConfiguration} fills it (default: twice the timeout).
  */
-public record SourceSettings(boolean enabled, String baseUrl, String token, Duration timeout, Duration cacheTtl, Duration deadline) {
+public record SourceSettings(boolean enabled, String baseUrl, String token, Duration timeout, Duration cacheTtl,
+                             Duration deadline) {
 
-    /** The constructor configuration binds (a record with a second constructor needs it named). */
+    /**
+     * The constructor configuration binds (a record with a second constructor needs it named).
+     */
     @ConstructorBinding
     public SourceSettings {
     }

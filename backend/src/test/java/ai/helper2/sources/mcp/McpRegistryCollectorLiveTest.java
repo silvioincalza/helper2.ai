@@ -1,19 +1,22 @@
 package ai.helper2.sources.mcp;
 
-import static ai.helper2.sources.SourceFixtures.live;
-import static ai.helper2.sources.SourceFixtures.liveHttp;
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.sources.support.RunInterval;
-import java.time.Clock;
-import java.time.Duration;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-/** Opt-in: the official MCP Registry (no key). ./gradlew liveTest. One page of servers. */
+import java.time.Clock;
+import java.time.Duration;
+
+import static ai.helper2.sources.SourceFixtures.live;
+import static ai.helper2.sources.SourceFixtures.liveHttp;
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * Opt-in: the official MCP Registry (no key). ./gradlew liveTest. One page of servers.
+ */
 @Tag("live")
 class McpRegistryCollectorLiveTest {
 

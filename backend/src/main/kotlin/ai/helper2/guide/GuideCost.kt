@@ -10,8 +10,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
-import java.util.HexFormat
-import java.util.Locale
+import java.util.*
 
 /**
  * Fresh (not cached) guide questions per client per UTC day. The per-minute rate limit alone lets one client
@@ -128,7 +127,8 @@ class GuideAnswerCache(
             val comparisonChecked = a.comparison?.rows.orEmpty().flatMap { it.cells }
                 .none { it.text != null && it.reasonCheck == ReasonCheck.NOT_CHECKED }
             val explanationChecked = a.explanation?.sentences.orEmpty().none { it.reasonCheck == ReasonCheck.NOT_CHECKED }
-            val answered = a.recommendations.any { it.aiReasoned } || a.comparison != null || a.explanation?.sentences?.isNotEmpty() == true
+            val answered =
+                a.recommendations.any { it.aiReasoned } || a.comparison != null || a.explanation?.sentences?.isNotEmpty() == true
             return answered && picksChecked && comparisonChecked && explanationChecked
         }
 
@@ -146,7 +146,13 @@ class GuideAnswerCache(
          */
         @JvmStatic
         @JvmOverloads
-        fun key(request: String, path: AudiencePath?, config: String, clarification: String? = null, drops: Drops = Drops.NONE): String =
+        fun key(
+            request: String,
+            path: AudiencePath?,
+            config: String,
+            clarification: String? = null,
+            drops: Drops = Drops.NONE
+        ): String =
             sha256Hex(
                 listOf(
                     SHAPE, normalized(request), path?.name ?: "-", config,

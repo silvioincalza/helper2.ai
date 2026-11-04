@@ -1,8 +1,5 @@
 package ai.helper2.sources.evidence;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 import ai.helper2.platform.http.ObservedHttp;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.ExtraText;
@@ -13,15 +10,23 @@ import ai.helper2.sources.SourceFixtures;
 import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.testing.FixtureServer;
 import io.micrometer.observation.ObservationRegistry;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+
 import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ReadmeEvidenceTest {
 
     final FixtureServer server = new FixtureServer();
+
+    private static GapTarget target(GapKind kind) {
+        return new GapTarget(kind, "acme", "tool", UUID.randomUUID());
+    }
 
     @AfterEach
     void stop() {
@@ -32,10 +37,6 @@ class ReadmeEvidenceTest {
         SourceSettings settings = new SourceSettings(true, server.baseUrl(), "token", Duration.ofSeconds(2), Duration.ZERO);
         return ReadmeEvidence.of(settings, settings, ObservedHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP),
             ObservedHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP), Resilience.NONE, SourceFixtures.CLOCK);
-    }
-
-    private static GapTarget target(GapKind kind) {
-        return new GapTarget(kind, "acme", "tool", UUID.randomUUID());
     }
 
     @Test

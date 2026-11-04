@@ -1,12 +1,12 @@
 package ai.helper2.architecture;
 
-import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.Helper2Application;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
+import org.junit.jupiter.api.Test;
+import org.springframework.modulith.core.ApplicationModules;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -19,10 +19,13 @@ import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Test;
-import org.springframework.modulith.core.ApplicationModules;
 
-/** Architecture rules as tests: module boundaries (Spring Modulith) and hexagonal direction (ArchUnit). */
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * Architecture rules as tests: module boundaries (Spring Modulith) and hexagonal direction (ArchUnit).
+ */
 class ModularityTest {
 
     private static final ApplicationModules MODULES = ApplicationModules.of(Helper2Application.class);
@@ -30,9 +33,45 @@ class ModularityTest {
         .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
         .importPackages("ai.helper2");
 
-    /** Packages that hold the business rules (Kotlin): the top-level packages and their use cases — not their web/cache/config/internal adapters. */
+    /**
+     * Packages that hold the business rules (Kotlin): the top-level packages and their use cases — not their web/cache/config/internal adapters.
+     */
     private static final String[] DOMAIN = {"ai.helper2.shared", "ai.helper2.search", "ai.helper2.scout", "ai.helper2.guide", "ai.helper2.setup",
         "ai.helper2.search.usecase", "ai.helper2.scout.usecase", "ai.helper2.guide.usecase"};
+    /**
+     * The module that owns each table of the schema. Spring Modulith cannot see coupling through the database, so
+     * this test does: every table in the versioned migrations (V*__*.sql) has one owner here, and only the owner's code names it in SQL.
+     */
+    private static final Map<String, String> TABLE_OWNERS = Map.ofEntries(
+        Map.entry("source", "catalog"), Map.entry("resource", "catalog"), Map.entry("resource_label", "catalog"),
+        Map.entry("source_record", "catalog"), Map.entry("resource_embedding", "catalog"), Map.entry("evidence", "catalog"),
+        Map.entry("enrichment_run", "catalog"), Map.entry("field_assertion", "catalog"),
+        Map.entry("field_assertion_evidence", "catalog"), Map.entry("relationship", "catalog"),
+        Map.entry("relationship_evidence", "catalog"), Map.entry("summary_claim", "catalog"),
+        Map.entry("summary_claim_evidence", "catalog"), Map.entry("issue_report", "catalog"),
+        Map.entry("review_item", "catalog"), Map.entry("app_user", "identity"), Map.entry("bookmark", "identity"),
+        Map.entry("admin_audit", "identity"), Map.entry("tavily_query_result", "search"), Map.entry("ai_cache", "platform"),
+        Map.entry("shedlock", "platform"), Map.entry("guide_similar_question", "guide"), Map.entry("source_cursor", "scout"),
+        Map.entry("scout_run", "scout"), Map.entry("scout_schedule", "scout"));
+    /**
+     * Known exceptions, as "table module". The Scout writes source.last_outcome in JdbcScoutStore; moving it behind a
+     * catalog port is on the roadmap (section 7).
+     */
+    private static final Set<String> SHARED_TABLES = Set.of("source scout");
+    private static final Pattern CREATE_TABLE = Pattern.compile("(?im)^CREATE TABLE (?:IF NOT EXISTS )?(\\w+)");
+    /**
+     * Block and line comments: prose like "derived from source data" is not SQL.
+     */
+    private static final Pattern COMMENT = Pattern.compile("(?s)/\\*.*?\\*/|(?m)//.*$");
+    private static final Pattern SQL_TABLE = Pattern.compile("(?i)\\b(?:FROM|JOIN|INTO|UPDATE)\\s+(\\w+)");
+
+    private static String read(Path file) {
+        try {
+            return Files.readString(file);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
 
     @Test
     void modulesHaveNoCyclesAndUseOnlyPublicApis() {
@@ -64,33 +103,6 @@ class ModularityTest {
             .should().dependOnClassesThat().resideInAPackage("ai.helper2.sources..")
             .check(CLASSES);
     }
-
-    /**
-     * The module that owns each table of the schema. Spring Modulith cannot see coupling through the database, so
-     * this test does: every table in the versioned migrations (V*__*.sql) has one owner here, and only the owner's code names it in SQL.
-     */
-    private static final Map<String, String> TABLE_OWNERS = Map.ofEntries(
-        Map.entry("source", "catalog"), Map.entry("resource", "catalog"), Map.entry("resource_label", "catalog"),
-        Map.entry("source_record", "catalog"), Map.entry("resource_embedding", "catalog"), Map.entry("evidence", "catalog"),
-        Map.entry("enrichment_run", "catalog"), Map.entry("field_assertion", "catalog"),
-        Map.entry("field_assertion_evidence", "catalog"), Map.entry("relationship", "catalog"),
-        Map.entry("relationship_evidence", "catalog"), Map.entry("summary_claim", "catalog"),
-        Map.entry("summary_claim_evidence", "catalog"), Map.entry("issue_report", "catalog"),
-        Map.entry("review_item", "catalog"), Map.entry("app_user", "identity"), Map.entry("bookmark", "identity"),
-        Map.entry("admin_audit", "identity"), Map.entry("tavily_query_result", "search"), Map.entry("ai_cache", "platform"),
-        Map.entry("shedlock", "platform"), Map.entry("guide_similar_question", "guide"), Map.entry("source_cursor", "scout"),
-        Map.entry("scout_run", "scout"), Map.entry("scout_schedule", "scout"));
-
-    /**
-     * Known exceptions, as "table module". The Scout writes source.last_outcome in JdbcScoutStore; moving it behind a
-     * catalog port is on the roadmap (section 7).
-     */
-    private static final Set<String> SHARED_TABLES = Set.of("source scout");
-
-    private static final Pattern CREATE_TABLE = Pattern.compile("(?im)^CREATE TABLE (?:IF NOT EXISTS )?(\\w+)");
-    /** Block and line comments: prose like "derived from source data" is not SQL. */
-    private static final Pattern COMMENT = Pattern.compile("(?s)/\\*.*?\\*/|(?m)//.*$");
-    private static final Pattern SQL_TABLE = Pattern.compile("(?i)\\b(?:FROM|JOIN|INTO|UPDATE)\\s+(\\w+)");
 
     @Test
     void tablesHaveOneOwner() throws IOException {
@@ -126,13 +138,5 @@ class ModularityTest {
             }
         }
         assertThat(foreign).as("SQL on another module's table").isEmpty();
-    }
-
-    private static String read(Path file) {
-        try {
-            return Files.readString(file);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
     }
 }

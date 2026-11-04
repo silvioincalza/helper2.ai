@@ -1,13 +1,9 @@
 package ai.helper2.catalog;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 import ai.helper2.TestcontainersConfiguration;
 import ai.helper2.catalog.usecase.ResolveReviewItem;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.ResourceId;
-import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +12,14 @@ import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
-/** V3 migration (ADR 0032 §8): COURSE is a resource type, and course pages Scout finds wait in review, once per URL. */
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+/**
+ * V3 migration (ADR 0032 §8): COURSE is a resource type, and course pages Scout finds wait in review, once per URL.
+ */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 class CourseCandidateReviewTest {
@@ -41,13 +44,13 @@ class CourseCandidateReviewTest {
     @Test
     void courseIsAResourceTypeAndUnknownTypesStayRejected() {
         jdbc.sql("""
-                INSERT INTO resource (id, canonical_url, url, title, description_origin, type, audience, data_origin)
-                VALUES (:id, :u, :u, 'A course', 'DEMO', 'COURSE', 'BOTH', 'DEMO')
-                """).param("id", UUID.randomUUID()).param("u", "https://coursera.org/learn/test-type").update();
+            INSERT INTO resource (id, canonical_url, url, title, description_origin, type, audience, data_origin)
+            VALUES (:id, :u, :u, 'A course', 'DEMO', 'COURSE', 'BOTH', 'DEMO')
+            """).param("id", UUID.randomUUID()).param("u", "https://coursera.org/learn/test-type").update();
         assertThatThrownBy(() -> jdbc.sql("""
-                INSERT INTO resource (id, canonical_url, url, title, description_origin, type, audience, data_origin)
-                VALUES (:id, :u, :u, 'Nope', 'DEMO', 'WEBINAR', 'BOTH', 'DEMO')
-                """).param("id", UUID.randomUUID()).param("u", "https://coursera.org/learn/test-bad").update())
+            INSERT INTO resource (id, canonical_url, url, title, description_origin, type, audience, data_origin)
+            VALUES (:id, :u, :u, 'Nope', 'DEMO', 'WEBINAR', 'BOTH', 'DEMO')
+            """).param("id", UUID.randomUUID()).param("u", "https://coursera.org/learn/test-bad").update())
             .isInstanceOf(DataIntegrityViolationException.class);
     }
 
@@ -68,9 +71,9 @@ class CourseCandidateReviewTest {
     void aPageAlreadyInTheCatalogIsNotProposed() {
         String url = "https://coursera.org/learn/test-already-there";
         jdbc.sql("""
-                INSERT INTO resource (id, canonical_url, url, title, description_origin, type, audience, data_origin)
-                VALUES (:id, :u, :u, 'Already there', 'DEMO', 'COURSE', 'BOTH', 'DEMO')
-                """).param("id", ResourceId.of(CanonicalUrl.of(url)).getValue()).param("u", url).update();
+            INSERT INTO resource (id, canonical_url, url, title, description_origin, type, audience, data_origin)
+            VALUES (:id, :u, :u, 'Already there', 'DEMO', 'COURSE', 'BOTH', 'DEMO')
+            """).param("id", ResourceId.of(CanonicalUrl.of(url)).getValue()).param("u", url).update();
         assertThat(queue.proposeCandidate(ReviewQueue.Kind.COURSE_CANDIDATE, url, "New course", "URL: " + url)).isFalse();
     }
 }

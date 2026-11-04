@@ -1,12 +1,15 @@
 package ai.helper2.catalog.internal;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.testing.InMemorySharedCache;
-import java.time.Duration;
 import org.junit.jupiter.api.Test;
 
-/** Query vectors shared by the replicas: exact floats back, no query text stored, a vector of another size is a miss. */
+import java.time.Duration;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * Query vectors shared by the replicas: exact floats back, no query text stored, a vector of another size is a miss.
+ */
 class QueryVectorCacheTest {
 
     private static final Duration TTL = Duration.ofDays(7);

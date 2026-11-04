@@ -67,7 +67,10 @@ class IntentsTest {
     fun `a window resolves from today, a month being 30 days`() {
         val today = LocalDate.of(2026, 10, 2)
         assertEquals(DateWindow(LocalDate.of(2026, 9, 2), today), PlannedWindow(1, WindowUnit.MONTH).resolve(today))
-        assertEquals(DateWindow(today, LocalDate.of(2026, 10, 16)), PlannedWindow(2, WindowUnit.WEEK, WindowDirection.NEXT).resolve(today))
+        assertEquals(
+            DateWindow(today, LocalDate.of(2026, 10, 16)),
+            PlannedWindow(2, WindowUnit.WEEK, WindowDirection.NEXT).resolve(today)
+        )
         // Model noise ("last 100000 years") is capped, not trusted.
         assertEquals(today.minusDays(120L * 365), PlannedWindow(100_000, WindowUnit.YEAR).resolve(today).from)
     }
@@ -163,7 +166,11 @@ class IntentsTest {
     fun `an option too long for a chip names the subject and its kind`() {
         val results = listOf(
             result("https://ai.google.dev/gemini", "Gemini", ResourceType.MODEL),
-            result("https://example.com/gemini-cli", "gemini command line interface for developers at scale cli", ResourceType.PRODUCT),
+            result(
+                "https://example.com/gemini-cli",
+                "gemini command line interface for developers at scale cli",
+                ResourceType.PRODUCT
+            ),
         )
         assertEquals(listOf("Gemini (model)", "Gemini (tool)"), AmbiguousSubject.clarification("Gemini", results, null)?.options)
     }

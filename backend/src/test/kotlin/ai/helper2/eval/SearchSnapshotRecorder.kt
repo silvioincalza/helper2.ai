@@ -4,13 +4,13 @@ import ai.helper2.catalog.Embedder
 import ai.helper2.search.QueryTranslator
 import ai.helper2.search.SearchSource
 import ai.helper2.shared.LanguageDetector
-import java.time.Duration
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.jdbc.core.simple.JdbcClient
+import java.time.Duration
 
 /**
  * Records one snapshot per query of docs/eval/search-queries.json and docs/eval/semantic-gold.json: each source's
@@ -26,18 +26,25 @@ import org.springframework.jdbc.core.simple.JdbcClient
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 class SearchSnapshotRecorder {
 
-    @Autowired lateinit var sources: List<SearchSource>
-    @Autowired lateinit var languages: LanguageDetector
-    @Autowired lateinit var translator: ObjectProvider<QueryTranslator>
-    @Autowired lateinit var embedder: ObjectProvider<Embedder>
-    @Autowired lateinit var jdbc: JdbcClient
+    @Autowired
+    lateinit var sources: List<SearchSource>
+    @Autowired
+    lateinit var languages: LanguageDetector
+    @Autowired
+    lateinit var translator: ObjectProvider<QueryTranslator>
+    @Autowired
+    lateinit var embedder: ObjectProvider<Embedder>
+    @Autowired
+    lateinit var jdbc: JdbcClient
 
     @Test
     fun `records each query once against the live sources`() {
-        val taker = SnapshotTaker(sources.sortedWith(compareBy({ it.descriptor.priority }, { it.descriptor.id })), languages,
+        val taker = SnapshotTaker(
+            sources.sortedWith(compareBy({ it.descriptor.priority }, { it.descriptor.id })), languages,
             translator.getIfAvailable { QueryTranslator.NONE })
         val pause = Duration.parse(System.getenv("H2_EVAL_PAUSE") ?: "PT4S")
-        val queries = (EvalFiles.searchQueries() + EvalFiles.semanticQueries()).filterNot { EvalFiles.snapshotFile(it.id).exists() }
+        val queries =
+            (EvalFiles.searchQueries() + EvalFiles.semanticQueries()).filterNot { EvalFiles.snapshotFile(it.id).exists() }
         println("recording ${queries.size} queries into ${EvalFiles.snapshots}")
         queries.forEachIndexed { i, q ->
             if (i > 0) Thread.sleep(pause)
@@ -51,13 +58,15 @@ class SearchSnapshotRecorder {
     private fun nearest(text: String): List<SemanticHit>? {
         val e = embedder.ifAvailable ?: return null
         val vector = e.embed(listOf(text), Embedder.Kind.QUERY).first().joinToString(",", "[", "]")
-        return jdbc.sql("""
+        return jdbc.sql(
+            """
                 SELECT r.canonical_url, e.embedding <=> CAST(:v AS vector) AS distance
                 FROM resource_embedding e JOIN resource r ON r.id = e.resource_id
                 WHERE e.model = :model AND r.data_origin IN ('INDEXED', 'OBSERVED', 'CURATED')
                 ORDER BY e.embedding <=> CAST(:v AS vector)
                 LIMIT 50
-                """)
+                """
+        )
             .param("v", vector).param("model", e.model())
             .query { rs, _ -> SemanticHit(rs.getString(1), rs.getDouble(2)) }
             .list()

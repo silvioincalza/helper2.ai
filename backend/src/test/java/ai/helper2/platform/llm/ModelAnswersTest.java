@@ -1,8 +1,8 @@
 package ai.helper2.platform.llm;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class ModelAnswersTest {
 

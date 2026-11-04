@@ -21,16 +21,16 @@ import io.micrometer.core.instrument.observation.DefaultMeterObservationHandler
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.micrometer.observation.Observation
 import io.micrometer.observation.ObservationRegistry
+import org.slf4j.LoggerFactory
 import java.time.Clock
 import java.time.Duration
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executor
 import java.util.concurrent.atomic.AtomicLong
 import java.util.function.Supplier
-import org.slf4j.LoggerFactory
 
 /**
  * One enrichment budget shared by every collector and the backlog within a single Scout run. It counts model
@@ -91,6 +91,7 @@ class RunScout(
     private val review: CandidateReview? = null,
 ) {
     private val log = LoggerFactory.getLogger(RunScout::class.java)
+
     // Strong references: a gauge only holds its source object weakly.
     private val lastSuccess = ConcurrentHashMap<String, AtomicLong>()
     private val merger = ResultMerger()
@@ -241,11 +242,18 @@ class RunScout(
         meters.counter("helper2.scout.items", "source", source, "kind", "queued").increment(summary.enrichmentsQueued.toDouble())
         val finished = (summary.finishedAt ?: summary.startedAt).epochSecond
         lastSuccess.computeIfAbsent(source) {
-            AtomicLong().also { Gauge.builder("helper2.scout.last.success", it, AtomicLong::toDouble).tag("source", source).register(meters) }
+            AtomicLong().also {
+                Gauge.builder("helper2.scout.last.success", it, AtomicLong::toDouble).tag("source", source).register(meters)
+            }
         }.set(finished)
     }
 
-    private fun runCollector(collector: Collector, running: RunSummary, budget: EnrichmentBudget, observation: Observation): RunSummary {
+    private fun runCollector(
+        collector: Collector,
+        running: RunSummary,
+        budget: EnrichmentBudget,
+        observation: Observation
+    ): RunSummary {
         val d = collector.descriptor
         val id = running.id
         val started = running.startedAt
@@ -260,7 +268,10 @@ class RunScout(
             val merged = merger.merge(batch.hits, mapOf(d.id to SourceContext(d, ServedFrom.LIVE)))
             val changed = catalog.index(merged, d.id).distinct()
             if (batch.candidates.isNotEmpty()) {
-                checkNotNull(review) { "${d.id} proposed candidates but no review list is configured" }.propose(d.id, batch.candidates)
+                checkNotNull(review) { "${d.id} proposed candidates but no review list is configured" }.propose(
+                    d.id,
+                    batch.candidates
+                )
             }
             store.saveCursor(
                 d.id,
@@ -296,7 +307,17 @@ class RunScout(
             // The message tells apart failures that share a class (timeout, HTTP status, malformed body).
             log.warn("scout run for ${d.id} failed: ${e.javaClass.simpleName}: ${e.message.orEmpty().take(300)}")
             observation.error(e)
-            RunSummary(id, d.id, RunStatus.FAILED, started, clock.instant(), 0, 0, 0, "Collection failed: ${e.javaClass.simpleName}")
+            RunSummary(
+                id,
+                d.id,
+                RunStatus.FAILED,
+                started,
+                clock.instant(),
+                0,
+                0,
+                0,
+                "Collection failed: ${e.javaClass.simpleName}"
+            )
         }
         saveQuietly(summary)
         return summary

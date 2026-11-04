@@ -107,6 +107,7 @@ enum class SubjectKind(val label: String) {
             ResourceType.DATASET -> DATASET
             ResourceType.PRODUCT, ResourceType.AGENT, ResourceType.PROMPT, ResourceType.SKILL, ResourceType.MCP_SERVER,
             ResourceType.LIBRARY -> TOOL
+
             else -> null
         }
     }
@@ -128,7 +129,9 @@ object AmbiguousSubject {
             .mapNotNull { r -> SubjectKind.of(r.type)?.let { it to r } }
             .distinctBy { it.first }
         if (firstOfEachKind.size < 2) return null
-        return planned ?: Clarification.of("Which $subject do you mean?", firstOfEachKind.map { (kind, r) -> option(subject, kind, r) })
+        return planned ?: Clarification.of(
+            "Which $subject do you mean?",
+            firstOfEachKind.map { (kind, r) -> option(subject, kind, r) })
     }
 
     /** "gemini cli (tool)": the entry's name without owner, so the reply grounds as a subject; too long, "Gemini (tool)". */
@@ -147,9 +150,10 @@ data class Drops(val intent: Boolean = false, val window: Boolean = false, val c
     val isEmpty: Boolean get() = !intent && !window && constraints.isEmpty()
 
     /** Stable text for the answer cache key. */
-    val key: String get() = if (isEmpty) "" else listOfNotNull(
-        "intent".takeIf { intent }, "window".takeIf { window }, *constraints.sorted().map { "constraint:$it" }.toTypedArray(),
-    ).joinToString(",")
+    val key: String
+        get() = if (isEmpty) "" else listOfNotNull(
+            "intent".takeIf { intent }, "window".takeIf { window }, *constraints.sorted().map { "constraint:$it" }.toTypedArray(),
+        ).joinToString(",")
 
     companion object {
         @JvmField
@@ -245,7 +249,8 @@ object IntentRules {
     )
 
     /** "new", "latest", "recent", "upcoming" and the like: a question about what is new, with or without a period. */
-    private val NEW_WORDS = Regex("(?i)\\b(new|newest|latest|recent(ly)?|upcoming|launched|released|born|nuov[oaie]|recent[ei])\\b")
+    private val NEW_WORDS =
+        Regex("(?i)\\b(new|newest|latest|recent(ly)?|upcoming|launched|released|born|nuov[oaie]|recent[ei])\\b")
 
     /**
      * Grounding for the planner (ADR 0032): the fast model copies periods from its examples ("an open source MCP
@@ -278,7 +283,8 @@ object IntentRules {
         return REQUIREMENT_WORDS.any { it.containsMatchIn(constraint) && it.containsMatchIn(request) }
     }
 
-    private val STOP = setOf("works", "runs", "the", "and", "with", "must", "has", "have", "licence", "license", "support", "supports")
+    private val STOP =
+        setOf("works", "runs", "the", "and", "with", "must", "has", "have", "licence", "license", "support", "supports")
 
     /** A window only from an explicit time expression; "latest" alone sorts by date but sets none. */
     @JvmStatic
@@ -315,7 +321,8 @@ object IntentRules {
     /** The query without generic words; empty when nothing names a subject. */
     @JvmStatic
     fun subjectWords(query: String): String =
-        query.split(Regex("\\s+")).filter { it.isNotBlank() && it.lowercase().trim('.', ',', '?', '!') !in GENERIC }.joinToString(" ")
+        query.split(Regex("\\s+")).filter { it.isNotBlank() && it.lowercase().trim('.', ',', '?', '!') !in GENERIC }
+            .joinToString(" ")
 }
 
 /**
@@ -356,6 +363,7 @@ internal object IntentWords {
 
     fun phrases(key: String): List<String> {
         require(bundles.any { it.containsKey(key) }) { "no language defines $key" }
-        return bundles.flatMap { b -> b.getProperty(key).orEmpty().split(',').map { it.trim() }.filter { it.isNotEmpty() } }.distinct()
+        return bundles.flatMap { b -> b.getProperty(key).orEmpty().split(',').map { it.trim() }.filter { it.isNotEmpty() } }
+            .distinct()
     }
 }

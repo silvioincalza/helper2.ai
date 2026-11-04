@@ -18,7 +18,7 @@ import ai.helper2.search.descriptor
 import ai.helper2.testing.MovableClock
 import java.time.Duration
 import java.time.Instant
-import java.util.Optional
+import java.util.*
 import java.util.function.Supplier
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -69,12 +69,23 @@ class ListSourcesTest {
     @Test
     fun `each source shows this replica's response time and its circuit`() {
         val health = SourceHealth()
-        health.sourceCompleted(SourceStatus(github.descriptor, SourceOutcome.SUCCEEDED, ServedFrom.LIVE, 3, Duration.ofMillis(420), now))
+        health.sourceCompleted(
+            SourceStatus(
+                github.descriptor,
+                SourceOutcome.SUCCEEDED,
+                ServedFrom.LIVE,
+                3,
+                Duration.ofMillis(420),
+                now
+            )
+        )
         val opened = now.minusSeconds(12)
-        val circuits = Circuits(mapOf(
-            "source-github" to Circuit(Circuit.State.CLOSED, null),
-            "source-npm" to Circuit(Circuit.State.OPEN, opened),
-        ))
+        val circuits = Circuits(
+            mapOf(
+                "source-github" to Circuit(Circuit.State.CLOSED, null),
+                "source-npm" to Circuit(Circuit.State.OPEN, opened),
+            )
+        )
 
         val byId = list(health = health, resilience = circuits).associateBy { it.descriptor.id }
 
@@ -115,7 +126,16 @@ class ListSourcesTest {
     @Test
     fun `a newer Scout outcome wins, and an unreadable record leaves this replica's outcomes`() {
         val health = SourceHealth()
-        health.sourceCompleted(SourceStatus(github.descriptor, SourceOutcome.FAILED, ServedFrom.NONE, 0, null, now.minusSeconds(60)))
+        health.sourceCompleted(
+            SourceStatus(
+                github.descriptor,
+                SourceOutcome.FAILED,
+                ServedFrom.NONE,
+                0,
+                null,
+                now.minusSeconds(60)
+            )
+        )
 
         val recorded = list(health = health, recorded = { mapOf("github" to SourceHealth.Entry(SourceOutcome.SUCCEEDED, now)) })
         assertEquals(SourceHealth.Entry(SourceOutcome.SUCCEEDED, now), recorded.first().last)

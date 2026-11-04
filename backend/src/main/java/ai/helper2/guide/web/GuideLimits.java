@@ -4,19 +4,20 @@ import ai.helper2.platform.resilience.Resilience;
 import io.micrometer.context.ContextExecutorService;
 import io.micrometer.context.ContextSnapshotFactory;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
-import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.Optional;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
+import java.time.Duration;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 
 /**
  * The guide's two bounds, shared by the JSON and the streamed endpoint: a question runs only with a place in the
@@ -27,18 +28,19 @@ import org.springframework.stereotype.Component;
 @Component
 class GuideLimits implements DisposableBean {
 
-    private static final Logger log = LoggerFactory.getLogger(GuideLimits.class);
-
-    /** What a client is told, by either endpoint, when every slot is taken (503) or the deadline passed (504). */
+    /**
+     * What a client is told, by either endpoint, when every slot is taken (503) or the deadline passed (504).
+     */
     static final String BUSY = "The guide is answering too many questions right now. Try again in a moment.";
     static final String TIMED_OUT = "The guide took too long to answer. Try again in a moment.";
-
     static final String POLICY = "guide";
-
+    private static final Logger log = LoggerFactory.getLogger(GuideLimits.class);
     private final Resilience resilience;
     private final Duration deadline;
     private final ContextSnapshotFactory snapshots = ContextSnapshotFactory.builder().build();
-    /** The deadline callback only needs the trace, not the caller's SecurityContext. */
+    /**
+     * The deadline callback only needs the trace, not the caller's SecurityContext.
+     */
     private final ContextSnapshotFactory traceOnly = ContextSnapshotFactory.builder()
         .captureKeyPredicate(ObservationThreadLocalAccessor.KEY::equals).build();
     private final ExecutorService executor = ContextExecutorService.wrap(Executors.newVirtualThreadPerTaskExecutor(), snapshots);

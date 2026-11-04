@@ -2,7 +2,6 @@ package ai.helper2.platform.llm;
 
 import ai.helper2.platform.resilience.Resilience;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.time.Clock;
 import io.micrometer.observation.ObservationRegistry;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,10 +9,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
+import java.time.Clock;
+
 @Configuration(proxyBeanMethods = false)
 class LlmConfiguration {
 
-    /** Every module's model settings; startup stops here when a configured model is not an NVIDIA one (NvidiaOnly). */
+    /**
+     * Every module's model settings; startup stops here when a configured model is not an NVIDIA one (NvidiaOnly).
+     */
     @Bean
     LlmSettings llmSettings(@Value("${spring.ai.model.chat:none}") String chatProvider,
                             @Value("${helper2.llm.provider-label:}") String providerLabel,
@@ -36,7 +39,9 @@ class LlmConfiguration {
         return new BudgetLedger(template == null ? null : new RedisCallCounter(template, resilience), clock);
     }
 
-    /** One metrics recorder for every model call, whichever module makes it. */
+    /**
+     * One metrics recorder for every model call, whichever module makes it.
+     */
     @Bean
     ModelCallMetrics modelCallMetrics(ObservationRegistry observations, MeterRegistry meters) {
         return new ModelCallMetrics(observations, meters);

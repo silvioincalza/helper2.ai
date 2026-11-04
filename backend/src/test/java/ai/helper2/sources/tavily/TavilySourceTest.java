@@ -1,21 +1,32 @@
 package ai.helper2.sources.tavily;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.platform.http.ObservedHttp;
 import ai.helper2.search.SourceQuery;
 import ai.helper2.shared.WebPageTitle;
 import ai.helper2.sources.SourceFixtures;
 import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.testing.FixtureServer;
-import java.time.Duration;
-import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-/** What the live Tavily source sends: the guide's web query when planned, the catalog keywords otherwise. */
+import java.time.Duration;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * What the live Tavily source sends: the guide's web query when planned, the catalog keywords otherwise.
+ */
 class TavilySourceTest {
 
+    static final String PAGE_TITLES = """
+        {"results":[
+          {"url":"https://github.com/crystaldba/postgres-mcp","title":"GitHub - crystaldba/postgres-mcp: Postgres MCP Pro provides configurable read/write access and performance analysis for you and your AI agents. · GitHub"},
+          {"url":"https://scored.tools/vector-databases","title":"Best Open Source Vector Databases for Production RAG 2026 | scored.tools",
+           "content":"A ranking of vector databases for RAG."},
+          {"url":"https://www.kaily.ai/chat-pdf","title":"PDF Free | Chat with PDF AI - No ... - Kaily.ai","content":"Chat with your PDF using AI."},
+          {"url":"https://ollama.com/","title":"Ollama  -  Get up and running with large language models","content":"Run LLMs locally."}
+        ]}""";
     final FixtureServer server = new FixtureServer();
 
     @AfterEach
@@ -42,15 +53,6 @@ class TavilySourceTest {
             .doesNotContain("artificial intelligence");
         assertThat(hits).extracting(h -> h.getTitle()).containsExactly("Acme launches an open-source AI agent framework");
     }
-
-    static final String PAGE_TITLES = """
-        {"results":[
-          {"url":"https://github.com/crystaldba/postgres-mcp","title":"GitHub - crystaldba/postgres-mcp: Postgres MCP Pro provides configurable read/write access and performance analysis for you and your AI agents. · GitHub"},
-          {"url":"https://scored.tools/vector-databases","title":"Best Open Source Vector Databases for Production RAG 2026 | scored.tools",
-           "content":"A ranking of vector databases for RAG."},
-          {"url":"https://www.kaily.ai/chat-pdf","title":"PDF Free | Chat with PDF AI - No ... - Kaily.ai","content":"Chat with your PDF using AI."},
-          {"url":"https://ollama.com/","title":"Ollama  -  Get up and running with large language models","content":"Run LLMs locally."}
-        ]}""";
 
     @Test
     void webPageTitlesLoseTheSiteNameAndGitHubPagesShowTheRepository() {

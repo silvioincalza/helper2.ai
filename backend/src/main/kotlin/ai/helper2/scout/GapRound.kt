@@ -3,7 +3,7 @@ package ai.helper2.scout
 import java.net.URI
 import java.text.Normalizer
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 
 /**
  * The gap round (ADR 0043): when an enrichment leaves fields unproven, one more pass with more text from the
@@ -39,7 +39,13 @@ fun interface GapBudget {
 }
 
 /** The parts of a source record the gap round looks at. */
-data class GapSourceRecord(val id: UUID, val sourceId: String, val externalId: String, val sourceUrl: String, val repositoryUrl: String?)
+data class GapSourceRecord(
+    val id: UUID,
+    val sourceId: String,
+    val externalId: String,
+    val sourceUrl: String,
+    val repositoryUrl: String?
+)
 
 object GapTargets {
 
@@ -64,7 +70,8 @@ object GapTargets {
      */
     @JvmStatic
     fun select(records: List<GapSourceRecord>): GapTarget? {
-        records.firstNotNullOfOrNull { r -> if (r.sourceId in GITHUB_SOURCES) github(r.sourceUrl, r.id) else null }?.let { return it }
+        records.firstNotNullOfOrNull { r -> if (r.sourceId in GITHUB_SOURCES) github(r.sourceUrl, r.id) else null }
+            ?.let { return it }
         records.firstNotNullOfOrNull { r -> if (r.sourceId in HF_SOURCES) hub(r.sourceUrl, r.id) else null }?.let { return it }
         return records.firstNotNullOfOrNull { r ->
             if (r.sourceId != MCP) return@firstNotNullOfOrNull null
@@ -116,7 +123,10 @@ object ReadmeText {
     private val TRAILING_SPACE = Regex("[ \\t]+\\n")
 
     /** Headings of the sections that usually state licence, platforms and how to install. */
-    private val USEFUL_HEADING = Regex("licen[cs]e|install|getting started|quick ?start|usage|platform|support|compatib|requirement", RegexOption.IGNORE_CASE)
+    private val USEFUL_HEADING = Regex(
+        "licen[cs]e|install|getting started|quick ?start|usage|platform|support|compatib|requirement",
+        RegexOption.IGNORE_CASE
+    )
 
     fun clean(raw: String): String {
         // Hidden characters go first: "alice\u200B@x.com" must not slip past the email mask and join up afterwards.
@@ -137,7 +147,8 @@ object ReadmeText {
         val out = StringBuilder(s.length)
         s.codePoints().forEach { cp ->
             val type = Character.getType(cp)
-            val hidden = (type == Character.CONTROL.toInt() && cp != '\n'.code && cp != '\t'.code) || type == Character.FORMAT.toInt()
+            val hidden =
+                (type == Character.CONTROL.toInt() && cp != '\n'.code && cp != '\t'.code) || type == Character.FORMAT.toInt()
             if (!hidden) out.appendCodePoint(cp)
         }
         return out.toString()
@@ -150,8 +161,9 @@ object ReadmeText {
     fun window(text: String, maxChars: Int = MAX_CHARS): String {
         if (text.length <= maxChars) return text
         val sections = sections(text)
-        val order = listOf(0) + sections.indices.drop(1).filter { USEFUL_HEADING.containsMatchIn(sections[it].lineSequence().first()) } +
-            sections.indices.drop(1).filterNot { USEFUL_HEADING.containsMatchIn(sections[it].lineSequence().first()) }
+        val order =
+            listOf(0) + sections.indices.drop(1).filter { USEFUL_HEADING.containsMatchIn(sections[it].lineSequence().first()) } +
+                sections.indices.drop(1).filterNot { USEFUL_HEADING.containsMatchIn(sections[it].lineSequence().first()) }
         val kept = sortedMapOf<Int, String>()
         var used = 0
         for (i in order) {

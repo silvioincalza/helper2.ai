@@ -3,12 +3,15 @@ package ai.helper2.scout.internal;
 import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.scout.Candidate;
 import ai.helper2.scout.CandidateReview;
-import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-/** Collector proposals become COURSE_CANDIDATE review items: an admin decides them, nothing reaches the catalog. */
+import java.util.List;
+
+/**
+ * Collector proposals become COURSE_CANDIDATE review items: an admin decides them, nothing reaches the catalog.
+ */
 @Component
 class ReviewQueueCandidateReview implements CandidateReview {
 
@@ -21,24 +24,9 @@ class ReviewQueueCandidateReview implements CandidateReview {
         this.queue = queue;
     }
 
-    @Override
-    public int propose(String sourceId, List<Candidate> candidates) {
-        int opened = 0;
-        for (Candidate c : candidates) {
-            String url = c.getUrl().getValue();
-            String reason = "New course or certification page found by " + sourceId + ": " + c.getTitle();
-            if (queue.proposeCandidate(ReviewQueue.Kind.COURSE_CANDIDATE, url, reason.length() > 300 ? reason.substring(0, 300) : reason,
-                    details(c))) {
-                opened++;
-            }
-        }
-        if (opened > 0) {
-            log.info("{}: {} of {} candidate pages sent to review", sourceId, opened, candidates.size());
-        }
-        return opened;
-    }
-
-    /** What an admin needs to decide: the page, its platform and the search snippet, one per line. */
+    /**
+     * What an admin needs to decide: the page, its platform and the search snippet, one per line.
+     */
     static String details(Candidate c) {
         StringBuilder b = new StringBuilder("URL: ").append(c.getUrl().getValue());
         if (c.getPlatform() != null) {
@@ -49,5 +37,22 @@ class ReviewQueueCandidateReview implements CandidateReview {
             b.append("\nSnippet: ").append(s.length() > MAX_SNIPPET ? s.substring(0, MAX_SNIPPET - 1) + "…" : s);
         }
         return b.toString();
+    }
+
+    @Override
+    public int propose(String sourceId, List<Candidate> candidates) {
+        int opened = 0;
+        for (Candidate c : candidates) {
+            String url = c.getUrl().getValue();
+            String reason = "New course or certification page found by " + sourceId + ": " + c.getTitle();
+            if (queue.proposeCandidate(ReviewQueue.Kind.COURSE_CANDIDATE, url, reason.length() > 300 ? reason.substring(0, 300) : reason,
+                details(c))) {
+                opened++;
+            }
+        }
+        if (opened > 0) {
+            log.info("{}: {} of {} candidate pages sent to review", sourceId, opened, candidates.size());
+        }
+        return opened;
     }
 }

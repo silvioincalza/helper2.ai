@@ -93,7 +93,10 @@ class ResultMergerTest {
             assertEquals(listOf(alone), Filtering.apply(listOf(alone), SearchFilters(licenses = setOf(UNKNOWN))), raw)
 
             val withGithub = merger.merge(
-                listOf(hit("github", "https://github.com/a/x", license = "MIT"), hit("npm", "https://github.com/a/x", license = raw)),
+                listOf(
+                    hit("github", "https://github.com/a/x", license = "MIT"),
+                    hit("npm", "https://github.com/a/x", license = raw)
+                ),
                 contexts("github", "npm"),
             ).single()
             assertEquals("MIT", withGithub.license, raw)
@@ -195,7 +198,14 @@ class ResultMergerTest {
     @Test
     fun `use cases are derived deterministically from source text when no source states them`() {
         val merged = merger.merge(
-            listOf(hit("github", "https://github.com/a/x", title = "doc-translator", description = "Translate documents with an LLM")),
+            listOf(
+                hit(
+                    "github",
+                    "https://github.com/a/x",
+                    title = "doc-translator",
+                    description = "Translate documents with an LLM"
+                )
+            ),
             contexts("github"),
         ).single()
         assertEquals(setOf("translation"), merged.useCases)
@@ -214,7 +224,10 @@ class ResultMergerTest {
         assertEquals(2, merged.size)
         assertEquals(2, merged.map { it.id }.toSet().size)
         assertEquals(
-            setOf("https://npmjs.com/package/@modelcontextprotocol/server-memory", "https://npmjs.com/package/@modelcontextprotocol/server-filesystem"),
+            setOf(
+                "https://npmjs.com/package/@modelcontextprotocol/server-memory",
+                "https://npmjs.com/package/@modelcontextprotocol/server-filesystem"
+            ),
             merged.map { it.canonicalUrl.value }.toSet(),
         )
         assertTrue(merged.all { r -> r.hits.single().repositoryUrl?.value == "https://github.com/modelcontextprotocol/servers" })
@@ -240,7 +253,11 @@ class ResultMergerTest {
         val merged = merger.merge(
             listOf(
                 hit("github", "https://github.com/remotion-dev/remotion"),
-                hit("npm", "https://www.npmjs.com/package/@remotion/player", repo = "https://github.com/remotion-dev/remotion/tree/main/packages/player"),
+                hit(
+                    "npm",
+                    "https://www.npmjs.com/package/@remotion/player",
+                    repo = "https://github.com/remotion-dev/remotion/tree/main/packages/player"
+                ),
             ),
             contexts("github", "npm"),
         )

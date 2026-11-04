@@ -1,8 +1,5 @@
 package ai.helper2.sources;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
-
 import ai.helper2.platform.http.ObservedHttp;
 import ai.helper2.search.SearchSource;
 import ai.helper2.search.SourceFailure;
@@ -13,15 +10,19 @@ import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.sources.tavily.TavilySource;
 import ai.helper2.testing.FixtureServer;
 import io.micrometer.observation.ObservationRegistry;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.web.client.RestClient;
+
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.springframework.web.client.RestClient;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 /**
  * A source token goes only to the configured host. HttpClient refuses a redirect to another authority (here
@@ -35,24 +36,21 @@ class TokenRedirectTest {
     final FixtureServer configured = new FixtureServer();
     final FixtureServer elsewhere = new FixtureServer();
 
-    @AfterEach
-    void stop() {
-        configured.close();
-        elsewhere.close();
-    }
-
-    record TokenSource(String name, boolean get, String path, BiFunction<SourceSettings, RestClient.Builder, SearchSource> create) {
-        @Override
-        public String toString() {
-            return name;
-        }
-    }
-
     static Stream<TokenSource> tokenSources() {
         return Stream.of(
             new TokenSource("github", true, "/search/repositories", (s, b) -> new GitHubSource(s, b, SourceFixtures.CLOCK)),
             new TokenSource("hf-models", true, "/api/models", (s, b) -> new HuggingFaceModelsSource(s, b, SourceFixtures.CLOCK)),
             new TokenSource("tavily", false, "/search", (s, b) -> new TavilySource(s, b, SourceFixtures.CLOCK)));
+    }
+
+    static Stream<TokenSource> getSources() {
+        return tokenSources().filter(TokenSource::get);
+    }
+
+    @AfterEach
+    void stop() {
+        configured.close();
+        elsewhere.close();
     }
 
     private SearchSource source(TokenSource t) {
@@ -76,10 +74,6 @@ class TokenRedirectTest {
         assertThat(elsewhere.requestHeaders).allSatisfy(h -> assertThat(h).doesNotContainKey("Authorization"));
     }
 
-    static Stream<TokenSource> getSources() {
-        return tokenSources().filter(TokenSource::get);
-    }
-
     @ParameterizedTest
     @MethodSource("getSources")
     void aRedirectOnTheConfiguredHostKeepsTheToken(TokenSource t) {
@@ -90,5 +84,13 @@ class TokenRedirectTest {
 
         assertThat(configured.requestHeaders).hasSize(2)
             .allSatisfy(h -> assertThat(h.get("Authorization")).containsExactly("Bearer " + TOKEN));
+    }
+
+    record TokenSource(String name, boolean get, String path,
+                       BiFunction<SourceSettings, RestClient.Builder, SearchSource> create) {
+        @Override
+        public String toString() {
+            return name;
+        }
     }
 }

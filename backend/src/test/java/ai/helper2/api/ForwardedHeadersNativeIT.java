@@ -1,12 +1,6 @@
 package ai.helper2.api;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.TestcontainersConfiguration;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +8,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.redis.core.StringRedisTemplate;
+
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Production setting behind Cloudflare (H2_FORWARD_HEADERS_STRATEGY=native): the proxy appends the real
@@ -28,19 +29,19 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 @Import(TestcontainersConfiguration.class)
 class ForwardedHeadersNativeIT {
 
+    final HttpClient http = HttpClient.newHttpClient();
     @LocalServerPort
     int port;
-
     @Autowired
     StringRedisTemplate redis;
 
-    /** Rate-limit counts are in the Redis that every test context shares: each test starts from zero. */
+    /**
+     * Rate-limit counts are in the Redis that every test context shares: each test starts from zero.
+     */
     @BeforeEach
     void resetRateLimits() {
         redis.delete(redis.keys("h2:v1:rate:*"));
     }
-
-    final HttpClient http = HttpClient.newHttpClient();
 
     int recent(String xForwardedFor) throws Exception {
         return http.send(HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/api/v1/recent"))

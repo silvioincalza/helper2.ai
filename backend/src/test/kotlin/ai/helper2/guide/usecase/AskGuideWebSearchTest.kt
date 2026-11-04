@@ -2,12 +2,12 @@ package ai.helper2.guide.usecase
 
 import ai.helper2.guide.Candidate
 import ai.helper2.guide.GuideAnswerCache
-import ai.helper2.guide.MemoryAnswerStore
 import ai.helper2.guide.GuideIntent
 import ai.helper2.guide.GuideModel
 import ai.helper2.guide.GuideProposal
 import ai.helper2.guide.GuideSearchPlan
 import ai.helper2.guide.GuideStatus
+import ai.helper2.guide.MemoryAnswerStore
 import ai.helper2.guide.ProposedPick
 import ai.helper2.guide.ReasonClaim
 import ai.helper2.platform.quota.QuotaCounter
@@ -34,7 +34,7 @@ import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneOffset
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.AfterTest
@@ -57,14 +57,31 @@ class AskGuideWebSearchTest {
         override fun search(query: SourceQuery): List<SourceHit> {
             webCalls.incrementAndGet()
             return listOf(
-                hit("tavily", "https://github.com/ollama/ollama", title = "ollama", type = ResourceType.PRODUCT,
-                    description = "Get up and running with large language models locally. MIT License"),
-                hit("tavily", "https://lmstudio.ai", title = "LM Studio", rank = 1, type = ResourceType.PRODUCT,
-                    description = "Discover, download and run local LLMs on your computer with a desktop app"),
-                hit("tavily", "https://ai.google.dev/gemini", title = "Gemini", rank = 2, type = ResourceType.MODEL,
-                    published = "2023-12-06T00:00:00Z", description = "Gemini is a family of multimodal models developed by Google"),
-                hit("tavily", "https://github.com/google-gemini/gemini-cli", title = "gemini-cli", rank = 3,
-                    published = "2025-06-25T00:00:00Z", description = "An open-source AI agent that brings Gemini into your terminal"),
+                hit(
+                    "tavily", "https://github.com/ollama/ollama", title = "ollama", type = ResourceType.PRODUCT,
+                    description = "Get up and running with large language models locally. MIT License"
+                ),
+                hit(
+                    "tavily", "https://lmstudio.ai", title = "LM Studio", rank = 1, type = ResourceType.PRODUCT,
+                    description = "Discover, download and run local LLMs on your computer with a desktop app"
+                ),
+                hit(
+                    "tavily",
+                    "https://ai.google.dev/gemini",
+                    title = "Gemini",
+                    rank = 2,
+                    type = ResourceType.MODEL,
+                    published = "2023-12-06T00:00:00Z",
+                    description = "Gemini is a family of multimodal models developed by Google"
+                ),
+                hit(
+                    "tavily",
+                    "https://github.com/google-gemini/gemini-cli",
+                    title = "gemini-cli",
+                    rank = 3,
+                    published = "2025-06-25T00:00:00Z",
+                    description = "An open-source AI agent that brings Gemini into your terminal"
+                ),
             )
         }
     }
@@ -72,7 +89,13 @@ class AskGuideWebSearchTest {
     private val stored = mutableMapOf<Pair<String, IntentClass>, CachedHits>()
     private val store = object : WebResultStore {
         override fun find(sourceId: String, query: String, intentClass: IntentClass) = stored[query to intentClass]
-        override fun replace(sourceId: String, query: String, intentClass: IntentClass, fetchedAt: Instant, hits: List<SourceHit>) {
+        override fun replace(
+            sourceId: String,
+            query: String,
+            intentClass: IntentClass,
+            fetchedAt: Instant,
+            hits: List<SourceHit>
+        ) {
             stored[query to intentClass] = CachedHits(hits, fetchedAt)
         }
     }
@@ -85,6 +108,7 @@ class AskGuideWebSearchTest {
             own?.let { counts[it] = used + 1 }
             return Result(Verdict.TAKEN, used + 1)
         }
+
         override fun giveBack(counter: Counter) {}
         override fun used(counter: Counter) = counts[counter] ?: 0
         override fun delete(keys: Collection<String>) {}
@@ -95,8 +119,10 @@ class AskGuideWebSearchTest {
         override fun put(key: String, value: CachedHits, ttl: Duration) {}
     }
 
-    private val search = SearchResources(listOf(web), noCache, ResultObserver { emptyMap() }, executor, clock,
-        webResults = store, quota = WebSearchQuota(counter, QuotaKeys("test-secret", clock)))
+    private val search = SearchResources(
+        listOf(web), noCache, ResultObserver { emptyMap() }, executor, clock,
+        webResults = store, quota = WebSearchQuota(counter, QuotaKeys("test-secret", clock))
+    )
 
     private class Model(val plan: GuideSearchPlan) : GuideModel {
         override val provider = "fake"
@@ -104,7 +130,12 @@ class AskGuideWebSearchTest {
         override val reasoningModel = "reasoning"
         override fun plan(request: String, path: AudiencePath?) = plan
         override fun choose(request: String, candidates: List<Candidate>, constraints: List<String>) =
-            GuideProposal(candidates.map { ProposedPick(it.key, "Runs models locally.", it.result.description!!) }, null, emptyList())
+            GuideProposal(
+                candidates.map { ProposedPick(it.key, "Runs models locally.", it.result.description!!) },
+                null,
+                emptyList()
+            )
+
         override fun verifyReasons(request: String, claims: List<ReasonClaim>) = claims.associate { it.key to true }
     }
 
@@ -116,9 +147,12 @@ class AskGuideWebSearchTest {
             override val reasoningModel = "reasoning"
             override fun plan(request: String, path: AudiencePath?) =
                 GuideSearchPlan("Gemini", intent = GuideIntent.WHEN, subjects = listOf("Gemini"))
+
             override fun plan(request: String, path: AudiencePath?, clarification: String?) =
                 GuideSearchPlan("gemini cli", intent = GuideIntent.WHEN, subjects = listOf("gemini cli"))
-            override fun choose(request: String, candidates: List<Candidate>, constraints: List<String>) = error("no choose for a date")
+
+            override fun choose(request: String, candidates: List<Candidate>, constraints: List<String>) =
+                error("no choose for a date")
         }
         val guide = AskGuide(search, released, clock)
 
@@ -132,7 +166,8 @@ class AskGuideWebSearchTest {
         assertEquals(2, webCalls.get())
     }
 
-    private val alternatives = Model(GuideSearchPlan("local LLM runner", intent = GuideIntent.ALTERNATIVES, subjects = listOf("Ollama")))
+    private val alternatives =
+        Model(GuideSearchPlan("local LLM runner", intent = GuideIntent.ALTERNATIVES, subjects = listOf("Ollama")))
 
     @Test
     fun `a question that searches twice takes one web search and states what the guide has left`() {
@@ -140,12 +175,16 @@ class AskGuideWebSearchTest {
 
         assertEquals(2, webCalls.get(), "the subject lookup and the picks: two credits")
         assertEquals(2, answer.webSearches!!.remaining)
-        assertEquals(3, search.webSearchesLeft(ai.helper2.search.Asker(ai.helper2.search.Feature.SEARCH, "203.0.113.7"))!!.remaining)
+        assertEquals(
+            3,
+            search.webSearchesLeft(ai.helper2.search.Asker(ai.helper2.search.Feature.SEARCH, "203.0.113.7"))!!.remaining
+        )
     }
 
     @Test
     fun `a cached answer shows each asker their own web searches left`() {
-        val guide = AskGuide(search, alternatives, clock, cache = GuideAnswerCache(Duration.ofHours(24), clock, MemoryAnswerStore()))
+        val guide =
+            AskGuide(search, alternatives, clock, cache = GuideAnswerCache(Duration.ofHours(24), clock, MemoryAnswerStore()))
         guide.ask("alternatives to Ollama", null, client = "203.0.113.7")
 
         val cached = guide.ask("alternatives to Ollama", null, client = "198.51.100.1")

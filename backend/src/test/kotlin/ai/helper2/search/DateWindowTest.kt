@@ -1,10 +1,10 @@
 package ai.helper2.search
 
 import ai.helper2.search.usecase.SearchResources
+import java.time.Clock
 import java.time.Duration
 import java.time.LocalDate
 import java.time.ZoneOffset
-import java.time.Clock
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.Executors
 import kotlin.test.AfterTest
@@ -58,6 +58,7 @@ class DateWindowTest {
                 return listOf(hit(id, "https://$id.example/x", published = "2026-10-20T00:00:00Z"))
             }
         }
+
         val cache = object : SearchCache {
             override fun get(key: String) = null
             override fun put(key: String, value: CachedHits, ttl: Duration) {}

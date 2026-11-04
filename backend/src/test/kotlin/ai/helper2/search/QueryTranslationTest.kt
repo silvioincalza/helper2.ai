@@ -7,8 +7,8 @@ import java.time.Duration
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -29,20 +29,31 @@ class QueryTranslationTest {
         override fun put(key: String, value: CachedHits, ttl: Duration) {}
     }
 
-    private fun run(text: String, timeout: Duration = Duration.ofSeconds(2), translator: QueryTranslator): Pair<SourceQuery, SearchOutcome> {
+    private fun run(
+        text: String,
+        timeout: Duration = Duration.ofSeconds(2),
+        translator: QueryTranslator
+    ): Pair<SourceQuery, SearchOutcome> {
         var seen: SourceQuery? = null
         val src = object : SearchSource {
             override val descriptor = descriptor("catalog")
             override fun search(query: SourceQuery): List<SourceHit> = emptyList<SourceHit>().also { seen = query }
         }
-        val out = SearchResources(listOf(src), noCache, { emptyMap() }, executor, Clock.systemUTC(),
-            languages = languages, translator = translator, translateTimeout = timeout).search(SearchRequest(text))
+        val out = SearchResources(
+            listOf(src), noCache, { emptyMap() }, executor, Clock.systemUTC(),
+            languages = languages, translator = translator, translateTimeout = timeout
+        ).search(SearchRequest(text))
         return seen!! to out
     }
 
     @Test
     fun `a Spanish query is searched in English first and disclosed`() {
-        val (q, out) = run("herramienta para traducir documentos") { _, lang -> assertEquals("es", lang); "Document translation tool" }
+        val (q, out) = run("herramienta para traducir documentos") { _, lang ->
+            assertEquals(
+                "es",
+                lang
+            ); "Document translation tool"
+        }
         assertEquals("es", q.language)
         assertEquals("document translation tool", q.requiredVariants.first())
         assertTrue("document translation tool" in q.expandedTerms)
@@ -64,8 +75,10 @@ class QueryTranslationTest {
             override fun search(query: SourceQuery): List<SourceHit> = emptyList<SourceHit>().also { seen.set(query) }
         }
         val slowModel = QueryTranslator { _, _ -> Thread.sleep(400); "document translation tool" }
-        val out = SearchResources(listOf(fast), noCache, { emptyMap() }, executor, Clock.systemUTC(),
-            languages = languages, translator = slowModel, translateTimeout = Duration.ofSeconds(2))
+        val out = SearchResources(
+            listOf(fast), noCache, { emptyMap() }, executor, Clock.systemUTC(),
+            languages = languages, translator = slowModel, translateTimeout = Duration.ofSeconds(2)
+        )
             .search(SearchRequest("herramienta para traducir documentos"))
 
         val status = out.statuses.single()
@@ -78,7 +91,9 @@ class QueryTranslationTest {
     fun `sources that never read the translation run while the model is still translating`() {
         val semanticCalled = CountDownLatch(1)
         val semantic = object : SearchSource {
-            override val descriptor = descriptor("semantic", mode = ai.helper2.shared.SourceMode.INDEXED).copy(usesTranslation = false)
+            override val descriptor =
+                descriptor("semantic", mode = ai.helper2.shared.SourceMode.INDEXED).copy(usesTranslation = false)
+
             override fun search(query: SourceQuery): List<SourceHit> = emptyList<SourceHit>().also { semanticCalled.countDown() }
         }
         val seenByIndex = AtomicReference<SourceQuery>()
@@ -87,9 +102,12 @@ class QueryTranslationTest {
             override fun search(query: SourceQuery): List<SourceHit> = emptyList<SourceHit>().also { seenByIndex.set(query) }
         }
         // The model answers only once the semantic source has been called: it must not wait for the model.
-        val model = QueryTranslator { _, _ -> if (semanticCalled.await(2, TimeUnit.SECONDS)) "document translation tool" else null }
-        SearchResources(listOf(semantic, index), noCache, { emptyMap() }, executor, Clock.systemUTC(),
-            languages = languages, translator = model, translateTimeout = Duration.ofSeconds(3))
+        val model =
+            QueryTranslator { _, _ -> if (semanticCalled.await(2, TimeUnit.SECONDS)) "document translation tool" else null }
+        SearchResources(
+            listOf(semantic, index), noCache, { emptyMap() }, executor, Clock.systemUTC(),
+            languages = languages, translator = model, translateTimeout = Duration.ofSeconds(3)
+        )
             .search(SearchRequest("herramienta para traducir documentos"))
 
         assertEquals("document translation tool", seenByIndex.get().requiredVariants.first())

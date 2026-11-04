@@ -1,7 +1,5 @@
 package ai.helper2.sources;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.platform.http.ObservedHttp;
 import ai.helper2.platform.resilience.Resilience4jPolicies;
 import ai.helper2.search.CachedHits;
@@ -20,27 +18,22 @@ import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.retry.RetryRegistry;
 import io.micrometer.observation.ObservationRegistry;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 
-/** A real source adapter behind its circuit, over HTTP: repeated 503s open it, then a search skips the source without a call. */
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * A real source adapter behind its circuit, over HTTP: repeated 503s open it, then a search skips the source without a call.
+ */
 class SourceCircuitIT {
-
-    private final FixtureServer server = new FixtureServer();
-    private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
-    private final MovableClock clock = new MovableClock(Instant.parse("2026-10-30T10:00:00Z"));
-
-    @AfterEach
-    void stop() {
-        server.close();
-        executor.shutdownNow();
-    }
 
     private static final SearchCache NO_CACHE = new SearchCache() {
         @Override
@@ -52,6 +45,15 @@ class SourceCircuitIT {
         public void put(String key, CachedHits value, Duration ttl) {
         }
     };
+    private final FixtureServer server = new FixtureServer();
+    private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+    private final MovableClock clock = new MovableClock(Instant.parse("2026-10-30T10:00:00Z"));
+
+    @AfterEach
+    void stop() {
+        server.close();
+        executor.shutdownNow();
+    }
 
     private SearchResources search() {
         CircuitBreakerRegistry circuits = CircuitBreakerRegistry.ofDefaults();

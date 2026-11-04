@@ -15,6 +15,8 @@ import ai.helper2.scout.GapTarget;
 import ai.helper2.scout.GapTargets;
 import ai.helper2.scout.Material;
 import ai.helper2.scout.ValidationResult;
+import org.springframework.stereotype.Component;
+
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -25,7 +27,6 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.springframework.stereotype.Component;
 
 /**
  * The Scout's view of the catalog for enrichment. Reads the backlog and a resource's source text through
@@ -35,10 +36,14 @@ import org.springframework.stereotype.Component;
 @Component
 class CatalogEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
 
-    /** A FAILED run is usually transient (timeout, provider error); give up after this many. */
+    /**
+     * A FAILED run is usually transient (timeout, provider error); give up after this many.
+     */
     static final int MAX_FAILED_ATTEMPTS = 3;
 
-    /** Minimum source description length for a resource to be worth an LLM call. */
+    /**
+     * Minimum source description length for a resource to be worth an LLM call.
+     */
     static final int MIN_DESCRIPTION = 40;
 
     private final EnrichmentCandidates candidates;
@@ -49,7 +54,31 @@ class CatalogEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
         this.results = results;
     }
 
-    /** Same text bar as {@link #pending}: a bare title gives the model nothing worth citing. */
+    private static EnrichmentResults.Checked checked(ValidationResult result) {
+        return new EnrichmentResults.Checked(
+            result.getFields().stream().map(f -> new EnrichmentResults.Field(f.getField(), f.getValue(), f.getVerification(),
+                citations(f.getCitations()))).toList(),
+            result.getRelationships().stream().map(r -> new EnrichmentResults.Relationship(r.getKind(), r.getTarget(), r.getTargetId(),
+                r.getVerification(), citations(r.getCitations()))).toList(),
+            result.getSummary().stream().map(c -> new EnrichmentResults.Claim(c.getText(), citations(c.getCitations()))).toList());
+    }
+
+    private static List<EnrichmentResults.Citation> citations(List<CheckedCitation> citations) {
+        return citations.stream().map(c -> new EnrichmentResults.Citation(c.getSourceRecordId(), c.getExcerpt(),
+            c.getSourceUrl(), c.getRetrievedAt())).toList();
+    }
+
+    private static String sha(String s) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(s.getBytes(StandardCharsets.UTF_8)), 0, 16);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /**
+     * Same text bar as {@link #pending}: a bare title gives the model nothing worth citing.
+     */
     @Override
     public List<UUID> eligible(List<UUID> resourceIds) {
         return candidates.withEnoughText(resourceIds, MIN_DESCRIPTION);
@@ -65,7 +94,9 @@ class CatalogEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
         return candidates.pending(limit, MIN_DESCRIPTION, MAX_FAILED_ATTEMPTS);
     }
 
-    /** How many resources {@link #pending} would return without a limit; for the back office overview. */
+    /**
+     * How many resources {@link #pending} would return without a limit; for the back office overview.
+     */
     @Override
     public long pendingCount() {
         return candidates.pendingCount(MIN_DESCRIPTION, MAX_FAILED_ATTEMPTS);
@@ -99,7 +130,9 @@ class CatalogEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
         return new EnrichmentMaterial(new EnrichmentInput(candidate.title(), materials, facts, Map.of()), sha(allText), gap);
     }
 
-    /** Runs without a judged answer (LLM_UNAVAILABLE, FAILED) say nothing about the input, so they are passed over. */
+    /**
+     * Runs without a judged answer (LLM_UNAVAILABLE, FAILED) say nothing about the input, so they are passed over.
+     */
     @Override
     public String lastFingerprint(UUID resourceId) {
         return candidates.lastJudgedFingerprint(resourceId);
@@ -125,28 +158,6 @@ class CatalogEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
         List<String> errors = result != null ? result.getErrors() : failure != null ? List.of(failure) : List.of();
         results.record(new EnrichmentResults.Run(resourceId, model.getProvider(), model.getModel(), model.getPromptVersion(),
             inputFingerprint, startedAt, outcome.name(), errors, extraEvidence), result == null ? null : checked(result));
-    }
-
-    private static EnrichmentResults.Checked checked(ValidationResult result) {
-        return new EnrichmentResults.Checked(
-            result.getFields().stream().map(f -> new EnrichmentResults.Field(f.getField(), f.getValue(), f.getVerification(),
-                citations(f.getCitations()))).toList(),
-            result.getRelationships().stream().map(r -> new EnrichmentResults.Relationship(r.getKind(), r.getTarget(), r.getTargetId(),
-                r.getVerification(), citations(r.getCitations()))).toList(),
-            result.getSummary().stream().map(c -> new EnrichmentResults.Claim(c.getText(), citations(c.getCitations()))).toList());
-    }
-
-    private static List<EnrichmentResults.Citation> citations(List<CheckedCitation> citations) {
-        return citations.stream().map(c -> new EnrichmentResults.Citation(c.getSourceRecordId(), c.getExcerpt(),
-            c.getSourceUrl(), c.getRetrievedAt())).toList();
-    }
-
-    private static String sha(String s) {
-        try {
-            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(s.getBytes(StandardCharsets.UTF_8)), 0, 16);
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
-        }
     }
 
 }

@@ -5,28 +5,22 @@ import ai.helper2.platform.quota.QuotaKeys;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.search.DailyLimits;
 import ai.helper2.search.DescribedSource;
-import ai.helper2.search.RecordedOutcomes;
-import ai.helper2.search.WebFreshness;
-import ai.helper2.search.WebSearchQuota;
-import ai.helper2.search.internal.JdbcWebResultStore;
-import ai.helper2.search.usecase.ListSources;
-import ai.helper2.search.usecase.SearchResources;
 import ai.helper2.search.QueryTranslator;
+import ai.helper2.search.RecordedOutcomes;
 import ai.helper2.search.ResultObserver;
 import ai.helper2.search.SearchCache;
 import ai.helper2.search.SearchSource;
 import ai.helper2.search.SourceHealth;
+import ai.helper2.search.WebFreshness;
+import ai.helper2.search.WebSearchQuota;
 import ai.helper2.search.cache.RedisSearchCache;
+import ai.helper2.search.internal.JdbcWebResultStore;
+import ai.helper2.search.usecase.ListSources;
+import ai.helper2.search.usecase.SearchResources;
 import ai.helper2.shared.LanguageDetector;
 import io.micrometer.context.ContextExecutorService;
 import io.micrometer.context.ContextSnapshotFactory;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.time.Clock;
-import java.time.Duration;
-import java.util.Comparator;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -34,6 +28,13 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import tools.jackson.databind.ObjectMapper;
+
+import java.time.Clock;
+import java.time.Duration;
+import java.util.Comparator;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Configuration(proxyBeanMethods = false)
 class SearchConfiguration {
@@ -44,7 +45,9 @@ class SearchConfiguration {
         return ContextExecutorService.wrap(Executors.newVirtualThreadPerTaskExecutor(), ContextSnapshotFactory.builder().build());
     }
 
-    /** Language of queries (search) and of catalog text (catalog ingest); models load once at startup. */
+    /**
+     * Language of queries (search) and of catalog text (catalog ingest); models load once at startup.
+     */
     @Bean
     LanguageDetector languageDetector() {
         return new LanguageDetector();
@@ -65,7 +68,9 @@ class SearchConfiguration {
         return new JdbcWebResultStore(jdbc, keys, catalog);
     }
 
-    /** The daily web searches (ADR 0037); an empty global cap means none. */
+    /**
+     * The daily web searches (ADR 0037); an empty global cap means none.
+     */
     @Bean
     WebSearchQuota webSearchQuota(QuotaCounter counter, QuotaKeys keys,
                                   @Value("${helper2.tavily.quota.guest.search}") int guestSearch,

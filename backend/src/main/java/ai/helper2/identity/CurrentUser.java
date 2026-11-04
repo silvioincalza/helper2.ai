@@ -2,14 +2,15 @@ package ai.helper2.identity;
 
 import ai.helper2.identity.internal.Users;
 import ai.helper2.platform.SignedInUser;
-import java.util.Optional;
-import java.util.UUID;
 import org.springframework.context.event.EventListener;
 import org.springframework.security.authentication.event.AuthenticationSuccessEvent;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.stereotype.Component;
+
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Resolves the signed-in user (if any) to the local app_user id. The row is written once per sign-in (which also
@@ -22,6 +23,17 @@ public class CurrentUser implements SignedInUser {
 
     CurrentUser(Users users) {
         this.users = users;
+    }
+
+    static String displayName(OAuth2AuthenticationToken t) {
+        Object name = t.getPrincipal().getAttributes().get("name");
+        if (name == null) {
+            name = t.getPrincipal().getAttributes().get("preferred_username");
+        }
+        if (name == null) {
+            name = t.getPrincipal().getAttributes().get("login");
+        }
+        return name == null ? null : name.toString();
     }
 
     @Override
@@ -40,16 +52,5 @@ public class CurrentUser implements SignedInUser {
         if (event.getAuthentication() instanceof OAuth2AuthenticationToken t) {
             users.signedIn(t.getAuthorizedClientRegistrationId(), t.getName(), displayName(t));
         }
-    }
-
-    static String displayName(OAuth2AuthenticationToken t) {
-        Object name = t.getPrincipal().getAttributes().get("name");
-        if (name == null) {
-            name = t.getPrincipal().getAttributes().get("preferred_username");
-        }
-        if (name == null) {
-            name = t.getPrincipal().getAttributes().get("login");
-        }
-        return name == null ? null : name.toString();
     }
 }

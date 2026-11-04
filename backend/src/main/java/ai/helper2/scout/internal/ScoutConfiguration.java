@@ -16,7 +16,6 @@ import ai.helper2.scout.EnrichmentBacklog;
 import ai.helper2.scout.EnrichmentInput;
 import ai.helper2.scout.EnrichmentModel;
 import ai.helper2.scout.EnrichmentProposal;
-import ai.helper2.scout.usecase.EnrichResource;
 import ai.helper2.scout.EnrichmentStore;
 import ai.helper2.scout.EvidenceValidator;
 import ai.helper2.scout.ExtraEvidence;
@@ -25,20 +24,15 @@ import ai.helper2.scout.LlmUnavailable;
 import ai.helper2.scout.RunLock;
 import ai.helper2.scout.ScheduledRun;
 import ai.helper2.scout.ScheduledRunStore;
+import ai.helper2.scout.ScoutStore;
+import ai.helper2.scout.usecase.EnrichResource;
 import ai.helper2.scout.usecase.RunScout;
 import ai.helper2.scout.usecase.StartScoutRun;
-import ai.helper2.scout.ScoutStore;
-import io.micrometer.core.instrument.Gauge;
 import io.micrometer.context.ContextSnapshotFactory;
-import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
-import java.time.Clock;
-import java.time.Duration;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.Executor;
-import java.util.function.Supplier;
+import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,10 +47,67 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
+import java.time.Duration;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.Executor;
+import java.util.function.Supplier;
+
 @Configuration(proxyBeanMethods = false)
 class ScoutConfiguration {
 
+    /**
+     * Long enough that a pause of the renewal thread (GC, a slow database) does not let the lease lapse.
+     */
+    static final Duration RUN_LOCK_LEASE = Duration.ofMinutes(2);
     private static final Logger log = LoggerFactory.getLogger(ScoutConfiguration.class);
+    /**
+     * Only the observation: the run must not inherit the admin's SecurityContext (least privilege).
+     */
+    private static final ContextSnapshotFactory RUN_CONTEXT = ContextSnapshotFactory.builder()
+        .captureKeyPredicate(ObservationThreadLocalAccessor.KEY::equals).build();
+    /**
+     * A run started from the admin page collects on its own virtual thread; the request answers at once. The thread
+     * carries the request's observation, so its log lines have the request's trace and span ids (ADR 0026).
+     */
+    static final Executor RUN_THREADS = task -> Thread.ofVirtual().name("scout-run")
+        .start(RUN_CONTEXT.captureAll().wrap(task));
+
+    /**
+     * The gap round's own daily cap (ADR 0043), counted like the others so a restart does not reset the day. Its calls
+     * also count on the enrichment cap, so this is a share of it, not more. 0 turns the gap round off.
+     */
+    static GapBudget gapBudget(int dailyCalls, Clock clock, CallCounter counter, MeterRegistry meters) {
+        if (dailyCalls <= 0) {
+            return new GapBudget() {
+                @Override
+                public boolean tryAcquire() {
+                    return false;
+                }
+
+                @Override
+                public boolean hasRoom() {
+                    return false;
+                }
+            };
+        }
+        DailyBudget budget = new DailyBudget(dailyCalls, clock, "enrichment-gap", counter);
+        Gauge.builder("helper2.scout.gap.budget.remaining", budget, DailyBudget::remaining)
+            .description("Scout gap-round model calls left under today's cap (UTC day)")
+            .register(meters);
+        return new GapBudget() {
+            @Override
+            public boolean tryAcquire() {
+                return budget.tryAcquire();
+            }
+
+            @Override
+            public boolean hasRoom() {
+                return budget.remaining() > 0;
+            }
+        };
+    }
 
     /**
      * Uses the reasoning model when one is configured (spring.ai.model.chat, helper2.llm.reasoning-model);
@@ -101,73 +152,24 @@ class ScoutConfiguration {
         return locks.keptAlive("scout-run", RUN_LOCK_LEASE);
     }
 
-    /** Long enough that a pause of the renewal thread (GC, a slow database) does not let the lease lapse. */
-    static final Duration RUN_LOCK_LEASE = Duration.ofMinutes(2);
-
     @Bean
     RunScout scoutRunner(List<Collector> collectors, ScoutStore store, CatalogIndex index, EnrichmentModel model,
-                            EnrichmentStore enrichmentStore, EnrichmentBacklog backlog, Clock clock, ClusterLock scoutRunLock,
-                            CandidateReview review, MeterRegistry meters, ObservationRegistry observations,
-                            ObjectProvider<ExtraEvidence> extraEvidence, CallCounter budgetCounter,
-                            @Value("${helper2.scout.max-items-per-run:500}") int maxItemsPerRun,
-                            @Value("${helper2.scout.max-enrichments-per-run:20}") int maxEnrichmentsPerRun,
-                            @Value("${helper2.scout.gap-daily-calls:400}") int gapDailyCalls) {
+                         EnrichmentStore enrichmentStore, EnrichmentBacklog backlog, Clock clock, ClusterLock scoutRunLock,
+                         CandidateReview review, MeterRegistry meters, ObservationRegistry observations,
+                         ObjectProvider<ExtraEvidence> extraEvidence, CallCounter budgetCounter,
+                         @Value("${helper2.scout.max-items-per-run:500}") int maxItemsPerRun,
+                         @Value("${helper2.scout.max-enrichments-per-run:20}") int maxEnrichmentsPerRun,
+                         @Value("${helper2.scout.gap-daily-calls:400}") int gapDailyCalls) {
         return new RunScout(collectors, store, index, new EnrichResource(model, enrichmentStore, clock,
             new EvidenceValidator(), meters, extraEvidence.getIfAvailable(), gapBudget(gapDailyCalls, clock, budgetCounter, meters)),
             clock, new ClusterRunLock(scoutRunLock), maxItemsPerRun, maxEnrichmentsPerRun,
             backlog, meters, RUN_THREADS, observations, review);
     }
 
-    /**
-     * The gap round's own daily cap (ADR 0043), counted like the others so a restart does not reset the day. Its calls
-     * also count on the enrichment cap, so this is a share of it, not more. 0 turns the gap round off.
-     */
-    static GapBudget gapBudget(int dailyCalls, Clock clock, CallCounter counter, MeterRegistry meters) {
-        if (dailyCalls <= 0) {
-            return new GapBudget() {
-                @Override
-                public boolean tryAcquire() {
-                    return false;
-                }
-
-                @Override
-                public boolean hasRoom() {
-                    return false;
-                }
-            };
-        }
-        DailyBudget budget = new DailyBudget(dailyCalls, clock, "enrichment-gap", counter);
-        Gauge.builder("helper2.scout.gap.budget.remaining", budget, DailyBudget::remaining)
-            .description("Scout gap-round model calls left under today's cap (UTC day)")
-            .register(meters);
-        return new GapBudget() {
-            @Override
-            public boolean tryAcquire() {
-                return budget.tryAcquire();
-            }
-
-            @Override
-            public boolean hasRoom() {
-                return budget.remaining() > 0;
-            }
-        };
-    }
-
     @Bean
     StartScoutRun startScoutRun(RunScout scoutRunner, AuditTrail audit) {
         return new StartScoutRun(scoutRunner, audit);
     }
-
-    /** Only the observation: the run must not inherit the admin's SecurityContext (least privilege). */
-    private static final ContextSnapshotFactory RUN_CONTEXT = ContextSnapshotFactory.builder()
-        .captureKeyPredicate(ObservationThreadLocalAccessor.KEY::equals).build();
-
-    /**
-     * A run started from the admin page collects on its own virtual thread; the request answers at once. The thread
-     * carries the request's observation, so its log lines have the request's trace and span ids (ADR 0026).
-     */
-    static final Executor RUN_THREADS = task -> Thread.ofVirtual().name("scout-run")
-        .start(RUN_CONTEXT.captureAll().wrap(task));
 
     /**
      * At startup, run records still RUNNING belong to a replica that stopped mid-run (a crash, a deploy): closed as
@@ -186,7 +188,9 @@ class ScoutConfiguration {
         };
     }
 
-    /** The RunLock port over a lock shared by every replica. */
+    /**
+     * The RunLock port over a lock shared by every replica.
+     */
     static final class ClusterRunLock implements RunLock {
         private final ClusterLock lock;
 

@@ -1,24 +1,20 @@
 package ai.helper2.sources.config;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.time.Duration;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.context.properties.bind.validation.BindValidationException;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Configuration;
 
-/** Each collector's settings bind from helper2.scout.<collector> with the documented defaults; invalid values stop startup. */
-class CollectorPropertiesTest {
+import java.time.Duration;
+import java.util.List;
 
-    @Configuration(proxyBeanMethods = false)
-    @EnableConfigurationProperties({CollectorProperties.HfTrending.class, CollectorProperties.TavilyScout.class,
-        CollectorProperties.Courses.class, CollectorProperties.GitHubAwesome.class, CollectorProperties.HfProviderOrgs.class,
-        CollectorProperties.AiDeadlines.class, CollectorProperties.McpRegistry.class})
-    static class Binding {
-    }
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * Each collector's settings bind from helper2.scout.<collector> with the documented defaults; invalid values stop startup.
+ */
+class CollectorPropertiesTest {
 
     final ApplicationContextRunner context = new ApplicationContextRunner().withUserConfiguration(Binding.class);
 
@@ -61,5 +57,12 @@ class CollectorPropertiesTest {
     @Test
     void aNegativeIntervalStopsStartup() {
         context.withPropertyValues("helper2.scout.mcp-registry.interval=-PT1H").run(c -> assertThat(c).hasFailed());
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    @EnableConfigurationProperties({CollectorProperties.HfTrending.class, CollectorProperties.TavilyScout.class,
+        CollectorProperties.Courses.class, CollectorProperties.GitHubAwesome.class, CollectorProperties.HfProviderOrgs.class,
+        CollectorProperties.AiDeadlines.class, CollectorProperties.McpRegistry.class})
+    static class Binding {
     }
 }

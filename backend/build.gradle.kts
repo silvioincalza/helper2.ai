@@ -115,25 +115,27 @@ tasks.named<GenerateTask>("openApiGenerate") {
     modelPackage.set("ai.helper2.api.generated.model")
     modelNameSuffix.set("Dto")
     cleanupOutput.set(true)
-    configOptions.set(mapOf(
-        "useSpringBoot4" to "true",
-        "useJackson3" to "true",
-        "interfaceOnly" to "true",
-        "useTags" to "true",
-        "skipDefaultInterface" to "true",
-        "openApiNullable" to "false",
-        "useBeanValidation" to "true",
-        "performBeanValidation" to "false",
-        "documentationProvider" to "none",
-        "annotationLibrary" to "none",
-        "dateLibrary" to "java8",
-        "sourceFolder" to "src/main/java",
-        "useOptional" to "false",
-        "containerDefaultToNull" to "false",
-        // Explicit (generator 7.24+ warns when unset): null handling stays with the global JSON mapper.
-        "generateJsonIncludeAnnotations" to "false",
-        "generateJsonSetterNullsAnnotations" to "false",
-    ))
+    configOptions.set(
+        mapOf(
+            "useSpringBoot4" to "true",
+            "useJackson3" to "true",
+            "interfaceOnly" to "true",
+            "useTags" to "true",
+            "skipDefaultInterface" to "true",
+            "openApiNullable" to "false",
+            "useBeanValidation" to "true",
+            "performBeanValidation" to "false",
+            "documentationProvider" to "none",
+            "annotationLibrary" to "none",
+            "dateLibrary" to "java8",
+            "sourceFolder" to "src/main/java",
+            "useOptional" to "false",
+            "containerDefaultToNull" to "false",
+            // Explicit (generator 7.24+ warns when unset): null handling stays with the global JSON mapper.
+            "generateJsonIncludeAnnotations" to "false",
+            "generateJsonSetterNullsAnnotations" to "false",
+        )
+    )
 }
 
 sourceSets {
@@ -148,7 +150,11 @@ tasks.named("compileKotlin") { dependsOn("openApiGenerate") }
 // Testcontainers on Podman (macOS): if DOCKER_HOST is unset and a Podman machine is running, point
 // Testcontainers at its socket and disable Ryuk (unsupported on rootless Podman). Docker users are unaffected.
 val podmanSocket = providers.exec {
-    commandLine("sh", "-c", "command -v podman >/dev/null && podman machine inspect --format '{{.ConnectionInfo.PodmanSocket.Path}}' 2>/dev/null || true")
+    commandLine(
+        "sh",
+        "-c",
+        "command -v podman >/dev/null && podman machine inspect --format '{{.ConnectionInfo.PodmanSocket.Path}}' 2>/dev/null || true"
+    )
     isIgnoreExitValue = true
 }.standardOutput.asText.map { it.trim() }
 
@@ -218,5 +224,3 @@ tasks.register<Test>("liveTest") {
     classpath = sourceSets["test"].runtimeClasspath
     useJUnitPlatform { includeTags("live") }
 }
-
-

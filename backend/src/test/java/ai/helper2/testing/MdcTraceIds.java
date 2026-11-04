@@ -3,8 +3,9 @@ package ai.helper2.testing;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationHandler;
 import io.micrometer.observation.ObservationRegistry;
-import java.util.UUID;
 import org.slf4j.MDC;
+
+import java.util.UUID;
 
 /**
  * Stands in for the tracing bridge in unit tests: an observation gets a trace id, which is in the MDC while the
@@ -21,7 +22,9 @@ public final class MdcTraceIds implements ObservationHandler<Observation.Context
         return registry;
     }
 
-    /** The trace id the MDC holds while {@code observation} is in scope. */
+    /**
+     * The trace id the MDC holds while {@code observation} is in scope.
+     */
     public static String traceId(Observation observation) {
         return observation.getContext().getRequired(KEY);
     }

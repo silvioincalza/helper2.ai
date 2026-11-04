@@ -1,15 +1,22 @@
 package ai.helper2.guide.internal;
 
+import ai.helper2.catalog.Embedder;
+import org.junit.jupiter.api.Test;
+
+import java.time.Clock;
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import ai.helper2.catalog.Embedder;
-import java.time.Clock;
-import java.util.List;
-import org.junit.jupiter.api.Test;
-
-/** H2_GUIDE_SIMILAR_THRESHOLD: unset is off; set, it needs 1024-long query embeddings and a cosine in (0, 1]. */
+/**
+ * H2_GUIDE_SIMILAR_THRESHOLD: unset is off; set, it needs 1024-long query embeddings and a cosine in (0, 1].
+ */
 class GuideSimilarConfigurationTest {
+
+    private final Embedder embedder = embedder(1024);
+    private final JdbcSimilarQuestionIndex index = new JdbcSimilarQuestionIndex(null);
+    private final Clock clock = Clock.systemUTC();
 
     private static Embedder embedder(int dimensions) {
         return new Embedder() {
@@ -29,10 +36,6 @@ class GuideSimilarConfigurationTest {
             }
         };
     }
-
-    private final Embedder embedder = embedder(1024);
-    private final JdbcSimilarQuestionIndex index = new JdbcSimilarQuestionIndex(null);
-    private final Clock clock = Clock.systemUTC();
 
     @Test
     void anUnsetThresholdIsOff() {

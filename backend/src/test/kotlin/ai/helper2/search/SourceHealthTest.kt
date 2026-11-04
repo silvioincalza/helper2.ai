@@ -40,15 +40,21 @@ class SourceHealthTest {
         val health = SourceHealth()
         health.sourceCompleted(searched("github", SourceOutcome.TIMED_OUT, later))
 
-        assertEquals(SourceHealth.Entry(SourceOutcome.TIMED_OUT, later),
-            health.lastFor("github", SourceHealth.Entry(SourceOutcome.SUCCEEDED, earlier)))
+        assertEquals(
+            SourceHealth.Entry(SourceOutcome.TIMED_OUT, later),
+            health.lastFor("github", SourceHealth.Entry(SourceOutcome.SUCCEEDED, earlier))
+        )
     }
 
     @Test
     fun `a source disabled in configuration leaves no outcome, whatever its message says`() {
         val health = SourceHealth()
-        health.sourceCompleted(SourceStatus(descriptor("tavily"), SourceOutcome.SKIPPED, ServedFrom.NONE, 0, null, later,
-            message = "Turned off", skipReason = SkipReason.DISABLED))
+        health.sourceCompleted(
+            SourceStatus(
+                descriptor("tavily"), SourceOutcome.SKIPPED, ServedFrom.NONE, 0, null, later,
+                message = "Turned off", skipReason = SkipReason.DISABLED
+            )
+        )
 
         assertNull(health.lastFor("tavily", null))
     }
@@ -56,14 +62,20 @@ class SourceHealthTest {
     @Test
     fun `a source paused after a rate limit keeps its skipped outcome`() {
         val health = SourceHealth()
-        health.sourceCompleted(SourceStatus(descriptor("github"), SourceOutcome.SKIPPED, ServedFrom.NONE, 0, null, later,
-            message = "Paused", skipReason = SkipReason.RATE_LIMIT_PAUSE))
+        health.sourceCompleted(
+            SourceStatus(
+                descriptor("github"), SourceOutcome.SKIPPED, ServedFrom.NONE, 0, null, later,
+                message = "Paused", skipReason = SkipReason.RATE_LIMIT_PAUSE
+            )
+        )
 
         assertEquals(SourceHealth.Entry(SourceOutcome.SKIPPED, later), health.lastFor("github", null))
     }
 
-    private fun called(id: String, millis: Long, outcome: SourceOutcome = SourceOutcome.SUCCEEDED,
-                       servedFrom: ServedFrom = ServedFrom.LIVE) =
+    private fun called(
+        id: String, millis: Long, outcome: SourceOutcome = SourceOutcome.SUCCEEDED,
+        servedFrom: ServedFrom = ServedFrom.LIVE
+    ) =
         SourceStatus(descriptor(id), outcome, servedFrom, 0, Duration.ofMillis(millis), later)
 
     @Test
@@ -81,8 +93,12 @@ class SourceHealthTest {
         health.sourceCompleted(called("github", 2500, SourceOutcome.TIMED_OUT, ServedFrom.STALE_CACHE))
         health.sourceCompleted(called("github", 2400, SourceOutcome.FAILED, ServedFrom.NONE))
         health.sourceCompleted(called("github", 0, servedFrom = ServedFrom.CACHE))
-        health.sourceCompleted(SourceStatus(descriptor("github"), SourceOutcome.SKIPPED, ServedFrom.NONE, 0, null, later,
-            skipReason = SkipReason.CIRCUIT_OPEN))
+        health.sourceCompleted(
+            SourceStatus(
+                descriptor("github"), SourceOutcome.SKIPPED, ServedFrom.NONE, 0, null, later,
+                skipReason = SkipReason.CIRCUIT_OPEN
+            )
+        )
 
         assertEquals(Duration.ofMillis(2400), health.responseTime("github"))
     }

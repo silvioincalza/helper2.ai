@@ -1,12 +1,15 @@
 package ai.helper2.catalog.internal;
 
-import java.util.Optional;
-import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
 
-/** Users' reports that a resource is wrong or outdated, as they were sent. */
+import java.util.Optional;
+import java.util.UUID;
+
+/**
+ * Users' reports that a resource is wrong or outdated, as they were sent.
+ */
 @Component
 public class IssueReports {
 
@@ -16,7 +19,9 @@ public class IssueReports {
         this.jdbc = jdbc;
     }
 
-    /** Stores the report and returns its id; empty when the resource does not exist. */
+    /**
+     * Stores the report and returns its id; empty when the resource does not exist.
+     */
     public Optional<UUID> add(UUID resourceId, String kind, @Nullable String field, String message, @Nullable UUID reporterUserId) {
         boolean exists = jdbc.sql("SELECT EXISTS (SELECT 1 FROM resource WHERE id = :id)")
             .param("id", resourceId).query(Boolean.class).single();

@@ -9,8 +9,6 @@ import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.search.QueryTranslator;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.time.Clock;
-import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ChatModel;
@@ -19,7 +17,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/** The query translation of search (ADR 0011): an adapter of the search module's QueryTranslator port. */
+import java.time.Clock;
+import java.time.Duration;
+
+/**
+ * The query translation of search (ADR 0011): an adapter of the search module's QueryTranslator port.
+ */
 @Configuration(proxyBeanMethods = false)
 class TranslationConfiguration {
 

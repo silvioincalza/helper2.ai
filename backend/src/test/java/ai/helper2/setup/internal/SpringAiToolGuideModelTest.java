@@ -1,8 +1,5 @@
 package ai.helper2.setup.internal;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.ModelCallMetrics;
 import ai.helper2.platform.resilience.Resilience;
@@ -19,12 +16,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.observation.DefaultMeterObservationHandler;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
-import java.net.URI;
-import java.time.Clock;
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -34,7 +25,19 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 
-/** The tool guide's model call over the wire: a local server stands in for the OpenAI-compatible endpoint. */
+import java.net.URI;
+import java.time.Clock;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+/**
+ * The tool guide's model call over the wire: a local server stands in for the OpenAI-compatible endpoint.
+ */
 class SpringAiToolGuideModelTest {
 
     private static final ToolRef REF = new ToolRef("Acme X", "MCP_SERVER", "acme/x", null, null, null);
@@ -44,13 +47,13 @@ class SpringAiToolGuideModelTest {
     final FixtureServer server = new FixtureServer();
     final DailyBudget budget = new DailyBudget(10, Clock.systemUTC(), "tool-guide");
 
+    private static String quote(String s) {
+        return "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n") + "\"";
+    }
+
     @AfterEach
     void stop() {
         server.close();
-    }
-
-    /** Same simple name as the OpenAI SDK's 429; ModelErrors matches by name. */
-    static final class RateLimitException extends RuntimeException {
     }
 
     private SpringAiToolGuideModel model() {
@@ -73,10 +76,6 @@ class SpringAiToolGuideModelTest {
              "choices":[{"index":0,"finish_reason":"stop","message":{"role":"assistant","content":%s}}],
              "usage":{"prompt_tokens":1,"completion_tokens":1,"total_tokens":2}}
             """.formatted(quote(content))));
-    }
-
-    private static String quote(String s) {
-        return "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n") + "\"";
     }
 
     @Test
@@ -119,7 +118,9 @@ class SpringAiToolGuideModelTest {
         assertThat(budget.usedToday()).isEqualTo(1);
     }
 
-    /** A malformed first answer, then a provider error: the provider is why, and it recovers by itself. */
+    /**
+     * A malformed first answer, then a provider error: the provider is why, and it recovers by itself.
+     */
     @Test
     void aProviderErrorAfterAnUnreadableAnswerIsAProviderError() {
         AtomicInteger calls = new AtomicInteger();
@@ -136,7 +137,9 @@ class SpringAiToolGuideModelTest {
         assertThat(calls).hasValue(2);
     }
 
-    /** An open llm-chat circuit is a provider error at once: no request, no unit of the daily cap. */
+    /**
+     * An open llm-chat circuit is a provider error at once: no request, no unit of the daily cap.
+     */
     @Test
     void anOpenCircuitIsAProviderErrorWithoutTheProviderOrTheBudget() {
         assertThatThrownBy(() -> model(ModelCallMetrics.none(), TestPolicies.llmChatOpen()).write(REF, List.of(README)))
@@ -145,7 +148,9 @@ class SpringAiToolGuideModelTest {
         assertThat(budget.usedToday()).isZero();
     }
 
-    /** The prompt tag tells two prompt versions apart in the latency, outcome and token series. */
+    /**
+     * The prompt tag tells two prompt versions apart in the latency, outcome and token series.
+     */
     @Test
     void theCallAndItsTokensAreTaggedWithTheVersionOfThePrompt() {
         MeterRegistry meters = new SimpleMeterRegistry();
@@ -170,5 +175,11 @@ class SpringAiToolGuideModelTest {
             .write(REF, List.of(README)))
             .isInstanceOfSatisfying(ToolGuideUnavailable.class, e -> assertThat(e.getReason()).isEqualTo(Reason.BUDGET));
         assertThat(server.requests).isEmpty();
+    }
+
+    /**
+     * Same simple name as the OpenAI SDK's 429; ModelErrors matches by name.
+     */
+    static final class RateLimitException extends RuntimeException {
     }
 }

@@ -1,8 +1,5 @@
 package ai.helper2.sources.github;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 import ai.helper2.platform.http.ObservedHttp;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CollectedBatch;
@@ -15,12 +12,16 @@ import ai.helper2.sources.classifier.RepoClassifier;
 import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.testing.FixtureServer;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class GitHubAwesomeCollectorTest {
 
@@ -58,31 +59,6 @@ class GitHubAwesomeCollectorTest {
     @AfterEach
     void stop() {
         server.close();
-    }
-
-    /** Answers like the model: the interpreter is an AI agent, Node is not AI. */
-    static final class FakeModel implements RepoClassifier {
-        final List<List<Facts>> calls = new java.util.ArrayList<>();
-        RuntimeException failure;
-
-        @Override
-        public Map<String, Verdict> classify(List<Facts> repos) {
-            calls.add(repos);
-            if (failure != null) {
-                throw failure;
-            }
-            Map<String, Verdict> out = new HashMap<>();
-            for (Facts f : repos) {
-                out.put(f.id(), f.fullName().startsWith("nodejs/")
-                    ? new Verdict(false, ResourceType.OTHER) : new Verdict(true, ResourceType.AGENT));
-            }
-            return out;
-        }
-
-        @Override
-        public String name() {
-            return "fake-nano";
-        }
     }
 
     GitHubAwesomeCollector collector(RepoClassifier classifier, int perRun, String token) {
@@ -191,5 +167,32 @@ class GitHubAwesomeCollectorTest {
 
         assertThatThrownBy(() -> collector(new FakeModel(), 200, "t").collect(null, null, 500))
             .isInstanceOf(SourceFailure.RateLimited.class);
+    }
+
+    /**
+     * Answers like the model: the interpreter is an AI agent, Node is not AI.
+     */
+    static final class FakeModel implements RepoClassifier {
+        final List<List<Facts>> calls = new java.util.ArrayList<>();
+        RuntimeException failure;
+
+        @Override
+        public Map<String, Verdict> classify(List<Facts> repos) {
+            calls.add(repos);
+            if (failure != null) {
+                throw failure;
+            }
+            Map<String, Verdict> out = new HashMap<>();
+            for (Facts f : repos) {
+                out.put(f.id(), f.fullName().startsWith("nodejs/")
+                    ? new Verdict(false, ResourceType.OTHER) : new Verdict(true, ResourceType.AGENT));
+            }
+            return out;
+        }
+
+        @Override
+        public String name() {
+            return "fake-nano";
+        }
     }
 }

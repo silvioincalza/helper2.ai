@@ -6,13 +6,13 @@ import ai.helper2.scout.RunLock
 import ai.helper2.scout.RunSummary
 import ai.helper2.scout.ScoutCursor
 import ai.helper2.scout.ScoutStore
+import org.junit.jupiter.api.Test
 import java.time.Clock
 import java.time.Instant
 import java.util.function.Supplier
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
-import org.junit.jupiter.api.Test
 
 class StartScoutRunTest {
 
@@ -29,7 +29,8 @@ class StartScoutRunTest {
         override fun markInterrupted(at: Instant) = 0
     }
 
-    private fun runner(lock: RunLock) = RunScout(emptyList(), NoStore, CatalogIndex { _, _ -> emptyList() }, null, Clock.systemUTC(), lock)
+    private fun runner(lock: RunLock) =
+        RunScout(emptyList(), NoStore, CatalogIndex { _, _ -> emptyList() }, null, Clock.systemUTC(), lock)
 
     private val free = object : RunLock {
         override fun <T : Any> runExclusively(task: Supplier<T>): T? = task.get()

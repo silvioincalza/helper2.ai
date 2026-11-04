@@ -23,8 +23,10 @@ class Ranking(private val k: Int = 60) {
      * [AnalyzedQuery.requiredVariants]). Default: every query word. With "server" in it, titles like
      * "x/mcp-postgres-server" got +0.02 that "crystaldba/postgres-mcp" could not get.
      */
-    fun rank(results: List<MergedResult>, query: String, path: AudiencePath?,
-             typeHints: Set<ResourceType> = emptySet(), titleTerms: List<String>? = null): List<MergedResult> {
+    fun rank(
+        results: List<MergedResult>, query: String, path: AudiencePath?,
+        typeHints: Set<ResourceType> = emptySet(), titleTerms: List<String>? = null
+    ): List<MergedResult> {
         val q = normalize(query)
         val terms = (titleTerms?.map(::normalize) ?: q.split(' ')).filter { it.length > 1 }
         return results
@@ -32,7 +34,13 @@ class Ranking(private val k: Int = 60) {
             .sortedWith(compareByDescending<MergedResult> { it.score }.thenBy { it.title.lowercase() }.thenBy { it.id.value })
     }
 
-    private fun score(r: MergedResult, q: String, terms: List<String>, path: AudiencePath?, typeHints: Set<ResourceType>): Double {
+    private fun score(
+        r: MergedResult,
+        q: String,
+        terms: List<String>,
+        path: AudiencePath?,
+        typeHints: Set<ResourceType>
+    ): Double {
         var s = r.hits.distinctBy { it.sourceId }.sumOf { 1.0 / (k + it.rank + 1) }
         val title = normalize(r.title)
         if (title == q) s += 0.05

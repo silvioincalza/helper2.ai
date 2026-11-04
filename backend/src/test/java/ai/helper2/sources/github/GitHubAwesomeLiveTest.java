@@ -1,7 +1,5 @@
 package ai.helper2.sources.github;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.platform.http.ObservedHttp;
 import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.resilience.Resilience;
@@ -10,16 +8,19 @@ import ai.helper2.sources.classifier.RepoClassifier;
 import ai.helper2.sources.classifier.SpringAiRepoClassifier;
 import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
-import java.time.Clock;
-import java.time.Duration;
-import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
+
+import java.time.Clock;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Opt-in: real GitHub (search, raw README, GraphQL) and real Nemotron Nano on Token Factory.

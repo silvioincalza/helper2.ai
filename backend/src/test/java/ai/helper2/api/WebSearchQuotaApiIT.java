@@ -1,10 +1,5 @@
 package ai.helper2.api;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import ai.helper2.search.SearchSource;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.SourceHit;
@@ -15,6 +10,13 @@ import ai.helper2.shared.DateFact;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.SourceMode;
 import ai.helper2.shared.ValueOrigin;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
+
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
@@ -23,12 +25,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.web.servlet.request.RequestPostProcessor;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Daily web searches (ADR 0037) as a visitor sees them: a metered web source stands in for Tavily. Each test asks from
@@ -46,7 +47,9 @@ class WebSearchQuotaApiIT extends ApiTestBase {
 
     static final AtomicInteger WEB_CALLS = new AtomicInteger();
 
-    /** One address per test, so no two tests share a counter (a random pick of 250 sometimes did). */
+    /**
+     * One address per test, so no two tests share a counter (a random pick of 250 sometimes did).
+     */
     private static final AtomicInteger ADDRESSES = new AtomicInteger(10);
 
     private final String address = "198.51.100." + ADDRESSES.incrementAndGet();
@@ -55,13 +58,13 @@ class WebSearchQuotaApiIT extends ApiTestBase {
         return request;
     };
 
+    private static Object read(String json, String path) {
+        return com.jayway.jsonpath.JsonPath.read(json, path);
+    }
+
     private String search(String q) throws Exception {
         return mvc.perform(get("/api/v1/search").param("q", q).with(visitor))
             .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
-    }
-
-    private static Object read(String json, String path) {
-        return com.jayway.jsonpath.JsonPath.read(json, path);
     }
 
     @Test

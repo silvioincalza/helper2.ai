@@ -1,7 +1,5 @@
 package ai.helper2;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.catalog.internal.ResourceStore;
 import ai.helper2.catalog.usecase.ReportIssue;
@@ -15,9 +13,16 @@ import ai.helper2.shared.Audience;
 import ai.helper2.shared.DatePrecision;
 import ai.helper2.shared.Pricing;
 import ai.helper2.shared.ResourceType;
+import ai.helper2.shared.SourceMode;
 import ai.helper2.shared.TechLevel;
 import ai.helper2.shared.ValueOrigin;
 import ai.helper2.shared.Verification;
+import org.flywaydb.core.Flyway;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -32,12 +37,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import ai.helper2.shared.SourceMode;
-import org.flywaydb.core.Flyway;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.jdbc.datasource.DriverManagerDataSource;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * The schema as the code needs it (ADR 0004, ADR 0034): every foreign key deletes as retention needs, every foreign key
@@ -50,7 +51,9 @@ class SchemaContractTest {
 
     static final Path SCHEMA = Path.of("src/main/resources/db/migration/V1__schema.sql");
 
-    /** Tables a library owns: their columns are read by the library, not by our code. */
+    /**
+     * Tables a library owns: their columns are read by the library, not by our code.
+     */
     static final Set<String> LIBRARY_TABLES = Set.of("flyway_schema_history", "shedlock");
 
     static JdbcClient jdbc;
@@ -64,18 +67,51 @@ class SchemaContractTest {
         jdbc = JdbcClient.create(dataSource);
     }
 
+    private static String read(Path file) {
+        try {
+            return Files.readString(file);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private static Set<String> literals(String checkDefinition) {
+        Matcher m = Pattern.compile("'([^']+)'::text").matcher(checkDefinition);
+        Set<String> values = new TreeSet<>();
+        while (m.find()) {
+            values.add(m.group(1));
+        }
+        return values;
+    }
+
+    private static Set<String> names(Enum<?>[] values) {
+        return Arrays.stream(values).map(Enum::name).collect(Collectors.toCollection(TreeSet::new));
+    }
+
+    private static Set<String> without(Set<String> values, String value) {
+        Set<String> copy = new TreeSet<>(values);
+        copy.remove(value);
+        return copy;
+    }
+
+    private static Set<String> with(Set<String> values, String value) {
+        Set<String> copy = new TreeSet<>(values);
+        copy.add(value);
+        return copy;
+    }
+
     @Test
     void everyForeignKeyDeletesAsRetentionNeeds() {
         Map<String, String> actual = new TreeMap<>();
         jdbc.sql("""
-                SELECT k.table_name || '.' || k.column_name AS fk, u.table_name || ' ' || r.delete_rule AS rule
-                FROM information_schema.referential_constraints r
-                JOIN information_schema.key_column_usage k
-                  ON k.constraint_name = r.constraint_name AND k.constraint_schema = r.constraint_schema
-                JOIN information_schema.constraint_column_usage u
-                  ON u.constraint_name = r.constraint_name AND u.constraint_schema = r.constraint_schema
-                WHERE r.constraint_schema = 'public'
-                """).query((rs, i) -> actual.put(rs.getString("fk"), rs.getString("rule"))).list();
+            SELECT k.table_name || '.' || k.column_name AS fk, u.table_name || ' ' || r.delete_rule AS rule
+            FROM information_schema.referential_constraints r
+            JOIN information_schema.key_column_usage k
+              ON k.constraint_name = r.constraint_name AND k.constraint_schema = r.constraint_schema
+            JOIN information_schema.constraint_column_usage u
+              ON u.constraint_name = r.constraint_name AND u.constraint_schema = r.constraint_schema
+            WHERE r.constraint_schema = 'public'
+            """).query((rs, i) -> actual.put(rs.getString("fk"), rs.getString("rule"))).list();
 
         assertThat(actual).isEqualTo(new TreeMap<>(Map.ofEntries(
             // A source is never deleted while catalog data cites it.
@@ -125,18 +161,20 @@ class SchemaContractTest {
         assertThat(implicit).isEmpty();
     }
 
-    /** A delete of a parent row looks its children up by the foreign key; sources are never deleted. */
+    /**
+     * A delete of a parent row looks its children up by the foreign key; sources are never deleted.
+     */
     @Test
     void everyForeignKeyADeleteFollowsLeadsAnIndex() {
         List<String> unindexed = jdbc.sql("""
-                SELECT c.conrelid::regclass || '.' || a.attname
-                FROM pg_constraint c
-                JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = c.conkey[1]
-                WHERE c.contype = 'f' AND c.connamespace = 'public'::regnamespace
-                  AND c.confrelid <> 'source'::regclass
-                  AND NOT EXISTS (SELECT 1 FROM pg_index i WHERE i.indrelid = c.conrelid AND i.indkey[0] = c.conkey[1])
-                ORDER BY 1
-                """).query(String.class).list();
+            SELECT c.conrelid::regclass || '.' || a.attname
+            FROM pg_constraint c
+            JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = c.conkey[1]
+            WHERE c.contype = 'f' AND c.connamespace = 'public'::regnamespace
+              AND c.confrelid <> 'source'::regclass
+              AND NOT EXISTS (SELECT 1 FROM pg_index i WHERE i.indrelid = c.conrelid AND i.indkey[0] = c.conkey[1])
+            ORDER BY 1
+            """).query(String.class).list();
         assertThat(unindexed).isEmpty();
     }
 
@@ -169,21 +207,23 @@ class SchemaContractTest {
 
         Map<String, Set<String>> actual = new TreeMap<>();
         jdbc.sql("""
-                SELECT c.conrelid::regclass || '.' || a.attname AS col, pg_get_constraintdef(c.oid) AS def
-                FROM pg_constraint c
-                JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = c.conkey[1]
-                WHERE c.contype = 'c' AND c.connamespace = 'public'::regnamespace AND cardinality(c.conkey) = 1
-                """).query((rs, i) -> {
-                    String col = rs.getString("col");
-                    if (expected.containsKey(col)) {
-                        actual.put(col, literals(rs.getString("def")));
-                    }
-                    return col;
-                }).list();
+            SELECT c.conrelid::regclass || '.' || a.attname AS col, pg_get_constraintdef(c.oid) AS def
+            FROM pg_constraint c
+            JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = c.conkey[1]
+            WHERE c.contype = 'c' AND c.connamespace = 'public'::regnamespace AND cardinality(c.conkey) = 1
+            """).query((rs, i) -> {
+            String col = rs.getString("col");
+            if (expected.containsKey(col)) {
+                actual.put(col, literals(rs.getString("def")));
+            }
+            return col;
+        }).list();
         assertThat(actual).isEqualTo(expected);
     }
 
-    /** A column no code reads or writes is dead weight; so is a table. Seeds alone do not keep one alive. */
+    /**
+     * A column no code reads or writes is dead weight; so is a table. Seeds alone do not keep one alive.
+     */
     @Test
     void everyTableAndColumnIsUsedByTheCode() throws IOException {
         String code;
@@ -198,38 +238,5 @@ class SchemaContractTest {
             .filter(c -> Arrays.stream(c.split("\\.")).anyMatch(name -> !Pattern.compile("\\b" + name + "\\b").matcher(code).find()))
             .toList();
         assertThat(unused).isEmpty();
-    }
-
-    private static String read(Path file) {
-        try {
-            return Files.readString(file);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
-    private static Set<String> literals(String checkDefinition) {
-        Matcher m = Pattern.compile("'([^']+)'::text").matcher(checkDefinition);
-        Set<String> values = new TreeSet<>();
-        while (m.find()) {
-            values.add(m.group(1));
-        }
-        return values;
-    }
-
-    private static Set<String> names(Enum<?>[] values) {
-        return Arrays.stream(values).map(Enum::name).collect(Collectors.toCollection(TreeSet::new));
-    }
-
-    private static Set<String> without(Set<String> values, String value) {
-        Set<String> copy = new TreeSet<>(values);
-        copy.remove(value);
-        return copy;
-    }
-
-    private static Set<String> with(Set<String> values, String value) {
-        Set<String> copy = new TreeSet<>(values);
-        copy.add(value);
-        return copy;
     }
 }

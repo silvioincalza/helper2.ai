@@ -1,12 +1,12 @@
 package ai.helper2.guide.internal
 
 import ai.helper2.testing.InMemorySharedCache
+import tools.jackson.databind.json.JsonMapper
 import java.time.Duration
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import tools.jackson.databind.json.JsonMapper
 
 /** The shared copy of an answer must read back equal, per build, and any problem must be a miss, never an error. */
 class SharedGuideAnswerStoreTest {
@@ -20,7 +20,10 @@ class SharedGuideAnswerStoreTest {
     fun `an answer reads back equal, for its build only, kept for the ttl it was given`() {
         val original = GuideAnswerFixture.answer()
         assertTrue(original.recommendations.any { it.aiReasoned }, "fixture must be a cacheable answer")
-        assertTrue(original.trail.queries.isNotEmpty() && original.trail.removed.isNotEmpty(), "fixture must carry a research trail")
+        assertTrue(
+            original.trail.queries.isNotEmpty() && original.trail.removed.isNotEmpty(),
+            "fixture must carry a research trail"
+        )
 
         store().put(key, original, Duration.ofHours(23))
 

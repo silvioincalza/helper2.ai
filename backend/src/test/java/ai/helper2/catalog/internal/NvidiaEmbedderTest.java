@@ -1,26 +1,27 @@
 package ai.helper2.catalog.internal;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 import ai.helper2.catalog.Embedder;
 import ai.helper2.platform.llm.LlmPolicies;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.platform.resilience.Resilience4jPolicies;
+import ai.helper2.testing.FixtureServer;
 import io.github.resilience4j.bulkhead.BulkheadRegistry;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.retry.RetryRegistry;
-import ai.helper2.testing.FixtureServer;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.observation.DefaultMeterObservationHandler;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
+import org.junit.jupiter.api.Test;
+
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class NvidiaEmbedderTest {
 
@@ -48,14 +49,16 @@ class NvidiaEmbedderTest {
         }
     }
 
-    /** Observed like the source calls: one http.client.requests timer per call, tagged with the path only. */
+    /**
+     * Observed like the source calls: one http.client.requests timer per call, tagged with the path only.
+     */
     @Test
     void eachCallIsTimed() {
         MeterRegistry meters = new SimpleMeterRegistry();
         ObservationRegistry observations = ObservationRegistry.create();
         observations.observationConfig().observationHandler(new DefaultMeterObservationHandler(meters));
         try (FixtureServer server = new FixtureServer()
-                .route("/v1/embeddings", FixtureServer.Reply.ok("{\"data\":[{\"index\":0,\"embedding\":[0.5,0.5]}]}"))) {
+            .route("/v1/embeddings", FixtureServer.Reply.ok("{\"data\":[{\"index\":0,\"embedding\":[0.5,0.5]}]}"))) {
             new NvidiaEmbedder(server.baseUrl() + "/v1", "key", "m", 2, Duration.ofSeconds(5), observations, Resilience.NONE)
                 .embed(List.of("query"), Embedder.Kind.QUERY);
 
@@ -66,14 +69,16 @@ class NvidiaEmbedderTest {
         }
     }
 
-    /** While the llm-embed circuit is open, an embedding fails at once without reaching the API. */
+    /**
+     * While the llm-embed circuit is open, an embedding fails at once without reaching the API.
+     */
     @Test
     void anOpenCircuitFailsAtOnceWithoutCallingTheApi() {
         CircuitBreakerRegistry circuits = CircuitBreakerRegistry.ofDefaults();
         circuits.circuitBreaker(LlmPolicies.EMBED).transitionToForcedOpenState();
         Resilience resilience = new Resilience4jPolicies(circuits, BulkheadRegistry.ofDefaults(), RetryRegistry.ofDefaults());
         try (FixtureServer server = new FixtureServer()
-                .route("/v1/embeddings", FixtureServer.Reply.ok("{\"data\":[{\"index\":0,\"embedding\":[0.5,0.5]}]}"))) {
+            .route("/v1/embeddings", FixtureServer.Reply.ok("{\"data\":[{\"index\":0,\"embedding\":[0.5,0.5]}]}"))) {
             NvidiaEmbedder embedder = new NvidiaEmbedder(server.baseUrl() + "/v1", "key", "m", 2, Duration.ofSeconds(5),
                 ObservationRegistry.NOOP, resilience);
 
@@ -82,11 +87,13 @@ class NvidiaEmbedderTest {
         }
     }
 
-    /** A response that keeps trickling in stops at the embedder's timeout, used as the call's total deadline. */
+    /**
+     * A response that keeps trickling in stops at the embedder's timeout, used as the call's total deadline.
+     */
     @Test
     void aResponseThatTricklesInStopsAtTheTimeout() {
         try (FixtureServer server = new FixtureServer()
-                .route("/v1/embeddings", FixtureServer.Reply.drip("{\"data\":[{\"index\":0,\"embedding\":[0.5,0.5]}]}", 50))) {
+            .route("/v1/embeddings", FixtureServer.Reply.drip("{\"data\":[{\"index\":0,\"embedding\":[0.5,0.5]}]}", 50))) {
             NvidiaEmbedder embedder = new NvidiaEmbedder(server.baseUrl() + "/v1", "key", "m", 2, Duration.ofMillis(500),
                 ObservationRegistry.NOOP, Resilience.NONE);
             long start = System.nanoTime();

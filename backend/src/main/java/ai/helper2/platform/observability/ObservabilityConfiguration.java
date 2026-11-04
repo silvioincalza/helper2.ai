@@ -8,6 +8,10 @@ import org.springframework.http.server.observation.ServerRequestObservationConte
 @Configuration(proxyBeanMethods = false)
 class ObservabilityConfiguration {
 
+    static boolean isActuator(String requestUri) {
+        return requestUri != null && (requestUri.equals("/actuator") || requestUri.startsWith("/actuator/"));
+    }
+
     /**
      * Drops server observations for actuator endpoints. Kubernetes probes and Prometheus scrapes hit them every few
      * seconds and would otherwise flood the trace backend. Dropping the observation also drops the
@@ -17,9 +21,5 @@ class ObservabilityConfiguration {
     ObservationPredicate actuatorObservationPredicate() {
         return (name, context) -> !(context instanceof ServerRequestObservationContext server
             && isActuator(server.getCarrier() == null ? null : server.getCarrier().getRequestURI()));
-    }
-
-    static boolean isActuator(String requestUri) {
-        return requestUri != null && (requestUri.equals("/actuator") || requestUri.startsWith("/actuator/"));
     }
 }

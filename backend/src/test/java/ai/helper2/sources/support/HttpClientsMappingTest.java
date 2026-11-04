@@ -1,8 +1,5 @@
 package ai.helper2.sources.support;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 import ai.helper2.platform.http.ObservedHttp;
 import ai.helper2.search.SourceFailure;
 import ai.helper2.search.SourceHit;
@@ -12,15 +9,19 @@ import ai.helper2.testing.FixtureServer;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
-import java.net.URI;
-import java.time.Duration;
-import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
+
+import java.net.URI;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class HttpClientsMappingTest {
 
@@ -53,7 +54,9 @@ class HttpClientsMappingTest {
             .isInstanceOfSatisfying(SourceFailure.Unavailable.class, e -> assertThat(e.getTransient()).as("503 is transient").isTrue());
     }
 
-    /** What the Scout's collector policies retry: 503 and network errors or timeouts, never another status or a bad body. */
+    /**
+     * What the Scout's collector policies retry: 503 and network errors or timeouts, never another status or a bad body.
+     */
     @Test
     void onlyA503OrANetworkFailureIsTransient() {
         server.route("/gone", new FixtureServer.Reply(404, "{}", Map.of(), 0));
@@ -71,7 +74,9 @@ class HttpClientsMappingTest {
             .isInstanceOfSatisfying(SourceFailure.Unavailable.class, e -> assertThat(e.getTransient()).as("timeout").isTrue());
     }
 
-    /** A body that keeps trickling in past the call's deadline is a transient failure, retried like a timeout. */
+    /**
+     * A body that keeps trickling in past the call's deadline is a transient failure, retried like a timeout.
+     */
     @Test
     void aCallPastItsDeadlineIsATransientFailure() {
         server.route("/drip", FixtureServer.Reply.drip("{\"items\":[1,2,3,4,5,6,7,8,9]}", 50));

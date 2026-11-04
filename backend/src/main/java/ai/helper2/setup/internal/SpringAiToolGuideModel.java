@@ -19,16 +19,17 @@ import ai.helper2.setup.ToolGuideModel;
 import ai.helper2.setup.ToolGuideUnavailable;
 import ai.helper2.setup.ToolGuideUnavailable.Reason;
 import ai.helper2.setup.ToolRef;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.AdvisorParams;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.converter.BeanOutputConverter;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Spring AI adapter for the tool guide: one structured-output call with the tool's documents (the useful
@@ -37,24 +38,12 @@ import org.springframework.ai.converter.BeanOutputConverter;
  */
 class SpringAiToolGuideModel implements ToolGuideModel {
 
-    private static final Logger log = LoggerFactory.getLogger(SpringAiToolGuideModel.class);
-
-    /** Per document sent to the model; the validator still checks quotes and commands against the full text. */
+    /**
+     * Per document sent to the model; the validator still checks quotes and commands against the full text.
+     */
     static final int MAX_DOCUMENT_CHARS = 14_000;
     static final int MAX_TOKENS = 8192;
-
-    record Answer(List<Section> sections) {
-        record Section(String kind, List<Step> steps) {
-        }
-
-        record Step(String text, String source, String quote, String code, String language) {
-        }
-    }
-
-    static String systemPrompt() {
-        return PromptTemplate.fromClasspath("setup/tool-guide.txt").render(Map.of());
-    }
-
+    private static final Logger log = LoggerFactory.getLogger(SpringAiToolGuideModel.class);
     private final ChatClient chat;
     private final String system;
     private final String version;
@@ -63,7 +52,6 @@ class SpringAiToolGuideModel implements ToolGuideModel {
     private final DailyBudget budget;
     private final ModelCallMetrics metrics;
     private final Resilience resilience;
-
     SpringAiToolGuideModel(ChatModel chatModel, String model, boolean nativeSchema, DailyBudget budget, ModelCallMetrics metrics,
                            Resilience resilience) {
         resilience.require(LlmPolicies.CHAT);
@@ -75,6 +63,14 @@ class SpringAiToolGuideModel implements ToolGuideModel {
         this.budget = budget;
         this.metrics = metrics;
         this.resilience = resilience;
+    }
+
+    static String systemPrompt() {
+        return PromptTemplate.fromClasspath("setup/tool-guide.txt").render(Map.of());
+    }
+
+    private static String nz(String s) {
+        return s == null ? "" : s;
     }
 
     @Override
@@ -152,7 +148,11 @@ class SpringAiToolGuideModel implements ToolGuideModel {
         throw new ToolGuideUnavailable(Reason.UNREADABLE);
     }
 
-    private static String nz(String s) {
-        return s == null ? "" : s;
+    record Answer(List<Section> sections) {
+        record Section(String kind, List<Step> steps) {
+        }
+
+        record Step(String text, String source, String quote, String code, String language) {
+        }
     }
 }

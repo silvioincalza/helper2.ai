@@ -13,11 +13,13 @@ internal object Formats {
         is Map<*, *> -> if (value.isEmpty()) "{}" else value.entries.joinToString(",\n", "{\n", "\n$indent}") { (k, v) ->
             "$indent  ${jsonString(k.toString())}: ${json(v, "$indent  ")}"
         }
+
         is List<*> -> when {
             value.isEmpty() -> "[]"
             value.all { it is String } -> value.joinToString(", ", "[", "]") { json(it) }
             else -> value.joinToString(",\n", "[\n", "\n$indent]") { "$indent  ${json(it, "$indent  ")}" }
         }
+
         else -> jsonString(value.toString())
     }
 

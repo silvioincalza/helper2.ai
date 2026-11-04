@@ -6,7 +6,13 @@ import java.time.Instant
 enum class GuideSectionKind { REQUIREMENTS, INSTALL, CONFIGURE, USE, CONNECT }
 
 /** The model's proposal: everything in it is checked by [ToolGuideValidator] before anyone sees it. */
-data class ProposedStep(val text: String, val materialKey: String, val quote: String, val code: String? = null, val language: String? = null)
+data class ProposedStep(
+    val text: String,
+    val materialKey: String,
+    val quote: String,
+    val code: String? = null,
+    val language: String? = null
+)
 
 data class ProposedSection(val kind: String, val steps: List<ProposedStep>)
 
@@ -28,10 +34,13 @@ data class GuideSection(val kind: GuideSectionKind, val steps: List<GuideStep>)
 enum class ToolGuideStatus {
     /** At least one step passed the checks. */
     OK,
+
     /** The documents were read, but no proposed step passed the checks. */
     NO_STEPS,
+
     /** The resource has no document we can read. */
     NO_MATERIAL,
+
     /** No model configured, it failed, or today's model calls are used up. */
     LLM_UNAVAILABLE,
 }
@@ -59,8 +68,10 @@ class ToolGuideUnavailable(val reason: Reason) : RuntimeException(reason.name) {
     ) {
         /** Today's model calls are used up. */
         BUDGET("budget"),
+
         /** No connection, a timeout, a 429, a 5xx, a rejected call or the open `llm-chat` circuit. */
         PROVIDER("error"),
+
         /** The provider answered twice, and neither answer was the requested JSON. */
         UNREADABLE("error"),
     }

@@ -21,8 +21,10 @@ object CutoffSweep {
 
     val DEFAULT_CUTOFFS: List<Double> = (8..18).map { it * 0.05 }
 
-    fun sweep(snapshots: Collection<SearchSnapshot>, qrels: Qrels, controlIds: Set<String>,
-              cutoffs: List<Double> = DEFAULT_CUTOFFS): List<CutoffPoint> {
+    fun sweep(
+        snapshots: Collection<SearchSnapshot>, qrels: Qrels, controlIds: Set<String>,
+        cutoffs: List<Double> = DEFAULT_CUTOFFS
+    ): List<CutoffPoint> {
         val withVectors = snapshots.filter { it.semantic != null }
         return cutoffs.map { c ->
             val kept = withVectors.associate { s -> s.queryId to s.semantic!!.filter { it.distance <= c + 1e-9 }.take(30) }
@@ -33,12 +35,16 @@ object CutoffSweep {
             }
             val recall = judged.mapNotNull { s ->
                 val grades = qrels.of(s.queryId)
-                RelevanceMetrics.recall(kept.getValue(s.queryId).take(10).map { key(it.canonicalUrl) }.toSet(),
-                    grades.filterValues { it >= RelevanceMetrics.RELEVANT }.keys)
+                RelevanceMetrics.recall(
+                    kept.getValue(s.queryId).take(10).map { key(it.canonicalUrl) }.toSet(),
+                    grades.filterValues { it >= RelevanceMetrics.RELEVANT }.keys
+                )
             }
             val controls = kept.filterKeys { it in controlIds }.values.map { it.size.toDouble() }
-            CutoffPoint(c, ndcg.averageOrNull(), recall.averageOrNull(), kept.values.map { it.size.toDouble() }.averageOrNull() ?: 0.0,
-                controls.averageOrNull())
+            CutoffPoint(
+                c, ndcg.averageOrNull(), recall.averageOrNull(), kept.values.map { it.size.toDouble() }.averageOrNull() ?: 0.0,
+                controls.averageOrNull()
+            )
         }
     }
 
@@ -46,8 +52,10 @@ object CutoffSweep {
         appendLine("| max distance | nDCG@10 | Recall@10 | kept per query | kept per nonsense query |")
         appendLine("|---|---|---|---|---|")
         points.forEach { p ->
-            appendLine("| ${SearchEvaluation.fmt(p.maxDistance)} | ${SearchEvaluation.fmt(p.ndcg10)} | ${SearchEvaluation.fmt(p.recall10)} | " +
-                "${SearchEvaluation.fmt(p.keptPerQuery)} | ${SearchEvaluation.fmt(p.keptPerControlQuery)} |")
+            appendLine(
+                "| ${SearchEvaluation.fmt(p.maxDistance)} | ${SearchEvaluation.fmt(p.ndcg10)} | ${SearchEvaluation.fmt(p.recall10)} | " +
+                    "${SearchEvaluation.fmt(p.keptPerQuery)} | ${SearchEvaluation.fmt(p.keptPerControlQuery)} |"
+            )
         }
     }
 

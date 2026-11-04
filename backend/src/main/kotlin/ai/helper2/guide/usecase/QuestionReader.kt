@@ -9,10 +9,10 @@ import ai.helper2.guide.GuideValidator
 import ai.helper2.guide.IntentRules
 import ai.helper2.guide.PlannedQueries
 import ai.helper2.guide.wantsReading
+import org.slf4j.LoggerFactory
 import java.time.Clock
 import java.time.LocalDate
 import java.time.ZoneOffset
-import org.slf4j.LoggerFactory
 
 /** Reads a question: the plan (or the backup rules alone), grounded in the user's words, with their removals applied. */
 internal class QuestionReader(private val clock: Clock) {
@@ -81,14 +81,22 @@ internal class QuestionReader(private val clock: Clock) {
      * read by the planner (its question back is AI-written), and never once the user answered a question back or
      * named the kind of thing they mean ("the Gemini model").
      */
-    private fun askBackSubject(q: Question, modelFailed: Boolean, intent: GuideIntent, subjects: List<String>, aboutEvent: Boolean): String? {
+    private fun askBackSubject(
+        q: Question,
+        modelFailed: Boolean,
+        intent: GuideIntent,
+        subjects: List<String>,
+        aboutEvent: Boolean
+    ): String? {
         if (q.clarification != null || modelFailed || IntentRules.namesKind(q.text)) return null
         val subject = subjects.singleOrNull() ?: return null
         val aboutTheSubject = when (intent) {
             GuideIntent.WHAT_IS, GuideIntent.ALTERNATIVES -> true
             GuideIntent.WHEN -> !aboutEvent
             // "Gemini" alone, not "a chat UI for Gemini": there the name is context, the task is the subject.
-            GuideIntent.SUGGEST -> IntentRules.subjectWords(q.text.replace(subject, " ", ignoreCase = true)).none { it.isLetterOrDigit() }
+            GuideIntent.SUGGEST -> IntentRules.subjectWords(q.text.replace(subject, " ", ignoreCase = true))
+                .none { it.isLetterOrDigit() }
+
             else -> false
         }
         return subject.takeIf { aboutTheSubject }

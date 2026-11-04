@@ -1,27 +1,18 @@
 package ai.helper2.platform.llm;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.UncheckedIOException;
 import java.net.SocketTimeoutException;
-import org.junit.jupiter.api.Test;
 
-/** Same simple names and hierarchy as the OpenAI Java SDK errors; ModelErrors matches by name. */
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * Same simple names and hierarchy as the OpenAI Java SDK errors; ModelErrors matches by name.
+ */
 class ModelErrorsTest {
-
-    static class OpenAIException extends RuntimeException {
-    }
-
-    static class OpenAIServiceException extends OpenAIException {
-    }
-
-    static final class RateLimitException extends OpenAIServiceException {
-    }
-
-    static final class BadRequestException extends OpenAIServiceException {
-    }
 
     @Test
     void rateLimitsAndIoAreTransientProviderErrors() {
@@ -56,7 +47,9 @@ class ModelErrorsTest {
         assertThat(ModelErrors.category(new IllegalStateException("other"))).isEqualTo("error");
     }
 
-    /** The llm-chat circuit counts the provider's failures only: our parse error or spent budget says nothing about it. */
+    /**
+     * The llm-chat circuit counts the provider's failures only: our parse error or spent budget says nothing about it.
+     */
     @Test
     void onlyProviderFailuresCountForTheChatCircuit() {
         var notFromProvider = new ModelErrors.NotFromProvider();
@@ -65,5 +58,17 @@ class ModelErrorsTest {
         assertThat(notFromProvider.test(new BadRequestException())).isFalse();
         assertThat(notFromProvider.test(new SocketTimeoutException("read timed out"))).isFalse();
         assertThat(notFromProvider.test(new IllegalStateException("budget used up"))).isTrue();
+    }
+
+    static class OpenAIException extends RuntimeException {
+    }
+
+    static class OpenAIServiceException extends OpenAIException {
+    }
+
+    static final class RateLimitException extends OpenAIServiceException {
+    }
+
+    static final class BadRequestException extends OpenAIServiceException {
     }
 }

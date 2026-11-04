@@ -1,21 +1,10 @@
 package ai.helper2.api;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import ai.helper2.setup.Material;
 import ai.helper2.setup.MaterialKind;
 import ai.helper2.setup.ToolMaterials;
 import ai.helper2.shared.ResourceType;
 import com.jayway.jsonpath.JsonPath;
-import java.net.URI;
-import java.time.Instant;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +13,18 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.simple.JdbcClient;
+
+import java.net.URI;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * POST /resources/{id}/guide without a model (the test profile has none): the documents are found or not, and the
@@ -37,24 +38,15 @@ class ToolGuideApiIT extends ApiTestBase {
     @Autowired
     JdbcClient jdbc;
 
-    @TestConfiguration(proxyBeanMethods = false)
-    static class FakeDocs {
-        @Bean
-        @Primary
-        ToolMaterials fakeToolMaterials() {
-            return ref -> DOCS.get().load(ref);
-        }
-    }
-
     @BeforeEach
     void docs() {
         DOCS.set(ref -> "acme/readme-mcp".equals(ref.getGithubRepo())
             ? List.of(new Material("readme", MaterialKind.README, URI.create("https://github.com/acme/readme-mcp"), Instant.now(), """
-                # readme-mcp
-                ```json
-                { "mcpServers": { "readme-mcp": { "command": "npx", "args": ["-y", "readme-mcp"], "env": { "API_TOKEN": "x" } } } }
-                ```
-                """))
+            # readme-mcp
+            ```json
+            { "mcpServers": { "readme-mcp": { "command": "npx", "args": ["-y", "readme-mcp"], "env": { "API_TOKEN": "x" } } } }
+            ```
+            """))
             : List.of());
     }
 
@@ -101,5 +93,14 @@ class ToolGuideApiIT extends ApiTestBase {
             id.set(ids.getFirst());
         });
         return id.get();
+    }
+
+    @TestConfiguration(proxyBeanMethods = false)
+    static class FakeDocs {
+        @Bean
+        @Primary
+        ToolMaterials fakeToolMaterials() {
+            return ref -> DOCS.get().load(ref);
+        }
     }
 }

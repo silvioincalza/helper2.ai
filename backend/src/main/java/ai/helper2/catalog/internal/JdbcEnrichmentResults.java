@@ -1,10 +1,16 @@
 package ai.helper2.catalog.internal;
 
-import ai.helper2.catalog.enrichment.EnrichmentResults;
 import ai.helper2.catalog.ResourceDetail;
 import ai.helper2.catalog.ReviewQueue;
+import ai.helper2.catalog.enrichment.EnrichmentResults;
 import ai.helper2.shared.ValueOrigin;
 import ai.helper2.shared.Verification;
+import org.jspecify.annotations.Nullable;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
+
 import java.net.URI;
 import java.sql.Timestamp;
 import java.time.Clock;
@@ -15,11 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
-import org.jspecify.annotations.Nullable;
-import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
-import tools.jackson.databind.ObjectMapper;
 
 /**
  * Enrichment results in Postgres, with full history. Every field and relationship the validator did not reject is
@@ -44,7 +45,9 @@ public class JdbcEnrichmentResults implements EnrichmentResults {
         this.clock = clock;
     }
 
-    /** A FAILED run leaves the resource REJECTED: there is nothing to show, and the backlog retries it. */
+    /**
+     * A FAILED run leaves the resource REJECTED: there is nothing to show, and the backlog retries it.
+     */
     @Override
     @Transactional
     public UUID record(Run run, @Nullable Checked checked) {
@@ -139,7 +142,9 @@ public class JdbcEnrichmentResults implements EnrichmentResults {
         return withEvidence(rows, "field_assertion_evidence", "assertion_id");
     }
 
-    /** The resource's relationships no reviewer rejected, each with its evidence. */
+    /**
+     * The resource's relationships no reviewer rejected, each with its evidence.
+     */
     public List<ResourceDetail.Relationship> relationships(UUID resourceId) {
         List<Owned<ResourceDetail.Relationship>> rows = jdbc.sql("""
                 SELECT id, kind, to_resource_id, to_title, verification FROM relationship
@@ -158,7 +163,9 @@ public class JdbcEnrichmentResults implements EnrichmentResults {
         return withEvidence(rows, "relationship_evidence", "relationship_id");
     }
 
-    /** The summary of the latest run that has one, or null. */
+    /**
+     * The summary of the latest run that has one, or null.
+     */
     public ResourceDetail.@Nullable Summary summary(UUID resourceId) {
         return jdbc.sql("""
                 SELECT r.id, r.model, r.prompt_version, r.finished_at FROM enrichment_run r
@@ -185,14 +192,9 @@ public class JdbcEnrichmentResults implements EnrichmentResults {
             .orElse(null);
     }
 
-    private record RunRow(UUID id, String model, String promptVersion, Instant finishedAt) {
-    }
-
-    /** A row read before its evidence: its id, and how to build it once the evidence is known. */
-    private record Owned<T>(UUID id, Function<List<ResourceDetail.Evidence>, T> build) {
-    }
-
-    /** Builds [rows] in their order, each with its own evidence; one evidence statement for all, none when empty. */
+    /**
+     * Builds [rows] in their order, each with its own evidence; one evidence statement for all, none when empty.
+     */
     private <T> List<T> withEvidence(List<Owned<T>> rows, String joinTable, String fk) {
         if (rows.isEmpty()) {
             return List.of();
@@ -227,9 +229,9 @@ public class JdbcEnrichmentResults implements EnrichmentResults {
     private void deleteAiFields(UUID resourceId) {
         // The CTE reads the links before the cascade removes them (one snapshot per statement).
         deleteOrphanEvidence(jdbc.sql("""
-                WITH gone AS (DELETE FROM field_assertion WHERE resource_id = :rid AND origin = 'AI_EXTRACTED' RETURNING id)
-                SELECT DISTINCT fae.evidence_id FROM field_assertion_evidence fae JOIN gone ON gone.id = fae.assertion_id
-                """).param("rid", resourceId).query(UUID.class).list());
+            WITH gone AS (DELETE FROM field_assertion WHERE resource_id = :rid AND origin = 'AI_EXTRACTED' RETURNING id)
+            SELECT DISTINCT fae.evidence_id FROM field_assertion_evidence fae JOIN gone ON gone.id = fae.assertion_id
+            """).param("rid", resourceId).query(UUID.class).list());
     }
 
     /**
@@ -239,26 +241,28 @@ public class JdbcEnrichmentResults implements EnrichmentResults {
      */
     private void deleteUnreviewedAiRelationships(UUID resourceId) {
         deleteOrphanEvidence(jdbc.sql("""
-                WITH gone AS (
-                    DELETE FROM relationship r WHERE r.from_resource_id = :rid AND r.origin = 'AI_EXTRACTED'
-                      AND NOT EXISTS (SELECT 1 FROM review_item i
-                                      WHERE i.relationship_id = r.id AND i.status IN ('ACCEPTED', 'REJECTED'))
-                    RETURNING r.id)
-                SELECT DISTINCT re.evidence_id FROM relationship_evidence re JOIN gone ON gone.id = re.relationship_id
-                """).param("rid", resourceId).query(UUID.class).list());
+            WITH gone AS (
+                DELETE FROM relationship r WHERE r.from_resource_id = :rid AND r.origin = 'AI_EXTRACTED'
+                  AND NOT EXISTS (SELECT 1 FROM review_item i
+                                  WHERE i.relationship_id = r.id AND i.status IN ('ACCEPTED', 'REJECTED'))
+                RETURNING r.id)
+            SELECT DISTINCT re.evidence_id FROM relationship_evidence re JOIN gone ON gone.id = re.relationship_id
+            """).param("rid", resourceId).query(UUID.class).list());
     }
 
-    /** Deletes those of [ids] that no field, relationship or summary claim cites any more. */
+    /**
+     * Deletes those of [ids] that no field, relationship or summary claim cites any more.
+     */
     private void deleteOrphanEvidence(List<UUID> ids) {
         if (ids.isEmpty()) {
             return;
         }
         jdbc.sql("""
-                DELETE FROM evidence e WHERE e.id IN (:ids)
-                  AND NOT EXISTS (SELECT 1 FROM field_assertion_evidence x WHERE x.evidence_id = e.id)
-                  AND NOT EXISTS (SELECT 1 FROM relationship_evidence x WHERE x.evidence_id = e.id)
-                  AND NOT EXISTS (SELECT 1 FROM summary_claim_evidence x WHERE x.evidence_id = e.id)
-                """).param("ids", ids).update();
+            DELETE FROM evidence e WHERE e.id IN (:ids)
+              AND NOT EXISTS (SELECT 1 FROM field_assertion_evidence x WHERE x.evidence_id = e.id)
+              AND NOT EXISTS (SELECT 1 FROM relationship_evidence x WHERE x.evidence_id = e.id)
+              AND NOT EXISTS (SELECT 1 FROM summary_claim_evidence x WHERE x.evidence_id = e.id)
+            """).param("ids", ids).update();
     }
 
     /**
@@ -284,5 +288,14 @@ public class JdbcEnrichmentResults implements EnrichmentResults {
             jdbc.sql("INSERT INTO %s (%s, evidence_id) VALUES (:o, :e) ON CONFLICT DO NOTHING".formatted(joinTable, fk))
                 .param("o", owner).param("e", evidenceId).update();
         }
+    }
+
+    private record RunRow(UUID id, String model, String promptVersion, Instant finishedAt) {
+    }
+
+    /**
+     * A row read before its evidence: its id, and how to build it once the evidence is known.
+     */
+    private record Owned<T>(UUID id, Function<List<ResourceDetail.Evidence>, T> build) {
     }
 }

@@ -9,34 +9,48 @@ import java.util.Collection;
  */
 public interface QuotaCounter {
 
-    /** One count: a key and one of its fields (a feature, a source). */
-    record Counter(String key, String field) {
-    }
-
-    enum Verdict {
-        /** Counted on every counter given. */
-        TAKEN,
-        /** The own counter is at its limit; nothing was counted. */
-        LIMIT_REACHED,
-        /** The global counter is at its limit; nothing was counted. */
-        GLOBAL_LIMIT_REACHED,
-    }
-
-    /** {@code used}: the own counter after the call (unchanged when refused); 0 without an own counter. */
-    record Result(Verdict verdict, long used) {
-    }
-
     /**
      * In one atomic step: refuses when {@code own} (if not null) has reached {@code ownLimit} or {@code global} (if not
      * null) has reached {@code globalLimit}; otherwise adds one to each. Concurrent callers never pass a limit.
      */
     Result take(Counter own, int ownLimit, Counter global, long globalLimit);
 
-    /** Takes one count off {@code counter}, never below 0: a count whose work did not run. */
+    /**
+     * Takes one count off {@code counter}, never below 0: a count whose work did not run.
+     */
     void giveBack(Counter counter);
 
-    /** The count of {@code counter}; 0 when nothing was counted. */
+    /**
+     * The count of {@code counter}; 0 when nothing was counted.
+     */
     long used(Counter counter);
 
     void delete(Collection<String> keys);
+
+    enum Verdict {
+        /**
+         * Counted on every counter given.
+         */
+        TAKEN,
+        /**
+         * The own counter is at its limit; nothing was counted.
+         */
+        LIMIT_REACHED,
+        /**
+         * The global counter is at its limit; nothing was counted.
+         */
+        GLOBAL_LIMIT_REACHED,
+    }
+
+    /**
+     * One count: a key and one of its fields (a feature, a source).
+     */
+    record Counter(String key, String field) {
+    }
+
+    /**
+     * {@code used}: the own counter after the call (unchanged when refused); 0 without an own counter.
+     */
+    record Result(Verdict verdict, long used) {
+    }
 }

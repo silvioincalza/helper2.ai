@@ -21,6 +21,13 @@ import ai.helper2.sources.support.Classification;
 import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.web.client.RestClient;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.node.ObjectNode;
+
 import java.net.URI;
 import java.time.Clock;
 import java.time.Duration;
@@ -35,12 +42,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.web.client.RestClient;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.node.JsonNodeFactory;
-import tools.jackson.databind.node.ObjectNode;
 
 /**
  * GitHub "awesome" lists about AI, found by topic search. A pass: discover the lists, read each README
@@ -54,16 +55,21 @@ import tools.jackson.databind.node.ObjectNode;
 public class GitHubAwesomeCollector implements Collector {
 
     static final String ID = "github-awesome";
-    /** Circuit breaker and retry of this collector\'s calls (ADR 0033). */
+    /**
+     * Circuit breaker and retry of this collector\'s calls (ADR 0033).
+     */
     static final String POLICY = "collector-" + ID;
+    /**
+     * Big awesome lists are long Markdown files; anything past this is not a list worth parsing.
+     */
+    static final int README_MAX_BYTES = 5 * 1024 * 1024;
+    /**
+     * Total time for one README (ADR 0006 §2): 5 MB at about 90 kB/s; other calls keep the collector's deadline.
+     */
+    static final Duration README_DEADLINE = Duration.ofSeconds(60);
     private static final Logger log = LoggerFactory.getLogger(GitHubAwesomeCollector.class);
     private static final int GRAPHQL_BATCH = 50;
     private static final int SEARCH_PAGE = 20;
-
-    public record Limits(int maxLists, int minListStars, int maxEntriesPerPass, int maxEntriesPerRun, int minRepoStars,
-                  int classifyBatch) {
-    }
-
     private final RestClient http;
     private final Clock clock;
     private final Resilience resilience;
@@ -95,6 +101,59 @@ public class GitHubAwesomeCollector implements Collector {
             settings.timeout(), settings.cacheTtl(), settings.enabled() && settings.hasToken(), 25);
     }
 
+    static String graphQl(List<AwesomeListParser.Entry> batch) {
+        StringBuilder q = new StringBuilder("query {");
+        for (int i = 0; i < batch.size(); i++) {
+            String[] parts = batch.get(i).fullName().split("/", 2);
+            q.append(" r").append(i).append(": repository(owner: \"").append(parts[0]).append("\", name: \"")
+                .append(parts[1]).append("\") { nameWithOwner url description stargazerCount isArchived isFork")
+                .append(" createdAt pushedAt licenseInfo { spdxId } repositoryTopics(first: 20) { nodes { topic { name } } } }");
+        }
+        return q.append(" }").toString();
+    }
+
+    private static List<String> topics(JsonNode repo) {
+        List<String> topics = new ArrayList<>();
+        repo.path("repositoryTopics").path("nodes").forEach(n -> {
+            String t = HttpClients.text(n.path("topic"), "name");
+            if (t != null) {
+                topics.add(t);
+            }
+        });
+        return topics;
+    }
+
+    private static SourceHit toHit(JsonNode repo, ResourceType type, int rank, Instant now) {
+        String name = HttpClients.text(repo, "nameWithOwner");
+        String url = HttpClients.text(repo, "url");
+        CanonicalUrl canonical = url == null ? null : CanonicalUrl.of(url);
+        if (name == null || canonical == null) {
+            return null;
+        }
+        String spdx = HttpClients.text(repo.path("licenseInfo"), "spdxId");
+        String license = spdx == null ? null : ResultMerger.normalizeLicense(spdx);
+        Set<String> tags = new LinkedHashSet<>(topics(repo));
+        Audience audience = type == ResourceType.PRODUCT ? Audience.USE_AI : Audience.BUILD_WITH_AI;
+        return new SourceHit(ID, name, URI.create(url), canonical, null, name, HttpClients.text(repo, "description"),
+            ValueOrigin.SOURCE_PROVIDED, type, audience, null, Set.of(), tags, license, null, Set.of(),
+            Classification.openSource(license),
+            DateFact.fromSource(HttpClients.instant(repo, "createdAt"), "github", now),
+            DateFact.fromSource(HttpClients.instant(repo, "pushedAt"), "github", now),
+            List.of(new PopularityMetric(PopularityKind.GITHUB_STARS, repo.path("stargazerCount").asLong(), "github", now)),
+            now, rank);
+    }
+
+    private static int offset(String cursor) {
+        if (cursor == null) {
+            return 0;
+        }
+        try {
+            return Math.max(0, Integer.parseInt(cursor.strip()));
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
     @Override
     public SourceDescriptor getDescriptor() {
         return descriptor;
@@ -119,7 +178,9 @@ public class GitHubAwesomeCollector implements Collector {
         return new CollectedBatch(hits, end < all.size() ? String.valueOf(end) : null, startedAt.toString());
     }
 
-    /** Lists by stars, most first. A search query that fails is skipped; rate limits stop the pass. */
+    /**
+     * Lists by stars, most first. A search query that fails is skipped; rate limits stop the pass.
+     */
     List<String> discoverLists() {
         Map<String, Long> stars = new HashMap<>();
         for (String topics : topicQueries) {
@@ -169,11 +230,6 @@ public class GitHubAwesomeCollector implements Collector {
         return new ArrayList<>(unique.values()).subList(0, Math.min(unique.size(), limits.maxEntriesPerPass()));
     }
 
-    /** Big awesome lists are long Markdown files; anything past this is not a list worth parsing. */
-    static final int README_MAX_BYTES = 5 * 1024 * 1024;
-    /** Total time for one README (ADR 0006 §2): 5 MB at about 90 kB/s; other calls keep the collector's deadline. */
-    static final Duration README_DEADLINE = Duration.ofSeconds(60);
-
     private String readme(String list) {
         String[] parts = list.split("/", 2);
         return resilience.call(POLICY, () -> HttpClients.getText(() -> http.get()
@@ -184,7 +240,9 @@ public class GitHubAwesomeCollector implements Collector {
             .retrieve().body(String.class), clock));
     }
 
-    /** Facts by lower-case full name. Repositories GitHub cannot resolve (renamed, deleted) are absent. */
+    /**
+     * Facts by lower-case full name. Repositories GitHub cannot resolve (renamed, deleted) are absent.
+     */
     Map<String, JsonNode> repoFacts(List<AwesomeListParser.Entry> entries) {
         Map<String, JsonNode> facts = new HashMap<>();
         for (int from = 0; from < entries.size(); from += GRAPHQL_BATCH) {
@@ -210,17 +268,6 @@ public class GitHubAwesomeCollector implements Collector {
             }
         }
         return facts;
-    }
-
-    static String graphQl(List<AwesomeListParser.Entry> batch) {
-        StringBuilder q = new StringBuilder("query {");
-        for (int i = 0; i < batch.size(); i++) {
-            String[] parts = batch.get(i).fullName().split("/", 2);
-            q.append(" r").append(i).append(": repository(owner: \"").append(parts[0]).append("\", name: \"")
-                .append(parts[1]).append("\") { nameWithOwner url description stargazerCount isArchived isFork")
-                .append(" createdAt pushedAt licenseInfo { spdxId } repositoryTopics(first: 20) { nodes { topic { name } } } }");
-        }
-        return q.append(" }").toString();
     }
 
     private List<SourceHit> toHits(List<AwesomeListParser.Entry> slice, Map<String, JsonNode> facts, int offset,
@@ -256,7 +303,9 @@ public class GitHubAwesomeCollector implements Collector {
         return hits;
     }
 
-    /** Model first, in batches; anything it did not answer (an error, a missing id) goes to the heuristic. */
+    /**
+     * Model first, in batches; anything it did not answer (an error, a missing id) goes to the heuristic.
+     */
     private Map<String, RepoClassifier.Verdict> classify(List<RepoClassifier.Facts> candidates) {
         Map<String, RepoClassifier.Verdict> verdicts = new HashMap<>();
         int fallbacks = 0;
@@ -286,45 +335,7 @@ public class GitHubAwesomeCollector implements Collector {
         }
     }
 
-    private static List<String> topics(JsonNode repo) {
-        List<String> topics = new ArrayList<>();
-        repo.path("repositoryTopics").path("nodes").forEach(n -> {
-            String t = HttpClients.text(n.path("topic"), "name");
-            if (t != null) {
-                topics.add(t);
-            }
-        });
-        return topics;
-    }
-
-    private static SourceHit toHit(JsonNode repo, ResourceType type, int rank, Instant now) {
-        String name = HttpClients.text(repo, "nameWithOwner");
-        String url = HttpClients.text(repo, "url");
-        CanonicalUrl canonical = url == null ? null : CanonicalUrl.of(url);
-        if (name == null || canonical == null) {
-            return null;
-        }
-        String spdx = HttpClients.text(repo.path("licenseInfo"), "spdxId");
-        String license = spdx == null ? null : ResultMerger.normalizeLicense(spdx);
-        Set<String> tags = new LinkedHashSet<>(topics(repo));
-        Audience audience = type == ResourceType.PRODUCT ? Audience.USE_AI : Audience.BUILD_WITH_AI;
-        return new SourceHit(ID, name, URI.create(url), canonical, null, name, HttpClients.text(repo, "description"),
-            ValueOrigin.SOURCE_PROVIDED, type, audience, null, Set.of(), tags, license, null, Set.of(),
-            Classification.openSource(license),
-            DateFact.fromSource(HttpClients.instant(repo, "createdAt"), "github", now),
-            DateFact.fromSource(HttpClients.instant(repo, "pushedAt"), "github", now),
-            List.of(new PopularityMetric(PopularityKind.GITHUB_STARS, repo.path("stargazerCount").asLong(), "github", now)),
-            now, rank);
-    }
-
-    private static int offset(String cursor) {
-        if (cursor == null) {
-            return 0;
-        }
-        try {
-            return Math.max(0, Integer.parseInt(cursor.strip()));
-        } catch (NumberFormatException e) {
-            return 0;
-        }
+    public record Limits(int maxLists, int minListStars, int maxEntriesPerPass, int maxEntriesPerRun, int minRepoStars,
+                         int classifyBatch) {
     }
 }

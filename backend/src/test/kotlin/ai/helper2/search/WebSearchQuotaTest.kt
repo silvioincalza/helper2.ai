@@ -6,7 +6,7 @@ import ai.helper2.platform.quota.QuotaCounter.Result
 import ai.helper2.platform.quota.QuotaCounter.Verdict
 import ai.helper2.platform.quota.QuotaKeys
 import ai.helper2.testing.MovableClock
-import java.util.UUID
+import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -45,8 +45,10 @@ class WebSearchQuotaTest {
     private val user = UUID.fromString("00000000-0000-0000-0000-000000000042")
 
     private fun quota(registeredTier: Boolean = false, globalDailyCredits: Long? = null) =
-        WebSearchQuota(counter, keys, DailyLimits(guestSearch = 3, guestGuide = 3, registeredSearch = 10, registeredGuide = 10),
-            registeredTier, globalDailyCredits)
+        WebSearchQuota(
+            counter, keys, DailyLimits(guestSearch = 3, guestGuide = 3, registeredSearch = 10, registeredGuide = 10),
+            registeredTier, globalDailyCredits
+        )
 
     @Test
     fun `a guest gets three web searches a day per feature, then the daily limit`() {

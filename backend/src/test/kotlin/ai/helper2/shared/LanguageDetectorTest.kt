@@ -23,8 +23,10 @@ class LanguageDetectorTest {
 
     @Test
     fun `short technical queries are English or unknown, never a guessed language`() {
-        for (q in listOf("mcp postgres", "llm", "rag", "MCP server Postgres", "langchain agents", "k8s operator", "vector database",
-            "tools in rust", "image generation for slides")) {
+        for (q in listOf(
+            "mcp postgres", "llm", "rag", "MCP server Postgres", "langchain agents", "k8s operator", "vector database",
+            "tools in rust", "image generation for slides"
+        )) {
             val code = detector.detect(q)
             assertTrue(code == null || code == "en", "$q -> $code")
         }

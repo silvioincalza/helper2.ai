@@ -4,13 +4,14 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.model.ChatResponse;
+
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.function.Supplier;
-import org.springframework.ai.chat.metadata.Usage;
-import org.springframework.ai.chat.model.ChatResponse;
 
 /**
  * Timer, span and token counters of one model call, for every module that calls a model. An Observation gives
@@ -31,7 +32,9 @@ public final class ModelCallMetrics {
         this.meters = meters;
     }
 
-    /** No-op tracing, throwaway meters: for callers and tests that do not look at them. */
+    /**
+     * No-op tracing, throwaway meters: for callers and tests that do not look at them.
+     */
     public static ModelCallMetrics none() {
         return new ModelCallMetrics(ObservationRegistry.NOOP, new SimpleMeterRegistry());
     }
@@ -49,7 +52,9 @@ public final class ModelCallMetrics {
         }
     }
 
-    /** One attempt: a retry is a second call to the provider, with its own latency, so it is observed again. */
+    /**
+     * One attempt: a retry is a second call to the provider, with its own latency, so it is observed again.
+     */
     public <T> T observe(String step, String model, String prompt, Supplier<T> call) {
         Observation observation = Observation.createNotStarted(CALL, observations)
             .lowCardinalityKeyValue("step", step)
@@ -69,7 +74,9 @@ public final class ModelCallMetrics {
         }
     }
 
-    /** Tokens the provider reports; nothing is counted when it reports none. */
+    /**
+     * Tokens the provider reports; nothing is counted when it reports none.
+     */
     public void tokens(String step, String prompt, ChatResponse response) {
         Usage usage = response == null || response.getMetadata() == null ? null : response.getMetadata().getUsage();
         if (usage == null) {

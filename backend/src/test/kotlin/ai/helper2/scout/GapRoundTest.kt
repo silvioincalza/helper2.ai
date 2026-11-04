@@ -1,6 +1,6 @@
 package ai.helper2.scout
 
-import java.util.UUID
+import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -26,10 +26,14 @@ class GapRoundTest {
 
     @Test
     fun `an MCP Registry entry gets the README only when its namespace is the repository owner`() {
-        val own = record("mcp-registry", "io.github.acme/server", "https://github.com/acme/server", "https://github.com/acme/server")
-        val borrowed = record("mcp-registry", "io.example/x", "https://github.com/modelcontextprotocol/servers",
-            "https://github.com/modelcontextprotocol/servers")
-        val otherOwner = record("mcp-registry", "io.github.mallory/x", "https://github.com/acme/server", "https://github.com/acme/server")
+        val own =
+            record("mcp-registry", "io.github.acme/server", "https://github.com/acme/server", "https://github.com/acme/server")
+        val borrowed = record(
+            "mcp-registry", "io.example/x", "https://github.com/modelcontextprotocol/servers",
+            "https://github.com/modelcontextprotocol/servers"
+        )
+        val otherOwner =
+            record("mcp-registry", "io.github.mallory/x", "https://github.com/acme/server", "https://github.com/acme/server")
 
         assertEquals(GapTarget(GapKind.GITHUB_README, "acme", "server", own.id), GapTargets.select(listOf(own)))
         assertNull(GapTargets.select(listOf(borrowed)))
@@ -102,7 +106,8 @@ class GapRoundTest {
     @Test
     fun `the window keeps the top and the licence and install sections within the limit`() {
         val filler = "Lorem ipsum dolor sit amet. ".repeat(400)
-        val raw = "# Tool\nA tool for agents.\n\n## Features\n$filler\n\n## Installation\npip install tool\n\n## License\nMIT License\n"
+        val raw =
+            "# Tool\nA tool for agents.\n\n## Features\n$filler\n\n## Installation\npip install tool\n\n## License\nMIT License\n"
         val text = ReadmeText.window(ReadmeText.clean(raw), 2000)
 
         assertTrue(text.length <= 2000)

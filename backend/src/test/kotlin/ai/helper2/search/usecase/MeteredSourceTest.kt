@@ -63,7 +63,13 @@ class MeteredSourceTest {
     private class MapStore : WebResultStore {
         val sets = HashMap<Triple<String, String, IntentClass>, CachedHits>()
         override fun find(sourceId: String, query: String, intentClass: IntentClass) = sets[Triple(sourceId, query, intentClass)]
-        override fun replace(sourceId: String, query: String, intentClass: IntentClass, fetchedAt: Instant, hits: List<SourceHit>) {
+        override fun replace(
+            sourceId: String,
+            query: String,
+            intentClass: IntentClass,
+            fetchedAt: Instant,
+            hits: List<SourceHit>
+        ) {
             sets[Triple(sourceId, query, intentClass)] = CachedHits(hits, fetchedAt)
         }
     }
@@ -80,9 +86,11 @@ class MeteredSourceTest {
             own?.let { counts[it] = used + 1 }
             return Result(Verdict.TAKEN, used + 1)
         }
+
         override fun giveBack(counter: Counter) {
             counts[counter] = maxOf(0, (counts[counter] ?: 0) - 1)
         }
+
         override fun used(counter: Counter) = if (down) throw IllegalStateException("down") else counts[counter] ?: 0
         override fun delete(keys: Collection<String>) {}
     }
@@ -185,10 +193,18 @@ class MeteredSourceTest {
             override val descriptor = descriptor("github")
             override fun search(query: SourceQuery) = listOf(hit("github", "https://github.com/a/x"))
         }
-        val svc = SearchResources(listOf(web, github), object : SearchCache {
-            override fun get(key: String): CachedHits? = null
-            override fun put(key: String, value: CachedHits, ttl: Duration) {}
-        }, ResultObserver { emptyMap() }, executor, clock, webResults = store, quota = WebSearchQuota(counter, QuotaKeys("test-secret", clock)))
+        val svc = SearchResources(
+            listOf(web, github),
+            object : SearchCache {
+                override fun get(key: String): CachedHits? = null
+                override fun put(key: String, value: CachedHits, ttl: Duration) {}
+            },
+            ResultObserver { emptyMap() },
+            executor,
+            clock,
+            webResults = store,
+            quota = WebSearchQuota(counter, QuotaKeys("test-secret", clock))
+        )
         repeat(3) { svc.search(req("query $it")) }
 
         val out = svc.search(req("something new"))
@@ -279,6 +295,7 @@ class MeteredSourceTest {
         val open = object : Resilience {
             override fun <T> call(policy: String, work: java.util.function.Supplier<T>): T =
                 throw CallRefused(policy, CallRefused.Reason.CIRCUIT_OPEN, null)
+
             override fun require(policy: String) {}
         }
 

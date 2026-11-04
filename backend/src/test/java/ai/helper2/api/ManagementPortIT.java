@@ -1,17 +1,18 @@
 package ai.helper2.api;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.TestcontainersConfiguration;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalManagementPort;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
+
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * The k8s setup: actuator on its own port with metrics open for the cluster scraper. The edge routes
@@ -25,13 +26,11 @@ import org.springframework.context.annotation.Import;
 @Import(TestcontainersConfiguration.class)
 class ManagementPortIT {
 
+    final HttpClient http = HttpClient.newHttpClient();
     @LocalServerPort
     int port;
-
     @LocalManagementPort
     int managementPort;
-
-    final HttpClient http = HttpClient.newHttpClient();
 
     int status(int onPort, String path) throws Exception {
         var request = HttpRequest.newBuilder(URI.create("http://localhost:" + onPort + path)).build();

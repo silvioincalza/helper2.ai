@@ -8,13 +8,16 @@ import ai.helper2.api.generated.model.ReviewKindCountDto;
 import ai.helper2.api.generated.model.ReviewKindDto;
 import ai.helper2.api.generated.model.WebCreditsDto;
 import ai.helper2.shared.UtcTimes;
-import java.net.URI;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** GET /api/v1/admin/overview (ADMIN only, admin port): the back office landing page. */
+import java.net.URI;
+
+/**
+ * GET /api/v1/admin/overview (ADMIN only, admin port): the back office landing page.
+ */
 @RestController
 @RequestMapping("/api/v1")
 class OverviewController implements OverviewApi {
@@ -27,7 +30,9 @@ class OverviewController implements OverviewApi {
         this.grafanaUrl = grafanaLink(grafanaUrl);
     }
 
-    /** An absolute http(s) link with a host, or none. Anything else stops startup: the page puts it in an href. */
+    /**
+     * An absolute http(s) link with a host, or none. Anything else stops startup: the page puts it in an href.
+     */
     static URI grafanaLink(String value) {
         if (value.isBlank()) {
             return null;

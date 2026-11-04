@@ -1,20 +1,9 @@
 package ai.helper2.platform.quota;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 import ai.helper2.TestcontainersConfiguration;
 import ai.helper2.platform.quota.QuotaCounter.Counter;
 import ai.helper2.platform.quota.QuotaCounter.Verdict;
 import ai.helper2.platform.resilience.Resilience;
-import java.time.Duration;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -23,7 +12,21 @@ import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.RedisScript;
 
-/** The daily quota counters on the real Redis: check and count in one step, per field, with a 24 h expiry. */
+import java.time.Duration;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+/**
+ * The daily quota counters on the real Redis: check and count in one step, per field, with a 24 h expiry.
+ */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 class RedisQuotaCounterIT {
@@ -31,12 +34,12 @@ class RedisQuotaCounterIT {
     @Autowired
     StringRedisTemplate redis;
 
-    private RedisQuotaCounter counter() {
-        return new RedisQuotaCounter(redis, Resilience.NONE);
-    }
-
     private static String key() {
         return "test:quota:" + UUID.randomUUID();
+    }
+
+    private RedisQuotaCounter counter() {
+        return new RedisQuotaCounter(redis, Resilience.NONE);
     }
 
     @Test

@@ -10,10 +10,14 @@ class FilteringTest {
 
     private val results = merger.merge(
         listOf(
-            hit("github", "https://github.com/a/mit", license = "MIT", type = ResourceType.MCP_SERVER,
-                published = "2024-01-01T00:00:00Z", updated = "2026-05-01T00:00:00Z"),
-            hit("github", "https://github.com/a/apache", license = "Apache-2.0", type = ResourceType.LIBRARY,
-                published = "2025-01-01T00:00:00Z", updated = "2026-01-01T00:00:00Z"),
+            hit(
+                "github", "https://github.com/a/mit", license = "MIT", type = ResourceType.MCP_SERVER,
+                published = "2024-01-01T00:00:00Z", updated = "2026-05-01T00:00:00Z"
+            ),
+            hit(
+                "github", "https://github.com/a/apache", license = "Apache-2.0", type = ResourceType.LIBRARY,
+                published = "2025-01-01T00:00:00Z", updated = "2026-01-01T00:00:00Z"
+            ),
             hit("github", "https://github.com/a/nolicense", type = ResourceType.LIBRARY),
             hit("github", "https://github.com/a/conflict", license = "MIT", published = "2023-01-01T00:00:00Z"),
             hit("npm", "https://github.com/a/conflict", license = "ISC"),

@@ -1,11 +1,12 @@
 package ai.helper2.catalog.enrichment;
 
+import org.jspecify.annotations.Nullable;
+
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Outbound port of the catalog for enrichment: which resources still need a run, and what the sources stored about
@@ -20,16 +21,24 @@ public interface EnrichmentCandidates {
      */
     List<UUID> pending(int limit, int minText, int maxFailed);
 
-    /** How many resources [pending] would return without a limit; gives up after a few seconds (back office overview). */
+    /**
+     * How many resources [pending] would return without a limit; gives up after a few seconds (back office overview).
+     */
     long pendingCount(int minText, int maxFailed);
 
-    /** The subset of [ids] with a source description of at least [minText] characters, in the given order. */
+    /**
+     * The subset of [ids] with a source description of at least [minText] characters, in the given order.
+     */
     List<UUID> withEnoughText(List<UUID> ids, int minText);
 
-    /** The resource and its source records in source id order; null when it has no source record. */
+    /**
+     * The resource and its source records in source id order; null when it has no source record.
+     */
     @Nullable Candidate candidate(UUID id);
 
-    /** Input fingerprint of the latest run that judged the model's answer (not LLM_UNAVAILABLE, not FAILED); null when none. */
+    /**
+     * Input fingerprint of the latest run that judged the model's answer (not LLM_UNAVAILABLE, not FAILED); null when none.
+     */
     @Nullable String lastJudgedFingerprint(UUID id);
 
     /**

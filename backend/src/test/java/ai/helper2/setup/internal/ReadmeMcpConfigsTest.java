@@ -1,14 +1,15 @@
 package ai.helper2.setup.internal;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.setup.RunOption;
 import ai.helper2.setup.Setting;
 import ai.helper2.setup.ToolRef;
 import ai.helper2.setup.Transport;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
+
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class ReadmeMcpConfigsTest {
 
@@ -105,7 +106,7 @@ class ReadmeMcpConfigsTest {
               "env": { "PG_URL": "postgres://localhost/db" } } } }
             ```
             """)).singleElement().isInstanceOfSatisfying(RunOption.Command.class,
-                c -> assertThat(c.getArgs()).containsExactly("run", "-i", "--rm", "-e", "PG_URL", "ghcr.io/acme/pg-mcp:1.2"));
+            c -> assertThat(c.getArgs()).containsExactly("run", "-i", "--rm", "-e", "PG_URL", "ghcr.io/acme/pg-mcp:1.2"));
     }
 
     @Test
@@ -127,6 +128,6 @@ class ReadmeMcpConfigsTest {
             { "mcpServers": { "acme": { "url": "https://mcp.acme.dev/mcp" }, "github": { "url": "https://api.githubcopilot.com/mcp/" } } }
             ```
             """)).singleElement().isInstanceOfSatisfying(RunOption.Remote.class,
-                r -> assertThat(r.getUrl()).hasToString("https://mcp.acme.dev/mcp"));
+            r -> assertThat(r.getUrl()).hasToString("https://mcp.acme.dev/mcp"));
     }
 }

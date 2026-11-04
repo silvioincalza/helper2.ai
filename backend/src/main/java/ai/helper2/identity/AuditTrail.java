@@ -8,12 +8,12 @@ import org.jspecify.annotations.Nullable;
  */
 public interface AuditTrail {
 
-    enum Action { RESOLVE_REVIEW_ITEM, START_SCOUT_RUN }
-
     /**
      * @param adminId  the administrator's provider subject (GitHub: the numeric user id)
      * @param targetId what the action was about (a review item id, a source id), or null for "everything"
      * @param outcome  what happened, in a few upper-case words (ACCEPTED, STARTED, BUSY, ...)
      */
     void record(String adminId, Action action, @Nullable String targetId, String outcome);
+
+    enum Action {RESOLVE_REVIEW_ITEM, START_SCOUT_RUN}
 }

@@ -15,9 +15,9 @@ import ai.helper2.scout.ReadmeText
 import ai.helper2.scout.ValidationResult
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
-import java.time.Clock
-import java.util.UUID
 import org.slf4j.LoggerFactory
+import java.time.Clock
+import java.util.*
 
 /**
  * Runs the model, validates deterministically, persists, and routes problems to review. A resource whose
@@ -96,7 +96,11 @@ class EnrichResource @JvmOverloads constructor(
      * it keeps more than [first]; null otherwise, and whenever the source, the budget or the model fails: the first
      * run stands.
      */
-    private fun gapRound(resourceId: UUID, material: EnrichmentMaterial, first: ValidationResult): Pair<ValidationResult, GapTarget>? {
+    private fun gapRound(
+        resourceId: UUID,
+        material: EnrichmentMaterial,
+        first: ValidationResult
+    ): Pair<ValidationResult, GapTarget>? {
         val target = material.gapTarget ?: return null
         val evidence = extraEvidence ?: return null
         if (first.outcome !in GAP_OUTCOMES) return null
@@ -114,11 +118,14 @@ class EnrichResource @JvmOverloads constructor(
         // The cap counts model calls; reading a README costs none. Reads stay bounded by the enrichments themselves.
         if (!gapBudget.tryAcquire()) return skipped(source, "skipped_cap")
         val input = material.input.copy(
-            materials = material.input.materials + Material(UUID.randomUUID(), extra.sourceUrl, extra.retrievedAt, text,
-                anchorRecordId = target.anchorRecordId, supportsClaims = false),
+            materials = material.input.materials + Material(
+                UUID.randomUUID(), extra.sourceUrl, extra.retrievedAt, text,
+                anchorRecordId = target.anchorRecordId, supportsClaims = false
+            ),
             // The licence the source API states is a fact, like a record's (a record's own wins): a README that says
             // otherwise conflicts instead of overwriting it.
-            sourceFacts = extra.license?.let { mapOf("license" to it) + material.input.sourceFacts } ?: material.input.sourceFacts,
+            sourceFacts = extra.license?.let { mapOf("license" to it) + material.input.sourceFacts }
+                ?: material.input.sourceFacts,
         )
         val second = try {
             run(resourceId, input)

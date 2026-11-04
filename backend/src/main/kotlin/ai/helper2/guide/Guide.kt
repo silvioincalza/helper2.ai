@@ -69,7 +69,8 @@ private val QUALIFIERS = Regex(
 fun withoutQualifiers(query: String): String =
     QUALIFIERS.replace(query, " ").replace(Regex("\\s+"), " ").trim().ifBlank { query.trim() }
 
-fun wantsReading(request: String, plan: GuideSearchPlan?): Boolean = plan?.wantsReading == true || READING_WORDS.containsMatchIn(request)
+fun wantsReading(request: String, plan: GuideSearchPlan?): Boolean =
+    plan?.wantsReading == true || READING_WORDS.containsMatchIn(request)
 
 /** How the planner's queries are cut before search; the plan prompt states the same limits. */
 object PlannedQueries {
@@ -181,7 +182,8 @@ interface GuideModel {
      * Reasoning model: explain [subject] in a few sentences, each quoting one of [candidates]. Replaces [choose] for
      * [GuideIntent.WHAT_IS].
      */
-    fun explain(request: String, subject: String, candidates: List<Candidate>): ExplanationProposal = ExplanationProposal(emptyList())
+    fun explain(request: String, subject: String, candidates: List<Candidate>): ExplanationProposal =
+        ExplanationProposal(emptyList())
 }
 
 /** One cell the model proposes: what [subjectKey] says about the row's aspect, with a quote from its own text. */
@@ -192,7 +194,12 @@ data class ProposedRow(val aspect: String, val cells: List<ProposedCell>)
 data class ComparisonProposal(val rows: List<ProposedRow>)
 
 /** A cell that passed the gate; [text] and [quote] are null when the source does not state it. */
-data class ComparisonCell(val subjectKey: String, val text: String?, val quote: String?, val reasonCheck: ReasonCheck = ReasonCheck.NOT_CHECKED)
+data class ComparisonCell(
+    val subjectKey: String,
+    val text: String?,
+    val quote: String?,
+    val reasonCheck: ReasonCheck = ReasonCheck.NOT_CHECKED
+)
 
 data class ComparisonRow(val aspect: String, val cells: List<ComparisonCell>)
 
@@ -206,7 +213,12 @@ data class ProposedSentence(val text: String, val candidateKey: String, val quot
 data class ExplanationProposal(val sentences: List<ProposedSentence>)
 
 /** One explanation sentence that passed the gate, with the resource its quote comes from. */
-data class ExplainedSentence(val text: String, val quote: String, val source: MergedResult, val reasonCheck: ReasonCheck = ReasonCheck.NOT_CHECKED)
+data class ExplainedSentence(
+    val text: String,
+    val quote: String,
+    val source: MergedResult,
+    val reasonCheck: ReasonCheck = ReasonCheck.NOT_CHECKED
+)
 
 data class Explanation(val sentences: List<ExplainedSentence>)
 
@@ -338,12 +350,15 @@ class GuideValidator(
 
     enum class Rejection {
         UNKNOWN_CANDIDATE, DUPLICATE, READING_TYPE, NO_REASON, REASON_TOO_LONG,
+
         /** The reason contains a link: the UI shows it as text, but a link is the easiest way to smuggle content. */
         REASON_INVALID,
         QUOTE_TOO_LONG,
         QUOTE_NOT_IN_TEXT, QUOTE_TOO_SHORT,
+
         /** Born outside the question's period, by the date its source states (checked by AskGuide, not the gate). */
         OUTSIDE_WINDOW,
+
         /** A valid pick beyond [maxPicks]: nothing wrong with it, only no room. */
         OVER_LIMIT,
         PROMPT_INVALID;
@@ -382,6 +397,7 @@ class GuideValidator(
             rejectedBy.merge(r, 1, Int::plus)
             if (c != null) rejectedPicks += RejectedPick(c, r)
         }
+
         val picks = mutableListOf<KeptPick>()
         for (p in proposal.picks) {
             val c = byKey[p.candidateKey.trim()]
@@ -422,7 +438,11 @@ class GuideValidator(
      * appears verbatim in the candidate's own text; anything else (no quote, invented quote, quote for a
      * different constraint) is NOT_CONFIRMED. The model can only lose a check, never create one.
      */
-    fun checkConstraints(constraints: List<String>, candidate: Candidate, evidence: List<ConstraintQuote>): List<ConstraintCheck> {
+    fun checkConstraints(
+        constraints: List<String>,
+        candidate: Candidate,
+        evidence: List<ConstraintQuote>
+    ): List<ConstraintCheck> {
         val text = normalize(candidate.text)
         return normalizedConstraints(constraints).map { constraint ->
             licenceCheck(constraint, candidate.result)?.let { return@map it }
@@ -477,7 +497,8 @@ class GuideValidator(
                 else -> null
             }
         }
-        val ok = if (named.isNotEmpty()) named.any { word(it).containsMatchIn(licence.lowercase()) } else result.openSource == true
+        val ok =
+            if (named.isNotEmpty()) named.any { word(it).containsMatchIn(licence.lowercase()) } else result.openSource == true
         if (!ok) return ConstraintCheck(constraint, CheckStatus.NOT_CONFIRMED, null)
         val stated = "License: $licence (stated by ${result.sources.joinToString { s -> s.sourceName }})"
         return ConstraintCheck(constraint, CheckStatus.CONFIRMED, stated)
@@ -520,9 +541,11 @@ class GuideValidator(
         private val PERCENT_ESCAPE = Regex("%([0-9a-fA-F]{2})")
         private val HTML_ENTITY = Regex("&(?:#(\\d{1,7})|#[xX]([0-9a-fA-F]{1,6})|(colon|sol|period|tab|newline));?")
         private val NAMED_ENTITIES = mapOf("colon" to ":", "sol" to "/", "period" to ".", "tab" to "\t", "newline" to "\n")
+
         /** Characters a browser or terminal drops or never shows: controls (not tab/newline), soft hyphen, zero-width, BOM. */
         private val URL_IGNORED_WHITESPACE = Regex("[\\t\\r\\n]")
-        private val INVISIBLE = Regex("[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F\\u007F\\u00AD\\u200B-\\u200F\\u2060-\\u2064\\uFEFF]")
+        private val INVISIBLE =
+            Regex("[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F\\u007F\\u00AD\\u200B-\\u200F\\u2060-\\u2064\\uFEFF]")
 
         /**
          * A link counts however it is spelled: fullwidth forms are folded (NFKC), invisible characters

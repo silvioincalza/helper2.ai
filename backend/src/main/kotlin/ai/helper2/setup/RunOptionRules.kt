@@ -93,6 +93,7 @@ object RunOptionRules {
                     values += a to args[i + 1]
                     i += 2
                 }
+
                 a.startsWith("-") -> return null
                 // The package; what follows goes to the server, not to the runner.
                 else -> return Invocation(values, a)
@@ -102,7 +103,8 @@ object RunOptionRules {
     }
 
     private fun uvx(args: List<String>): String? {
-        val checks = mapOf<String, (String) -> Boolean>("--from" to ::validPypiSpec, "--with" to ::validPypiSpec,
+        val checks = mapOf<String, (String) -> Boolean>(
+            "--from" to ::validPypiSpec, "--with" to ::validPypiSpec,
             "--python" to { PYTHON_VERSION.matches(it) })
         val run = invocation(args, UVX_FLAGS, checks.keys) ?: return null
         if (!validPypiSpec(run.spec) || !run.values.all { (flag, value) -> checks.getValue(flag)(value) }) return null
@@ -160,7 +162,11 @@ object RunOptionRules {
 
     private fun validNpmSpec(spec: String): Boolean {
         val at = spec.indexOf('@', 1)
-        return if (at < 0) NPM_NAME.matches(spec) else NPM_NAME.matches(spec.substring(0, at)) && NPM_TAG.matches(spec.substring(at + 1))
+        return if (at < 0) NPM_NAME.matches(spec) else NPM_NAME.matches(spec.substring(0, at)) && NPM_TAG.matches(
+            spec.substring(
+                at + 1
+            )
+        )
     }
 
     private fun validNugetSpec(spec: String): Boolean =
@@ -171,6 +177,7 @@ object RunOptionRules {
     private fun hasControl(s: String) = s.any { it < ' ' || it == '\u007f' }
 
     private val ENV_NAME = Regex("[A-Za-z_][A-Za-z0-9_]*")
+
     /** RFC 9110 token. */
     private val HEADER_NAME = Regex("[!#$%&'*+.^_`|~0-9A-Za-z-]+")
     private val ARGUMENT_NAME = Regex("--?[A-Za-z0-9][A-Za-z0-9_.-]*")
@@ -178,9 +185,11 @@ object RunOptionRules {
     private val NPM_TAG = Regex("[A-Za-z0-9][A-Za-z0-9._+-]{0,63}")
     private val NPM_NAME = Regex("(?=.{1,214}$)(@[a-z0-9][a-z0-9._-]*/)?[a-z0-9][a-z0-9._-]*")
     private val PYPI_NAME = Regex("[A-Za-z0-9](?:[A-Za-z0-9._-]{0,98}[A-Za-z0-9])?")
-    private val PYPI_SPEC = Regex("[A-Za-z0-9](?:[A-Za-z0-9._-]{0,98}[A-Za-z0-9])?(?:\\[[A-Za-z0-9._,-]+])?(?:(?:==|@)[A-Za-z0-9][A-Za-z0-9._+!-]{0,63})?")
+    private val PYPI_SPEC =
+        Regex("[A-Za-z0-9](?:[A-Za-z0-9._-]{0,98}[A-Za-z0-9])?(?:\\[[A-Za-z0-9._,-]+])?(?:(?:==|@)[A-Za-z0-9][A-Za-z0-9._+!-]{0,63})?")
     private val PYTHON_VERSION = Regex("[0-9]+(?:\\.[0-9]+){0,2}")
     private val NUGET_NAME = Regex("[A-Za-z0-9_](?:[A-Za-z0-9_.-]{0,98}[A-Za-z0-9_])?")
+
     /** The OCI reference grammar: optional registry host, lowercase path, optional tag, optional digest. */
     private val OCI_IMAGE = Regex(
         "(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+|localhost)(?::[0-9]+)?/)?" +

@@ -6,14 +6,6 @@ import ai.helper2.search.SourceHit;
 import ai.helper2.search.SourceQuery;
 import ai.helper2.shared.CanonicalUrl;
 import io.micrometer.core.instrument.Metrics;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.time.Clock;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -27,12 +19,22 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Supplier;
+
 /**
  * Source call plumbing: base URL and token, uniform failure mapping and hit parsing. The transport itself
  * (timeouts, User-Agent, observation) is {@link ai.helper2.platform.http.ObservedHttp}.
  */
 public final class HttpClients {
 
+    static final String ITEMS_DROPPED = "helper2.source.items.dropped";
     private static final Logger log = LoggerFactory.getLogger(HttpClients.class);
     private static final ObjectMapper JSON = JsonMapper.builder().build();
 
@@ -89,7 +91,9 @@ public final class HttpClients {
         return u;
     }
 
-    /** Runs a call that returns plain text (e.g. a raw README) with the same failure mapping as {@link #getJson}. */
+    /**
+     * Runs a call that returns plain text (e.g. a raw README) with the same failure mapping as {@link #getJson}.
+     */
     public static String getText(Supplier<String> call, Clock clock) {
         try {
             String body = call.get();
@@ -109,7 +113,9 @@ public final class HttpClients {
         }
     }
 
-    /** Runs a call and maps transport, HTTP and parsing errors to {@link SourceFailure}s. */
+    /**
+     * Runs a call and maps transport, HTTP and parsing errors to {@link SourceFailure}s.
+     */
     public static JsonNode getJson(Supplier<String> call, Clock clock) {
         String body = getText(call, clock);
         try {
@@ -152,11 +158,6 @@ public final class HttpClients {
         return null;
     }
 
-    @FunctionalInterface
-    public interface HitMapper {
-        SourceHit toHit(JsonNode item, Instant now, int rank);
-    }
-
     /**
      * Maps each item; null means "not for us". An item whose mapping throws is malformed source data: it is
      * dropped and counted in {@value #ITEMS_DROPPED} by source and exception type, and the other items are kept.
@@ -177,14 +178,16 @@ public final class HttpClients {
         return hits;
     }
 
-    static final String ITEMS_DROPPED = "helper2.source.items.dropped";
-
-    /** Counts one malformed source item; the reason is the exception type, never source text. */
+    /**
+     * Counts one malformed source item; the reason is the exception type, never source text.
+     */
     public static void dropped(String sourceId, RuntimeException e) {
         dropped(sourceId, e.getClass().getSimpleName());
     }
 
-    /** Counts one dropped source item for a [reason] that is no exception; a fixed word in code, never source text. */
+    /**
+     * Counts one dropped source item for a [reason] that is no exception; a fixed word in code, never source text.
+     */
     public static void dropped(String sourceId, String reason) {
         log.debug("{}: item dropped: {}", sourceId, reason);
         Metrics.counter(ITEMS_DROPPED, "source", sourceId, "reason", reason).increment();
@@ -202,5 +205,10 @@ public final class HttpClients {
         } catch (RuntimeException e) {
             return null;
         }
+    }
+
+    @FunctionalInterface
+    public interface HitMapper {
+        SourceHit toHit(JsonNode item, Instant now, int rank);
     }
 }

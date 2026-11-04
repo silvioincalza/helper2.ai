@@ -1,12 +1,13 @@
 package ai.helper2.platform.quota;
 
 import ai.helper2.platform.resilience.Resilience;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.RedisScript;
+
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.script.RedisScript;
 
 /**
  * {@link QuotaCounter} in Redis hashes. The check and the count of the own and the global counter run in one Lua
@@ -45,7 +46,9 @@ public final class RedisQuotaCounter implements QuotaCounter {
         return {0, used}
         """, List.class);
 
-    /** KEYS: the key; ARGV: the field. Takes one off the field, never below 0. */
+    /**
+     * KEYS: the key; ARGV: the field. Takes one off the field, never below 0.
+     */
     private static final RedisScript<Long> GIVE_BACK = RedisScript.of("""
         if tonumber(redis.call('HGET', KEYS[1], ARGV[1]) or '0') > 0 then
           return redis.call('HINCRBY', KEYS[1], ARGV[1], -1)

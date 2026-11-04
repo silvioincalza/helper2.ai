@@ -1,16 +1,10 @@
 package ai.helper2.platform;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.TestcontainersConfiguration;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.testing.MovableClock;
 import ai.helper2.testing.TestPolicies;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.List;
-import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -19,20 +13,27 @@ import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.RedisScript;
 
-/** The shared limit on the real Redis: two RedisRateLimiter instances stand for two replicas. */
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * The shared limit on the real Redis: two RedisRateLimiter instances stand for two replicas.
+ */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 class RedisRateLimiterIT {
 
     private static final Duration MINUTE = Duration.ofMinutes(1);
-
-    @Autowired
-    StringRedisTemplate redis;
-
     private final MovableClock clock = new MovableClock(Instant.parse("2026-10-27T10:00:00Z"));
     private final SimpleMeterRegistry meters = new SimpleMeterRegistry();
     private final Resilience resilience = TestPolicies.redis(clock);
     private final String name = "test-" + UUID.randomUUID();
+    @Autowired
+    StringRedisTemplate redis;
 
     private RedisRateLimiter replica(StringRedisTemplate template) {
         return new RedisRateLimiter(name, 3, MINUTE, template, resilience, new InMemoryRateLimiter(3, MINUTE, clock), meters);

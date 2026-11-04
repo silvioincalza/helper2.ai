@@ -26,6 +26,7 @@ import ai.helper2.search.SearchOutcome
 import ai.helper2.search.SearchRequest
 import io.micrometer.context.ContextExecutorService
 import io.micrometer.context.ContextSnapshotFactory
+import org.slf4j.LoggerFactory
 import java.time.Clock
 import java.time.Duration
 import java.util.concurrent.Callable
@@ -34,7 +35,6 @@ import java.util.concurrent.ExecutionException
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
-import org.slf4j.LoggerFactory
 
 /** COMPARE (ADR 0032): each subject's own entry, aspect rows from one model call, every cell quoted. */
 internal class CompareAnswer(
@@ -60,8 +60,16 @@ internal class CompareAnswer(
         if (present.size < 2) {
             val fallback = present.firstOrNull()?.result?.title ?: r.query
             // The name is the planner's: a field of its own, so the page marks it AI-written (ADR 0038).
-            val notices = subjects.filter { it.result == null }.map { Notice(NoticeCode.GUIDE_SUBJECT_NOT_FOUND, NOT_FOUND_COMPARED, subject = it.name) }
-            return picks.picks(q, r, progress, asked, model, Retrieval(fallback, readingFilter(r), notices = notices, planned = fallback == r.query))
+            val notices = subjects.filter { it.result == null }
+                .map { Notice(NoticeCode.GUIDE_SUBJECT_NOT_FOUND, NOT_FOUND_COMPARED, subject = it.name) }
+            return picks.picks(
+                q,
+                r,
+                progress,
+                asked,
+                model,
+                Retrieval(fallback, readingFilter(r), notices = notices, planned = fallback == r.query)
+            )
         }
         val empty = Comparison(subjects, emptyList())
         if (model == null) return subjectsOnly(GuideStatus.LLM_UNAVAILABLE, r, present, empty, modelUsed = false)
@@ -79,7 +87,11 @@ internal class CompareAnswer(
         val rows = steps.step(q, "validate") {
             proposal.rows.asSequence()
                 .map { it.aspect.trim() }.zip(proposal.rows.asSequence())
-                .filter { (aspect, _) -> aspect.isNotEmpty() && aspect.length <= limits.maxAspectChars && !GuideValidator.containsLink(aspect) }
+                .filter { (aspect, _) ->
+                    aspect.isNotEmpty() && aspect.length <= limits.maxAspectChars && !GuideValidator.containsLink(
+                        aspect
+                    )
+                }
                 .distinctBy { (aspect, _) -> aspect.lowercase() }
                 .take(limits.maxRows)
                 .map { (aspect, row) ->
@@ -96,7 +108,11 @@ internal class CompareAnswer(
                         if (cell != null && !ok) rejected++
                         // The trail names the subject whose cell was removed, never the cell or its aspect (ADR 0044).
                         if (c != null && check != null) removed += RemovedSuggestion(c.result.title, check)
-                        if (ok) ComparisonCell(s.key, cell!!.text.trim(), cell.quote.trim()) else ComparisonCell(s.key, null, null)
+                        if (ok) ComparisonCell(s.key, cell!!.text.trim(), cell.quote.trim()) else ComparisonCell(
+                            s.key,
+                            null,
+                            null
+                        )
                     })
                 }
                 .filter { row -> row.cells.any { it.text != null } }
@@ -105,7 +121,15 @@ internal class CompareAnswer(
         progress.validated(rows.sumOf { row -> row.cells.count { it.text != null } }, rejected)
         q.counts += "subjects=${present.size} rows=${proposal.rows.size} keptRows=${rows.size} rejectedCells=$rejected"
         val claims = rows.flatMapIndexed { i, row ->
-            row.cells.filter { it.text != null }.map { cell -> ReasonClaim("r${i + 1}-${cell.subjectKey}", cell.text!!, cell.quote!!, byKey.getValue(cell.subjectKey).text, emptyList()) }
+            row.cells.filter { it.text != null }.map { cell ->
+                ReasonClaim(
+                    "r${i + 1}-${cell.subjectKey}",
+                    cell.text!!,
+                    cell.quote!!,
+                    byKey.getValue(cell.subjectKey).text,
+                    emptyList()
+                )
+            }
         }
         val verdicts = if (claims.isEmpty()) emptyMap() else reasonCheck.verdicts(q, model, claims, progress)
         val checkedRows = rows.mapIndexed { i, row ->
@@ -113,14 +137,19 @@ internal class CompareAnswer(
                 when (val v = verdicts["r${i + 1}-${cell.subjectKey}"]) {
                     null -> cell
                     ReasonCheck.REMOVED -> {
-                        removed += RemovedSuggestion(byKey.getValue(cell.subjectKey).result.title, TrailCheck.REASON_NOT_SUPPORTED)
+                        removed += RemovedSuggestion(
+                            byKey.getValue(cell.subjectKey).result.title,
+                            TrailCheck.REASON_NOT_SUPPORTED
+                        )
                         ComparisonCell(cell.subjectKey, null, null, ReasonCheck.REMOVED)
                     }
+
                     else -> cell.copy(reasonCheck = v)
                 }
             })
         }
-        val status = if (checkedRows.isEmpty()) GuideStatus.PARTIAL else if (rejected == 0) GuideStatus.OK else GuideStatus.PARTIAL
+        val status =
+            if (checkedRows.isEmpty()) GuideStatus.PARTIAL else if (rejected == 0) GuideStatus.OK else GuideStatus.PARTIAL
         return subjectsOnly(status, r, present, Comparison(subjects, checkedRows), modelUsed = true, rejected = rejected)
             .copy(trail = ResearchTrail(removed = removed))
     }
@@ -131,9 +160,16 @@ internal class CompareAnswer(
      */
     private fun subjectsFound(q: Question, r: Reading): List<MergedResult?> {
         val searches = r.subjects.map { name ->
-            Callable { steps.find(q, r, SearchRequest(text = name, path = q.path, size = SUBJECT_SEARCH_SIZE)).results.firstOrNull { isSubject(it, name) } }
+            Callable {
+                steps.find(
+                    q,
+                    r,
+                    SearchRequest(text = name, path = q.path, size = SUBJECT_SEARCH_SIZE)
+                ).results.firstOrNull { isSubject(it, name) }
+            }
         }
-        val threads = ContextExecutorService.wrap(Executors.newVirtualThreadPerTaskExecutor(), ContextSnapshotFactory.builder().build())
+        val threads =
+            ContextExecutorService.wrap(Executors.newVirtualThreadPerTaskExecutor(), ContextSnapshotFactory.builder().build())
         try {
             return threads.invokeAll(searches, subjectSearchDeadline.toNanos(), TimeUnit.NANOSECONDS).map(::foundOrNull)
         } finally {
@@ -151,10 +187,24 @@ internal class CompareAnswer(
         null
     }
 
-    private fun subjectsOnly(status: GuideStatus, r: Reading, present: List<Candidate>, comparison: Comparison, modelUsed: Boolean, rejected: Int = 0) =
+    private fun subjectsOnly(
+        status: GuideStatus,
+        r: Reading,
+        present: List<Candidate>,
+        comparison: Comparison,
+        modelUsed: Boolean,
+        rejected: Int = 0
+    ) =
         GuideAnswer(
             status, r.query,
-            present.map { Recommendation(it.result, "", (it.result.description ?: it.result.title).take(160), aiReasoned = false) },
+            present.map {
+                Recommendation(
+                    it.result,
+                    "",
+                    (it.result.description ?: it.result.title).take(160),
+                    aiReasoned = false
+                )
+            },
             null, modelUsed, present.size, rejected, SearchOutcome.empty(clock.instant()), clock.instant(), r.constraints,
             comparison = comparison,
         )

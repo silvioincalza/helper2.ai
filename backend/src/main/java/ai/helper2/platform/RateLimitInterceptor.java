@@ -5,10 +5,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.time.Clock;
-import java.time.Duration;
-import java.util.Map;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
@@ -19,6 +15,11 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import java.io.IOException;
+import java.time.Clock;
+import java.time.Duration;
+import java.util.Map;
+
 /**
  * Per-client rate limits keyed on the handler method Spring actually routed the request to, not on
  * the raw request URI. Raw-URI matching can be bypassed with path variants (";param", encoding,
@@ -28,7 +29,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration(proxyBeanMethods = false)
 class RateLimitInterceptor implements HandlerInterceptor, WebMvcConfigurer {
 
-    /** Contract operationIds (generated interface method names) that are limited. */
+    /**
+     * Contract operationIds (generated interface method names) that are limited.
+     */
     private final Map<String, RateLimiter> limiters;
 
     private final StringRedisTemplate redis;

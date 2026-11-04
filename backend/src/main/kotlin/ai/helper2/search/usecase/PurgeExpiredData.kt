@@ -1,9 +1,9 @@
 package ai.helper2.search.usecase
 
 import ai.helper2.search.WebResultRetention
+import org.slf4j.LoggerFactory
 import java.time.Clock
 import java.time.Duration
-import org.slf4j.LoggerFactory
 
 /** The search module's retention rule (ADR 0034): stored web result sets are deleted [webResults] after they were fetched. */
 class PurgeExpiredData(

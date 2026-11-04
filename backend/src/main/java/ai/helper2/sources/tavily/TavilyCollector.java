@@ -10,6 +10,9 @@ import ai.helper2.shared.SourceMode;
 import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
+import org.springframework.web.client.RestClient;
+import tools.jackson.databind.JsonNode;
+
 import java.net.URI;
 import java.time.Clock;
 import java.time.Instant;
@@ -18,8 +21,6 @@ import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.springframework.web.client.RestClient;
-import tools.jackson.databind.JsonNode;
 
 /**
  * Tavily news search with a fixed list of discovery queries ("new AI tool launched", ...), run on a
@@ -32,7 +33,9 @@ import tools.jackson.databind.JsonNode;
 public class TavilyCollector implements Collector {
 
     static final String ID = "tavily-scout";
-    /** Circuit breaker and retry of this collector\'s calls (ADR 0033). */
+    /**
+     * Circuit breaker and retry of this collector\'s calls (ADR 0033).
+     */
     static final String POLICY = "collector-" + ID;
     private static final int MAX_RESULTS_PER_QUERY = 20;
 
@@ -58,6 +61,20 @@ public class TavilyCollector implements Collector {
             "Web results via the Tavily Search API; each links to the original publisher.",
             EnumSet.of(ResourceType.NEWS, ResourceType.ARTICLE, ResourceType.EVENT),
             settings.timeout(), settings.cacheTtl(), settings.enabled() && settings.hasToken() && !this.queries.isEmpty(), 48);
+    }
+
+    /**
+     * UTC day of the previous complete pass; null on the first run or for an unreadable checkpoint.
+     */
+    static String startDate(String checkpoint) {
+        if (checkpoint == null) {
+            return null;
+        }
+        try {
+            return Instant.parse(checkpoint).atZone(ZoneOffset.UTC).toLocalDate().toString();
+        } catch (java.time.format.DateTimeParseException e) {
+            return null;
+        }
     }
 
     @Override
@@ -97,17 +114,5 @@ public class TavilyCollector implements Collector {
             }
         }
         return new CollectedBatch(List.copyOf(byUrl.values()), null, startedAt.toString());
-    }
-
-    /** UTC day of the previous complete pass; null on the first run or for an unreadable checkpoint. */
-    static String startDate(String checkpoint) {
-        if (checkpoint == null) {
-            return null;
-        }
-        try {
-            return Instant.parse(checkpoint).atZone(ZoneOffset.UTC).toLocalDate().toString();
-        } catch (java.time.format.DateTimeParseException e) {
-            return null;
-        }
     }
 }

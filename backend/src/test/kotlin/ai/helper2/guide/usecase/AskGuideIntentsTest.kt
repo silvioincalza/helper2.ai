@@ -1,8 +1,5 @@
 package ai.helper2.guide.usecase
 
-import kotlin.test.assertFalse
-import ai.helper2.guide.TrailCheck
-import ai.helper2.guide.RemovedSuggestion
 import ai.helper2.guide.Candidate
 import ai.helper2.guide.Clarification
 import ai.helper2.guide.ComparisonProposal
@@ -19,9 +16,12 @@ import ai.helper2.guide.ProposedPick
 import ai.helper2.guide.ProposedRow
 import ai.helper2.guide.ProposedSentence
 import ai.helper2.guide.ReasonClaim
+import ai.helper2.guide.RemovedSuggestion
+import ai.helper2.guide.TrailCheck
 import ai.helper2.guide.WindowUnit
 import ai.helper2.search.CachedHits
 import ai.helper2.search.NOW
+import ai.helper2.search.NoticeCode
 import ai.helper2.search.ResultObserver
 import ai.helper2.search.SearchCache
 import ai.helper2.search.SearchSource
@@ -33,14 +33,13 @@ import ai.helper2.search.usecase.SearchResources
 import ai.helper2.shared.AudiencePath
 import ai.helper2.shared.DateFact
 import ai.helper2.shared.ResourceType
+import io.micrometer.core.instrument.observation.DefaultMeterObservationHandler
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
+import io.micrometer.observation.ObservationRegistry
 import java.time.Clock
 import java.time.Duration
 import java.time.LocalDate
 import java.time.ZoneOffset
-import io.micrometer.core.instrument.observation.DefaultMeterObservationHandler
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry
-import io.micrometer.observation.ObservationRegistry
-import ai.helper2.search.NoticeCode
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
@@ -48,6 +47,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -65,22 +65,38 @@ class AskGuideIntentsTest {
     private val queries = ConcurrentLinkedQueue<SourceQuery>()
 
     private var hits = listOf(
-        hit("s", "https://github.com/acme/agent-kit", title = "agent-kit", published = "2026-10-20T00:00:00Z",
-            description = "Agent framework for building tool-using assistants in Python, released this autumn"),
-        hit("s", "https://github.com/acme/rag-box", title = "rag-box", rank = 1, published = "2026-10-01T00:00:00Z",
-            description = "Retrieval augmented generation toolkit with connectors for many vector databases"),
-        hit("s", "https://github.com/acme/old-tool", title = "old-tool", rank = 2, published = "2025-01-01T00:00:00Z",
-            description = "An older command line helper for prompting large language models from scripts"),
-        hit("s", "https://www.npmjs.com/package/undated", title = "undated", rank = 3,
-            description = "A package whose source states no creation date at all for anyone to read"),
-        hit("s", "https://github.com/ollama/ollama", title = "ollama", rank = 4, type = ResourceType.PRODUCT,
-            description = "Get up and running with large language models locally. MIT License"),
-        hit("s", "https://lmstudio.ai", title = "LM Studio", rank = 5, type = ResourceType.PRODUCT,
-            description = "Discover, download and run local LLMs on your computer with a desktop app"),
-        hit("s", "https://www.npmjs.com/package/ollama-js-helper", title = "ollama-js-helper", rank = 6,
-            description = "Small helper around the ollama HTTP API for node scripts and bots"),
-        hit("s", "https://neurips.cc", title = "NeurIPS 2026", rank = 7, type = ResourceType.EVENT,
-            description = "The Conference on Neural Information Processing Systems"),
+        hit(
+            "s", "https://github.com/acme/agent-kit", title = "agent-kit", published = "2026-10-20T00:00:00Z",
+            description = "Agent framework for building tool-using assistants in Python, released this autumn"
+        ),
+        hit(
+            "s", "https://github.com/acme/rag-box", title = "rag-box", rank = 1, published = "2026-10-01T00:00:00Z",
+            description = "Retrieval augmented generation toolkit with connectors for many vector databases"
+        ),
+        hit(
+            "s", "https://github.com/acme/old-tool", title = "old-tool", rank = 2, published = "2025-01-01T00:00:00Z",
+            description = "An older command line helper for prompting large language models from scripts"
+        ),
+        hit(
+            "s", "https://www.npmjs.com/package/undated", title = "undated", rank = 3,
+            description = "A package whose source states no creation date at all for anyone to read"
+        ),
+        hit(
+            "s", "https://github.com/ollama/ollama", title = "ollama", rank = 4, type = ResourceType.PRODUCT,
+            description = "Get up and running with large language models locally. MIT License"
+        ),
+        hit(
+            "s", "https://lmstudio.ai", title = "LM Studio", rank = 5, type = ResourceType.PRODUCT,
+            description = "Discover, download and run local LLMs on your computer with a desktop app"
+        ),
+        hit(
+            "s", "https://www.npmjs.com/package/ollama-js-helper", title = "ollama-js-helper", rank = 6,
+            description = "Small helper around the ollama HTTP API for node scripts and bots"
+        ),
+        hit(
+            "s", "https://neurips.cc", title = "NeurIPS 2026", rank = 7, type = ResourceType.EVENT,
+            description = "The Conference on Neural Information Processing Systems"
+        ),
     )
 
     private val source = object : SearchSource {
@@ -117,17 +133,25 @@ class AskGuideIntentsTest {
             clarificationSeen = clarification
             return plan
         }
+
         override fun choose(request: String, candidates: List<Candidate>, constraints: List<String>): GuideProposal {
             chosenFrom = candidates
             thought = false
             return choose(candidates)
         }
+
         var thought: Boolean? = null
-        override fun choose(request: String, candidates: List<Candidate>, constraints: List<String>, think: Boolean): GuideProposal {
+        override fun choose(
+            request: String,
+            candidates: List<Candidate>,
+            constraints: List<String>,
+            think: Boolean
+        ): GuideProposal {
             chosenFrom = candidates
             thought = think
             return choose(candidates)
         }
+
         override fun compare(request: String, subjects: List<Candidate>) = compare(subjects)
         var explained = 0
         override fun explain(request: String, subject: String, candidates: List<Candidate>): ExplanationProposal {
@@ -200,7 +224,12 @@ class AskGuideIntentsTest {
         val a = guide(null).ask("AI tools from the last month", null)
         assertEquals(GuideIntent.NEWEST, a.intent)
         assertEquals(GuideStatus.LLM_UNAVAILABLE, a.status)
-        assertTrue(a.recommendations.all { it.result.published.value != null && it.result.title in setOf("agent-kit", "rag-box") })
+        assertTrue(a.recommendations.all {
+            it.result.published.value != null && it.result.title in setOf(
+                "agent-kit",
+                "rag-box"
+            )
+        })
     }
 
     @Test
@@ -220,10 +249,23 @@ class AskGuideIntentsTest {
 
     /** Two own entries of different kinds for one name: the model and the command-line tool. */
     private val gemini = listOf(
-        hit("s", "https://ai.google.dev/gemini", title = "Gemini", rank = 8, type = ResourceType.MODEL, published = "2023-12-06T00:00:00Z",
-            description = "Gemini is a family of multimodal large language models developed by Google"),
-        hit("s", "https://github.com/google-gemini/gemini-cli", title = "google-gemini/gemini-cli", rank = 9, published = "2025-06-25T00:00:00Z",
-            description = "An open-source AI agent that brings the power of Gemini directly into your terminal"),
+        hit(
+            "s",
+            "https://ai.google.dev/gemini",
+            title = "Gemini",
+            rank = 8,
+            type = ResourceType.MODEL,
+            published = "2023-12-06T00:00:00Z",
+            description = "Gemini is a family of multimodal large language models developed by Google"
+        ),
+        hit(
+            "s",
+            "https://github.com/google-gemini/gemini-cli",
+            title = "google-gemini/gemini-cli",
+            rank = 9,
+            published = "2025-06-25T00:00:00Z",
+            description = "An open-source AI agent that brings the power of Gemini directly into your terminal"
+        ),
     )
 
     @Test
@@ -232,7 +274,10 @@ class AskGuideIntentsTest {
         val model = Model(GuideSearchPlan("Gemini", intent = GuideIntent.WHAT_IS, subjects = listOf("Gemini")))
         val first = guide(model).ask("what is Gemini?", null)
         assertEquals(GuideStatus.NEEDS_CLARIFICATION, first.status)
-        assertEquals(Clarification("Which Gemini do you mean?", listOf("Gemini (model)", "gemini cli (tool)")), first.clarification)
+        assertEquals(
+            Clarification("Which Gemini do you mean?", listOf("Gemini (model)", "gemini cli (tool)")),
+            first.clarification
+        )
         assertEquals(1, queries.size, "one search, the one the explanation needs anyway")
         assertEquals(0, model.explained)
 
@@ -248,11 +293,23 @@ class AskGuideIntentsTest {
         hits = hits + gemini
         fun ask(plan: GuideSearchPlan, text: String) = guide(Model(plan, choose = ::pickAll)).ask(text, null).status
         val asked = GuideStatus.NEEDS_CLARIFICATION
-        assertEquals(asked, ask(GuideSearchPlan("AI assistant", intent = GuideIntent.ALTERNATIVES, subjects = listOf("Gemini")), "alternatives to Gemini"))
-        assertEquals(asked, ask(GuideSearchPlan("Gemini", intent = GuideIntent.WHEN, subjects = listOf("Gemini")), "when was Gemini released?"))
+        assertEquals(
+            asked,
+            ask(
+                GuideSearchPlan("AI assistant", intent = GuideIntent.ALTERNATIVES, subjects = listOf("Gemini")),
+                "alternatives to Gemini"
+            )
+        )
+        assertEquals(
+            asked,
+            ask(GuideSearchPlan("Gemini", intent = GuideIntent.WHEN, subjects = listOf("Gemini")), "when was Gemini released?")
+        )
         assertEquals(asked, ask(GuideSearchPlan("Gemini", subjects = listOf("Gemini")), "Gemini?"))
         assertNotEquals(asked, ask(GuideSearchPlan("chat UI Gemini", subjects = listOf("Gemini")), "a chat UI for Gemini"))
-        assertNotEquals(asked, ask(GuideSearchPlan("Gemini", intent = GuideIntent.NEWEST, subjects = listOf("Gemini")), "latest Gemini tools"))
+        assertNotEquals(
+            asked,
+            ask(GuideSearchPlan("Gemini", intent = GuideIntent.NEWEST, subjects = listOf("Gemini")), "latest Gemini tools")
+        )
     }
 
     @Test
@@ -260,9 +317,21 @@ class AskGuideIntentsTest {
         hits = hits + gemini
         fun ask(plan: GuideSearchPlan, text: String) = guide(Model(plan, choose = ::pickAll)).ask(text, null).status
         val asked = GuideStatus.NEEDS_CLARIFICATION
-        assertNotEquals(asked, ask(GuideSearchPlan("Gemini", intent = GuideIntent.WHAT_IS, subjects = listOf("Gemini")), "what is the Gemini model?"))
-        assertNotEquals(asked, ask(GuideSearchPlan("Gemini", intent = GuideIntent.ALTERNATIVES, subjects = listOf("Gemini")), "alternatives to the Gemini CLI tool"))
-        assertNotEquals(asked, ask(GuideSearchPlan("Gemini", intent = GuideIntent.WHAT_IS, subjects = listOf("Gemini")), "cos'è il modello Gemini?"))
+        assertNotEquals(
+            asked,
+            ask(GuideSearchPlan("Gemini", intent = GuideIntent.WHAT_IS, subjects = listOf("Gemini")), "what is the Gemini model?")
+        )
+        assertNotEquals(
+            asked,
+            ask(
+                GuideSearchPlan("Gemini", intent = GuideIntent.ALTERNATIVES, subjects = listOf("Gemini")),
+                "alternatives to the Gemini CLI tool"
+            )
+        )
+        assertNotEquals(
+            asked,
+            ask(GuideSearchPlan("Gemini", intent = GuideIntent.WHAT_IS, subjects = listOf("Gemini")), "cos'è il modello Gemini?")
+        )
     }
 
     @Test
@@ -312,7 +381,11 @@ class AskGuideIntentsTest {
     @Test
     fun `a question with a period is never asked back`() {
         val model = Model(
-            GuideSearchPlan("AI tools", window = PlannedWindow(1, WindowUnit.MONTH), clarify = Clarification("For what?", listOf("a", "b"))),
+            GuideSearchPlan(
+                "AI tools",
+                window = PlannedWindow(1, WindowUnit.MONTH),
+                clarify = Clarification("For what?", listOf("a", "b"))
+            ),
             choose = ::pickAll,
         )
         val a = guide(model).ask("AI tools born last month", null)
@@ -322,7 +395,10 @@ class AskGuideIntentsTest {
 
     @Test
     fun `dropping the window answers as a plain suggestion over every date`() {
-        val model = Model(GuideSearchPlan("AI tools", intent = GuideIntent.NEWEST, window = PlannedWindow(1, WindowUnit.MONTH)), choose = ::pickAll)
+        val model = Model(
+            GuideSearchPlan("AI tools", intent = GuideIntent.NEWEST, window = PlannedWindow(1, WindowUnit.MONTH)),
+            choose = ::pickAll
+        )
         val a = guide(model).ask("AI tools born last month", null, drops = Drops(window = true, intent = true))
         assertEquals(GuideIntent.SUGGEST, a.intent)
         assertNull(a.window)
@@ -332,8 +408,10 @@ class AskGuideIntentsTest {
     @Test
     fun `a period or subjects the user never wrote are ignored, so nothing is filtered by an invented window`() {
         val model = Model(
-            GuideSearchPlan("MCP server postgres", intent = GuideIntent.NEWEST, subjects = listOf("Supabase"),
-                window = PlannedWindow(1, WindowUnit.MONTH)),
+            GuideSearchPlan(
+                "MCP server postgres", intent = GuideIntent.NEWEST, subjects = listOf("Supabase"),
+                window = PlannedWindow(1, WindowUnit.MONTH)
+            ),
             choose = ::pickAll,
         )
         val a = guide(model).ask("an open source MCP server to query Postgres", null)
@@ -345,7 +423,10 @@ class AskGuideIntentsTest {
 
     @Test
     fun `alternatives never pick the subject itself`() {
-        val model = Model(GuideSearchPlan("local LLM runner", intent = GuideIntent.ALTERNATIVES, subjects = listOf("Ollama")), choose = ::pickAll)
+        val model = Model(
+            GuideSearchPlan("local LLM runner", intent = GuideIntent.ALTERNATIVES, subjects = listOf("Ollama")),
+            choose = ::pickAll
+        )
         val a = guide(model).ask("alternatives to Ollama", null)
         assertTrue(model.chosenFrom.isNotEmpty())
         assertTrue(model.chosenFrom.none { it.result.title == "ollama" })
@@ -361,8 +442,14 @@ class AskGuideIntentsTest {
                 val lm = s.first { it.result.title == "LM Studio" }.key
                 ComparisonProposal(
                     listOf(
-                        ProposedRow("Licence", listOf(ProposedCell(ollama, "MIT", "MIT License"), ProposedCell(lm, "Apache", "Apache 2.0"))),
-                        ProposedRow("What it is", listOf(ProposedCell(lm, "A desktop app for local LLMs", "run local LLMs on your computer"))),
+                        ProposedRow(
+                            "Licence",
+                            listOf(ProposedCell(ollama, "MIT", "MIT License"), ProposedCell(lm, "Apache", "Apache 2.0"))
+                        ),
+                        ProposedRow(
+                            "What it is",
+                            listOf(ProposedCell(lm, "A desktop app for local LLMs", "run local LLMs on your computer"))
+                        ),
                     ),
                 )
             },
@@ -376,7 +463,11 @@ class AskGuideIntentsTest {
         // "Apache 2.0" is not in LM Studio's text: not stated, never guessed.
         assertNull(licence.cells[1].text)
         assertEquals(1, a.rejected)
-        assertEquals(listOf(RemovedSuggestion("LM Studio", TrailCheck.QUOTE_NOT_FOUND)), a.trail.removed, "the subject, never the cell")
+        assertEquals(
+            listOf(RemovedSuggestion("LM Studio", TrailCheck.QUOTE_NOT_FOUND)),
+            a.trail.removed,
+            "the subject, never the cell"
+        )
     }
 
     @Test
@@ -386,7 +477,17 @@ class AskGuideIntentsTest {
             compare = { s ->
                 val ollama = s.first { it.result.title == "ollama" }.key
                 val lm = s.first { it.result.title == "LM Studio" }.key
-                ComparisonProposal(listOf(ProposedRow("Licence", listOf(ProposedCell(ollama, "MIT", "MIT License"), ProposedCell(lm, "Runs locally", "run local LLMs on your computer")))))
+                ComparisonProposal(
+                    listOf(
+                        ProposedRow(
+                            "Licence",
+                            listOf(
+                                ProposedCell(ollama, "MIT", "MIT License"),
+                                ProposedCell(lm, "Runs locally", "run local LLMs on your computer")
+                            )
+                        )
+                    )
+                )
             },
             verify = { claims -> claims.associate { it.key to !it.key.endsWith("s2") } },
         )
@@ -403,8 +504,10 @@ class AskGuideIntentsTest {
                 val own = c.first { it.result.title == "ollama" }.key
                 ExplanationProposal(
                     listOf(
-                        ProposedSentence("Ollama runs large language models on your own machine.", own,
-                            "Get up and running with large language models locally."),
+                        ProposedSentence(
+                            "Ollama runs large language models on your own machine.", own,
+                            "Get up and running with large language models locally."
+                        ),
                         ProposedSentence("It is the fastest runner.", own, "fastest runner available anywhere today"),
                     ),
                 )
@@ -415,7 +518,11 @@ class AskGuideIntentsTest {
         assertEquals(1, e.sentences.size)
         assertEquals("ollama", a.recommendations.first().result.title)
         assertEquals(1, a.rejected)
-        assertEquals(listOf(RemovedSuggestion("ollama", TrailCheck.QUOTE_NOT_FOUND)), a.trail.removed, "the source, never the sentence")
+        assertEquals(
+            listOf(RemovedSuggestion("ollama", TrailCheck.QUOTE_NOT_FOUND)),
+            a.trail.removed,
+            "the source, never the sentence"
+        )
         assertFalse("fastest runner" in a.trail.toString())
     }
 
@@ -425,7 +532,15 @@ class AskGuideIntentsTest {
             GuideSearchPlan("Ollama", intent = GuideIntent.WHAT_IS, subjects = listOf("Ollama")),
             explain = { c ->
                 val own = c.first { it.result.title == "ollama" }.key
-                ExplanationProposal(listOf(ProposedSentence("SECRET-SENTENCE about Ollama.", own, "Get up and running with large language models locally.")))
+                ExplanationProposal(
+                    listOf(
+                        ProposedSentence(
+                            "SECRET-SENTENCE about Ollama.",
+                            own,
+                            "Get up and running with large language models locally."
+                        )
+                    )
+                )
             },
             verify = { claims -> claims.associate { it.key to false } },
         )
@@ -467,8 +582,24 @@ class AskGuideIntentsTest {
     fun `compare, explain and dates questions time each of their steps`() {
         val observed = { model: GuideModel -> AskGuide(search, model, clock, observations = observations) }
         observed(ollamaVsLmStudio()).ask("Ollama vs LM Studio", null)
-        observed(Model(GuideSearchPlan("Ollama", intent = GuideIntent.WHAT_IS, subjects = listOf("Ollama")))).ask("what is Ollama?", null)
-        observed(Model(GuideSearchPlan("agent-kit", intent = GuideIntent.WHEN, subjects = listOf("agent-kit")))).ask("when was agent-kit released?", null)
+        observed(
+            Model(
+                GuideSearchPlan(
+                    "Ollama",
+                    intent = GuideIntent.WHAT_IS,
+                    subjects = listOf("Ollama")
+                )
+            )
+        ).ask("what is Ollama?", null)
+        observed(
+            Model(
+                GuideSearchPlan(
+                    "agent-kit",
+                    intent = GuideIntent.WHEN,
+                    subjects = listOf("agent-kit")
+                )
+            )
+        ).ask("when was agent-kit released?", null)
 
         assertEquals(setOf("plan", "search", "compare", "validate", "verify"), steps("compare"))
         assertEquals(setOf("plan", "search", "explain", "validate"), steps("what_is"))
@@ -521,7 +652,10 @@ class AskGuideIntentsTest {
 
     @Test
     fun `alternatives to a name not in our sources - the notice carries the planner's name and search apart from its message`() {
-        val model = Model(GuideSearchPlan("local LLM runner", intent = GuideIntent.ALTERNATIVES, subjects = listOf("Frobnicator")), choose = ::pickAll)
+        val model = Model(
+            GuideSearchPlan("local LLM runner", intent = GuideIntent.ALTERNATIVES, subjects = listOf("Frobnicator")),
+            choose = ::pickAll
+        )
 
         val a = guide(model).ask("alternatives to Frobnicator", null)
 
@@ -534,7 +668,8 @@ class AskGuideIntentsTest {
 
     @Test
     fun `without a planned search the not-found notice has no query - the user's own words are never marked AI-written`() {
-        val model = Model(GuideSearchPlan("", intent = GuideIntent.ALTERNATIVES, subjects = listOf("Frobnicator")), choose = ::pickAll)
+        val model =
+            Model(GuideSearchPlan("", intent = GuideIntent.ALTERNATIVES, subjects = listOf("Frobnicator")), choose = ::pickAll)
 
         val a = guide(model).ask("alternatives to Frobnicator", null)
 
@@ -545,7 +680,10 @@ class AskGuideIntentsTest {
 
     @Test
     fun `alternatives to a name in our sources say nothing about it`() {
-        val model = Model(GuideSearchPlan("local LLM runner", intent = GuideIntent.ALTERNATIVES, subjects = listOf("Ollama")), choose = ::pickAll)
+        val model = Model(
+            GuideSearchPlan("local LLM runner", intent = GuideIntent.ALTERNATIVES, subjects = listOf("Ollama")),
+            choose = ::pickAll
+        )
 
         val a = guide(model).ask("alternatives to Ollama", null)
 

@@ -13,6 +13,9 @@ import ai.helper2.sources.support.Classification;
 import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
+import org.springframework.web.client.RestClient;
+import tools.jackson.databind.JsonNode;
+
 import java.net.URI;
 import java.time.Clock;
 import java.time.Instant;
@@ -23,8 +26,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
-import org.springframework.web.client.RestClient;
-import tools.jackson.databind.JsonNode;
 
 /**
  * New AI courses and certifications (ADR 0032 §8, Source 3): one Tavily search per learning platform, restricted to
@@ -38,40 +39,14 @@ import tools.jackson.databind.JsonNode;
 public class CourseCollector implements Collector {
 
     static final String ID = "course-scout";
-    /** Circuit breaker and retry of this collector\'s calls (ADR 0033). */
+    /**
+     * Circuit breaker and retry of this collector\'s calls (ADR 0033).
+     */
     static final String POLICY = "collector-" + ID;
     private static final int MAX_RESULTS_PER_PLATFORM = 10;
     private static final Pattern COURSE_WORDS = Pattern.compile(
         "\\b(courses?|certifications?|certificates?|certified|specializations?|training|bootcamp|exam|class|learning path|"
             + "nanodegree|workshop|live event|tutorials?|lessons?)\\b", Pattern.CASE_INSENSITIVE);
-
-    /** A platform to search: results must be on [host] (or a subdomain) under [pathPrefix]. */
-    record Platform(String host, String pathPrefix, String name) {
-
-        /** "host[/path]=Name", e.g. "huggingface.co/learn=Hugging Face Learn"; null when unreadable. */
-        static Platform parse(String spec) {
-            int eq = spec.indexOf('=');
-            String where = (eq < 0 ? spec : spec.substring(0, eq)).strip().toLowerCase(Locale.ROOT);
-            String name = eq < 0 ? null : spec.substring(eq + 1).strip();
-            if (where.isEmpty() || where.contains("://")) {
-                return null;
-            }
-            int slash = where.indexOf('/');
-            String host = slash < 0 ? where : where.substring(0, slash);
-            String path = slash < 0 ? "" : where.substring(slash).replaceAll("/+$", "");
-            return host.contains(".") ? new Platform(host.replaceFirst("^www\\.", ""), path, name == null || name.isEmpty() ? host : name)
-                : null;
-        }
-
-        boolean covers(CanonicalUrl url) {
-            URI u = URI.create(url.getValue());
-            String h = u.getHost();
-            boolean onHost = h.equals(host) || h.endsWith("." + host);
-            String path = u.getRawPath() == null ? "" : u.getRawPath();
-            return onHost && (pathPrefix.isEmpty() || path.equals(pathPrefix) || path.startsWith(pathPrefix + "/"));
-        }
-    }
-
     private final RestClient http;
     private final Clock clock;
     private final Resilience resilience;
@@ -79,7 +54,6 @@ public class CourseCollector implements Collector {
     private final String query;
     private final List<Platform> platforms;
     private final SourceDescriptor descriptor;
-
     public CourseCollector(SourceSettings settings, RestClient.Builder builder, Clock clock, Resilience resilience, RunInterval interval,
                            String query, List<String> platformSpecs) {
         this.clock = clock;
@@ -96,6 +70,26 @@ public class CourseCollector implements Collector {
             "Course and certification pages found via the Tavily Search API; an admin reviews each before it is catalogued.",
             EnumSet.of(ResourceType.COURSE), settings.timeout(), settings.cacheTtl(),
             settings.enabled() && settings.hasToken() && !this.platforms.isEmpty() && !this.query.isEmpty(), 60);
+    }
+
+    /**
+     * One Tavily result as a candidate; null when it is off the platform, not about AI or not a course page.
+     */
+    static Candidate candidate(JsonNode r, Platform p) {
+        String title = HttpClients.text(r, "title");
+        CanonicalUrl url = CanonicalUrl.of(HttpClients.text(r, "url"));
+        if (title == null || url == null || !p.covers(url)) {
+            return null;
+        }
+        String content = HttpClients.text(r, "content");
+        if (!Classification.isAiRelated(title, content, Set.of())) {
+            return null;
+        }
+        String text = title + " " + (content == null ? "" : content) + " " + url.getValue().replace('-', ' ').replace('/', ' ');
+        if (!COURSE_WORDS.matcher(text).find()) {
+            return null;
+        }
+        return new Candidate(url, WebPageTitle.of(title, url.getHost()).getTitle(), TavilySource.snippet(content), p.name());
     }
 
     @Override
@@ -135,21 +129,34 @@ public class CourseCollector implements Collector {
         return new CollectedBatch(List.of(), null, startedAt.toString(), false, List.copyOf(byUrl.values()));
     }
 
-    /** One Tavily result as a candidate; null when it is off the platform, not about AI or not a course page. */
-    static Candidate candidate(JsonNode r, Platform p) {
-        String title = HttpClients.text(r, "title");
-        CanonicalUrl url = CanonicalUrl.of(HttpClients.text(r, "url"));
-        if (title == null || url == null || !p.covers(url)) {
-            return null;
+    /**
+     * A platform to search: results must be on [host] (or a subdomain) under [pathPrefix].
+     */
+    record Platform(String host, String pathPrefix, String name) {
+
+        /**
+         * "host[/path]=Name", e.g. "huggingface.co/learn=Hugging Face Learn"; null when unreadable.
+         */
+        static Platform parse(String spec) {
+            int eq = spec.indexOf('=');
+            String where = (eq < 0 ? spec : spec.substring(0, eq)).strip().toLowerCase(Locale.ROOT);
+            String name = eq < 0 ? null : spec.substring(eq + 1).strip();
+            if (where.isEmpty() || where.contains("://")) {
+                return null;
+            }
+            int slash = where.indexOf('/');
+            String host = slash < 0 ? where : where.substring(0, slash);
+            String path = slash < 0 ? "" : where.substring(slash).replaceAll("/+$", "");
+            return host.contains(".") ? new Platform(host.replaceFirst("^www\\.", ""), path, name == null || name.isEmpty() ? host : name)
+                : null;
         }
-        String content = HttpClients.text(r, "content");
-        if (!Classification.isAiRelated(title, content, Set.of())) {
-            return null;
+
+        boolean covers(CanonicalUrl url) {
+            URI u = URI.create(url.getValue());
+            String h = u.getHost();
+            boolean onHost = h.equals(host) || h.endsWith("." + host);
+            String path = u.getRawPath() == null ? "" : u.getRawPath();
+            return onHost && (pathPrefix.isEmpty() || path.equals(pathPrefix) || path.startsWith(pathPrefix + "/"));
         }
-        String text = title + " " + (content == null ? "" : content) + " " + url.getValue().replace('-', ' ').replace('/', ' ');
-        if (!COURSE_WORDS.matcher(text).find()) {
-            return null;
-        }
-        return new Candidate(url, WebPageTitle.of(title, url.getHost()).getTitle(), TavilySource.snippet(content), p.name());
     }
 }

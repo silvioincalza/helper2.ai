@@ -1,19 +1,11 @@
 package ai.helper2.search.internal;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.LlmPolicies;
 import ai.helper2.platform.llm.ModelCallMetrics;
-import ai.helper2.testing.InMemorySharedCache;
-import java.time.Clock;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.platform.resilience.Resilience4jPolicies;
+import ai.helper2.testing.InMemorySharedCache;
 import io.github.resilience4j.bulkhead.BulkheadRegistry;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.retry.RetryRegistry;
@@ -23,6 +15,15 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
+
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class SpringAiQueryTranslatorTest {
 
@@ -40,18 +41,6 @@ class SpringAiQueryTranslatorTest {
             new InMemorySharedCache("translation"), TTL, ModelCallMetrics.none(), Resilience.NONE);
     }
 
-    /** A model that answers {@code reply} and counts its calls. */
-    static final class CountingModel implements ChatModel {
-        final AtomicInteger calls = new AtomicInteger();
-        String reply = "MCP server postgres";
-
-        @Override
-        public ChatResponse call(Prompt prompt) {
-            calls.incrementAndGet();
-            return new ChatResponse(List.of(new Generation(new AssistantMessage(reply))));
-        }
-    }
-
     @Test
     void promptTreatsTheQueryAsData() {
         assertThat(SpringAiQueryTranslator.systemPrompt())
@@ -67,7 +56,9 @@ class SpringAiQueryTranslatorTest {
         assertThat(translator(reply).toEnglish("server MCP per postgres", "it")).isEqualTo("MCP server postgres");
     }
 
-    /** Reasoning cut by the token limit has no answer; its last line must not become the search query. */
+    /**
+     * Reasoning cut by the token limit has no answer; its last line must not become the search query.
+     */
     @Test
     void truncatedReasoningIsNoTranslation() {
         String reply = "<think>The user writes Italian.\nI could answer postgres tools";
@@ -75,7 +66,9 @@ class SpringAiQueryTranslatorTest {
         assertThat(translator(reply).toEnglish("server MCP per postgres", "it")).isNull();
     }
 
-    /** While the llm-chat circuit is open, search runs untranslated at once and no translation is charged. */
+    /**
+     * While the llm-chat circuit is open, search runs untranslated at once and no translation is charged.
+     */
     @Test
     void anOpenCircuitLeavesTheQueryUntranslatedWithoutCallingTheModel() {
         CircuitBreakerRegistry circuits = CircuitBreakerRegistry.ofDefaults();
@@ -94,7 +87,9 @@ class SpringAiQueryTranslatorTest {
         assertThat(budget.usedToday()).isZero();
     }
 
-    /** Three replicas, one cache: a query any replica translated costs the others no model call and no budget. */
+    /**
+     * Three replicas, one cache: a query any replica translated costs the others no model call and no budget.
+     */
     @Test
     void aQueryOneReplicaTranslatedIsServedToTheOthersFromTheSharedCache() {
         InMemorySharedCache shared = new InMemorySharedCache("translation");
@@ -115,7 +110,9 @@ class SpringAiQueryTranslatorTest {
         assertThat(shared.ttls.values()).containsOnly(TTL);
     }
 
-    /** A refused call must not stick: once the budget allows it again, the next search gets its translation. */
+    /**
+     * A refused call must not stick: once the budget allows it again, the next search gets its translation.
+     */
     @Test
     void aBudgetRefusedTranslationIsNotCached() {
         InMemorySharedCache shared = new InMemorySharedCache("translation");
@@ -141,7 +138,9 @@ class SpringAiQueryTranslatorTest {
         assertThat(shared.values).isEmpty();
     }
 
-    /** An unavailable store is a miss: the model answers and search goes on. */
+    /**
+     * An unavailable store is a miss: the model answers and search goes on.
+     */
     @Test
     void anUnavailableCacheOnlyCostsAModelCall() {
         InMemorySharedCache shared = new InMemorySharedCache("translation");
@@ -153,5 +152,19 @@ class SpringAiQueryTranslatorTest {
         assertThat(translator.toEnglish("server MCP per postgres", "it")).isEqualTo("MCP server postgres");
         assertThat(translator.toEnglish("server MCP per postgres", "it")).isEqualTo("MCP server postgres");
         assertThat(model.calls).hasValue(2);
+    }
+
+    /**
+     * A model that answers {@code reply} and counts its calls.
+     */
+    static final class CountingModel implements ChatModel {
+        final AtomicInteger calls = new AtomicInteger();
+        String reply = "MCP server postgres";
+
+        @Override
+        public ChatResponse call(Prompt prompt) {
+            calls.incrementAndGet();
+            return new ChatResponse(List.of(new Generation(new AssistantMessage(reply))));
+        }
     }
 }

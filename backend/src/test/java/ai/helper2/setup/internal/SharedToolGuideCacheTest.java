@@ -1,7 +1,5 @@
 package ai.helper2.setup.internal;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.setup.Code;
 import ai.helper2.setup.GuideSection;
 import ai.helper2.setup.GuideSectionKind;
@@ -19,6 +17,9 @@ import ai.helper2.setup.ToolGuideUnavailable;
 import ai.helper2.setup.ToolGuides;
 import ai.helper2.setup.ToolRef;
 import ai.helper2.testing.InMemorySharedCache;
+import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
+
 import java.net.URI;
 import java.time.Clock;
 import java.time.Duration;
@@ -26,10 +27,12 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
-import org.junit.jupiter.api.Test;
-import tools.jackson.databind.json.JsonMapper;
 
-/** What a tool guide answer leaves in the shared cache: the checked steps and document links, never a document's text. */
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * What a tool guide answer leaves in the shared cache: the checked steps and document links, never a document's text.
+ */
 class SharedToolGuideCacheTest {
 
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-30T10:00:00Z"), ZoneOffset.UTC);
@@ -39,6 +42,11 @@ class SharedToolGuideCacheTest {
 
     private final InMemorySharedCache shared = new InMemorySharedCache("tool-guide");
     private final SharedToolGuideCache store = new SharedToolGuideCache(shared, JsonMapper.builder().build());
+
+    private static Material readme() {
+        return new Material("readme", MaterialKind.README, URI.create("https://github.com/acme/x"), CLOCK.instant(),
+            "Install with:\n\n```bash\nnpm install acme-x\n```\n\n" + README_ONLY + "\n");
+    }
 
     @Test
     void storesTheAnswerWithoutTheDocumentText_andReadsItBack() {
@@ -119,11 +127,6 @@ class SharedToolGuideCacheTest {
 
         assertThat(model.calls).isEqualTo(2);
         assertThat(second.getStatus()).isEqualTo(ToolGuideStatus.OK);
-    }
-
-    private static Material readme() {
-        return new Material("readme", MaterialKind.README, URI.create("https://github.com/acme/x"), CLOCK.instant(),
-            "Install with:\n\n```bash\nnpm install acme-x\n```\n\n" + README_ONLY + "\n");
     }
 
     private static final class Model implements ToolGuideModel {

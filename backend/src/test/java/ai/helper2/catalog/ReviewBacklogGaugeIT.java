@@ -1,7 +1,5 @@
 package ai.helper2.catalog;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.TestcontainersConfiguration;
 import ai.helper2.catalog.usecase.ResolveReviewItem;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -12,7 +10,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
-/** The review backlog gauge counts the items waiting for a person: OPEN ones only. */
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * The review backlog gauge counts the items waiting for a person: OPEN ones only.
+ */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 class ReviewBacklogGaugeIT {

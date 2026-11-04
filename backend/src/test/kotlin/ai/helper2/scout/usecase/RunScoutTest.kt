@@ -37,26 +37,27 @@ import ch.qos.logback.core.read.ListAppender
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import org.slf4j.LoggerFactory
 import java.net.URI
 import java.time.Clock
 import java.time.Instant
+import java.time.ZoneOffset
+import java.util.*
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
-import java.time.ZoneOffset
-import java.util.UUID
 import java.util.function.Supplier
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
-import org.slf4j.LoggerFactory
 
 /** One test runner per test: nothing to exclude. The shared lock is tested in ScoutRunLockIT. */
 private val NO_LOCK = object : RunLock {
     override fun <T : Any> runExclusively(task: Supplier<T>): T? = task.get()
 }
 
-private fun material() = EnrichmentMaterial(EnrichmentInput("x", listOf(Material(UUID.randomUUID(), URI("https://x.example"), NOW, "text"))), "fp")
+private fun material() =
+    EnrichmentMaterial(EnrichmentInput("x", listOf(Material(UUID.randomUUID(), URI("https://x.example"), NOW, "text"))), "fp")
 
 class RunScoutTest {
 
@@ -70,8 +71,14 @@ class RunScoutTest {
         val cursors = mutableMapOf<String, ScoutCursor>()
         val runs = linkedMapOf<UUID, RunSummary>()
         override fun cursor(sourceId: String) = cursors[sourceId]
-        override fun saveCursor(sourceId: String, cursor: ScoutCursor) { cursors[sourceId] = cursor }
-        override fun save(run: RunSummary) { runs[run.id] = run }
+        override fun saveCursor(sourceId: String, cursor: ScoutCursor) {
+            cursors[sourceId] = cursor
+        }
+
+        override fun save(run: RunSummary) {
+            runs[run.id] = run
+        }
+
         override fun recent(limit: Int) = runs.values.toList().takeLast(limit)
         override fun markInterrupted(at: Instant): Int {
             val open = runs.values.filter { it.status == RunStatus.RUNNING }
@@ -80,7 +87,8 @@ class RunScoutTest {
         }
     }
 
-    private class FakeCollector(override val descriptor: SourceDescriptor, val behaviour: (String?) -> CollectedBatch) : Collector {
+    private class FakeCollector(override val descriptor: SourceDescriptor, val behaviour: (String?) -> CollectedBatch) :
+        Collector {
         val seenCheckpoints = mutableListOf<String?>()
         override fun collect(checkpoint: String?, resumeCursor: String?, maxItems: Int): CollectedBatch {
             seenCheckpoints += checkpoint
@@ -93,8 +101,11 @@ class RunScoutTest {
         override fun load(resourceId: UUID): EnrichmentMaterial? = material()
         override fun lastFingerprint(resourceId: UUID): String? = null
         override fun resourcesTitled(titles: Collection<String>, resourceId: UUID): Map<String, UUID> = emptyMap()
-        override fun save(resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: java.time.Instant,
-                          result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?) {}
+        override fun save(
+            resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: java.time.Instant,
+            result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?
+        ) {
+        }
     }
 
     private val changedIds = mutableListOf<UUID>()
@@ -103,7 +114,17 @@ class RunScoutTest {
     @Test
     fun `one failing collector does not stop the others`() {
         val bad = FakeCollector(descriptor("bad")) { throw IllegalStateException("boom") }
-        val good = FakeCollector(descriptor("good")) { CollectedBatch(listOf(hit("good", "https://github.com/a/x", type = ResourceType.MCP_SERVER)), null, "cp1") }
+        val good = FakeCollector(descriptor("good")) {
+            CollectedBatch(
+                listOf(
+                    hit(
+                        "good",
+                        "https://github.com/a/x",
+                        type = ResourceType.MCP_SERVER
+                    )
+                ), null, "cp1"
+            )
+        }
         val runs = RunScout(listOf(bad, good), history, catalog, null, clock, NO_LOCK).runNow()!!
         assertEquals(listOf(RunStatus.FAILED, RunStatus.SUCCEEDED), runs.map { it.status })
         assertEquals(1, runs[1].itemsSeen)
@@ -172,7 +193,17 @@ class RunScoutTest {
     fun `every enrichment attempt is counted by outcome`() {
         val meters = SimpleMeterRegistry()
         val store = object : FakeEnrichmentStore() {
-            override fun save(resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: java.time.Instant, result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?) {}
+            override fun save(
+                resourceId: UUID,
+                model: EnrichmentModel,
+                inputFingerprint: String,
+                startedAt: java.time.Instant,
+                result: ValidationResult?,
+                outcome: EnrichmentOutcome,
+                failure: String?,
+                extraEvidence: String?
+            ) {
+            }
         }
         val model = object : EnrichmentModel {
             override val provider = "none"
@@ -190,7 +221,13 @@ class RunScoutTest {
     fun `checkpoint advances only after a complete pass and is passed next time`() {
         val store = history
         var complete = false
-        val c = FakeCollector(descriptor("mcp")) { CollectedBatch(emptyList(), if (complete) null else "page2", if (complete) "cp-done" else null) }
+        val c = FakeCollector(descriptor("mcp")) {
+            CollectedBatch(
+                emptyList(),
+                if (complete) null else "page2",
+                if (complete) "cp-done" else null
+            )
+        }
         val runner = RunScout(listOf(c), store, catalog, null, clock, NO_LOCK)
         runner.runNow()
         assertNull(store.cursors["mcp"]!!.checkpoint)
@@ -205,7 +242,16 @@ class RunScoutTest {
     fun `an llm outage or a spent budget is recorded once, not fatal, and stops enrichment for the rest of the run`() {
         val saved = mutableListOf<EnrichmentOutcome>()
         val store = object : FakeEnrichmentStore() {
-            override fun save(resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: java.time.Instant, result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?) {
+            override fun save(
+                resourceId: UUID,
+                model: EnrichmentModel,
+                inputFingerprint: String,
+                startedAt: java.time.Instant,
+                result: ValidationResult?,
+                outcome: EnrichmentOutcome,
+                failure: String?,
+                extraEvidence: String?
+            ) {
                 saved += outcome
             }
         }
@@ -213,12 +259,14 @@ class RunScoutTest {
             override val provider = "none"
             override val model = "none"
             override val promptVersion = "enrich-v3"
-            override fun propose(input: EnrichmentInput): EnrichmentProposal = throw LlmUnavailable("daily enrichment budget used up")
+            override fun propose(input: EnrichmentInput): EnrichmentProposal =
+                throw LlmUnavailable("daily enrichment budget used up")
         }
         val stranded = mutableListOf<Int>()
         val hits = (0 until 5).map { hit("mcp", "https://github.com/a/r$it") }
         val c = FakeCollector(descriptor("mcp")) { CollectedBatch(hits, null, "cp") }
-        val run = RunScout(listOf(c), history, catalog, EnrichResource(model, store, clock), clock, NO_LOCK, maxEnrichmentsPerRun = 3,
+        val run = RunScout(
+            listOf(c), history, catalog, EnrichResource(model, store, clock), clock, NO_LOCK, maxEnrichmentsPerRun = 3,
             backlog = backlog { limit -> stranded += limit; listOf(UUID.randomUUID()) }).runNow()!!.single()
         assertEquals(RunStatus.SUCCEEDED, run.status)
         assertEquals(0, run.enrichmentsQueued)
@@ -232,8 +280,10 @@ class RunScoutTest {
         val saved = mutableListOf<EnrichmentOutcome>()
         val store = object : FakeEnrichmentStore() {
             override fun lastFingerprint(resourceId: UUID) = material().fingerprintFor(model(true))
-            override fun save(resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: java.time.Instant,
-                              result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?) {
+            override fun save(
+                resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: java.time.Instant,
+                result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?
+            ) {
                 saved += outcome
             }
         }
@@ -260,9 +310,13 @@ class RunScoutTest {
         val unchanged = mutableSetOf<UUID>()
         val store = object : FakeEnrichmentStore() {
             val enriched = mutableListOf<UUID>()
-            override fun lastFingerprint(resourceId: UUID) = if (resourceId in unchanged) material().fingerprintFor(model(true)) else null
-            override fun save(resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: java.time.Instant,
-                              result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?) {
+            override fun lastFingerprint(resourceId: UUID) =
+                if (resourceId in unchanged) material().fingerprintFor(model(true)) else null
+
+            override fun save(
+                resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: java.time.Instant,
+                result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?
+            ) {
                 enriched += resourceId
             }
         }
@@ -270,9 +324,11 @@ class RunScoutTest {
         val c = FakeCollector(descriptor("mcp")) { CollectedBatch(hits, null, "cp") }
         val stranded = (0 until 4).map { UUID.randomUUID() }
         unchanged += stranded[0]
-        val catalog = CatalogIndex { results, _ -> results.map { it.id.value }.also { ids -> unchanged += ids; changedIds += ids } }
+        val catalog =
+            CatalogIndex { results, _ -> results.map { it.id.value }.also { ids -> unchanged += ids; changedIds += ids } }
 
-        val run = RunScout(listOf(c), history, catalog, EnrichResource(model(true), store, clock), clock, NO_LOCK,
+        val run = RunScout(
+            listOf(c), history, catalog, EnrichResource(model(true), store, clock), clock, NO_LOCK,
             maxEnrichmentsPerRun = 2, backlog = backlog { limit -> stranded.take(limit) }).runNow()!!.single()
 
         // Three changed records with the same source text and one unchanged backlog entry cost nothing:
@@ -289,13 +345,20 @@ class RunScoutTest {
         val evidence = UUID.randomUUID()
         val store = object : FakeEnrichmentStore() {
             override fun load(resourceId: UUID) = EnrichmentMaterial(
-                EnrichmentInput("pg-mcp", listOf(Material(evidence, URI("https://x.example"), NOW, "Postgres MCP server. Works with Claude Desktop."))),
+                EnrichmentInput(
+                    "pg-mcp",
+                    listOf(Material(evidence, URI("https://x.example"), NOW, "Postgres MCP server. Works with Claude Desktop."))
+                ),
                 "fp",
             )
+
             override fun resourcesTitled(titles: Collection<String>, resourceId: UUID) =
                 mapOf("claude desktop" to target).also { asked += titles }
-            override fun save(resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: java.time.Instant,
-                              result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?) {
+
+            override fun save(
+                resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: java.time.Instant,
+                result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?
+            ) {
                 checked = result
             }
         }
@@ -303,9 +366,15 @@ class RunScoutTest {
             override val provider = "fake"
             override val model = "m"
             override val promptVersion = "enrich-v3"
-            override fun propose(input: EnrichmentInput) = EnrichmentProposal(relationships = listOf(
-                ProposedRelationship("COMPATIBLE_WITH", " Claude Desktop ", listOf(Citation(evidence.toString(), "Works with Claude Desktop"))),
-            ))
+            override fun propose(input: EnrichmentInput) = EnrichmentProposal(
+                relationships = listOf(
+                    ProposedRelationship(
+                        "COMPATIBLE_WITH",
+                        " Claude Desktop ",
+                        listOf(Citation(evidence.toString(), "Works with Claude Desktop"))
+                    ),
+                )
+            )
         }
 
         EnrichResource(model, store, clock).enrich(UUID.randomUUID())
@@ -323,16 +392,26 @@ class RunScoutTest {
 
     private class RecordingEnrichmentStore : FakeEnrichmentStore() {
         val enriched = mutableListOf<UUID>()
-        override fun save(resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: java.time.Instant, result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?) {
+        override fun save(
+            resourceId: UUID,
+            model: EnrichmentModel,
+            inputFingerprint: String,
+            startedAt: java.time.Instant,
+            result: ValidationResult?,
+            outcome: EnrichmentOutcome,
+            failure: String?,
+            extraEvidence: String?
+        ) {
             enriched += resourceId
         }
     }
 
-    private fun backlog(eligible: (List<UUID>) -> List<UUID> = { it }, pending: (Int) -> List<UUID>) = object : EnrichmentBacklog {
-        override fun pending(limit: Int) = pending(limit)
-        override fun eligible(resourceIds: List<UUID>) = eligible(resourceIds)
-        override fun pendingCount() = 0L
-    }
+    private fun backlog(eligible: (List<UUID>) -> List<UUID> = { it }, pending: (Int) -> List<UUID>) =
+        object : EnrichmentBacklog {
+            override fun pending(limit: Int) = pending(limit)
+            override fun eligible(resourceIds: List<UUID>) = eligible(resourceIds)
+            override fun pendingCount() = 0L
+        }
 
     private fun model(available: Boolean) = object : EnrichmentModel {
         override val provider = if (available) "fake" else "none"
@@ -352,8 +431,10 @@ class RunScoutTest {
         val requestedLimits = mutableListOf<Int>()
         val backlog = backlog { limit -> requestedLimits += limit; (changedIds.take(1) + stranded).take(limit) }
 
-        RunScout(listOf(c), history, catalog, EnrichResource(model(true), store, clock), clock, NO_LOCK,
-            maxEnrichmentsPerRun = 4, backlog = backlog).runNow()!!
+        RunScout(
+            listOf(c), history, catalog, EnrichResource(model(true), store, clock), clock, NO_LOCK,
+            maxEnrichmentsPerRun = 4, backlog = backlog
+        ).runNow()!!
 
         assertEquals(changedIds + stranded.take(2), store.enriched)
         assertEquals(listOf(4), requestedLimits)
@@ -365,7 +446,8 @@ class RunScoutTest {
         val hits = (0 until 4).map { hit("hf", "https://huggingface.co/m/r$it") }
         val c = FakeCollector(descriptor("hf")) { CollectedBatch(hits, null, "cp") }
         val withText = mutableListOf<UUID>()
-        val run = RunScout(listOf(c), history, catalog, EnrichResource(model(true), store, clock), clock, NO_LOCK,
+        val run = RunScout(
+            listOf(c), history, catalog, EnrichResource(model(true), store, clock), clock, NO_LOCK,
             backlog = backlog(eligible = { ids -> ids.take(1).also { withText += it } }) { emptyList() }).runNow()!!.single()
         assertEquals(1, run.enrichmentsQueued)
         assertEquals(withText, store.enriched)
@@ -375,11 +457,14 @@ class RunScoutTest {
     fun `the technical reason of a failed or unavailable call is saved`() {
         val reasons = mutableListOf<Pair<EnrichmentOutcome, String?>>()
         val store = object : FakeEnrichmentStore() {
-            override fun save(resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: java.time.Instant,
-                              result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?) {
+            override fun save(
+                resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: java.time.Instant,
+                result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?
+            ) {
                 reasons += outcome to failure
             }
         }
+
         fun throwing(e: RuntimeException) = object : EnrichmentModel {
             override val provider = "fake"
             override val model = "m"
@@ -388,19 +473,35 @@ class RunScoutTest {
         }
         EnrichResource(throwing(LlmUnavailable("provider unavailable: 429")), store, clock).enrich(UUID.randomUUID())
         EnrichResource(throwing(ModelAnswerInvalid("answer contains no JSON object")), store, clock).enrich(UUID.randomUUID())
-        assertEquals<List<Pair<EnrichmentOutcome, String?>>>(listOf(
-            EnrichmentOutcome.LLM_UNAVAILABLE to "LlmUnavailable: provider unavailable: 429",
-            EnrichmentOutcome.FAILED to "ModelAnswerInvalid: answer contains no JSON object",
-        ), reasons)
+        assertEquals<List<Pair<EnrichmentOutcome, String?>>>(
+            listOf(
+                EnrichmentOutcome.LLM_UNAVAILABLE to "LlmUnavailable: provider unavailable: 429",
+                EnrichmentOutcome.FAILED to "ModelAnswerInvalid: answer contains no JSON object",
+            ), reasons
+        )
     }
 
     @Test
     fun `one budget is shared by all collectors in a run`() {
         val store = RecordingEnrichmentStore()
-        val a = FakeCollector(descriptor("a")) { CollectedBatch((0 until 3).map { hit("a", "https://github.com/a/a$it") }, null, "cp") }
-        val b = FakeCollector(descriptor("b")) { CollectedBatch((0 until 3).map { hit("b", "https://github.com/b/b$it") }, null, "cp") }
-        val runs = RunScout(listOf(a, b), history, catalog, EnrichResource(model(true), store, clock), clock, NO_LOCK,
-            maxEnrichmentsPerRun = 4).runNow()!!
+        val a = FakeCollector(descriptor("a")) {
+            CollectedBatch(
+                (0 until 3).map { hit("a", "https://github.com/a/a$it") },
+                null,
+                "cp"
+            )
+        }
+        val b = FakeCollector(descriptor("b")) {
+            CollectedBatch(
+                (0 until 3).map { hit("b", "https://github.com/b/b$it") },
+                null,
+                "cp"
+            )
+        }
+        val runs = RunScout(
+            listOf(a, b), history, catalog, EnrichResource(model(true), store, clock), clock, NO_LOCK,
+            maxEnrichmentsPerRun = 4
+        ).runNow()!!
         assertEquals(listOf(3, 1), runs.map { it.enrichmentsQueued })
         assertEquals(4, store.enriched.size)
     }
@@ -410,7 +511,8 @@ class RunScoutTest {
         val store = RecordingEnrichmentStore()
         var asked = false
         val c = FakeCollector(descriptor("mcp")) { CollectedBatch(emptyList(), null, "cp") }
-        RunScout(listOf(c), history, catalog, EnrichResource(model(false), store, clock), clock, NO_LOCK,
+        RunScout(
+            listOf(c), history, catalog, EnrichResource(model(false), store, clock), clock, NO_LOCK,
             backlog = backlog { asked = true; listOf(UUID.randomUUID()) }).runNow()!!
         assertEquals(false, asked)
         assertEquals(emptyList(), store.enriched)
@@ -419,7 +521,8 @@ class RunScoutTest {
     @Test
     fun `a failing backlog query does not fail the collector runs`() {
         val c = FakeCollector(descriptor("mcp")) { CollectedBatch(emptyList(), null, "cp") }
-        val runs = RunScout(listOf(c), history, catalog, EnrichResource(model(true), RecordingEnrichmentStore(), clock), clock, NO_LOCK,
+        val runs = RunScout(
+            listOf(c), history, catalog, EnrichResource(model(true), RecordingEnrichmentStore(), clock), clock, NO_LOCK,
             backlog = backlog { error("db down") }).runNow()!!
         assertEquals(listOf(RunStatus.SUCCEEDED), runs.map { it.status })
     }
@@ -434,14 +537,18 @@ class RunScoutTest {
                 if (resourceId == changedIds.first()) throw IllegalStateException("connection reset")
                 return material()
             }
-            override fun save(resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: java.time.Instant,
-                              result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?) {
+
+            override fun save(
+                resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: java.time.Instant,
+                result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?
+            ) {
                 enriched += resourceId
             }
         }
         val scoutStore = history
 
-        val run = RunScout(listOf(c), scoutStore, catalog, EnrichResource(model(true), store, clock), clock, NO_LOCK).runNow()!!.single()
+        val run = RunScout(listOf(c), scoutStore, catalog, EnrichResource(model(true), store, clock), clock, NO_LOCK).runNow()!!
+            .single()
 
         assertEquals(RunStatus.SUCCEEDED, run.status)
         assertEquals(3, run.itemsSeen)
@@ -460,13 +567,17 @@ class RunScoutTest {
                 if (resourceId == stranded[0]) throw IllegalStateException("connection reset")
                 return material()
             }
-            override fun save(resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: java.time.Instant,
-                              result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?) {
+
+            override fun save(
+                resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: java.time.Instant,
+                result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?
+            ) {
                 enriched += resourceId
             }
         }
         val c = FakeCollector(descriptor("mcp")) { CollectedBatch(emptyList(), null, "cp") }
-        RunScout(listOf(c), history, catalog, EnrichResource(model(true), store, clock), clock, NO_LOCK,
+        RunScout(
+            listOf(c), history, catalog, EnrichResource(model(true), store, clock), clock, NO_LOCK,
             backlog = backlog { limit -> stranded.take(limit) }).runNow()!!
         assertEquals(stranded.drop(1), enriched)
     }
@@ -507,7 +618,11 @@ class RunScoutTest {
             override fun collect(checkpoint: String?, resumeCursor: String?, maxItems: Int): CollectedBatch {
                 seen += checkpoint to resumeCursor
                 // Budget hit on the first run; the second run finishes the pass.
-                return if (resumeCursor == null) CollectedBatch(emptyList(), "p2", null) else CollectedBatch(emptyList(), null, "done")
+                return if (resumeCursor == null) CollectedBatch(emptyList(), "p2", null) else CollectedBatch(
+                    emptyList(),
+                    null,
+                    "done"
+                )
             }
         }
         val store = history
@@ -540,7 +655,8 @@ class RunScoutTest {
     @Test
     fun `a started run answers with its planned runs at once and collects in the background`() {
         val release = CountDownLatch(1)
-        val slow = FakeCollector(descriptor("slow")) { release.await(10, TimeUnit.SECONDS); CollectedBatch(emptyList(), null, "cp") }
+        val slow =
+            FakeCollector(descriptor("slow")) { release.await(10, TimeUnit.SECONDS); CollectedBatch(emptyList(), null, "cp") }
         val off = FakeCollector(descriptor("off", enabled = false)) { error("must not run") }
         val store = history
         Executors.newVirtualThreadPerTaskExecutor().use { threads ->
@@ -583,7 +699,9 @@ class RunScoutTest {
         assertEquals(true, RunScout(emptyList(), store, catalog, null, clock, NO_LOCK).closeInterruptedRuns())
         assertEquals(RunStatus.FAILED, store.runs.values.single().status)
     }
-    private fun candidate(url: String) = Candidate(CanonicalUrl.of(url)!!, "AI agents course", "A course on agents.", "Hugging Face Learn")
+
+    private fun candidate(url: String) =
+        Candidate(CanonicalUrl.of(url)!!, "AI agents course", "A course on agents.", "Hugging Face Learn")
 
     @Test
     fun `candidates a collector returns are proposed for review under its source id and never indexed`() {
@@ -604,7 +722,10 @@ class RunScoutTest {
     fun `a batch without candidates opens no review`() {
         val review = CandidateReview { _, _ -> error("must not be called") }
         val c = FakeCollector(descriptor("mcp")) { CollectedBatch(emptyList(), null, "cp") }
-        assertEquals(RunStatus.SUCCEEDED, RunScout(listOf(c), history, catalog, null, clock, NO_LOCK, review = review).runNow()!!.single().status)
+        assertEquals(
+            RunStatus.SUCCEEDED,
+            RunScout(listOf(c), history, catalog, null, clock, NO_LOCK, review = review).runNow()!!.single().status
+        )
     }
 
     @Test

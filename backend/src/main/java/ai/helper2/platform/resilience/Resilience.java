@@ -1,9 +1,10 @@
 package ai.helper2.platform.resilience;
 
+import org.jspecify.annotations.Nullable;
+
 import java.time.Instant;
 import java.util.Optional;
 import java.util.function.Supplier;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Runs work under a named resilience policy (circuit breaker, bulkhead, retry; ADR 0033). The policy names are
@@ -12,6 +13,26 @@ import org.jspecify.annotations.Nullable;
  * the work; any other exception is the work's own.
  */
 public interface Resilience {
+
+    /**
+     * Runs the work as is, always has a place and knows every name: for use cases tested without policies.
+     */
+    Resilience NONE = new Resilience() {
+        @Override
+        public <T> T call(String policy, Supplier<T> work) {
+            return work.get();
+        }
+
+        @Override
+        public Optional<Slot> trySlot(String policy) {
+            return Optional.of(() -> {
+            });
+        }
+
+        @Override
+        public void require(String policy) {
+        }
+    };
 
     <T> T call(String policy, Supplier<T> work);
 
@@ -31,7 +52,9 @@ public interface Resilience {
         throw new IllegalStateException("no bulkhead named " + policy + " (resilience4j.bulkhead in application.yaml)");
     }
 
-    /** Fails with {@link IllegalStateException} when no policy has this name, so a missing policy stops startup. */
+    /**
+     * Fails with {@link IllegalStateException} when no policy has this name, so a missing policy stops startup.
+     */
     void require(String policy);
 
     /**
@@ -42,40 +65,32 @@ public interface Resilience {
         return Optional.empty();
     }
 
-    /** A circuit's state; {@code openedAt} is set only while it is {@link State#OPEN}. */
-    record Circuit(State state, @Nullable Instant openedAt) {
-
-        public enum State {
-            /** Calls go through. */
-            CLOSED,
-            /** Calls are refused without running until the open window ends. */
-            OPEN,
-            /** A few trial calls decide whether it closes again. */
-            HALF_OPEN,
-        }
-    }
-
-    /** A place taken with {@link #trySlot}; releasing it again does nothing. */
+    /**
+     * A place taken with {@link #trySlot}; releasing it again does nothing.
+     */
     @FunctionalInterface
     interface Slot {
         void release();
     }
 
-    /** Runs the work as is, always has a place and knows every name: for use cases tested without policies. */
-    Resilience NONE = new Resilience() {
-        @Override
-        public <T> T call(String policy, Supplier<T> work) {
-            return work.get();
-        }
+    /**
+     * A circuit's state; {@code openedAt} is set only while it is {@link State#OPEN}.
+     */
+    record Circuit(State state, @Nullable Instant openedAt) {
 
-        @Override
-        public Optional<Slot> trySlot(String policy) {
-            return Optional.of(() -> {
-            });
+        public enum State {
+            /**
+             * Calls go through.
+             */
+            CLOSED,
+            /**
+             * Calls are refused without running until the open window ends.
+             */
+            OPEN,
+            /**
+             * A few trial calls decide whether it closes again.
+             */
+            HALF_OPEN,
         }
-
-        @Override
-        public void require(String policy) {
-        }
-    };
+    }
 }

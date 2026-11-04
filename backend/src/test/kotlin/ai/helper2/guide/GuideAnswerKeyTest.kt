@@ -61,7 +61,10 @@ class GuideAnswerKeyTest {
 
     @Test
     fun `the audience path and the config are part of the key`() {
-        assertNotEquals(GuideAnswerCache.key("rag", AudiencePath.BUILD_WITH_AI, "c"), GuideAnswerCache.key("rag", AudiencePath.USE_AI, "c"))
+        assertNotEquals(
+            GuideAnswerCache.key("rag", AudiencePath.BUILD_WITH_AI, "c"),
+            GuideAnswerCache.key("rag", AudiencePath.USE_AI, "c")
+        )
         assertNotEquals(GuideAnswerCache.key("rag", null, "c1"), GuideAnswerCache.key("rag", null, "c2"))
     }
 

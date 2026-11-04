@@ -4,12 +4,15 @@ import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.catalog.internal.ReviewDecisions;
 import ai.helper2.identity.AuditTrail;
 import ai.helper2.platform.BadRequestException;
-import java.util.Optional;
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** An administrator decides an open review item; the decision is recorded in the audit trail. */
+import java.util.Optional;
+import java.util.UUID;
+
+/**
+ * An administrator decides an open review item; the decision is recorded in the audit trail.
+ */
 @Service
 public class ResolveReviewItem {
 
@@ -21,18 +24,6 @@ public class ResolveReviewItem {
         this.decisions = decisions;
         this.queue = queue;
         this.audit = audit;
-    }
-
-    /** What a decision did: the item now decided, an item that was already decided, or no item at all. */
-    public sealed interface Outcome {
-        record Resolved(ReviewQueue.Item item) implements Outcome {
-        }
-
-        record NotOpen(ReviewQueue.Item item) implements Outcome {
-        }
-
-        record NotFound() implements Outcome {
-        }
     }
 
     /**
@@ -57,5 +48,19 @@ public class ResolveReviewItem {
         };
         audit.record(by, AuditTrail.Action.RESOLVE_REVIEW_ITEM, id.toString(), recorded);
         return outcome;
+    }
+
+    /**
+     * What a decision did: the item now decided, an item that was already decided, or no item at all.
+     */
+    public sealed interface Outcome {
+        record Resolved(ReviewQueue.Item item) implements Outcome {
+        }
+
+        record NotOpen(ReviewQueue.Item item) implements Outcome {
+        }
+
+        record NotFound() implements Outcome {
+        }
     }
 }

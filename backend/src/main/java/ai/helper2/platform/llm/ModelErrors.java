@@ -1,5 +1,7 @@
 package ai.helper2.platform.llm;
 
+import org.springframework.web.client.ResourceAccessException;
+
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.net.SocketTimeoutException;
@@ -7,7 +9,6 @@ import java.net.http.HttpTimeoutException;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
-import org.springframework.web.client.ResourceAccessException;
 
 /**
  * Classifies exceptions from a model call. Types of Spring AI and of the OpenAI Java SDK (used by the
@@ -19,11 +20,15 @@ import org.springframework.web.client.ResourceAccessException;
  */
 public final class ModelErrors {
 
-    /** Provider trouble that may fix itself later: no connection, a timeout, a 429 or a 5xx. */
+    /**
+     * Provider trouble that may fix itself later: no connection, a timeout, a 429 or a 5xx.
+     */
     private static final Set<String> TRANSIENT = Set.of("TransientAiException", "RateLimitException",
         "InternalServerException", "OpenAIIoException", "OpenAIRetryableException");
 
-    /** Base types of every error the provider client raises, transient or not (a 400, a 401, ...). */
+    /**
+     * Base types of every error the provider client raises, transient or not (a 400, a 401, ...).
+     */
     private static final Set<String> PROVIDER = Set.of("OpenAIException", "NonTransientAiException");
 
     private ModelErrors() {
@@ -69,17 +74,8 @@ public final class ModelErrors {
     }
 
     /**
-     * For the {@code llm-chat} circuit (application.yaml): a failure that is not the provider's, such as an answer
-     * that is not the requested JSON or a spent daily budget, is neither a success nor a failure of the provider.
+     * OkHttp (the OpenAI SDK's client) reports its timeouts as InterruptedIOException("timeout").
      */
-    public static final class NotFromProvider implements Predicate<Throwable> {
-        @Override
-        public boolean test(Throwable e) {
-            return !isProviderError(e);
-        }
-    }
-
-    /** OkHttp (the OpenAI SDK's client) reports its timeouts as InterruptedIOException("timeout"). */
     private static boolean isTimeout(Throwable e) {
         for (Throwable t = e; t != null; t = next(t)) {
             if (t instanceof TimeoutException || t instanceof SocketTimeoutException || t instanceof HttpTimeoutException
@@ -119,5 +115,16 @@ public final class ModelErrors {
 
     private static Throwable next(Throwable t) {
         return t.getCause() == t ? null : t.getCause();
+    }
+
+    /**
+     * For the {@code llm-chat} circuit (application.yaml): a failure that is not the provider's, such as an answer
+     * that is not the requested JSON or a spent daily budget, is neither a success nor a failure of the provider.
+     */
+    public static final class NotFromProvider implements Predicate<Throwable> {
+        @Override
+        public boolean test(Throwable e) {
+            return !isProviderError(e);
+        }
     }
 }

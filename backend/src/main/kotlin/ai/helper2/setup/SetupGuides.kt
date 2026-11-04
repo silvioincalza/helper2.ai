@@ -68,7 +68,13 @@ class SetupGuides @JvmOverloads constructor(
         val key = key(title, spec.name)
         val targets = shown.map { Target(key, it.id, it.option, it.launch, values(it.option)) }
         val guides = if (targets.isEmpty()) emptyList() else clients.map { c -> ClientGuide(c, targets.map(c::snippet)) }
-        return SetupGuide(title, spec.version, shown, guides, listOf(SetupSource(spec.sourceId, spec.sourceUrl, spec.retrievedAt)))
+        return SetupGuide(
+            title,
+            spec.version,
+            shown,
+            guides,
+            listOf(SetupSource(spec.sourceId, spec.sourceUrl, spec.retrievedAt))
+        )
     }
 
     companion object {

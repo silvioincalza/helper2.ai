@@ -4,8 +4,6 @@ import ai.helper2.platform.ClusterLock;
 import ai.helper2.platform.ClusterLocks;
 import ai.helper2.platform.resilience.Resilience;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.time.Duration;
-import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -13,7 +11,12 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.scheduling.annotation.Scheduled;
 
-/** The shared caches, and their purge once a day (helper2.retention.cron, UTC) on one replica at a time. */
+import javax.sql.DataSource;
+import java.time.Duration;
+
+/**
+ * The shared caches, and their purge once a day (helper2.retention.cron, UTC) on one replica at a time.
+ */
 @Configuration(proxyBeanMethods = false)
 class SharedCacheConfiguration {
 

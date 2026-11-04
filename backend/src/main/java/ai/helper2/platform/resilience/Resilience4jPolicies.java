@@ -8,6 +8,7 @@ import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.retry.Retry;
 import io.github.resilience4j.retry.RetryRegistry;
+
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
@@ -35,6 +36,10 @@ public final class Resilience4jPolicies implements Resilience {
         this.retries = retries;
         circuits.getEventPublisher().onEntryAdded(added -> watch(added.getAddedEntry()));
         circuits.getAllCircuitBreakers().forEach(this::watch);
+    }
+
+    private static IllegalStateException unknown(String policy) {
+        return new IllegalStateException("no resilience policy named " + policy + " (resilience4j.* in application.yaml)");
     }
 
     private void watch(CircuitBreaker circuit) {
@@ -93,7 +98,9 @@ public final class Resilience4jPolicies implements Resilience {
         });
     }
 
-    /** FORCED_OPEN shows as OPEN; DISABLED and METRICS_ONLY let every call through, so they show as CLOSED. */
+    /**
+     * FORCED_OPEN shows as OPEN; DISABLED and METRICS_ONLY let every call through, so they show as CLOSED.
+     */
     @Override
     public Optional<Circuit> circuit(String policy) {
         return circuits.find(policy).map(circuit -> switch (circuit.getState()) {
@@ -108,9 +115,5 @@ public final class Resilience4jPolicies implements Resilience {
         if (circuits.find(policy).isEmpty() && bulkheads.find(policy).isEmpty() && retries.find(policy).isEmpty()) {
             throw unknown(policy);
         }
-    }
-
-    private static IllegalStateException unknown(String policy) {
-        return new IllegalStateException("no resilience policy named " + policy + " (resilience4j.* in application.yaml)");
     }
 }

@@ -1,5 +1,15 @@
 package ai.helper2.api;
 
+import ai.helper2.catalog.ReviewQueue;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.OAuth2LoginRequestPostProcessor;
+
+import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oauth2Login;
@@ -8,27 +18,18 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import ai.helper2.catalog.ReviewQueue;
-import java.util.UUID;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
-import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.OAuth2LoginRequestPostProcessor;
-
-/** Every admin write leaves an audit entry in its own transaction; GET /admin/audit pages through them. */
+/**
+ * Every admin write leaves an audit entry in its own transaction; GET /admin/audit pages through them.
+ */
 class AdminAuditApiIT extends ApiTestBase {
-
-    @Autowired
-    JdbcClient jdbc;
-
-    @Autowired
-    ReviewQueue queue;
 
     final String adminId = "audit-" + UUID.randomUUID();
     final OAuth2LoginRequestPostProcessor admin = oauth2Login()
         .attributes(a -> a.put("sub", adminId)).authorities(new SimpleGrantedAuthority("ROLE_ADMIN"));
+    @Autowired
+    JdbcClient jdbc;
+    @Autowired
+    ReviewQueue queue;
 
     String outcomeOf(UUID target) {
         return jdbc.sql("SELECT outcome FROM admin_audit WHERE admin_id = :a AND action = 'RESOLVE_REVIEW_ITEM' AND target_id = :t")

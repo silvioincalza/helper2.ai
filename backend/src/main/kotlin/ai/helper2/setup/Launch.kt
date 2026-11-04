@@ -37,7 +37,9 @@ object Launches {
     private fun defaultArgs(type: String, p: RunOption.Package): List<String> = when (type) {
         "npm" -> listOf("-y", packageRef(type, p))
         // OCI: environment variables must be passed into the container one by one.
-        "oci" -> listOf("run", "-i", "--rm") + p.settings.filter { it.required || it.value != null }.flatMap { listOf("-e", it.name) } + packageRef(type, p)
+        "oci" -> listOf("run", "-i", "--rm") + p.settings.filter { it.required || it.value != null }
+            .flatMap { listOf("-e", it.name) } + packageRef(type, p)
+
         "nuget" -> listOf(packageRef(type, p), "--yes")
         else -> listOf(packageRef(type, p))
     }

@@ -34,7 +34,8 @@ class ToolGuideValidator {
                 out as GuideStep
                 val list = kept.getOrPut(kind) { mutableListOf() }
                 // A step already given in an earlier section (same command or same text) is not repeated.
-                val seen = kept.values.flatten().any { it.text.equals(out.text, ignoreCase = true) || (out.code != null && it.code?.text == out.code.text) }
+                val seen = kept.values.flatten()
+                    .any { it.text.equals(out.text, ignoreCase = true) || (out.code != null && it.code?.text == out.code.text) }
                 if (list.size >= MAX_STEPS_PER_SECTION || seen) {
                     reject(Rejection.DUPLICATE)
                 } else {
@@ -42,7 +43,9 @@ class ToolGuideValidator {
                 }
             }
         }
-        return Result(GuideSectionKind.entries.mapNotNull { k -> kept[k]?.takeIf { it.isNotEmpty() }?.let { GuideSection(k, it) } }, rejectedBy.values.sum(), rejectedBy)
+        return Result(GuideSectionKind.entries.mapNotNull { k ->
+            kept[k]?.takeIf { it.isNotEmpty() }?.let { GuideSection(k, it) }
+        }, rejectedBy.values.sum(), rejectedBy)
     }
 
     /**
@@ -65,8 +68,10 @@ class ToolGuideValidator {
             }
         }
         val language = step.language?.trim()?.lowercase()?.takeIf { LANGUAGE.matches(it) }
-        return GuideStep(text, material.key, if (quoteFound) quote else code!!,
-            code?.let { Code(language ?: parsed.languageOf(it), it) }, code != null && cautious(code))
+        return GuideStep(
+            text, material.key, if (quoteFound) quote else code!!,
+            code?.let { Code(language ?: parsed.languageOf(it), it) }, code != null && cautious(code)
+        )
     }
 
     /** One command line of a block: its comparison key and the source lines it came from, as written. */
@@ -126,20 +131,24 @@ class ToolGuideValidator {
 
         private val LANGUAGE = Regex("[a-z0-9+#-]{1,16}")
         private val LINK = Regex("https?://|www\\.", RegexOption.IGNORE_CASE)
+
         /** A program that runs whatever text it is given: a shell or a script interpreter. */
-        private const val RUNNER = "(?:(?:ba|z|da|k|fi)?sh|python[0-9.]*|perl|ruby|node|php|pwsh|powershell|iex|invoke-expression)"
+        private const val RUNNER =
+            "(?:(?:ba|z|da|k|fi)?sh|python[0-9.]*|perl|ruby|node|php|pwsh|powershell|iex|invoke-expression)"
         private const val DOWNLOAD = "(?:curl|wget|iwr|irm|invoke-webrequest|invoke-restmethod)"
-        private val CAUTION = Regex(listOf(
-            // Anything piped into a runner, possibly through sudo or env.
-            "\\|\\s*(?:sudo(?:\\s+-\\S+)*\\s+)?(?:env(?:\\s+\\S+=\\S*)*\\s+)?$RUNNER(?![\\w.-])",
-            // A download handed to a shell as text: sh -c "$(curl …)", bash <(curl …), eval "$(wget …)".
-            "[$<]\\(\\s*$DOWNLOAD\\b",
-            "\\b(?:invoke-expression|iex)\\s*\\(",
-            "\\bsudo\\b",
-            "\\bchmod\\s+(?:-\\S+\\s+)*0?777\\b",
-            "\\brm\\s+(?:-\\S+\\s+)*-[a-z]*(?:r[a-z]*f|f[a-z]*r)",
-            "\\brm\\s+(?:-\\S+\\s+)*--recursive\\b",
-        ).joinToString("|"), RegexOption.IGNORE_CASE)
+        private val CAUTION = Regex(
+            listOf(
+                // Anything piped into a runner, possibly through sudo or env.
+                "\\|\\s*(?:sudo(?:\\s+-\\S+)*\\s+)?(?:env(?:\\s+\\S+=\\S*)*\\s+)?$RUNNER(?![\\w.-])",
+                // A download handed to a shell as text: sh -c "$(curl …)", bash <(curl …), eval "$(wget …)".
+                "[$<]\\(\\s*$DOWNLOAD\\b",
+                "\\b(?:invoke-expression|iex)\\s*\\(",
+                "\\bsudo\\b",
+                "\\bchmod\\s+(?:-\\S+\\s+)*0?777\\b",
+                "\\brm\\s+(?:-\\S+\\s+)*-[a-z]*(?:r[a-z]*f|f[a-z]*r)",
+                "\\brm\\s+(?:-\\S+\\s+)*--recursive\\b",
+            ).joinToString("|"), RegexOption.IGNORE_CASE
+        )
 
         fun containsLink(text: String) = LINK.containsMatchIn(text)
 

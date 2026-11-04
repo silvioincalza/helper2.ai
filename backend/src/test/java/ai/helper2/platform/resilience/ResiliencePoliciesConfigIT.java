@@ -1,21 +1,24 @@
 package ai.helper2.platform.resilience;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.TestcontainersConfiguration;
 import ai.helper2.search.SourceFailure;
 import io.github.resilience4j.bulkhead.BulkheadRegistry;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.retry.RetryRegistry;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.time.Duration;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 
-/** The policies of application.yaml as the app loads them: every name in place, the settings ADR 0033 states, meters bound. */
+import java.time.Duration;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * The policies of application.yaml as the app loads them: every name in place, the settings ADR 0033 states, meters bound.
+ */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 class ResiliencePoliciesConfigIT {
@@ -75,7 +78,9 @@ class ResiliencePoliciesConfigIT {
         assertThat(retries.find("redis")).isEmpty();
     }
 
-    /** Shared cache lookups give up on a slow database and never take more than 2 of its 10 connections per replica. */
+    /**
+     * Shared cache lookups give up on a slow database and never take more than 2 of its 10 connections per replica.
+     */
     @Test
     void theSharedCachesHaveACircuitOnSlowCallsAndASmallBulkhead() {
         var circuit = circuits.find("db-cache").orElseThrow().getCircuitBreakerConfig();

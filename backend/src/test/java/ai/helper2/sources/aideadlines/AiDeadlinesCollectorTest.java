@@ -1,8 +1,5 @@
 package ai.helper2.sources.aideadlines;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 import ai.helper2.platform.http.ObservedHttp;
 import ai.helper2.platform.resilience.CallRefused;
 import ai.helper2.platform.resilience.Resilience;
@@ -17,6 +14,9 @@ import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.testing.FixtureServer;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
@@ -24,8 +24,9 @@ import java.time.LocalDate;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class AiDeadlinesCollectorTest {
 
@@ -76,7 +77,9 @@ class AiDeadlinesCollectorTest {
         return counter == null ? 0 : counter.count();
     }
 
-    /** Every drop of this source; meters of earlier tests also show up here, at 0, through the global registry. */
+    /**
+     * Every drop of this source; meters of earlier tests also show up here, at 0, through the global registry.
+     */
     private double droppedInAll() {
         return meters.find("helper2.source.items.dropped").tag("source", "ai-deadlines").counters().stream()
             .mapToDouble(c -> c.count()).sum();
@@ -198,7 +201,9 @@ class AiDeadlinesCollectorTest {
         assertThat(droppedInAll()).as("only the broken file").isEqualTo(1);
     }
 
-    /** An open circuit refuses every later call: the pass ends there, and the refused files are not counted one by one. */
+    /**
+     * An open circuit refuses every later call: the pass ends there, and the refused files are not counted one by one.
+     */
     @Test
     void anOpenCircuitEndsThePassWithoutCountingEachFile() {
         server.route(AiDeadlinesCollector.CONFERENCES_PATH, FixtureServer.Reply.ok("""

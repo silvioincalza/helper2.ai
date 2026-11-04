@@ -1,12 +1,13 @@
 package ai.helper2.platform.cache;
 
+import org.jspecify.annotations.Nullable;
+
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.HexFormat;
 import java.util.Locale;
-import org.jspecify.annotations.Nullable;
 
 /**
  * A model's answer shared by every replica, so the cluster pays for one question once (ADR 0005). The key is a hash of
@@ -15,15 +16,28 @@ import org.jspecify.annotations.Nullable;
  */
 public interface SharedCache {
 
-    /** The cache an entry belongs to ({@code translation}, {@code query-vector}, {@code tool-guide}, {@code guide-answer}). */
+    /**
+     * The same query typed with other case or spaces is the same entry.
+     */
+    static String normalisedQuery(String text) {
+        return text.strip().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
+    }
+
+    /**
+     * The cache an entry belongs to ({@code translation}, {@code query-vector}, {@code tool-guide}, {@code guide-answer}).
+     */
     String name();
 
     @Nullable String get(String key);
 
-    /** Keeps the value for {@code ttl}; a read after that is a miss. */
+    /**
+     * Keeps the value for {@code ttl}; a read after that is a miss.
+     */
     void put(String key, String value, Duration ttl);
 
-    /** A fixed-length key (SHA-256, hex) for these parts (model, prompt version, normalised query…), in this order. */
+    /**
+     * A fixed-length key (SHA-256, hex) for these parts (model, prompt version, normalised query…), in this order.
+     */
     default String key(String... parts) {
         try {
             byte[] digest = MessageDigest.getInstance("SHA-256")
@@ -32,10 +46,5 @@ public interface SharedCache {
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException(e);
         }
-    }
-
-    /** The same query typed with other case or spaces is the same entry. */
-    static String normalisedQuery(String text) {
-        return text.strip().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
     }
 }

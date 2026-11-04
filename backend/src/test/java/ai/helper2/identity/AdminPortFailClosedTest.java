@@ -1,12 +1,14 @@
 package ai.helper2.identity;
 
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.env.MockEnvironment;
 
-/** ADR 0035: with a sign-in provider configured, the app refuses to start without an admin port, except on a developer machine. */
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+/**
+ * ADR 0035: with a sign-in provider configured, the app refuses to start without an admin port, except on a developer machine.
+ */
 class AdminPortFailClosedTest {
 
     static MockEnvironment withGitHub(String... profiles) {
@@ -24,7 +26,9 @@ class AdminPortFailClosedTest {
             .hasMessageContaining("H2_ADMIN_PORT");
     }
 
-    /** Set through environment variables, without the oauth-github profile, it is still a provider. */
+    /**
+     * Set through environment variables, without the oauth-github profile, it is still a provider.
+     */
     @Test
     void anyRegistrationCountsNotOnlyTheProfile() {
         assertThatThrownBy(() -> AdminPortConfiguration.requireAdminPortWithRealSignIn(new AdminPort(0), withGitHub("llm-nebius")))

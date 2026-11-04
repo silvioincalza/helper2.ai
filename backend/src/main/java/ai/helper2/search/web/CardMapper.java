@@ -23,10 +23,11 @@ import ai.helper2.search.MergedResult;
 import ai.helper2.search.WebSearchesLeft;
 import ai.helper2.shared.DateFact;
 import ai.helper2.shared.UtcTimes;
+import org.springframework.modulith.NamedInterface;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.springframework.modulith.NamedInterface;
 
 /**
  * Maps search-domain results to contract DTOs: the search module's "cards" named interface. Result cards
@@ -82,7 +83,7 @@ public final class CardMapper {
      */
     public static List<CompatibilityFlagDto> compatibility(MergedResult r) {
         return Compatibility.INSTANCE.of(r).stream().map(f -> new CompatibilityFlagDto(
-                f.getTool(), f.getLabel(), CompatibilityFlagDto.BasisEnum.fromValue(f.getBasis().name()), f.getEvidence())
+            f.getTool(), f.getLabel(), CompatibilityFlagDto.BasisEnum.fromValue(f.getBasis().name()), f.getEvidence())
             .sourceId(f.getSourceId())).collect(Collectors.toCollection(ArrayList::new));
     }
 
@@ -96,7 +97,9 @@ public final class CardMapper {
         return dto;
     }
 
-    /** Web searches left today; null when unknown. */
+    /**
+     * Web searches left today; null when unknown.
+     */
     public static WebSearchesDto webSearches(WebSearchesLeft left) {
         return left == null ? null : new WebSearchesDto(left.getLimit(), left.getRemaining());
     }

@@ -1,17 +1,8 @@
 package ai.helper2.identity.usecase;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 import ai.helper2.TestcontainersConfiguration;
 import ai.helper2.identity.internal.AuditLog;
 import ai.helper2.identity.internal.Users;
-import java.sql.Timestamp;
-import java.time.Clock;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -19,7 +10,19 @@ import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
-/** Identity's retention rules on the real schema; the clock is fixed in 2000, before any row other tests write. */
+import java.sql.Timestamp;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+/**
+ * Identity's retention rules on the real schema; the clock is fixed in 2000, before any row other tests write.
+ */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 class IdentityPurgeExpiredDataIT {
@@ -35,7 +38,9 @@ class IdentityPurgeExpiredDataIT {
     @Autowired
     AuditLog audit;
 
-    /** The defaults of application.yaml: 24 months for both. */
+    /**
+     * The defaults of application.yaml: 24 months for both.
+     */
     PurgeExpiredData purge() {
         return new PurgeExpiredData(users, audit, Clock.fixed(NOW, ZoneOffset.UTC), Duration.ofDays(730), Duration.ofDays(730));
     }

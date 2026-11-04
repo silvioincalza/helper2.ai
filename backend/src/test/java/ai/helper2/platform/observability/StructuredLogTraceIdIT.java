@@ -1,24 +1,11 @@
 package ai.helper2.platform.observability;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.TestcontainersConfiguration;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.AppenderBase;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,6 +23,20 @@ import org.springframework.web.servlet.function.RouterFunctions;
 import org.springframework.web.servlet.function.ServerResponse;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
+
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * ADR 0026, decision 1: with tracing on (export off), every log line written inside a request, on the request thread or
@@ -57,11 +58,9 @@ class StructuredLogTraceIdIT {
 
     private static final JsonMapper JSON = JsonMapper.builder().build();
     private static final Logger LOG = (Logger) LoggerFactory.getLogger(LoggingEndpoints.class);
-
+    private final List<JsonNode> lines = new CopyOnWriteArrayList<>();
     @LocalServerPort
     int port;
-
-    private final List<JsonNode> lines = new CopyOnWriteArrayList<>();
     private AppenderBase<ILoggingEvent> appender;
     private StructuredLogEncoder encoder;
 
@@ -131,7 +130,9 @@ class StructuredLogTraceIdIT {
         static final String TICK = "structured-log-it scheduled tick";
         private static final org.slf4j.Logger log = LoggerFactory.getLogger(LoggingEndpoints.class);
 
-        /** A route, not a @RestController: component scanning would put a controller into every test context. */
+        /**
+         * A route, not a @RestController: component scanning would put a controller into every test context.
+         */
         @Bean
         RouterFunction<ServerResponse> traceLogRoute(@Qualifier("searchExecutor") ExecutorService searchExecutor) {
             return RouterFunctions.route().GET("/it/trace-log", request -> {

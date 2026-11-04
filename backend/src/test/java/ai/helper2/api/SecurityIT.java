@@ -1,5 +1,8 @@
 package ai.helper2.api;
 
+import org.junit.jupiter.api.Test;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oauth2Login;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -7,9 +10,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import org.junit.jupiter.api.Test;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 class SecurityIT extends ApiTestBase {
 
@@ -26,7 +26,9 @@ class SecurityIT extends ApiTestBase {
             .andExpect(status().isOk());
     }
 
-    /** Every admin write needs the CSRF token, even from a signed-in administrator. */
+    /**
+     * Every admin write needs the CSRF token, even from a signed-in administrator.
+     */
     @Test
     void adminWritesWithoutTheCsrfTokenAreRefused() throws Exception {
         var admin = oauth2Login().authorities(new SimpleGrantedAuthority("ROLE_ADMIN"));

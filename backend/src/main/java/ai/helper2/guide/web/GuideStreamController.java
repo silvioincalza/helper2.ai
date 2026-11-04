@@ -1,19 +1,19 @@
 package ai.helper2.guide.web;
 
 import ai.helper2.api.generated.model.GuideIntentDto;
-import ai.helper2.api.generated.model.GuideStreamUnderstoodDto;
-import ai.helper2.guide.Clarification;
-import ai.helper2.guide.DateWindow;
-import ai.helper2.guide.Drops;
-import ai.helper2.guide.GuideIntent;
 import ai.helper2.api.generated.model.GuideRequestDto;
 import ai.helper2.api.generated.model.GuideStreamCheckedDto;
 import ai.helper2.api.generated.model.GuideStreamChosenDto;
 import ai.helper2.api.generated.model.GuideStreamEventDto;
 import ai.helper2.api.generated.model.GuideStreamPlannedDto;
 import ai.helper2.api.generated.model.GuideStreamRetrievedDto;
+import ai.helper2.api.generated.model.GuideStreamUnderstoodDto;
 import ai.helper2.api.generated.model.GuideStreamValidatedDto;
 import ai.helper2.api.generated.model.ProblemDto;
+import ai.helper2.guide.Clarification;
+import ai.helper2.guide.DateWindow;
+import ai.helper2.guide.Drops;
+import ai.helper2.guide.GuideIntent;
 import ai.helper2.guide.GuideProgress;
 import ai.helper2.guide.usecase.AskGuide;
 import ai.helper2.platform.BadRequestException;
@@ -25,15 +25,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import java.io.IOException;
-import java.time.Duration;
-import java.util.List;
-import java.util.Locale;
-import java.util.UUID;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -46,6 +37,16 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.io.IOException;
+import java.time.Duration;
+import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * {@code POST /api/v1/guide/stream} (contract: tag guide-stream). Hand-written because the generator has no
@@ -68,11 +69,12 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @RequestMapping("/api/v1")
 class GuideStreamController implements DisposableBean {
 
-    private static final Logger log = LoggerFactory.getLogger(GuideStreamController.class);
-    /** The emitter outlives the deadline a little, so the deadline's error event can still be sent. */
-    private static final Duration EMITTER_GRACE = Duration.ofSeconds(10);
     static final String FIRST_USEFUL = "helper2.guide.first_useful";
-
+    private static final Logger log = LoggerFactory.getLogger(GuideStreamController.class);
+    /**
+     * The emitter outlives the deadline a little, so the deadline's error event can still be sent.
+     */
+    private static final Duration EMITTER_GRACE = Duration.ofSeconds(10);
     private final AskGuide guide;
     private final GuideDtoMapper mapper;
     private final GuideLimits limits;
@@ -90,6 +92,29 @@ class GuideStreamController implements DisposableBean {
         this.signedInUser = signedInUser;
         this.meters = meters;
         this.heartbeat = heartbeat;
+    }
+
+    static String validRequest(GuideRequestDto body) {
+        String request = body.getRequest() == null ? "" : body.getRequest().strip();
+        if (request.length() < 3) {
+            throw new BadRequestException("request too short");
+        }
+        return request;
+    }
+
+    /**
+     * The answer to a clarification, trimmed; null when the request is not one ("" = "search anyway").
+     */
+    static String clarification(GuideRequestDto body) {
+        return body.getClarification() == null ? null : body.getClarification().strip();
+    }
+
+    static Drops drops(GuideRequestDto body) {
+        return Drops.of(body.getDrop());
+    }
+
+    static AudiencePath path(GuideRequestDto body) {
+        return body.getPath() == null ? null : AudiencePath.valueOf(body.getPath().getValue());
     }
 
     @Override
@@ -122,27 +147,6 @@ class GuideStreamController implements DisposableBean {
             // nginx-style proxies buffer responses by default, which would deliver every event at the end.
             .header("X-Accel-Buffering", "no")
             .body(events.emitter);
-    }
-
-    static String validRequest(GuideRequestDto body) {
-        String request = body.getRequest() == null ? "" : body.getRequest().strip();
-        if (request.length() < 3) {
-            throw new BadRequestException("request too short");
-        }
-        return request;
-    }
-
-    /** The answer to a clarification, trimmed; null when the request is not one ("" = "search anyway"). */
-    static String clarification(GuideRequestDto body) {
-        return body.getClarification() == null ? null : body.getClarification().strip();
-    }
-
-    static Drops drops(GuideRequestDto body) {
-        return Drops.of(body.getDrop());
-    }
-
-    static AudiencePath path(GuideRequestDto body) {
-        return body.getPath() == null ? null : AudiencePath.valueOf(body.getPath().getValue());
     }
 
     private void run(Events events, String request, AudiencePath path, String client, UUID userId, String clarification, Drops drops) {
@@ -213,7 +217,9 @@ class GuideStreamController implements DisposableBean {
             send(GuideStreamEventDto.CHECKED, new GuideStreamCheckedDto(supported, removed, notChecked));
         }
 
-        /** Sends an event that shows the asker something real; the first one sent is the question's first useful event. */
+        /**
+         * Sends an event that shows the asker something real; the first one sent is the question's first useful event.
+         */
         private synchronized void useful(GuideStreamEventDto name, Object data) {
             if (send(name, data) && !usefulSent) {
                 usefulSent = true;
@@ -229,7 +235,9 @@ class GuideStreamController implements DisposableBean {
             }
         }
 
-        /** Sends a comment every heartbeat until the last event (or the client is gone). */
+        /**
+         * Sends a comment every heartbeat until the last event (or the client is gone).
+         */
         synchronized void keepAlive() {
             if (open && !finished) {
                 long every = heartbeat.toMillis();
@@ -269,7 +277,9 @@ class GuideStreamController implements DisposableBean {
             }
         }
 
-        /** True when the event reached the connection. */
+        /**
+         * True when the event reached the connection.
+         */
         synchronized boolean send(GuideStreamEventDto name, Object data) {
             if (!open || finished) {
                 return false;

@@ -1,11 +1,13 @@
 package ai.helper2.platform.llm;
 
+import org.junit.jupiter.api.Test;
+
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import org.junit.jupiter.api.Test;
-
-/** NVIDIA-only (ADR 0014): the application does not start with a model id of another vendor. */
+/**
+ * NVIDIA-only (ADR 0014): the application does not start with a model id of another vendor.
+ */
 class NvidiaOnlyTest {
 
     static final String SUPER = "nvidia/nemotron-3-super-120b-a12b";
@@ -33,7 +35,9 @@ class NvidiaOnlyTest {
         assertThatCode(() -> NvidiaOnly.require("none", "", "", "", "", "text-embedding-3-small")).doesNotThrowAnyException();
     }
 
-    /** Only the OpenAI-compatible client reaches a provider; a test's scripted ChatModel calls nobody. */
+    /**
+     * Only the OpenAI-compatible client reaches a provider; a test's scripted ChatModel calls nobody.
+     */
     @Test
     void chatIdsAreCheckedOnlyWhenTheyReachAProvider() {
         assertThatCode(() -> NvidiaOnly.require("none", "", "fake-nano", "fake-super", "", "")).doesNotThrowAnyException();

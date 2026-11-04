@@ -1,9 +1,9 @@
 package ai.helper2.scout.usecase
 
 import ai.helper2.scout.RunHistoryRetention
+import org.slf4j.LoggerFactory
 import java.time.Clock
 import java.time.Duration
-import org.slf4j.LoggerFactory
 
 /** The Scout's retention rule (ADR 0034): run records older than [scoutRuns] are deleted. */
 class PurgeExpiredData(

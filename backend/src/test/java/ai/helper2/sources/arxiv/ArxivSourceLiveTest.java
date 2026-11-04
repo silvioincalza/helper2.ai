@@ -1,17 +1,20 @@
 package ai.helper2.sources.arxiv;
 
+import ai.helper2.search.SourceHit;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
+import java.time.Clock;
+import java.util.List;
+
 import static ai.helper2.sources.SourceFixtures.live;
 import static ai.helper2.sources.SourceFixtures.liveHttp;
 import static ai.helper2.sources.SourceFixtures.query;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import ai.helper2.search.SourceHit;
-import java.time.Clock;
-import java.util.List;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-
-/** Opt-in: the real arXiv API (no key; one call, within its one request per 3 s). ./gradlew liveTest */
+/**
+ * Opt-in: the real arXiv API (no key; one call, within its one request per 3 s). ./gradlew liveTest
+ */
 @Tag("live")
 class ArxivSourceLiveTest {
 

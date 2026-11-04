@@ -1,12 +1,13 @@
 package ai.helper2.platform.llm;
 
+import org.jspecify.annotations.Nullable;
+
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Every daily model budget of the app and today's count of each, for the back office. It is the {@link CallCounter} the
@@ -16,14 +17,9 @@ import org.jspecify.annotations.Nullable;
  */
 public final class BudgetLedger implements CallCounter {
 
-    /** One budget today: its daily limit and the calls counted so far, null when the count is unknown. */
-    public record Reading(String name, int dailyLimit, @Nullable Long usedToday) {
-    }
-
     private final @Nullable RedisCallCounter store;
     private final Clock clock;
     private final Map<String, Integer> limits = new ConcurrentSkipListMap<>();
-
     BudgetLedger(@Nullable RedisCallCounter store, Clock clock) {
         this.store = store;
         this.clock = clock;
@@ -39,7 +35,9 @@ public final class BudgetLedger implements CallCounter {
         limits.put(name, dailyCalls);
     }
 
-    /** Every declared budget, by name. A count above the limit (refused calls count too) shows as the limit. */
+    /**
+     * Every declared budget, by name. A count above the limit (refused calls count too) shows as the limit.
+     */
     public List<Reading> today() {
         LocalDate day = LocalDate.ofInstant(clock.instant(), ZoneOffset.UTC);
         return limits.entrySet().stream()
@@ -49,5 +47,11 @@ public final class BudgetLedger implements CallCounter {
                 return new Reading(e.getKey(), e.getValue(), shown);
             })
             .toList();
+    }
+
+    /**
+     * One budget today: its daily limit and the calls counted so far, null when the count is unknown.
+     */
+    public record Reading(String name, int dailyLimit, @Nullable Long usedToday) {
     }
 }

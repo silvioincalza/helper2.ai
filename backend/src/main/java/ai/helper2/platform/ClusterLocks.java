@@ -1,11 +1,12 @@
 package ai.helper2.platform;
 
-import java.time.Duration;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import net.javacrumbs.shedlock.core.DefaultLockingTaskExecutor;
 import net.javacrumbs.shedlock.core.ExtensibleLockProvider;
 import net.javacrumbs.shedlock.support.KeepAliveLockProvider;
+
+import java.time.Duration;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * Cluster locks for tasks of unknown length (a Scout run: minutes to hours). Such a lock is a short lease that
@@ -27,7 +28,9 @@ public final class ClusterLocks implements AutoCloseable {
         });
     }
 
-    /** A lock named {@code name}, held for {@code lease} (at least 30 s) at a time and renewed while its task runs. */
+    /**
+     * A lock named {@code name}, held for {@code lease} (at least 30 s) at a time and renewed while its task runs.
+     */
     public ClusterLock keptAlive(String name, Duration lease) {
         return new ClusterLock(new DefaultLockingTaskExecutor(new KeepAliveLockProvider(provider, renewals)), name, lease, Duration.ZERO);
     }

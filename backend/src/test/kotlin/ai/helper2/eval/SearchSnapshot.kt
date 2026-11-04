@@ -91,17 +91,23 @@ class SnapshotTaker(
         recording.forEach { it.hits = emptyList() }
         val outcome = search.search(SearchRequest(text))
         val sources = outcome.statuses.map { st ->
-            val hits = if (st.outcome == SourceOutcome.SUCCEEDED) recording.first { it.descriptor.id == st.source.id }.hits else emptyList()
-            SourceSnapshot(st.source.id, st.source.name, st.source.mode, st.source.priority, st.outcome,
-                st.latency?.toMillis(), hits.map(::snapshotOf))
+            val hits =
+                if (st.outcome == SourceOutcome.SUCCEEDED) recording.first { it.descriptor.id == st.source.id }.hits else emptyList()
+            SourceSnapshot(
+                st.source.id, st.source.name, st.source.mode, st.source.priority, st.outcome,
+                st.latency?.toMillis(), hits.map(::snapshotOf)
+            )
         }
         val interpretation = outcome.interpretation
-        return SearchSnapshot(queryId, text, outcome.executedAt, interpretation.requiredVariants.first().split(' '),
-            interpretation.typeHints, sources) to outcome
+        return SearchSnapshot(
+            queryId, text, outcome.executedAt, interpretation.requiredVariants.first().split(' '),
+            interpretation.typeHints, sources
+        ) to outcome
     }
 
     private class RecordingSource(private val delegate: SearchSource) : SearchSource {
-        @Volatile var hits: List<SourceHit> = emptyList()
+        @Volatile
+        var hits: List<SourceHit> = emptyList()
         override val descriptor: SourceDescriptor get() = delegate.descriptor
         override fun search(query: SourceQuery): List<SourceHit> = delegate.search(query).also { hits = it }
     }
@@ -112,7 +118,8 @@ class SnapshotTaker(
             override fun put(key: String, value: ai.helper2.search.CachedHits, ttl: Duration) {}
         }
 
-        fun snapshotOf(h: SourceHit) = HitSnapshot(h.rank, h.url.toString(), h.canonicalUrl.value, h.repositoryUrl?.value,
+        fun snapshotOf(h: SourceHit) = HitSnapshot(
+            h.rank, h.url.toString(), h.canonicalUrl.value, h.repositoryUrl?.value,
             h.title, h.description, h.type, h.audience, h.tags, h.popularity.associate { it.kind to it.value })
     }
 }
@@ -124,8 +131,12 @@ class SearchReplay(private val merger: ResultMerger = ResultMerger(), private va
     fun rank(snapshot: SearchSnapshot, without: Set<String> = emptySet()): List<MergedResult> {
         val kept = snapshot.sources.filter { it.id !in without }
         val contexts = kept.associate { s ->
-            s.id to SourceContext(SourceDescriptor(s.id, s.name, s.mode, PLACEHOLDER, null, null, ResourceType.entries.toSet(),
-                Duration.ofSeconds(1), Duration.ZERO, priority = s.priority), ServedFrom.LIVE)
+            s.id to SourceContext(
+                SourceDescriptor(
+                    s.id, s.name, s.mode, PLACEHOLDER, null, null, ResourceType.entries.toSet(),
+                    Duration.ofSeconds(1), Duration.ZERO, priority = s.priority
+                ), ServedFrom.LIVE
+            )
         }
         val hits = kept.flatMap { s -> s.hits.map { hitOf(s.id, it, snapshot.recordedAt) } }
         return ranking.rank(merger.merge(hits, contexts), snapshot.text, null, snapshot.typeHints, snapshot.titleTerms)

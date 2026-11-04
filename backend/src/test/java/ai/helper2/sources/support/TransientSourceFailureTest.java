@@ -1,10 +1,11 @@
 package ai.helper2.sources.support;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.search.SourceFailure;
-import java.time.Duration;
 import org.junit.jupiter.api.Test;
+
+import java.time.Duration;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class TransientSourceFailureTest {
 

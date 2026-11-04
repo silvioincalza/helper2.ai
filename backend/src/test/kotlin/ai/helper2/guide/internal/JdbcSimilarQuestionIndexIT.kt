@@ -3,21 +3,21 @@ package ai.helper2.guide.internal
 import ai.helper2.TestcontainersConfiguration
 import ai.helper2.guide.IndexedQuestion
 import ai.helper2.guide.usecase.PurgeExpiredData
-import java.time.Clock
-import java.time.Duration
-import java.time.Instant
-import java.time.ZoneOffset
-import java.util.UUID
-import kotlin.math.cos
-import kotlin.math.sin
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.annotation.Import
 import org.springframework.jdbc.core.simple.JdbcClient
+import java.time.Clock
+import java.time.Duration
+import java.time.Instant
+import java.time.ZoneOffset
+import java.util.*
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 /**
  * The similar-question index on the real PostgreSQL with pgvector (ADR 0041): nearest live question by cosine within a
@@ -28,7 +28,8 @@ import org.springframework.jdbc.core.simple.JdbcClient
 @Import(TestcontainersConfiguration::class)
 class JdbcSimilarQuestionIndexIT {
 
-    @Autowired lateinit var jdbc: JdbcClient
+    @Autowired
+    lateinit var jdbc: JdbcClient
 
     private val later = Instant.now().plus(Duration.ofHours(24))
 
@@ -63,8 +64,10 @@ class JdbcSimilarQuestionIndexIT {
         index().add(group, IndexedQuestion(key, vector(0.0), later))
 
         assertEquals(1.0, index().nearest(group, vector(0.0), Instant.now())!!.similarity, 1e-6)
-        assertEquals(1L, jdbc.sql("SELECT count(*) FROM guide_similar_question WHERE answer_key = :k").param("k", key)
-            .query(Long::class.java).single())
+        assertEquals(
+            1L, jdbc.sql("SELECT count(*) FROM guide_similar_question WHERE answer_key = :k").param("k", key)
+                .query(Long::class.java).single()
+        )
     }
 
     @Test
@@ -77,7 +80,9 @@ class JdbcSimilarQuestionIndexIT {
         val deleted = PurgeExpiredData(index(), Clock.fixed(now, ZoneOffset.UTC)).purge()
 
         assertEquals(1, deleted)
-        assertEquals(1L, jdbc.sql("SELECT count(*) FROM guide_similar_question WHERE group_key = :g").param("g", group)
-            .query(Long::class.java).single())
+        assertEquals(
+            1L, jdbc.sql("SELECT count(*) FROM guide_similar_question WHERE group_key = :g").param("g", group)
+                .query(Long::class.java).single()
+        )
     }
 }

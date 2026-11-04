@@ -6,11 +6,11 @@ import ai.helper2.guide.ClientQuota;
 import ai.helper2.guide.GuideAnswerCache;
 import ai.helper2.guide.GuideAnswerStore;
 import ai.helper2.guide.GuideModel;
+import ai.helper2.guide.GuideValidator;
 import ai.helper2.guide.SimilarQuestionIndex;
 import ai.helper2.guide.SimilarQuestions;
-import ai.helper2.platform.cache.SharedCaches;
 import ai.helper2.guide.usecase.AskGuide;
-import ai.helper2.guide.GuideValidator;
+import ai.helper2.platform.cache.SharedCaches;
 import ai.helper2.platform.llm.CallCounter;
 import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.LlmSettings;
@@ -20,9 +20,6 @@ import ai.helper2.search.usecase.SearchResources;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
-import java.time.Clock;
-import java.time.Duration;
-import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ChatModel;
@@ -33,36 +30,18 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.Clock;
+import java.time.Duration;
+import java.util.List;
+
 @Configuration(proxyBeanMethods = false)
 class GuideConfiguration {
 
-    private static final Logger log = LoggerFactory.getLogger(GuideConfiguration.class);
-
-    /** guide_similar_question.embedding is vector(1024), like resource_embedding. */
+    /**
+     * guide_similar_question.embedding is vector(1024), like resource_embedding.
+     */
     static final int INDEX_DIMENSIONS = 1024;
-
-    /** Guide answers in the shared cache (ADR 0041): they survive restarts and serve every replica, per build. */
-    @Bean
-    SharedGuideAnswerStore guideAnswerStore(SharedCaches caches, ObjectMapper json, @Value("${helper2.build.version:local}") String build) {
-        return new SharedGuideAnswerStore(caches.named("guide-answer"), json, build);
-    }
-
-    /** The similar-question index; also purged while reuse is off, so rows of an earlier setting go too. */
-    @Bean
-    JdbcSimilarQuestionIndex similarQuestionIndex(JdbcClient jdbc) {
-        return new JdbcSimilarQuestionIndex(jdbc);
-    }
-
-    /** Daily model-call cap of the guide (ADR 0017); every provider attempt takes one call. */
-    @Bean
-    DailyBudget guideBudget(Clock clock, CallCounter budgetCounter, MeterRegistry meters,
-                            @Value("${helper2.guide.daily-model-calls:600}") int dailyModelCalls) {
-        DailyBudget budget = new DailyBudget(dailyModelCalls, clock, "guide", budgetCounter);
-        Gauge.builder("helper2.guide.budget.remaining", budget, DailyBudget::remaining)
-            .description("Guide model calls left under today's cap (UTC day)")
-            .register(meters);
-        return budget;
-    }
+    private static final Logger log = LoggerFactory.getLogger(GuideConfiguration.class);
 
     /**
      * Reuse of a similar question's answer (ADR 0041): on only with a threshold, the question embedder of vector search
@@ -84,20 +63,49 @@ class GuideConfiguration {
             index, clock);
     }
 
+    /**
+     * Guide answers in the shared cache (ADR 0041): they survive restarts and serve every replica, per build.
+     */
+    @Bean
+    SharedGuideAnswerStore guideAnswerStore(SharedCaches caches, ObjectMapper json, @Value("${helper2.build.version:local}") String build) {
+        return new SharedGuideAnswerStore(caches.named("guide-answer"), json, build);
+    }
+
+    /**
+     * The similar-question index; also purged while reuse is off, so rows of an earlier setting go too.
+     */
+    @Bean
+    JdbcSimilarQuestionIndex similarQuestionIndex(JdbcClient jdbc) {
+        return new JdbcSimilarQuestionIndex(jdbc);
+    }
+
+    /**
+     * Daily model-call cap of the guide (ADR 0017); every provider attempt takes one call.
+     */
+    @Bean
+    DailyBudget guideBudget(Clock clock, CallCounter budgetCounter, MeterRegistry meters,
+                            @Value("${helper2.guide.daily-model-calls:600}") int dailyModelCalls) {
+        DailyBudget budget = new DailyBudget(dailyModelCalls, clock, "guide", budgetCounter);
+        Gauge.builder("helper2.guide.budget.remaining", budget, DailyBudget::remaining)
+            .description("Guide model calls left under today's cap (UTC day)")
+            .register(meters);
+        return budget;
+    }
+
     @Bean
     AskGuide guideService(SearchResources search, ObjectProvider<ChatModel> chatModel, LlmSettings llm, Clock clock,
-                              DailyBudget guideBudget, CallCounter budgetCounter, GuideAnswerStore answerStore,
-                              ObjectProvider<Embedder> embedder, JdbcSimilarQuestionIndex similarQuestionIndex,
-                              ModelCallMetrics metrics, ObservationRegistry observations, MeterRegistry meters, Resilience resilience,
-                              @Value("${helper2.llm.native-schema:true}") boolean nativeSchema,
-                              @Value("${helper2.llm.choose-max-tokens:" + SpringAiGuideModel.DEFAULT_CHOOSE_MAX_TOKENS + "}") int chooseMaxTokens,
-                              @Value("${helper2.guide.cache-ttl:PT24H}") Duration cacheTtl,
-                              @Value("${helper2.guide.similar-threshold:}") String similarThreshold,
-                              @Value("${helper2.guide.max-candidates:24}") int maxCandidates,
-                              @Value("${helper2.guide.client-daily-questions:30}") int clientDailyQuestions,
-                              @Value("${helper2.guide.thinking.plan:false}") boolean thinkPlan,
-                              @Value("${helper2.guide.thinking.choose:false}") boolean thinkChoose,
-                              @Value("${helper2.guide.thinking.verify:false}") boolean thinkVerify) {
+                          DailyBudget guideBudget, CallCounter budgetCounter, GuideAnswerStore answerStore,
+                          ObjectProvider<Embedder> embedder, JdbcSimilarQuestionIndex similarQuestionIndex,
+                          ModelCallMetrics metrics, ObservationRegistry observations, MeterRegistry meters, Resilience resilience,
+                          @Value("${helper2.llm.native-schema:true}") boolean nativeSchema,
+                          @Value("${helper2.llm.choose-max-tokens:" + SpringAiGuideModel.DEFAULT_CHOOSE_MAX_TOKENS + "}") int chooseMaxTokens,
+                          @Value("${helper2.guide.cache-ttl:PT24H}") Duration cacheTtl,
+                          @Value("${helper2.guide.similar-threshold:}") String similarThreshold,
+                          @Value("${helper2.guide.max-candidates:24}") int maxCandidates,
+                          @Value("${helper2.guide.client-daily-questions:30}") int clientDailyQuestions,
+                          @Value("${helper2.guide.thinking.plan:false}") boolean thinkPlan,
+                          @Value("${helper2.guide.thinking.choose:false}") boolean thinkChoose,
+                          @Value("${helper2.guide.thinking.verify:false}") boolean thinkVerify) {
         ChatModel model = chatModel.getIfAvailable();
         GuideModel guideModel = null;
         if (llm.usable(model) && llm.hasReasoningModel()) {

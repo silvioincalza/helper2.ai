@@ -12,6 +12,8 @@ import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.DateFact;
 import ai.helper2.shared.ResourceId;
 import ai.helper2.shared.SourceMode;
+import org.springframework.stereotype.Component;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -21,9 +23,10 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.springframework.stereotype.Component;
 
-/** Stored resources as the same cards search shows; shared by the detail page and the home page lists. */
+/**
+ * Stored resources as the same cards search shows; shared by the detail page and the home page lists.
+ */
 @Component
 public class ResourceCards {
 
@@ -36,7 +39,15 @@ public class ResourceCards {
         this.catalog = catalog;
     }
 
-    /** The card of resource [id]; empty when it is gone or its records no longer merge. */
+    private static SourceDescriptor withMode(SourceDescriptor d, SourceMode mode) {
+        return Objects.equals(d.getMode(), mode) ? d : new SourceDescriptor(d.getId(), d.getName(), mode, d.getHomepage(),
+            d.getTermsUrl(), d.getAttribution(), d.getResourceTypes(), d.getTimeout(), d.getCacheTtl(), d.getEnabled(),
+            d.getPriority());
+    }
+
+    /**
+     * The card of resource [id]; empty when it is gone or its records no longer merge.
+     */
     public Optional<MergedResult> cardOf(UUID id) {
         return cardsOf(List.of(id)).stream().findFirst();
     }
@@ -89,11 +100,5 @@ public class ResourceCards {
             .orElseGet(() -> merged.stream().max(Comparator.comparingInt(m -> m.getHits().size())).orElseThrow());
         CanonicalUrl canonical = Objects.requireNonNullElse(CanonicalUrl.of(row.canonicalUrl()), card.getCanonicalUrl());
         return Optional.of(card.withIdentity(id, canonical).withDiscovered(DateFact.observed(row.firstDiscoveredAt())));
-    }
-
-    private static SourceDescriptor withMode(SourceDescriptor d, SourceMode mode) {
-        return Objects.equals(d.getMode(), mode) ? d : new SourceDescriptor(d.getId(), d.getName(), mode, d.getHomepage(),
-            d.getTermsUrl(), d.getAttribution(), d.getResourceTypes(), d.getTimeout(), d.getCacheTtl(), d.getEnabled(),
-            d.getPriority());
     }
 }

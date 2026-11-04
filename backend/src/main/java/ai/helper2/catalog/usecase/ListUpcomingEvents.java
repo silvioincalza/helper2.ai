@@ -3,11 +3,14 @@ package ai.helper2.catalog.usecase;
 import ai.helper2.catalog.internal.ResourceCards;
 import ai.helper2.catalog.internal.ResourceStore;
 import ai.helper2.search.MergedResult;
-import java.time.Instant;
-import java.util.List;
 import org.springframework.stereotype.Service;
 
-/** The home page's upcoming events. */
+import java.time.Instant;
+import java.util.List;
+
+/**
+ * The home page's upcoming events.
+ */
 @Service
 public class ListUpcomingEvents {
 
@@ -19,7 +22,9 @@ public class ListUpcomingEvents {
         this.cards = cards;
     }
 
-    /** Events that have not ended by [today], soonest first, as the same cards search shows; six statements for any limit. */
+    /**
+     * Events that have not ended by [today], soonest first, as the same cards search shows; six statements for any limit.
+     */
     public List<MergedResult> list(Instant today, int limit) {
         return cards.cardsOf(store.upcomingEvents(today, limit));
     }

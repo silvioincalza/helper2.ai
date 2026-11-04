@@ -1,17 +1,7 @@
 package ai.helper2.api;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.TestcontainersConfiguration;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.redis.autoconfigure.DataRedisConnectionDetails;
@@ -23,6 +13,17 @@ import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Redis down (nothing listens on its port): anonymous use keeps working and creates no session; sign-in, which
@@ -44,40 +45,20 @@ import org.springframework.test.context.DynamicPropertySource;
 @Import({TestcontainersConfiguration.class, RedisDownIT.UnreachableRedis.class})
 class RedisDownIT {
 
-    @TestConfiguration(proxyBeanMethods = false)
-    static class UnreachableRedis {
-        @Bean
-        @Primary
-        DataRedisConnectionDetails unreachableRedis() throws IOException {
-            int closedPort;
-            try (ServerSocket socket = new ServerSocket(0)) {
-                closedPort = socket.getLocalPort();
-            }
-            DataRedisConnectionDetails.Standalone standalone = DataRedisConnectionDetails.Standalone.of("localhost", closedPort);
-            return new DataRedisConnectionDetails() {
-                @Override
-                public Standalone getStandalone() {
-                    return standalone;
-                }
-            };
-        }
-    }
-
-    /** Sign-in is on, so the app needs an admin port to start (ADR 0035); sign-in starts there, as in prod. */
+    /**
+     * Sign-in is on, so the app needs an admin port to start (ADR 0035); sign-in starts there, as in prod.
+     */
     static final int ADMIN_PORT = HttpEdgeIT.freePort();
+    final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
+    @LocalServerPort
+    int port;
+    @Autowired
+    MeterRegistry meters;
 
     @DynamicPropertySource
     static void adminPort(DynamicPropertyRegistry r) {
         r.add("helper2.admin.port", () -> ADMIN_PORT);
     }
-
-    @LocalServerPort
-    int port;
-
-    @Autowired
-    MeterRegistry meters;
-
-    final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
 
     HttpResponse<String> get(String path) throws Exception {
         return getAt(port, path);
@@ -98,7 +79,9 @@ class RedisDownIT {
         assertThat(meters.counter("helper2.rate-limit.fallback", "limiter", "search").count()).isPositive();
     }
 
-    /** A signed-in admin's browser keeps sending its session cookie: served as anonymous until Redis is back. */
+    /**
+     * A signed-in admin's browser keeps sending its session cookie: served as anonymous until Redis is back.
+     */
     @Test
     void aRequestWithASessionCookieIsServedAsAnonymous() throws Exception {
         for (String path : List.of("/api/v1/search?q=signed+in", "/api/v1/me")) {
@@ -121,5 +104,24 @@ class RedisDownIT {
         assertThat(r.headers().firstValue("Location")).hasValueSatisfying(l -> assertThat(l).endsWith("/admin?signin=failed"));
         assertThat(r.headers().allValues("Set-Cookie")).noneMatch(c -> c.startsWith("SESSION="));
         assertThat(Duration.ofNanos(System.nanoTime() - start)).isLessThan(Duration.ofSeconds(3));
+    }
+
+    @TestConfiguration(proxyBeanMethods = false)
+    static class UnreachableRedis {
+        @Bean
+        @Primary
+        DataRedisConnectionDetails unreachableRedis() throws IOException {
+            int closedPort;
+            try (ServerSocket socket = new ServerSocket(0)) {
+                closedPort = socket.getLocalPort();
+            }
+            DataRedisConnectionDetails.Standalone standalone = DataRedisConnectionDetails.Standalone.of("localhost", closedPort);
+            return new DataRedisConnectionDetails() {
+                @Override
+                public Standalone getStandalone() {
+                    return standalone;
+                }
+            };
+        }
     }
 }

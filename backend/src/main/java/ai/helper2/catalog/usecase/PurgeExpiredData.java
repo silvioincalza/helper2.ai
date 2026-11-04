@@ -1,13 +1,14 @@
 package ai.helper2.catalog.usecase;
 
 import ai.helper2.catalog.internal.CatalogRetention;
-import java.time.Clock;
-import java.time.Duration;
-import java.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 
 /**
  * The catalog's retention rules (ADR 0034), each with its own period (helper2.retention.*). Review items and issue
@@ -17,12 +18,6 @@ import org.springframework.stereotype.Service;
 public class PurgeExpiredData {
 
     private static final Logger log = LoggerFactory.getLogger(PurgeExpiredData.class);
-
-    /** What one purge deleted, per rule. */
-    public record Purged(int reviewItems, int issueReports, int enrichmentRuns, int webNewsRecords, int pastEvents,
-                         int observedResources) {
-    }
-
     private final CatalogRetention retention;
     private final Clock clock;
     private final Duration resolvedReviewItems;
@@ -31,7 +26,6 @@ public class PurgeExpiredData {
     private final Duration webNews;
     private final Duration pastEvents;
     private final Duration observedUnseen;
-
     public PurgeExpiredData(CatalogRetention retention, Clock clock,
                             @Value("${helper2.retention.resolved-review-items}") Duration resolvedReviewItems,
                             @Value("${helper2.retention.resolved-issue-reports}") Duration resolvedIssueReports,
@@ -60,5 +54,12 @@ public class PurgeExpiredData {
             retention.deleteObservedUnseenSince(now.minus(observedUnseen)));
         log.info("catalog retention: {}", purged);
         return purged;
+    }
+
+    /**
+     * What one purge deleted, per rule.
+     */
+    public record Purged(int reviewItems, int issueReports, int enrichmentRuns, int webNewsRecords, int pastEvents,
+                         int observedResources) {
     }
 }

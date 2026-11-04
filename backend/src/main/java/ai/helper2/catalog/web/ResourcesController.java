@@ -26,6 +26,13 @@ import ai.helper2.platform.BadRequestException;
 import ai.helper2.platform.NotFoundException;
 import ai.helper2.search.web.CardMapper;
 import ai.helper2.shared.UtcTimes;
+import org.jspecify.annotations.Nullable;
+import org.springframework.http.CacheControl;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -33,12 +40,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.jspecify.annotations.Nullable;
-import org.springframework.http.CacheControl;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -59,6 +60,10 @@ class ResourcesController implements ResourcesApi {
         this.clock = clock;
         this.reports = reports;
         this.currentUser = currentUser;
+    }
+
+    private static List<EvidenceDto> evidence(List<ResourceDetail.Evidence> list) {
+        return list.stream().map(e -> new EvidenceDto(e.id(), e.sourceUrl(), UtcTimes.odt(e.retrievedAt())).excerpt(e.excerpt())).toList();
     }
 
     @Override
@@ -112,9 +117,5 @@ class ResourcesController implements ResourcesApi {
                 currentUser.id().orElse(null))
             .orElseThrow(() -> new NotFoundException("Resource not found in the Helper2 index."));
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(new IssueReportAcceptedDto(reportId));
-    }
-
-    private static List<EvidenceDto> evidence(List<ResourceDetail.Evidence> list) {
-        return list.stream().map(e -> new EvidenceDto(e.id(), e.sourceUrl(), UtcTimes.odt(e.retrievedAt())).excerpt(e.excerpt())).toList();
     }
 }

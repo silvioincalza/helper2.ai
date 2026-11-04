@@ -1,8 +1,8 @@
 package ai.helper2.platform;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class ClientKeyTest {
 
@@ -31,7 +31,9 @@ class ClientKeyTest {
         assertThat(ClientKey.of("fe80::1%25eth0")).isEqualTo(ClientKey.of("fe80::2"));
     }
 
-    /** The rate limiters and the guide quota key a client the same way, zone id included. */
+    /**
+     * The rate limiters and the guide quota key a client the same way, zone id included.
+     */
     @Test
     void theRateLimitersCountAClientByItsKey() {
         InMemoryRateLimiter limiter = new InMemoryRateLimiter(1, java.time.Duration.ofMinutes(1), java.time.Clock.systemUTC());

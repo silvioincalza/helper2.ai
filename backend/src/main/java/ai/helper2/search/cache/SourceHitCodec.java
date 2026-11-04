@@ -7,33 +7,64 @@ import ai.helper2.search.SourceHit;
 import ai.helper2.shared.Audience;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.DateFact;
+import ai.helper2.shared.DatePrecision;
 import ai.helper2.shared.EventFormat;
 import ai.helper2.shared.EventKind;
-import ai.helper2.shared.DatePrecision;
 import ai.helper2.shared.Pricing;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.TechLevel;
 import ai.helper2.shared.ValueOrigin;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
+
 import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ArrayNode;
-import tools.jackson.databind.node.ObjectNode;
 
-/** Explicit, versioned JSON form of cached hits. Keeps Jackson out of the domain. */
+/**
+ * Explicit, versioned JSON form of cached hits. Keeps Jackson out of the domain.
+ */
 final class SourceHitCodec {
 
-    /** Bumped when the shape changes, so an entry written in another shape is a cache miss. */
+    /**
+     * Bumped when the shape changes, so an entry written in another shape is a cache miss.
+     */
     static final int VERSION = 1;
     private final ObjectMapper json;
 
     SourceHitCodec(ObjectMapper json) {
         this.json = json;
+    }
+
+    private static void date(ObjectNode n, String field, DateFact f) {
+        if (f.getValue() != null) {
+            n.putObject(field).put("value", f.getValue().toString()).put("precision", f.getPrecision().name())
+                .put("sourceId", f.getSourceId());
+        }
+    }
+
+    private static DateFact readDate(JsonNode n) {
+        if (n.isMissingNode() || n.isNull()) {
+            return DateFact.unknown();
+        }
+        return new DateFact(Instant.parse(n.path("value").asString()), DatePrecision.valueOf(n.path("precision").asString()),
+            n.path("sourceId").asString(), List.of(), false);
+    }
+
+    private static String text(JsonNode n, String field) {
+        JsonNode v = n.path(field);
+        return v.isMissingNode() || v.isNull() ? null : v.asString();
+    }
+
+    private static Set<String> strings(JsonNode arr) {
+        Set<String> out = new LinkedHashSet<>();
+        arr.forEach(x -> out.add(x.asString()));
+        return out;
     }
 
     String encode(CachedHits value) {
@@ -79,7 +110,9 @@ final class SourceHitCodec {
         return json.writeValueAsString(root);
     }
 
-    /** Returns null for unknown versions or corrupt entries (treated as a cache miss). */
+    /**
+     * Returns null for unknown versions or corrupt entries (treated as a cache miss).
+     */
     CachedHits decode(String raw) {
         try {
             JsonNode root = json.readTree(raw);
@@ -113,31 +146,5 @@ final class SourceHitCodec {
         } catch (RuntimeException e) {
             return null;
         }
-    }
-
-    private static void date(ObjectNode n, String field, DateFact f) {
-        if (f.getValue() != null) {
-            n.putObject(field).put("value", f.getValue().toString()).put("precision", f.getPrecision().name())
-                .put("sourceId", f.getSourceId());
-        }
-    }
-
-    private static DateFact readDate(JsonNode n) {
-        if (n.isMissingNode() || n.isNull()) {
-            return DateFact.unknown();
-        }
-        return new DateFact(Instant.parse(n.path("value").asString()), DatePrecision.valueOf(n.path("precision").asString()),
-            n.path("sourceId").asString(), List.of(), false);
-    }
-
-    private static String text(JsonNode n, String field) {
-        JsonNode v = n.path(field);
-        return v.isMissingNode() || v.isNull() ? null : v.asString();
-    }
-
-    private static Set<String> strings(JsonNode arr) {
-        Set<String> out = new LinkedHashSet<>();
-        arr.forEach(x -> out.add(x.asString()));
-        return out;
     }
 }

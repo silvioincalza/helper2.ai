@@ -23,7 +23,7 @@ import java.net.URI
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
-import java.util.UUID
+import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -35,8 +35,12 @@ class EnrichResourceGapRoundTest {
     private val record = UUID.randomUUID()
     private val target = GapTarget(GapKind.GITHUB_README, "acme", "tool", record)
     private val base = EnrichmentMaterial(
-        EnrichmentInput("tool", listOf(Material(record, URI("https://github.com/acme/tool"), NOW, "acme/tool\nA tool for agents."))),
-        "source-text-hash", target)
+        EnrichmentInput(
+            "tool",
+            listOf(Material(record, URI("https://github.com/acme/tool"), NOW, "acme/tool\nA tool for agents."))
+        ),
+        "source-text-hash", target
+    )
     private val readme = "# Tool\nA tool for agents.\n\n## License\nThis project is released under the MIT License.\n"
     private val readmeUrl = URI("https://github.com/acme/tool#readme")
 
@@ -49,7 +53,15 @@ class EnrichResourceGapRoundTest {
         var claimFromReadme = false
         override fun propose(input: EnrichmentInput): EnrichmentProposal {
             inputs += input
-            val extra = input.materials.firstOrNull { it.extra } ?: return EnrichmentProposal(listOf(ProposedField("license", "MIT", emptyList())))
+            val extra = input.materials.firstOrNull { it.extra } ?: return EnrichmentProposal(
+                listOf(
+                    ProposedField(
+                        "license",
+                        "MIT",
+                        emptyList()
+                    )
+                )
+            )
             val cite = Citation(extra.evidenceId.toString(), "released under the MIT License")
             return EnrichmentProposal(
                 fields = listOf(ProposedField("license", "MIT", listOf(cite))),
@@ -63,14 +75,21 @@ class EnrichResourceGapRoundTest {
         override fun load(resourceId: UUID) = base
         override fun lastFingerprint(resourceId: UUID) = last
         override fun resourcesTitled(titles: Collection<String>, resourceId: UUID) = emptyMap<String, UUID>()
-        override fun save(resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: Instant,
-                          result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?) {
+        override fun save(
+            resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: Instant,
+            result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?
+        ) {
             saved += Saved(inputFingerprint, result, outcome, extraEvidence)
             if (outcome != EnrichmentOutcome.LLM_UNAVAILABLE && outcome != EnrichmentOutcome.FAILED) last = inputFingerprint
         }
     }
 
-    private data class Saved(val fingerprint: String, val result: ValidationResult?, val outcome: EnrichmentOutcome, val extra: String?)
+    private data class Saved(
+        val fingerprint: String,
+        val result: ValidationResult?,
+        val outcome: EnrichmentOutcome,
+        val extra: String?
+    )
 
     private fun readmeSource(license: String? = null, calls: MutableList<GapTarget> = mutableListOf()) =
         ExtraEvidence { t -> calls += t; ExtraText(readmeUrl, NOW, readme, license) }
@@ -118,7 +137,8 @@ class EnrichResourceGapRoundTest {
             override val provider = "fake"
             override val model = "m"
             override val promptVersion = "enrich-v3"
-            override fun propose(input: EnrichmentInput) = EnrichmentProposal(listOf(ProposedField("license", "MIT", emptyList())))
+            override fun propose(input: EnrichmentInput) =
+                EnrichmentProposal(listOf(ProposedField("license", "MIT", emptyList())))
         }
         val store = Store()
 
@@ -139,8 +159,10 @@ class EnrichResourceGapRoundTest {
             val store = object : EnrichmentStore by Store() {
                 val saved = mutableListOf<String?>()
                 override fun load(resourceId: UUID) = material
-                override fun save(resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: Instant,
-                                  result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?) {
+                override fun save(
+                    resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: Instant,
+                    result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?
+                ) {
                     saved += extraEvidence
                 }
             }

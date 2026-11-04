@@ -19,8 +19,8 @@ import ai.helper2.guide.TrailCheck
 import ai.helper2.guide.isSubject
 import ai.helper2.search.MergedResult
 import ai.helper2.search.SearchRequest
-import java.time.Clock
 import org.slf4j.LoggerFactory
+import java.time.Clock
 
 /** WHAT_IS (ADR 0032): a few quoted sentences about the subject, its own card and related ones. */
 internal class ExplainAnswer(
@@ -36,6 +36,7 @@ internal class ExplainAnswer(
     private companion object {
         const val EXPLAIN_CANDIDATES = 12
         const val RELATED_CARDS = 4
+
         /** Not "the subject's own page": a concept ("retrieval augmented generation") has none, only namesakes. */
         const val SUBJECT_REASON = "Matches the name you asked about."
         const val RELATED_REASON = "Related search result."
@@ -47,18 +48,50 @@ internal class ExplainAnswer(
      */
     fun answer(q: Question, r: Reading, progress: GuideProgress, asked: Asked, model: GuideModel?): GuideAnswer {
         val subject = r.subjects.firstOrNull() ?: r.query
-        val outcome = steps.step(q, "search") { steps.find(q, r, SearchRequest(text = subject, path = q.path, size = maxCandidates, webQuery = r.webQuery), planned = r.subjects.isEmpty()) }
+        val outcome = steps.step(q, "search") {
+            steps.find(
+                q,
+                r,
+                SearchRequest(text = subject, path = q.path, size = maxCandidates, webQuery = r.webQuery),
+                planned = r.subjects.isEmpty()
+            )
+        }
         namesakes(r, outcome)?.let { return askBack(clock, r, it, outcome, progress) }
         // Only what can be quoted: an entry without a description cannot support a sentence. The subject's own entry
         // first, then web explainers (articles, news), which say what a thing is better than projects named after it.
         val ordered = outcome.results.filterNot { it.description.isNullOrBlank() }
-            .sortedWith(compareByDescending<MergedResult> { isSubject(it, subject) }.thenByDescending { it.type in WEB_ANNOUNCEMENTS })
+            .sortedWith(compareByDescending<MergedResult> {
+                isSubject(
+                    it,
+                    subject
+                )
+            }.thenByDescending { it.type in WEB_ANNOUNCEMENTS })
             .take(EXPLAIN_CANDIDATES)
         val candidates = ordered.mapIndexed { i, res -> Candidate("c${i + 1}", res) }
         progress.retrieved(candidates.size, outcome)
-        if (log.isDebugEnabled) log.debug("guide explain candidates: {}", candidates.map { "${it.key} ${it.result.type} ${it.result.title.take(60)} subject=${isSubject(it.result, subject)} desc=${it.result.description?.length ?: 0}" })
+        if (log.isDebugEnabled) log.debug(
+            "guide explain candidates: {}",
+            candidates.map {
+                "${it.key} ${it.result.type} ${it.result.title.take(60)} subject=${
+                    isSubject(
+                        it.result,
+                        subject
+                    )
+                } desc=${it.result.description?.length ?: 0}"
+            })
         if (candidates.isEmpty()) {
-            return GuideAnswer(GuideStatus.NO_CANDIDATES, subject, emptyList(), null, !r.modelFailed, 0, 0, outcome, clock.instant(), r.constraints)
+            return GuideAnswer(
+                GuideStatus.NO_CANDIDATES,
+                subject,
+                emptyList(),
+                null,
+                !r.modelFailed,
+                0,
+                0,
+                outcome,
+                clock.instant(),
+                r.constraints
+            )
         }
         // The subject's own card, then up to RELATED_CARDS - 1 related ones, in search order.
         val own = candidates.firstOrNull { isSubject(it.result, subject) }
@@ -66,8 +99,10 @@ internal class ExplainAnswer(
         fun cardsAnswer(status: GuideStatus, modelUsed: Boolean, explanation: Explanation?, rejected: Int) = GuideAnswer(
             status, subject,
             cards.map {
-                Recommendation(it.result, if (isSubject(it.result, subject)) SUBJECT_REASON else RELATED_REASON,
-                    (it.result.description ?: it.result.title).take(160), aiReasoned = false)
+                Recommendation(
+                    it.result, if (isSubject(it.result, subject)) SUBJECT_REASON else RELATED_REASON,
+                    (it.result.description ?: it.result.title).take(160), aiReasoned = false
+                )
             },
             null, modelUsed, candidates.size, rejected, outcome, clock.instant(), r.constraints, explanation = explanation,
         )
@@ -101,7 +136,15 @@ internal class ExplainAnswer(
         }
         progress.validated(kept.size, rejected)
         q.counts += "candidates=${candidates.size} proposed=${proposal.sentences.size} kept=${kept.size} rejected=$rejected"
-        val claims = kept.mapIndexed { i, (key, p) -> ReasonClaim("e${i + 1}", p.text.trim(), p.quote.trim(), byKey.getValue(key).text, emptyList()) }
+        val claims = kept.mapIndexed { i, (key, p) ->
+            ReasonClaim(
+                "e${i + 1}",
+                p.text.trim(),
+                p.quote.trim(),
+                byKey.getValue(key).text,
+                emptyList()
+            )
+        }
         val verdicts = if (claims.isEmpty()) emptyMap() else reasonCheck.verdicts(q, model, claims, progress)
         val sentences = kept.mapIndexedNotNull { i, (key, p) ->
             when (val v = verdicts["e${i + 1}"] ?: ReasonCheck.NOT_CHECKED) {
@@ -109,6 +152,7 @@ internal class ExplainAnswer(
                     removed += RemovedSuggestion(byKey.getValue(key).result.title, TrailCheck.REASON_NOT_SUPPORTED)
                     null
                 }
+
                 else -> ExplainedSentence(p.text.trim(), p.quote.trim(), byKey.getValue(key).result, v)
             }
         }

@@ -6,10 +6,13 @@ import ai.helper2.search.SearchMetrics;
 import ai.helper2.search.SourceStatus;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+
 import java.time.Duration;
 import java.util.List;
 
-/** Metrics: per-source outcome/latency, cache events, partial-result and zero-result frequency. No query text. */
+/**
+ * Metrics: per-source outcome/latency, cache events, partial-result and zero-result frequency. No query text.
+ */
 class MicrometerSearchMetrics implements SearchMetrics {
 
     private final MeterRegistry registry;
@@ -44,7 +47,9 @@ class MicrometerSearchMetrics implements SearchMetrics {
         Timer.builder("helper2.search.latency").publishPercentiles(0.5, 0.95).register(registry).record(latency);
     }
 
-    /** {@code helper2.tavily.credits{feature,tier}}: one per live call of the metered source; internal calls are {@code none}. */
+    /**
+     * {@code helper2.tavily.credits{feature,tier}}: one per live call of the metered source; internal calls are {@code none}.
+     */
     @Override
     public void creditSpent(String sourceId, Asker asker, QuotaTier tier) {
         registry.counter("helper2." + sourceId + ".credits",

@@ -1,8 +1,5 @@
 package ai.helper2.setup.internal;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 import ai.helper2.platform.http.ObservedHttp;
 import ai.helper2.setup.McpServerSpec;
 import ai.helper2.setup.RunOption;
@@ -10,16 +7,22 @@ import ai.helper2.setup.SetupUnavailable;
 import ai.helper2.setup.Transport;
 import ai.helper2.testing.FixtureServer;
 import io.micrometer.observation.ObservationRegistry;
+import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
+
 import java.net.URI;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Map;
-import org.junit.jupiter.api.Test;
-import tools.jackson.databind.json.JsonMapper;
 
-/** Parsing of real Official MCP Registry entries (trimmed), as fetched 2026-10-27. */
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+/**
+ * Parsing of real Official MCP Registry entries (trimmed), as fetched 2026-10-27.
+ */
 class RegistryMcpServerSpecsTest {
 
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-27T20:00:00Z"), ZoneOffset.UTC);

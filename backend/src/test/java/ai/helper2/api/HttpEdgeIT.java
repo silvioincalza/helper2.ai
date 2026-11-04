@@ -1,14 +1,6 @@
 package ai.helper2.api;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.TestcontainersConfiguration;
-import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +10,15 @@ import org.springframework.context.annotation.Import;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Real HTTP through the servlet container: cookies, sessions, CSRF, security headers, rate limiting. MockMvc would
@@ -46,25 +47,37 @@ class HttpEdgeIT {
      * would make the context cache (32) evict another, and closing it stops the shared Testcontainers.
      */
     static final int ADMIN_PORT = freePort();
+    final HttpClient http = HttpClient.newHttpClient();
+    final HttpClient noRedirects = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).build();
+    @LocalServerPort
+    int port;
+    @Autowired
+    StringRedisTemplate redis;
 
     @DynamicPropertySource
     static void adminPort(DynamicPropertyRegistry r) {
         r.add("helper2.admin.port", () -> ADMIN_PORT);
     }
 
-    @LocalServerPort
-    int port;
+    private static java.util.List<String> sessionCookies(HttpResponse<?> r) {
+        return r.headers().allValues("Set-Cookie").stream().filter(c -> c.startsWith("SESSION=")).toList();
+    }
 
-    @Autowired
-    StringRedisTemplate redis;
+    static int freePort() {
+        try (ServerSocket s = new ServerSocket(0)) {
+            return s.getLocalPort();
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
 
-    /** Rate-limit counts are in the Redis that every test context shares: each test starts from zero. */
+    /**
+     * Rate-limit counts are in the Redis that every test context shares: each test starts from zero.
+     */
     @BeforeEach
     void resetRateLimits() {
         redis.delete(redis.keys("h2:v1:rate:*"));
     }
-
-    final HttpClient http = HttpClient.newHttpClient();
 
     HttpResponse<String> send(HttpRequest.Builder b) throws Exception {
         return http.send(b.build(), HttpResponse.BodyHandlers.ofString());
@@ -147,10 +160,6 @@ class HttpEdgeIT {
         assertThat(last).isEqualTo(429);
     }
 
-    private static java.util.List<String> sessionCookies(HttpResponse<?> r) {
-        return r.headers().allValues("Set-Cookie").stream().filter(c -> c.startsWith("SESSION=")).toList();
-    }
-
     @Test
     void anonymousRequestsNeverCreateASession() throws Exception {
         java.util.Set<String> before = redis.keys("helper2:session:*");
@@ -165,6 +174,8 @@ class HttpEdgeIT {
         assertThat(responses).allSatisfy(r -> assertThat(sessionCookies(r)).isEmpty());
         assertThat(redis.keys("helper2:session:*")).isEqualTo(before);
     }
+
+    // ── Admin port (ADR 0035) ──
 
     @Test
     void signInKeepsItsStateInARedisSessionThatAnyReplicaCanRead() throws Exception {
@@ -197,10 +208,6 @@ class HttpEdgeIT {
         assertThat(statuses.subList(0, 3)).as("the encoded path really reaches the guide").containsOnly(200);
         assertThat(statuses.subList(3, 6)).as("encoded and plain paths share one budget").containsOnly(429);
     }
-
-    // ── Admin port (ADR 0035) ──
-
-    final HttpClient noRedirects = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).build();
 
     HttpResponse<String> getAt(int port, String path) throws Exception {
         return noRedirects.send(HttpRequest.newBuilder(URI.create("http://localhost:" + port + path)).build(), HttpResponse.BodyHandlers.ofString());
@@ -251,13 +258,5 @@ class HttpEdgeIT {
     @Test
     void thePublicApiStaysOnThePublicPort() throws Exception {
         assertThat(getAt(port, "/api/v1/me").statusCode()).isEqualTo(200);
-    }
-
-    static int freePort() {
-        try (ServerSocket s = new ServerSocket(0)) {
-            return s.getLocalPort();
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
     }
 }

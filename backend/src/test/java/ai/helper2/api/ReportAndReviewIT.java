@@ -1,5 +1,15 @@
 package ai.helper2.api;
 
+import ai.helper2.shared.CanonicalUrl;
+import ai.helper2.shared.ResourceId;
+import com.jayway.jsonpath.JsonPath;
+import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
+import java.util.List;
+import java.util.UUID;
+
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oauth2Login;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -8,21 +18,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import ai.helper2.shared.CanonicalUrl;
-import ai.helper2.shared.ResourceId;
-import com.jayway.jsonpath.JsonPath;
-import java.util.List;
-import java.util.UUID;
-import org.junit.jupiter.api.Test;
-import org.springframework.http.MediaType;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-
 class ReportAndReviewIT extends ApiTestBase {
 
+    final String deepl = ResourceId.of(CanonicalUrl.of("https://deepl.com/translator")).toString();
     @org.springframework.beans.factory.annotation.Autowired
     org.springframework.context.ApplicationContext context;
-
-    final String deepl = ResourceId.of(CanonicalUrl.of("https://deepl.com/translator")).toString();
 
     @Test
     void reportOpensAReviewItemThatAnAdminCanResolve() throws Exception {

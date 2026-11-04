@@ -18,7 +18,9 @@ final class SharedCacheRetention {
         this.jdbc = jdbc;
     }
 
-    /** Returns how many entries were deleted. */
+    /**
+     * Returns how many entries were deleted.
+     */
     int purge() {
         int deleted = jdbc.sql("DELETE FROM ai_cache WHERE expires_at <= now()").update();
         log.info("shared cache retention: {} expired entr{} deleted", deleted, deleted == 1 ? "y" : "ies");

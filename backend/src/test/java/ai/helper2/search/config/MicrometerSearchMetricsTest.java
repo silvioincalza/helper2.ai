@@ -1,13 +1,16 @@
 package ai.helper2.search.config;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.time.Duration;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 
-/** The zero-result rate is a count with one tag: no query text reaches the metrics. */
+import java.time.Duration;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * The zero-result rate is a count with one tag: no query text reaches the metrics.
+ */
 class MicrometerSearchMetricsTest {
 
     @Test

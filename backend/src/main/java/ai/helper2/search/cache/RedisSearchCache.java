@@ -3,13 +3,14 @@ package ai.helper2.search.cache;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.search.CachedHits;
 import ai.helper2.search.SearchCache;
-import java.time.Duration;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.Duration;
+
 /**
  * Redis adapter for the search cache port.
- *
+ * <p>
  * Failure behaviour: every Redis call runs under the {@code redis} policy (ADR 0033); a Redis error, or the circuit
  * refusing the call while it is open, fails at once with "cache unavailable", so a cache outage never adds per-source
  * latency. The orchestrator turns failures into a CACHE_UNAVAILABLE notice and queries sources live.

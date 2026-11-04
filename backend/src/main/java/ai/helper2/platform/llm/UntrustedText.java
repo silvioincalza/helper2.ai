@@ -10,7 +10,9 @@ public final class UntrustedText {
     private UntrustedText() {
     }
 
-    /** The text with {@code < >} replaced, cut to {@code maxChars} (an ellipsis marks the cut); empty for null. */
+    /**
+     * The text with {@code < >} replaced, cut to {@code maxChars} (an ellipsis marks the cut); empty for null.
+     */
     public static String untrusted(String text, int maxChars) {
         if (text == null) {
             return "";

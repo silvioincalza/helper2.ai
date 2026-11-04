@@ -1,20 +1,23 @@
 package ai.helper2.platform.llm;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.TestcontainersConfiguration;
 import ai.helper2.platform.resilience.Resilience;
-import java.time.Duration;
-import java.time.LocalDate;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
-/** The daily counter on the real Redis: the count and its expiry are set together. */
+import java.time.Duration;
+import java.time.LocalDate;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * The daily counter on the real Redis: the count and its expiry are set together.
+ */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 class RedisCallCounterIT {
@@ -52,7 +55,9 @@ class RedisCallCounterIT {
         assertThat(counter.current(name, DAY)).as("reading does not count").isEqualTo(2);
     }
 
-    /** Every replica counts in Redis, so the ledger shows the shared count; a count past the limit shows as the limit. */
+    /**
+     * Every replica counts in Redis, so the ledger shows the shared count; a count past the limit shows as the limit.
+     */
     @Test
     void theLedgerShowsTheSharedCountOfEachBudget() {
         java.time.Clock clock = java.time.Clock.fixed(DAY.atStartOfDay(java.time.ZoneOffset.UTC).toInstant(), java.time.ZoneOffset.UTC);

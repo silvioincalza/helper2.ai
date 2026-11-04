@@ -2,7 +2,6 @@ package ai.helper2.guide
 
 import ai.helper2.guide.usecase.AskGuide
 import ai.helper2.search.CachedHits
-import ai.helper2.search.usecase.SearchResources
 import ai.helper2.search.NOW
 import ai.helper2.search.ResultObserver
 import ai.helper2.search.SearchCache
@@ -11,6 +10,7 @@ import ai.helper2.search.SourceHit
 import ai.helper2.search.SourceQuery
 import ai.helper2.search.descriptor
 import ai.helper2.search.hit
+import ai.helper2.search.usecase.SearchResources
 import ai.helper2.shared.AudiencePath
 import ai.helper2.shared.ResourceType
 import ai.helper2.testing.MovableClock
@@ -49,7 +49,11 @@ class GuideAnswerCacheStoreTest {
         override fun choose(request: String, candidates: List<Candidate>, constraints: List<String>): GuideProposal {
             calls++
             val whisper = candidates.first { it.result.title == "whisper-small" }.key
-            return GuideProposal(listOf(ProposedPick(whisper, "Self-hostable.", "Speech recognition model you can self-host")), null, emptyList())
+            return GuideProposal(
+                listOf(ProposedPick(whisper, "Self-hostable.", "Speech recognition model you can self-host")),
+                null,
+                emptyList()
+            )
         }
 
         override fun verifyReasons(request: String, claims: List<ReasonClaim>) = claims.associate { it.key to true }

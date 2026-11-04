@@ -14,6 +14,9 @@ import ai.helper2.shared.SourceMode;
 import ai.helper2.shared.ValueOrigin;
 import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.SourceSettings;
+import org.springframework.web.client.RestClient;
+import tools.jackson.databind.JsonNode;
+
 import java.net.URI;
 import java.time.Clock;
 import java.time.Instant;
@@ -21,10 +24,10 @@ import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import org.springframework.web.client.RestClient;
-import tools.jackson.databind.JsonNode;
 
-/** Hugging Face Spaces (hosted AI apps and demos). Docs: https://huggingface.co/docs/hub/api */
+/**
+ * Hugging Face Spaces (hosted AI apps and demos). Docs: https://huggingface.co/docs/hub/api
+ */
 public class HuggingFaceSpacesSource implements SearchSource {
 
     private final RestClient http;
@@ -38,20 +41,6 @@ public class HuggingFaceSpacesSource implements SearchSource {
             URI.create("https://huggingface.co/spaces"), URI.create("https://huggingface.co/terms-of-service"),
             "AI app and demo metadata from the Hugging Face Hub API", EnumSet.of(ResourceType.PRODUCT),
             settings.timeout(), settings.cacheTtl(), settings.enabled(), 35, false, true, true, true);
-    }
-
-    @Override
-    public SourceDescriptor getDescriptor() {
-        return descriptor;
-    }
-
-    @Override
-    public List<SourceHit> search(SourceQuery query) {
-        String text = HttpClients.queryText(query);
-        JsonNode root = HttpClients.getJson(() -> http.get()
-            .uri(u -> HttpClients.hubListing(u.path("/api/spaces"), query, text).queryParam("limit", Math.min(query.getLimit(), 50)).build())
-            .retrieve().body(String.class), clock);
-        return HttpClients.hits("hf-spaces", root, clock.instant(), HuggingFaceSpacesSource::toHit);
     }
 
     private static SourceHit toHit(JsonNode s, Instant now, int position) {
@@ -74,5 +63,19 @@ public class HuggingFaceSpacesSource implements SearchSource {
             Set.of("web"), null,
             DateFact.fromSource(HttpClients.instant(s, "createdAt"), "hf-spaces", now),
             DateFact.fromSource(HttpClients.instant(s, "lastModified"), "hf-spaces", now), pop, now, position);
+    }
+
+    @Override
+    public SourceDescriptor getDescriptor() {
+        return descriptor;
+    }
+
+    @Override
+    public List<SourceHit> search(SourceQuery query) {
+        String text = HttpClients.queryText(query);
+        JsonNode root = HttpClients.getJson(() -> http.get()
+            .uri(u -> HttpClients.hubListing(u.path("/api/spaces"), query, text).queryParam("limit", Math.min(query.getLimit(), 50)).build())
+            .retrieve().body(String.class), clock);
+        return HttpClients.hits("hf-spaces", root, clock.instant(), HuggingFaceSpacesSource::toHit);
     }
 }

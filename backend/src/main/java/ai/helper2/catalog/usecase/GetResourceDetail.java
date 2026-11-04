@@ -1,8 +1,8 @@
 package ai.helper2.catalog.usecase;
 
-import ai.helper2.catalog.internal.ResourceCards;
 import ai.helper2.catalog.ResourceDetail;
 import ai.helper2.catalog.internal.JdbcEnrichmentResults;
+import ai.helper2.catalog.internal.ResourceCards;
 import ai.helper2.catalog.internal.ResourceStore;
 import ai.helper2.catalog.internal.ResourceStore.RecordRow;
 import ai.helper2.catalog.internal.ResourceStore.ResourceRow;
@@ -11,6 +11,8 @@ import ai.helper2.search.MergedResult;
 import ai.helper2.search.SourceHit;
 import ai.helper2.shared.ValueOrigin;
 import ai.helper2.shared.Verification;
+import org.springframework.stereotype.Service;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -20,9 +22,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.springframework.stereotype.Service;
 
-/** The resource detail page: every fact with its origin, verification and evidence. */
+/**
+ * The resource detail page: every fact with its origin, verification and evidence.
+ */
 @Service
 public class GetResourceDetail {
 
@@ -68,7 +71,9 @@ public class GetResourceDetail {
             row.get().enrichmentStatus()));
     }
 
-    /** Source-provided facts: VERIFIED means "this is exactly what the source returned", with the record as evidence. */
+    /**
+     * Source-provided facts: VERIFIED means "this is exactly what the source returned", with the record as evidence.
+     */
     private List<ResourceDetail.Assertion> sourceAssertions(List<RecordRow> records, List<FieldConflict> conflicts) {
         Set<String> conflicting = conflicts.stream().map(FieldConflict::getField).collect(Collectors.toSet());
         List<ResourceDetail.Assertion> out = new ArrayList<>();

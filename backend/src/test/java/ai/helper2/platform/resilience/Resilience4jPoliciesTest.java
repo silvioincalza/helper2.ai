@@ -1,8 +1,5 @@
 package ai.helper2.platform.resilience;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 import ai.helper2.testing.MovableClock;
 import io.github.resilience4j.bulkhead.BulkheadConfig;
 import io.github.resilience4j.bulkhead.BulkheadRegistry;
@@ -10,15 +7,21 @@ import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.retry.RetryConfig;
 import io.github.resilience4j.retry.RetryRegistry;
+import org.junit.jupiter.api.Test;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.junit.jupiter.api.Test;
 
-/** Named policies built from the Resilience4j registries: what callers see when a policy refuses or retries a call. */
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+/**
+ * Named policies built from the Resilience4j registries: what callers see when a policy refuses or retries a call.
+ */
 class Resilience4jPoliciesTest {
 
     private final MovableClock clock = new MovableClock(Instant.parse("2026-10-30T10:00:00Z"));
@@ -27,6 +30,14 @@ class Resilience4jPoliciesTest {
     private final RetryRegistry retries = RetryRegistry.ofDefaults();
     private final Resilience resilience = new Resilience4jPolicies(circuits, bulkheads, retries);
     private final AtomicInteger calls = new AtomicInteger();
+
+    private static void await(CountDownLatch latch) {
+        try {
+            latch.await(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
 
     private String failing() {
         calls.incrementAndGet();
@@ -188,13 +199,5 @@ class Resilience4jPoliciesTest {
         assertThat(resilience.circuit("guide")).isEmpty();
         assertThat(resilience.circuit("source-nope")).isEmpty();
         assertThat(Resilience.NONE.circuit("source-x")).isEmpty();
-    }
-
-    private static void await(CountDownLatch latch) {
-        try {
-            latch.await(5, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
     }
 }

@@ -2,6 +2,7 @@ package ai.helper2.sources.classifier;
 
 import ai.helper2.shared.ResourceType;
 import ai.helper2.sources.support.Classification;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,19 +14,25 @@ import java.util.Map;
  */
 public interface RepoClassifier {
 
+    /**
+     * Verdicts by {@link Facts#id()}. A missing id means "not answered"; the caller falls back.
+     */
+    Map<String, Verdict> classify(List<Facts> repos);
+
+    /**
+     * Model id, or "heuristic". Logged with each pass.
+     */
+    String name();
+
     record Facts(String id, String fullName, String description, List<String> topics, String listSection) {
     }
 
     record Verdict(boolean ai, ResourceType type) {
     }
 
-    /** Verdicts by {@link Facts#id()}. A missing id means "not answered"; the caller falls back. */
-    Map<String, Verdict> classify(List<Facts> repos);
-
-    /** Model id, or "heuristic". Logged with each pass. */
-    String name();
-
-    /** Keyword rules: used without a model, and for repositories the model did not answer. */
+    /**
+     * Keyword rules: used without a model, and for repositories the model did not answer.
+     */
     final class Heuristic implements RepoClassifier {
         @Override
         public Map<String, Verdict> classify(List<Facts> repos) {

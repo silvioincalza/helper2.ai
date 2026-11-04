@@ -5,12 +5,12 @@ import ai.helper2.guide.GuideAnswerCache
 import ai.helper2.guide.GuideIntent
 import ai.helper2.guide.ReadingKey
 import ai.helper2.guide.SimilarQuestions
+import tools.jackson.module.kotlin.readValue
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.time.LocalDate
-import java.util.Base64
-import tools.jackson.module.kotlin.readValue
+import java.util.*
 
 /** One question of docs/eval/guide-similar.json, with the reading a correct plan gives it (ADR 0032 grounding). */
 data class SimilarCase(val text: String, val reading: LabelledReading)
@@ -25,8 +25,10 @@ data class LabelledReading(
     val asksBack: Boolean = false,
 ) {
     val key: ReadingKey
-        get() = ReadingKey(intent, subjects, constraints, window?.let { DateWindow(LocalDate.parse(it.from), LocalDate.parse(it.to)) },
-            wantsReading, aboutEvent, asksBack)
+        get() = ReadingKey(
+            intent, subjects, constraints, window?.let { DateWindow(LocalDate.parse(it.from), LocalDate.parse(it.to)) },
+            wantsReading, aboutEvent, asksBack
+        )
 }
 
 data class LabelledWindow(val from: String, val to: String)
@@ -41,7 +43,8 @@ data class SimilarSet(val pairs: List<SimilarPair>)
 /** Question embeddings recorded once by GuideSimilarRecorder: normalised question → float32 little endian, Base64. */
 data class RecordedVectors(val model: String, val dimensions: Int, val vectors: Map<String, String>) {
     fun of(text: String): FloatArray {
-        val raw = requireNotNull(vectors[text]) { "no recorded vector for \"$text\": run ./gradlew evalRecord --tests '*GuideSimilarRecorder'" }
+        val raw =
+            requireNotNull(vectors[text]) { "no recorded vector for \"$text\": run ./gradlew evalRecord --tests '*GuideSimilarRecorder'" }
         val bytes = ByteBuffer.wrap(Base64.getDecoder().decode(raw)).order(ByteOrder.LITTLE_ENDIAN)
         return FloatArray(bytes.remaining() / 4).also { bytes.asFloatBuffer().get(it) }
     }
@@ -74,7 +77,8 @@ object GuideSimilarEvaluation {
 
     fun vectors(): RecordedVectors = EvalFiles.json.readValue(vectorsFile)
 
-    fun cosine(pair: SimilarPair, vectors: RecordedVectors) = SimilarQuestions.cosine(vectors.of(pair.a.text), vectors.of(pair.b.text))
+    fun cosine(pair: SimilarPair, vectors: RecordedVectors) =
+        SimilarQuestions.cosine(vectors.of(pair.a.text), vectors.of(pair.b.text))
 
     fun sweep(set: SimilarSet, vectors: RecordedVectors, thresholds: List<Double>, withReading: Boolean): List<SimilarPoint> {
         val scored = set.pairs.map { p -> Triple(p, cosine(p, vectors), p.a.reading.key.text == p.b.reading.key.text) }

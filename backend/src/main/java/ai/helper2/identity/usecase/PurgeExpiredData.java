@@ -2,13 +2,14 @@ package ai.helper2.identity.usecase;
 
 import ai.helper2.identity.internal.AuditLog;
 import ai.helper2.identity.internal.Users;
-import java.time.Clock;
-import java.time.Duration;
-import java.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 
 /**
  * Identity's retention rules (ADR 0034): accounts nobody signed in to for [inactiveAccounts] go with their bookmarks
@@ -18,17 +19,11 @@ import org.springframework.stereotype.Service;
 public class PurgeExpiredData {
 
     private static final Logger log = LoggerFactory.getLogger(PurgeExpiredData.class);
-
-    /** What one purge deleted. */
-    public record Purged(int accounts, int auditEntries) {
-    }
-
     private final Users users;
     private final AuditLog audit;
     private final Clock clock;
     private final Duration inactiveAccounts;
     private final Duration adminAudit;
-
     public PurgeExpiredData(Users users, AuditLog audit, Clock clock,
                             @Value("${helper2.retention.inactive-accounts}") Duration inactiveAccounts,
                             @Value("${helper2.retention.admin-audit}") Duration adminAudit) {
@@ -45,5 +40,11 @@ public class PurgeExpiredData {
             audit.deleteBefore(now.minus(adminAudit)));
         log.info("identity retention: {}", purged);
         return purged;
+    }
+
+    /**
+     * What one purge deleted.
+     */
+    public record Purged(int accounts, int auditEntries) {
     }
 }

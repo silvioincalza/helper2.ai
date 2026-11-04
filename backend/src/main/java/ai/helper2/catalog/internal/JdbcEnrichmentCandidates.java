@@ -1,6 +1,10 @@
 package ai.helper2.catalog.internal;
 
 import ai.helper2.catalog.enrichment.EnrichmentCandidates;
+import org.jspecify.annotations.Nullable;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.stereotype.Component;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -8,14 +12,31 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.jspecify.annotations.Nullable;
-import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.stereotype.Component;
 
-/** The enrichment backlog and a resource's stored source text, read from resource, source_record and enrichment_run. */
+/**
+ * The enrichment backlog and a resource's stored source text, read from resource, source_record and enrichment_run.
+ */
 @Component
 class JdbcEnrichmentCandidates implements EnrichmentCandidates {
 
+    /**
+     * Longest the backlog count may run: the overview waits for it, and one slow plan must not hold the page.
+     */
+    static final int COUNT_TIMEOUT_SECONDS = 5;
+    /**
+     * Which resources wait for enrichment; one rule for the backlog and its count.
+     */
+    private static final String PENDING = """
+        r.data_origin IN ('INDEXED', 'OBSERVED', 'CURATED')
+          AND EXISTS (SELECT 1 FROM source_record s
+                      WHERE s.resource_id = r.id AND length(coalesce(s.description, '')) >= :minText)
+          AND (r.enrichment_status IN ('NOT_RUN', 'LLM_UNAVAILABLE')
+               OR (r.enrichment_status = 'REJECTED'
+                   AND (SELECT e.outcome FROM enrichment_run e WHERE e.resource_id = r.id
+                        ORDER BY e.started_at DESC LIMIT 1) = 'FAILED'
+                   AND (SELECT count(*) FROM enrichment_run e
+                        WHERE e.resource_id = r.id AND e.outcome = 'FAILED') < :maxFailed))
+        """;
     private final JdbcClient jdbc;
 
     JdbcEnrichmentCandidates(JdbcClient jdbc) {
@@ -32,9 +53,6 @@ class JdbcEnrichmentCandidates implements EnrichmentCandidates {
             .query(UUID.class).list();
     }
 
-    /** Longest the backlog count may run: the overview waits for it, and one slow plan must not hold the page. */
-    static final int COUNT_TIMEOUT_SECONDS = 5;
-
     /**
      * The same rule as {@link #pending}, counted. A full pass over the backlog: the overview caches it, and the query
      * gives up after {@link #COUNT_TIMEOUT_SECONDS}.
@@ -46,19 +64,6 @@ class JdbcEnrichmentCandidates implements EnrichmentCandidates {
             .withQueryTimeout(COUNT_TIMEOUT_SECONDS)
             .query(Long.class).single();
     }
-
-    /** Which resources wait for enrichment; one rule for the backlog and its count. */
-    private static final String PENDING = """
-            r.data_origin IN ('INDEXED', 'OBSERVED', 'CURATED')
-              AND EXISTS (SELECT 1 FROM source_record s
-                          WHERE s.resource_id = r.id AND length(coalesce(s.description, '')) >= :minText)
-              AND (r.enrichment_status IN ('NOT_RUN', 'LLM_UNAVAILABLE')
-                   OR (r.enrichment_status = 'REJECTED'
-                       AND (SELECT e.outcome FROM enrichment_run e WHERE e.resource_id = r.id
-                            ORDER BY e.started_at DESC LIMIT 1) = 'FAILED'
-                       AND (SELECT count(*) FROM enrichment_run e
-                            WHERE e.resource_id = r.id AND e.outcome = 'FAILED') < :maxFailed))
-            """;
 
     @Override
     public List<UUID> withEnoughText(List<UUID> ids, int minText) {
@@ -99,10 +104,10 @@ class JdbcEnrichmentCandidates implements EnrichmentCandidates {
     @Override
     public @Nullable String lastJudgedFingerprint(UUID id) {
         return jdbc.sql("""
-                SELECT input_fingerprint FROM enrichment_run
-                WHERE resource_id = :id AND outcome NOT IN ('LLM_UNAVAILABLE', 'FAILED')
-                ORDER BY started_at DESC LIMIT 1
-                """).param("id", id).query(String.class).optional().orElse(null);
+            SELECT input_fingerprint FROM enrichment_run
+            WHERE resource_id = :id AND outcome NOT IN ('LLM_UNAVAILABLE', 'FAILED')
+            ORDER BY started_at DESC LIMIT 1
+            """).param("id", id).query(String.class).optional().orElse(null);
     }
 
     @Override

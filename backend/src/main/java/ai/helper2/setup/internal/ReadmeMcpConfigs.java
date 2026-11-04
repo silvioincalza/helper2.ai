@@ -11,15 +11,16 @@ import ai.helper2.setup.SettingKind;
 import ai.helper2.setup.ToolMaterials;
 import ai.helper2.setup.ToolRef;
 import ai.helper2.setup.Transport;
+import org.jspecify.annotations.Nullable;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
-import org.jspecify.annotations.Nullable;
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 
 /**
  * Run options from the MCP config example in a server's own README: a JSON block with `mcpServers`, `servers`,
@@ -43,17 +44,6 @@ class ReadmeMcpConfigs implements ReadmeConfigs {
     ReadmeMcpConfigs(ToolMaterials materials, ObjectMapper json) {
         this.materials = materials;
         this.json = json;
-    }
-
-    @Override
-    public @Nullable McpServerSpec of(ToolRef ref) {
-        for (Material m : materials.load(ref)) {
-            List<RunOption> options = options(ref, m.getText(), json);
-            if (!options.isEmpty()) {
-                return new McpServerSpec(ref.getTitle(), null, options, m.getUrl(), m.getRetrievedAt(), "readme");
-            }
-        }
-        return null;
     }
 
     static List<RunOption> options(ToolRef ref, String readme, ObjectMapper json) {
@@ -169,5 +159,16 @@ class ReadmeMcpConfigs implements ReadmeConfigs {
     private static @Nullable String text(JsonNode node, String field) {
         JsonNode v = node.path(field);
         return v.isString() && !v.asString().isBlank() ? v.asString().strip() : null;
+    }
+
+    @Override
+    public @Nullable McpServerSpec of(ToolRef ref) {
+        for (Material m : materials.load(ref)) {
+            List<RunOption> options = options(ref, m.getText(), json);
+            if (!options.isEmpty()) {
+                return new McpServerSpec(ref.getTitle(), null, options, m.getUrl(), m.getRetrievedAt(), "readme");
+            }
+        }
+        return null;
     }
 }

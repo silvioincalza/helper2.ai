@@ -1,18 +1,19 @@
 package ai.helper2.api;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import ai.helper2.search.SourceFailure;
 import ai.helper2.shared.ResourceType;
-import java.util.List;
-import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.web.servlet.MvcResult;
+
+import java.util.List;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class SearchApiIT extends ApiTestBase {
 
@@ -22,6 +23,11 @@ class SearchApiIT extends ApiTestBase {
     @org.springframework.beans.factory.annotation.Autowired
     org.springframework.data.redis.core.StringRedisTemplate redis;
 
+    private static java.util.Map<String, Object> source(String body, String id) {
+        List<java.util.Map<String, Object>> found = com.jayway.jsonpath.JsonPath.read(body, "$[?(@.id == '" + id + "')]");
+        assertThat(found).as(id).hasSize(1);
+        return found.getFirst();
+    }
 
     String unique(String base) {
         return base + " " + UUID.randomUUID().toString().substring(0, 8);
@@ -223,11 +229,5 @@ class SearchApiIT extends ApiTestBase {
         assertThat(source(body, "mcp-registry").get("circuit")).as("a Scout collector has no source circuit").isNull();
         assertThat(source(body, "tavily").get("webCredits")).as("disabled").isNull();
         assertThat(body).doesNotContainIgnoringCase("exception").doesNotContain("localhost").doesNotContain("redis");
-    }
-
-    private static java.util.Map<String, Object> source(String body, String id) {
-        List<java.util.Map<String, Object>> found = com.jayway.jsonpath.JsonPath.read(body, "$[?(@.id == '" + id + "')]");
-        assertThat(found).as(id).hasSize(1);
-        return found.getFirst();
     }
 }

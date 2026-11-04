@@ -1,11 +1,9 @@
 package ai.helper2.catalog.internal;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.TestcontainersConfiguration;
-import ai.helper2.catalog.usecase.GetResourceDetail;
 import ai.helper2.catalog.internal.ResourceStore.DataOrigin;
 import ai.helper2.catalog.internal.ResourceStore.ResourceRow;
+import ai.helper2.catalog.usecase.GetResourceDetail;
 import ai.helper2.search.MergedResult;
 import ai.helper2.search.PopularityKind;
 import ai.helper2.search.PopularityMetric;
@@ -21,6 +19,13 @@ import ai.helper2.shared.ResourceId;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.SourceMode;
 import ai.helper2.shared.ValueOrigin;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.transaction.support.TransactionTemplate;
+
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
@@ -29,34 +34,37 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
-import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.transaction.support.TransactionTemplate;
 
-/** The catalog's write path and index query against real PostgreSQL. */
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * The catalog's write path and index query against real PostgreSQL.
+ */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 class ResourceStoreIT {
 
     private static final Set<String> LIVE = Set.of("github", "npm");
-
+    private final String run = UUID.randomUUID().toString().substring(0, 8);
+    private final Instant now = Instant.now();
     @Autowired
     ResourceStore store;
-
     @Autowired
     GetResourceDetail details;
-
     @Autowired
     JdbcClient jdbc;
-
     @Autowired
     TransactionTemplate tx;
 
-    private final String run = UUID.randomUUID().toString().substring(0, 8);
-    private final Instant now = Instant.now();
+    private static List<MergedResult> merge(SourceHit... hits) {
+        Map<String, SourceContext> contexts = Map.of("github", context("github"), "npm", context("npm"));
+        return new ResultMerger().merge(List.of(hits), contexts);
+    }
+
+    private static SourceContext context(String id) {
+        return new SourceContext(new SourceDescriptor(id, id, SourceMode.LIVE, URI.create("https://" + id + ".example"), null,
+            null, EnumSet.allOf(ResourceType.class), Duration.ofSeconds(1), Duration.ZERO), ServedFrom.LIVE);
+    }
 
     private SourceHit hit(String source, String url, String repo, Set<String> tags, List<PopularityMetric> popularity) {
         return hit(source, source + ":" + url, url, repo, tags, popularity);
@@ -67,16 +75,6 @@ class ResourceStoreIT {
         return new SourceHit(source, externalId, URI.create(url), CanonicalUrl.of(url), CanonicalUrl.of(repo),
             "tool " + run, "An AI tool", ValueOrigin.SOURCE_PROVIDED, ResourceType.LIBRARY, Audience.BUILD_WITH_AI, null,
             Set.of(), tags, null, null, Set.of(), null, DateFact.unknown(), DateFact.unknown(), popularity, now, 0);
-    }
-
-    private static List<MergedResult> merge(SourceHit... hits) {
-        Map<String, SourceContext> contexts = Map.of("github", context("github"), "npm", context("npm"));
-        return new ResultMerger().merge(List.of(hits), contexts);
-    }
-
-    private static SourceContext context(String id) {
-        return new SourceContext(new SourceDescriptor(id, id, SourceMode.LIVE, URI.create("https://" + id + ".example"), null,
-            null, EnumSet.allOf(ResourceType.class), Duration.ofSeconds(1), Duration.ZERO), ServedFrom.LIVE);
     }
 
     private Set<String> tags(UUID id) {

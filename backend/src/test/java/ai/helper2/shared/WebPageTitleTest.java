@@ -1,14 +1,17 @@
 package ai.helper2.shared;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-/** Page titles of web results, cleaned without losing the real name. */
+import java.util.stream.Stream;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * Page titles of web results, cleaned without losing the real name.
+ */
 class WebPageTitleTest {
 
     static Stream<Arguments> titles() {

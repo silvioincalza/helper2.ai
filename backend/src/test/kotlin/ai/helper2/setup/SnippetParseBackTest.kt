@@ -1,13 +1,13 @@
 package ai.helper2.setup
 
-import java.net.URI
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.ObjectMapper
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.dataformat.toml.TomlMapper
+import java.net.URI
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * Every snippet of every client, parsed back with a real parser for its format, gives exactly the values it was
@@ -35,8 +35,10 @@ class SnippetParseBackTest {
 
     private val command = Launch("npx", listOf("-y", "@acme/pg-mcp@1.0.0") + hostile, emptyList(), "Node.js (npx)")
     private val stdio = Target("pg", "o1", RunOption.Command("npx", command.args, emptyList()), command, values)
-    private val remote = Target("pg", "o2",
-        RunOption.Remote(Transport.STREAMABLE_HTTP, URI("https://mcp.acme.dev/mcp?a=1&b=%22"), emptyList()), null, values)
+    private val remote = Target(
+        "pg", "o2",
+        RunOption.Remote(Transport.STREAMABLE_HTTP, URI("https://mcp.acme.dev/mcp?a=1&b=%22"), emptyList()), null, values
+    )
 
     private val json: ObjectMapper = JsonMapper.builder().build()
     private val toml: ObjectMapper = TomlMapper.builder().build()
@@ -57,8 +59,10 @@ class SnippetParseBackTest {
                     else -> error("$where: unexpected language ${s.language}")
                 }
                 if (t.stdio) {
-                    assertTrue(strings.containsAll(command.args) || strings.windowed(command.args.size).contains(command.args),
-                        "$where: arguments\n$text")
+                    assertTrue(
+                        strings.containsAll(command.args) || strings.windowed(command.args.size).contains(command.args),
+                        "$where: arguments\n$text"
+                    )
                 } else {
                     assertTrue(t.url in strings, "$where: url\n$text")
                 }
@@ -131,8 +135,14 @@ class SnippetParseBackTest {
                         if (text[i] == '\\') {
                             val e = text[i + 1]
                             when (e) {
-                                'x' -> { word.append(text.substring(i + 2, i + 4).toInt(16).toChar()); i += 2 }
-                                'u' -> { word.append(text.substring(i + 2, i + 6).toInt(16).toChar()); i += 4 }
+                                'x' -> {
+                                    word.append(text.substring(i + 2, i + 4).toInt(16).toChar()); i += 2
+                                }
+
+                                'u' -> {
+                                    word.append(text.substring(i + 2, i + 6).toInt(16).toChar()); i += 4
+                                }
+
                                 else -> word.append(e)
                             }
                             i += 2
@@ -142,22 +152,26 @@ class SnippetParseBackTest {
                     }
                     inWord = true
                 }
+
                 c == '\'' -> {
                     val end = text.indexOf('\'', i + 1)
                     word.append(text, i + 1, end)
                     inWord = true
                     i = end
                 }
+
                 c == '\\' -> {
                     word.append(text[i + 1])
                     inWord = true
                     i++
                 }
+
                 c == ' ' -> {
                     if (inWord) out += word.toString()
                     word.clear()
                     inWord = false
                 }
+
                 else -> {
                     assertTrue(c.isLetterOrDigit() || c in "_@%+=:,./-", "unquoted special character ${c.code} in\n$text")
                     word.append(c)

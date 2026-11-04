@@ -1,25 +1,11 @@
 package ai.helper2.scout;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oauth2Login;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import ai.helper2.TestcontainersConfiguration;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.ResourceId;
 import ai.helper2.testing.FixtureServer;
 import com.jayway.jsonpath.JsonPath;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.List;
-import java.util.UUID;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 import net.javacrumbs.shedlock.core.LockConfiguration;
 import net.javacrumbs.shedlock.core.LockProvider;
 import net.javacrumbs.shedlock.core.SimpleLock;
@@ -43,6 +29,21 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oauth2Login;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Scout end to end: fixture MCP Registry -> collection -> PostgreSQL index -> LLM proposal (fake
@@ -69,6 +70,16 @@ class ScoutPipelineIT {
     static final AtomicReference<String> LLM_REPLY = new AtomicReference<>("{}");
     static final java.util.concurrent.atomic.AtomicInteger LLM_CALLS = new java.util.concurrent.atomic.AtomicInteger();
     static final String REPO = "https://github.com/helper2-test/pg-bridge";
+    @Autowired
+    MockMvc mvc;
+    @Autowired
+    EnrichmentBacklog backlog;
+    @Autowired
+    MeterRegistry meters;
+    @Autowired
+    LockProvider locks;
+    @Autowired
+    JdbcClient jdbc;
 
     @DynamicPropertySource
     static void registry(DynamicPropertyRegistry r) {
@@ -80,37 +91,15 @@ class ScoutPipelineIT {
         REGISTRY.close();
     }
 
-    @TestConfiguration(proxyBeanMethods = false)
-    static class FakeLlm {
-        @Bean
-        ChatModel chatModel() {
-            return new ChatModel() {
-                @Override
-                public ChatResponse call(Prompt prompt) {
-                    LLM_CALLS.incrementAndGet();
-                    String text = prompt.getContents();
-                    // Echo the real evidence id the adapter put in the prompt, like a model would.
-                    String evidenceId = text.replaceAll("(?s).*evidenceId=\"([0-9a-f-]{36})\".*", "$1");
-                    return new ChatResponse(List.of(new Generation(new AssistantMessage(LLM_REPLY.get().replace("EVID", evidenceId)))));
-                }
-            };
-        }
+    private static String rerunServer(String version, String description, String updatedAt) {
+        return """
+            {"servers":[{"server":{"name":"io.github.helper2-test/rerun","title":"Rerun Server",
+               "description":"%s","version":"%s",
+               "repository":{"url":"https://github.com/helper2-test/rerun","source":"github"}},
+              "_meta":{"io.modelcontextprotocol.registry/official":{"isLatest":true,
+               "publishedAt":"2026-03-01T00:00:00Z","updatedAt":"%s"}}}],
+             "metadata":{"count":1}}""".formatted(description, version, updatedAt);
     }
-
-    @Autowired
-    MockMvc mvc;
-
-    @Autowired
-    EnrichmentBacklog backlog;
-
-    @Autowired
-    MeterRegistry meters;
-
-    @Autowired
-    LockProvider locks;
-
-    @Autowired
-    JdbcClient jdbc;
 
     /**
      * The run lock is cluster-wide: every test context shares the one PostgreSQL, so a Scout run started by another
@@ -198,16 +187,6 @@ class ScoutPipelineIT {
         return timer == null ? 0 : timer.count();
     }
 
-    private static String rerunServer(String version, String description, String updatedAt) {
-        return """
-            {"servers":[{"server":{"name":"io.github.helper2-test/rerun","title":"Rerun Server",
-               "description":"%s","version":"%s",
-               "repository":{"url":"https://github.com/helper2-test/rerun","source":"github"}},
-              "_meta":{"io.modelcontextprotocol.registry/official":{"isLatest":true,
-               "publishedAt":"2026-03-01T00:00:00Z","updatedAt":"%s"}}}],
-             "metadata":{"count":1}}""".formatted(description, version, updatedAt);
-    }
-
     /**
      * Starts an admin run of the MCP Registry collector: answered with 202 and the run RUNNING, then polled on the
      * run listing, like the admin page does, until it ends. Returns the ended run once the whole run (backlog
@@ -236,7 +215,9 @@ class ScoutPipelineIT {
         throw new AssertionError("Scout run " + id + " still RUNNING after 30 s");
     }
 
-    /** No row yet (no run since the database was created) is free too. */
+    /**
+     * No row yet (no run since the database was created) is free too.
+     */
     private boolean runLockReleased() {
         return jdbc.sql("SELECT lock_until <= timezone('utc', now()) FROM shedlock WHERE name = 'scout-run'")
             .query(Boolean.class).optional().orElse(true);
@@ -300,11 +281,11 @@ class ScoutPipelineIT {
     @Test
     void resourcesLeftOverByTheBudgetAreEnrichedByLaterRuns() throws Exception {
         String servers = java.util.stream.IntStream.range(0, 3).mapToObj(i -> """
-            {"server":{"name":"io.github.helper2-test/backlog-%d","title":"Backlog Server %d",
-               "description":"MCP server number %d that exposes a ticket tracker to AI agents.","version":"1.0.0",
-               "repository":{"url":"https://github.com/helper2-test/backlog-%d","source":"github"}},
-             "_meta":{"io.modelcontextprotocol.registry/official":{"isLatest":true,
-               "publishedAt":"2026-03-01T00:00:00Z","updatedAt":"2026-10-01T00:00:00Z"}}}""".formatted(i, i, i, i))
+                {"server":{"name":"io.github.helper2-test/backlog-%d","title":"Backlog Server %d",
+                   "description":"MCP server number %d that exposes a ticket tracker to AI agents.","version":"1.0.0",
+                   "repository":{"url":"https://github.com/helper2-test/backlog-%d","source":"github"}},
+                 "_meta":{"io.modelcontextprotocol.registry/official":{"isLatest":true,
+                   "publishedAt":"2026-03-01T00:00:00Z","updatedAt":"2026-10-01T00:00:00Z"}}}""".formatted(i, i, i, i))
             .collect(java.util.stream.Collectors.joining(","));
         REGISTRY.route("/v0.1/servers", FixtureServer.Reply.ok("{\"servers\":[" + servers + "],\"metadata\":{\"count\":3}}"));
         LLM_REPLY.set("{\"fields\":[],\"relationships\":[],\"summary\":[]}");
@@ -321,5 +302,22 @@ class ScoutPipelineIT {
         REGISTRY.route("/v0.1/servers", FixtureServer.Reply.ok("{\"servers\":[],\"metadata\":{\"count\":0}}"));
         assertThat(JsonPath.<Integer>read(runMcpRegistry(), "$.itemsChanged")).isZero();
         assertThat(backlog.pending(100).stream().filter(ids::contains).toList()).hasSize(1);
+    }
+
+    @TestConfiguration(proxyBeanMethods = false)
+    static class FakeLlm {
+        @Bean
+        ChatModel chatModel() {
+            return new ChatModel() {
+                @Override
+                public ChatResponse call(Prompt prompt) {
+                    LLM_CALLS.incrementAndGet();
+                    String text = prompt.getContents();
+                    // Echo the real evidence id the adapter put in the prompt, like a model would.
+                    String evidenceId = text.replaceAll("(?s).*evidenceId=\"([0-9a-f-]{36})\".*", "$1");
+                    return new ChatResponse(List.of(new Generation(new AssistantMessage(LLM_REPLY.get().replace("EVID", evidenceId)))));
+                }
+            };
+        }
     }
 }

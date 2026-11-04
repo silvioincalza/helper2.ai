@@ -1,19 +1,9 @@
 package ai.helper2.platform.cache;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.TestcontainersConfiguration;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.testing.TestPolicies;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.time.Clock;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.UUID;
-import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -21,20 +11,30 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
-/** The shared cache on the real schema: two caches on one table stand for two replicas. */
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * The shared cache on the real schema: two caches on one table stand for two replicas.
+ */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 class JdbcSharedCacheIT {
 
     private static final Duration DAY = Duration.ofHours(24);
-
+    private final SimpleMeterRegistry meters = new SimpleMeterRegistry();
     @Autowired
     DataSource dataSource;
-
     @Autowired
     JdbcClient jdbc;
-
-    private final SimpleMeterRegistry meters = new SimpleMeterRegistry();
 
     private SharedCaches caches(DataSource db, Resilience resilience) {
         return new SharedCaches(db, resilience, meters);
@@ -133,7 +133,9 @@ class JdbcSharedCacheIT {
         assertThat(count("translation", "miss")).isEqualTo(2);
     }
 
-    /** No database listens on port 1: every connection fails at once. */
+    /**
+     * No database listens on port 1: every connection fails at once.
+     */
     private static final class CountingDataSource extends DriverManagerDataSource {
         int connections;
 

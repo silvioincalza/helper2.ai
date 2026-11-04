@@ -10,6 +10,15 @@ import ai.helper2.setup.SetupUnavailable;
 import ai.helper2.setup.Transport;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import org.jspecify.annotations.Nullable;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestClientResponseException;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -19,14 +28,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import org.jspecify.annotations.Nullable;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestClientResponseException;
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 
 /**
  * Reads the latest entry of an MCP server from the Official MCP Registry, by name, at request time.
@@ -39,7 +40,9 @@ import tools.jackson.databind.ObjectMapper;
  */
 class RegistryMcpServerSpecs implements McpServerSpecs {
 
-    /** An entry is a few kilobytes: a count bounds the memory well enough. */
+    /**
+     * An entry is a few kilobytes: a count bounds the memory well enough.
+     */
     static final int MAX_ENTRIES = 500;
 
     private final RestClient http;
@@ -59,36 +62,6 @@ class RegistryMcpServerSpecs implements McpServerSpecs {
             .maximumSize(MAX_ENTRIES)
             .executor(Runnable::run)
             .build();
-    }
-
-    @Override
-    public @Nullable McpServerSpec latest(String name) {
-        // A failure throws out of the loader, so nothing is kept for it.
-        return cache.get(name, n -> Optional.ofNullable(fetch(n))).orElse(null);
-    }
-
-    private @Nullable McpServerSpec fetch(String name) {
-        String path = "/v0.1/servers/" + URLEncoder.encode(name, StandardCharsets.UTF_8) + "/versions/latest";
-        String body;
-        try {
-            body = http.get().uri(URI.create(baseUrl + path)).retrieve().body(String.class);
-        } catch (RestClientResponseException e) {
-            if (e.getStatusCode().isSameCodeAs(HttpStatus.NOT_FOUND)) {
-                return null;
-            }
-            throw new SetupUnavailable("MCP Registry answered " + e.getStatusCode().value());
-        } catch (RestClientException e) {
-            throw new SetupUnavailable("MCP Registry did not answer");
-        }
-        try {
-            JsonNode server = json.readTree(body == null ? "" : body).path("server");
-            if (!server.isObject()) {
-                throw new SetupUnavailable("MCP Registry sent an unexpected answer");
-            }
-            return parse(server, URI.create(baseUrl + path), clock);
-        } catch (JacksonException e) {
-            throw new SetupUnavailable("MCP Registry sent a malformed answer");
-        }
     }
 
     static McpServerSpec parse(JsonNode server, URI sourceUrl, Clock clock) {
@@ -177,5 +150,35 @@ class RegistryMcpServerSpecs implements McpServerSpecs {
         }
         String s = v.asString().strip();
         return s.isEmpty() ? null : s;
+    }
+
+    @Override
+    public @Nullable McpServerSpec latest(String name) {
+        // A failure throws out of the loader, so nothing is kept for it.
+        return cache.get(name, n -> Optional.ofNullable(fetch(n))).orElse(null);
+    }
+
+    private @Nullable McpServerSpec fetch(String name) {
+        String path = "/v0.1/servers/" + URLEncoder.encode(name, StandardCharsets.UTF_8) + "/versions/latest";
+        String body;
+        try {
+            body = http.get().uri(URI.create(baseUrl + path)).retrieve().body(String.class);
+        } catch (RestClientResponseException e) {
+            if (e.getStatusCode().isSameCodeAs(HttpStatus.NOT_FOUND)) {
+                return null;
+            }
+            throw new SetupUnavailable("MCP Registry answered " + e.getStatusCode().value());
+        } catch (RestClientException e) {
+            throw new SetupUnavailable("MCP Registry did not answer");
+        }
+        try {
+            JsonNode server = json.readTree(body == null ? "" : body).path("server");
+            if (!server.isObject()) {
+                throw new SetupUnavailable("MCP Registry sent an unexpected answer");
+            }
+            return parse(server, URI.create(baseUrl + path), clock);
+        } catch (JacksonException e) {
+            throw new SetupUnavailable("MCP Registry sent a malformed answer");
+        }
     }
 }

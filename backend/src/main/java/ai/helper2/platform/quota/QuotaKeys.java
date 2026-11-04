@@ -1,5 +1,7 @@
 package ai.helper2.platform.quota;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.time.Clock;
@@ -8,8 +10,6 @@ import java.time.ZoneOffset;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.UUID;
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 
 /**
  * Names of the daily quota counters and of the stored web result sets (ADR 0037), from {@code H2_QUOTA_KEY_SECRET}.
@@ -36,6 +36,20 @@ public final class QuotaKeys {
         this.clock = clock;
     }
 
+    private static String user(UUID userId, LocalDate day) {
+        return PREFIX + "user:" + userId + ":" + day;
+    }
+
+    private static byte[] hmac(byte[] key, String text) {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(key, "HmacSHA256"));
+            return mac.doFinal(text.getBytes(StandardCharsets.UTF_8));
+        } catch (GeneralSecurityException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
     public boolean hasSecret() {
         return secret.length > 0;
     }
@@ -49,7 +63,9 @@ public final class QuotaKeys {
         return user(userId, today());
     }
 
-    /** Every key of the user that may still be alive: today's and yesterday's (a key lives one day). */
+    /**
+     * Every key of the user that may still be alive: today's and yesterday's (a key lives one day).
+     */
     public List<String> userKeys(UUID userId) {
         return List.of(user(userId, today()), user(userId, today().minusDays(1)));
     }
@@ -62,10 +78,6 @@ public final class QuotaKeys {
         return hmac(secret(), "query|" + text);
     }
 
-    private static String user(UUID userId, LocalDate day) {
-        return PREFIX + "user:" + userId + ":" + day;
-    }
-
     private byte[] secret() {
         if (!hasSecret()) {
             throw new IllegalStateException("H2_QUOTA_KEY_SECRET is not set");
@@ -75,15 +87,5 @@ public final class QuotaKeys {
 
     private LocalDate today() {
         return LocalDate.ofInstant(clock.instant(), ZoneOffset.UTC);
-    }
-
-    private static byte[] hmac(byte[] key, String text) {
-        try {
-            Mac mac = Mac.getInstance("HmacSHA256");
-            mac.init(new SecretKeySpec(key, "HmacSHA256"));
-            return mac.doFinal(text.getBytes(StandardCharsets.UTF_8));
-        } catch (GeneralSecurityException e) {
-            throw new IllegalStateException(e);
-        }
     }
 }

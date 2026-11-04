@@ -1,12 +1,12 @@
 package ai.helper2.eval
 
 import ai.helper2.shared.CanonicalUrl
-import java.io.File
-import java.security.MessageDigest
-import java.util.HexFormat
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.KotlinModule
 import tools.jackson.module.kotlin.readValue
+import java.io.File
+import java.security.MessageDigest
+import java.util.*
 
 /** One query of a fixed set; [group] is the kind of need it stands for. */
 data class EvalQuery(val id: String, val group: String, val text: String, val lang: String = "en", val from: String? = null)
@@ -35,7 +35,8 @@ class Qrels(val grades: Map<String, Map<String, Int>>) {
                 val cols = row.split('\t')
                 require(cols.size == 3) { "qrels line ${i + 2}: expected 3 tab-separated columns" }
                 val url = requireNotNull(CanonicalUrl.of(cols[1])) { "qrels line ${i + 2}: not a URL: ${cols[1]}" }.value
-                val grade = requireNotNull(cols[2].toIntOrNull()?.takeIf { it in 0..3 }) { "qrels line ${i + 2}: grade must be 0-3" }
+                val grade =
+                    requireNotNull(cols[2].toIntOrNull()?.takeIf { it in 0..3 }) { "qrels line ${i + 2}: grade must be 0-3" }
                 grades.getOrPut(cols[0]) { LinkedHashMap() }[url] = grade
             }
             return Qrels(grades)
@@ -48,7 +49,8 @@ object EvalFiles {
     val json: JsonMapper = JsonMapper.builder().addModule(KotlinModule.Builder().build()).build()
 
     /** The repository root: Gradle runs tests in backend/, an IDE may run them from the root. */
-    val root: File = File(System.getProperty("user.dir")).absoluteFile.let { if (File(it, "docs/eval").isDirectory) it else it.parentFile }
+    val root: File =
+        File(System.getProperty("user.dir")).absoluteFile.let { if (File(it, "docs/eval").isDirectory) it else it.parentFile }
     val docs: File = File(root, "docs/eval")
     val data: File = File(root, "backend/eval-data")
     val snapshots: File = File(data, "search-snapshots")

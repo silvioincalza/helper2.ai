@@ -14,7 +14,9 @@ public final class ClientKey {
     private ClientKey() {
     }
 
-    /** Never null: an address that is missing is "unknown", one that does not parse is kept as it is. */
+    /**
+     * Never null: an address that is missing is "unknown", one that does not parse is kept as it is.
+     */
     public static String of(String remoteAddr) {
         if (remoteAddr == null || remoteAddr.isBlank()) {
             return "unknown";

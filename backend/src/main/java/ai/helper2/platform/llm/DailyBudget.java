@@ -31,7 +31,9 @@ public final class DailyBudget {
         this.counter.declare(name, dailyCalls);
     }
 
-    /** In memory only: for a budget that does not need to survive a restart. */
+    /**
+     * In memory only: for a budget that does not need to survive a restart.
+     */
     public DailyBudget(int dailyCalls, Clock clock, String name) {
         this(dailyCalls, clock, name, CallCounter.NONE);
     }
@@ -40,7 +42,9 @@ public final class DailyBudget {
         return name;
     }
 
-    /** Takes one call from today's budget. False when the budget is used up (or set to 0). */
+    /**
+     * Takes one call from today's budget. False when the budget is used up (or set to 0).
+     */
     public boolean tryAcquire() {
         if (dailyCalls <= 0) {
             return false;
@@ -69,7 +73,9 @@ public final class DailyBudget {
         return today().equals(day) ? used : 0;
     }
 
-    /** Calls left today; for the budget gauges. */
+    /**
+     * Calls left today; for the budget gauges.
+     */
     public int remaining() {
         return Math.max(0, dailyCalls - usedToday());
     }

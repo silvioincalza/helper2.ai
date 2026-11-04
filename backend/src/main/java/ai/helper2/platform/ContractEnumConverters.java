@@ -1,11 +1,12 @@
 package ai.helper2.platform;
 
-import java.lang.reflect.Method;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.converter.ConverterFactory;
 import org.springframework.format.FormatterRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import java.lang.reflect.Method;
 
 /**
  * Binds query parameters to generated contract enums by their wire VALUE (e.g. TriState "unknown"),

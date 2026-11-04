@@ -1,11 +1,5 @@
 package ai.helper2.api;
 
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oauth2Login;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,29 +8,36 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.OAuth2LoginRequestPostProcessor;
 
-/** GET /admin/review-items: paged, newest first, filtered by status (SUPERSEDED included). */
+import java.util.UUID;
+
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oauth2Login;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+/**
+ * GET /admin/review-items: paged, newest first, filtered by status (SUPERSEDED included).
+ */
 class ReviewItemsApiIT extends ApiTestBase {
 
     static final OAuth2LoginRequestPostProcessor ADMIN = oauth2Login().authorities(new SimpleGrantedAuthority("ROLE_ADMIN"));
-
+    final UUID resource = UUID.randomUUID();
     @Autowired
     JdbcClient jdbc;
-
-    final UUID resource = UUID.randomUUID();
 
     @BeforeEach
     void threeSupersededItemsOfOneResource() {
         String url = "https://review-items.example/" + resource;
         jdbc.sql("""
-                INSERT INTO resource (id, canonical_url, url, title, description_origin, type, audience, data_origin)
-                VALUES (:id, :url, :url, 'Paged', 'SOURCE_PROVIDED', 'LIBRARY', 'BUILD_WITH_AI', 'INDEXED')
-                """).param("id", resource).param("url", url).update();
+            INSERT INTO resource (id, canonical_url, url, title, description_origin, type, audience, data_origin)
+            VALUES (:id, :url, :url, 'Paged', 'SOURCE_PROVIDED', 'LIBRARY', 'BUILD_WITH_AI', 'INDEXED')
+            """).param("id", resource).param("url", url).update();
         for (int i = 0; i < 3; i++) {
             jdbc.sql("""
-                    INSERT INTO review_item (id, kind, status, resource_id, reason, created_at, resolved_at)
-                    VALUES (:id, 'ENRICHMENT_VALIDATION', 'SUPERSEDED', :rid, :reason,
-                            TIMESTAMPTZ '2000-01-01' + make_interval(days => :i), now())
-                    """).param("id", UUID.randomUUID()).param("rid", resource).param("reason", "item " + i).param("i", i).update();
+                INSERT INTO review_item (id, kind, status, resource_id, reason, created_at, resolved_at)
+                VALUES (:id, 'ENRICHMENT_VALIDATION', 'SUPERSEDED', :rid, :reason,
+                        TIMESTAMPTZ '2000-01-01' + make_interval(days => :i), now())
+                """).param("id", UUID.randomUUID()).param("rid", resource).param("reason", "item " + i).param("i", i).update();
         }
     }
 
@@ -45,7 +46,9 @@ class ReviewItemsApiIT extends ApiTestBase {
         jdbc.sql("DELETE FROM resource WHERE id = :id").param("id", resource).update();
     }
 
-    /** Other tests share the database: page through this resource's items only by their place among SUPERSEDED ones. */
+    /**
+     * Other tests share the database: page through this resource's items only by their place among SUPERSEDED ones.
+     */
     @Test
     void pagesThroughOneStatusNewestFirst() throws Exception {
         long others = jdbc.sql("SELECT count(*) FROM review_item WHERE status = 'SUPERSEDED' AND resource_id <> :id")
@@ -65,9 +68,9 @@ class ReviewItemsApiIT extends ApiTestBase {
     void filtersByKind() throws Exception {
         UUID report = UUID.randomUUID();
         jdbc.sql("""
-                INSERT INTO review_item (id, kind, status, resource_id, reason)
-                VALUES (:id, 'USER_REPORT', 'OPEN', :rid, 'a user report')
-                """).param("id", report).param("rid", resource).update();
+            INSERT INTO review_item (id, kind, status, resource_id, reason)
+            VALUES (:id, 'USER_REPORT', 'OPEN', :rid, 'a user report')
+            """).param("id", report).param("rid", resource).update();
         String page = mvc.perform(get("/api/v1/admin/review-items").param("kind", "USER_REPORT").param("status", "OPEN")
                 .param("size", "100").with(ADMIN))
             .andExpect(status().isOk())

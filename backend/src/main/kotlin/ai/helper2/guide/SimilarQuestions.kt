@@ -1,10 +1,10 @@
 package ai.helper2.guide
 
 import ai.helper2.shared.AudiencePath
+import org.slf4j.LoggerFactory
 import java.time.Clock
 import java.time.Instant
 import kotlin.math.sqrt
-import org.slf4j.LoggerFactory
 
 /**
  * How a question was read, as far as the reading decides the answer (ADR 0041). Two questions with equal keys get

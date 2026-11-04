@@ -45,7 +45,11 @@ data class DateFact(
         @JvmStatic
         fun scheduledDay(day: java.time.LocalDate?, sourceId: String): DateFact {
             val value = day?.atStartOfDay(java.time.ZoneOffset.UTC)?.toInstant()
-            return if (value == null || value.isBefore(EARLIEST_PLAUSIBLE)) unknown() else DateFact(value, DatePrecision.DAY, sourceId)
+            return if (value == null || value.isBefore(EARLIEST_PLAUSIBLE)) unknown() else DateFact(
+                value,
+                DatePrecision.DAY,
+                sourceId
+            )
         }
 
         /** Helper2's own observation time (e.g. first discovered). */

@@ -1,8 +1,8 @@
 package ai.helper2.guide.usecase
 
 import ai.helper2.guide.SimilarQuestionRetention
-import java.time.Clock
 import org.slf4j.LoggerFactory
+import java.time.Clock
 
 /**
  * The guide module's retention rule (ADR 0034): indexed questions are deleted once expired. The answers themselves are

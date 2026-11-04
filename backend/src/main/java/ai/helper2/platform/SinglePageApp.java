@@ -1,8 +1,5 @@
 package ai.helper2.platform;
 
-import java.io.IOException;
-import java.time.Duration;
-import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
@@ -11,6 +8,10 @@ import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.resource.PathResourceResolver;
+
+import java.io.IOException;
+import java.time.Duration;
+import java.util.List;
 
 /**
  * Serves the built SPA (frontend/dist, copied to classpath:static/ in the image). Controllers are matched
@@ -28,13 +29,28 @@ import org.springframework.web.servlet.resource.PathResourceResolver;
 @Configuration(proxyBeanMethods = false)
 class SinglePageApp implements WebMvcConfigurer {
 
-    /** Leading path segments that belong to the server, never to the client router. */
+    /**
+     * Leading path segments that belong to the server, never to the client router.
+     */
     private static final List<String> SERVER_PREFIXES = List.of("api/", "oauth2/", "login/", "actuator/");
 
     private final String location;
 
     SinglePageApp(@Value("${helper2.spa.location:classpath:/static/}") String location) {
         this.location = location.endsWith("/") ? location : location + "/";
+    }
+
+    /**
+     * True for paths the client router owns: no file extension and not a server path.
+     */
+    static boolean isClientRoute(String path) {
+        String p = path.startsWith("/") ? path.substring(1) : path;
+        if (p.equals("logout") || p.equals("api") || p.equals("oauth2") || p.equals("login") || p.equals("actuator")
+            || SERVER_PREFIXES.stream().anyMatch(p::startsWith)) {
+            return false;
+        }
+        String last = p.substring(p.lastIndexOf('/') + 1);
+        return !last.contains(".");
     }
 
     @Override
@@ -49,24 +65,17 @@ class SinglePageApp implements WebMvcConfigurer {
             .addResolver(new ClientRoutes());
     }
 
-    /** The resource handler never serves an empty path, so the root is forwarded to the file explicitly. */
+    /**
+     * The resource handler never serves an empty path, so the root is forwarded to the file explicitly.
+     */
     @Override
     public void addViewControllers(ViewControllerRegistry registry) {
         registry.addViewController("/").setViewName("forward:/index.html");
     }
 
-    /** True for paths the client router owns: no file extension and not a server path. */
-    static boolean isClientRoute(String path) {
-        String p = path.startsWith("/") ? path.substring(1) : path;
-        if (p.equals("logout") || p.equals("api") || p.equals("oauth2") || p.equals("login") || p.equals("actuator")
-            || SERVER_PREFIXES.stream().anyMatch(p::startsWith)) {
-            return false;
-        }
-        String last = p.substring(p.lastIndexOf('/') + 1);
-        return !last.contains(".");
-    }
-
-    /** An existing file as it is; a client route as index.html; anything else not found. */
+    /**
+     * An existing file as it is; a client route as index.html; anything else not found.
+     */
     private static final class ClientRoutes extends PathResourceResolver {
         @Override
         protected Resource getResource(String resourcePath, Resource location) throws IOException {

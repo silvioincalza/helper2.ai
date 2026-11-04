@@ -1,7 +1,6 @@
 package ai.helper2.catalog.internal;
 
 import ai.helper2.catalog.Embedder;
-import ai.helper2.catalog.ResourceCatalog;
 import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.catalog.internal.ResourceStore.DataOrigin;
 import ai.helper2.platform.ClusterLock;
@@ -14,14 +13,6 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.MeterBinder;
 import io.micrometer.observation.ObservationRegistry;
-import java.net.URI;
-import java.time.Clock;
-import java.time.Duration;
-import java.util.EnumSet;
-import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import net.javacrumbs.shedlock.core.LockingTaskExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,17 +21,30 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.net.URI;
+import java.time.Clock;
+import java.time.Duration;
+import java.util.EnumSet;
+import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 @Configuration(proxyBeanMethods = false)
 class CatalogConfiguration {
 
-    /** Background writer for what searches observed; see ResourceCatalog. */
+    /**
+     * Background writer for what searches observed; see ResourceCatalog.
+     */
     @Bean(destroyMethod = "close")
     ObservationQueue observationQueue(MeterRegistry registry,
                                       @Value("${helper2.catalog.observation-queue:256}") int capacity) {
         return new ObservationQueue(capacity, registry);
     }
 
-    /** The review backlog: items waiting for a person (one count query per scrape). */
+    /**
+     * The review backlog: items waiting for a person (one count query per scrape).
+     */
     @Bean
     MeterBinder reviewBacklogGauge(ReviewQueue queue) {
         return meters -> Gauge.builder("helper2.review.open_items", queue, ReviewQueue::openCount)
@@ -176,7 +180,9 @@ class CatalogConfiguration {
                 }
             }
 
-            /** An exception escaping a scheduled task would cancel all later runs. */
+            /**
+             * An exception escaping a scheduled task would cancel all later runs.
+             */
             private void runSafely() {
                 try {
                     lock.tryRun(indexer::tick);

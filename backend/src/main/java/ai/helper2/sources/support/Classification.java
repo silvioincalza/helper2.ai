@@ -1,6 +1,7 @@
 package ai.helper2.sources.support;
 
 import ai.helper2.shared.ResourceType;
+
 import java.util.Collection;
 import java.util.Locale;
 import java.util.Set;
@@ -49,7 +50,9 @@ public final class Classification {
         return fallback;
     }
 
-    /** true only for an OSI-approved SPDX id; null when unknown (no license is NOT "closed", just unknown). */
+    /**
+     * true only for an OSI-approved SPDX id; null when unknown (no license is NOT "closed", just unknown).
+     */
     public static Boolean openSource(String spdx) {
         return spdx != null && OSI.contains(spdx) ? Boolean.TRUE : null;
     }

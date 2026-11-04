@@ -1,16 +1,8 @@
 package ai.helper2.catalog.internal;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.TestcontainersConfiguration;
 import ai.helper2.catalog.enrichment.EnrichmentCandidates.Candidate;
 import ai.helper2.catalog.enrichment.EnrichmentCandidates.SourceText;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +10,18 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
-/** The enrichment backlog and a resource's source text, read from the catalog tables on real PostgreSQL. */
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * The enrichment backlog and a resource's source text, read from the catalog tables on real PostgreSQL.
+ */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 class JdbcEnrichmentCandidatesIT {
@@ -27,14 +30,11 @@ class JdbcEnrichmentCandidatesIT {
     static final int MAX_FAILED = 3;
     static final String LONG = "A description long enough for the model to cite something.";
     static final Instant T0 = Instant.parse("2026-01-01T00:00:00Z");
-
+    final List<UUID> created = new ArrayList<>();
     @Autowired
     JdbcEnrichmentCandidates candidates;
-
     @Autowired
     JdbcClient jdbc;
-
-    final List<UUID> created = new ArrayList<>();
 
     @AfterEach
     void clean() {
@@ -105,7 +105,9 @@ class JdbcEnrichmentCandidatesIT {
         assertThat(pendingOfThisTest()).containsExactly(kept);
     }
 
-    /** The overview's backlog count follows the same rule as the backlog the Scout takes. */
+    /**
+     * The overview's backlog count follows the same rule as the backlog the Scout takes.
+     */
     @Test
     void theCountIsTheSizeOfTheWholeBacklog() {
         withText("Counted", "INDEXED", "NOT_RUN", T0);
@@ -149,10 +151,10 @@ class JdbcEnrichmentCandidatesIT {
     @Test
     void aCandidateHasItsSourcesInSourceIdOrderAndTheLicenceOfTheFirstSourceThatStatesOne() {
         jdbc.sql("""
-                INSERT INTO source (id, name, mode, homepage, attribution)
-                VALUES ('aa-candidates', 'Candidates test', 'CURATED', 'https://helper2.ai/sources', 'Test')
-                ON CONFLICT (id) DO NOTHING
-                """).update();
+            INSERT INTO source (id, name, mode, homepage, attribution)
+            VALUES ('aa-candidates', 'Candidates test', 'CURATED', 'https://helper2.ai/sources', 'Test')
+            ON CONFLICT (id) DO NOTHING
+            """).update();
         UUID id = resource("Candidate", "INDEXED", "NOT_RUN", T0);
         UUID curated = record(id, "curated", "From curated", "Curated text.", "Apache-2.0");
         UUID first = record(id, "aa-candidates", "From first", null, null);

@@ -4,9 +4,9 @@ import ai.helper2.catalog.Embedder
 import ai.helper2.catalog.internal.NvidiaEmbedder
 import ai.helper2.platform.resilience.Resilience
 import io.micrometer.observation.ObservationRegistry
-import java.time.Duration
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import java.time.Duration
 
 /**
  * Records the question embeddings of docs/eval/guide-similar.json into docs/eval/guide-similar-vectors.json, with the
@@ -22,12 +22,14 @@ class GuideSimilarRecorder {
         val key = requireNotNull(System.getenv("H2_NVIDIA_API_KEY")?.ifBlank { null }) { "H2_NVIDIA_API_KEY is not set" }
         val base = System.getenv("H2_NVIDIA_EMBEDDING_BASE_URL") ?: "https://integrate.api.nvidia.com/v1"
         val model = System.getenv("H2_NVIDIA_EMBEDDING_MODEL") ?: "nvidia/nemotron-3.5-embed-1b"
-        val embedder = NvidiaEmbedder(base, key, model, DIMENSIONS, Duration.ofSeconds(60), ObservationRegistry.NOOP, Resilience.NONE)
+        val embedder =
+            NvidiaEmbedder(base, key, model, DIMENSIONS, Duration.ofSeconds(60), ObservationRegistry.NOOP, Resilience.NONE)
         val questions = GuideSimilarEvaluation.questions(GuideSimilarEvaluation.set())
         val vectors = questions.chunked(16).flatMap { batch -> batch.zip(embedder.embed(batch, Embedder.Kind.QUERY)) }
             .associate { (text, vector) -> text to RecordedVectors.encode(vector) }
             .toSortedMap()
-        EvalFiles.json.writerWithDefaultPrettyPrinter().writeValue(GuideSimilarEvaluation.vectorsFile, RecordedVectors(model, DIMENSIONS, vectors))
+        EvalFiles.json.writerWithDefaultPrettyPrinter()
+            .writeValue(GuideSimilarEvaluation.vectorsFile, RecordedVectors(model, DIMENSIONS, vectors))
         println("recorded ${vectors.size} question embeddings with $model into ${GuideSimilarEvaluation.vectorsFile}")
     }
 

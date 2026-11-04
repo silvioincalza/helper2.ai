@@ -9,15 +9,24 @@ import ai.helper2.search.SourceHit;
 import ai.helper2.shared.Audience;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.DateFact;
+import ai.helper2.shared.DatePrecision;
 import ai.helper2.shared.EventFormat;
 import ai.helper2.shared.EventKind;
-import ai.helper2.shared.DatePrecision;
 import ai.helper2.shared.LanguageDetector;
 import ai.helper2.shared.Pricing;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.TechLevel;
 import ai.helper2.shared.ValueOrigin;
 import ai.helper2.shared.WebPageTitle;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
+
 import java.net.URI;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -40,60 +49,53 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ArrayNode;
-import tools.jackson.databind.node.ObjectNode;
 
-/** JDBC access to resources and source records. All SQL for the catalog's core tables lives here. */
+/**
+ * JDBC access to resources and source records. All SQL for the catalog's core tables lives here.
+ */
 @Repository
 public class ResourceStore {
 
-    /** Origin precedence: a higher-precedence origin's descriptive fields are never overwritten by a lower one. */
-    public enum DataOrigin { OBSERVED, INDEXED, CURATED, DEMO }
-
     /**
-     * A catalog row with its labels and the popularity metrics its source records state (each still
-     * attributed to the source that reported it).
+     * Tags kept per resource (labels are rebuilt from its records on every upsert).
      */
-    public record ResourceRow(
-        UUID id, String canonicalUrl, String url, String title, String description, ValueOrigin descriptionOrigin,
-        ResourceType type, Audience audience, TechLevel techLevel, String license, Pricing pricing, Boolean openSource,
-        Instant publishedAt, DatePrecision publishedPrecision, String publishedSourceId,
-        Instant updatedAt, String updatedSourceId, Instant firstDiscoveredAt, Instant lastSeenAt,
-        DataOrigin dataOrigin, String enrichmentStatus, Set<String> tags, Set<String> useCases, Set<String> platforms,
-        List<PopularityMetric> popularity) {
-
-        ResourceRow withFacts(Map<String, Set<String>> labels, List<PopularityMetric> metrics) {
-            return new ResourceRow(id, canonicalUrl, url, title, description, descriptionOrigin, type, audience, techLevel,
-                license, pricing, openSource, publishedAt, publishedPrecision, publishedSourceId, updatedAt, updatedSourceId,
-                firstDiscoveredAt, lastSeenAt, dataOrigin, enrichmentStatus, labels.getOrDefault("TAG", Set.of()),
-                labels.getOrDefault("USE_CASE", Set.of()), labels.getOrDefault("PLATFORM", Set.of()), metrics);
-        }
-
-        /** The row with its title cleaned as a web page title ({@link WebPageTitle}); unchanged when already clean. */
-        ResourceRow withPageTitle() {
-            CanonicalUrl page = CanonicalUrl.of(canonicalUrl);
-            String clean = WebPageTitle.of(title, page == null ? null : page.getHost()).getTitle();
-            return clean.equals(title) ? this : new ResourceRow(id, canonicalUrl, url, clean, description, descriptionOrigin, type,
-                audience, techLevel, license, pricing, openSource, publishedAt, publishedPrecision, publishedSourceId, updatedAt,
-                updatedSourceId, firstDiscoveredAt, lastSeenAt, dataOrigin, enrichmentStatus, tags, useCases, platforms, popularity);
-        }
-    }
-
-    public record RecordRow(UUID id, String sourceId, String externalId, UUID resourceId, String sourceUrl,
-                            Instant retrievedAt, String fingerprint, SourceHit hit) {
-    }
-
+    static final int MAX_TAGS = 20;
+    static final int MAX_VARIANTS = 4;
+    /**
+     * Rows that get the full text score (stage 2 of [search]).
+     */
+    static final int PRESELECT = 300;
+    /**
+     * Title similarity at which a row matches by name alone (typos, partial names).
+     */
+    static final double TITLE_SIMILARITY = 0.35;
     private static final String ORIGIN_RANK =
         "(CASE %s WHEN 'DEMO' THEN 3 WHEN 'CURATED' THEN 2 WHEN 'INDEXED' THEN 1 ELSE 0 END)";
-    /** Tags kept per resource (labels are rebuilt from its records on every upsert). */
-    static final int MAX_TAGS = 20;
-
+    /**
+     * Every word of :anyq, OR-ed, in English, language-neutral and the query language's stemmer.
+     */
+    private static final String ANY_TERMS = "websearch_to_tsquery('english', h2_unaccent(:anyq))"
+        + " || websearch_to_tsquery('simple', h2_unaccent(:anyq))"
+        + " || websearch_to_tsquery(h2_ts_config(:lang), h2_unaccent(:anyq))";
+    /**
+     * Which rows the index query retrieves: any word matches (GIN resource_search_idx) or the title is
+     * similar to the query. `lower(title) % :raw` is the indexable trigram operator (GIN
+     * resource_title_trgm_idx; its default threshold 0.3 is below ours), rechecked against the exact
+     * similarity. A plain `similarity(...) > x` cannot use an index, which turned the OR into a scan of the
+     * whole table. Both arms are indexable, so PostgreSQL can combine the two indexes (BitmapOr).
+     */
+    static final String MATCHES = "(r.search_vector @@ (" + ANY_TERMS + ")"
+        + " OR (lower(r.title) % lower(:raw) AND similarity(lower(r.title), lower(:raw)) > :similarity))";
+    /**
+     * Text the embedding is made from, and its hash; SQL and Java must agree, so it is defined once here.
+     */
+    private static final String EMBEDDED_TEXT = "r.title || E'\\n' || coalesce(r.description, '')";
+    /**
+     * A resource whose embedding for :model is missing or stale (its text changed since): the indexer's work list
+     * and its backlog. Needs `resource r` LEFT JOIN `resource_embedding e` on the resource and the model.
+     */
+    private static final String EMBEDDING_PENDING =
+        "r.data_origin <> 'DEMO' AND (e.resource_id IS NULL OR e.text_hash <> md5(" + EMBEDDED_TEXT + "))";
     private final JdbcClient jdbc;
     private final JdbcTemplate template;
     private final ObjectMapper json;
@@ -104,6 +106,118 @@ public class ResourceStore {
         this.template = template;
         this.json = json;
         this.languages = languages;
+    }
+
+    /**
+     * Words only, for websearch_to_tsquery: user text must not become its syntax. A leading "-" means NOT,
+     * quotes make phrases and a bare "or" means OR there ("-mcp server" would exclude MCP servers).
+     */
+    static String plainWords(String text) {
+        return Arrays.stream(text.split("\\s+"))
+            .map(w -> w.replace("\"", "").replaceFirst("^-+", ""))
+            .filter(w -> !w.isEmpty() && !w.equalsIgnoreCase("or"))
+            .collect(Collectors.joining(" "));
+    }
+
+    /**
+     * The index query of [search] for [variants] required-word variants. Parameters: :anyq, :raw, :lang,
+     * :origins, :preselect, :limit, :similarity and :v0..:vN. Only parameter names are concatenated into the
+     * SQL, never query text. Rows are retrieved by {@link #MATCHES}.
+     */
+    static String searchSql(int variants) {
+        StringBuilder allTerms = new StringBuilder();
+        for (int i = 0; i < variants; i++) {
+            if (i > 0) {
+                allTerms.append(" || ");
+            }
+            String p = ":v" + i;
+            allTerms.append("websearch_to_tsquery('english', h2_unaccent(").append(p).append(")) || ")
+                .append("websearch_to_tsquery('simple', h2_unaccent(").append(p).append(")) || ")
+                .append("websearch_to_tsquery(h2_ts_config(:lang), h2_unaccent(").append(p).append("))");
+        }
+        // Order: rows containing every word of a variant first (+2, more than the rest can add); within
+        // each group, popularity (0..1, strongest metric, log-scaled per kind) plus half the text score
+        // (capped at 10 -> 0..0.5). Text score alone measures word density, not relevance: for
+        // "MCP server Postgres" it ranked short npm names first and crystaldba/postgres-mcp (3.4k stars)
+        // 368th; with this order it is 3rd (prod catalog, 2026-10-26). Popularity is the stored column
+        // kept by a trigger on source_record, not computed per matched row.
+        //
+        // Two stages, because ts_rank_cd per matched row is the expensive part and grows with the catalog
+        // (11k resources, 2.9k matches for a 5-word query: 2.0 s in the app, close to the 3 s source
+        // timeout). Stage 1 orders every match by cheap facts (every-word match, popularity, title
+        // similarity) and keeps PRESELECT rows; stage 2 scores only those. Rows with every word are
+        // almost always fewer than PRESELECT, so they are never cut. 2.0 s -> 0.2 s (prod, 2026-10-26).
+        // The WHERE spells out any_terms instead of reading it from q: q is a CTE used twice, so it is
+        // materialized, and a condition on a CTE column is a join filter that no index can serve.
+        return """
+            WITH q AS (
+              SELECT (%1$s) AS all_terms, %2$s AS any_terms
+            ), matched AS (
+              SELECT r.id, (r.search_vector @@ q.all_terms) AS all_match,
+                     similarity(lower(r.title), lower(:raw)) AS sim
+              FROM resource r, q
+              WHERE r.data_origin = ANY(:origins)
+                AND %3$s
+                AND (CAST(:after AS timestamptz) IS NULL OR r.published_at >= CAST(:after AS timestamptz))
+            ), pre AS (
+              SELECT m.*, r.popularity AS pop
+              FROM matched m JOIN resource r ON r.id = m.id
+              ORDER BY m.all_match DESC, r.popularity + m.sim DESC
+              LIMIT :preselect
+            )
+            SELECT r.*, (CASE WHEN pre.all_match THEN 2 ELSE 0 END + pre.pop
+                         + 0.5 * least((ts_rank_cd(r.search_vector, q.any_terms) * 3 + pre.sim) / 10, 1)) AS score
+            FROM pre JOIN resource r ON r.id = pre.id, q
+            ORDER BY score DESC, r.title
+            LIMIT :limit
+            """.formatted(allTerms, ANY_TERMS, MATCHES);
+    }
+
+    private static PopularityMetric metric(String kind, String value, String sourceId, String asOf, Instant retrievedAt) {
+        try {
+            Instant at = asOf == null ? retrievedAt : Instant.parse(asOf);
+            return new PopularityMetric(PopularityKind.valueOf(kind), Long.parseLong(value), sourceId, at);
+        } catch (IllegalArgumentException | NullPointerException | DateTimeParseException e) {
+            return null;
+        }
+    }
+
+    private static DateFact eventDay(Timestamp t, String sourceId) {
+        return t == null ? DateFact.unknown() : new DateFact(t.toInstant(), DatePrecision.DAY, sourceId, List.of(), false);
+    }
+
+    private static DateFact date(Instant value, String precision, String sourceId) {
+        if (value == null) {
+            return DateFact.unknown();
+        }
+        DatePrecision p = "DAY".equals(precision) ? DatePrecision.DAY : DatePrecision.INSTANT;
+        return new DateFact(value, p, sourceId, List.of(), false);
+    }
+
+    private static Set<String> strings(JsonNode arr) {
+        Set<String> out = new LinkedHashSet<>();
+        arr.forEach(n -> out.add(n.asString()));
+        return out;
+    }
+
+    static String clip(String s, int max) {
+        return s == null || s.length() <= max ? s : s.substring(0, max);
+    }
+
+    private static String iso(Instant i) {
+        return i == null ? null : i.toString();
+    }
+
+    private static Timestamp ts(Instant i) {
+        return i == null ? null : Timestamp.from(i);
+    }
+
+    private static Instant instant(Timestamp t) {
+        return t == null ? null : t.toInstant();
+    }
+
+    private static <E extends Enum<E>> E enumOrNull(Class<E> type, String v) {
+        return v == null ? null : Enum.valueOf(type, v);
     }
 
     @Transactional
@@ -124,9 +238,9 @@ public class ResourceStore {
         }
     }
 
-    public record RecordedOutcome(String sourceId, String outcome, Instant checkedAt) {}
-
-    /** Last outcome per source as written by the Scout; sources never run are absent. */
+    /**
+     * Last outcome per source as written by the Scout; sources never run are absent.
+     */
     public List<RecordedOutcome> recordedOutcomes() {
         return jdbc.sql("SELECT id, last_outcome, last_checked_at FROM source WHERE last_outcome IS NOT NULL AND last_checked_at IS NOT NULL")
             .query((rs, i) -> new RecordedOutcome(rs.getString("id"), rs.getString("last_outcome"),
@@ -134,14 +248,10 @@ public class ResourceStore {
             .list();
     }
 
-    /** A source record to write: the hit, its stable id and the resource that owns it. */
-    private record RecordInput(UUID id, SourceHit hit, String externalId, UUID owner) {
-    }
-
     /**
      * Upserts merged results and the source records behind them (those of [persistableSources] only).
      * Returns the record ids whose content fingerprint changed (or are new), for the Scout's change detection.
-     *
+     * <p>
      * Then, for every resource touched (owners, and resources a record moved away from): labels are rebuilt
      * from the current records, event dates follow the records, and an OBSERVED resource left without any
      * record is deleted (its links still resolve through the record, see [ownerOfRecordUrl]). Its user reports
@@ -200,36 +310,33 @@ public class ResourceStore {
         String newRank = ORIGIN_RANK.formatted("EXCLUDED.data_origin");
         String keep = rank + " > " + newRank;
         template.batchUpdate("""
-                INSERT INTO resource (id, canonical_url, url, title, description, description_origin, type, audience,
-                    tech_level, license, pricing, open_source, published_at, published_precision, published_source_id,
-                    updated_at, updated_source_id, data_origin, language)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT (canonical_url) DO UPDATE SET
-                    last_seen_at = now(),
-                    modified_at = now(),
-                    url = CASE WHEN %1$s THEN resource.url ELSE EXCLUDED.url END,
-                    title = CASE WHEN %1$s THEN resource.title ELSE EXCLUDED.title END,
-                    description = CASE WHEN %1$s THEN resource.description ELSE coalesce(EXCLUDED.description, resource.description) END,
-                    description_origin = CASE WHEN %1$s OR EXCLUDED.description IS NULL THEN resource.description_origin ELSE EXCLUDED.description_origin END,
-                    type = CASE WHEN %1$s THEN resource.type ELSE EXCLUDED.type END,
-                    audience = CASE WHEN %1$s THEN resource.audience ELSE EXCLUDED.audience END,
-                    tech_level = coalesce(resource.tech_level, EXCLUDED.tech_level),
-                    license = CASE WHEN %1$s THEN resource.license ELSE EXCLUDED.license END,
-                    pricing = CASE WHEN %1$s THEN resource.pricing ELSE EXCLUDED.pricing END,
-                    open_source = CASE WHEN %1$s THEN resource.open_source ELSE EXCLUDED.open_source END,
-                    published_at = CASE WHEN %1$s OR EXCLUDED.published_at IS NULL THEN resource.published_at ELSE EXCLUDED.published_at END,
-                    published_precision = CASE WHEN %1$s OR EXCLUDED.published_at IS NULL THEN resource.published_precision ELSE EXCLUDED.published_precision END,
-                    published_source_id = CASE WHEN %1$s OR EXCLUDED.published_at IS NULL THEN resource.published_source_id ELSE EXCLUDED.published_source_id END,
-                    updated_at = CASE WHEN EXCLUDED.updated_at IS NOT NULL AND (resource.updated_at IS NULL OR EXCLUDED.updated_at > resource.updated_at)
-                                      THEN EXCLUDED.updated_at ELSE resource.updated_at END,
-                    updated_source_id = CASE WHEN EXCLUDED.updated_at IS NOT NULL AND (resource.updated_at IS NULL OR EXCLUDED.updated_at > resource.updated_at)
-                                      THEN EXCLUDED.updated_source_id ELSE resource.updated_source_id END,
-                    data_origin = CASE WHEN %1$s THEN resource.data_origin ELSE EXCLUDED.data_origin END,
-                    language = CASE WHEN %1$s THEN resource.language ELSE EXCLUDED.language END
-                """.formatted(keep), args);
-    }
-
-    private record UpsertedRecord(UUID id, UUID owner, boolean changed, UUID previousOwner) {
+            INSERT INTO resource (id, canonical_url, url, title, description, description_origin, type, audience,
+                tech_level, license, pricing, open_source, published_at, published_precision, published_source_id,
+                updated_at, updated_source_id, data_origin, language)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT (canonical_url) DO UPDATE SET
+                last_seen_at = now(),
+                modified_at = now(),
+                url = CASE WHEN %1$s THEN resource.url ELSE EXCLUDED.url END,
+                title = CASE WHEN %1$s THEN resource.title ELSE EXCLUDED.title END,
+                description = CASE WHEN %1$s THEN resource.description ELSE coalesce(EXCLUDED.description, resource.description) END,
+                description_origin = CASE WHEN %1$s OR EXCLUDED.description IS NULL THEN resource.description_origin ELSE EXCLUDED.description_origin END,
+                type = CASE WHEN %1$s THEN resource.type ELSE EXCLUDED.type END,
+                audience = CASE WHEN %1$s THEN resource.audience ELSE EXCLUDED.audience END,
+                tech_level = coalesce(resource.tech_level, EXCLUDED.tech_level),
+                license = CASE WHEN %1$s THEN resource.license ELSE EXCLUDED.license END,
+                pricing = CASE WHEN %1$s THEN resource.pricing ELSE EXCLUDED.pricing END,
+                open_source = CASE WHEN %1$s THEN resource.open_source ELSE EXCLUDED.open_source END,
+                published_at = CASE WHEN %1$s OR EXCLUDED.published_at IS NULL THEN resource.published_at ELSE EXCLUDED.published_at END,
+                published_precision = CASE WHEN %1$s OR EXCLUDED.published_at IS NULL THEN resource.published_precision ELSE EXCLUDED.published_precision END,
+                published_source_id = CASE WHEN %1$s OR EXCLUDED.published_at IS NULL THEN resource.published_source_id ELSE EXCLUDED.published_source_id END,
+                updated_at = CASE WHEN EXCLUDED.updated_at IS NOT NULL AND (resource.updated_at IS NULL OR EXCLUDED.updated_at > resource.updated_at)
+                                  THEN EXCLUDED.updated_at ELSE resource.updated_at END,
+                updated_source_id = CASE WHEN EXCLUDED.updated_at IS NOT NULL AND (resource.updated_at IS NULL OR EXCLUDED.updated_at > resource.updated_at)
+                                  THEN EXCLUDED.updated_source_id ELSE resource.updated_source_id END,
+                data_origin = CASE WHEN %1$s THEN resource.data_origin ELSE EXCLUDED.data_origin END,
+                language = CASE WHEN %1$s THEN resource.language ELSE EXCLUDED.language END
+            """.formatted(keep), args);
     }
 
     /**
@@ -310,14 +417,14 @@ public class ResourceStore {
         UUID[] from = moves.stream().map(UpsertedRecord::previousOwner).toArray(UUID[]::new);
         UUID[] to = moves.stream().map(UpsertedRecord::owner).toArray(UUID[]::new);
         String target = """
-                WITH moved AS (SELECT * FROM unnest(CAST(:from AS uuid[]), CAST(:to AS uuid[])) AS m(previous_owner, owner)),
-                target AS (
-                  SELECT m.previous_owner, (array_agg(DISTINCT m.owner))[1] AS owner
-                  FROM moved m
-                  WHERE NOT EXISTS (SELECT 1 FROM source_record s WHERE s.resource_id = m.previous_owner)
-                  GROUP BY m.previous_owner HAVING count(DISTINCT m.owner) = 1
-                )
-                """;
+            WITH moved AS (SELECT * FROM unnest(CAST(:from AS uuid[]), CAST(:to AS uuid[])) AS m(previous_owner, owner)),
+            target AS (
+              SELECT m.previous_owner, (array_agg(DISTINCT m.owner))[1] AS owner
+              FROM moved m
+              WHERE NOT EXISTS (SELECT 1 FROM source_record s WHERE s.resource_id = m.previous_owner)
+              GROUP BY m.previous_owner HAVING count(DISTINCT m.owner) = 1
+            )
+            """;
         for (String table : List.of("issue_report", "review_item")) {
             jdbc.sql(target + "UPDATE " + table + " x SET resource_id = t.owner FROM target t WHERE x.resource_id = t.previous_owner")
                 .param("from", from).param("to", to).update();
@@ -370,7 +477,9 @@ public class ResourceStore {
             .param("ids", ids).param("maxTags", MAX_TAGS).update();
     }
 
-    /** resource.event_* follow the records: earliest stated start, latest stated end (null when none states one). */
+    /**
+     * resource.event_* follow the records: earliest stated start, latest stated end (null when none states one).
+     */
     private void refreshEventDates(Collection<UUID> resourceIds) {
         if (resourceIds.isEmpty()) {
             return;
@@ -414,92 +523,6 @@ public class ResourceStore {
         return out;
     }
 
-    static final int MAX_VARIANTS = 4;
-    /** Rows that get the full text score (stage 2 of [search]). */
-    static final int PRESELECT = 300;
-    /** Title similarity at which a row matches by name alone (typos, partial names). */
-    static final double TITLE_SIMILARITY = 0.35;
-
-    /**
-     * Words only, for websearch_to_tsquery: user text must not become its syntax. A leading "-" means NOT,
-     * quotes make phrases and a bare "or" means OR there ("-mcp server" would exclude MCP servers).
-     */
-    static String plainWords(String text) {
-        return Arrays.stream(text.split("\\s+"))
-            .map(w -> w.replace("\"", "").replaceFirst("^-+", ""))
-            .filter(w -> !w.isEmpty() && !w.equalsIgnoreCase("or"))
-            .collect(Collectors.joining(" "));
-    }
-
-    /** Every word of :anyq, OR-ed, in English, language-neutral and the query language's stemmer. */
-    private static final String ANY_TERMS = "websearch_to_tsquery('english', h2_unaccent(:anyq))"
-        + " || websearch_to_tsquery('simple', h2_unaccent(:anyq))"
-        + " || websearch_to_tsquery(h2_ts_config(:lang), h2_unaccent(:anyq))";
-
-    /**
-     * Which rows the index query retrieves: any word matches (GIN resource_search_idx) or the title is
-     * similar to the query. `lower(title) % :raw` is the indexable trigram operator (GIN
-     * resource_title_trgm_idx; its default threshold 0.3 is below ours), rechecked against the exact
-     * similarity. A plain `similarity(...) > x` cannot use an index, which turned the OR into a scan of the
-     * whole table. Both arms are indexable, so PostgreSQL can combine the two indexes (BitmapOr).
-     */
-    static final String MATCHES = "(r.search_vector @@ (" + ANY_TERMS + ")"
-        + " OR (lower(r.title) % lower(:raw) AND similarity(lower(r.title), lower(:raw)) > :similarity))";
-
-    /**
-     * The index query of [search] for [variants] required-word variants. Parameters: :anyq, :raw, :lang,
-     * :origins, :preselect, :limit, :similarity and :v0..:vN. Only parameter names are concatenated into the
-     * SQL, never query text. Rows are retrieved by {@link #MATCHES}.
-     */
-    static String searchSql(int variants) {
-        StringBuilder allTerms = new StringBuilder();
-        for (int i = 0; i < variants; i++) {
-            if (i > 0) {
-                allTerms.append(" || ");
-            }
-            String p = ":v" + i;
-            allTerms.append("websearch_to_tsquery('english', h2_unaccent(").append(p).append(")) || ")
-                .append("websearch_to_tsquery('simple', h2_unaccent(").append(p).append(")) || ")
-                .append("websearch_to_tsquery(h2_ts_config(:lang), h2_unaccent(").append(p).append("))");
-        }
-        // Order: rows containing every word of a variant first (+2, more than the rest can add); within
-        // each group, popularity (0..1, strongest metric, log-scaled per kind) plus half the text score
-        // (capped at 10 -> 0..0.5). Text score alone measures word density, not relevance: for
-        // "MCP server Postgres" it ranked short npm names first and crystaldba/postgres-mcp (3.4k stars)
-        // 368th; with this order it is 3rd (prod catalog, 2026-10-26). Popularity is the stored column
-        // kept by a trigger on source_record, not computed per matched row.
-        //
-        // Two stages, because ts_rank_cd per matched row is the expensive part and grows with the catalog
-        // (11k resources, 2.9k matches for a 5-word query: 2.0 s in the app, close to the 3 s source
-        // timeout). Stage 1 orders every match by cheap facts (every-word match, popularity, title
-        // similarity) and keeps PRESELECT rows; stage 2 scores only those. Rows with every word are
-        // almost always fewer than PRESELECT, so they are never cut. 2.0 s -> 0.2 s (prod, 2026-10-26).
-        // The WHERE spells out any_terms instead of reading it from q: q is a CTE used twice, so it is
-        // materialized, and a condition on a CTE column is a join filter that no index can serve.
-        return """
-            WITH q AS (
-              SELECT (%1$s) AS all_terms, %2$s AS any_terms
-            ), matched AS (
-              SELECT r.id, (r.search_vector @@ q.all_terms) AS all_match,
-                     similarity(lower(r.title), lower(:raw)) AS sim
-              FROM resource r, q
-              WHERE r.data_origin = ANY(:origins)
-                AND %3$s
-                AND (CAST(:after AS timestamptz) IS NULL OR r.published_at >= CAST(:after AS timestamptz))
-            ), pre AS (
-              SELECT m.*, r.popularity AS pop
-              FROM matched m JOIN resource r ON r.id = m.id
-              ORDER BY m.all_match DESC, r.popularity + m.sim DESC
-              LIMIT :preselect
-            )
-            SELECT r.*, (CASE WHEN pre.all_match THEN 2 ELSE 0 END + pre.pop
-                         + 0.5 * least((ts_rank_cd(r.search_vector, q.any_terms) * 3 + pre.sim) / 10, 1)) AS score
-            FROM pre JOIN resource r ON r.id = pre.id, q
-            ORDER BY score DESC, r.title
-            LIMIT :limit
-            """.formatted(allTerms, ANY_TERMS, MATCHES);
-    }
-
     /**
      * Full-text + trigram search over the catalog. A row is retrieved when it matches any word; it scores
      * higher when it contains every word of at least one of [requiredVariants] (the query without type
@@ -514,7 +537,9 @@ public class ResourceStore {
         return search(query, requiredVariants, extraTerms, synonyms, language, origins, limit, null);
     }
 
-    /** As {@link #search}, keeping only rows created on or after [publishedAfter] (by the source's date); null = any. */
+    /**
+     * As {@link #search}, keeping only rows created on or after [publishedAfter] (by the source's date); null = any.
+     */
     public List<ResourceRow> search(String query, List<String> requiredVariants, List<String> extraTerms,
                                     List<String> synonyms, String language, Set<DataOrigin> origins, int limit,
                                     Instant publishedAfter) {
@@ -538,23 +563,6 @@ public class ResourceStore {
             spec = spec.param("v" + i, plainWords(variants.get(i) + " " + expansions));
         }
         return withFacts(spec.query(this::mapResource).list());
-    }
-
-    /** Text the embedding is made from, and its hash; SQL and Java must agree, so it is defined once here. */
-    private static final String EMBEDDED_TEXT = "r.title || E'\\n' || coalesce(r.description, '')";
-
-    /**
-     * A resource whose embedding for :model is missing or stale (its text changed since): the indexer's work list
-     * and its backlog. Needs `resource r` LEFT JOIN `resource_embedding e` on the resource and the model.
-     */
-    private static final String EMBEDDING_PENDING =
-        "r.data_origin <> 'DEMO' AND (e.resource_id IS NULL OR e.text_hash <> md5(" + EMBEDDED_TEXT + "))";
-
-    public record EmbeddingTask(UUID resourceId, String text, String textHash) {
-    }
-
-    /** One batch of [tasks] and the [backlog]: every resource still to embed, this batch included. */
-    public record PendingEmbeddings(List<EmbeddingTask> tasks, long backlog) {
     }
 
     /**
@@ -604,9 +612,6 @@ public class ResourceStore {
                 .param("v", PgVectors.literal(vectors.get(i)))
                 .update();
         }
-    }
-
-    public record EmbeddingCoverage(long embedded, long total) {
     }
 
     public EmbeddingCoverage embeddingCoverage(String model) {
@@ -771,7 +776,7 @@ public class ResourceStore {
     private Object[] resourceArgs(MergedResult r, DataOrigin origin) {
         DateFact pub = r.getPublished();
         DateFact upd = r.getUpdated();
-        return new Object[] {
+        return new Object[]{
             r.getId().getValue(), r.getCanonicalUrl().getValue(), r.getUrl().toString(), clip(r.getTitle(), 300),
             clip(r.getDescription(), 4000), r.getDescriptionOrigin().name(), r.getType().name(), r.getAudience().name(),
             r.getTechLevel() == null ? null : r.getTechLevel().name(), r.getLicense(),
@@ -783,7 +788,9 @@ public class ResourceStore {
         };
     }
 
-    /** ISO code of the row's own text, so the index adds that language's stemmer; 'simple' when unclear. */
+    /**
+     * ISO code of the row's own text, so the index adds that language's stemmer; 'simple' when unclear.
+     */
     private String languageOf(MergedResult r) {
         String text = Objects.toString(clip(r.getTitle(), 300), "") + " " + Objects.toString(clip(r.getDescription(), 1000), "");
         String code = languages.detect(text);
@@ -828,7 +835,9 @@ public class ResourceStore {
             .toList();
     }
 
-    /** Resources of [ids] whose records all come from {@link WebPageTitle#SOURCES}: their title is a page title. */
+    /**
+     * Resources of [ids] whose records all come from {@link WebPageTitle#SOURCES}: their title is a page title.
+     */
     private Set<UUID> pageTitled(UUID[] ids) {
         return new HashSet<>(jdbc.sql("""
                 SELECT resource_id FROM source_record WHERE resource_id = ANY(:ids)
@@ -872,15 +881,6 @@ public class ResourceStore {
         newest.forEach((id, byKey) -> out.put(id, byKey.values().stream()
             .sorted(Comparator.comparing(PopularityMetric::getKind)).toList()));
         return out;
-    }
-
-    private static PopularityMetric metric(String kind, String value, String sourceId, String asOf, Instant retrievedAt) {
-        try {
-            Instant at = asOf == null ? retrievedAt : Instant.parse(asOf);
-            return new PopularityMetric(PopularityKind.valueOf(kind), Long.parseLong(value), sourceId, at);
-        } catch (IllegalArgumentException | NullPointerException | DateTimeParseException e) {
-            return null;
-        }
     }
 
     private ObjectNode extra(SourceHit h) {
@@ -938,42 +938,68 @@ public class ResourceStore {
             enumOrNull(EventFormat.class, x.path("eventFormat").asString(null)));
     }
 
-    private static DateFact eventDay(Timestamp t, String sourceId) {
-        return t == null ? DateFact.unknown() : new DateFact(t.toInstant(), DatePrecision.DAY, sourceId, List.of(), false);
-    }
+    /**
+     * Origin precedence: a higher-precedence origin's descriptive fields are never overwritten by a lower one.
+     */
+    public enum DataOrigin {OBSERVED, INDEXED, CURATED, DEMO}
 
-    private static DateFact date(Instant value, String precision, String sourceId) {
-        if (value == null) {
-            return DateFact.unknown();
+    /**
+     * A catalog row with its labels and the popularity metrics its source records state (each still
+     * attributed to the source that reported it).
+     */
+    public record ResourceRow(
+        UUID id, String canonicalUrl, String url, String title, String description, ValueOrigin descriptionOrigin,
+        ResourceType type, Audience audience, TechLevel techLevel, String license, Pricing pricing, Boolean openSource,
+        Instant publishedAt, DatePrecision publishedPrecision, String publishedSourceId,
+        Instant updatedAt, String updatedSourceId, Instant firstDiscoveredAt, Instant lastSeenAt,
+        DataOrigin dataOrigin, String enrichmentStatus, Set<String> tags, Set<String> useCases, Set<String> platforms,
+        List<PopularityMetric> popularity) {
+
+        ResourceRow withFacts(Map<String, Set<String>> labels, List<PopularityMetric> metrics) {
+            return new ResourceRow(id, canonicalUrl, url, title, description, descriptionOrigin, type, audience, techLevel,
+                license, pricing, openSource, publishedAt, publishedPrecision, publishedSourceId, updatedAt, updatedSourceId,
+                firstDiscoveredAt, lastSeenAt, dataOrigin, enrichmentStatus, labels.getOrDefault("TAG", Set.of()),
+                labels.getOrDefault("USE_CASE", Set.of()), labels.getOrDefault("PLATFORM", Set.of()), metrics);
         }
-        DatePrecision p = "DAY".equals(precision) ? DatePrecision.DAY : DatePrecision.INSTANT;
-        return new DateFact(value, p, sourceId, List.of(), false);
+
+        /**
+         * The row with its title cleaned as a web page title ({@link WebPageTitle}); unchanged when already clean.
+         */
+        ResourceRow withPageTitle() {
+            CanonicalUrl page = CanonicalUrl.of(canonicalUrl);
+            String clean = WebPageTitle.of(title, page == null ? null : page.getHost()).getTitle();
+            return clean.equals(title) ? this : new ResourceRow(id, canonicalUrl, url, clean, description, descriptionOrigin, type,
+                audience, techLevel, license, pricing, openSource, publishedAt, publishedPrecision, publishedSourceId, updatedAt,
+                updatedSourceId, firstDiscoveredAt, lastSeenAt, dataOrigin, enrichmentStatus, tags, useCases, platforms, popularity);
+        }
     }
 
-    private static Set<String> strings(JsonNode arr) {
-        Set<String> out = new LinkedHashSet<>();
-        arr.forEach(n -> out.add(n.asString()));
-        return out;
+    public record RecordRow(UUID id, String sourceId, String externalId, UUID resourceId, String sourceUrl,
+                            Instant retrievedAt, String fingerprint, SourceHit hit) {
     }
 
-    static String clip(String s, int max) {
-        return s == null || s.length() <= max ? s : s.substring(0, max);
+    public record RecordedOutcome(String sourceId, String outcome, Instant checkedAt) {
     }
 
-    private static String iso(Instant i) {
-        return i == null ? null : i.toString();
+    /**
+     * A source record to write: the hit, its stable id and the resource that owns it.
+     */
+    private record RecordInput(UUID id, SourceHit hit, String externalId, UUID owner) {
     }
 
-    private static Timestamp ts(Instant i) {
-        return i == null ? null : Timestamp.from(i);
+    private record UpsertedRecord(UUID id, UUID owner, boolean changed, UUID previousOwner) {
     }
 
-    private static Instant instant(Timestamp t) {
-        return t == null ? null : t.toInstant();
+    public record EmbeddingTask(UUID resourceId, String text, String textHash) {
     }
 
-    private static <E extends Enum<E>> E enumOrNull(Class<E> type, String v) {
-        return v == null ? null : Enum.valueOf(type, v);
+    /**
+     * One batch of [tasks] and the [backlog]: every resource still to embed, this batch included.
+     */
+    public record PendingEmbeddings(List<EmbeddingTask> tasks, long backlog) {
+    }
+
+    public record EmbeddingCoverage(long embedded, long total) {
     }
 
 }

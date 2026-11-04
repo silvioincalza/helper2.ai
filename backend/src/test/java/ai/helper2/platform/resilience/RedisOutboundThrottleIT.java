@@ -1,10 +1,6 @@
 package ai.helper2.platform.resilience;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.TestcontainersConfiguration;
-import java.time.Duration;
-import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -13,15 +9,21 @@ import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
-/** One outbound slot per interval across replicas, on the real Redis: two throttles stand for two replicas. */
+import java.time.Duration;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * One outbound slot per interval across replicas, on the real Redis: two throttles stand for two replicas.
+ */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 class RedisOutboundThrottleIT {
 
+    private final String host = "test-" + UUID.randomUUID();
     @Autowired
     StringRedisTemplate redis;
-
-    private final String host = "test-" + UUID.randomUUID();
 
     @Test
     void oneCallerPerIntervalWhicheverReplicaAsks() throws InterruptedException {

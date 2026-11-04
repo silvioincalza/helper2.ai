@@ -10,6 +10,8 @@ import ai.helper2.search.SourceQuery;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.DateFact;
 import ai.helper2.shared.DatePrecision;
+import org.springframework.dao.DataAccessException;
+
 import java.net.URI;
 import java.time.Clock;
 import java.time.Instant;
@@ -18,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.springframework.dao.DataAccessException;
 
 /**
  * The Helper2 PostgreSQL catalog as a federated source. Two instances exist: the INDEXED index
@@ -38,28 +39,9 @@ public class CatalogSearchSource implements SearchSource {
         this.clock = clock;
     }
 
-    @Override
-    public SourceDescriptor getDescriptor() {
-        return descriptor;
-    }
-
-    @Override
-    public List<SourceHit> search(SourceQuery query) {
-        List<ResourceRow> rows;
-        Instant after = query.getPublishedAfter() == null ? null : query.getPublishedAfter().atStartOfDay(ZoneOffset.UTC).toInstant();
-        try {
-            rows = query.getBrowse() && after != null
-                ? store.browse(after, clock.instant(), query.getTypes().stream().map(Enum::name).collect(Collectors.toSet()), origins, query.getLimit())
-                : query.getBrowse() ? List.of()
-                : store.search(query.getText(), query.getRequiredVariants(), query.getExpandedTerms(), query.getSynonyms(),
-                    query.getLanguage(), origins, query.getLimit(), after);
-        } catch (DataAccessException e) {
-            throw new SourceFailure.Unavailable("catalog unavailable");
-        }
-        return hits(descriptor, rows, clock.instant());
-    }
-
-    /** Catalog rows as hits of [descriptor], ranked in row order; rows without a canonical URL are skipped. */
+    /**
+     * Catalog rows as hits of [descriptor], ranked in row order; rows without a canonical URL are skipped.
+     */
     static List<SourceHit> hits(SourceDescriptor descriptor, List<ResourceRow> rows, Instant now) {
         List<SourceHit> hits = new ArrayList<>();
         for (int i = 0; i < rows.size(); i++) {
@@ -80,12 +62,35 @@ public class CatalogSearchSource implements SearchSource {
         return hits;
     }
 
-    /** Dates keep their ORIGINAL source attribution; the index only relays them. */
+    /**
+     * Dates keep their ORIGINAL source attribution; the index only relays them.
+     */
     private static DateFact fact(Instant value, DatePrecision precision, String sourceId) {
         if (value == null) {
             return DateFact.unknown();
         }
         return new DateFact(value, precision == DatePrecision.UNKNOWN ? DatePrecision.INSTANT : precision,
             sourceId, List.of(), false);
+    }
+
+    @Override
+    public SourceDescriptor getDescriptor() {
+        return descriptor;
+    }
+
+    @Override
+    public List<SourceHit> search(SourceQuery query) {
+        List<ResourceRow> rows;
+        Instant after = query.getPublishedAfter() == null ? null : query.getPublishedAfter().atStartOfDay(ZoneOffset.UTC).toInstant();
+        try {
+            rows = query.getBrowse() && after != null
+                ? store.browse(after, clock.instant(), query.getTypes().stream().map(Enum::name).collect(Collectors.toSet()), origins, query.getLimit())
+                : query.getBrowse() ? List.of()
+                : store.search(query.getText(), query.getRequiredVariants(), query.getExpandedTerms(), query.getSynonyms(),
+                query.getLanguage(), origins, query.getLimit(), after);
+        } catch (DataAccessException e) {
+            throw new SourceFailure.Unavailable("catalog unavailable");
+        }
+        return hits(descriptor, rows, clock.instant());
     }
 }

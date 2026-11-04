@@ -1,11 +1,13 @@
 package ai.helper2.platform.cache;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.testing.InMemorySharedCache;
 import org.junit.jupiter.api.Test;
 
-/** Shared cache keys are a hash of the query, never its text, and the same query typed differently is one key. */
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * Shared cache keys are a hash of the query, never its text, and the same query typed differently is one key.
+ */
 class SharedCacheTest {
 
     private final SharedCache translations = new InMemorySharedCache("translation");

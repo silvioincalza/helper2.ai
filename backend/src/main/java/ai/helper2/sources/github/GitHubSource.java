@@ -16,6 +16,9 @@ import ai.helper2.shared.ValueOrigin;
 import ai.helper2.sources.support.Classification;
 import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.SourceSettings;
+import org.springframework.web.client.RestClient;
+import tools.jackson.databind.JsonNode;
+
 import java.net.URI;
 import java.time.Clock;
 import java.time.Instant;
@@ -23,8 +26,6 @@ import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import org.springframework.web.client.RestClient;
-import tools.jackson.databind.JsonNode;
 
 /**
  * GitHub REST search (repositories). Docs: https://docs.github.com/en/rest/search/search
@@ -32,6 +33,10 @@ import tools.jackson.databind.JsonNode;
  */
 public class GitHubSource implements SearchSource {
 
+    /**
+     * Words that put a repository in the AI world when no subject was given; at most 5 ORs, GitHub's limit.
+     */
+    static final String BROWSE_SCOPE = "llm OR ai-agent OR mcp OR generative-ai OR rag";
     private final RestClient http;
     private final Clock clock;
     private final SourceDescriptor descriptor;
@@ -46,28 +51,6 @@ public class GitHubSource implements SearchSource {
             settings.timeout(), settings.cacheTtl(), settings.enabled(), 20, false, true, true, true);
     }
 
-    @Override
-    public SourceDescriptor getDescriptor() {
-        return descriptor;
-    }
-
-    @Override
-    public List<SourceHit> search(SourceQuery query) {
-        String q = searchText(query);
-        // In a window, most-starred first: best match among new repositories favours empty ones named after the words.
-        boolean windowed = query.getPublishedAfter() != null;
-        JsonNode root = HttpClients.getJson(() -> http.get()
-            .uri(u -> {
-                u.path("/search/repositories").queryParam("q", q).queryParam("per_page", Math.min(query.getLimit(), 50));
-                if (windowed) {
-                    u.queryParam("sort", "stars").queryParam("order", "desc");
-                }
-                return u.build();
-            })
-            .retrieve().body(String.class), clock);
-        return HttpClients.hits("github", root.path("items"), clock.instant(), GitHubSource::toHit);
-    }
-
     /**
      * The repository search text. A window becomes the documented {@code created:>=} qualifier (creation date, the
      * same date the hit reports as published). Browsing has no subject words, so it keeps an AI scope: GitHub is
@@ -80,9 +63,6 @@ public class GitHubSource implements SearchSource {
         String created = query.getPublishedAfter() == null ? "" : " created:>=" + query.getPublishedAfter();
         return words + " fork:false archived:false" + created;
     }
-
-    /** Words that put a repository in the AI world when no subject was given; at most 5 ORs, GitHub's limit. */
-    static final String BROWSE_SCOPE = "llm OR ai-agent OR mcp OR generative-ai OR rag";
 
     private static SourceHit toHit(JsonNode item, Instant now, int position) {
         String name = HttpClients.text(item, "full_name");
@@ -109,5 +89,27 @@ public class GitHubSource implements SearchSource {
             // pushed_at = last code push. updated_at changes on stars/metadata and would overstate freshness.
             DateFact.fromSource(HttpClients.instant(item, "pushed_at"), "github", now),
             popularity, now, position);
+    }
+
+    @Override
+    public SourceDescriptor getDescriptor() {
+        return descriptor;
+    }
+
+    @Override
+    public List<SourceHit> search(SourceQuery query) {
+        String q = searchText(query);
+        // In a window, most-starred first: best match among new repositories favours empty ones named after the words.
+        boolean windowed = query.getPublishedAfter() != null;
+        JsonNode root = HttpClients.getJson(() -> http.get()
+            .uri(u -> {
+                u.path("/search/repositories").queryParam("q", q).queryParam("per_page", Math.min(query.getLimit(), 50));
+                if (windowed) {
+                    u.queryParam("sort", "stars").queryParam("order", "desc");
+                }
+                return u.build();
+            })
+            .retrieve().body(String.class), clock);
+        return HttpClients.hits("github", root.path("items"), clock.instant(), GitHubSource::toHit);
     }
 }

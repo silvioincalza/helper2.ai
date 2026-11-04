@@ -1,17 +1,18 @@
 package ai.helper2.platform.http;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 import ai.helper2.testing.FixtureServer;
 import io.micrometer.observation.ObservationRegistry;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.web.client.RestClient;
+
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.web.client.RestClient;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * A total deadline per call (ADR 0006 §2): the response timeout applies per read, so a body that arrives a byte at a
@@ -19,22 +20,23 @@ import org.springframework.web.client.RestClient;
  */
 class ObservedHttpDeadlineTest {
 
+    private static final Duration SECOND = Duration.ofSeconds(1);
     final FixtureServer server = new FixtureServer();
+
+    private static long millisSince(long start) {
+        return (System.nanoTime() - start) / 1_000_000;
+    }
 
     @AfterEach
     void stop() {
         server.close();
     }
 
-    private static final Duration SECOND = Duration.ofSeconds(1);
-
-    /** 20 bytes, 100 ms apart: about 2 s in all, and no single read waits longer than 100 ms. */
+    /**
+     * 20 bytes, 100 ms apart: about 2 s in all, and no single read waits longer than 100 ms.
+     */
     private void dripTwoSeconds() {
         server.route("/drip", FixtureServer.Reply.drip("x".repeat(20), 100));
-    }
-
-    private static long millisSince(long start) {
-        return (System.nanoTime() - start) / 1_000_000;
     }
 
     @Test
@@ -80,7 +82,9 @@ class ObservedHttpDeadlineTest {
         assertThat(http.get().uri("/fast").retrieve().body(String.class)).isEqualTo("{\"ok\":true}");
     }
 
-    /** The stream itself, on a fake ticker: the clock starts before the request, each read checks it. */
+    /**
+     * The stream itself, on a fake ticker: the clock starts before the request, each read checks it.
+     */
     @Test
     void theCappedStreamChecksTheDeadlineOnEveryRead() throws Exception {
         AtomicLong nanos = new AtomicLong(1_000);

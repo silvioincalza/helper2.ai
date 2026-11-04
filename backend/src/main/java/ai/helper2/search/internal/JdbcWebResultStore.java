@@ -8,6 +8,8 @@ import ai.helper2.search.SourceHit;
 import ai.helper2.search.WebResultRetention;
 import ai.helper2.search.WebResultStore;
 import ai.helper2.shared.ResourceId;
+import org.springframework.jdbc.core.simple.JdbcClient;
+
 import java.sql.Array;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -15,7 +17,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import org.springframework.jdbc.core.simple.JdbcClient;
 
 /**
  * {@link WebResultStore} in {@code tavily_query_result} (ADR 0037). The key is an HMAC of the source id and the query
@@ -35,7 +36,8 @@ public class JdbcWebResultStore implements WebResultStore, WebResultRetention {
         this.catalog = catalog;
     }
 
-    private record Row(Instant fetchedAt, List<ResourceId> ids) {
+    private static List<ResourceId> ids(Array array) throws java.sql.SQLException {
+        return Arrays.stream((UUID[]) array.getArray()).map(ResourceId::new).toList();
     }
 
     @Override
@@ -80,7 +82,6 @@ public class JdbcWebResultStore implements WebResultStore, WebResultRetention {
         return keys.queryKey(sourceId + "|" + query);
     }
 
-    private static List<ResourceId> ids(Array array) throws java.sql.SQLException {
-        return Arrays.stream((UUID[]) array.getArray()).map(ResourceId::new).toList();
+    private record Row(Instant fetchedAt, List<ResourceId> ids) {
     }
 }

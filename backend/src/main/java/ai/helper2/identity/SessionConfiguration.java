@@ -5,7 +5,6 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +22,8 @@ import org.springframework.session.SessionRepository;
 import org.springframework.session.data.redis.RedisSessionRepository;
 import org.springframework.session.web.http.SessionRepositoryFilter;
 import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
 
 /**
  * Sign-in sessions are kept in Redis (spring.session.data.redis), so a signed-in admin is recognised by every
@@ -55,7 +56,7 @@ class SessionConfiguration {
 
     @Bean
     FilterRegistrationBean<SessionStoreFailureFilter> sessionStoreFailureFilter(@Value("${helper2.frontend-url:/}") String frontendUrl,
-                                                                               AdminPort adminPort) {
+                                                                                AdminPort adminPort) {
         FilterRegistrationBean<SessionStoreFailureFilter> registration = new FilterRegistrationBean<>(new SessionStoreFailureFilter(
             req -> SecurityConfiguration.afterSignIn(frontendUrl, adminPort.admits(req)) + "?signin=failed"));
         registration.setOrder(SessionRepositoryFilter.DEFAULT_ORDER - 1);
@@ -105,11 +106,26 @@ class SessionConfiguration {
 
         private static final Logger log = LoggerFactory.getLogger(SessionStoreFailureFilter.class);
 
-        /** Where a failed sign-in returns, per port (ADR 0035). */
+        /**
+         * Where a failed sign-in returns, per port (ADR 0035).
+         */
         private final java.util.function.Function<HttpServletRequest, String> signInFailed;
 
         SessionStoreFailureFilter(java.util.function.Function<HttpServletRequest, String> signInFailed) {
             this.signInFailed = signInFailed;
+        }
+
+        /**
+         * The Redis failure that ended the request (a timeout is Lettuce's), or null when it was something else.
+         */
+        private static @Nullable Throwable redisFailure(Throwable e) {
+            for (Throwable t = e; t != null; t = t.getCause()) {
+                if (t instanceof RedisConnectionFailureException || t instanceof RedisSystemException
+                    || t.getClass().getName().startsWith("io.lettuce.")) {
+                    return t;
+                }
+            }
+            return null;
         }
 
         @Override
@@ -134,17 +150,6 @@ class SessionConfiguration {
                         + "\"detail\":\"Sign-in is unavailable right now. Try again in a moment.\"}");
                 }
             }
-        }
-
-        /** The Redis failure that ended the request (a timeout is Lettuce's), or null when it was something else. */
-        private static @Nullable Throwable redisFailure(Throwable e) {
-            for (Throwable t = e; t != null; t = t.getCause()) {
-                if (t instanceof RedisConnectionFailureException || t instanceof RedisSystemException
-                    || t.getClass().getName().startsWith("io.lettuce.")) {
-                    return t;
-                }
-            }
-            return null;
         }
     }
 }

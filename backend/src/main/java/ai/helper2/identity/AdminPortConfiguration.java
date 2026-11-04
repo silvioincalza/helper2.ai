@@ -4,13 +4,11 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.Map;
 import org.apache.catalina.connector.Connector;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.tomcat.servlet.TomcatServletWebServerFactory;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.boot.tomcat.servlet.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -20,16 +18,18 @@ import org.springframework.core.ResolvableType;
 import org.springframework.core.env.Environment;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-/** The second connector and the filter that keeps the back office off the public port (ADR 0035). */
+import java.io.IOException;
+import java.util.Map;
+
+/**
+ * The second connector and the filter that keeps the back office off the public port (ADR 0035).
+ */
 @Configuration(proxyBeanMethods = false)
 class AdminPortConfiguration {
 
-    @Bean
-    AdminPort adminPort(@Value("${helper2.admin.port:0}") int port, Environment environment) {
-        AdminPort adminPort = new AdminPort(port);
-        requireAdminPortWithRealSignIn(adminPort, environment);
-        return adminPort;
-    }
+    private static final Bindable<Map<String, Map<String, String>>> REGISTRATIONS = Bindable.of(
+        ResolvableType.forClassWithGenerics(Map.class, ResolvableType.forClass(String.class),
+            ResolvableType.forClassWithGenerics(Map.class, String.class, String.class)));
 
     /**
      * Fail closed (ADR 0035): with a real sign-in provider and no admin port, the back office and ADMIN would be back
@@ -44,11 +44,9 @@ class AdminPortConfiguration {
         }
     }
 
-    private static final Bindable<Map<String, Map<String, String>>> REGISTRATIONS = Bindable.of(
-        ResolvableType.forClassWithGenerics(Map.class, ResolvableType.forClass(String.class),
-            ResolvableType.forClassWithGenerics(Map.class, String.class, String.class)));
-
-    /** A registration that cannot be read (a missing secret) still counts: the check fails closed. */
+    /**
+     * A registration that cannot be read (a missing secret) still counts: the check fails closed.
+     */
     static boolean hasSignInProvider(Environment environment) {
         try {
             return Binder.get(environment).bind("spring.security.oauth2.client.registration", REGISTRATIONS)
@@ -56,6 +54,13 @@ class AdminPortConfiguration {
         } catch (RuntimeException unreadable) {
             return true;
         }
+    }
+
+    @Bean
+    AdminPort adminPort(@Value("${helper2.admin.port:0}") int port, Environment environment) {
+        AdminPort adminPort = new AdminPort(port);
+        requireAdminPortWithRealSignIn(adminPort, environment);
+        return adminPort;
     }
 
     @Bean
@@ -69,7 +74,9 @@ class AdminPortConfiguration {
         };
     }
 
-    /** Before the session and security filters: the public port answers 404, as if there were no back office. */
+    /**
+     * Before the session and security filters: the public port answers 404, as if there were no back office.
+     */
     @Bean
     FilterRegistrationBean<BackOfficeOffPublicPort> backOfficeOffPublicPort(AdminPort adminPort) {
         FilterRegistrationBean<BackOfficeOffPublicPort> registration = new FilterRegistrationBean<>(new BackOfficeOffPublicPort(adminPort));
@@ -78,23 +85,15 @@ class AdminPortConfiguration {
     }
 
     static final class BackOfficeOffPublicPort extends OncePerRequestFilter {
-        /** The same problem body as any unknown path, without the path: it runs before the security filters. */
+        /**
+         * The same problem body as any unknown path, without the path: it runs before the security filters.
+         */
         static final String NOT_FOUND = "{\"type\":\"about:blank\",\"title\":\"Not Found\",\"status\":404}";
 
         private final AdminPort adminPort;
 
         BackOfficeOffPublicPort(AdminPort adminPort) {
             this.adminPort = adminPort;
-        }
-
-        @Override
-        protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
-            throws ServletException, IOException {
-            if (!adminPort.admits(request) && AdminPort.isBackOffice(request)) {
-                notFound(response);
-                return;
-            }
-            chain.doFilter(request, response);
         }
 
         /**
@@ -110,6 +109,16 @@ class AdminPortConfiguration {
             response.setHeader("Content-Security-Policy", SecurityConfiguration.CSP);
             response.setHeader("Permissions-Policy", SecurityConfiguration.PERMISSIONS_POLICY);
             response.getWriter().write(NOT_FOUND);
+        }
+
+        @Override
+        protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+            throws ServletException, IOException {
+            if (!adminPort.admits(request) && AdminPort.isBackOffice(request)) {
+                notFound(response);
+                return;
+            }
+            chain.doFilter(request, response);
         }
     }
 }

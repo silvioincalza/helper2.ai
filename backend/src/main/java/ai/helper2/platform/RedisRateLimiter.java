@@ -3,10 +3,11 @@ package ai.helper2.platform;
 import ai.helper2.platform.resilience.Resilience;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.time.Duration;
-import java.util.List;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.RedisScript;
+
+import java.time.Duration;
+import java.util.List;
 
 /**
  * Fixed-window rate limit counted in Redis, so every replica sees the same count per client. One key per limiter
@@ -39,7 +40,9 @@ public final class RedisRateLimiter implements RateLimiter {
     private final RateLimiter fallback;
     private final Counter fallbacks;
 
-    /** {@code name} is the key's namespace and the meter's {@code limiter} tag: one per limit, not per endpoint. */
+    /**
+     * {@code name} is the key's namespace and the meter's {@code limiter} tag: one per limit, not per endpoint.
+     */
     public RedisRateLimiter(String name, int limit, Duration window, StringRedisTemplate redis, Resilience resilience,
                             RateLimiter fallback, MeterRegistry meters) {
         this.name = name;

@@ -45,7 +45,8 @@ class CanonicalUrl private constructor(val value: String) {
                 if (segments.size >= 2) {
                     val owner = segments[0].lowercase()
                     val repo = segments[1].lowercase().removeSuffix(".git")
-                    val subDirectory = if (segments.size > 4 && segments[2] == "tree") "/" + segments.drop(2).joinToString("/") else ""
+                    val subDirectory =
+                        if (segments.size > 4 && segments[2] == "tree") "/" + segments.drop(2).joinToString("/") else ""
                     return CanonicalUrl("https://github.com/$owner/$repo$subDirectory")
                 }
             }

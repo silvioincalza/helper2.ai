@@ -1,11 +1,11 @@
 package ai.helper2.eval
 
-import java.io.File
-import kotlin.test.assertTrue
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import tools.jackson.module.kotlin.readValue
+import java.io.File
+import kotlin.test.assertTrue
 
 /**
  * Offline search evaluation (ADR 0036): `./gradlew evalTest`. Replays the recorded snapshots through production merge
@@ -24,8 +24,10 @@ class SearchRelevanceEvalTest {
     fun `writes the report, the judging pool and TREC files`() {
         assumeTrue(snapshots.isNotEmpty(), "No snapshots in ${EvalFiles.snapshots}: run ./gradlew evalRecord first.")
         val written = listOf(
-            EvalFiles.write("search-report.md", evaluation.report(EvalFiles.secondJudge()) + "\n## Semantic cutoff sweep\n\n" +
-                CutoffSweep.table(CutoffSweep.sweep(snapshots.values, qrels, controlIds()))),
+            EvalFiles.write(
+                "search-report.md", evaluation.report(EvalFiles.secondJudge()) + "\n## Semantic cutoff sweep\n\n" +
+                    CutoffSweep.table(CutoffSweep.sweep(snapshots.values, qrels, controlIds()))
+            ),
             EvalFiles.write("search-pool.tsv", evaluation.pool()),
             EvalFiles.write("baseline.run", evaluation.trecRun("baseline")),
             EvalFiles.write("search.qrels", evaluation.trecQrels()),
@@ -37,7 +39,10 @@ class SearchRelevanceEvalTest {
     @Test
     fun `nDCG at 10 does not fall below the baseline`() {
         assumeTrue(snapshots.isNotEmpty(), "No snapshots in ${EvalFiles.snapshots}: run ./gradlew evalRecord first.")
-        assumeTrue(!qrels.isEmpty, "docs/eval/search-qrels.tsv has no judgements yet: label backend/eval-data/search-pool.tsv first.")
+        assumeTrue(
+            !qrels.isEmpty,
+            "docs/eval/search-qrels.tsv has no judgements yet: label backend/eval-data/search-pool.tsv first."
+        )
         val measured = SearchEvaluation.mean(evaluation.scores().mapNotNull { it.ndcg10 })
         val current = SearchBaseline(snapshotsFingerprint(), qrels.fingerprint(), measured, SearchBaseline.TOLERANCE)
         val file = File(EvalFiles.docs, "search-baseline.json")
@@ -48,12 +53,16 @@ class SearchRelevanceEvalTest {
         }
         assumeTrue(file.isFile, "No $file: run once with H2_EVAL_WRITE_BASELINE=true to store the baseline.")
         val baseline = EvalFiles.json.readValue<SearchBaseline>(file)
-        assumeTrue(baseline.snapshots == current.snapshots && baseline.qrels == current.qrels,
-            "The baseline was measured on other snapshots or judgements: store a new one with H2_EVAL_WRITE_BASELINE=true.")
+        assumeTrue(
+            baseline.snapshots == current.snapshots && baseline.qrels == current.qrels,
+            "The baseline was measured on other snapshots or judgements: store a new one with H2_EVAL_WRITE_BASELINE=true."
+        )
         println("nDCG@10 ${SearchEvaluation.fmt(measured)}, baseline ${SearchEvaluation.fmt(baseline.ndcg10)}")
-        assertTrue(measured >= baseline.ndcg10 - baseline.tolerance,
+        assertTrue(
+            measured >= baseline.ndcg10 - baseline.tolerance,
             "nDCG@10 fell from ${SearchEvaluation.fmt(baseline.ndcg10)} to ${SearchEvaluation.fmt(measured)} " +
-                "(tolerance ${baseline.tolerance}); see backend/eval-data/search-report.md")
+                "(tolerance ${baseline.tolerance}); see backend/eval-data/search-report.md"
+        )
     }
 
     private fun controlIds() = queries.filter { it.group == "nonsense" }.map { it.id }.toSet()

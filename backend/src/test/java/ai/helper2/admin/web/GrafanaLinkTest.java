@@ -1,11 +1,13 @@
 package ai.helper2.admin.web;
 
+import org.junit.jupiter.api.Test;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import org.junit.jupiter.api.Test;
-
-/** The Grafana link goes into an href: only an absolute http(s) URL with a host, or none. */
+/**
+ * The Grafana link goes into an href: only an absolute http(s) URL with a host, or none.
+ */
 class GrafanaLinkTest {
 
     @Test

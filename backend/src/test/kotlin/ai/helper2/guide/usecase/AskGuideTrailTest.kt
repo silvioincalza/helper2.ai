@@ -43,10 +43,14 @@ class AskGuideTrailTest {
     private val catalog = object : SearchSource {
         override val descriptor = descriptor("hf")
         override fun search(query: SourceQuery): List<SourceHit> = listOf(
-            hit("hf", "https://huggingface.co/acme/whisper-small", title = "whisper-small", type = ResourceType.MODEL,
-                description = "Speech recognition model you can self-host, released under the MIT License"),
-            hit("hf", "https://huggingface.co/acme/promo", title = "promo <b>model</b>", rank = 1, type = ResourceType.MODEL,
-                description = "Text to speech voices for podcasts and audiobooks in many languages"),
+            hit(
+                "hf", "https://huggingface.co/acme/whisper-small", title = "whisper-small", type = ResourceType.MODEL,
+                description = "Speech recognition model you can self-host, released under the MIT License"
+            ),
+            hit(
+                "hf", "https://huggingface.co/acme/promo", title = "promo <b>model</b>", rank = 1, type = ResourceType.MODEL,
+                description = "Text to speech voices for podcasts and audiobooks in many languages"
+            ),
         )
     }
 
@@ -61,19 +65,30 @@ class AskGuideTrailTest {
         override fun put(key: String, value: ai.helper2.search.CachedHits, ttl: Duration) {}
     }
 
-    private fun search(vararg sources: SearchSource) = SearchResources(sources.toList(), noCache, ResultObserver { emptyMap() }, executor, clock)
+    private fun search(vararg sources: SearchSource) =
+        SearchResources(sources.toList(), noCache, ResultObserver { emptyMap() }, executor, clock)
 
-    private class Model(val plan: GuideSearchPlan, val failPlan: Boolean = false, val proposal: (List<Candidate>) -> GuideProposal) : GuideModel {
+    private class Model(
+        val plan: GuideSearchPlan,
+        val failPlan: Boolean = false,
+        val proposal: (List<Candidate>) -> GuideProposal
+    ) : GuideModel {
         override val provider = "fake"
         override val fastModel = "fast"
         override val reasoningModel = "reasoning"
-        override fun plan(request: String, path: AudiencePath?): GuideSearchPlan = if (failPlan) throw GuideUnavailable("down") else plan
+        override fun plan(request: String, path: AudiencePath?): GuideSearchPlan =
+            if (failPlan) throw GuideUnavailable("down") else plan
+
         override fun choose(request: String, candidates: List<Candidate>, constraints: List<String>) = proposal(candidates)
         override fun verifyReasons(request: String, claims: List<ReasonClaim>) = claims.associate { it.key to true }
     }
 
     private val whisperPick: (List<Candidate>) -> ProposedPick = { c ->
-        ProposedPick(c.first { it.result.title == "whisper-small" }.key, "Self-hostable.", "Speech recognition model you can self-host")
+        ProposedPick(
+            c.first { it.result.title == "whisper-small" }.key,
+            "Self-hostable.",
+            "Speech recognition model you can self-host"
+        )
     }
 
     @Test
@@ -100,7 +115,8 @@ class AskGuideTrailTest {
 
     @Test
     fun `without the planner no query is listed, because the searches ran with the asker's own words`() {
-        val model = Model(GuideSearchPlan("unused"), failPlan = true) { c -> GuideProposal(listOf(whisperPick(c)), null, emptyList()) }
+        val model =
+            Model(GuideSearchPlan("unused"), failPlan = true) { c -> GuideProposal(listOf(whisperPick(c)), null, emptyList()) }
 
         val answer = AskGuide(search(catalog), model, clock).ask("speech to text I can self-host", null)
 
@@ -146,7 +162,11 @@ class AskGuideTrailTest {
     fun `a candidate rejected once and then kept is a pick, not a removed suggestion`() {
         val model = Model(GuideSearchPlan("speech recognition")) { c ->
             val whisper = whisperPick(c)
-            GuideProposal(listOf(whisper.copy(quote = "not in the text at all, invented by the model"), whisper), null, emptyList())
+            GuideProposal(
+                listOf(whisper.copy(quote = "not in the text at all, invented by the model"), whisper),
+                null,
+                emptyList()
+            )
         }
 
         val answer = AskGuide(search(catalog), model, clock).ask("speech to text I can self-host", null)

@@ -6,6 +6,12 @@ import ai.helper2.setup.ToolMaterials;
 import ai.helper2.setup.ToolRef;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
+
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -15,11 +21,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestClientException;
 
 /**
  * Reads a resource's own documents from fixed hosts only, by identifiers parsed from its source records:
@@ -32,15 +33,6 @@ class HttpToolMaterials implements ToolMaterials {
 
     static final int MAX_BYTES = 512 * 1024;
     private static final Logger log = LoggerFactory.getLogger(HttpToolMaterials.class);
-
-    /** Base URLs of the fixed hosts, the setup guide's own GitHub token and the Hub token (empty for none). */
-    record Hosts(String github, String npm, String hf, String githubToken, String hfToken) {
-    }
-
-    /** How long documents are kept, and the most text (in characters) kept at once. */
-    record CacheSettings(Duration ttl, long maxChars) {
-    }
-
     private final RestClient http;
     private final String github;
     private final String npm;
@@ -50,7 +42,6 @@ class HttpToolMaterials implements ToolMaterials {
     private final Clock clock;
     private final HourlyFetchBudget budget;
     private final Cache<ToolRef, List<Material>> cache;
-
     HttpToolMaterials(RestClient.Builder builder, Hosts hosts, Clock clock, HourlyFetchBudget budget, CacheSettings settings) {
         this.http = builder.build();
         this.github = strip(hosts.github());
@@ -67,6 +58,10 @@ class HttpToolMaterials implements ToolMaterials {
             .weigher((ToolRef ref, List<Material> docs) -> docs.stream().mapToInt(m -> m.getText().length()).sum())
             .executor(Runnable::run)
             .build();
+    }
+
+    private static String strip(String base) {
+        return base.endsWith("/") ? base.substring(0, base.length() - 1) : base;
     }
 
     @Override
@@ -101,16 +96,12 @@ class HttpToolMaterials implements ToolMaterials {
         return materials;
     }
 
-    /** Total length of the documents kept now; for tests. */
+    /**
+     * Total length of the documents kept now; for tests.
+     */
     long cachedChars() {
         cache.cleanUp();
         return cache.policy().eviction().orElseThrow().weightedSize().orElse(0);
-    }
-
-    /** What one load read, and whether the budget turned a fetch down. */
-    private static final class Fetches {
-        final List<Material> materials = new ArrayList<>();
-        boolean refused;
     }
 
     private void add(Fetches out, String key, MaterialKind kind, URI page, URI fetch, String accept, String token, Instant now) {
@@ -147,7 +138,23 @@ class HttpToolMaterials implements ToolMaterials {
         }
     }
 
-    private static String strip(String base) {
-        return base.endsWith("/") ? base.substring(0, base.length() - 1) : base;
+    /**
+     * Base URLs of the fixed hosts, the setup guide's own GitHub token and the Hub token (empty for none).
+     */
+    record Hosts(String github, String npm, String hf, String githubToken, String hfToken) {
+    }
+
+    /**
+     * How long documents are kept, and the most text (in characters) kept at once.
+     */
+    record CacheSettings(Duration ttl, long maxChars) {
+    }
+
+    /**
+     * What one load read, and whether the budget turned a fetch down.
+     */
+    private static final class Fetches {
+        final List<Material> materials = new ArrayList<>();
+        boolean refused;
     }
 }

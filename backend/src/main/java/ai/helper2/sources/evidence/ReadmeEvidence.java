@@ -9,14 +9,15 @@ import ai.helper2.scout.GapTarget;
 import ai.helper2.search.SourceFailure;
 import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.SourceSettings;
-import java.net.URI;
-import java.time.Clock;
-import java.util.Locale;
-import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
+
+import java.net.URI;
+import java.time.Clock;
+import java.util.Locale;
+import java.util.Set;
 
 /**
  * The gap round's text (ADR 0043): a GitHub repository's README and the licence GitHub states for it, or a Hugging
@@ -28,10 +29,14 @@ public class ReadmeEvidence implements ExtraEvidence {
 
     static final String POLICY = "collector-gap-evidence";
 
-    /** A README past this is not worth reading; the window keeps 4000 characters anyway. */
+    /**
+     * A README past this is not worth reading; the window keeps 4000 characters anyway.
+     */
     static final int MAX_BYTES = 512 * 1024;
 
-    /** "No licence file GitHub could identify" and "a licence GitHub does not know": not a licence. */
+    /**
+     * "No licence file GitHub could identify" and "a licence GitHub does not know": not a licence.
+     */
     private static final Set<String> NOT_A_LICENSE = Set.of("NOASSERTION", "OTHER");
 
     /**
@@ -59,6 +64,54 @@ public class ReadmeEvidence implements ExtraEvidence {
         // Without a token GitHub allows 60 calls an hour: the gap round would spend them on 429s. Same rule as the awesome lists.
         return new ReadmeEvidence(github.enabled() && github.hasToken() ? HttpClients.gitHubClient(githubBuilder, github) : null,
             hub.enabled() ? HttpClients.client(hubBuilder, hub) : null, resilience, clock);
+    }
+
+    /**
+     * The {@code license:} line of a model card's YAML front matter, when it is an SPDX-style id.
+     */
+    static @Nullable String cardLicense(String card) {
+        if (!card.startsWith("---")) {
+            return null;
+        }
+        int end = card.indexOf("\n---", 3);
+        if (end < 0) {
+            return null;
+        }
+        for (String line : card.substring(3, end).split("\n")) {
+            // Only the top-level key: an indented "license:" belongs to something nested (a dataset, a base model).
+            if (line.toLowerCase(Locale.ROOT).startsWith("license:")) {
+                return spdx(line.substring("license:".length()).strip().replace("\"", "").replace("'", ""));
+            }
+        }
+        return null;
+    }
+
+    private static @Nullable String spdx(@Nullable String id) {
+        if (id == null || id.isBlank() || NOT_A_LICENSE.contains(id.toUpperCase(Locale.ROOT)) || !id.matches("[A-Za-z0-9.+-]{2,40}")) {
+            return null;
+        }
+        return id;
+    }
+
+    /**
+     * A page a person can open: the link the evidence shows. Owner and name are already strict (GapTargets).
+     */
+    private static URI link(String template, GapTarget t) {
+        return URI.create(template.replace("{o}", t.getOwner()).replace("{r}", t.getName()));
+    }
+
+    /**
+     * A README or repository that is gone is no text, not a failure.
+     */
+    private static <T> @Nullable T notFoundIsNull(java.util.function.Supplier<T> call) {
+        try {
+            return call.get();
+        } catch (SourceFailure.Unavailable e) {
+            if (e.getMessage() != null && e.getMessage().contains("HTTP 404")) {
+                return null;
+            }
+            throw e;
+        }
     }
 
     @Override
@@ -98,47 +151,5 @@ public class ReadmeEvidence implements ExtraEvidence {
             return null;
         }
         return new ExtraText(link("https://huggingface.co/{o}/{r}/blob/main/README.md", t), clock.instant(), card, cardLicense(card));
-    }
-
-    /** The {@code license:} line of a model card's YAML front matter, when it is an SPDX-style id. */
-    static @Nullable String cardLicense(String card) {
-        if (!card.startsWith("---")) {
-            return null;
-        }
-        int end = card.indexOf("\n---", 3);
-        if (end < 0) {
-            return null;
-        }
-        for (String line : card.substring(3, end).split("\n")) {
-            // Only the top-level key: an indented "license:" belongs to something nested (a dataset, a base model).
-            if (line.toLowerCase(Locale.ROOT).startsWith("license:")) {
-                return spdx(line.substring("license:".length()).strip().replace("\"", "").replace("'", ""));
-            }
-        }
-        return null;
-    }
-
-    private static @Nullable String spdx(@Nullable String id) {
-        if (id == null || id.isBlank() || NOT_A_LICENSE.contains(id.toUpperCase(Locale.ROOT)) || !id.matches("[A-Za-z0-9.+-]{2,40}")) {
-            return null;
-        }
-        return id;
-    }
-
-    /** A page a person can open: the link the evidence shows. Owner and name are already strict (GapTargets). */
-    private static URI link(String template, GapTarget t) {
-        return URI.create(template.replace("{o}", t.getOwner()).replace("{r}", t.getName()));
-    }
-
-    /** A README or repository that is gone is no text, not a failure. */
-    private static <T> @Nullable T notFoundIsNull(java.util.function.Supplier<T> call) {
-        try {
-            return call.get();
-        } catch (SourceFailure.Unavailable e) {
-            if (e.getMessage() != null && e.getMessage().contains("HTTP 404")) {
-                return null;
-            }
-            throw e;
-        }
     }
 }

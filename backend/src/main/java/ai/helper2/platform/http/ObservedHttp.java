@@ -2,6 +2,30 @@ package ai.helper2.platform.http;
 
 import io.micrometer.common.KeyValue;
 import io.micrometer.observation.ObservationRegistry;
+import org.apache.hc.client5.http.config.ConnectionConfig;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.DefaultRedirectStrategy;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.core5.http.Header;
+import org.apache.hc.core5.http.HttpResponse;
+import org.apache.hc.core5.http.ProtocolException;
+import org.apache.hc.core5.http.io.EofSensorInputStream;
+import org.apache.hc.core5.http.protocol.HttpContext;
+import org.apache.hc.core5.util.Timeout;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpRequest;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.client.ClientHttpRequestExecution;
+import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.http.client.ClientHttpRequestInterceptor;
+import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.http.client.observation.ClientRequestObservationContext;
+import org.springframework.http.client.observation.DefaultClientRequestObservationConvention;
+import org.springframework.web.client.RestClient;
+
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,29 +35,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.regex.Pattern;
-import org.apache.hc.client5.http.config.ConnectionConfig;
-import org.apache.hc.client5.http.config.RequestConfig;
-import org.apache.hc.client5.http.impl.DefaultRedirectStrategy;
-import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
-import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
-import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
-import org.apache.hc.core5.http.Header;
-import org.apache.hc.core5.http.HttpResponse;
-import org.apache.hc.core5.http.io.EofSensorInputStream;
-import org.apache.hc.core5.http.ProtocolException;
-import org.apache.hc.core5.http.protocol.HttpContext;
-import org.apache.hc.core5.util.Timeout;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpRequest;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.client.ClientHttpRequestExecution;
-import org.springframework.http.client.ClientHttpRequestInterceptor;
-import org.springframework.http.client.ClientHttpResponse;
-import org.springframework.http.client.ClientHttpRequestFactory;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.http.client.observation.ClientRequestObservationContext;
-import org.springframework.http.client.observation.DefaultClientRequestObservationConvention;
-import org.springframework.web.client.RestClient;
 
 /**
  * Outbound HTTP for every module that calls a remote API (sources, embeddings): bounded timeouts, an
@@ -43,17 +44,24 @@ import org.springframework.web.client.RestClient;
  */
 public final class ObservedHttp {
 
-    /** Names the release: the boot jar's manifest carries the build version (ADR 0029); "dev" when run from classes. */
+    /**
+     * Names the release: the boot jar's manifest carries the build version (ADR 0029); "dev" when run from classes.
+     */
     public static final String USER_AGENT = userAgent(ObservedHttp.class.getPackage().getImplementationVersion());
 
-    /** Longest wait for a free pooled connection: a full pool means the remote host is already struggling. */
+    /**
+     * Longest wait for a free pooled connection: a full pool means the remote host is already struggling.
+     */
     public static final Duration POOL_WAIT = Duration.ofMillis(250);
 
-    /** Largest response body a source call reads, unless the call sets its own cap with {@link #maxResponseBytes}. */
+    /**
+     * Largest response body a source call reads, unless the call sets its own cap with {@link #maxResponseBytes}.
+     */
     public static final int MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
 
     private static final String MAX_RESPONSE_BYTES_ATTRIBUTE = ObservedHttp.class.getName() + ".maxResponseBytes";
     private static final String DEADLINE_ATTRIBUTE = ObservedHttp.class.getName() + ".deadline";
+    private static final Pattern ID_SEGMENT = Pattern.compile("^(\\d+|[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}|[0-9a-fA-F]{24,})$");
 
     private ObservedHttp() {
     }
@@ -67,7 +75,7 @@ public final class ObservedHttp {
      * Builder for source calls: redirects followed unless they downgrade https to http; response bodies read up
      * to {@link #MAX_RESPONSE_BYTES} or the call's own {@link #maxResponseBytes}; the call ends at its deadline,
      * here {@code timeout} (see {@link #restClientBuilder(Duration, Duration, ObservationRegistry)}).
-     *
+     * <p>
      * Timeouts: {@code timeout} once as the connect timeout and once as the client's single response timeout
      * (time to wait for response data), plus a short {@link #POOL_WAIT}. The response timeout is not repeated
      * as a socket timeout or a request-factory read timeout, so a straggler whose search was already given up
@@ -105,14 +113,9 @@ public final class ObservedHttp {
         return attributes -> attributes.put(DEADLINE_ATTRIBUTE, deadline);
     }
 
-    /** Thrown on a read of the body once the call's deadline has passed; RestClient wraps it, {@link #isDeadlineExceeded} finds it. */
-    public static final class DeadlineExceeded extends IOException {
-        DeadlineExceeded(Duration deadline) {
-            super("deadline of " + deadline.toMillis() + " ms exceeded");
-        }
-    }
-
-    /** Whether {@code failure}, or one of its causes, is a read past the call's deadline. */
+    /**
+     * Whether {@code failure}, or one of its causes, is a read past the call's deadline.
+     */
     public static boolean isDeadlineExceeded(Throwable failure) {
         for (Throwable t = failure; t != null; t = t.getCause()) {
             if (t instanceof DeadlineExceeded) {
@@ -130,14 +133,9 @@ public final class ObservedHttp {
         return attributes -> attributes.put(MAX_RESPONSE_BYTES_ATTRIBUTE, bytes);
     }
 
-    /** Thrown while reading a body past its cap; RestClient wraps it, {@link #isTooLarge} finds it. */
-    public static final class ResponseTooLarge extends IOException {
-        ResponseTooLarge(long cap) {
-            super("response larger than " + cap + " bytes");
-        }
-    }
-
-    /** Whether {@code failure}, or one of its causes, is a body read past its cap. */
+    /**
+     * Whether {@code failure}, or one of its causes, is a body read past its cap.
+     */
     public static boolean isTooLarge(Throwable failure) {
         for (Throwable t = failure; t != null; t = t.getCause()) {
             if (t instanceof ResponseTooLarge) {
@@ -145,6 +143,70 @@ public final class ObservedHttp {
             }
         }
         return false;
+    }
+
+    /**
+     * Drops the connection under a body we stop reading at its deadline. A plain close would read the rest first: Spring
+     * drains the body on close, and Apache reads a chunked or sized body to its end to reuse the connection, so a body
+     * that trickles in would hold the call until it ends, deadline or not.
+     */
+    private static void abort(InputStream raw) {
+        try {
+            if (raw instanceof EofSensorInputStream apache) {
+                apache.abort();
+            } else {
+                raw.close();
+            }
+        } catch (IOException ignored) {
+            // The call fails with DeadlineExceeded anyway.
+        }
+    }
+
+    /**
+     * Pooled Apache client: {@code timeout} as connect and response timeout, {@code poolWait} for a free
+     * connection; redirects either followed without an https-to-http downgrade, or not followed at all. Each request
+     * is sent once: retries are the caller's resilience policy (ADR 0033), so they are counted and bounded there.
+     */
+    public static HttpComponentsClientHttpRequestFactory requestFactory(Duration timeout, Duration poolWait, boolean followRedirects) {
+        ConnectionConfig connection = ConnectionConfig.custom().setConnectTimeout(Timeout.of(timeout)).build();
+        PoolingHttpClientConnectionManager pool = PoolingHttpClientConnectionManagerBuilder.create()
+            .setDefaultConnectionConfig(connection).setMaxConnTotal(50).setMaxConnPerRoute(20).build();
+        RequestConfig request = RequestConfig.custom()
+            .setResponseTimeout(Timeout.of(timeout)).setConnectionRequestTimeout(Timeout.of(poolWait)).build();
+        HttpClientBuilder client = HttpClientBuilder.create().setConnectionManager(pool).setDefaultRequestConfig(request)
+            .disableAutomaticRetries();
+        if (followRedirects) {
+            client.setRedirectStrategy(NoDowngradeRedirects.INSTANCE);
+        } else {
+            client.disableRedirectHandling();
+        }
+        return new HttpComponentsClientHttpRequestFactory(client.build());
+    }
+
+    /**
+     * A builder over {@code factory} that sends the User-Agent and is observed with the bounded URI convention.
+     */
+    public static RestClient.Builder observed(ClientHttpRequestFactory factory, ObservationRegistry registry) {
+        return RestClient.builder().requestFactory(factory).defaultHeader(HttpHeaders.USER_AGENT, USER_AGENT)
+            .observationRegistry(registry).observationConvention(BoundedUriConvention.INSTANCE);
+    }
+
+    /**
+     * Thrown on a read of the body once the call's deadline has passed; RestClient wraps it, {@link #isDeadlineExceeded} finds it.
+     */
+    public static final class DeadlineExceeded extends IOException {
+        DeadlineExceeded(Duration deadline) {
+            super("deadline of " + deadline.toMillis() + " ms exceeded");
+        }
+    }
+
+    /**
+     * Thrown while reading a body past its cap; RestClient wraps it, {@link #isTooLarge} finds it.
+     */
+    public static final class ResponseTooLarge extends IOException {
+        ResponseTooLarge(long cap) {
+            super("response larger than " + cap + " bytes");
+        }
     }
 
     /**
@@ -201,23 +263,6 @@ public final class ObservedHttp {
                     response.close();
                 }
             };
-        }
-    }
-
-    /**
-     * Drops the connection under a body we stop reading at its deadline. A plain close would read the rest first: Spring
-     * drains the body on close, and Apache reads a chunked or sized body to its end to reuse the connection, so a body
-     * that trickles in would hold the call until it ends, deadline or not.
-     */
-    private static void abort(InputStream raw) {
-        try {
-            if (raw instanceof EofSensorInputStream apache) {
-                apache.abort();
-            } else {
-                raw.close();
-            }
-        } catch (IOException ignored) {
-            // The call fails with DeadlineExceeded anyway.
         }
     }
 
@@ -290,33 +335,6 @@ public final class ObservedHttp {
     }
 
     /**
-     * Pooled Apache client: {@code timeout} as connect and response timeout, {@code poolWait} for a free
-     * connection; redirects either followed without an https-to-http downgrade, or not followed at all. Each request
-     * is sent once: retries are the caller's resilience policy (ADR 0033), so they are counted and bounded there.
-     */
-    public static HttpComponentsClientHttpRequestFactory requestFactory(Duration timeout, Duration poolWait, boolean followRedirects) {
-        ConnectionConfig connection = ConnectionConfig.custom().setConnectTimeout(Timeout.of(timeout)).build();
-        PoolingHttpClientConnectionManager pool = PoolingHttpClientConnectionManagerBuilder.create()
-            .setDefaultConnectionConfig(connection).setMaxConnTotal(50).setMaxConnPerRoute(20).build();
-        RequestConfig request = RequestConfig.custom()
-            .setResponseTimeout(Timeout.of(timeout)).setConnectionRequestTimeout(Timeout.of(poolWait)).build();
-        HttpClientBuilder client = HttpClientBuilder.create().setConnectionManager(pool).setDefaultRequestConfig(request)
-            .disableAutomaticRetries();
-        if (followRedirects) {
-            client.setRedirectStrategy(NoDowngradeRedirects.INSTANCE);
-        } else {
-            client.disableRedirectHandling();
-        }
-        return new HttpComponentsClientHttpRequestFactory(client.build());
-    }
-
-    /** A builder over {@code factory} that sends the User-Agent and is observed with the bounded URI convention. */
-    public static RestClient.Builder observed(ClientHttpRequestFactory factory, ObservationRegistry registry) {
-        return RestClient.builder().requestFactory(factory).defaultHeader(HttpHeaders.USER_AGENT, USER_AGENT)
-            .observationRegistry(registry).observationConvention(BoundedUriConvention.INSTANCE);
-    }
-
-    /**
      * Follows redirects except https to http. The inherited {@link DefaultRedirectStrategy#isRedirectAllowed}
      * refuses a redirect to another scheme, host or port while the request carries {@code Authorization}, so a
      * source token never reaches a host other than the configured one (TokenRedirectTest).
@@ -336,8 +354,6 @@ public final class ObservedHttp {
             return !downgrade;
         }
     }
-
-    private static final Pattern ID_SEGMENT = Pattern.compile("^(\\d+|[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}|[0-9a-fA-F]{24,})$");
 
     /**
      * The default convention tags {@code uri} "none" for calls built with a UriBuilder lambda (all our search calls).
@@ -365,7 +381,9 @@ public final class ObservedHttp {
             return KeyValue.of("uri", out.isEmpty() ? "/" : out.toString());
         }
 
-        /** The span's {@code http.url} without query or fragment: queries carry visitors' search text. */
+        /**
+         * The span's {@code http.url} without query or fragment: queries carry visitors' search text.
+         */
         @Override
         protected KeyValue requestUri(ClientRequestObservationContext context) {
             if (context.getCarrier() == null) {

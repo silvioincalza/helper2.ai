@@ -3,13 +3,16 @@ package ai.helper2.identity;
 import ai.helper2.identity.usecase.PurgeExpiredData;
 import ai.helper2.platform.ClusterLock;
 import ai.helper2.platform.ClusterLocks;
-import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-/** Runs identity's retention once a day (helper2.retention.cron, UTC), on one replica at a time. */
+import java.time.Duration;
+
+/**
+ * Runs identity's retention once a day (helper2.retention.cron, UTC), on one replica at a time.
+ */
 @Component
 class IdentityRetentionSchedule {
 

@@ -6,12 +6,6 @@ import ai.helper2.platform.llm.LlmPolicies;
 import ai.helper2.platform.resilience.CallRefused;
 import ai.helper2.platform.resilience.Resilience;
 import io.micrometer.observation.ObservationRegistry;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.BufferingClientHttpRequestFactory;
@@ -19,6 +13,13 @@ import org.springframework.http.client.InterceptingClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
+
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * NVIDIA API catalog embeddings (OpenAI-compatible {@code POST /v1/embeddings} plus NVIDIA's
@@ -29,20 +30,10 @@ import org.springframework.web.client.RestClientResponseException;
  */
 public class NvidiaEmbedder implements Embedder {
 
-    record Request(String model, List<String> input, String input_type, Integer dimensions, String truncate,
-                   String encoding_format) {
-    }
-
-    record Response(List<Item> data) {
-        record Item(int index, float[] embedding) {
-        }
-    }
-
     private final RestClient http;
     private final String model;
     private final int dimensions;
     private final Resilience resilience;
-
     /**
      * Observed like the source calls (ObservedHttp): {@code timeout} to connect, to wait for response data, to wait
      * for a pooled connection and as the call's total deadline; redirects are not followed, so the API key never goes
@@ -62,6 +53,27 @@ public class NvidiaEmbedder implements Embedder {
         this.model = model;
         this.dimensions = dimensions;
         this.resilience = resilience;
+    }
+
+    /**
+     * Untrusted shape: every input needs exactly one vector of the expected size.
+     */
+    static List<float[]> vectors(Response response, int count, int dimensions) {
+        if (response == null || response.data() == null || response.data().size() != count) {
+            throw new EmbeddingFailure("embedding response has the wrong number of vectors", false);
+        }
+        Map<Integer, float[]> byIndex = new LinkedHashMap<>();
+        response.data().stream().sorted(Comparator.comparingInt(Response.Item::index))
+            .forEach(i -> byIndex.put(i.index(), i.embedding()));
+        List<float[]> out = new ArrayList<>(count);
+        for (int i = 0; i < count; i++) {
+            float[] v = byIndex.get(i);
+            if (v == null || v.length != dimensions) {
+                throw new EmbeddingFailure("embedding response has a missing or wrong-sized vector", false);
+            }
+            out.add(v);
+        }
+        return out;
     }
 
     @Override
@@ -96,22 +108,12 @@ public class NvidiaEmbedder implements Embedder {
         return vectors(response, texts.size(), dimensions);
     }
 
-    /** Untrusted shape: every input needs exactly one vector of the expected size. */
-    static List<float[]> vectors(Response response, int count, int dimensions) {
-        if (response == null || response.data() == null || response.data().size() != count) {
-            throw new EmbeddingFailure("embedding response has the wrong number of vectors", false);
+    record Request(String model, List<String> input, String input_type, Integer dimensions, String truncate,
+                   String encoding_format) {
+    }
+
+    record Response(List<Item> data) {
+        record Item(int index, float[] embedding) {
         }
-        Map<Integer, float[]> byIndex = new LinkedHashMap<>();
-        response.data().stream().sorted(Comparator.comparingInt(Response.Item::index))
-            .forEach(i -> byIndex.put(i.index(), i.embedding()));
-        List<float[]> out = new ArrayList<>(count);
-        for (int i = 0; i < count; i++) {
-            float[] v = byIndex.get(i);
-            if (v == null || v.length != dimensions) {
-                throw new EmbeddingFailure("embedding response has a missing or wrong-sized vector", false);
-            }
-            out.add(v);
-        }
-        return out;
     }
 }

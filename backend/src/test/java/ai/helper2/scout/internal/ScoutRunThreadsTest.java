@@ -1,20 +1,23 @@
 package ai.helper2.scout.internal;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.testing.MdcTraceIds;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-/** A Scout run started from the admin page logs with the trace id of the request that started it (ADR 0026). */
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * A Scout run started from the admin page logs with the trace id of the request that started it (ADR 0026).
+ */
 class ScoutRunThreadsTest {
 
     private final ObservationRegistry observations = MdcTraceIds.registry();

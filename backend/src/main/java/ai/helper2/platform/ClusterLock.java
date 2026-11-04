@@ -1,12 +1,13 @@
 package ai.helper2.platform;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.function.Supplier;
 import net.javacrumbs.shedlock.core.LockConfiguration;
 import net.javacrumbs.shedlock.core.LockingTaskExecutor;
 import net.javacrumbs.shedlock.core.LockingTaskExecutor.TaskResult;
 import org.jspecify.annotations.Nullable;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.function.Supplier;
 
 /**
  * One named lock shared by every replica (see ClusterLockConfiguration). A task runs only while its replica holds
@@ -46,7 +47,9 @@ public final class ClusterLock {
         return atLeastFor;
     }
 
-    /** The task's result (never null), or null without running it while the lock is held elsewhere. */
+    /**
+     * The task's result (never null), or null without running it while the lock is held elsewhere.
+     */
     public <T> @Nullable T tryCall(Supplier<T> task) {
         TaskResult<T> result;
         try {
@@ -60,7 +63,9 @@ public final class ClusterLock {
         return result.wasExecuted() ? result.getResult() : null;
     }
 
-    /** false, without running it, while the lock is held elsewhere. */
+    /**
+     * false, without running it, while the lock is held elsewhere.
+     */
     public boolean tryRun(Runnable task) {
         return tryCall(() -> {
             task.run();

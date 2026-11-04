@@ -192,32 +192,32 @@ resilience4j:
         wait-duration-in-open-state: ${H2_RESILIENCE_LLM_OPEN_FOR:30s}
         permitted-number-of-calls-in-half-open-state: 2
     instances:
-      source-github: {base-config: source}
-      source-hf-models: {base-config: source}
-      source-hf-spaces: {base-config: source}
-      source-npm: {base-config: source}
-      source-arxiv: {base-config: source}
+      source-github: { base-config: source }
+      source-hf-models: { base-config: source }
+      source-hf-spaces: { base-config: source }
+      source-npm: { base-config: source }
+      source-arxiv: { base-config: source }
       source-tavily:
         base-config: source
         # Tavily answers in 2-4 s (timeout 6 s).
         slow-call-duration-threshold: 5s
-      source-helper2-index: {base-config: source}
-      source-helper2-semantic: {base-config: source}
-      source-curated: {base-config: source}
-      collector-hf-trending: {base-config: collector}
-      collector-tavily-scout: {base-config: collector}
-      collector-course-scout: {base-config: collector}
-      collector-github-awesome: {base-config: collector}
-      collector-hf-provider-orgs: {base-config: collector}
-      collector-ai-deadlines: {base-config: collector}
-      collector-mcp-registry: {base-config: collector}
-      collector-gap-evidence: {base-config: collector}
-      redis: {base-config: store}
+      source-helper2-index: { base-config: source }
+      source-helper2-semantic: { base-config: source }
+      source-curated: { base-config: source }
+      collector-hf-trending: { base-config: collector }
+      collector-tavily-scout: { base-config: collector }
+      collector-course-scout: { base-config: collector }
+      collector-github-awesome: { base-config: collector }
+      collector-hf-provider-orgs: { base-config: collector }
+      collector-ai-deadlines: { base-config: collector }
+      collector-mcp-registry: { base-config: collector }
+      collector-gap-evidence: { base-config: collector }
+      redis: { base-config: store }
       llm-chat:
         base-config: model
         # Malformed JSON or a spent daily budget is not an outage of the provider: neither success nor failure.
         ignore-exception-predicate: ai.helper2.platform.llm.ModelErrors$NotFromProvider
-      llm-embed: {base-config: model}
+      llm-embed: { base-config: model }
       db-cache:
         sliding-window-type: COUNT_BASED
         sliding-window-size: 10
@@ -241,15 +241,15 @@ resilience4j:
         max-concurrent-calls: ${H2_RESILIENCE_CATALOG_MAX_CONCURRENT:6}
         max-wait-duration: 0
     instances:
-      source-github: {base-config: source}
-      source-hf-models: {base-config: source}
-      source-hf-spaces: {base-config: source}
-      source-npm: {base-config: source}
-      source-arxiv: {base-config: source}
-      source-tavily: {base-config: source}
-      source-helper2-index: {base-config: catalog}
-      source-helper2-semantic: {base-config: catalog}
-      source-curated: {base-config: catalog}
+      source-github: { base-config: source }
+      source-hf-models: { base-config: source }
+      source-hf-spaces: { base-config: source }
+      source-npm: { base-config: source }
+      source-arxiv: { base-config: source }
+      source-tavily: { base-config: source }
+      source-helper2-index: { base-config: catalog }
+      source-helper2-semantic: { base-config: catalog }
+      source-curated: { base-config: catalog }
       db-cache:
         # Shared cache lookups at once in this replica, next to the catalog sources' 6: they never take the connections
         # of the pool (H2_DATABASE_POOL_SIZE, 10) that the Scout and the admin need. One more is a miss, it never waits.
@@ -270,14 +270,14 @@ resilience4j:
         randomized-wait-factor: 0.5
         retry-exception-predicate: ai.helper2.sources.support.TransientSourceFailure
     instances:
-      collector-hf-trending: {base-config: collector}
-      collector-tavily-scout: {base-config: collector}
-      collector-course-scout: {base-config: collector}
-      collector-github-awesome: {base-config: collector}
-      collector-hf-provider-orgs: {base-config: collector}
-      collector-ai-deadlines: {base-config: collector}
-      collector-mcp-registry: {base-config: collector}
-      collector-gap-evidence: {base-config: collector}
+      collector-hf-trending: { base-config: collector }
+      collector-tavily-scout: { base-config: collector }
+      collector-course-scout: { base-config: collector }
+      collector-github-awesome: { base-config: collector }
+      collector-hf-provider-orgs: { base-config: collector }
+      collector-ai-deadlines: { base-config: collector }
+      collector-mcp-registry: { base-config: collector }
+      collector-gap-evidence: { base-config: collector }
 
 logging:
   structured:
@@ -610,16 +610,16 @@ helper2:
 resilience4j:
   circuitbreaker:
     instances:
-      source-demo-catalog: {base-config: source}
-      source-demo-mirror: {base-config: source}
-      source-demo-slow: {base-config: source}
-      source-demo-down: {base-config: source}
+      source-demo-catalog: { base-config: source }
+      source-demo-mirror: { base-config: source }
+      source-demo-slow: { base-config: source }
+      source-demo-down: { base-config: source }
   bulkhead:
     instances:
-      source-demo-catalog: {base-config: source}
-      source-demo-mirror: {base-config: source}
-      source-demo-slow: {base-config: source}
-      source-demo-down: {base-config: source}
+      source-demo-catalog: { base-config: source }
+      source-demo-mirror: { base-config: source }
+      source-demo-slow: { base-config: source }
+      source-demo-down: { base-config: source }
 
 ---
 # Data retention (ADR 0034): what the daily purges delete, and when. Every period can be changed without a release.

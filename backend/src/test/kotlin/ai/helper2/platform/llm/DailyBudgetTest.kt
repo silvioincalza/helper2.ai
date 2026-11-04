@@ -78,7 +78,8 @@ class DailyBudgetTest {
 
     @Test
     fun `a counter that throws is treated as down, never as an error`() {
-        val budget = DailyBudget(1, Clock.fixed(NOW, ZoneOffset.UTC), "guide") { _, _ -> throw IllegalStateException("redis down") }
+        val budget =
+            DailyBudget(1, Clock.fixed(NOW, ZoneOffset.UTC), "guide") { _, _ -> throw IllegalStateException("redis down") }
         assertTrue(budget.tryAcquire())
         assertFalse(budget.tryAcquire())
     }

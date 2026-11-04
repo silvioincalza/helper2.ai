@@ -56,10 +56,12 @@ class RankingTest {
         val few = Ranking.popularity(listOf(PopularityMetric(PopularityKind.GITHUB_STARS, 24, "github", NOW)))
         val many = Ranking.popularity(listOf(PopularityMetric(PopularityKind.GITHUB_STARS, 3_400, "github", NOW)))
         val capped = Ranking.popularity(listOf(PopularityMetric(PopularityKind.GITHUB_STARS, 10_000_000, "github", NOW)))
-        val both = Ranking.popularity(listOf(
-            PopularityMetric(PopularityKind.GITHUB_STARS, 3_400, "github", NOW),
-            PopularityMetric(PopularityKind.NPM_DOWNLOADS_WEEKLY, 10, "npm", NOW),
-        ))
+        val both = Ranking.popularity(
+            listOf(
+                PopularityMetric(PopularityKind.GITHUB_STARS, 3_400, "github", NOW),
+                PopularityMetric(PopularityKind.NPM_DOWNLOADS_WEEKLY, 10, "npm", NOW),
+            )
+        )
         kotlin.test.assertTrue(few < many && many < 1.0)
         assertEquals(1.0, capped)
         assertEquals(many, both)

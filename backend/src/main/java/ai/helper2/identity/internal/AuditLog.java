@@ -1,24 +1,21 @@
 package ai.helper2.identity.internal;
 
 import ai.helper2.identity.AuditTrail;
+import org.jspecify.annotations.Nullable;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.stereotype.Repository;
+
 import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import org.jspecify.annotations.Nullable;
-import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.stereotype.Repository;
 
-/** The admin_audit table: rows are inserted and, past their retention, deleted; never updated. */
+/**
+ * The admin_audit table: rows are inserted and, past their retention, deleted; never updated.
+ */
 @Repository
 public class AuditLog implements AuditTrail {
-
-    public record Entry(UUID id, String adminId, Action action, @Nullable String targetId, Instant at, String outcome) {
-    }
-
-    public record Page(List<Entry> items, long total) {
-    }
 
     private final JdbcClient jdbc;
     private final Clock clock;
@@ -36,7 +33,9 @@ public class AuditLog implements AuditTrail {
             .update();
     }
 
-    /** Newest first. */
+    /**
+     * Newest first.
+     */
     public Page page(int page, int size) {
         List<Entry> items = jdbc.sql("SELECT * FROM admin_audit ORDER BY at DESC, id LIMIT :size OFFSET :offset")
             .param("size", size).param("offset", (long) page * size)
@@ -48,8 +47,16 @@ public class AuditLog implements AuditTrail {
         return new Page(items, total);
     }
 
-    /** Deletes the entries written before [cutoff]; returns how many. */
+    /**
+     * Deletes the entries written before [cutoff]; returns how many.
+     */
     public int deleteBefore(Instant cutoff) {
         return jdbc.sql("DELETE FROM admin_audit WHERE at < :cutoff").param("cutoff", Timestamp.from(cutoff)).update();
+    }
+
+    public record Entry(UUID id, String adminId, Action action, @Nullable String targetId, Instant at, String outcome) {
+    }
+
+    public record Page(List<Entry> items, long total) {
     }
 }

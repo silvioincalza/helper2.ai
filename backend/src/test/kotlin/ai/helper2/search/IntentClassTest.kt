@@ -25,10 +25,19 @@ class IntentClassTest {
 
     @Test
     fun `a filter on time-bound types, a date window or newest first is time-bound`() {
-        assertEquals(IntentClass.TIME_BOUND, classOf(SearchRequest("agents", filters = SearchFilters(types = setOf(ResourceType.NEWS, ResourceType.EVENT)))))
-        assertEquals(IntentClass.TIME_BOUND, classOf(SearchRequest("agents", filters = SearchFilters(publishedAfter = LocalDate.of(2026, 10, 1)))))
+        assertEquals(
+            IntentClass.TIME_BOUND,
+            classOf(SearchRequest("agents", filters = SearchFilters(types = setOf(ResourceType.NEWS, ResourceType.EVENT))))
+        )
+        assertEquals(
+            IntentClass.TIME_BOUND,
+            classOf(SearchRequest("agents", filters = SearchFilters(publishedAfter = LocalDate.of(2026, 10, 1))))
+        )
         assertEquals(IntentClass.TIME_BOUND, classOf(SearchRequest("agents", sort = SortOrder.NEWEST)))
-        assertEquals(IntentClass.GENERAL, classOf(SearchRequest("agents", filters = SearchFilters(types = setOf(ResourceType.NEWS, ResourceType.LIBRARY)))))
+        assertEquals(
+            IntentClass.GENERAL,
+            classOf(SearchRequest("agents", filters = SearchFilters(types = setOf(ResourceType.NEWS, ResourceType.LIBRARY))))
+        )
     }
 
     @Test

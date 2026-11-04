@@ -1,12 +1,5 @@
 package ai.helper2.api;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import java.util.regex.Pattern;
 import org.hamcrest.Matcher;
 import org.springframework.http.MediaType;
 import org.springframework.test.util.JsonPathExpectationsHelper;
@@ -14,6 +7,14 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
+
+import java.util.regex.Pattern;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Asks the guide over {@code POST /api/v1/guide/stream}, the only guide endpoint, and returns the data of its last
@@ -26,7 +27,9 @@ final class GuideAnswers {
     private GuideAnswers() {
     }
 
-    /** The {@code answer} of a question that streams to the end; fails with the whole stream when there is none. */
+    /**
+     * The {@code answer} of a question that streams to the end; fails with the whole stream when there is none.
+     */
     static Answer ask(MockMvc mvc, String json, RequestPostProcessor... with) throws Exception {
         MockHttpServletRequestBuilder request = post("/api/v1/guide/stream").contentType(MediaType.APPLICATION_JSON).content(json);
         for (RequestPostProcessor p : with) {
@@ -42,7 +45,9 @@ final class GuideAnswers {
         return new Answer(m.group(1));
     }
 
-    /** The answer's JSON, and JSONPath checks on it in the style of MockMvc's {@code jsonPath(...)}. */
+    /**
+     * The answer's JSON, and JSONPath checks on it in the style of MockMvc's {@code jsonPath(...)}.
+     */
     record Answer(String json) {
 
         @SuppressWarnings("unchecked")

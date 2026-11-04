@@ -16,22 +16,24 @@ import java.util.regex.Pattern;
  */
 final class AwesomeListParser {
 
-    record Entry(String fullName, String section) {
-    }
-
-    /** Owner and name follow GitHub's allowed characters, so they are safe to embed in a GraphQL string. */
+    /**
+     * Owner and name follow GitHub's allowed characters, so they are safe to embed in a GraphQL string.
+     */
     private static final Pattern REPO_LINK = Pattern.compile("https?://github\\.com/([A-Za-z0-9-]{1,39})/([A-Za-z0-9._-]{1,100})");
     private static final Pattern LIST_ITEM = Pattern.compile("^\\s*(?:[-*+|]|\\d+\\.)\\s");
-    /** First path segments that are GitHub pages, not users or organizations. */
+    /**
+     * First path segments that are GitHub pages, not users or organizations.
+     */
     private static final Set<String> NOT_OWNERS = Set.of("topics", "orgs", "sponsors", "features", "marketplace", "apps",
         "collections", "login", "settings", "about", "site", "trending", "search", "users", "readme", "contact",
         "pricing", "enterprise", "github", "security", "explore", "notifications", "new", "codespaces");
     private static final int MAX_SECTION = 80;
-
     private AwesomeListParser() {
     }
 
-    /** Unique repositories in README order; the list itself and GitHub's own pages are left out. */
+    /**
+     * Unique repositories in README order; the list itself and GitHub's own pages are left out.
+     */
     static List<Entry> entries(String markdown, String listFullName) {
         Map<String, Entry> unique = new LinkedHashMap<>();
         String section = "";
@@ -73,5 +75,8 @@ final class AwesomeListParser {
 
     private static String clip(String s) {
         return s.length() <= MAX_SECTION ? s : s.substring(0, MAX_SECTION);
+    }
+
+    record Entry(String fullName, String section) {
     }
 }

@@ -4,8 +4,6 @@ import ai.helper2.platform.ClusterLock;
 import ai.helper2.platform.ClusterLocks;
 import ai.helper2.search.WebResultRetention;
 import ai.helper2.search.usecase.PurgeExpiredData;
-import java.time.Clock;
-import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,7 +11,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Scheduled;
 
-/** Runs the search module's retention once a day (helper2.retention.cron, UTC), on one replica at a time. */
+import java.time.Clock;
+import java.time.Duration;
+
+/**
+ * Runs the search module's retention once a day (helper2.retention.cron, UTC), on one replica at a time.
+ */
 @Configuration(proxyBeanMethods = false)
 class SearchRetentionSchedule {
 

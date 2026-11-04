@@ -1,21 +1,28 @@
 package ai.helper2.api;
 
+import ai.helper2.shared.ResourceType;
+import com.jayway.jsonpath.JsonPath;
+import org.junit.jupiter.api.Test;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import ai.helper2.shared.ResourceType;
-import com.jayway.jsonpath.JsonPath;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.List;
-import org.junit.jupiter.api.Test;
-
-/** The home page "Today" list: newest by the date the SOURCE states, from Helper2's own index. */
+/**
+ * The home page "Today" list: newest by the date the SOURCE states, from Helper2's own index.
+ */
 class RecentApiIT extends ApiTestBase {
 
     private static String daysAgo(int days) {
         return Instant.now().minus(Duration.ofDays(days)).toString();
+    }
+
+    private static List<String> titles(String body) {
+        return JsonPath.read(body, "$.items[*].title");
     }
 
     @Test
@@ -58,9 +65,5 @@ class RecentApiIT extends ApiTestBase {
     void rejectsOutOfRangeParameters() throws Exception {
         mvc.perform(get("/api/v1/recent").param("days", "31")).andExpect(status().isBadRequest());
         mvc.perform(get("/api/v1/recent").param("size", "0")).andExpect(status().isBadRequest());
-    }
-
-    private static List<String> titles(String body) {
-        return JsonPath.read(body, "$.items[*].title");
     }
 }

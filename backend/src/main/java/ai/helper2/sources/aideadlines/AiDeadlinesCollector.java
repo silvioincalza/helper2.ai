@@ -16,6 +16,14 @@ import ai.helper2.shared.ValueOrigin;
 import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.web.client.RestClient;
+import org.yaml.snakeyaml.LoaderOptions;
+import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.SafeConstructor;
+import tools.jackson.databind.JsonNode;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Clock;
@@ -34,13 +42,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.web.client.RestClient;
-import org.yaml.snakeyaml.LoaderOptions;
-import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.constructor.SafeConstructor;
-import tools.jackson.databind.JsonNode;
 
 /**
  * AI conferences from huggingface/ai-deadlines (MIT): one YAML file per conference with each edition's
@@ -49,7 +50,7 @@ import tools.jackson.databind.JsonNode;
  * Dates are the days the file states (DAY precision); an edition without a parseable start is skipped.
  * One GitHub contents call lists the files, then each raw file is read once per pass.
  * Repository: https://github.com/huggingface/ai-deadlines
- *
+ * <p>
  * The raw files are read only from {@link #RAW_HOST}, without the GitHub token: download_url is data from
  * the API response, and the token must never go to a host it names. A file that cannot be read or parsed
  * is skipped and the pass goes on with the others. Each skipped file is counted in helper2.source.items.dropped
@@ -60,11 +61,15 @@ import tools.jackson.databind.JsonNode;
 public class AiDeadlinesCollector implements Collector {
 
     static final String ID = "ai-deadlines";
-    /** Circuit breaker and retry of this collector\'s calls (ADR 0033). */
+    /**
+     * Circuit breaker and retry of this collector\'s calls (ADR 0033).
+     */
     static final String POLICY = "collector-" + ID;
     static final String CONFERENCES_PATH = "/repos/huggingface/ai-deadlines/contents/src/data/conferences";
     static final URI RAW_HOST = URI.create("https://raw.githubusercontent.com");
-    /** Reason of helper2.source.items.dropped for a file whose download URL is not on the raw host. */
+    /**
+     * Reason of helper2.source.items.dropped for a file whose download URL is not on the raw host.
+     */
     static final String FOREIGN_DOWNLOAD_URL = "ForeignDownloadUrl";
 
     private static final Logger log = LoggerFactory.getLogger(AiDeadlinesCollector.class);
@@ -81,7 +86,9 @@ public class AiDeadlinesCollector implements Collector {
         this(settings, builder, clock, resilience, interval, RAW_HOST);
     }
 
-    /** [rawHost]: scheme, host and port download URLs must have (tests point it at a fixture server). */
+    /**
+     * [rawHost]: scheme, host and port download URLs must have (tests point it at a fixture server).
+     */
     AiDeadlinesCollector(SourceSettings settings, RestClient.Builder builder, Clock clock, Resilience resilience, RunInterval interval, URI rawHost) {
         this.clock = clock;
         this.resilience = resilience;
@@ -97,6 +104,60 @@ public class AiDeadlinesCollector implements Collector {
             URI.create("https://github.com/huggingface/ai-deadlines"), URI.create("https://github.com/huggingface/ai-deadlines/blob/main/LICENSE"),
             "Conference dates and venues from huggingface/ai-deadlines (MIT License)", EnumSet.of(ResourceType.EVENT),
             settings.timeout(), settings.cacheTtl(), settings.enabled(), 40);
+    }
+
+    /**
+     * The edition that ends (or, without an end, starts) soonest on or after [today]; empty when none.
+     */
+    static Optional<SourceHit> nextEdition(String conference, String yaml, LocalDate today, Instant now, int position) {
+        Object parsed = new Yaml(new SafeConstructor(new LoaderOptions())).load(yaml);
+        if (!(parsed instanceof List<?> editions)) {
+            return Optional.empty();
+        }
+        return editions.stream()
+            .filter(Map.class::isInstance).map(e -> (Map<?, ?>) e)
+            .map(e -> new Edition(e, day(e.get("start")), day(e.get("end"))))
+            .filter(e -> e.start != null && !Objects.requireNonNullElse(e.end, e.start).isBefore(today))
+            .min(Comparator.comparing(Edition::start))
+            .flatMap(e -> toHit(conference, e, now, position));
+    }
+
+    private static Optional<SourceHit> toHit(String conference, Edition e, Instant now, int position) {
+        String link = e.text("link");
+        CanonicalUrl canonical = link == null ? null : CanonicalUrl.of(link);
+        String title = e.text("title");
+        if (canonical == null || title == null) {
+            return Optional.empty();
+        }
+        String year = e.text("year");
+        String location = Stream.of(e.text("city"), e.text("country")).filter(Objects::nonNull).collect(Collectors.joining(", "));
+        String description = Stream.of(e.text("full_name"), e.text("venue"))
+            .filter(Objects::nonNull).collect(Collectors.joining(". "));
+        return Optional.of(new SourceHit(ID, conference, HttpClients.link(link, canonical), canonical, null,
+            year == null || title.contains(year) ? title : title + " " + year,
+            description.isEmpty() ? null : description, ValueOrigin.SOURCE_PROVIDED, ResourceType.EVENT, Audience.BUILD_WITH_AI,
+            null, Set.of(), Set.of("conference"), null, null, Set.of(), null,
+            DateFact.unknown(), DateFact.unknown(), List.of(), now, position,
+            DateFact.scheduledDay(e.start(), ID), DateFact.scheduledDay(e.end(), ID), location.isEmpty() ? null : location,
+            // ai-deadlines lists conferences; it does not say whether one is online, so the format stays unknown.
+            EventKind.CONFERENCE, null));
+    }
+
+    /**
+     * "2026-12-06" as a string or a YAML date; anything else (e.g. "TBA") is unknown.
+     */
+    static LocalDate day(Object v) {
+        if (v instanceof Date d) {
+            return LocalDate.ofInstant(d.toInstant(), ZoneOffset.UTC);
+        }
+        if (v instanceof String s && !s.isBlank()) {
+            try {
+                return LocalDate.parse(s.strip().substring(0, Math.min(10, s.strip().length())));
+            } catch (DateTimeParseException ex) {
+                return null;
+            }
+        }
+        return null;
     }
 
     @Override
@@ -150,7 +211,9 @@ public class AiDeadlinesCollector implements Collector {
         return new CollectedBatch(hits, null, startedAt.toString());
     }
 
-    /** [download] when it is on the raw host (same scheme, host and port); anything else is never fetched. */
+    /**
+     * [download] when it is on the raw host (same scheme, host and port); anything else is never fetched.
+     */
     Optional<URI> allowed(String download) {
         try {
             URI u = new URI(download.strip());
@@ -162,60 +225,10 @@ public class AiDeadlinesCollector implements Collector {
         }
     }
 
-    /** The edition that ends (or, without an end, starts) soonest on or after [today]; empty when none. */
-    static Optional<SourceHit> nextEdition(String conference, String yaml, LocalDate today, Instant now, int position) {
-        Object parsed = new Yaml(new SafeConstructor(new LoaderOptions())).load(yaml);
-        if (!(parsed instanceof List<?> editions)) {
-            return Optional.empty();
-        }
-        return editions.stream()
-            .filter(Map.class::isInstance).map(e -> (Map<?, ?>) e)
-            .map(e -> new Edition(e, day(e.get("start")), day(e.get("end"))))
-            .filter(e -> e.start != null && !Objects.requireNonNullElse(e.end, e.start).isBefore(today))
-            .min(Comparator.comparing(Edition::start))
-            .flatMap(e -> toHit(conference, e, now, position));
-    }
-
     private record Edition(Map<?, ?> raw, LocalDate start, LocalDate end) {
         String text(String key) {
             Object v = raw.get(key);
             return v == null || v.toString().isBlank() ? null : v.toString().strip();
         }
-    }
-
-    private static Optional<SourceHit> toHit(String conference, Edition e, Instant now, int position) {
-        String link = e.text("link");
-        CanonicalUrl canonical = link == null ? null : CanonicalUrl.of(link);
-        String title = e.text("title");
-        if (canonical == null || title == null) {
-            return Optional.empty();
-        }
-        String year = e.text("year");
-        String location = Stream.of(e.text("city"), e.text("country")).filter(Objects::nonNull).collect(Collectors.joining(", "));
-        String description = Stream.of(e.text("full_name"), e.text("venue"))
-            .filter(Objects::nonNull).collect(Collectors.joining(". "));
-        return Optional.of(new SourceHit(ID, conference, HttpClients.link(link, canonical), canonical, null,
-            year == null || title.contains(year) ? title : title + " " + year,
-            description.isEmpty() ? null : description, ValueOrigin.SOURCE_PROVIDED, ResourceType.EVENT, Audience.BUILD_WITH_AI,
-            null, Set.of(), Set.of("conference"), null, null, Set.of(), null,
-            DateFact.unknown(), DateFact.unknown(), List.of(), now, position,
-            DateFact.scheduledDay(e.start(), ID), DateFact.scheduledDay(e.end(), ID), location.isEmpty() ? null : location,
-            // ai-deadlines lists conferences; it does not say whether one is online, so the format stays unknown.
-            EventKind.CONFERENCE, null));
-    }
-
-    /** "2026-12-06" as a string or a YAML date; anything else (e.g. "TBA") is unknown. */
-    static LocalDate day(Object v) {
-        if (v instanceof Date d) {
-            return LocalDate.ofInstant(d.toInstant(), ZoneOffset.UTC);
-        }
-        if (v instanceof String s && !s.isBlank()) {
-            try {
-                return LocalDate.parse(s.strip().substring(0, Math.min(10, s.strip().length())));
-            } catch (DateTimeParseException ex) {
-                return null;
-            }
-        }
-        return null;
     }
 }

@@ -15,15 +15,19 @@ class SetupGuidesTest {
     private val src = URI("https://registry.modelcontextprotocol.io/v0.1/servers/x/versions/latest")
 
     private val remote = RunOption.Remote(Transport.STREAMABLE_HTTP, URI("https://mcp.dotsy.ai/mcp"), emptyList())
-    private val sse = RunOption.Remote(Transport.SSE, URI("https://example.com/sse"),
-        listOf(Setting("Authorization", SettingKind.HEADER, "API key", true, true, "Bearer {api_key}")))
-    private val npm = RunOption.Package("npm", "@kaiva/postgres-mcp", "0.1.1", Transport.STDIO, null, emptyList(),
+    private val sse = RunOption.Remote(
+        Transport.SSE, URI("https://example.com/sse"),
+        listOf(Setting("Authorization", SettingKind.HEADER, "API key", true, true, "Bearer {api_key}"))
+    )
+    private val npm = RunOption.Package(
+        "npm", "@kaiva/postgres-mcp", "0.1.1", Transport.STDIO, null, emptyList(),
         listOf(Argument(null, null, "database_url", "PostgreSQL URL", required = true, secret = true)),
         listOf(
             Setting("DATABASE_URL", SettingKind.ENV, "Connection", required = true, secret = true, value = null),
             Setting("LOG_LEVEL", SettingKind.ENV, null, required = false, secret = false, value = "info"),
             Setting("OPTIONAL", SettingKind.ENV, null, required = false, secret = false, value = null),
-        ))
+        )
+    )
 
     private fun guide(vararg options: RunOption) =
         SetupGuides({ McpServerSpec(it, "1.0.0", options.toList(), src, at) }).build("Dotsy", "ai.dotsy/mcp")
@@ -74,15 +78,19 @@ class SetupGuidesTest {
         assertEquals(listOf("mcp-pg==2.0"), Launches.of(py)!!.args)
         val oci = npm.copy(registryType = "oci", identifier = "ghcr.io/a/b:1.2", packageArgs = emptyList())
         assertEquals("docker", Launches.of(oci)!!.command)
-        assertEquals(listOf("run", "-i", "--rm", "-e", "DATABASE_URL", "-e", "LOG_LEVEL", "ghcr.io/a/b:1.2"),
-            Launches.of(oci)!!.args)
+        assertEquals(
+            listOf("run", "-i", "--rm", "-e", "DATABASE_URL", "-e", "LOG_LEVEL", "ghcr.io/a/b:1.2"),
+            Launches.of(oci)!!.args
+        )
         assertNull(Launches.of(npm.copy(registryType = "cargo")))
     }
 
     @Test
     fun `runtimeHint and runtime arguments come from the entry`() {
-        val p = npm.copy(runtimeHint = "npx", runtimeArgs = listOf(Argument(null, "--stdio", null, null, true, false)),
-            packageArgs = emptyList())
+        val p = npm.copy(
+            runtimeHint = "npx", runtimeArgs = listOf(Argument(null, "--stdio", null, null, true, false)),
+            packageArgs = emptyList()
+        )
         assertEquals(listOf("--stdio", "@kaiva/postgres-mcp@0.1.1"), Launches.of(p)!!.args)
     }
 
@@ -93,10 +101,18 @@ class SetupGuidesTest {
             npm.copy(identifier = "@acme/x", version = "1 --call rm"),
             npm.copy(runtimeHint = "node"),
             npm.copy(runtimeHint = "npx", runtimeArgs = listOf(Argument(null, "-c", null, null, true, false))),
-            npm.copy(registryType = "oci", identifier = "acme/x", runtimeArgs = listOf(Argument(null, "run", null, null, true, false),
-                Argument("-v", "/:/host", null, null, true, false))),
-            npm.copy(registryType = "oci", identifier = "acme/x", runtimeArgs = listOf(Argument(null, "run", null, null, true, false),
-                Argument(null, "--privileged", null, null, true, false))),
+            npm.copy(
+                registryType = "oci", identifier = "acme/x", runtimeArgs = listOf(
+                    Argument(null, "run", null, null, true, false),
+                    Argument("-v", "/:/host", null, null, true, false)
+                )
+            ),
+            npm.copy(
+                registryType = "oci", identifier = "acme/x", runtimeArgs = listOf(
+                    Argument(null, "run", null, null, true, false),
+                    Argument(null, "--privileged", null, null, true, false)
+                )
+            ),
             npm.copy(registryType = "cargo", runtimeHint = "npx"),
             npm.copy(settings = listOf(Setting("API-KEY", SettingKind.ENV, null, true, true))),
             sse.copy(settings = listOf(Setting("X Api", SettingKind.HEADER, null, true, true))),
@@ -112,7 +128,8 @@ class SetupGuidesTest {
 
     @Test
     fun `the clients are the eight MCP clients with the widest reach, in display order`() {
-        assertEquals(listOf("claude-code", "claude-desktop", "cursor", "vscode", "codex", "windsurf", "gemini-cli", "cline"),
+        assertEquals(
+            listOf("claude-code", "claude-desktop", "cursor", "vscode", "codex", "windsurf", "gemini-cli", "cline"),
             Clients.ALL.map { it.id })
     }
 
@@ -139,16 +156,21 @@ class SetupGuidesTest {
     fun `claude code commands`() {
         val g = guide(remote, sse, npm)
         assertEquals("claude mcp add --transport http dotsy https://mcp.dotsy.ai/mcp", snippet(g, "claude-code").text)
-        assertEquals("claude mcp add --transport sse dotsy https://example.com/sse --header 'Authorization: Bearer <api_key>'",
-            snippet(g, "claude-code", "o2").text)
-        assertEquals("claude mcp add --env 'DATABASE_URL=<DATABASE_URL>' --env LOG_LEVEL=info --transport stdio dotsy -- " +
-            "npx -y @kaiva/postgres-mcp@0.1.1 '<database_url>'", snippet(g, "claude-code", "o3").text)
+        assertEquals(
+            "claude mcp add --transport sse dotsy https://example.com/sse --header 'Authorization: Bearer <api_key>'",
+            snippet(g, "claude-code", "o2").text
+        )
+        assertEquals(
+            "claude mcp add --env 'DATABASE_URL=<DATABASE_URL>' --env LOG_LEVEL=info --transport stdio dotsy -- " +
+                "npx -y @kaiva/postgres-mcp@0.1.1 '<database_url>'", snippet(g, "claude-code", "o3").text
+        )
     }
 
     @Test
     fun `cursor and claude desktop json`() {
         val g = guide(remote, npm)
-        assertEquals("""
+        assertEquals(
+            """
             {
               "mcpServers": {
                 "dotsy": {
@@ -156,8 +178,10 @@ class SetupGuidesTest {
                 }
               }
             }
-        """.trimIndent(), snippet(g, "cursor").text)
-        assertEquals("""
+        """.trimIndent(), snippet(g, "cursor").text
+        )
+        assertEquals(
+            """
             {
               "mcpServers": {
                 "dotsy": {
@@ -170,7 +194,8 @@ class SetupGuidesTest {
                 }
               }
             }
-        """.trimIndent(), snippet(g, "claude-desktop", "o2").text)
+        """.trimIndent(), snippet(g, "claude-desktop", "o2").text
+        )
         val desktopRemote = snippet(g, "claude-desktop")
         assertTrue(desktopRemote.supported)
         assertEquals("https://mcp.dotsy.ai/mcp", desktopRemote.text)
@@ -189,8 +214,10 @@ class SetupGuidesTest {
         val g = guide(remote, sse, npm)
         assertEquals("[mcp_servers.dotsy]\nurl = \"https://mcp.dotsy.ai/mcp\"", snippet(g, "codex").text)
         assertFalse(snippet(g, "codex", "o2").supported)
-        assertEquals("[mcp_servers.dotsy]\ncommand = \"npx\"\nargs = [\"-y\", \"@kaiva/postgres-mcp@0.1.1\", \"<database_url>\"]\n\n" +
-            "[mcp_servers.dotsy.env]\nDATABASE_URL = \"<DATABASE_URL>\"\nLOG_LEVEL = \"info\"", snippet(g, "codex", "o3").text)
+        assertEquals(
+            "[mcp_servers.dotsy]\ncommand = \"npx\"\nargs = [\"-y\", \"@kaiva/postgres-mcp@0.1.1\", \"<database_url>\"]\n\n" +
+                "[mcp_servers.dotsy.env]\nDATABASE_URL = \"<DATABASE_URL>\"\nLOG_LEVEL = \"info\"", snippet(g, "codex", "o3").text
+        )
         assertTrue("\"httpUrl\": \"https://mcp.dotsy.ai/mcp\"" in snippet(g, "gemini-cli").text!!)
         assertTrue("\"url\": \"https://example.com/sse\"" in snippet(g, "gemini-cli", "o2").text!!)
         assertTrue("\"type\": \"streamableHttp\"" in snippet(g, "cline").text!!)

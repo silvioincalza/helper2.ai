@@ -61,7 +61,14 @@ interface WebResultStore {
         @JvmField
         val NONE: WebResultStore = object : WebResultStore {
             override fun find(sourceId: String, query: String, intentClass: IntentClass): CachedHits? = null
-            override fun replace(sourceId: String, query: String, intentClass: IntentClass, fetchedAt: Instant, hits: List<SourceHit>) {}
+            override fun replace(
+                sourceId: String,
+                query: String,
+                intentClass: IntentClass,
+                fetchedAt: Instant,
+                hits: List<SourceHit>
+            ) {
+            }
         }
     }
 }
@@ -85,6 +92,7 @@ fun interface RecordedOutcomes {
 interface SearchMetrics {
     fun sourceCompleted(status: SourceStatus) {}
     fun cacheEvent(event: String) {}
+
     /** One search answered: [partial] when an enabled source failed, [empty] when nothing matched (no query text). */
     fun searchCompleted(partial: Boolean, empty: Boolean, latency: Duration) {}
 

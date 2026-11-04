@@ -1,21 +1,24 @@
 package ai.helper2.setup.internal;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.TestcontainersConfiguration;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.setup.internal.RegistryMcpServerSpecsTest.MutableClock;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
-/** The hourly fetch budget is one count for every replica, kept in Redis, and a new hour starts a new count. */
+import java.time.Duration;
+import java.time.Instant;
+import java.util.concurrent.TimeUnit;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * The hourly fetch budget is one count for every replica, kept in Redis, and a new hour starts a new count.
+ */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 class HourlyFetchBudgetIT {

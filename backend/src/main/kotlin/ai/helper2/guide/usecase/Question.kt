@@ -33,7 +33,13 @@ import java.time.Instant
  * What the user asked: the text, the answer to a clarification and the parts of the reading they removed; and who
  * asks, for the daily web searches (one per question, however many searches it runs).
  */
-internal class Question(val text: String, val path: AudiencePath?, val clarification: String?, val drops: Drops, val asker: Asker?) {
+internal class Question(
+    val text: String,
+    val path: AudiencePath?,
+    val clarification: String?,
+    val drops: Drops,
+    val asker: Asker?
+) {
     /** The text the search and the no-model backup see: the question plus the user's answer to our question. */
     val fullText: String get() = listOfNotNull(text, clarification?.takeIf { it.isNotBlank() }).joinToString(" ")
 
@@ -105,7 +111,8 @@ internal class GuideSteps(private val search: SearchResources, private val obser
      * question's log line. The intent is read when the step ends, so the plan step carries the intent it found.
      */
     fun <T> step(q: Question, name: String, work: () -> T): T {
-        val observation = Observation.createNotStarted("helper2.guide.step", observations).lowCardinalityKeyValue("step", name).start()
+        val observation =
+            Observation.createNotStarted("helper2.guide.step", observations).lowCardinalityKeyValue("step", name).start()
         val started = System.nanoTime()
         try {
             return observation.openScope().use { work() }
@@ -135,7 +142,9 @@ internal class GuideSteps(private val search: SearchResources, private val obser
         // A blank planned query falls back to the asker's own text (QuestionReader): that is not AI-written.
         if (planned && r.plan?.searchQuery?.isNotBlank() == true) q.ran(request.text)
         val web = request.webQuery
-        if (web != null && web == r.webQuery && outcome.statuses.any { it.source.usesWebQuery && it.outcome != SourceOutcome.SKIPPED }) q.ran(web)
+        if (web != null && web == r.webQuery && outcome.statuses.any { it.source.usesWebQuery && it.outcome != SourceOutcome.SKIPPED }) q.ran(
+            web
+        )
         return outcome
     }
 }

@@ -1,7 +1,8 @@
 package ai.helper2.platform.resilience;
 
-import java.time.Duration;
 import org.springframework.data.redis.core.StringRedisTemplate;
+
+import java.time.Duration;
 
 /**
  * {@link OutboundThrottle} in Redis: {@code SET h2:v1:outbound:<host> 1 NX PX <interval>} takes the slot, and the key's

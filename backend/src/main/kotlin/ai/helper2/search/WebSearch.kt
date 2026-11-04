@@ -6,7 +6,7 @@ import ai.helper2.platform.quota.QuotaCounter.Verdict
 import ai.helper2.platform.quota.QuotaKeys
 import ai.helper2.shared.ResourceType
 import java.time.Duration
-import java.util.UUID
+import java.util.*
 
 /*
  * Web search with credits (Tavily, ADR 0037): store first, then a live call inside the asker's daily quota.
@@ -124,10 +124,18 @@ class WebSearchQuota @JvmOverloads constructor(
                 is QuotaDecision.OverLimit -> earlier
                 is QuotaDecision.Allowed ->
                     ask(null, 0, global) { earlier.left }.let { if (it is QuotaDecision.Allowed) earlier else it }
+
                 QuotaDecision.Unavailable, null -> {
                     val tier = tierOf(asker)
                     val limit = limits.of(tier, asker.feature)
-                    ask(own(asker, tier), limit, global) { used -> WebSearchesLeft(asker.feature, tier, limit, maxOf(0, limit - used.toInt())) }
+                    ask(own(asker, tier), limit, global) { used ->
+                        WebSearchesLeft(
+                            asker.feature,
+                            tier,
+                            limit,
+                            maxOf(0, limit - used.toInt())
+                        )
+                    }
                 }
             }
             asker.decision = decision
@@ -177,7 +185,10 @@ class WebSearchQuota @JvmOverloads constructor(
     /** The quota counters [asker] uses. */
     private fun own(asker: Asker, tier: QuotaTier): Counter {
         val field = asker.feature.name.lowercase()
-        return if (tier == QuotaTier.REGISTERED) Counter(keys.user(asker.userId!!), field) else Counter(keys.guest(asker.client), field)
+        return if (tier == QuotaTier.REGISTERED) Counter(keys.user(asker.userId!!), field) else Counter(
+            keys.guest(asker.client),
+            field
+        )
     }
 
     private fun ask(own: Counter?, limit: Int, global: Counter, left: (Long) -> WebSearchesLeft?): QuotaDecision {

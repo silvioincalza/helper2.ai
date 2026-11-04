@@ -9,12 +9,16 @@ import java.time.LocalDate;
 @FunctionalInterface
 public interface CallCounter {
 
-    /** No durable store (no Redis): every budget counts in memory. */
+    /**
+     * No durable store (no Redis): every budget counts in memory.
+     */
     CallCounter NONE = (name, day) -> null;
 
     Long increment(String name, LocalDate day);
 
-    /** A budget declares its name and daily limit once, so the back office can list every budget. */
+    /**
+     * A budget declares its name and daily limit once, so the back office can list every budget.
+     */
     default void declare(String name, int dailyCalls) {
     }
 }

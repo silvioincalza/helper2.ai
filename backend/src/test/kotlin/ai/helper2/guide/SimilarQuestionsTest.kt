@@ -18,9 +18,11 @@ class MemoryQuestionIndex : SimilarQuestionIndex {
         groups[group].orEmpty().values.filter { now.isBefore(it.expiresAt) }
             .map { Neighbour(it.answerKey, SimilarQuestions.cosine(vector, it.vector)) }
             .maxByOrNull { it.similarity }
+
     override fun add(group: String, question: IndexedQuestion) {
         groups.getOrPut(group) { mutableMapOf() }[question.answerKey] = question
     }
+
     val size: Int get() = groups.values.sumOf { it.size }
 }
 
@@ -117,15 +119,24 @@ class SimilarQuestionsTest {
 
     @Test
     fun `a comparison's subjects are a set, other subjects keep their order`() {
-        assertEquals(key(GuideIntent.COMPARE, listOf("Ollama", "LM Studio")), key(GuideIntent.COMPARE, listOf("lm studio", "ollama")))
+        assertEquals(
+            key(GuideIntent.COMPARE, listOf("Ollama", "LM Studio")),
+            key(GuideIntent.COMPARE, listOf("lm studio", "ollama"))
+        )
         assertNotEquals(key(GuideIntent.SUGGEST, listOf("python", "rust")), key(GuideIntent.SUGGEST, listOf("rust", "python")))
         assertNotEquals(key(GuideIntent.HOW_TO, listOf("pytorch", "onnx")), key(GuideIntent.HOW_TO, listOf("onnx", "pytorch")))
     }
 
     @Test
     fun `names compare without case, hyphens or underscores, constraints in any order`() {
-        assertEquals(key(GuideIntent.COMPARE, listOf("faster-whisper", "Whisper")), key(GuideIntent.COMPARE, listOf("whisper", "Faster Whisper")))
-        assertEquals(key(GuideIntent.SUGGEST, emptyList(), listOf("free", "Open source")), key(GuideIntent.SUGGEST, emptyList(), listOf("open-source", "free")))
+        assertEquals(
+            key(GuideIntent.COMPARE, listOf("faster-whisper", "Whisper")),
+            key(GuideIntent.COMPARE, listOf("whisper", "Faster Whisper"))
+        )
+        assertEquals(
+            key(GuideIntent.SUGGEST, emptyList(), listOf("free", "Open source")),
+            key(GuideIntent.SUGGEST, emptyList(), listOf("open-source", "free"))
+        )
         assertNotEquals(key(GuideIntent.SUGGEST, listOf("llama.cpp")), key(GuideIntent.SUGGEST, listOf("llama cpp")))
     }
 

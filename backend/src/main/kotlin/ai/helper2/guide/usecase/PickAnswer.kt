@@ -27,17 +27,18 @@ import ai.helper2.search.SearchRequest
 import ai.helper2.search.SortOrder
 import ai.helper2.shared.ResourceType
 import io.micrometer.core.instrument.MeterRegistry
+import org.slf4j.LoggerFactory
 import java.time.Clock
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
-import org.slf4j.LoggerFactory
 
 /** Tools only, unless the user asked for something to read (seen in evaluation run 4: papers filled the slots). */
 internal fun readingFilter(r: Reading) =
     if (r.allowReading) SearchFilters(types = ResourceType.entries.toSet() - LEARN_TYPES) else SearchFilters(types = TOOL_TYPES)
 
 /** The not-found notices' messages: our own words only; the name and the query travel apart (ADR 0038). */
-internal const val NOT_FOUND_ALTERNATIVES = "The name in the question was not found in our sources; showing tools for the planned search instead."
+internal const val NOT_FOUND_ALTERNATIVES =
+    "The name in the question was not found in our sources; showing tools for the planned search instead."
 internal const val NOT_FOUND_COMPARED = "A name to compare was not found in our sources."
 
 /** One search for the pick pipeline: text, filters, order, and what must not be picked. */
@@ -101,66 +102,132 @@ internal class PickAnswer(
         val name = r.subjects.firstOrNull()
             ?: return picks(q, r, progress, asked, model, Retrieval(r.query, readingFilter(r)))
         val found = steps.step(q, "search") {
-            steps.find(q, r, SearchRequest(text = name, path = q.path, filters = SearchFilters(types = TOOL_TYPES), size = SUBJECT_SEARCH_SIZE))
+            steps.find(
+                q,
+                r,
+                SearchRequest(text = name, path = q.path, filters = SearchFilters(types = TOOL_TYPES), size = SUBJECT_SEARCH_SIZE)
+            )
         }
         namesakes(r, found)?.let { return askBack(clock, r, it, found, progress) }
         val own = found.results.firstOrNull { isSubject(it, name) }
-        val category = own?.let { listOfNotNull(it.useCases.joinToString(" ").ifBlank { null }, it.type.name.lowercase().replace('_', ' ')).joinToString(" ") }
+        val category = own?.let {
+            listOfNotNull(
+                it.useCases.joinToString(" ").ifBlank { null },
+                it.type.name.lowercase().replace('_', ' ')
+            ).joinToString(" ")
+        }
         // The name and the query are the planner's words: fields of their own, so the page marks them AI-written (ADR 0038).
         // Only a query the planner wrote: without one, r.query is the user's own text, which must not be marked AI-written.
         val plannedQuery = r.plan?.let { PlannedQueries.searchQueryOf(it.searchQuery) }?.ifBlank { null }
-        val notices = if (own == null) listOf(Notice(NoticeCode.GUIDE_SUBJECT_NOT_FOUND, NOT_FOUND_ALTERNATIVES, subject = name, query = plannedQuery)) else emptyList()
+        val notices = if (own == null) listOf(
+            Notice(
+                NoticeCode.GUIDE_SUBJECT_NOT_FOUND,
+                NOT_FOUND_ALTERNATIVES,
+                subject = name,
+                query = plannedQuery
+            )
+        ) else emptyList()
         val text = category?.takeIf { IntentRules.subjectWords(it).isNotBlank() } ?: r.query
-        return picks(q, r, progress, asked, model, Retrieval(text, readingFilter(r), exclude = { isSubject(it, name) }, notices = notices, planned = text == r.query))
+        return picks(
+            q,
+            r,
+            progress,
+            asked,
+            model,
+            Retrieval(text, readingFilter(r), exclude = { isSubject(it, name) }, notices = notices, planned = text == r.query)
+        )
     }
 
     /**
      * Retrieval first, AI second, validator last: the guide as it was before intents, parameterised by [retrieval].
      * Works (degraded) without a model.
      */
-    fun picks(q: Question, r: Reading, progress: GuideProgress, asked: Asked, model: GuideModel?, retrieval: Retrieval): GuideAnswer {
+    fun picks(
+        q: Question,
+        r: Reading,
+        progress: GuideProgress,
+        asked: Asked,
+        model: GuideModel?,
+        retrieval: Retrieval
+    ): GuideAnswer {
         val text = q.fullText
         val outcome = steps.step(q, "search") {
             steps.find(
                 q, r,
                 SearchRequest(
-                    text = retrieval.text, path = q.path, filters = retrieval.filters, sort = retrieval.sort, size = maxCandidates,
-                    webQuery = r.webQuery, browse = retrieval.browse,
+                    text = retrieval.text,
+                    path = q.path,
+                    filters = retrieval.filters,
+                    sort = retrieval.sort,
+                    size = maxCandidates,
+                    webQuery = r.webQuery,
+                    browse = retrieval.browse,
                 ),
                 planned = retrieval.planned,
             )
         }
         if (retrieval.askBack) namesakes(r, outcome)?.let { return askBack(clock, r, it, outcome, progress) }
-        val candidates = outcome.results.filterNot(retrieval.exclude).take(maxCandidates).mapIndexed { i, res -> Candidate("c${i + 1}", res) }
+        val candidates =
+            outcome.results.filterNot(retrieval.exclude).take(maxCandidates).mapIndexed { i, res -> Candidate("c${i + 1}", res) }
         // Defence in depth: the search filter already removed reading types; keep the model and the
         // validator on the same rule in case a source mislabels a type after filtering.
         val allowReading = r.allowReading || retrieval.allowReading
         val choosable = if (allowReading) candidates else candidates.filter { it.result.type !in READING_TYPES }
         progress.retrieved(candidates.size, outcome)
-        if (log.isDebugEnabled) log.debug("guide candidates: {}", candidates.map { "${it.key} ${it.result.type} ${it.result.title.take(60)} ${it.result.published.value} desc=${it.result.description?.length ?: 0}" })
+        if (log.isDebugEnabled) log.debug(
+            "guide candidates: {}",
+            candidates.map { "${it.key} ${it.result.type} ${it.result.title.take(60)} ${it.result.published.value} desc=${it.result.description?.length ?: 0}" })
         val query = retrieval.text
         val constraints = r.constraints
         if (candidates.isEmpty()) {
-            return GuideAnswer(GuideStatus.NO_CANDIDATES, query, emptyList(), null, !r.modelFailed, 0, 0, outcome, clock.instant(), constraints,
-                notices = retrieval.notices)
+            return GuideAnswer(
+                GuideStatus.NO_CANDIDATES, query, emptyList(), null, !r.modelFailed, 0, 0, outcome, clock.instant(), constraints,
+                notices = retrieval.notices
+            )
         }
         if (model == null) {
-            return degraded(clock, GuideStatus.LLM_UNAVAILABLE, query, candidates, outcome, 0, modelUsed = false).withNotices(retrieval.notices)
+            return degraded(clock, GuideStatus.LLM_UNAVAILABLE, query, candidates, outcome, 0, modelUsed = false).withNotices(
+                retrieval.notices
+            )
         }
         val proposal = try {
             if (choosable.isEmpty()) {
-                return degraded(clock, GuideStatus.PARTIAL, query, candidates, outcome, 0, modelUsed = true, constraints).withNotices(retrieval.notices)
+                return degraded(
+                    clock,
+                    GuideStatus.PARTIAL,
+                    query,
+                    candidates,
+                    outcome,
+                    0,
+                    modelUsed = true,
+                    constraints
+                ).withNotices(retrieval.notices)
             }
             steps.step(q, "choose") {
-                if (retrieval.think) model.choose(text, choosable, constraints, true) else model.choose(text, choosable, constraints)
+                if (retrieval.think) model.choose(text, choosable, constraints, true) else model.choose(
+                    text,
+                    choosable,
+                    constraints
+                )
             }
         } catch (e: RuntimeException) {
             log.warn("guide choose failed: ${failure(e)}")
             asked.budgetExhausted = e is GuideBudgetExhausted
-            return degraded(clock, GuideStatus.LLM_UNAVAILABLE, query, candidates, outcome, 0, modelUsed = false, constraints).withNotices(retrieval.notices)
+            return degraded(
+                clock,
+                GuideStatus.LLM_UNAVAILABLE,
+                query,
+                candidates,
+                outcome,
+                0,
+                modelUsed = false,
+                constraints
+            ).withNotices(retrieval.notices)
         }
         progress.chosen(proposal.picks.size)
-        val checked = steps.step(q, "validate") { validator.validate(proposal, choosable, constraints, allowReading).insideWindow(retrieval.filters) }
+        val checked = steps.step(q, "validate") {
+            validator.validate(proposal, choosable, constraints, allowReading).insideWindow(retrieval.filters)
+        }
         progress.validated(checked.picks.size, checked.rejected)
         // Search rank of each kept pick. A pick far down the list is the first sign of text written to be chosen
         // (content poisoning): its quote is genuine, so the gate cannot catch it.
@@ -171,7 +238,16 @@ internal class PickAnswer(
             "rejectedBy=${checked.rejectedBy} reasons=${verdicts.values.groupingBy { it }.eachCount()}"
         val trail = ResearchTrail(removed = validator.removedOf(checked))
         if (checked.picks.isEmpty()) {
-            return degraded(clock, GuideStatus.PARTIAL, query, candidates, outcome, checked.rejected, modelUsed = true, constraints)
+            return degraded(
+                clock,
+                GuideStatus.PARTIAL,
+                query,
+                candidates,
+                outcome,
+                checked.rejected,
+                modelUsed = true,
+                constraints
+            )
                 .withNotices(retrieval.notices).copy(trail = trail)
         }
         return GuideAnswer(
@@ -202,13 +278,20 @@ internal class PickAnswer(
      */
     private fun GuideValidator.Result.insideWindow(filters: SearchFilters): GuideValidator.Result {
         if (filters.publishedAfter == null && filters.publishedBefore == null) return this
-        val inside = picks.filter { Filtering.apply(listOf(it.candidate.result), SearchFilters(publishedAfter = filters.publishedAfter, publishedBefore = filters.publishedBefore)).isNotEmpty() }
+        val inside = picks.filter {
+            Filtering.apply(
+                listOf(it.candidate.result),
+                SearchFilters(publishedAfter = filters.publishedAfter, publishedBefore = filters.publishedBefore)
+            ).isNotEmpty()
+        }
         val out = picks.size - inside.size
         if (out == 0) return this
-        val outside = (picks - inside.toSet()).map { GuideValidator.RejectedPick(it.candidate, GuideValidator.Rejection.OUTSIDE_WINDOW) }
+        val outside =
+            (picks - inside.toSet()).map { GuideValidator.RejectedPick(it.candidate, GuideValidator.Rejection.OUTSIDE_WINDOW) }
         return copy(
             picks = inside, rejected = rejected + out,
-            rejectedBy = rejectedBy + (GuideValidator.Rejection.OUTSIDE_WINDOW to (rejectedBy[GuideValidator.Rejection.OUTSIDE_WINDOW] ?: 0) + out),
+            rejectedBy = rejectedBy + (GuideValidator.Rejection.OUTSIDE_WINDOW to (rejectedBy[GuideValidator.Rejection.OUTSIDE_WINDOW]
+                ?: 0) + out),
             rejectedPicks = rejectedPicks + outside,
         )
     }
@@ -218,7 +301,14 @@ internal class PickAnswer(
      * then checked against that date instead of being removed for a claim the text cannot show.
      */
     private fun claimsOf(checked: GuideValidator.Result) = checked.picks.map { (c, p) ->
-        val created = c.result.published.value?.let { "\nCreated: ${DateTimeFormatter.ISO_LOCAL_DATE.format(it.atOffset(ZoneOffset.UTC))} (as stated by ${c.result.published.sourceId ?: "its source"})" } ?: ""
-        ReasonClaim(c.key, p.reason, p.quote, c.text + created, checked.checks[c.key].orEmpty().filter { it.status == CheckStatus.CONFIRMED })
+        val created =
+            c.result.published.value?.let { "\nCreated: ${DateTimeFormatter.ISO_LOCAL_DATE.format(it.atOffset(ZoneOffset.UTC))} (as stated by ${c.result.published.sourceId ?: "its source"})" }
+                ?: ""
+        ReasonClaim(
+            c.key,
+            p.reason,
+            p.quote,
+            c.text + created,
+            checked.checks[c.key].orEmpty().filter { it.status == CheckStatus.CONFIRMED })
     }
 }

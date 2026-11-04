@@ -4,10 +4,10 @@ import ai.helper2.guide.Candidate
 import ai.helper2.guide.Drops
 import ai.helper2.guide.GuideAnswerCache
 import ai.helper2.guide.GuideIntent
-import ai.helper2.guide.MemoryAnswerStore
 import ai.helper2.guide.GuideModel
 import ai.helper2.guide.GuideProposal
 import ai.helper2.guide.GuideSearchPlan
+import ai.helper2.guide.MemoryAnswerStore
 import ai.helper2.guide.MemoryQuestionIndex
 import ai.helper2.guide.ProposedPick
 import ai.helper2.guide.ReasonClaim
@@ -59,8 +59,10 @@ class AskGuideSimilarTest {
         override fun search(query: SourceQuery): List<SourceHit> {
             webCalls.incrementAndGet()
             return listOf(
-                hit("tavily", "https://example.org/pdf-chat", title = "pdf-chat", type = ResourceType.PRODUCT,
-                    description = "Chat with your PDF files, free and open source"),
+                hit(
+                    "tavily", "https://example.org/pdf-chat", title = "pdf-chat", type = ResourceType.PRODUCT,
+                    description = "Chat with your PDF files, free and open source"
+                ),
             )
         }
     }
@@ -73,6 +75,7 @@ class AskGuideSimilarTest {
             own?.let { counts[it] = used + 1 }
             return Result(Verdict.TAKEN, used + 1)
         }
+
         override fun giveBack(counter: Counter) {}
         override fun used(counter: Counter) = counts[counter] ?: 0
         override fun delete(keys: Collection<String>) {}
@@ -83,8 +86,10 @@ class AskGuideSimilarTest {
         override fun put(key: String, value: CachedHits, ttl: Duration) {}
     }
 
-    private val search = SearchResources(listOf(web), noCache, ResultObserver { emptyMap() }, executor, clock,
-        quota = WebSearchQuota(counter, QuotaKeys("test-secret", clock)))
+    private val search = SearchResources(
+        listOf(web), noCache, ResultObserver { emptyMap() }, executor, clock,
+        quota = WebSearchQuota(counter, QuotaKeys("test-secret", clock))
+    )
 
     /** Plans "free" only when the question says it, as the grounding of ADR 0032 keeps it; counts every call. */
     private class Model : GuideModel {
@@ -95,12 +100,21 @@ class AskGuideSimilarTest {
         override val reasoningModel = "reasoning"
         override fun plan(request: String, path: AudiencePath?): GuideSearchPlan {
             plans++
-            return GuideSearchPlan("pdf chat", listOfNotNull("free".takeIf { "free" in request.lowercase() }, "paid".takeIf { "paid" in request.lowercase() }))
+            return GuideSearchPlan(
+                "pdf chat",
+                listOfNotNull("free".takeIf { "free" in request.lowercase() }, "paid".takeIf { "paid" in request.lowercase() })
+            )
         }
+
         override fun choose(request: String, candidates: List<Candidate>, constraints: List<String>): GuideProposal {
             chooses++
-            return GuideProposal(candidates.map { ProposedPick(it.key, "Chats with PDFs.", it.result.description!!) }, null, emptyList())
+            return GuideProposal(
+                candidates.map { ProposedPick(it.key, "Chats with PDFs.", it.result.description!!) },
+                null,
+                emptyList()
+            )
         }
+
         override fun verifyReasons(request: String, claims: List<ReasonClaim>) = claims.associate { it.key to true }
     }
 
@@ -118,7 +132,14 @@ class AskGuideSimilarTest {
     private val meters = SimpleMeterRegistry()
 
     private fun guide(similar: SimilarQuestions? = SimilarQuestions(0.95, "embed", embedder, index, clock)) =
-        AskGuide(search, model, clock, cache = GuideAnswerCache(Duration.ofHours(24), clock, MemoryAnswerStore()), meters = meters, similar = similar)
+        AskGuide(
+            search,
+            model,
+            clock,
+            cache = GuideAnswerCache(Duration.ofHours(24), clock, MemoryAnswerStore()),
+            meters = meters,
+            similar = similar
+        )
 
     private fun cache(result: String) = meters.counter("helper2.guide.cache", "result", result).count()
     private fun questions(outcome: String) = meters.counter("helper2.guide.questions", "outcome", outcome).count()
@@ -133,7 +154,10 @@ class AskGuideSimilarTest {
         assertEquals(2, model.plans, "the paraphrase is planned, to know how it is read")
         assertEquals(1, model.chooses, "but not answered again")
         assertEquals(1, webCalls.get(), "and not searched again")
-        assertEquals(first.copy(webSearches = null, searchQuery = "", trail = first.trail.withoutQueries()), reused.copy(webSearches = null))
+        assertEquals(
+            first.copy(webSearches = null, searchQuery = "", trail = first.trail.withoutQueries()),
+            reused.copy(webSearches = null)
+        )
         assertEquals(first.generatedAt, reused.generatedAt, "the page states the age of the answer it shows")
         assertEquals(listOf(1.0, 1.0, 0.0), listOf(cache("miss"), cache("similar"), cache("exact")))
         assertEquals(listOf(1.0, 1.0), listOf(questions("answered"), questions("cached")))
@@ -163,17 +187,28 @@ class AskGuideSimilarTest {
             override val reasoningModel = "reasoning"
             override fun plan(request: String, path: AudiencePath?) =
                 GuideSearchPlan("pdf chat", intent = GuideIntent.ALTERNATIVES, subjects = listOf("Frobnicator"))
+
             override fun choose(request: String, candidates: List<Candidate>, constraints: List<String>) =
-                GuideProposal(candidates.map { ProposedPick(it.key, "Chats with PDFs.", it.result.description!!) }, null, emptyList())
+                GuideProposal(
+                    candidates.map { ProposedPick(it.key, "Chats with PDFs.", it.result.description!!) },
+                    null,
+                    emptyList()
+                )
+
             override fun verifyReasons(request: String, claims: List<ReasonClaim>) = claims.associate { it.key to true }
         }
-        val embedder = TableEmbedder(mapOf(
-            "alternatives to frobnicator" to floatArrayOf(1f, 0f, 0f), // the cache embeds the normalized question
-            "frobnicator alternatives" to floatArrayOf(0.96f, 0.28f, 0f),
-        ))
-        val guide = AskGuide(search, alternatives, clock, cache = GuideAnswerCache(Duration.ofHours(24), clock, MemoryAnswerStore()),
-            meters = meters, similar = SimilarQuestions(0.95, "embed", embedder, MemoryQuestionIndex(), clock))
-        val first = guide.ask("alternatives to Frobnicator", null).notices.single { it.code == NoticeCode.GUIDE_SUBJECT_NOT_FOUND }
+        val embedder = TableEmbedder(
+            mapOf(
+                "alternatives to frobnicator" to floatArrayOf(1f, 0f, 0f), // the cache embeds the normalized question
+                "frobnicator alternatives" to floatArrayOf(0.96f, 0.28f, 0f),
+            )
+        )
+        val guide = AskGuide(
+            search, alternatives, clock, cache = GuideAnswerCache(Duration.ofHours(24), clock, MemoryAnswerStore()),
+            meters = meters, similar = SimilarQuestions(0.95, "embed", embedder, MemoryQuestionIndex(), clock)
+        )
+        val first =
+            guide.ask("alternatives to Frobnicator", null).notices.single { it.code == NoticeCode.GUIDE_SUBJECT_NOT_FOUND }
 
         val reused = guide.ask("Frobnicator alternatives", null).notices.single { it.code == NoticeCode.GUIDE_SUBJECT_NOT_FOUND }
 
@@ -191,23 +226,39 @@ class AskGuideSimilarTest {
             override val reasoningModel = "reasoning"
             override fun plan(request: String, path: AudiencePath?) =
                 GuideSearchPlan("riassunto pdf", intent = GuideIntent.ALTERNATIVES, subjects = listOf("Frobnicator"))
+
             override fun choose(request: String, candidates: List<Candidate>, constraints: List<String>) =
-                GuideProposal(candidates.map { ProposedPick(it.key, "Chats with PDFs.", it.result.description!!) }, null, emptyList())
+                GuideProposal(
+                    candidates.map { ProposedPick(it.key, "Chats with PDFs.", it.result.description!!) },
+                    null,
+                    emptyList()
+                )
+
             override fun verifyReasons(request: String, claims: List<ReasonClaim>) = claims.associate { it.key to true }
         }
-        val embedder = TableEmbedder(mapOf(
-            "alternatives to frobnicator" to floatArrayOf(1f, 0f, 0f),
-            "frobnicator alternatives" to floatArrayOf(0.96f, 0.28f, 0f),
-        ))
-        val guide = AskGuide(search, alternatives, clock, cache = GuideAnswerCache(Duration.ofHours(24), clock, MemoryAnswerStore()),
-            meters = meters, similar = SimilarQuestions(0.95, "embed", embedder, MemoryQuestionIndex(), clock))
+        val embedder = TableEmbedder(
+            mapOf(
+                "alternatives to frobnicator" to floatArrayOf(1f, 0f, 0f),
+                "frobnicator alternatives" to floatArrayOf(0.96f, 0.28f, 0f),
+            )
+        )
+        val guide = AskGuide(
+            search, alternatives, clock, cache = GuideAnswerCache(Duration.ofHours(24), clock, MemoryAnswerStore()),
+            meters = meters, similar = SimilarQuestions(0.95, "embed", embedder, MemoryQuestionIndex(), clock)
+        )
         val first = guide.ask("alternatives to Frobnicator", null)
-        assertTrue(first.search.notices.any { it.code == NoticeCode.QUERY_EXPANDED }, "the planned Italian search gets its English terms")
+        assertTrue(
+            first.search.notices.any { it.code == NoticeCode.QUERY_EXPANDED },
+            "the planned Italian search gets its English terms"
+        )
 
         val reused = guide.ask("Frobnicator alternatives", null)
 
         assertEquals(1.0, cache("similar"))
-        assertTrue(reused.search.notices.none { it.code == NoticeCode.QUERY_EXPANDED }, "the terms came from the other asker's search")
+        assertTrue(
+            reused.search.notices.none { it.code == NoticeCode.QUERY_EXPANDED },
+            "the terms came from the other asker's search"
+        )
     }
 
     @Test
@@ -217,7 +268,10 @@ class AskGuideSimilarTest {
 
         val reused = guide.ask(paraphrase, null, client = "198.51.100.1")
 
-        assertTrue(reused.modelUsed && reused.recommendations.all { it.aiReasoned }, "the AI marking of ADR 0038 comes with the answer")
+        assertTrue(
+            reused.modelUsed && reused.recommendations.all { it.aiReasoned },
+            "the AI marking of ADR 0038 comes with the answer"
+        )
         assertEquals(3, reused.webSearches!!.remaining, "a guest's three web searches, untouched")
         assertEquals(1, webCalls.get())
     }
@@ -278,12 +332,16 @@ class AskGuideSimilarTest {
             override fun plan(request: String, path: AudiencePath?) =
                 GuideSearchPlan("language bindings", subjects = listOf("python", "rust")).also { model.plans++ }
         }
-        val embedder = TableEmbedder(mapOf(
-            "python bindings for rust" to floatArrayOf(1f, 0f),
-            "rust bindings for python" to floatArrayOf(0.99f, 0.141f), // cosine 0.99, as recorded: 0.986
-        ))
-        val guide = AskGuide(search, sameOrder, clock, cache = GuideAnswerCache(Duration.ofHours(24), clock, MemoryAnswerStore()), meters = meters,
-            similar = SimilarQuestions(0.95, "embed", embedder, index, clock))
+        val embedder = TableEmbedder(
+            mapOf(
+                "python bindings for rust" to floatArrayOf(1f, 0f),
+                "rust bindings for python" to floatArrayOf(0.99f, 0.141f), // cosine 0.99, as recorded: 0.986
+            )
+        )
+        val guide = AskGuide(
+            search, sameOrder, clock, cache = GuideAnswerCache(Duration.ofHours(24), clock, MemoryAnswerStore()), meters = meters,
+            similar = SimilarQuestions(0.95, "embed", embedder, index, clock)
+        )
         guide.ask("python bindings for rust", null)
 
         guide.ask("rust bindings for python", null)

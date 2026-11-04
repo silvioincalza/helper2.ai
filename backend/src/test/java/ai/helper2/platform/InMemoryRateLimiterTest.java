@@ -1,11 +1,12 @@
 package ai.helper2.platform;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.testing.MovableClock;
+import org.junit.jupiter.api.Test;
+
 import java.time.Duration;
 import java.time.Instant;
-import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class InMemoryRateLimiterTest {
 

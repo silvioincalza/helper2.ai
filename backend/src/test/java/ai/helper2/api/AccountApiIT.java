@@ -1,5 +1,16 @@
 package ai.helper2.api;
 
+import ai.helper2.platform.quota.QuotaKeys;
+import ai.helper2.shared.CanonicalUrl;
+import ai.helper2.shared.ResourceId;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.OAuth2LoginRequestPostProcessor;
+
+import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oauth2Login;
@@ -10,30 +21,20 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import ai.helper2.platform.quota.QuotaKeys;
-import ai.helper2.shared.CanonicalUrl;
-import ai.helper2.shared.ResourceId;
-import java.util.UUID;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
-import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.OAuth2LoginRequestPostProcessor;
-
-/** A signed-in user's bookmarks (one use case per action) and deleting the account. */
+/**
+ * A signed-in user's bookmarks (one use case per action) and deleting the account.
+ */
 class AccountApiIT extends ApiTestBase {
-
-    @Autowired
-    JdbcClient jdbc;
-
-    @Autowired
-    QuotaKeys quotaKeys;
 
     final String subject = "user-" + UUID.randomUUID();
     final OAuth2LoginRequestPostProcessor user = oauth2Login().attributes(a -> {
         a.put("sub", subject);
         a.put("name", "Tester");
     });
+    @Autowired
+    JdbcClient jdbc;
+    @Autowired
+    QuotaKeys quotaKeys;
 
     static String bookmark(UUID id, String url) {
         return "{\"resourceId\":\"" + id + "\",\"title\":\"T\",\"url\":\"" + url + "\"}";
@@ -87,7 +88,7 @@ class AccountApiIT extends ApiTestBase {
             .andExpect(jsonPath("$.length()").value(1));
         String invalid = bookmark(UUID.randomUUID(), "ftp://example.com");
         mvc.perform(post("/api/v1/me/bookmarks").with(user).with(csrf()).contentType(MediaType.APPLICATION_JSON)
-            .content("[" + bookmark(UUID.randomUUID(), "https://example.com/two") + "," + invalid + "]"))
+                .content("[" + bookmark(UUID.randomUUID(), "https://example.com/two") + "," + invalid + "]"))
             .andExpect(status().isBadRequest());
         mvc.perform(get("/api/v1/me/bookmarks").with(user)).andExpect(jsonPath("$.length()").value(1));
     }

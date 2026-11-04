@@ -6,8 +6,10 @@ import ai.helper2.shared.ResourceType
 enum class CompatibilityBasis {
     /** A source listed this tag, topic or keyword on the resource. */
     TAG,
+
     /** The resource type implies it, by protocol (an MCP server works with MCP clients). */
     TYPE,
+
     /** The published file format implies it (GGUF weights run on llama.cpp and Ollama). */
     FORMAT,
 }

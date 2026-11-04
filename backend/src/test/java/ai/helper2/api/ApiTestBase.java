@@ -11,15 +11,6 @@ import ai.helper2.shared.DateFact;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.SourceMode;
 import ai.helper2.shared.ValueOrigin;
-import java.net.URI;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -29,6 +20,16 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.net.URI;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 /**
  * Full Spring context with real PostgreSQL + Redis (Testcontainers). Every real connector is
@@ -65,19 +66,6 @@ abstract class ApiTestBase {
     @Autowired
     StringRedisTemplate rateLimitRedis;
 
-    @BeforeEach
-    void resetFake() {
-        FAKE.set(q -> List.of());
-        FAKE_CALLS.set(0);
-        // Rate-limit counts are in the Redis that every test context shares: each test starts from zero.
-        rateLimitRedis.delete(rateLimitRedis.keys("h2:v1:rate:*"));
-    }
-
-    @FunctionalInterface
-    interface Check {
-        void run() throws Exception;
-    }
-
     /**
      * The catalog records what a search saw in the background (ResourceCatalog): checks that read it wait
      * until [check] passes, at most 5 s.
@@ -105,6 +93,19 @@ abstract class ApiTestBase {
             license == null ? null : Boolean.TRUE,
             DateFact.fromSource(published == null ? null : Instant.parse(published), "fake-live", now),
             DateFact.fromSource(updated == null ? null : Instant.parse(updated), "fake-live", now), List.of(), now, rank);
+    }
+
+    @BeforeEach
+    void resetFake() {
+        FAKE.set(q -> List.of());
+        FAKE_CALLS.set(0);
+        // Rate-limit counts are in the Redis that every test context shares: each test starts from zero.
+        rateLimitRedis.delete(rateLimitRedis.keys("h2:v1:rate:*"));
+    }
+
+    @FunctionalInterface
+    interface Check {
+        void run() throws Exception;
     }
 
     @TestConfiguration(proxyBeanMethods = false)

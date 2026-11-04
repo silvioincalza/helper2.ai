@@ -1,13 +1,16 @@
 package ai.helper2.platform.llm;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import org.junit.jupiter.api.Test;
 
-/** Without a shared store the budgets still list themselves, and their counts are unknown, not guessed. */
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * Without a shared store the budgets still list themselves, and their counts are unknown, not guessed.
+ */
 class BudgetLedgerTest {
 
     final Clock clock = Clock.fixed(Instant.parse("2026-11-04T10:00:00Z"), ZoneOffset.UTC);

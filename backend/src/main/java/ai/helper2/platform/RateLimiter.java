@@ -6,6 +6,8 @@ package ai.helper2.platform;
  */
 public interface RateLimiter {
 
-    /** @return seconds to wait (at least 1), or 0 if allowed. */
+    /**
+     * @return seconds to wait (at least 1), or 0 if allowed.
+     */
     long acquire(String clientAddress);
 }

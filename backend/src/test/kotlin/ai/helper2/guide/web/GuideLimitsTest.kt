@@ -9,7 +9,6 @@ import ai.helper2.platform.SignedInUser
 import ai.helper2.platform.llm.LlmSettings
 import ai.helper2.platform.resilience.Resilience4jPolicies
 import ai.helper2.search.CachedHits
-import ai.helper2.search.usecase.SearchResources
 import ai.helper2.search.NOW
 import ai.helper2.search.ResultObserver
 import ai.helper2.search.SearchCache
@@ -18,6 +17,7 @@ import ai.helper2.search.SourceHit
 import ai.helper2.search.SourceQuery
 import ai.helper2.search.descriptor
 import ai.helper2.search.hit
+import ai.helper2.search.usecase.SearchResources
 import ai.helper2.shared.AudiencePath
 import ai.helper2.testing.MdcTraceIds
 import io.github.resilience4j.bulkhead.BulkheadConfig
@@ -26,6 +26,13 @@ import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry
 import io.github.resilience4j.retry.RetryRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.micrometer.observation.Observation
+import org.slf4j.MDC
+import org.springframework.http.MediaType
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.request
+import org.springframework.test.web.servlet.setup.MockMvcBuilders
 import java.time.Clock
 import java.time.Duration
 import java.time.ZoneOffset
@@ -36,13 +43,6 @@ import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import org.slf4j.MDC
-import org.springframework.http.MediaType
-import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.request
-import org.springframework.test.web.servlet.setup.MockMvcBuilders
 
 /**
  * The guide's bounds: concurrent questions (the `guide` bulkhead) and a deadline per question. The full pipeline
@@ -65,7 +65,14 @@ class GuideLimitsTest {
     private val source = object : SearchSource {
         override val descriptor = descriptor("hf")
         override fun search(query: SourceQuery): List<SourceHit> =
-            listOf(hit("hf", "https://huggingface.co/acme/whisper-small", title = "whisper-small", description = "Speech recognition model"))
+            listOf(
+                hit(
+                    "hf",
+                    "https://huggingface.co/acme/whisper-small",
+                    title = "whisper-small",
+                    description = "Speech recognition model"
+                )
+            )
     }
 
     private val noCache = object : SearchCache {
@@ -88,14 +95,23 @@ class GuideLimitsTest {
     }
 
     private fun mvc(maxConcurrent: Int, deadline: Duration): MockMvc {
-        val guide = AskGuide(SearchResources(listOf(source), noCache, ResultObserver { emptyMap() }, executor, clock), stuck, clock)
+        val guide =
+            AskGuide(SearchResources(listOf(source), noCache, ResultObserver { emptyMap() }, executor, clock), stuck, clock)
         val mapper = GuideDtoMapper(LlmSettings("fake", "", "fast", "reasoning"))
-        val bulkheads = BulkheadRegistry.of(BulkheadConfig.custom().maxConcurrentCalls(maxConcurrent).maxWaitDuration(Duration.ZERO).build())
+        val bulkheads =
+            BulkheadRegistry.of(BulkheadConfig.custom().maxConcurrentCalls(maxConcurrent).maxWaitDuration(Duration.ZERO).build())
         bulkheads.bulkhead("guide")
         val policies = Resilience4jPolicies(CircuitBreakerRegistry.ofDefaults(), bulkheads, RetryRegistry.ofDefaults())
         val shared = GuideLimits(policies, deadline).also { limits += it }
         return MockMvcBuilders.standaloneSetup(
-            GuideStreamController(guide, mapper, shared, SignedInUser.ANONYMOUS, SimpleMeterRegistry(), Duration.ofMillis(50)).also { streams += it },
+            GuideStreamController(
+                guide,
+                mapper,
+                shared,
+                SignedInUser.ANONYMOUS,
+                SimpleMeterRegistry(),
+                Duration.ofMillis(50)
+            ).also { streams += it },
         ).build()
     }
 
@@ -157,8 +173,10 @@ class GuideLimitsTest {
     fun `the deadline callback logs with the trace id of the question's request`() {
         val bulkheads = BulkheadRegistry.of(BulkheadConfig.custom().maxConcurrentCalls(1).maxWaitDuration(Duration.ZERO).build())
         bulkheads.bulkhead("guide")
-        val shared = GuideLimits(Resilience4jPolicies(CircuitBreakerRegistry.ofDefaults(), bulkheads, RetryRegistry.ofDefaults()),
-            Duration.ofMillis(100)).also { limits += it }
+        val shared = GuideLimits(
+            Resilience4jPolicies(CircuitBreakerRegistry.ofDefaults(), bulkheads, RetryRegistry.ofDefaults()),
+            Duration.ofMillis(100)
+        ).also { limits += it }
         val request = Observation.start("http.server.requests", MdcTraceIds.registry())
         val seen = CompletableFuture<String?>()
 

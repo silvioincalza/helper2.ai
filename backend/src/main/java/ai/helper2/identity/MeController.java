@@ -15,10 +15,6 @@ import ai.helper2.identity.usecase.RemoveBookmark;
 import ai.helper2.platform.BadRequestException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,7 +28,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-/** /api/v1/me: maps requests to the identity use cases, one per action. */
+import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * /api/v1/me: maps requests to the identity use cases, one per action.
+ */
 @RestController
 @RequestMapping("/api/v1")
 class MeController implements MeApi {
@@ -60,6 +63,15 @@ class MeController implements MeApi {
         this.registrations = registrations;
         this.request = request;
         this.response = response;
+    }
+
+    private static Bookmark bookmark(BookmarkRequestDto r) {
+        return new Bookmark(r.getResourceId(), r.getTitle(), r.getUrl(), r.getType() == null ? null : r.getType().getValue(), null);
+    }
+
+    private static BookmarkDto dto(Bookmark b) {
+        return new BookmarkDto(b.resourceId(), b.title(), b.url(), b.savedAt().atOffset(ZoneOffset.UTC))
+            .type(b.type() == null ? null : ResourceTypeDto.fromValue(b.type()));
     }
 
     @Override
@@ -127,14 +139,5 @@ class MeController implements MeApi {
             }
         }
         return out;
-    }
-
-    private static Bookmark bookmark(BookmarkRequestDto r) {
-        return new Bookmark(r.getResourceId(), r.getTitle(), r.getUrl(), r.getType() == null ? null : r.getType().getValue(), null);
-    }
-
-    private static BookmarkDto dto(Bookmark b) {
-        return new BookmarkDto(b.resourceId(), b.title(), b.url(), b.savedAt().atOffset(ZoneOffset.UTC))
-            .type(b.type() == null ? null : ResourceTypeDto.fromValue(b.type()));
     }
 }

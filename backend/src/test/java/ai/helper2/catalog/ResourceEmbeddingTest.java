@@ -1,21 +1,12 @@
 package ai.helper2.catalog;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.TestcontainersConfiguration;
 import ai.helper2.catalog.internal.EmbeddingIndexer;
 import ai.helper2.catalog.internal.ResourceStore;
 import ai.helper2.catalog.internal.ResourceStore.DataOrigin;
 import ai.helper2.catalog.internal.ResourceStore.EmbeddingTask;
 import ai.helper2.catalog.internal.ResourceStore.ResourceRow;
-import ai.helper2.catalog.Embedder.EmbeddingFailure;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.time.Clock;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,22 +15,40 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.transaction.annotation.Transactional;
 
-/** resource_embedding against real Postgres + pgvector: the indexer loop and nearest-neighbour search. */
+import java.time.Clock;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * resource_embedding against real Postgres + pgvector: the indexer loop and nearest-neighbour search.
+ */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 class ResourceEmbeddingTest {
 
     static final int DIM = 1024;
-
-    @Autowired
-    JdbcClient jdbc;
-
-    @Autowired
-    ResourceStore store;
-
     final String run = UUID.randomUUID().toString();
     final String model = "test-model-" + run;
     final List<UUID> created = new ArrayList<>();
+    @Autowired
+    JdbcClient jdbc;
+    @Autowired
+    ResourceStore store;
+
+    /**
+     * A unit vector on axis [axis], leaning [lean] towards axis+1: distances are known exactly.
+     */
+    static float[] axis(int axis, float lean) {
+        float[] v = new float[DIM];
+        v[axis] = 1;
+        v[axis + 1] = lean;
+        return v;
+    }
 
     @AfterEach
     void clean() {
@@ -61,35 +70,6 @@ class ResourceEmbeddingTest {
             .param("origin", dataOrigin).update();
         created.add(id);
         return id;
-    }
-
-    /** A unit vector on axis [axis], leaning [lean] towards axis+1: distances are known exactly. */
-    static float[] axis(int axis, float lean) {
-        float[] v = new float[DIM];
-        v[axis] = 1;
-        v[axis + 1] = lean;
-        return v;
-    }
-
-    /** Embeds a text by its first word: "a…" → axis 0, "b…" → axis 2, anything else → axis 4. */
-    class FakeEmbedder implements Embedder {
-        final List<List<String>> batches = new ArrayList<>();
-
-        @Override
-        public String model() {
-            return model;
-        }
-
-        @Override
-        public int dimensions() {
-            return DIM;
-        }
-
-        @Override
-        public List<float[]> embed(List<String> texts, Kind kind) {
-            batches.add(texts);
-            return texts.stream().map(t -> t.startsWith("a") ? axis(0, 0) : t.startsWith("b") ? axis(2, 0) : axis(4, 0)).toList();
-        }
     }
 
     private List<EmbeddingTask> pendingOfThisRun() {
@@ -222,5 +202,28 @@ class ResourceEmbeddingTest {
 
         assertThat(jdbc.sql("SELECT count(*) FROM resource_embedding WHERE model = :m").param("m", model).query(Long.class).single())
             .isZero();
+    }
+
+    /**
+     * Embeds a text by its first word: "a…" → axis 0, "b…" → axis 2, anything else → axis 4.
+     */
+    class FakeEmbedder implements Embedder {
+        final List<List<String>> batches = new ArrayList<>();
+
+        @Override
+        public String model() {
+            return model;
+        }
+
+        @Override
+        public int dimensions() {
+            return DIM;
+        }
+
+        @Override
+        public List<float[]> embed(List<String> texts, Kind kind) {
+            batches.add(texts);
+            return texts.stream().map(t -> t.startsWith("a") ? axis(0, 0) : t.startsWith("b") ? axis(2, 0) : axis(4, 0)).toList();
+        }
     }
 }

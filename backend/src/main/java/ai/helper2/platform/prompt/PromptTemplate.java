@@ -36,7 +36,9 @@ public final class PromptTemplate {
         this.text = text;
     }
 
-    /** Reads {@code prompts/<name>}, e.g. {@code fromClasspath("guide/plan.txt")}. */
+    /**
+     * Reads {@code prompts/<name>}, e.g. {@code fromClasspath("guide/plan.txt")}.
+     */
     public static PromptTemplate fromClasspath(String name) {
         String path = ROOT + name;
         try (InputStream in = PromptTemplate.class.getClassLoader().getResourceAsStream(path)) {
@@ -53,7 +55,9 @@ public final class PromptTemplate {
         return new PromptTemplate(name, text);
     }
 
-    /** For a prompt without placeholders. */
+    /**
+     * For a prompt without placeholders.
+     */
     public String render() {
         return render(Map.of());
     }

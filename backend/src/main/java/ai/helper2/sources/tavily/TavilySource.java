@@ -14,6 +14,9 @@ import ai.helper2.shared.WebPageTitle;
 import ai.helper2.sources.support.Classification;
 import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.SourceSettings;
+import org.springframework.web.client.RestClient;
+import tools.jackson.databind.JsonNode;
+
 import java.net.URI;
 import java.time.Clock;
 import java.time.Duration;
@@ -27,8 +30,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
-import org.springframework.web.client.RestClient;
-import tools.jackson.databind.JsonNode;
 
 /**
  * Tavily web search (topic "news") for AI news, articles and events. Docs:
@@ -58,26 +59,6 @@ public class TavilySource implements SearchSource {
             settings.timeout(), Duration.ZERO, settings.enabled() && settings.hasToken(), 48, true, true, true, true, true);
     }
 
-    @Override
-    public SourceDescriptor getDescriptor() {
-        return descriptor;
-    }
-
-    @Override
-    public List<SourceHit> search(SourceQuery query) {
-        Map<String, Object> body = new LinkedHashMap<>(Map.of(
-            "query", queryText(query),
-            "topic", topic(query),
-            "search_depth", "basic",
-            "max_results", Math.min(query.getLimit(), 20)));
-        if (query.getPublishedAfter() != null) {
-            // Tavily's documented window: results published on or after this day (YYYY-MM-DD).
-            body.put("start_date", query.getPublishedAfter().toString());
-        }
-        JsonNode root = HttpClients.getJson(() -> http.post().uri("/search").body(body).retrieve().body(String.class), clock);
-        return HttpClients.hits("tavily", root.path("results"), clock.instant(), (item, now, rank) -> toHit(item, "tavily", now, rank));
-    }
-
     /**
      * News, except for a guide question without a period ("what is RAG?"): there the general web finds explainers and
      * product pages, which news search does not. Non-AI pages are still dropped by the gate in {@link #toHit}.
@@ -99,7 +80,9 @@ public class TavilySource implements SearchSource {
         return text + " artificial intelligence";
     }
 
-    /** Maps one Tavily result; shared with the Scout's Tavily collector. null when unusable or not about AI. */
+    /**
+     * Maps one Tavily result; shared with the Scout's Tavily collector. null when unusable or not about AI.
+     */
     static SourceHit toHit(JsonNode r, String sourceId, Instant now, int position) {
         String url = HttpClients.text(r, "url");
         String title = HttpClients.text(r, "title");
@@ -120,12 +103,16 @@ public class TavilySource implements SearchSource {
             DateFact.unknown(), List.of(), now, position);
     }
 
-    /** At most 400 characters; null stays null. */
+    /**
+     * At most 400 characters; null stays null.
+     */
     static String snippet(String text) {
         return text == null ? null : text.length() > 400 ? text.substring(0, 397) + "…" : text;
     }
 
-    /** ISO-8601 or RFC 1123 ("Mon, 20 Oct 2026 14:00:00 GMT"); anything else is unknown. */
+    /**
+     * ISO-8601 or RFC 1123 ("Mon, 20 Oct 2026 14:00:00 GMT"); anything else is unknown.
+     */
     static Instant date(String s) {
         if (s == null) {
             return null;
@@ -140,5 +127,25 @@ public class TavilySource implements SearchSource {
         } catch (RuntimeException ignored) {
             return null;
         }
+    }
+
+    @Override
+    public SourceDescriptor getDescriptor() {
+        return descriptor;
+    }
+
+    @Override
+    public List<SourceHit> search(SourceQuery query) {
+        Map<String, Object> body = new LinkedHashMap<>(Map.of(
+            "query", queryText(query),
+            "topic", topic(query),
+            "search_depth", "basic",
+            "max_results", Math.min(query.getLimit(), 20)));
+        if (query.getPublishedAfter() != null) {
+            // Tavily's documented window: results published on or after this day (YYYY-MM-DD).
+            body.put("start_date", query.getPublishedAfter().toString());
+        }
+        JsonNode root = HttpClients.getJson(() -> http.post().uri("/search").body(body).retrieve().body(String.class), clock);
+        return HttpClients.hits("tavily", root.path("results"), clock.instant(), (item, now, rank) -> toHit(item, "tavily", now, rank));
     }
 }

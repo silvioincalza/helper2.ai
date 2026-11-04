@@ -13,7 +13,7 @@ import java.net.URI
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
-import java.util.UUID
+import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -22,9 +22,11 @@ class EnrichResourceTest {
 
     private val clock = Clock.fixed(NOW, ZoneOffset.UTC)
     private val material = EnrichmentMaterial(
-        EnrichmentInput("x", listOf(Material(UUID.randomUUID(), URI("https://x.example"), NOW, "text"))), "source-text-hash")
+        EnrichmentInput("x", listOf(Material(UUID.randomUUID(), URI("https://x.example"), NOW, "text"))), "source-text-hash"
+    )
 
-    private class CountingModel(override val model: String = "m", override val promptVersion: String = "enrich-v3") : EnrichmentModel {
+    private class CountingModel(override val model: String = "m", override val promptVersion: String = "enrich-v3") :
+        EnrichmentModel {
         override val provider = "fake"
         var calls = 0
         override fun propose(input: EnrichmentInput) = EnrichmentProposal().also { calls++ }
@@ -36,8 +38,10 @@ class EnrichResourceTest {
         override fun load(resourceId: UUID) = material
         override fun lastFingerprint(resourceId: UUID) = last
         override fun resourcesTitled(titles: Collection<String>, resourceId: UUID) = emptyMap<String, UUID>()
-        override fun save(resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: Instant,
-                          result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?) {
+        override fun save(
+            resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: Instant,
+            result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?
+        ) {
             saved += inputFingerprint
             last = inputFingerprint
         }

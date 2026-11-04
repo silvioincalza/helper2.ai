@@ -1,18 +1,5 @@
 package ai.helper2.platform;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.forwardedUrl;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,7 +16,23 @@ import org.springframework.web.context.support.AnnotationConfigWebApplicationCon
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 
-/** Every client route loads the SPA on a direct visit or a refresh; server paths and missing files stay 404. */
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.forwardedUrl;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+/**
+ * Every client route loads the SPA on a direct visit or a refresh; server paths and missing files stay 404.
+ */
 class SinglePageAppTest {
 
     private static final Pattern ROUTE = Pattern.compile("path: '([^'*]+)'");
@@ -40,26 +43,9 @@ class SinglePageAppTest {
     private AnnotationConfigWebApplicationContext context;
     private MockMvc mvc;
 
-    @EnableWebMvc
-    @Configuration(proxyBeanMethods = false)
-    static class Mvc {
-        @Bean
-        InternalResourceViewResolver views() {
-            return new InternalResourceViewResolver();
-        }
-
-        @Bean
-        Api api() {
-            return new Api();
-        }
-    }
-
-    @RestController
-    static class Api {
-        @GetMapping("/api/v1/ping")
-        String ping() {
-            return "pong";
-        }
+    private static List<String> frontendRoutes() throws IOException {
+        String routes = Files.readString(Path.of("../frontend/src/routes.tsx"));
+        return ROUTE.matcher(routes).results().map(m -> m.group(1)).toList();
     }
 
     @BeforeEach
@@ -149,8 +135,25 @@ class SinglePageAppTest {
         assertThat(SinglePageApp.isClientRoute("assets/app.js")).isFalse();
     }
 
-    private static List<String> frontendRoutes() throws IOException {
-        String routes = Files.readString(Path.of("../frontend/src/routes.tsx"));
-        return ROUTE.matcher(routes).results().map(m -> m.group(1)).toList();
+    @EnableWebMvc
+    @Configuration(proxyBeanMethods = false)
+    static class Mvc {
+        @Bean
+        InternalResourceViewResolver views() {
+            return new InternalResourceViewResolver();
+        }
+
+        @Bean
+        Api api() {
+            return new Api();
+        }
+    }
+
+    @RestController
+    static class Api {
+        @GetMapping("/api/v1/ping")
+        String ping() {
+            return "pong";
+        }
     }
 }

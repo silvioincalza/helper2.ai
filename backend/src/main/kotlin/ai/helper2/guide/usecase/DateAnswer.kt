@@ -35,7 +35,13 @@ internal class DateAnswer(private val steps: GuideSteps, private val maxCandidat
         val subject = r.subjects.firstOrNull()
         val text = subject ?: IntentRules.subjectWords(r.query).ifBlank { "AI" }
         val request = if (r.aboutEvent) {
-            SearchRequest(text = text, path = q.path, filters = SearchFilters(types = EVENTS), size = maxCandidates, webQuery = r.webQuery)
+            SearchRequest(
+                text = text,
+                path = q.path,
+                filters = SearchFilters(types = EVENTS),
+                size = maxCandidates,
+                webQuery = r.webQuery
+            )
         } else {
             SearchRequest(text = text, path = q.path, size = maxCandidates)
         }
@@ -61,8 +67,16 @@ internal class DateAnswer(private val steps: GuideSteps, private val maxCandidat
             .take(MAX_EVENTS)
         if (events.isNotEmpty()) {
             return GuideAnswer(
-                GuideStatus.OK, text, events.map { Recommendation(it, eventReason(it), (it.description ?: it.title).take(160), aiReasoned = false) },
-                null, !r.modelFailed, outcome.results.size, 0, outcome, clock.instant(), r.constraints,
+                GuideStatus.OK,
+                text,
+                events.map { Recommendation(it, eventReason(it), (it.description ?: it.title).take(160), aiReasoned = false) },
+                null,
+                !r.modelFailed,
+                outcome.results.size,
+                0,
+                outcome,
+                clock.instant(),
+                r.constraints,
             )
         }
         val own = subject?.let { name -> outcome.results.firstOrNull { isSubject(it, name) && it.type != ResourceType.EVENT } }
@@ -77,10 +91,36 @@ internal class DateAnswer(private val steps: GuideSteps, private val maxCandidat
             )
         }
         if (outcome.results.isEmpty()) {
-            return GuideAnswer(GuideStatus.NO_CANDIDATES, text, emptyList(), null, !r.modelFailed, 0, 0, outcome, clock.instant(), r.constraints)
+            return GuideAnswer(
+                GuideStatus.NO_CANDIDATES,
+                text,
+                emptyList(),
+                null,
+                !r.modelFailed,
+                0,
+                0,
+                outcome,
+                clock.instant(),
+                r.constraints
+            )
         }
-        return degraded(clock, GuideStatus.PARTIAL, text, outcome.results.mapIndexed { i, res -> Candidate("c${i + 1}", res) }, outcome, 0, !r.modelFailed)
-            .withNotices(listOf(Notice(NoticeCode.GUIDE_SUBJECT_NOT_FOUND, "No date found in our sources; showing the closest search results.")))
+        return degraded(
+            clock,
+            GuideStatus.PARTIAL,
+            text,
+            outcome.results.mapIndexed { i, res -> Candidate("c${i + 1}", res) },
+            outcome,
+            0,
+            !r.modelFailed
+        )
+            .withNotices(
+                listOf(
+                    Notice(
+                        NoticeCode.GUIDE_SUBJECT_NOT_FOUND,
+                        "No date found in our sources; showing the closest search results."
+                    )
+                )
+            )
     }
 
     private fun eventReason(e: MergedResult): String {

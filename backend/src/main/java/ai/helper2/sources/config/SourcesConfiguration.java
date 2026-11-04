@@ -28,9 +28,6 @@ import ai.helper2.sources.tavily.TavilySource;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
-import java.time.Clock;
-import java.time.Duration;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ChatModel;
@@ -42,6 +39,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.web.client.RestClient;
 
+import java.time.Clock;
+import java.time.Duration;
+import java.util.Map;
+
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties({SourcesConfiguration.SourcesProperties.class, CollectorProperties.HfTrending.class,
     CollectorProperties.TavilyScout.class, CollectorProperties.Courses.class, CollectorProperties.GitHubAwesome.class,
@@ -50,20 +51,6 @@ import org.springframework.web.client.RestClient;
 class SourcesConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(SourcesConfiguration.class);
-
-    @ConfigurationProperties("helper2")
-    record SourcesProperties(Map<String, SourceSettings> sources) {
-        SourceSettings get(String key) {
-            SourceSettings s = sources == null ? null : sources.get(key);
-            if (s == null) {
-                throw new IllegalStateException("missing helper2.sources." + key);
-            }
-            Duration timeout = s.timeout() == null ? Duration.ofSeconds(2) : s.timeout();
-            return new SourceSettings(s.enabled(), s.baseUrl(), s.token(), timeout,
-                s.cacheTtl() == null ? Duration.ofMinutes(30) : s.cacheTtl(),
-                s.deadline() == null ? timeout.multipliedBy(2) : s.deadline());
-        }
-    }
 
     /**
      * A Scout collector's client: its calls may take up to the source's deadline in all (H2_SOURCE_<ID>_DEADLINE,
@@ -111,7 +98,7 @@ class SourcesConfiguration {
 
     @Bean
     HuggingFaceTrendingCollector huggingFaceTrendingCollector(SourcesProperties p, CollectorProperties.HfTrending c, Clock clock,
-            Resilience resilience, ObservationRegistry observations) {
+                                                              Resilience resilience, ObservationRegistry observations) {
         SourceSettings s = p.get("hf-trending");
         return new HuggingFaceTrendingCollector(s, collectorClient(s, observations), clock, resilience,
             new RunInterval(c.interval()), c.minLikes());
@@ -119,16 +106,18 @@ class SourcesConfiguration {
 
     @Bean
     TavilyCollector tavilyCollector(SourcesProperties p, CollectorProperties.TavilyScout c, Clock clock, Resilience resilience,
-            ObservationRegistry observations) {
+                                    ObservationRegistry observations) {
         SourceSettings s = p.get("tavily-scout");
         return new TavilyCollector(s, collectorClient(s, observations), clock, resilience, new RunInterval(c.interval()),
             c.queries());
     }
 
-    /** Weekly Tavily searches on learning platforms; what it finds goes to the admin review list (ADR 0032 §8). */
+    /**
+     * Weekly Tavily searches on learning platforms; what it finds goes to the admin review list (ADR 0032 §8).
+     */
     @Bean
     CourseCollector courseCollector(SourcesProperties p, CollectorProperties.Courses c, Clock clock, Resilience resilience,
-            ObservationRegistry observations) {
+                                    ObservationRegistry observations) {
         SourceSettings s = p.get("course-scout");
         return new CourseCollector(s, collectorClient(s, observations), clock, resilience, new RunInterval(c.interval()),
             c.query(), c.platforms());
@@ -140,8 +129,8 @@ class SourcesConfiguration {
      */
     @Bean
     GitHubAwesomeCollector gitHubAwesomeCollector(SourcesProperties p, CollectorProperties.GitHubAwesome c, Clock clock, Resilience resilience,
-            ObservationRegistry observations, ObjectProvider<ChatModel> chatModel, LlmSettings llm, CallCounter budgetCounter,
-            ModelCallMetrics metrics, MeterRegistry meters) {
+                                                  ObservationRegistry observations, ObjectProvider<ChatModel> chatModel, LlmSettings llm, CallCounter budgetCounter,
+                                                  ModelCallMetrics metrics, MeterRegistry meters) {
         SourceSettings s = p.get("github-awesome");
         ChatModel model = chatModel.getIfAvailable();
         RepoClassifier classifier;
@@ -164,7 +153,7 @@ class SourcesConfiguration {
 
     @Bean
     HuggingFaceProviderOrgsCollector huggingFaceProviderOrgsCollector(SourcesProperties p, CollectorProperties.HfProviderOrgs c, Clock clock,
-            Resilience resilience, ObservationRegistry observations) {
+                                                                      Resilience resilience, ObservationRegistry observations) {
         SourceSettings s = p.get("hf-provider-orgs");
         return new HuggingFaceProviderOrgsCollector(s, collectorClient(s, observations), clock, resilience,
             new RunInterval(c.interval()), c.orgs(), c.perOrg());
@@ -172,12 +161,14 @@ class SourcesConfiguration {
 
     @Bean
     AiDeadlinesCollector aiDeadlinesCollector(SourcesProperties p, CollectorProperties.AiDeadlines c, Clock clock, Resilience resilience,
-            ObservationRegistry observations) {
+                                              ObservationRegistry observations) {
         SourceSettings s = p.get("ai-deadlines");
         return new AiDeadlinesCollector(s, collectorClient(s, observations), clock, resilience, new RunInterval(c.interval()));
     }
 
-    /** README and model-card text for the Scout's gap round (ADR 0043), with the GitHub and Hub settings and tokens. */
+    /**
+     * README and model-card text for the Scout's gap round (ADR 0043), with the GitHub and Hub settings and tokens.
+     */
     @Bean
     ReadmeEvidence readmeEvidence(SourcesProperties p, Clock clock, Resilience resilience, ObservationRegistry observations) {
         SourceSettings github = p.get("github");
@@ -188,8 +179,22 @@ class SourcesConfiguration {
 
     @Bean
     McpRegistryCollector mcpRegistryCollector(SourcesProperties p, CollectorProperties.McpRegistry c, Clock clock, Resilience resilience,
-            ObservationRegistry observations) {
+                                              ObservationRegistry observations) {
         SourceSettings s = p.get("mcp-registry");
         return new McpRegistryCollector(s, collectorClient(s, observations), clock, resilience, new RunInterval(c.interval()));
+    }
+
+    @ConfigurationProperties("helper2")
+    record SourcesProperties(Map<String, SourceSettings> sources) {
+        SourceSettings get(String key) {
+            SourceSettings s = sources == null ? null : sources.get(key);
+            if (s == null) {
+                throw new IllegalStateException("missing helper2.sources." + key);
+            }
+            Duration timeout = s.timeout() == null ? Duration.ofSeconds(2) : s.timeout();
+            return new SourceSettings(s.enabled(), s.baseUrl(), s.token(), timeout,
+                s.cacheTtl() == null ? Duration.ofMinutes(30) : s.cacheTtl(),
+                s.deadline() == null ? timeout.multipliedBy(2) : s.deadline());
+        }
     }
 }

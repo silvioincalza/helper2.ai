@@ -1,11 +1,14 @@
 package ai.helper2.catalog.internal;
 
 import ai.helper2.catalog.ReviewQueue;
-import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
 
-/** A person's decision on an open review item, and what it means for the relationship the item is about. */
+import java.util.UUID;
+
+/**
+ * A person's decision on an open review item, and what it means for the relationship the item is about.
+ */
 @Component
 public class ReviewDecisions {
 

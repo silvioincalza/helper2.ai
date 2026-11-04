@@ -62,24 +62,32 @@ object Clients {
                 listOf("claude", "mcp", "add", "--transport", if (t.sse) "sse" else "http", t.key, t.url!!) +
                     t.values.flatMap { (k, v) -> listOf("--header", "$k: $v") }
             }
-            Snippet(t.optionId, true, "Terminal", "shell", words.joinToString(" ") { sh(it) },
-                "Add --scope user to use it in every project, or --scope project to share it in .mcp.json.")
+            Snippet(
+                t.optionId, true, "Terminal", "shell", words.joinToString(" ") { sh(it) },
+                "Add --scope user to use it in every project, or --scope project to share it in .mcp.json."
+            )
         }),
-        Client("claude-desktop", "Claude Desktop",
+        Client(
+            "claude-desktop", "Claude Desktop",
             URI("https://modelcontextprotocol.io/docs/develop/connect-local-servers"), { t ->
                 if (t.stdio) {
                     jsonSnippet(t, "claude_desktop_config.json (Settings › Developer › Edit Config)", "mcpServers", stdioEntry(t))
                 } else {
-                    Snippet(t.optionId, true, "Settings › Connectors › Add custom connector", null, t.url,
+                    Snippet(
+                        t.optionId, true, "Settings › Connectors › Add custom connector", null, t.url,
                         "Remote servers are added as a custom connector with this URL, not in the config file." +
-                            if (t.values.isNotEmpty()) " Fixed headers can only be set by an Owner on Team or Enterprise plans." else "")
+                            if (t.values.isNotEmpty()) " Fixed headers can only be set by an Owner on Team or Enterprise plans." else ""
+                    )
                 }
             }),
         Client("cursor", "Cursor", URI("https://cursor.com/docs/mcp"), { t ->
-            jsonSnippet(t, ".cursor/mcp.json (project) or ~/.cursor/mcp.json", "mcpServers",
-                if (t.stdio) stdioEntry(t) else urlEntry(t))
+            jsonSnippet(
+                t, ".cursor/mcp.json (project) or ~/.cursor/mcp.json", "mcpServers",
+                if (t.stdio) stdioEntry(t) else urlEntry(t)
+            )
         }),
-        Client("vscode", "VS Code (GitHub Copilot)",
+        Client(
+            "vscode", "VS Code (GitHub Copilot)",
             URI("https://code.visualstudio.com/docs/agents/reference/mcp-configuration"), { t -> vsCode(t) }),
         Client("codex", "OpenAI Codex", URI("https://learn.chatgpt.com/docs/extend/mcp"), { t ->
             when {
@@ -88,24 +96,34 @@ object Clients {
             }
         }),
         Client("windsurf", "Windsurf (Devin Desktop)", URI("https://docs.devin.ai/desktop/cascade/mcp"), { t ->
-            jsonSnippet(t, "~/.config/devin/mcp_config.json", "mcpServers",
-                if (t.stdio) stdioEntry(t) else mapOf("serverUrl" to t.url) + headers(t))
+            jsonSnippet(
+                t, "~/.config/devin/mcp_config.json", "mcpServers",
+                if (t.stdio) stdioEntry(t) else mapOf("serverUrl" to t.url) + headers(t)
+            )
                 .copy(note = "This file is read by the Cascade agent; the Devin Local agent reads the Devin CLI configuration.")
         }),
-        Client("gemini-cli", "Gemini CLI", URI("https://github.com/google-gemini/gemini-cli/blob/main/docs/tools/mcp-server.md"), { t ->
-            jsonSnippet(t, ".gemini/settings.json (project) or ~/.gemini/settings.json", "mcpServers", when {
-                t.stdio -> stdioEntry(t)
-                // Gemini CLI: httpUrl is Streamable HTTP, url is SSE.
-                t.sse -> mapOf("url" to t.url) + headers(t)
-                else -> mapOf("httpUrl" to t.url) + headers(t)
-            })
-        }),
+        Client(
+            "gemini-cli",
+            "Gemini CLI",
+            URI("https://github.com/google-gemini/gemini-cli/blob/main/docs/tools/mcp-server.md"),
+            { t ->
+                jsonSnippet(
+                    t, ".gemini/settings.json (project) or ~/.gemini/settings.json", "mcpServers", when {
+                        t.stdio -> stdioEntry(t)
+                        // Gemini CLI: httpUrl is Streamable HTTP, url is SSE.
+                        t.sse -> mapOf("url" to t.url) + headers(t)
+                        else -> mapOf("httpUrl" to t.url) + headers(t)
+                    }
+                )
+            }),
         Client("cline", "Cline", URI("https://docs.cline.bot/mcp/mcp-overview"), { t ->
-            jsonSnippet(t, "Cline › MCP Servers › Configure (cline_mcp_settings.json)", "mcpServers", when {
-                t.stdio -> stdioEntry(t) + linkedMapOf("disabled" to false, "autoApprove" to emptyList<String>())
-                // Without a type Cline assumes the legacy SSE transport.
-                else -> mapOf("type" to if (t.sse) "sse" else "streamableHttp") + urlEntry(t)
-            })
+            jsonSnippet(
+                t, "Cline › MCP Servers › Configure (cline_mcp_settings.json)", "mcpServers", when {
+                    t.stdio -> stdioEntry(t) + linkedMapOf("disabled" to false, "autoApprove" to emptyList<String>())
+                    // Without a type Cline assumes the legacy SSE transport.
+                    else -> mapOf("type" to if (t.sse) "sse" else "streamableHttp") + urlEntry(t)
+                }
+            )
         }),
     )
 
@@ -137,12 +155,19 @@ object Clients {
         val doc = linkedMapOf<String, Any?>()
         if (secrets.isNotEmpty()) {
             doc["inputs"] = secrets.map {
-                linkedMapOf("type" to "promptString", "id" to inputId(it.name), "description" to (it.description ?: it.name), "password" to true)
+                linkedMapOf(
+                    "type" to "promptString",
+                    "id" to inputId(it.name),
+                    "description" to (it.description ?: it.name),
+                    "password" to true
+                )
             }
         }
         doc["servers"] = mapOf(t.key to entry)
-        return Snippet(t.optionId, true, ".vscode/mcp.json", "json", json(doc),
-            if (secrets.isEmpty()) null else "VS Code asks for the secret values when the server starts.")
+        return Snippet(
+            t.optionId, true, ".vscode/mcp.json", "json", json(doc),
+            if (secrets.isEmpty()) null else "VS Code asks for the secret values when the server starts."
+        )
     }
 
     private fun inputId(name: String) = name.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-')

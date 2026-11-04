@@ -14,6 +14,9 @@ import ai.helper2.shared.ValueOrigin;
 import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
+import org.springframework.web.client.RestClient;
+import tools.jackson.databind.JsonNode;
+
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -26,8 +29,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.springframework.web.client.RestClient;
-import tools.jackson.databind.JsonNode;
 
 /**
  * Official MCP Registry (CC0 data; registry asks aggregators to sync ~hourly into their own store).
@@ -36,11 +37,11 @@ import tools.jackson.databind.JsonNode;
  */
 public class McpRegistryCollector implements Collector {
 
-    private static final String META = "io.modelcontextprotocol.registry/official";
-
-    /** Circuit breaker and retry of this collector's calls (ADR 0033). */
+    /**
+     * Circuit breaker and retry of this collector's calls (ADR 0033).
+     */
     static final String POLICY = "collector-mcp-registry";
-
+    private static final String META = "io.modelcontextprotocol.registry/official";
     private final RestClient http;
     private final Clock clock;
     private final Resilience resilience;
@@ -52,7 +53,9 @@ public class McpRegistryCollector implements Collector {
         this(settings, builder, clock, resilience, new RunInterval(Duration.ZERO));
     }
 
-    /** [interval]: the registry asks aggregators to poll "on a regular but infrequent basis (e.g., once per hour)". */
+    /**
+     * [interval]: the registry asks aggregators to poll "on a regular but infrequent basis (e.g., once per hour)".
+     */
     public McpRegistryCollector(SourceSettings settings, RestClient.Builder builder, Clock clock, Resilience resilience, RunInterval interval) {
         this.clock = clock;
         this.resilience = resilience;

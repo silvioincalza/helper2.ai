@@ -1,7 +1,5 @@
 package ai.helper2.scout.internal;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ai.helper2.TestcontainersConfiguration;
 import ai.helper2.catalog.ResourceDetail;
 import ai.helper2.catalog.ReviewQueue;
@@ -10,22 +8,18 @@ import ai.helper2.catalog.usecase.ResolveReviewItem;
 import ai.helper2.scout.CheckedCitation;
 import ai.helper2.scout.CheckedClaim;
 import ai.helper2.scout.CheckedField;
-import ai.helper2.scout.GapKind;
 import ai.helper2.scout.CheckedRelationship;
 import ai.helper2.scout.EnrichmentInput;
 import ai.helper2.scout.EnrichmentMaterial;
 import ai.helper2.scout.EnrichmentModel;
 import ai.helper2.scout.EnrichmentOutcome;
 import ai.helper2.scout.EnrichmentProposal;
+import ai.helper2.scout.GapKind;
 import ai.helper2.scout.Material;
 import ai.helper2.scout.ValidationResult;
 import ai.helper2.shared.Verification;
 import ai.helper2.testing.StatementCounting;
 import ai.helper2.testing.StatementCounting.Counted;
-import java.net.URI;
-import java.time.Instant;
-import java.util.List;
-import java.util.UUID;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,6 +28,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
+
+import java.net.URI;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * What one saved enrichment run leaves in PostgreSQL: fingerprints, relationships, evidence and review items, and how
@@ -64,25 +65,37 @@ class CatalogEnrichmentStoreIT {
             throw new UnsupportedOperationException();
         }
     };
-
+    static final URI README = URI.create("https://github.com/acme/tool#readme");
+    /**
+     * When the README was read: before both records, so its evidence comes first.
+     */
+    final Instant readmeReadAt = Instant.now().minus(java.time.Duration.ofDays(2)).truncatedTo(java.time.temporal.ChronoUnit.MILLIS);
     @Autowired
     CatalogEnrichmentStore store;
-
     @Autowired
     ResolveReviewItem resolve;
-
     @Autowired
     JdbcClient jdbc;
-
     @Autowired
     JdbcEnrichmentResults results;
-
     UUID resource;
     UUID record;
-    /** A second record of the same resource, retrieved a day earlier: its evidence comes first. */
+    /**
+     * A second record of the same resource, retrieved a day earlier: its evidence comes first.
+     */
     UUID older;
-    /** When the README was read: before both records, so its evidence comes first. */
-    final Instant readmeReadAt = Instant.now().minus(java.time.Duration.ofDays(2)).truncatedTo(java.time.temporal.ChronoUnit.MILLIS);
+
+    private static List<CheckedCitation> cites(UUID rec, String... excerpts) {
+        return java.util.Arrays.stream(excerpts).map(e -> new CheckedCitation(rec, e)).toList();
+    }
+
+    private static <T> List<T> concat(List<T> a, List<T> b) {
+        return java.util.stream.Stream.concat(a.stream(), b.stream()).toList();
+    }
+
+    private static List<String> excerpts(List<ResourceDetail.Evidence> evidence) {
+        return evidence.stream().map(ResourceDetail.Evidence::excerpt).toList();
+    }
 
     @BeforeEach
     void resourceWithOneSourceRecord() {
@@ -90,22 +103,22 @@ class CatalogEnrichmentStoreIT {
         record = UUID.randomUUID();
         String url = "https://enrichment-store.example/" + resource;
         jdbc.sql("""
-                INSERT INTO resource (id, canonical_url, url, title, description_origin, type, audience, data_origin)
-                VALUES (:id, :url, :url, 'Store test', 'SOURCE_PROVIDED', 'MCP_SERVER', 'BUILD_WITH_AI', 'INDEXED')
-                """).param("id", resource).param("url", url).update();
+            INSERT INTO resource (id, canonical_url, url, title, description_origin, type, audience, data_origin)
+            VALUES (:id, :url, :url, 'Store test', 'SOURCE_PROVIDED', 'MCP_SERVER', 'BUILD_WITH_AI', 'INDEXED')
+            """).param("id", resource).param("url", url).update();
         jdbc.sql("""
-                INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title,
-                                           description, type, retrieved_at, fingerprint)
-                VALUES (:id, 'curated', :id::text, :rid, :url, :url, 'Store test',
-                        'Works with Claude Desktop and with Cursor.', 'MCP_SERVER', now(), 'fp')
-                """).param("id", record).param("rid", resource).param("url", url).update();
+            INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title,
+                                       description, type, retrieved_at, fingerprint)
+            VALUES (:id, 'curated', :id::text, :rid, :url, :url, 'Store test',
+                    'Works with Claude Desktop and with Cursor.', 'MCP_SERVER', now(), 'fp')
+            """).param("id", record).param("rid", resource).param("url", url).update();
         older = UUID.randomUUID();
         jdbc.sql("""
-                INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title,
-                                           description, type, retrieved_at, fingerprint)
-                VALUES (:id, 'curated', :id::text, :rid, :url, :url, 'Store test', 'Older text.', 'MCP_SERVER',
-                        now() - interval '1 day', 'fp')
-                """).param("id", older).param("rid", resource).param("url", url + "/older").update();
+            INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title,
+                                       description, type, retrieved_at, fingerprint)
+            VALUES (:id, 'curated', :id::text, :rid, :url, :url, 'Store test', 'Older text.', 'MCP_SERVER',
+                    now() - interval '1 day', 'fp')
+            """).param("id", older).param("rid", resource).param("url", url + "/older").update();
     }
 
     @AfterEach
@@ -142,7 +155,9 @@ class CatalogEnrichmentStoreIT {
             .param("id", resource).param("k", kind.name()).query(String.class).list();
     }
 
-    /** The overview's backlog count follows the same rule as the backlog the Scout takes. */
+    /**
+     * The overview's backlog count follows the same rule as the backlog the Scout takes.
+     */
     @Test
     void theBacklogCountIsTheBacklog() {
         List<UUID> backlog = store.pending(Integer.MAX_VALUE);
@@ -161,10 +176,10 @@ class CatalogEnrichmentStoreIT {
         store.save(resource, MODEL, "fp-1", Instant.now(), result, EnrichmentOutcome.VALIDATED, null, "github-readme:acme/tool");
 
         assertThat(jdbc.sql("""
-                SELECT e.source_url || '|' || e.source_record_id || '|' || e.retrieved_at FROM evidence e
-                JOIN field_assertion_evidence x ON x.evidence_id = e.id JOIN field_assertion f ON f.id = x.assertion_id
-                WHERE f.resource_id = :id
-                """).param("id", resource).query(String.class).single())
+            SELECT e.source_url || '|' || e.source_record_id || '|' || e.retrieved_at FROM evidence e
+            JOIN field_assertion_evidence x ON x.evidence_id = e.id JOIN field_assertion f ON f.id = x.assertion_id
+            WHERE f.resource_id = :id
+            """).param("id", resource).query(String.class).single())
             .startsWith(readme + "|" + record + "|2026-11-04");
         assertThat(jdbc.sql("SELECT extra_evidence FROM enrichment_run WHERE resource_id = :id").param("id", resource)
             .query(String.class).single()).isEqualTo("github-readme:acme/tool");
@@ -175,11 +190,11 @@ class CatalogEnrichmentStoreIT {
         assertThat(store.load(resource).getGapTarget()).isNull();
         UUID github = UUID.randomUUID();
         jdbc.sql("""
-                INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title,
-                                           description, type, retrieved_at, fingerprint)
-                VALUES (:id, 'github', :id::text, :rid, 'https://github.com/acme/tool', 'https://github.com/acme/tool',
-                        'acme/tool', 'A tool.', 'MCP_SERVER', now(), 'fp')
-                """).param("id", github).param("rid", resource).update();
+            INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title,
+                                       description, type, retrieved_at, fingerprint)
+            VALUES (:id, 'github', :id::text, :rid, 'https://github.com/acme/tool', 'https://github.com/acme/tool',
+                    'acme/tool', 'A tool.', 'MCP_SERVER', now(), 'fp')
+            """).param("id", github).param("rid", resource).update();
 
         var target = store.load(resource).getGapTarget();
 
@@ -206,9 +221,9 @@ class CatalogEnrichmentStoreIT {
         save("run-1", EnrichmentOutcome.PARTIAL, partial(List.of(
             relationship("Claude Desktop", Verification.UNVERIFIED), relationship("Cursor", Verification.UNVERIFIED))));
         UUID accepted = jdbc.sql("""
-                SELECT i.id FROM review_item i JOIN relationship r ON r.id = i.relationship_id
-                WHERE r.from_resource_id = :id AND r.to_title = 'Cursor'
-                """).param("id", resource).query(UUID.class).single();
+            SELECT i.id FROM review_item i JOIN relationship r ON r.id = i.relationship_id
+            WHERE r.from_resource_id = :id AND r.to_title = 'Cursor'
+            """).param("id", resource).query(UUID.class).single();
         resolve.resolve(accepted, ReviewQueue.Status.ACCEPTED, "admin", null);
 
         // The second run no longer proposes Claude Desktop, and proposes Cursor again.
@@ -229,8 +244,8 @@ class CatalogEnrichmentStoreIT {
         assertThat(reviewStatuses(ReviewQueue.Kind.ENRICHMENT_VALIDATION)).containsExactly("SUPERSEDED", "OPEN");
         assertThat(reviewStatuses(ReviewQueue.Kind.RELATIONSHIP_CANDIDATE)).containsExactly("SUPERSEDED", "OPEN");
         assertThat(jdbc.sql("""
-                SELECT count(*) FROM review_item WHERE resource_id = :id AND status = 'SUPERSEDED' AND resolved_at IS NOT NULL
-                """).param("id", resource).query(Long.class).single()).isEqualTo(2);
+            SELECT count(*) FROM review_item WHERE resource_id = :id AND status = 'SUPERSEDED' AND resolved_at IS NOT NULL
+            """).param("id", resource).query(Long.class).single()).isEqualTo(2);
     }
 
     @Test
@@ -242,16 +257,6 @@ class CatalogEnrichmentStoreIT {
         assertThat(relationships()).containsExactly("Claude Desktop:UNVERIFIED");
         assertThat(reviewStatuses(ReviewQueue.Kind.ENRICHMENT_VALIDATION)).containsExactly("OPEN");
     }
-
-    private static List<CheckedCitation> cites(UUID rec, String... excerpts) {
-        return java.util.Arrays.stream(excerpts).map(e -> new CheckedCitation(rec, e)).toList();
-    }
-
-    private static <T> List<T> concat(List<T> a, List<T> b) {
-        return java.util.stream.Stream.concat(a.stream(), b.stream()).toList();
-    }
-
-    static final URI README = URI.create("https://github.com/acme/tool#readme");
 
     /**
      * Three fields, three relationships and three summary claims, with evidence shared between owners and kinds,
@@ -275,16 +280,8 @@ class CatalogEnrichmentStoreIT {
         save("full", EnrichmentOutcome.VALIDATED, result);
     }
 
-    private record Detail(List<ResourceDetail.Assertion> assertions, List<ResourceDetail.Relationship> relationships,
-                          ResourceDetail.Summary summary) {
-    }
-
     private Counted<Detail> readDetail(UUID id) {
         return StatementCounting.count(() -> new Detail(results.assertions(id), results.relationships(id), results.summary(id)));
-    }
-
-    private static List<String> excerpts(List<ResourceDetail.Evidence> evidence) {
-        return evidence.stream().map(ResourceDetail.Evidence::excerpt).toList();
     }
 
     @Test
@@ -346,17 +343,17 @@ class CatalogEnrichmentStoreIT {
     void theMaterialAndItsFingerprintStayByteIdentical() {
         jdbc.sql("DELETE FROM source_record WHERE id = :id").param("id", older).update();
         jdbc.sql("""
-                INSERT INTO source (id, name, mode, homepage, attribution)
-                VALUES ('aa-golden', 'Golden test', 'CURATED', 'https://helper2.ai/sources', 'Test')
-                ON CONFLICT (id) DO NOTHING
-                """).update();
+            INSERT INTO source (id, name, mode, homepage, attribution)
+            VALUES ('aa-golden', 'Golden test', 'CURATED', 'https://helper2.ai/sources', 'Test')
+            ON CONFLICT (id) DO NOTHING
+            """).update();
         UUID second = UUID.randomUUID();
         String url = "https://enrichment-store.example/second/" + resource;
         jdbc.sql("""
-                INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title,
-                                           description, type, retrieved_at, fingerprint)
-                VALUES (:id, 'aa-golden', :id::text, :rid, :url, :url, 'Store test — ünïcode', NULL, 'MCP_SERVER', now(), 'fp')
-                """).param("id", second).param("rid", resource).param("url", url).update();
+            INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title,
+                                       description, type, retrieved_at, fingerprint)
+            VALUES (:id, 'aa-golden', :id::text, :rid, :url, :url, 'Store test — ünïcode', NULL, 'MCP_SERVER', now(), 'fp')
+            """).param("id", second).param("rid", resource).param("url", url).update();
         jdbc.sql("UPDATE source_record SET description = 'Works with Claude Desktop and with Cursor.\nSecond line.' WHERE id = :id")
             .param("id", record).update();
 
@@ -366,5 +363,9 @@ class CatalogEnrichmentStoreIT {
             .containsExactly("Store test — ünïcode\n", "Store test\nWorks with Claude Desktop and with Cursor.\nSecond line.");
         assertThat(material.getTextHash()).isEqualTo("f0687fef5a659106ccefb5499837d3b0");
         assertThat(material.fingerprintFor(MODEL)).isEqualTo("88bb3ba375c917c44707219947bc8154");
+    }
+
+    private record Detail(List<ResourceDetail.Assertion> assertions, List<ResourceDetail.Relationship> relationships,
+                          ResourceDetail.Summary summary) {
     }
 }

@@ -9,8 +9,7 @@ import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.time.Instant
-import java.util.HexFormat
-import java.util.UUID
+import java.util.*
 
 /**
  * One piece of retrieved source material the model may cite. A source record is its own anchor. Extra text read in
@@ -43,7 +42,11 @@ data class EnrichmentInput(
  * What the store loaded for one resource: the model's input, a hash of its source text and, when one of its
  * records names its own repository or model, where the gap round may read more ([gapTarget]).
  */
-data class EnrichmentMaterial @JvmOverloads constructor(val input: EnrichmentInput, val textHash: String, val gapTarget: GapTarget? = null) {
+data class EnrichmentMaterial @JvmOverloads constructor(
+    val input: EnrichmentInput,
+    val textHash: String,
+    val gapTarget: GapTarget? = null
+) {
     /**
      * The enrichment fingerprint: what a run of [model] would see. The same source text under another prompt
      * version or another model is a different input, so it is enriched again.
@@ -107,8 +110,21 @@ data class CheckedCitation @JvmOverloads constructor(
     val retrievedAt: Instant? = null,
 )
 
-data class CheckedField(val field: String, val value: String, val verification: Verification, val citations: List<CheckedCitation>)
-data class CheckedRelationship(val kind: String, val target: String, val targetId: UUID?, val verification: Verification, val citations: List<CheckedCitation>)
+data class CheckedField(
+    val field: String,
+    val value: String,
+    val verification: Verification,
+    val citations: List<CheckedCitation>
+)
+
+data class CheckedRelationship(
+    val kind: String,
+    val target: String,
+    val targetId: UUID?,
+    val verification: Verification,
+    val citations: List<CheckedCitation>
+)
+
 data class CheckedClaim(val text: String, val citations: List<CheckedCitation>)
 
 data class ValidationResult(
@@ -154,7 +170,20 @@ class EvidenceValidator(private val minExcerpt: Int = MIN_EXCERPT_CHARS, private
             "writing", "translation", "summarization", "image-generation", "coding", "research", "transcription",
             "automation", "design", "learning", "data-analysis", "chat", "video", "audio",
         )
-        val PLATFORMS = setOf("web", "desktop", "ios", "android", "cli", "api", "browser-extension", "vscode", "node", "python", "local", "remote")
+        val PLATFORMS = setOf(
+            "web",
+            "desktop",
+            "ios",
+            "android",
+            "cli",
+            "api",
+            "browser-extension",
+            "vscode",
+            "node",
+            "python",
+            "local",
+            "remote"
+        )
 
         /**
          * The allowed values, one line per field, for the model's instructions. Built from the same
@@ -188,7 +217,13 @@ class EvidenceValidator(private val minExcerpt: Int = MIN_EXCERPT_CHARS, private
                 "android" to listOf("android"),
                 "cli" to listOf("cli", "command line", "command-line", "terminal"),
                 "api" to listOf("api", "rest", "sdk"),
-                "browser-extension" to listOf("browser extension", "chrome extension", "firefox extension", "extension", "add-on"),
+                "browser-extension" to listOf(
+                    "browser extension",
+                    "chrome extension",
+                    "firefox extension",
+                    "extension",
+                    "add-on"
+                ),
                 "vscode" to listOf("vscode", "vs code", "visual studio code"),
                 "node" to listOf("node", "node.js", "nodejs", "npm"),
                 "python" to listOf("python", "pip", "pypi"),
@@ -274,10 +309,12 @@ class EvidenceValidator(private val minExcerpt: Int = MIN_EXCERPT_CHARS, private
                     errors += "$label: field not allowed"
                     CheckedField(f.field, f.value, Verification.REJECTED, emptyList())
                 }
+
                 !rule(f.value) -> {
                     errors += "$label: value not allowed"
                     CheckedField(f.field, f.value, Verification.REJECTED, emptyList())
                 }
+
                 else -> {
                     val cited = check(f.citations, label)
                     val sourceValue = input.sourceFacts[f.field]
@@ -287,10 +324,12 @@ class EvidenceValidator(private val minExcerpt: Int = MIN_EXCERPT_CHARS, private
                             errors += "$label: conflicts with source-provided value"
                             CheckedField(f.field, f.value, Verification.CONFLICTING, cited)
                         }
+
                         f.field in MUST_STATE_VALUE && cited.none { statesValue(it.excerpt, f.field, f.value) } -> {
                             errors += "$label: the cited excerpt does not state the value"
                             CheckedField(f.field, f.value, Verification.UNVERIFIED, cited)
                         }
+
                         else -> CheckedField(f.field, f.value, Verification.VERIFIED, cited)
                     }
                 }
@@ -312,7 +351,13 @@ class EvidenceValidator(private val minExcerpt: Int = MIN_EXCERPT_CHARS, private
                 return@map CheckedRelationship(r.kind, r.target, null, Verification.REJECTED, emptyList())
             }
             val targetId = input.knownResources[r.target.trim().lowercase()]
-            CheckedRelationship(r.kind, r.target, targetId, if (targetId != null) Verification.VERIFIED else Verification.UNVERIFIED, cited)
+            CheckedRelationship(
+                r.kind,
+                r.target,
+                targetId,
+                if (targetId != null) Verification.VERIFIED else Verification.UNVERIFIED,
+                cited
+            )
         }
 
         val claims = proposal.summary.take(MAX_SUMMARY_CLAIMS).mapNotNull { c ->

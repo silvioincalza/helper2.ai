@@ -13,13 +13,17 @@ public final class NvidiaOnly {
 
     static final String PREFIX = "nvidia/";
 
-    /** The client that sends chat calls to a provider (spring-ai-starter-model-openai). */
+    /**
+     * The client that sends chat calls to a provider (spring-ai-starter-model-openai).
+     */
     static final String PROVIDER_CLIENT = "openai";
 
     private NvidiaOnly() {
     }
 
-    /** Fails with {@link IllegalStateException} naming every configured id that is not an NVIDIA model. */
+    /**
+     * Fails with {@link IllegalStateException} naming every configured id that is not an NVIDIA model.
+     */
     public static void require(String chatProvider, String chatModel, String fastModel, String reasoningModel,
                                String embeddingKey, String embeddingModel) {
         List<String> wrong = new ArrayList<>();

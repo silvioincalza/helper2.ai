@@ -10,13 +10,17 @@ import java.util.regex.Pattern;
  */
 public final class ModelAnswers {
 
-    /** A closed block, or an unclosed one: the model ran out of tokens while thinking, so no answer follows. */
+    /**
+     * A closed block, or an unclosed one: the model ran out of tokens while thinking, so no answer follows.
+     */
     private static final Pattern REASONING = Pattern.compile("(?s)<think>.*?(</think>|\\z)");
 
     private ModelAnswers() {
     }
 
-    /** The answer without reasoning blocks, stripped; empty when there was only reasoning or nothing. */
+    /**
+     * The answer without reasoning blocks, stripped; empty when there was only reasoning or nothing.
+     */
     public static String withoutReasoning(String answer) {
         return answer == null ? "" : REASONING.matcher(answer).replaceAll("").strip();
     }

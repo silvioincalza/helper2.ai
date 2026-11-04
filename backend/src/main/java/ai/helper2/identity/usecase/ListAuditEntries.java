@@ -4,11 +4,15 @@ import ai.helper2.identity.internal.AuditLog;
 import ai.helper2.platform.BadRequestException;
 import org.springframework.stereotype.Service;
 
-/** One page of the admin audit trail, newest first. */
+/**
+ * One page of the admin audit trail, newest first.
+ */
 @Service
 public class ListAuditEntries {
 
-    /** The largest page the back office may ask for. */
+    /**
+     * The largest page the back office may ask for.
+     */
     public static final int MAX_PAGE_SIZE = 100;
 
     private final AuditLog log;

@@ -10,12 +10,13 @@ import ai.helper2.platform.prompt.PromptTemplate;
 import ai.helper2.platform.resilience.CallRefused;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.search.QueryTranslator;
-import java.time.Duration;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
+
+import java.time.Duration;
+import java.util.Map;
 
 /**
  * Translates a non-English search query into English search terms with the fast model (ADR 0011).
@@ -28,11 +29,6 @@ import org.springframework.ai.chat.model.ChatModel;
 class SpringAiQueryTranslator implements QueryTranslator {
 
     private static final Logger log = LoggerFactory.getLogger(SpringAiQueryTranslator.class);
-
-    static String systemPrompt() {
-        return PromptTemplate.fromClasspath("search/translate-query.txt").render(Map.of("maxWords", QueryTranslator.MAX_WORDS));
-    }
-
     private final ChatClient chat;
     private final String system;
     private final String version;
@@ -42,14 +38,6 @@ class SpringAiQueryTranslator implements QueryTranslator {
     private final Duration ttl;
     private final ModelCallMetrics metrics;
     private final Resilience resilience;
-
-    /** The budget is checked inside the circuit, so a refused call is not charged; it is no provider failure either. */
-    private static final class BudgetSpent extends RuntimeException {
-        BudgetSpent() {
-            super("daily translation budget used up", null, false, false);
-        }
-    }
-
     SpringAiQueryTranslator(ChatModel chatModel, String model, DailyBudget budget, SharedCache cache, Duration ttl,
                             ModelCallMetrics metrics, Resilience resilience) {
         resilience.require(LlmPolicies.CHAT);
@@ -62,6 +50,10 @@ class SpringAiQueryTranslator implements QueryTranslator {
         this.budget = budget;
         this.cache = cache;
         this.ttl = ttl;
+    }
+
+    static String systemPrompt() {
+        return PromptTemplate.fromClasspath("search/translate-query.txt").render(Map.of("maxWords", QueryTranslator.MAX_WORDS));
     }
 
     @Override
@@ -106,5 +98,14 @@ class SpringAiQueryTranslator implements QueryTranslator {
         english = english.lines().reduce((first, second) -> second).orElse("").strip();
         cache.put(key, english, ttl);
         return english;
+    }
+
+    /**
+     * The budget is checked inside the circuit, so a refused call is not charged; it is no provider failure either.
+     */
+    private static final class BudgetSpent extends RuntimeException {
+        BudgetSpent() {
+            super("daily translation budget used up", null, false, false);
+        }
     }
 }

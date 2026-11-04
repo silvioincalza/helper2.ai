@@ -2,7 +2,7 @@ package ai.helper2.setup
 
 import java.security.MessageDigest
 import java.time.Clock
-import java.util.HexFormat
+import java.util.*
 
 /**
  * The tool guide: the resource's own documents, a model that may only pick and order passages from them, and the
@@ -23,8 +23,9 @@ class ToolGuides @JvmOverloads constructor(
         val docs = if (ref.hasDocs) materials.load(ref) else emptyList()
         if (docs.isEmpty()) return empty(ToolGuideStatus.NO_MATERIAL, docs)
         if (model == null) return empty(ToolGuideStatus.LLM_UNAVAILABLE, docs, "error")
-        val key = "v1:" + resourceId + ":" + sha256(model.configFingerprint + "\u0000" +
-            docs.joinToString("\u0000") { it.url.toString() + "\u0000" + it.text })
+        val key = "v1:" + resourceId + ":" + sha256(
+            model.configFingerprint + "\u0000" +
+                docs.joinToString("\u0000") { it.url.toString() + "\u0000" + it.text })
         cache.get(key)?.let { return it }
         val proposal = try {
             model.write(ref, docs)
@@ -34,8 +35,10 @@ class ToolGuides @JvmOverloads constructor(
             return unavailable
         }
         val result = validator.validate(proposal, docs)
-        val answer = ToolGuideAnswer(if (result.sections.isEmpty()) ToolGuideStatus.NO_STEPS else ToolGuideStatus.OK,
-            result.sections, docs.map { it.ref }, model.model, result.rejected, clock.instant(), result.rejectedBy)
+        val answer = ToolGuideAnswer(
+            if (result.sections.isEmpty()) ToolGuideStatus.NO_STEPS else ToolGuideStatus.OK,
+            result.sections, docs.map { it.ref }, model.model, result.rejected, clock.instant(), result.rejectedBy
+        )
         cache.put(key, answer, ttls.answer)
         return answer
     }
