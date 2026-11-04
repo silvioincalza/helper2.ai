@@ -268,6 +268,8 @@ Fix an item or accept it; when it no longer holds, remove it.
 ### Edge and identity
 
 - Roles live in the session: removing an admin takes effect at the next sign-in; a Redis outage signs the admin out. ([ADR 0023](adr/edge/0023-identity-and-admin.md))
+- The admin pages ship in the public bundle (the server still refuses every admin call without ADMIN). Load them lazily so the back office's shape stays out of the public JavaScript.
+- Privacy check: the review decision note is free text kept with the review item. Write no personal data in it; confirm with privacy-legal whether the Privacy page must list it.
 - While Redis is down each replica counts alone (up to 3× the limit on prod). Clients behind one shared address share one limit. ([ADR 0024](adr/edge/0024-http-edge-protection.md))
 
 ### Frontend

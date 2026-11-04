@@ -14,8 +14,10 @@ the cluster with an address from the vSwitch range (the Proxmox node masquerades
 ## Decision
 1. **Two ports in one app.** `H2_ADMIN_PORT` (chart `app.adminPort`, 8082) opens a second Tomcat connector
    (`AdminPortConfiguration`). The public port stays 8080. Not set (0): one port for everything, only on a
-   developer machine. With GitHub sign-in on (profile `oauth-github`) and no admin port, the app refuses to start
-   unless the `dev` profile is on: a missing value must not put the back office back on the public host.
+   developer machine. With a sign-in provider configured (any OAuth2 client registration: the `oauth-github` profile,
+   environment variables, a later provider) and no admin port, the app refuses to start unless the `dev` profile is
+   on: a missing value must not put the back office back on the public host. A registration that cannot be read
+   counts as configured.
 2. **The public port has no back office.** `/admin`, `/admin/**`, `/api/v1/admin` and `/api/v1/admin/**` answer 404 on
    the public port (`BackOfficeOffPublicPort`, before the session and security filters). The check reads the decoded,
    normalised path the container maps, so `%61dmin` or `x/../admin` cannot pass as another path.

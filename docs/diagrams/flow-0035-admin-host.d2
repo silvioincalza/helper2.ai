@@ -15,7 +15,7 @@ startup: Startup {
   class: group
   direction: down
   boot: "App starts" {class: app}
-  closed: "GitHub sign-in on,\nno admin port,\nnot the dev profile?" {class: decision}
+  closed: "Sign-in provider configured,\nno admin port,\nnot the dev profile?" {class: decision}
   refuse: "Refuses to start:\nthe back office would be\non the public host" {class: fail}
   run: "Serves requests" {class: end}
   boot -> closed
