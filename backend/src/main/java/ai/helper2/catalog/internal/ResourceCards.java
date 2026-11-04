@@ -91,7 +91,7 @@ public class ResourceCards {
             d.getMode() == SourceMode.CURATED || d.getMode() == SourceMode.DEMO
                 ? d.getMode()
                 : SourceMode.INDEXED;
-        contexts.put(r.sourceId(), new SourceContext(withMode(d, mode), ServedFrom.LIVE));
+        contexts.put(r.sourceId(), new SourceContext(d.withMode(mode), ServedFrom.LIVE));
       }
     }
     List<MergedResult> merged =
@@ -110,22 +110,5 @@ public class ResourceCards {
     return Optional.of(
         card.withIdentity(id, canonical)
             .withDiscovered(DateFact.observed(row.firstDiscoveredAt())));
-  }
-
-  private static SourceDescriptor withMode(SourceDescriptor d, SourceMode mode) {
-    return Objects.equals(d.getMode(), mode)
-        ? d
-        : new SourceDescriptor(
-            d.getId(),
-            d.getName(),
-            mode,
-            d.getHomepage(),
-            d.getTermsUrl(),
-            d.getAttribution(),
-            d.getResourceTypes(),
-            d.getTimeout(),
-            d.getCacheTtl(),
-            d.getEnabled(),
-            d.getPriority());
   }
 }
