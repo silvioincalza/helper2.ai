@@ -1,5 +1,6 @@
 # Sequence: the runtime paths of the hosted chart: a visitor's request through Cloudflare and ingress-nginx, the
-# probes and the metrics scrape on the management port, and the nightly backup on prod.
+# probes and the metrics scrape on the management port, an old pod leaving in a rolling update, and the nightly
+# backup on prod.
 # Source of truth: deploy/helm/helper2/templates/app.yaml, redis.yaml, backup.yaml, networkpolicy.yaml,
 #   values-prod.yaml; the edge (tunnel, DNS, Ingresses) is in incalza-me-infra.
 # Render: cd docs/diagrams && d2 fmt sequence-0027-runtime-topology.d2 && d2 sequence-0027-runtime-topology.d2 sequence-0027-runtime-topology.svg
@@ -32,6 +33,14 @@ request: One request {
 management: Management port, never through an Ingress {
   obs -> app: "startup (≤ 300 s), readiness 5 s,\nliveness 10 s: /actuator/health on 8081"
   obs -> app: "GET /actuator/prometheus on 8081\n(Alloy, namespace observability)"
+}
+
+shutdown: An old pod leaves (rolling update, app.shutdown) {
+  obs -> app: "kubelet: preStop sleep 10 s;\nthe pod still serves"
+  obs -> nginx: "the pod leaves the Service endpoints;\nthe controller stops sending to it"
+  obs -> app: "SIGTERM"
+  app -> app: "graceful shutdown: no new connections,\nrequests in flight get 30 s (H2_SHUTDOWN_TIMEOUT)"
+  obs -> app: "SIGKILL only after 45 s\n(terminationGracePeriodSeconds)"
 }
 
 nightly: 02:30 Europe/Zurich, prod {

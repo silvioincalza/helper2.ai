@@ -86,8 +86,6 @@ query vectors and setup guide answers in the Postgres table `ai_cache`. Still pe
 
 Open items:
 
-- **preStop delay.** A pod gets SIGTERM while it is still being removed from the Service endpoints; a few
-  seconds of `preStop` sleep would stop the last requests from reaching it during a rolling update.
 - **Redis memory.** Sign-in sessions, rate-limit windows and web-search counters share the 128 MB `allkeys-lru`
   cache: under pressure an admin is signed out, or a client gets a fresh window or a fresh day early. Alert on
   Redis evictions (with the Redis exporter, section 2).
@@ -256,6 +254,7 @@ Fix an item or accept it; when it no longer holds, remove it.
 ### Operations
 
 - Alert delivery is configured in the observability stack, not here. A collector disabled on purpose keeps alerting until its value is 9 days old. Histogram buckets add series per timer. ([ADR 0026](adr/operations/0026-observability.md))
+- A guide stream or any request still running 30 s after SIGTERM is cut during a deploy (`app.shutdown.drainSeconds`); the guide's own deadline is 90 s. ([ADR 0027](adr/operations/0027-runtime-topology.md))
 - Staging (1 replica) has no failover; a prod deploy starts pods one after another (up to 300 s each). Plain HTTP inside the cluster; sign-in for everyone changes that. Never run `helm uninstall`: it deletes the Postgres and Redis StatefulSets. ([ADR 0027](adr/operations/0027-runtime-topology.md))
 - Deleting an old image needs the Harbor immutability rule disabled first, and enabled again after. ([ADR 0029](adr/operations/0029-release-versioning.md))
 - A deleted row stays in the backups for up to 7 days; purges run daily, so a row can outlive its period by a day; a purged observed resource seen again comes back with a new `first_discovered_at`. ([ADR 0034](adr/operations/0034-data-retention.md))
