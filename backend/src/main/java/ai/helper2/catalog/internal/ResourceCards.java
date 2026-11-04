@@ -1,8 +1,8 @@
 package ai.helper2.catalog.internal;
 
-import ai.helper2.catalog.ResourceCatalog;
 import ai.helper2.catalog.internal.ResourceStore.RecordRow;
 import ai.helper2.catalog.internal.ResourceStore.ResourceRow;
+import ai.helper2.search.DescribedSource;
 import ai.helper2.search.MergedResult;
 import ai.helper2.search.ResultMerger;
 import ai.helper2.search.ServedFrom;
@@ -31,12 +31,12 @@ import org.springframework.stereotype.Component;
 public class ResourceCards {
 
   private final ResourceStore store;
-  private final ResourceCatalog catalog;
+  private final List<DescribedSource> sources;
   private final ResultMerger merger = new ResultMerger();
 
-  public ResourceCards(ResourceStore store, ResourceCatalog catalog) {
+  public ResourceCards(ResourceStore store, List<DescribedSource> sources) {
     this.store = store;
-    this.catalog = catalog;
+    this.sources = sources;
   }
 
   /** The card of resource [id]; empty when it is gone or its records no longer merge. */
@@ -77,7 +77,8 @@ public class ResourceCards {
       return Optional.empty();
     }
     Map<String, SourceDescriptor> descriptors =
-        catalog.descriptors().stream()
+        sources.stream()
+            .map(DescribedSource::getDescriptor)
             .collect(Collectors.toMap(SourceDescriptor::getId, d -> d, (a, b) -> a));
 
     Map<String, SourceContext> contexts = new HashMap<>();

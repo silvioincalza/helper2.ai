@@ -87,8 +87,8 @@ abstract class ApiTestBase {
   }
 
   /**
-   * The catalog records what a search saw in the background (ResourceCatalog): checks that read it
-   * wait until [check] passes, at most 5 s.
+   * The catalog records what a search saw in the background (CatalogResultObserver): checks that
+   * read it wait until [check] passes, at most 5 s.
    */
   static void eventually(Check check) throws Exception {
     long deadline = System.nanoTime() + 5_000_000_000L;

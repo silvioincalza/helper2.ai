@@ -3,6 +3,7 @@ package ai.helper2.catalog
 import ai.helper2.TestcontainersConfiguration
 import ai.helper2.catalog.internal.ResourceStore
 import ai.helper2.catalog.internal.ResourceStore.DataOrigin
+import ai.helper2.catalog.usecase.IndexResources
 import ai.helper2.search.NOW
 import ai.helper2.search.PopularityKind
 import ai.helper2.search.PopularityMetric
@@ -28,7 +29,7 @@ import org.springframework.jdbc.core.simple.JdbcClient
 @Import(TestcontainersConfiguration::class)
 class CatalogSearchRankingIT {
 
-  @Autowired lateinit var catalog: ResourceCatalog
+  @Autowired lateinit var indexResources: IndexResources
   @Autowired lateinit var store: ResourceStore
   @Autowired lateinit var jdbc: JdbcClient
 
@@ -74,7 +75,7 @@ class CatalogSearchRankingIT {
           )
           .copy(popularity = stars(1_715)),
       )
-    catalog.index(
+    indexResources.index(
       ResultMerger()
         .merge(hits, mapOf("github" to SourceContext(descriptor("github"), ServedFrom.LIVE))),
       "github",

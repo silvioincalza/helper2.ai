@@ -1,7 +1,5 @@
-package ai.helper2.catalog;
+package ai.helper2.catalog.internal;
 
-import ai.helper2.catalog.internal.ObservationQueue;
-import ai.helper2.catalog.internal.ResourceStore;
 import ai.helper2.catalog.internal.ResourceStore.DataOrigin;
 import ai.helper2.search.DescribedSource;
 import ai.helper2.search.MergedResult;
@@ -21,22 +19,20 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.springframework.beans.factory.SmartInitializingSingleton;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 /**
- * Catalog entry point. Implements the search module's {@link ResultObserver}: every resource seen
- * in a live search is recorded so Helper2 can state when it was first discovered, and detail pages
- * work for live results, and the hits a source gave can be read back for a stored web result set
- * (ADR 0037). Also {@link RecordedOutcomes}: the Scout's last run outcome per source.
+ * The catalog seen from search. Implements the search module's {@link ResultObserver}: every
+ * resource seen in a live search is recorded so Helper2 can state when it was first discovered, and
+ * detail pages work for live results, and the hits a source gave can be read back for a stored web
+ * result set (ADR 0037). Also {@link RecordedOutcomes}: the Scout's last run outcome per source.
  *
  * <p>Recording is asynchronous ({@link ObservationQueue}), so a search costs one batched read of
  * discovery dates and no writes. The trade-off: a resource seen for the first time has no discovery
  * date in that first response (it is not recorded yet); every later search shows it.
  */
-@Service
-public class ResourceCatalog
-    implements ResultObserver, RecordedOutcomes, SmartInitializingSingleton {
+@Component
+public class CatalogResultObserver implements ResultObserver, RecordedOutcomes {
 
   private final ResourceStore store;
   private final List<DescribedSource> sources;
@@ -44,21 +40,13 @@ public class ResourceCatalog
   private final Set<String> liveSources;
   private final Set<String> demoSources;
 
-  public ResourceCatalog(
+  public CatalogResultObserver(
       ResourceStore store, List<DescribedSource> sources, ObservationQueue observations) {
     this.store = store;
     this.sources = sources;
     this.observations = observations;
     this.liveSources = idsWithMode(SourceMode.LIVE);
     this.demoSources = idsWithMode(SourceMode.DEMO);
-  }
-
-  /**
-   * Make sure every configured source exists in the registry table before anything references it.
-   */
-  @Override
-  public void afterSingletonsInstantiated() {
-    store.registerSources(sources.stream().map(DescribedSource::getDescriptor).toList());
   }
 
   @Override
@@ -123,19 +111,5 @@ public class ResourceCatalog
         .filter(d -> d.getMode() == mode)
         .map(SourceDescriptor::getId)
         .collect(Collectors.toSet());
-  }
-
-  /** Scout path: persist collected results; returns changed source-record ids. */
-  public List<UUID> index(List<MergedResult> results, String sourceId) {
-    return store.upsert(results, DataOrigin.INDEXED, Set.of(sourceId));
-  }
-
-  /** Resource ids owning the given source records. */
-  public List<UUID> resourcesOfRecords(List<UUID> recordIds) {
-    return store.resourcesOfRecords(recordIds);
-  }
-
-  public List<SourceDescriptor> descriptors() {
-    return sources.stream().map(DescribedSource::getDescriptor).toList();
   }
 }

@@ -1,6 +1,6 @@
 package ai.helper2.scout.internal;
 
-import ai.helper2.catalog.ResourceCatalog;
+import ai.helper2.catalog.usecase.IndexResources;
 import ai.helper2.identity.AuditTrail;
 import ai.helper2.platform.ClusterLock;
 import ai.helper2.platform.ClusterLocks;
@@ -36,7 +36,6 @@ import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccess
 import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
@@ -97,11 +96,8 @@ class ScoutConfiguration {
   }
 
   @Bean
-  CatalogIndex catalogIndex(ResourceCatalog catalog) {
-    return (results, sourceId) -> {
-      List<UUID> changedRecords = catalog.index(results, sourceId);
-      return catalog.resourcesOfRecords(changedRecords);
-    };
+  CatalogIndex catalogIndex(IndexResources indexResources) {
+    return indexResources::index;
   }
 
   /**

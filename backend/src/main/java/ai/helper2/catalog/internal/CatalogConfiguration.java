@@ -32,7 +32,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 class CatalogConfiguration {
 
-  /** Background writer for what searches observed; see ResourceCatalog. */
+  /** Background writer for what searches observed; see CatalogResultObserver. */
   @Bean(destroyMethod = "close")
   ObservationQueue observationQueue(
       MeterRegistry registry, @Value("${helper2.catalog.observation-queue:256}") int capacity) {
