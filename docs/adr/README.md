@@ -84,6 +84,7 @@ All diagrams: [docs/diagrams](../diagrams/README.md).
 | [0028](operations/0028-ci-cd.md) | CI/CD: GitHub Actions, PR checks, OpenBao OIDC, staging on main, approved prod on a release | 0007, 0027 | [flow](../diagrams/flow-0028-ci-cd.svg) · [sequence](../diagrams/sequence-0028-ci-cd.svg) |
 | [0029](operations/0029-release-versioning.md) | Release and versioning: semantic versions, immutable tags, release workflow | 0001, 0028 | [flow](../diagrams/flow-0029-release-versioning.svg) · [sequence](../diagrams/sequence-0029-release-versioning.svg) |
 | [0034](operations/0034-data-retention.md) | Data retention: a period and a mechanism for every store; daily purges per module | 0004, 0005, 0023, 0026 | [flow](../diagrams/flow-0034-data-retention.svg) · [sequence](../diagrams/sequence-0034-data-retention.svg) |
+| [0046](operations/0046-supply-chain.md) | Supply chain: base images pinned by digest, an SBOM per image, a Grype scan, report-only first | 0027, 0028, 0029 | [flow](../diagrams/flow-0046-supply-chain.svg) |
 
 ## Quality — [`quality/`](quality/)
 

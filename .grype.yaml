@@ -1,0 +1,12 @@
+# Grype settings for the image scans in CI and the weekly release scan (ADR 0046). Grype reads this file from the
+# repository root.
+#
+# Exceptions. Add one only when a finding does not apply to helper2 (the code path is never used, the fix breaks the
+# build, a false match), never just to make the scan pass. Each one names the vulnerability, the package if it can,
+# the reason, and a review date in the reason; remove it at the review date or when the fix ships. Example:
+#
+# ignore:
+#   - vulnerability: CVE-2026-12345
+#     package: { name: libexample, type: apk }
+#     reason: "Only the CLI is affected; the image never runs it. Review by 2027-01-31."
+ignore: []

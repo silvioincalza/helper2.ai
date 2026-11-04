@@ -1,0 +1,44 @@
+# Syft (SBOM) and Grype (vulnerability scan) for the supply-chain checks (ADR 0046). No third-party action: a
+# moved tag of a scanner action ran attacker code in March 2026 (CVE-2026-33634).
+# - Syft: the linux_amd64 release tarball, checked against its SHA-256 (from the release's checksums, as published in
+#   anchore's goreleaser Homebrew tap), like promtool in ci.yml.
+# - Grype: `go install` of the exact version, checked by the Go checksum database, like helm, kubeconform and d2.
+# Bump a version together with its SHA-256. Dependabot does not see these pins.
+name: install-scanners
+description: Install pinned Syft and, optionally, Grype into RUNNER_TEMP/scanners
+inputs:
+  grype:
+    description: also install Grype (needs Go; the self-hosted CD runner only makes SBOMs)
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    - name: Install Syft
+      shell: bash
+      env:
+        SYFT_VERSION: 1.56.0
+        SYFT_SHA256: 1c2493cfcf52d3367d6cb25780d9190c111c2219c34c820574c43e8bae15c528
+      run: |
+        set -euo pipefail
+        dir="$RUNNER_TEMP/scanners"; mkdir -p "$dir"
+        tarball="syft_${SYFT_VERSION}_linux_amd64.tar.gz"
+        curl -fsSLo "$dir/$tarball" "https://github.com/anchore/syft/releases/download/v${SYFT_VERSION}/${tarball}"
+        echo "${SYFT_SHA256}  $dir/$tarball" | sha256sum -c -
+        tar -xzf "$dir/$tarball" -C "$dir" syft
+        rm "$dir/$tarball"
+        echo "$dir" >> "$GITHUB_PATH"
+    - if: inputs.grype == 'true'
+      uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      with:
+        go-version: '1.27'
+        cache: false
+    - name: Install Grype
+      if: inputs.grype == 'true'
+      shell: bash
+      env:
+        GRYPE_VERSION: 0.121.1
+      run: |
+        set -euo pipefail
+        dir="$RUNNER_TEMP/scanners"; mkdir -p "$dir"
+        GOBIN="$dir" go install -ldflags "-X main.version=${GRYPE_VERSION}" "github.com/anchore/grype/cmd/grype@v${GRYPE_VERSION}"
+        echo "$dir" >> "$GITHUB_PATH"

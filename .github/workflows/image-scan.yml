@@ -1,0 +1,58 @@
+# Weekly scan of what runs on prod (ADR 0046): Grype against the SBOM attached to the latest GitHub release, with a
+# fresh vulnerability database. New CVEs appear after a release; this finds them without a new build.
+# Report-only: findings go to code scanning (category release/app, on the release tag) and the job summary.
+name: image-scan
+
+on:
+  schedule:
+    - cron: '17 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/install-scanners
+        with:
+          grype: 'true'
+      - uses: ./.github/actions/grype-db
+        with:
+          cache: 'false'
+      - name: Latest release and its SBOM
+        id: release
+        run: |
+          set -euo pipefail
+          tag=$(gh release view -R "$GITHUB_REPOSITORY" --json tagName --jq .tagName)
+          if ! gh release download "$tag" -R "$GITHUB_REPOSITORY" -p 'helper2-*.cdx.json' -O sbom.cdx.json; then
+            echo "::warning::release $tag has no SBOM (published before ADR 0046): nothing to scan"
+            echo "found=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          git fetch --quiet --force origin "refs/tags/$tag:refs/tags/$tag"
+          { echo "found=true"; echo "tag=$tag"; echo "sha=$(git rev-parse "refs/tags/$tag^{commit}")"; } >> "$GITHUB_OUTPUT"
+      - name: Scan (report-only)
+        if: steps.release.outputs.found == 'true'
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          set -euo pipefail
+          grype sbom:sbom.cdx.json --only-fixed -o table=grype.txt -o sarif=grype.sarif
+          { echo "### Grype, release $TAG (fixable only)"; echo '```'; cat grype.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          cat grype.txt
+      - if: steps.release.outputs.found == 'true'
+        uses: ./.github/actions/upload-sarif
+        continue-on-error: true
+        with:
+          sarif: grype.sarif
+          category: release/app
+          ref: refs/tags/${{ steps.release.outputs.tag }}
+          sha: ${{ steps.release.outputs.sha }}

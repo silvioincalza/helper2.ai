@@ -7,6 +7,7 @@
 # The platform repo (incalza-me-infra) owns the namespaces, the Ingresses, DNS and the deployer RBAC.
 #
 #   make image                   build linux/amd64 image, push to Harbor (robot from OpenBao helper2/kv ci/harbor)
+#   make sbom                    CycloneDX SBOM of the pushed image TAG (syft), into sbom.cdx.json
 #   make ENV=staging diff        what the next deploy would change
 #   make ENV=staging deploy      helm upgrade --install (chart ../helm/helper2) with TAG, wait, roll back on failure
 #   make ENV=staging rollback    previous helm revision
@@ -32,7 +33,7 @@ ifeq ($(filter $(ENV),staging prod),)
 $(error ENV must be staging or prod)
 endif
 
-.PHONY: help credentials backup-credentials image postgres-image chart-check check-env release-ready deploy diff rollback status
+.PHONY: help credentials backup-credentials image sbom postgres-image chart-check check-env release-ready deploy diff rollback status
 
 help: ## this list
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
@@ -98,6 +99,14 @@ image: ## build the linux/amd64 image of TAG (deploy/Dockerfile) and push it to 
 	$(ENGINE) build --platform linux/amd64 -f "$$work/src/deploy/Dockerfile" -t $(IMAGE):$(TAG) "$$work/src"; \
 	$(ENGINE) push $(IMAGE):$(TAG); \
 	echo "pushed $(IMAGE):$(TAG)"
+
+# CycloneDX SBOM of the pushed image of TAG, read from Harbor with the robot account (ADR 0046). Needs syft.
+SBOM ?= sbom.cdx.json
+sbom: ## CycloneDX SBOM of the image TAG, read from Harbor (needs syft), into SBOM (default sbom.cdx.json)
+	@set -euo pipefail; $(HARBOR); \
+	SYFT_REGISTRY_AUTH_AUTHORITY=$(REGISTRY) SYFT_REGISTRY_AUTH_USERNAME="$$user" SYFT_REGISTRY_AUTH_PASSWORD="$$pass" \
+		syft registry:$(IMAGE):$(TAG) -o cyclonedx-json=$(SBOM); \
+	echo "SBOM of $(IMAGE):$(TAG) in $(SBOM)"
 
 # Built only when postgres.image.tag is not in Harbor yet (the first run after a bump), otherwise a
 # no-op, so CD runs it on every push. Prints the digest to pin as postgres.image.digest.

@@ -97,26 +97,54 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       SHA: ${{ needs.release.outputs.sha }}
+    outputs:
+      run: ${{ steps.wait.outputs.run }}
     steps:
       - name: Wait for the commit's CD run to pass staging
+        id: wait
         run: |
           set -euo pipefail
           for _ in $(seq 1 80); do
             # Filtered by the full commit on the server, so an old release commit is found as well as a new one.
             run=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/cd.yml/runs?event=push&head_sha=$SHA&per_page=1" \
-              --jq ".workflow_runs[0] // empty | [.status, (.conclusion // \"\"), .html_url] | @tsv")
+              --jq ".workflow_runs[0] // empty | [.status, (.conclusion // \"\"), .html_url, .id] | @tsv")
             if [[ -z $run ]]; then
               echo "::error::no CD run for $SHA: the commit never went through staging"; exit 1
             fi
-            IFS=$'\t' read -r status conclusion url <<< "$run"
+            IFS=$'\t' read -r status conclusion url id <<< "$run"
             if [[ $status == completed ]]; then
-              [[ $conclusion == success ]] && { echo "staging passed: $url"; exit 0; }
+              [[ $conclusion == success ]] && { echo "staging passed: $url"; echo "run=$id" >> "$GITHUB_OUTPUT"; exit 0; }
               echo "::error::the CD run of $SHA ended '$conclusion' ($url): fix staging, then tag a new version"; exit 1
             fi
             echo "CD run of $SHA is $status, waiting ($url)"
             sleep 30
           done
           echo "::error::the CD run of $SHA did not finish in 40 minutes"; exit 1
+
+  # The SBOM of the image that goes to prod (ADR 0046): the one CD made when it pushed that image, attached to the
+  # release. Public: it lists packages and versions, no data. A CD run from before SBOMs has none: a warning only.
+  sbom:
+    needs: [release, staged]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ github.ref_name }}
+      RUN: ${{ needs.staged.outputs.run }}
+    steps:
+      - name: Attach the CD run's SBOM to the release
+        run: |
+          set -euo pipefail
+          dir=$(mktemp -d)
+          if ! gh run download "$RUN" -R "$GITHUB_REPOSITORY" -n sbom -D "$dir"; then
+            echo "::warning::CD run $RUN has no SBOM artifact (expired after 90 days, or older than ADR 0046): release $TAG has none"
+            exit 0
+          fi
+          mv "$dir/sbom.cdx.json" "$dir/helper2-$TAG.cdx.json"
+          gh release upload "$TAG" "$dir/helper2-$TAG.cdx.json" -R "$GITHUB_REPOSITORY" --clobber
 
   # Only after every check above: the image of that commit, built when it reached main and run on
   # staging, goes to prod. Never rebuilt (ADR 0028).
