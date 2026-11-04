@@ -13,52 +13,59 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.data.redis.core.script.RedisScript;
 
-/** Redis is optional: when it is down the budget counts in memory without waiting on Redis each time. */
+/**
+ * Redis is optional: when it is down the budget counts in memory without waiting on Redis each
+ * time.
+ */
 class RedisCallCounterTest {
 
-    private static final LocalDate DAY = LocalDate.of(2026, 10, 26);
+  private static final LocalDate DAY = LocalDate.of(2026, 10, 26);
 
-    private static final class DownRedis extends StringRedisTemplate {
-        int calls;
+  private static final class DownRedis extends StringRedisTemplate {
+    int calls;
 
-        @Override
-        public <T> T execute(RedisScript<T> script, List<String> keys, Object... args) {
-            calls++;
-            throw new RedisConnectionFailureException("down");
-        }
-
-        @Override
-        public ValueOperations<String, String> opsForValue() {
-            calls++;
-            throw new RedisConnectionFailureException("down");
-        }
+    @Override
+    public <T> T execute(RedisScript<T> script, List<String> keys, Object... args) {
+      calls++;
+      throw new RedisConnectionFailureException("down");
     }
 
-    @Test
-    void aReadRedisCannotAnswerIsUnknownNotZero() {
-        RedisCallCounter counter = new RedisCallCounter(new DownRedis(), TestPolicies.redis(new MovableClock(Instant.parse("2026-10-26T10:00:00Z"))));
-
-        assertThat(counter.current("guide", DAY)).isNull();
+    @Override
+    public ValueOperations<String, String> opsForValue() {
+      calls++;
+      throw new RedisConnectionFailureException("down");
     }
+  }
 
-    @Test
-    void afterAFailureRedisIsLeftAloneForAWhile() {
-        DownRedis redis = new DownRedis();
-        MovableClock clock = new MovableClock(Instant.parse("2026-10-26T10:00:00Z"));
-        RedisCallCounter counter = new RedisCallCounter(redis, TestPolicies.redis(clock));
+  @Test
+  void aReadRedisCannotAnswerIsUnknownNotZero() {
+    RedisCallCounter counter =
+        new RedisCallCounter(
+            new DownRedis(),
+            TestPolicies.redis(new MovableClock(Instant.parse("2026-10-26T10:00:00Z"))));
 
-        assertThat(counter.increment("guide", DAY)).isNull();
-        assertThat(counter.increment("guide", DAY)).isNull();
-        assertThat(redis.calls).isEqualTo(1);
+    assertThat(counter.current("guide", DAY)).isNull();
+  }
 
-        clock.now = clock.now.plusSeconds(31);
-        assertThat(counter.increment("guide", DAY)).isNull();
-        assertThat(redis.calls).isEqualTo(2);
-    }
+  @Test
+  void afterAFailureRedisIsLeftAloneForAWhile() {
+    DownRedis redis = new DownRedis();
+    MovableClock clock = new MovableClock(Instant.parse("2026-10-26T10:00:00Z"));
+    RedisCallCounter counter = new RedisCallCounter(redis, TestPolicies.redis(clock));
 
-    @Test
-    void keysAreSeparatePerBudgetAndDay() {
-        assertThat(RedisCallCounter.key("guide", DAY)).isEqualTo("h2:v1:budget:guide:2026-10-26");
-        assertThat(RedisCallCounter.key("translation", DAY)).isNotEqualTo(RedisCallCounter.key("guide", DAY));
-    }
+    assertThat(counter.increment("guide", DAY)).isNull();
+    assertThat(counter.increment("guide", DAY)).isNull();
+    assertThat(redis.calls).isEqualTo(1);
+
+    clock.now = clock.now.plusSeconds(31);
+    assertThat(counter.increment("guide", DAY)).isNull();
+    assertThat(redis.calls).isEqualTo(2);
+  }
+
+  @Test
+  void keysAreSeparatePerBudgetAndDay() {
+    assertThat(RedisCallCounter.key("guide", DAY)).isEqualTo("h2:v1:budget:guide:2026-10-26");
+    assertThat(RedisCallCounter.key("translation", DAY))
+        .isNotEqualTo(RedisCallCounter.key("guide", DAY));
+  }
 }

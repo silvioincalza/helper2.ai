@@ -26,17 +26,17 @@ import ai.helper2.platform.BadRequestException;
 import ai.helper2.platform.ClientKey;
 import ai.helper2.platform.SignedInUser;
 import ai.helper2.search.Asker;
-import ai.helper2.search.Feature;
 import ai.helper2.search.FacetCount;
-import ai.helper2.search.usecase.ListSources;
-import ai.helper2.search.usecase.SearchResources;
-import ai.helper2.search.usecase.SourceOverview;
+import ai.helper2.search.Feature;
 import ai.helper2.search.SearchFilters;
 import ai.helper2.search.SearchOutcome;
 import ai.helper2.search.SearchRequest;
 import ai.helper2.search.SortOrder;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.SourceStatus;
+import ai.helper2.search.usecase.ListSources;
+import ai.helper2.search.usecase.SearchResources;
+import ai.helper2.search.usecase.SourceOverview;
 import ai.helper2.shared.Audience;
 import ai.helper2.shared.AudiencePath;
 import ai.helper2.shared.ResourceType;
@@ -59,34 +59,49 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1")
 class SearchController implements SearchApi, SourcesApi {
 
-    static final String COVERAGE_NOTE =
-        "Results come only from the sources listed here; Helper2.ai does not search the whole web.";
+  static final String COVERAGE_NOTE =
+      "Results come only from the sources listed here; Helper2.ai does not search the whole web.";
 
-    private final SearchResources search;
-    private final ListSources sources;
-    private final SignedInUser signedInUser;
-    /** A proxy to the current request: the generated interface does not pass it. */
-    private final HttpServletRequest http;
+  private final SearchResources search;
+  private final ListSources sources;
+  private final SignedInUser signedInUser;
 
-    SearchController(SearchResources search, ListSources sources, SignedInUser signedInUser, HttpServletRequest http) {
-        this.search = search;
-        this.sources = sources;
-        this.signedInUser = signedInUser;
-        this.http = http;
+  /** A proxy to the current request: the generated interface does not pass it. */
+  private final HttpServletRequest http;
+
+  SearchController(
+      SearchResources search,
+      ListSources sources,
+      SignedInUser signedInUser,
+      HttpServletRequest http) {
+    this.search = search;
+    this.sources = sources;
+    this.signedInUser = signedInUser;
+    this.http = http;
+  }
+
+  @Override
+  public ResponseEntity<SearchResponseDto> search(
+      String q,
+      @Nullable AudiencePathDto path,
+      @Nullable List<ResourceTypeDto> type,
+      @Nullable List<String> source,
+      @Nullable List<String> license,
+      @Nullable TriStateDto openSource,
+      @Nullable List<PricingFilterDto> pricing,
+      @Nullable List<String> platform,
+      @Nullable List<String> useCase,
+      @Nullable List<TechLevelFilterDto> techLevel,
+      @Nullable List<AudienceDto> audience,
+      @Nullable LocalDate updatedAfter,
+      @Nullable SortOrderDto sort,
+      Integer page,
+      Integer size) {
+    if (q.isBlank()) {
+      throw new BadRequestException("Query must not be blank");
     }
-
-    @Override
-    public ResponseEntity<SearchResponseDto> search(String q, @Nullable AudiencePathDto path,
-                                                    @Nullable List<ResourceTypeDto> type, @Nullable List<String> source,
-                                                    @Nullable List<String> license, @Nullable TriStateDto openSource,
-                                                    @Nullable List<PricingFilterDto> pricing, @Nullable List<String> platform,
-                                                    @Nullable List<String> useCase, @Nullable List<TechLevelFilterDto> techLevel,
-                                                    @Nullable List<AudienceDto> audience, @Nullable LocalDate updatedAfter,
-                                                    @Nullable SortOrderDto sort, Integer page, Integer size) {
-        if (q.isBlank()) {
-            throw new BadRequestException("Query must not be blank");
-        }
-        SearchFilters filters = new SearchFilters(
+    SearchFilters filters =
+        new SearchFilters(
             set(type, t -> ResourceType.valueOf(t.getValue())),
             set(source, Function.identity()),
             set(license, l -> l.equalsIgnoreCase("unknown") ? "unknown" : l),
@@ -97,82 +112,133 @@ class SearchController implements SearchApi, SourcesApi {
             set(techLevel, t -> t == TechLevelFilterDto.UNKNOWN ? "unknown" : t.getValue()),
             set(audience, a -> Audience.valueOf(a.getValue())),
             updatedAfter);
-        Asker asker = new Asker(Feature.SEARCH, ClientKey.of(http.getRemoteAddr()), signedInUser.id().orElse(null));
-        SearchOutcome out = search.search(new SearchRequest(
-            q, path == null ? null : AudiencePath.valueOf(path.getValue()), filters,
-            sort == null ? SortOrder.RELEVANCE : SortOrder.valueOf(sort.getValue()), page, size, null, false, asker, null));
-        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(toDto(out));
-    }
+    Asker asker =
+        new Asker(
+            Feature.SEARCH, ClientKey.of(http.getRemoteAddr()), signedInUser.id().orElse(null));
+    SearchOutcome out =
+        search.search(
+            new SearchRequest(
+                q,
+                path == null ? null : AudiencePath.valueOf(path.getValue()),
+                filters,
+                sort == null ? SortOrder.RELEVANCE : SortOrder.valueOf(sort.getValue()),
+                page,
+                size,
+                null,
+                false,
+                asker,
+                null));
+    return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(toDto(out));
+  }
 
-    @Override
-    public ResponseEntity<List<SourceInfoDto>> listSources() {
-        return ResponseEntity.ok(sources.list().stream().map(SearchController::info).toList());
-    }
+  @Override
+  public ResponseEntity<List<SourceInfoDto>> listSources() {
+    return ResponseEntity.ok(sources.list().stream().map(SearchController::info).toList());
+  }
 
-    private static SourceInfoDto info(SourceOverview o) {
-        SourceDescriptor d = o.getDescriptor();
-        SourceInfoDto dto = new SourceInfoDto(d.getId(), d.getName(), SourceModeDto.fromValue(d.getMode().name()),
-            d.getEnabled(), d.getMetered(), d.getHomepage(),
-            d.getResourceTypes().stream().map(t -> ResourceTypeDto.fromValue(t.name())).sorted().toList())
-            .termsUrl(d.getTermsUrl()).attribution(d.getAttribution())
+  private static SourceInfoDto info(SourceOverview o) {
+    SourceDescriptor d = o.getDescriptor();
+    SourceInfoDto dto =
+        new SourceInfoDto(
+                d.getId(),
+                d.getName(),
+                SourceModeDto.fromValue(d.getMode().name()),
+                d.getEnabled(),
+                d.getMetered(),
+                d.getHomepage(),
+                d.getResourceTypes().stream()
+                    .map(t -> ResourceTypeDto.fromValue(t.name()))
+                    .sorted()
+                    .toList())
+            .termsUrl(d.getTermsUrl())
+            .attribution(d.getAttribution())
             .responseTimeMs(o.getResponseTime() == null ? null : o.getResponseTime().toMillis());
-        if (o.getLast() != null) {
-            dto.lastOutcome(SourceOutcomeDto.fromValue(o.getLast().getOutcome().name()))
-                .lastCheckedAt(UtcTimes.odt(o.getLast().getCheckedAt()));
-        }
-        if (o.getCircuit() != null) {
-            dto.circuit(CircuitStateDto.fromValue(o.getCircuit().state().name()))
-                .circuitOpenedAt(UtcTimes.odt(o.getCircuit().openedAt()));
-        }
-        if (o.getWebCredits() != null) {
-            dto.webCredits(new WebCreditsDto(o.getWebCredits().getUsedToday()).dailyCap(o.getWebCredits().getDailyCap()));
-        }
-        return dto;
+    if (o.getLast() != null) {
+      dto.lastOutcome(SourceOutcomeDto.fromValue(o.getLast().getOutcome().name()))
+          .lastCheckedAt(UtcTimes.odt(o.getLast().getCheckedAt()));
     }
+    if (o.getCircuit() != null) {
+      dto.circuit(CircuitStateDto.fromValue(o.getCircuit().state().name()))
+          .circuitOpenedAt(UtcTimes.odt(o.getCircuit().openedAt()));
+    }
+    if (o.getWebCredits() != null) {
+      dto.webCredits(
+          new WebCreditsDto(o.getWebCredits().getUsedToday())
+              .dailyCap(o.getWebCredits().getDailyCap()));
+    }
+    return dto;
+  }
 
-    private static SearchResponseDto toDto(SearchOutcome out) {
-        SearchResponseDto dto = new SearchResponseDto()
+  private static SearchResponseDto toDto(SearchOutcome out) {
+    SearchResponseDto dto =
+        new SearchResponseDto()
             .query(out.getRequest().getText())
-            .path(out.getRequest().getPath() == null ? null : AudiencePathDto.fromValue(out.getRequest().getPath().name()))
+            .path(
+                out.getRequest().getPath() == null
+                    ? null
+                    : AudiencePathDto.fromValue(out.getRequest().getPath().name()))
             .sort(SortOrderDto.fromValue(out.getRequest().getSort().name()))
             .executedAt(UtcTimes.odt(out.getExecutedAt()))
-            .coverage(new CoverageDto()
-                .partial(out.getCoverage().getPartial())
-                .sourcesConfigured(out.getCoverage().getSourcesConfigured())
-                .sourcesQueried(out.getCoverage().getSourcesQueried())
-                .sourcesSucceeded(out.getCoverage().getSourcesSucceeded())
-                .note(COVERAGE_NOTE))
+            .coverage(
+                new CoverageDto()
+                    .partial(out.getCoverage().getPartial())
+                    .sourcesConfigured(out.getCoverage().getSourcesConfigured())
+                    .sourcesQueried(out.getCoverage().getSourcesQueried())
+                    .sourcesSucceeded(out.getCoverage().getSourcesSucceeded())
+                    .note(COVERAGE_NOTE))
             .sources(out.getStatuses().stream().map(SearchController::status).toList())
             .results(out.getResults().stream().map(CardMapper::card).toList())
             .facets(facets(out.getFacets()))
             .total(out.getTotal())
             .page(out.getRequest().getPage())
             .size(out.getRequest().getSize())
-            .notices(out.getNotices().stream()
-                .map(n -> new NoticeDto(NoticeDto.CodeEnum.fromValue(n.getCode().name()), n.getMessage())).toList())
-            .interpretation(new QueryInterpretationDto(out.getInterpretation().getExpandedTerms(),
-                List.copyOf(out.getInterpretation().getUseCases())))
+            .notices(
+                out.getNotices().stream()
+                    .map(n ->
+                        new NoticeDto(
+                            NoticeDto.CodeEnum.fromValue(n.getCode().name()), n.getMessage()))
+                    .toList())
+            .interpretation(
+                new QueryInterpretationDto(
+                    out.getInterpretation().getExpandedTerms(),
+                    List.copyOf(out.getInterpretation().getUseCases())))
             .webSearches(CardMapper.webSearches(out.getWebSearches()));
-        return dto;
-    }
+    return dto;
+  }
 
-    private static SourceStatusDto status(SourceStatus s) {
-        return new SourceStatusDto(s.getSource().getId(), s.getSource().getName(),
-            SourceModeDto.fromValue(s.getSource().getMode().name()), SourceOutcomeDto.fromValue(s.getOutcome().name()),
-            ServedFromDto.fromValue(s.getServedFrom().name()), s.getResultCount(), UtcTimes.odt(s.getCheckedAt()))
-            .latencyMs(s.getLatency() == null ? null : s.getLatency().toMillis())
-            .cachedAt(UtcTimes.odt(s.getCachedAt()))
-            .message(s.getMessage());
-    }
+  private static SourceStatusDto status(SourceStatus s) {
+    return new SourceStatusDto(
+            s.getSource().getId(),
+            s.getSource().getName(),
+            SourceModeDto.fromValue(s.getSource().getMode().name()),
+            SourceOutcomeDto.fromValue(s.getOutcome().name()),
+            ServedFromDto.fromValue(s.getServedFrom().name()),
+            s.getResultCount(),
+            UtcTimes.odt(s.getCheckedAt()))
+        .latencyMs(s.getLatency() == null ? null : s.getLatency().toMillis())
+        .cachedAt(UtcTimes.odt(s.getCachedAt()))
+        .message(s.getMessage());
+  }
 
-    private static FacetsDto facets(Map<String, List<FacetCount>> f) {
-        Function<String, List<FacetValueDto>> get = name -> f.getOrDefault(name, List.of()).stream()
-            .map(c -> new FacetValueDto(c.getValue(), c.getCount())).toList();
-        return new FacetsDto(get.apply("type"), get.apply("source"), get.apply("license"), get.apply("openSource"),
-            get.apply("pricing"), get.apply("platform"), get.apply("useCase"), get.apply("techLevel"), get.apply("audience"));
-    }
+  private static FacetsDto facets(Map<String, List<FacetCount>> f) {
+    Function<String, List<FacetValueDto>> get =
+        name ->
+            f.getOrDefault(name, List.of()).stream()
+                .map(c -> new FacetValueDto(c.getValue(), c.getCount()))
+                .toList();
+    return new FacetsDto(
+        get.apply("type"),
+        get.apply("source"),
+        get.apply("license"),
+        get.apply("openSource"),
+        get.apply("pricing"),
+        get.apply("platform"),
+        get.apply("useCase"),
+        get.apply("techLevel"),
+        get.apply("audience"));
+  }
 
-    private static <T, R> Set<R> set(@Nullable Collection<T> in, Function<T, R> f) {
-        return in == null ? Set.of() : in.stream().map(f).collect(Collectors.toUnmodifiableSet());
-    }
+  private static <T, R> Set<R> set(@Nullable Collection<T> in, Function<T, R> f) {
+    return in == null ? Set.of() : in.stream().map(f).collect(Collectors.toUnmodifiableSet());
+  }
 }

@@ -19,45 +19,59 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1")
 class OverviewController implements OverviewApi {
 
-    private final GetOverview overview;
-    private final URI grafanaUrl;
+  private final GetOverview overview;
+  private final URI grafanaUrl;
 
-    OverviewController(GetOverview overview, @Value("${helper2.admin.grafana-url:}") String grafanaUrl) {
-        this.overview = overview;
-        this.grafanaUrl = grafanaLink(grafanaUrl);
+  OverviewController(
+      GetOverview overview, @Value("${helper2.admin.grafana-url:}") String grafanaUrl) {
+    this.overview = overview;
+    this.grafanaUrl = grafanaLink(grafanaUrl);
+  }
+
+  /**
+   * An absolute http(s) link with a host, or none. Anything else stops startup: the page puts it in
+   * an href.
+   */
+  static URI grafanaLink(String value) {
+    if (value.isBlank()) {
+      return null;
     }
-
-    /** An absolute http(s) link with a host, or none. Anything else stops startup: the page puts it in an href. */
-    static URI grafanaLink(String value) {
-        if (value.isBlank()) {
-            return null;
-        }
-        URI uri = URI.create(value.strip());
-        String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase(java.util.Locale.ROOT);
-        if (!(scheme.equals("https") || scheme.equals("http")) || uri.getHost() == null) {
-            throw new IllegalStateException("H2_ADMIN_GRAFANA_URL must be an absolute http(s) URL with a host.");
-        }
-        return uri;
+    URI uri = URI.create(value.strip());
+    String scheme =
+        uri.getScheme() == null ? "" : uri.getScheme().toLowerCase(java.util.Locale.ROOT);
+    if (!(scheme.equals("https") || scheme.equals("http")) || uri.getHost() == null) {
+      throw new IllegalStateException(
+          "H2_ADMIN_GRAFANA_URL must be an absolute http(s) URL with a host.");
     }
+    return uri;
+  }
 
-    @Override
-    public ResponseEntity<AdminOverviewDto> getAdminOverview() {
-        GetOverview.Overview o = overview.get();
-        AdminOverviewDto dto = new AdminOverviewDto(
-            UtcTimes.odt(o.generatedAt()),
-            o.openReviewItems().entrySet().stream()
-                .map(e -> new ReviewKindCountDto(ReviewKindDto.fromValue(e.getKey().name()), Math.toIntExact(e.getValue())))
-                .toList(),
-            Math.toIntExact(o.enrichmentBacklog()),
-            o.budgets().stream()
-                .map(b -> new BudgetTodayDto(b.name(), b.dailyLimit()).usedToday(b.usedToday() == null ? null : Math.toIntExact(b.usedToday())))
-                .toList(),
-            o.recentRuns().stream().map(AdminController::dto).toList(),
-            o.failedRunsLast24h())
+  @Override
+  public ResponseEntity<AdminOverviewDto> getAdminOverview() {
+    GetOverview.Overview o = overview.get();
+    AdminOverviewDto dto =
+        new AdminOverviewDto(
+                UtcTimes.odt(o.generatedAt()),
+                o.openReviewItems().entrySet().stream()
+                    .map(e ->
+                        new ReviewKindCountDto(
+                            ReviewKindDto.fromValue(e.getKey().name()),
+                            Math.toIntExact(e.getValue())))
+                    .toList(),
+                Math.toIntExact(o.enrichmentBacklog()),
+                o.budgets().stream()
+                    .map(b ->
+                        new BudgetTodayDto(b.name(), b.dailyLimit())
+                            .usedToday(
+                                b.usedToday() == null ? null : Math.toIntExact(b.usedToday())))
+                    .toList(),
+                o.recentRuns().stream().map(AdminController::dto).toList(),
+                o.failedRunsLast24h())
             .grafanaUrl(grafanaUrl);
-        if (o.webCredits() != null) {
-            dto.webCredits(new WebCreditsDto(o.webCredits().getUsedToday()).dailyCap(o.webCredits().getDailyCap()));
-        }
-        return ResponseEntity.ok(dto);
+    if (o.webCredits() != null) {
+      dto.webCredits(
+          new WebCreditsDto(o.webCredits().getUsedToday()).dailyCap(o.webCredits().getDailyCap()));
     }
+    return ResponseEntity.ok(dto);
+  }
 }

@@ -18,68 +18,79 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import tools.jackson.databind.json.JsonMapper;
 
-/** The search cache is optional: while the redis circuit is open, calls fail at once instead of slowing every search. */
+/**
+ * The search cache is optional: while the redis circuit is open, calls fail at once instead of
+ * slowing every search.
+ */
 class RedisSearchCacheTest {
 
-    private static final Instant NOW = Instant.parse("2026-10-27T10:00:00Z");
+  private static final Instant NOW = Instant.parse("2026-10-27T10:00:00Z");
 
-    /** In-memory Redis for get and set-with-ttl; down = every call fails. */
-    private static final class FakeRedis extends StringRedisTemplate {
-        final Map<String, String> values = new HashMap<>();
-        final Map<String, Duration> ttls = new HashMap<>();
-        boolean down;
-        int calls;
+  /** In-memory Redis for get and set-with-ttl; down = every call fails. */
+  private static final class FakeRedis extends StringRedisTemplate {
+    final Map<String, String> values = new HashMap<>();
+    final Map<String, Duration> ttls = new HashMap<>();
+    boolean down;
+    int calls;
 
-        @Override
-        @SuppressWarnings("unchecked")
-        public ValueOperations<String, String> opsForValue() {
-            calls++;
-            if (down) {
-                throw new RedisConnectionFailureException("down");
-            }
-            return (ValueOperations<String, String>) Proxy.newProxyInstance(getClass().getClassLoader(),
-                new Class<?>[] {ValueOperations.class}, (proxy, method, args) -> switch (method.getName()) {
+    @Override
+    @SuppressWarnings("unchecked")
+    public ValueOperations<String, String> opsForValue() {
+      calls++;
+      if (down) {
+        throw new RedisConnectionFailureException("down");
+      }
+      return (ValueOperations<String, String>)
+          Proxy.newProxyInstance(
+              getClass().getClassLoader(),
+              new Class<?>[] {ValueOperations.class},
+              (proxy, method, args) ->
+                  switch (method.getName()) {
                     case "get" -> values.get((String) args[0]);
                     case "set" -> {
-                        values.put((String) args[0], (String) args[1]);
-                        ttls.put((String) args[0], (Duration) args[2]);
-                        yield null;
+                      values.put((String) args[0], (String) args[1]);
+                      ttls.put((String) args[0], (Duration) args[2]);
+                      yield null;
                     }
                     default -> throw new UnsupportedOperationException(method.getName());
-                });
-        }
+                  });
     }
+  }
 
-    private final FakeRedis redis = new FakeRedis();
-    private final MovableClock clock = new MovableClock(NOW);
-    private final RedisSearchCache cache = new RedisSearchCache(redis, JsonMapper.builder().build(), TestPolicies.redis(clock));
+  private final FakeRedis redis = new FakeRedis();
+  private final MovableClock clock = new MovableClock(NOW);
+  private final RedisSearchCache cache =
+      new RedisSearchCache(redis, JsonMapper.builder().build(), TestPolicies.redis(clock));
 
-    @Test
-    void storesWithTheTtlAndReadsBack() {
-        cache.put("k", new CachedHits(List.of(), NOW), Duration.ofMinutes(30));
+  @Test
+  void storesWithTheTtlAndReadsBack() {
+    cache.put("k", new CachedHits(List.of(), NOW), Duration.ofMinutes(30));
 
-        assertThat(redis.ttls).containsEntry("k", Duration.ofMinutes(30));
-        assertThat(cache.get("k")).isEqualTo(new CachedHits(List.of(), NOW));
-        assertThat(cache.get("missing")).isNull();
-    }
+    assertThat(redis.ttls).containsEntry("k", Duration.ofMinutes(30));
+    assertThat(cache.get("k")).isEqualTo(new CachedHits(List.of(), NOW));
+    assertThat(cache.get("missing")).isNull();
+  }
 
-    @Test
-    void anUnreadableEntryIsAMiss() {
-        redis.values.put("k", "not json");
-        assertThat(cache.get("k")).isNull();
-    }
+  @Test
+  void anUnreadableEntryIsAMiss() {
+    redis.values.put("k", "not json");
+    assertThat(cache.get("k")).isNull();
+  }
 
-    @Test
-    void afterAFailureRedisIsLeftAloneUntilTheCircuitLetsATrialCallThrough() {
-        redis.down = true;
-        assertThatThrownBy(() -> cache.get("k")).isInstanceOf(IllegalStateException.class).hasMessage("cache unavailable");
-        assertThatThrownBy(() -> cache.put("k", new CachedHits(List.of(), NOW), Duration.ofMinutes(1)))
-            .isInstanceOf(IllegalStateException.class).hasMessage("cache unavailable");
-        assertThat(redis.calls).isEqualTo(1);
+  @Test
+  void afterAFailureRedisIsLeftAloneUntilTheCircuitLetsATrialCallThrough() {
+    redis.down = true;
+    assertThatThrownBy(() -> cache.get("k"))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage("cache unavailable");
+    assertThatThrownBy(() -> cache.put("k", new CachedHits(List.of(), NOW), Duration.ofMinutes(1)))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage("cache unavailable");
+    assertThat(redis.calls).isEqualTo(1);
 
-        redis.down = false;
-        clock.now = NOW.plusSeconds(31);
-        assertThat(cache.get("k")).isNull();
-        assertThat(redis.calls).isEqualTo(2);
-    }
+    redis.down = false;
+    clock.now = NOW.plusSeconds(31);
+    assertThat(cache.get("k")).isNull();
+    assertThat(redis.calls).isEqualTo(2);
+  }
 }

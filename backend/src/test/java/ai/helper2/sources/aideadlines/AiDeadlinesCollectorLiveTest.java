@@ -16,20 +16,28 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 /**
  * Opt-in: huggingface/ai-deadlines through the GitHub contents API and raw.githubusercontent.com.
- * H2_GITHUB_TOKEN=$(gh auth token) ./gradlew liveTest. One contents call and about 70 raw files. The token is
- * required here: anonymous contents calls share 60 per hour per IP address and fail on shared runners.
+ * H2_GITHUB_TOKEN=$(gh auth token) ./gradlew liveTest. One contents call and about 70 raw files.
+ * The token is required here: anonymous contents calls share 60 per hour per IP address and fail on
+ * shared runners.
  */
 @Tag("live")
 @EnabledIfEnvironmentVariable(named = "H2_GITHUB_TOKEN", matches = ".+")
 class AiDeadlinesCollectorLiveTest {
 
-    @Test
-    void conferencesWithAnUpcomingEditionBecomeEvents() {
-        AiDeadlinesCollector collector = new AiDeadlinesCollector(live("https://api.github.com", "H2_GITHUB_TOKEN"), liveHttp(),
-            Clock.systemUTC(), Resilience.NONE, new RunInterval(Duration.ZERO));
+  @Test
+  void conferencesWithAnUpcomingEditionBecomeEvents() {
+    AiDeadlinesCollector collector =
+        new AiDeadlinesCollector(
+            live("https://api.github.com", "H2_GITHUB_TOKEN"),
+            liveHttp(),
+            Clock.systemUTC(),
+            Resilience.NONE,
+            new RunInterval(Duration.ZERO));
 
-        CollectedBatch batch = collector.collect(null, null, 500);
+    CollectedBatch batch = collector.collect(null, null, 500);
 
-        assertThat(batch.getHits()).isNotEmpty().allSatisfy(h -> assertThat(h.getType()).isEqualTo(ResourceType.EVENT));
-    }
+    assertThat(batch.getHits())
+        .isNotEmpty()
+        .allSatisfy(h -> assertThat(h.getType()).isEqualTo(ResourceType.EVENT));
+  }
 }

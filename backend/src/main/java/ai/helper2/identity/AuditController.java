@@ -15,21 +15,28 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1")
 class AuditController implements AuditApi {
 
-    private final ListAuditEntries entries;
+  private final ListAuditEntries entries;
 
-    AuditController(ListAuditEntries entries) {
-        this.entries = entries;
-    }
+  AuditController(ListAuditEntries entries) {
+    this.entries = entries;
+  }
 
-    @Override
-    public ResponseEntity<AuditEntryPageDto> listAuditEntries(Integer page, Integer size) {
-        AuditLog.Page found = entries.list(page, size);
-        return ResponseEntity.ok(new AuditEntryPageDto(found.items().stream().map(AuditController::dto).toList(),
+  @Override
+  public ResponseEntity<AuditEntryPageDto> listAuditEntries(Integer page, Integer size) {
+    AuditLog.Page found = entries.list(page, size);
+    return ResponseEntity.ok(
+        new AuditEntryPageDto(
+            found.items().stream().map(AuditController::dto).toList(),
             Math.toIntExact(found.total())));
-    }
+  }
 
-    private static AuditEntryDto dto(AuditLog.Entry e) {
-        return new AuditEntryDto(e.id(), e.adminId(), AuditEntryDto.ActionEnum.fromValue(e.action().name()),
-            e.at().atOffset(ZoneOffset.UTC), e.outcome()).targetId(e.targetId());
-    }
+  private static AuditEntryDto dto(AuditLog.Entry e) {
+    return new AuditEntryDto(
+            e.id(),
+            e.adminId(),
+            AuditEntryDto.ActionEnum.fromValue(e.action().name()),
+            e.at().atOffset(ZoneOffset.UTC),
+            e.outcome())
+        .targetId(e.targetId());
+  }
 }

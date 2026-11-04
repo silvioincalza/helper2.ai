@@ -10,13 +10,13 @@ import org.springframework.stereotype.Service;
 @Service
 public class ListBookmarks {
 
-    private final Bookmarks bookmarks;
+  private final Bookmarks bookmarks;
 
-    public ListBookmarks(Bookmarks bookmarks) {
-        this.bookmarks = bookmarks;
-    }
+  public ListBookmarks(Bookmarks bookmarks) {
+    this.bookmarks = bookmarks;
+  }
 
-    public List<Bookmark> list(UUID userId) {
-        return bookmarks.list(userId);
-    }
+  public List<Bookmark> list(UUID userId) {
+    return bookmarks.list(userId);
+  }
 }

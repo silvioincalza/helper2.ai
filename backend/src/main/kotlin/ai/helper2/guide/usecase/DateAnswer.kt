@@ -19,79 +19,155 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 /** WHEN (ADR 0032): dates from records, never from a model. */
-internal class DateAnswer(private val steps: GuideSteps, private val maxCandidates: Int, private val clock: Clock) {
+internal class DateAnswer(
+  private val steps: GuideSteps,
+  private val maxCandidates: Int,
+  private val clock: Clock,
+) {
 
-    private companion object {
-        const val MAX_EVENTS = 5
-        val EVENTS = setOf(ResourceType.EVENT)
+  private companion object {
+    const val MAX_EVENTS = 5
+    val EVENTS = setOf(ResourceType.EVENT)
+  }
+
+  /**
+   * "when is NeurIPS?", "AI events next month", "when was Llama 4 released?": dates come from
+   * records, never from a model. Events: their stated days, soonest first. Otherwise the subject's
+   * creation date and the source stating it. A question about an event searches events only, so
+   * projects named like the event never crowd them out.
+   */
+  fun answer(q: Question, r: Reading, progress: GuideProgress): GuideAnswer {
+    val subject = r.subjects.firstOrNull()
+    val text = subject ?: IntentRules.subjectWords(r.query).ifBlank { "AI" }
+    val request =
+      if (r.aboutEvent) {
+        SearchRequest(
+          text = text,
+          path = q.path,
+          filters = SearchFilters(types = EVENTS),
+          size = maxCandidates,
+          webQuery = r.webQuery,
+        )
+      } else {
+        SearchRequest(text = text, path = q.path, size = maxCandidates)
+      }
+    // The text is cut from the planner's query only when no subject was named (and it is not the
+    // "AI" fallback).
+    val planned = subject == null && IntentRules.subjectWords(r.query).isNotBlank()
+    val outcome = steps.step(q, "search") { steps.find(q, r, request, planned) }
+    namesakes(r, outcome)?.let {
+      return askBack(clock, r, it, outcome, progress)
     }
-
-    /**
-     * "when is NeurIPS?", "AI events next month", "when was Llama 4 released?": dates come from records, never from a
-     * model. Events: their stated days, soonest first. Otherwise the subject's creation date and the source stating it.
-     * A question about an event searches events only, so projects named like the event never crowd them out.
-     */
-    fun answer(q: Question, r: Reading, progress: GuideProgress): GuideAnswer {
-        val subject = r.subjects.firstOrNull()
-        val text = subject ?: IntentRules.subjectWords(r.query).ifBlank { "AI" }
-        val request = if (r.aboutEvent) {
-            SearchRequest(text = text, path = q.path, filters = SearchFilters(types = EVENTS), size = maxCandidates, webQuery = r.webQuery)
-        } else {
-            SearchRequest(text = text, path = q.path, size = maxCandidates)
-        }
-        // The text is cut from the planner's query only when no subject was named (and it is not the "AI" fallback).
-        val planned = subject == null && IntentRules.subjectWords(r.query).isNotBlank()
-        val outcome = steps.step(q, "search") { steps.find(q, r, request, planned) }
-        namesakes(r, outcome)?.let { return askBack(clock, r, it, outcome, progress) }
-        progress.retrieved(outcome.results.size, outcome)
-        val window = r.window
-        val events = outcome.results.filter { it.type == ResourceType.EVENT && it.eventStart.value != null }
-            .filter { e -> subject == null || e.title.contains(subject, ignoreCase = true) }
-            .filter { e ->
-                val start = e.eventStart.value!!
-                val end = e.eventEnd.value ?: start
-                if (window != null) {
-                    !end.isBefore(window.from.atStartOfDay(ZoneOffset.UTC).toInstant()) &&
-                        start.isBefore(window.to.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant())
-                } else {
-                    !end.isBefore(LocalDate.ofInstant(clock.instant(), ZoneOffset.UTC).atStartOfDay(ZoneOffset.UTC).toInstant())
-                }
-            }
-            .sortedBy { it.eventStart.value }
-            .take(MAX_EVENTS)
-        if (events.isNotEmpty()) {
-            return GuideAnswer(
-                GuideStatus.OK, text, events.map { Recommendation(it, eventReason(it), (it.description ?: it.title).take(160), aiReasoned = false) },
-                null, !r.modelFailed, outcome.results.size, 0, outcome, clock.instant(), r.constraints,
+    progress.retrieved(outcome.results.size, outcome)
+    val window = r.window
+    val events =
+      outcome.results
+        .filter { it.type == ResourceType.EVENT && it.eventStart.value != null }
+        .filter { e -> subject == null || e.title.contains(subject, ignoreCase = true) }
+        .filter { e ->
+          val start = e.eventStart.value!!
+          val end = e.eventEnd.value ?: start
+          if (window != null) {
+            !end.isBefore(window.from.atStartOfDay(ZoneOffset.UTC).toInstant()) &&
+              start.isBefore(window.to.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant())
+          } else {
+            !end.isBefore(
+              LocalDate.ofInstant(clock.instant(), ZoneOffset.UTC)
+                .atStartOfDay(ZoneOffset.UTC)
+                .toInstant()
             )
+          }
         }
-        val own = subject?.let { name -> outcome.results.firstOrNull { isSubject(it, name) && it.type != ResourceType.EVENT } }
-        if (own != null) {
-            val date = own.published.value
-            val reason = if (date == null) "No release date found in our sources."
-            else "Created ${DateTimeFormatter.ISO_LOCAL_DATE.format(date.atOffset(ZoneOffset.UTC))}, as stated by ${own.published.sourceId ?: "its source"}."
-            return GuideAnswer(
-                if (date == null) GuideStatus.PARTIAL else GuideStatus.OK, text,
-                listOf(Recommendation(own, reason, (own.description ?: own.title).take(160), aiReasoned = false)),
-                null, !r.modelFailed, outcome.results.size, 0, outcome, clock.instant(), r.constraints,
-            )
-        }
-        if (outcome.results.isEmpty()) {
-            return GuideAnswer(GuideStatus.NO_CANDIDATES, text, emptyList(), null, !r.modelFailed, 0, 0, outcome, clock.instant(), r.constraints)
-        }
-        return degraded(clock, GuideStatus.PARTIAL, text, outcome.results.mapIndexed { i, res -> Candidate("c${i + 1}", res) }, outcome, 0, !r.modelFailed)
-            .withNotices(listOf(Notice(NoticeCode.GUIDE_SUBJECT_NOT_FOUND, "No date found in our sources; showing the closest search results.")))
+        .sortedBy { it.eventStart.value }
+        .take(MAX_EVENTS)
+    if (events.isNotEmpty()) {
+      return GuideAnswer(
+        GuideStatus.OK,
+        text,
+        events.map {
+          Recommendation(
+            it,
+            eventReason(it),
+            (it.description ?: it.title).take(160),
+            aiReasoned = false,
+          )
+        },
+        null,
+        !r.modelFailed,
+        outcome.results.size,
+        0,
+        outcome,
+        clock.instant(),
+        r.constraints,
+      )
     }
+    val own = subject?.let { name ->
+      outcome.results.firstOrNull { isSubject(it, name) && it.type != ResourceType.EVENT }
+    }
+    if (own != null) {
+      val date = own.published.value
+      val reason =
+        if (date == null) "No release date found in our sources."
+        else
+          "Created ${DateTimeFormatter.ISO_LOCAL_DATE.format(date.atOffset(ZoneOffset.UTC))}, as stated by ${own.published.sourceId ?: "its source"}."
+      return GuideAnswer(
+        if (date == null) GuideStatus.PARTIAL else GuideStatus.OK,
+        text,
+        listOf(
+          Recommendation(own, reason, (own.description ?: own.title).take(160), aiReasoned = false)
+        ),
+        null,
+        !r.modelFailed,
+        outcome.results.size,
+        0,
+        outcome,
+        clock.instant(),
+        r.constraints,
+      )
+    }
+    if (outcome.results.isEmpty()) {
+      return GuideAnswer(
+        GuideStatus.NO_CANDIDATES,
+        text,
+        emptyList(),
+        null,
+        !r.modelFailed,
+        0,
+        0,
+        outcome,
+        clock.instant(),
+        r.constraints,
+      )
+    }
+    return degraded(
+        clock,
+        GuideStatus.PARTIAL,
+        text,
+        outcome.results.mapIndexed { i, res -> Candidate("c${i + 1}", res) },
+        outcome,
+        0,
+        !r.modelFailed,
+      )
+      .withNotices(
+        listOf(
+          Notice(
+            NoticeCode.GUIDE_SUBJECT_NOT_FOUND,
+            "No date found in our sources; showing the closest search results.",
+          )
+        )
+      )
+  }
 
-    private fun eventReason(e: MergedResult): String {
-        val day = DateTimeFormatter.ISO_LOCAL_DATE
-        val start = day.format(e.eventStart.value!!.atOffset(ZoneOffset.UTC))
-        val end = e.eventEnd.value?.let { day.format(it.atOffset(ZoneOffset.UTC)) }?.takeIf { it != start }
-        val where = e.location?.takeIf { it.isNotBlank() }
-        return buildString {
-            append(if (end == null) "On $start" else "From $start to $end")
-            if (where != null) append(", $where")
-            append(" (as stated by ${e.eventStart.sourceId ?: "its source"}).")
-        }
+  private fun eventReason(e: MergedResult): String {
+    val day = DateTimeFormatter.ISO_LOCAL_DATE
+    val start = day.format(e.eventStart.value!!.atOffset(ZoneOffset.UTC))
+    val end =
+      e.eventEnd.value?.let { day.format(it.atOffset(ZoneOffset.UTC)) }?.takeIf { it != start }
+    val where = e.location?.takeIf { it.isNotBlank() }
+    return buildString {
+      append(if (end == null) "On $start" else "From $start to $end")
+      if (where != null) append(", $where")
+      append(" (as stated by ${e.eventStart.sourceId ?: "its source"}).")
     }
+  }
 }

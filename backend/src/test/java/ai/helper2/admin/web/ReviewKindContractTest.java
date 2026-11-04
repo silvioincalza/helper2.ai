@@ -7,12 +7,16 @@ import ai.helper2.catalog.ReviewQueue;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
-/** The contract's review kinds and the queue's are the same set, so a mapping never fails with a 500. */
+/**
+ * The contract's review kinds and the queue's are the same set, so a mapping never fails with a
+ * 500.
+ */
 class ReviewKindContractTest {
 
-    @Test
-    void contractAndDomainKindsMatch() {
-        assertThat(Arrays.stream(ReviewKindDto.values()).map(ReviewKindDto::getValue).toList())
-            .containsExactlyInAnyOrderElementsOf(Arrays.stream(ReviewQueue.Kind.values()).map(Enum::name).toList());
-    }
+  @Test
+  void contractAndDomainKindsMatch() {
+    assertThat(Arrays.stream(ReviewKindDto.values()).map(ReviewKindDto::getValue).toList())
+        .containsExactlyInAnyOrderElementsOf(
+            Arrays.stream(ReviewQueue.Kind.values()).map(Enum::name).toList());
+  }
 }

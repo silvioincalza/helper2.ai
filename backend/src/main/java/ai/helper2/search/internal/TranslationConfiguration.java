@@ -19,35 +19,54 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/** The query translation of search (ADR 0011): an adapter of the search module's QueryTranslator port. */
+/**
+ * The query translation of search (ADR 0011): an adapter of the search module's QueryTranslator
+ * port.
+ */
 @Configuration(proxyBeanMethods = false)
 class TranslationConfiguration {
 
-    private static final Logger log = LoggerFactory.getLogger(TranslationConfiguration.class);
+  private static final Logger log = LoggerFactory.getLogger(TranslationConfiguration.class);
 
-    /**
-     * Non-English search queries in English words, with the fast model; off without a configured model.
-     * Its own daily cap, separate from the guide's: search allows far more requests per client than the
-     * guide, so a flood of unique foreign-language queries must not spend the guide's budget. Translations are shared
-     * by the replicas for {@code translationTtl}.
-     */
-    @Bean
-    QueryTranslator queryTranslator(ObjectProvider<ChatModel> chatModel, LlmSettings llm, Clock clock,
-                                    CallCounter budgetCounter, ModelCallMetrics metrics, MeterRegistry meters, Resilience resilience,
-                                    SharedCaches caches,
-                                    @Value("${helper2.search.daily-translations:300}") int dailyTranslations,
-                                    @Value("${helper2.search.translation-ttl:24h}") Duration translationTtl,
-                                    @Value("${helper2.search.translate-queries:true}") boolean enabled) {
-        ChatModel model = chatModel.getIfAvailable();
-        if (!enabled || !llm.usable(model) || !llm.hasReasoningModel()) {
-            log.info("Search query translation off");
-            return QueryTranslator.NONE;
-        }
-        log.info("Search query translation on: model={}, dailyTranslations={}", llm.fast(), dailyTranslations);
-        DailyBudget budget = new DailyBudget(dailyTranslations, clock, "translation", budgetCounter);
-        Gauge.builder("helper2.search.translation.budget.remaining", budget, DailyBudget::remaining)
-            .description("Search query translations left under today's cap (UTC day)")
-            .register(meters);
-        return new SpringAiQueryTranslator(model, llm.fast(), budget, caches.named("translation"), translationTtl, metrics, resilience);
+  /**
+   * Non-English search queries in English words, with the fast model; off without a configured
+   * model. Its own daily cap, separate from the guide's: search allows far more requests per client
+   * than the guide, so a flood of unique foreign-language queries must not spend the guide's
+   * budget. Translations are shared by the replicas for {@code translationTtl}.
+   */
+  @Bean
+  QueryTranslator queryTranslator(
+      ObjectProvider<ChatModel> chatModel,
+      LlmSettings llm,
+      Clock clock,
+      CallCounter budgetCounter,
+      ModelCallMetrics metrics,
+      MeterRegistry meters,
+      Resilience resilience,
+      SharedCaches caches,
+      @Value("${helper2.search.daily-translations:300}") int dailyTranslations,
+      @Value("${helper2.search.translation-ttl:24h}") Duration translationTtl,
+      @Value("${helper2.search.translate-queries:true}") boolean enabled) {
+    ChatModel model = chatModel.getIfAvailable();
+    if (!enabled || !llm.usable(model) || !llm.hasReasoningModel()) {
+      log.info("Search query translation off");
+      return QueryTranslator.NONE;
     }
+    log.info(
+        "Search query translation on: model={}, dailyTranslations={}",
+        llm.fast(),
+        dailyTranslations);
+    DailyBudget budget = new DailyBudget(dailyTranslations, clock, "translation", budgetCounter);
+    Gauge.builder("helper2.search.translation.budget.remaining", budget, DailyBudget::remaining)
+        .description("Search query translations left under today's cap (UTC day)")
+        .register(meters);
+    return new SpringAiQueryTranslator(
+        model,
+        llm.fast(),
+        budget,
+        caches.named("translation"),
+        translationTtl,
+        metrics,
+        resilience);
+  }
 }

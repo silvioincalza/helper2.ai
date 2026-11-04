@@ -30,114 +30,159 @@ import java.time.Clock
 import java.time.Instant
 
 /**
- * What the user asked: the text, the answer to a clarification and the parts of the reading they removed; and who
- * asks, for the daily web searches (one per question, however many searches it runs).
+ * What the user asked: the text, the answer to a clarification and the parts of the reading they
+ * removed; and who asks, for the daily web searches (one per question, however many searches it
+ * runs).
  */
-internal class Question(val text: String, val path: AudiencePath?, val clarification: String?, val drops: Drops, val asker: Asker?) {
-    /** The text the search and the no-model backup see: the question plus the user's answer to our question. */
-    val fullText: String get() = listOfNotNull(text, clarification?.takeIf { it.isNotBlank() }).joinToString(" ")
+internal class Question(
+  val text: String,
+  val path: AudiencePath?,
+  val clarification: String?,
+  val drops: Drops,
+  val asker: Asker?,
+) {
+  /**
+   * The text the search and the no-model backup see: the question plus the user's answer to our
+   * question.
+   */
+  val fullText: String
+    get() = listOfNotNull(text, clarification?.takeIf { it.isNotBlank() }).joinToString(" ")
 
-    /** Set once the question is read; the metric tag of the intent. */
-    var intentTag: String = "unknown"
+  /** Set once the question is read; the metric tag of the intent. */
+  var intentTag: String = "unknown"
 
-    /** When the earliest web results this question's searches used stop being fresh. */
-    var webFreshUntil: Instant? = null
-        private set
+  /** When the earliest web results this question's searches used stop being fresh. */
+  var webFreshUntil: Instant? = null
+    private set
 
-    /** The comparison searches its subjects at the same time, so two searches can report at once. */
-    @Synchronized
-    fun webResultsFreshUntil(until: Instant) {
-        webFreshUntil = webFreshUntil?.let { minOf(it, until) } ?: until
-    }
+  /** The comparison searches its subjects at the same time, so two searches can report at once. */
+  @Synchronized
+  fun webResultsFreshUntil(until: Instant) {
+    webFreshUntil = webFreshUntil?.let { minOf(it, until) } ?: until
+  }
 
-    /** Milliseconds per step, in the order the steps ran, for the question's log line. */
-    val timings = LinkedHashMap<String, Long>()
+  /** Milliseconds per step, in the order the steps ran, for the question's log line. */
+  val timings = LinkedHashMap<String, Long>()
 
-    /** What the steps found (`kept=2 keptRanks=[1, 4]`), for the question's log line; never user text. */
-    val counts = mutableListOf<String>()
+  /**
+   * What the steps found (`kept=2 keptRanks=[1, 4]`), for the question's log line; never user text.
+   */
+  val counts = mutableListOf<String>()
 
-    private val queries = mutableListOf<String>()
+  private val queries = mutableListOf<String>()
 
-    /** A planner-written query a search ran with; the comparison's searches run at the same time. */
-    @Synchronized
-    fun ran(query: String?) {
-        if (!query.isNullOrBlank()) queries += query
-    }
+  /** A planner-written query a search ran with; the comparison's searches run at the same time. */
+  @Synchronized
+  fun ran(query: String?) {
+    if (!query.isNullOrBlank()) queries += query
+  }
 
-    /** The planner-written queries run, in order: the research trail's (ADR 0044). */
-    @Synchronized
-    fun queriesRun(): List<String> = queries.toList()
+  /** The planner-written queries run, in order: the research trail's (ADR 0044). */
+  @Synchronized fun queriesRun(): List<String> = queries.toList()
 }
 
 /**
- * Set while answering, for the question metric (the status alone cannot tell a spent budget from an outage) and for
- * the similar-question index (ADR 0041): the question's probe, and whether the answer is a near twin's.
+ * Set while answering, for the question metric (the status alone cannot tell a spent budget from an
+ * outage) and for the similar-question index (ADR 0041): the question's probe, and whether the
+ * answer is a near twin's.
  */
 internal class Asked(var budgetExhausted: Boolean = false) {
-    var probe: SimilarQuestions.Probe? = null
-    var reused: Boolean = false
+  var probe: SimilarQuestions.Probe? = null
+  var reused: Boolean = false
 }
 
-/** How the question was read: the plan (or the backup rules alone), with the user's removals applied. */
+/**
+ * How the question was read: the plan (or the backup rules alone), with the user's removals
+ * applied.
+ */
 internal class Reading(
-    val plan: GuideSearchPlan?,
-    val modelFailed: Boolean,
-    val intent: GuideIntent,
-    val subjects: List<String>,
-    val window: DateWindow?,
-    /** "latest" without a period: order by date, filter nothing. */
-    val newestFirst: Boolean,
-    val constraints: List<String>,
-    val query: String,
-    val webQuery: String?,
-    val allowReading: Boolean,
-    /** WHEN about an event (a conference, a hackathon, a start, a deadline): its search covers events only. */
-    val aboutEvent: Boolean = false,
-    /** The one subject whose namesakes are checked after the question's own search; null: never asked back for it. */
-    val askBackSubject: String? = null,
+  val plan: GuideSearchPlan?,
+  val modelFailed: Boolean,
+  val intent: GuideIntent,
+  val subjects: List<String>,
+  val window: DateWindow?,
+  /** "latest" without a period: order by date, filter nothing. */
+  val newestFirst: Boolean,
+  val constraints: List<String>,
+  val query: String,
+  val webQuery: String?,
+  val allowReading: Boolean,
+  /**
+   * WHEN about an event (a conference, a hackathon, a start, a deadline): its search covers events
+   * only.
+   */
+  val aboutEvent: Boolean = false,
+  /**
+   * The one subject whose namesakes are checked after the question's own search; null: never asked
+   * back for it.
+   */
+  val askBackSubject: String? = null,
 )
 
 /** What every step of a question shares: its span and timing, and its searches. */
-internal class GuideSteps(private val search: SearchResources, private val observations: ObservationRegistry) {
+internal class GuideSteps(
+  private val search: SearchResources,
+  private val observations: ObservationRegistry,
+) {
 
-    /**
-     * One step of a question: a child span and timer `helper2.guide.step{step,intent}`, and its time in the
-     * question's log line. The intent is read when the step ends, so the plan step carries the intent it found.
-     */
-    fun <T> step(q: Question, name: String, work: () -> T): T {
-        val observation = Observation.createNotStarted("helper2.guide.step", observations).lowCardinalityKeyValue("step", name).start()
-        val started = System.nanoTime()
-        try {
-            return observation.openScope().use { work() }
-        } catch (e: Throwable) {
-            observation.error(e)
-            throw e
-        } finally {
-            q.timings.merge(name, (System.nanoTime() - started) / 1_000_000, Long::plus)
-            observation.lowCardinalityKeyValue("intent", q.intentTag)
-            observation.stop()
-        }
+  /**
+   * One step of a question: a child span and timer `helper2.guide.step{step,intent}`, and its time
+   * in the question's log line. The intent is read when the step ends, so the plan step carries the
+   * intent it found.
+   */
+  fun <T> step(q: Question, name: String, work: () -> T): T {
+    val observation =
+      Observation.createNotStarted("helper2.guide.step", observations)
+        .lowCardinalityKeyValue("step", name)
+        .start()
+    val started = System.nanoTime()
+    try {
+      return observation.openScope().use { work() }
+    } catch (e: Throwable) {
+      observation.error(e)
+      throw e
+    } finally {
+      q.timings.merge(name, (System.nanoTime() - started) / 1_000_000, Long::plus)
+      observation.lowCardinalityKeyValue("intent", q.intentTag)
+      observation.stop()
     }
+  }
 
-    /**
-     * Every search of a question: under its asker's web-search quota, with the freshness its intent needs (dates,
-     * newest and learning questions are time-bound), and noting how long the web results it used stay fresh.
-     */
-    fun find(q: Question, r: Reading, request: SearchRequest, planned: Boolean = false): SearchOutcome {
-        val intentClass = when (r.intent) {
-            GuideIntent.NEWEST, GuideIntent.WHEN, GuideIntent.LEARN -> IntentClass.TIME_BOUND
-            else -> IntentClass.GENERAL
-        }
-        val outcome = search.search(request.copy(asker = q.asker, intentClass = intentClass))
-        outcome.webFreshUntil?.let(q::webResultsFreshUntil)
-        // The research trail (ADR 0044) lists only the planner's words that a search really sent: the planned query when
-        // [planned] says the text is it, the web query when a source that reads it was not skipped.
-        // A blank planned query falls back to the asker's own text (QuestionReader): that is not AI-written.
-        if (planned && r.plan?.searchQuery?.isNotBlank() == true) q.ran(request.text)
-        val web = request.webQuery
-        if (web != null && web == r.webQuery && outcome.statuses.any { it.source.usesWebQuery && it.outcome != SourceOutcome.SKIPPED }) q.ran(web)
-        return outcome
-    }
+  /**
+   * Every search of a question: under its asker's web-search quota, with the freshness its intent
+   * needs (dates, newest and learning questions are time-bound), and noting how long the web
+   * results it used stay fresh.
+   */
+  fun find(
+    q: Question,
+    r: Reading,
+    request: SearchRequest,
+    planned: Boolean = false,
+  ): SearchOutcome {
+    val intentClass =
+      when (r.intent) {
+        GuideIntent.NEWEST,
+        GuideIntent.WHEN,
+        GuideIntent.LEARN -> IntentClass.TIME_BOUND
+        else -> IntentClass.GENERAL
+      }
+    val outcome = search.search(request.copy(asker = q.asker, intentClass = intentClass))
+    outcome.webFreshUntil?.let(q::webResultsFreshUntil)
+    // The research trail (ADR 0044) lists only the planner's words that a search really sent: the
+    // planned query when
+    // [planned] says the text is it, the web query when a source that reads it was not skipped.
+    // A blank planned query falls back to the asker's own text (QuestionReader): that is not
+    // AI-written.
+    if (planned && r.plan?.searchQuery?.isNotBlank() == true) q.ran(request.text)
+    val web = request.webQuery
+    if (
+      web != null &&
+        web == r.webQuery &&
+        outcome.statuses.any { it.source.usesWebQuery && it.outcome != SourceOutcome.SKIPPED }
+    )
+      q.ran(web)
+    return outcome
+  }
 }
 
 /** Web pages that can announce a new resource. */
@@ -147,52 +192,76 @@ internal val WEB_ANNOUNCEMENTS = setOf(ResourceType.NEWS, ResourceType.ARTICLE)
 internal const val SUBJECT_SEARCH_SIZE = 5
 
 /** Why a model call failed, for the log: the adapter's category, or the exception's class. */
-internal fun failure(e: RuntimeException) = (e as? GuideUnavailable)?.category ?: e.javaClass.simpleName
+internal fun failure(e: RuntimeException) =
+  (e as? GuideUnavailable)?.category ?: e.javaClass.simpleName
 
 /**
- * The question back (ADR 0032 §3), after the plan call and at most the question's own search: no other model call,
- * no choose, no reason check. AI-written like every clarification: the plan call ran.
+ * The question back (ADR 0032 §3), after the plan call and at most the question's own search: no
+ * other model call, no choose, no reason check. AI-written like every clarification: the plan call
+ * ran.
  */
-internal fun askBack(clock: Clock, r: Reading, c: Clarification, outcome: SearchOutcome, progress: GuideProgress): GuideAnswer {
-    progress.clarify(c)
-    return GuideAnswer(
-        GuideStatus.NEEDS_CLARIFICATION, r.query, emptyList(), null, true, 0, 0, outcome, clock.instant(), r.constraints,
-        clarification = c,
-    )
+internal fun askBack(
+  clock: Clock,
+  r: Reading,
+  c: Clarification,
+  outcome: SearchOutcome,
+  progress: GuideProgress,
+): GuideAnswer {
+  progress.clarify(c)
+  return GuideAnswer(
+    GuideStatus.NEEDS_CLARIFICATION,
+    r.query,
+    emptyList(),
+    null,
+    true,
+    0,
+    0,
+    outcome,
+    clock.instant(),
+    r.constraints,
+    clarification = c,
+  )
 }
 
-/** The question back when the subject's own search found namesakes of different kinds; null to answer. */
+/**
+ * The question back when the subject's own search found namesakes of different kinds; null to
+ * answer.
+ */
 internal fun namesakes(r: Reading, outcome: SearchOutcome): Clarification? =
-    r.askBackSubject?.let { AmbiguousSubject.clarification(it, outcome.results, r.plan?.clarify) }
+  r.askBackSubject?.let { AmbiguousSubject.clarification(it, outcome.results, r.plan?.clarify) }
 
-internal fun GuideAnswer.withNotices(extra: List<Notice>) = if (extra.isEmpty()) this else copy(notices = notices + extra)
+internal fun GuideAnswer.withNotices(extra: List<Notice>) =
+  if (extra.isEmpty()) this else copy(notices = notices + extra)
 
 /** No trustworthy AI answer: show the top search results, clearly marked as not AI-reasoned. */
 internal fun degraded(
-    clock: Clock,
-    status: GuideStatus,
-    query: String,
-    candidates: List<Candidate>,
-    outcome: SearchOutcome,
-    rejected: Int,
-    modelUsed: Boolean,
-    constraints: List<String> = emptyList(),
+  clock: Clock,
+  status: GuideStatus,
+  query: String,
+  candidates: List<Candidate>,
+  outcome: SearchOutcome,
+  rejected: Int,
+  modelUsed: Boolean,
+  constraints: List<String> = emptyList(),
 ) =
-    GuideAnswer(
-        status = status,
-        searchQuery = query,
-        recommendations = candidates.take(3).map { c ->
-            Recommendation(
-                c.result, "Top search result (no AI reasoning available).", (c.result.description ?: c.result.title).take(160),
-                aiReasoned = false,
-                checks = constraints.map { ConstraintCheck(it, CheckStatus.NOT_CONFIRMED, null) },
-            )
-        },
-        prompt = null,
-        modelUsed = modelUsed,
-        candidatesConsidered = candidates.size,
-        rejected = rejected,
-        search = outcome,
-        generatedAt = clock.instant(),
-        constraints = constraints,
-    )
+  GuideAnswer(
+    status = status,
+    searchQuery = query,
+    recommendations =
+      candidates.take(3).map { c ->
+        Recommendation(
+          c.result,
+          "Top search result (no AI reasoning available).",
+          (c.result.description ?: c.result.title).take(160),
+          aiReasoned = false,
+          checks = constraints.map { ConstraintCheck(it, CheckStatus.NOT_CONFIRMED, null) },
+        )
+      },
+    prompt = null,
+    modelUsed = modelUsed,
+    candidatesConsidered = candidates.size,
+    rejected = rejected,
+    search = outcome,
+    generatedAt = clock.instant(),
+    constraints = constraints,
+  )

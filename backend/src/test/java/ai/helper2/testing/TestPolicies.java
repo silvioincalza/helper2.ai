@@ -13,32 +13,45 @@ import java.time.Duration;
 /** Resilience policies for adapter tests, on a clock the test moves. */
 public final class TestPolicies {
 
-    private TestPolicies() {
-    }
+  private TestPolicies() {}
 
-    /** A {@code redis} circuit that opens on the first failure for 30 s, then lets one trial call through. */
-    public static Resilience redis(Clock clock) {
-        return openingOnFirstFailure("redis", clock);
-    }
+  /**
+   * A {@code redis} circuit that opens on the first failure for 30 s, then lets one trial call
+   * through.
+   */
+  public static Resilience redis(Clock clock) {
+    return openingOnFirstFailure("redis", clock);
+  }
 
-    /** A {@code db-cache} circuit that opens on the first failure for 30 s, then lets one trial call through. */
-    public static Resilience dbCache(Clock clock) {
-        return openingOnFirstFailure("db-cache", clock);
-    }
+  /**
+   * A {@code db-cache} circuit that opens on the first failure for 30 s, then lets one trial call
+   * through.
+   */
+  public static Resilience dbCache(Clock clock) {
+    return openingOnFirstFailure("db-cache", clock);
+  }
 
-    private static Resilience openingOnFirstFailure(String policy, Clock clock) {
-        CircuitBreakerRegistry circuits = CircuitBreakerRegistry.ofDefaults();
-        circuits.circuitBreaker(policy, CircuitBreakerConfig.custom()
-            .slidingWindowSize(1).minimumNumberOfCalls(1).failureRateThreshold(50)
-            .waitDurationInOpenState(Duration.ofSeconds(30)).permittedNumberOfCallsInHalfOpenState(1)
-            .clock(clock).build());
-        return new Resilience4jPolicies(circuits, BulkheadRegistry.ofDefaults(), RetryRegistry.ofDefaults());
-    }
+  private static Resilience openingOnFirstFailure(String policy, Clock clock) {
+    CircuitBreakerRegistry circuits = CircuitBreakerRegistry.ofDefaults();
+    circuits.circuitBreaker(
+        policy,
+        CircuitBreakerConfig.custom()
+            .slidingWindowSize(1)
+            .minimumNumberOfCalls(1)
+            .failureRateThreshold(50)
+            .waitDurationInOpenState(Duration.ofSeconds(30))
+            .permittedNumberOfCallsInHalfOpenState(1)
+            .clock(clock)
+            .build());
+    return new Resilience4jPolicies(
+        circuits, BulkheadRegistry.ofDefaults(), RetryRegistry.ofDefaults());
+  }
 
-    /** An {@code llm-chat} circuit held open: every model call under it is refused. */
-    public static Resilience llmChatOpen() {
-        CircuitBreakerRegistry circuits = CircuitBreakerRegistry.ofDefaults();
-        circuits.circuitBreaker(LlmPolicies.CHAT).transitionToForcedOpenState();
-        return new Resilience4jPolicies(circuits, BulkheadRegistry.ofDefaults(), RetryRegistry.ofDefaults());
-    }
+  /** An {@code llm-chat} circuit held open: every model call under it is refused. */
+  public static Resilience llmChatOpen() {
+    CircuitBreakerRegistry circuits = CircuitBreakerRegistry.ofDefaults();
+    circuits.circuitBreaker(LlmPolicies.CHAT).transitionToForcedOpenState();
+    return new Resilience4jPolicies(
+        circuits, BulkheadRegistry.ofDefaults(), RetryRegistry.ofDefaults());
+  }
 }

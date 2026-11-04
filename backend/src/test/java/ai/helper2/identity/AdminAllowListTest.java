@@ -24,77 +24,101 @@ import org.springframework.security.oauth2.core.OAuth2AccessToken;
  */
 class AdminAllowListTest {
 
-    static HttpServer userInfo;
+  static HttpServer userInfo;
 
-    @BeforeAll
-    static void startUserInfo() throws Exception {
-        userInfo = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
-        userInfo.createContext("/user", exchange -> {
-            byte[] body = "{\"id\":12345,\"login\":\"octocat\",\"name\":\"The Octocat\"}".getBytes(StandardCharsets.UTF_8);
-            exchange.getResponseHeaders().add("Content-Type", "application/json");
-            exchange.sendResponseHeaders(200, body.length);
-            exchange.getResponseBody().write(body);
-            exchange.close();
+  @BeforeAll
+  static void startUserInfo() throws Exception {
+    userInfo = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+    userInfo.createContext(
+        "/user",
+        exchange -> {
+          byte[] body =
+              "{\"id\":12345,\"login\":\"octocat\",\"name\":\"The Octocat\"}"
+                  .getBytes(StandardCharsets.UTF_8);
+          exchange.getResponseHeaders().add("Content-Type", "application/json");
+          exchange.sendResponseHeaders(200, body.length);
+          exchange.getResponseBody().write(body);
+          exchange.close();
         });
-        userInfo.start();
-    }
+    userInfo.start();
+  }
 
-    @AfterAll
-    static void stopUserInfo() {
-        userInfo.stop(0);
-    }
+  @AfterAll
+  static void stopUserInfo() {
+    userInfo.stop(0);
+  }
 
-    private static Set<String> rolesFor(Set<String> admins) {
-        return rolesFor(admins, true);
-    }
+  private static Set<String> rolesFor(Set<String> admins) {
+    return rolesFor(admins, true);
+  }
 
-    private static Set<String> rolesFor(Set<String> admins, boolean onAdminPort) {
-        // The provider defaults Spring Boot uses for "github": user-name attribute "id".
-        ClientRegistration github = CommonOAuth2Provider.GITHUB.getBuilder("github")
-            .clientId("client").clientSecret("secret")
+  private static Set<String> rolesFor(Set<String> admins, boolean onAdminPort) {
+    // The provider defaults Spring Boot uses for "github": user-name attribute "id".
+    ClientRegistration github =
+        CommonOAuth2Provider.GITHUB
+            .getBuilder("github")
+            .clientId("client")
+            .clientSecret("secret")
             .userInfoUri("http://127.0.0.1:" + userInfo.getAddress().getPort() + "/user")
             .build();
-        OAuth2AccessToken token = new OAuth2AccessToken(OAuth2AccessToken.TokenType.BEARER, "token",
-            Instant.now(), Instant.now().plusSeconds(60));
-        return SecurityConfiguration.oauthUsers(admins, () -> onAdminPort).loadUser(new OAuth2UserRequest(github, token))
-            .getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet());
-    }
+    OAuth2AccessToken token =
+        new OAuth2AccessToken(
+            OAuth2AccessToken.TokenType.BEARER,
+            "token",
+            Instant.now(),
+            Instant.now().plusSeconds(60));
+    return SecurityConfiguration.oauthUsers(admins, () -> onAdminPort)
+        .loadUser(new OAuth2UserRequest(github, token))
+        .getAuthorities()
+        .stream()
+        .map(GrantedAuthority::getAuthority)
+        .collect(Collectors.toSet());
+  }
 
-    @Test
-    void numericGithubIdInTheAllowListGrantsAdmin() {
-        assertThat(rolesFor(Set.of("github:12345"))).contains("ROLE_USER", "ROLE_ADMIN");
-    }
+  @Test
+  void numericGithubIdInTheAllowListGrantsAdmin() {
+    assertThat(rolesFor(Set.of("github:12345"))).contains("ROLE_USER", "ROLE_ADMIN");
+  }
 
-    @Test
-    void githubLoginInTheAllowListDoesNotGrantAdmin() {
-        assertThat(rolesFor(Set.of("github:octocat"))).contains("ROLE_USER").doesNotContain("ROLE_ADMIN");
-    }
+  @Test
+  void githubLoginInTheAllowListDoesNotGrantAdmin() {
+    assertThat(rolesFor(Set.of("github:octocat")))
+        .contains("ROLE_USER")
+        .doesNotContain("ROLE_ADMIN");
+  }
 
-    @Test
-    void sameIdUnderAnotherProviderDoesNotGrantAdmin() {
-        assertThat(rolesFor(Set.of("google:12345"))).doesNotContain("ROLE_ADMIN");
-    }
+  @Test
+  void sameIdUnderAnotherProviderDoesNotGrantAdmin() {
+    assertThat(rolesFor(Set.of("google:12345"))).doesNotContain("ROLE_ADMIN");
+  }
 
-    @Test
-    void anAdminWhoSignsInOnThePublicPortIsAPlainUserThere() {
-        // ADR 0035: ADMIN only on a session made on the admin port, so a stolen public session is never an admin one.
-        assertThat(rolesFor(Set.of("github:12345"), false)).contains("ROLE_USER").doesNotContain("ROLE_ADMIN");
-    }
+  @Test
+  void anAdminWhoSignsInOnThePublicPortIsAPlainUserThere() {
+    // ADR 0035: ADMIN only on a session made on the admin port, so a stolen public session is never
+    // an admin one.
+    assertThat(rolesFor(Set.of("github:12345"), false))
+        .contains("ROLE_USER")
+        .doesNotContain("ROLE_ADMIN");
+  }
 
-    @Test
-    void anAllowListedEmailGrantsAdminOnlyOnTheAdminPort() {
-        Set<String> admins = Set.of("oidc:owner@example.org");
-        assertThat(SecurityConfiguration.roles(admins, "oidc", "subject-1", "owner@example.org", true))
-            .extracting(GrantedAuthority::getAuthority).contains("ROLE_ADMIN");
-        assertThat(SecurityConfiguration.roles(admins, "oidc", "subject-1", "owner@example.org", false))
-            .extracting(GrantedAuthority::getAuthority).containsExactly("ROLE_USER");
-    }
+  @Test
+  void anAllowListedEmailGrantsAdminOnlyOnTheAdminPort() {
+    Set<String> admins = Set.of("oidc:owner@example.org");
+    assertThat(SecurityConfiguration.roles(admins, "oidc", "subject-1", "owner@example.org", true))
+        .extracting(GrantedAuthority::getAuthority)
+        .contains("ROLE_ADMIN");
+    assertThat(SecurityConfiguration.roles(admins, "oidc", "subject-1", "owner@example.org", false))
+        .extracting(GrantedAuthority::getAuthority)
+        .containsExactly("ROLE_USER");
+  }
 
-    @Test
-    void signInReturnsToTheBackOfficeOnTheAdminPortAndToTheSiteOnThePublicPort() {
-        assertThat(SecurityConfiguration.afterSignIn("/", true)).isEqualTo("/admin");
-        assertThat(SecurityConfiguration.afterSignIn("/", false)).isEqualTo("/");
-        assertThat(SecurityConfiguration.afterSignIn("http://localhost:5173", true)).isEqualTo("http://localhost:5173/admin");
-        assertThat(SecurityConfiguration.afterSignIn("http://localhost:5173", false)).isEqualTo("http://localhost:5173/");
-    }
+  @Test
+  void signInReturnsToTheBackOfficeOnTheAdminPortAndToTheSiteOnThePublicPort() {
+    assertThat(SecurityConfiguration.afterSignIn("/", true)).isEqualTo("/admin");
+    assertThat(SecurityConfiguration.afterSignIn("/", false)).isEqualTo("/");
+    assertThat(SecurityConfiguration.afterSignIn("http://localhost:5173", true))
+        .isEqualTo("http://localhost:5173/admin");
+    assertThat(SecurityConfiguration.afterSignIn("http://localhost:5173", false))
+        .isEqualTo("http://localhost:5173/");
+  }
 }

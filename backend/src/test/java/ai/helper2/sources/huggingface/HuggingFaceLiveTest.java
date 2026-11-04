@@ -17,53 +17,77 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 /**
- * Opt-in: the real Hugging Face Hub API, one test per source and collector (H2_HF_TOKEN optional). ./gradlew liveTest
- * Four Hub calls. Fails when the Hub changes the listing fields the mappers read.
+ * Opt-in: the real Hugging Face Hub API, one test per source and collector (H2_HF_TOKEN optional).
+ * ./gradlew liveTest Four Hub calls. Fails when the Hub changes the listing fields the mappers
+ * read.
  */
 @Tag("live")
 class HuggingFaceLiveTest {
 
-    static final String HUB = "https://huggingface.co";
+  static final String HUB = "https://huggingface.co";
 
-    @Test
-    void modelsSearchFindsModelsWithLikes() {
-        HuggingFaceModelsSource source = new HuggingFaceModelsSource(live(HUB, "H2_HF_TOKEN"), liveHttp(), Clock.systemUTC());
+  @Test
+  void modelsSearchFindsModelsWithLikes() {
+    HuggingFaceModelsSource source =
+        new HuggingFaceModelsSource(live(HUB, "H2_HF_TOKEN"), liveHttp(), Clock.systemUTC());
 
-        List<SourceHit> hits = source.search(query("qwen"));
+    List<SourceHit> hits = source.search(query("qwen"));
 
-        assertThat(hits).isNotEmpty().allSatisfy(h -> {
-            assertThat(h.getUrl().toString()).startsWith(HUB + "/");
-            assertThat(h.getType()).isEqualTo(ResourceType.MODEL);
+    assertThat(hits)
+        .isNotEmpty()
+        .allSatisfy(h -> {
+          assertThat(h.getUrl().toString()).startsWith(HUB + "/");
+          assertThat(h.getType()).isEqualTo(ResourceType.MODEL);
         });
-    }
+  }
 
-    @Test
-    void spacesSearchFindsApps() {
-        HuggingFaceSpacesSource source = new HuggingFaceSpacesSource(live(HUB, "H2_HF_TOKEN"), liveHttp(), Clock.systemUTC());
+  @Test
+  void spacesSearchFindsApps() {
+    HuggingFaceSpacesSource source =
+        new HuggingFaceSpacesSource(live(HUB, "H2_HF_TOKEN"), liveHttp(), Clock.systemUTC());
 
-        List<SourceHit> hits = source.search(query("translate"));
+    List<SourceHit> hits = source.search(query("translate"));
 
-        assertThat(hits).isNotEmpty().allSatisfy(h -> assertThat(h.getUrl().toString()).startsWith(HUB + "/spaces/"));
-    }
+    assertThat(hits)
+        .isNotEmpty()
+        .allSatisfy(h -> assertThat(h.getUrl().toString()).startsWith(HUB + "/spaces/"));
+  }
 
-    @Test
-    void trendingCollectorReadsTheCurrentList() {
-        HuggingFaceTrendingCollector collector = new HuggingFaceTrendingCollector(live(HUB, "H2_HF_TOKEN"), liveHttp(), Clock.systemUTC(),
-            Resilience.NONE, new RunInterval(Duration.ZERO), 20);
+  @Test
+  void trendingCollectorReadsTheCurrentList() {
+    HuggingFaceTrendingCollector collector =
+        new HuggingFaceTrendingCollector(
+            live(HUB, "H2_HF_TOKEN"),
+            liveHttp(),
+            Clock.systemUTC(),
+            Resilience.NONE,
+            new RunInterval(Duration.ZERO),
+            20);
 
-        CollectedBatch batch = collector.collect(null, null, 20);
+    CollectedBatch batch = collector.collect(null, null, 20);
 
-        assertThat(batch.getHits()).isNotEmpty().allSatisfy(h -> assertThat(h.getType()).isEqualTo(ResourceType.MODEL));
-        assertThat(batch.getCheckpoint()).isNotNull();
-    }
+    assertThat(batch.getHits())
+        .isNotEmpty()
+        .allSatisfy(h -> assertThat(h.getType()).isEqualTo(ResourceType.MODEL));
+    assertThat(batch.getCheckpoint()).isNotNull();
+  }
 
-    @Test
-    void providerOrgsCollectorReadsTheNewestModelsOfAnOrg() {
-        HuggingFaceProviderOrgsCollector collector = new HuggingFaceProviderOrgsCollector(live(HUB, "H2_HF_TOKEN"), liveHttp(),
-            Clock.systemUTC(), Resilience.NONE, new RunInterval(Duration.ZERO), List.of("Qwen"), 5);
+  @Test
+  void providerOrgsCollectorReadsTheNewestModelsOfAnOrg() {
+    HuggingFaceProviderOrgsCollector collector =
+        new HuggingFaceProviderOrgsCollector(
+            live(HUB, "H2_HF_TOKEN"),
+            liveHttp(),
+            Clock.systemUTC(),
+            Resilience.NONE,
+            new RunInterval(Duration.ZERO),
+            List.of("Qwen"),
+            5);
 
-        CollectedBatch batch = collector.collect(null, null, 20);
+    CollectedBatch batch = collector.collect(null, null, 20);
 
-        assertThat(batch.getHits()).isNotEmpty().allSatisfy(h -> assertThat(h.getUrl().toString()).startsWith(HUB + "/Qwen/"));
-    }
+    assertThat(batch.getHits())
+        .isNotEmpty()
+        .allSatisfy(h -> assertThat(h.getUrl().toString()).startsWith(HUB + "/Qwen/"));
+  }
 }
