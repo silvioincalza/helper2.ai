@@ -22,6 +22,7 @@ cd backend && ./gradlew test        # unit + integration (Postgres, Redis in con
 cd backend && ./gradlew spotlessApply  # format Java and Kotlin (CI runs spotlessCheck)
 cd backend && ./gradlew liveTest    # opt-in, real external APIs
 cd frontend && npm test -- --run && npm run lint && npm run typecheck
+cd frontend && npm run format        # Prettier (CI runs format:check)
 ```
 
 Run the relevant tests before calling a change done.
