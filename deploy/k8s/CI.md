@@ -72,7 +72,15 @@ Deployment in staging (to promote what staging runs), but not staging's Secrets.
 change, rerun `make ENV=<env> credentials`; the next deploy restarts the app with it.
 
 **Releases** — tag the release commit on `main`: `git tag -a v1.0.3 -m "<notes>" <commit>; git push origin v1.0.3`.
-The push publishes the GitHub release and starts the prod deploy of that commit, which waits for the approval.
+The push publishes the GitHub release, adds the tag `1.0.3` to the commit's image in Harbor and starts the prod
+deploy of `1.0.3`, which waits for the approval.
+
+**Fix releases from a release branch** (ADR 0048) — branch from the release tag (`git switch -c release/1.0 v1.0.3`,
+push it), merge the fix into it by pull request, then tag the next patch on it (`v1.0.4` when `v1.0.3` is the release
+just below). CD builds the image of each push to `release/*` and deploys no staging: the release goes to prod without
+a staging run, after the approval. Merge the fix into `main` too. Setup, once: a branch ruleset on `release/*` like
+`main` (pull requests only, no force push, no deletion), and the OpenBao role `deploy` bound to `refs/heads/main`,
+`refs/heads/release/*` and `refs/tags/v*`.
 A release tag is never moved: publish a new version instead. Repo settings → Rules → a tag ruleset on
 `refs/tags/v*` restricting updates and deletions blocks the push itself; `release.yml` fails on one that
 got through and publishes nothing.

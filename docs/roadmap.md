@@ -69,6 +69,11 @@ Items are grouped by the order in which they matter. Inside a group, the first i
     are justified to `.grype.yaml`, then let the `scan` job fail on a Critical finding with a fix
     (`--fail-on critical` in `cd.yml`) and make it a need of `staging` there
     ([ADR 0046](adr/operations/0046-supply-chain.md)).
+- **Release branches** ([ADR 0048](adr/operations/0048-release-branches-and-version-tags.md)):
+  - before the first release from a `release/*` branch: bind the OpenBao role `deploy` to `refs/heads/release/*` and
+    `refs/tags/v*` too (incalza-me-infra), and add a branch ruleset on `release/*` like `main`;
+  - a release from a release branch skips staging. If hotfixes become frequent, give them a staging run first (a
+    second staging namespace, or staging switched to the release branch for the time of the fix).
 
 ## 3. More than one replica
 

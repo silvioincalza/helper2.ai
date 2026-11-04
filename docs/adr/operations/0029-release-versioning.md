@@ -15,28 +15,33 @@ and the Helm chart. A published version must always mean the same code, so it ca
 2. **One version, four files.** `backend/build.gradle.kts` (`version`), `frontend/package.json` (`version`),
    `deploy/helm/helper2/Chart.yaml` (`version`) and `api/openapi.yaml` (`info.version`) change together, in the
    release commit. The chart has
-   no `appVersion`: the running image is the commit tag.
+   no `appVersion`: on prod the running image tag is the version (`X.Y.Z`, [0048](0048-release-branches-and-version-tags.md)).
 3. **Version in the site footer.** Vite injects `package.json`'s version as `__APP_VERSION__`; `Layout.tsx`
    shows it in the footer (for example `v1.0.1`), linked to the GitHub release of that tag.
 4. **Annotated tag on `main`.** A release is `git tag -a vX.Y.Z -m "<notes>" <commit>` on a commit of `main`,
-   pushed to GitHub.
+   pushed to GitHub. A fix for what runs on prod may instead be tagged on a `release/*` branch, with the next patch
+   only ([0048](0048-release-branches-and-version-tags.md)).
 5. **Release workflow.** `release.yml` runs on every pushed `v*` tag, on a GitHub-hosted runner:
    - it fails when the tag was deleted or moved (the push was forced, or the tag had a previous value);
-   - it checks the name is `vX.Y.Z`, the tag is annotated, and its commit is on `main`;
+   - it checks the name is `vX.Y.Z`, the tag is annotated, and its commit is on `main`, or on a `release/*`
+     branch with the next patch after the release just below it;
    - it checks the four files at that commit carry the same version as the tag;
    - it publishes the GitHub release with the tag message as notes plus the image name
-     `<registry>/helper2/apps/helper2:<commit[0:12]>`. An existing release is left as is;
-   - then it waits until the commit's CD run has passed staging, and deploys that commit to prod, after the approval on the `prod` environment ([0028](0028-ci-cd.md)).
+     `<registry>/helper2/apps/helper2:X.Y.Z` and the commit. An existing release is left as is;
+   - then it waits until the commit's CD run has passed (from `main`: staging too), adds the tag `X.Y.Z` to the
+     commit's image in Harbor, and deploys `X.Y.Z` to prod, after the approval on the `prod` environment
+     ([0028](0028-ci-cd.md), [0048](0048-release-branches-and-version-tags.md)).
      A release is the only automatic way to prod.
 6. **Tags are immutable.** A release tag is never moved or deleted; a fix is a new version. A GitHub tag ruleset
-   on `refs/tags/v*` blocks moving and deleting release tags, with no bypass. Image tags are commits and are never
-   rebuilt: `make image` skips a tag that Harbor already has, and a Harbor tag-immutability rule on the `helper2`
+   on `refs/tags/v*` blocks moving and deleting release tags, with no bypass. Images are never rebuilt; a release
+   only adds its version tag to the image of its commit: `make image` skips a tag that Harbor already has, and a Harbor tag-immutability rule on the `helper2`
    project refuses to overwrite or delete any tag.
 7. **v1.0.0 is the first release**, on a fresh database with clean images and Helm releases. Every later change
    ships as a new version under point 6.
 
 ## Consequences
-- A version names one commit and one image, so a rollback to a release is `make ENV=prod TAG=<commit> deploy`.
+- A version names one commit and one image, so a rollback to a release is `make ENV=prod TAG=X.Y.Z deploy`
+  (or the commit).
 - The ruleset blocks a moved or deleted tag at push time; the workflow check is a second guard.
 - A release deploys prod; a push to `main` deploys staging only ([0028](0028-ci-cd.md)). So prod always runs a
   version the footer can name.
@@ -51,7 +56,7 @@ and the Helm chart. A published version must always mean the same code, so it ca
 - `.github/workflows/release.yml` — tag checks, GitHub release, prod deploy (calls `deploy.yml`).
 - `backend/build.gradle.kts`, `frontend/package.json`, `deploy/helm/helper2/Chart.yaml`, `api/openapi.yaml` (`info.version`) — the version.
 - `frontend/vite.config.ts`, `frontend/src/components/Layout.tsx` — version in the footer.
-- `deploy/k8s/Makefile` (`image`) — commit tags never rebuilt.
+- `deploy/k8s/Makefile` (`image`, `retag`) — commit tags never rebuilt; the version tag on a release's image.
 - `deploy/k8s/CI.md` (Releases) — how to tag a release.
 
 ## Diagrams

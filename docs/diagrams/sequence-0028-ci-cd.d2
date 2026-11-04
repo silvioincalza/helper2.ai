@@ -19,7 +19,7 @@ site: "https://helper2.ai" {class: ext}
 approval: Approval {
   gha -> reviewer: "release vX.Y.Z checked and published;\njob prod waits on environment prod"
   reviewer -> gha: "approve"
-  gha -> runner: "run deploy.yml\n(environment prod, tag = the release commit[0:12])" {class: hot}
+  gha -> runner: "run deploy.yml\n(environment prod, tag = the release version X.Y.Z)" {class: hot}
 }
 
 login: OpenBao login (OIDC) {
@@ -32,7 +32,7 @@ login: OpenBao login (OIDC) {
 }
 
 tag: Resolve tag {
-  runner -> runner: "tag = 12 hex chars;\nno ref with that name;\ncommit on origin/main"
+  runner -> runner: "tag = 12 hex chars (no ref with that name)\nor X.Y.Z (the commit of tag vX.Y.Z);\ncommit on origin/main or a release/* branch"
   runner -> runner: "git checkout <commit>:\nchart and image match"
   runner -> bao: "kv get ci/prod field app_env"
   bao -> runner: "prod/app.env"

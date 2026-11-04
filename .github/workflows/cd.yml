@@ -1,11 +1,12 @@
-# CD: every push to main runs CI, builds the image once and deploys staging. Prod is not deployed from
-# here: a release tag vX.Y.Z does that (release.yml). Manual runs redeploy or roll back a given tag.
+# CD: every push to main runs CI, builds the image once and deploys staging. A push to a release/* branch
+# runs CI and builds the image only (ADR 0048). Prod is not deployed from here: a release tag vX.Y.Z does that
+# (release.yml), under the version tag. Manual runs redeploy or roll back a given tag.
 # No pull_request trigger here: self-hosted jobs must never run fork code (the repo is public).
 name: cd
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'release/**']
   workflow_dispatch:
     inputs:
       environment:
@@ -14,7 +15,7 @@ on:
         options: [staging, prod]
         default: prod
       tag:
-        description: 12-char commit already built. Empty = HEAD of main for staging, what staging runs for prod
+        description: 12-char commit already built, or a release version X.Y.Z. Empty = HEAD of main for staging, what staging runs for prod
         type: string
         default: ''
       rollback:
@@ -119,7 +120,9 @@ jobs:
           ref: ${{ github.ref }}
           sha: ${{ github.sha }}
 
+  # Main only: a release branch never deploys staging (ADR 0048).
   staging:
+    if: github.ref == 'refs/heads/main'
     needs: image
     uses: ./.github/workflows/deploy.yml
     permissions:

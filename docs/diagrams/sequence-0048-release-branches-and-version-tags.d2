@@ -1,0 +1,45 @@
+# Sequence: a fix released from a release branch, from the merged pull request to prod running helper2:X.Y.Z (ADR 0048).
+# Source of truth: .github/workflows/cd.yml, .github/workflows/release.yml (release, staged, retag, prod),
+#   .github/workflows/deploy.yml (Resolve tag), .github/actions/bao-login/action.yml, deploy/k8s/Makefile (image, retag).
+# Render: cd docs/diagrams && d2 fmt sequence-0048-release-branches-and-version-tags.d2 && d2 sequence-0048-release-branches-and-version-tags.d2 sequence-0048-release-branches-and-version-tags.svg
+
+...@style
+
+shape: sequence_diagram
+
+owner: Owner {class: person}
+github: "GitHub\n(repository, Actions)" {class: ext}
+runner: "Self-hosted runner\n(one JIT job)" {class: app}
+bao: OpenBao {class: data}
+harbor: Harbor {class: data}
+k8s: "Kubernetes API\n(prod)" {class: ext}
+
+build: Push to release/1.0 {
+  owner -> github: "merge the fix's pull request\ninto release/1.0" {class: hot}
+  github -> runner: "cd.yml: CI passed, job image"
+  runner -> bao: "OIDC login, role deploy\n(ref refs/heads/release/1.0)"
+  bao -> runner: "token, reads ci/harbor"
+  runner -> harbor: "push helper2:<commit[0:12]>" {class: hot}
+  github -> github: "job scan (Grype); no staging deploy"
+}
+
+release: Tag v1.0.6 {
+  owner -> github: "git push origin v1.0.6\n(annotated, on release/1.0)" {class: hot}
+  github -> github: "release.yml: not on main, on release/1.0;\nrelease below is v1.0.5, so v1.0.6 is the next patch;\nfour files = 1.0.6; GitHub release published"
+  github -> github: "staged: the commit's CD run succeeded\n(warning: staging never ran it)"
+  github -> runner: "job retag"
+  runner -> bao: "OIDC login, role deploy\n(ref refs/tags/v1.0.6)"
+  bao -> runner: "token, reads ci/harbor"
+  runner -> harbor: "GET artifacts/<commit>, artifacts/1.0.6 (404)"
+  runner -> harbor: "POST artifacts/<commit>/tags {name: 1.0.6}" {class: hot}
+  harbor -> runner: "201: one digest, two tags"
+}
+
+deploy: Prod {
+  github -> owner: "job prod waits on environment prod"
+  owner -> github: "approve"
+  github -> runner: "deploy.yml env prod, tag = 1.0.6" {class: hot}
+  runner -> runner: "1.0.6 → commit of v1.0.6, on release/1.0;\nnot older than what prod runs;\ncheckout the chart of that commit"
+  runner -> k8s: "helm upgrade, image helper2:1.0.6" {class: hot}
+  k8s -> harbor: "pull helper2:1.0.6"
+}
