@@ -1,7 +1,7 @@
 package ai.helper2.catalog.usecase;
 
+import ai.helper2.catalog.EnrichmentFacts;
 import ai.helper2.catalog.ResourceDetail;
-import ai.helper2.catalog.internal.JdbcEnrichmentResults;
 import ai.helper2.catalog.internal.ResourceCards;
 import ai.helper2.catalog.internal.ResourceStore;
 import ai.helper2.catalog.internal.ResourceStore.RecordRow;
@@ -28,11 +28,10 @@ import org.springframework.stereotype.Service;
 public class GetResourceDetail {
 
   private final ResourceStore store;
-  private final JdbcEnrichmentResults enrichment;
+  private final EnrichmentFacts enrichment;
   private final ResourceCards cards;
 
-  public GetResourceDetail(
-      ResourceStore store, JdbcEnrichmentResults enrichment, ResourceCards cards) {
+  public GetResourceDetail(ResourceStore store, EnrichmentFacts enrichment, ResourceCards cards) {
     this.store = store;
     this.enrichment = enrichment;
     this.cards = cards;
