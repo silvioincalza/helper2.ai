@@ -129,11 +129,22 @@ jobs:
           running=$(kubectl -n "helper2-$ENV" get deployment helper2 \
             -o jsonpath='{.spec.template.spec.containers[?(@.name=="app")].image}' 2>/dev/null || true)
           running=${running##*:}
+          # Commits of main and of a release branch can diverge (ADR 0048): then neither is an ancestor of the other,
+          # and only two release versions say which is newer; with a commit tag on either side it takes rollback: true.
           if [[ -n $running && $running != "$tag" && $ROLLBACK != true ]] \
             && running_sha=$(commit_of "$running" 2>/dev/null) \
             && [[ $running_sha != "$sha" ]] \
-            && git merge-base --is-ancestor "$sha" "$running_sha"; then
-            echo "::error::$tag is older than $running, which $ENV runs; a rollback needs rollback: true"; exit 1
+            && ! git merge-base --is-ancestor "$running_sha" "$sha"; then
+            semver='^[0-9]+\.[0-9]+\.[0-9]+$'
+            if git merge-base --is-ancestor "$sha" "$running_sha"; then
+              echo "::error::$tag is older than $running, which $ENV runs; a rollback needs rollback: true"; exit 1
+            fi
+            if [[ ! $tag =~ $semver || ! $running =~ $semver ]]; then
+              echo "::error::$tag and $running ($ENV) are on diverging histories with no versions to order them; deploying needs rollback: true"; exit 1
+            fi
+            if [[ $(printf '%s\n%s\n' "$tag" "$running" | sort -V | tail -1) != "$tag" ]]; then
+              echo "::error::$tag is a lower version than $running, which $ENV runs; a rollback needs rollback: true"; exit 1
+            fi
           fi
           # A release run (ADR 0048): the version must still name the commit release.yml checked. Only then does Harbor
           # add the tag X.Y.Z to that commit's image (same digest), here, after the approval and with this commit's

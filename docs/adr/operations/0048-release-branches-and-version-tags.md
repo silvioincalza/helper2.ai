@@ -20,7 +20,10 @@ rebuilds one.
 2. **Prod runs the version.** The `prod` job of `release.yml` deploys `X.Y.Z`. `deploy.yml` takes a 12-character
    commit or a version; a version resolves to the commit of the tag `vX.Y.Z`, and the chart is checked out from that
    commit, as before. The release notes name both tags. The "older than what runs" check compares commits, so the same commit under a commit tag and
-   under a version tag is not a rollback.
+   under a version tag is not a rollback. Commits of `main` and of a release branch can diverge, so neither is the
+   older one: then the higher release version wins, and a lower version, or a commit tag on either side, needs
+   `rollback: true`. The `staged` job reads the CD run of the commit on its own source branch; from `main`, that
+   run's staging deploy must have passed, so a release-branch run of the same commit never stands in for it.
 3. **Release branches `release/*`.** A push runs `cd.yml`: CI, then the `image` and `scan` jobs, with the commit
    tag. No staging deploy: staging follows `main`. A pull request to a release branch runs `ci.yml` like any other.
 4. **Patch only on a release branch.** A tag on a commit that is not on `main` must be on a `release/*` branch and

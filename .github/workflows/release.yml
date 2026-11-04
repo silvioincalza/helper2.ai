@@ -124,8 +124,10 @@ jobs:
         run: |
           set -euo pipefail
           for _ in $(seq 1 80); do
-            # Filtered by the full commit on the server, so an old release commit is found as well as a new one.
-            run=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/cd.yml/runs?event=push&head_sha=$SHA&per_page=1" \
+            # Filtered by the full commit and the source branch on the server, so an old release commit is found as well
+            # as a new one, and a release/* run of the same commit (no staging) never stands in for main's.
+            run=$(gh api -X GET "repos/$GITHUB_REPOSITORY/actions/workflows/cd.yml/runs" \
+              -f event=push -f head_sha="$SHA" -f branch="$SOURCE" -f per_page=1 \
               --jq ".workflow_runs[0] // empty | [.status, (.conclusion // \"\"), .html_url, .id] | @tsv")
             if [[ -z $run ]]; then
               echo "::error::no CD run for $SHA on $SOURCE: the commit never went through CD"; exit 1
@@ -134,6 +136,10 @@ jobs:
             if [[ $status == completed ]]; then
               if [[ $conclusion == success ]]; then
                 if [[ $SOURCE == main ]]; then
+                  # The run's staging deploy (job "staging / deploy") itself must have passed, not been skipped.
+                  staged=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$id/jobs" -f per_page=100 -X GET \
+                    --jq '[.jobs[] | select(.name | startswith("staging")) | .conclusion] | all(. == "success") and length > 0')
+                  [[ $staged == true ]] || { echo "::error::the CD run of $SHA on main did not deploy staging ($url)"; exit 1; }
                   echo "staging passed: $url"
                 else
                   echo "::warning::$SHA is on $SOURCE: its CD run built the image, staging never ran it ($url)"
