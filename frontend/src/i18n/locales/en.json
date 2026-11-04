@@ -688,7 +688,8 @@
       "NEEDS_CLARIFICATION": "The question needs one more detail."
     },
     "notice": {
-      "GUIDE_DAILY_QUOTA": "You have used today's AI answers, so this answer shows the top search results without AI picks. AI answers are available again after midnight UTC."
+      "GUIDE_DAILY_QUOTA": "You have used today's AI answers, so this answer shows the top search results without AI picks. AI answers are available again after midnight UTC.",
+      "ALL_SOURCES_FAILED": "No source answered the guide's search. Try again in a moment."
     },
     "error": "The guide could not answer. Please try again.",
     "streamFailure": {

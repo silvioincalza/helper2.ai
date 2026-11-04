@@ -182,6 +182,47 @@ describe('guide on the one page', () => {
     expect(screen.queryByText('Pick #1')).not.toBeInTheDocument();
   });
 
+  it('no source answered the guide search: the bar says so, not "nothing in the catalog", and the fold does not repeat it', async () => {
+    mockApi({
+      'POST /guide/stream': () => sse(makeGuide({
+        status: 'NO_CANDIDATES', model: null, aiContent: null, recommendations: [], candidatesConsidered: 0,
+        sources: [makeStatus({ outcome: 'FAILED', resultCount: 0 })],
+        notices: [{ code: 'ALL_SOURCES_FAILED', message: 'all failed' }],
+      })),
+    });
+    renderApp('/');
+    await ask('an MCP server for Postgres');
+    const bar = await screen.findByRole('region', { name: 'Guide picks' });
+    expect(await within(bar).findByText("No source answered the guide's search. Try again in a moment.")).toBeInTheDocument();
+    expect(screen.queryByText(/Nothing in the catalog matched/)).not.toBeInTheDocument();
+    const fold = screen.getByText('How the guide decided').closest('details')!;
+    expect(fold).not.toHaveAttribute('open');
+    expect(within(fold).queryByText('No source could be reached.')).not.toBeInTheDocument();
+  });
+
+  it('the fold lists the guide search notices under "found", outside the AI-marked text, without the query expansion', async () => {
+    mockApi({
+      'POST /guide/stream': () => sse(makeGuide({
+        notices: [
+          { code: 'QUERY_EXPANDED', message: 'expanded' },
+          { code: 'CACHE_UNAVAILABLE', message: 'cache down' },
+          { code: 'INDEX_UNAVAILABLE', message: 'index down' },
+        ],
+      })),
+    });
+    renderApp('/');
+    await ask('an MCP server for Postgres');
+    await answered();
+    const fold = screen.getByText('How the guide decided').closest('details')!;
+    await userEvent.click(within(fold).getByText('How the guide decided'));
+    const found = within(fold).getByText('2 · Found').closest('li')!;
+    const cache = within(found).getByText(/Cache unavailable: every source was queried live/);
+    expect(cache).toHaveTextContent('Notice:');
+    expect(within(found).getByText(/Helper2 index unavailable/)).toBeInTheDocument();
+    expect(within(fold).queryByText('expanded')).not.toBeInTheDocument();
+    for (const n of found.querySelectorAll('.notice')) expect(n.closest('[data-ai-generated]')).toBeNull();
+  });
+
   it('model chose nothing: the bar says nothing fits, no row is a pick, and the preview only says what the result is', async () => {
     const base = makeGuide();
     const fallback = { ...base.recommendations[0]!, reason: 'Top search result (no AI reasoning available).', aiReasoned: false };

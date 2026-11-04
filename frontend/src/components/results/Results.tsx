@@ -16,6 +16,7 @@ import { Pagination } from '@/components/Pagination';
 import { ResultsTimeline } from '@/components/ResultsTimeline';
 import { GuideBody, GuideMeButton, OpenGuideContext, useGuideToggle } from '@/components/SetupGuide';
 import { Timeline } from '@/components/Timeline';
+import { NoticeList } from '@/components/ui/NoticeList';
 import { ProofQuote } from '@/components/ui/ProofQuote';
 import { SelectableRow } from '@/components/ui/SelectableRow';
 import { SourceTiles } from '@/components/ui/SourceTiles';
@@ -196,17 +197,7 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
       <ActiveFilters state={state} sources={res.sources} onChange={update} />
 
       {/* QUERY_EXPANDED is shown by the interpretation line below; other notices are localized by code. */}
-      {res.notices.some((n) => n.code !== 'QUERY_EXPANDED') && (
-        <ul className="plain-list notices">
-          {res.notices.filter((n) => n.code !== 'QUERY_EXPANDED').map((n, i) => (
-            <li key={`${n.code}-${i}`} className={`notice notice-${n.code.toLowerCase()}`}>
-              <Icon name={n.code === 'ALL_SOURCES_FAILED' ? 'warn' : 'info'} />
-              <span className="sr-only">{t(n.code === 'ALL_SOURCES_FAILED' ? 'results.noticeWarning' : 'results.noticeInfo')}: </span>
-              {t(`results.notice.${n.code}`, { defaultValue: n.message })}
-            </li>
-          ))}
-        </ul>
-      )}
+      <NoticeList notices={res.notices} exclude={['QUERY_EXPANDED']} />
       {res.interpretation.expandedTerms.length > 0 && (
         <p className="muted small interpretation">
           {t('results.alsoSearched', { terms: res.interpretation.expandedTerms.join(', ') })}{' '}

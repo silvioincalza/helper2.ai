@@ -1,7 +1,8 @@
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
-import type { GuideResponse, TrailRemoved } from '@/api/types';
+import type { GuideResponse, Notice, TrailRemoved } from '@/api/types';
 import { Icon } from '@/components/Icon';
+import { NoticeList } from '@/components/ui/NoticeList';
 import { aiMark } from '@/lib/aiMark';
 import { ComparisonTable, ExplanationBlock } from './AnswerBlocks';
 import { Clarify } from './Clarify';
@@ -9,21 +10,45 @@ import { PromptBox } from './PromptBox';
 import type { Refine } from './types';
 import { Understood } from './Understood';
 
+/** Why an answer has no AI pick, as one code. Order: quota, then no source answered, then model down, then empty catalog. */
+export type NoPickCode = 'GUIDE_DAILY_QUOTA' | 'ALL_SOURCES_FAILED' | 'LLM_UNAVAILABLE' | 'NO_CANDIDATES' | 'GUIDE_SUBJECT_NOT_FOUND' | 'NO_FIT';
+
+export function noPickCode(answer: GuideResponse): NoPickCode | undefined {
+  const has = (code: string) => answer.notices.some((n) => n.code === code);
+  if (has('GUIDE_DAILY_QUOTA') && answer.status === 'LLM_UNAVAILABLE') return 'GUIDE_DAILY_QUOTA';
+  if (has('ALL_SOURCES_FAILED')) return 'ALL_SOURCES_FAILED';
+  if (answer.status === 'LLM_UNAVAILABLE') return 'LLM_UNAVAILABLE';
+  if (answer.status === 'NO_CANDIDATES') return 'NO_CANDIDATES';
+  if (has('GUIDE_SUBJECT_NOT_FOUND')) return 'GUIDE_SUBJECT_NOT_FOUND';
+  if (answer.model != null) return 'NO_FIT';
+  return undefined;
+}
+
 /**
- * Why an answer has no AI pick, in one short line: today's AI answers are used, the model is not available, the
- * catalog had nothing, the subject was not found, or the model found nothing that fits. Undefined: no reason beyond
- * "no pick".
+ * Why an answer has no AI pick, in one short line: today's AI answers are used, no source answered the search, the
+ * model is not available, the catalog had nothing, the subject was not found, or the model found nothing that fits.
+ * Undefined: no reason beyond "no pick".
  */
 export function noPickReason(answer: GuideResponse, t: TFunction): string | undefined {
-  if (answer.notices.some((n) => n.code === 'GUIDE_DAILY_QUOTA') && answer.status === 'LLM_UNAVAILABLE') {
-    return t('guide.notice.GUIDE_DAILY_QUOTA');
+  switch (noPickCode(answer)) {
+    case 'GUIDE_DAILY_QUOTA': return t('guide.notice.GUIDE_DAILY_QUOTA');
+    case 'ALL_SOURCES_FAILED': return t('guide.notice.ALL_SOURCES_FAILED');
+    case 'LLM_UNAVAILABLE': return t('guide.status.LLM_UNAVAILABLE');
+    case 'NO_CANDIDATES': return t('guide.status.NO_CANDIDATES');
+    case 'GUIDE_SUBJECT_NOT_FOUND': return answer.notices.find((n) => n.code === 'GUIDE_SUBJECT_NOT_FOUND')?.message;
+    case 'NO_FIT': return t('guide.noFit');
+    default: return undefined;
   }
-  if (answer.status === 'LLM_UNAVAILABLE') return t('guide.status.LLM_UNAVAILABLE');
-  if (answer.status === 'NO_CANDIDATES') return t('guide.status.NO_CANDIDATES');
-  const notFound = answer.notices.find((n) => n.code === 'GUIDE_SUBJECT_NOT_FOUND');
-  if (notFound) return notFound.message;
-  if (answer.model != null) return t('guide.noFit');
-  return undefined;
+}
+
+/**
+ * The search notices to list under "found": not the query expansion (the reading shows it), not the guide's own
+ * notices (the bar and the status line say them), and not "no source answered" when it is already the bar's reason.
+ */
+export function foldNoticeExclusions(answer: GuideResponse, kept: number): Notice['code'][] {
+  const exclude: Notice['code'][] = ['QUERY_EXPANDED', 'GUIDE_DAILY_QUOTA', 'GUIDE_SUBJECT_NOT_FOUND'];
+  if (kept === 0 && noPickCode(answer) === 'ALL_SOURCES_FAILED') exclude.push('ALL_SOURCES_FAILED');
+  return exclude;
 }
 
 /**
@@ -68,6 +93,7 @@ export function GuideAnswer({ answer, onRefine }: { answer: GuideResponse; onRef
   const kept = answer.recommendations.filter((r) => r.aiReasoned).length;
   const rejected = answer.rejected ?? 0;
   const sourcesOk = answer.sources.filter((s) => s.outcome === 'SUCCEEDED').length;
+  const searchNotices = <NoticeList notices={answer.notices} exclude={foldNoticeExclusions(answer, kept)} />;
   return (
     <div className="guide-answer" data-ai-provider={answer.aiContent?.provider} data-ai-models={answer.aiContent?.models.join(' ')}>
 
@@ -87,6 +113,7 @@ export function GuideAnswer({ answer, onRefine }: { answer: GuideResponse; onRef
             <span className="proof-n">{t('guide.strip.found')}</span>
             <strong>{t('guide.considered', { n: answer.candidatesConsidered })}</strong>
             <span className="proof-sub">{t('guide.sourcesAnswered', { ok: sourcesOk, all: answer.sources.length })}</span>
+            {searchNotices}
           </li>
           <li>
             <span className="proof-n">{t('guide.strip.chose')}</span>
@@ -111,6 +138,8 @@ export function GuideAnswer({ answer, onRefine }: { answer: GuideResponse; onRef
           {' · '}{t('guide.considered', { n: answer.candidatesConsidered })}
         </p>
       )}
+      {/* Without the steps, the search notices follow the one line; never inside an AI-marked element (ADR 0038). */}
+      {!answer.model && searchNotices}
 
       {/* With no pick the bar already says why; with picks, this says how the check went. */}
       {kept > 0 && (
