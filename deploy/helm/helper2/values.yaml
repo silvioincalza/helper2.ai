@@ -24,9 +24,17 @@ app:
   springProfiles: llm-nebius
   # The Scout and the embedding indexer run on one replica at a time (ShedLock in Postgres); rate limits
   # and sign-in sessions are in Redis. Above 1: a PodDisruptionBudget keeps replicas - 1 available.
-  # Postgres connections: (replicas + 1 during a deploy) x H2_DATABASE_POOL_SIZE (10) = 40 at 3 replicas,
-  # under Postgres' default max_connections of 100 (backup and psql need a few more).
+  # Postgres connections: (replicas + 1) x H2_DATABASE_POOL_SIZE (10) = 40 at 3 replicas during a deploy, plus the
+  # pools of pods still terminating (up to shutdown.drainSeconds; at worst one more pod, 50), under Postgres' default
+  # max_connections of 100 (backup and psql need a few more).
   replicas: 3
+  # Rolling update and shutdown of a pod (ADR 0027). preStopSeconds: the pod keeps serving while the Service
+  # endpoints and the Ingress controller drop it (native preStop sleep, Kubernetes 1.30 and later). Then SIGTERM:
+  # the app takes no new connections and requests in flight get drainSeconds (H2_SHUTDOWN_TIMEOUT). The pod's
+  # terminationGracePeriodSeconds is preStopSeconds + drainSeconds + 5.
+  shutdown:
+    preStopSeconds: 10
+    drainSeconds: 30
   # Scout = scheduled collection + LLM enrichment. Each replica checks shortly after startup
   # (scoutInitialDelay), then hourly (H2_SCOUT_TICK, default PT1H); the Scout runs when the last scheduled
   # run ended at least scoutEvery ago (or never ran): one run per scoutEvery in total, whatever the number

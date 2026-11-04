@@ -31,6 +31,9 @@ spec:
       topologySpreadConstraints:
         - { maxSkew: 1, topologyKey: kubernetes.io/hostname, whenUnsatisfiable: ScheduleAnyway, labelSelector: { matchLabels: { app: helper2 } } }
       securityContext: { runAsNonRoot: true, runAsUser: 10001, seccompProfile: { type: RuntimeDefault } }
+      {{- $shutdown := .Values.app.shutdown }}
+      # preStop sleep + graceful drain + 5 s for the JVM to exit (values.yaml app.shutdown).
+      terminationGracePeriodSeconds: {{ add (int (required "app.shutdown.preStopSeconds" $shutdown.preStopSeconds)) (int (required "app.shutdown.drainSeconds" $shutdown.drainSeconds)) 5 }}
       containers:
         - name: app
           image: {{ include "helper2.image" . }}
@@ -38,6 +41,8 @@ spec:
           envFrom: [{ secretRef: { name: helper2-env } }]
           env:
             - { name: H2_PROFILES, value: {{ .Values.app.springProfiles | quote }} }
+            # spring.lifecycle.timeout-per-shutdown-phase: how long requests in flight get after SIGTERM.
+            - { name: H2_SHUTDOWN_TIMEOUT, value: "{{ int $shutdown.drainSeconds }}s" }
             - { name: H2_DATABASE_URL, value: "jdbc:postgresql://postgres:5432/helper2" }
             - { name: H2_DATABASE_USER, value: helper2 }
             - { name: H2_REDIS_HOST, value: redis }
@@ -106,6 +111,10 @@ spec:
             httpGet: { path: /actuator/health/liveness, port: management }
             periodSeconds: 10
             failureThreshold: 3
+          # Serve on while the endpoints and the Ingress controller drop this pod; SIGTERM comes after.
+          lifecycle:
+            preStop:
+              sleep: { seconds: {{ int $shutdown.preStopSeconds }} }
           resources:
             {{- toYaml .Values.app.resources | nindent 12 }}
           securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }

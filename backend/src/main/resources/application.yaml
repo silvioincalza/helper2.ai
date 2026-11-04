@@ -12,6 +12,10 @@ spring:
   threads:
     virtual:
       enabled: true
+  lifecycle:
+    # Graceful shutdown (server.shutdown): after SIGTERM, requests in flight get this long to finish, then the
+    # app stops. The chart sets it from app.shutdown.drainSeconds and gives the pod preStop + drain + 5 s (ADR 0027).
+    timeout-per-shutdown-phase: ${H2_SHUTDOWN_TIMEOUT:30s}
   datasource:
     url: ${H2_DATABASE_URL:jdbc:postgresql://localhost:5432/helper2}
     username: ${H2_DATABASE_USER:helper2}
@@ -64,6 +68,8 @@ spring:
 
 server:
   port: ${H2_PORT:8080}
+  # Stop taking new connections on SIGTERM and let the requests in flight finish (spring.lifecycle above).
+  shutdown: graceful
   # Trust X-Forwarded-* ONLY behind a proxy that always overwrites them (set H2_FORWARD_HEADERS_STRATEGY=native|framework there).
   # Default none: otherwise clients could spoof X-Forwarded-For and bypass per-IP rate limits.
   forward-headers-strategy: ${H2_FORWARD_HEADERS_STRATEGY:none}

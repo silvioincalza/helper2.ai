@@ -22,7 +22,12 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
 3. **App replicas.** `app.replicas`: 3 on prod, 1 on staging. `RollingUpdate` with `maxUnavailable: 0` and
    `maxSurge: 1`: one new pod at a time, and an old pod goes only when the new one is ready. Topology spread over
    `kubernetes.io/hostname` (`ScheduleAnyway`). Above 1 replica a PodDisruptionBudget keeps `replicas - 1` available
-   during node drains. `make deploy` and `make rollback` wait up to 12 min (`helm --wait`). Replicas share state only
+   during node drains. A pod that leaves first sleeps 10 s in `preStop` (native `sleep` action, Kubernetes 1.30 and
+   later) and keeps serving while the Service endpoints and ingress-nginx drop it. Then SIGTERM: the app shuts down
+   gracefully (`server.shutdown: graceful`), takes no new connections and gives requests in flight 30 s
+   (`H2_SHUTDOWN_TIMEOUT`, `spring.lifecycle.timeout-per-shutdown-phase`). `terminationGracePeriodSeconds` is
+   10 + 30 + 5 = 45 s. All three come from one place, `app.shutdown` (`preStopSeconds`, `drainSeconds`) in
+   `values.yaml`; chart-check pins them. `make deploy` and `make rollback` wait up to 12 min (`helm --wait`). Replicas share state only
    through Postgres and Redis: the Scout and indexer locks and the end time of the last scheduled Scout run
    ([0018](../scout/0018-scout-runner.md)), rate limits
    ([0024](../edge/0024-http-edge-protection.md)) and sign-in sessions ([0023](../edge/0023-identity-and-admin.md)). The `deployer`
@@ -96,6 +101,7 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
 - `deploy/helm/helper2/templates/app.yaml`, `postgres.yaml`, `redis.yaml`, `backup.yaml`,
   `networkpolicy.yaml`, `serviceaccount.yaml`, `secret.yaml`, `_helpers.tpl` — workloads and policies.
 - incalza-me-infra (outside this repo) — namespace, DNS, tunnel, ingress-nginx and the Ingresses, deployer.
+- `backend/src/main/resources/application.yaml` — `server.shutdown`, `spring.lifecycle.timeout-per-shutdown-phase`.
 - `deploy/k8s/Makefile`, `deploy/k8s/README.md` — deploy, rollback, backup and restore steps.
 
 ## Diagrams
@@ -105,6 +111,6 @@ The topology itself is in the [infrastructure](../../diagrams/infrastructure.svg
 ## Roadmap
 - Test a restore, add a restore-check job, turn on the R2 copy, encrypt dumps: [roadmap](../../roadmap.md#2-operations).
 - Postgres and Redis exporters: [roadmap](../../roadmap.md#2-operations).
-- What stays per replica; `preStop` delay for rolling updates; Scout lock after a crash; Redis memory:
+- What stays per replica; Scout lock after a crash; Redis memory:
   [roadmap](../../roadmap.md#3-more-than-one-replica).
 - Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).
