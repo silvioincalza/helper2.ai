@@ -1,6 +1,5 @@
-package ai.helper2.catalog;
+package ai.helper2.catalog.internal;
 
-import ai.helper2.catalog.internal.ResourceStore;
 import ai.helper2.catalog.internal.ResourceStore.DataOrigin;
 import ai.helper2.catalog.internal.ResourceStore.ResourceRow;
 import ai.helper2.search.SearchSource;
@@ -32,7 +31,7 @@ public class CatalogSearchSource implements SearchSource {
     private final Set<DataOrigin> origins;
     private final Clock clock;
 
-    public CatalogSearchSource(SourceDescriptor descriptor, ResourceStore store, Set<DataOrigin> origins, Clock clock) {
+    CatalogSearchSource(SourceDescriptor descriptor, ResourceStore store, Set<DataOrigin> origins, Clock clock) {
         this.descriptor = descriptor;
         this.store = store;
         this.origins = origins;

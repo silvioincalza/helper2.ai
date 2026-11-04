@@ -1,9 +1,8 @@
-package ai.helper2.catalog;
+package ai.helper2.catalog.internal;
 
-import ai.helper2.catalog.internal.EmbeddingIndexer;
-import ai.helper2.catalog.internal.NvidiaEmbedder;
-import ai.helper2.catalog.internal.ObservationQueue;
-import ai.helper2.catalog.internal.ResourceStore;
+import ai.helper2.catalog.Embedder;
+import ai.helper2.catalog.ResourceCatalog;
+import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.catalog.internal.ResourceStore.DataOrigin;
 import ai.helper2.platform.ClusterLock;
 import ai.helper2.platform.cache.SharedCaches;

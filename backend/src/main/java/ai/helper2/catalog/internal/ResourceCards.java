@@ -1,6 +1,6 @@
-package ai.helper2.catalog;
+package ai.helper2.catalog.internal;
 
-import ai.helper2.catalog.internal.ResourceStore;
+import ai.helper2.catalog.ResourceCatalog;
 import ai.helper2.catalog.internal.ResourceStore.RecordRow;
 import ai.helper2.catalog.internal.ResourceStore.ResourceRow;
 import ai.helper2.search.MergedResult;

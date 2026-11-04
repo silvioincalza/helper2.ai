@@ -96,7 +96,7 @@ The periods are a product decision the owner may change; changing one must not n
 
 ## Code
 - `backend/src/main/java/ai/helper2/catalog/usecase/PurgeExpiredData.java`, `catalog/internal/CatalogRetention.java`,
-  `catalog/CatalogRetentionSchedule.java` — catalog rules.
+  `catalog/internal/CatalogRetentionSchedule.java` — catalog rules.
 - `backend/src/main/kotlin/ai/helper2/scout/usecase/PurgeExpiredData.kt`, `scout/Retention.kt`,
   `backend/src/main/java/ai/helper2/scout/internal/ScoutRetentionSchedule.java`, `JdbcScoutStore.java` — Scout rule.
 - `backend/src/main/java/ai/helper2/identity/usecase/PurgeExpiredData.java`, `identity/IdentityRetentionSchedule.java`,

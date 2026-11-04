@@ -1,6 +1,6 @@
 package ai.helper2.catalog.usecase;
 
-import ai.helper2.catalog.ResourceCards;
+import ai.helper2.catalog.internal.ResourceCards;
 import ai.helper2.catalog.internal.ResourceStore;
 import ai.helper2.catalog.internal.ResourceStore.DataOrigin;
 import ai.helper2.search.MergedResult;
