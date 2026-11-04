@@ -11,6 +11,7 @@ cd backend && ./gradlew test            # unit + integration (Postgres 18, Redis
 ./gradlew evalRecord                    # opt-in: one live search per evaluation query, saved to backend/eval-data (ADR 0036);
                                          # --tests '*GuideSimilarRecorder' records the similar-question embeddings (ADR 0041)
 ./gradlew evalTest                      # offline replay and metrics over the recorded snapshots; skips without them
+./gradlew perfTest                      # opt-in latency tests on a seeded catalog (@Tag("perf")), p50/p95/p99 in build/perf/
 # alert rules (promtool from the Prometheus release)
 promtool check rules deploy/monitoring/helper2-rules.yaml
 promtool test rules deploy/monitoring/tests/*.yaml
@@ -44,6 +45,7 @@ The guide evaluation (`scripts/eval-guide.mjs`, default and adversarial sets) ru
 | Identity | AdminAllowListTest, FailSoftSessionRepositoryTest, AdminPortFailClosedTest | GitHub sign-in through the real user service: `github:<numeric id>` grants ADMIN, `github:<login>` does not; session reads fail soft while Redis is down; with any sign-in provider configured and no admin port the app refuses to start, except with the dev profile |
 | Setup guide | RunOptionRulesTest, SetupGuidesTest, SnippetParseBackTest, HttpToolMaterialsTest, SharedToolGuideCacheTest, ToolGuideApiIT | only safe run commands (package runners, one Docker image, no shells or inline code), snippets for the eight listed clients, every client snippet parses back to the same values, READMEs read with the setup guide's own GitHub token or anonymously, guide answers in the shared cache without document text, the unreadable answer kept 10 minutes, the guide endpoint takes no question |
 | Search and guide evaluation | RelevanceMetricsTest, SearchEvaluationTest, CutoffSweepTest, SnapshotTakerTest, GuideSimilarEvaluationTest | nDCG@10, reciprocal rank and recall on known cases; the vector cutoff sweep; offline replay of recorded snapshots and the nDCG@10 gate (`evalTest`); the similar-question threshold sweep on recorded embeddings, no false reuse from 0.96 ([ADR 0041](adr/guide/0041-guide-answer-cache.md)) |
+| Statement counts and latency | HomeListsIT, HomeListsPerfTest | the home lists read their cards in 6 statements for any size (`StatementCounting`, datasource-proxy), batched cards equal the one-by-one ones; `HomeListsPerfTest` gives p50/p95/p99 before and after on 25 000 resources (`perfTest` only) |
 | Live smoke | GitHubSourceLiveTest, HuggingFaceLiveTest, NpmSourceLiveTest, ArxivSourceLiveTest, TavilyLiveTest, McpRegistryCollectorLiveTest, AiDeadlinesCollectorLiveTest, GitHubAwesomeLiveTest | one per adapter, against the real API (the awesome-list collector with Nemotron classification); a test whose key is missing is skipped; runs only with `./gradlew liveTest`, once a week in the `live` workflow |
 | Frontend | 303 Vitest + RTL tests (AccountPage.test.tsx and others) | pages, client, bookmarks, account deletion, i18n, layout; axe smoke checks in jsdom |
 | Alert rules | deploy/monitoring/tests | promtool unit tests: each of the 17 rules fires on its condition and stays quiet otherwise |
