@@ -76,6 +76,9 @@ A collector returns hits, which the runner indexes, and candidates, which the ru
 ## Diagrams
 [flow](../../diagrams/flow-0020-scout-collectors.svg) · [sequence](../../diagrams/sequence-0020-scout-collectors.svg)
 
+## Amended by
+- [0043](0043-enrichment-gap-round.md): a run that leaves fields unproven reads the resource's README or model card once.
+
 ## Roadmap
 - [More registries, if their terms allow it](../../roadmap.md#6-search-and-catalog)
 - [Count skipped ai-deadlines files in a metric](../../roadmap.md#6-search-and-catalog)

@@ -36,7 +36,7 @@ app:
   scoutInitialDelay: PT20S
   scoutEvery: P1D
   # At most this many enrichments (Nemotron calls) per run. The app also caps calls per UTC day
-  # (H2_SCOUT_DAILY_ENRICHMENT_CALLS, default 300), so a large backlog after a fresh database is spread
+  # (H2_SCOUT_DAILY_ENRICHMENT_CALLS, default 500, of which up to 400 gap rounds, ADR 0043), so a large backlog after a fresh database is spread
   # over several days.
   scoutMaxEnrichments: 200
   # Longest allowed startup (Flyway migrations, Lingua models) before the startup probe restarts the

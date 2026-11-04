@@ -1,5 +1,6 @@
 # Data model: every PostgreSQL table, its columns, keys and foreign keys, and what a delete of the target does.
-# Source of truth: backend/src/main/resources/db/migration/V1__schema.sql (the whole schema, ADR 0004 §5).
+# Source of truth: backend/src/main/resources/db/migration/V1__schema.sql (the whole schema, ADR 0004 §5),
+#   V2__enrichment_extra_evidence.sql (ADR 0043).
 #   Delete rules on the lines: ADR 0034. Seeds (R__ migrations) add rows, no tables.
 # Lines: solid = foreign key, labelled with its ON DELETE rule; dashed = a link the code keeps, with no foreign key.
 # Render: cd docs/diagrams && d2 fmt data-model.d2 && d2 data-model.d2 data-model.svg
@@ -138,6 +139,7 @@ enrichment: "enrichment: AI facts, each backed by evidence" {
     finished_at: timestamptz
     outcome: text
     validation_errors: jsonb
+    extra_evidence: text
   }
 
   evidence: {

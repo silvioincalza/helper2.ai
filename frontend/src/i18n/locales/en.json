@@ -398,6 +398,8 @@
     "sourceRecords": "Source records (provenance)",
     "noEvidence": "No evidence attached.",
     "evidenceLink": "Evidence",
+    "evidenceReadme": "{{name}} · README",
+    "evidenceModelCard": "{{name}} · model card",
     "retrievedAt": "Retrieved {{date}}"
   },
   "enrichment": {
@@ -789,7 +791,8 @@
           "Answering your searches and guide questions, your account and your saved items: to provide the service you ask for (Art. 6(1)(b) GDPR).",
           "Rate limits, technical logs and the security cookie: our legitimate interest in keeping the service secure and available (Art. 6(1)(f) GDPR).",
           "Web search counters and stored results: legitimate interest in a free service at bounded cost (Art. 6(1)(f) GDPR).",
-          "Reports you send: our legitimate interest in keeping the information on Helper2.ai correct (Art. 6(1)(f) GDPR)."
+          "Reports you send: our legitimate interest in keeping the information on Helper2.ai correct (Art. 6(1)(f) GDPR).",
+          "Describing public AI resources with names and short quotes from their public pages: our legitimate interest in showing what a resource is and where each fact comes from (Art. 6(1)(f) GDPR)."
         ]
       },
       {
@@ -807,11 +810,20 @@
           "Search sources: to find results, your search text is sent to the sources that answer live, such as GitHub, Hugging Face, npm, arXiv and Tavily. The Sources page lists them all. Each provider handles the request under its own privacy policy, and some of them are in the United States.",
           "Tavily (United States): your search text or the guide's web query, unless a stored result answers.",
           "AI models: guide questions, and searches written in a language other than English, are sent to NVIDIA Nemotron models on Nebius Token Factory, processed in the European Union. We send only the text, never your account data.",
+          "AI models also read public text about AI resources (source descriptions, README files and model cards) to describe them, on NVIDIA Nemotron models on Nebius Token Factory in the European Union. It is public text about the resources, not about our visitors.",
           "Embeddings: your search text, and your guide question when similar-question reuse is on, is sent to the NVIDIA API catalog (United States) to compute its embedding. We send only the text, never your IP address or account data. NVIDIA is certified under the Data Privacy Framework (see Transfers abroad).",
           "GitHub, when you choose to sign in with it.",
           "Network edge: every request to helper2.ai passes through Cloudflare (United States), which routes traffic to our servers. Cloudflare sees your IP address and the request.",
           "Transfers abroad: GitHub, Cloudflare and NVIDIA are certified under the Swiss-US and EU-US Data Privacy Framework and its UK Extension, so those transfers rely on that certification. Hugging Face, npm, arXiv and Tavily are not certified. We send them only your search text, never your IP address or account data, and only because it is needed to give you the results you asked for (Art. 17(1)(b) FADP, Art. 49(1)(b) GDPR).",
           "Hosting: our servers are in Germany (European Union)."
+        ]
+      },
+      {
+        "title": "Public data about AI resources",
+        "items": [
+          "To describe the AI resources we list, we read public pages about them, such as GitHub repositories, their README files and Hugging Face model cards.",
+          "From README files and model cards we keep names of projects, organisations and authors, and short quotes of up to 300 characters, each with its source named and a link to it. We do not keep the rest of their text, and we replace email addresses with \"[email]\" before anything is quoted.",
+          "This data is about the resources. If a quote names you, you can object or ask us to remove it: write to us at the address above."
         ]
       },
       {
@@ -823,7 +835,8 @@
           "English translations of searches typed in another language: 24 hours. Search vectors (the numbers we use to search by meaning): 7 days. Both are stored under a hash of the search, not its text, and deleted from the database within a day after they expire.",
           "Your account and saved items: until you delete them, or 24 months after you last signed in. Then we delete the account and its saved items.",
           "Reports: 12 months after they were handled. If your account is deleted, your reports stay without your name until then.",
-          "Database backups: 7 days. Anything deleted above is gone from the backups within 7 days."
+          "Database backups: 7 days. Anything deleted above is gone from the backups within 7 days.",
+          "Quotes from public pages about AI resources: as long as we keep the source record they were read for, and never longer than we list the resource."
         ]
       },
       {
@@ -849,7 +862,7 @@
   },
   "terms": {
     "title": "Terms of use",
-    "updated": "Last updated: 30 October 2026",
+    "updated": "Last updated: 4 November 2026",
     "lede": "These terms apply when you use the Helper2.ai website. By using it, you accept them. If you do not accept them, please do not use the site.",
     "contactIntro": "Helper2.ai is run by Silvio Incalza, Switzerland. For any question about these terms, write to",
     "sections": [
@@ -895,7 +908,7 @@
       {
         "title": "Intellectual property",
         "paragraphs": [
-          "Results, titles and descriptions belong to their owners and are shown to help you find them. The Helper2.ai name and logo belong to Silvio Incalza. The source code has its own licence, linked in the footer."
+          "Results, titles and descriptions belong to their owners and are shown to help you find them. Short quotes from README files and model cards are shown as evidence, with their source named and a link to it. The Helper2.ai name and logo belong to Silvio Incalza. The source code has its own licence, linked in the footer."
         ]
       },
       {

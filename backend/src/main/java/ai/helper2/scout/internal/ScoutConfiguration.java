@@ -19,6 +19,8 @@ import ai.helper2.scout.EnrichmentProposal;
 import ai.helper2.scout.usecase.EnrichResource;
 import ai.helper2.scout.EnrichmentStore;
 import ai.helper2.scout.EvidenceValidator;
+import ai.helper2.scout.ExtraEvidence;
+import ai.helper2.scout.GapBudget;
 import ai.helper2.scout.LlmUnavailable;
 import ai.helper2.scout.RunLock;
 import ai.helper2.scout.ScheduledRun;
@@ -63,7 +65,7 @@ class ScoutConfiguration {
     EnrichmentModel enrichmentModel(ObjectProvider<ChatModel> chatModel, LlmSettings llm, Clock clock, CallCounter budgetCounter,
                                     ModelCallMetrics metrics, MeterRegistry meters, Resilience resilience,
                                     @Value("${helper2.llm.enrich-max-tokens:" + SpringAiEnrichmentModel.DEFAULT_MAX_TOKENS + "}") int maxTokens,
-                                    @Value("${helper2.scout.daily-enrichment-calls:300}") int dailyCalls) {
+                                    @Value("${helper2.scout.daily-enrichment-calls:500}") int dailyCalls) {
         ChatModel model = chatModel.getIfAvailable();
         if (!llm.usable(model) || !llm.hasReasoningModel()) {
             log.info("No LLM configured: enrichment disabled, deterministic source metadata only");
@@ -104,11 +106,49 @@ class ScoutConfiguration {
     RunScout scoutRunner(List<Collector> collectors, ScoutStore store, CatalogIndex index, EnrichmentModel model,
                             EnrichmentStore enrichmentStore, EnrichmentBacklog backlog, Clock clock, ClusterLock scoutRunLock,
                             CandidateReview review, MeterRegistry meters, ObservationRegistry observations,
+                            ObjectProvider<ExtraEvidence> extraEvidence, CallCounter budgetCounter,
                             @Value("${helper2.scout.max-items-per-run:500}") int maxItemsPerRun,
-                            @Value("${helper2.scout.max-enrichments-per-run:20}") int maxEnrichmentsPerRun) {
+                            @Value("${helper2.scout.max-enrichments-per-run:20}") int maxEnrichmentsPerRun,
+                            @Value("${helper2.scout.gap-daily-calls:400}") int gapDailyCalls) {
         return new RunScout(collectors, store, index, new EnrichResource(model, enrichmentStore, clock,
-            new EvidenceValidator(), meters), clock, new ClusterRunLock(scoutRunLock), maxItemsPerRun, maxEnrichmentsPerRun,
+            new EvidenceValidator(), meters, extraEvidence.getIfAvailable(), gapBudget(gapDailyCalls, clock, budgetCounter, meters)),
+            clock, new ClusterRunLock(scoutRunLock), maxItemsPerRun, maxEnrichmentsPerRun,
             backlog, meters, RUN_THREADS, observations, review);
+    }
+
+    /**
+     * The gap round's own daily cap (ADR 0043), counted like the others so a restart does not reset the day. Its calls
+     * also count on the enrichment cap, so this is a share of it, not more. 0 turns the gap round off.
+     */
+    static GapBudget gapBudget(int dailyCalls, Clock clock, CallCounter counter, MeterRegistry meters) {
+        if (dailyCalls <= 0) {
+            return new GapBudget() {
+                @Override
+                public boolean tryAcquire() {
+                    return false;
+                }
+
+                @Override
+                public boolean hasRoom() {
+                    return false;
+                }
+            };
+        }
+        DailyBudget budget = new DailyBudget(dailyCalls, clock, "enrichment-gap", counter);
+        Gauge.builder("helper2.scout.gap.budget.remaining", budget, DailyBudget::remaining)
+            .description("Scout gap-round model calls left under today's cap (UTC day)")
+            .register(meters);
+        return new GapBudget() {
+            @Override
+            public boolean tryAcquire() {
+                return budget.tryAcquire();
+            }
+
+            @Override
+            public boolean hasRoom() {
+                return budget.remaining() > 0;
+            }
+        };
     }
 
     @Bean

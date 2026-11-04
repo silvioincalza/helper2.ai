@@ -1,6 +1,7 @@
 package ai.helper2.catalog;
 
 import ai.helper2.shared.Verification;
+import java.net.URI;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -15,14 +16,27 @@ public interface EnrichmentResults {
 
     /**
      * One run. [outcome] is VALIDATED, PARTIAL, REJECTED, LLM_UNAVAILABLE or FAILED; [errors] are the validation
-     * errors, or the failure.
+     * errors, or the failure. [extraEvidence] names the README or model card the run read (ADR 0043), else null.
      */
     record Run(UUID resourceId, String provider, String model, String promptVersion, String inputFingerprint,
-               Instant startedAt, String outcome, List<String> errors) {
+               Instant startedAt, String outcome, List<String> errors, @Nullable String extraEvidence) {
+
+        public Run(UUID resourceId, String provider, String model, String promptVersion, String inputFingerprint,
+                   Instant startedAt, String outcome, List<String> errors) {
+            this(resourceId, provider, model, promptVersion, inputFingerprint, startedAt, outcome, errors, null);
+        }
     }
 
-    /** A passage of a source record that supports a fact. */
-    record Citation(UUID sourceRecordId, String excerpt) {
+    /**
+     * A passage that supports a fact. Without [sourceUrl] it is a passage of the source record; with it, a passage of
+     * text read for that record (its README or model card, ADR 0043), at [sourceUrl] on [retrievedAt]. The record
+     * anchors it either way, so it goes when the record goes.
+     */
+    record Citation(UUID sourceRecordId, String excerpt, @Nullable URI sourceUrl, @Nullable Instant retrievedAt) {
+
+        public Citation(UUID sourceRecordId, String excerpt) {
+            this(sourceRecordId, excerpt, null, null);
+        }
     }
 
     record Field(String field, String value, Verification verification, List<Citation> citations) {

@@ -30,7 +30,7 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
   guide -> search: "retrieve candidates" {class: hot}
   search -> sources: "SearchSource" {class: config}
   search -> catalog: "SearchSource, ResultObserver" {class: config}
-  scout -> sources: "Collector" {class: config}
+  scout -> sources: "Collector, ExtraEvidence" {class: config}
   scout -> catalog: "CatalogIndex" {class: config}
   guide -> platform: "model calls" {class: ai-call}
   scout -> platform: "model calls" {class: ai-call}

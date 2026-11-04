@@ -15,7 +15,7 @@ load: "Source records loaded?\n(title + description)" {class: decision}
 noMat: "REJECTED\n(nothing to cite)" {class: fail}
 same: "Same fingerprint (text, prompt\nversion, model) as the last run\nthat judged an answer?" {class: decision}
 unchanged: "UNCHANGED: no model call,\nnothing recorded;\nrun slot given back" {class: end}
-budget: "Enrichment daily budget\nunit left? (300)" {class: decision}
+budget: "Enrichment daily budget\nunit left? (500)" {class: decision}
 call: "Reasoning model, enrich-v3,\nthinking off, 8192 max tokens" {class: ai}
 callOk: "Provider answered?" {class: decision}
 unavail: "LLM_UNAVAILABLE run saved;\nresource back in backlog;\nrun stops enriching" {class: fail}

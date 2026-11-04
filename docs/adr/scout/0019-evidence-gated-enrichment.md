@@ -19,7 +19,7 @@ source states. Every published value must point to the text it came from, and a 
    does not cost a call, and a `REJECTED` answer is not asked for again on the same text. A new prompt version or
    model changes the fingerprint, so every resource is enriched again as the backlog reaches it. `RunScout` gives
    the slot back to the run's enrichment budget, so the next resource can use it ([0018](0018-scout-runner.md)).
-3. **Daily cap.** Each call takes one unit of the enrichment budget `H2_SCOUT_DAILY_ENRICHMENT_CALLS` (300 per day; days are in Coordinated Universal Time, UTC),
+3. **Daily cap.** Each call takes one unit of the enrichment budget `H2_SCOUT_DAILY_ENRICHMENT_CALLS` (500 per day; days are in Coordinated Universal Time, UTC),
    separate from the guide's. Gauge `helper2.scout.enrichment.budget.remaining`.
 4. **Call.** `SpringAiEnrichmentModel`: reasoning model, thinking off, `H2_NEBIUS_ENRICH_MAX_TOKENS` (8192), prompt
    `prompts/scout/enrich-v3.txt` (version stored with every run). Material goes in `<material evidenceId=…>` tags
@@ -66,7 +66,7 @@ source states. Every published value must point to the text it came from, and a 
 - A page never mixes artificial intelligence (AI) fields or unreviewed AI relationships from two runs, and the review
   queue only asks about the newest run.
 - A prompt or model change re-enriches the whole catalog, bounded by the same daily cap.
-- The cost is bounded per run (`H2_SCOUT_MAX_ENRICHMENTS`: 20 by default, 200 in the Helm chart) and per day (300);
+- The cost is bounded per run (`H2_SCOUT_MAX_ENRICHMENTS`: 20 by default, 200 in the Helm chart) and per day (500);
   unchanged text costs nothing and does not use up a slot of the run.
 - Source-stated `type` is a fact, so a model that disagrees (for example LIBRARY vs MCP_SERVER) opens a review item.
 
@@ -90,6 +90,9 @@ source states. Every published value must point to the text it came from, and a 
 
 ## Diagrams
 [flow](../../diagrams/flow-0019-evidence-gated-enrichment.svg) · [sequence](../../diagrams/sequence-0019-evidence-gated-enrichment.svg)
+
+## Amended by
+- [0043](0043-enrichment-gap-round.md): a run that leaves fields unproven reads the resource's README or model card once.
 
 ## Roadmap
 - [Watch how often source `type` sends proposals to CONFLICTING review](../../roadmap.md#5-ai-quality-and-cost)

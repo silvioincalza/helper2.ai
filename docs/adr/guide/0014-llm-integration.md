@@ -39,7 +39,7 @@ Without a configured model the application must still work.
 6. **Daily budget per use, per attempt.** `DailyBudget.tryAcquire()` runs before each provider attempt, retries
    included. The only retry is ours: the guide tries once more when it cannot use an answer, for example malformed
    JavaScript Object Notation (JSON) (`SpringAiGuideModel`). Budgets per day in Coordinated Universal Time (UTC): guide
-   `H2_GUIDE_DAILY_MODEL_CALLS` (600), translation `H2_SEARCH_DAILY_TRANSLATIONS` (300), enrichment `H2_SCOUT_DAILY_ENRICHMENT_CALLS` (300), classifier
+   `H2_GUIDE_DAILY_MODEL_CALLS` (600), translation `H2_SEARCH_DAILY_TRANSLATIONS` (300), enrichment `H2_SCOUT_DAILY_ENRICHMENT_CALLS` (500; its gap-round share `H2_SCOUT_GAP_DAILY_CALLS`, 400, [0043](../scout/0043-enrichment-gap-round.md)), classifier
    `H2_SCOUT_AWESOME_CLASSIFIER_DAILY_CALLS` (300). The counts live in Redis, with a fallback to memory
    ([0005](../foundation/0005-redis-disposable-cache.md)): `RedisCallCounter` runs `INCR` and `PEXPIRE` in one Lua script, so a
    counter key always has its expiry.
