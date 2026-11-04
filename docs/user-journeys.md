@@ -90,7 +90,7 @@ Anyone can sign in, to keep saved items on the account and get a larger daily qu
 
 ## UJ-8 Understand coverage and sources
 
-1. **Sources** page lists every configured source: mode (LIVE, INDEXED, CURATED, DEMO), what it covers, homepage, terms, attribution, last outcome and check time.
+1. **Sources** page lists every configured source: mode (LIVE, INDEXED, CURATED, DEMO), what it covers, homepage, terms, attribution, last outcome and check time. A called source also shows its response time ("No calls yet" on a live source before its first call). A source whose circuit is open says "Paused after repeated failures, since HH:MM:SS UTC. It tries again on its own."; half open, "Trying again". The metered web source shows today's web credits for all visitors ("312 of 1,000 (all visitors)", "312 (no daily cap)" or "Not available right now"). The summary counts the last outcome only: a paused source is not counted as limited. One line under the list says response time and pauses come from the server that answered the page.
 2. Footer on every page: "Helper2.ai searches the sources listed here — not the whole web."
 
 ## UJ-9 Admin: keep the catalog honest

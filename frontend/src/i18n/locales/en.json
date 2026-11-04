@@ -470,7 +470,21 @@
     "col": {
       "terms": "Terms",
       "attribution": "Attribution"
-    }
+    },
+    "responseTime": "Response time",
+    "noCalls": "No calls yet",
+    "pause": {
+      "since": "Paused after repeated failures, since {{time}}. It tries again on its own.",
+      "paused": "Paused after repeated failures. It tries again on its own.",
+      "trying": "Trying again"
+    },
+    "webCredits": "Web credits today",
+    "credits": {
+      "capped": "{{used}} of {{cap}} (all visitors)",
+      "uncapped": "{{used}} (no daily cap)",
+      "unavailable": "Not available right now"
+    },
+    "replicaNote": "Response time and pauses are from the server that answered this page."
   },
   "admin": {
     "title": "Admin",

@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import type { Bookmark, SourceInfo } from '@/api/types';
 import { BOOKMARK_KEY } from '@/lib/bookmarks';
 import { axeViolations } from '@/test/a11y';
-import { SOURCES, USER } from '@/test/fixtures';
+import { HEALTH_SOURCES, SOURCES, USER } from '@/test/fixtures';
 import { mockApi, problem } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
 import { CACHE_TTL_MS } from '@/hooks/useApi';
@@ -59,8 +59,8 @@ describe('Feature: saved resources', () => {
 
 const sources: SourceInfo[] = [
   ...SOURCES,
-  { id: 'arxiv', name: 'arXiv', mode: 'INDEXED', enabled: true, homepage: 'https://arxiv.org', termsUrl: null, attribution: 'Thanks to arXiv', resourceTypes: ['PAPER'], lastOutcome: 'RATE_LIMITED', lastCheckedAt: '2026-10-22T08:00:00Z' },
-  { id: 'npm', name: 'npm', mode: 'LIVE', enabled: true, homepage: 'https://www.npmjs.com', termsUrl: null, attribution: null, resourceTypes: ['LIBRARY'], lastOutcome: 'FAILED', lastCheckedAt: '2026-10-22T08:30:00Z' },
+  { id: 'arxiv', name: 'arXiv', mode: 'INDEXED', enabled: true, metered: false, homepage: 'https://arxiv.org', termsUrl: null, attribution: 'Thanks to arXiv', resourceTypes: ['PAPER'], lastOutcome: 'RATE_LIMITED', lastCheckedAt: '2026-10-22T08:00:00Z' },
+  { id: 'npm', name: 'npm', mode: 'LIVE', enabled: true, metered: false, homepage: 'https://www.npmjs.com', termsUrl: null, attribution: null, resourceTypes: ['LIBRARY'], lastOutcome: 'FAILED', lastCheckedAt: '2026-10-22T08:30:00Z' },
 ];
 
 describe('Feature: the sources page', () => {
@@ -94,6 +94,57 @@ describe('Feature: the sources page', () => {
     expect(screen.getByRole('heading', { level: 3, name: /arXiv/ })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { level: 3, name: /GitHub/ })).not.toBeInTheDocument();
     expect(within(chips).getByRole('button', { name: 'Indexed' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('Scenario: each card shows its response time after the last check, or "No calls yet" on a live source', async () => {
+    mockApi({ 'GET /sources': () => HEALTH_SOURCES });
+    renderApp('/sources');
+    const gh = (await screen.findByRole('heading', { level: 3, name: /GitHub/ })).closest('li') as HTMLElement;
+    const terms = [...gh.querySelectorAll('dt')].map((d) => d.textContent);
+    expect(terms.indexOf('Response time')).toBe(terms.indexOf('Last check') + 1);
+    const time = within(gh).getByText('Response time').nextElementSibling as HTMLElement;
+    expect(time).toHaveTextContent('240 ms');
+    expect(within(time).getByText('240 milliseconds')).toHaveClass('sr-only');
+    const hf = screen.getByRole('heading', { level: 3, name: /Hugging Face/ }).closest('li') as HTMLElement;
+    expect(within(hf).getByText('Response time').nextElementSibling).toHaveTextContent('No calls yet');
+    // A curated source is not called: no response time row.
+    const seed = screen.getByRole('heading', { level: 3, name: /Helper2 seed/ }).closest('li') as HTMLElement;
+    expect(within(seed).queryByText('Response time')).not.toBeInTheDocument();
+    expect(screen.getByText('Response time and pauses are from the server that answered this page.')).toBeInTheDocument();
+  });
+
+  it('Scenario: a paused source says since when and that it retries; the summary still counts the last outcome only', async () => {
+    mockApi({ 'GET /sources': () => HEALTH_SOURCES });
+    renderApp('/sources');
+    const npm = (await screen.findByRole('heading', { level: 3, name: /npm/ })).closest('li') as HTMLElement;
+    expect(within(npm).getByText('Paused after repeated failures, since 09:14:05 UTC. It tries again on its own.')).toBeInTheDocument();
+    const hf = screen.getByRole('heading', { level: 3, name: /Hugging Face/ }).closest('li') as HTMLElement;
+    expect(within(hf).getByText('Trying again')).toBeInTheDocument();
+    const gh = screen.getByRole('heading', { level: 3, name: /GitHub/ }).closest('li') as HTMLElement;
+    expect(within(gh).queryByText(/Paused|Trying again/)).not.toBeInTheDocument();
+    // npm is paused but its last call succeeded: it counts as answered, not as limited.
+    expect(screen.getByText('3 of 5 sources answered at their last check')).toBeInTheDocument();
+    expect(screen.queryByText(/rate limited or skipped/)).not.toBeInTheDocument();
+  });
+
+  it('Scenario: only the metered source shows today\'s web credits, with or without a daily cap', async () => {
+    mockApi({ 'GET /sources': () => HEALTH_SOURCES });
+    const first = renderApp('/sources');
+    const tavily = (await screen.findByRole('heading', { level: 3, name: /Tavily/ })).closest('li') as HTMLElement;
+    expect(within(tavily).getByText('Web credits today').nextElementSibling).toHaveTextContent('312 of 1,000 (all visitors)');
+    expect(screen.getAllByText('Web credits today')).toHaveLength(1);
+    first.unmount();
+    mockApi({ 'GET /sources': () => HEALTH_SOURCES.map((s) => (s.id === 'tavily' ? { ...s, webCredits: { usedToday: 312, dailyCap: null } } : s)) });
+    renderApp('/sources');
+    const again = (await screen.findByRole('heading', { level: 3, name: /Tavily/ })).closest('li') as HTMLElement;
+    expect(within(again).getByText('Web credits today').nextElementSibling).toHaveTextContent('312 (no daily cap)');
+  });
+
+  it('Scenario: when the credits cannot be read, the metered source says they are not available', async () => {
+    mockApi({ 'GET /sources': () => HEALTH_SOURCES.map((s) => (s.id === 'tavily' ? { ...s, webCredits: null } : s)) });
+    renderApp('/sources');
+    const tavily = (await screen.findByRole('heading', { level: 3, name: /Tavily/ })).closest('li') as HTMLElement;
+    expect(within(tavily).getByText('Web credits today').nextElementSibling).toHaveTextContent('Not available right now');
   });
 
   it('Scenario: the page has one h1 and no axe violations', async () => {

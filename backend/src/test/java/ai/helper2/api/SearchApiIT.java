@@ -189,6 +189,17 @@ class SearchApiIT extends ApiTestBase {
     }
 
     @Test
+    void sourcesEndpointMarksOnlyTheSourceThatSpendsAPaidQuotaAsMetered() throws Exception {
+        String body = mvc.perform(get("/api/v1/sources")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+
+        ContractValidator.assertArrayMatches("SourceInfo", body);
+        List<Object> metered = com.jayway.jsonpath.JsonPath.read(body, "$[?(@.metered == true)].id");
+        assertThat(metered).as("metered even while disabled").containsExactly("tavily");
+        assertThat(source(body, "github").get("metered")).isEqualTo(false);
+        assertThat(source(body, "mcp-registry").get("metered")).isEqualTo(false);
+    }
+
+    @Test
     void sourcesEndpointShowsTheScoutOutcomeOfCollectorsThatAreNeverSearched() throws Exception {
         jdbc.sql("UPDATE source SET last_outcome = 'SUCCEEDED', last_checked_at = '2026-10-26T12:00:00Z' WHERE id = 'mcp-registry'").update();
 

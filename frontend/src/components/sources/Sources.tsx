@@ -8,6 +8,8 @@ import { api } from '@/api/client';
 import { useApi } from '@/hooks/useApi';
 import { useRetry } from '@/hooks/useRetry';
 import { formatDate } from '@/lib/format';
+import { creditsOf, responseTimeShown } from '@/lib/sourceHealth';
+import { ResponseTimeValue, SourceNotes, WebCreditsValue } from './SourceHealth';
 import '@/components/saved/saved.css';
 import './sources.css';
 
@@ -27,7 +29,9 @@ export function sourceState(s: SourceInfo): SourceState {
 
 /**
  * Sources page (ADR 0040, 10): how a search works, the source modes in use, the last check of every
- * source in words, and one card per source with what it covers, its terms and attribution.
+ * source in words, and one card per source with what it covers, its terms and attribution, its response time, a pause
+ * line while its circuit is open, and today's web credits on the metered source. The summary counts the last outcome
+ * only: a paused source is not counted as limited.
  */
 export function Sources() {
   const { t, i18n } = useTranslation();
@@ -118,10 +122,24 @@ export function Sources() {
                     <dd>{s.attribution ?? '—'}</dd>
                     <dt>{t('sources.lastCheck')}</dt>
                     <dd className="h2-src-card__mono">{s.lastCheckedAt ? formatDate(s.lastCheckedAt, i18n.language, 'INSTANT') : t('sourcesPage.neverChecked')}</dd>
+                    {responseTimeShown(s) && (
+                      <>
+                        <dt>{t('sourcesPage.responseTime')}</dt>
+                        <dd className="h2-src-card__mono"><ResponseTimeValue source={s} /></dd>
+                      </>
+                    )}
+                    {creditsOf(s) && (
+                      <>
+                        <dt>{t('sourcesPage.webCredits')}</dt>
+                        <dd><WebCreditsValue source={s} /></dd>
+                      </>
+                    )}
                   </dl>
+                  <SourceNotes source={s} />
                 </li>
               ))}
             </ul>
+            <p className="h2-sources__note">{t('sourcesPage.replicaNote')}</p>
           </>
         )}
       </section>
