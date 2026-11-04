@@ -346,4 +346,4 @@ exactly when expected ("new tools?", "Gemini", "what is Gemini?" are; "what is O
 [flow](../../diagrams/flow-0032-guide-intents.svg) · [sequence](../../diagrams/sequence-0032-guide-intents.svg)
 
 ## Roadmap
-- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).
+- Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

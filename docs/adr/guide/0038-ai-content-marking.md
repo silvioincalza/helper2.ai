@@ -66,5 +66,5 @@ to the text.
 [flow](../../diagrams/flow-0038-ai-content-marking.svg) · [sequence](../../diagrams/sequence-0038-ai-content-marking.svg)
 
 ## Roadmap
-- [Signed provenance manifest for AI-written text](../../roadmap.md#5-ai-quality-and-cost)
-- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).
+- [Signed provenance manifest for AI-written text](../../roadmap.md#4-ai-quality-and-cost)
+- Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

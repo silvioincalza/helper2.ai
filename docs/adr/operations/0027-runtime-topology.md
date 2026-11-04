@@ -103,9 +103,8 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
 The topology itself is in the [infrastructure](../../diagrams/infrastructure.svg) diagram.
 
 ## Roadmap
-- Check that the DNS pods carry `k8s-app=kube-dns` in `kube-system`: [roadmap](../../roadmap.md#1-before-the-hackathon-deadline-30-oct-2026-1800-zurich).
-- Test a restore, add a restore-check job, turn on the R2 copy, encrypt dumps: [roadmap](../../roadmap.md#3-operations).
-- Postgres and Redis exporters: [roadmap](../../roadmap.md#3-operations).
+- Test a restore, add a restore-check job, turn on the R2 copy, encrypt dumps: [roadmap](../../roadmap.md#2-operations).
+- Postgres and Redis exporters: [roadmap](../../roadmap.md#2-operations).
 - What stays per replica; `preStop` delay for rolling updates; Scout lock after a crash; Redis memory:
-  [roadmap](../../roadmap.md#4-more-than-one-replica).
-- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).
+  [roadmap](../../roadmap.md#3-more-than-one-replica).
+- Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

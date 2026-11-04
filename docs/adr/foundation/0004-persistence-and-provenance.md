@@ -131,8 +131,8 @@ Shared cache lookups: [flow 0011](../../diagrams/flow-0011-language-aware-search
 [sequence 0012](../../diagrams/sequence-0012-vector-search-pgvector.svg); purge: [flow 0034](../../diagrams/flow-0034-data-retention.svg).
 
 ## Roadmap
-- Discovery date unknown on a resource's first search: [roadmap](../../roadmap.md#6-search-and-catalog).
-- Delete indexed resources left without source records: [roadmap](../../roadmap.md#6-search-and-catalog).
-- Batch the per-item queries of recent items, events and evidence: [roadmap](../../roadmap.md#6-search-and-catalog).
-- One owner per table (the Scout reads catalog tables for its enrichment backlog): [roadmap](../../roadmap.md#8-architecture).
-- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).
+- Discovery date unknown on a resource's first search: [roadmap](../../roadmap.md#5-search-and-catalog).
+- Delete indexed resources left without source records: [roadmap](../../roadmap.md#5-search-and-catalog).
+- Batch the per-item queries of recent items, events and evidence: [roadmap](../../roadmap.md#5-search-and-catalog).
+- One owner per table (the Scout reads catalog tables for its enrichment backlog): [roadmap](../../roadmap.md#7-architecture).
+- Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

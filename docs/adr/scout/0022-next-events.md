@@ -68,7 +68,7 @@ not instants. Helper2 never invents a date ([0004](../foundation/0004-persistenc
 [flow](../../diagrams/flow-0022-next-events.svg) · [sequence](../../diagrams/sequence-0022-next-events.svg)
 
 ## Roadmap
-- [Live collectors for hackathons, meetups, talks and workshops](../../roadmap.md#6-search-and-catalog)
-- [`ListUpcomingEvents` makes two queries per item; batch them](../../roadmap.md#6-search-and-catalog)
-- [Count skipped ai-deadlines files in a metric](../../roadmap.md#6-search-and-catalog)
-- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).
+- [Live collectors for hackathons, meetups, talks and workshops](../../roadmap.md#5-search-and-catalog)
+- [`ListUpcomingEvents` makes two queries per item; batch them](../../roadmap.md#5-search-and-catalog)
+- [Count skipped ai-deadlines files in a metric](../../roadmap.md#5-search-and-catalog)
+- Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

@@ -117,4 +117,4 @@ The periods are a product decision the owner may change; changing one must not n
 [flow](../../diagrams/flow-0034-data-retention.svg) · [sequence](../../diagrams/sequence-0034-data-retention.svg)
 
 ## Roadmap
-- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).
+- Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

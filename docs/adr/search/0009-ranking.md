@@ -56,4 +56,4 @@ The index query must also stay well inside its 3 s timeout on the production cat
 
 ## Roadmap
 - [Ranking measured on a labeled query set](../../roadmap.md#quality-gates).
-- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).
+- Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

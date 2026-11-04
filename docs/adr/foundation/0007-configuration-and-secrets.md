@@ -64,7 +64,6 @@ or in GitHub settings, and the deploy must not need a person to copy them.
 [flow](../../diagrams/flow-0007-configuration-and-secrets.svg) · [sequence](../../diagrams/sequence-0007-configuration-and-secrets.svg)
 
 ## Roadmap
-- Rewrite `app_env` in OpenBao with the `H2_` names: [roadmap](../../roadmap.md#1-before-the-hackathon-deadline-30-oct-2026-1800-zurich).
-- Short-lived deployer token from the OpenBao Kubernetes secrets engine: [roadmap](../../roadmap.md#3-operations).
-- Restart Redis on rotation when `redis.auth.existingSecret` is used: [roadmap](../../roadmap.md#3-operations).
-- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).
+- Short-lived deployer token from the OpenBao Kubernetes secrets engine: [roadmap](../../roadmap.md#2-operations).
+- Restart Redis on rotation when `redis.auth.existingSecret` is used: [roadmap](../../roadmap.md#2-operations).
+- Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

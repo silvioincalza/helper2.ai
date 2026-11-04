@@ -140,6 +140,6 @@ and chose between options for each part.
 [flow](../../diagrams/flow-0040-frontend-design.svg) · [sequence](../../diagrams/sequence-0040-frontend-design.svg)
 
 ## Roadmap
-[Frontend](../../roadmap.md#7-frontend): consent banner
+[Frontend](../../roadmap.md#6-frontend): consent banner
 and Privacy update before any tracking cookie; a release to take the design to prod.
-- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).
+- Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

@@ -88,5 +88,5 @@ The guards run in this order. Values are defaults; each has an `H2_` variable.
 [flow](../../diagrams/flow-0017-guide-cost-guard.svg) · [sequence](../../diagrams/sequence-0017-guide-cost-guard.svg)
 
 ## Roadmap
-- [Single-flight and concurrency limit stay per replica, on purpose](../../roadmap.md#4-more-than-one-replica)
-- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).
+- [Single-flight and concurrency limit stay per replica, on purpose](../../roadmap.md#3-more-than-one-replica)
+- Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

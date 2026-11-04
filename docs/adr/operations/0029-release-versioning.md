@@ -58,5 +58,4 @@ and the Helm chart. A published version must always mean the same code, so it ca
 [flow](../../diagrams/flow-0029-release-versioning.svg) · [sequence](../../diagrams/sequence-0029-release-versioning.svg)
 
 ## Roadmap
-- GitHub tag ruleset on `refs/tags/v*` and a Harbor tag-immutability rule: [roadmap](../../roadmap.md#1-before-the-hackathon-deadline-30-oct-2026-1800-zurich).
-- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).
+- Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

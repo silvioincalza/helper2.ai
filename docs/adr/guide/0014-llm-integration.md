@@ -103,5 +103,5 @@ Without a configured model the application must still work.
 [flow](../../diagrams/flow-0014-llm-integration.svg) · [sequence](../../diagrams/sequence-0014-llm-integration.svg)
 
 ## Roadmap
-- [A closed `llm` module instead of the open `platform` module](../../roadmap.md#8-architecture)
-- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).
+- [A closed `llm` module instead of the open `platform` module](../../roadmap.md#7-architecture)
+- Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

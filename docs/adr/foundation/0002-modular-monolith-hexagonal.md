@@ -75,7 +75,7 @@ internals. Microservices would add network calls and deploys without a scaling n
 Modules, ports and adapters: [software architecture](../../diagrams/software-architecture.svg).
 
 ## Roadmap
-- One owner per table, so the schema has no hidden coupling: [roadmap](../../roadmap.md#8-architecture).
-- A closed `llm` module instead of the LLM layer in open `platform`: [roadmap](../../roadmap.md#8-architecture).
-- Move the source and catalog adapters into `internal` packages: [roadmap](../../roadmap.md#8-architecture).
-- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).
+- One owner per table, so the schema has no hidden coupling: [roadmap](../../roadmap.md#7-architecture).
+- A closed `llm` module instead of the LLM layer in open `platform`: [roadmap](../../roadmap.md#7-architecture).
+- Move the source and catalog adapters into `internal` packages: [roadmap](../../roadmap.md#7-architecture).
+- Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

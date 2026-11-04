@@ -134,4 +134,4 @@ The domain (Kotlin) must not depend on the library that implements them ([0002](
 [sequence 0005](../../diagrams/sequence-0005-redis-disposable-cache.svg) (the `redis` circuit)
 
 ## Roadmap
-- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).
+- Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

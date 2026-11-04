@@ -109,6 +109,6 @@ state what happened.
 The weekly live check (13) is a scheduled test run, not a runtime path, so the diagrams leave it out.
 
 ## Roadmap
-- Total deadline per call instead of a per-read timeout: [roadmap](../../roadmap.md#6-search-and-catalog).
+- Total deadline per call instead of a per-read timeout: [roadmap](../../roadmap.md#5-search-and-catalog).
 - Run `./gradlew liveTest` against production egress: [roadmap](../../roadmap.md#quality-gates).
-- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).
+- Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).
