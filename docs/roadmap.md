@@ -162,8 +162,6 @@ Open items:
 
 ## 6. Frontend
 
-- The shared `/sources` data is fetched once per page load, so the Sources page can show an old last outcome
-  during a long visit.
 - More UI languages. The UI is English only; queries work in any language.
 - TypeScript 7 and ESLint 10 (with `@eslint/js` 10) are held back in `.github/dependabot.yml`: on 27 Oct 2026
   `typescript-eslint` 8.72 needs TypeScript <6.1 and `eslint-plugin-jsx-a11y` 6.10 needs ESLint <=9. Remove the

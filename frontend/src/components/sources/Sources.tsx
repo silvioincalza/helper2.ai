@@ -6,9 +6,10 @@ import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
 import { TypeTag } from '@/components/ui/TypeTag';
 import { api } from '@/api/client';
 import { useApi } from '@/hooks/useApi';
+import { useRefreshOnReturn } from '@/hooks/useRefreshOnReturn';
 import { useRetry } from '@/hooks/useRetry';
 import { formatDate } from '@/lib/format';
-import { creditsOf, responseTimeShown } from '@/lib/sourceHealth';
+import { clockTime, creditsOf, responseTimeShown } from '@/lib/sourceHealth';
 import { ResponseTimeValue, SourceNotes, WebCreditsValue } from './SourceHealth';
 import '@/components/saved/saved.css';
 import './sources.css';
@@ -36,10 +37,19 @@ export function sourceState(s: SourceInfo): SourceState {
 export function Sources() {
   const { t, i18n } = useTranslation();
   // Its own request, not the copy the app loaded at start: the last checks shown here are at most CACHE_TTL_MS old.
-  const q = useApi('sources', (signal) => api.listSources(signal));
+  // When the list on screen arrived, for the line after a failed refresh. A list from the recent-answers cache counts
+  // from when the page opened.
+  const [listedAt, setListedAt] = useState(() => new Date().toISOString());
+  const q = useApi('sources', (signal) => api.listSources(signal).then((list) => {
+    setListedAt(new Date().toISOString());
+    return list;
+  }));
   const { retry, focusRef } = useRetry(q.reload, q.loading);
+  // Back on the tab after a minute or more: ask again, and keep showing the list meanwhile.
+  useRefreshOnReturn(q.reload);
+  const list = q.data ?? q.previous;
   const [mode, setMode] = useState<SourceMode | null>(null);
-  const all = q.data ?? [];
+  const all = list ?? [];
   const modes = MODES.filter((m) => all.some((s) => s.mode === m));
   const shown = mode ? all.filter((s) => s.mode === mode) : all;
   const count = (st: SourceState) => all.filter((s) => sourceState(s) === st).length;
@@ -82,12 +92,15 @@ export function Sources() {
 
       <section aria-labelledby="all-h">
         <h2 id="all-h" ref={focusRef} tabIndex={-1} className="h2-sources__h">{t('sources.all')}</h2>
-        {q.loading && <p role="status">{t('common.loading')}</p>}
-        {!q.loading && q.error !== undefined && (
+        {q.loading && !list && <p role="status">{t('common.loading')}</p>}
+        {!q.loading && q.error !== undefined && !list && (
           <StatePanel tone="error" level={3} title={t('sourcesPage.error')} next={<RetryButton onClick={retry} />} />
         )}
-        {q.data && (
+        {list && (
           <>
+            {!q.loading && q.error !== undefined && (
+              <p className="h2-sources__stale" role="status">{t('sourcesPage.refreshFailed', { time: clockTime(listedAt, i18n.language, false) })}</p>
+            )}
             <p className="h2-sources__summary">
               <strong>{t('sources.summary', { ok: count('ok'), total: all.length })}</strong>
               {count('warn') > 0 && <span><span className="h2-dot is-warn" aria-hidden="true" />{t('sources.warn', { count: count('warn') })}</span>}
@@ -146,3 +159,4 @@ export function Sources() {
     </div>
   );
 }
+

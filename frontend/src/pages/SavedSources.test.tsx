@@ -196,3 +196,72 @@ describe('Feature: the source list cannot load', () => {
     await settle();
   });
 });
+
+/** The reader leaves the tab and comes back [ms] later. */
+async function comeBackAfter(ms: number) {
+  const now = Date.now();
+  vi.spyOn(Date, 'now').mockReturnValue(now + ms);
+  const set = (state: DocumentVisibilityState) => {
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => state });
+    document.dispatchEvent(new Event('visibilitychange'));
+  };
+  await act(async () => {
+    set('hidden');
+    set('visible');
+  });
+}
+
+describe('Feature: the sources page refreshes when the reader comes back', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' });
+  });
+
+  it('Scenario: back after a while, the page asks again and shows the new outcome without a loading line', async () => {
+    let answer: SourceInfo[] = SOURCES;
+    let release!: () => void;
+    let held = false;
+    const m = mockApi({
+      'GET /sources': () => (held ? new Promise((r) => { release = () => r(answer); }) : answer),
+    });
+    renderApp('/sources');
+    const gh = (await screen.findByRole('heading', { level: 3, name: /GitHub/ })).closest('li') as HTMLElement;
+    expect(within(gh).getByText('Succeeded')).toBeInTheDocument();
+    const chip = screen.queryByRole('button', { name: 'Live' });
+    const before = m.callsTo('GET', '/sources').length;
+    held = true;
+    answer = SOURCES.map((s) => (s.id === 'github' ? { ...s, lastOutcome: 'FAILED' as const } : s));
+    await comeBackAfter(2 * 60_000);
+    await waitFor(() => expect(m.callsTo('GET', '/sources')).toHaveLength(before + 1));
+    // While it loads, the old list stays: no loading line, no blink.
+    expect(screen.queryByText('Loading…')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 3, name: /GitHub/ })).toBeInTheDocument();
+    if (chip) expect(screen.getByRole('button', { name: 'Live' })).toBe(chip);
+    await act(async () => release());
+    const after = screen.getByRole('heading', { level: 3, name: /GitHub/ }).closest('li') as HTMLElement;
+    expect(await within(after).findByText('Failed')).toBeInTheDocument();
+  });
+
+  it('Scenario: back within a minute, the page does not ask again', async () => {
+    const m = mockApi();
+    renderApp('/sources');
+    await screen.findByRole('heading', { level: 3, name: /GitHub/ });
+    await settle();
+    const before = m.callsTo('GET', '/sources').length;
+    await comeBackAfter(30_000);
+    await settle();
+    expect(m.callsTo('GET', '/sources')).toHaveLength(before);
+  });
+
+  it('Scenario: a refresh that fails keeps the old list and says so quietly', async () => {
+    let fail = false;
+    mockApi({ 'GET /sources': () => (fail ? problem(503, 'Unavailable') : SOURCES) });
+    renderApp('/sources');
+    await screen.findByRole('heading', { level: 3, name: /GitHub/ });
+    fail = true;
+    await comeBackAfter(2 * 60_000);
+    expect(await screen.findByText(/^Could not refresh; showing the list from \d\d:\d\d UTC$/)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 3, name: /GitHub/ })).toBeInTheDocument();
+    expect(screen.queryByText('Could not load the source list.')).not.toBeInTheDocument();
+  });
+});
