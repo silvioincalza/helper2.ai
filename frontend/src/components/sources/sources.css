@@ -32,6 +32,7 @@
 .h2-src-card__facts dd { margin: 0; color: var(--ink); overflow-wrap: anywhere; }
 .h2-src-card__note { margin: 0; font-size: 0.875rem; color: var(--ink-2); }
 .h2-src-card__note.is-paused { color: var(--ink); }
+.h2-sources__stale { margin: 0 0 var(--space-3); font-size: 0.875rem; color: var(--ink-2); }
 .h2-sources__note { margin: var(--space-3) 0 0; font-size: 0.8125rem; color: var(--muted); }
 .h2-src-card__mono { font-family: var(--font-mono); font-size: 0.8125rem; }
 @media (max-width: 1000px) { .h2-sources__steps, .h2-sources__modes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

@@ -484,7 +484,8 @@
       "uncapped": "{{used}} (no daily cap)",
       "unavailable": "Not available right now"
     },
-    "replicaNote": "Response time and pauses are from the server that answered this page."
+    "replicaNote": "Response time and pauses are from the server that answered this page.",
+    "refreshFailed": "Could not refresh; showing the list from {{time}}"
   },
   "admin": {
     "title": "Admin",
