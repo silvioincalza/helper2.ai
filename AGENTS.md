@@ -127,7 +127,7 @@ deferred (safe for now, say why).
 - Config and secrets: `H2_` prefix; secrets live in OpenBao, never in the repo.
 - The deploy stays generic: no dependency on a specific cluster or infra repo.
 - Infra baseline (do not reopen without a concrete reason): Kubernetes, Helm charts for staging
-  and prod, own image registry, OpenBao for secrets, Traefik ingress, GitHub as identity
+  and prod, own image registry, OpenBao for secrets, ingress-nginx, GitHub as identity
   provider, servers in the EU, admin back office only over VPN.
 - No backward compatibility with removed code or migrations unless asked.
 - Never add AI attribution, "Generated with" footers or Co-Authored-By to commits, PRs,
