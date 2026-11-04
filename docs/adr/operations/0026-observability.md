@@ -156,5 +156,4 @@ the guide work long before that, and what makes the wait feel long is the first 
 ## Roadmap
 - [Postgres and Redis exporters in the Helm chart](../../roadmap.md#2-operations).
 - [Confirm trace and span ids in every log line](../../roadmap.md#2-operations).
-- [Conference files skipped by ai-deadlines are logged, not counted](../../roadmap.md#5-search-and-catalog).
 - Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

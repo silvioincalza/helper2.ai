@@ -1,5 +1,6 @@
 package ai.helper2.sources.aideadlines;
 
+import ai.helper2.platform.resilience.CallRefused;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.scout.Collector;
@@ -51,7 +52,10 @@ import tools.jackson.databind.JsonNode;
  *
  * The raw files are read only from {@link #RAW_HOST}, without the GitHub token: download_url is data from
  * the API response, and the token must never go to a host it names. A file that cannot be read or parsed
- * is skipped (logged and counted) and the pass goes on with the others.
+ * is skipped and the pass goes on with the others. Each skipped file is counted in helper2.source.items.dropped
+ * {source=ai-deadlines, reason}: the exception type, or ForeignDownloadUrl. A conference with no upcoming edition is
+ * not a skip. A call the circuit breaker refuses ends the pass (the run fails and the next run retries), so the
+ * refused files are not counted one by one.
  */
 public class AiDeadlinesCollector implements Collector {
 
@@ -60,6 +64,8 @@ public class AiDeadlinesCollector implements Collector {
     static final String POLICY = "collector-" + ID;
     static final String CONFERENCES_PATH = "/repos/huggingface/ai-deadlines/contents/src/data/conferences";
     static final URI RAW_HOST = URI.create("https://raw.githubusercontent.com");
+    /** Reason of helper2.source.items.dropped for a file whose download URL is not on the raw host. */
+    static final String FOREIGN_DOWNLOAD_URL = "ForeignDownloadUrl";
 
     private static final Logger log = LoggerFactory.getLogger(AiDeadlinesCollector.class);
 
@@ -118,6 +124,7 @@ public class AiDeadlinesCollector implements Collector {
             Optional<URI> url = allowed(download);
             if (url.isEmpty()) {
                 skipped++;
+                HttpClients.dropped(ID, FOREIGN_DOWNLOAD_URL);
                 log.warn("ai-deadlines: {} skipped, download URL is not on {}", name, rawHost.getHost());
                 continue;
             }
@@ -128,8 +135,12 @@ public class AiDeadlinesCollector implements Collector {
                     hits.add(hit.get());
                     rank++;
                 }
+            } catch (CallRefused e) {
+                // The circuit is open: every later file would be refused too. The pass fails and the next run retries it.
+                throw e;
             } catch (RuntimeException e) {
                 skipped++;
+                HttpClients.dropped(ID, e);
                 log.warn("ai-deadlines: {} skipped: {}", name, e.getClass().getSimpleName());
             }
         }
