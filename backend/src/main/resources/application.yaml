@@ -89,7 +89,8 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,prometheus,metrics
+        # Only what the probes and the scraper read; anything else under /actuator is not served.
+        include: health,prometheus
   endpoint:
     health:
       probes:
@@ -344,7 +345,7 @@ helper2:
     guide-per-minute: ${H2_RATE_LIMIT_GUIDE_PER_MINUTE:10}
     recent-per-minute: ${H2_RATE_LIMIT_RECENT_PER_MINUTE:60}
   security:
-    # /actuator/prometheus without sign-in (the other actuator endpoints but health and info stay ADMIN only).
+    # /actuator/prometheus without sign-in (health is always open; nothing else is served).
     # Only where the management port is not public.
     metrics-public: ${H2_METRICS_PUBLIC:false}
     # Comma-separated "registrationId:subject" entries granted ADMIN (GitHub: numeric user id, never the
