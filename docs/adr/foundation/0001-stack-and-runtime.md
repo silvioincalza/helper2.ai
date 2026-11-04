@@ -55,5 +55,5 @@ The modules are in the [software architecture](../../diagrams/software-architect
 
 ## Roadmap
 - Search engine support (robots.txt, sitemap, metadata for detail pages): [roadmap](../../roadmap.md#product-and-legal).
-- Pin base images by digest, image scan and software bill of materials: [roadmap](../../roadmap.md#3-operations).
-- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).
+- Pin base images by digest, image scan and software bill of materials: [roadmap](../../roadmap.md#2-operations).
+- Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

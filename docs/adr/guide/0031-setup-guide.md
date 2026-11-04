@@ -153,4 +153,4 @@ and a snippet copied into an AI client's config file runs on the user's machine.
 ## Roadmap
 - Guide me on every result card (same panel, inline).
 - PyPI package pages as a document source (no PyPI source in the catalog yet).
-- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).
+- Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

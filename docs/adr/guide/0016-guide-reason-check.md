@@ -52,5 +52,5 @@ language; a model can, but its answer is a judgment, not a proof.
 [flow](../../diagrams/flow-0016-guide-reason-check.svg) · [sequence](../../diagrams/sequence-0016-guide-reason-check.svg)
 
 ## Roadmap
-- [The reason check is a model judgment and can miss a claim](../../roadmap.md#5-ai-quality-and-cost)
-- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).
+- [The reason check is a model judgment and can miss a claim](../../roadmap.md#4-ai-quality-and-cost)
+- Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

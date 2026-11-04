@@ -161,7 +161,7 @@ New components are added with the page that first needs them.
 
 ## API features the design needs
 
-These are drawn in the redesign and are not in the API yet. They are on the roadmap (section 7).
+These are drawn in the redesign and are not in the API yet. They are on the roadmap (section 6).
 
 | Feature | Where | API change |
 |---|---|---|

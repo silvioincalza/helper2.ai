@@ -80,7 +80,7 @@ A collector returns hits, which the runner indexes, and candidates, which the ru
 - [0043](0043-enrichment-gap-round.md): a run that leaves fields unproven reads the resource's README or model card once.
 
 ## Roadmap
-- [More registries, if their terms allow it](../../roadmap.md#6-search-and-catalog)
-- [Count skipped ai-deadlines files in a metric](../../roadmap.md#6-search-and-catalog)
+- [More registries, if their terms allow it](../../roadmap.md#5-search-and-catalog)
+- [Count skipped ai-deadlines files in a metric](../../roadmap.md#5-search-and-catalog)
 - [Review each source's terms for commercial use](../../roadmap.md#product-and-legal)
-- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).
+- Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

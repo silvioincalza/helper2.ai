@@ -95,6 +95,6 @@ source states. Every published value must point to the text it came from, and a 
 - [0043](0043-enrichment-gap-round.md): a run that leaves fields unproven reads the resource's README or model card once.
 
 ## Roadmap
-- [Watch how often source `type` sends proposals to CONFLICTING review](../../roadmap.md#5-ai-quality-and-cost)
-- [One owner per table: the Scout reads catalog tables for its enrichment backlog](../../roadmap.md#8-architecture)
-- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).
+- [Watch how often source `type` sends proposals to CONFLICTING review](../../roadmap.md#4-ai-quality-and-cost)
+- [One owner per table: the Scout reads catalog tables for its enrichment backlog](../../roadmap.md#7-architecture)
+- Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

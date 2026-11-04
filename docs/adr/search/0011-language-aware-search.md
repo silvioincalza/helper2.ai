@@ -69,6 +69,6 @@ A translation costs a model call and time, and it must not slow down sources tha
 [flow](../../diagrams/flow-0011-language-aware-search.svg) · [sequence](../../diagrams/sequence-0011-language-aware-search.svg)
 
 ## Roadmap
-- [More user interface (UI) languages; the UI is English only](../../roadmap.md#7-frontend).
-- [Cross-language retrieval in vector search](../../roadmap.md#5-ai-quality-and-cost).
-- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).
+- [More user interface (UI) languages; the UI is English only](../../roadmap.md#6-frontend).
+- [Cross-language retrieval in vector search](../../roadmap.md#4-ai-quality-and-cost).
+- Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

@@ -6,13 +6,7 @@ from their "Roadmap" section. The code has no TODO or FIXME comments.
 The baseline is v1.0.0, the first release (27 Oct 2026); the current release is v2.0.0, a major version because prod got an empty database for the single V1 schema.
 Items are grouped by the order in which they matter. Inside a group, the first item is the most useful.
 
-## 1. Before the hackathon deadline (30 Oct 2026, 18:00 Zurich)
-
-- **Full vector index before recording the video.** Every resource has an embedding
-  ([ADR 0012](adr/search/0012-vector-search-pgvector.md)). The Scout fills the index over a few days (500 enrichments
-  per day).
-
-## 2. Launch hardening
+## 1. Launch hardening
 
 ### Product and legal
 - Imprint and contact (EU). The Privacy and Terms pages exist; the Sources page lists attributions.
@@ -57,12 +51,8 @@ Items are grouped by the order in which they matter. Inside a group, the first i
   [docs/eval](eval/README.md) describes, then record the baseline.
 - Guide relevance judged by a second person, not only by the owner ([ADR 0030](adr/quality/0030-guide-evaluation.md)).
 
-## 3. Operations
+## 2. Operations
 
-- **Database reset for the single V1 schema:** staging right before the merge, prod in the maintenance window of the
-  release that ships it, never earlier ([deploy/k8s/RESET-DATABASE.md](../deploy/k8s/RESET-DATABASE.md)). After the
-  reset, migrations are forward-only: every schema change is a new `V2__…`
-  ([ADR 0004](adr/foundation/0004-persistence-and-provenance.md)).
 - **Exporters.** Postgres and Redis exporters in the Helm chart, and an alert on Redis evicted keys
   (`allkeys-lru` can drop sessions, rate-limit windows and web-search counters under memory pressure).
 - **Backups:**
@@ -80,7 +70,7 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 - Remove the unused duplicate `deploy/.dockerignore`.
 - Confirm that trace and span ids appear in every log line (only a configuration comment says so today).
 
-## 4. More than one replica
+## 3. More than one replica
 
 Prod runs 3 replicas (`app.replicas`, staging 1). The Scout and the embedding indexer run on one replica at a
 time (ShedLock, table `shedlock` in Postgres); rate limits and sign-in sessions are in Redis, query translations,
@@ -102,9 +92,9 @@ Open items:
   seconds of `preStop` sleep would stop the last requests from reaching it during a rolling update.
 - **Redis memory.** Sign-in sessions, rate-limit windows and web-search counters share the 128 MB `allkeys-lru`
   cache: under pressure an admin is signed out, or a client gets a fresh window or a fresh day early. Alert on
-  Redis evictions (with the Redis exporter, section 3).
+  Redis evictions (with the Redis exporter, section 2).
 
-## 5. AI quality and cost
+## 4. AI quality and cost
 
 - The guide reason check is a model judgment and can miss a claim. Only the quote is proven
   ([ADR 0016](adr/guide/0016-guide-reason-check.md)).
@@ -135,7 +125,7 @@ Open items:
 - A question from a shared `?ask=` link is asked on page load. Asking only after a click would stop a link from
   spending model calls for its visitors (one cached answer per question limits it today).
 
-## 6. Search and catalog
+## 5. Search and catalog
 
 - `ListRecentResources` and `ListUpcomingEvents` make two queries per item, and the evidence loaders make one
   query per assertion. Batch them.
@@ -164,7 +154,7 @@ Open items:
   redisplay. Rate-limited like issue reports; no sign-in needed. Courses and certifications (Coursera, O'Reilly,
   edX, Udemy, vendor programmes) are the first case ([ADR 0032](adr/guide/0032-guide-intents.md)).
 
-## 7. Frontend
+## 6. Frontend
 
 - Sources page shows response time, circuit state and Tavily credits from GET /sources (`responseTimeMs`,
   `circuit`, `circuitOpenedAt`, `webCredits`; [ADR 0008](adr/search/0008-federated-search.md)). Response time and
@@ -193,7 +183,7 @@ Open items:
 - Tracking cookies are planned. Before the first one: consent banner, cookie notice, Privacy page and record of
   processing, all in the same pull request, wording checked by a lawyer.
 
-## 8. Architecture
+## 7. Architecture
 
 - The Scout reads catalog tables (`resource`, `source_record`) for its enrichment backlog in
   `JdbcEnrichmentStore`. Spring Modulith cannot see coupling through the schema; read them through a catalog port
@@ -201,17 +191,17 @@ Open items:
 - `platform` is an open module and holds the LLM layer. Consider a closed `llm` module with a named interface.
 - Move the source and catalog adapters into `internal` packages.
 
-## 9. Documentation
+## 8. Documentation
 
 - `docs/diagrams/software-architecture.svg` is about 5,800 px wide: readable at full size, too small when scaled
   down. Split it into one diagram per module group.
 - `docs/diagrams/flow-0025-frontend-one-box.svg` has two crossing dashed edges near `HomePage`.
 
-## 10. Known limits
+## 9. Known limits
 
 What each decision leaves open. The ADRs describe only what the code does; their limits live here. Limits that
-already have a task above are not repeated: SEO (section 2), backups, exporters and
-tokens (section 3), per-replica state (section 4), the labeled query set (section 2) and module coupling (section 8).
+already have a task above are not repeated: SEO (section 1), backups, exporters and
+tokens (section 2), per-replica state (section 3), the labeled query set (section 1) and module coupling (section 7).
 Fix an item or accept it; when it no longer holds, remove it.
 
 ### Foundation

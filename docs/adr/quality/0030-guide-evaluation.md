@@ -146,4 +146,4 @@ drop in quality must be seen the next day, not at the next run by hand.
 ## Roadmap
 - [Guide relevance judged by a second person](../../roadmap.md#quality-gates)
 - [Browser end-to-end journeys for the guide](../../roadmap.md#quality-gates)
-- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).
+- Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

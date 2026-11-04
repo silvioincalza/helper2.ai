@@ -121,4 +121,4 @@ Inside the folded "How the guide decided" (`GuidePicks.FullAnswer` → `GuideAns
 [flow](../../diagrams/flow-0044-research-trail.svg) · [sequence](../../diagrams/sequence-0044-research-trail.svg)
 
 ## Roadmap
-- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).
+- Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

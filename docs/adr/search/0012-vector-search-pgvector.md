@@ -79,8 +79,7 @@ never break keyword search.
 [flow](../../diagrams/flow-0012-vector-search-pgvector.svg) · [sequence](../../diagrams/sequence-0012-vector-search-pgvector.svg)
 
 ## Roadmap
-- [Full vector index before recording the video](../../roadmap.md#1-before-the-hackathon-deadline-30-oct-2026-1800-zurich).
-- [The embedding backlog gauge does not count rows whose text changed](../../roadmap.md#6-search-and-catalog).
-- [Cross-language retrieval in vector search](../../roadmap.md#5-ai-quality-and-cost).
-- [Rate-limit pause stays per replica, on purpose](../../roadmap.md#4-more-than-one-replica).
-- Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).
+- [The embedding backlog gauge does not count rows whose text changed](../../roadmap.md#5-search-and-catalog).
+- [Cross-language retrieval in vector search](../../roadmap.md#4-ai-quality-and-cost).
+- [Rate-limit pause stays per replica, on purpose](../../roadmap.md#3-more-than-one-replica).
+- Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).
