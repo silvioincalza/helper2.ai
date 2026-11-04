@@ -3,7 +3,8 @@
 # to the Debian-based pgvector/pgvector image would change the C library and need a REINDEX.
 # Built and pushed by `make -C deploy/k8s postgres-image`, under postgres.image.tag of the Helm chart's
 # values.yaml, and only when that tag is not in Harbor yet. Any change here needs a new tag there.
-FROM docker.io/library/postgres:18.6-alpine
+# Pinned by the digest of its multi-arch index (ADR 0046); Dependabot updates tag and digest together.
+FROM docker.io/library/postgres:18.6-alpine@sha256:10a5c69a83035ab5239f5620d708520e8b28f5aa1f2b20143e6024532edadfb5
 
 # The source is pinned twice: the tag must resolve to this commit, and the files must hash to this
 # sha256, so a moved tag or a tampered download fails the build. For a new version:

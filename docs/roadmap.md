@@ -63,8 +63,8 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 - **Short-lived deployer token.** Mint it with the OpenBao Kubernetes secrets engine. The deployer token
   (incalza-me-infra) does not expire ([ADR 0028](adr/operations/0028-ci-cd.md)).
 - **Supply chain:**
-  - pin base images by digest (`deploy/Dockerfile`, `deploy/postgres/Dockerfile`);
-  - set `postgres.image.digest`;
+  - set `postgres.image.digest` to the digest of `18.6-pgvector0.8.6-2` once CD has pushed that tag (with the
+    Postgres exporter: one restart);
   - **18 Nov 2026:** end of the report-only period. Look at the findings in code scanning, add the exceptions that
     are justified to `.grype.yaml`, then let the pull-request scans fail on a Critical finding with a fix
     (`--fail-on critical` in `ci.yml`, [ADR 0046](adr/operations/0046-supply-chain.md)).
