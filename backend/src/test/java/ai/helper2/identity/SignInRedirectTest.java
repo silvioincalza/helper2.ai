@@ -9,10 +9,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class SignInRedirectTest {
 
-    @Test
-    void oauthReturnsToTheAdminPageWithOrWithoutATrailingSlash() {
-        assertThat(SecurityConfiguration.adminPage("/")).isEqualTo("/admin");
-        assertThat(SecurityConfiguration.adminPage("http://localhost:5173/")).isEqualTo("http://localhost:5173/admin");
-        assertThat(SecurityConfiguration.adminPage("https://helper2.ai")).isEqualTo("https://helper2.ai/admin");
-    }
+  @Test
+  void oauthReturnsToTheAdminPageWithOrWithoutATrailingSlash() {
+    assertThat(SecurityConfiguration.adminPage("/")).isEqualTo("/admin");
+    assertThat(SecurityConfiguration.adminPage("http://localhost:5173/"))
+        .isEqualTo("http://localhost:5173/admin");
+    assertThat(SecurityConfiguration.adminPage("https://helper2.ai"))
+        .isEqualTo("https://helper2.ai/admin");
+  }
 }

@@ -11,12 +11,13 @@ import java.time.Instant
 val NOW: Instant = Instant.parse("2026-10-22T10:00:00Z")
 
 fun descriptor(
-    id: String,
-    mode: SourceMode = SourceMode.LIVE,
-    timeout: Duration = Duration.ofMillis(500),
-    priority: Int = 100,
-    enabled: Boolean = true,
-) = SourceDescriptor(
+  id: String,
+  mode: SourceMode = SourceMode.LIVE,
+  timeout: Duration = Duration.ofMillis(500),
+  priority: Int = 100,
+  enabled: Boolean = true,
+) =
+  SourceDescriptor(
     id = id,
     name = id.replaceFirstChar { it.uppercase() },
     mode = mode,
@@ -28,21 +29,22 @@ fun descriptor(
     cacheTtl = Duration.ofMinutes(10),
     enabled = enabled,
     priority = priority,
-)
+  )
 
 fun hit(
-    source: String,
-    url: String,
-    title: String = url.substringAfterLast('/'),
-    rank: Int = 0,
-    repo: String? = null,
-    type: ResourceType = ResourceType.LIBRARY,
-    license: String? = null,
-    published: String? = null,
-    updated: String? = null,
-    description: String? = null,
-    tags: Set<String> = emptySet(),
-) = SourceHit(
+  source: String,
+  url: String,
+  title: String = url.substringAfterLast('/'),
+  rank: Int = 0,
+  repo: String? = null,
+  type: ResourceType = ResourceType.LIBRARY,
+  license: String? = null,
+  published: String? = null,
+  updated: String? = null,
+  description: String? = null,
+  tags: Set<String> = emptySet(),
+) =
+  SourceHit(
     sourceId = source,
     externalId = "$source:$url",
     url = URI(url),
@@ -57,7 +59,8 @@ fun hit(
     updated = DateFact.fromSource(updated?.let(Instant::parse), source, NOW),
     retrievedAt = NOW,
     rank = rank,
-)
+  )
 
-fun contexts(vararg ids: String, servedFrom: ServedFrom = ServedFrom.LIVE) =
-    ids.associateWith { SourceContext(descriptor(it), servedFrom) }
+fun contexts(vararg ids: String, servedFrom: ServedFrom = ServedFrom.LIVE) = ids.associateWith {
+  SourceContext(descriptor(it), servedFrom)
+}

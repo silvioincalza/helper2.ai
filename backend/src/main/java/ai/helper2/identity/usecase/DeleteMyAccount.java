@@ -10,31 +10,33 @@ import org.springframework.stereotype.Service;
 import java.util.UUID;
 
 /**
- * A signed-in user deletes their account: the app_user row and, with it, every bookmark, then the user's daily
- * web-search counters (ADR 0037). Issue reports they sent stay, without a reporter (the reviewer still needs them).
- * The caller ends the session. While Redis is down the counters stay until they expire, within a day.
+ * A signed-in user deletes their account: the app_user row and, with it, every bookmark, then the
+ * user's daily web-search counters (ADR 0037). Issue reports they sent stay, without a reporter
+ * (the reviewer still needs them). The caller ends the session. While Redis is down the counters
+ * stay until they expire, within a day.
  */
 @Service
 public class DeleteMyAccount {
 
-    private static final Logger log = LoggerFactory.getLogger(DeleteMyAccount.class);
+  private static final Logger log = LoggerFactory.getLogger(DeleteMyAccount.class);
 
-    private final Users users;
-    private final QuotaCounter quota;
-    private final QuotaKeys quotaKeys;
+  private final Users users;
+  private final QuotaCounter quota;
+  private final QuotaKeys quotaKeys;
 
-    public DeleteMyAccount(Users users, QuotaCounter quota, QuotaKeys quotaKeys) {
-        this.users = users;
-        this.quota = quota;
-        this.quotaKeys = quotaKeys;
+  public DeleteMyAccount(Users users, QuotaCounter quota, QuotaKeys quotaKeys) {
+    this.users = users;
+    this.quota = quota;
+    this.quotaKeys = quotaKeys;
+  }
+
+  public void delete(UUID userId) {
+    users.delete(userId);
+    try {
+      quota.delete(quotaKeys.userKeys(userId));
+    } catch (RuntimeException e) {
+      log.warn(
+          "quota counters of a deleted account left to expire: {}", e.getClass().getSimpleName());
     }
-
-    public void delete(UUID userId) {
-        users.delete(userId);
-        try {
-            quota.delete(quotaKeys.userKeys(userId));
-        } catch (RuntimeException e) {
-            log.warn("quota counters of a deleted account left to expire: {}", e.getClass().getSimpleName());
-        }
-    }
+  }
 }

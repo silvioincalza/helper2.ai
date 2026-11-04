@@ -19,38 +19,40 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Import(TestcontainersConfiguration.class)
 class ReviewBacklogGaugeIT {
 
-    @Autowired
-    JdbcClient jdbc;
+  @Autowired JdbcClient jdbc;
 
-    @Autowired
-    ReviewQueue queue;
+  @Autowired ReviewQueue queue;
 
-    @Autowired
-    ResolveReviewItem resolve;
+  @Autowired ResolveReviewItem resolve;
 
-    @Autowired
-    MeterRegistry meters;
+  @Autowired MeterRegistry meters;
 
-    @AfterEach
-    void clean() {
-        jdbc.sql("DELETE FROM review_item WHERE candidate_url LIKE 'https://example.com/backlog-%'").update();
-    }
+  @AfterEach
+  void clean() {
+    jdbc.sql("DELETE FROM review_item WHERE candidate_url LIKE 'https://example.com/backlog-%'")
+        .update();
+  }
 
-    private double gauge() {
-        return meters.get("helper2.review.open_items").gauge().value();
-    }
+  private double gauge() {
+    return meters.get("helper2.review.open_items").gauge().value();
+  }
 
-    @Test
-    void countsOpenItems_notDecidedOnes() {
-        double before = gauge();
-        queue.proposeCandidate(ReviewQueue.Kind.COURSE_CANDIDATE, "https://example.com/backlog-1", "New course", "");
-        queue.proposeCandidate(ReviewQueue.Kind.COURSE_CANDIDATE, "https://example.com/backlog-2", "New course", "");
-        assertThat(gauge()).isEqualTo(before + 2);
+  @Test
+  void countsOpenItems_notDecidedOnes() {
+    double before = gauge();
+    queue.proposeCandidate(
+        ReviewQueue.Kind.COURSE_CANDIDATE, "https://example.com/backlog-1", "New course", "");
+    queue.proposeCandidate(
+        ReviewQueue.Kind.COURSE_CANDIDATE, "https://example.com/backlog-2", "New course", "");
+    assertThat(gauge()).isEqualTo(before + 2);
 
-        ReviewQueue.Item first = queue.list(ReviewQueue.Status.OPEN, null, 0, 100).items().stream()
-            .filter(i -> "New course".equals(i.reason())).findFirst().orElseThrow();
-        resolve.resolve(first.id(), ReviewQueue.Status.REJECTED, "admin", "not a course");
+    ReviewQueue.Item first =
+        queue.list(ReviewQueue.Status.OPEN, null, 0, 100).items().stream()
+            .filter(i -> "New course".equals(i.reason()))
+            .findFirst()
+            .orElseThrow();
+    resolve.resolve(first.id(), ReviewQueue.Status.REJECTED, "admin", "not a course");
 
-        assertThat(gauge()).isEqualTo(before + 1);
-    }
+    assertThat(gauge()).isEqualTo(before + 1);
+  }
 }

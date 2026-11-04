@@ -23,53 +23,86 @@ import ai.helper2.testing.MovableClock
 import java.time.Duration
 import java.util.concurrent.Executors
 
-
-/** A realistic guide answer: two sources, a licence, dates, a repository URL, a prompt and constraint checks. */
+/**
+ * A realistic guide answer: two sources, a licence, dates, a repository URL, a prompt and
+ * constraint checks.
+ */
 object GuideAnswerFixture {
-    fun answer(): GuideAnswer {
-        val clock = MovableClock(NOW)
-        val executor = Executors.newVirtualThreadPerTaskExecutor()
-        val source = object : SearchSource {
-            override val descriptor = descriptor("hf")
-            override fun search(query: SourceQuery): List<SourceHit> = listOf(
-                hit(
-                    "hf", "https://huggingface.co/acme/whisper-small", title = "whisper-small", type = ResourceType.MODEL,
-                    license = "MIT", published = "2026-01-02T00:00:00Z", repo = "https://github.com/acme/whisper",
-                    description = "Speech recognition model you can self-host, released under the MIT License",
-                ),
-                hit(
-                    "hf", "https://huggingface.co/acme/transcribe-prompt", title = "transcribe-prompt", rank = 1,
-                    type = ResourceType.PROMPT, description = "Prompt to clean up a raw speech transcript into readable text",
-                ),
-            )
+  fun answer(): GuideAnswer {
+    val clock = MovableClock(NOW)
+    val executor = Executors.newVirtualThreadPerTaskExecutor()
+    val source =
+      object : SearchSource {
+        override val descriptor = descriptor("hf")
+
+        override fun search(query: SourceQuery): List<SourceHit> =
+          listOf(
+            hit(
+              "hf",
+              "https://huggingface.co/acme/whisper-small",
+              title = "whisper-small",
+              type = ResourceType.MODEL,
+              license = "MIT",
+              published = "2026-01-02T00:00:00Z",
+              repo = "https://github.com/acme/whisper",
+              description =
+                "Speech recognition model you can self-host, released under the MIT License",
+            ),
+            hit(
+              "hf",
+              "https://huggingface.co/acme/transcribe-prompt",
+              title = "transcribe-prompt",
+              rank = 1,
+              type = ResourceType.PROMPT,
+              description = "Prompt to clean up a raw speech transcript into readable text",
+            ),
+          )
+      }
+    val noCache =
+      object : SearchCache {
+        override fun get(key: String) = null
+
+        override fun put(key: String, value: CachedHits, ttl: Duration) {}
+      }
+    val model =
+      object : GuideModel {
+        override val provider = "fake"
+        override val fastModel = "fast"
+        override val reasoningModel = "reasoning"
+
+        override fun plan(request: String, path: AudiencePath?) =
+          GuideSearchPlan("speech recognition", listOf("MIT licence"))
+
+        override fun choose(
+          request: String,
+          candidates: List<Candidate>,
+          constraints: List<String>,
+        ): GuideProposal {
+          val whisper = candidates.first { it.result.title == "whisper-small" }.key
+          val prompt = candidates.first { it.result.title == "transcribe-prompt" }.key
+          return GuideProposal(
+            listOf(
+              ProposedPick(whisper, "Self-hostable.", "Speech recognition model you can self-host"),
+              // Rejected: its quote is not in the text, so the answer carries a research trail
+              // entry (ADR 0044).
+              ProposedPick(
+                prompt,
+                "A prompt.",
+                "a quote that is nowhere in this candidate's own text",
+              ),
+            ),
+            "Clean up this transcript.",
+            listOf(prompt),
+          )
         }
-        val noCache = object : SearchCache {
-            override fun get(key: String) = null
-            override fun put(key: String, value: CachedHits, ttl: Duration) {}
-        }
-        val model = object : GuideModel {
-            override val provider = "fake"
-            override val fastModel = "fast"
-            override val reasoningModel = "reasoning"
-            override fun plan(request: String, path: AudiencePath?) = GuideSearchPlan("speech recognition", listOf("MIT licence"))
-            override fun choose(request: String, candidates: List<Candidate>, constraints: List<String>): GuideProposal {
-                val whisper = candidates.first { it.result.title == "whisper-small" }.key
-                val prompt = candidates.first { it.result.title == "transcribe-prompt" }.key
-                return GuideProposal(
-                    listOf(
-                        ProposedPick(whisper, "Self-hostable.", "Speech recognition model you can self-host"),
-                        // Rejected: its quote is not in the text, so the answer carries a research trail entry (ADR 0044).
-                        ProposedPick(prompt, "A prompt.", "a quote that is nowhere in this candidate's own text"),
-                    ),
-                    "Clean up this transcript.", listOf(prompt),
-                )
-            }
-        }
-        val search = SearchResources(listOf(source), noCache, ResultObserver { emptyMap() }, executor, clock)
-        try {
-            return AskGuide(search, model, clock).ask("speech to text I can self-host, MIT licence", AudiencePath.BUILD_WITH_AI)
-        } finally {
-            executor.shutdownNow()
-        }
+      }
+    val search =
+      SearchResources(listOf(source), noCache, ResultObserver { emptyMap() }, executor, clock)
+    try {
+      return AskGuide(search, model, clock)
+        .ask("speech to text I can self-host, MIT licence", AudiencePath.BUILD_WITH_AI)
+    } finally {
+      executor.shutdownNow()
     }
+  }
 }

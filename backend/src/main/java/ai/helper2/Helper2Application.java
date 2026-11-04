@@ -1,5 +1,6 @@
 package ai.helper2;
 
+import java.time.Clock;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
@@ -13,12 +14,12 @@ import java.time.Clock;
 @EnableScheduling
 public class Helper2Application {
 
-    public static void main(String[] args) {
-        SpringApplication.run(Helper2Application.class, args);
-    }
+  public static void main(String[] args) {
+    SpringApplication.run(Helper2Application.class, args);
+  }
 
-    @Bean
-    Clock clock() {
-        return Clock.systemUTC();
-    }
+  @Bean
+  Clock clock() {
+    return Clock.systemUTC();
+  }
 }

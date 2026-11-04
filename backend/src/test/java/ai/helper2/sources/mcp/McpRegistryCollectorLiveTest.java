@@ -20,14 +20,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Tag("live")
 class McpRegistryCollectorLiveTest {
 
-    @Test
-    void onePageOfServersAndACursorForTheNext() {
-        McpRegistryCollector collector = new McpRegistryCollector(live("https://registry.modelcontextprotocol.io", null), liveHttp(),
-            Clock.systemUTC(), Resilience.NONE, new RunInterval(Duration.ZERO));
+  @Test
+  void onePageOfServersAndACursorForTheNext() {
+    McpRegistryCollector collector =
+        new McpRegistryCollector(
+            live("https://registry.modelcontextprotocol.io", null),
+            liveHttp(),
+            Clock.systemUTC(),
+            Resilience.NONE,
+            new RunInterval(Duration.ZERO));
 
-        CollectedBatch batch = collector.collect(null, null, 20);
+    CollectedBatch batch = collector.collect(null, null, 20);
 
-        assertThat(batch.getHits()).isNotEmpty().allSatisfy(h -> assertThat(h.getType()).isEqualTo(ResourceType.MCP_SERVER));
-        assertThat(batch.getNextCursor()).isNotNull();
-    }
+    assertThat(batch.getHits())
+        .isNotEmpty()
+        .allSatisfy(h -> assertThat(h.getType()).isEqualTo(ResourceType.MCP_SERVER));
+    assertThat(batch.getNextCursor()).isNotNull();
+  }
 }

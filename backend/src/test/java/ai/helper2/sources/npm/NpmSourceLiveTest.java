@@ -18,12 +18,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Tag("live")
 class NpmSourceLiveTest {
 
-    @Test
-    void searchFindsPackagesWithTheirRegistryPage() {
-        NpmSource source = new NpmSource(live("https://registry.npmjs.org", null), liveHttp(), Clock.systemUTC());
+  @Test
+  void searchFindsPackagesWithTheirRegistryPage() {
+    NpmSource source =
+        new NpmSource(live("https://registry.npmjs.org", null), liveHttp(), Clock.systemUTC());
 
-        List<SourceHit> hits = source.search(query("mcp server"));
+    List<SourceHit> hits = source.search(query("mcp server"));
 
-        assertThat(hits).isNotEmpty().allSatisfy(h -> assertThat(h.getUrl().getHost()).endsWith("npmjs.com"));
-    }
+    assertThat(hits)
+        .isNotEmpty()
+        .allSatisfy(h -> assertThat(h.getUrl().getHost()).endsWith("npmjs.com"));
+  }
 }

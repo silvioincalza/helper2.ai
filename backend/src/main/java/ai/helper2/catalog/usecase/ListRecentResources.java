@@ -16,20 +16,23 @@ import java.util.Set;
 @Service
 public class ListRecentResources {
 
-    private final ResourceStore store;
-    private final ResourceCards cards;
+  private final ResourceStore store;
+  private final ResourceCards cards;
 
-    public ListRecentResources(ResourceStore store, ResourceCards cards) {
-        this.store = store;
-        this.cards = cards;
-    }
+  public ListRecentResources(ResourceStore store, ResourceCards cards) {
+    this.store = store;
+    this.cards = cards;
+  }
 
-    /**
-     * Newest resources by source-stated publication date (the home page "Today" list), as the same cards
-     * the detail page and search show. Only Helper2's own index (indexed and observed resources), never
-     * curated or demo rows; resources whose records no longer merge are skipped. Six statements for any limit.
-     */
-    public List<MergedResult> list(Instant since, Instant now, Set<String> types, int limit) {
-        return cards.cardsOf(store.recentlyPublished(since, now, types, Set.of(DataOrigin.INDEXED, DataOrigin.OBSERVED), limit));
-    }
+  /**
+   * Newest resources by source-stated publication date (the home page "Today" list), as the same
+   * cards the detail page and search show. Only Helper2's own index (indexed and observed
+   * resources), never curated or demo rows; resources whose records no longer merge are skipped.
+   * Six statements for any limit.
+   */
+  public List<MergedResult> list(Instant since, Instant now, Set<String> types, int limit) {
+    return cards.cardsOf(
+        store.recentlyPublished(
+            since, now, types, Set.of(DataOrigin.INDEXED, DataOrigin.OBSERVED), limit));
+  }
 }

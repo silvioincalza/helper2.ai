@@ -13,49 +13,70 @@ import java.time.Duration
 
 /** One disclosed source as the Sources page shows it. */
 data class SourceOverview(
-    val descriptor: SourceDescriptor,
-    /** Last outcome: this replica's last search or the Scout's last run, whichever is newer. */
-    val last: SourceHealth.Entry?,
-    /** Median of this replica's recent calls ([SourceHealth.responseTime]). */
-    val responseTime: Duration?,
-    /** This replica's circuit `source-<id>`; null for a disabled source or one without a circuit (Scout collectors). */
-    val circuit: Circuit?,
-    /** The credits of the day for the whole cluster; only on an enabled metered source, null when unreadable. */
-    val webCredits: WebCredits?,
+  val descriptor: SourceDescriptor,
+  /** Last outcome: this replica's last search or the Scout's last run, whichever is newer. */
+  val last: SourceHealth.Entry?,
+  /** Median of this replica's recent calls ([SourceHealth.responseTime]). */
+  val responseTime: Duration?,
+  /**
+   * This replica's circuit `source-<id>`; null for a disabled source or one without a circuit
+   * (Scout collectors).
+   */
+  val circuit: Circuit?,
+  /**
+   * The credits of the day for the whole cluster; only on an enabled metered source, null when
+   * unreadable.
+   */
+  val webCredits: WebCredits?,
 )
 
 /**
- * Lists every disclosed source (search sources and Scout collectors, enabled or not) by priority with its live
- * numbers (ADR 0008). Never throws for a store that cannot answer: the Scout outcomes and the credits are then left out.
+ * Lists every disclosed source (search sources and Scout collectors, enabled or not) by priority
+ * with its live numbers (ADR 0008). Never throws for a store that cannot answer: the Scout outcomes
+ * and the credits are then left out.
  */
 class ListSources(
-    private val sources: List<DescribedSource>,
-    private val health: SourceHealth,
-    private val recorded: RecordedOutcomes,
-    private val resilience: Resilience,
-    private val quota: WebSearchQuota,
+  private val sources: List<DescribedSource>,
+  private val health: SourceHealth,
+  private val recorded: RecordedOutcomes,
+  private val resilience: Resilience,
+  private val quota: WebSearchQuota,
 ) {
-    private val log = LoggerFactory.getLogger(ListSources::class.java)
+  private val log = LoggerFactory.getLogger(ListSources::class.java)
 
-    fun list(): List<SourceOverview> {
-        val fromScout = recordedOutcomes()
-        val descriptors = sources.map { it.descriptor }.sortedWith(compareBy({ it.priority }, { it.id }))
-        val credits = if (descriptors.any { it.metered && it.enabled }) quota.creditsToday() else null
-        return descriptors.map { d ->
-            SourceOverview(
-                descriptor = d,
-                last = health.lastFor(d.id, fromScout[d.id]),
-                responseTime = health.responseTime(d.id),
-                circuit = if (d.enabled) resilience.circuit(SearchResources.policy(d)).orElse(null) else null,
-                webCredits = credits?.takeIf { d.metered && d.enabled },
-            )
-        }
-    }
+  fun list(): List<SourceOverview> {
+    val fromScout = recordedOutcomes()
+    val descriptors =
+      sources.map { it.descriptor }.sortedWith(compareBy({ it.priority }, { it.id }))
+    val credits = if (descriptors.any { it.spendsCredits }) quota.creditsToday() else null
+    return descriptors.map { overview(it, fromScout[it.id], credits) }
+  }
 
-    private fun recordedOutcomes(): Map<String, SourceHealth.Entry> = try {
-        recorded.lastOutcomes()
+  private fun overview(
+    d: SourceDescriptor,
+    fromScout: SourceHealth.Entry?,
+    credits: WebCredits?,
+  ): SourceOverview =
+    SourceOverview(
+      descriptor = d,
+      last = health.lastFor(d.id, fromScout),
+      responseTime = health.responseTime(d.id),
+      circuit = circuitOf(d),
+      webCredits = credits?.takeIf { d.spendsCredits },
+    )
+
+  private fun circuitOf(d: SourceDescriptor): Circuit? =
+    if (d.enabled) resilience.circuit(SearchResources.policy(d)).orElse(null) else null
+
+  private fun recordedOutcomes(): Map<String, SourceHealth.Entry> =
+    try {
+      recorded.lastOutcomes()
     } catch (e: RuntimeException) {
-        log.warn("Recorded source outcomes unavailable: {}", e.toString())
-        emptyMap()
+      log.warn("Recorded source outcomes unavailable: {}", e.toString())
+      emptyMap()
     }
 }
+
+/** An enabled metered source: it spends the day's web credits. */
+private val SourceDescriptor.spendsCredits: Boolean
+  get() = metered && enabled

@@ -23,75 +23,93 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class ObservedHttpObservationTest {
 
-    private HttpServer server;
-    private MeterRegistry meters;
-    private ObservationRegistry observations;
+  private HttpServer server;
+  private MeterRegistry meters;
+  private ObservationRegistry observations;
 
-    @BeforeEach
-    void start() throws Exception {
-        server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
-        server.createContext("/", ex -> {
-            byte[] body = "{}".getBytes(StandardCharsets.UTF_8);
-            ex.sendResponseHeaders(200, body.length);
-            ex.getResponseBody().write(body);
-            ex.close();
+  @BeforeEach
+  void start() throws Exception {
+    server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+    server.createContext(
+        "/",
+        ex -> {
+          byte[] body = "{}".getBytes(StandardCharsets.UTF_8);
+          ex.sendResponseHeaders(200, body.length);
+          ex.getResponseBody().write(body);
+          ex.close();
         });
-        server.start();
-        meters = new SimpleMeterRegistry();
-        observations = ObservationRegistry.create();
-        observations.observationConfig().observationHandler(new DefaultMeterObservationHandler(meters));
-    }
+    server.start();
+    meters = new SimpleMeterRegistry();
+    observations = ObservationRegistry.create();
+    observations.observationConfig().observationHandler(new DefaultMeterObservationHandler(meters));
+  }
 
-    @AfterEach
-    void stop() {
-        server.stop(0);
-    }
+  @AfterEach
+  void stop() {
+    server.stop(0);
+  }
 
-    private RestClient client() {
-        return ObservedHttp.restClientBuilder(Duration.ofSeconds(2), observations)
-            .baseUrl("http://127.0.0.1:" + server.getAddress().getPort()).build();
-    }
+  private RestClient client() {
+    return ObservedHttp.restClientBuilder(Duration.ofSeconds(2), observations)
+        .baseUrl("http://127.0.0.1:" + server.getAddress().getPort())
+        .build();
+  }
 
-    @Test
-    void recordsClientRequestTimerWithHostAndBoundedUri() {
-        client().get().uri(u -> u.path("/api/models/12345").queryParam("search", "secret query").build())
-            .retrieve().body(String.class);
+  @Test
+  void recordsClientRequestTimerWithHostAndBoundedUri() {
+    client()
+        .get()
+        .uri(u -> u.path("/api/models/12345").queryParam("search", "secret query").build())
+        .retrieve()
+        .body(String.class);
 
-        var timer = meters.get("http.client.requests").timer();
-        assertThat(timer.count()).isEqualTo(1);
-        assertThat(timer.getId().getTag("client.name")).isEqualTo("127.0.0.1");
-        assertThat(timer.getId().getTag("uri")).isEqualTo("/api/models/{id}");
-        assertThat(timer.getId().getTag("status")).isEqualTo("200");
-    }
+    var timer = meters.get("http.client.requests").timer();
+    assertThat(timer.count()).isEqualTo(1);
+    assertThat(timer.getId().getTag("client.name")).isEqualTo("127.0.0.1");
+    assertThat(timer.getId().getTag("uri")).isEqualTo("/api/models/{id}");
+    assertThat(timer.getId().getTag("status")).isEqualTo("200");
+  }
 
-    @Test
-    void spanUrlLeavesOutTheQuery() {
-        List<String> urls = new ArrayList<>();
-        observations.observationConfig().observationHandler(new ObservationHandler<>() {
-            @Override
-            public boolean supportsContext(Observation.Context context) {
+  @Test
+  void spanUrlLeavesOutTheQuery() {
+    List<String> urls = new ArrayList<>();
+    observations
+        .observationConfig()
+        .observationHandler(
+            new ObservationHandler<>() {
+              @Override
+              public boolean supportsContext(Observation.Context context) {
                 return true;
-            }
+              }
 
-            @Override
-            public void onStop(Observation.Context context) {
+              @Override
+              public void onStop(Observation.Context context) {
                 KeyValue url = context.getHighCardinalityKeyValue("http.url");
                 if (url != null) {
-                    urls.add(url.getValue());
+                  urls.add(url.getValue());
                 }
-            }
-        });
+              }
+            });
 
-        client().get().uri(u -> u.path("/api/models").queryParam("search", "secret query").build())
-            .retrieve().body(String.class);
+    client()
+        .get()
+        .uri(u -> u.path("/api/models").queryParam("search", "secret query").build())
+        .retrieve()
+        .body(String.class);
 
-        assertThat(urls).containsExactly("http://127.0.0.1:" + server.getAddress().getPort() + "/api/models");
-    }
+    assertThat(urls)
+        .containsExactly("http://127.0.0.1:" + server.getAddress().getPort() + "/api/models");
+  }
 
-    @Test
-    void keepsUriTemplateWhenGiven() {
-        client().get().uri("/repos/{owner}/{repo}/readme", "acme", "tool").retrieve().body(String.class);
+  @Test
+  void keepsUriTemplateWhenGiven() {
+    client()
+        .get()
+        .uri("/repos/{owner}/{repo}/readme", "acme", "tool")
+        .retrieve()
+        .body(String.class);
 
-        assertThat(meters.get("http.client.requests").timer().getId().getTag("uri")).isEqualTo("/repos/{owner}/{repo}/readme");
-    }
+    assertThat(meters.get("http.client.requests").timer().getId().getTag("uri"))
+        .isEqualTo("/repos/{owner}/{repo}/readme");
+  }
 }

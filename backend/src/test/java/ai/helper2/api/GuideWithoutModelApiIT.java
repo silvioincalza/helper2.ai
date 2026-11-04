@@ -12,19 +12,31 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
  */
 class GuideWithoutModelApiIT extends ApiTestBase {
 
-    @Test
-    void withoutAModelTheGuideDegradesToTopSearchResults() throws Exception {
-        FAKE.set(q -> List.of(fakeHit("https://github.com/acme/polyglot", "Polyglot Translate",
-            "Polyglot Translate converts whole documents between thirty languages", ResourceType.PRODUCT, "MIT", null, null, 0)));
+  @Test
+  void withoutAModelTheGuideDegradesToTopSearchResults() throws Exception {
+    FAKE.set(q ->
+        List.of(
+            fakeHit(
+                "https://github.com/acme/polyglot",
+                "Polyglot Translate",
+                "Polyglot Translate converts whole documents between thirty languages",
+                ResourceType.PRODUCT,
+                "MIT",
+                null,
+                null,
+                0)));
 
-        String json = GuideAnswers.ask(mvc, "{\"request\":\"translate documents without a model\"}", csrf())
+    String json =
+        GuideAnswers.ask(mvc, "{\"request\":\"translate documents without a model\"}", csrf())
             .value("$.status", "LLM_UNAVAILABLE")
             .doesNotExist("$.model")
             .doesNotExist("$.aiContent")
             .doesNotExist("$.prompt")
             .value("$.recommendations[0].aiReasoned", false)
-            .value("$.recommendations[0].reason", org.hamcrest.Matchers.containsString("no AI reasoning"))
+            .value(
+                "$.recommendations[0].reason",
+                org.hamcrest.Matchers.containsString("no AI reasoning"))
             .json();
-        ContractValidator.assertMatches("GuideResponse", json);
-    }
+    ContractValidator.assertMatches("GuideResponse", json);
+  }
 }

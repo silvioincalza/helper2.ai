@@ -18,45 +18,62 @@ import static ai.helper2.sources.SourceFixtures.query;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Opt-in: the real Tavily Search API, one test per adapter. H2_TAVILY_API_KEY=... ./gradlew liveTest
- * Three credits per run (search_depth basic, one query each).
+ * Opt-in: the real Tavily Search API, one test per adapter. H2_TAVILY_API_KEY=... ./gradlew
+ * liveTest Three credits per run (search_depth basic, one query each).
  */
 @Tag("live")
 @EnabledIfEnvironmentVariable(named = "H2_TAVILY_API_KEY", matches = ".+")
 class TavilyLiveTest {
 
-    static final String API = "https://api.tavily.com";
+  static final String API = "https://api.tavily.com";
 
-    @Test
-    void searchSourceFindsPagesWithTheirAnswerSnippet() {
-        TavilySource source = new TavilySource(live(API, "H2_TAVILY_API_KEY"), liveHttp(), Clock.systemUTC());
+  @Test
+  void searchSourceFindsPagesWithTheirAnswerSnippet() {
+    TavilySource source =
+        new TavilySource(live(API, "H2_TAVILY_API_KEY"), liveHttp(), Clock.systemUTC());
 
-        List<SourceHit> hits = source.search(query("new open-source LLM released"));
+    List<SourceHit> hits = source.search(query("new open-source LLM released"));
 
-        assertThat(hits).isNotEmpty().allSatisfy(h -> assertThat(h.getUrl().getScheme()).isEqualTo("https"));
-    }
+    assertThat(hits)
+        .isNotEmpty()
+        .allSatisfy(h -> assertThat(h.getUrl().getScheme()).isEqualTo("https"));
+  }
 
-    @Test
-    void discoveryCollectorRunsOneNewsQuery() {
-        TavilyCollector collector = new TavilyCollector(live(API, "H2_TAVILY_API_KEY"), liveHttp(), Clock.systemUTC(), Resilience.NONE,
-            new RunInterval(Duration.ZERO), List.of("new MCP server released"));
+  @Test
+  void discoveryCollectorRunsOneNewsQuery() {
+    TavilyCollector collector =
+        new TavilyCollector(
+            live(API, "H2_TAVILY_API_KEY"),
+            liveHttp(),
+            Clock.systemUTC(),
+            Resilience.NONE,
+            new RunInterval(Duration.ZERO),
+            List.of("new MCP server released"));
 
-        CollectedBatch batch = collector.collect(null, null, 20);
+    CollectedBatch batch = collector.collect(null, null, 20);
 
-        assertThat(batch.getHits()).isNotEmpty();
-        assertThat(batch.getCheckpoint()).isNotNull();
-    }
+    assertThat(batch.getHits()).isNotEmpty();
+    assertThat(batch.getCheckpoint()).isNotNull();
+  }
 
-    @Test
-    void courseCollectorKeepsOnlyPagesOnThePlatform() {
-        CourseCollector collector = new CourseCollector(live(API, "H2_TAVILY_API_KEY"), liveHttp(), Clock.systemUTC(), Resilience.NONE,
-            new RunInterval(Duration.ZERO), "new artificial intelligence course or certification", List.of("deeplearning.ai=DeepLearning.AI"));
+  @Test
+  void courseCollectorKeepsOnlyPagesOnThePlatform() {
+    CourseCollector collector =
+        new CourseCollector(
+            live(API, "H2_TAVILY_API_KEY"),
+            liveHttp(),
+            Clock.systemUTC(),
+            Resilience.NONE,
+            new RunInterval(Duration.ZERO),
+            "new artificial intelligence course or certification",
+            List.of("deeplearning.ai=DeepLearning.AI"));
 
-        CollectedBatch batch = collector.collect(null, null, 10);
+    CollectedBatch batch = collector.collect(null, null, 10);
 
-        // New pages are not guaranteed every month; a complete pass is, and nothing off the platform.
-        assertThat(batch.getHits()).isEmpty();
-        assertThat(batch.getCheckpoint()).isNotNull();
-        assertThat(batch.getCandidates()).allSatisfy(c -> assertThat(c.getUrl().getValue()).contains("deeplearning.ai"));
-    }
+    // New pages are not guaranteed every month; a complete pass is, and nothing off the platform.
+    assertThat(batch.getHits()).isEmpty();
+    assertThat(batch.getCheckpoint()).isNotNull();
+    assertThat(batch.getCandidates())
+        .allSatisfy(c -> assertThat(c.getUrl().getValue()).contains("deeplearning.ai"));
+  }
 }
