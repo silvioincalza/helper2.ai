@@ -15,8 +15,8 @@ Draft an ADR for: $ARGUMENTS
    - `docs/diagrams/flow-NNNN-<slug>.d2` — flowchart of the decisions in the code
    - `docs/diagrams/sequence-NNNN-<slug>.d2` — sequence of the call path
      (no runtime path: one line in the ADR saying why, no sequence diagram)
-   - if the module structure or the runtime changes: update `software-architecture.d2`
-     and/or `infrastructure.d2`
+   - if the module structure or the runtime changes: update the `architecture-*` view of the
+     module that changed (and context if modules change) and/or `infrastructure.d2`
    Start each `.d2` with what it shows and the source files it describes. Render each to SVG
    (`d2 <file>.d2 <file>.svg`) and commit both.
 5. Add the ADR to `docs/adr/README.md` (with the Diagrams column) and the diagrams to

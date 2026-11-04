@@ -1,0 +1,81 @@
+# Architecture, view 5 of 6: Guide me on a resource page. The setup module, its ports and the adapters that answer them.
+# The registry entry and the README give the run options; the tool guide asks the model for steps, from the tool's own documents.
+# Source of truth: backend/src/main/java/ai/helper2/setup/web/SetupController.java,
+#   backend/src/main/java/ai/helper2/setup/usecase/GetResourceSetup.java, setup/usecase/GetToolGuide.java,
+#   backend/src/main/kotlin/ai/helper2/setup/Setup.kt, setup/Materials.kt, setup/ToolGuidePorts.kt (ports),
+#   backend/src/main/java/ai/helper2/setup/internal/SetupConfiguration.java (adapters, budgets),
+#   setup/internal/HourlyFetchBudget.java (h2:v1:setup:fetches:*),
+#   backend/src/main/resources/application.yaml (helper2.setup.*).
+# Render: cd docs/diagrams && d2 fmt architecture-setup.d2 && d2 architecture-setup.d2 architecture-setup.svg
+
+...@style
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+browser: "Browser\nresource page, \"Guide me\"" {class: person}
+
+setup: "setup (Kotlin domain)" {
+  class: group
+  ctl: "SetupController\nGET /resources/{id}/setup\nPOST /resources/{id}/guide" {class: app}
+  usecase: "GetResourceSetup\nGetToolGuide" {class: app}
+  core: "SetupGuides · RunOptionRules\nToolGuides · ToolGuideValidator" {class: app}
+  p_specs: McpServerSpecs {class: port}
+  p_readme: ReadmeConfigs {class: port}
+  p_materials: ToolMaterials {class: port}
+  p_model: ToolGuideModel {class: port}
+  p_cache: ToolGuideCache {class: port}
+  specs: "RegistryMcpServerSpecs\n(Caffeine)" {class: app}
+  readme: "ReadmeMcpConfigs" {class: app}
+  materials: "HttpToolMaterials\n(Caffeine, HourlyFetchBudget)" {class: app}
+  model: "SpringAiToolGuideModel\n(own DailyBudget \"tool-guide\")" {class: app}
+  cache: "SharedToolGuideCache" {class: app}
+  ctl -> usecase: {class: hot}
+  usecase -> core
+  core -> p_specs
+  core -> p_readme
+  core -> p_materials
+  core -> p_model: {class: ai-call}
+  core -> p_cache
+  specs -> p_specs: implements {class: config}
+  readme -> p_readme: implements {class: config}
+  materials -> p_materials: implements {class: config}
+  model -> p_model: implements {class: config}
+  cache -> p_cache: implements {class: config}
+  readme -> p_materials: "README text"
+}
+
+catalog: "catalog\nGetResourceDetail" {class: app}
+
+platform: "platform" {
+  class: group
+  http: "http: ObservedHttp" {class: app}
+  llm: "llm: LlmSettings · DailyBudget\nModelCallMetrics" {class: app}
+  resilience: "resilience: Resilience" {class: app}
+  shared: "cache: SharedCaches\n(\"tool-guide\")" {class: app}
+}
+
+redis: "Redis\nh2:v1:setup:fetches:*\nh2:v1:budget:*" {shape: cylinder; class: data}
+pg: "PostgreSQL\nai_cache (tool-guide)" {shape: cylinder; class: data}
+registry: "registry.modelcontextprotocol.io" {class: ext}
+docs: "api.github.com · huggingface.co\ncdn.jsdelivr.net (npm READMEs)" {class: ext}
+nebius: "Nebius Token Factory\nNano, or Super with reasoning on" {class: ai}
+
+browser -> setup.ctl: "Guide me" {class: hot}
+setup.usecase -> catalog: "resource detail"
+setup.specs -> platform.http
+setup.materials -> platform.http
+setup.materials -> platform.resilience: "redis policy"
+setup.model -> platform.llm
+setup.cache -> platform.shared
+setup.materials -> redis: "hourly fetch budget"
+platform.llm -> redis: "daily model calls"
+platform.shared -> pg
+setup.specs -> registry: "HTTPS: registry entry"
+setup.materials -> docs: "HTTPS: READMEs, model cards"
+setup.model -> nebius: "tool guide steps" {class: ai-call}

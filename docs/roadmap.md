@@ -181,8 +181,6 @@ Open items:
 
 ## 8. Documentation
 
-- `docs/diagrams/software-architecture.svg` is about 5,800 px wide: readable at full size, too small when scaled
-  down. Split it into one diagram per module group.
 
 ## 9. Known limits
 

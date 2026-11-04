@@ -19,3 +19,15 @@ for f in *.d2; do
   d2 fmt "$f"
   d2 "$f" "${f%.d2}.svg"
 done
+
+# Every SVG comes from a .d2 next to it, so a deleted diagram does not leave its picture behind.
+# hexagonal-architecture.svg is drawn by hand and has no source.
+orphans=0
+for s in *.svg; do
+  [[ $s == hexagonal-architecture.svg ]] && continue
+  if [[ ! -f ${s%.svg}.d2 ]]; then
+    echo "orphan SVG without a .d2 source: $s" >&2
+    orphans=1
+  fi
+done
+exit "$orphans"

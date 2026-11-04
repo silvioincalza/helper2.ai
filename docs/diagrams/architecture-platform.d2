@@ -1,0 +1,89 @@
+# Architecture, view 6 of 6: the edge and the shared services. Identity, the request edge (rate limits, errors, SPA),
+# and the platform services every module uses: llm, http, resilience, quota, shared cache and cluster locks.
+# With the Redis keys and Postgres tables each one owns, and GitHub OAuth for the back office.
+# Source of truth: backend/src/main/java/ai/helper2/platform/package-info.java (open module),
+#   platform/RateLimitInterceptor.java, RedisRateLimiter.java (h2:v1:rate:*), ApiExceptionHandler.java,
+#   SinglePageApp.java, ClusterLockConfiguration.java (shedlock),
+#   platform/llm/* (RedisCallCounter: h2:v1:budget:*), platform/http/ObservedHttp.java,
+#   platform/resilience/* (RedisOutboundThrottle: h2:v1:outbound:*), platform/quota/* (QuotaKeys: h2:v1:quota:*),
+#   platform/cache/* (JdbcSharedCache, SharedCacheRetention: ai_cache),
+#   backend/src/main/java/ai/helper2/identity/SecurityConfiguration.java, SessionConfiguration.java,
+#   AdminPortConfiguration.java, MeController.java, AuditController.java, identity/internal/*, identity/usecase/*,
+#   backend/src/main/resources/application.yaml (spring.session.data.redis.namespace, oauth-github profile).
+# Render: cd docs/diagrams && d2 fmt architecture-platform.d2 && d2 architecture-platform.d2 architecture-platform.svg
+
+...@style
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+browser: "Browser\nReact SPA" {class: person}
+admin: "Admin\n(VPN, admin port)" {class: person}
+
+edge: "Request edge (platform)" {
+  class: group
+  spa: "SinglePageApp\nserves the built SPA,\nclient routes → index.html" {class: app}
+  rate: "RateLimitInterceptor\nRedisRateLimiter\n(in memory while Redis is down)" {class: app}
+  errors: "ApiExceptionHandler\nproblem+json" {class: app}
+}
+
+identity: "identity (Java)" {
+  class: group
+  sec: "SecurityConfiguration\nCSRF · ADMIN allow-list\nAdminPortConfiguration" {class: app}
+  session: "SessionConfiguration\nfail-soft session store" {class: app}
+  me: "MeController · AuditController" {class: app}
+  usecase: "AddBookmark · ListBookmarks\nMergeLocalBookmarks · RemoveBookmark\nDeleteMyAccount · ListAuditEntries\nPurgeExpiredData" {class: app}
+  store: "Users · Bookmarks · AuditLog\n(identity.internal)" {class: app}
+  me -> usecase
+  usecase -> store
+}
+
+modules: "search · guide · scout · catalog\nsources · setup" {class: app}
+
+platform: "platform (open module)" {
+  class: group
+  llm: "llm: LlmSettings · NvidiaOnly\nDailyBudget · BudgetLedger · RedisCallCounter\nModelCallMetrics · LlmPolicies" {class: app}
+  http: "http: ObservedHttp\n(pooled, observed RestClient;\nUser-Agent with build version)" {class: app}
+  resilience: "resilience: Resilience\n(named policies on Resilience4j:\nredis, llm-chat, llm-embed, guide, …)\nOutboundThrottle" {class: app}
+  quota: "quota: QuotaCounter (Redis Lua)\nQuotaKeys (HMAC)" {class: app}
+  cache: "cache: SharedCaches\nJdbcSharedCache\nSharedCacheRetention (daily purge)" {class: app}
+  locks: "ClusterLock · ClusterLocks\n(ShedLock, database time)" {class: app}
+}
+
+shared: "shared (open, Kotlin)\nCanonicalUrl · ResourceId · DateFact\nLanguageDetector · Vocabulary" {class: app}
+api: "api (open)\ngenerated from api/openapi.yaml" {class: app}
+
+redis: "Redis 8 (disposable)\nh2:v1:rate:* · h2:v1:budget:*\nh2:v1:outbound:* · h2:v1:quota:*\nhelper2:session:*" {shape: cylinder; class: data}
+pg: "PostgreSQL 18\napp_user · bookmark · admin_audit\nai_cache · shedlock" {shape: cylinder; class: data}
+oauth: "github.com OAuth\n(profile oauth-github; off on\nstaging and prod)" {class: ext}
+
+browser -> edge.spa: "pages, assets"
+browser -> edge.rate: "/api/v1/*" {class: hot}
+edge.rate -> modules: {class: hot}
+browser -> identity.me: "/me, bookmarks"
+admin -> identity.sec: "/admin"
+identity.sec -> oauth: "sign-in" {class: config}
+identity.sec -> identity.session
+modules -> edge.errors: "exceptions"
+modules -> platform.llm: "model calls" {class: ai-call}
+modules -> platform.http: "HTTP client" {class: config}
+modules -> platform.quota: "daily web searches"
+modules -> platform.cache: "model answers"
+modules -> platform.locks: "Scout, embedding indexer"
+modules -> shared
+modules -> api: "controller interfaces, DTOs"
+identity.usecase -> platform.quota: "delete counters\nwith the account"
+
+edge.rate -> redis: "h2:v1:rate:*"
+identity.session -> redis: "helper2:session:*"
+platform.llm -> redis: "h2:v1:budget:*"
+platform.resilience -> redis: "h2:v1:outbound:*"
+platform.quota -> redis: "h2:v1:quota:*"
+identity.store -> pg: "app_user, bookmark,\nadmin_audit"
+platform.cache -> pg: "ai_cache"
+platform.locks -> pg: "shedlock"

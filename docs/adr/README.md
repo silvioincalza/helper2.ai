@@ -5,7 +5,7 @@ system: reading them top to bottom builds the whole system up step by step. The 
 Every record is Accepted and describes the code as it is today, as if it was built that way from the start.
 Open items and known limits are not kept in the records: each one links to [the roadmap](../roadmap.md).
 
-Overview diagrams: [software architecture](../diagrams/software-architecture.svg) · [infrastructure](../diagrams/infrastructure.svg).
+Overview diagrams: [architecture views](../architecture.md#the-same-system-one-view-at-a-time) · [infrastructure](../diagrams/infrastructure.svg).
 All diagrams: [docs/diagrams](../diagrams/README.md).
 
 ## Foundation — [`foundation/`](foundation/)

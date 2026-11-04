@@ -12,8 +12,9 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [architecture-context](architecture-context.svg) | Context view: the modules as boxes, who calls helper2 and what it calls. |
 | [architecture-search](architecture-search.svg) | One search: the search ports and the adapters behind them. |
 | [architecture-guide](architecture-guide.svg) | One guide question: AskGuide, the search it reuses, the evidence gate, the LLM layer. |
-| [architecture-index](architecture-index.svg) | How the index grows: Scout, collectors, enrichment, catalog storage and embeddings. |
-| [software-architecture](software-architecture.svg) | Software architecture of helper2: the Spring Modulith modules, their ports (pink hexagons) and the adapters that implement them, the two stores, and every external service the code calls. |
+| [architecture-index](architecture-index.svg) | How the index grows: Scout, collectors, enrichment and its gap round, catalog storage and embeddings. |
+| [architecture-setup](architecture-setup.svg) | Guide me on a resource page: the setup ports, the registry, README and tool-guide adapters, the fetch budget and the shared cache. |
+| [architecture-platform](architecture-platform.svg) | The edge and the shared services: identity, rate limits, errors, the SPA, and platform llm, http, resilience, quota, shared cache and locks, with their Redis keys and tables. |
 | [data-model](data-model.svg) | Data model: every PostgreSQL table from `V1__schema.sql` with its columns and keys, grouped by area. Solid lines are foreign keys labelled with their ON DELETE rule (ADR 0034); dashed lines are links the code keeps without one (bookmark snapshot, Tavily hit ids, guide answer key). |
 | [infrastructure](infrastructure.svg) | Runtime infrastructure of the hosted helper2 on Kubernetes: Cloudflare and ingress-nginx, the public and the admin host, the two namespaces and their workloads, what the network policy lets each workload reach (egress), Redis auth, OpenBao and Harbor for delivery, Alloy -> Prometheus / Tempo for observability, and the prod backup with its optional off-site copy to Cloudflare R2 (off today). |
 
