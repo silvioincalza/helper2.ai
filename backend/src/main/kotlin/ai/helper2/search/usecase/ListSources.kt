@@ -8,8 +8,8 @@ import ai.helper2.search.SourceDescriptor
 import ai.helper2.search.SourceHealth
 import ai.helper2.search.WebCredits
 import ai.helper2.search.WebSearchQuota
-import org.slf4j.LoggerFactory
 import java.time.Duration
+import org.slf4j.LoggerFactory
 
 /** One disclosed source as the Sources page shows it. */
 data class SourceOverview(

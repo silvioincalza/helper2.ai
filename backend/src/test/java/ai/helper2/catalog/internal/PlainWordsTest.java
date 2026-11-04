@@ -1,12 +1,10 @@
 package ai.helper2.catalog.internal;
 
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * User text reaches websearch_to_tsquery as words only, never as its NOT / phrase / OR syntax.
- */
+import org.junit.jupiter.api.Test;
+
+/** User text reaches websearch_to_tsquery as words only, never as its NOT / phrase / OR syntax. */
 class PlainWordsTest {
 
   @Test

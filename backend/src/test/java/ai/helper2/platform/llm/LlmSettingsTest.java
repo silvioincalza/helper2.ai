@@ -1,11 +1,11 @@
 package ai.helper2.platform.llm;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 class LlmSettingsTest {
 

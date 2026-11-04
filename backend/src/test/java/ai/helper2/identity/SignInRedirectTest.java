@@ -1,12 +1,10 @@
 package ai.helper2.identity;
 
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Sign-in lives on the admin page only, so OAuth2 must send the user back there.
- */
+import org.junit.jupiter.api.Test;
+
+/** Sign-in lives on the admin page only, so OAuth2 must send the user back there. */
 class SignInRedirectTest {
 
   @Test

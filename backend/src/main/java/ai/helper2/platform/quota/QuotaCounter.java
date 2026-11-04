@@ -3,54 +3,42 @@ package ai.helper2.platform.quota;
 import java.util.Collection;
 
 /**
- * Daily counters every replica shares (ADR 0037): a count is one field of a key, and a key expires one day after its
- * first count. {@link QuotaKeys} names the keys. Every method throws when the store cannot answer; the caller decides
- * what that means.
+ * Daily counters every replica shares (ADR 0037): a count is one field of a key, and a key expires
+ * one day after its first count. {@link QuotaKeys} names the keys. Every method throws when the
+ * store cannot answer; the caller decides what that means.
  */
 public interface QuotaCounter {
 
-    /**
-     * In one atomic step: refuses when {@code own} (if not null) has reached {@code ownLimit} or {@code global} (if not
-     * null) has reached {@code globalLimit}; otherwise adds one to each. Concurrent callers never pass a limit.
-     */
-    Result take(Counter own, int ownLimit, Counter global, long globalLimit);
+  /**
+   * In one atomic step: refuses when {@code own} (if not null) has reached {@code ownLimit} or
+   * {@code global} (if not null) has reached {@code globalLimit}; otherwise adds one to each.
+   * Concurrent callers never pass a limit.
+   */
+  Result take(Counter own, int ownLimit, Counter global, long globalLimit);
 
-    /**
-     * Takes one count off {@code counter}, never below 0: a count whose work did not run.
-     */
-    void giveBack(Counter counter);
+  /** Takes one count off {@code counter}, never below 0: a count whose work did not run. */
+  void giveBack(Counter counter);
 
-    /**
-     * The count of {@code counter}; 0 when nothing was counted.
-     */
-    long used(Counter counter);
+  /** The count of {@code counter}; 0 when nothing was counted. */
+  long used(Counter counter);
 
-    void delete(Collection<String> keys);
+  void delete(Collection<String> keys);
 
-    enum Verdict {
-        /**
-         * Counted on every counter given.
-         */
-        TAKEN,
-        /**
-         * The own counter is at its limit; nothing was counted.
-         */
-        LIMIT_REACHED,
-        /**
-         * The global counter is at its limit; nothing was counted.
-         */
-        GLOBAL_LIMIT_REACHED,
-    }
+  enum Verdict {
+    /** Counted on every counter given. */
+    TAKEN,
+    /** The own counter is at its limit; nothing was counted. */
+    LIMIT_REACHED,
+    /** The global counter is at its limit; nothing was counted. */
+    GLOBAL_LIMIT_REACHED,
+  }
 
-    /**
-     * One count: a key and one of its fields (a feature, a source).
-     */
-    record Counter(String key, String field) {
-    }
+  /** One count: a key and one of its fields (a feature, a source). */
+  record Counter(String key, String field) {}
 
-    /**
-     * {@code used}: the own counter after the call (unchanged when refused); 0 without an own counter.
-     */
-    record Result(Verdict verdict, long used) {
-    }
+  /**
+   * {@code used}: the own counter after the call (unchanged when refused); 0 without an own
+   * counter.
+   */
+  record Result(Verdict verdict, long used) {}
 }

@@ -2,11 +2,10 @@ package ai.helper2.platform.cache;
 
 import ai.helper2.platform.resilience.Resilience;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.time.Duration;
+import javax.sql.DataSource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.JdbcClient;
-
-import javax.sql.DataSource;
-import java.time.Duration;
 
 /**
  * The shared caches of model answers, one {@link SharedCache} per name, all in the PostgreSQL table

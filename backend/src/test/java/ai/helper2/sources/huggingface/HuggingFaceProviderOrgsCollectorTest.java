@@ -1,5 +1,7 @@
 package ai.helper2.sources.huggingface;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import ai.helper2.platform.http.ObservedHttp;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CollectedBatch;
@@ -8,13 +10,10 @@ import ai.helper2.sources.SourceFixtures;
 import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.testing.FixtureServer;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-
 import java.time.Duration;
 import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 class HuggingFaceProviderOrgsCollectorTest {
 

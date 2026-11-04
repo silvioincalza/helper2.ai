@@ -37,154 +37,227 @@ import ai.helper2.search.Notice;
 import ai.helper2.search.SearchOutcome;
 import ai.helper2.search.web.CardMapper;
 import ai.helper2.shared.UtcTimes;
-import org.springframework.stereotype.Component;
-
 import java.util.List;
 import java.util.stream.Stream;
+import org.springframework.stereotype.Component;
 
 /**
- * One mapping from the guide's domain answer to the contract, shared by the JSON and the streamed endpoint.
+ * One mapping from the guide's domain answer to the contract, shared by the JSON and the streamed
+ * endpoint.
  */
 @Component
 class GuideDtoMapper {
 
-    /**
-     * Fields a model may write in a guide answer (ADR 0038). Quotes, titles and URLs come from the sources.
-     */
-    static final List<String> AI_WRITTEN_FIELDS = List.of(
-        "searchQuery", "constraints[]", "recommendations[].reason", "recommendations[].checks[].constraint", "prompt.text",
-        "clarification.question", "clarification.options[]", "comparison.rows[].aspect", "comparison.rows[].cells[].text",
-        "explanation.sentences[].text", "trail.queries[]", "notices[].subject", "notices[].query");
+  /**
+   * Fields a model may write in a guide answer (ADR 0038). Quotes, titles and URLs come from the
+   * sources.
+   */
+  static final List<String> AI_WRITTEN_FIELDS =
+      List.of(
+          "searchQuery",
+          "constraints[]",
+          "recommendations[].reason",
+          "recommendations[].checks[].constraint",
+          "prompt.text",
+          "clarification.question",
+          "clarification.options[]",
+          "comparison.rows[].aspect",
+          "comparison.rows[].cells[].text",
+          "explanation.sentences[].text",
+          "trail.queries[]",
+          "notices[].subject",
+          "notices[].query");
 
-    /**
-     * The public page that explains the marking. A path, so the same build works on any host.
-     */
-    static final String AI_MARKING_POLICY = "/mission";
+  /** The public page that explains the marking. A path, so the same build works on any host. */
+  static final String AI_MARKING_POLICY = "/mission";
 
-    private final String provider;
-    private final String fastModel;
-    private final String reasoningModel;
+  private final String provider;
+  private final String fastModel;
+  private final String reasoningModel;
 
-    GuideDtoMapper(LlmSettings llm) {
-        this.provider = llm.provider();
-        this.fastModel = llm.fast();
-        this.reasoningModel = llm.reasoningModel();
+  GuideDtoMapper(LlmSettings llm) {
+    this.provider = llm.provider();
+    this.fastModel = llm.fast();
+    this.reasoningModel = llm.reasoningModel();
+  }
+
+  /**
+   * The research trail (ADR 0044): queries and removed suggestions with their check code; never a
+   * removed reason.
+   */
+  static GuideTrailDto trail(ResearchTrail t) {
+    return new GuideTrailDto(
+        t.getQueries(),
+        t.getRemoved().stream()
+            .map(r ->
+                new GuideTrailRemovedDto(
+                    r.getTitle(), GuideTrailRemovedDto.CheckEnum.fromValue(r.getCheck().name())))
+            .toList());
+  }
+
+  static GuideWindowDto window(DateWindow w) {
+    return w == null ? null : new GuideWindowDto(w.getFrom(), w.getTo());
+  }
+
+  static GuideClarificationDto clarification(Clarification c) {
+    return c == null ? null : new GuideClarificationDto(c.getQuestion(), c.getOptions());
+  }
+
+  private static GuideComparisonDto comparison(Comparison c) {
+    if (c == null) {
+      return null;
     }
+    return new GuideComparisonDto(
+        c.getSubjects().stream()
+            .map(s ->
+                new GuideComparisonSubjectsInnerDto(s.getKey(), s.getName())
+                    .resourceId(s.getResult() == null ? null : s.getResult().getId().getValue())
+                    .title(s.getResult() == null ? null : s.getResult().getTitle())
+                    .url(s.getResult() == null ? null : s.getResult().getUrl()))
+            .toList(),
+        c.getRows().stream()
+            .map(r ->
+                new GuideComparisonRowsInnerDto(
+                    r.getAspect(),
+                    r.getCells().stream()
+                        .map(cell ->
+                            new GuideComparisonRowsInnerCellsInnerDto(cell.getSubjectKey())
+                                .text(cell.getText())
+                                .quote(cell.getQuote())
+                                .reasonCheck(
+                                    GuideComparisonRowsInnerCellsInnerDto.ReasonCheckEnum.fromValue(
+                                        cell.getReasonCheck().name())))
+                        .toList()))
+            .toList());
+  }
 
-    /**
-     * The research trail (ADR 0044): queries and removed suggestions with their check code; never a removed reason.
-     */
-    static GuideTrailDto trail(ResearchTrail t) {
-        return new GuideTrailDto(t.getQueries(), t.getRemoved().stream()
-            .map(r -> new GuideTrailRemovedDto(r.getTitle(), GuideTrailRemovedDto.CheckEnum.fromValue(r.getCheck().name()))).toList());
+  private static GuideExplanationDto explanation(Explanation e) {
+    if (e == null) {
+      return null;
     }
+    return new GuideExplanationDto(
+        e.getSentences().stream()
+            .map(x ->
+                new GuideExplanationSentencesInnerDto(
+                        x.getText(),
+                        x.getQuote(),
+                        x.getSource().getId().getValue(),
+                        x.getSource().getTitle(),
+                        x.getSource().getUrl())
+                    .reasonCheck(
+                        GuideExplanationSentencesInnerDto.ReasonCheckEnum.fromValue(
+                            x.getReasonCheck().name())))
+            .toList());
+  }
 
-    static GuideWindowDto window(DateWindow w) {
-        return w == null ? null : new GuideWindowDto(w.getFrom(), w.getTo());
-    }
+  static List<SourceStatusDto> statuses(SearchOutcome outcome) {
+    return outcome.getStatuses().stream()
+        .map(s ->
+            new SourceStatusDto(
+                    s.getSource().getId(),
+                    s.getSource().getName(),
+                    SourceModeDto.fromValue(s.getSource().getMode().name()),
+                    SourceOutcomeDto.fromValue(s.getOutcome().name()),
+                    ServedFromDto.fromValue(s.getServedFrom().name()),
+                    s.getResultCount(),
+                    UtcTimes.odt(s.getCheckedAt()))
+                .latencyMs(s.getLatency() == null ? null : s.getLatency().toMillis())
+                .cachedAt(UtcTimes.odt(s.getCachedAt()))
+                .message(s.getMessage()))
+        .toList();
+  }
 
-    static GuideClarificationDto clarification(Clarification c) {
-        return c == null ? null : new GuideClarificationDto(c.getQuestion(), c.getOptions());
-    }
+  /**
+   * The message is ours; a not-found notice's name and query are the planner's, so they are fields
+   * of their own.
+   */
+  static NoticeDto notice(Notice n) {
+    return new NoticeDto(NoticeDto.CodeEnum.fromValue(n.getCode().name()), n.getMessage())
+        .subject(n.getSubject())
+        .query(n.getQuery());
+  }
 
-    private static GuideComparisonDto comparison(Comparison c) {
-        if (c == null) {
-            return null;
-        }
-        return new GuideComparisonDto(
-            c.getSubjects().stream().map(s -> new GuideComparisonSubjectsInnerDto(s.getKey(), s.getName())
-                .resourceId(s.getResult() == null ? null : s.getResult().getId().getValue())
-                .title(s.getResult() == null ? null : s.getResult().getTitle())
-                .url(s.getResult() == null ? null : s.getResult().getUrl())).toList(),
-            c.getRows().stream().map(r -> new GuideComparisonRowsInnerDto(r.getAspect(), r.getCells().stream()
-                .map(cell -> new GuideComparisonRowsInnerCellsInnerDto(cell.getSubjectKey()).text(cell.getText()).quote(cell.getQuote())
-                    .reasonCheck(GuideComparisonRowsInnerCellsInnerDto.ReasonCheckEnum.fromValue(cell.getReasonCheck().name())))
-                .toList())).toList());
-    }
+  private static GuideCheckDto check(ConstraintCheck c) {
+    return new GuideCheckDto(
+            c.getConstraint(), GuideCheckDto.StatusEnum.fromValue(c.getStatus().name()))
+        .quote(c.getQuote());
+  }
 
-    private static GuideExplanationDto explanation(Explanation e) {
-        if (e == null) {
-            return null;
-        }
-        return new GuideExplanationDto(e.getSentences().stream().map(x -> new GuideExplanationSentencesInnerDto(
-            x.getText(), x.getQuote(), x.getSource().getId().getValue(), x.getSource().getTitle(), x.getSource().getUrl())
-            .reasonCheck(GuideExplanationSentencesInnerDto.ReasonCheckEnum.fromValue(x.getReasonCheck().name()))).toList());
-    }
+  private static GuidePromptBasedOnInnerDto basedOn(MergedResult r) {
+    return new GuidePromptBasedOnInnerDto(r.getId().getValue(), r.getTitle());
+  }
 
-    static List<SourceStatusDto> statuses(SearchOutcome outcome) {
-        return outcome.getStatuses().stream().map(s -> new SourceStatusDto(s.getSource().getId(),
-            s.getSource().getName(), SourceModeDto.fromValue(s.getSource().getMode().name()),
-            SourceOutcomeDto.fromValue(s.getOutcome().name()), ServedFromDto.fromValue(s.getServedFrom().name()),
-            s.getResultCount(), UtcTimes.odt(s.getCheckedAt()))
-            .latencyMs(s.getLatency() == null ? null : s.getLatency().toMillis())
-            .cachedAt(UtcTimes.odt(s.getCachedAt())).message(s.getMessage())).toList();
-    }
+  String fastModel() {
+    return fastModel;
+  }
 
-    /**
-     * The message is ours; a not-found notice's name and query are the planner's, so they are fields of their own.
-     */
-    static NoticeDto notice(Notice n) {
-        return new NoticeDto(NoticeDto.CodeEnum.fromValue(n.getCode().name()), n.getMessage()).subject(n.getSubject()).query(n.getQuery());
-    }
+  String reasoningModel() {
+    return reasoningModel;
+  }
 
-    private static GuideCheckDto check(ConstraintCheck c) {
-        return new GuideCheckDto(c.getConstraint(), GuideCheckDto.StatusEnum.fromValue(c.getStatus().name())).quote(c.getQuote());
-    }
+  GuideResponseDto toDto(GuideAnswer a) {
+    return new GuideResponseDto()
+        .status(GuideResponseDto.StatusEnum.fromValue(a.getStatus().name()))
+        .searchQuery(a.getSearchQuery())
+        .recommendations(
+            a.getRecommendations().stream()
+                .map(r ->
+                    new GuideRecommendationDto(
+                            r.getResult().getId().getValue(),
+                            r.getResult().getTitle(),
+                            r.getResult().getUrl(),
+                            ResourceTypeDto.fromValue(r.getResult().getType().name()),
+                            r.getReason(),
+                            r.getQuote(),
+                            r.getResult().getSources().stream().map(s -> s.getSourceId()).toList(),
+                            r.getAiReasoned())
+                        .description(r.getResult().getDescription())
+                        .compatibleWith(CardMapper.compatibility(r.getResult()))
+                        .checks(r.getChecks().stream().map(GuideDtoMapper::check).toList())
+                        .reasonCheck(
+                            GuideRecommendationDto.ReasonCheckEnum.fromValue(
+                                r.getReasonCheck().name())))
+                .toList())
+        .constraints(a.getConstraints())
+        .prompt(
+            a.getPrompt() == null
+                ? null
+                : new GuidePromptDto(
+                    a.getPrompt().getText(),
+                    a.getPrompt().getBasedOn().stream().map(GuideDtoMapper::basedOn).toList()))
+        .model(a.getModelUsed() ? new GuideModelInfoDto(provider, fastModel, reasoningModel) : null)
+        .aiContent(aiContent(a))
+        .candidatesConsidered(a.getCandidatesConsidered())
+        .rejected(a.getRejected())
+        .sources(statuses(a.getSearch()))
+        .notices(
+            Stream.concat(a.getSearch().getNotices().stream(), a.getNotices().stream())
+                .map(GuideDtoMapper::notice)
+                .toList())
+        .generatedAt(UtcTimes.odt(a.getGeneratedAt()))
+        .intent(GuideIntentDto.fromValue(a.getIntent().name()))
+        .subjects(a.getSubjects())
+        .window(window(a.getWindow()))
+        .clarification(clarification(a.getClarification()))
+        .comparison(comparison(a.getComparison()))
+        .explanation(explanation(a.getExplanation()))
+        .webSearches(CardMapper.webSearches(a.getWebSearches()))
+        .trail(trail(a.getTrail()));
+  }
 
-    private static GuidePromptBasedOnInnerDto basedOn(MergedResult r) {
-        return new GuidePromptBasedOnInnerDto(r.getId().getValue(), r.getTitle());
+  /**
+   * Present when a model wrote text in the answer: the answering call ran, or only the planner did
+   * and its reading (search query, requirements) is kept while the answering call failed. Then only
+   * the fast model wrote.
+   */
+  private AiContentMarkerDto aiContent(GuideAnswer a) {
+    if (!a.getModelUsed() && !a.getPlanned()) {
+      return null;
     }
-
-    String fastModel() {
-        return fastModel;
-    }
-
-    String reasoningModel() {
-        return reasoningModel;
-    }
-
-    GuideResponseDto toDto(GuideAnswer a) {
-        return new GuideResponseDto()
-            .status(GuideResponseDto.StatusEnum.fromValue(a.getStatus().name()))
-            .searchQuery(a.getSearchQuery())
-            .recommendations(a.getRecommendations().stream().map(r -> new GuideRecommendationDto(
-                r.getResult().getId().getValue(), r.getResult().getTitle(), r.getResult().getUrl(),
-                ResourceTypeDto.fromValue(r.getResult().getType().name()), r.getReason(), r.getQuote(),
-                r.getResult().getSources().stream().map(s -> s.getSourceId()).toList(), r.getAiReasoned())
-                .description(r.getResult().getDescription())
-                .compatibleWith(CardMapper.compatibility(r.getResult()))
-                .checks(r.getChecks().stream().map(GuideDtoMapper::check).toList())
-                .reasonCheck(GuideRecommendationDto.ReasonCheckEnum.fromValue(r.getReasonCheck().name()))).toList())
-            .constraints(a.getConstraints())
-            .prompt(a.getPrompt() == null ? null : new GuidePromptDto(a.getPrompt().getText(),
-                a.getPrompt().getBasedOn().stream().map(GuideDtoMapper::basedOn).toList()))
-            .model(a.getModelUsed() ? new GuideModelInfoDto(provider, fastModel, reasoningModel) : null)
-            .aiContent(aiContent(a))
-            .candidatesConsidered(a.getCandidatesConsidered())
-            .rejected(a.getRejected())
-            .sources(statuses(a.getSearch()))
-            .notices(Stream.concat(a.getSearch().getNotices().stream(), a.getNotices().stream())
-                .map(GuideDtoMapper::notice).toList())
-            .generatedAt(UtcTimes.odt(a.getGeneratedAt()))
-            .intent(GuideIntentDto.fromValue(a.getIntent().name()))
-            .subjects(a.getSubjects())
-            .window(window(a.getWindow()))
-            .clarification(clarification(a.getClarification()))
-            .comparison(comparison(a.getComparison()))
-            .explanation(explanation(a.getExplanation()))
-            .webSearches(CardMapper.webSearches(a.getWebSearches()))
-            .trail(trail(a.getTrail()));
-    }
-
-    /**
-     * Present when a model wrote text in the answer: the answering call ran, or only the planner did and its reading
-     * (search query, requirements) is kept while the answering call failed. Then only the fast model wrote.
-     */
-    private AiContentMarkerDto aiContent(GuideAnswer a) {
-        if (!a.getModelUsed() && !a.getPlanned()) {
-            return null;
-        }
-        List<String> models = a.getModelUsed() ? Stream.of(fastModel, reasoningModel).distinct().toList() : List.of(fastModel);
-        return new AiContentMarkerDto(true, provider, models, AI_WRITTEN_FIELDS, AI_MARKING_POLICY);
-    }
+    List<String> models =
+        a.getModelUsed()
+            ? Stream.of(fastModel, reasoningModel).distinct().toList()
+            : List.of(fastModel);
+    return new AiContentMarkerDto(true, provider, models, AI_WRITTEN_FIELDS, AI_MARKING_POLICY);
+  }
 }

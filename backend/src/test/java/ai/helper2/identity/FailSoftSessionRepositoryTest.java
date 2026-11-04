@@ -1,18 +1,17 @@
 package ai.helper2.identity;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import ai.helper2.identity.SessionConfiguration.FailSoftSessionRepository;
 import ai.helper2.platform.resilience.CallRefused;
 import ai.helper2.platform.resilience.Resilience;
-import org.junit.jupiter.api.Test;
-import org.springframework.session.MapSession;
-import org.springframework.session.SessionRepository;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.junit.jupiter.api.Test;
+import org.springframework.session.MapSession;
+import org.springframework.session.SessionRepository;
 
 class FailSoftSessionRepositoryTest {
 

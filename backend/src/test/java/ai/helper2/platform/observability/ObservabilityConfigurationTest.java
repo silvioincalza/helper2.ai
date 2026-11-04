@@ -1,13 +1,13 @@
 package ai.helper2.platform.observability;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationPredicate;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.server.observation.ServerRequestObservationContext;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 class ObservabilityConfigurationTest {
 

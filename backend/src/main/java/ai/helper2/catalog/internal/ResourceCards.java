@@ -12,8 +12,6 @@ import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.DateFact;
 import ai.helper2.shared.ResourceId;
 import ai.helper2.shared.SourceMode;
-import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -23,82 +21,110 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.stereotype.Component;
 
 /**
- * Stored resources as the same cards search shows; shared by the detail page and the home page lists.
+ * Stored resources as the same cards search shows; shared by the detail page and the home page
+ * lists.
  */
 @Component
 public class ResourceCards {
 
-    private final ResourceStore store;
-    private final ResourceCatalog catalog;
-    private final ResultMerger merger = new ResultMerger();
+  private final ResourceStore store;
+  private final ResourceCatalog catalog;
+  private final ResultMerger merger = new ResultMerger();
 
-    public ResourceCards(ResourceStore store, ResourceCatalog catalog) {
-        this.store = store;
-        this.catalog = catalog;
-    }
+  public ResourceCards(ResourceStore store, ResourceCatalog catalog) {
+    this.store = store;
+    this.catalog = catalog;
+  }
 
-    private static SourceDescriptor withMode(SourceDescriptor d, SourceMode mode) {
-        return Objects.equals(d.getMode(), mode) ? d : new SourceDescriptor(d.getId(), d.getName(), mode, d.getHomepage(),
-            d.getTermsUrl(), d.getAttribution(), d.getResourceTypes(), d.getTimeout(), d.getCacheTtl(), d.getEnabled(),
+  private static SourceDescriptor withMode(SourceDescriptor d, SourceMode mode) {
+    return Objects.equals(d.getMode(), mode)
+        ? d
+        : new SourceDescriptor(
+            d.getId(),
+            d.getName(),
+            mode,
+            d.getHomepage(),
+            d.getTermsUrl(),
+            d.getAttribution(),
+            d.getResourceTypes(),
+            d.getTimeout(),
+            d.getCacheTtl(),
+            d.getEnabled(),
             d.getPriority());
-    }
+  }
 
-    /**
-     * The card of resource [id]; empty when it is gone or its records no longer merge.
-     */
-    public Optional<MergedResult> cardOf(UUID id) {
-        return cardsOf(List.of(id)).stream().findFirst();
-    }
+  /** The card of resource [id]; empty when it is gone or its records no longer merge. */
+  public Optional<MergedResult> cardOf(UUID id) {
+    return cardsOf(List.of(id)).stream().findFirst();
+  }
 
-    /**
-     * The cards of [ids] in the same order, in a fixed number of statements (the rows with their facts, then the
-     * records of all of them). An id whose resource is gone or whose records no longer merge has no card.
-     */
-    public List<MergedResult> cardsOf(List<UUID> ids) {
-        if (ids.isEmpty()) {
-            return List.of();
-        }
-        Map<UUID, ResourceRow> rows = store.findResources(ids).stream()
+  /**
+   * The cards of [ids] in the same order, in a fixed number of statements (the rows with their
+   * facts, then the records of all of them). An id whose resource is gone or whose records no
+   * longer merge has no card.
+   */
+  public List<MergedResult> cardsOf(List<UUID> ids) {
+    if (ids.isEmpty()) {
+      return List.of();
+    }
+    Map<UUID, ResourceRow> rows =
+        store.findResources(ids).stream()
             .collect(Collectors.toMap(ResourceRow::id, r -> r, (a, b) -> a));
-        Map<UUID, List<RecordRow>> records = store.recordsOf(rows.keySet());
-        List<MergedResult> out = new ArrayList<>();
-        for (UUID id : ids) {
-            ResourceRow row = rows.get(id);
-            if (row != null) {
-                card(row, records.getOrDefault(id, List.of())).ifPresent(out::add);
-            }
-        }
-        return out;
+    Map<UUID, List<RecordRow>> records = store.recordsOf(rows.keySet());
+    List<MergedResult> out = new ArrayList<>();
+    for (UUID id : ids) {
+      ResourceRow row = rows.get(id);
+      if (row != null) {
+        card(row, records.getOrDefault(id, List.of())).ifPresent(out::add);
+      }
     }
+    return out;
+  }
 
-    /**
-     * One resource as a card: its source records merged, plus the date Helper2 first discovered it. The card
-     * always carries the resource's own id: records may merge to another identity (a repository URL), and a
-     * card with another id would link to a page that does not exist.
-     */
-    public Optional<MergedResult> card(ResourceRow row, List<RecordRow> records) {
-        if (records.isEmpty()) {
-            return Optional.empty();
-        }
-        Map<String, SourceDescriptor> descriptors = catalog.descriptors().stream()
+  /**
+   * One resource as a card: its source records merged, plus the date Helper2 first discovered it.
+   * The card always carries the resource's own id: records may merge to another identity (a
+   * repository URL), and a card with another id would link to a page that does not exist.
+   */
+  public Optional<MergedResult> card(ResourceRow row, List<RecordRow> records) {
+    if (records.isEmpty()) {
+      return Optional.empty();
+    }
+    Map<String, SourceDescriptor> descriptors =
+        catalog.descriptors().stream()
             .collect(Collectors.toMap(SourceDescriptor::getId, d -> d, (a, b) -> a));
 
-        Map<String, SourceContext> contexts = new HashMap<>();
-        for (RecordRow r : records) {
-            SourceDescriptor d = descriptors.get(r.sourceId());
-            if (d != null) {
-                // Data on a detail page comes from Helper2's store: INDEXED, unless curated or demo fixtures.
-                SourceMode mode = d.getMode() == SourceMode.CURATED || d.getMode() == SourceMode.DEMO ? d.getMode() : SourceMode.INDEXED;
-                contexts.put(r.sourceId(), new SourceContext(withMode(d, mode), ServedFrom.LIVE));
-            }
-        }
-        List<MergedResult> merged = merger.merge(records.stream().map(RecordRow::hit).toList(), contexts);
-        ResourceId id = new ResourceId(row.id());
-        MergedResult card = merged.stream().filter(m -> m.getId().equals(id)).findFirst()
-            .orElseGet(() -> merged.stream().max(Comparator.comparingInt(m -> m.getHits().size())).orElseThrow());
-        CanonicalUrl canonical = Objects.requireNonNullElse(CanonicalUrl.of(row.canonicalUrl()), card.getCanonicalUrl());
-        return Optional.of(card.withIdentity(id, canonical).withDiscovered(DateFact.observed(row.firstDiscoveredAt())));
+    Map<String, SourceContext> contexts = new HashMap<>();
+    for (RecordRow r : records) {
+      SourceDescriptor d = descriptors.get(r.sourceId());
+      if (d != null) {
+        // Data on a detail page comes from Helper2's store: INDEXED, unless curated or demo
+        // fixtures.
+        SourceMode mode =
+            d.getMode() == SourceMode.CURATED || d.getMode() == SourceMode.DEMO
+                ? d.getMode()
+                : SourceMode.INDEXED;
+        contexts.put(r.sourceId(), new SourceContext(withMode(d, mode), ServedFrom.LIVE));
+      }
     }
+    List<MergedResult> merged =
+        merger.merge(records.stream().map(RecordRow::hit).toList(), contexts);
+    ResourceId id = new ResourceId(row.id());
+    MergedResult card =
+        merged.stream()
+            .filter(m -> m.getId().equals(id))
+            .findFirst()
+            .orElseGet(() ->
+                merged.stream()
+                    .max(Comparator.comparingInt(m -> m.getHits().size()))
+                    .orElseThrow());
+    CanonicalUrl canonical =
+        Objects.requireNonNullElse(CanonicalUrl.of(row.canonicalUrl()), card.getCanonicalUrl());
+    return Optional.of(
+        card.withIdentity(id, canonical)
+            .withDiscovered(DateFact.observed(row.firstDiscoveredAt())));
+  }
 }

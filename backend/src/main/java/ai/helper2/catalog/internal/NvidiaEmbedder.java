@@ -6,6 +6,12 @@ import ai.helper2.platform.llm.LlmPolicies;
 import ai.helper2.platform.resilience.CallRefused;
 import ai.helper2.platform.resilience.Resilience;
 import io.micrometer.observation.ObservationRegistry;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.BufferingClientHttpRequestFactory;
@@ -14,106 +20,134 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
 
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
 /**
- * NVIDIA API catalog embeddings (OpenAI-compatible {@code POST /v1/embeddings} plus NVIDIA's
- * {@code input_type} and {@code truncate}). Docs: https://docs.nvidia.com/nim/nemo-retriever/embedding/latest/use-the-api-openai.html
- * Nemotron 3.5 Embed accepts any dimension from 128 to 2048 (Matryoshka: first N values, re-normalised);
- * the schema stores 1024, under the 2000 limit of a pgvector HNSW index. Every call runs under the {@code llm-embed}
- * circuit (ADR 0033): while the API is down, embeddings fail at once instead of after their timeout.
+ * NVIDIA API catalog embeddings (OpenAI-compatible {@code POST /v1/embeddings} plus NVIDIA's {@code
+ * input_type} and {@code truncate}). Docs:
+ * https://docs.nvidia.com/nim/nemo-retriever/embedding/latest/use-the-api-openai.html Nemotron 3.5
+ * Embed accepts any dimension from 128 to 2048 (Matryoshka: first N values, re-normalised); the
+ * schema stores 1024, under the 2000 limit of a pgvector HNSW index. Every call runs under the
+ * {@code llm-embed} circuit (ADR 0033): while the API is down, embeddings fail at once instead of
+ * after their timeout.
  */
 public class NvidiaEmbedder implements Embedder {
 
-    private final RestClient http;
-    private final String model;
-    private final int dimensions;
-    private final Resilience resilience;
-    /**
-     * Observed like the source calls (ObservedHttp): {@code timeout} to connect, to wait for response data, to wait
-     * for a pooled connection and as the call's total deadline; redirects are not followed, so the API key never goes
-     * to another host.
-     */
-    public NvidiaEmbedder(String baseUrl, String apiKey, String model, int dimensions, Duration timeout,
-                          ObservationRegistry observations, Resilience resilience) {
-        resilience.require(LlmPolicies.EMBED);
-        // Buffered, so the request carries a Content-Length: a streamed (chunked) body of 50 texts made the
-        // API catalog hang until the read timeout, while one short query went through (27 Oct 2026).
-        // Its timeout is also the call's total deadline (ADR 0006 §2, 11). The deadline sits under the buffering, so the
-        // buffered read of the response is the read it stops.
-        var factory = new BufferingClientHttpRequestFactory(new InterceptingClientHttpRequestFactory(
-            ObservedHttp.requestFactory(timeout, timeout, false), List.of(ObservedHttp.deadlineOnly(timeout))));
-        this.http = ObservedHttp.observed(factory, observations).baseUrl(baseUrl)
-            .defaultHeader("Authorization", "Bearer " + apiKey).build();
-        this.model = model;
-        this.dimensions = dimensions;
-        this.resilience = resilience;
-    }
+  private final RestClient http;
+  private final String model;
+  private final int dimensions;
+  private final Resilience resilience;
 
-    /**
-     * Untrusted shape: every input needs exactly one vector of the expected size.
-     */
-    static List<float[]> vectors(Response response, int count, int dimensions) {
-        if (response == null || response.data() == null || response.data().size() != count) {
-            throw new EmbeddingFailure("embedding response has the wrong number of vectors", false);
-        }
-        Map<Integer, float[]> byIndex = new LinkedHashMap<>();
-        response.data().stream().sorted(Comparator.comparingInt(Response.Item::index))
-            .forEach(i -> byIndex.put(i.index(), i.embedding()));
-        List<float[]> out = new ArrayList<>(count);
-        for (int i = 0; i < count; i++) {
-            float[] v = byIndex.get(i);
-            if (v == null || v.length != dimensions) {
-                throw new EmbeddingFailure("embedding response has a missing or wrong-sized vector", false);
-            }
-            out.add(v);
-        }
-        return out;
-    }
+  /**
+   * Observed like the source calls (ObservedHttp): {@code timeout} to connect, to wait for response
+   * data, to wait for a pooled connection and as the call's total deadline; redirects are not
+   * followed, so the API key never goes to another host.
+   */
+  public NvidiaEmbedder(
+      String baseUrl,
+      String apiKey,
+      String model,
+      int dimensions,
+      Duration timeout,
+      ObservationRegistry observations,
+      Resilience resilience) {
+    resilience.require(LlmPolicies.EMBED);
+    // Buffered, so the request carries a Content-Length: a streamed (chunked) body of 50 texts made
+    // the
+    // API catalog hang until the read timeout, while one short query went through (27 Oct 2026).
+    // Its timeout is also the call's total deadline (ADR 0006 §2, 11). The deadline sits under the
+    // buffering, so the
+    // buffered read of the response is the read it stops.
+    var factory =
+        new BufferingClientHttpRequestFactory(
+            new InterceptingClientHttpRequestFactory(
+                ObservedHttp.requestFactory(timeout, timeout, false),
+                List.of(ObservedHttp.deadlineOnly(timeout))));
+    this.http =
+        ObservedHttp.observed(factory, observations)
+            .baseUrl(baseUrl)
+            .defaultHeader("Authorization", "Bearer " + apiKey)
+            .build();
+    this.model = model;
+    this.dimensions = dimensions;
+    this.resilience = resilience;
+  }
 
-    @Override
-    public String model() {
-        return model;
+  /** Untrusted shape: every input needs exactly one vector of the expected size. */
+  static List<float[]> vectors(Response response, int count, int dimensions) {
+    if (response == null || response.data() == null || response.data().size() != count) {
+      throw new EmbeddingFailure("embedding response has the wrong number of vectors", false);
     }
+    Map<Integer, float[]> byIndex = new LinkedHashMap<>();
+    response.data().stream()
+        .sorted(Comparator.comparingInt(Response.Item::index))
+        .forEach(i -> byIndex.put(i.index(), i.embedding()));
+    List<float[]> out = new ArrayList<>(count);
+    for (int i = 0; i < count; i++) {
+      float[] v = byIndex.get(i);
+      if (v == null || v.length != dimensions) {
+        throw new EmbeddingFailure("embedding response has a missing or wrong-sized vector", false);
+      }
+      out.add(v);
+    }
+    return out;
+  }
 
-    @Override
-    public int dimensions() {
-        return dimensions;
-    }
+  @Override
+  public String model() {
+    return model;
+  }
 
-    @Override
-    public List<float[]> embed(List<String> texts, Kind kind) {
-        if (texts.isEmpty()) {
-            return List.of();
-        }
-        Response response;
-        try {
-            response = resilience.call(LlmPolicies.EMBED, () -> http.post().uri("/embeddings").contentType(MediaType.APPLICATION_JSON)
-                .body(new Request(model, texts, kind == Kind.QUERY ? "query" : "passage", dimensions, "END", "float"))
-                .retrieve().body(Response.class));
-        } catch (CallRefused e) {
-            throw new EmbeddingFailure("embedding call refused: " + e.reason(), false);
-        } catch (RestClientResponseException e) {
-            boolean limited = e.getStatusCode().isSameCodeAs(HttpStatus.TOO_MANY_REQUESTS);
-            throw new EmbeddingFailure("embedding call failed: HTTP " + e.getStatusCode().value(), limited);
-        } catch (RestClientException e) {
-            String why = ObservedHttp.isDeadlineExceeded(e) ? "deadline exceeded" : e.getClass().getSimpleName();
-            throw new EmbeddingFailure("embedding call failed: " + why, false);
-        }
-        return vectors(response, texts.size(), dimensions);
-    }
+  @Override
+  public int dimensions() {
+    return dimensions;
+  }
 
-    record Request(String model, List<String> input, String input_type, Integer dimensions, String truncate,
-                   String encoding_format) {
+  @Override
+  public List<float[]> embed(List<String> texts, Kind kind) {
+    if (texts.isEmpty()) {
+      return List.of();
     }
+    Response response;
+    try {
+      response =
+          resilience.call(
+              LlmPolicies.EMBED,
+              () ->
+                  http.post()
+                      .uri("/embeddings")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .body(
+                          new Request(
+                              model,
+                              texts,
+                              kind == Kind.QUERY ? "query" : "passage",
+                              dimensions,
+                              "END",
+                              "float"))
+                      .retrieve()
+                      .body(Response.class));
+    } catch (CallRefused e) {
+      throw new EmbeddingFailure("embedding call refused: " + e.reason(), false);
+    } catch (RestClientResponseException e) {
+      boolean limited = e.getStatusCode().isSameCodeAs(HttpStatus.TOO_MANY_REQUESTS);
+      throw new EmbeddingFailure(
+          "embedding call failed: HTTP " + e.getStatusCode().value(), limited);
+    } catch (RestClientException e) {
+      String why =
+          ObservedHttp.isDeadlineExceeded(e) ? "deadline exceeded" : e.getClass().getSimpleName();
+      throw new EmbeddingFailure("embedding call failed: " + why, false);
+    }
+    return vectors(response, texts.size(), dimensions);
+  }
 
-    record Response(List<Item> data) {
-        record Item(int index, float[] embedding) {
-        }
-    }
+  record Request(
+      String model,
+      List<String> input,
+      String input_type,
+      Integer dimensions,
+      String truncate,
+      String encoding_format) {}
+
+  record Response(List<Item> data) {
+    record Item(int index, float[] embedding) {}
+  }
 }

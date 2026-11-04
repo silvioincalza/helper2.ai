@@ -1,13 +1,10 @@
 package ai.helper2.identity.usecase;
 
 import ai.helper2.identity.internal.Bookmarks;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 
-import java.util.UUID;
-
-/**
- * A signed-in user removes one saved resource. Removing one that is not saved changes nothing.
- */
+/** A signed-in user removes one saved resource. Removing one that is not saved changes nothing. */
 @Service
 public class RemoveBookmark {
 

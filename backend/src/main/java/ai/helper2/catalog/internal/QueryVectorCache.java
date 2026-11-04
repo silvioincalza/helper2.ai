@@ -1,11 +1,10 @@
 package ai.helper2.catalog.internal;
 
 import ai.helper2.platform.cache.SharedCache;
-import org.jspecify.annotations.Nullable;
-
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Base64;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Query vectors shared by every replica (ADR 0012): the guide's example questions and pagination

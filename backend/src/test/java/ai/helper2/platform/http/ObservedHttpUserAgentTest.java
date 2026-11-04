@@ -1,14 +1,13 @@
 package ai.helper2.platform.http;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import ai.helper2.testing.FixtureServer;
 import io.micrometer.observation.ObservationRegistry;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-
 import java.time.Duration;
 import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 class ObservedHttpUserAgentTest {
 

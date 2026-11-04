@@ -1,154 +1,192 @@
 package ai.helper2.catalog;
 
-import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.stereotype.Service;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.stereotype.Service;
 
 /**
- * Human review queue: anything that must not be shown as verified without a person deciding. Items are
- * opened here; a person decides them through the ResolveReviewItem use case.
+ * Human review queue: anything that must not be shown as verified without a person deciding. Items
+ * are opened here; a person decides them through the ResolveReviewItem use case.
  */
 @Service
 public class ReviewQueue {
 
-    private static final String SELECT_ITEMS =
-        "SELECT i.*, r.title AS resource_title FROM review_item i LEFT JOIN resource r ON r.id = i.resource_id";
-    private final JdbcClient jdbc;
+  private static final String SELECT_ITEMS =
+      "SELECT i.*, r.title AS resource_title FROM review_item i LEFT JOIN resource r ON r.id = i.resource_id";
+  private final JdbcClient jdbc;
 
-    public ReviewQueue(JdbcClient jdbc) {
-        this.jdbc = jdbc;
-    }
+  public ReviewQueue(JdbcClient jdbc) {
+    this.jdbc = jdbc;
+  }
 
-    private static Item item(ResultSet rs, int n) throws SQLException {
-        return new Item(
-            rs.getObject("id", UUID.class), Kind.valueOf(rs.getString("kind")), Status.valueOf(rs.getString("status")),
-            rs.getObject("resource_id", UUID.class), rs.getString("resource_title"), rs.getString("reason"),
-            rs.getString("details"), rs.getTimestamp("created_at").toInstant(),
-            rs.getTimestamp("resolved_at") == null ? null : rs.getTimestamp("resolved_at").toInstant(),
-            rs.getString("resolved_by"));
-    }
+  private static Item item(ResultSet rs, int n) throws SQLException {
+    return new Item(
+        rs.getObject("id", UUID.class),
+        Kind.valueOf(rs.getString("kind")),
+        Status.valueOf(rs.getString("status")),
+        rs.getObject("resource_id", UUID.class),
+        rs.getString("resource_title"),
+        rs.getString("reason"),
+        rs.getString("details"),
+        rs.getTimestamp("created_at").toInstant(),
+        rs.getTimestamp("resolved_at") == null ? null : rs.getTimestamp("resolved_at").toInstant(),
+        rs.getString("resolved_by"));
+  }
 
-    public UUID open(Kind kind, UUID resourceId, String reason, String details, Links links) {
-        UUID id = UUID.randomUUID();
-        jdbc.sql("""
-                INSERT INTO review_item (id, kind, resource_id, enrichment_run_id, relationship_id, report_id, reason, details)
-                VALUES (:id, :kind, :rid, :run, :rel, :rep, :reason, :details)
-                """)
-            .param("id", id).param("kind", kind.name()).param("rid", resourceId)
-            .param("run", links.enrichmentRunId()).param("rel", links.relationshipId()).param("rep", links.reportId())
-            .param("reason", reason).param("details", details)
-            .update();
-        return id;
-    }
+  public UUID open(Kind kind, UUID resourceId, String reason, String details, Links links) {
+    UUID id = UUID.randomUUID();
+    jdbc.sql(
+            """
+            INSERT INTO review_item (id, kind, resource_id, enrichment_run_id, relationship_id, report_id, reason, details)
+            VALUES (:id, :kind, :rid, :run, :rel, :rep, :reason, :details)
+            """)
+        .param("id", id)
+        .param("kind", kind.name())
+        .param("rid", resourceId)
+        .param("run", links.enrichmentRunId())
+        .param("rel", links.relationshipId())
+        .param("rep", links.reportId())
+        .param("reason", reason)
+        .param("details", details)
+        .update();
+    return id;
+  }
 
-    /**
-     * Closes the resource's OPEN items about earlier enrichment runs as SUPERSEDED by [runId]: a person decides
-     * only what the newest run says.
-     */
-    public void supersedeEnrichmentItems(UUID resourceId, UUID runId) {
-        jdbc.sql("""
-                UPDATE review_item SET status = 'SUPERSEDED', resolved_at = now(), resolution_note = :note
-                WHERE resource_id = :rid AND status = 'OPEN' AND enrichment_run_id IS NOT NULL
-                  AND enrichment_run_id <> :run
-                """)
-            .param("rid", resourceId).param("run", runId).param("note", "Superseded by enrichment run " + runId)
-            .update();
-    }
+  /**
+   * Closes the resource's OPEN items about earlier enrichment runs as SUPERSEDED by [runId]: a
+   * person decides only what the newest run says.
+   */
+  public void supersedeEnrichmentItems(UUID resourceId, UUID runId) {
+    jdbc.sql(
+            """
+            UPDATE review_item SET status = 'SUPERSEDED', resolved_at = now(), resolution_note = :note
+            WHERE resource_id = :rid AND status = 'OPEN' AND enrichment_run_id IS NOT NULL
+              AND enrichment_run_id <> :run
+            """)
+        .param("rid", resourceId)
+        .param("run", runId)
+        .param("note", "Superseded by enrichment run " + runId)
+        .update();
+  }
 
-    /**
-     * Opens a candidate item for [canonicalUrl] unless the catalog already has that resource or the URL was ever
-     * proposed before (whatever was decided). Returns whether an item was opened.
-     */
-    public boolean proposeCandidate(Kind kind, String canonicalUrl, String reason, String details) {
-        return jdbc.sql("""
+  /**
+   * Opens a candidate item for [canonicalUrl] unless the catalog already has that resource or the
+   * URL was ever proposed before (whatever was decided). Returns whether an item was opened.
+   */
+  public boolean proposeCandidate(Kind kind, String canonicalUrl, String reason, String details) {
+    return jdbc.sql(
+                """
                 INSERT INTO review_item (id, kind, candidate_url, reason, details)
                 SELECT :id, :kind, :url, :reason, :details
                 WHERE NOT EXISTS (SELECT 1 FROM resource WHERE canonical_url = :url)
                 ON CONFLICT (kind, candidate_url) WHERE candidate_url IS NOT NULL DO NOTHING
                 """)
-            .param("id", UUID.randomUUID()).param("kind", kind.name()).param("url", canonicalUrl)
-            .param("reason", reason).param("details", details)
-            .update() == 1;
-    }
+            .param("id", UUID.randomUUID())
+            .param("kind", kind.name())
+            .param("url", canonicalUrl)
+            .param("reason", reason)
+            .param("details", details)
+            .update()
+        == 1;
+  }
 
-    /**
-     * Newest first; all statuses when [status] is null, all kinds when [kind] is null.
-     */
-    public Page list(Status status, Kind kind, int page, int size) {
-        String wantedStatus = status == null ? null : status.name();
-        String wantedKind = kind == null ? null : kind.name();
-        List<Item> items = jdbc.sql(SELECT_ITEMS + """
-                 WHERE (CAST(:status AS text) IS NULL OR i.status = :status)
-                   AND (CAST(:kind AS text) IS NULL OR i.kind = :kind)
-                ORDER BY i.created_at DESC, i.id
-                LIMIT :size OFFSET :offset
-                """)
-            .param("status", wantedStatus).param("kind", wantedKind).param("size", size).param("offset", (long) page * size)
+  /** Newest first; all statuses when [status] is null, all kinds when [kind] is null. */
+  public Page list(Status status, Kind kind, int page, int size) {
+    String wantedStatus = status == null ? null : status.name();
+    String wantedKind = kind == null ? null : kind.name();
+    List<Item> items =
+        jdbc.sql(
+                SELECT_ITEMS
+                    + """
+                     WHERE (CAST(:status AS text) IS NULL OR i.status = :status)
+                       AND (CAST(:kind AS text) IS NULL OR i.kind = :kind)
+                    ORDER BY i.created_at DESC, i.id
+                    LIMIT :size OFFSET :offset
+                    """)
+            .param("status", wantedStatus)
+            .param("kind", wantedKind)
+            .param("size", size)
+            .param("offset", (long) page * size)
             .query(ReviewQueue::item)
             .list();
-        long total = jdbc.sql("""
+    long total =
+        jdbc.sql(
+                """
                 SELECT count(*) FROM review_item
                 WHERE (CAST(:status AS text) IS NULL OR status = :status) AND (CAST(:kind AS text) IS NULL OR kind = :kind)
                 """)
-            .param("status", wantedStatus).param("kind", wantedKind).query(Long.class).single();
-        return new Page(items, total);
-    }
+            .param("status", wantedStatus)
+            .param("kind", wantedKind)
+            .query(Long.class)
+            .single();
+    return new Page(items, total);
+  }
 
-    /**
-     * Open items per kind, every kind listed (0 when none waits); for the back office overview.
-     */
-    public java.util.Map<Kind, Long> openCountsByKind() {
-        java.util.Map<Kind, Long> counts = new java.util.EnumMap<>(Kind.class);
-        for (Kind kind : Kind.values()) {
-            counts.put(kind, 0L);
-        }
-        jdbc.sql("SELECT kind, count(*) AS n FROM review_item WHERE status = 'OPEN' GROUP BY kind")
-            .query((rs, i) -> counts.put(Kind.valueOf(rs.getString("kind")), rs.getLong("n")))
-            .list();
-        return counts;
+  /** Open items per kind, every kind listed (0 when none waits); for the back office overview. */
+  public java.util.Map<Kind, Long> openCountsByKind() {
+    java.util.Map<Kind, Long> counts = new java.util.EnumMap<>(Kind.class);
+    for (Kind kind : Kind.values()) {
+      counts.put(kind, 0L);
     }
+    jdbc.sql("SELECT kind, count(*) AS n FROM review_item WHERE status = 'OPEN' GROUP BY kind")
+        .query((rs, i) -> counts.put(Kind.valueOf(rs.getString("kind")), rs.getLong("n")))
+        .list();
+    return counts;
+  }
 
-    /**
-     * Items waiting for a person; for the review backlog gauge.
-     */
-    public long openCount() {
-        return jdbc.sql("SELECT count(*) FROM review_item WHERE status = 'OPEN'").query(Long.class).single();
-    }
+  /** Items waiting for a person; for the review backlog gauge. */
+  public long openCount() {
+    return jdbc.sql("SELECT count(*) FROM review_item WHERE status = 'OPEN'")
+        .query(Long.class)
+        .single();
+  }
 
-    public Optional<Item> find(UUID id) {
-        return jdbc.sql(SELECT_ITEMS + " WHERE i.id = :id").param("id", id).query(ReviewQueue::item).optional();
-    }
+  public Optional<Item> find(UUID id) {
+    return jdbc.sql(SELECT_ITEMS + " WHERE i.id = :id")
+        .param("id", id)
+        .query(ReviewQueue::item)
+        .optional();
+  }
 
-    public enum Kind {
-        ENRICHMENT_VALIDATION, RELATIONSHIP_CANDIDATE, USER_REPORT,
-        /**
-         * A page a collector proposes for the catalog (ADR 0032 §8): no resource yet, only its URL.
-         */
-        COURSE_CANDIDATE
-    }
+  public enum Kind {
+    ENRICHMENT_VALIDATION,
+    RELATIONSHIP_CANDIDATE,
+    USER_REPORT,
+    /** A page a collector proposes for the catalog (ADR 0032 §8): no resource yet, only its URL. */
+    COURSE_CANDIDATE
+  }
 
-    /**
-     * SUPERSEDED: a newer enrichment run of the same resource replaced the run the item was about.
-     */
-    public enum Status {OPEN, ACCEPTED, REJECTED, SUPERSEDED}
+  /**
+   * SUPERSEDED: a newer enrichment run of the same resource replaced the run the item was about.
+   */
+  public enum Status {
+    OPEN,
+    ACCEPTED,
+    REJECTED,
+    SUPERSEDED
+  }
 
-    public record Item(UUID id, Kind kind, Status status, UUID resourceId, String resourceTitle, String reason,
-                       String details, Instant createdAt, Instant resolvedAt, String resolvedBy) {
-    }
+  public record Item(
+      UUID id,
+      Kind kind,
+      Status status,
+      UUID resourceId,
+      String resourceTitle,
+      String reason,
+      String details,
+      Instant createdAt,
+      Instant resolvedAt,
+      String resolvedBy) {}
 
-    public record Links(UUID enrichmentRunId, UUID relationshipId, UUID reportId) {
-        public static final Links NONE = new Links(null, null, null);
-    }
+  public record Links(UUID enrichmentRunId, UUID relationshipId, UUID reportId) {
+    public static final Links NONE = new Links(null, null, null);
+  }
 
-    /**
-     * One page of items: [items] in the page, [total] across every page.
-     */
-    public record Page(List<Item> items, long total) {
-    }
+  /** One page of items: [items] in the page, [total] across every page. */
+  public record Page(List<Item> items, long total) {}
 }

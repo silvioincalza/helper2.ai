@@ -1,14 +1,13 @@
 package ai.helper2.admin.usecase;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import ai.helper2.scout.RunStatus;
 import ai.helper2.scout.RunSummary;
-import org.junit.jupiter.api.Test;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
 
 class GetOverviewTest {
 

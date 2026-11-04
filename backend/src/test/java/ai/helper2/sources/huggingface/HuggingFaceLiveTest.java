@@ -1,21 +1,20 @@
 package ai.helper2.sources.huggingface;
 
+import static ai.helper2.sources.SourceFixtures.live;
+import static ai.helper2.sources.SourceFixtures.liveHttp;
+import static ai.helper2.sources.SourceFixtures.query;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.search.SourceHit;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.sources.support.RunInterval;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-
 import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
-
-import static ai.helper2.sources.SourceFixtures.live;
-import static ai.helper2.sources.SourceFixtures.liveHttp;
-import static ai.helper2.sources.SourceFixtures.query;
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
 /**
  * Opt-in: the real Hugging Face Hub API, one test per source and collector (H2_HF_TOKEN optional).

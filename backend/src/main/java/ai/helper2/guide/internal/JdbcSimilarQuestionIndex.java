@@ -5,13 +5,12 @@ import ai.helper2.guide.Neighbour;
 import ai.helper2.guide.SimilarQuestionIndex;
 import ai.helper2.guide.SimilarQuestionRetention;
 import ai.helper2.platform.PgVectors;
+import java.sql.Timestamp;
+import java.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.simple.JdbcClient;
-
-import java.sql.Timestamp;
-import java.time.Instant;
 
 /**
  * {@link SimilarQuestionIndex} in {@code guide_similar_question} (ADR 0041), embeddings in a

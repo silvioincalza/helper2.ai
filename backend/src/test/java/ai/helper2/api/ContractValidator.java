@@ -4,15 +4,14 @@ import com.networknt.schema.Error;
 import com.networknt.schema.Schema;
 import com.networknt.schema.SchemaRegistry;
 import com.networknt.schema.SpecificationVersion;
+import java.io.File;
+import java.util.List;
+import java.util.stream.Collectors;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
 import tools.jackson.dataformat.yaml.YAMLMapper;
-
-import java.io.File;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Validates real API responses against the OpenAPI 3.1 component schemas (which are JSON Schema

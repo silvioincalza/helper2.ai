@@ -1,7 +1,6 @@
 package ai.helper2.catalog.internal;
 
 import ai.helper2.search.SourceHit;
-
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

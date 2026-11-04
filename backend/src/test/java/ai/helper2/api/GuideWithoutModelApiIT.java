@@ -1,15 +1,12 @@
 package ai.helper2.api;
 
-import ai.helper2.shared.ResourceType;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
-/**
- * No model configured (the default test context): the guide still answers, from search only.
- */
+import ai.helper2.shared.ResourceType;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+
+/** No model configured (the default test context): the guide still answers, from search only. */
 class GuideWithoutModelApiIT extends ApiTestBase {
 
   @Test

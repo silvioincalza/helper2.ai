@@ -1,11 +1,10 @@
 package ai.helper2.platform.llm;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.ai.openai.OpenAiChatOptions;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
+import org.springframework.ai.openai.OpenAiChatOptions;
 
 class CallOptionsTest {
 
