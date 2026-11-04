@@ -26,7 +26,7 @@ green: "All checks green?" {class: decision}
 fix: "Fix and push again" {class: fail}
 merge: "Merge to main" {class: app}
 
-cd: cd.yml (push to main) {
+cd: cd.yml (push to main or release/*) {
   class: group
   direction: down
   ci: "ci.yml again\n(frontend, backend, chart)" {class: app}
@@ -38,6 +38,8 @@ cd: cd.yml (push to main) {
   staging: "deploy.yml env staging:\ndiff, deploy, status" {class: app}
   ok: "Staging rollout\nhealthy?" {class: decision}
   rollback: "helm --rollback-on-failure:\nprevious revision" {class: fail}
+  branch: "Push to main?" {class: decision}
+  imageonly: "release/* (0048): image only,\nno staging" {class: end}
   done: "Staging runs the commit;\nprod unchanged" {class: end}
 
   ci -> build: {class: hot}
@@ -45,8 +47,10 @@ cd: cd.yml (push to main) {
   exists -> reuse: yes
   exists -> push: no {class: hot}
   build -> scan: "SBOM artifacts"
-  reuse -> staging
-  push -> staging: {class: hot}
+  reuse -> branch
+  push -> branch: {class: hot}
+  branch -> staging: yes {class: hot}
+  branch -> imageonly: no
   staging -> ok
   ok -> rollback: no
   ok -> done: yes {class: hot}
@@ -55,15 +59,16 @@ cd: cd.yml (push to main) {
 release: release.yml (push of a tag vX.Y.Z) {
   class: group
   direction: down
-  checks: "Release checks (0029):\nnot moved, annotated,\non main, four versions" {class: app}
+  checks: "Release checks (0029, 0048):\nnot moved, annotated, on main\nor release/* (next patch),\nfour versions" {class: app}
   valid: "All pass?" {class: decision}
   refused: "Fail: no release,\nno deploy" {class: fail}
   publish: "GitHub release\npublished" {class: app}
-  staged: "CD run of the commit\npassed staging?\n(waits while it runs)" {class: decision}
+  staged: "CD run of the commit\npassed? (from main:\nstaging too; waits)" {class: decision}
   blocked: "Fail: no prod deploy" {class: fail}
+  retag: "retag: Harbor adds X.Y.Z\nto the commit's image\n(same digest)" {class: data}
   approve: "Prod reviewer\napproves?" {class: decision}
   wait: "Prod waits\n(not deployed)" {class: end}
-  prod: "deploy.yml env prod:\nthe tag's commit\n(image built on main)" {class: app}
+  prod: "deploy.yml env prod:\nimage X.Y.Z\n(built by CD, never rebuilt)" {class: app}
   live: "helper2.ai runs the release" {class: end}
 
   checks -> valid
@@ -73,11 +78,12 @@ release: release.yml (push of a tag vX.Y.Z) {
   staged -> blocked: no
   staged -> approve: yes {class: hot}
   approve -> wait: no
-  approve -> prod: yes {class: hot}
+  approve -> retag: yes {class: hot}
+  retag -> prod: {class: hot}
   prod -> live: {class: hot}
 }
 
-tagger: "Owner tags a main\ncommit vX.Y.Z" {class: person}
+tagger: "Owner tags a commit of main\nor release/* vX.Y.Z" {class: person}
 
 manual: "Manual run (workflow_dispatch):\nenvironment + tag;\nprod with empty tag = promote\nwhat staging runs" {class: config}
 

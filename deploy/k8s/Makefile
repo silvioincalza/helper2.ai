@@ -7,6 +7,7 @@
 # The platform repo (incalza-me-infra) owns the namespaces, the Ingresses, DNS and the deployer RBAC.
 #
 #   make image                   build linux/amd64 image, push to Harbor (robot from OpenBao helper2/kv ci/harbor)
+#   make retag VERSION=X.Y.Z     add the release tag X.Y.Z to the pushed image TAG (same digest, no rebuild)
 #   make sbom                    CycloneDX SBOM of the pushed image TAG (syft), into sbom.cdx.json
 #   make postgres-sbom           the same for the Postgres image of postgres.image.tag
 #   make ENV=staging diff        what the next deploy would change
@@ -34,7 +35,7 @@ ifeq ($(filter $(ENV),staging prod),)
 $(error ENV must be staging or prod)
 endif
 
-.PHONY: help credentials backup-credentials image sbom postgres-sbom postgres-image chart-check check-env release-ready deploy diff rollback status
+.PHONY: help credentials backup-credentials image retag sbom postgres-sbom postgres-image chart-check check-env release-ready deploy diff rollback status
 
 help: ## this list
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
@@ -100,6 +101,25 @@ image: ## build the linux/amd64 image of TAG (deploy/Dockerfile) and push it to 
 	$(ENGINE) build --platform linux/amd64 -f "$$work/src/deploy/Dockerfile" -t $(IMAGE):$(TAG) "$$work/src"; \
 	$(ENGINE) push $(IMAGE):$(TAG); \
 	echo "pushed $(IMAGE):$(TAG)"
+
+# A release names its image by version (ADR 0048): Harbor adds the tag VERSION to the image of the commit TAG, so both
+# tags point at one digest and nothing is rebuilt. Run again: a no-op. VERSION already on another digest: a failure
+# (Harbor's tag-immutability rule would refuse to move it anyway).
+VERSION ?=
+retag: ## add the release tag VERSION (X.Y.Z) to the pushed image TAG in Harbor: same digest, no rebuild
+	@set -euo pipefail; \
+	[[ "$(VERSION)" =~ ^[0-9]+\.[0-9]+\.[0-9]+$$ ]] || { echo "VERSION must be X.Y.Z, got '$(VERSION)'"; exit 1; }; \
+	$(HARBOR); \
+	want=$$(harbor_api apps/helper2 $(TAG) -f | jq -r .digest) || { echo "$(IMAGE):$(TAG) is not in Harbor"; exit 1; }; \
+	code=$$(harbor_api apps/helper2 $(VERSION) -o "$$work/version.json" -w "%{http_code}"); case $$code in \
+		200) have=$$(jq -r .digest "$$work/version.json"); \
+			[[ $$have == "$$want" ]] || { echo "$(IMAGE):$(VERSION) is $$have, not the image of $(TAG) ($$want)"; exit 1; }; \
+			echo "$(IMAGE):$(VERSION) is the image of $(TAG) already";; \
+		404) jq -n --arg name "$(VERSION)" '{name: $$name}' \
+			| harbor_api apps/helper2 $(TAG)/tags -f -X POST -H 'Content-Type: application/json' --data-binary @- -o /dev/null; \
+			echo "tagged $(IMAGE):$(TAG) as $(VERSION) ($$want)";; \
+		*) echo "Harbor answered HTTP $$code for $(IMAGE):$(VERSION)"; exit 1;; \
+	esac
 
 # CycloneDX SBOM of the pushed image of TAG, read from Harbor with the robot account (ADR 0046). Needs syft.
 SBOM ?= sbom.cdx.json

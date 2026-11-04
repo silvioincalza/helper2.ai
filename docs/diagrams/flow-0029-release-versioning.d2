@@ -1,5 +1,6 @@
 # Flowchart: the release workflow, from a pushed v* tag to the published GitHub release and the prod deploy.
-# Shows every check in order: deleted or moved tag, name, annotated, on main, one version in four files.
+# Shows every check in order: deleted or moved tag, name, annotated, on main or on a release branch with the next
+# patch (ADR 0048), one version in four files; then the version tag on the image and the prod deploy.
 # Source of truth: .github/workflows/release.yml (release and prod jobs), deploy/k8s/CI.md (Releases),
 #   backend/build.gradle.kts, frontend/package.json, deploy/helm/helper2/Chart.yaml.
 # Render: cd docs/diagrams && d2 fmt flow-0029-release-versioning.d2 && d2 flow-0029-release-versioning.d2 flow-0029-release-versioning.svg
@@ -17,6 +18,8 @@ moved: "Push forced, or the tag\nhad a previous value?" {class: decision}
 name: "Name matches\nvX.Y.Z?" {class: decision}
 annotated: "Annotated tag?" {class: decision}
 main: "Commit on main?" {class: decision}
+branch: "Commit on a\nrelease/* branch?" {class: decision}
+patch: "Tag = next patch after\nthe release just below?" {class: decision}
 versions: "build.gradle.kts, package.json,\nChart.yaml, openapi.yaml\nat the commit = X.Y.Z?" {class: decision}
 exists: "GitHub release\nalready exists?" {class: decision}
 
@@ -24,13 +27,14 @@ e_deleted: "Fail: release tags\nare permanent" {class: fail}
 e_moved: "Fail: tags are immutable,\npublish a new version" {class: fail}
 e_name: "Fail: not vX.Y.Z" {class: fail}
 e_annotated: "Fail: must be annotated" {class: fail}
-e_main: "Fail: not on main" {class: fail}
+e_main: "Fail: not on main\nnor on release/*" {class: fail}
+e_patch: "Fail: a release branch\nraises the patch only" {class: fail}
 e_versions: "Fail: file <name> has\nanother version" {class: fail}
 keep: "Release left as is" {class: app}
-publish: "gh release create vX.Y.Z\nnotes = tag message\n+ image helper2:<commit[0:12]>" {class: app}
-staged: "Commit's CD run\npassed staging?" {class: decision}
+publish: "gh release create vX.Y.Z\nnotes = tag message\n+ image helper2:X.Y.Z (commit)" {class: app}
+staged: "Commit's CD run passed?\n(from main: staging too)" {class: decision}
 e_staged: "Fail: no prod deploy" {class: fail}
-prod: "Prod deploy of the commit\n(deploy.yml, after the\nprod approval, ADR 0028)" {class: end}
+prod: "Prod deploy of X.Y.Z (deploy.yml,\nafter the prod approval: Harbor\nadds X.Y.Z to the commit's image)" {class: end}
 
 owner -> tag: {class: hot}
 tag -> push: {class: hot}
@@ -43,7 +47,11 @@ name -> e_name: no
 name -> annotated: yes {class: hot}
 annotated -> e_annotated: no
 annotated -> main: yes {class: hot}
-main -> e_main: no
+main -> branch: no
+branch -> e_main: no
+branch -> patch: yes
+patch -> e_patch: no
+patch -> versions: yes
 main -> versions: yes {class: hot}
 versions -> e_versions: no
 versions -> exists: yes {class: hot}

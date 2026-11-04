@@ -17,21 +17,21 @@ visitor: "Visitor\n(site footer)" {class: person}
 
 tag: Release vX.Y.Z {
   owner -> owner: "bump the version in build.gradle.kts,\npackage.json, Chart.yaml, openapi.yaml\n(release commit, merged to main)"
-  owner -> github: "git push origin vX.Y.Z\n(annotated tag on a main commit)" {class: hot}
+  owner -> github: "git push origin vX.Y.Z\n(annotated tag on a commit of main\nor of a release/* branch, 0048)" {class: hot}
   github -> runner: "push event: tag v*,\nbefore, forced, deleted" {class: hot}
   runner -> runner: "deleted, forced or a previous\nvalue? fail: tags are immutable"
-  runner -> github: "fetch refs/tags/vX.Y.Z and main"
+  runner -> github: "fetch refs/tags/vX.Y.Z, main, release/*"
   github -> runner: "tag object, history"
-  runner -> runner: "name vX.Y.Z, annotated, on main,\nfour files = X.Y.Z at the commit?"
+  runner -> runner: "name vX.Y.Z, annotated, on main\n(or release/* and the next patch),\nfour files = X.Y.Z at the commit?"
   runner -> releases: "gh release view vX.Y.Z"
   releases -> runner: "not found (an existing one is left as is)"
-  runner -> releases: "gh release create --verify-tag\nnotes = tag message + image\nhelper2:<commit[0:12]>" {class: hot}
+  runner -> releases: "gh release create --verify-tag\nnotes = tag message + image\nhelper2:X.Y.Z (commit)" {class: hot}
   runner -> github: "job staged: the commit's CD run\n(waits while it runs)"
   github -> runner: "completed, success"
   github -> owner: "job prod waits for the\napproval on environment prod"
   owner -> github: "approve"
-  github -> prod: "deploy.yml env prod,\ntag = commit[0:12]" {class: hot}
-  prod -> prod: "helm upgrade; helper2.ai\nruns vX.Y.Z (sequence 0028)"
+  github -> prod: "deploy.yml env prod,\ntag = X.Y.Z" {class: hot}
+  prod -> prod: "Harbor adds X.Y.Z to the commit's image\n(sequence 0048); helm upgrade;\nhelper2.ai runs vX.Y.Z (sequence 0028)"
 }
 
 blocked: Moving or deleting a release tag {

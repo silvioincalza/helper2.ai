@@ -11,13 +11,17 @@ on:
         type: string
         required: true
       tag:
-        description: image tag = 12-char commit. Empty = the caller's commit; for prod, what staging runs
+        description: image tag = 12-char commit or release version X.Y.Z. Empty = the caller's commit; for prod, what staging runs
         type: string
         default: ''
       rollback:
         description: allow a commit older than the one the environment runs (a deliberate rollback)
         type: boolean
         default: false
+      release-commit:
+        description: release.yml only, the full commit its checks passed for the version in tag; the version tag is added in Harbor only then
+        type: string
+        default: ''
     outputs:
       tag:
         description: the tag that was deployed
@@ -75,6 +79,7 @@ jobs:
         env:
           INPUT_TAG: ${{ inputs.tag }}
           ROLLBACK: ${{ inputs.rollback }}
+          RELEASE_COMMIT: ${{ inputs.release-commit }}
         run: |
           set -euo pipefail
           tag=$INPUT_TAG
@@ -86,31 +91,75 @@ jobs:
             tag=${image##*:}
           fi
           tag=${tag:-${GITHUB_SHA::12}}
-          [[ $tag =~ ^[0-9a-f]{12}$ ]] || { echo "tag must be a 12-char commit, got '$tag'"; exit 1; }
-          # A branch or tag named like the hex would win ref resolution over the commit: refuse it.
-          if [[ -n $(git for-each-ref "refs/tags/$tag" "refs/heads/$tag" "refs/remotes/origin/$tag") ]]; then
-            echo "a ref named $tag exists, refusing"; exit 1
+          # An image tag is a 12-char commit (CD) or a release version X.Y.Z (release.yml, ADR 0048): its commit.
+          commit_of() {
+            local t=$1 s
+            if [[ $t =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              # Never force-fetched: the local tag and GitHub's must be the same object, or the tag was moved.
+              git rev-parse --verify --quiet "refs/tags/v$t" >/dev/null \
+                || git fetch --quiet origin "refs/tags/v$t:refs/tags/v$t" 2>/dev/null \
+                || { echo "no release tag v$t" >&2; return 1; }
+              [[ $(git ls-remote origin "refs/tags/v$t" | cut -f1) == "$(git rev-parse "refs/tags/v$t")" ]] \
+                || { echo "release tag v$t differs from GitHub's, refusing" >&2; return 1; }
+              git rev-parse --verify --quiet "refs/tags/v$t^{commit}" || { echo "v$t names no commit" >&2; return 1; }
+              return
+            fi
+            [[ $t =~ ^[0-9a-f]{12}$ ]] || { echo "tag must be a 12-char commit or a version X.Y.Z, got '$t'" >&2; return 1; }
+            # A branch or tag named like the hex would win ref resolution over the commit: refuse it.
+            if [[ -n $(git for-each-ref "refs/tags/$t" "refs/heads/$t" "refs/remotes/origin/$t") ]]; then
+              echo "a ref named $t exists, refusing" >&2; return 1
+            fi
+            s=$(git rev-parse --verify --quiet "$t^{commit}") || { echo "no commit $t" >&2; return 1; }
+            [[ $s == "$t"* ]] || { echo "$t resolved to $s" >&2; return 1; }
+            echo "$s"
+          }
+          git fetch --quiet origin +refs/heads/main:refs/remotes/origin/main '+refs/heads/release/*:refs/remotes/origin/release/*'
+          sha=$(commit_of "$tag") || exit 1
+          # Only commits that reached main (and so passed CI) may run with deploy secrets. A release version may also
+          # name a commit of a release/* branch (ADR 0048): release.yml checked it, a reviewer approved it.
+          if ! git merge-base --is-ancestor "$sha" refs/remotes/origin/main; then
+            if [[ ! $tag =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "$tag is not on main (a release/* commit deploys only as its release version)"; exit 1
+            fi
+            [[ -n $(git for-each-ref --contains "$sha" refs/remotes/origin/release/) ]] \
+              || { echo "$tag is not on main nor on a release/* branch"; exit 1; }
           fi
-          sha=$(git rev-parse --verify --quiet "$tag^{commit}") || { echo "no commit $tag"; exit 1; }
-          [[ $sha == "$tag"* ]] || { echo "$tag resolved to $sha"; exit 1; }
-          # Only commits that reached main (and so passed CI) may run with deploy secrets.
-          git fetch --quiet origin +refs/heads/main:refs/remotes/origin/main
-          git merge-base --is-ancestor "$sha" refs/remotes/origin/main || { echo "$tag is not on main"; exit 1; }
           # Never go back by accident: a run left waiting at the prod approval for days deploys its own,
           # older commit when approved (3 Nov 2026, prod). Older than what runs = rollback: true only.
           running=$(kubectl -n "helper2-$ENV" get deployment helper2 \
             -o jsonpath='{.spec.template.spec.containers[?(@.name=="app")].image}' 2>/dev/null || true)
           running=${running##*:}
-          if [[ $running =~ ^[0-9a-f]{12}$ && $running != "$tag" && $ROLLBACK != true ]] \
-            && git rev-parse --verify --quiet "$running^{commit}" >/dev/null \
-            && git merge-base --is-ancestor "$sha" "$running"; then
-            echo "::error::$tag is older than $running, which $ENV runs; a rollback needs rollback: true"; exit 1
+          # Commits of main and of a release branch can diverge (ADR 0048): then neither is an ancestor of the other,
+          # and only two release versions say which is newer; with a commit tag on either side it takes rollback: true.
+          if [[ -n $running && $running != "$tag" && $ROLLBACK != true ]] \
+            && running_sha=$(commit_of "$running" 2>/dev/null) \
+            && [[ $running_sha != "$sha" ]] \
+            && ! git merge-base --is-ancestor "$running_sha" "$sha"; then
+            semver='^[0-9]+\.[0-9]+\.[0-9]+$'
+            if git merge-base --is-ancestor "$sha" "$running_sha"; then
+              echo "::error::$tag is older than $running, which $ENV runs; a rollback needs rollback: true"; exit 1
+            fi
+            if [[ ! $tag =~ $semver || ! $running =~ $semver ]]; then
+              echo "::error::$tag and $running ($ENV) are on diverging histories with no versions to order them; deploying needs rollback: true"; exit 1
+            fi
+            if [[ $(printf '%s\n%s\n' "$tag" "$running" | sort -V | tail -1) != "$tag" ]]; then
+              echo "::error::$tag is a lower version than $running, which $ENV runs; a rollback needs rollback: true"; exit 1
+            fi
+          fi
+          # A release run (ADR 0048): the version must still name the commit release.yml checked. Only then does Harbor
+          # add the tag X.Y.Z to that commit's image (same digest), here, after the approval and with this commit's
+          # Makefile (an older release's has no `retag`). Needs read on ci/harbor for the role deploy-prod.
+          # Any other run deploys a version only if a release already tagged it in Harbor, else the rollout fails.
+          if [[ -n $RELEASE_COMMIT ]]; then
+            [[ $ENV == prod && $tag =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "release-commit is for a prod release by version"; exit 1; }
+            [[ $sha == "$RELEASE_COMMIT" ]] || { echo "::error::v$tag now names $sha, release.yml checked $RELEASE_COMMIT"; exit 1; }
+            make retag TAG="${sha::12}" VERSION="$tag"
           fi
           # Chart and image from the same commit, so an old image never runs with a newer chart.
           git checkout --quiet --detach "$sha"
           echo "TAG=$tag" >> "$GITHUB_ENV"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          echo "Deploying $tag to $ENV" >> "$GITHUB_STEP_SUMMARY"
+          echo "Deploying $tag (commit ${sha::12}) to $ENV" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Write app.env from OpenBao
         run: |
