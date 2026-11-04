@@ -117,6 +117,21 @@ describe('Feature: the overview says what needs a person now', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Refresh' }));
     await waitFor(() => expect(m.callsTo('GET', '/admin/overview')).toHaveLength(3));
   });
+
+  it('Scenario: a Refresh that fails keeps the last counts and says they are not current', async () => {
+    let fail = false;
+    mockApi({ 'GET /me': () => ADMIN, 'GET /admin/overview': () => (fail ? problem(503, 'Service Unavailable') : overview()) });
+    renderApp('/admin');
+    const refresh = await screen.findByRole('button', { name: 'Refresh' });
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    fail = true;
+    await userEvent.click(refresh);
+    expect(await screen.findByRole('alert')).toHaveTextContent('Refresh failed. These counts are from the last load.');
+    expect(screen.getByRole('button', { name: 'Refresh' })).toBeInTheDocument();
+    fail = false;
+    await userEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+  });
 });
 
 describe('Feature: deciding review items', () => {

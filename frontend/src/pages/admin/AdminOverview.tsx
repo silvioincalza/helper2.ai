@@ -4,6 +4,7 @@ import { api } from '@/api/client';
 import type { AdminOverview as Overview } from '@/api/types';
 import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
 import { StatusPill } from '@/components/ui/StatusPill';
+import { Icon } from '@/components/Icon';
 import { useApi } from '@/hooks/useApi';
 import { useRetry } from '@/hooks/useRetry';
 import { formatDate } from '@/lib/format';
@@ -26,7 +27,14 @@ export default function AdminOverview() {
       <h2 id="ov-h" ref={heading} tabIndex={-1} className="h2-admin__h">{t('admin.overview.title')}</h2>
       {overview.loading && !data ? <p role="status" className="muted">{t('common.loading')}</p> : overview.error !== undefined && !data ? (
         <StatePanel tone="error" level={3} title={t('admin.overview.loadError')} next={<RetryButton onClick={retry} />} />
-      ) : data ? <OverviewParts data={data} onRefresh={overview.reload} refreshing={overview.loading} /> : null}
+      ) : data ? (
+        <>
+          {overview.error !== undefined && !overview.loading && (
+            <p role="alert" className="banner banner-warn"><Icon name="warn" /> {t('admin.overview.refreshError')}</p>
+          )}
+          <OverviewParts data={data} onRefresh={overview.reload} refreshing={overview.loading} />
+        </>
+      ) : null}
     </section>
   );
 }

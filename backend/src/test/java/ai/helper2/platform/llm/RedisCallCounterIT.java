@@ -45,7 +45,7 @@ class RedisCallCounterIT {
         String name = "test-" + UUID.randomUUID();
         RedisCallCounter counter = new RedisCallCounter(redis, resilience);
 
-        assertThat(counter.current(name, DAY)).as("nothing counted yet").isNull();
+        assertThat(counter.current(name, DAY)).as("no key yet: Redis answered, nothing used").isEqualTo(0);
         counter.increment(name, DAY);
         counter.increment(name, DAY);
         assertThat(counter.current(name, DAY)).isEqualTo(2);

@@ -527,6 +527,7 @@
     "overview": {
       "title": "What needs you now",
       "loadError": "Could not load the overview.",
+      "refreshError": "Refresh failed. These counts are from the last load.",
       "updated": "Counted at {{at}}.",
       "refresh": "Refresh",
       "trends": "Trends in Grafana (opens in a new tab)",
