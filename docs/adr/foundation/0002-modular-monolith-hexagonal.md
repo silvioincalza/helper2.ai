@@ -24,6 +24,11 @@ internals. Microservices would add network calls and deploys without a scaling n
    (Spring AI, Redis, Java Database Connectivity (JDBC)). The `sources` module implements `SearchSource` and `Collector` for each
    public application programming interface (API). The `catalog` module implements `ResultObserver`, `RecordedOutcomes` and two
    `SearchSource`s over PostgreSQL.
+   The base package of a Java module holds only what other modules use. `catalog` keeps `ResourceCatalog`,
+   `ReviewQueue`, `Embedder`, `ResourceDetail` and `EnrichmentResults` there; its adapters and its configuration
+   (`CatalogConfiguration`, `CatalogSearchSource`, `SemanticSearchSource`, `ResourceCards`) are in `catalog.internal`.
+   `sources` has no API: its base package is empty, and its own configuration wires its adapters into the ports of
+   `search` and `scout`.
 4. **One class per use case.** What a caller can ask a module to do lives in its `usecase` sub-package, one
    class per entry point: `SearchResources` (search), `AskGuide` (guide), `RunScout`, `StartScoutRun`,
    `EnrichResource` and `PurgeExpiredData` (scout), `GetResourceDetail`, `ListRecentResources`,
@@ -42,7 +47,8 @@ internals. Microservices would add network calls and deploys without a scaling n
    - `ApplicationModules.verify()`: no cycles, only public types of other modules are used;
    - the domain packages do not depend on `org.springframework..`, `tools.jackson..` or `java.sql..`;
    - the domain packages do not depend on any `web`, `cache`, `config` or `internal` package;
-   - both rules also hold for the Kotlin `usecase` packages (`search.usecase`, `guide.usecase`, `scout.usecase`).
+   - both rules also hold for the Kotlin `usecase` packages (`search.usecase`, `guide.usecase`, `scout.usecase`);
+   - no class outside `sources` depends on a class of `sources`.
 
 ## Consequences
 - Domain tests are plain unit tests with fakes (for example `SearchResourcesTest`, `GuideValidatorTest`).
@@ -57,6 +63,8 @@ internals. Microservices would add network calls and deploys without a scaling n
   nothing stops one feature from using another's repository.
 - Hexagonal everywhere — `catalog`, `identity` and `sources` are mostly mapping and Structured Query Language (SQL); ports there
   would only add indirection.
+- A closed `llm` module with a named interface — the LLM layer stays in open `platform` (owner decision,
+  4 Nov 2026): every feature module calls it, so a closed module would only add a named interface for all of it.
 - Only Kotlin or only Java — Kotlin data classes and null safety fit the rules; Spring and generated
   code read well in Java.
 
@@ -68,7 +76,7 @@ internals. Microservices would add network calls and deploys without a scaling n
 - `backend/src/main/kotlin/ai/helper2/{search,guide,scout}/usecase/`, `backend/src/main/java/ai/helper2/catalog/usecase/`
   — use cases; `.../{search,catalog}/usecase/package-info.java` — named interfaces.
 - `backend/src/main/java/ai/helper2/search/{web,cache,config}`, `.../guide/{web,internal}`,
-  `.../scout/{web,internal}` — adapters.
+  `.../scout/{web,internal}`, `.../catalog/internal`, `.../sources/*` — adapters.
 
 ## Diagrams
 [flow](../../diagrams/flow-0002-modular-monolith-hexagonal.svg) · [sequence](../../diagrams/sequence-0002-modular-monolith-hexagonal.svg)
@@ -76,6 +84,4 @@ Modules, ports and adapters: [software architecture](../../diagrams/software-arc
 
 ## Roadmap
 - One owner per table, so the schema has no hidden coupling: [roadmap](../../roadmap.md#7-architecture).
-- A closed `llm` module instead of the LLM layer in open `platform`: [roadmap](../../roadmap.md#7-architecture).
-- Move the source and catalog adapters into `internal` packages: [roadmap](../../roadmap.md#7-architecture).
 - Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

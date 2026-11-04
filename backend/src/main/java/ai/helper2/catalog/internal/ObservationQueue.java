@@ -24,7 +24,7 @@ public class ObservationQueue implements AutoCloseable {
     private final Counter dropped;
     private final Counter failed;
 
-    public ObservationQueue(int capacity, MeterRegistry registry) {
+    ObservationQueue(int capacity, MeterRegistry registry) {
         this.executor = new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(capacity), r -> {
             Thread t = new Thread(r, "catalog-observations");
             t.setDaemon(true);

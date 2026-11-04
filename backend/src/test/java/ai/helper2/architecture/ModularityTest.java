@@ -40,4 +40,15 @@ class ModularityTest {
             .should().dependOnClassesThat().resideInAnyPackage("ai.helper2..web..", "ai.helper2..cache..", "ai.helper2..config..", "ai.helper2..internal..")
             .check(CLASSES);
     }
+
+    /**
+     * sources has no API: its base package is empty, and its adapters are wired by its own configuration into the
+     * ports of search and scout. So no class outside it may name one of its classes.
+     */
+    @Test
+    void sourcesIsReachedOnlyThroughPorts() {
+        noClasses().that().resideOutsideOfPackage("ai.helper2.sources..")
+            .should().dependOnClassesThat().resideInAPackage("ai.helper2.sources..")
+            .check(CLASSES);
+    }
 }

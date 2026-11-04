@@ -1,4 +1,4 @@
-package ai.helper2.catalog;
+package ai.helper2.catalog.internal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

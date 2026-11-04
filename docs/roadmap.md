@@ -179,8 +179,6 @@ Open items:
 - The Scout reads catalog tables (`resource`, `source_record`) for its enrichment backlog in
   `JdbcEnrichmentStore`. Spring Modulith cannot see coupling through the schema; read them through a catalog port
   ([ADR 0002](adr/foundation/0002-modular-monolith-hexagonal.md)).
-- `platform` is an open module and holds the LLM layer. Consider a closed `llm` module with a named interface.
-- Move the source and catalog adapters into `internal` packages.
 
 ## 8. Documentation
 

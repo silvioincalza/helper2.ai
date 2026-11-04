@@ -48,7 +48,7 @@ The index query must also stay well inside its 3 s timeout on the production cat
 - `backend/src/main/kotlin/ai/helper2/search/QueryAnalyzer.kt` — type hints, synonyms, required-word variants, lexicon.
 - `backend/src/main/kotlin/ai/helper2/search/Ranking.kt` — fusion, boosts, bounded popularity.
 - `backend/src/main/java/ai/helper2/catalog/internal/ResourceStore.java` — `searchSql`, `search`, `withFacts`, `popularity`.
-- `backend/src/main/java/ai/helper2/catalog/CatalogSearchSource.java` — index rows as ranked hits.
+- `backend/src/main/java/ai/helper2/catalog/internal/CatalogSearchSource.java` — index rows as ranked hits.
 - `backend/src/main/resources/db/migration/V1__schema.sql` — `search_vector`, trigram index, popularity trigger.
 
 ## Diagrams
