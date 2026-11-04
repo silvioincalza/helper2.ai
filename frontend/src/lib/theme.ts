@@ -6,16 +6,13 @@ export function otherTheme(theme: Theme): Theme {
   return theme === 'dark' ? 'light' : 'dark';
 }
 
-/** Where storage is blocked, the choice lasts for this page only. */
-let unsaved: Theme = 'light';
-
-/** The saved theme (public/theme.js applies it before first paint); light unless dark was chosen. */
+/**
+ * The theme on the page: data-theme on <html> is the one source of truth. public/theme.js sets it from the saved
+ * choice before first paint and chooseTheme updates it, so the button and the page always agree, even when
+ * storage can be read but not written.
+ */
 export function currentTheme(): Theme {
-  try {
-    return window.localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light';
-  } catch {
-    return unsaved;
-  }
+  return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
 }
 
 const listeners = new Set<() => void>();
@@ -28,14 +25,13 @@ export function subscribeTheme(onChange: () => void): () => void {
   };
 }
 
-/** Applies a theme and remembers it. */
+/** Applies a theme and remembers it where storage allows. */
 export function chooseTheme(theme: Theme): void {
-  unsaved = theme;
+  document.documentElement.dataset.theme = theme;
   try {
     window.localStorage.setItem(THEME_KEY, theme);
   } catch {
-    /* storage unavailable: `unsaved` keeps the choice for this page */
+    /* storage unavailable: the choice lasts for this page only */
   }
-  document.documentElement.dataset.theme = theme;
   for (const l of listeners) l();
 }

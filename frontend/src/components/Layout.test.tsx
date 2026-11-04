@@ -120,12 +120,51 @@ describe('layout', () => {
     delete document.documentElement.dataset.theme;
   });
 
-  it('the theme button starts from the saved choice', async () => {
+  it('the theme button starts from the theme public/theme.js applied before paint', async () => {
     mockApi();
     window.localStorage.setItem(THEME_KEY, 'dark');
+    document.documentElement.dataset.theme = 'dark';
     renderApp('/');
     await settle();
     expect(screen.getByRole('button', { name: 'Theme: dark. Change to light' })).toBeInTheDocument();
+    delete document.documentElement.dataset.theme;
+  });
+
+  describe('when storage is blocked', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+      delete document.documentElement.dataset.theme;
+    });
+
+    it('storage can be read but not written: the button and the page agree after each click', async () => {
+      mockApi();
+      document.documentElement.dataset.theme = 'light';
+      vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+        throw new DOMException('full', 'QuotaExceededError');
+      });
+      renderApp('/');
+      await userEvent.click(screen.getByRole('button', { name: 'Theme: light. Change to dark' }));
+      expect(document.documentElement.dataset.theme).toBe('dark');
+      expect(screen.getByRole('button', { name: 'Theme: dark. Change to light' })).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'Theme: dark. Change to light' }));
+      expect(document.documentElement.dataset.theme).toBe('light');
+      expect(screen.getByRole('button', { name: 'Theme: light. Change to dark' })).toBeInTheDocument();
+    });
+
+    it('storage can be neither read nor written: the page starts light and switching works', async () => {
+      mockApi();
+      document.documentElement.dataset.theme = 'light';
+      const blocked = () => {
+        throw new DOMException('blocked', 'SecurityError');
+      };
+      vi.spyOn(Storage.prototype, 'getItem').mockImplementation(blocked);
+      vi.spyOn(Storage.prototype, 'setItem').mockImplementation(blocked);
+      renderApp('/');
+      await userEvent.click(screen.getByRole('button', { name: 'Theme: light. Change to dark' }));
+      expect(document.documentElement.dataset.theme).toBe('dark');
+      await userEvent.click(screen.getByRole('button', { name: 'Theme: dark. Change to light' }));
+      expect(document.documentElement.dataset.theme).toBe('light');
+    });
   });
 
   it('moving to another page focuses its heading and announces it; new search params do not move focus', async () => {
