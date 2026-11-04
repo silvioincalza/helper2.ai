@@ -23,7 +23,8 @@ function startsSoon(card: ResultCard, now: number): boolean {
 export function EventsBoard() {
   const { t, i18n } = useTranslation();
   const feed = useApi<UpcomingEventsResponse>('next-events', (signal) =>
-    api.listUpcomingEvents(new URLSearchParams({ size: String(EVENTS_SHOWN) }), signal));
+    api.listUpcomingEvents(new URLSearchParams({ size: String(EVENTS_SHOWN) }), signal),
+  );
   // The server's clock (generatedAt) decides the window and the countdown.
   const now = Date.parse(feed.data?.generatedAt ?? '');
   const cards = (feed.data?.items ?? []).filter((card) => startsSoon(card, now));
@@ -31,23 +32,38 @@ export function EventsBoard() {
     const start = card.timeline.eventStart?.value ?? '';
     const days = daysUntil(start, now);
     const left = Number.isNaN(days) ? null : countdown(days);
-    const kind = [card.eventKind && t(`events.kind.${card.eventKind}`), card.eventFormat && t(`events.format.${card.eventFormat}`)]
-      .filter(Boolean).join(' · ');
+    const kind = [
+      card.eventKind && t(`events.kind.${card.eventKind}`),
+      card.eventFormat && t(`events.format.${card.eventFormat}`),
+    ]
+      .filter(Boolean)
+      .join(' · ');
     return {
       id: card.id,
       date: start ? shortDay(start, i18n.language) : '',
       dateTime: start || undefined,
       tag: kind ? <span className="h2-type-tag h2-type-tag--other">{kind}</span> : null,
       where: card.location ?? card.sources[0]?.sourceName,
-      status: left ? t(`board.countdown.${left.key}`, 'count' in left ? { count: left.count } : {}) : '',
+      status: left
+        ? t(`board.countdown.${left.key}`, 'count' in left ? { count: left.count } : {})
+        : '',
       tone: i === 0 ? 'next' : 'later',
       title: card.title,
       href: resourcePath(card.id),
     };
   });
   return (
-    <HomeBoard id="events" title={t('board.events.title')} sub={t('board.events.sub')} listLabel={t('board.events.list')}
-      loading={feed.loading} error={feed.error !== undefined} errorText={t('events.error')}
-      emptyText={t('events.empty')} onRetry={feed.reload} rows={rows} />
+    <HomeBoard
+      id="events"
+      title={t('board.events.title')}
+      sub={t('board.events.sub')}
+      listLabel={t('board.events.list')}
+      loading={feed.loading}
+      error={feed.error !== undefined}
+      errorText={t('events.error')}
+      emptyText={t('events.empty')}
+      onRetry={feed.reload}
+      rows={rows}
+    />
   );
 }

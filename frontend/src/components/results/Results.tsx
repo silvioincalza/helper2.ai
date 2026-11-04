@@ -1,4 +1,12 @@
-import { useId, useLayoutEffect, useMemo, useRef, useState, type FocusEvent, type RefObject } from 'react';
+import {
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FocusEvent,
+  type RefObject,
+} from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { api, ApiError } from '@/api/client';
@@ -14,7 +22,12 @@ import { Icon } from '@/components/Icon';
 import { OneBox } from '@/components/OneBox';
 import { Pagination } from '@/components/Pagination';
 import { ResultsTimeline } from '@/components/ResultsTimeline';
-import { GuideBody, GuideMeButton, OpenGuideContext, useGuideToggle } from '@/components/SetupGuide';
+import {
+  GuideBody,
+  GuideMeButton,
+  OpenGuideContext,
+  useGuideToggle,
+} from '@/components/SetupGuide';
 import { Timeline } from '@/components/Timeline';
 import { NoticeList } from '@/components/ui/NoticeList';
 import { ProofQuote } from '@/components/ui/ProofQuote';
@@ -28,8 +41,29 @@ import { useGuideStream } from '@/hooks/useGuideStream';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useTitle } from '@/hooks/useTitle';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
-import { displayHost, guidePicks, picksById, picksFirst, selectedResult, type GuidePick } from '@/lib/selection';
-import { activeFilterCount, askedQuestion, clampQuestion, clearFilters, homeParams, isSelected, parseSearchParams, patchState, toApiParams, toggleFilter, type ResultsView, type SearchState, resourcePath } from '@/lib/searchState';
+import {
+  displayHost,
+  guidePicks,
+  picksById,
+  picksFirst,
+  selectedResult,
+  type GuidePick,
+} from '@/lib/selection';
+import {
+  activeFilterCount,
+  askedQuestion,
+  clampQuestion,
+  clearFilters,
+  homeParams,
+  isSelected,
+  parseSearchParams,
+  patchState,
+  toApiParams,
+  toggleFilter,
+  type ResultsView,
+  type SearchState,
+  resourcePath,
+} from '@/lib/searchState';
 import { ListedBy, ResultFacts } from './ResultFacts';
 import './results.css';
 import { OpenButton } from './OpenButton';
@@ -50,7 +84,8 @@ export function Results() {
   const state = parseSearchParams(sp);
   const asked = askedQuestion(sp);
   useTitle(state.q);
-  const go = (next: SearchState, ask: string) => setSp(homeParams(next, ask, sp), { preventScrollReset: true });
+  const go = (next: SearchState, ask: string) =>
+    setSp(homeParams(next, ask, sp), { preventScrollReset: true });
   const update = (next: SearchState) => go(next, asked);
   const ask = (question: string) => {
     const q = clampQuestion(question);
@@ -63,50 +98,93 @@ export function Results() {
 
   const apiParams = toApiParams(state);
   const key = apiParams.toString();
-  const search = useApi<SearchResponse | null>(`search?${key}`, (signal) => (state.q ? api.search(apiParams, signal) : Promise.resolve(null)));
+  const search = useApi<SearchResponse | null>(`search?${key}`, (signal) =>
+    state.q ? api.search(apiParams, signal) : Promise.resolve(null),
+  );
   const shown = search.loading ? (search.previous ?? undefined) : (search.data ?? undefined);
 
   return (
     <div className="h2-results">
       <h1 className="sr-only">{t('results.heading', { q: state.q })}</h1>
-      <div className="h2-results__box"><OneBox /></div>
-      {asked ? <GuidePicks stream={stream} loaded={new Set((shown?.results ?? []).map((c) => c.id))} webLine={webLineExpected(shown?.webSearches)} /> : words >= 4 && (
-        <button type="button" className="btn suggest-guide" onClick={() => ask(state.q)}>{t('home.suggestGuide', { q: state.q })}</button>
+      <div className="h2-results__box">
+        <OneBox />
+      </div>
+      {asked ? (
+        <GuidePicks
+          stream={stream}
+          loaded={new Set((shown?.results ?? []).map((c) => c.id))}
+          webLine={webLineExpected(shown?.webSearches)}
+        />
+      ) : (
+        words >= 4 && (
+          <button type="button" className="btn suggest-guide" onClick={() => ask(state.q)}>
+            {t('home.suggestGuide', { q: state.q })}
+          </button>
+        )
       )}
       {/* Each new search says so; the skeleton only on the first load, later the last results stay, dimmed. */}
       {search.loading && (
         <div role="status" className="h2-results__loading">
           <p>{t('results.loading')}</p>
           {/* No per-source lines: they arrived after the skeleton and pushed it down (layout shift). */}
-          {!shown && (<>
-          <ul className="plain-list h2-skeleton" aria-hidden="true">
-            {[0, 1, 2, 3].map((i) => (
-              <li key={i} className="h2-skeleton__row">
-                <span className="h2-skeleton__line is-short" />
-                <span className="h2-skeleton__line is-title" />
-                <span className="h2-skeleton__line" />
-              </li>
-            ))}
-          </ul>
-          </>)}
+          {!shown && (
+            <>
+              <ul className="plain-list h2-skeleton" aria-hidden="true">
+                {[0, 1, 2, 3].map((i) => (
+                  <li key={i} className="h2-skeleton__row">
+                    <span className="h2-skeleton__line is-short" />
+                    <span className="h2-skeleton__line is-title" />
+                    <span className="h2-skeleton__line" />
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </div>
       )}
       {!search.loading && search.error !== undefined && (
-        <StatePanel tone="error" level={2} title={t('results.errorTitle')} next={<RetryButton onClick={search.reload} />}>
-          <p>{search.error instanceof ApiError && search.error.problem?.detail ? search.error.problem.detail : t('results.errorBody')}</p>
+        <StatePanel
+          tone="error"
+          level={2}
+          title={t('results.errorTitle')}
+          next={<RetryButton onClick={search.reload} />}
+        >
+          <p>
+            {search.error instanceof ApiError && search.error.problem?.detail
+              ? search.error.problem.detail
+              : t('results.errorBody')}
+          </p>
         </StatePanel>
       )}
       {shown && (
         <div className={search.loading ? 'is-stale' : undefined} aria-busy={search.loading}>
-          <ResultsBody res={shown} state={state} update={update} retry={search.reload} picks={picks} ask={asked || !clampQuestion(state.q) ? undefined : () => ask(state.q)} />
+          <ResultsBody
+            res={shown}
+            state={state}
+            update={update}
+            retry={search.reload}
+            picks={picks}
+            ask={asked || !clampQuestion(state.q) ? undefined : () => ask(state.q)}
+          />
         </div>
       )}
     </div>
   );
 }
 
-function ResultsBody({ res, state, update, retry, picks, ask }: {
-  res: SearchResponse; state: SearchState; update: (s: SearchState) => void; retry: () => void; picks: readonly GuidePick[];
+function ResultsBody({
+  res,
+  state,
+  update,
+  retry,
+  picks,
+  ask,
+}: {
+  res: SearchResponse;
+  state: SearchState;
+  update: (s: SearchState) => void;
+  retry: () => void;
+  picks: readonly GuidePick[];
   /** Asks the guide the same words; absent when the guide is already asked. */
   ask?: (() => void) | undefined;
 }) {
@@ -117,15 +195,29 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
   const { picked, rest } = useMemo(() => picksFirst(res.results, picks), [res.results, picks]);
   // An id the user chose (a click, a shared link, a reload) wins; otherwise the guide's pick #1 opens in the preview.
   const selected = selectedResult(res.results, sp.get('id'), picked[0]?.id);
-  const select = (id: string) => setSp((prev) => { const next = new URLSearchParams(prev); next.set('id', id); return next; }, { replace: true, preventScrollReset: true });
+  const select = (id: string) =>
+    setSp(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set('id', id);
+        return next;
+      },
+      { replace: true, preventScrollReset: true },
+    );
   const [guide, setGuide] = useState<string | null>(null);
   const openGuide = useMemo(() => ({ openId: guide, setOpenId: setGuide }), [guide]);
   const typeCounts = res.facets.type ?? [];
   const activeType = state.filters.type.length === 1 ? state.filters.type[0] : null;
-  const setType = (type: string | null) => update(patchState(state, { filters: { ...state.filters, type: type ? [type] : [] } }));
+  const setType = (type: string | null) =>
+    update(patchState(state, { filters: { ...state.filters, type: type ? [type] : [] } }));
   const okSources = res.sources.filter((s) => s.outcome === 'SUCCEEDED').length;
-  const stale = useMemo(() => new Set(res.sources.filter((x) => x.servedFrom === 'STALE_CACHE').map((x) => x.sourceId)), [res.sources]);
-  const useCaseHints = res.interpretation.detectedUseCases.filter((u) => !isSelected(state.filters.useCase, u));
+  const stale = useMemo(
+    () => new Set(res.sources.filter((x) => x.servedFrom === 'STALE_CACHE').map((x) => x.sourceId)),
+    [res.sources],
+  );
+  const useCaseHints = res.interpretation.detectedUseCases.filter(
+    (u) => !isSelected(state.filters.useCase, u),
+  );
   // After a page change the new list replaces the old one: reading starts again at the count.
   const count = useRef<HTMLParagraphElement>(null);
   const toPage = (page: number) => {
@@ -139,31 +231,59 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const pickedId = useId();
   const restId = useId();
-  const nothingSearched = res.results.length === 0 && (res.coverage.sourcesSucceeded === 0 || res.notices.some((n) => n.code === 'ALL_SOURCES_FAILED'));
+  const nothingSearched =
+    res.results.length === 0 &&
+    (res.coverage.sourcesSucceeded === 0 ||
+      res.notices.some((n) => n.code === 'ALL_SOURCES_FAILED'));
 
   return (
     <OpenGuideContext.Provider value={openGuide}>
       <nav className="h2-tabs" aria-label={t('results.types')}>
-        <button type="button" className="h2-tab" aria-pressed={activeType === null} onClick={() => setType(null)}>
+        <button
+          type="button"
+          className="h2-tab"
+          aria-pressed={activeType === null}
+          onClick={() => setType(null)}
+        >
           {t('results.allTypes')} <span className="h2-tab__n">{res.total}</span>
         </button>
         {typeCounts.map((f) => (
-          <button key={f.value} type="button" className="h2-tab" aria-pressed={activeType === f.value} onClick={() => setType(f.value)}>
-            {t(`type.${f.value}`, { defaultValue: f.value })} <span className="h2-tab__n">{f.count}</span>
+          <button
+            key={f.value}
+            type="button"
+            className="h2-tab"
+            aria-pressed={activeType === f.value}
+            onClick={() => setType(f.value)}
+          >
+            {t(`type.${f.value}`, { defaultValue: f.value })}{' '}
+            <span className="h2-tab__n">{f.count}</span>
           </button>
         ))}
       </nav>
 
       {/* One row: the Filters toggle, and the use cases the search detected as one-tap chips. */}
       <div className="h2-results__tools">
-        <button type="button" className="h2-fold-toggle" aria-expanded={filtersOpen} aria-controls={filtersId} onClick={() => setFiltersOpen((o) => !o)}>
+        <button
+          type="button"
+          className="h2-fold-toggle"
+          aria-expanded={filtersOpen}
+          aria-controls={filtersId}
+          onClick={() => setFiltersOpen((o) => !o)}
+        >
           {t('filters.title')} <Icon name="chevron" />
         </button>
         {useCaseHints.length > 0 && (
           <div className="hints" role="group" aria-labelledby={hintsId}>
-            <span id={hintsId} className="muted small">{t('results.suggestUseCase')}</span>
+            <span id={hintsId} className="muted small">
+              {t('results.suggestUseCase')}
+            </span>
             {useCaseHints.map((u) => (
-              <button key={u} type="button" className="chip" onClick={() => update(toggleFilter(state, 'useCase', u))}>
+              <button
+                key={u}
+                type="button"
+                className="chip"
+                onClick={() => update(toggleFilter(state, 'useCase', u))}
+              >
                 {t(`useCase.${u}`, { defaultValue: u })}
               </button>
             ))}
@@ -174,7 +294,13 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
         <div className="results-head">
           <div className="view-switch" role="group" aria-label={t('timeline.viewLabel')}>
             {(['list', 'timeline'] as ResultsView[]).map((v) => (
-              <button key={v} type="button" className="chip" aria-pressed={state.view === v} onClick={() => update(patchState(state, { view: v }))}>
+              <button
+                key={v}
+                type="button"
+                className="chip"
+                aria-pressed={state.view === v}
+                onClick={() => update(patchState(state, { view: v }))}
+              >
                 {t(`timeline.view.${v}`)}
               </button>
             ))}
@@ -184,7 +310,12 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
           ) : (
             <label className="sort">
               {t('sort.label')}{' '}
-              <select value={state.sort} onChange={(e) => update(patchState(state, { sort: e.target.value as SearchState['sort'] }))}>
+              <select
+                value={state.sort}
+                onChange={(e) =>
+                  update(patchState(state, { sort: e.target.value as SearchState['sort'] }))
+                }
+              >
                 <option value="RELEVANCE">{t('sort.RELEVANCE')}</option>
                 <option value="NEWEST">{t('sort.NEWEST')}</option>
                 <option value="RECENTLY_UPDATED">{t('sort.RECENTLY_UPDATED')}</option>
@@ -209,29 +340,58 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
 
       {res.coverage.partial && (
         <div role="status" className="banner banner-warn h2-partial">
-          <p><Icon name="warn" /> {t('results.partialBody', { ok: res.coverage.sourcesSucceeded, total: res.coverage.sourcesQueried })}</p>
+          <p>
+            <Icon name="warn" />{' '}
+            {t('results.partialBody', {
+              ok: res.coverage.sourcesSucceeded,
+              total: res.coverage.sourcesQueried,
+            })}
+          </p>
           <p className="h2-partial__next">
             <a href="#h2-sources-h">{t('results.seeWhich')}</a>
-            <button type="button" className="btn" onClick={retry}><Icon name="refresh" /> {t('common.retry')}</button>
+            <button type="button" className="btn" onClick={retry}>
+              <Icon name="refresh" /> {t('common.retry')}
+            </button>
           </p>
         </div>
       )}
 
       {nothingSearched ? (
-        <StatePanel tone="error" level={2} title={t('results.allFailedTitle')}
-          next={<><RetryButton onClick={retry} /><Link to="/sources">{t('results.seeSources')}</Link></>}>
+        <StatePanel
+          tone="error"
+          level={2}
+          title={t('results.allFailedTitle')}
+          next={
+            <>
+              <RetryButton onClick={retry} />
+              <Link to="/sources">{t('results.seeSources')}</Link>
+            </>
+          }
+        >
           <p>{t('results.allFailedBody')}</p>
         </StatePanel>
       ) : res.results.length === 0 ? (
-        <StatePanel tone="notice" live level={2} title={t('results.emptyTitle')} next={(
-          <>
-            {activeFilterCount(state) > 0 && (
-              <button type="button" className="btn" onClick={() => update(clearFilters(state))}>{t('results.emptyRemoveFilters')}</button>
-            )}
-            {ask && <button type="button" className="btn btn-primary" onClick={ask}>{t('results.askGuide')}</button>}
-            <Link to="/sources">{t('results.seeSources')}</Link>
-          </>
-        )}>
+        <StatePanel
+          tone="notice"
+          live
+          level={2}
+          title={t('results.emptyTitle')}
+          next={
+            <>
+              {activeFilterCount(state) > 0 && (
+                <button type="button" className="btn" onClick={() => update(clearFilters(state))}>
+                  {t('results.emptyRemoveFilters')}
+                </button>
+              )}
+              {ask && (
+                <button type="button" className="btn btn-primary" onClick={ask}>
+                  {t('results.askGuide')}
+                </button>
+              )}
+              <Link to="/sources">{t('results.seeSources')}</Link>
+            </>
+          }
+        >
           <p>{t('results.emptyTryOther')}</p>
         </StatePanel>
       ) : state.view === 'timeline' ? (
@@ -239,20 +399,53 @@ function ResultsBody({ res, state, update, retry, picks, ask }: {
       ) : (
         <div className="h2-split">
           <div className="h2-list" ref={list} onFocus={keepFocus.onFocus} onBlur={keepFocus.onBlur}>
-            <p ref={count} tabIndex={-1} className="h2-list__count" aria-live="polite">{t('results.count', { count: res.total })}</p>
+            <p ref={count} tabIndex={-1} className="h2-list__count" aria-live="polite">
+              {t('results.count', { count: res.total })}
+            </p>
             {/* Here from the first render, so the move of the picks to the top is said once, politely. */}
-            <p className="sr-only" role="status">{picked.length > 0 ? t('results.picksOnTop', { count: picked.length }) : ''}</p>
+            <p className="sr-only" role="status">
+              {picked.length > 0 ? t('results.picksOnTop', { count: picked.length }) : ''}
+            </p>
             {picked.length > 0 && (
               <>
-                <p id={pickedId} className="h2-list__group">{t('results.picksGroup')}</p>
+                <p id={pickedId} className="h2-list__group">
+                  {t('results.picksGroup')}
+                </p>
                 <ul className="plain-list" aria-labelledby={pickedId}>
-                  {picked.map((c) => <ResultRow key={c.id} card={c} pick={byId.get(c.id)} selected={c.id === selected?.id} onSelect={select} inline={!wide} stale={stale} />)}
+                  {picked.map((c) => (
+                    <ResultRow
+                      key={c.id}
+                      card={c}
+                      pick={byId.get(c.id)}
+                      selected={c.id === selected?.id}
+                      onSelect={select}
+                      inline={!wide}
+                      stale={stale}
+                    />
+                  ))}
                 </ul>
-                <p id={restId} className="h2-list__group">{t('results.moreResults')}</p>
+                <p id={restId} className="h2-list__group">
+                  {t('results.moreResults')}
+                </p>
               </>
             )}
-            <ul className="plain-list" {...(picked.length > 0 ? { 'aria-labelledby': restId } : { 'aria-label': t('results.title') })}>
-              {rest.map((c) => <ResultRow key={c.id} card={c} pick={undefined} selected={c.id === selected?.id} onSelect={select} inline={!wide} stale={stale} />)}
+            <ul
+              className="plain-list"
+              {...(picked.length > 0
+                ? { 'aria-labelledby': restId }
+                : { 'aria-label': t('results.title') })}
+            >
+              {rest.map((c) => (
+                <ResultRow
+                  key={c.id}
+                  card={c}
+                  pick={undefined}
+                  selected={c.id === selected?.id}
+                  onSelect={select}
+                  inline={!wide}
+                  stale={stale}
+                />
+              ))}
             </ul>
           </div>
           {wide && selected && (
@@ -286,23 +479,39 @@ function useKeepRowFocus(list: RefObject<HTMLDivElement | null>, order: string) 
   const focused = useRef<string | null>(null);
   // React focus handlers on the list element: they work however late the list mounts, and after a view switch.
   const onFocus = (e: FocusEvent<HTMLDivElement>) => {
-    focused.current = (e.target as HTMLElement).closest('li[data-id]')?.getAttribute('data-id') ?? null;
+    focused.current =
+      (e.target as HTMLElement).closest('li[data-id]')?.getAttribute('data-id') ?? null;
   };
   const onBlur = (e: FocusEvent<HTMLDivElement>) => {
-    if (e.relatedTarget instanceof Node && !e.currentTarget.contains(e.relatedTarget)) focused.current = null;
+    if (e.relatedTarget instanceof Node && !e.currentTarget.contains(e.relatedTarget))
+      focused.current = null;
   };
   useLayoutEffect(() => {
     const id = focused.current;
     const active = document.activeElement;
     if (!id || (active && active !== document.body)) return;
-    list.current?.querySelector<HTMLElement>(`li[data-id="${CSS.escape(id)}"] .h2-select-row`)?.focus({ preventScroll: true });
+    list.current
+      ?.querySelector<HTMLElement>(`li[data-id="${CSS.escape(id)}"] .h2-select-row`)
+      ?.focus({ preventScroll: true });
   }, [list, order]);
   return { onFocus, onBlur };
 }
 
 /** A result in the list: its row, and under it the preview when the preview opens inside the list (narrow screens). */
-function ResultRow({ card, pick, selected, onSelect, inline, stale }: {
-  card: ResultCard; pick: GuidePick | undefined; selected: boolean; onSelect: (id: string) => void; inline: boolean; stale: ReadonlySet<string>;
+function ResultRow({
+  card,
+  pick,
+  selected,
+  onSelect,
+  inline,
+  stale,
+}: {
+  card: ResultCard;
+  pick: GuidePick | undefined;
+  selected: boolean;
+  onSelect: (id: string) => void;
+  inline: boolean;
+  stale: ReadonlySet<string>;
 }) {
   return (
     <li data-id={card.id}>
@@ -329,15 +538,22 @@ function RowContent({ card, pick }: { card: ResultCard; pick: GuidePick | undefi
         {pick && <StatusPill tone="next">{t('results.pick', { rank: pick.rank })}</StatusPill>}
       </span>
       <span className="h2-row__title">{card.title}</span>
-      {card.description && (
-        isAiOrigin(card.descriptionOrigin)
-          ? <span className="h2-row__text"><span className="h2-row__ai"><OriginLabel origin={card.descriptionOrigin} /></span> <span {...aiMark()}>{card.description}</span></span>
-          : <span className="h2-row__text">{card.description}</span>
-      )}
+      {card.description &&
+        (isAiOrigin(card.descriptionOrigin) ? (
+          <span className="h2-row__text">
+            <span className="h2-row__ai">
+              <OriginLabel origin={card.descriptionOrigin} />
+            </span>{' '}
+            <span {...aiMark()}>{card.description}</span>
+          </span>
+        ) : (
+          <span className="h2-row__text">{card.description}</span>
+        ))}
       {/* The AI-written label only ever comes with the text it labels. */}
       {pick?.reason && (
         <span className="h2-row__reason">
-          <span className="h2-row__ai">{t('picks.aiWritten')}</span> <span {...aiMark()}>{pick.reason}</span>
+          <span className="h2-row__ai">{t('picks.aiWritten')}</span>{' '}
+          <span {...aiMark()}>{pick.reason}</span>
         </span>
       )}
     </span>
@@ -345,7 +561,17 @@ function RowContent({ card, pick }: { card: ResultCard; pick: GuidePick | undefi
 }
 
 /** The selected result: actions, the proof, Use and Build facts, who lists it and its dates. */
-function Preview({ card, pick, stale, inline = false }: { card: ResultCard; pick: GuidePick | undefined; stale: ReadonlySet<string>; inline?: boolean }) {
+function Preview({
+  card,
+  pick,
+  stale,
+  inline = false,
+}: {
+  card: ResultCard;
+  pick: GuidePick | undefined;
+  stale: ReadonlySet<string>;
+  inline?: boolean;
+}) {
   const { t } = useTranslation();
   const host = displayHost(card.url);
   const guide = useGuideToggle(card.id);
@@ -356,25 +582,48 @@ function Preview({ card, pick, stale, inline = false }: { card: ResultCard; pick
   const detail = { pathname: resourcePath(card.id) };
   const back = new URLSearchParams(location.search);
   back.set('id', card.id);
-  const detailState = { from: `${location.pathname}?${back.toString()}`, quote: pick?.quote ?? null };
+  const detailState = {
+    from: `${location.pathname}?${back.toString()}`,
+    quote: pick?.quote ?? null,
+  };
   // The same levels inline and beside the list: the page's h1, then this h2.
   const TitleTag = 'h2';
   const SecTag = 'h3';
   const GroupTag = 'h4';
   return (
     <div className="h2-pv">
-      <div className="h2-pv__top"><TypeTag type={card.type} /><span className="h2-row__host">{host}</span><FreshnessBadge freshness={card.freshness} /></div>
+      <div className="h2-pv__top">
+        <TypeTag type={card.type} />
+        <span className="h2-row__host">{host}</span>
+        <FreshnessBadge freshness={card.freshness} />
+      </div>
       <TitleTag id={inline ? undefined : 'h2-preview-title'} className="h2-pv__title">
-        <Link to={detail} state={detailState}>{card.title}</Link>
+        <Link to={detail} state={detailState}>
+          {card.title}
+        </Link>
       </TitleTag>
       <div className="h2-pv__actions">
         <OpenButton url={card.url} host={host} />
         <BookmarkButton card={card} />
-        {canGuide(card) && <GuideMeButton title={card.title} open={guide.open} onToggle={guide.toggle} bodyId={bodyId} buttonRef={button} />}
-        {inline && <Link className="btn" to={detail} state={detailState}>{t('results.fullDetails')}</Link>}
+        {canGuide(card) && (
+          <GuideMeButton
+            title={card.title}
+            open={guide.open}
+            onToggle={guide.toggle}
+            bodyId={bodyId}
+            buttonRef={button}
+          />
+        )}
+        {inline && (
+          <Link className="btn" to={detail} state={detailState}>
+            {t('results.fullDetails')}
+          </Link>
+        )}
       </div>
       {canGuide(card) && (
-        <div id={bodyId} hidden={!guide.open}>{guide.open && <GuideBody id={card.id} title={card.title} level={3} />}</div>
+        <div id={bodyId} hidden={!guide.open}>
+          {guide.open && <GuideBody id={card.id} title={card.title} level={3} />}
+        </div>
       )}
 
       {pick ? (
@@ -389,7 +638,9 @@ function Preview({ card, pick, stale, inline = false }: { card: ResultCard; pick
         <>
           <SecTag className="h2-pv__sec">{t('results.about')}</SecTag>
           {card.description ? (
-            <p className="h2-pv__text" {...(isAiOrigin(card.descriptionOrigin) ? aiMark() : {})}>{card.description}</p>
+            <p className="h2-pv__text" {...(isAiOrigin(card.descriptionOrigin) ? aiMark() : {})}>
+              {card.description}
+            </p>
           ) : (
             <p className="muted">{t('card.noDescription')}</p>
           )}
@@ -415,12 +666,21 @@ function Preview({ card, pick, stale, inline = false }: { card: ResultCard; pick
 function PickReason({ pick }: { pick: GuidePick }) {
   const { t } = useTranslation();
   if (pick.reasonCheck === 'REMOVED' || !pick.reason) {
-    return <p className="h2-pv__check">{t(pick.reasonCheck === 'REMOVED' ? 'guide.reasonRemoved' : 'results.noReason')}</p>;
+    return (
+      <p className="h2-pv__check">
+        {t(pick.reasonCheck === 'REMOVED' ? 'guide.reasonRemoved' : 'results.noReason')}
+      </p>
+    );
   }
   return (
     <>
-      <p className="h2-pv__reason"><span className="h2-row__ai">{t('picks.aiWritten')}</span> <span {...aiMark()}>{pick.reason}</span></p>
-      <p className="h2-pv__check">{t(pick.reasonCheck === 'SUPPORTED' ? 'results.reasonChecked' : 'results.reasonNotChecked')}</p>
+      <p className="h2-pv__reason">
+        <span className="h2-row__ai">{t('picks.aiWritten')}</span>{' '}
+        <span {...aiMark()}>{pick.reason}</span>
+      </p>
+      <p className="h2-pv__check">
+        {t(pick.reasonCheck === 'SUPPORTED' ? 'results.reasonChecked' : 'results.reasonNotChecked')}
+      </p>
     </>
   );
 }
@@ -432,14 +692,25 @@ function PickChecks({ checks }: { checks: GuidePick['checks'] }) {
   return (
     <>
       {/* Art. 50: the planner wrote the requirements; labelled on screen once, marked on each. */}
-      <p className="h2-pv__proof-label">{t('guide.checksLabel')} <span className="h2-row__ai">{t('guide.requirementsAi')}</span></p>
+      <p className="h2-pv__proof-label">
+        {t('guide.checksLabel')} <span className="h2-row__ai">{t('guide.requirementsAi')}</span>
+      </p>
       <ul className="plain-list h2-pv__checks" aria-label={t('guide.checksLabel')}>
         {checks.map((c) => (
-          <li key={c.constraint} className={c.status === 'CONFIRMED' ? 'check-ok' : 'check-unknown'}>
+          <li
+            key={c.constraint}
+            className={c.status === 'CONFIRMED' ? 'check-ok' : 'check-unknown'}
+          >
             {/* Status in words, never colour alone (WCAG 1.4.1). */}
             <Icon name={c.status === 'CONFIRMED' ? 'check' : 'info'} />{' '}
             <strong {...aiMark()}>{c.constraint}</strong>:{' '}
-            {c.status === 'CONFIRMED' ? <>{t('guide.checkConfirmed')} <q>{c.quote}</q></> : t('guide.checkNotConfirmed')}
+            {c.status === 'CONFIRMED' ? (
+              <>
+                {t('guide.checkConfirmed')} <q>{c.quote}</q>
+              </>
+            ) : (
+              t('guide.checkNotConfirmed')
+            )}
           </li>
         ))}
       </ul>

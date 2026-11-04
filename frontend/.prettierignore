@@ -1,0 +1,7 @@
+# Generated or vendored: never formatted.
+dist
+node_modules
+package-lock.json
+src/api/schema.ts
+# Prose keeps its own line breaks.
+*.md

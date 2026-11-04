@@ -1,4 +1,5 @@
 import js from '@eslint/js';
+import prettier from 'eslint-config-prettier';
 import globals from 'globals';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 import reactHooks from 'eslint-plugin-react-hooks';
@@ -13,7 +14,12 @@ export default tseslint.config(
   {
     languageOptions: { globals: { ...globals.browser, ...globals.node } },
     rules: {
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
     },
   },
+  // Last: turns off ESLint rules that clash with Prettier, which owns the format.
+  prettier,
 );

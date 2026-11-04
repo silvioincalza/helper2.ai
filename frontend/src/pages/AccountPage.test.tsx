@@ -8,7 +8,9 @@ describe('Feature: delete my account', () => {
   it('Scenario: a signed-in user opens their account from their name in the header', async () => {
     mockApi({ 'GET /me': () => USER });
     const { router } = renderApp('/');
-    await userEvent.click(await within(screen.getByRole('banner')).findByRole('link', { name: 'Ada' }));
+    await userEvent.click(
+      await within(screen.getByRole('banner')).findByRole('link', { name: 'Ada' }),
+    );
     expect(router.state.location.pathname).toBe('/account');
     expect(await screen.findByRole('heading', { name: 'Your account' })).toBeInTheDocument();
   });
@@ -17,7 +19,10 @@ describe('Feature: delete my account', () => {
     // Given a signed-in user on their account page
     const reload = vi.fn();
     vi.stubGlobal('location', { ...window.location, reload });
-    const m = mockApi({ 'GET /me': () => USER, 'DELETE /me': () => new Response(null, { status: 204 }) });
+    const m = mockApi({
+      'GET /me': () => USER,
+      'DELETE /me': () => new Response(null, { status: 204 }),
+    });
     renderApp('/account');
     // When they ask to delete the account
     await userEvent.click(await screen.findByRole('button', { name: 'Delete my account' }));
@@ -35,7 +40,9 @@ describe('Feature: delete my account', () => {
     const m = mockApi({ 'GET /me': () => USER });
     renderApp('/account');
     await userEvent.click(await screen.findByRole('button', { name: 'Delete my account' }));
-    await userEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Cancel' }));
+    await userEvent.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Cancel' }),
+    );
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
     expect(m.callsTo('DELETE', '/me')).toHaveLength(0);
     expect(screen.getByRole('button', { name: 'Delete my account' })).toHaveFocus();
@@ -45,7 +52,9 @@ describe('Feature: delete my account', () => {
     mockApi({ 'GET /me': () => USER });
     renderApp('/account');
     await userEvent.click(await screen.findByRole('button', { name: 'Delete my account' }));
-    expect(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Cancel' })).toHaveFocus();
+    expect(
+      within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Cancel' }),
+    ).toHaveFocus();
     await userEvent.keyboard('{Escape}');
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
@@ -56,14 +65,23 @@ describe('Feature: delete my account', () => {
     mockApi({ 'GET /me': () => USER, 'DELETE /me': () => problem(503, 'Service Unavailable') });
     renderApp('/account');
     await userEvent.click(await screen.findByRole('button', { name: 'Delete my account' }));
-    await userEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Delete account' }));
+    await userEvent.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', {
+        name: 'Delete account',
+      }),
+    );
     expect(await screen.findByRole('alert')).toHaveTextContent('Your account could not be deleted');
     expect(reload).not.toHaveBeenCalled();
   });
 
   it('Scenario: while the page asks who is signed in, it says it is loading', async () => {
     let answer: (v: unknown) => void = () => {};
-    mockApi({ 'GET /me': () => new Promise((r) => { answer = r; }) });
+    mockApi({
+      'GET /me': () =>
+        new Promise((r) => {
+          answer = r;
+        }),
+    });
     renderApp('/account');
     expect(within(screen.getByRole('main')).getByRole('status')).toHaveTextContent('Loading…');
     answer(USER);
@@ -75,6 +93,8 @@ describe('Feature: delete my account', () => {
     renderApp('/account');
     await settle();
     expect(screen.queryByRole('button', { name: 'Delete my account' })).not.toBeInTheDocument();
-    expect(screen.getByText('You are not signed in, so there is no account to delete.')).toBeInTheDocument();
+    expect(
+      screen.getByText('You are not signed in, so there is no account to delete.'),
+    ).toBeInTheDocument();
   });
 });

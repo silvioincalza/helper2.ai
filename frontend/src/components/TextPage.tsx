@@ -12,7 +12,15 @@ const WIDE = '(min-width: 861px)';
  * readable column, then [after]. "On this page" links to every section: a list beside the text on a wide screen,
  * a collapsible list under the head on a phone. The text itself comes from the locale file, unchanged.
  */
-export function TextPage({ i18nKey, head, after }: { i18nKey: string; head: ReactNode; after?: ReactNode }) {
+export function TextPage({
+  i18nKey,
+  head,
+  after,
+}: {
+  i18nKey: string;
+  head: ReactNode;
+  after?: ReactNode;
+}) {
   const { t } = useTranslation();
   const wide = useMediaQuery(WIDE);
   const tocId = useId();
@@ -20,7 +28,9 @@ export function TextPage({ i18nKey, head, after }: { i18nKey: string; head: Reac
   const links = (
     <ol className="h2-toc__list">
       {sections.map((s) => (
-        <li key={s.title}><a href={`#${sectionAnchor(s.title)}`}>{s.title}</a></li>
+        <li key={s.title}>
+          <a href={`#${sectionAnchor(s.title)}`}>{s.title}</a>
+        </li>
       ))}
     </ol>
   );
@@ -39,7 +49,9 @@ export function TextPage({ i18nKey, head, after }: { i18nKey: string; head: Reac
       </article>
       {wide && sections.length > 0 && (
         <nav className="h2-toc" aria-labelledby={tocId}>
-          <h2 id={tocId} className="h2-toc__title">{t('textPage.onThisPage')}</h2>
+          <h2 id={tocId} className="h2-toc__title">
+            {t('textPage.onThisPage')}
+          </h2>
           {links}
         </nav>
       )}

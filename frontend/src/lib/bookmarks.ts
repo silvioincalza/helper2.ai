@@ -10,8 +10,11 @@ export function readLocalBookmarks(): Bookmark[] {
     if (!Array.isArray(parsed)) return [];
     return parsed.filter(
       (b): b is Bookmark =>
-        typeof b === 'object' && b !== null && typeof (b as Bookmark).resourceId === 'string' &&
-        typeof (b as Bookmark).title === 'string' && typeof (b as Bookmark).url === 'string',
+        typeof b === 'object' &&
+        b !== null &&
+        typeof (b as Bookmark).resourceId === 'string' &&
+        typeof (b as Bookmark).title === 'string' &&
+        typeof (b as Bookmark).url === 'string',
     );
   } catch {
     return [];

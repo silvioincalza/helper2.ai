@@ -19,7 +19,11 @@ import TermsPage from '@/pages/TermsPage';
 /** Kept separate from the router so tests can mount it in createMemoryRouter. */
 export const routes: RouteObject[] = [
   {
-    element: <AppProviders><Layout /></AppProviders>,
+    element: (
+      <AppProviders>
+        <Layout />
+      </AppProviders>
+    ),
     children: [
       { index: true, element: <HomePage /> },
       // Results live on /search (ADR 0040, 3).

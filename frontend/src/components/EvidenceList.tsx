@@ -20,7 +20,9 @@ export function EvidenceList({ evidence }: { evidence: Evidence[] }) {
         <li key={e.id}>
           <ExternalLink url={e.sourceUrl}>{evidenceLabel(e.sourceUrl)}</ExternalLink>
           {e.excerpt && <blockquote>{e.excerpt}</blockquote>}
-          <span className="muted small">{t('detail.retrievedAt', { date: formatDate(e.retrievedAt, i18n.language, 'INSTANT') })}</span>
+          <span className="muted small">
+            {t('detail.retrievedAt', { date: formatDate(e.retrievedAt, i18n.language, 'INSTANT') })}
+          </span>
         </li>
       ))}
     </ul>

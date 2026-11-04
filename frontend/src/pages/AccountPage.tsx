@@ -21,7 +21,9 @@ export default function AccountPage() {
   useEffect(() => {
     if (confirming) {
       cancelButton.current?.focus();
-      const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setConfirming(false); };
+      const onKey = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') setConfirming(false);
+      };
       document.addEventListener('keydown', onKey);
       wasConfirming.current = true;
       return () => document.removeEventListener('keydown', onKey);
@@ -36,7 +38,9 @@ export default function AccountPage() {
     return (
       <div className="h2-text-page">
         <h1>{t('account.title')}</h1>
-        <p>{t('account.signedOut')} <Link to="/privacy">{t('nav.privacy')}</Link></p>
+        <p>
+          {t('account.signedOut')} <Link to="/privacy">{t('nav.privacy')}</Link>
+        </p>
       </div>
     );
   }
@@ -57,19 +61,46 @@ export default function AccountPage() {
       <h1>{t('account.title')}</h1>
       <p>{t('account.signedInAs', { name: me.displayName ?? t('nav.signedIn') })}</p>
       <h2>{t('account.deleteTitle')}</h2>
-      <p>{t('account.deleteText')} <Link to="/privacy">{t('account.privacyLink')}</Link></p>
-      {failed && <p role="alert" className="banner banner-warn">{t('account.failed')}</p>}
-      <button ref={opener} type="button" className="btn" onClick={() => setConfirming(true)} disabled={confirming}>
+      <p>
+        {t('account.deleteText')} <Link to="/privacy">{t('account.privacyLink')}</Link>
+      </p>
+      {failed && (
+        <p role="alert" className="banner banner-warn">
+          {t('account.failed')}
+        </p>
+      )}
+      <button
+        ref={opener}
+        type="button"
+        className="btn"
+        onClick={() => setConfirming(true)}
+        disabled={confirming}
+      >
         {t('account.delete')}
       </button>
       {confirming && (
-        <div role="alertdialog" aria-modal="false" aria-labelledby="account-confirm-title" aria-describedby="account-confirm-text"
-          className="h2-dialog">
-          <h2 id="account-confirm-title" >{t('account.confirmTitle')}</h2>
+        <div
+          role="alertdialog"
+          aria-modal="false"
+          aria-labelledby="account-confirm-title"
+          aria-describedby="account-confirm-text"
+          className="h2-dialog"
+        >
+          <h2 id="account-confirm-title">{t('account.confirmTitle')}</h2>
           <p id="account-confirm-text">{t('account.confirmText')}</p>
           <div className="h2-dialog__actions">
-            <button ref={cancelButton} type="button" className="btn" onClick={cancel} disabled={busy}>{t('account.cancel')}</button>
-            <button type="button" className="btn btn-primary" onClick={confirm} disabled={busy}>{t('account.confirm')}</button>
+            <button
+              ref={cancelButton}
+              type="button"
+              className="btn"
+              onClick={cancel}
+              disabled={busy}
+            >
+              {t('account.cancel')}
+            </button>
+            <button type="button" className="btn btn-primary" onClick={confirm} disabled={busy}>
+              {t('account.confirm')}
+            </button>
           </div>
         </div>
       )}

@@ -16,7 +16,11 @@ const base: GuideResponse = {
 };
 
 function view(answer: GuideResponse, onRefine = vi.fn()) {
-  render(<MemoryRouter><GuideAnswer answer={answer} onRefine={onRefine} /></MemoryRouter>);
+  render(
+    <MemoryRouter>
+      <GuideAnswer answer={answer} onRefine={onRefine} />
+    </MemoryRouter>,
+  );
   return onRefine;
 }
 
@@ -46,9 +50,15 @@ describe('GuideAnswer intents (ADR 0032)', () => {
     });
     expect(screen.getByText('New resources')).toBeInTheDocument();
     // With a period the server reads "newest" again, so only the period can be removed.
-    expect(screen.queryByRole('button', { name: 'Remove “New resources” and ask again' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Remove “New resources” and ask again' }),
+    ).not.toBeInTheDocument();
     expect(screen.getByText('Created 2026-09-28 – 2026-10-28')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Remove “Created 2026-09-28 – 2026-10-28” and ask again' }));
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: 'Remove “Created 2026-09-28 – 2026-10-28” and ask again',
+      }),
+    );
     expect(onRefine).toHaveBeenLastCalledWith({ drop: ['window'] });
     await userEvent.click(screen.getByRole('button', { name: 'Remove “free” and ask again' }));
     expect(onRefine).toHaveBeenLastCalledWith({ drop: ['constraint:free'] });
@@ -60,19 +70,26 @@ describe('GuideAnswer intents (ADR 0032)', () => {
       status: 'NEEDS_CLARIFICATION',
       clarification: { question: 'New tools for what?', options: ['coding', 'agents'] },
     });
-    expect(screen.getByRole('heading', { name: 'New tools for what?' })).toHaveAttribute('data-ai-generated', 'true');
+    expect(screen.getByRole('heading', { name: 'New tools for what?' })).toHaveAttribute(
+      'data-ai-generated',
+      'true',
+    );
     expect(screen.getByText('coding')).toHaveAttribute('data-ai-generated', 'true');
   });
 
   it('marks requirements read by the model as AI-generated, and the period it computed in code not (ADR 0038)', () => {
     view({ ...base, window: { from: '2026-09-28', to: '2026-10-28' }, constraints: ['free'] });
     expect(screen.getByText('free')).toHaveAttribute('data-ai-generated', 'true');
-    expect(screen.getByText('Created 2026-09-28 – 2026-10-28').closest('[data-ai-generated]')).toBeNull();
+    expect(
+      screen.getByText('Created 2026-09-28 – 2026-10-28').closest('[data-ai-generated]'),
+    ).toBeNull();
   });
 
   it('removes the intent when no period holds it in place', async () => {
     const onRefine = view({ ...base, intent: 'NEWEST' });
-    await userEvent.click(screen.getByRole('button', { name: 'Remove “New resources” and ask again' }));
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Remove “New resources” and ask again' }),
+    );
     expect(onRefine).toHaveBeenLastCalledWith({ drop: ['intent'] });
   });
 
@@ -83,10 +100,24 @@ describe('GuideAnswer intents (ADR 0032)', () => {
       subjects: ['Ollama', 'LM Studio'],
       comparison: {
         subjects: [
-          { key: 's1', name: 'Ollama', resourceId: '11111111-1111-5111-8111-111111111111', title: 'ollama', url: 'https://github.com/ollama/ollama' },
+          {
+            key: 's1',
+            name: 'Ollama',
+            resourceId: '11111111-1111-5111-8111-111111111111',
+            title: 'ollama',
+            url: 'https://github.com/ollama/ollama',
+          },
           { key: 's2', name: 'LM Studio', resourceId: null, title: null, url: null },
         ],
-        rows: [{ aspect: 'Licence', cells: [{ subjectKey: 's1', text: 'MIT', quote: 'MIT License', reasonCheck: 'SUPPORTED' }, { subjectKey: 's2', text: null, quote: null, reasonCheck: 'NOT_CHECKED' }] }],
+        rows: [
+          {
+            aspect: 'Licence',
+            cells: [
+              { subjectKey: 's1', text: 'MIT', quote: 'MIT License', reasonCheck: 'SUPPORTED' },
+              { subjectKey: 's2', text: null, quote: null, reasonCheck: 'NOT_CHECKED' },
+            ],
+          },
+        ],
       },
     });
     expect(screen.getByRole('columnheader', { name: 'ollama' })).toBeInTheDocument();
@@ -100,21 +131,36 @@ describe('GuideAnswer intents (ADR 0032)', () => {
       ...base,
       intent: 'WHAT_IS',
       explanation: {
-        sentences: [{
-          text: 'Ollama runs language models locally.', quote: 'Get up and running with large language models locally.',
-          resourceId: '11111111-1111-5111-8111-111111111111', title: 'ollama', url: 'https://github.com/ollama/ollama', reasonCheck: 'SUPPORTED',
-        }],
+        sentences: [
+          {
+            text: 'Ollama runs language models locally.',
+            quote: 'Get up and running with large language models locally.',
+            resourceId: '11111111-1111-5111-8111-111111111111',
+            title: 'ollama',
+            url: 'https://github.com/ollama/ollama',
+            reasonCheck: 'SUPPORTED',
+          },
+        ],
       },
     });
     expect(screen.getByRole('heading', { name: /What it is/ })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'ollama' })).toHaveAttribute('href', '/resource/11111111-1111-5111-8111-111111111111');
-    expect(screen.getByText('Get up and running with large language models locally.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'ollama' })).toHaveAttribute(
+      'href',
+      '/resource/11111111-1111-5111-8111-111111111111',
+    );
+    expect(
+      screen.getByText('Get up and running with large language models locally.'),
+    ).toBeInTheDocument();
   });
 });
 
 describe('GuideAnswer marks every planner-written text (EU AI Act Art. 50(2), ADR 0038)', () => {
   const planner: GuideResponse['aiContent'] = {
-    aiGenerated: true, provider: 'nebius-token-factory', models: ['nvidia/nemotron-nano'], fields: [], policy: '/mission',
+    aiGenerated: true,
+    provider: 'nebius-token-factory',
+    models: ['nvidia/nemotron-nano'],
+    fields: [],
+    policy: '/mission',
   };
 
   it('marks the question back and its options, not our own label and buttons', () => {
@@ -128,8 +174,13 @@ describe('GuideAnswer marks every planner-written text (EU AI Act Art. 50(2), AD
     expect(question).toHaveAttribute('data-ai-generated', 'true');
     expect(question).toHaveAttribute('data-ai-model', 'nvidia/nemotron-nano');
     expect(question.closest('section')).toHaveAttribute('data-ai-provider', 'nebius-token-factory');
-    expect(screen.getByRole('button', { name: 'agents' })).toHaveAttribute('data-ai-generated', 'true');
-    expect(screen.getByRole('button', { name: 'Search anyway' })).not.toHaveAttribute('data-ai-generated');
+    expect(screen.getByRole('button', { name: 'agents' })).toHaveAttribute(
+      'data-ai-generated',
+      'true',
+    );
+    expect(screen.getByRole('button', { name: 'Search anyway' })).not.toHaveAttribute(
+      'data-ai-generated',
+    );
   });
 
   it('marks requirement chips and comparison aspects, not the remove button or the subjects', () => {
@@ -140,12 +191,25 @@ describe('GuideAnswer marks every planner-written text (EU AI Act Art. 50(2), AD
       constraints: ['free'],
       comparison: {
         subjects: [{ key: 's1', name: 'Ollama', resourceId: null, title: null, url: null }],
-        rows: [{ aspect: 'Licence', cells: [{ subjectKey: 's1', text: 'MIT', quote: 'MIT License', reasonCheck: 'SUPPORTED' }] }],
+        rows: [
+          {
+            aspect: 'Licence',
+            cells: [
+              { subjectKey: 's1', text: 'MIT', quote: 'MIT License', reasonCheck: 'SUPPORTED' },
+            ],
+          },
+        ],
       },
     });
     expect(screen.getByText('free')).toHaveAttribute('data-ai-generated', 'true');
-    expect(screen.getByRole('button', { name: 'Remove “free” and ask again' }).closest('[data-ai-generated]')).toBeNull();
-    expect(screen.getByText('Ollama', { selector: '.understood-chip' }).closest('[data-ai-generated]')).toBeNull();
+    expect(
+      screen
+        .getByRole('button', { name: 'Remove “free” and ask again' })
+        .closest('[data-ai-generated]'),
+    ).toBeNull();
+    expect(
+      screen.getByText('Ollama', { selector: '.understood-chip' }).closest('[data-ai-generated]'),
+    ).toBeNull();
     expect(screen.getByText('Licence')).toHaveAttribute('data-ai-generated', 'true');
     // Art. 50: the AI-written requirements carry one label on screen for the group.
     expect(screen.getAllByText('Requirements AI-written')).toHaveLength(1);
@@ -157,15 +221,31 @@ describe('GuideAnswer marks every planner-written text (EU AI Act Art. 50(2), AD
   });
 
   it('labels the planner-written search terms in the proof strip as AI-written', () => {
-    view({ ...base, model: { provider: 'nebius-token-factory', fastModel: 'nvidia/nemotron-nano', reasoningModel: 'r' } });
+    view({
+      ...base,
+      model: {
+        provider: 'nebius-token-factory',
+        fastModel: 'nvidia/nemotron-nano',
+        reasoningModel: 'r',
+      },
+    });
     const terms = screen.getByText(/AI tools/);
     expect(terms).toHaveAttribute('data-ai-model', 'nvidia/nemotron-nano');
     expect(terms.nextElementSibling).toHaveTextContent('AI-written');
   });
 
   it('marks the planner-written search query when the answering model failed', () => {
-    view({ ...base, status: 'LLM_UNAVAILABLE', model: null, aiContent: planner, searchQuery: 'speech recognition' });
-    expect(screen.getByText(/speech recognition/)).toHaveAttribute('data-ai-model', 'nvidia/nemotron-nano');
+    view({
+      ...base,
+      status: 'LLM_UNAVAILABLE',
+      model: null,
+      aiContent: planner,
+      searchQuery: 'speech recognition',
+    });
+    expect(screen.getByText(/speech recognition/)).toHaveAttribute(
+      'data-ai-model',
+      'nvidia/nemotron-nano',
+    );
     expect(screen.getByText(/speech recognition/).parentElement).toHaveTextContent('AI-written');
   });
 });

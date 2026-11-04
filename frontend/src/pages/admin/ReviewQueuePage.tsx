@@ -33,7 +33,11 @@ export default function ReviewQueuePage() {
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [actionError, setActionError] = useState<ActionError | null>(null);
   const [busy, setBusy] = useState(false);
-  const items = useApi(`review/${status}/${kind ?? ''}/${page}`, (s) => api.listReviewItems({ status, kind }, page, PAGE_SIZE, s), { cache: false });
+  const items = useApi(
+    `review/${status}/${kind ?? ''}/${page}`,
+    (s) => api.listReviewItems({ status, kind }, page, PAGE_SIZE, s),
+    { cache: false },
+  );
   const { retry, focusRef: heading } = useRetry(items.reload, items.loading);
 
   /** A new filter starts on the first page; the other filter stays. */
@@ -71,33 +75,64 @@ export default function ReviewQueuePage() {
 
   return (
     <section aria-labelledby="rq-h" className="h2-admin__part">
-      <h2 id="rq-h" ref={heading} tabIndex={-1} className="h2-admin__h">{t('admin.reviewQueue')}</h2>
-      {actionError && <p role="alert" className="banner banner-warn"><Icon name="warn" /> {t(actionError === 'alreadyDecided' ? 'admin.alreadyDecided' : 'admin.actionFailed')}</p>}
+      <h2 id="rq-h" ref={heading} tabIndex={-1} className="h2-admin__h">
+        {t('admin.reviewQueue')}
+      </h2>
+      {actionError && (
+        <p role="alert" className="banner banner-warn">
+          <Icon name="warn" />{' '}
+          {t(actionError === 'alreadyDecided' ? 'admin.alreadyDecided' : 'admin.actionFailed')}
+        </p>
+      )}
       <div className="h2-admin__tools">
         <label>
           {t('admin.status')}
           <select value={status} onChange={(e) => setFilter('status', e.target.value)}>
-            {REVIEW_STATUSES.map((s) => <option key={s} value={s}>{t(`admin.reviewStatus.${s}`)}</option>)}
+            {REVIEW_STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {t(`admin.reviewStatus.${s}`)}
+              </option>
+            ))}
           </select>
         </label>
         <label>
           {t('admin.kindFilter')}
-          <select value={kind ?? ''} onChange={(e) => setFilter('kind', e.target.value || undefined)}>
+          <select
+            value={kind ?? ''}
+            onChange={(e) => setFilter('kind', e.target.value || undefined)}
+          >
             <option value="">{t('admin.allKinds')}</option>
-            {REVIEW_KINDS.map((k) => <option key={k} value={k}>{t(`admin.kind.${k}`)}</option>)}
+            {REVIEW_KINDS.map((k) => (
+              <option key={k} value={k}>
+                {t(`admin.kind.${k}`)}
+              </option>
+            ))}
           </select>
         </label>
       </div>
-      {items.loading ? <p role="status" className="muted">{t('common.loading')}</p> : items.error !== undefined ? (
-        <StatePanel tone="error" level={3} title={t('admin.loadError')} next={<RetryButton onClick={retry} />} />
-      ) : list.length === 0 ? <p className="muted">{t('admin.queueEmpty')}</p> : (
+      {items.loading ? (
+        <p role="status" className="muted">
+          {t('common.loading')}
+        </p>
+      ) : items.error !== undefined ? (
+        <StatePanel
+          tone="error"
+          level={3}
+          title={t('admin.loadError')}
+          next={<RetryButton onClick={retry} />}
+        />
+      ) : list.length === 0 ? (
+        <p className="muted">{t('admin.queueEmpty')}</p>
+      ) : (
         <ul className="h2-saved__list" aria-labelledby="rq-h">
           {list.map((it) => (
             <li key={it.id} className="h2-saved__row">
               <p className="h2-saved__meta">
                 <span>{t(`admin.kind.${it.kind}`)}</span>
                 <span>{formatDate(it.createdAt, i18n.language, 'INSTANT')}</span>
-                {it.resourceId && <Link to={resourcePath(it.resourceId)}>{it.resourceTitle ?? it.resourceId}</Link>}
+                {it.resourceId && (
+                  <Link to={resourcePath(it.resourceId)}>{it.resourceTitle ?? it.resourceId}</Link>
+                )}
               </p>
               <p className="h2-admin__reason">{it.reason}</p>
               {it.details && <p className="h2-admin__details">{it.details}</p>}
@@ -105,20 +140,53 @@ export default function ReviewQueuePage() {
                 <div className="h2-admin__decide">
                   <label className="h2-admin__note">
                     {t('admin.note')}
-                    <input type="text" maxLength={NOTE_MAX} value={notes[it.id] ?? ''}
-                      onChange={(e) => setNotes((n) => ({ ...n, [it.id]: e.target.value }))} />
+                    <input
+                      type="text"
+                      maxLength={NOTE_MAX}
+                      value={notes[it.id] ?? ''}
+                      onChange={(e) => setNotes((n) => ({ ...n, [it.id]: e.target.value }))}
+                    />
                   </label>
                   <div className="h2-saved__actions h2-admin__actions">
-                    <button type="button" className="btn btn-primary" aria-disabled={disabled} onClick={() => void resolve(it, 'ACCEPTED')}>{t('admin.accept')}<span className="sr-only"> {it.reason}</span></button>
-                    <button type="button" className="btn" aria-disabled={disabled} onClick={() => void resolve(it, 'REJECTED')}>{t('admin.reject')}<span className="sr-only"> {it.reason}</span></button>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      aria-disabled={disabled}
+                      onClick={() => void resolve(it, 'ACCEPTED')}
+                    >
+                      {t('admin.accept')}
+                      <span className="sr-only"> {it.reason}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="btn"
+                      aria-disabled={disabled}
+                      onClick={() => void resolve(it, 'REJECTED')}
+                    >
+                      {t('admin.reject')}
+                      <span className="sr-only"> {it.reason}</span>
+                    </button>
                   </div>
                 </div>
-              ) : <p><StatusPill tone={REVIEW_TONE[it.status]}>{t(`admin.reviewStatus.${it.status}`)}</StatusPill></p>}
+              ) : (
+                <p>
+                  <StatusPill tone={REVIEW_TONE[it.status]}>
+                    {t(`admin.reviewStatus.${it.status}`)}
+                  </StatusPill>
+                </p>
+              )}
             </li>
           ))}
         </ul>
       )}
-      {items.data && <Pagination page={page} size={PAGE_SIZE} total={items.data.total} onPage={(p) => setFilter('page', String(p))} />}
+      {items.data && (
+        <Pagination
+          page={page}
+          size={PAGE_SIZE}
+          total={items.data.total}
+          onPage={(p) => setFilter('page', String(p))}
+        />
+      )}
     </section>
   );
 }

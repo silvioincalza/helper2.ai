@@ -33,25 +33,50 @@ export default function AdminLayout() {
           <h1>{t('admin.title')}</h1>
           <p className="h2-page-head__lede">{t('admin.signInPrompt')}</p>
         </header>
-        {params.get('signin') === 'failed' && <p role="alert" className="banner banner-warn">{t('admin.signInFailed')}</p>}
-        <div className="h2-admin__tools"><SignIn /></div>
+        {params.get('signin') === 'failed' && (
+          <p role="alert" className="banner banner-warn">
+            {t('admin.signInFailed')}
+          </p>
+        )}
+        <div className="h2-admin__tools">
+          <SignIn />
+        </div>
       </div>
     );
   }
   if (!isAdmin) {
     return (
       <div className="h2-admin">
-        <header className="h2-page-head"><h1>{t('admin.title')}</h1></header>
-        <StatePanel tone="error" level={2} title={t('admin.forbidden')} next={<Link to="/" className="btn">{t('notFound.home')}</Link>} />
+        <header className="h2-page-head">
+          <h1>{t('admin.title')}</h1>
+        </header>
+        <StatePanel
+          tone="error"
+          level={2}
+          title={t('admin.forbidden')}
+          next={
+            <Link to="/" className="btn">
+              {t('notFound.home')}
+            </Link>
+          }
+        />
       </div>
     );
   }
   return (
     <div className="h2-admin">
-      <header className="h2-page-head"><h1>{t('admin.title')}</h1></header>
+      <header className="h2-page-head">
+        <h1>{t('admin.title')}</h1>
+      </header>
       <nav aria-label={t('admin.nav.label')} className="h2-admin__nav">
         <ul>
-          {PARTS.map((p) => <li key={p.key}><NavLink to={p.to} end={p.end}>{t(`admin.nav.${p.key}`)}</NavLink></li>)}
+          {PARTS.map((p) => (
+            <li key={p.key}>
+              <NavLink to={p.to} end={p.end}>
+                {t(`admin.nav.${p.key}`)}
+              </NavLink>
+            </li>
+          ))}
         </ul>
       </nav>
       <Outlet />

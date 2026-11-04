@@ -26,20 +26,33 @@ export function readingParts(reading: Reading, today: string, t: TFunction): Rea
   const parts: ReadingPart[] = [];
   // A period alone reads as "newest" on the server, so removing that intent would come straight back: the period's ✕ is the way out.
   const intentFromWindow = intent === 'NEWEST' && reading.window != null;
-  if (intent !== 'SUGGEST') parts.push({ key: 'intent', label: t(`guide.intent.${intent}`), drop: intentFromWindow ? undefined : 'intent' });
+  if (intent !== 'SUGGEST')
+    parts.push({
+      key: 'intent',
+      label: t(`guide.intent.${intent}`),
+      drop: intentFromWindow ? undefined : 'intent',
+    });
   for (const s of reading.subjects ?? []) parts.push({ key: `s:${s}`, label: s });
   if (reading.window) {
     const next = reading.window.from >= today;
     parts.push({
       key: 'window',
-      label: t(next ? 'guide.windowNext' : 'guide.window', { from: reading.window.from, to: reading.window.to }),
+      label: t(next ? 'guide.windowNext' : 'guide.window', {
+        from: reading.window.from,
+        to: reading.window.to,
+      }),
       drop: 'window',
     });
   }
   for (const c of reading.constraints ?? []) {
     // The URL keeps a removed part only up to MAX_DROP characters: a longer one could not be removed, so no ✕.
     const drop = `constraint:${c}`;
-    parts.push({ key: `c:${c}`, label: c, drop: drop.length <= MAX_DROP ? drop : undefined, ai: true });
+    parts.push({
+      key: `c:${c}`,
+      label: c,
+      drop: drop.length <= MAX_DROP ? drop : undefined,
+      ai: true,
+    });
   }
   return parts;
 }
@@ -54,7 +67,8 @@ export function progressOf(steps: readonly GuideStep[]): Progress {
   let reading: Reading | null = null;
   let candidates: number | undefined;
   for (const s of steps) {
-    if (s.kind === 'understood') reading = { intent: s.data.intent, subjects: s.data.subjects, window: s.data.window ?? null };
+    if (s.kind === 'understood')
+      reading = { intent: s.data.intent, subjects: s.data.subjects, window: s.data.window ?? null };
     else if (s.kind === 'retrieved') candidates = s.data.candidates;
   }
   return { reading, candidates };

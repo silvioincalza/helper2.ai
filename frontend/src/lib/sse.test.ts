@@ -19,6 +19,8 @@ describe('SseParser', () => {
 
   it('joins multi-line data, defaults the name, and skips comments and empty events', () => {
     const p = new SseParser();
-    expect(p.push(': keep-alive\n\ndata: one\ndata: two\nid: 7\n\n')).toEqual([{ event: 'message', data: 'one\ntwo' }]);
+    expect(p.push(': keep-alive\n\ndata: one\ndata: two\nid: 7\n\n')).toEqual([
+      { event: 'message', data: 'one\ntwo' },
+    ]);
   });
 });

@@ -3,7 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { mockApi } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
 
-const box = () => screen.getByRole('textbox', { name: 'Search AI resources' }) as HTMLTextAreaElement;
+const box = () =>
+  screen.getByRole('textbox', { name: 'Search AI resources' }) as HTMLTextAreaElement;
 
 describe('Feature: a better search box', () => {
   it('Scenario: × empties the box and keeps the results; it shows only when there is text', async () => {
@@ -22,7 +23,10 @@ describe('Feature: a better search box', () => {
   it('Scenario: Esc empties the box', async () => {
     mockApi();
     renderApp('/');
-    await userEvent.type(await screen.findByRole('textbox', { name: 'Search AI resources' }), 'vector db');
+    await userEvent.type(
+      await screen.findByRole('textbox', { name: 'Search AI resources' }),
+      'vector db',
+    );
     await userEvent.keyboard('{Escape}');
     expect(box().value).toBe('');
   });

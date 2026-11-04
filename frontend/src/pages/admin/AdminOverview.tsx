@@ -24,13 +24,26 @@ export default function AdminOverview() {
 
   return (
     <section aria-labelledby="ov-h" className="h2-admin__part">
-      <h2 id="ov-h" ref={heading} tabIndex={-1} className="h2-admin__h">{t('admin.overview.title')}</h2>
-      {overview.loading && !data ? <p role="status" className="muted">{t('common.loading')}</p> : overview.error !== undefined && !data ? (
-        <StatePanel tone="error" level={3} title={t('admin.overview.loadError')} next={<RetryButton onClick={retry} />} />
+      <h2 id="ov-h" ref={heading} tabIndex={-1} className="h2-admin__h">
+        {t('admin.overview.title')}
+      </h2>
+      {overview.loading && !data ? (
+        <p role="status" className="muted">
+          {t('common.loading')}
+        </p>
+      ) : overview.error !== undefined && !data ? (
+        <StatePanel
+          tone="error"
+          level={3}
+          title={t('admin.overview.loadError')}
+          next={<RetryButton onClick={retry} />}
+        />
       ) : data ? (
         <>
           {overview.error !== undefined && !overview.loading && (
-            <p role="alert" className="banner banner-warn"><Icon name="warn" /> {t('admin.overview.refreshError')}</p>
+            <p role="alert" className="banner banner-warn">
+              <Icon name="warn" /> {t('admin.overview.refreshError')}
+            </p>
           )}
           <OverviewParts data={data} onRefresh={overview.reload} refreshing={overview.loading} />
         </>
@@ -39,37 +52,74 @@ export default function AdminOverview() {
   );
 }
 
-function OverviewParts({ data, onRefresh, refreshing }: { data: Overview; onRefresh: () => void; refreshing: boolean }) {
+function OverviewParts({
+  data,
+  onRefresh,
+  refreshing,
+}: {
+  data: Overview;
+  onRefresh: () => void;
+  refreshing: boolean;
+}) {
   const { t, i18n } = useTranslation();
   const open = data.openReviewItems.reduce((sum, k) => sum + k.count, 0);
   return (
     <>
       <div className="h2-admin__tools">
-        <p className="muted">{t('admin.overview.updated', { at: formatDate(data.generatedAt, i18n.language, 'INSTANT') })}</p>
-        <button type="button" className="btn" aria-disabled={refreshing || undefined} onClick={() => { if (!refreshing) onRefresh(); }}>{t('admin.overview.refresh')}</button>
-        {data.grafanaUrl && <a href={data.grafanaUrl} target="_blank" rel="noopener noreferrer">{t('admin.overview.trends')}</a>}
+        <p className="muted">
+          {t('admin.overview.updated', {
+            at: formatDate(data.generatedAt, i18n.language, 'INSTANT'),
+          })}
+        </p>
+        <button
+          type="button"
+          className="btn"
+          aria-disabled={refreshing || undefined}
+          onClick={() => {
+            if (!refreshing) onRefresh();
+          }}
+        >
+          {t('admin.overview.refresh')}
+        </button>
+        {data.grafanaUrl && (
+          <a href={data.grafanaUrl} target="_blank" rel="noopener noreferrer">
+            {t('admin.overview.trends')}
+          </a>
+        )}
       </div>
 
       <h3 className="h2-admin__h3">{t('admin.overview.open', { count: open })}</h3>
       <ul className="h2-admin__counts">
         {data.openReviewItems.map(({ kind, count }) => (
           <li key={kind}>
-            <Link to={`/admin/review?kind=${kind}`}><span className="h2-admin__count">{count}</span> {t(`admin.kind.${kind}`)}</Link>
+            <Link to={`/admin/review?kind=${kind}`}>
+              <span className="h2-admin__count">{count}</span> {t(`admin.kind.${kind}`)}
+            </Link>
           </li>
         ))}
       </ul>
 
       <h3 className="h2-admin__h3">{t('admin.overview.scout')}</h3>
       <ul className="h2-admin__counts">
-        <li><span><span className="h2-admin__count">{data.enrichmentBacklog}</span> {t('admin.overview.backlog')}</span></li>
         <li>
-          <Link to="/admin/runs"><span className="h2-admin__count">{data.failedRunsLast24h}</span> {t('admin.overview.failed')}</Link>
+          <span>
+            <span className="h2-admin__count">{data.enrichmentBacklog}</span>{' '}
+            {t('admin.overview.backlog')}
+          </span>
+        </li>
+        <li>
+          <Link to="/admin/runs">
+            <span className="h2-admin__count">{data.failedRunsLast24h}</span>{' '}
+            {t('admin.overview.failed')}
+          </Link>
         </li>
       </ul>
 
       <div className="table-wrap">
         <table aria-labelledby="ov-budgets">
-          <caption id="ov-budgets" className="h2-admin__caption">{t('admin.overview.budgets')}</caption>
+          <caption id="ov-budgets" className="h2-admin__caption">
+            {t('admin.overview.budgets')}
+          </caption>
           <thead>
             <tr>
               <th scope="col">{t('admin.overview.col.budget')}</th>
@@ -80,19 +130,32 @@ function OverviewParts({ data, onRefresh, refreshing }: { data: Overview; onRefr
             {data.budgets.map((b) => (
               <tr key={b.name}>
                 <th scope="row">{t(`admin.budget.${b.name}`, { defaultValue: b.name })}</th>
-                <td><Usage used={b.usedToday ?? null} limit={b.dailyLimit} /></td>
+                <td>
+                  <Usage used={b.usedToday ?? null} limit={b.dailyLimit} />
+                </td>
               </tr>
             ))}
             <tr>
               <th scope="row">{t('admin.overview.webCredits')}</th>
-              <td>{data.webCredits ? <Usage used={data.webCredits.usedToday} limit={data.webCredits.dailyCap ?? null} /> : t('admin.overview.notCounted')}</td>
+              <td>
+                {data.webCredits ? (
+                  <Usage
+                    used={data.webCredits.usedToday}
+                    limit={data.webCredits.dailyCap ?? null}
+                  />
+                ) : (
+                  t('admin.overview.notCounted')
+                )}
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
 
       <h3 className="h2-admin__h3">{t('admin.overview.lastRuns')}</h3>
-      {data.recentRuns.length === 0 ? <p className="muted">{t('admin.noRuns')}</p> : (
+      {data.recentRuns.length === 0 ? (
+        <p className="muted">{t('admin.noRuns')}</p>
+      ) : (
         <ul className="h2-admin__runs">
           {data.recentRuns.slice(0, SHOWN_RUNS).map((r) => (
             <li key={r.id}>
@@ -102,7 +165,9 @@ function OverviewParts({ data, onRefresh, refreshing }: { data: Overview; onRefr
           ))}
         </ul>
       )}
-      <p><Link to="/admin/runs">{t('admin.overview.allRuns')}</Link></p>
+      <p>
+        <Link to="/admin/runs">{t('admin.overview.allRuns')}</Link>
+      </p>
     </>
   );
 }
@@ -116,7 +181,13 @@ function Usage({ used, limit }: { used: number | null; limit: number | null }) {
   return (
     <span className="h2-admin__usage">
       {t('admin.overview.usedOf', { used, limit })}
-      <meter min={0} max={limit} value={Math.min(used, limit)} high={limit * 0.8} aria-hidden="true" />
+      <meter
+        min={0}
+        max={limit}
+        value={Math.min(used, limit)}
+        high={limit * 0.8}
+        aria-hidden="true"
+      />
     </span>
   );
 }

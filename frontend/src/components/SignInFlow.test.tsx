@@ -63,14 +63,20 @@ describe('Feature: end users sign in on the public site (ADR 0035)', () => {
   it('Scenario: a failed sign-in says so, and offers to try again', async () => {
     mockApi({ 'GET /me': () => ANON });
     renderApp('/?signin=failed');
-    expect(await screen.findByRole('alert')).toHaveTextContent('Sign-in did not work. Please try again.');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Sign-in did not work. Please try again.',
+    );
   });
 
   it('Scenario: the Saved page offers sign-in to keep saved items on every device', async () => {
     mockApi({ 'GET /me': () => ANON });
     renderApp('/saved');
     const main = await screen.findByRole('main');
-    expect(await within(main).findByText('Saved in this browser only. Sign in to keep them on every device.')).toBeInTheDocument();
+    expect(
+      await within(main).findByText(
+        'Saved in this browser only. Sign in to keep them on every device.',
+      ),
+    ).toBeInTheDocument();
     expect(within(main).getByRole('link', { name: 'Sign in with GitHub' })).toBeInTheDocument();
   });
 

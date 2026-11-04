@@ -14,16 +14,31 @@ export default function AuditPage() {
   const { t, i18n } = useTranslation();
   const [params, setParams] = useSearchParams();
   const page = Math.max(0, Number.parseInt(params.get('page') ?? '0', 10) || 0);
-  const entries = useApi(`admin/audit/${page}`, (s) => api.listAuditEntries(page, PAGE_SIZE, s), { cache: false });
+  const entries = useApi(`admin/audit/${page}`, (s) => api.listAuditEntries(page, PAGE_SIZE, s), {
+    cache: false,
+  });
   const { retry, focusRef: heading } = useRetry(entries.reload, entries.loading);
   const list = entries.data?.items ?? [];
 
   return (
     <section aria-labelledby="au-h" className="h2-admin__part">
-      <h2 id="au-h" ref={heading} tabIndex={-1} className="h2-admin__h">{t('admin.audit.title')}</h2>
-      {entries.loading ? <p role="status" className="muted">{t('common.loading')}</p> : entries.error !== undefined ? (
-        <StatePanel tone="error" level={3} title={t('admin.audit.loadError')} next={<RetryButton onClick={retry} />} />
-      ) : list.length === 0 ? <p className="muted">{t('admin.audit.empty')}</p> : (
+      <h2 id="au-h" ref={heading} tabIndex={-1} className="h2-admin__h">
+        {t('admin.audit.title')}
+      </h2>
+      {entries.loading ? (
+        <p role="status" className="muted">
+          {t('common.loading')}
+        </p>
+      ) : entries.error !== undefined ? (
+        <StatePanel
+          tone="error"
+          level={3}
+          title={t('admin.audit.loadError')}
+          next={<RetryButton onClick={retry} />}
+        />
+      ) : list.length === 0 ? (
+        <p className="muted">{t('admin.audit.empty')}</p>
+      ) : (
         <div className="table-wrap">
           <table aria-labelledby="au-h">
             <thead>
@@ -49,7 +64,14 @@ export default function AuditPage() {
           </table>
         </div>
       )}
-      {entries.data && <Pagination page={page} size={PAGE_SIZE} total={entries.data.total} onPage={(p) => setParams({ page: String(p) })} />}
+      {entries.data && (
+        <Pagination
+          page={page}
+          size={PAGE_SIZE}
+          total={entries.data.total}
+          onPage={(p) => setParams({ page: String(p) })}
+        />
+      )}
     </section>
   );
 }

@@ -13,7 +13,8 @@ export function useRetry(reload: () => void, loading: boolean) {
     if (!pending.current || loading) return;
     pending.current = false;
     const active = document.activeElement;
-    if (!active || active === document.body || active === focusRef.current) focusRef.current?.focus();
+    if (!active || active === document.body || active === focusRef.current)
+      focusRef.current?.focus();
   });
   const retry = useCallback(() => {
     pending.current = true;

@@ -21,29 +21,43 @@ const ASK_BACK: GuideResponse = {
   clarification: { question: 'New tools for what?', options: ['coding', 'agents'] },
 };
 
-const guideCalls = (m: ReturnType<typeof mockApi>) => m.callsTo('POST', '/guide/stream').map((c) => c.body);
+const guideCalls = (m: ReturnType<typeof mockApi>) =>
+  m.callsTo('POST', '/guide/stream').map((c) => c.body);
 
 describe('refining a guide question', () => {
   it('given the guide asks back, when the user picks an option, then it asks again with the reply and the URL keeps it', async () => {
-    const m = mockApi({ 'POST /guide/stream': ({ body }) => sse((body as { clarification?: string }).clarification ? OK : ASK_BACK) });
+    const m = mockApi({
+      'POST /guide/stream': ({ body }) =>
+        sse((body as { clarification?: string }).clarification ? OK : ASK_BACK),
+    });
     const { params } = renderApp('/?q=new+tools&ask=new+tools');
 
     await userEvent.click(await screen.findByRole('button', { name: 'agents' }));
 
-    expect(await screen.findByRole('button', { name: 'Remove “free” and ask again' })).toBeInTheDocument();
-    expect(guideCalls(m)).toEqual([{ request: 'new tools' }, { request: 'new tools', clarification: 'agents' }]);
+    expect(
+      await screen.findByRole('button', { name: 'Remove “free” and ask again' }),
+    ).toBeInTheDocument();
+    expect(guideCalls(m)).toEqual([
+      { request: 'new tools' },
+      { request: 'new tools', clarification: 'agents' },
+    ]);
     expect(params().get('clar')).toBe('agents');
   });
 
   it('given a refined question failed, when the user retries, then the retry sends the same refinement', async () => {
     let n = 0;
-    const m = mockApi({ 'POST /guide/stream': () => (n++ === 0 ? problem(502, 'Bad gateway', 'The model timed out.') : sse(OK)) });
+    const m = mockApi({
+      'POST /guide/stream': () =>
+        n++ === 0 ? problem(502, 'Bad gateway', 'The model timed out.') : sse(OK),
+    });
     renderApp('/?q=new+tools&ask=new+tools&clar=agents&drop=window');
 
     expect(await screen.findByRole('alert')).toHaveTextContent('The model timed out.');
     await userEvent.click(screen.getByRole('button', { name: /Try again/ }));
 
-    expect(await screen.findByRole('button', { name: 'Remove “free” and ask again' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', { name: 'Remove “free” and ask again' }),
+    ).toBeInTheDocument();
     const refined = { request: 'new tools', clarification: 'agents', drop: ['window'] };
     expect(guideCalls(m)).toEqual([refined, refined]);
   });
@@ -52,7 +66,9 @@ describe('refining a guide question', () => {
     const m = mockApi({ 'POST /guide/stream': () => sse(OK) });
     const { params } = renderApp('/?q=new+tools&ask=new+tools&drop=window');
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Remove “free” and ask again' }));
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Remove “free” and ask again' }),
+    );
 
     await vi.waitFor(() => expect(guideCalls(m)).toHaveLength(2));
     expect(guideCalls(m)[1]).toEqual({ request: 'new tools', drop: ['window', 'constraint:free'] });
@@ -78,8 +94,12 @@ describe('refining a guide question', () => {
     renderApp('/?q=new+tools&ask=new+tools');
     await screen.findByRole('button', { name: 'Remove “free” and ask again' });
 
-    await act(async () => { await i18n.changeLanguage('de'); });
-    await act(async () => { await i18n.changeLanguage('en'); });
+    await act(async () => {
+      await i18n.changeLanguage('de');
+    });
+    await act(async () => {
+      await i18n.changeLanguage('en');
+    });
 
     expect(guideCalls(m)).toHaveLength(1);
   });

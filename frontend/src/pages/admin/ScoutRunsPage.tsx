@@ -44,12 +44,30 @@ export default function ScoutRunsPage() {
 
   return (
     <section aria-labelledby="sr-h" className="h2-admin__part">
-      <h2 id="sr-h" className="h2-admin__h">{t('admin.scoutRuns')}</h2>
-      {actionError && <p role="alert" className="banner banner-warn"><Icon name="warn" /> {t(actionError === 'runInProgress' ? 'admin.runInProgress' : 'admin.actionFailed')}</p>}
+      <h2 id="sr-h" className="h2-admin__h">
+        {t('admin.scoutRuns')}
+      </h2>
+      {actionError && (
+        <p role="alert" className="banner banner-warn">
+          <Icon name="warn" />{' '}
+          {t(actionError === 'runInProgress' ? 'admin.runInProgress' : 'admin.actionFailed')}
+        </p>
+      )}
       <div className="h2-admin__tools">
-        <button type="button" className="btn btn-primary" aria-disabled={busy || undefined} onClick={() => void runNow()}>{t('admin.runNow')}</button>
+        <button
+          type="button"
+          className="btn btn-primary"
+          aria-disabled={busy || undefined}
+          onClick={() => void runNow()}
+        >
+          {t('admin.runNow')}
+        </button>
       </div>
-      {runs.loading && runs.previous === undefined ? <p role="status">{t('common.loading')}</p> : runList.length === 0 ? <p className="muted">{t('admin.noRuns')}</p> : (
+      {runs.loading && runs.previous === undefined ? (
+        <p role="status">{t('common.loading')}</p>
+      ) : runList.length === 0 ? (
+        <p className="muted">{t('admin.noRuns')}</p>
+      ) : (
         <div className="table-wrap">
           <table aria-labelledby="sr-h">
             <thead>
@@ -66,7 +84,11 @@ export default function ScoutRunsPage() {
               {runList.map((r) => (
                 <tr key={r.id}>
                   <th scope="row">{r.sourceId}</th>
-                  <td><StatusPill tone={RUN_TONE[r.status]}>{t(`admin.runStatus.${r.status}`)}</StatusPill></td>
+                  <td>
+                    <StatusPill tone={RUN_TONE[r.status]}>
+                      {t(`admin.runStatus.${r.status}`)}
+                    </StatusPill>
+                  </td>
                   <td>{formatDate(r.startedAt, i18n.language, 'INSTANT')}</td>
                   <td>{r.itemsSeen}</td>
                   <td>{r.itemsChanged}</td>

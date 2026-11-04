@@ -8,11 +8,17 @@ import { makeCard, makeSearch, makeStatus } from '@/test/fixtures';
 
 /** The guide's pick is on the page of results, so the list shows it first and the preview opens on it. */
 const PICKED = makeCard({
-  id: '22222222-2222-5222-8222-222222222222', title: 'Postgres MCP', type: 'MCP_SERVER', url: 'https://github.com/acme/postgres-mcp',
+  id: '22222222-2222-5222-8222-222222222222',
+  title: 'Postgres MCP',
+  type: 'MCP_SERVER',
+  url: 'https://github.com/acme/postgres-mcp',
   description: 'MCP server that gives agents read-only access to a PostgreSQL database',
 });
 const mockApi = (handlers: Record<string, Handler> = {}) =>
-  mockAll({ 'GET /search': () => makeSearch({ results: [makeCard(), PICKED], total: 2 }), ...handlers });
+  mockAll({
+    'GET /search': () => makeSearch({ results: [makeCard(), PICKED], total: 2 }),
+    ...handlers,
+  });
 /** The preview of the selected result. */
 const preview = async () => within(await screen.findByRole('article'));
 /** The guide answered: its pick #1 is in the bar. */
@@ -22,22 +28,31 @@ function makeGuide(over: Partial<GuideResponse> = {}): GuideResponse {
   return {
     status: 'OK',
     searchQuery: 'mcp server postgres',
-    recommendations: [{
-      resourceId: '22222222-2222-5222-8222-222222222222',
-      title: 'Postgres MCP',
-      url: 'https://github.com/acme/postgres-mcp',
-      type: 'MCP_SERVER',
-      reason: 'Lets an agent run read-only SQL against Postgres.',
-      quote: 'MCP server that gives agents read-only access to a PostgreSQL database',
-      sourceIds: ['github'],
-      aiReasoned: true,
-      reasonCheck: 'NOT_CHECKED',
-    }],
+    recommendations: [
+      {
+        resourceId: '22222222-2222-5222-8222-222222222222',
+        title: 'Postgres MCP',
+        url: 'https://github.com/acme/postgres-mcp',
+        type: 'MCP_SERVER',
+        reason: 'Lets an agent run read-only SQL against Postgres.',
+        quote: 'MCP server that gives agents read-only access to a PostgreSQL database',
+        sourceIds: ['github'],
+        aiReasoned: true,
+        reasonCheck: 'NOT_CHECKED',
+      },
+    ],
     prompt: null,
-    model: { provider: 'nebius-token-factory', fastModel: 'nvidia/nemotron-nano', reasoningModel: 'nvidia/nemotron-3-super' },
+    model: {
+      provider: 'nebius-token-factory',
+      fastModel: 'nvidia/nemotron-nano',
+      reasoningModel: 'nvidia/nemotron-3-super',
+    },
     aiContent: {
-      aiGenerated: true, provider: 'nebius-token-factory', models: ['nvidia/nemotron-nano', 'nvidia/nemotron-3-super'],
-      fields: ['searchQuery', 'recommendations[].reason'], policy: '/mission',
+      aiGenerated: true,
+      provider: 'nebius-token-factory',
+      models: ['nvidia/nemotron-nano', 'nvidia/nemotron-3-super'],
+      fields: ['searchQuery', 'recommendations[].reason'],
+      policy: '/mission',
     },
     candidatesConsidered: 12,
     rejected: 0,
@@ -62,11 +77,16 @@ describe('guide on the one page', () => {
     await ask('an MCP server for Postgres');
 
     await answered();
-    expect(m.callsTo('POST', '/guide/stream')[0]?.body).toEqual({ request: 'an MCP server for Postgres' });
+    expect(m.callsTo('POST', '/guide/stream')[0]?.body).toEqual({
+      request: 'an MCP server for Postgres',
+    });
     expect(params().get('ask')).toBe('an MCP server for Postgres');
     expect(params().get('q')).toBe('an MCP server for Postgres');
     const pv = await preview();
-    expect(pv.getByRole('link', { name: 'Postgres MCP' })).toHaveAttribute('href', '/resource/22222222-2222-5222-8222-222222222222');
+    expect(pv.getByRole('link', { name: 'Postgres MCP' })).toHaveAttribute(
+      'href',
+      '/resource/22222222-2222-5222-8222-222222222222',
+    );
     expect(pv.getByRole('heading', { name: 'Why the guide picked it' })).toBeInTheDocument();
     expect(pv.getByText('Lets an agent run read-only SQL against Postgres.')).toBeInTheDocument();
     expect(pv.getByText('Not checked by a second model call.')).toBeInTheDocument();
@@ -90,29 +110,43 @@ describe('guide on the one page', () => {
     const trace = document.querySelector('.guide-answer');
     expect(trace).toHaveAttribute('data-ai-provider', 'nebius-token-factory');
     expect(trace).toHaveAttribute('data-ai-models', 'nvidia/nemotron-nano nvidia/nemotron-3-super');
-    for (const q of screen.getAllByText(/read-only access to a PostgreSQL database/)) expect(q.closest('[data-ai-generated]')).toBeNull();
+    for (const q of screen.getAllByText(/read-only access to a PostgreSQL database/))
+      expect(q.closest('[data-ai-generated]')).toBeNull();
   });
 
   it('shows each requirement as confirmed with its quote or as not confirmed, in words', async () => {
     const base = makeGuide();
     mockApi({
-      'POST /guide/stream': () => sse(makeGuide({
-        constraints: ['open source', 'free'],
-        recommendations: [{
-          ...base.recommendations[0]!,
-          checks: [
-            { constraint: 'open source', status: 'CONFIRMED', quote: 'MIT licensed, open source' },
-            { constraint: 'free', status: 'NOT_CONFIRMED', quote: null },
-          ],
-        }],
-      })),
+      'POST /guide/stream': () =>
+        sse(
+          makeGuide({
+            constraints: ['open source', 'free'],
+            recommendations: [
+              {
+                ...base.recommendations[0]!,
+                checks: [
+                  {
+                    constraint: 'open source',
+                    status: 'CONFIRMED',
+                    quote: 'MIT licensed, open source',
+                  },
+                  { constraint: 'free', status: 'NOT_CONFIRMED', quote: null },
+                ],
+              },
+            ],
+          }),
+        ),
     });
     renderApp('/');
     await ask('a free open-source MCP server for Postgres');
 
-    const checks = (await preview()).getByRole('list', { name: 'Your requirements, checked against the source' });
+    const checks = (await preview()).getByRole('list', {
+      name: 'Your requirements, checked against the source',
+    });
     const items = within(checks).getAllByRole('listitem');
-    expect(items[0]).toHaveTextContent('open source: confirmed by the source: MIT licensed, open source');
+    expect(items[0]).toHaveTextContent(
+      'open source: confirmed by the source: MIT licensed, open source',
+    );
     expect(items[1]).toHaveTextContent('free: not confirmed by the source');
     // Art. 50: the planner wrote the requirements, so they carry a label over their checks.
     expect(checks.previousElementSibling).toHaveTextContent('Requirements AI-written');
@@ -123,42 +157,74 @@ describe('guide on the one page', () => {
     renderApp('/');
     await ask('an MCP server for Postgres');
     await answered();
-    expect(screen.queryByRole('list', { name: 'Your requirements, checked against the source' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('list', { name: 'Your requirements, checked against the source' }),
+    ).not.toBeInTheDocument();
   });
 
   it('shows which model planned and which model chose, and on which provider', async () => {
     mockApi({ 'POST /guide/stream': () => sse(makeGuide()) });
     renderApp('/');
     await ask('an MCP server for Postgres');
-    expect(await screen.findByText('Planning: nvidia/nemotron-nano · Choosing: nvidia/nemotron-3-super · on nebius-token-factory')).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        'Planning: nvidia/nemotron-nano · Choosing: nvidia/nemotron-3-super · on nebius-token-factory',
+      ),
+    ).toBeInTheDocument();
   });
 
   it('shows an adapted prompt with its catalog sources and a warning to read it before pasting', async () => {
     mockApi({
-      'POST /guide/stream': () => sse(makeGuide({
-        prompt: {
-          text: 'Summarise [notes] into decisions and owners.',
-          basedOn: [{ resourceId: '33333333-3333-5333-8333-333333333333', title: 'Meeting summary prompt' }],
-        },
-      })),
+      'POST /guide/stream': () =>
+        sse(
+          makeGuide({
+            prompt: {
+              text: 'Summarise [notes] into decisions and owners.',
+              basedOn: [
+                {
+                  resourceId: '33333333-3333-5333-8333-333333333333',
+                  title: 'Meeting summary prompt',
+                },
+              ],
+            },
+          }),
+        ),
     });
     renderApp('/');
     await ask('a prompt to summarise meeting notes');
     expect(await screen.findByText('Ready-to-use prompt')).toBeInTheDocument();
     expect(screen.getByText('Summarise [notes] into decisions and owners.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Meeting summary prompt' })).toHaveAttribute('href', '/resource/33333333-3333-5333-8333-333333333333');
+    expect(screen.getByRole('link', { name: 'Meeting summary prompt' })).toHaveAttribute(
+      'href',
+      '/resource/33333333-3333-5333-8333-333333333333',
+    );
     expect(screen.getByText(/Third parties wrote the prompts it adapts/)).toBeInTheDocument();
   });
 
   it('LLM_UNAVAILABLE says so in the bar, picks nothing and writes nothing AI', async () => {
     const fallback = { ...makeGuide().recommendations[0]!, aiReasoned: false };
-    mockApi({ 'POST /guide/stream': () => sse(makeGuide({ status: 'LLM_UNAVAILABLE', model: null, aiContent: null, prompt: null, recommendations: [fallback] })) });
+    mockApi({
+      'POST /guide/stream': () =>
+        sse(
+          makeGuide({
+            status: 'LLM_UNAVAILABLE',
+            model: null,
+            aiContent: null,
+            prompt: null,
+            recommendations: [fallback],
+          }),
+        ),
+    });
     renderApp('/');
     await ask('an MCP server for Postgres');
     // No pick: the bar's one line says why; how the guide decided stays folded, so the results stay in view.
     const bar = await screen.findByRole('region', { name: 'Guide picks' });
-    expect(await within(bar).findByText(/The AI model is not available right now/)).toBeInTheDocument();
-    expect(screen.getByText('How the guide decided').closest('details')).not.toHaveAttribute('open');
+    expect(
+      await within(bar).findByText(/The AI model is not available right now/),
+    ).toBeInTheDocument();
+    expect(screen.getByText('How the guide decided').closest('details')).not.toHaveAttribute(
+      'open',
+    );
     // Asking again without a requirement would hit the same unavailable model: no next steps.
     expect(within(bar).queryByRole('button')).not.toBeInTheDocument();
     expect(screen.queryByText('Pick #1')).not.toBeInTheDocument();
@@ -170,10 +236,15 @@ describe('guide on the one page', () => {
   it('over the daily quota says so instead of calling the model unavailable', async () => {
     const fallback = { ...makeGuide().recommendations[0]!, aiReasoned: false };
     mockApi({
-      'POST /guide/stream': () => sse(makeGuide({
-        status: 'LLM_UNAVAILABLE', model: null, recommendations: [fallback],
-        notices: [{ code: 'GUIDE_DAILY_QUOTA', message: 'quota used' }],
-      })),
+      'POST /guide/stream': () =>
+        sse(
+          makeGuide({
+            status: 'LLM_UNAVAILABLE',
+            model: null,
+            recommendations: [fallback],
+            notices: [{ code: 'GUIDE_DAILY_QUOTA', message: 'quota used' }],
+          }),
+        ),
     });
     renderApp('/');
     await ask('an MCP server for Postgres');
@@ -185,16 +256,25 @@ describe('guide on the one page', () => {
 
   it('no source answered the guide search: the bar says so, not "nothing in the catalog", and the fold does not repeat it', async () => {
     mockApi({
-      'POST /guide/stream': () => sse(makeGuide({
-        status: 'NO_CANDIDATES', model: null, aiContent: null, recommendations: [], candidatesConsidered: 0,
-        sources: [makeStatus({ outcome: 'FAILED', resultCount: 0 })],
-        notices: [{ code: 'ALL_SOURCES_FAILED', message: 'all failed' }],
-      })),
+      'POST /guide/stream': () =>
+        sse(
+          makeGuide({
+            status: 'NO_CANDIDATES',
+            model: null,
+            aiContent: null,
+            recommendations: [],
+            candidatesConsidered: 0,
+            sources: [makeStatus({ outcome: 'FAILED', resultCount: 0 })],
+            notices: [{ code: 'ALL_SOURCES_FAILED', message: 'all failed' }],
+          }),
+        ),
     });
     renderApp('/');
     await ask('an MCP server for Postgres');
     const bar = await screen.findByRole('region', { name: 'Guide picks' });
-    expect(await within(bar).findByText("No source answered the guide's search. Try again in a moment.")).toBeInTheDocument();
+    expect(
+      await within(bar).findByText("No source answered the guide's search. Try again in a moment."),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/Nothing in the catalog matched/)).not.toBeInTheDocument();
     const fold = screen.getByText('How the guide decided').closest('details')!;
     expect(fold).not.toHaveAttribute('open');
@@ -203,13 +283,16 @@ describe('guide on the one page', () => {
 
   it('the fold lists the guide search notices under "found", outside the AI-marked text, without the query expansion', async () => {
     mockApi({
-      'POST /guide/stream': () => sse(makeGuide({
-        notices: [
-          { code: 'QUERY_EXPANDED', message: 'expanded' },
-          { code: 'CACHE_UNAVAILABLE', message: 'cache down' },
-          { code: 'INDEX_UNAVAILABLE', message: 'index down' },
-        ],
-      })),
+      'POST /guide/stream': () =>
+        sse(
+          makeGuide({
+            notices: [
+              { code: 'QUERY_EXPANDED', message: 'expanded' },
+              { code: 'CACHE_UNAVAILABLE', message: 'cache down' },
+              { code: 'INDEX_UNAVAILABLE', message: 'index down' },
+            ],
+          }),
+        ),
     });
     renderApp('/');
     await ask('an MCP server for Postgres');
@@ -221,70 +304,122 @@ describe('guide on the one page', () => {
     expect(cache).toHaveTextContent('Notice:');
     expect(within(found).getByText(/Helper2 index unavailable/)).toBeInTheDocument();
     expect(within(fold).queryByText('expanded')).not.toBeInTheDocument();
-    for (const n of found.querySelectorAll('.notice')) expect(n.closest('[data-ai-generated]')).toBeNull();
+    for (const n of found.querySelectorAll('.notice'))
+      expect(n.closest('[data-ai-generated]')).toBeNull();
   });
 
   it('a name not in our sources: the bar builds the sentence, and only the name and the search are AI-marked and labelled', async () => {
     mockApi({
-      'POST /guide/stream': () => sse(makeGuide({
-        status: 'PARTIAL', recommendations: [], intent: 'ALTERNATIVES', subjects: ['Frobnicator'],
-        notices: [{
-          code: 'GUIDE_SUBJECT_NOT_FOUND', message: 'The name in the question was not found in our sources.',
-          subject: 'Frobnicator', query: 'local llm runner',
-        }],
-      })),
+      'POST /guide/stream': () =>
+        sse(
+          makeGuide({
+            status: 'PARTIAL',
+            recommendations: [],
+            intent: 'ALTERNATIVES',
+            subjects: ['Frobnicator'],
+            notices: [
+              {
+                code: 'GUIDE_SUBJECT_NOT_FOUND',
+                message: 'The name in the question was not found in our sources.',
+                subject: 'Frobnicator',
+                query: 'local llm runner',
+              },
+            ],
+          }),
+        ),
     });
     const { container } = renderApp('/');
     await ask('an alternative to Frobnicator for local models');
     const bar = await screen.findByRole('region', { name: 'Guide picks' });
     const line = await within(bar).findByRole('status');
     await within(line).findByText('Frobnicator');
-    expect(line).toHaveTextContent('Frobnicator was not found in our sources; showing tools for: local llm runner Name and search AI-written');
+    expect(line).toHaveTextContent(
+      'Frobnicator was not found in our sources; showing tools for: local llm runner Name and search AI-written',
+    );
     const marked = [...line.querySelectorAll('[data-ai-generated="true"]')];
     expect(marked.map((m) => m.textContent)).toEqual(['Frobnicator', 'local llm runner']);
     for (const m of marked) expect(m).toHaveAttribute('data-ai-model', 'nvidia/nemotron-nano');
     expect(line.closest('[data-ai-generated]')).toBeNull();
-    expect(within(line).getByText(/was not found in our sources; showing tools for:/).closest('[data-ai-generated]')).toBeNull();
+    expect(
+      within(line)
+        .getByText(/was not found in our sources; showing tools for:/)
+        .closest('[data-ai-generated]'),
+    ).toBeNull();
     expect(within(line).queryByText(/The name in the question/)).not.toBeInTheDocument();
     expect(await axeViolations(container)).toEqual([]);
   });
 
   it('a name not in our sources next to picks: the fold says it with the same marking', async () => {
     mockApi({
-      'POST /guide/stream': () => sse(makeGuide({
-        notices: [{ code: 'GUIDE_SUBJECT_NOT_FOUND', message: 'A name to compare was not found in our sources.', subject: 'LM Studio', query: null }],
-      })),
+      'POST /guide/stream': () =>
+        sse(
+          makeGuide({
+            notices: [
+              {
+                code: 'GUIDE_SUBJECT_NOT_FOUND',
+                message: 'A name to compare was not found in our sources.',
+                subject: 'LM Studio',
+                query: null,
+              },
+            ],
+          }),
+        ),
     });
     renderApp('/');
     await ask('Postgres MCP vs LM Studio');
     await answered();
     const fold = screen.getByText('How the guide decided').closest('details')!;
     await userEvent.click(within(fold).getByText('How the guide decided'));
-    const notice = within(fold).getByText(/was not found in our sources\./).closest('p')!;
+    const notice = within(fold)
+      .getByText(/was not found in our sources\./)
+      .closest('p')!;
     expect(notice).toHaveTextContent('LM Studio was not found in our sources. Name AI-written');
-    expect([...notice.querySelectorAll('[data-ai-generated]')].map((m) => m.textContent)).toEqual(['LM Studio']);
+    expect([...notice.querySelectorAll('[data-ai-generated]')].map((m) => m.textContent)).toEqual([
+      'LM Studio',
+    ]);
     expect(within(fold).queryByText(/A name to compare/)).not.toBeInTheDocument();
   });
 
-  it('an older cached answer without the fields: the bar says it without the planner\'s words and without the AI label', async () => {
+  it("an older cached answer without the fields: the bar says it without the planner's words and without the AI label", async () => {
     mockApi({
-      'POST /guide/stream': () => sse(makeGuide({
-        status: 'PARTIAL', recommendations: [],
-        notices: [{ code: 'GUIDE_SUBJECT_NOT_FOUND', message: 'Frobnicator was not found in our sources; showing tools for: local llm runner' }],
-      })),
+      'POST /guide/stream': () =>
+        sse(
+          makeGuide({
+            status: 'PARTIAL',
+            recommendations: [],
+            notices: [
+              {
+                code: 'GUIDE_SUBJECT_NOT_FOUND',
+                message:
+                  'Frobnicator was not found in our sources; showing tools for: local llm runner',
+              },
+            ],
+          }),
+        ),
     });
     renderApp('/');
     await ask('an alternative to Frobnicator for local models');
     const bar = await screen.findByRole('region', { name: 'Guide picks' });
-    expect(await within(bar).findByText('A name in the question was not found in our sources; showing the closest results.')).toBeInTheDocument();
+    expect(
+      await within(bar).findByText(
+        'A name in the question was not found in our sources; showing the closest results.',
+      ),
+    ).toBeInTheDocument();
     expect(within(bar).queryByText(/Frobnicator/)).not.toBeInTheDocument();
     expect(within(bar).queryByText(/AI-written$/)).not.toBeInTheDocument();
   });
 
   it('model chose nothing: the bar says nothing fits, no row is a pick, and the preview only says what the result is', async () => {
     const base = makeGuide();
-    const fallback = { ...base.recommendations[0]!, reason: 'Top search result (no AI reasoning available).', aiReasoned: false };
-    mockApi({ 'POST /guide/stream': () => sse(makeGuide({ status: 'PARTIAL', rejected: 0, recommendations: [fallback] })) });
+    const fallback = {
+      ...base.recommendations[0]!,
+      reason: 'Top search result (no AI reasoning available).',
+      aiReasoned: false,
+    };
+    mockApi({
+      'POST /guide/stream': () =>
+        sse(makeGuide({ status: 'PARTIAL', rejected: 0, recommendations: [fallback] })),
+    });
     renderApp('/');
     await ask('a quantum blockchain toaster that writes poems');
     const bar = await screen.findByRole('region', { name: 'Guide picks' });
@@ -293,18 +428,24 @@ describe('guide on the one page', () => {
     expect(screen.queryByText(/Some AI suggestions were removed/)).not.toBeInTheDocument();
     expect((await preview()).getByRole('heading', { name: 'About' })).toBeInTheDocument();
     expect(screen.queryByText(/checked word for word/)).not.toBeInTheDocument();
-    expect(screen.queryByText('Top search result (no AI reasoning available).')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('Top search result (no AI reasoning available).'),
+    ).not.toBeInTheDocument();
   });
 
   it('rejected > 0 shows how many AI suggestions were removed', async () => {
     mockApi({ 'POST /guide/stream': () => sse(makeGuide({ status: 'PARTIAL', rejected: 2 })) });
     renderApp('/');
     await ask('an MCP server for Postgres');
-    expect(await screen.findByText(/2 AI suggestions removed: no supporting evidence/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/2 AI suggestions removed: no supporting evidence/),
+    ).toBeInTheDocument();
   });
 
   it('API error shows an alert and keeps the typed request', async () => {
-    mockApi({ 'POST /guide/stream': () => problem(429, 'Too many requests', 'Please wait a minute.') });
+    mockApi({
+      'POST /guide/stream': () => problem(429, 'Too many requests', 'Please wait a minute.'),
+    });
     renderApp('/');
     await ask('an MCP server for Postgres');
     expect(await screen.findByRole('alert')).toHaveTextContent('Please wait a minute.');
@@ -317,7 +458,9 @@ describe('guide on the one page', () => {
     expect(await answered()).toBeInTheDocument();
     expect(screen.getByLabelText(BOX)).toHaveValue('MCP server for Slack');
     expect(m.callsTo('POST', '/guide/stream')).toHaveLength(1);
-    expect(m.callsTo('POST', '/guide/stream')[0]?.body).toEqual({ request: 'MCP server for Slack' });
+    expect(m.callsTo('POST', '/guide/stream')[0]?.body).toEqual({
+      request: 'MCP server for Slack',
+    });
   });
 
   it('/guide is not a page: it shows the not-found page and asks no guide', async () => {
@@ -329,7 +472,12 @@ describe('guide on the one page', () => {
 
   it('while the guide answers the picks bar says it is reading, and the line goes once the answer is in', async () => {
     let release!: (r: Response) => void;
-    mockApi({ 'POST /guide/stream': () => new Promise((r) => { release = r; }) });
+    mockApi({
+      'POST /guide/stream': () =>
+        new Promise((r) => {
+          release = r;
+        }),
+    });
     renderApp('/');
     await ask('an MCP server for Postgres');
     expect(await screen.findByText(/Guide is reading the results/)).toBeInTheDocument();
@@ -340,7 +488,10 @@ describe('guide on the one page', () => {
 
   it('a failed guide request clears the spinner and offers a retry that asks again', async () => {
     let n = 0;
-    const m = mockApi({ 'POST /guide/stream': () => (n++ === 0 ? problem(502, 'Bad gateway', 'The model timed out.') : sse(makeGuide())) });
+    const m = mockApi({
+      'POST /guide/stream': () =>
+        n++ === 0 ? problem(502, 'Bad gateway', 'The model timed out.') : sse(makeGuide()),
+    });
     renderApp('/');
     await ask('an MCP server for Postgres');
     expect(await screen.findByRole('alert')).toHaveTextContent('The model timed out.');
@@ -353,7 +504,12 @@ describe('guide on the one page', () => {
   });
 
   it('a new question while one is answered replaces it: the old stream is aborted', async () => {
-    const m = mockApi({ 'POST /guide/stream': ({ body }) => ((body as { request: string }).request.includes('Slack') ? sse(makeGuide()) : new Promise(() => undefined)) });
+    const m = mockApi({
+      'POST /guide/stream': ({ body }) =>
+        (body as { request: string }).request.includes('Slack')
+          ? sse(makeGuide())
+          : new Promise(() => undefined),
+    });
     renderApp('/');
     await ask('an MCP server for Postgres');
     await screen.findByText(/Guide is reading/);
@@ -361,10 +517,13 @@ describe('guide on the one page', () => {
     await ask('an MCP server for Slack');
     expect(await answered()).toBeInTheDocument();
     expect(m.callsTo('POST', '/guide/stream')).toHaveLength(2);
-    const firstSignal = (m.fetchMock.mock.calls.find(([, init]) => String(init?.body).includes('Postgres'))?.[1] as RequestInit).signal;
+    const firstSignal = (
+      m.fetchMock.mock.calls.find(([, init]) =>
+        String(init?.body).includes('Postgres'),
+      )?.[1] as RequestInit
+    ).signal;
     expect(firstSignal?.aborted).toBe(true);
   });
-
 
   it('Shift+Enter asks the guide even for a short text, and keeps it as the search', async () => {
     const m = mockApi({ 'POST /guide/stream': () => sse(makeGuide()) });
@@ -384,12 +543,12 @@ describe('guide on the one page', () => {
     expect(m.callsTo('POST', '/guide/stream')).toHaveLength(0);
   });
 
-
-
   it('highlights the checked quote inside the resource’s own description, in the preview of pick #1', async () => {
-    const description = 'Fast. An MCP server that gives agents  READ-ONLY access to a PostgreSQL database, with audit logs.';
+    const description =
+      'Fast. An MCP server that gives agents  READ-ONLY access to a PostgreSQL database, with audit logs.';
     mockApi({
-      'GET /search': () => makeSearch({ results: [makeCard(), { ...PICKED, description }], total: 2 }),
+      'GET /search': () =>
+        makeSearch({ results: [makeCard(), { ...PICKED, description }], total: 2 }),
       'POST /guide/stream': () => sse(makeGuide()),
     });
     renderApp('/');
@@ -397,16 +556,19 @@ describe('guide on the one page', () => {
 
     await answered();
     const mark = screen.getByRole('article').querySelector('mark');
-    expect(mark).toHaveTextContent('MCP server that gives agents READ-ONLY access to a PostgreSQL database');
+    expect(mark).toHaveTextContent(
+      'MCP server that gives agents READ-ONLY access to a PostgreSQL database',
+    );
     expect(mark?.parentElement).toHaveTextContent(/^Fast\. An .* with audit logs\.$/);
   });
 
   it('an error event from the stream shows its message', async () => {
     mockApi({
-      'POST /guide/stream': () => new Response(
-        'event:error\ndata:{"title":"Guide failed","status":500,"detail":"The guide could not answer. Try again in a moment."}\n\n',
-        { headers: { 'content-type': 'text/event-stream' } },
-      ),
+      'POST /guide/stream': () =>
+        new Response(
+          'event:error\ndata:{"title":"Guide failed","status":500,"detail":"The guide could not answer. Try again in a moment."}\n\n',
+          { headers: { 'content-type': 'text/event-stream' } },
+        ),
     });
     renderApp('/');
     await ask('an MCP server for Postgres');
@@ -415,11 +577,15 @@ describe('guide on the one page', () => {
 
   it('a stream that closes before the answer says so', async () => {
     mockApi({
-      'POST /guide/stream': () => new Response('event:planned\ndata:{"searchQuery":"mcp","constraints":[],"model":"m"}\n\n',
-        { headers: { 'content-type': 'text/event-stream' } }),
+      'POST /guide/stream': () =>
+        new Response('event:planned\ndata:{"searchQuery":"mcp","constraints":[],"model":"m"}\n\n', {
+          headers: { 'content-type': 'text/event-stream' },
+        }),
     });
     renderApp('/');
     await ask('an MCP server for Postgres');
-    expect(await screen.findByRole('alert')).toHaveTextContent('The connection closed before the answer arrived.');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'The connection closed before the answer arrived.',
+    );
   });
 });

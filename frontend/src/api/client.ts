@@ -1,4 +1,30 @@
-import type { UpcomingEventsResponse, Bookmark, BookmarkRequest, GuideRequest, GuideResponse, GuideStep, GuideStepEvent, IssueReportAccepted, IssueReportRequest, Me, Problem, RecentResponse, ResourceDetail, ReviewItem, ReviewItemPage, SetupGuide, ToolGuide, ReviewResolution, ReviewStatus, ReviewKind, ScoutRun, AuditEntryPage, AdminOverview, SearchResponse, SourceInfo } from './types';
+import type {
+  UpcomingEventsResponse,
+  Bookmark,
+  BookmarkRequest,
+  GuideRequest,
+  GuideResponse,
+  GuideStep,
+  GuideStepEvent,
+  IssueReportAccepted,
+  IssueReportRequest,
+  Me,
+  Problem,
+  RecentResponse,
+  ResourceDetail,
+  ReviewItem,
+  ReviewItemPage,
+  SetupGuide,
+  ToolGuide,
+  ReviewResolution,
+  ReviewStatus,
+  ReviewKind,
+  ScoutRun,
+  AuditEntryPage,
+  AdminOverview,
+  SearchResponse,
+  SourceInfo,
+} from './types';
 
 import { guideStreamEventValues } from './schema';
 import { SseParser } from '@/lib/sse';
@@ -71,7 +97,8 @@ async function send(method: string, url: string, opts: RequestOptions): Promise<
   if (!res.ok) {
     let problem: Problem | undefined;
     try {
-      if ((res.headers.get('content-type') ?? '').includes('json')) problem = (await res.json()) as Problem;
+      if ((res.headers.get('content-type') ?? '').includes('json'))
+        problem = (await res.json()) as Problem;
     } catch {
       /* non-JSON error body */
     }
@@ -147,7 +174,11 @@ async function askGuideStream(
 
   arm();
   try {
-    const res = await send('POST', absolute(`${API_BASE}/guide/stream`), { body, signal: ctrl.signal, accept: 'text/event-stream, application/problem+json' });
+    const res = await send('POST', absolute(`${API_BASE}/guide/stream`), {
+      body,
+      signal: ctrl.signal,
+      accept: 'text/event-stream, application/problem+json',
+    });
     reader = res.body?.pipeThrough(new TextDecoderStream()).getReader();
     while (reader && !answer) {
       const { done, value } = await reader.read();
@@ -159,7 +190,8 @@ async function askGuideStream(
     if (idle) throw new ApiError(0, 'The answer stream went quiet', undefined, 'IDLE_TIMEOUT');
     signal?.throwIfAborted();
     handle('\n\n');
-    if (!answer) throw new ApiError(0, 'The answer stream ended without an answer', undefined, 'ENDED_EARLY');
+    if (!answer)
+      throw new ApiError(0, 'The answer stream ended without an answer', undefined, 'ENDED_EARLY');
     return answer;
   } catch (e) {
     if (idle) throw new ApiError(0, 'The answer stream went quiet', undefined, 'IDLE_TIMEOUT');
@@ -191,12 +223,18 @@ export const api = {
   getMe: (signal?: AbortSignal) => request<Me>('GET', '/me', { signal }),
   listBookmarks: (signal?: AbortSignal) => request<Bookmark[]>('GET', '/me/bookmarks', { signal }),
   /** Right after sign-in: the browser's bookmarks join the account's; answers with the full list. */
-  mergeLocalBookmarks: (body: BookmarkRequest[]) => request<Bookmark[]>('POST', '/me/bookmarks', { body }),
+  mergeLocalBookmarks: (body: BookmarkRequest[]) =>
+    request<Bookmark[]>('POST', '/me/bookmarks', { body }),
   addBookmark: (body: BookmarkRequest) =>
     request<Bookmark>('PUT', `/me/bookmarks/${encodeURIComponent(body.resourceId)}`, { body }),
   deleteBookmark: (resourceId: string) =>
     request<void>('DELETE', `/me/bookmarks/${encodeURIComponent(resourceId)}`),
-  listReviewItems: (filter: { status?: ReviewStatus | undefined; kind?: ReviewKind | undefined }, page: number, size: number, signal?: AbortSignal) =>
+  listReviewItems: (
+    filter: { status?: ReviewStatus | undefined; kind?: ReviewKind | undefined },
+    page: number,
+    size: number,
+    signal?: AbortSignal,
+  ) =>
     request<ReviewItemPage>('GET', '/admin/review-items', {
       query: new URLSearchParams({
         ...(filter.status ? { status: filter.status } : {}),
@@ -208,15 +246,22 @@ export const api = {
     }),
   /** 409 when the item was already decided (another decision, a double click, or a newer enrichment run). */
   resolveReviewItem: (id: string, body: ReviewResolution) =>
-    request<ReviewItem>('PUT', `/admin/review-items/${encodeURIComponent(id)}/resolution`, { body }),
-  listScoutRuns: (signal?: AbortSignal) => request<ScoutRun[]>('GET', '/admin/scout-runs', { signal }),
+    request<ReviewItem>('PUT', `/admin/review-items/${encodeURIComponent(id)}/resolution`, {
+      body,
+    }),
+  listScoutRuns: (signal?: AbortSignal) =>
+    request<ScoutRun[]>('GET', '/admin/scout-runs', { signal }),
   /** Answers at once with the started run's records (RUNNING); follow them with listScoutRuns. 409 while a run holds the lock. */
   startScoutRun: (sourceId?: string) =>
     request<ScoutRun[]>('POST', '/admin/scout-runs', { body: sourceId ? { sourceId } : {} }),
   /** Counts for the back office landing page; the server computes them at most once a minute. */
-  getAdminOverview: (signal?: AbortSignal) => request<AdminOverview>('GET', '/admin/overview', { signal }),
+  getAdminOverview: (signal?: AbortSignal) =>
+    request<AdminOverview>('GET', '/admin/overview', { signal }),
   listAuditEntries: (page: number, size: number, signal?: AbortSignal) =>
-    request<AuditEntryPage>('GET', '/admin/audit', { query: new URLSearchParams({ page: String(page), size: String(size) }), signal }),
+    request<AuditEntryPage>('GET', '/admin/audit', {
+      query: new URLSearchParams({ page: String(page), size: String(size) }),
+      signal,
+    }),
 };
 
 /** Spring Security logout lives outside /api/v1. */
@@ -229,7 +274,9 @@ export async function signOut(reload: () => void = () => window.location.reload(
 }
 
 /** Deletes the signed-in user's account and bookmarks; the server ends the session, so the page starts over. */
-export async function deleteMyAccount(reload: () => void = () => window.location.reload()): Promise<void> {
+export async function deleteMyAccount(
+  reload: () => void = () => window.location.reload(),
+): Promise<void> {
   await request<void>('DELETE', '/me');
   reload();
 }

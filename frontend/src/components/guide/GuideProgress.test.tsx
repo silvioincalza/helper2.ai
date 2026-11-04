@@ -37,21 +37,31 @@ describe('guide progress while it works', () => {
     await waitFor(() => expect(line).toHaveTextContent('Understood as New resources, MCP servers'));
 
     stream.step('retrieved', { candidates: 42, sources: [] });
-    await waitFor(() => expect(within(picksBar()).getByRole('status')).toHaveTextContent('Guide is reading 42 candidates'));
+    await waitFor(() =>
+      expect(within(picksBar()).getByRole('status')).toHaveTextContent(
+        'Guide is reading 42 candidates',
+      ),
+    );
     expect(within(picksBar()).getByRole('status')).toHaveTextContent('New resources, MCP servers');
     // Nothing to remove yet: a second question would start while the first one still runs.
     expect(screen.queryByRole('button', { name: /and ask again/ })).toBeNull();
 
     stream.finish(answer());
-    expect(await screen.findByRole('button', { name: 'Remove “New resources” and ask again' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', { name: 'Remove “New resources” and ask again' }),
+    ).toBeInTheDocument();
   });
 });
 
 describe('web searches left today', () => {
   it('shows what the guide has left once one is used', async () => {
-    mockApi({ 'POST /guide/stream': () => sse(answer({ webSearches: { limit: 3, remaining: 2 } })) });
+    mockApi({
+      'POST /guide/stream': () => sse(answer({ webSearches: { limit: 3, remaining: 2 } })),
+    });
     renderApp(URL);
-    expect(await screen.findByText('2 of 3 web searches left today for the guide.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('2 of 3 web searches left today for the guide.'),
+    ).toBeInTheDocument();
   });
 
   it('says when search has none left, that stored results still answer, and when it resets', async () => {

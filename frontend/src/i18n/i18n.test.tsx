@@ -16,9 +16,10 @@ describe('i18n', () => {
   });
 
   it('falls back to the raw slug for unknown use cases', async () => {
-    mockApi({ 'GET /search': () => makeSearch({ results: [makeCard({ useCases: ['quantum-baking'] })] }) });
+    mockApi({
+      'GET /search': () => makeSearch({ results: [makeCard({ useCases: ['quantum-baking'] })] }),
+    });
     renderApp('/search?q=x');
     expect(await screen.findByText('quantum-baking', { exact: false })).toBeInTheDocument();
   });
-
 });

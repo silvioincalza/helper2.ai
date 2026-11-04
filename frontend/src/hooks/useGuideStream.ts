@@ -58,7 +58,12 @@ export function useGuideStream(): GuideStream {
     const update = (change: (r: Run) => Run) => {
       if (!ctrl.signal.aborted) setRun((r) => change(r.id === runId ? r : fresh(runId)));
     };
-    api.askGuideStream(JSON.parse(request) as GuideRequest, (step) => update((r) => ({ ...r, steps: [...r.steps, step] })), ctrl.signal)
+    api
+      .askGuideStream(
+        JSON.parse(request) as GuideRequest,
+        (step) => update((r) => ({ ...r, steps: [...r.steps, step] })),
+        ctrl.signal,
+      )
       .then((answer) => update((r) => ({ ...r, answer, done: true })))
       .catch((error: unknown) => update((r) => ({ ...r, error, done: true })));
     // Forget this run when it is replaced: coming back to the same request (Back) starts clean, not done.

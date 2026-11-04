@@ -59,5 +59,7 @@ interface GuideStepData {
 /** Every event of the contract but the last one (`answer` or `error`) is a step. */
 export type GuideStepEvent = Exclude<S['GuideStreamEvent'], 'answer' | 'error'>;
 /** One real step of the guide, as streamed by POST /guide/stream. */
-export type GuideStep = { [K in GuideStepEvent]: { kind: K; data: GuideStepData[K] } }[GuideStepEvent];
+export type GuideStep = {
+  [K in GuideStepEvent]: { kind: K; data: GuideStepData[K] };
+}[GuideStepEvent];
 export type GuideResponse = S['GuideResponse'];

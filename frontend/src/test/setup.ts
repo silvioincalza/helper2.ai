@@ -12,7 +12,8 @@ beforeEach(async () => {
   actWarnings = [];
   console.error = (...args: unknown[]) => {
     const message = args.map(String).join(' ');
-    if (message.includes('not wrapped in act')) actWarnings.push(args.slice(1).map(String).join(' ') || message);
+    if (message.includes('not wrapped in act'))
+      actWarnings.push(args.slice(1).map(String).join(' ') || message);
     realError(...args);
   };
   window.localStorage.clear();
@@ -26,11 +27,15 @@ beforeEach(async () => {
 
 afterEach(async () => {
   // Answers a test did not wait for (the sources list, /me) arrive inside act() before the screen is torn down.
-  if (!vi.isFakeTimers()) await act(async () => { for (let i = 0; i < 10; i++) await Promise.resolve(); });
+  if (!vi.isFakeTimers())
+    await act(async () => {
+      for (let i = 0; i < 10; i++) await Promise.resolve();
+    });
   cleanup();
   clearApiCache();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
   console.error = realError;
-  if (actWarnings.length > 0) throw new Error(`State updated outside act() in: ${actWarnings.join(', ')}`);
+  if (actWarnings.length > 0)
+    throw new Error(`State updated outside act() in: ${actWarnings.join(', ')}`);
 });

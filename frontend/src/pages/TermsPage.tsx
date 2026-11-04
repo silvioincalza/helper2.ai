@@ -20,7 +20,14 @@ export default function TermsPage() {
   return (
     <TextPage
       i18nKey="terms.sections"
-      head={<><h1>{t('terms.title')}</h1><p className="updated">{t('terms.updated')}</p><p className="lede">{t('terms.lede')}</p>{contact}</>}
+      head={
+        <>
+          <h1>{t('terms.title')}</h1>
+          <p className="updated">{t('terms.updated')}</p>
+          <p className="lede">{t('terms.lede')}</p>
+          {contact}
+        </>
+      }
       after={privacy}
     />
   );

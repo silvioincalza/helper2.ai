@@ -8,7 +8,13 @@ import type { Refine } from './types';
  * How the guide read the question, as chips: the kind of answer, the named subjects, the period and the
  * requirements; the AI-written requirements carry one label for the group. ✕ re-asks without that part (sent as a structured removal, never as text to the model).
  */
-export function Understood({ answer, onRefine }: { answer: GuideResponse; onRefine?: Refine | undefined }) {
+export function Understood({
+  answer,
+  onRefine,
+}: {
+  answer: GuideResponse;
+  onRefine?: Refine | undefined;
+}) {
   const { t } = useTranslation();
   const parts = readingParts(answer, answer.generatedAt.slice(0, 10), t);
   if (parts.length === 0) return null;
@@ -19,7 +25,13 @@ export function Understood({ answer, onRefine }: { answer: GuideResponse; onRefi
         <span key={p.key} className="understood-chip">
           {p.ai ? <span {...aiMark()}>{p.label}</span> : p.label}
           {p.drop && onRefine && (
-            <button type="button" aria-label={t('guide.remove', { part: p.label })} onClick={() => onRefine({ drop: [p.drop!] })}>×</button>
+            <button
+              type="button"
+              aria-label={t('guide.remove', { part: p.label })}
+              onClick={() => onRefine({ drop: [p.drop!] })}
+            >
+              ×
+            </button>
           )}
         </span>
       ))}

@@ -16,13 +16,19 @@ import './resource.css';
 import { OpenButton } from './OpenButton';
 
 /** What the results page passes on: where to go back to, and the sentence the guide checked. */
-interface FromResults { from?: string | undefined; quote?: string | null }
+interface FromResults {
+  from?: string | undefined;
+  quote?: string | null;
+}
 
 function fromResults(state: unknown): FromResults {
   if (!state || typeof state !== 'object') return {};
   const s = state as Record<string, unknown>;
   // Only a path inside the site, so the back link can never leave it.
-  const from = typeof s.from === 'string' && s.from.startsWith('/') && !s.from.startsWith('//') ? s.from : undefined;
+  const from =
+    typeof s.from === 'string' && s.from.startsWith('/') && !s.from.startsWith('//')
+      ? s.from
+      : undefined;
   const quote = typeof s.quote === 'string' && s.quote.trim() ? s.quote : null;
   return { from, quote };
 }
@@ -40,11 +46,17 @@ export function Resource({ detail: d, children }: { detail: ResourceDetail; chil
   return (
     <div className="h2-res">
       <p className="h2-res__back">
-        <Link to={from ?? '/'}><span aria-hidden="true">← </span>{from ? t('resource.backToResults') : t('detail.backToSearch')}</Link>
+        <Link to={from ?? '/'}>
+          <span aria-hidden="true">← </span>
+          {from ? t('resource.backToResults') : t('detail.backToSearch')}
+        </Link>
       </p>
       <div className="h2-res__grid">
         <div className="h2-res__main">
-          <div className="h2-pv__top"><TypeTag type={card.type} /><span className="h2-row__host">{host}</span></div>
+          <div className="h2-pv__top">
+            <TypeTag type={card.type} />
+            <span className="h2-row__host">{host}</span>
+          </div>
           <h1 className="h2-pv__title">{card.title}</h1>
           <div className="h2-pv__actions">
             <OpenButton url={card.url} host={host} />
@@ -53,12 +65,16 @@ export function Resource({ detail: d, children }: { detail: ResourceDetail; chil
           {canGuide(card) && <SetupGuidePanel id={card.id} title={card.title} />}
 
           <section className="h2-res__sec" aria-labelledby="h2-res-text">
-            <h2 id="h2-res-text" className="h2-pv__sec">{t('resource.sourceText')}</h2>
+            <h2 id="h2-res-text" className="h2-pv__sec">
+              {t('resource.sourceText')}
+            </h2>
             {/* A checked quote can come from the title alone, so it shows even without a description. */}
             {quote ? (
               <ProofQuote text={card.description ?? ''} quote={quote} source={host} />
             ) : card.description ? (
-              <p className="h2-res__text" {...(isAiOrigin(card.descriptionOrigin) ? aiMark() : {})}>{card.description}</p>
+              <p className="h2-res__text" {...(isAiOrigin(card.descriptionOrigin) ? aiMark() : {})}>
+                {card.description}
+              </p>
             ) : (
               <p className="muted">{t('card.noDescription')}</p>
             )}
@@ -70,15 +86,21 @@ export function Resource({ detail: d, children }: { detail: ResourceDetail; chil
 
         <aside className="h2-res__side" aria-label={t('results.facts')}>
           <section aria-labelledby="h2-res-facts">
-            <h2 id="h2-res-facts" className="h2-pv__sec">{t('results.facts')}</h2>
+            <h2 id="h2-res-facts" className="h2-pv__sec">
+              {t('results.facts')}
+            </h2>
             <ResultFacts card={card} groupTag="h3" />
           </section>
           <section aria-labelledby="h2-res-listed">
-            <h2 id="h2-res-listed" className="h2-pv__sec">{t('results.listedBy')}</h2>
+            <h2 id="h2-res-listed" className="h2-pv__sec">
+              {t('results.listedBy')}
+            </h2>
             <ListedBy card={card} />
           </section>
           <section aria-labelledby="h2-res-time">
-            <h2 id="h2-res-time" className="h2-pv__sec">{t('results.timeline')}</h2>
+            <h2 id="h2-res-time" className="h2-pv__sec">
+              {t('results.timeline')}
+            </h2>
             <Timeline timeline={card.timeline} />
           </section>
         </aside>

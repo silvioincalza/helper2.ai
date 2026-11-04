@@ -2,7 +2,15 @@ import { useTranslation } from 'react-i18next';
 import { hostname, safeHref } from '@/lib/format';
 import { Icon } from './Icon';
 
-export function ExternalLink({ url, children, showHost = true }: { url: string; children?: React.ReactNode; showHost?: boolean }) {
+export function ExternalLink({
+  url,
+  children,
+  showHost = true,
+}: {
+  url: string;
+  children?: React.ReactNode;
+  showHost?: boolean;
+}) {
   const { t } = useTranslation();
   const href = safeHref(url);
   if (!href) return <span>{children ?? url}</span>;

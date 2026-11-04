@@ -5,7 +5,8 @@
 export type EvidenceSource = { kind: 'readme' | 'modelCard'; name: string };
 
 const README = /^https:\/\/github\.com\/([A-Za-z0-9-]+\/[A-Za-z0-9._-]+)#readme$/;
-const MODEL_CARD = /^https:\/\/huggingface\.co\/([A-Za-z0-9._-]+\/[A-Za-z0-9._-]+)\/blob\/[^/]+\/README\.md$/;
+const MODEL_CARD =
+  /^https:\/\/huggingface\.co\/([A-Za-z0-9._-]+\/[A-Za-z0-9._-]+)\/blob\/[^/]+\/README\.md$/;
 
 export function evidenceSource(url: string): EvidenceSource | null {
   const readme = README.exec(url);

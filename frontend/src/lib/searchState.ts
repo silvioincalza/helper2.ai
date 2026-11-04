@@ -46,13 +46,25 @@ export function clampQuestion(text: string): string {
 }
 
 // Records keyed by the contract's enums: a value added to or removed from the API breaks the build here.
-const SORT_VALUES = { RELEVANCE: true, NEWEST: true, RECENTLY_UPDATED: true } satisfies Record<SortOrder, true>;
+const SORT_VALUES = { RELEVANCE: true, NEWEST: true, RECENTLY_UPDATED: true } satisfies Record<
+  SortOrder,
+  true
+>;
 const TRI_VALUES = { true: true, false: true, unknown: true } satisfies Record<TriState, true>;
 const SORTS = Object.keys(SORT_VALUES) as SortOrder[];
 const TRI = Object.keys(TRI_VALUES) as TriState[];
 
 export function emptyFilters(): Record<MultiKey, string[]> {
-  return { type: [], source: [], license: [], pricing: [], platform: [], useCase: [], techLevel: [], audience: [] };
+  return {
+    type: [],
+    source: [],
+    license: [],
+    pricing: [],
+    platform: [],
+    useCase: [],
+    techLevel: [],
+    audience: [],
+  };
 }
 
 export function parseSearchParams(sp: URLSearchParams): SearchState {
@@ -114,7 +126,9 @@ export function patchState(s: SearchState, patch: Partial<SearchState>): SearchS
 
 export function toggleFilter(s: SearchState, key: MultiKey, value: string): SearchState {
   const has = isSelected(s.filters[key], value);
-  const list = has ? s.filters[key].filter((v) => v.toLowerCase() !== value.toLowerCase()) : [...s.filters[key], value];
+  const list = has
+    ? s.filters[key].filter((v) => v.toLowerCase() !== value.toLowerCase())
+    : [...s.filters[key], value];
   return patchState(s, { filters: { ...s.filters, [key]: list } });
 }
 
@@ -124,7 +138,8 @@ export function isSelected(list: string[], value: string): boolean {
 
 /** Value to put in the URL for a facet bucket (`unknown` bucket spelled per the API enum). */
 export function filterValue(key: MultiKey, facetValue: string): string {
-  if (facetValue.toLowerCase() === 'unknown') return ENUM_KEYS.includes(key) ? 'UNKNOWN' : 'unknown';
+  if (facetValue.toLowerCase() === 'unknown')
+    return ENUM_KEYS.includes(key) ? 'UNKNOWN' : 'unknown';
   return facetValue;
 }
 
@@ -133,7 +148,11 @@ export function clearFilters(s: SearchState): SearchState {
 }
 
 export function activeFilterCount(s: SearchState): number {
-  return MULTI_KEYS.reduce((n, k) => n + s.filters[k].length, 0) + (s.openSource ? 1 : 0) + (s.updatedAfter ? 1 : 0);
+  return (
+    MULTI_KEYS.reduce((n, k) => n + s.filters[k].length, 0) +
+    (s.openSource ? 1 : 0) +
+    (s.updatedAfter ? 1 : 0)
+  );
 }
 
 /** The question in a home URL (`ask`), or '' when there is none worth asking. */
@@ -168,7 +187,8 @@ export function askedRefinement(sp: URLSearchParams): Refinement {
 function setRefinement(params: URLSearchParams, r: Refinement) {
   params.delete('clar');
   params.delete('drop');
-  if (r.clarification !== undefined && r.clarification !== null) params.set('clar', r.clarification);
+  if (r.clarification !== undefined && r.clarification !== null)
+    params.set('clar', r.clarification);
   for (const d of r.drop) params.append('drop', d);
 }
 
@@ -194,17 +214,25 @@ export function resourcePath(id: string): string {
  * The home URL for [state] plus, optionally, the question the guide should answer. When that is the question
  * [current] already asks, its refinement stays; a new question starts without one.
  */
-export function homeParams(state: SearchState, ask = '', current?: URLSearchParams): URLSearchParams {
+export function homeParams(
+  state: SearchState,
+  ask = '',
+  current?: URLSearchParams,
+): URLSearchParams {
   const params = toSearchParams(state);
   const question = clampQuestion(ask);
   if (question) {
     params.set('ask', question);
-    if (current && askedQuestion(current) === question) setRefinement(params, askedRefinement(current));
+    if (current && askedQuestion(current) === question)
+      setRefinement(params, askedRefinement(current));
   }
   return params;
 }
 
 /** The home URL that searches [question] and asks the guide about it, from any page. */
 export function askParams(question: string): URLSearchParams {
-  return homeParams(patchState(parseSearchParams(new URLSearchParams()), { q: question }), question);
+  return homeParams(
+    patchState(parseSearchParams(new URLSearchParams()), { q: question }),
+    question,
+  );
 }

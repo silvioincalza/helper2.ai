@@ -9,7 +9,12 @@ export default function MissionPage() {
   useTitle(t('nav.mission'));
   const feedback = (
     <p>
-      <a href={`${REPO_URL}/issues`} target="_blank" rel="noopener noreferrer" aria-label={t('mission.feedbackLink')}>
+      <a
+        href={`${REPO_URL}/issues`}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={t('mission.feedbackLink')}
+      >
         {t('mission.feedback')}
       </a>
     </p>
@@ -17,8 +22,18 @@ export default function MissionPage() {
   return (
     <TextPage
       i18nKey="mission.sections"
-      head={<><h1>{t('mission.title')}</h1><p className="lede">{t('mission.lede')}</p></>}
-      after={<><HowItWorks />{feedback}</>}
+      head={
+        <>
+          <h1>{t('mission.title')}</h1>
+          <p className="lede">{t('mission.lede')}</p>
+        </>
+      }
+      after={
+        <>
+          <HowItWorks />
+          {feedback}
+        </>
+      }
     />
   );
 }

@@ -24,7 +24,11 @@ export function ResultsTimeline({ cards }: { cards: ResultCard[] }) {
         return (
           <li key={id} className="tl-group">
             <h3 id={id} className="tl-month">
-              {group.month ? <time dateTime={group.month}>{formatMonth(group.month, i18n.language)}</time> : t('timeline.unknown')}
+              {group.month ? (
+                <time dateTime={group.month}>{formatMonth(group.month, i18n.language)}</time>
+              ) : (
+                t('timeline.unknown')
+              )}
             </h3>
             {!group.month && <p className="muted small">{t('timeline.unknownHint')}</p>}
             <ol className="plain-list tl-items" aria-labelledby={id}>
@@ -36,10 +40,15 @@ export function ResultsTimeline({ cards }: { cards: ResultCard[] }) {
                     <p className="tl-date small">
                       {created ? (
                         <>
-                          {t('timeline.created')} <time dateTime={created}>{formatDate(created, i18n.language, 'DAY')}</time>
+                          {t('timeline.created')}{' '}
+                          <time dateTime={created}>
+                            {formatDate(created, i18n.language, 'DAY')}
+                          </time>
                           {disputed && <span className="muted"> ({t('date.conflicting')})</span>}
                         </>
-                      ) : t('timeline.noDate')}
+                      ) : (
+                        t('timeline.noDate')
+                      )}
                     </p>
                     <Link to={resourcePath(card.id)} className="h2-row tl-row">
                       <span className="h2-row__meta">
@@ -47,11 +56,17 @@ export function ResultsTimeline({ cards }: { cards: ResultCard[] }) {
                         <span className="h2-row__host">{displayHost(card.url)}</span>
                       </span>
                       <span className="h2-row__title">{card.title}</span>
-                      {card.description && (
-                        isAiOrigin(card.descriptionOrigin)
-                          ? <span className="h2-row__text"><span className="h2-row__ai"><OriginLabel origin={card.descriptionOrigin} /></span> <span {...aiMark()}>{card.description}</span></span>
-                          : <span className="h2-row__text">{card.description}</span>
-                      )}
+                      {card.description &&
+                        (isAiOrigin(card.descriptionOrigin) ? (
+                          <span className="h2-row__text">
+                            <span className="h2-row__ai">
+                              <OriginLabel origin={card.descriptionOrigin} />
+                            </span>{' '}
+                            <span {...aiMark()}>{card.description}</span>
+                          </span>
+                        ) : (
+                          <span className="h2-row__text">{card.description}</span>
+                        ))}
                     </Link>
                   </li>
                 );

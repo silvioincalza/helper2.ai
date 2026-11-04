@@ -2,13 +2,26 @@
 export function LogoMark() {
   return (
     <span className="logo-mark">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-        strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+        focusable="false"
+      >
         <circle cx="12" cy="12" r="9" />
         <circle cx="12" cy="12" r="4.2" strokeWidth="1.4" opacity="0.5" />
         <path d="M12 12 18.4 5.6" />
-        <path d="M16.2 11.1Q16.2 15 20.1 15Q16.2 15 16.2 18.9Q16.2 15 12.3 15Q16.2 15 16.2 11.1Z"
-          fill="currentColor" strokeWidth="1" />
+        <path
+          d="M16.2 11.1Q16.2 15 20.1 15Q16.2 15 16.2 18.9Q16.2 15 12.3 15Q16.2 15 16.2 11.1Z"
+          fill="currentColor"
+          strokeWidth="1"
+        />
       </svg>
     </span>
   );

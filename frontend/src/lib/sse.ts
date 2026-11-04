@@ -31,7 +31,8 @@ export class SseParser {
 
   private line(line: string, out: SseEvent[]) {
     if (line === '') {
-      if (this.data.length > 0) out.push({ event: this.event || 'message', data: this.data.join('\n') });
+      if (this.data.length > 0)
+        out.push({ event: this.event || 'message', data: this.data.join('\n') });
       this.event = '';
       this.data = [];
       return;

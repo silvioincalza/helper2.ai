@@ -26,7 +26,12 @@ export function OriginLabel({ origin }: { origin: ValueOrigin }) {
   return <span className="origin">{t(`origin.${origin}`)}</span>;
 }
 
-const VERIF_ICON: Record<Verification, string> = { VERIFIED: 'check', UNVERIFIED: 'question', CONFLICTING: 'warn', REJECTED: 'cross' };
+const VERIF_ICON: Record<Verification, string> = {
+  VERIFIED: 'check',
+  UNVERIFIED: 'question',
+  CONFLICTING: 'warn',
+  REJECTED: 'cross',
+};
 
 export function VerificationBadge({ verification }: { verification: Verification }) {
   const { t } = useTranslation();

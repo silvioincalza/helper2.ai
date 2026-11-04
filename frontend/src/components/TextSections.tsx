@@ -10,7 +10,11 @@ export interface TextSection {
 
 /** A stable anchor for a section title: lower case, words joined by '-' ("Who receives data" → "who-receives-data"). */
 export function sectionAnchor(title: string): string {
-  return title.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  return title
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 }
 
 /** The `<key>.sections` array of a locale file, or an empty list when the key holds something else. */
@@ -25,7 +29,13 @@ export function useTextSections(i18nKey: string): TextSection[] {
  * copy in the locale file, so translating them needs no code change. [anchored]: each section gets the id of
  * [sectionAnchor], so a table of contents can link to it (ADR 0040).
  */
-export function TextSections({ i18nKey, anchored = false }: { i18nKey: string; anchored?: boolean }) {
+export function TextSections({
+  i18nKey,
+  anchored = false,
+}: {
+  i18nKey: string;
+  anchored?: boolean;
+}) {
   const idPrefix = useId();
   const sections = useTextSections(i18nKey);
   if (sections.length === 0) return null;
@@ -36,9 +46,19 @@ export function TextSections({ i18nKey, anchored = false }: { i18nKey: string; a
         const headingId = anchor ? `${anchor}-h` : `${idPrefix}-${i}`;
         return (
           <section key={s.title} id={anchor} aria-labelledby={headingId} className="text-section">
-            <h2 id={headingId} className="h-mid">{s.title}</h2>
-            {s.paragraphs?.map((p) => <p key={p}>{p}</p>)}
-            {s.items && <ul>{s.items.map((item) => <li key={item}>{item}</li>)}</ul>}
+            <h2 id={headingId} className="h-mid">
+              {s.title}
+            </h2>
+            {s.paragraphs?.map((p) => (
+              <p key={p}>{p}</p>
+            ))}
+            {s.items && (
+              <ul>
+                {s.items.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            )}
           </section>
         );
       })}

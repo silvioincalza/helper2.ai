@@ -1,8 +1,6 @@
 /** How far away a day is, in words a board shows: Today, Tomorrow, In N days (< 14), In N weeks (< 45 days), else In N months. */
 export type Countdown =
-  | { key: 'today' }
-  | { key: 'tomorrow' }
-  | { key: 'days' | 'weeks' | 'months'; count: number };
+  { key: 'today' } | { key: 'tomorrow' } | { key: 'days' | 'weeks' | 'months'; count: number };
 
 const DAY_MS = 86_400_000;
 

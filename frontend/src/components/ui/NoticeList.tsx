@@ -5,7 +5,10 @@ import { Icon } from '@/components/Icon';
 type NoticeCode = Notice['code'];
 
 /** The notices to show: every notice whose code is not excluded. */
-export function visibleNotices(notices: readonly Notice[], exclude: readonly NoticeCode[] = []): Notice[] {
+export function visibleNotices(
+  notices: readonly Notice[],
+  exclude: readonly NoticeCode[] = [],
+): Notice[] {
   return notices.filter((n) => !exclude.includes(n.code));
 }
 
@@ -14,7 +17,13 @@ export function visibleNotices(notices: readonly Notice[], exclude: readonly Not
  * server's message when there is no key). Nothing when no notice is left. The text is from the server, never from a
  * model: keep this list outside elements marked as AI-written (ADR 0038).
  */
-export function NoticeList({ notices, exclude = [] }: { notices: readonly Notice[]; exclude?: readonly NoticeCode[] }) {
+export function NoticeList({
+  notices,
+  exclude = [],
+}: {
+  notices: readonly Notice[];
+  exclude?: readonly NoticeCode[];
+}) {
   const { t } = useTranslation();
   const shown = visibleNotices(notices, exclude);
   if (shown.length === 0) return null;
@@ -25,7 +34,9 @@ export function NoticeList({ notices, exclude = [] }: { notices: readonly Notice
         return (
           <li key={`${n.code}-${i}`} className={`notice notice-${n.code.toLowerCase()}`}>
             <Icon name={warning ? 'warn' : 'info'} />
-            <span className="sr-only">{t(warning ? 'results.noticeWarning' : 'results.noticeInfo')}: </span>
+            <span className="sr-only">
+              {t(warning ? 'results.noticeWarning' : 'results.noticeInfo')}:{' '}
+            </span>
             {t(`results.notice.${n.code}`, { defaultValue: n.message })}
           </li>
         );

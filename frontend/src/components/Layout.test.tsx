@@ -12,9 +12,15 @@ describe('layout', () => {
     renderApp('/');
     await waitFor(() => expect(m.callsTo('GET', '/me')).toHaveLength(1));
     const header = document.querySelector<HTMLElement>('header.site-header')!;
-    expect(await within(header).findByRole('link', { name: 'Sign in with GitHub' })).toBeInTheDocument();
+    expect(
+      await within(header).findByRole('link', { name: 'Sign in with GitHub' }),
+    ).toBeInTheDocument();
     const nav = screen.getByRole('navigation', { name: 'Main' });
-    expect(within(nav).getAllByRole('link').map((a) => a.textContent)).toEqual(['News', 'Events', 'Saved']);
+    expect(
+      within(nav)
+        .getAllByRole('link')
+        .map((a) => a.textContent),
+    ).toEqual(['News', 'Events', 'Saved']);
     expect(screen.queryByRole('link', { name: 'Admin' })).not.toBeInTheDocument();
   });
 
@@ -30,7 +36,9 @@ describe('layout', () => {
     expect(panel).not.toHaveClass('is-open');
     // The panel holds the pages and the sign-in.
     expect(within(panel).getByRole('navigation', { name: 'Main' })).toBeInTheDocument();
-    expect(await within(panel).findByRole('link', { name: 'Sign in with GitHub' })).toBeInTheDocument();
+    expect(
+      await within(panel).findByRole('link', { name: 'Sign in with GitHub' }),
+    ).toBeInTheDocument();
 
     await user.click(button);
     expect(button).toHaveAttribute('aria-expanded', 'true');
@@ -55,7 +63,9 @@ describe('layout', () => {
   it('the removed models page is not a route any more', async () => {
     mockApi();
     renderApp('/models');
-    expect(await screen.findByRole('heading', { level: 1, name: 'Page not found' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Page not found' }),
+    ).toBeInTheDocument();
   });
 
   it('hides Admin for signed-in non-admins and shows it for admins', async () => {
@@ -73,10 +83,15 @@ describe('layout', () => {
     mockApi();
     renderApp('/');
     await settle();
-    expect(screen.getByRole('link', { name: 'Skip to main content' })).toHaveAttribute('href', '#main');
+    expect(screen.getByRole('link', { name: 'Skip to main content' })).toHaveAttribute(
+      'href',
+      '#main',
+    );
     expect(screen.getByRole('banner')).toBeInTheDocument();
     expect(screen.getByRole('main')).toBeInTheDocument();
-    expect(screen.getByRole('contentinfo')).toHaveTextContent('searches the sources listed on the Sources page, not the whole web');
+    expect(screen.getByRole('contentinfo')).toHaveTextContent(
+      'searches the sources listed on the Sources page, not the whole web',
+    );
   });
 
   it('footer shows the release version and links to its notes in a new tab', async () => {
@@ -86,7 +101,10 @@ describe('layout', () => {
     const footer = screen.getByRole('contentinfo');
     const version = within(footer).getByRole('link', { name: /Release notes for version/ });
     expect(version).toHaveTextContent(`v${pkg.version}`);
-    expect(version).toHaveAttribute('href', `https://github.com/silvioincalza/helper2.ai/releases/tag/v${pkg.version}`);
+    expect(version).toHaveAttribute(
+      'href',
+      `https://github.com/silvioincalza/helper2.ai/releases/tag/v${pkg.version}`,
+    );
     expect(version).toHaveAttribute('target', '_blank');
   });
 
@@ -100,7 +118,10 @@ describe('layout', () => {
     expect(repo).toHaveAttribute('href', 'https://github.com/silvioincalza/helper2.ai');
     expect(repo).toHaveAccessibleName('Helper2.ai source code on GitHub (opens in a new tab)');
     const license = within(footer).getByRole('link', { name: /Apache-2.0/ });
-    expect(license).toHaveAttribute('href', 'https://github.com/silvioincalza/helper2.ai/blob/main/LICENSE');
+    expect(license).toHaveAttribute(
+      'href',
+      'https://github.com/silvioincalza/helper2.ai/blob/main/LICENSE',
+    );
     for (const link of [repo, license]) {
       expect(link).toHaveAttribute('target', '_blank');
       expect(link).toHaveAttribute('rel', 'noopener noreferrer');
@@ -126,7 +147,9 @@ describe('layout', () => {
     document.documentElement.dataset.theme = 'dark';
     renderApp('/');
     await settle();
-    expect(screen.getByRole('button', { name: 'Theme: dark. Change to light' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Theme: dark. Change to light' }),
+    ).toBeInTheDocument();
     delete document.documentElement.dataset.theme;
   });
 
@@ -145,10 +168,14 @@ describe('layout', () => {
       renderApp('/');
       await userEvent.click(screen.getByRole('button', { name: 'Theme: light. Change to dark' }));
       expect(document.documentElement.dataset.theme).toBe('dark');
-      expect(screen.getByRole('button', { name: 'Theme: dark. Change to light' })).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'Theme: dark. Change to light' }),
+      ).toBeInTheDocument();
       await userEvent.click(screen.getByRole('button', { name: 'Theme: dark. Change to light' }));
       expect(document.documentElement.dataset.theme).toBe('light');
-      expect(screen.getByRole('button', { name: 'Theme: light. Change to dark' })).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'Theme: light. Change to dark' }),
+      ).toBeInTheDocument();
     });
 
     it('storage can be neither read nor written: the page starts light and switching works', async () => {
@@ -171,14 +198,19 @@ describe('layout', () => {
     mockApi();
     const { router } = renderApp('/');
     // The footer names Sources twice (the coverage line and the page list): either opens the page.
-    await userEvent.click(within(screen.getByRole('contentinfo')).getAllByRole('link', { name: 'Sources' })[0]!);
+    await userEvent.click(
+      within(screen.getByRole('contentinfo')).getAllByRole('link', { name: 'Sources' })[0]!,
+    );
     const h1 = await screen.findByRole('heading', { level: 1, name: 'Sources' });
     await waitFor(() => expect(h1).toHaveFocus());
     expect(document.querySelector('[aria-live="polite"].sr-only')).toHaveTextContent('Sources');
 
     await act(() => router.navigate('/search?q=rag'));
     await screen.findByRole('list', { name: 'Search results' });
-    await userEvent.type(screen.getByRole('textbox', { name: 'Search AI resources' }), ' db{Enter}');
+    await userEvent.type(
+      screen.getByRole('textbox', { name: 'Search AI resources' }),
+      ' db{Enter}',
+    );
     await waitFor(() => expect(router.state.location.search).toBe('?q=rag+db'));
     expect(screen.getByRole('textbox', { name: 'Search AI resources' })).toHaveFocus();
     await settle();

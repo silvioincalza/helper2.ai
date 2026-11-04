@@ -43,23 +43,43 @@ function ResourceView({ id }: { id: string }) {
   const d = q.data;
   useTitle(d?.card.title ?? '');
 
-  if (q.loading) return <p role="status" aria-busy="true">{t('common.loading')}</p>;
+  if (q.loading)
+    return (
+      <p role="status" aria-busy="true">
+        {t('common.loading')}
+      </p>
+    );
   if (q.error !== undefined || !d) {
     const notFound = q.error instanceof ApiError && q.error.status === 404;
     return (
-      <StatePanel tone="error" level={1} title={notFound ? t('detail.notFound') : t('detail.errorTitle')}
-        next={<>{!notFound && <RetryButton onClick={q.reload} />}<Link to="/">{t('detail.backToSearch')}</Link></>} />
+      <StatePanel
+        tone="error"
+        level={1}
+        title={notFound ? t('detail.notFound') : t('detail.errorTitle')}
+        next={
+          <>
+            {!notFound && <RetryButton onClick={q.reload} />}
+            <Link to="/">{t('detail.backToSearch')}</Link>
+          </>
+        }
+      />
     );
   }
 
-  return <Resource detail={d}><DetailSections detail={d} /></Resource>;
+  return (
+    <Resource detail={d}>
+      <DetailSections detail={d} />
+    </Resource>
+  );
 }
 
 /** Summary, recorded facts, relationships, source records and the report form. */
 function DetailSections({ detail: d }: { detail: ResourceDetail }) {
   const { t, i18n } = useTranslation();
   const confirmed = d.relationships.filter((r) => r.verification === 'VERIFIED');
-  const candidates = d.relationships.filter((r) => r.verification === 'UNVERIFIED' || r.verification === 'CONFLICTING');
+  const candidates = d.relationships.filter(
+    (r) => r.verification === 'UNVERIFIED' || r.verification === 'CONFLICTING',
+  );
   return (
     <>
       <section aria-labelledby="sum-h" className="panel">
@@ -79,7 +99,11 @@ function DetailSections({ detail: d }: { detail: ResourceDetail }) {
               ))}
             </ul>
             <p className="muted small">
-              {t('detail.summaryMeta', { model: d.summary.model, version: d.summary.promptVersion, date: formatDate(d.summary.generatedAt, i18n.language, 'INSTANT') })}
+              {t('detail.summaryMeta', {
+                model: d.summary.model,
+                version: d.summary.promptVersion,
+                date: formatDate(d.summary.generatedAt, i18n.language, 'INSTANT'),
+              })}
             </p>
           </>
         ) : (
@@ -89,7 +113,9 @@ function DetailSections({ detail: d }: { detail: ResourceDetail }) {
 
       <section aria-labelledby="as-h" className="panel">
         <h2 id="as-h">{t('detail.assertions')}</h2>
-        {d.assertions.length === 0 ? <p className="muted">{t('detail.noAssertions')}</p> : (
+        {d.assertions.length === 0 ? (
+          <p className="muted">{t('detail.noAssertions')}</p>
+        ) : (
           <div className="table-wrap">
             <table>
               <thead>
@@ -106,9 +132,16 @@ function DetailSections({ detail: d }: { detail: ResourceDetail }) {
                   <tr key={`${a.field}-${i}`}>
                     <th scope="row">{a.field}</th>
                     <td {...(isAiOrigin(a.origin) ? aiMark() : {})}>{a.value}</td>
-                    <td><OriginLabel origin={a.origin} />{a.sourceId && <div className="muted small">{a.sourceId}</div>}</td>
-                    <td><VerificationBadge verification={a.verification} /></td>
-                    <td><EvidenceList evidence={a.evidence} /></td>
+                    <td>
+                      <OriginLabel origin={a.origin} />
+                      {a.sourceId && <div className="muted small">{a.sourceId}</div>}
+                    </td>
+                    <td>
+                      <VerificationBadge verification={a.verification} />
+                    </td>
+                    <td>
+                      <EvidenceList evidence={a.evidence} />
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -119,11 +152,17 @@ function DetailSections({ detail: d }: { detail: ResourceDetail }) {
 
       <section aria-labelledby="rel-h" className="panel">
         <h2 id="rel-h">{t('detail.relationships')}</h2>
-        {confirmed.length === 0 ? <p className="muted">{t('detail.noVerified')}</p> : <RelList items={confirmed} />}
+        {confirmed.length === 0 ? (
+          <p className="muted">{t('detail.noVerified')}</p>
+        ) : (
+          <RelList items={confirmed} />
+        )}
       </section>
       {candidates.length > 0 && (
         <section aria-labelledby="cand-h" className="panel panel-candidates">
-          <h2 id="cand-h"><Icon name="question" /> {t('detail.candidates')}</h2>
+          <h2 id="cand-h">
+            <Icon name="question" /> {t('detail.candidates')}
+          </h2>
           <p className="muted">{t('detail.candidatesHint')}</p>
           <RelList items={candidates} />
         </section>
@@ -145,9 +184,15 @@ function DetailSections({ detail: d }: { detail: ResourceDetail }) {
               {d.sourceRecords.map((r) => (
                 <tr key={`${r.sourceId}-${r.externalId}`}>
                   <th scope="row">{r.sourceId}</th>
-                  <td><ExternalLink url={r.url} showHost={false}>{r.externalId}</ExternalLink></td>
+                  <td>
+                    <ExternalLink url={r.url} showHost={false}>
+                      {r.externalId}
+                    </ExternalLink>
+                  </td>
                   <td>{formatDate(r.retrievedAt, i18n.language, 'INSTANT')}</td>
-                  <td><code title={r.fingerprint}>{r.fingerprint.slice(0, 12)}</code></td>
+                  <td>
+                    <code title={r.fingerprint}>{r.fingerprint.slice(0, 12)}</code>
+                  </td>
                 </tr>
               ))}
             </tbody>

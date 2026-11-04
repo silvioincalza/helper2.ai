@@ -7,7 +7,8 @@ type TileState = 'ok' | 'warn' | 'failed' | 'off';
 function tileState(s: SourceStatus): TileState {
   if (s.outcome === 'SKIPPED') return 'off';
   if (s.outcome === 'FAILED' || s.outcome === 'TIMED_OUT') return 'failed';
-  if (s.outcome === 'RATE_LIMITED' || s.servedFrom === 'CACHE' || s.servedFrom === 'STALE_CACHE') return 'warn';
+  if (s.outcome === 'RATE_LIMITED' || s.servedFrom === 'CACHE' || s.servedFrom === 'STALE_CACHE')
+    return 'warn';
   return 'ok';
 }
 
@@ -28,8 +29,11 @@ export function SourceTiles({ sources, now }: { sources: SourceStatus[]; now: nu
   const { t, i18n } = useTranslation();
   const detail = (s: SourceStatus): string => {
     if (s.outcome !== 'SUCCEEDED') return t(`outcome.${s.outcome}`);
-    if (s.servedFrom !== 'LIVE' && s.cachedAt) return t('sourceTile.cached', { age: age(s.cachedAt, now, i18n.language) });
-    return s.latencyMs == null ? t('outcome.SUCCEEDED') : t('sources.latencyMs', { ms: s.latencyMs });
+    if (s.servedFrom !== 'LIVE' && s.cachedAt)
+      return t('sourceTile.cached', { age: age(s.cachedAt, now, i18n.language) });
+    return s.latencyMs == null
+      ? t('outcome.SUCCEEDED')
+      : t('sources.latencyMs', { ms: s.latencyMs });
   };
   return (
     <ul className="h2-source-tiles" aria-label={t('sourceTile.label')}>
