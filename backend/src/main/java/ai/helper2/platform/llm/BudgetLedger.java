@@ -36,9 +36,17 @@ public final class BudgetLedger implements CallCounter {
     return store == null ? null : store.increment(name, day);
   }
 
+  /**
+   * Budgets the app has: one per use, a handful. A name past this many is not listed, so a budget
+   * per visitor that forgot {@link CallCounter#unlisted()} can never grow the list without bound.
+   */
+  static final int MAX_LISTED = 64;
+
   @Override
   public void declare(String name, int dailyCalls) {
-    limits.put(name, dailyCalls);
+    if (limits.size() < MAX_LISTED || limits.containsKey(name)) {
+      limits.put(name, dailyCalls);
+    }
   }
 
   /**

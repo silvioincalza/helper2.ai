@@ -26,6 +26,8 @@ them without each module growing an admin corner.
 4. **Budgets read from the shared counter.** Every `DailyBudget` declares its name and limit in the `BudgetLedger`, the
    `CallCounter` it counts on. The overview reads today's count from Redis, the store every replica counts in, never
    from one replica's memory. Without Redis, or while it cannot answer, the count is unknown and shown as unknown.
+   A budget per visitor (the guide's `ClientQuota`) counts through `CallCounter.unlisted()` and is never listed: its
+   name comes from the visitor's address, and there is one per visitor. The ledger lists at most 64 names.
 5. **The zero-result rate is a metric.** `helper2.search.results{empty}` counts searches that found nothing, with no
    query text. It goes to Grafana, not to the overview.
 

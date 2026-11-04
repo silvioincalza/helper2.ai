@@ -42,6 +42,26 @@ class ClientQuotaTest {
     assertEquals(2, quota.clientsInMemory)
   }
 
+  /** A budget per client is never listed: its name comes from the client's address (ADR 0045). */
+  @Test
+  fun `no client budget is declared for the back office`() {
+    val declared = mutableListOf<String>()
+    val listing =
+      object : CallCounter {
+        override fun increment(name: String, day: java.time.LocalDate) =
+          counter.increment(name, day)
+
+        override fun declare(name: String, dailyCalls: Int) {
+          declared += name
+        }
+      }
+    val quota = ClientQuota(1, clock, listing)
+    assertTrue(quota.tryAcquire("10.0.0.1"))
+    assertFalse(quota.tryAcquire("10.0.0.1"))
+
+    assertTrue(declared.isEmpty())
+  }
+
   @Test
   fun `a client that left memory keeps its count in the durable counter`() {
     val quota = ClientQuota(1, clock, counter, maxClients = 1)

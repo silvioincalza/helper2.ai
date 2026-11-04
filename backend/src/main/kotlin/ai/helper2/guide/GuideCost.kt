@@ -17,7 +17,8 @@ import java.util.Locale
  * Fresh (not cached) guide questions per client per UTC day. The per-minute rate limit alone lets
  * one client spend the global daily budget in about twenty minutes; past this quota the client
  * still gets an answer, from search only. Counted in [counter] (Redis) under a hash of the client,
- * so no address is stored; when the counter fails, counting goes on in memory.
+ * so no address is stored; when the counter fails, counting goes on in memory. These budgets are
+ * never listed in the back office.
  *
  * In memory, only today's clients are kept, at most [maxClients], the least recently seen leaving
  * first. A client that left keeps its count in [counter]; only the in-memory fallback count is
@@ -28,9 +29,15 @@ class ClientQuota
 constructor(
   private val questionsPerDay: Int,
   private val clock: Clock,
-  private val counter: CallCounter = CallCounter.NONE,
+  counter: CallCounter = CallCounter.NONE,
   private val maxClients: Int = MAX_CLIENTS,
 ) {
+  /**
+   * Counted like any budget, never listed: a name per client must not reach the back office (ADR
+   * 0045).
+   */
+  private val counter: CallCounter = counter.unlisted()
+
   private var day: LocalDate = today()
   private val budgets =
     object : LinkedHashMap<String, DailyBudget>(16, 0.75f, true) {

@@ -16,4 +16,13 @@ public interface CallCounter {
 
   /** A budget declares its name and daily limit once, so the back office can list every budget. */
   default void declare(String name, int dailyCalls) {}
+
+  /**
+   * The same counts, with budgets that are never listed. For budgets per visitor (ClientQuota):
+   * their names are derived from the visitor, so they must never reach the back office, and there
+   * is one per visitor.
+   */
+  default CallCounter unlisted() {
+    return this::increment;
+  }
 }
