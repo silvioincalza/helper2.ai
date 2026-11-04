@@ -7,6 +7,7 @@ import ai.helper2.scout.EnrichmentOutcome
 import ai.helper2.scout.EnrichmentStore
 import ai.helper2.scout.EvidenceValidator
 import ai.helper2.scout.ExtraEvidence
+import ai.helper2.scout.ExtraText
 import ai.helper2.scout.GapBudget
 import ai.helper2.scout.GapTarget
 import ai.helper2.scout.LlmUnavailable
@@ -16,6 +17,7 @@ import ai.helper2.scout.ValidationResult
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import java.time.Clock
+import java.time.Instant
 import java.util.UUID
 import org.slf4j.LoggerFactory
 
@@ -75,43 +77,33 @@ constructor(
     val material = store.load(resourceId) ?: return EnrichmentOutcome.REJECTED
     val fingerprint = material.fingerprintFor(model)
     if (store.lastFingerprint(resourceId) == fingerprint) return EnrichmentOutcome.UNCHANGED
-    var result: ValidationResult
-    try {
-      result = run(resourceId, material.input)
-    } catch (e: LlmUnavailable) {
-      log.warn("enrichment of $resourceId: LLM unavailable (${reason(e)})")
-      store.save(
-        resourceId,
-        model,
-        fingerprint,
-        started,
-        null,
-        EnrichmentOutcome.LLM_UNAVAILABLE,
-        reason(e),
-        null,
-      )
-      return EnrichmentOutcome.LLM_UNAVAILABLE
-    } catch (e: RuntimeException) {
-      log.warn("enrichment of $resourceId failed (${reason(e)})")
-      store.save(
-        resourceId,
-        model,
-        fingerprint,
-        started,
-        null,
-        EnrichmentOutcome.FAILED,
-        reason(e),
-        null,
-      )
-      return EnrichmentOutcome.FAILED
-    }
-    var used: String? = null
-    gapRound(resourceId, material, result)?.let { (better, target) ->
-      result = better
-      used = target.label
-    }
+    val first =
+      try {
+        run(resourceId, material.input)
+      } catch (e: LlmUnavailable) {
+        log.warn("enrichment of $resourceId: LLM unavailable (${reason(e)})")
+        return saveFailure(resourceId, fingerprint, started, EnrichmentOutcome.LLM_UNAVAILABLE, e)
+      } catch (e: RuntimeException) {
+        log.warn("enrichment of $resourceId failed (${reason(e)})")
+        return saveFailure(resourceId, fingerprint, started, EnrichmentOutcome.FAILED, e)
+      }
+    val gap = gapRound(resourceId, material, first)
+    val result = gap?.first ?: first
+    val used = gap?.second?.label
     store.save(resourceId, model, fingerprint, started, result, result.outcome, null, used)
     return result.outcome
+  }
+
+  /** Records a run that validated no model output, and returns its [outcome]. */
+  private fun saveFailure(
+    resourceId: UUID,
+    fingerprint: String,
+    started: Instant,
+    outcome: EnrichmentOutcome,
+    e: RuntimeException,
+  ): EnrichmentOutcome {
+    store.save(resourceId, model, fingerprint, started, null, outcome, reason(e), null)
+    return outcome
   }
 
   private fun run(resourceId: UUID, input: EnrichmentInput): ValidationResult {
@@ -151,33 +143,15 @@ constructor(
         )
         return skipped(source, "source_failed")
       }
-    val text = extra?.let { ReadmeText.window(ReadmeText.clean(it.raw)) }
-    if (extra == null || text.isNullOrBlank()) return skipped(source, "no_text")
+    if (extra == null) return skipped(source, "no_text")
+    val text = ReadmeText.window(ReadmeText.clean(extra.raw))
+    if (text.isBlank()) return skipped(source, "no_text")
     // The cap counts model calls; reading a README costs none. Reads stay bounded by the
     // enrichments themselves.
     if (!gapBudget.tryAcquire()) return skipped(source, "skipped_cap")
-    val input =
-      material.input.copy(
-        materials =
-          material.input.materials +
-            Material(
-              UUID.randomUUID(),
-              extra.sourceUrl,
-              extra.retrievedAt,
-              text,
-              anchorRecordId = target.anchorRecordId,
-              supportsClaims = false,
-            ),
-        // The licence the source API states is a fact, like a record's (a record's own wins): a
-        // README that says
-        // otherwise conflicts instead of overwriting it.
-        sourceFacts =
-          extra.license?.let { mapOf("license" to it) + material.input.sourceFacts }
-            ?: material.input.sourceFacts,
-      )
     val second =
       try {
-        run(resourceId, input)
+        run(resourceId, withExtraText(material.input, target, extra, text))
       } catch (e: RuntimeException) {
         log.info("gap round of $resourceId: model run failed (${reason(e)})")
         return skipped(source, "model_failed")
@@ -186,6 +160,30 @@ constructor(
     gapMetric(source, "filled")
     return second to target
   }
+
+  /** [input] plus the README or model card [text], as a material that proves no claim alone. */
+  private fun withExtraText(
+    input: EnrichmentInput,
+    target: GapTarget,
+    extra: ExtraText,
+    text: String,
+  ): EnrichmentInput =
+    input.copy(
+      materials =
+        input.materials +
+          Material(
+            UUID.randomUUID(),
+            extra.sourceUrl,
+            extra.retrievedAt,
+            text,
+            anchorRecordId = target.anchorRecordId,
+            supportsClaims = false,
+          ),
+      // The licence the source API states is a fact, like a record's (a record's own wins): a
+      // README that says otherwise conflicts instead of overwriting it.
+      sourceFacts =
+        extra.license?.let { mapOf("license" to it) + input.sourceFacts } ?: input.sourceFacts,
+    )
 
   private fun skipped(source: String, outcome: String): Pair<ValidationResult, GapTarget>? {
     gapMetric(source, outcome)

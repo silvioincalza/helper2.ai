@@ -1,6 +1,7 @@
 package ai.helper2.guide.usecase
 
 import ai.helper2.guide.Candidate
+import ai.helper2.guide.DateWindow
 import ai.helper2.guide.GuideAnswer
 import ai.helper2.guide.GuideProgress
 import ai.helper2.guide.GuideStatus
@@ -11,6 +12,7 @@ import ai.helper2.search.MergedResult
 import ai.helper2.search.Notice
 import ai.helper2.search.NoticeCode
 import ai.helper2.search.SearchFilters
+import ai.helper2.search.SearchOutcome
 import ai.helper2.search.SearchRequest
 import ai.helper2.shared.ResourceType
 import java.time.Clock
@@ -39,18 +41,7 @@ internal class DateAnswer(
   fun answer(q: Question, r: Reading, progress: GuideProgress): GuideAnswer {
     val subject = r.subjects.firstOrNull()
     val text = subject ?: IntentRules.subjectWords(r.query).ifBlank { "AI" }
-    val request =
-      if (r.aboutEvent) {
-        SearchRequest(
-          text = text,
-          path = q.path,
-          filters = SearchFilters(types = EVENTS),
-          size = maxCandidates,
-          webQuery = r.webQuery,
-        )
-      } else {
-        SearchRequest(text = text, path = q.path, size = maxCandidates)
-      }
+    val request = searchRequest(q, r, text)
     // The text is cut from the planner's query only when no subject was named (and it is not the
     // "AI" fallback).
     val planned = subject == null && IntentRules.subjectWords(r.query).isNotBlank()
@@ -59,94 +50,140 @@ internal class DateAnswer(
       return askBack(clock, r, it, outcome, progress)
     }
     progress.retrieved(outcome.results.size, outcome)
-    val window = r.window
-    val events =
-      outcome.results
-        .filter { it.type == ResourceType.EVENT && it.eventStart.value != null }
-        .filter { e -> subject == null || e.title.contains(subject, ignoreCase = true) }
-        .filter { e ->
-          val start = e.eventStart.value!!
-          val end = e.eventEnd.value ?: start
-          if (window != null) {
-            !end.isBefore(window.from.atStartOfDay(ZoneOffset.UTC).toInstant()) &&
-              start.isBefore(window.to.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant())
-          } else {
-            !end.isBefore(
-              LocalDate.ofInstant(clock.instant(), ZoneOffset.UTC)
-                .atStartOfDay(ZoneOffset.UTC)
-                .toInstant()
-            )
-          }
-        }
-        .sortedBy { it.eventStart.value }
-        .take(MAX_EVENTS)
-    if (events.isNotEmpty()) {
-      return GuideAnswer(
-        GuideStatus.OK,
-        text,
-        events.map {
-          Recommendation(
-            it,
-            eventReason(it),
-            (it.description ?: it.title).take(160),
-            aiReasoned = false,
-          )
-        },
-        null,
-        !r.modelFailed,
-        outcome.results.size,
-        0,
-        outcome,
-        clock.instant(),
-        r.constraints,
-      )
-    }
+    val events = eventsOf(outcome, subject, r.window)
+    if (events.isNotEmpty()) return eventsAnswer(events, text, r, outcome)
     val own = subject?.let { name ->
       outcome.results.firstOrNull { isSubject(it, name) && it.type != ResourceType.EVENT }
     }
-    if (own != null) {
-      val date = own.published.value
-      val reason =
-        if (date == null) "No release date found in our sources."
-        else
-          "Created ${DateTimeFormatter.ISO_LOCAL_DATE.format(date.atOffset(ZoneOffset.UTC))}, as stated by ${own.published.sourceId ?: "its source"}."
-      return GuideAnswer(
-        if (date == null) GuideStatus.PARTIAL else GuideStatus.OK,
-        text,
-        listOf(
-          Recommendation(own, reason, (own.description ?: own.title).take(160), aiReasoned = false)
-        ),
-        null,
-        !r.modelFailed,
-        outcome.results.size,
-        0,
-        outcome,
-        clock.instant(),
-        r.constraints,
+    if (own != null) return creationDateAnswer(own, text, r, outcome)
+    if (outcome.results.isEmpty()) return noCandidates(text, r, outcome)
+    return closestResults(text, r, outcome)
+  }
+
+  /** A question about an event searches events only. */
+  private fun searchRequest(q: Question, r: Reading, text: String): SearchRequest =
+    if (r.aboutEvent) {
+      SearchRequest(
+        text = text,
+        path = q.path,
+        filters = SearchFilters(types = EVENTS),
+        size = maxCandidates,
+        webQuery = r.webQuery,
+      )
+    } else {
+      SearchRequest(text = text, path = q.path, size = maxCandidates)
+    }
+
+  /**
+   * Dated events, named like [subject] when there is one, inside [window] or not over yet; soonest
+   * first.
+   */
+  private fun eventsOf(
+    outcome: SearchOutcome,
+    subject: String?,
+    window: DateWindow?,
+  ): List<MergedResult> =
+    outcome.results
+      .filter { it.type == ResourceType.EVENT && it.eventStart.value != null }
+      .filter { e -> subject == null || e.title.contains(subject, ignoreCase = true) }
+      .filter { e -> isInWindowOrUpcoming(e, window) }
+      .sortedBy { it.eventStart.value }
+      .take(MAX_EVENTS)
+
+  /** The event overlaps [window]; without one, it has not ended before today. */
+  private fun isInWindowOrUpcoming(e: MergedResult, window: DateWindow?): Boolean {
+    val start = e.eventStart.value!!
+    val end = e.eventEnd.value ?: start
+    return if (window != null) {
+      !end.isBefore(window.from.atStartOfDay(ZoneOffset.UTC).toInstant()) &&
+        start.isBefore(window.to.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant())
+    } else {
+      !end.isBefore(
+        LocalDate.ofInstant(clock.instant(), ZoneOffset.UTC)
+          .atStartOfDay(ZoneOffset.UTC)
+          .toInstant()
       )
     }
-    if (outcome.results.isEmpty()) {
-      return GuideAnswer(
-        GuideStatus.NO_CANDIDATES,
-        text,
-        emptyList(),
-        null,
-        !r.modelFailed,
-        0,
-        0,
-        outcome,
-        clock.instant(),
-        r.constraints,
-      )
-    }
-    return degraded(
+  }
+
+  private fun eventsAnswer(
+    events: List<MergedResult>,
+    text: String,
+    r: Reading,
+    outcome: SearchOutcome,
+  ) =
+    GuideAnswer(
+      GuideStatus.OK,
+      text,
+      events.map {
+        Recommendation(
+          it,
+          eventReason(it),
+          (it.description ?: it.title).take(160),
+          aiReasoned = false,
+        )
+      },
+      null,
+      !r.modelFailed,
+      outcome.results.size,
+      0,
+      outcome,
+      clock.instant(),
+      r.constraints,
+    )
+
+  /** The subject's creation date and the source stating it; PARTIAL when no source states one. */
+  private fun creationDateAnswer(
+    own: MergedResult,
+    text: String,
+    r: Reading,
+    outcome: SearchOutcome,
+  ): GuideAnswer {
+    val date = own.published.value
+    val reason =
+      if (date == null) "No release date found in our sources."
+      else
+        "Created ${DateTimeFormatter.ISO_LOCAL_DATE.format(date.atOffset(ZoneOffset.UTC))}, as stated by ${own.published.sourceId ?: "its source"}."
+    return GuideAnswer(
+      if (date == null) GuideStatus.PARTIAL else GuideStatus.OK,
+      text,
+      listOf(
+        Recommendation(own, reason, (own.description ?: own.title).take(160), aiReasoned = false)
+      ),
+      null,
+      !r.modelFailed,
+      outcome.results.size,
+      0,
+      outcome,
+      clock.instant(),
+      r.constraints,
+    )
+  }
+
+  private fun noCandidates(text: String, r: Reading, outcome: SearchOutcome) =
+    GuideAnswer(
+      GuideStatus.NO_CANDIDATES,
+      text,
+      emptyList(),
+      null,
+      !r.modelFailed,
+      0,
+      0,
+      outcome,
+      clock.instant(),
+      r.constraints,
+    )
+
+  /** No date found: the top search results, saying so. */
+  private fun closestResults(text: String, r: Reading, outcome: SearchOutcome) =
+    degraded(
         clock,
         GuideStatus.PARTIAL,
         text,
         outcome.results.mapIndexed { i, res -> Candidate("c${i + 1}", res) },
         outcome,
         0,
-        !r.modelFailed,
+        modelUsed = !r.modelFailed,
       )
       .withNotices(
         listOf(
@@ -156,7 +193,6 @@ internal class DateAnswer(
           )
         )
       )
-  }
 
   private fun eventReason(e: MergedResult): String {
     val day = DateTimeFormatter.ISO_LOCAL_DATE

@@ -1,5 +1,6 @@
 package ai.helper2.catalog.internal;
 
+import ai.helper2.catalog.EnrichmentFacts;
 import ai.helper2.catalog.ResourceDetail;
 import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.catalog.enrichment.EnrichmentResults;
@@ -31,7 +32,7 @@ import tools.jackson.databind.ObjectMapper;
  * kept for audit. Also reads them back for the resource detail page.
  */
 @Component
-public class JdbcEnrichmentResults implements EnrichmentResults {
+public class JdbcEnrichmentResults implements EnrichmentResults, EnrichmentFacts {
 
   private final JdbcClient jdbc;
   private final ReviewQueue reviewQueue;
@@ -169,6 +170,7 @@ public class JdbcEnrichmentResults implements EnrichmentResults {
    * of fields: the fields, then the evidence of all of them ({@link #evidenceOf}). The same holds
    * for relationships and claims, so the detail page reads its enrichment in at most 7 statements.
    */
+  @Override
   public List<ResourceDetail.Assertion> assertions(UUID resourceId) {
     List<Owned<ResourceDetail.Assertion>> rows =
         jdbc.sql(
@@ -190,6 +192,7 @@ public class JdbcEnrichmentResults implements EnrichmentResults {
   }
 
   /** The resource's relationships no reviewer rejected, each with its evidence. */
+  @Override
   public List<ResourceDetail.Relationship> relationships(UUID resourceId) {
     List<Owned<ResourceDetail.Relationship>> rows =
         jdbc.sql(
@@ -213,6 +216,7 @@ public class JdbcEnrichmentResults implements EnrichmentResults {
   }
 
   /** The summary of the latest run that has one, or null. */
+  @Override
   public ResourceDetail.@Nullable Summary summary(UUID resourceId) {
     return jdbc.sql(
             """

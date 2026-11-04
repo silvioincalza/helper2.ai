@@ -47,17 +47,23 @@ public class ResolveReviewItem {
       throw new BadRequestException("decision must be ACCEPTED or REJECTED");
     }
     boolean decided = decisions.decide(id, decision, by, note);
-    Optional<ReviewQueue.Item> item = queue.find(id);
-    Outcome outcome =
-        item.<Outcome>map(i -> decided ? new Outcome.Resolved(i) : new Outcome.NotOpen(i))
-            .orElseGet(Outcome.NotFound::new);
-    String recorded =
-        switch (outcome) {
-          case Outcome.Resolved r -> decision.name();
-          case Outcome.NotOpen n -> "NOT_OPEN";
-          case Outcome.NotFound f -> "NOT_FOUND";
-        };
-    audit.record(by, AuditTrail.Action.RESOLVE_REVIEW_ITEM, id.toString(), recorded);
+    Outcome outcome = outcomeOf(queue.find(id), decided);
+    audit.record(
+        by, AuditTrail.Action.RESOLVE_REVIEW_ITEM, id.toString(), recorded(outcome, decision));
     return outcome;
+  }
+
+  private static Outcome outcomeOf(Optional<ReviewQueue.Item> item, boolean decided) {
+    return item.<Outcome>map(i -> decided ? new Outcome.Resolved(i) : new Outcome.NotOpen(i))
+        .orElseGet(Outcome.NotFound::new);
+  }
+
+  /** The audit entry's outcome: the decision, NOT_OPEN or NOT_FOUND. */
+  private static String recorded(Outcome outcome, ReviewQueue.Status decision) {
+    return switch (outcome) {
+      case Outcome.Resolved r -> decision.name();
+      case Outcome.NotOpen n -> "NOT_OPEN";
+      case Outcome.NotFound f -> "NOT_FOUND";
+    };
   }
 }

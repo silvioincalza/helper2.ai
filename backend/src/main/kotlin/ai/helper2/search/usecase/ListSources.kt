@@ -48,18 +48,25 @@ class ListSources(
     val fromScout = recordedOutcomes()
     val descriptors =
       sources.map { it.descriptor }.sortedWith(compareBy({ it.priority }, { it.id }))
-    val credits = if (descriptors.any { it.metered && it.enabled }) quota.creditsToday() else null
-    return descriptors.map { d ->
-      SourceOverview(
-        descriptor = d,
-        last = health.lastFor(d.id, fromScout[d.id]),
-        responseTime = health.responseTime(d.id),
-        circuit =
-          if (d.enabled) resilience.circuit(SearchResources.policy(d)).orElse(null) else null,
-        webCredits = credits?.takeIf { d.metered && d.enabled },
-      )
-    }
+    val credits = if (descriptors.any { it.spendsCredits }) quota.creditsToday() else null
+    return descriptors.map { overview(it, fromScout[it.id], credits) }
   }
+
+  private fun overview(
+    d: SourceDescriptor,
+    fromScout: SourceHealth.Entry?,
+    credits: WebCredits?,
+  ): SourceOverview =
+    SourceOverview(
+      descriptor = d,
+      last = health.lastFor(d.id, fromScout),
+      responseTime = health.responseTime(d.id),
+      circuit = circuitOf(d),
+      webCredits = credits?.takeIf { d.spendsCredits },
+    )
+
+  private fun circuitOf(d: SourceDescriptor): Circuit? =
+    if (d.enabled) resilience.circuit(SearchResources.policy(d)).orElse(null) else null
 
   private fun recordedOutcomes(): Map<String, SourceHealth.Entry> =
     try {
@@ -69,3 +76,7 @@ class ListSources(
       emptyMap()
     }
 }
+
+/** An enabled metered source: it spends the day's web credits. */
+private val SourceDescriptor.spendsCredits: Boolean
+  get() = metered && enabled
