@@ -8,13 +8,13 @@ import org.springframework.stereotype.Service;
 @Service
 public class RemoveBookmark {
 
-    private final Bookmarks bookmarks;
+  private final Bookmarks bookmarks;
 
-    public RemoveBookmark(Bookmarks bookmarks) {
-        this.bookmarks = bookmarks;
-    }
+  public RemoveBookmark(Bookmarks bookmarks) {
+    this.bookmarks = bookmarks;
+  }
 
-    public void remove(UUID userId, UUID resourceId) {
-        bookmarks.remove(userId, resourceId);
-    }
+  public void remove(UUID userId, UUID resourceId) {
+    bookmarks.remove(userId, resourceId);
+  }
 }

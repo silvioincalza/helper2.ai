@@ -7,6 +7,5 @@ import java.time.ZoneOffset
 /** Instants as the API writes them: an offset date-time at UTC. */
 object UtcTimes {
 
-    @JvmStatic
-    fun odt(instant: Instant?): OffsetDateTime? = instant?.atOffset(ZoneOffset.UTC)
+  @JvmStatic fun odt(instant: Instant?): OffsetDateTime? = instant?.atOffset(ZoneOffset.UTC)
 }

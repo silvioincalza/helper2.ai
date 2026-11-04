@@ -11,13 +11,13 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 @Configuration(proxyBeanMethods = false)
 class QuotaConfiguration {
 
-    @Bean
-    QuotaKeys quotaKeys(@Value("${helper2.tavily.quota.key-secret:}") String secret, Clock clock) {
-        return new QuotaKeys(secret, clock);
-    }
+  @Bean
+  QuotaKeys quotaKeys(@Value("${helper2.tavily.quota.key-secret:}") String secret, Clock clock) {
+    return new QuotaKeys(secret, clock);
+  }
 
-    @Bean
-    QuotaCounter quotaCounter(StringRedisTemplate redis, Resilience resilience) {
-        return new RedisQuotaCounter(redis, resilience);
-    }
+  @Bean
+  QuotaCounter quotaCounter(StringRedisTemplate redis, Resilience resilience) {
+    return new RedisQuotaCounter(redis, resilience);
+  }
 }

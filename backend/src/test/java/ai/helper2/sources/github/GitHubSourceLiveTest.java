@@ -12,22 +12,26 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 /**
- * Opt-in: the real GitHub search API (anonymous works, H2_GITHUB_TOKEN raises the limit). ./gradlew liveTest
- * One call. Fails when GitHub changes the response shape the mapper reads.
+ * Opt-in: the real GitHub search API (anonymous works, H2_GITHUB_TOKEN raises the limit). ./gradlew
+ * liveTest One call. Fails when GitHub changes the response shape the mapper reads.
  */
 @Tag("live")
 class GitHubSourceLiveTest {
 
-    @Test
-    void searchFindsRepositoriesWithStarsAndDates() {
-        GitHubSource source = new GitHubSource(live("https://api.github.com", "H2_GITHUB_TOKEN"), liveHttp(), Clock.systemUTC());
+  @Test
+  void searchFindsRepositoriesWithStarsAndDates() {
+    GitHubSource source =
+        new GitHubSource(
+            live("https://api.github.com", "H2_GITHUB_TOKEN"), liveHttp(), Clock.systemUTC());
 
-        List<SourceHit> hits = source.search(query("mcp server postgres"));
+    List<SourceHit> hits = source.search(query("mcp server postgres"));
 
-        assertThat(hits).isNotEmpty().allSatisfy(h -> {
-            assertThat(h.getUrl().getHost()).isEqualTo("github.com");
-            assertThat(h.getPopularity()).isNotEmpty();
-            assertThat(h.getUpdated().getValue()).isNotNull();
+    assertThat(hits)
+        .isNotEmpty()
+        .allSatisfy(h -> {
+          assertThat(h.getUrl().getHost()).isEqualTo("github.com");
+          assertThat(h.getPopularity()).isNotEmpty();
+          assertThat(h.getUpdated().getValue()).isNotNull();
         });
-    }
+  }
 }

@@ -51,6 +51,8 @@ jobs:
           distribution: temurin
           java-version: 25
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+      # Code format (google-java-format, ktfmt Google style): fails on any unformatted file.
+      - run: ./gradlew --no-daemon spotlessCheck
       # Testcontainers (Postgres, Redis) uses the runner's Docker.
       - run: ./gradlew --no-daemon test
       - if: failure()

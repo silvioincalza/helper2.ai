@@ -10,25 +10,32 @@ import java.util.regex.Pattern;
  */
 public final class ModelAnswers {
 
-    /** A closed block, or an unclosed one: the model ran out of tokens while thinking, so no answer follows. */
-    private static final Pattern REASONING = Pattern.compile("(?s)<think>.*?(</think>|\\z)");
+  /**
+   * A closed block, or an unclosed one: the model ran out of tokens while thinking, so no answer
+   * follows.
+   */
+  private static final Pattern REASONING = Pattern.compile("(?s)<think>.*?(</think>|\\z)");
 
-    private ModelAnswers() {
-    }
+  private ModelAnswers() {}
 
-    /** The answer without reasoning blocks, stripped; empty when there was only reasoning or nothing. */
-    public static String withoutReasoning(String answer) {
-        return answer == null ? "" : REASONING.matcher(answer).replaceAll("").strip();
-    }
+  /**
+   * The answer without reasoning blocks, stripped; empty when there was only reasoning or nothing.
+   */
+  public static String withoutReasoning(String answer) {
+    return answer == null ? "" : REASONING.matcher(answer).replaceAll("").strip();
+  }
 
-    /**
-     * The outermost JSON object of the answer, from its first "{" to its last "}" after reasoning is removed.
-     * Lenient on wrapping text (a preamble, code fences); whether the object is valid is the parser's job.
-     */
-    public static Optional<String> jsonObject(String answer) {
-        String text = withoutReasoning(answer);
-        int start = text.indexOf('{');
-        int end = text.lastIndexOf('}');
-        return start < 0 || end < start ? Optional.empty() : Optional.of(text.substring(start, end + 1));
-    }
+  /**
+   * The outermost JSON object of the answer, from its first "{" to its last "}" after reasoning is
+   * removed. Lenient on wrapping text (a preamble, code fences); whether the object is valid is the
+   * parser's job.
+   */
+  public static Optional<String> jsonObject(String answer) {
+    String text = withoutReasoning(answer);
+    int start = text.indexOf('{');
+    int end = text.lastIndexOf('}');
+    return start < 0 || end < start
+        ? Optional.empty()
+        : Optional.of(text.substring(start, end + 1));
+  }
 }

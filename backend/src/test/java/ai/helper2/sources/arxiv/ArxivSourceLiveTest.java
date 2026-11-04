@@ -11,19 +11,28 @@ import java.util.List;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-/** Opt-in: the real arXiv API (no key; one call, within its one request per 3 s). ./gradlew liveTest */
+/**
+ * Opt-in: the real arXiv API (no key; one call, within its one request per 3 s). ./gradlew liveTest
+ */
 @Tag("live")
 class ArxivSourceLiveTest {
 
-    @Test
-    void searchFindsPapersWithPublicationDates() {
-        ArxivSource source = new ArxivSource(live("https://export.arxiv.org", null), liveHttp(), Clock.systemUTC(), (host, interval) -> true);
+  @Test
+  void searchFindsPapersWithPublicationDates() {
+    ArxivSource source =
+        new ArxivSource(
+            live("https://export.arxiv.org", null),
+            liveHttp(),
+            Clock.systemUTC(),
+            (host, interval) -> true);
 
-        List<SourceHit> hits = source.search(query("retrieval augmented generation"));
+    List<SourceHit> hits = source.search(query("retrieval augmented generation"));
 
-        assertThat(hits).isNotEmpty().allSatisfy(h -> {
-            assertThat(h.getUrl().getHost()).isEqualTo("arxiv.org");
-            assertThat(h.getPublished().getValue()).isNotNull();
+    assertThat(hits)
+        .isNotEmpty()
+        .allSatisfy(h -> {
+          assertThat(h.getUrl().getHost()).isEqualTo("arxiv.org");
+          assertThat(h.getPublished().getValue()).isNotNull();
         });
-    }
+  }
 }

@@ -21,94 +21,119 @@ import org.junit.jupiter.api.Test;
 
 class ReadmeEvidenceTest {
 
-    final FixtureServer server = new FixtureServer();
+  final FixtureServer server = new FixtureServer();
 
-    @AfterEach
-    void stop() {
-        server.close();
-    }
+  @AfterEach
+  void stop() {
+    server.close();
+  }
 
-    private ReadmeEvidence evidence() {
-        SourceSettings settings = new SourceSettings(true, server.baseUrl(), "token", Duration.ofSeconds(2), Duration.ZERO);
-        return ReadmeEvidence.of(settings, settings, ObservedHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP),
-            ObservedHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP), Resilience.NONE, SourceFixtures.CLOCK);
-    }
+  private ReadmeEvidence evidence() {
+    SourceSettings settings =
+        new SourceSettings(true, server.baseUrl(), "token", Duration.ofSeconds(2), Duration.ZERO);
+    return ReadmeEvidence.of(
+        settings,
+        settings,
+        ObservedHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP),
+        ObservedHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP),
+        Resilience.NONE,
+        SourceFixtures.CLOCK);
+  }
 
-    private static GapTarget target(GapKind kind) {
-        return new GapTarget(kind, "acme", "tool", UUID.randomUUID());
-    }
+  private static GapTarget target(GapKind kind) {
+    return new GapTarget(kind, "acme", "tool", UUID.randomUUID());
+  }
 
-    @Test
-    void readsTheReadmeAndTheLicenceGitHubStates() {
-        server.route("/repos/acme/tool/readme", FixtureServer.Reply.ok("# Tool\nMIT licensed."));
-        server.route("/repos/acme/tool", FixtureServer.Reply.ok("{\"license\":{\"spdx_id\":\"MIT\"}}"));
+  @Test
+  void readsTheReadmeAndTheLicenceGitHubStates() {
+    server.route("/repos/acme/tool/readme", FixtureServer.Reply.ok("# Tool\nMIT licensed."));
+    server.route("/repos/acme/tool", FixtureServer.Reply.ok("{\"license\":{\"spdx_id\":\"MIT\"}}"));
 
-        ExtraText text = evidence().fetch(target(GapKind.GITHUB_README));
+    ExtraText text = evidence().fetch(target(GapKind.GITHUB_README));
 
-        assertThat(text).isNotNull();
-        assertThat(text.getRaw()).contains("MIT licensed");
-        assertThat(text.getLicense()).isEqualTo("MIT");
-        assertThat(text.getSourceUrl()).hasToString("https://github.com/acme/tool#readme");
-        assertThat(server.requestHeaders.getFirst()).containsKey("Accept");
-        assertThat(server.requestHeaders.getFirst().get("Accept").getFirst()).contains("raw");
-    }
+    assertThat(text).isNotNull();
+    assertThat(text.getRaw()).contains("MIT licensed");
+    assertThat(text.getLicense()).isEqualTo("MIT");
+    assertThat(text.getSourceUrl()).hasToString("https://github.com/acme/tool#readme");
+    assertThat(server.requestHeaders.getFirst()).containsKey("Accept");
+    assertThat(server.requestHeaders.getFirst().get("Accept").getFirst()).contains("raw");
+  }
 
-    @Test
-    void noGitHubCallsWithoutAToken() {
-        SourceSettings anonymous = new SourceSettings(true, server.baseUrl(), null, Duration.ofSeconds(2), Duration.ZERO);
-        ReadmeEvidence evidence = ReadmeEvidence.of(anonymous, anonymous, ObservedHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP),
-            ObservedHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP), Resilience.NONE, SourceFixtures.CLOCK);
+  @Test
+  void noGitHubCallsWithoutAToken() {
+    SourceSettings anonymous =
+        new SourceSettings(true, server.baseUrl(), null, Duration.ofSeconds(2), Duration.ZERO);
+    ReadmeEvidence evidence =
+        ReadmeEvidence.of(
+            anonymous,
+            anonymous,
+            ObservedHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP),
+            ObservedHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP),
+            Resilience.NONE,
+            SourceFixtures.CLOCK);
 
-        assertThat(evidence.fetch(target(GapKind.GITHUB_README))).isNull();
-        assertThat(server.requests).isEmpty();
-    }
+    assertThat(evidence.fetch(target(GapKind.GITHUB_README))).isNull();
+    assertThat(server.requests).isEmpty();
+  }
 
-    @Test
-    void noAssertionIsNoLicence() {
-        server.route("/repos/acme/tool/readme", FixtureServer.Reply.ok("# Tool"));
-        server.route("/repos/acme/tool", FixtureServer.Reply.ok("{\"license\":{\"spdx_id\":\"NOASSERTION\"}}"));
+  @Test
+  void noAssertionIsNoLicence() {
+    server.route("/repos/acme/tool/readme", FixtureServer.Reply.ok("# Tool"));
+    server.route(
+        "/repos/acme/tool", FixtureServer.Reply.ok("{\"license\":{\"spdx_id\":\"NOASSERTION\"}}"));
 
-        assertThat(evidence().fetch(target(GapKind.GITHUB_README)).getLicense()).isNull();
-    }
+    assertThat(evidence().fetch(target(GapKind.GITHUB_README)).getLicense()).isNull();
+  }
 
-    @Test
-    void aMissingReadmeIsNoText() {
-        server.route("/repos/acme/tool/readme", new FixtureServer.Reply(404, "{}", Map.of(), 0));
+  @Test
+  void aMissingReadmeIsNoText() {
+    server.route("/repos/acme/tool/readme", new FixtureServer.Reply(404, "{}", Map.of(), 0));
 
-        assertThat(evidence().fetch(target(GapKind.GITHUB_README))).isNull();
-        assertThat(server.requests).hasSize(1);
-    }
+    assertThat(evidence().fetch(target(GapKind.GITHUB_README))).isNull();
+    assertThat(server.requests).hasSize(1);
+  }
 
-    @Test
-    void aServerErrorIsAFailure() {
-        server.route("/repos/acme/tool/readme", new FixtureServer.Reply(500, "{}", Map.of(), 0));
+  @Test
+  void aServerErrorIsAFailure() {
+    server.route("/repos/acme/tool/readme", new FixtureServer.Reply(500, "{}", Map.of(), 0));
 
-        assertThatThrownBy(() -> evidence().fetch(target(GapKind.GITHUB_README))).isInstanceOf(SourceFailure.class);
-    }
+    assertThatThrownBy(() -> evidence().fetch(target(GapKind.GITHUB_README)))
+        .isInstanceOf(SourceFailure.class);
+  }
 
-    @Test
-    void aRedirectThatWasNotFollowedIsAFailureNotText() {
-        server.route("/acme/tool/raw/main/README.md", new FixtureServer.Reply(302, "<html>moved</html>",
-            Map.of("Location", "https://other-host.example/x"), 0));
+  @Test
+  void aRedirectThatWasNotFollowedIsAFailureNotText() {
+    server.route(
+        "/acme/tool/raw/main/README.md",
+        new FixtureServer.Reply(
+            302, "<html>moved</html>", Map.of("Location", "https://other-host.example/x"), 0));
 
-        assertThatThrownBy(() -> evidence().fetch(target(GapKind.HF_MODEL_CARD))).isInstanceOf(SourceFailure.class);
-    }
+    assertThatThrownBy(() -> evidence().fetch(target(GapKind.HF_MODEL_CARD)))
+        .isInstanceOf(SourceFailure.class);
+  }
 
-    @Test
-    void readsTheModelCardAndItsLicence() {
-        server.route("/acme/tool/raw/main/README.md", FixtureServer.Reply.ok("---\nlicense: apache-2.0\ntags: [asr]\n---\n# Tool\n"));
+  @Test
+  void readsTheModelCardAndItsLicence() {
+    server.route(
+        "/acme/tool/raw/main/README.md",
+        FixtureServer.Reply.ok("---\nlicense: apache-2.0\ntags: [asr]\n---\n# Tool\n"));
 
-        ExtraText text = evidence().fetch(target(GapKind.HF_MODEL_CARD));
+    ExtraText text = evidence().fetch(target(GapKind.HF_MODEL_CARD));
 
-        assertThat(text.getLicense()).isEqualTo("apache-2.0");
-        assertThat(text.getSourceUrl()).hasToString("https://huggingface.co/acme/tool/blob/main/README.md");
-    }
+    assertThat(text.getLicense()).isEqualTo("apache-2.0");
+    assertThat(text.getSourceUrl())
+        .hasToString("https://huggingface.co/acme/tool/blob/main/README.md");
+  }
 
-    @Test
-    void cardLicenceOnlyFromFrontMatter() {
-        assertThat(ReadmeEvidence.cardLicense("# Tool\nlicense: mit\n")).isNull();
-        assertThat(ReadmeEvidence.cardLicense("---\nlicense: other\n---\n")).isNull();
-        assertThat(ReadmeEvidence.cardLicense("---\nlicense: \"llama3.1\"\n---\n")).isEqualTo("llama3.1");
-        assertThat(ReadmeEvidence.cardLicense("---\nbase_model:\n  license: mit\nlicense: apache-2.0\n---\n")).isEqualTo("apache-2.0");
-    }
+  @Test
+  void cardLicenceOnlyFromFrontMatter() {
+    assertThat(ReadmeEvidence.cardLicense("# Tool\nlicense: mit\n")).isNull();
+    assertThat(ReadmeEvidence.cardLicense("---\nlicense: other\n---\n")).isNull();
+    assertThat(ReadmeEvidence.cardLicense("---\nlicense: \"llama3.1\"\n---\n"))
+        .isEqualTo("llama3.1");
+    assertThat(
+            ReadmeEvidence.cardLicense(
+                "---\nbase_model:\n  license: mit\nlicense: apache-2.0\n---\n"))
+        .isEqualTo("apache-2.0");
+  }
 }

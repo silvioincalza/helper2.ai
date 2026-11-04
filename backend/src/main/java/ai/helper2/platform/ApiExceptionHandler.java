@@ -16,35 +16,45 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 /**
- * RFC 9457 problem details. Never echoes internals or input back verbatim. Only what the client sent can
- * be a 400 ({@link BadRequestException}, contract validation, unparseable parameters); every other
- * exception is a bug or an outage and answers 500.
+ * RFC 9457 problem details. Never echoes internals or input back verbatim. Only what the client
+ * sent can be a 400 ({@link BadRequestException}, contract validation, unparseable parameters);
+ * every other exception is a bug or an outage and answers 500.
  */
 @RestControllerAdvice
 class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
-    private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
+  private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
 
-    @ExceptionHandler({BadRequestException.class, ConstraintViolationException.class, MethodArgumentTypeMismatchException.class})
-    ProblemDetail badRequest(Exception e) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Invalid request parameters.");
-    }
+  @ExceptionHandler({
+    BadRequestException.class,
+    ConstraintViolationException.class,
+    MethodArgumentTypeMismatchException.class
+  })
+  ProblemDetail badRequest(Exception e) {
+    return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Invalid request parameters.");
+  }
 
-    @ExceptionHandler(NotFoundException.class)
-    ProblemDetail notFound(NotFoundException e) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage());
-    }
+  @ExceptionHandler(NotFoundException.class)
+  ProblemDetail notFound(NotFoundException e) {
+    return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage());
+  }
 
-    @ExceptionHandler(RuntimeException.class)
-    ProblemDetail unexpected(RuntimeException e) {
-        log.error("Unhandled exception in a request", e);
-        return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "Something went wrong on our side.");
-    }
+  @ExceptionHandler(RuntimeException.class)
+  ProblemDetail unexpected(RuntimeException e) {
+    log.error("Unhandled exception in a request", e);
+    return ProblemDetail.forStatusAndDetail(
+        HttpStatus.INTERNAL_SERVER_ERROR, "Something went wrong on our side.");
+  }
 
-    @Override
-    protected ResponseEntity<Object> handleHandlerMethodValidationException(
-        HandlerMethodValidationException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
-        return ResponseEntity.badRequest()
-            .body(ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Invalid request parameters."));
-    }
+  @Override
+  protected ResponseEntity<Object> handleHandlerMethodValidationException(
+      HandlerMethodValidationException ex,
+      HttpHeaders headers,
+      HttpStatusCode status,
+      WebRequest request) {
+    return ResponseEntity.badRequest()
+        .body(
+            ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, "Invalid request parameters."));
+  }
 }

@@ -19,6 +19,7 @@ as scope creep.
 
 ```
 cd backend && ./gradlew test        # unit + integration (Postgres, Redis in containers)
+cd backend && ./gradlew spotlessApply  # format Java and Kotlin (CI runs spotlessCheck)
 cd backend && ./gradlew liveTest    # opt-in, real external APIs
 cd frontend && npm test -- --run && npm run lint && npm run typecheck
 ```
@@ -31,6 +32,13 @@ Run the relevant tests before calling a change done.
   hexagonal: domain and use cases in the core, adapters for DB, LLM, HTTP, queue.
   One explicit use case per business action. Lightweight DDD: ubiquitous language, clear modules.
 - TDD for domain logic, BDD for user-visible behaviour, integration tests for adapters.
+- Code format: Google style. google-java-format for Java, ktfmt Google style for Kotlin, through
+  Spotless. Run `./gradlew spotlessApply` before a commit; CI fails on unformatted code.
+- Clean code: a use case reads top-down as the business action. Small methods with one level of
+  abstraction each, names that say the intent, early returns, no flag arguments. Split a long
+  method into named steps instead of adding comments.
+- Versions: use the latest compatible release of every dependency and tool. Ask Silvio before
+  picking a version, and say why when the latest does not work.
 - Before adding a library or tool: compare 2-3 candidates (fit, maintenance, licence, lock-in,
   operational cost), recommend one, state the trade-off. Revisit an existing feature's choice
   only when the feature changes or has a real problem.

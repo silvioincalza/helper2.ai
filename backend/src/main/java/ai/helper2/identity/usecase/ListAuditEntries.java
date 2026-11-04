@@ -8,19 +8,20 @@ import org.springframework.stereotype.Service;
 @Service
 public class ListAuditEntries {
 
-    /** The largest page the back office may ask for. */
-    public static final int MAX_PAGE_SIZE = 100;
+  /** The largest page the back office may ask for. */
+  public static final int MAX_PAGE_SIZE = 100;
 
-    private final AuditLog log;
+  private final AuditLog log;
 
-    public ListAuditEntries(AuditLog log) {
-        this.log = log;
+  public ListAuditEntries(AuditLog log) {
+    this.log = log;
+  }
+
+  public AuditLog.Page list(int page, int size) {
+    if (page < 0 || size < 1 || size > MAX_PAGE_SIZE) {
+      throw new BadRequestException(
+          "page must be 0 or more and size between 1 and " + MAX_PAGE_SIZE);
     }
-
-    public AuditLog.Page list(int page, int size) {
-        if (page < 0 || size < 1 || size > MAX_PAGE_SIZE) {
-            throw new BadRequestException("page must be 0 or more and size between 1 and " + MAX_PAGE_SIZE);
-        }
-        return log.page(page, size);
-    }
+    return log.page(page, size);
+  }
 }

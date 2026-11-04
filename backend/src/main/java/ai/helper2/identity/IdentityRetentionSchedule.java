@@ -13,22 +13,22 @@ import org.springframework.stereotype.Component;
 @Component
 class IdentityRetentionSchedule {
 
-    private static final Logger log = LoggerFactory.getLogger(IdentityRetentionSchedule.class);
+  private static final Logger log = LoggerFactory.getLogger(IdentityRetentionSchedule.class);
 
-    private final PurgeExpiredData purge;
-    private final ClusterLock lock;
+  private final PurgeExpiredData purge;
+  private final ClusterLock lock;
 
-    IdentityRetentionSchedule(PurgeExpiredData purge, ClusterLocks locks) {
-        this.purge = purge;
-        this.lock = locks.keptAlive("retention-identity", Duration.ofMinutes(1));
+  IdentityRetentionSchedule(PurgeExpiredData purge, ClusterLocks locks) {
+    this.purge = purge;
+    this.lock = locks.keptAlive("retention-identity", Duration.ofMinutes(1));
+  }
+
+  @Scheduled(cron = "${helper2.retention.cron}", zone = "UTC")
+  void daily() {
+    try {
+      lock.tryRun(purge::purge);
+    } catch (RuntimeException e) {
+      log.warn("identity retention failed: {}", e.getClass().getSimpleName());
     }
-
-    @Scheduled(cron = "${helper2.retention.cron}", zone = "UTC")
-    void daily() {
-        try {
-            lock.tryRun(purge::purge);
-        } catch (RuntimeException e) {
-            log.warn("identity retention failed: {}", e.getClass().getSimpleName());
-        }
-    }
+  }
 }
