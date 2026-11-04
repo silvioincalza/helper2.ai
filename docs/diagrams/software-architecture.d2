@@ -5,7 +5,7 @@
 # Source of truth: backend/src/main/java/ai/helper2/*/package-info.java (modules),
 #   backend/src/main/kotlin/ai/helper2/search/Ports.kt, scout/Ports.kt, scout/Scout.kt, scout/Enrichment.kt,
 #   guide/Guide.kt, guide/GuideCost.kt (ports),
-#   backend/src/main/java/ai/helper2/sources/config/SourcesConfiguration.java (sources and collectors),
+#   backend/src/main/java/ai/helper2/sources/config/SourcesConfiguration.java (sources, collectors, ReadmeEvidence),
 #   backend/src/main/java/ai/helper2/catalog/CatalogConfiguration.java (index, curated, semantic sources),
 #   backend/src/main/java/ai/helper2/catalog/EnrichmentResults.java (port the Scout writes through),
 #   backend/src/main/java/ai/helper2/setup/internal/SetupConfiguration.java (setup guide adapters),
@@ -76,8 +76,9 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
   scout: "scout (Kotlin domain)" {
     class: group
     ctl: "AdminController\nPOST /admin/scout-runs\nreview items" {class: app}
-    core: "RunScout · EnrichResource\nEvidenceValidator" {class: app}
+    core: "RunScout · EnrichResource\nEvidenceValidator\nGapTargets · ReadmeText (gap round)" {class: app}
     p_collector: Collector {class: port}
+    p_extra: "ExtraEvidence\nGapBudget" {class: port}
     p_index: CatalogIndex {class: port}
     p_enrich: EnrichmentModel {class: port}
     p_stores: "ScoutStore\nEnrichmentStore\nEnrichmentBacklog" {class: port}
@@ -85,6 +86,7 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
     jdbc: "JdbcScoutStore\nJdbcEnrichmentStore" {class: app}
     ctl -> core
     core -> p_collector
+    core -> p_extra: "gap round (ADR 0043)"
     core -> p_index
     core -> p_enrich: {class: ai-call}
     core -> p_stores
@@ -118,6 +120,7 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
     live: "SearchSource adapters\nGitHubSource · NpmSource · ArxivSource\nHuggingFaceModelsSource\nHuggingFaceSpacesSource · TavilySource" {class: app}
     collectors: "Collector adapters\nMcpRegistryCollector · TavilyCollector\nHuggingFaceTrendingCollector\nHuggingFaceProviderOrgsCollector\nGitHubAwesomeCollector · AiDeadlinesCollector" {class: app}
     classifier: "SpringAiRepoClassifier\n(or Heuristic without a model)" {class: app}
+    evidence: "ReadmeEvidence\n(README, model card)" {class: app}
     collectors -> classifier: awesome-list entries {class: ai-call}
   }
 
@@ -160,6 +163,7 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
   catalog.catalog -> search.p_observer: implements {class: config}
   catalog.catalog -> scout.p_index: implements {class: config}
   sources.collectors -> scout.p_collector: implements {class: config}
+  sources.evidence -> scout.p_extra: implements {class: config}
   sources.live -> platform.http: "HTTP client" {class: config}
   catalog.embed -> platform.http: "HTTP client" {class: config}
   search.core -> platform.quota: "daily web searches"
@@ -232,4 +236,5 @@ app.guide.core -> nvidia.embeddings: "question embedding\n(similar questions, AD
 
 app.sources.live -> hosts: "HTTPS: search calls"
 app.sources.collectors -> hosts: "HTTPS: Scout collection"
+app.sources.evidence -> hosts: "HTTPS: gap round\nREADMEs, model cards"
 app.setup.adapters -> hosts: "HTTPS: registry entry,\nREADMEs, model cards"

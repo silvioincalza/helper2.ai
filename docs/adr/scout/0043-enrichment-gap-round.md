@@ -46,7 +46,7 @@ decides where the extra text comes from, and the same evidence gate judges it.
    of such a quote: `owner/repo · README`, `owner/model · model card`.
 9. **Cost.** `H2_SCOUT_GAP_DAILY_CALLS` (250) gap model calls a day, a share of the 300 enrichment calls, not on top
    (both caps count them). At least 50 calls a day stay for first runs of new resources. A gap cap above the
-   enrichment cap has no effect: to allow up to 500 gap calls, raise `H2_SCOUT_DAILY_ENRICHMENT_CALLS` too. Taken only when there is text to send; `0` turns the gap round off. The per-run enrichment
+   enrichment cap has no effect: to allow up to 500 gap calls, raise `H2_SCOUT_DAILY_ENRICHMENT_CALLS` too. Taken only when there is text to send; when none is left today, or with `0` (off), no README is read either. The per-run enrichment
    budget ([0018](0018-scout-runner.md) §6) counts resources, not gap calls: a gap call is part of its resource's
    attempt, so a run can make up to its budget plus the gap calls left today. Reading a README needs `H2_GITHUB_TOKEN`
    (without it GitHub allows 60 calls an hour); a model card needs no token. Gauge

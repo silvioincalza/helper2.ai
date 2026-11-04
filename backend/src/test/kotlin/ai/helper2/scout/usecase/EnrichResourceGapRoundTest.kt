@@ -151,6 +151,20 @@ class EnrichResourceGapRoundTest {
     }
 
     @Test
+    fun `no README is read when the gap round is off or spent for today`() {
+        val reads = mutableListOf<GapTarget>()
+        val off = object : GapBudget {
+            override fun tryAcquire() = false
+            override fun hasRoom() = false
+        }
+
+        EnrichResource(LicenceModel(), Store(), clock, extraEvidence = readmeSource(calls = reads), gapBudget = off)
+            .enrich(UUID.randomUUID())
+
+        assertTrue(reads.isEmpty())
+    }
+
+    @Test
     fun `README text cannot support a summary claim`() {
         val model = LicenceModel().apply { claimFromReadme = true }
         val store = Store()

@@ -31,7 +31,11 @@ fun interface ExtraEvidence {
 
 /** Outbound port: the gap round's own daily cap, inside the enrichment cap. */
 fun interface GapBudget {
+    /** Takes one gap model call; false when today's cap is spent. */
     fun tryAcquire(): Boolean
+
+    /** false when no gap call is left today (or the gap round is off): then nothing is read either. */
+    fun hasRoom(): Boolean = true
 }
 
 /** The parts of a source record the gap round looks at. */

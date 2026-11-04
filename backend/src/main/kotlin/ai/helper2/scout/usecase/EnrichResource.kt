@@ -101,6 +101,8 @@ class EnrichResource @JvmOverloads constructor(
         val evidence = extraEvidence ?: return null
         if (first.outcome !in GAP_OUTCOMES) return null
         val source = target.kind.label
+        // Turned off or spent for today: no README is read for a call that cannot be made.
+        if (!gapBudget.hasRoom()) return skipped(source, "skipped_cap")
         val extra = try {
             evidence.fetch(target)
         } catch (e: RuntimeException) {

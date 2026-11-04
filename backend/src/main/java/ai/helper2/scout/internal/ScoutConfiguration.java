@@ -122,13 +122,33 @@ class ScoutConfiguration {
      */
     static GapBudget gapBudget(int dailyCalls, Clock clock, CallCounter counter, MeterRegistry meters) {
         if (dailyCalls <= 0) {
-            return () -> false;
+            return new GapBudget() {
+                @Override
+                public boolean tryAcquire() {
+                    return false;
+                }
+
+                @Override
+                public boolean hasRoom() {
+                    return false;
+                }
+            };
         }
         DailyBudget budget = new DailyBudget(dailyCalls, clock, "enrichment-gap", counter);
         Gauge.builder("helper2.scout.gap.budget.remaining", budget, DailyBudget::remaining)
             .description("Scout gap-round model calls left under today's cap (UTC day)")
             .register(meters);
-        return budget::tryAcquire;
+        return new GapBudget() {
+            @Override
+            public boolean tryAcquire() {
+                return budget.tryAcquire();
+            }
+
+            @Override
+            public boolean hasRoom() {
+                return budget.remaining() > 0;
+            }
+        };
     }
 
     @Bean
