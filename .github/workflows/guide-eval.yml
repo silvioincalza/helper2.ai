@@ -1,5 +1,5 @@
 # Guide evaluation: every night, the fixed guide questions and the hostile ones against staging, never prod
-# (ADR 0030). A run sends 28 questions: about 84 model calls (3 a question), at most 150 with retries under staging's
+# (ADR 0030). A run sends 28 questions (the 20 core ones and 8 hostile ones): about 84 model calls (3 a question), at most 150 with retries under staging's
 # guide cap. No secret: the guide endpoints are public, so a GitHub-hosted runner calls the staging URL like a visitor.
 # Staging runs with answers kept one second and 150 guide model calls a day (values-staging.yaml: app.guideCacheTtl,
 # app.dailyLimits.guideModelCalls). The reports are kept as an artifact for 30 days; nothing is committed.
@@ -32,9 +32,10 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 26
-      # 20 questions; fails below 10 passed (the last published run: 11, ADR 0030).
+      # The 20 core questions (not the 30 marked extended, which do not fit in staging's 150 calls a day);
+      # fails below 10 passed (the last published run: 11, ADR 0030).
       - name: Fixed questions
-        run: node scripts/eval-guide.mjs "$STAGING_URL" --min-pass 0.5
+        run: node scripts/eval-guide.mjs "$STAGING_URL" --core --min-pass 0.5
       # 8 hostile questions; fails on any case that does not pass.
       - name: Hostile questions
         if: ${{ !cancelled() }}

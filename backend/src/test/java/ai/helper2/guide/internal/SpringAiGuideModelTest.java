@@ -241,7 +241,11 @@ class SpringAiGuideModelTest {
         String thinking = new SpringAiGuideModel(chat, "p", "f", "r", true, 100, new SpringAiGuideModel.Thinking(false, true, false),
             budget, ModelCallMetrics.none(), Resilience.NONE).getConfigFingerprint();
 
-        assertThat(off).contains(SpringAiGuideModel.chooseSystem()).isNotEqualTo(thinking);
+        // Every rendered prompt is part of the answer cache key (AskGuide.configHash): editing any prompt file
+        // changes the key, so a new prompt never serves answers of the old one.
+        assertThat(off).contains(SpringAiGuideModel.planSystem(), SpringAiGuideModel.chooseSystem(),
+            SpringAiGuideModel.verifySystem(), SpringAiGuideModel.compareSystem(), SpringAiGuideModel.explainSystem())
+            .isNotEqualTo(thinking);
     }
 
     @Test
