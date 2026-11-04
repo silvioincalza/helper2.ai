@@ -112,7 +112,7 @@ class SearchController implements SearchApi, SourcesApi {
     private static SourceInfoDto info(SourceOverview o) {
         SourceDescriptor d = o.getDescriptor();
         SourceInfoDto dto = new SourceInfoDto(d.getId(), d.getName(), SourceModeDto.fromValue(d.getMode().name()),
-            d.getEnabled(), d.getHomepage(),
+            d.getEnabled(), d.getMetered(), d.getHomepage(),
             d.getResourceTypes().stream().map(t -> ResourceTypeDto.fromValue(t.name())).sorted().toList())
             .termsUrl(d.getTermsUrl()).attribution(d.getAttribution())
             .responseTimeMs(o.getResponseTime() == null ? null : o.getResponseTime().toMillis());

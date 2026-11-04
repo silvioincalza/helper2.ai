@@ -1,7 +1,7 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axeViolations } from '@/test/a11y';
-import { ADMIN, USER, makeDetail, makeSearch, makeStatus } from '@/test/fixtures';
+import { ADMIN, HEALTH_SOURCES, USER, makeDetail, makeSearch, makeStatus } from '@/test/fixtures';
 import { mockApi } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
 import { clearApiCache } from '@/hooks/useApi';
@@ -59,6 +59,7 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
       'GET /admin/overview': () => ({ generatedAt: '2026-11-04T09:00:00Z', openReviewItems: [{ kind: 'USER_REPORT', count: 1 }], enrichmentBacklog: 3, budgets: [{ name: 'guide', dailyLimit: 200, usedToday: 10 }], webCredits: null, recentRuns: [{ id: '77777777-7777-5777-8777-777777777777', sourceId: 'github', status: 'FAILED', startedAt: '2026-10-21T10:00:00Z', finishedAt: null, itemsSeen: 0, itemsChanged: 0, message: 'rate limited' }], failedRunsLast24h: 1, grafanaUrl: null }),
       'GET /admin/audit': () => ({ items: [{ id: '99999999-9999-5999-8999-999999999999', adminId: '12345', action: 'RESOLVE_REVIEW_ITEM', targetId: null, at: '2026-11-01T09:00:00Z', outcome: 'ACCEPTED' }], total: 1 }),
       'GET /me/bookmarks': () => [],
+      'GET /sources': () => HEALTH_SOURCES,
     });
     const s = renderApp('/sources');
     await screen.findByRole('heading', { level: 2, name: 'Every source' });

@@ -68,8 +68,17 @@ export function makeDetail(over: Partial<ResourceDetail> = {}): ResourceDetail {
 }
 
 export const SOURCES: SourceInfo[] = [
-  { id: 'github', name: 'GitHub', mode: 'LIVE', enabled: true, homepage: 'https://github.com', termsUrl: 'https://docs.github.com/terms', attribution: 'Data from GitHub', resourceTypes: ['LIBRARY', 'MCP_SERVER'], lastOutcome: 'SUCCEEDED', lastCheckedAt: '2026-10-22T09:00:00Z' },
-  { id: 'seed', name: 'Helper2 seed', mode: 'CURATED', enabled: true, homepage: 'https://helper2.ai', termsUrl: null, attribution: null, resourceTypes: ['PRODUCT'], lastOutcome: null, lastCheckedAt: null },
+  { id: 'github', name: 'GitHub', mode: 'LIVE', enabled: true, metered: false, homepage: 'https://github.com', termsUrl: 'https://docs.github.com/terms', attribution: 'Data from GitHub', resourceTypes: ['LIBRARY', 'MCP_SERVER'], lastOutcome: 'SUCCEEDED', lastCheckedAt: '2026-10-22T09:00:00Z' },
+  { id: 'seed', name: 'Helper2 seed', mode: 'CURATED', enabled: true, metered: false, homepage: 'https://helper2.ai', termsUrl: null, attribution: null, resourceTypes: ['PRODUCT'], lastOutcome: null, lastCheckedAt: null },
+];
+
+/** Every health field of GET /sources: response time, an open and a half-open circuit, the metered source's credits. */
+export const HEALTH_SOURCES: SourceInfo[] = [
+  { ...SOURCES[0]!, responseTimeMs: 240, circuit: 'CLOSED', circuitOpenedAt: null },
+  { id: 'npm', name: 'npm', mode: 'LIVE', enabled: true, metered: false, homepage: 'https://www.npmjs.com', termsUrl: null, attribution: null, resourceTypes: ['LIBRARY'], lastOutcome: 'SUCCEEDED', lastCheckedAt: '2026-10-22T08:30:00Z', responseTimeMs: 1250, circuit: 'OPEN', circuitOpenedAt: '2026-10-22T09:14:05Z' },
+  { id: 'hf', name: 'Hugging Face', mode: 'LIVE', enabled: true, metered: false, homepage: 'https://huggingface.co', termsUrl: null, attribution: null, resourceTypes: ['MODEL'], lastOutcome: 'FAILED', lastCheckedAt: '2026-10-22T08:40:00Z', responseTimeMs: null, circuit: 'HALF_OPEN', circuitOpenedAt: null },
+  { id: 'tavily', name: 'Tavily web search (AI news)', mode: 'LIVE', enabled: true, metered: true, homepage: 'https://tavily.com', termsUrl: null, attribution: null, resourceTypes: ['NEWS'], lastOutcome: 'SUCCEEDED', lastCheckedAt: '2026-10-22T08:50:00Z', responseTimeMs: 800, circuit: 'CLOSED', circuitOpenedAt: null, webCredits: { usedToday: 312, dailyCap: 1000 } },
+  { ...SOURCES[1]!, circuit: null, webCredits: null },
 ];
 
 export const ANON: Me = { authenticated: false, roles: [], loginProviders: [{ id: 'github', name: 'GitHub' }] };

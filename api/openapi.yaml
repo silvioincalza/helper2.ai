@@ -1269,12 +1269,17 @@ components:
 
     SourceInfo:
       type: object
-      required: [id, name, mode, enabled, homepage, resourceTypes]
+      required: [id, name, mode, enabled, metered, homepage, resourceTypes]
       properties:
         id: { type: string }
         name: { type: string }
         mode: { $ref: '#/components/schemas/SourceMode' }
         enabled: { type: boolean }
+        metered:
+          type: boolean
+          description: >-
+            True for a source whose calls spend a paid quota (today only Tavily), enabled or not. Only a metered source
+            can have `webCredits`.
         homepage: { type: string, format: uri }
         termsUrl: { type: [string, 'null'], format: uri }
         attribution: { type: [string, 'null'] }
@@ -1296,7 +1301,7 @@ components:
           description: When this replica's circuit opened; set only while `circuit` is OPEN.
         webCredits:
           oneOf: [{ $ref: '#/components/schemas/WebCredits' }, { type: 'null' }]
-          description: Only on an enabled metered source (Tavily); null when the count cannot be read.
+          description: Only on an enabled metered source (`metered`); null on every other source and when the count cannot be read.
 
     CircuitState:
       type: string

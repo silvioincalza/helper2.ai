@@ -66,9 +66,11 @@ and how many web credits the day has used. Two sources can describe the same res
       needs no shared store.
     - `circuit` (`CLOSED`, `OPEN`, `HALF_OPEN`) and `circuitOpenedAt` (only while `OPEN`): this replica's
       `source-<id>` circuit (`Resilience.circuit`); null for a disabled source and for Scout collectors.
+    - `metered`: true for a source whose calls spend a paid quota, enabled or not (`SourceDescriptor.metered`; today
+      only Tavily). The page reads this flag, not a source id.
     - `webCredits {usedToday, dailyCap}` on an enabled metered source: the credits of the day for the whole cluster
-      and the global cap, from Redis ([0037](0037-tavily-store-and-daily-quota.md)); null when Redis cannot answer.
-      A visitor's own web searches left stay in the search and guide responses.
+      and the global cap, from Redis ([0037](0037-tavily-store-and-daily-quota.md)); null on every other source and
+      when Redis cannot answer. A visitor's own web searches left stay in the search and guide responses.
 
     Response time and circuit are per replica, like the circuits themselves; the field descriptions say so.
 
