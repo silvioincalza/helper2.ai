@@ -24,7 +24,20 @@ class OverviewController implements OverviewApi {
 
     OverviewController(GetOverview overview, @Value("${helper2.admin.grafana-url:}") String grafanaUrl) {
         this.overview = overview;
-        this.grafanaUrl = grafanaUrl.isBlank() ? null : URI.create(grafanaUrl);
+        this.grafanaUrl = grafanaLink(grafanaUrl);
+    }
+
+    /** An absolute http(s) link with a host, or none. Anything else stops startup: the page puts it in an href. */
+    static URI grafanaLink(String value) {
+        if (value.isBlank()) {
+            return null;
+        }
+        URI uri = URI.create(value.strip());
+        String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase(java.util.Locale.ROOT);
+        if (!(scheme.equals("https") || scheme.equals("http")) || uri.getHost() == null) {
+            throw new IllegalStateException("H2_ADMIN_GRAFANA_URL must be an absolute http(s) URL with a host.");
+        }
+        return uri;
     }
 
     @Override

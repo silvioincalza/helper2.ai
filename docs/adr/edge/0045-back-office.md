@@ -21,7 +21,8 @@ them without each module growing an admin corner.
    kind (every kind, 0 included), the enrichment backlog (the same rule the Scout takes it by), every model budget with
    today's count and limit, web credits today, the last 10 Scout runs and the failed ones of the last 24 hours, and a
    link to Grafana (`H2_ADMIN_GRAFANA_URL`) for trends. It is computed at most once a minute, one computation at a time:
-   the backlog count is a full pass, and Refresh must not repeat it.
+   the backlog count is a full pass, and Refresh must not repeat it. That count gives up after 5 seconds. The Grafana
+   link must be an absolute http(s) URL with a host, or the app does not start: the page puts it in an href.
 4. **Budgets read from the shared counter.** Every `DailyBudget` declares its name and limit in the `BudgetLedger`, the
    `CallCounter` it counts on. The overview reads today's count from Redis, the store every replica counts in, never
    from one replica's memory. Without Redis, or while it cannot answer, the count is unknown and shown as unknown.
@@ -32,7 +33,7 @@ them without each module growing an admin corner.
 - One place for every admin endpoint; a new part is a route, a controller method and a use case here.
 - The overview shows only what to act on now. Trends stay in Grafana; the overview does not rebuild them.
 - The numbers can be up to a minute old; the page says when they were counted.
-- A budget that is never built (no model configured) is not listed.
+- A budget that is never built (no model configured), or one that counts only in memory, is not listed.
 - The backlog count costs a full pass over the catalog's backlog rule (about 90 ms at today's size, growing with it);
   the enrichment queue work rewrites that query (roadmap).
 

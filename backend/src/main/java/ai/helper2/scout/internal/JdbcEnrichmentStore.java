@@ -79,11 +79,18 @@ class JdbcEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
             .query(UUID.class).list();
     }
 
-    /** The same rule as {@link #pending}, counted. A full pass over the backlog: the overview caches it. */
+    /** Longest the backlog count may run: the overview waits for it, and one slow plan must not hold the page. */
+    static final int COUNT_TIMEOUT_SECONDS = 5;
+
+    /**
+     * The same rule as {@link #pending}, counted. A full pass over the backlog: the overview caches it, and the query
+     * gives up after {@link #COUNT_TIMEOUT_SECONDS}.
+     */
     @Override
     public long pendingCount() {
         return jdbc.sql("SELECT count(*) FROM resource r WHERE " + PENDING)
             .param("maxFailed", MAX_FAILED_ATTEMPTS).param("minText", MIN_DESCRIPTION)
+            .withQueryTimeout(COUNT_TIMEOUT_SECONDS)
             .query(Long.class).single();
     }
 

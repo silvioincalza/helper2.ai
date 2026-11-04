@@ -219,6 +219,7 @@ class HttpEdgeIT {
         assertThat(getAt(port, "/api/v1/admin").statusCode()).isEqualTo(404);
         assertThat(getAt(port, "/admin").statusCode()).isEqualTo(404);
         assertThat(getAt(port, "/admin/review").statusCode()).isEqualTo(404);
+        assertThat(getAt(port, "/api/v1/admin/overview").statusCode()).isEqualTo(404);
     }
 
     @Test
@@ -231,6 +232,7 @@ class HttpEdgeIT {
     @Test
     void theAdminPortAnswersTheBackOfficeBehindSignIn() throws Exception {
         assertThat(getAt(ADMIN_PORT, "/api/v1/admin/audit").statusCode()).isEqualTo(401);
+        assertThat(getAt(ADMIN_PORT, "/api/v1/admin/overview").statusCode()).isEqualTo(401);
     }
 
     @Test
