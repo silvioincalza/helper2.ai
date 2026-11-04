@@ -92,7 +92,7 @@ All diagrams: [docs/diagrams](../diagrams/README.md).
 |---|---|---|---|
 | [0030](quality/0030-guide-evaluation.md) | Guide evaluation: fixed question set, script, published results | 0015, 0016, 0017 | [flow](../diagrams/flow-0030-guide-evaluation.svg) · [sequence](../diagrams/sequence-0030-guide-evaluation.svg) |
 | [0036](quality/0036-search-evaluation-harness.md) | Search evaluation harness: frozen snapshots, pooled graded judgements, offline replay | 0008, 0009, 0012, 0030 | [flow](../diagrams/flow-0036-search-evaluation-harness.svg) · [sequence](../diagrams/sequence-0036-search-evaluation-harness.svg) |
-| [0047](quality/0047-code-format.md) | Code format: Google style for Java and Kotlin (google-java-format, ktfmt), applied by Spotless, checked in CI | 0028 | [flow](../diagrams/flow-0047-code-format.svg) |
+| [0047](quality/0047-code-format.md) | Code format: Google style for Java and Kotlin (google-java-format, ktfmt) through Spotless, Prettier for the frontend, checked in CI | 0028 | [flow](../diagrams/flow-0047-code-format.svg) |
 
 ## Writing a new ADR
 

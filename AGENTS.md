@@ -33,8 +33,9 @@ Run the relevant tests before calling a change done.
   hexagonal: domain and use cases in the core, adapters for DB, LLM, HTTP, queue.
   One explicit use case per business action. Lightweight DDD: ubiquitous language, clear modules.
 - TDD for domain logic, BDD for user-visible behaviour, integration tests for adapters.
-- Code format: Google style. google-java-format for Java, ktfmt Google style for Kotlin, through
-  Spotless. Run `./gradlew spotlessApply` before a commit; CI fails on unformatted code.
+- Code format (ADR 0047): Google style for the backend, google-java-format for Java and ktfmt
+  Google style for Kotlin, through Spotless; Prettier for the frontend. Run `./gradlew spotlessApply`
+  and `npm run format` before a commit; CI fails on unformatted code.
 - Clean code: a use case reads top-down as the business action. Small methods with one level of
   abstraction each, names that say the intent, early returns, no flag arguments. Split a long
   method into named steps instead of adding comments.
