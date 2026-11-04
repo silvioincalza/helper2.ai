@@ -97,6 +97,7 @@ class HttpEdgeIT {
         .hasValueSatisfying(
             v -> assertThat(v).contains("frame-ancestors 'none'").contains("script-src 'self'"));
     assertThat(me.headers().firstValue("X-Content-Type-Options")).contains("nosniff");
+    assertThat(me.headers().firstValue("X-Robots-Tag")).as("indexable unless H2_NOINDEX").isEmpty();
 
     String token = cookie.substring("XSRF-TOKEN=".length(), cookie.indexOf(';'));
     String body = "{\"kind\":\"WRONG\",\"message\":\"definitely wrong\"}";

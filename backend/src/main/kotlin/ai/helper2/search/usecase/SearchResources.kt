@@ -459,13 +459,21 @@ constructor(
     sorted.drop(request.page * request.size).take(request.size)
 
   private fun coverageOf(statuses: List<SourceStatus>): Coverage {
-    val queried = statuses.count {
-      it.outcome != SourceOutcome.SKIPPED || it.servedFrom != ServedFrom.NONE
-    }
+    val queried = statuses.count(::wasExpectedToAnswer)
     val succeeded = statuses.count { it.outcome == SourceOutcome.SUCCEEDED }
-    val partial = statuses.any { it.source.enabled && it.outcome != SourceOutcome.SUCCEEDED }
-    return Coverage(partial, sources.size, queried, succeeded)
+    // The banner and its counts come from the same two numbers, so it never says "8 of 8".
+    return Coverage(succeeded < queried, sources.size, queried, succeeded)
   }
+
+  /**
+   * A source counts as queried when it was called, served from cache, or was left out because it is
+   * failing (paused, circuit open, busy). Left out on purpose (disabled, nothing to browse, no web
+   * credits) it does not count: its tile says why, and the results are not incomplete for that.
+   */
+  private fun wasExpectedToAnswer(status: SourceStatus): Boolean =
+    status.outcome != SourceOutcome.SKIPPED ||
+      status.servedFrom != ServedFrom.NONE ||
+      status.skipReason in UNAVAILABLE
 
   private fun indexUnavailableNotice(dated: List<MergedResult>?): Notice? =
     if (dated != null) null
@@ -651,6 +659,10 @@ constructor(
 
   companion object {
     private const val MAX_TRANSLATION_CHARS = 120
+
+    /** Skip reasons that mean the source is failing, not left out on purpose. */
+    private val UNAVAILABLE =
+      setOf(SkipReason.RATE_LIMIT_PAUSE, SkipReason.CIRCUIT_OPEN, SkipReason.BUSY)
 
     /** The resilience policy of a search source. */
     @JvmStatic fun policy(d: SourceDescriptor) = "source-${d.id}"

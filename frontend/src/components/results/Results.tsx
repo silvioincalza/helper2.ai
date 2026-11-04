@@ -210,7 +210,6 @@ function ResultsBody({
   const activeType = state.filters.type.length === 1 ? state.filters.type[0] : null;
   const setType = (type: string | null) =>
     update(patchState(state, { filters: { ...state.filters, type: type ? [type] : [] } }));
-  const okSources = res.sources.filter((s) => s.outcome === 'SUCCEEDED').length;
   const stale = useMemo(
     () => new Set(res.sources.filter((x) => x.servedFrom === 'STALE_CACHE').map((x) => x.sourceId)),
     [res.sources],
@@ -462,7 +461,12 @@ function ResultsBody({
 
       <section className="h2-results__sources" aria-labelledby="h2-sources-h">
         <h2 id="h2-sources-h" className="h2-results__fan">
-          {t('results.fanOut', { ok: okSources, total: res.sources.length, count: res.total })}
+          {/* The same two numbers as the partial banner, so the page says one thing. */}
+          {t('results.fanOut', {
+            ok: res.coverage.sourcesSucceeded,
+            total: res.coverage.sourcesQueried,
+            count: res.total,
+          })}
         </h2>
         {/* Cache ages as of the search, so the tiles say what the search found. */}
         <SourceTiles sources={res.sources} now={Date.parse(res.executedAt)} />

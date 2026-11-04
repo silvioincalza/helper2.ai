@@ -419,7 +419,7 @@ describe('results: list and preview', () => {
     const button = await within(bar).findByRole('button', { name: 'Ask without “free”' });
     // The requirement is the planner's text: marked in the HTML, labelled once on screen (ADR 0038).
     expect(within(button).getByText('free')).toHaveAttribute('data-ai-generated', 'true');
-    expect(within(bar).getByText('Requirements AI-written')).toBeInTheDocument();
+    expect(within(bar).getByText('Read by AI')).toBeInTheDocument();
     await userEvent.click(button);
     await waitFor(() => expect(params().getAll('drop')).toEqual(['constraint:free']));
     await waitFor(() =>

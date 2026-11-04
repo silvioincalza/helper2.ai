@@ -149,7 +149,7 @@ describe('guide on the one page', () => {
     );
     expect(items[1]).toHaveTextContent('free: not confirmed by the source');
     // Art. 50: the planner wrote the requirements, so they carry a label over their checks.
-    expect(checks.previousElementSibling).toHaveTextContent('Requirements AI-written');
+    expect(checks.previousElementSibling).toHaveTextContent('Read by AI');
   });
 
   it('shows no requirement list when the need stated none', async () => {

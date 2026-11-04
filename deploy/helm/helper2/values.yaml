@@ -74,6 +74,9 @@ app:
   adminGrafanaUrl: ""
   # prod | staging, set per environment; the `environment` tag on metrics and spans.
   environment: ""
+  # Ask search engines not to index this deployment: X-Robots-Tag: noindex on every response (H2_NOINDEX).
+  # true for staging, so it never competes with the live site.
+  noindex: false
   # OTLP traces. Off by default; set export: true and your collector's endpoint, and
   # networkPolicy.egress.otlp.namespace so the app may reach it.
   tracing:

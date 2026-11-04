@@ -1,6 +1,9 @@
-/** How far away a day is, in words a board shows: Today, Tomorrow, In N days (< 14), In N weeks (< 45 days), else In N months. */
+/** How far away a day is, in words a board shows: On now (started before today), Today, Tomorrow, In N days (< 14), In N weeks (< 45 days), else In N months. */
 export type Countdown =
-  { key: 'today' } | { key: 'tomorrow' } | { key: 'days' | 'weeks' | 'months'; count: number };
+  | { key: 'onNow' }
+  | { key: 'today' }
+  | { key: 'tomorrow' }
+  | { key: 'days' | 'weeks' | 'months'; count: number };
 
 const DAY_MS = 86_400_000;
 
@@ -12,7 +15,8 @@ export function daysUntil(day: string, now: number): number {
 }
 
 export function countdown(days: number): Countdown {
-  if (days <= 0) return { key: 'today' };
+  if (days < 0) return { key: 'onNow' };
+  if (days === 0) return { key: 'today' };
   if (days === 1) return { key: 'tomorrow' };
   if (days < 14) return { key: 'days', count: days };
   if (days < 45) return { key: 'weeks', count: Math.round(days / 7) };

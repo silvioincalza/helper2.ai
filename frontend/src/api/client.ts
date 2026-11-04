@@ -57,6 +57,25 @@ export function readCsrfToken(): string | undefined {
   }
 }
 
+/**
+ * Spring sets the token cookie on GET /me only. A write sent before that call has answered (a shared link that asks
+ * the guide on the first visit) gets 403: load the cookie and send it once more. True when a token is there now.
+ */
+async function loadCsrfToken(signal?: AbortSignal): Promise<boolean> {
+  try {
+    await fetch(absolute(`${API_BASE}/me`), {
+      headers: { Accept: 'application/json' },
+      credentials: 'same-origin',
+      ...(signal ? { signal } : {}),
+    });
+  } catch (e) {
+    // A cancelled question stays a cancel, not a 403.
+    if (signal?.aborted) throw e;
+    return false;
+  }
+  return readCsrfToken() !== undefined;
+}
+
 interface RequestOptions {
   query?: URLSearchParams;
   body?: unknown;
@@ -76,11 +95,8 @@ async function send(method: string, url: string, opts: RequestOptions): Promise<
     Accept: opts.accept ?? 'application/json, application/problem+json',
     'Accept-Language': document.documentElement.lang || 'en',
   };
-  if (method !== 'GET') {
-    const token = readCsrfToken();
-    // Spring defers the token cookie; if absent we still send and let the server answer 403.
-    if (token) headers['X-XSRF-TOKEN'] = token;
-  }
+  const token = method === 'GET' ? undefined : readCsrfToken();
+  if (token) headers['X-XSRF-TOKEN'] = token;
   const init: RequestInit = { method, headers, credentials: 'same-origin' };
   if (opts.body !== undefined) {
     headers['Content-Type'] = 'application/json';
@@ -94,6 +110,8 @@ async function send(method: string, url: string, opts: RequestOptions): Promise<
     if (opts.signal?.aborted) throw e;
     throw new ApiError(0, 'Network error');
   }
+  if (res.status === 403 && method !== 'GET' && !token && (await loadCsrfToken(opts.signal)))
+    return send(method, url, opts);
   if (!res.ok) {
     let problem: Problem | undefined;
     try {

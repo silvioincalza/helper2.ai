@@ -64,6 +64,7 @@ spec:
             {{- with .Values.app.adminGrafanaUrl }}
             - { name: H2_ADMIN_GRAFANA_URL, value: {{ . | quote }} }
             {{- end }}
+            - { name: H2_NOINDEX, value: {{ .Values.app.noindex | toString | quote }} }
             - { name: H2_SCOUT_ENABLED, value: {{ .Values.app.scoutEnabled | toString | quote }} }
             - { name: H2_SCOUT_INITIAL_DELAY, value: {{ required "app.scoutInitialDelay" .Values.app.scoutInitialDelay | quote }} }
             - { name: H2_SCOUT_EVERY, value: {{ required "app.scoutEvery" .Values.app.scoutEvery | quote }} }

@@ -212,12 +212,12 @@ describe('GuideAnswer marks every planner-written text (EU AI Act Art. 50(2), AD
     ).toBeNull();
     expect(screen.getByText('Licence')).toHaveAttribute('data-ai-generated', 'true');
     // Art. 50: the AI-written requirements carry one label on screen for the group.
-    expect(screen.getAllByText('Requirements AI-written')).toHaveLength(1);
+    expect(screen.getAllByText('Read by AI')).toHaveLength(1);
   });
 
   it('gives no requirements label when no requirement is AI-written', () => {
     view({ ...base, constraints: [] });
-    expect(screen.queryByText('Requirements AI-written')).not.toBeInTheDocument();
+    expect(screen.queryByText('Read by AI')).not.toBeInTheDocument();
   });
 
   it('labels the planner-written search terms in the proof strip as AI-written', () => {
