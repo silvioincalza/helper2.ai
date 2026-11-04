@@ -36,7 +36,18 @@ Docker works the same way. Tags are never rebuilt or moved: one commit, one imag
 
 **`app.env`** (never commit it): copy [`app.env.example`](app.env.example) and fill in the values. It must
 contain `H2_DATABASE_PASSWORD` and `H2_REDIS_PASSWORD` (`openssl rand -hex 32`; letters and digits only).
-The chart turns the file into the Secret `helper2-env`. A change restarts the app only.
+It goes into a Secret that the chart does not create, so no value is kept in Helm's release history.
+Check it, then create or update the Secret:
+
+```bash
+deploy/k8s/check-app-env.sh app.env
+kubectl create namespace helper2
+kubectl -n helper2 create secret generic helper2-app-env --from-env-file=app.env --dry-run=client -o yaml \
+  | kubectl -n helper2 apply --server-side --field-manager=helper2-env-secret -f -
+```
+
+The chart cannot see the Secret change. Pass a new `envSecret.revision` (for example a hash of app.env) to
+restart the app, and a new `envSecret.redisPasswordRevision` to restart Redis after a new Redis password.
 
 **Redis password from your own Secret** (`redis.auth.existingSecret`): the chart cannot see that Secret change.
 To rotate: update the Secret, raise `redis.auth.revision` by one, deploy. Redis and the app restart and read the
@@ -63,10 +74,11 @@ Every value and its default is described in [`values.yaml`](../helm/helper2/valu
 ## 3. Install
 
 ```bash
-kubectl create namespace helper2
 helm upgrade --install helper2 deploy/helm/helper2 -n helper2 \
-  -f my-values.yaml --set image.tag=$TAG --set-file envFile=app.env \
-  --wait --timeout 12m
+  -f my-values.yaml --set image.tag=$TAG \
+  --set envSecret.revision=$(sha256sum < app.env | cut -c1-16) \
+  --set envSecret.redisPasswordRevision=$(grep ^H2_REDIS_PASSWORD= app.env | sha256sum | cut -c1-16) \
+  --wait --timeout 12m --history-max 3
 ```
 
 Check that it works:

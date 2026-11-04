@@ -11,7 +11,9 @@
 #   make sbom                    CycloneDX SBOM of the pushed image TAG (syft), into sbom.cdx.json
 #   make postgres-sbom           the same for the Postgres image of postgres.image.tag
 #   make ENV=staging diff        what the next deploy would change
-#   make ENV=staging deploy      helm upgrade --install (chart ../helm/helper2) with TAG, wait, roll back on failure
+#   make ENV=staging env-secret  write ENV's app.env into the Secret helper2-app-env (never through Helm)
+#   make ENV=staging deploy      env-secret, then helm upgrade --install (chart ../helm/helper2) with TAG, wait,
+#                                roll back on failure
 #   make ENV=staging rollback    previous helm revision
 # Promote to prod = the same TAG: make ENV=prod TAG=<tag already on staging> deploy
 
@@ -45,9 +47,11 @@ help: ## this list
 # BAO_ADDR must be a node over the mesh (the platform .env sets bao-01): the public bao.infra name
 # sits behind Cloudflare Access, which answers the CLI with 403.
 # Run once per env, and again after an app.env change or a token rotation.
-API_SERVER ?= https://10.0.0.40:6443
+# API_SERVER: the cluster's API over the mesh, from the platform .env (not in this public repo).
+API_SERVER ?=
 credentials: check-env ## write ENV's deployer kubeconfig + app.env to OpenBao for CI
 	@set -euo pipefail; \
+	test -n "$(API_SERVER)" || { echo "API_SERVER is not set (the platform .env sets it)"; exit 1; }; \
 	if [ -z "$${BAO_TOKEN:-}" ]; then \
 		BAO_TOKEN=$$(bao login -method=oidc -path=oidc -token-only role=helper2-operator); export BAO_TOKEN; \
 	fi; \
@@ -60,7 +64,9 @@ credentials: check-env ## write ENV's deployer kubeconfig + app.env to OpenBao f
 		--token="$$(jq -r .data.token <<<"$$sec" | base64 -d)" >/dev/null; \
 	KUBECONFIG=$$kc kubectl config set-context ci --cluster=incalzame --user=deployer --namespace=$(NS) >/dev/null; \
 	KUBECONFIG=$$kc kubectl config use-context ci >/dev/null; \
-	KUBECONFIG=$$kc kubectl auth can-i create deployments -n $(NS) | grep -qx yes; \
+	for v in "create deployments" "create secrets" "patch secrets/helper2-app-env"; do \
+		KUBECONFIG=$$kc kubectl auth can-i $$v -n $(NS) | grep -qx yes || { echo "deployer may not $$v"; exit 1; }; \
+	done; \
 	bao kv put -mount=helper2/kv ci/$(ENV) kubeconfig=@$$kc app_env=@$(ENV)/app.env >/dev/null; \
 	echo "wrote helper2/kv ci/$(ENV) (kubeconfig of $(NS)/deployer, $(ENV)/app.env)"
 
@@ -150,8 +156,14 @@ postgres-image: ## build Postgres + pgvector (deploy/postgres) and push it to Ha
 	esac; \
 	echo "$(PG_REPO):$(PG_TAG) digest: $$(harbor_api apps/postgres $(PG_TAG) -f | jq -r .digest)"
 
+# The env Secret (ADR 0007): app.env goes to the cluster with kubectl, never through Helm, so no value is kept
+# in the release history. Helm gets only hashes, which restart the app (any change) and Redis (a new password).
+ENV_SECRET := helper2-app-env
+ENV_REV     = $(shell sha256sum < $(ENV)/app.env 2>/dev/null | cut -c1-16)
+REDIS_REV   = $(shell grep -E '^H2_REDIS_PASSWORD=' $(ENV)/app.env 2>/dev/null | sha256sum | cut -c1-16)
 HELM_ARGS = helper2 $(CHART) -n $(NS) -f $(CHART)/values-$(ENV).yaml \
-	--set image.repository=$(IMAGE) --set image.tag=$(TAG) --set-file envFile=$(ENV)/app.env
+	--set image.repository=$(IMAGE) --set image.tag=$(TAG) \
+	--set envSecret.name=$(ENV_SECRET) --set envSecret.revision=$(ENV_REV) --set envSecret.redisPasswordRevision=$(REDIS_REV)
 
 # CI runs this on every pull request; no cluster needed. Each environment's values (and prod with the
 # off-site backup and the PrometheusRule on) with a fixture app.env, linted and checked against the Kubernetes
@@ -159,21 +171,31 @@ HELM_ARGS = helper2 $(CHART) -n $(NS) -f $(CHART)/values-$(ENV).yaml \
 # PrometheusRule is checked against its CRD schema from the CRDs-catalog, pinned to a commit, and must hold the
 # alerts of deploy/monitoring/helper2-rules.yaml (read through the chart's files/ symlink).
 CRD_SCHEMAS := https://raw.githubusercontent.com/datreeio/CRDs-catalog/3eb90d47aba8d61919d4419dd38301536e32a94b/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json
-chart-check: ## helm lint + helm template | kubeconform, for staging and prod; Redis AOF + PVC; preStop, drain and grace period; images pinned by digest; redis.auth.revision restarts; daily limits only where set; admin Service, ingress-nginx on 8080 and the admin port; PrometheusRule = rule file; an envFile key without H2_ fails
+chart-check: ## helm lint + helm template | kubeconform, for staging and prod; Redis AOF + PVC; preStop, drain and grace period; images pinned by digest; redis.auth.revision restarts; daily limits only where set; admin Service, ingress-nginx on 8080 and the admin port; PrometheusRule = rule file; the chart renders no Secret; app.env checks
 	@set -euo pipefail; \
 	env=$$(mktemp); bad=$$(mktemp); trap 'rm -f "$$env" "$$bad"' EXIT; \
 	printf 'H2_DATABASE_PASSWORD=ci\nH2_REDIS_PASSWORD=00000000000000000000000000000000\n' > "$$env"; \
-	echo "== envFile with a key outside ^H2_[A-Z0-9_]+$$ must not render"; \
-	{ cat "$$env"; echo 'NEBIUS_API_KEY=stale'; } > "$$bad"; \
-	if out=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --set-file envFile="$$bad" 2>&1); then \
-		echo "chart rendered an envFile with the key NEBIUS_API_KEY"; exit 1; \
-	fi; \
-	grep -q 'NEBIUS_API_KEY' <<<"$$out" || { echo "$$out"; echo "render failed without naming the key"; exit 1; }; \
+	echo "== app.env: a key outside ^H2_[A-Z0-9_]+$$, no database password or a short Redis password fails"; \
+	./check-app-env.sh "$$env"; \
+	for b in 'NEBIUS_API_KEY=stale' 'H2_REDIS_PASSWORD=0000000000000000' 'H2_DATABASE_PASSWORD=ci' 'H2_X=trailing ' ' H2_X=indented' 'H2_X'; do \
+		{ cat "$$env"; echo "$$b"; } > "$$bad"; \
+		if ./check-app-env.sh "$$bad" 2>/dev/null; then echo "check-app-env.sh passed with $$b"; exit 1; fi; \
+	done; \
+	grep -v DATABASE "$$env" > "$$bad"; \
+	if ./check-app-env.sh "$$bad" 2>/dev/null; then echo "check-app-env.sh passed without H2_DATABASE_PASSWORD"; exit 1; fi; \
+	echo "== the chart renders no Secret: app.env never sits in Helm's release history"; \
+	if helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 | grep -q '^kind: Secret$$'; then \
+		echo "the chart renders a Secret"; exit 1; fi; \
+	echo "== envSecret.revision restarts the app, envSecret.redisPasswordRevision restarts Redis"; \
+	rev=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 \
+		--set envSecret.revision=abc --set envSecret.redisPasswordRevision=def --show-only templates/app.yaml --show-only templates/redis.yaml); \
+	grep -q 'checksum/env-revision: "abc"' <<< "$$rev" || { echo "app: no checksum/env-revision"; exit 1; }; \
+	grep -q 'checksum/auth: "def"' <<< "$$rev" || { echo "redis: no checksum/auth"; exit 1; }; \
 	offsite=(--set backup.offsite.enabled=true --set backup.offsite.endpoint=https://example.r2.cloudflarestorage.com --set backup.offsite.bucket=ci); \
 	for v in "staging" "prod" "prod $${offsite[*]} --set monitoring.prometheusRule.enabled=true"; do \
 		set -- $$v; e=$$1; shift; \
 		echo "== $$e $$*"; \
-		args=(-f $(CHART)/values-$$e.yaml --set image.tag=000000000000 --set-file envFile=$$env "$$@"); \
+		args=(-f $(CHART)/values-$$e.yaml --set image.tag=000000000000 "$$@"); \
 		helm lint --strict $(CHART) "$${args[@]}"; \
 		helm template helper2 $(CHART) -n helper2-$$e "$${args[@]}" \
 			| kubeconform -strict -summary -schema-location default -schema-location '$(CRD_SCHEMAS)'; \
@@ -185,29 +207,29 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 	echo "== daily limits and the guide cache TTL are rendered only where set: prod none, staging all six"; \
 	limits='name: H2_(TAVILY_GUEST_SEARCH|TAVILY_GUEST_GUIDE|GUIDE_CLIENT_DAILY_QUESTIONS|TAVILY_GLOBAL_DAILY_CREDITS|GUIDE_DAILY_MODEL_CALLS|GUIDE_CACHE_TTL),'; \
 	for e in prod staging; do \
-		n=$$(helm template helper2 $(CHART) -f $(CHART)/values-$$e.yaml --set image.tag=000000000000 --set-file envFile=$$env \
+		n=$$(helm template helper2 $(CHART) -f $(CHART)/values-$$e.yaml --set image.tag=000000000000 \
 			--show-only templates/app.yaml | grep -cE "$$limits" || true); \
 		want=0; [ $$e = staging ] && want=6; \
 		[ "$$n" -eq "$$want" ] || { echo "$$e renders $$n daily limits and cache TTL, want $$want"; exit 1; }; \
 	done; \
 	echo "== prod signs in with GitHub and reuses similar guide answers at 0.96"; \
-	prod=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --set-file envFile=$$env --show-only templates/app.yaml); \
+	prod=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --show-only templates/app.yaml); \
 	grep -qE 'oauth-github' <<< "$$prod" || { echo "prod: no oauth-github profile"; exit 1; }; \
 	grep -qE 'name: H2_GUIDE_SIMILAR_THRESHOLD, value: "0.96"' <<< "$$prod" || { echo "prod: no similar threshold 0.96"; exit 1; }; \
 	echo "== shutdown (ADR 0027): preStop sleep 10 s, drain 30 s, grace 45 s, all from app.shutdown"; \
 	grep -qE '^      terminationGracePeriodSeconds: 45$$' <<< "$$prod" || { echo "prod: terminationGracePeriodSeconds is not 45"; exit 1; }; \
 	grep -qE 'name: H2_SHUTDOWN_TIMEOUT, value: "30s"' <<< "$$prod" || { echo "prod: H2_SHUTDOWN_TIMEOUT is not 30s"; exit 1; }; \
 	grep -A2 '^            preStop:$$' <<< "$$prod" | grep -qE 'sleep: \{ seconds: 10 \}' || { echo "prod: no preStop sleep of 10 s"; exit 1; }; \
-	grace=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --set-file envFile=$$env \
+	grace=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 \
 		--set app.shutdown.preStopSeconds=3 --set app.shutdown.drainSeconds=20 --show-only templates/app.yaml); \
 	grep -qE '^      terminationGracePeriodSeconds: 28$$' <<< "$$grace" || { echo "grace period must be preStopSeconds + drainSeconds + 5"; exit 1; }; \
 	echo "== every image but the app's is pinned by digest (ADR 0046); postgres once postgres.image.digest is set"; \
-	imgs=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --set-file envFile=$$env \
+	imgs=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 \
 		$${offsite[*]} --set postgres.image.digest=sha256:$$(printf '0%.0s' $$(seq 64)) | grep -E '^ *image: ' | grep -v '/apps/helper2:' | sort -u); \
 	test -n "$$imgs" || { echo "no images rendered"; exit 1; }; \
 	if grep -v '@sha256:[0-9a-f]\{64\}' <<< "$$imgs"; then echo "these images are not pinned by digest"; exit 1; fi; \
 	echo "== redis.auth.existingSecret: redis.auth.revision restarts Redis and the app; without it, no revision annotation"; \
-	r=(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --set-file envFile=$$env \
+	r=(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 \
 		--show-only templates/app.yaml --show-only templates/redis.yaml); \
 	ext=$$("$${r[@]}" --set redis.auth.existingSecret=redis-auth --set redis.auth.revision=7); \
 	[ "$$(grep -c 'checksum/redis-auth-revision: "7"' <<< "$$ext")" -eq 2 ] \
@@ -218,14 +240,14 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 		echo "redis.auth.revision=v2 must fail the render"; exit 1; fi; \
 	echo "== edge (ADR 0035): Service helper2-admin; ingress-nginx may reach the app on 8080 and the admin port"; \
 	for e in prod staging; do \
-		r=(helm template helper2 $(CHART) -f $(CHART)/values-$$e.yaml --set image.tag=000000000000 --set-file envFile=$$env); \
+		r=(helm template helper2 $(CHART) -f $(CHART)/values-$$e.yaml --set image.tag=000000000000); \
 		app=$$("$${r[@]}" --show-only templates/app.yaml); np=$$("$${r[@]}" --show-only templates/networkpolicy.yaml); \
 		grep -q '^  name: helper2-admin$$' <<< "$$app" || { echo "$$e: no Service helper2-admin"; exit 1; }; \
 		grep -A5 'kubernetes.io/metadata.name: ingress-nginx' <<< "$$np" \
 			| tr -d '\n' | grep -qE 'port: 8080, .*port: 8082, ' || { echo "$$e: ingress-nginx may not reach 8080 and 8082"; exit 1; }; \
 	done; \
 	echo "== PrometheusRule holds deploy/monitoring/helper2-rules.yaml"; \
-	rule=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --set-file envFile=$$env \
+	rule=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 \
 		--set monitoring.prometheusRule.enabled=true --show-only templates/prometheusrule.yaml); \
 	diff <(grep -oE 'alert: [A-Za-z0-9]+' <<<"$$rule") <(grep -oE 'alert: [A-Za-z0-9]+' $(ROOT)/deploy/monitoring/helper2-rules.yaml) \
 		|| { echo "the PrometheusRule must hold the alerts of deploy/monitoring/helper2-rules.yaml"; exit 1; }
@@ -250,13 +272,23 @@ release-ready:
 # --force-conflicts: Helm is the only owner. Fields last written by kubectl (kustomize era, or a manual
 # `kubectl edit`) would otherwise block server-side apply, e.g. the image on the first new tag.
 # 12m: the app's replicas are replaced one after another, each only once the previous one is ready.
-deploy: check-env release-ready ## helm upgrade ENV to TAG (default: current commit), wait, roll back on failure
-	helm upgrade --install $(HELM_ARGS) --server-side=true --force-conflicts --wait --timeout 12m --rollback-on-failure --history-max 10
+# --history-max 3: enough to roll back; older revisions are deleted.
+deploy: check-env release-ready env-secret ## env-secret, then helm upgrade ENV to TAG (default: current commit), wait, roll back on failure
+	helm upgrade --install $(HELM_ARGS) --server-side=true --force-conflicts --wait --timeout 12m --rollback-on-failure --history-max 3
+
+# Server-side apply under its own field manager: a key removed from app.env is removed from the Secret too.
+# The pods read it at start only; deploy passes its hash to Helm, so a change restarts them.
+env-secret: check-env ## write ENV's app.env into the Secret helper2-app-env (checked first by check-app-env.sh)
+	@set -euo pipefail; \
+	./check-app-env.sh $(ENV)/app.env; \
+	kubectl -n $(NS) create secret generic $(ENV_SECRET) --from-env-file=$(ENV)/app.env --dry-run=client -o yaml \
+		| kubectl -n $(NS) apply --server-side --field-manager=helper2-env-secret -f - >/dev/null; \
+	echo "wrote $(NS)/$(ENV_SECRET) from $(ENV)/app.env (revision $(ENV_REV))"
 
 # kubectl diff exits 1 when there are changes (the usual case before a deploy) and >1 on an error
 # (auth, API, invalid manifest): only 1 is tolerated. The chart is rendered first, so a render error
 # cannot pass as a diff either.
-diff: check-env ## what deploy would change in ENV (Secret values are masked by kubectl)
+diff: check-env ## what deploy would change in ENV (not the env Secret: env-secret writes it)
 	@set -uo pipefail; \
 	out=$$(mktemp); trap 'rm -f "$$out"' EXIT; \
 	helm template $(HELM_ARGS) > "$$out" || exit; \

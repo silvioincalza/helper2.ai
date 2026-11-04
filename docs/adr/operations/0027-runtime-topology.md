@@ -60,7 +60,7 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
      internet on 443 only, with the private ranges excluded;
    - `pg-backup`: DNS, Postgres, and 443 only when `backup.offsite` is on;
    - Postgres and Redis: nothing.
-7. **Redis auth.** `redis.auth.enabled: true`. The password is `H2_REDIS_PASSWORD` from `helper2-env` (or
+7. **Redis auth.** `redis.auth.enabled: true`. The password is `H2_REDIS_PASSWORD` from `helper2-app-env` (or
    `existingSecret`); it reaches `redis-server` as `requirepass` on standard input, never in the command line.
    Redis is a single-replica StatefulSet with an append-only file on its own PersistentVolumeClaim
    ([0005](../foundation/0005-redis-disposable-cache.md)): a Redis restart keeps sessions, rate-limit windows and cached

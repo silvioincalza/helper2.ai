@@ -15,8 +15,11 @@ spec:
     metadata:
       labels: { app: helper2 }
       annotations:
-        # A new app.env (e.g. a rotated token) restarts the app; Postgres reads its password only at init.
-        checksum/env: {{ include "helper2.env" . | sha256sum }}
+        {{- with .Values.envSecret.revision }}
+        # The chart cannot see the env Secret change: a new revision (a new app.env, e.g. a rotated
+        # token) restarts the app. Postgres reads its password only at init.
+        checksum/env-revision: {{ . | quote }}
+        {{- end }}
         {{- if and .Values.redis.auth.enabled .Values.redis.auth.existingSecret }}
         # The Redis password from an existing Secret: a new redis.auth.revision restarts the app with Redis.
         checksum/redis-auth-revision: {{ include "helper2.redisAuthRevision" . }}
@@ -42,7 +45,7 @@ spec:
         - name: app
           image: {{ include "helper2.image" . }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          envFrom: [{ secretRef: { name: helper2-env } }]
+          envFrom: [{ secretRef: { name: {{ include "helper2.envSecret" . }} } }]
           env:
             - { name: H2_PROFILES, value: {{ .Values.app.springProfiles | quote }} }
             # spring.lifecycle.timeout-per-shutdown-phase: how long requests in flight get after SIGTERM.
