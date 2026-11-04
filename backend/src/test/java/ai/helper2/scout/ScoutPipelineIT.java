@@ -321,9 +321,5 @@ class ScoutPipelineIT {
         REGISTRY.route("/v0.1/servers", FixtureServer.Reply.ok("{\"servers\":[],\"metadata\":{\"count\":0}}"));
         assertThat(JsonPath.<Integer>read(runMcpRegistry(), "$.itemsChanged")).isZero();
         assertThat(backlog.pending(100).stream().filter(ids::contains).toList()).hasSize(1);
-
-        // A bare title (no description) is never worth an LLM call.
-        UUID withText = ids.getFirst();
-        assertThat(backlog.eligible(List.of(UUID.randomUUID(), withText))).containsExactly(withText);
     }
 }

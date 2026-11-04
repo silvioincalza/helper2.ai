@@ -176,8 +176,7 @@ Open items:
 
 ## 7. Architecture
 
-- The Scout reads catalog tables (`resource`, `source_record`) for its enrichment backlog in
-  `JdbcEnrichmentStore`. Spring Modulith cannot see coupling through the schema; read them through a catalog port
+- The Scout writes `source.last_outcome` (`JdbcScoutStore`); move it behind a catalog port
   ([ADR 0002](adr/foundation/0002-modular-monolith-hexagonal.md)).
 
 ## 8. Documentation

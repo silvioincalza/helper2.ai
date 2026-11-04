@@ -51,11 +51,11 @@ them without each module growing an admin corner.
 - `backend/src/main/java/ai/helper2/platform/llm/BudgetLedger.java`, `CallCounter.java`, `DailyBudget.java`,
   `RedisCallCounter.java` (`current`), `LlmConfiguration.java`.
 - `backend/src/main/java/ai/helper2/catalog/ReviewQueue.java` (`openCountsByKind`),
-  `scout/internal/JdbcEnrichmentStore.java` (`pendingCount`), `search/config/MicrometerSearchMetrics.java`.
+  `scout/internal/CatalogEnrichmentStore.java` and `catalog/internal/JdbcEnrichmentCandidates.java` (`pendingCount`), `search/config/MicrometerSearchMetrics.java`.
 - `frontend/src/pages/admin/` — `AdminLayout.tsx`, `AdminOverview.tsx`, `ReviewQueuePage.tsx`, `ScoutRunsPage.tsx`,
   `AuditPage.tsx`.
 - Tests: `api/AdminOverviewApiIT.java`, `admin/usecase/GetOverviewTest.java`, `platform/llm/BudgetLedgerTest.java`,
-  `RedisCallCounterIT.java`, `scout/internal/JdbcEnrichmentStoreIT.java`, `search/config/MicrometerSearchMetricsTest.java`,
+  `RedisCallCounterIT.java`, `scout/internal/CatalogEnrichmentStoreIT.java`, `search/config/MicrometerSearchMetricsTest.java`,
   `frontend/src/pages/admin/Admin.test.tsx`.
 
 ## Diagrams

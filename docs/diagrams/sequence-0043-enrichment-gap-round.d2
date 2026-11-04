@@ -1,7 +1,8 @@
 # Sequence: an enrichment of a GitHub repository whose first run is REJECTED and whose README proves its licence.
 # Source of truth: backend/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt (attempt, gapRound),
 #   backend/src/main/kotlin/ai/helper2/scout/GapRound.kt, backend/src/main/java/ai/helper2/sources/evidence/ReadmeEvidence.java,
-#   backend/src/main/java/ai/helper2/scout/internal/JdbcEnrichmentStore.java, catalog/internal/JdbcEnrichmentResults.java.
+#   backend/src/main/java/ai/helper2/scout/internal/CatalogEnrichmentStore.java,
+#   catalog/internal/JdbcEnrichmentCandidates.java, catalog/internal/JdbcEnrichmentResults.java.
 # Render: cd docs/diagrams && d2 fmt sequence-0043-enrichment-gap-round.d2 && d2 sequence-0043-enrichment-gap-round.d2 sequence-0043-enrichment-gap-round.svg
 
 ...@style
@@ -9,7 +10,8 @@
 shape: sequence_diagram
 
 svc: EnrichResource {class: app}
-store: JdbcEnrichmentStore {class: app}
+store: CatalogEnrichmentStore {class: app}
+candidates: "EnrichmentCandidates\n(catalog)" {class: app}
 model: SpringAiEnrichmentModel {class: app}
 tf: "Token Factory\n(reasoning model)" {class: ai}
 val: EvidenceValidator {class: app}
@@ -18,6 +20,9 @@ gh: "GitHub API" {class: ext}
 results: "EnrichmentResults\n(catalog)" {class: app}
 
 svc -> store: "load(resourceId)"
+store -> candidates: "candidate(resourceId)"
+candidates -> store: "source texts with source id,\nexternal id, repository link"
+store -> store: "GapTargets.select"
 store -> svc: "records, facts, text hash,\ngap target github-readme:acme/tool"
 svc -> model: "propose(records)"
 model -> tf: "chat"

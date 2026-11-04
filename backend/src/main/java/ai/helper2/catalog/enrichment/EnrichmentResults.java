@@ -1,4 +1,4 @@
-package ai.helper2.catalog;
+package ai.helper2.catalog.enrichment;
 
 import ai.helper2.shared.Verification;
 import java.net.URI;

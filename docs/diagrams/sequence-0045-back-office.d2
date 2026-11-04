@@ -1,7 +1,7 @@
 # Sequence: the owner opens the back office and follows a count into the filtered queue (ADR 0045).
 # Source of truth: frontend/src/pages/admin/AdminOverview.tsx, ReviewQueuePage.tsx,
 #   backend/src/main/java/ai/helper2/admin/usecase/GetOverview.java, admin/web/OverviewController.java,
-#   catalog/ReviewQueue.java (openCountsByKind), scout/internal/JdbcEnrichmentStore.java (pendingCount),
+#   catalog/ReviewQueue.java (openCountsByKind), scout/internal/CatalogEnrichmentStore.java, catalog/internal/JdbcEnrichmentCandidates.java (pendingCount),
 #   platform/llm/BudgetLedger.java.
 # Render: cd docs/diagrams && d2 fmt sequence-0045-back-office.d2 && d2 sequence-0045-back-office.d2 sequence-0045-back-office.svg
 

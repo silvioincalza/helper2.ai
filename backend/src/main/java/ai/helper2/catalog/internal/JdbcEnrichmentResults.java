@@ -1,6 +1,6 @@
 package ai.helper2.catalog.internal;
 
-import ai.helper2.catalog.EnrichmentResults;
+import ai.helper2.catalog.enrichment.EnrichmentResults;
 import ai.helper2.catalog.ResourceDetail;
 import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.shared.ValueOrigin;
