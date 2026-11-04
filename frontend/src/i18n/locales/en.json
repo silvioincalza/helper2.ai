@@ -476,7 +476,7 @@
     "title": "Admin",
     "forbidden": "You need an administrator account to see this page.",
     "signInFailed": "Sign-in did not complete. Try again.",
-    "signInPrompt": "Sign in with an administrator account to review reports and run the scout.",
+    "signInPrompt": "Sign in with an administrator account to review the queue and run the scout.",
     "reviewQueue": "Review queue",
     "status": "Status",
     "queueEmpty": "Nothing in this queue.",
@@ -513,6 +513,36 @@
       "seen": "Items seen",
       "changed": "Items changed",
       "message": "Message"
+    },
+    "kindFilter": "Kind",
+    "allKinds": "All kinds",
+    "note": "Note (optional)",
+    "alreadyDecided": "This item was already decided. The list now shows its current status.",
+    "nav": {
+      "label": "Back office",
+      "overview": "Overview",
+      "review": "Review",
+      "runs": "Scout runs",
+      "audit": "Audit"
+    },
+    "overview": {
+      "open": "Open review items",
+      "lastRun": "Last Scout run",
+      "allRuns": "All runs"
+    },
+    "audit": {
+      "title": "Audit trail",
+      "empty": "No entries yet.",
+      "loadError": "Could not load the audit trail.",
+      "at": "When",
+      "action": "Action",
+      "target": "Target",
+      "outcome": "Outcome",
+      "admin": "Administrator",
+      "actions": {
+        "RESOLVE_REVIEW_ITEM": "Review decision",
+        "START_SCOUT_RUN": "Scout run started"
+      }
     }
   },
   "notFound": {

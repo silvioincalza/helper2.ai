@@ -62,6 +62,31 @@ class ReviewItemsApiIT extends ApiTestBase {
     }
 
     @Test
+    void filtersByKind() throws Exception {
+        UUID report = UUID.randomUUID();
+        jdbc.sql("""
+                INSERT INTO review_item (id, kind, status, resource_id, reason)
+                VALUES (:id, 'USER_REPORT', 'OPEN', :rid, 'a user report')
+                """).param("id", report).param("rid", resource).update();
+        String page = mvc.perform(get("/api/v1/admin/review-items").param("kind", "USER_REPORT").param("status", "OPEN")
+                .param("size", "100").with(ADMIN))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.items[*].kind").value(org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is("USER_REPORT"))))
+            .andExpect(jsonPath("$.items[*].id").value(org.hamcrest.Matchers.hasItem(report.toString())))
+            .andReturn().getResponse().getContentAsString();
+        ContractValidator.assertMatches("ReviewItemPage", page);
+        mvc.perform(get("/api/v1/admin/review-items").param("kind", "ENRICHMENT_VALIDATION").param("size", "100").with(ADMIN))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.items[*].id").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem(report.toString()))));
+    }
+
+    @Test
+    void refusesAnUnknownKind() throws Exception {
+        mvc.perform(get("/api/v1/admin/review-items").param("kind", "NOT_A_KIND").with(ADMIN))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void aPageHoldsAtMostTheRequestedSize() throws Exception {
         mvc.perform(get("/api/v1/admin/review-items").param("size", "1").with(ADMIN))
             .andExpect(status().isOk())

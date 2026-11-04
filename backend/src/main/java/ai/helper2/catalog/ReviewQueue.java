@@ -89,19 +89,24 @@ public class ReviewQueue {
     public record Page(List<Item> items, long total) {
     }
 
-    /** Newest first; all statuses when [status] is null. */
-    public Page list(Status status, int page, int size) {
-        String wanted = status == null ? null : status.name();
+    /** Newest first; all statuses when [status] is null, all kinds when [kind] is null. */
+    public Page list(Status status, Kind kind, int page, int size) {
+        String wantedStatus = status == null ? null : status.name();
+        String wantedKind = kind == null ? null : kind.name();
         List<Item> items = jdbc.sql(SELECT_ITEMS + """
                  WHERE (CAST(:status AS text) IS NULL OR i.status = :status)
+                   AND (CAST(:kind AS text) IS NULL OR i.kind = :kind)
                 ORDER BY i.created_at DESC, i.id
                 LIMIT :size OFFSET :offset
                 """)
-            .param("status", wanted).param("size", size).param("offset", (long) page * size)
+            .param("status", wantedStatus).param("kind", wantedKind).param("size", size).param("offset", (long) page * size)
             .query(ReviewQueue::item)
             .list();
-        long total = jdbc.sql("SELECT count(*) FROM review_item WHERE (CAST(:status AS text) IS NULL OR status = :status)")
-            .param("status", wanted).query(Long.class).single();
+        long total = jdbc.sql("""
+                SELECT count(*) FROM review_item
+                WHERE (CAST(:status AS text) IS NULL OR status = :status) AND (CAST(:kind AS text) IS NULL OR kind = :kind)
+                """)
+            .param("status", wantedStatus).param("kind", wantedKind).query(Long.class).single();
         return new Page(items, total);
     }
 

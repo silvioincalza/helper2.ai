@@ -2,7 +2,11 @@ import type { RouteObject } from 'react-router';
 import { Layout } from '@/components/Layout';
 import { AppProviders } from '@/AppProviders';
 import AccountPage from '@/pages/AccountPage';
-import AdminPage from '@/pages/AdminPage';
+import AdminLayout from '@/pages/admin/AdminLayout';
+import AdminOverview from '@/pages/admin/AdminOverview';
+import AuditPage from '@/pages/admin/AuditPage';
+import ReviewQueuePage from '@/pages/admin/ReviewQueuePage';
+import ScoutRunsPage from '@/pages/admin/ScoutRunsPage';
 import HomePage from '@/pages/HomePage';
 import MissionPage from '@/pages/MissionPage';
 import NotFoundPage from '@/pages/NotFoundPage';
@@ -24,7 +28,17 @@ export const routes: RouteObject[] = [
       { path: 'saved', element: <SavedPage /> },
       { path: 'sources', element: <SourcesPage /> },
       { path: 'account', element: <AccountPage /> },
-      { path: 'admin', element: <AdminPage /> },
+      {
+        // The back office (ADR 0023, ADR 0035): one guard, a part per route.
+        path: 'admin',
+        element: <AdminLayout />,
+        children: [
+          { index: true, element: <AdminOverview /> },
+          { path: 'review', element: <ReviewQueuePage /> },
+          { path: 'runs', element: <ScoutRunsPage /> },
+          { path: 'audit', element: <AuditPage /> },
+        ],
+      },
       { path: 'mission', element: <MissionPage /> },
       { path: 'privacy', element: <PrivacyPage /> },
       { path: 'terms', element: <TermsPage /> },

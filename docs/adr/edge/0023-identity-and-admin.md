@@ -53,7 +53,9 @@ traceable to that administrator.
    so an entry exists exactly when the decision was committed; `StartScoutRun` once the run holds its lock and has
    saved its run records (or was refused), since the run itself goes on in the background. The table is append-only: a
    trigger refuses `UPDATE`, and only the 24-month retention deletes rows. `GET /api/v1/admin/audit` (ADMIN, paged
-   like the review items, newest first, at most 100 per page) reads it for the back office.
+   like the review items, newest first, at most 100 per page) reads it for the back office (`/admin/audit`).
+   A decision on an item that is no longer open changes nothing: the entry says `NOT_OPEN` and the API answers 409, so
+   the back office knows its decision was not applied. Not an exception inside the transaction, so the entry is kept.
 8. **Admin host.** The back office is on its own port and host, reachable only from the LAN and WireGuard:
    [0035](0035-admin-host.md). Each environment turns sign-in on with the `oauth-github` profile.
 9. **Sessions in Redis** (Spring Session Data Redis, namespace `helper2:session`), so every replica knows a signed-in

@@ -1,4 +1,4 @@
-import type { UpcomingEventsResponse, Bookmark, BookmarkRequest, GuideRequest, GuideResponse, GuideStep, GuideStepEvent, IssueReportAccepted, IssueReportRequest, Me, Problem, RecentResponse, ResourceDetail, ReviewItem, ReviewItemPage, SetupGuide, ToolGuide, ReviewResolution, ReviewStatus, ScoutRun, SearchResponse, SourceInfo } from './types';
+import type { UpcomingEventsResponse, Bookmark, BookmarkRequest, GuideRequest, GuideResponse, GuideStep, GuideStepEvent, IssueReportAccepted, IssueReportRequest, Me, Problem, RecentResponse, ResourceDetail, ReviewItem, ReviewItemPage, SetupGuide, ToolGuide, ReviewResolution, ReviewStatus, ReviewKind, ScoutRun, AuditEntryPage, SearchResponse, SourceInfo } from './types';
 
 import { guideStreamEventValues } from './schema';
 import { SseParser } from '@/lib/sse';
@@ -196,17 +196,25 @@ export const api = {
     request<Bookmark>('PUT', `/me/bookmarks/${encodeURIComponent(body.resourceId)}`, { body }),
   deleteBookmark: (resourceId: string) =>
     request<void>('DELETE', `/me/bookmarks/${encodeURIComponent(resourceId)}`),
-  listReviewItems: (status: ReviewStatus | undefined, page: number, size: number, signal?: AbortSignal) =>
+  listReviewItems: (filter: { status?: ReviewStatus | undefined; kind?: ReviewKind | undefined }, page: number, size: number, signal?: AbortSignal) =>
     request<ReviewItemPage>('GET', '/admin/review-items', {
-      query: new URLSearchParams({ ...(status ? { status } : {}), page: String(page), size: String(size) }),
+      query: new URLSearchParams({
+        ...(filter.status ? { status: filter.status } : {}),
+        ...(filter.kind ? { kind: filter.kind } : {}),
+        page: String(page),
+        size: String(size),
+      }),
       signal,
     }),
+  /** 409 when the item was already decided (another decision, a double click, or a newer enrichment run). */
   resolveReviewItem: (id: string, body: ReviewResolution) =>
     request<ReviewItem>('PUT', `/admin/review-items/${encodeURIComponent(id)}/resolution`, { body }),
   listScoutRuns: (signal?: AbortSignal) => request<ScoutRun[]>('GET', '/admin/scout-runs', { signal }),
   /** Answers at once with the started run's records (RUNNING); follow them with listScoutRuns. 409 while a run holds the lock. */
   startScoutRun: (sourceId?: string) =>
     request<ScoutRun[]>('POST', '/admin/scout-runs', { body: sourceId ? { sourceId } : {} }),
+  listAuditEntries: (page: number, size: number, signal?: AbortSignal) =>
+    request<AuditEntryPage>('GET', '/admin/audit', { query: new URLSearchParams({ page: String(page), size: String(size) }), signal }),
 };
 
 /** Spring Security logout lives outside /api/v1. */

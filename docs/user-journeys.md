@@ -95,18 +95,26 @@ Anyone can sign in, to keep saved items on the account and get a larger daily qu
 
 ## UJ-9 Admin: keep the catalog honest
 
-1. Admin signs in (role ADMIN from an allow-list), opens **Admin**.
-2. Sees the review queue: enrichment outputs that failed validation, source conflicts, unverified relationship candidates, user reports. Accepts or rejects each with a note.
-3. Triggers a scout run for one source or all; sees run history with items seen/changed and failures.
+**Entry:** the admin host, `/admin` (only over the VPN, [ADR 0035](adr/edge/0035-admin-host.md)).
 
-Each item is a row: the kind, the date and the resource in the meta line, the reason and the details, then **Accept** and **Reject**. A closed item, and each run, shows its status in words in a pill. One action runs at a time; the other buttons wait.
+1. Admin signs in (role ADMIN from an allow-list), opens **Admin**. A sub-navigation links the parts: **Overview**, **Review**, **Scout runs**, **Audit**. Each part has its own address.
+2. **Overview** (the landing page): how many items wait, per kind. Each count is a link to the queue filtered by that kind (`/admin/review?kind=SOURCE_CONFLICT`). The last Scout run with its status.
+3. **Review**: enrichment outputs that failed validation, source conflicts, unverified relationship candidates, user reports, course candidates. Filters by status and by kind; filters and page live in the address, so Back works. Accepts or rejects each, with an optional note.
+4. **Scout runs**: triggers a run now; sees run history with items seen/changed and failures.
+5. **Audit**: what administrators did, newest first: when, the action, the target, the outcome, who.
+
+Each item is a row: the kind, the date and the resource in the meta line, the reason and the details, a note field, then **Accept** and **Reject**. A closed item, and each run, shows its status in words in a pill. One action runs at a time; the other buttons wait.
 
 | State | Behavior |
 |---|---|
-| Loading | "Loading…" in the queue and in the runs. |
-| Empty | "Nothing in this queue." / "No runs yet." |
-| Error | "Could not load the review queue." with Try again; focus stays on the queue's heading. An action that fails says so above the queue. |
-| Not an admin | A signed-in user without the role sees that an administrator account is needed, with a link to the home page. |
+| Loading | "Loading…" in each part. |
+| Empty | "Nothing in this queue." / "No runs yet." / "No entries yet." |
+| Error | "Could not load the review queue." (or the audit trail) with Try again; focus stays on the part's heading. An action that fails says so above the queue. |
+| Already decided | Someone else decided the item first (or a newer enrichment run replaced it): "This item was already decided." The list reloads and shows its current status. |
+| Unknown filter in the address | Falls back to open items of every kind, first page. |
+| Not an admin | A signed-in user without the role sees that an administrator account is needed, with a link to the home page. No admin endpoint is called. |
+
+**Exit:** any link back to the public site, or the next part in the sub-navigation.
 
 **Failure cases:** LLM provider unavailable → runs complete with `LLM_UNAVAILABLE`, original source metadata stays published; one connector failing does not stop others.
 

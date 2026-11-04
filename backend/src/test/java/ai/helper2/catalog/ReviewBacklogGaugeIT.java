@@ -45,7 +45,7 @@ class ReviewBacklogGaugeIT {
         queue.proposeCandidate(ReviewQueue.Kind.COURSE_CANDIDATE, "https://example.com/backlog-2", "New course", "");
         assertThat(gauge()).isEqualTo(before + 2);
 
-        ReviewQueue.Item first = queue.list(ReviewQueue.Status.OPEN, 0, 100).items().stream()
+        ReviewQueue.Item first = queue.list(ReviewQueue.Status.OPEN, null, 0, 100).items().stream()
             .filter(i -> "New course".equals(i.reason())).findFirst().orElseThrow();
         resolve.resolve(first.id(), ReviewQueue.Status.REJECTED, "admin", "not a course");
 

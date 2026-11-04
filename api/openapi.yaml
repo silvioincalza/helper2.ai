@@ -345,11 +345,12 @@ paths:
       operationId: listReviewItems
       parameters:
         - { name: status, in: query, description: Omit for every status., schema: { $ref: '#/components/schemas/ReviewStatus' } }
+        - { name: kind, in: query, description: Omit for every kind., schema: { $ref: '#/components/schemas/ReviewKind' } }
         - { name: page, in: query, schema: { type: integer, minimum: 0, default: 0 } }
         - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
       responses:
         '200':
-          description: One page of the human review queue, newest first.
+          description: One page of the human review queue, newest first, filtered by status and kind.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ReviewItemPage' }
@@ -361,6 +362,9 @@ paths:
     put:
       tags: [admin]
       operationId: resolveReviewItem
+      description: >-
+        409 when the item is no longer OPEN (another decision, a double click, or a newer enrichment run superseded
+        it): nothing changes, and the audit trail records NOT_OPEN.
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       requestBody:
@@ -377,6 +381,7 @@ paths:
         '401': { $ref: '#/components/responses/Problem' }
         '403': { $ref: '#/components/responses/Problem' }
         '404': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
 
   /admin/scout-runs:
     get:
@@ -1324,22 +1329,24 @@ components:
       description: SUPERSEDED is set by a newer enrichment run of the same resource, never by a person.
       enum: [OPEN, ACCEPTED, REJECTED, SUPERSEDED]
 
+    ReviewKind:
+      type: string
+      description: COURSE_CANDIDATE is a course page found by Scout and not yet in the catalog (no resource; URL in details).
+      enum: [ENRICHMENT_VALIDATION, SOURCE_CONFLICT, RELATIONSHIP_CANDIDATE, USER_REPORT, COURSE_CANDIDATE]
+
     ReviewItemPage:
       type: object
       required: [items, total]
       properties:
         items: { type: array, items: { $ref: '#/components/schemas/ReviewItem' } }
-        total: { type: integer, description: Items with the requested status, across all pages. }
+        total: { type: integer, description: Items with the requested status and kind, across all pages. }
 
     ReviewItem:
       type: object
       required: [id, kind, status, reason, createdAt]
       properties:
         id: { type: string, format: uuid }
-        kind:
-          type: string
-          description: COURSE_CANDIDATE is a course page found by Scout and not yet in the catalog (no resource; URL in details).
-          enum: [ENRICHMENT_VALIDATION, SOURCE_CONFLICT, RELATIONSHIP_CANDIDATE, USER_REPORT, COURSE_CANDIDATE]
+        kind: { $ref: '#/components/schemas/ReviewKind' }
         status: { $ref: '#/components/schemas/ReviewStatus' }
         resourceId: { type: [string, 'null'], format: uuid }
         resourceTitle: { type: [string, 'null'] }
