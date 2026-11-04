@@ -62,9 +62,8 @@ public class TavilySource implements SearchSource {
             "Web results via the Tavily Search API; each links to the original publisher.",
             EnumSet.of(ResourceType.NEWS, ResourceType.ARTICLE, ResourceType.EVENT),
             // Metered: each call costs a credit, so searches read stored result sets first, with
-            // their own freshness,
-            // and call live only inside the daily quota (ADR 0037); the per-source cache TTL does
-            // not apply.
+            // their own freshness, and call live only inside the daily quota (ADR 0037); the
+            // per-source cache TTL does not apply.
             settings.timeout(),
             Duration.ZERO,
             settings.enabled() && settings.hasToken(),

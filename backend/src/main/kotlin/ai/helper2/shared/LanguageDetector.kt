@@ -88,8 +88,6 @@ class LanguageDetector {
         Language.TURKISH to "tr",
       )
 
-    val CODES: Set<String> = SUPPORTED.values.toSet()
-
     /**
      * Short, common function words, none of them common in English text: evidence that a short
      * Latin-script query is really in that language.

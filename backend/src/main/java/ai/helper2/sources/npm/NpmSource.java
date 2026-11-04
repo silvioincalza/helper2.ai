@@ -114,9 +114,8 @@ public class NpmSource implements SearchSource {
                     now))
             : List.of();
     // The search API gives the repository URL only, never package.json's `repository.directory`. A
-    // URL that
-    // names a sub-directory keeps it (CanonicalUrl); ResultMerger keeps packages of one repository
-    // apart.
+    // URL that names a sub-directory keeps it (CanonicalUrl); ResultMerger keeps packages of one
+    // repository apart.
     return new SourceHit(
         "npm",
         name,

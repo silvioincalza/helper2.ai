@@ -119,14 +119,11 @@ class SecurityConfiguration {
                   .permitAll();
             })
         // Sessions (in Redis, shared by the replicas) exist only for sign-in: an anonymous request
-        // never creates
-        // one. A refused anonymous request would otherwise be saved in a new session for after
-        // sign-in, which
-        // always returns to the admin page anyway (defaultSuccessUrl below).
+        // never creates one. A refused anonymous request would otherwise be saved in a new session
+        // for after sign-in, which returns to a fixed page anyway (the success handler below).
         .requestCache(r -> r.requestCache(new NullRequestCache()))
         // The SPA setup of .spa(), but deferred: .spa() loads the token on every request, so every
-        // response
-        // without the cookie would set it. CsrfCookieFilter loads it on GET /api/v1/me only.
+        // response without the cookie would set it. CsrfCookieFilter loads it on GET /api/v1/me.
         .csrf(c ->
             c.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                 .csrfTokenRequestHandler(new DeferredSpaCsrfTokenRequestHandler()))
@@ -153,8 +150,7 @@ class SecurityConfiguration {
         });
     if (registrations.getIfAvailable() != null) {
       // Sign-in on both ports, each host with its own callback ({baseUrl}): end users on the public
-      // host, the
-      // owner on the admin host. ADMIN only for a sign-in made on the admin port (ADR 0035).
+      // host, the owner on the admin host. ADMIN only for a sign-in on the admin port (ADR 0035).
       BooleanSupplier onAdminPort = adminPort::currentRequestAdmitted;
       http.oauth2Login(o ->
           o.successHandler((req, res, auth) ->

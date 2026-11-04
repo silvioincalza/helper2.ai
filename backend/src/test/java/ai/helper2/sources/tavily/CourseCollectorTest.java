@@ -71,10 +71,8 @@ class CourseCollectorTest {
     assertThat(batch.getHits()).isEmpty();
     assertThat(batch.getCheckpoint()).isEqualTo(SourceFixtures.CLOCK.instant().toString());
     // Kept: on huggingface.co/learn, about AI, reads like a course. Dropped: the blog (wrong path),
-    // the cooking
-    // course (not AI), the overview (not a course page) and the other host. Coursera's run returns
-    // the same
-    // fixture, all off its domain.
+    // the cooking course (not AI), the overview (not a course page) and the other host. Coursera's
+    // run returns the same fixture, all off its domain.
     assertThat(batch.getCandidates())
         .extracting(c -> c.getUrl().getValue())
         .containsExactly("https://huggingface.co/learn/agents-course/unit0/introduction");

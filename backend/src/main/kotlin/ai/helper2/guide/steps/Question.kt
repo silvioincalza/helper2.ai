@@ -169,10 +169,9 @@ internal class GuideSteps(
     val outcome = search.search(request.copy(asker = q.asker, intentClass = intentClass))
     outcome.webFreshUntil?.let(q::webResultsFreshUntil)
     // The research trail (ADR 0044) lists only the planner's words that a search really sent: the
-    // planned query when
-    // [planned] says the text is it, the web query when a source that reads it was not skipped.
-    // A blank planned query falls back to the asker's own text (QuestionReader): that is not
-    // AI-written.
+    // planned query when [planned] says the text is it, the web query when a source that reads it
+    // was not skipped. A blank planned query falls back to the asker's own text (QuestionReader):
+    // that is not AI-written.
     if (planned && r.plan?.searchQuery?.isNotBlank() == true) q.ran(request.text)
     val web = request.webQuery
     if (

@@ -94,8 +94,7 @@ class ResultMerger(private val analyzer: QueryAnalyzer = QueryAnalyzer()) {
       )
     val primary = ordered.first()
     // Identity from the hits' own URLs, a GitHub URL first, then lexical order. A repository link
-    // alone never
-    // names a result: monorepo packages found in separate searches keep separate ids.
+    // alone never names a result: monorepo packages found in separate searches keep separate ids.
     val identity =
       group
         .map { it.canonicalUrl }

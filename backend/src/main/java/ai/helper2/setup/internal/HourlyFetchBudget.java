@@ -12,11 +12,11 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
 /**
- * Ceiling on the documents the setup guide fetches per UTC hour, across every replica. The GitHub
- * token is the one the Scout collects with: page views must not spend its hourly quota. Counted in
- * Redis ({@code INCR} on a key per hour, under the {@code redis} policy); when Redis cannot answer,
- * each replica counts on its own from the last value it saw, so an outage allows at most the budget
- * per replica and never blocks reading by mistake.
+ * Ceiling on the documents the setup guide fetches per UTC hour, across every replica, so page
+ * views cannot run up the GitHub, npm or Hugging Face rate limits. Counted in Redis ({@code INCR}
+ * on a key per hour, under the {@code redis} policy); when Redis cannot answer, each replica counts
+ * on its own from the last value it saw, so an outage allows at most the budget per replica and
+ * never blocks reading by mistake.
  */
 final class HourlyFetchBudget {
 

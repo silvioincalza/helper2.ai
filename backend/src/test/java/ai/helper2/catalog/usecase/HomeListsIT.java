@@ -236,7 +236,7 @@ class HomeListsIT {
             .findFirst()
             .orElseThrow();
     assertThat(pkg.getHits()).extracting(SourceHit::getSourceId).containsExactly("npm");
-    assertThat(cards.cardOf(monorepoPackage)).contains(pkg);
+    assertThat(cards.cardsOf(List.of(monorepoPackage))).containsExactly(pkg);
     assertThat(cards.cardsOf(List.of())).isEmpty();
   }
 }

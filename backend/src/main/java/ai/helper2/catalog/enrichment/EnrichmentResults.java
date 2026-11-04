@@ -28,29 +28,7 @@ public interface EnrichmentResults {
       Instant startedAt,
       String outcome,
       List<String> errors,
-      @Nullable String extraEvidence) {
-
-    public Run(
-        UUID resourceId,
-        String provider,
-        String model,
-        String promptVersion,
-        String inputFingerprint,
-        Instant startedAt,
-        String outcome,
-        List<String> errors) {
-      this(
-          resourceId,
-          provider,
-          model,
-          promptVersion,
-          inputFingerprint,
-          startedAt,
-          outcome,
-          errors,
-          null);
-    }
-  }
+      @Nullable String extraEvidence) {}
 
   /**
    * A passage that supports a fact. Without [sourceUrl] it is a passage of the source record; with
@@ -58,12 +36,10 @@ public interface EnrichmentResults {
    * on [retrievedAt]. The record anchors it either way, so it goes when the record goes.
    */
   record Citation(
-      UUID sourceRecordId, String excerpt, @Nullable URI sourceUrl, @Nullable Instant retrievedAt) {
-
-    public Citation(UUID sourceRecordId, String excerpt) {
-      this(sourceRecordId, excerpt, null, null);
-    }
-  }
+      UUID sourceRecordId,
+      String excerpt,
+      @Nullable URI sourceUrl,
+      @Nullable Instant retrievedAt) {}
 
   record Field(String field, String value, Verification verification, List<Citation> citations) {}
 

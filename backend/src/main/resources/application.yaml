@@ -256,7 +256,7 @@ resilience4j:
         max-concurrent-calls: ${H2_RESILIENCE_DB_CACHE_MAX_CONCURRENT:2}
         max-wait-duration: 0
       guide:
-        # Questions running at once, JSON and streamed together; one more is refused at once as busy (503).
+        # Questions running at once; one more is refused at once as busy (503).
         max-concurrent-calls: ${H2_GUIDE_MAX_CONCURRENT:8}
         max-wait-duration: 0
   retry:
@@ -333,7 +333,7 @@ helper2:
     translate-timeout-ms: ${H2_SEARCH_TRANSLATE_TIMEOUT_MS:2500}
     # Non-English queries translated by the fast model per UTC day (ADR 0011); separate from the guide's cap.
     daily-translations: ${H2_SEARCH_DAILY_TRANSLATIONS:300}
-    # Translations and query vectors are shared by the replicas in Redis this long (ADR 0011, ADR 0012).
+    # Translations and query vectors are shared by the replicas in Postgres this long (ADR 0011, ADR 0012).
     translation-ttl: ${H2_SEARCH_TRANSLATION_TTL:24h}
     query-vector-ttl: ${H2_SEARCH_QUERY_VECTOR_TTL:7d}
   # Requests per client address; past them the answer is 429.
