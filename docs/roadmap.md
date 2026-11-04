@@ -170,6 +170,15 @@ Open items:
   `typescript-eslint` 8.72 needs TypeScript <6.1 and `eslint-plugin-jsx-a11y` 6.10 needs ESLint <=9. Remove the
   ignore rules once both plugins support the new majors.
 
+- **Redesign, version 4 of the design system** ([design/system](design/system/README.md), boards in
+  [design/redesign](design/redesign)): build it page by page. The design needs these API features first:
+  - `newThisWeek` per source on GET /sources (radar dot size, Sources table).
+  - `limits` on GET /me: web searches and AI answers left today, and the reset time (account panel, Account page).
+  - `total` on the recent and upcoming responses (Show all on the home terminals).
+  - An `unknown` count per facet and an updated-date facet on the search response (Filters panel).
+  - Sign-in with Google (phase 1). Passkey, email link and password (phase 2) need their own ADR, a threat model and
+    the Privacy page first.
+  - The guide starts on its own only for questions of 4 words or more; shorter searches show Ask the guide.
 - **Frontend design** ([0040](adr/frontend/0040-frontend-design.md)) is done and on staging. Prod gets it with the next release:
   cut one once staging looks right.
 - Tracking cookies are planned. Before the first one: consent banner, cookie notice, Privacy page and record of

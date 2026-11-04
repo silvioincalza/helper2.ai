@@ -1,0 +1,56 @@
+# Flowchart: the redesign (design system v4) from the home page to the guide. Home loads the sources for the radar
+# and the two terminals; the search box stays pinned; a search opens one-column results; the guide starts on its own
+# only for a question (4+ words), else Ask the guide; every guide outcome has its own state.
+# Source of truth: docs/adr/frontend/0042-redesign-design-system-v4.md, docs/design/system/README.md,
+#   docs/design/redesign/*.dc.html. The code follows page by page (decision 8).
+# Render: cd docs/diagrams && d2 fmt flow-0042-redesign.d2 && d2 flow-0042-redesign.d2 flow-0042-redesign.svg
+
+...@style
+
+direction: down
+
+open: "Open /" {class: app}
+home: Home {
+  class: group
+  direction: down
+  hero: "Title, radar behind it" {class: app}
+  sources: "GET /api/v1/sources\n(one dot per source)" {class: ext}
+  bar: "Search box, pinned\nunder the header" {class: app}
+  terms: "New this week and Coming up\n(terminals, Show all in place)" {class: app}
+  feeds: "GET /api/v1/recent\nGET /api/v1/events/upcoming" {class: ext}
+  hero -> sources
+  hero -> bar -> terms -> feeds
+}
+phone: "Screen 720 px or less\nand scrolled 24 px?" {class: decision}
+fold: "Title folds away,\nbox stays pinned" {class: app}
+search: "Search: /search?q=…\nGET /api/v1/search" {class: ext}
+list: "One column: results,\nfilters, coverage" {class: app}
+question: "A question?\n(4+ words)" {class: decision}
+ask: "Ask the guide bar\n(no model call)" {class: app}
+pressed: "Ask the guide pressed?" {class: decision}
+guide: "POST /api/v1/guide/stream (SSE)" {class: ext}
+outcome: "Outcome?" {class: decision}
+picks: "Up to 3 picks:\nAI-written reason (labelled),\nchecked quote" {class: end}
+clarify: "Needs one more detail" {class: end}
+nopick: "No pick: Ask without … / Rephrase" {class: end}
+noai: "Model not available:\ntop 3 by score, no AI label" {class: end}
+fail: "Busy, timeout, stalled,\ndaily AI answers used" {class: fail}
+done: "Results only" {class: end}
+
+open -> home.hero
+home.bar -> phone
+phone -> fold: yes
+phone -> search: no, a search
+fold -> search: a search
+search -> list -> question
+question -> guide: yes {class: hot}
+question -> ask: no
+ask -> pressed
+pressed -> guide: yes
+pressed -> done: no
+guide -> outcome
+outcome -> picks: picks
+outcome -> clarify: clarify
+outcome -> nopick: none fits
+outcome -> noai: LLM_UNAVAILABLE
+outcome -> fail: 503 / 504 / quota

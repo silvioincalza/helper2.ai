@@ -4,9 +4,11 @@ Snapshot of the design work, saved next to the code. The live, editable version 
 
 ## The redesign (November 2026)
 
-Minimal and editorial, one font (Space Grotesk), page by page: https://claude.ai/artifact/6VErfaJsgEtyNU7gyxSVZE.
-Home follows it (headline, box, examples, what helper2 does, still News and Events lists). Results, Resource, the
-timeline and sign-in come next; until then they follow the boards below.
+Minimal and editorial: Geist Mono for the interface, Geist for reading, the radar behind the home title, New this
+week and Coming up as terminals. Every page, its states and the dark theme are drawn. Live canvas:
+https://claude.ai/artifact/6VErfaJsgEtyNU7gyxSVZE. Snapshot: [`redesign/`](redesign) (one `.dc.html` per board,
+`canvas.json` lays them out). The rules are in the design system, version 4: [system/README.md](system/README.md).
+The code moves to it page by page; until then the pages follow the boards below.
 
 ## `boards/` — the agreed design (ADR 0040)
 

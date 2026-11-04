@@ -70,6 +70,7 @@ All diagrams: [docs/diagrams](../diagrams/README.md).
 | [0025](frontend/0025-frontend-one-box.md) | Frontend: one box, state in the URL, guide stream, accessibility, theme (system/light/dark) | 0001, 0003, 0008, 0015 | [flow](../diagrams/flow-0025-frontend-one-box.svg) · [sequence](../diagrams/sequence-0025-frontend-one-box.svg) |
 | [0039](frontend/0039-frontend-recent-answers-cache.md) | Frontend recent-answers cache: back and forward without a new request | 0025 | [flow](../diagrams/flow-0039-frontend-recent-answers-cache.svg) · [sequence](../diagrams/sequence-0039-frontend-recent-answers-cache.svg) |
 | [0040](frontend/0040-frontend-design.md) | Frontend design: home page, results with preview, guide picks bar, design system | 0015, 0025, 0038, 0039 | [flow](../diagrams/flow-0040-frontend-design.svg) · [sequence](../diagrams/sequence-0040-frontend-design.svg) |
+| [0042](frontend/0042-redesign-design-system-v4.md) | Redesign: design system version 4 (fonts, home radar and terminals, one-column results, guide states, page-by-page move) | 0015, 0017, 0025, 0038, 0040 | [flow](../diagrams/flow-0042-redesign.svg) · [sequence](../diagrams/sequence-0042-redesign.svg) |
 
 ## Operations — [`operations/`](operations/)
 
