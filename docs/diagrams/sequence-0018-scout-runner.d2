@@ -8,7 +8,8 @@
 #   ClusterRunLock, catalogIndex),
 #   backend/src/main/java/ai/helper2/platform/ClusterLock.java, ClusterLocks.java (KeepAliveLockProvider),
 #   ClusterLockConfiguration.java (ShedLock, db time),
-#   backend/src/main/java/ai/helper2/scout/internal/JdbcScoutStore.java, JdbcEnrichmentStore.java,
+#   backend/src/main/java/ai/helper2/scout/internal/JdbcScoutStore.java, CatalogEnrichmentStore.java
+#   (over the catalog port EnrichmentCandidates),
 #   ReviewQueueCandidateReview.java (CandidateReview port in scout/Ports.kt).
 # Render: cd docs/diagrams && d2 fmt sequence-0018-scout-runner.d2 && d2 sequence-0018-scout-runner.d2 sequence-0018-scout-runner.svg
 
@@ -25,7 +26,7 @@ col: "Collector\n(e.g. McpRegistryCollector)" {class: app}
 ext: "Source API" {class: ext}
 index: "CatalogIndex\n(ResourceCatalog)" {class: app}
 review: "CandidateReview\n(ReviewQueueCandidateReview)" {class: app}
-backlog: JdbcEnrichmentStore {class: app}
+backlog: "CatalogEnrichmentStore\n(catalog::enrichment)" {class: app}
 enrich: EnrichResource {class: app}
 
 sched -> runner: "tick: tryRunScheduled(H2_SCOUT_EVERY)\n(first after 20 s, then every H2_SCOUT_TICK)"

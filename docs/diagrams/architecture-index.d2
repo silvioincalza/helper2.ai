@@ -2,7 +2,9 @@
 # Source of truth: backend/src/main/java/ai/helper2/admin/web/AdminController.java (back office),
 #   backend/src/main/kotlin/ai/helper2/scout/Ports.kt, scout/Scout.kt, scout/Enrichment.kt,
 #   backend/src/main/java/ai/helper2/sources/config/SourcesConfiguration.java (collectors),
-#   backend/src/main/java/ai/helper2/catalog/internal/CatalogConfiguration.java (index, embedder).
+#   backend/src/main/java/ai/helper2/catalog/internal/CatalogConfiguration.java (index, embedder),
+#   backend/src/main/java/ai/helper2/catalog/enrichment/ (EnrichmentCandidates, EnrichmentResults: the Scout's way in),
+#   backend/src/main/java/ai/helper2/scout/internal/CatalogEnrichmentStore.java.
 # Render: cd docs/diagrams && d2 fmt architecture-index.d2 && d2 architecture-index.d2 architecture-index.svg
 
 ...@style
@@ -25,7 +27,7 @@ scout: "scout (Kotlin domain)" {
   p_enrich: EnrichmentModel {class: port}
   p_stores: "ScoutStore\nEnrichmentStore\nEnrichmentBacklog" {class: port}
   model: "SpringAiEnrichmentModel" {class: app}
-  jdbc: "JdbcScoutStore\nJdbcEnrichmentStore" {class: app}
+  jdbc: "JdbcScoutStore\nCatalogEnrichmentStore" {class: app}
   core -> p_collector
   core -> p_index
   core -> p_enrich: {class: ai-call}
@@ -44,7 +46,10 @@ sources: "sources (collectors)" {
 catalog: "catalog (Java)" {
   class: group
   catalog: "ResourceCatalog · ReviewQueue" {class: app}
+  p_enrichment: "catalog::enrichment\nEnrichmentCandidates\nEnrichmentResults" {class: port}
+  enrichment: "JdbcEnrichmentCandidates\nJdbcEnrichmentResults" {class: app}
   store: ResourceStore {class: app}
+  enrichment -> p_enrichment: implements {class: config}
   embed: "EmbeddingIndexer\nNvidiaEmbedder" {class: app}
   catalog -> store
   embed -> store: "pending texts, vectors"
@@ -63,6 +68,8 @@ catalog.catalog -> scout.p_index: implements {class: config}
 sources.collectors -> hosts: HTTPS
 sources.classifier -> nebius: "classify repos" {class: ai-call}
 scout.model -> nebius: "enrich" {class: ai-call}
-scout.jdbc -> pg: JDBC
+scout.jdbc -> catalog.p_enrichment: "backlog, source text,\nrecord runs"
+scout.jdbc -> pg: "JDBC: scout_run, cursors,\nsource.last_outcome"
 catalog.store -> pg: JDBC
+catalog.enrichment -> pg: JDBC
 catalog.embed -> nvapi: "/embeddings" {class: ai-call}

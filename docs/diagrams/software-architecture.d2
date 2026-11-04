@@ -8,7 +8,7 @@
 #   guide/Guide.kt, guide/GuideCost.kt (ports),
 #   backend/src/main/java/ai/helper2/sources/config/SourcesConfiguration.java (sources, collectors, ReadmeEvidence),
 #   backend/src/main/java/ai/helper2/catalog/CatalogConfiguration.java (index, curated, semantic sources),
-#   backend/src/main/java/ai/helper2/catalog/EnrichmentResults.java (port the Scout writes through),
+#   backend/src/main/java/ai/helper2/catalog/enrichment/ (EnrichmentCandidates, EnrichmentResults: the Scout's way in),
 #   backend/src/main/java/ai/helper2/setup/internal/SetupConfiguration.java (setup guide adapters),
 #   backend/src/main/java/ai/helper2/platform/http/ObservedHttp.java (observed client of sources and embedder),
 #   backend/src/main/kotlin/ai/helper2/search/WebSearch.kt, search/internal/JdbcWebResultStore.java,
@@ -83,7 +83,7 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
     p_enrich: EnrichmentModel {class: port}
     p_stores: "ScoutStore\nEnrichmentStore\nEnrichmentBacklog" {class: port}
     model: "SpringAiEnrichmentModel\n(scout.internal)" {class: app}
-    jdbc: "JdbcScoutStore\nJdbcEnrichmentStore" {class: app}
+    jdbc: "JdbcScoutStore\nCatalogEnrichmentStore" {class: app}
     core -> p_collector
     core -> p_extra: "gap round (ADR 0043)"
     core -> p_index
@@ -97,9 +97,9 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
     class: group
     ctl: "ResourcesController\nresources, recent,\nevents, reports" {class: app}
     catalog: "ResourceCatalog · ReviewQueue\nusecase: GetResourceDetail · ReportIssue\nResolveReviewItem" {class: app}
-    p_results: EnrichmentResults {class: port}
+    p_results: "catalog::enrichment\nEnrichmentCandidates\nEnrichmentResults" {class: port}
     queue: "ObservationQueue\n(one writer thread)" {class: app}
-    store: "ResourceStore · JdbcEnrichmentResults\nIssueReports · ReviewDecisions\n(catalog.internal)" {class: app}
+    store: "ResourceStore · JdbcEnrichmentCandidates\nJdbcEnrichmentResults · IssueReports\nReviewDecisions (catalog.internal)" {class: app}
     index: "CatalogSearchSource\nhelper2-index · curated" {class: app}
     semantic: "SemanticSearchSource\nhelper2-semantic" {class: app}
     embed: "NvidiaEmbedder\nEmbeddingIndexer" {class: app}
@@ -174,7 +174,7 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
   catalog.embed -> platform.http: "HTTP client" {class: config}
   search.core -> platform.quota: "daily web searches"
   identity.me -> platform.quota: "delete counters\nwith the account"
-  scout.jdbc -> catalog.p_results: "record runs" {class: config}
+  scout.jdbc -> catalog.p_results: "backlog, source text,\nrecord runs" {class: config}
   setup.usecase -> catalog.catalog: "resource detail"
   admin.ctl -> catalog.catalog: "review decisions"
   admin.ctl -> scout.core: "start a run"

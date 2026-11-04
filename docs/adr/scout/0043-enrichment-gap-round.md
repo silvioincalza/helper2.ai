@@ -76,10 +76,13 @@ decides where the extra text comes from, and the same evidence gate judges it.
 - `backend/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt` — the gap round.
 - `backend/src/main/kotlin/ai/helper2/scout/Enrichment.kt` — `Material.anchorRecordId`, `supportsClaims`; claims may not cite README text.
 - `backend/src/main/java/ai/helper2/sources/evidence/ReadmeEvidence.java`; bean in `sources/config/SourcesConfiguration.java`.
-- `backend/src/main/java/ai/helper2/scout/internal/JdbcEnrichmentStore.java` (gap target), `ScoutConfiguration.java` (budget).
+- `backend/src/main/java/ai/helper2/scout/internal/CatalogEnrichmentStore.java` (gap target), `ScoutConfiguration.java` (budget).
+- `backend/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentCandidates.java` — each source text with its source id, external id
+  and repository link (port `catalog.enrichment.EnrichmentCandidates`).
 - `backend/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java` — evidence with its own URL; `V2__enrichment_extra_evidence.sql`.
 - `frontend/src/lib/evidenceSource.ts`, `frontend/src/components/EvidenceList.tsx`.
-- Tests: `GapRoundTest`, `EnrichResourceGapRoundTest`, `ReadmeEvidenceTest`, `JdbcEnrichmentStoreIT`, `evidenceSource.test.ts`.
+- Tests: `GapRoundTest`, `EnrichResourceGapRoundTest`, `ReadmeEvidenceTest`, `CatalogEnrichmentStoreIT`, `CatalogEnrichmentStoreTest`,
+  `JdbcEnrichmentCandidatesIT`, `evidenceSource.test.ts`.
 
 ## Diagrams
 [flow](../../diagrams/flow-0043-enrichment-gap-round.svg) · [sequence](../../diagrams/sequence-0043-enrichment-gap-round.svg)

@@ -13,9 +13,11 @@ import ai.helper2.scout.CheckedField;
 import ai.helper2.scout.GapKind;
 import ai.helper2.scout.CheckedRelationship;
 import ai.helper2.scout.EnrichmentInput;
+import ai.helper2.scout.EnrichmentMaterial;
 import ai.helper2.scout.EnrichmentModel;
 import ai.helper2.scout.EnrichmentOutcome;
 import ai.helper2.scout.EnrichmentProposal;
+import ai.helper2.scout.Material;
 import ai.helper2.scout.ValidationResult;
 import ai.helper2.shared.Verification;
 import ai.helper2.testing.StatementCounting;
@@ -39,7 +41,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
  */
 @SpringBootTest
 @Import({TestcontainersConfiguration.class, StatementCounting.class})
-class JdbcEnrichmentStoreIT {
+class CatalogEnrichmentStoreIT {
 
     static final EnrichmentModel MODEL = new EnrichmentModel() {
         @Override
@@ -64,7 +66,7 @@ class JdbcEnrichmentStoreIT {
     };
 
     @Autowired
-    JdbcEnrichmentStore store;
+    CatalogEnrichmentStore store;
 
     @Autowired
     ResolveReviewItem resolve;
@@ -114,6 +116,7 @@ class JdbcEnrichmentStoreIT {
         jdbc.sql("DELETE FROM field_assertion WHERE resource_id = :id").param("id", resource).update();
         jdbc.sql("DELETE FROM enrichment_run WHERE resource_id = :id").param("id", resource).update();
         jdbc.sql("DELETE FROM resource WHERE id = :id").param("id", resource).update();
+        jdbc.sql("DELETE FROM source WHERE id = 'aa-golden'").update();
     }
 
     private void save(String fingerprint, EnrichmentOutcome outcome, ValidationResult result) {
@@ -332,5 +335,36 @@ class JdbcEnrichmentStoreIT {
         assertThat(read.result().relationships()).isEmpty();
         assertThat(read.result().summary()).isNull();
         assertThat(read.statements()).as("owners only, nothing to load evidence for").isEqualTo(3);
+    }
+
+    /**
+     * The fingerprint decides whether a resource is enriched again. Its input is each source record as
+     * {@code title + "\n" + description} (no description: an empty one), in source id order. If this value changes,
+     * the Scout re-enriches the whole catalog.
+     */
+    @Test
+    void theMaterialAndItsFingerprintStayByteIdentical() {
+        jdbc.sql("DELETE FROM source_record WHERE id = :id").param("id", older).update();
+        jdbc.sql("""
+                INSERT INTO source (id, name, mode, homepage, attribution)
+                VALUES ('aa-golden', 'Golden test', 'CURATED', 'https://helper2.ai/sources', 'Test')
+                ON CONFLICT (id) DO NOTHING
+                """).update();
+        UUID second = UUID.randomUUID();
+        String url = "https://enrichment-store.example/second/" + resource;
+        jdbc.sql("""
+                INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title,
+                                           description, type, retrieved_at, fingerprint)
+                VALUES (:id, 'aa-golden', :id::text, :rid, :url, :url, 'Store test — ünïcode', NULL, 'MCP_SERVER', now(), 'fp')
+                """).param("id", second).param("rid", resource).param("url", url).update();
+        jdbc.sql("UPDATE source_record SET description = 'Works with Claude Desktop and with Cursor.\nSecond line.' WHERE id = :id")
+            .param("id", record).update();
+
+        EnrichmentMaterial material = store.load(resource);
+
+        assertThat(material.getInput().getMaterials()).extracting(Material::getText)
+            .containsExactly("Store test — ünïcode\n", "Store test\nWorks with Claude Desktop and with Cursor.\nSecond line.");
+        assertThat(material.getTextHash()).isEqualTo("f0687fef5a659106ccefb5499837d3b0");
+        assertThat(material.fingerprintFor(MODEL)).isEqualTo("88bb3ba375c917c44707219947bc8154");
     }
 }

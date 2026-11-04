@@ -25,7 +25,7 @@ internals. Microservices would add network calls and deploys without a scaling n
    public application programming interface (API). The `catalog` module implements `ResultObserver`, `RecordedOutcomes` and two
    `SearchSource`s over PostgreSQL.
    The base package of a Java module holds only what other modules use. `catalog` keeps `ResourceCatalog`,
-   `ReviewQueue`, `Embedder`, `ResourceDetail` and `EnrichmentResults` there; its adapters and its configuration
+   `ReviewQueue`, `Embedder` and `ResourceDetail` there; its adapters and its configuration
    (`CatalogConfiguration`, `CatalogSearchSource`, `SemanticSearchSource`, `ResourceCards`) are in `catalog.internal`.
    `sources` has no API: its base package is empty, and its own configuration wires its adapters into the ports of
    `search` and `scout`.
@@ -40,7 +40,10 @@ internals. Microservices would add network calls and deploys without a scaling n
    a read-only lookup of a store or port (run history, source health) may stay direct. Models, ports and rules (for
    example `GuideValidator`, `PlannedQueries`, `EvidenceValidator`) stay at the module root, so adapters never
    depend on a use case. A use case another module calls is exposed with `@NamedInterface("usecase")`
-   (`search.usecase` for the guide, `catalog.usecase` for the setup guide and the admin page). Kotlin use
+   (`search.usecase` for the guide, `catalog.usecase` for the setup guide and the admin page). The Scout reads and
+   writes catalog tables only through `catalog.enrichment` (`@NamedInterface("enrichment")`): `EnrichmentCandidates`
+   (the backlog and a resource's source text) and `EnrichmentResults` (what a run leaves). The Scout keeps its own
+   rules (the 40-character text bar, three FAILED attempts) and passes them in; the SQL stays in the catalog. Kotlin use
    cases are plain classes wired by `@Bean` methods in `config`/`internal`; catalog use cases are Spring
    services over SQL, because the catalog is not hexagonal.
 5. **Rules as tests.** `ModularityTest` runs on every build:
@@ -48,7 +51,9 @@ internals. Microservices would add network calls and deploys without a scaling n
    - the domain packages do not depend on `org.springframework..`, `tools.jackson..` or `java.sql..`;
    - the domain packages do not depend on any `web`, `cache`, `config` or `internal` package;
    - both rules also hold for the Kotlin `usecase` packages (`search.usecase`, `guide.usecase`, `scout.usecase`);
-   - no class outside `sources` depends on a class of `sources`.
+   - no class outside `sources` depends on a class of `sources`;
+   - `tablesHaveOneOwner`: every table the migrations (`V*__*.sql`) create has one owning module, and only that module's code names
+     it in SQL (`FROM`, `JOIN`, `INTO`, `UPDATE`). One exception is listed in the test: the Scout writes `source`.
 
 ## Consequences
 - Domain tests are plain unit tests with fakes (for example `SearchResourcesTest`, `GuideValidatorTest`).
@@ -83,5 +88,5 @@ internals. Microservices would add network calls and deploys without a scaling n
 Modules, ports and adapters: [software architecture](../../diagrams/software-architecture.svg).
 
 ## Roadmap
-- One owner per table, so the schema has no hidden coupling: [roadmap](../../roadmap.md#7-architecture).
+- The Scout writes `source.last_outcome` itself; move it behind a catalog port: [roadmap](../../roadmap.md#7-architecture).
 - Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

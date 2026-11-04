@@ -9,8 +9,8 @@ from the source text, but it can also invent them, copy instructions planted in 
 source states. Every published value must point to the text it came from, and a person must decide the unclear cases.
 
 ## Decision
-1. **Input.** `JdbcEnrichmentStore.load` turns each source record of the resource (title + description) into one
-   `Material` with an evidence id. The values the sources state (license, type unless `OTHER`, open source) are
+1. **Input.** `CatalogEnrichmentStore.load` reads the resource through the catalog's port `EnrichmentCandidates` and
+   turns each source record (title, a line break, description) into one `Material` with an evidence id. The values the sources state (license, type unless `OTHER`, open source) are
    `sourceFacts`. The first 16 bytes of a Secure Hash Algorithm (SHA-256) hash of the material text are its text hash.
    The input fingerprint (`EnrichmentMaterial.fingerprintFor`) is the same kind of hash over the text hash, the prompt
    version and the model id: what a run of this model with this prompt would see.
@@ -83,9 +83,10 @@ source states. Every published value must point to the text it came from, and a 
 ## Code
 - `backend/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt` — `EnrichResource`.
 - `backend/src/main/kotlin/ai/helper2/scout/Enrichment.kt` — `EvidenceValidator`, proposal and result types.
-- `backend/src/main/java/ai/helper2/scout/internal/SpringAiEnrichmentModel.java`, `JdbcEnrichmentStore.java`, `ScoutConfiguration.java`.
+- `backend/src/main/java/ai/helper2/scout/internal/SpringAiEnrichmentModel.java`, `CatalogEnrichmentStore.java`, `ScoutConfiguration.java`.
 - `backend/src/main/resources/prompts/scout/enrich-v3.txt`.
-- `backend/src/main/java/ai/helper2/catalog/EnrichmentResults.java`, `catalog/internal/JdbcEnrichmentResults.java`.
+- `backend/src/main/java/ai/helper2/catalog/enrichment/EnrichmentCandidates.java`, `EnrichmentResults.java` (named
+  interface `enrichment`), `catalog/internal/JdbcEnrichmentCandidates.java`, `JdbcEnrichmentResults.java`.
 - `backend/src/main/java/ai/helper2/catalog/ReviewQueue.java`, `catalog/internal/ReviewDecisions.java`,
   `catalog/usecase/ListReviewItems.java`, `catalog/usecase/ResolveReviewItem.java`, `admin/web/AdminController.java`.
 - `deploy/monitoring/helper2-rules.yaml` — `Helper2ReviewBacklog`.
@@ -98,5 +99,4 @@ source states. Every published value must point to the text it came from, and a 
 
 ## Roadmap
 - [Watch how often source `type` sends proposals to CONFLICTING review](../../roadmap.md#4-ai-quality-and-cost)
-- [One owner per table: the Scout reads catalog tables for its enrichment backlog](../../roadmap.md#7-architecture)
 - Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).
