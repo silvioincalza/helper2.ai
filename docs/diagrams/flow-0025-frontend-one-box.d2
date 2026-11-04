@@ -3,6 +3,8 @@
 # Shift+Enter, Enter in an empty box, and what each choice writes to the URL. The box itself: line breaks become
 # spaces, it grows up to six lines, Enter during IME composition is left alone, × or Esc empties it (results stay),
 # "/" from anywhere puts the cursor in it.
+# Every writer goes through the URL: HomePage (frontend/src/pages/HomePage.tsx) renders from it
+# (useSearchParams + parseSearchParams), so live search, Search and Ask only change the URL.
 # Source of truth: frontend/src/components/OneBox.tsx, frontend/src/pages/HomePage.tsx,
 #   frontend/src/lib/searchState.ts, frontend/src/components/results/Results.tsx, frontend/src/hooks/useApi.ts,
 #   frontend/src/hooks/useGuideStream.ts.
@@ -50,6 +52,8 @@ page: "HomePage on /search: Results" {
   suggest: "q has 4+ words and no ask:\n\"Ask the guide\" suggestion" {class: app}
 }
 
+url: "URL on /search: ?q=… (&ask=…)\nHomePage reads it (useSearchParams)" {class: app}
+
 other: "On another page: navigate to /search\nwith the same parameters" {class: app}
 
 slash -> type: "cursor in the box"
@@ -57,7 +61,7 @@ type -> norm: "each key or paste"
 norm -> live.min
 type -> emptybox: "× / Esc"
 type -> key: "Enter / button"
-live.replace -> page.results: {class: hot}
+live.replace -> url: {class: hot}
 key -> ime
 ime -> imeend: yes
 ime -> empty: no
@@ -67,9 +71,11 @@ shift -> ask: yes
 shift -> words: no
 words -> ask: yes
 words -> search: no {class: hot}
-search -> page.results: {class: hot}
-live.replace -> page.suggest: "4+ words typed"
-ask -> page.guide: {class: ai-call}
-ask -> page.results: "same q"
+search -> url: {class: hot}
+ask -> url: "&ask=…"
 search -> other: "not on /search"
 ask -> other: "not on /search"
+other -> url: "same parameters"
+url -> page.results: {class: hot}
+url -> page.guide: "ask set" {class: ai-call}
+url -> page.suggest: "4+ words, no ask"
