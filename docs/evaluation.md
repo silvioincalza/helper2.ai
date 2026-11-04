@@ -49,20 +49,68 @@ Per-model latency (planning vs choosing) is in the backend log lines starting wi
 ## How to run
 
 `node scripts/eval-guide.mjs <baseUrl>` against a backend started with `H2_GUIDE_CACHE_TTL=PT1S` (staging), so every answer is a real model call and the questions are sent exactly as written.
-Each question counts against the per-address daily quota (`H2_GUIDE_CLIENT_DAILY_QUESTIONS`, default 30 per UTC day); the set has 20 questions, so the backend under test sets a quota that covers the run.
+`--core` runs the 20 core questions only (the nightly run); `--repeat <n>` runs the set n times to count flips.
+Each question counts against the per-address daily quota (`H2_GUIDE_CLIENT_DAILY_QUESTIONS`) and spends about 3 of the guide's daily model calls (`H2_GUIDE_DAILY_MODEL_CALLS`); the backend under test sets both to cover the run (see "Clean baseline" below).
 `--intents` runs the intent cases ([evaluation-intents.md](evaluation-intents.md)), `--adversarial` the hostile questions ([evaluation-adversarial.md](evaluation-adversarial.md)).
-When an answer carries the `GUIDE_DAILY_QUOTA` notice the script stops and leaves this file unchanged.
+When an answer carries the `GUIDE_DAILY_QUOTA` notice, or 3 answers in a row come without a model, the script stops and leaves this file unchanged.
 The section under "Notes on this run" is hand-written and kept by the script; the rest is regenerated.
+
+## Clean baseline
+
+The baseline decides whether query fan-out (C) or an extra guide round (D) get built at all, so it runs once, clean,
+on staging, before either. Never on prod.
+
+Before the run, for that day only, in staging's `app.env` or chart values (back to the usual values the day after):
+
+| Setting | For the run | Staging today | Why |
+|---|---|---|---|
+| `H2_GUIDE_CACHE_TTL` (`app.guideCacheTtl`) | `PT1S` | `PT1S` | every answer is a real model call |
+| `H2_GUIDE_DAILY_MODEL_CALLS` (`app.dailyLimits.guideModelCalls`) | 1000 | 150 | 50 questions x 3 runs x 3 calls = 450, up to 900 with retries |
+| `H2_GUIDE_CLIENT_DAILY_QUESTIONS` (`app.dailyLimits.guideQuestions`) | at least 200 | 1000 | 150 questions from one address |
+| `H2_TAVILY_GUEST_GUIDE` (`app.dailyLimits.webSearches.guide`) | at least 200 | 1000 | n01 probably hit the guest limit of 3 on 29 Oct |
+| `H2_TAVILY_GUEST_SEARCH` (`app.dailyLimits.webSearches.search`) | at least 200 | 1000 | the pool searches of questions with no answer |
+| `H2_TAVILY_GLOBAL_DAILY_CREDITS` (`app.dailyLimits.webSearchCredits`) | 400 | 200 | web searches of the guide and of the pool searches |
+
+The backend needs its GitHub token (`H2_GITHUB_TOKEN`): the script keeps to 25 live GitHub searches a minute, which only
+an authenticated token allows. Start after the nightly run (01:41 UTC) has finished.
+
+The run, from the repository root (about 45 minutes):
+
+```
+node scripts/eval-guide.mjs "$H2_STAGING_URL" --repeat 3
+```
+
+Then:
+
+1. Grade `backend/eval-data/guide-pool.tsv` with the grades of [eval/README.md](eval/README.md): the AI picks, and the
+   candidates of every question with no answer. Append the first three columns to `docs/eval/guide-qrels.tsv`,
+   then delete the pool: the script never overwrites a pool with grades in it.
+2. `node scripts/eval-guide.mjs --rescore` rebuilds this report from the saved answers
+   (`backend/eval-data/guide-runs.json`) with the new grades, with no new request.
+3. Write the notes, and move the report to `docs/eval/` when a new run takes its place.
+
+What the figures decide:
+
+- **Choosing or retrieval.** When most questions with no answer already have a candidate graded relevant, the guide
+  found the resource and did not pick it: fix the chooser and the planner's wording, not C or D. When few have one,
+  retrieval is the gap and C is worth trying.
+- **Noise.** A change counts only when it is bigger than the flips between the baseline's own runs.
+- **C (fan-out)** goes ahead only if, on the same set and settings: the answer rate goes up, P@3 does not go down, the
+  share of relevant candidates goes up, p90 grows by 1.5 s at most, and there are zero 429s.
+- **D (extra round)** goes ahead only if: the answer rate goes up, P@3 does not go down, there are zero 429s, and the
+  p90 of the questions that trigger the extra round, reported on its own, stays under the target set before D is built.
 
 ## How to read this
 
+- "Answered" means the model gave an answer of the question's kind: an AI pick, a comparison, an explanation, or a dated record. "Expected empty" questions pass when they stay empty; each one says why in the query file.
 - "Checks confirmed" is confirmed / total constraint checks over the AI picks. Not confirmed means the resource's own text does not show it, not that it is false.
 - Previous runs are in [docs/eval/](eval/).
 - "(cache)" marks an answer served from the cache (the backend was not run with `H2_GUIDE_CACHE_TTL=PT1S`); its latency is left out of the percentiles.
 - P@3 is the share of the first three AI picks graded relevant (2 or 3) in [eval/guide-qrels.tsv](eval/guide-qrels.tsv); nDCG@3 weighs them by grade. Picks not graded yet are written to `backend/eval-data/guide-pool.tsv` and count as not relevant.
+- "Candidates graded relevant": for each question with no answer, the script sends the answer's search terms to `GET /api/v1/search` (24 results) and writes them to the pool. It is close to the guide's own 24 candidates, not the same list (no intent filter, sort or web query). Once graded, it tells a retrieval problem (no good candidate) from a choosing problem (a good candidate the model left out).
+- A flip is a question answered in one run and not in another; "top-flip" is a first AI pick that differs between runs.
 - "Kept" counts only AI-reasoned picks that passed the evidence check. Plain search results shown as a fallback count 0.
 - "Top pick" is the first AI-reasoned pick; "no AI pick" means the model chose nothing or everything was rejected.
-- `x01` is a nonsense query. The honest result is NO_CANDIDATES or no AI picks.
 - `b14` is in Italian, to check that the planning model turns any language into English search terms.
 
 ## Notes on this run

@@ -11,7 +11,7 @@ its relevance part with a message.
 | `search-qrels.tsv` | graded judgements for both sets: `query_id`, `url`, `grade` 0–3 | `evalTest` |
 | `search-qrels-second.tsv` | the second judge's grades of a 20 % sample (same format, optional) | `evalTest` (Cohen's kappa) |
 | `search-baseline.json` | nDCG@10 the gate compares with, and the snapshots and labels it was measured on | `evalTest` |
-| `guide-queries.json` | 20 guide questions ([ADR 0030](../adr/quality/0030-guide-evaluation.md)) | `scripts/eval-guide.mjs` |
+| `guide-queries.json` | 50 guide questions: 20 core ones (the nightly run) and 30 marked `extended`; 6 must stay empty (`expectNoPick`, with a `why`) ([ADR 0030](../adr/quality/0030-guide-evaluation.md)) | `scripts/eval-guide.mjs` (`--core`: the 20) |
 | `guide-intents.json` | 16 intent cases and 6 ask-back cases with pass rules ([ADR 0032](../adr/guide/0032-guide-intents.md) §10) | `scripts/eval-guide.mjs --intents` |
 | `guide-adversarial.json` | 8 hostile questions | `scripts/eval-guide.mjs --adversarial` |
 | `guide-qrels.tsv` | graded judgements of guide picks: `query_id` (guide or intent case id), `url`, `grade` 0–3 | `scripts/eval-guide.mjs` (P@3, nDCG@3) |
@@ -57,9 +57,12 @@ relevant result: a 0 for each pooled result is the label.
 
 ## Guide relevance (P@3, nDCG@3)
 
-`scripts/eval-guide.mjs` writes the AI picks no judge has graded to `backend/eval-data/guide-pool.tsv`. Grade them
-with the table above and append the first three columns to `guide-qrels.tsv`: about 60 picks per run (20 questions,
-up to 3 picks), about 15 minutes. Later runs only add the picks that changed.
+`scripts/eval-guide.mjs` writes the AI picks no judge has graded to `backend/eval-data/guide-pool.tsv` (origin
+`pick`), and for every question with no answer the 24 results of its own search terms (origin `candidate <rank>`).
+Grade them with the table above and append the first three columns to `guide-qrels.tsv`. A first run of the 50
+questions leaves about 100 picks and, for each question with no answer, up to 24 candidates: count on 2–3 hours.
+Later runs only add what changed. Then `node scripts/eval-guide.mjs --rescore` rebuilds the report with the new
+grades from the saved answers (`backend/eval-data/guide-runs.json`), with no new request.
 
 ## Classifier (`classifier-labels.tsv`)
 
