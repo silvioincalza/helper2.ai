@@ -47,7 +47,10 @@ A collector returns hits, which the runner indexes, and candidates, which the ru
 7. **ai-deadlines** (`ai-deadlines`, 1 day). One GitHub contents call lists the conference YAML files of
    `huggingface/ai-deadlines` (MIT). Each file is read only from `raw.githubusercontent.com` and without the GitHub
    token. One EVENT per conference: its next edition that has not ended ([0022](0022-next-events.md)). A file that
-   cannot be read or parsed is logged and skipped.
+   cannot be read or parsed, or whose download URL is on another host, is logged, skipped and counted in
+   `helper2.source.items.dropped{source=ai-deadlines, reason}` (the exception type, or `ForeignDownloadUrl`). A
+   conference with no upcoming edition is not counted. When the circuit breaker refuses a file, the pass ends there:
+   the run fails and the next run retries it.
 
 ## Consequences
 - The index grows from registries, the Hub, news and curated lists, with each record's source disclosed.
@@ -81,6 +84,5 @@ A collector returns hits, which the runner indexes, and candidates, which the ru
 
 ## Roadmap
 - [More registries, if their terms allow it](../../roadmap.md#5-search-and-catalog)
-- [Count skipped ai-deadlines files in a metric](../../roadmap.md#5-search-and-catalog)
 - [Review each source's terms for commercial use](../../roadmap.md#product-and-legal)
 - Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

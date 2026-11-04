@@ -26,7 +26,8 @@ Evidence for every term/limit: [research/sources-and-costs.md](research/sources-
 **Every source call** ([ADR 0006](adr/foundation/0006-outbound-http.md)): a token goes only to the configured host (no redirect
 to another host while `Authorization` is set); a body is read up to 2 MB (awesome-list READMEs 5 MB), past that the
 source is `FAILED` ("response too large"); a malformed item is dropped and counted in
-`helper2.source.items.dropped{source,reason}` while the other items are kept.
+`helper2.source.items.dropped{source,reason}` while the other items are kept (ai-deadlines counts a skipped
+conference file there too).
 
 **Web page titles** (`tavily`, `tavily-scout`, `course-scout`, listed once in `WebPageTitle.SOURCES`): the title is the
 page's HTML title, cleaned by `WebPageTitle` when it is stored and again when it is read. On read, a source record from

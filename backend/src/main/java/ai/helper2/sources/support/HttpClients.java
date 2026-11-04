@@ -177,8 +177,13 @@ public final class HttpClients {
 
     /** Counts one malformed source item; the reason is the exception type, never source text. */
     public static void dropped(String sourceId, RuntimeException e) {
-        log.debug("{}: malformed item dropped: {}", sourceId, e.getClass().getSimpleName());
-        Metrics.counter(ITEMS_DROPPED, "source", sourceId, "reason", e.getClass().getSimpleName()).increment();
+        dropped(sourceId, e.getClass().getSimpleName());
+    }
+
+    /** Counts one dropped source item for a [reason] that is no exception; a fixed word in code, never source text. */
+    public static void dropped(String sourceId, String reason) {
+        log.debug("{}: item dropped: {}", sourceId, reason);
+        Metrics.counter(ITEMS_DROPPED, "source", sourceId, "reason", reason).increment();
     }
 
     public static String text(JsonNode n, String field) {

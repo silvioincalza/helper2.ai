@@ -138,7 +138,6 @@ Open items:
 - Indexed resources left without source records are not deleted (only observed ones are).
 - The Apache client's response timeout applies per read, not as a total deadline per call
   ([ADR 0006](adr/foundation/0006-outbound-http.md)).
-- Conference files that the ai-deadlines collector skips are logged, not counted in a metric.
 - On a resource's first search, the discovery date is unknown, because catalog writes run off the request path
   ([ADR 0004](adr/foundation/0004-persistence-and-provenance.md)).
 - "Works with" flags on index hits name `helper2-index` as their source, not the source that set the tag, and only
