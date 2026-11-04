@@ -114,7 +114,8 @@ management:
   logging:
     export:
       otlp:
-        # Logs stay on stdout as JSON (with traceId/spanId); no second copy over OTLP.
+        # Logs stay on stdout as JSON; no second copy over OTLP. traceId/spanId are in every log line written
+        # inside a request or an observed background task (ADR 0026).
         enabled: false
   tracing:
     sampling:

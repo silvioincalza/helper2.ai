@@ -56,7 +56,7 @@ describe('mission, privacy and terms pages', () => {
     expect(recipients).toHaveTextContent('Data Privacy Framework');
     expect(recipients).toHaveTextContent('Cloudflare (United States)');
     expect(recipients).toHaveTextContent('Hugging Face, npm, arXiv and Tavily are not certified');
-    expect(screen.getByRole('region', { name: 'How long we keep data' })).toHaveTextContent('Technical logs: up to 3 months.');
+    expect(screen.getByRole('region', { name: 'How long we keep data' })).toHaveTextContent('Technical logs and request traces: up to 3 months.');
   });
 
   it('privacy page states the account data, how long it is kept and how to delete the account', async () => {

@@ -12,13 +12,17 @@ the guide work long before that, and what makes the wait feel long is the first 
 
 ## Decision
 1. **Logs.** Spring Boot structured logging on stdout, format `H2_LOG_FORMAT` (`logstash` JavaScript Object Notation (JSON); the `dev` profile uses
-   plain text). Trace and span ids are in each line. No second copy over OpenTelemetry Protocol (OTLP).
+   plain text). Trace and span ids (`traceId`, `spanId`) are in every log line written inside a request or an observed
+   background task: Micrometer Tracing puts them in the logging context while a span is in scope. Startup lines and
+   the threads of their own (guide heartbeat, embedding indexer, catalog write queue) have none. No second copy over OpenTelemetry Protocol (OTLP).
 2. **Traces.** `spring-boot-starter-opentelemetry`. Export only when `H2_TRACING_EXPORT=true`; sampling
    `H2_TRACING_SAMPLING` (1.0); endpoint `H2_OTLP_TRACES_ENDPOINT` (the chart: Alloy at
    `http://alloy.observability.svc:4318/v1/traces`, which forwards to Tempo). Resource attributes: `service.name=helper2`,
    `deployment.environment.name=H2_ENVIRONMENT`.
 3. **Context across threads.** The search executor is wrapped with `ContextExecutorService`, so each source call runs
-   in the request's trace. Source and embedding clients share `ObservedHttp` ([0006](../foundation/0006-outbound-http.md)):
+   in the request's trace. So are the guide's question threads and its deadline callback (`GuideLimits`), and a Scout
+   run started from the admin page (`ScoutConfiguration.RUN_THREADS`). Scheduled jobs (the Scout tick, the daily
+   retention jobs) are observed by Spring (`tasks.scheduled.execution`), so each run is a trace of its own. Source and embedding clients share `ObservedHttp` ([0006](../foundation/0006-outbound-http.md)):
    `http.client.requests`, a client span and trace headers, with a bounded Uniform Resource Identifier (URI) tag
    and no query string. Every model call (guide steps, translation, setup guide with step `tool-guide`, enrichment, classifier with step
    `classify`) is observed by `ModelCallMetrics` (span and timer `helper2.llm.call`), tagged with the version of its
@@ -142,6 +146,9 @@ the guide work long before that, and what makes the wait feel long is the first 
 - `backend/src/main/java/ai/helper2/search/config/MicrometerSearchMetrics.java`, `SearchConfiguration.java` — search meters, context executor.
 - `backend/src/main/java/ai/helper2/platform/llm/ModelCallMetrics.java` — model call span, timer, tokens.
 - `backend/src/main/java/ai/helper2/guide/web/GuideStreamController.java` — `helper2.guide.first_useful`.
+- `backend/src/main/java/ai/helper2/guide/web/GuideLimits.java`, `scout/internal/ScoutConfiguration.java` (`RUN_THREADS`) —
+  trace context on the guide's threads and on a Scout run started from the admin page.
+- `backend/src/test/java/ai/helper2/platform/observability/StructuredLogTraceIdIT.java` — trace and span ids in the JSON log lines.
 - `backend/src/main/java/ai/helper2/platform/http/ObservedHttp.java` — observed source and embedding clients.
 - `backend/src/main/java/ai/helper2/platform/llm/LlmConfiguration.java`, `sources/SourcesConfiguration.java` —
   translation and classifier budget gauges.
@@ -155,5 +162,4 @@ the guide work long before that, and what makes the wait feel long is the first 
 
 ## Roadmap
 - [Postgres and Redis exporters in the Helm chart](../../roadmap.md#2-operations).
-- [Confirm trace and span ids in every log line](../../roadmap.md#2-operations).
 - Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

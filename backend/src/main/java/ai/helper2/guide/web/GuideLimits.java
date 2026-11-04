@@ -3,6 +3,7 @@ package ai.helper2.guide.web;
 import ai.helper2.platform.resilience.Resilience;
 import io.micrometer.context.ContextExecutorService;
 import io.micrometer.context.ContextSnapshotFactory;
+import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -36,8 +37,11 @@ class GuideLimits implements DisposableBean {
 
     private final Resilience resilience;
     private final Duration deadline;
-    private final ExecutorService executor = ContextExecutorService.wrap(Executors.newVirtualThreadPerTaskExecutor(),
-        ContextSnapshotFactory.builder().build());
+    private final ContextSnapshotFactory snapshots = ContextSnapshotFactory.builder().build();
+    /** The deadline callback only needs the trace, not the caller's SecurityContext. */
+    private final ContextSnapshotFactory traceOnly = ContextSnapshotFactory.builder()
+        .captureKeyPredicate(ObservationThreadLocalAccessor.KEY::equals).build();
+    private final ExecutorService executor = ContextExecutorService.wrap(Executors.newVirtualThreadPerTaskExecutor(), snapshots);
 
     GuideLimits(Resilience resilience, @Value("${helper2.guide.question-deadline:PT90S}") Duration deadline) {
         resilience.require(POLICY);
@@ -75,7 +79,8 @@ class GuideLimits implements DisposableBean {
             release.run();
             return false;
         }
-        CompletableFuture.delayedExecutor(deadline.toMillis(), TimeUnit.MILLISECONDS).execute(() -> {
+        // The deadline callback carries the request's trace too, so its log line has the ids (ADR 0026).
+        CompletableFuture.delayedExecutor(deadline.toMillis(), TimeUnit.MILLISECONDS).execute(traceOnly.captureAll().wrap(() -> {
             if (running.isDone()) {
                 return;
             }
@@ -86,7 +91,7 @@ class GuideLimits implements DisposableBean {
             // The slot is free from the deadline on, also for a worker that never started (no finally runs)
             // or that is slow to react to the interrupt (its own release is then a no-op).
             release.run();
-        });
+        }));
         return true;
     }
 
