@@ -1,4 +1,5 @@
-# CI: frontend and backend checks, the chart and the diagrams, on GitHub-hosted runners.
+# CI: frontend and backend checks, the chart and the diagrams, on GitHub-hosted runners. No image build:
+# images are built, pushed and scanned only on main (cd.yml); a release tag reuses them (release.yml).
 # Runs on pull requests and is called by cd.yml before every deploy, so main never ships
 # a commit that did not pass here. Never add `pull_request_target`: the repo is public.
 # Third-party actions are pinned to commit SHAs (Dependabot keeps them current).
@@ -64,75 +65,25 @@ jobs:
           path: backend/build/reports/tests/
           retention-days: 7
 
-  # The app image as `make image` builds it, not pushed. Pull requests only: on main, CD builds it.
-  # Supply chain (ADR 0046): an SBOM (Syft, CycloneDX) and a Grype scan of it, REPORT-ONLY until 18 Nov 2026:
-  # findings go to code scanning and the job log, nothing fails the build yet.
-  image:
+  # No image is built here: pull requests stay light. CD builds, pushes and scans the images on main (cd.yml, ADR 0046).
+  # A pushed Postgres tag is never rebuilt (make postgres-image), so a change under deploy/postgres must come with a
+  # new postgres.image.tag: a git check, no build.
+  postgres-tag:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    permissions:
-      contents: read
-      security-events: write
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
-      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
-        with:
-          context: .
-          file: deploy/Dockerfile
-          platforms: linux/amd64
-          push: false
-          load: true
-          tags: helper2:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-      - uses: ./.github/actions/install-scanners
-        with:
-          grype: 'true'
-      - uses: ./.github/actions/grype-db
-      - name: SBOM and vulnerability scan (report-only)
-        run: |
-          set -euo pipefail
-          syft docker:helper2:ci -o cyclonedx-json=sbom.cdx.json
-          grype sbom:sbom.cdx.json --only-fixed -o table -o sarif=grype.sarif
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: sbom-app
-          path: sbom.cdx.json
-          retention-days: 7
-      - uses: ./.github/actions/upload-sarif
-        continue-on-error: true
-        with:
-          sarif: grype.sarif
-          category: image/app
-          ref: ${{ github.ref }}
-          sha: ${{ github.sha }}
-
-  # A pushed Postgres tag is never rebuilt (make postgres-image), so a change under deploy/postgres must
-  # come with a new postgres.image.tag; the image is built here (not pushed) to prove it builds, and scanned like
-  # the app image (report-only).
-  postgres-image:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    permissions:
-      contents: read
-      security-events: write
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
       - name: Changed, and tag bumped?
-        id: changed
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
         run: |
           set -euo pipefail
           if git diff --quiet "$BASE" HEAD -- deploy/postgres; then
-            echo "deploy/postgres unchanged"; echo "changed=false" >> "$GITHUB_OUTPUT"; exit 0
+            echo "deploy/postgres unchanged"; exit 0
           fi
-          echo "changed=true" >> "$GITHUB_OUTPUT"
           tag() { git show "$1:deploy/helm/helper2/values.yaml" | yq '.postgres.image.tag'; }
           old=$(tag "$BASE"); new=$(tag HEAD)
           if [[ $old == "$new" ]]; then
@@ -140,34 +91,6 @@ jobs:
             exit 1
           fi
           echo "postgres.image.tag $old -> $new"
-      - if: steps.changed.outputs.changed == 'true'
-        run: docker build --platform linux/amd64 -t helper2-postgres:ci deploy/postgres
-      - if: steps.changed.outputs.changed == 'true'
-        uses: ./.github/actions/install-scanners
-        with:
-          grype: 'true'
-      - if: steps.changed.outputs.changed == 'true'
-        uses: ./.github/actions/grype-db
-      - name: SBOM and vulnerability scan (report-only)
-        if: steps.changed.outputs.changed == 'true'
-        run: |
-          set -euo pipefail
-          syft docker:helper2-postgres:ci -o cyclonedx-json=sbom.cdx.json
-          grype sbom:sbom.cdx.json --only-fixed -o table -o sarif=grype.sarif
-      - if: steps.changed.outputs.changed == 'true'
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: sbom-postgres
-          path: sbom.cdx.json
-          retention-days: 7
-      - if: steps.changed.outputs.changed == 'true'
-        uses: ./.github/actions/upload-sarif
-        continue-on-error: true
-        with:
-          sarif: grype.sarif
-          category: image/postgres
-          ref: ${{ github.ref }}
-          sha: ${{ github.sha }}
 
   # Lint and render the chart for staging and prod and validate it against the Kubernetes schemas.
   chart:
