@@ -96,6 +96,10 @@ Open items:
 
 ## 4. AI quality and cost
 
+- The `GUIDE_SUBJECT_NOT_FOUND` notice puts a name and a query that the planner took from the question into a fixed
+  sentence (`PickAnswer.kt`, `CompareAnswer.kt`). The UI shows it without the AI label. Send the name and the query as
+  their own fields, marked as AI-written, and build the sentence from the code in the UI
+  ([ADR 0038](adr/guide/0038-ai-content-marking.md)).
 - The guide reason check is a model judgment and can miss a claim. Only the quote is proven
   ([ADR 0016](adr/guide/0016-guide-reason-check.md)).
 - Watch whether the source `type`, now a source fact in enrichment, sends many proposals to CONFLICTING review
