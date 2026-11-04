@@ -18,6 +18,10 @@ on:
         description: allow a commit older than the one the environment runs (a deliberate rollback)
         type: boolean
         default: false
+      release-commit:
+        description: release.yml only, the full commit its checks passed for the version in tag; the version tag is added in Harbor only then
+        type: string
+        default: ''
     outputs:
       tag:
         description: the tag that was deployed
@@ -75,6 +79,7 @@ jobs:
         env:
           INPUT_TAG: ${{ inputs.tag }}
           ROLLBACK: ${{ inputs.rollback }}
+          RELEASE_COMMIT: ${{ inputs.release-commit }}
         run: |
           set -euo pipefail
           tag=$INPUT_TAG
@@ -90,7 +95,12 @@ jobs:
           commit_of() {
             local t=$1 s
             if [[ $t =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-              git fetch --quiet --force origin "refs/tags/v$t:refs/tags/v$t" 2>/dev/null || { echo "no release tag v$t" >&2; return 1; }
+              # Never force-fetched: the local tag and GitHub's must be the same object, or the tag was moved.
+              git rev-parse --verify --quiet "refs/tags/v$t" >/dev/null \
+                || git fetch --quiet origin "refs/tags/v$t:refs/tags/v$t" 2>/dev/null \
+                || { echo "no release tag v$t" >&2; return 1; }
+              [[ $(git ls-remote origin "refs/tags/v$t" | cut -f1) == "$(git rev-parse "refs/tags/v$t")" ]] \
+                || { echo "release tag v$t differs from GitHub's, refusing" >&2; return 1; }
               git rev-parse --verify --quiet "refs/tags/v$t^{commit}" || { echo "v$t names no commit" >&2; return 1; }
               return
             fi
@@ -125,10 +135,13 @@ jobs:
             && git merge-base --is-ancestor "$sha" "$running_sha"; then
             echo "::error::$tag is older than $running, which $ENV runs; a rollback needs rollback: true"; exit 1
           fi
-          # Prod by version: Harbor adds the tag X.Y.Z to the commit's image (same digest, ADR 0048). Here, after the
-          # approval and with this commit's Makefile: an older release's Makefile has no `retag`. Needs read on
-          # ci/harbor for the role deploy-prod. Staging takes a version only once its release has tagged it.
-          if [[ $ENV == prod && $tag =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          # A release run (ADR 0048): the version must still name the commit release.yml checked. Only then does Harbor
+          # add the tag X.Y.Z to that commit's image (same digest), here, after the approval and with this commit's
+          # Makefile (an older release's has no `retag`). Needs read on ci/harbor for the role deploy-prod.
+          # Any other run deploys a version only if a release already tagged it in Harbor, else the rollout fails.
+          if [[ -n $RELEASE_COMMIT ]]; then
+            [[ $ENV == prod && $tag =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "release-commit is for a prod release by version"; exit 1; }
+            [[ $sha == "$RELEASE_COMMIT" ]] || { echo "::error::v$tag now names $sha, release.yml checked $RELEASE_COMMIT"; exit 1; }
             make retag TAG="${sha::12}" VERSION="$tag"
           fi
           # Chart and image from the same commit, so an old image never runs with a newer chart.

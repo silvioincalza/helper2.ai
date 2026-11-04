@@ -184,3 +184,4 @@ jobs:
     with:
       environment: prod
       tag: ${{ needs.release.outputs.version }}
+      release-commit: ${{ needs.release.outputs.sha }}

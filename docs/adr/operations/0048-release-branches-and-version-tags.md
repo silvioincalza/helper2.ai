@@ -13,9 +13,10 @@ rebuilds one.
    release adds its version: the prod deploy job runs `make retag`, and Harbor adds the tag `X.Y.Z` to the image of
    the commit (`POST …/artifacts/<commit>/tags`). One digest, two tags, nothing rebuilt. Run again, it does nothing;
    `X.Y.Z` already on another digest fails, and Harbor's tag-immutability rule refuses to move it anyway.
-   The retag runs in `deploy.yml`, after the prod approval and before the release commit is checked out: no job
-   reaches Harbor's credentials from a tag push before a reviewer said yes, and an older release, whose Makefile
-   has no `retag`, can still be deployed by version (a rollback).
+   The retag runs in `deploy.yml`, after the prod approval and before the release commit is checked out, and only
+   when `release.yml` calls it with the commit its checks passed (`release-commit`): the version tag must still
+   name that commit, and is never force-fetched. No job reaches Harbor's credentials from a tag push before a
+   reviewer said yes, and a manual run cannot add a version tag that no release checked.
 2. **Prod runs the version.** The `prod` job of `release.yml` deploys `X.Y.Z`. `deploy.yml` takes a 12-character
    commit or a version; a version resolves to the commit of the tag `vX.Y.Z`, and the chart is checked out from that
    commit, as before. The release notes name both tags. The "older than what runs" check compares commits, so the same commit under a commit tag and
@@ -42,8 +43,8 @@ rebuilds one.
   image went through CI, the Grype scan and the prod approval.
 - A release branch made before this decision carries the old `release.yml`, which refuses its tags: cut release
   branches from a commit that has this change.
-- Every prod deploy by version adds the version tag first, so a manual prod run by version works too. Staging
-  takes a version only once a prod deploy has tagged it.
+- A manual run (staging or prod, a rollback) deploys a version only once its release has tagged it in Harbor; a
+  release from before this decision is deployed by its commit.
 - The guide-answer cache is kept per build (`H2_BUILD_VERSION`, the image tag): the first prod deploy by version
   of a commit starts with an empty cache, once.
 - The prod deployer can now read the Harbor robot: it can push images, after the approval only.
