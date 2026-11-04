@@ -47,20 +47,20 @@ describe('Feature: the back office has a part per page', () => {
   it('Scenario: the overview counts open items per kind, and a count opens the queue filtered by that kind', async () => {
     const m = mockApi({
       'GET /me': () => ADMIN,
-      'GET /admin/review-items': ({ url }) => page([], url.searchParams.get('kind') === 'SOURCE_CONFLICT' ? 12 : 0),
+      'GET /admin/review-items': ({ url }) => page([], url.searchParams.get('kind') === 'USER_REPORT' ? 12 : 0),
       'GET /admin/scout-runs': () => [{ ...run, status: 'FAILED' }],
     });
     renderApp('/admin');
     const nav = await screen.findByRole('navigation', { name: 'Back office' });
     expect(within(nav).getByRole('link', { name: 'Overview' })).toHaveAttribute('aria-current', 'page');
-    const conflicts = await screen.findByRole('link', { name: /12 Source conflict/ });
-    expect(conflicts).toHaveAttribute('href', '/admin/review?kind=SOURCE_CONFLICT');
+    const reports = await screen.findByRole('link', { name: /12 User report/ });
+    expect(reports).toHaveAttribute('href', '/admin/review?kind=USER_REPORT');
     expect(await screen.findByText('Failed')).toHaveClass('h2-status-pill--warn');
 
-    await userEvent.click(conflicts);
+    await userEvent.click(reports);
     expect(await screen.findByRole('heading', { name: 'Review queue' })).toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: 'Kind' })).toHaveValue('SOURCE_CONFLICT');
-    await waitFor(() => expect(m.callsTo('GET', '/admin/review-items').at(-1)?.search).toBe('?status=OPEN&kind=SOURCE_CONFLICT&page=0&size=20'));
+    expect(screen.getByRole('combobox', { name: 'Kind' })).toHaveValue('USER_REPORT');
+    await waitFor(() => expect(m.callsTo('GET', '/admin/review-items').at(-1)?.search).toBe('?status=OPEN&kind=USER_REPORT&page=0&size=20'));
   });
 });
 

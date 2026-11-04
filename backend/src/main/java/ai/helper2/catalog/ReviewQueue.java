@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 public class ReviewQueue {
 
     public enum Kind {
-        ENRICHMENT_VALIDATION, SOURCE_CONFLICT, RELATIONSHIP_CANDIDATE, USER_REPORT,
+        ENRICHMENT_VALIDATION, RELATIONSHIP_CANDIDATE, USER_REPORT,
         /** A page a collector proposes for the catalog (ADR 0032 §8): no resource yet, only its URL. */
         COURSE_CANDIDATE
     }

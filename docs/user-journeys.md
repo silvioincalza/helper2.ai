@@ -98,8 +98,8 @@ Anyone can sign in, to keep saved items on the account and get a larger daily qu
 **Entry:** the admin host, `/admin` (only over the VPN, [ADR 0035](adr/edge/0035-admin-host.md)).
 
 1. Admin signs in (role ADMIN from an allow-list), opens **Admin**. A sub-navigation links the parts: **Overview**, **Review**, **Scout runs**, **Audit**. Each part has its own address.
-2. **Overview** (the landing page): how many items wait, per kind. Each count is a link to the queue filtered by that kind (`/admin/review?kind=SOURCE_CONFLICT`). The last Scout run with its status.
-3. **Review**: enrichment outputs that failed validation, source conflicts, unverified relationship candidates, user reports, course candidates. Filters by status and by kind; filters and page live in the address, so Back works. Accepts or rejects each, with an optional note.
+2. **Overview** (the landing page): how many items wait, per kind. Each count is a link to the queue filtered by that kind (`/admin/review?kind=USER_REPORT`). The last Scout run with its status.
+3. **Review**: enrichment outputs that failed validation or contradict a source, unverified relationship candidates, user reports, course candidates. Filters by status and by kind; filters and page live in the address, so Back works. Accepts or rejects each, with an optional note.
 4. **Scout runs**: triggers a run now; sees run history with items seen/changed and failures.
 5. **Audit**: what administrators did, newest first: when, the action, the target, the outcome, who.
 

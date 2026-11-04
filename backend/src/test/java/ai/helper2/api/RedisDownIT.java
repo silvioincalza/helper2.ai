@@ -21,6 +21,8 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 
 /**
  * Redis down (nothing listens on its port): anonymous use keeps working and creates no session; sign-in, which
@@ -61,6 +63,14 @@ class RedisDownIT {
         }
     }
 
+    /** Sign-in is on, so the app needs an admin port to start (ADR 0035); sign-in starts there, as in prod. */
+    static final int ADMIN_PORT = HttpEdgeIT.freePort();
+
+    @DynamicPropertySource
+    static void adminPort(DynamicPropertyRegistry r) {
+        r.add("helper2.admin.port", () -> ADMIN_PORT);
+    }
+
     @LocalServerPort
     int port;
 
@@ -70,6 +80,10 @@ class RedisDownIT {
     final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
 
     HttpResponse<String> get(String path) throws Exception {
+        return getAt(port, path);
+    }
+
+    HttpResponse<String> getAt(int port, String path) throws Exception {
         return http.send(HttpRequest.newBuilder(URI.create("http://localhost:" + port + path)).timeout(Duration.ofSeconds(10)).build(),
             HttpResponse.BodyHandlers.ofString());
     }
@@ -101,7 +115,7 @@ class RedisDownIT {
     @Test
     void signInFailsAtOnceAndReturnsToTheAdminPage() throws Exception {
         long start = System.nanoTime();
-        HttpResponse<String> r = get("/oauth2/authorization/test");
+        HttpResponse<String> r = getAt(ADMIN_PORT, "/oauth2/authorization/test");
 
         assertThat(r.statusCode()).isEqualTo(302);
         assertThat(r.headers().firstValue("Location")).hasValueSatisfying(l -> assertThat(l).endsWith("/admin?signin=failed"));
