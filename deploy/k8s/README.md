@@ -38,6 +38,10 @@ Docker works the same way. Tags are never rebuilt or moved: one commit, one imag
 contain `H2_DATABASE_PASSWORD` and `H2_REDIS_PASSWORD` (`openssl rand -hex 32`; letters and digits only).
 The chart turns the file into the Secret `helper2-env`. A change restarts the app only.
 
+**Redis password from your own Secret** (`redis.auth.existingSecret`): the chart cannot see that Secret change.
+To rotate: update the Secret, raise `redis.auth.revision` by one, deploy. Redis and the app restart and read the
+new password.
+
 **`my-values.yaml`**:
 
 ```yaml

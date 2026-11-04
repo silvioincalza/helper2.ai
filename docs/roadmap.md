@@ -68,7 +68,6 @@ Items are grouped by the order in which they matter. Inside a group, the first i
   - **18 Nov 2026:** end of the report-only period. Look at the findings in code scanning, add the exceptions that
     are justified to `.grype.yaml`, then let the pull-request scans fail on a Critical finding with a fix
     (`--fail-on critical` in `ci.yml`, [ADR 0046](adr/operations/0046-supply-chain.md)).
-- Redis with `redis.auth.existingSecret` has no restart checksum, so a password rotation needs a manual restart.
 
 ## 3. More than one replica
 
