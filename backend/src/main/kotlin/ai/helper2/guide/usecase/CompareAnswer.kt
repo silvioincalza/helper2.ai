@@ -15,6 +15,9 @@ import ai.helper2.guide.GuideValidator
 import ai.helper2.guide.ReasonCheck
 import ai.helper2.guide.ReasonClaim
 import ai.helper2.guide.Recommendation
+import ai.helper2.guide.RemovedSuggestion
+import ai.helper2.guide.ResearchTrail
+import ai.helper2.guide.TrailCheck
 import ai.helper2.guide.isSubject
 import ai.helper2.search.MergedResult
 import ai.helper2.search.Notice
@@ -57,7 +60,7 @@ internal class CompareAnswer(
         if (present.size < 2) {
             val fallback = present.firstOrNull()?.result?.title ?: r.query
             val notices = subjects.filter { it.result == null }.map { Notice(NoticeCode.GUIDE_SUBJECT_NOT_FOUND, "${it.name} was not found in our sources.") }
-            return picks.picks(q, r, progress, asked, model, Retrieval(fallback, readingFilter(r), notices = notices))
+            return picks.picks(q, r, progress, asked, model, Retrieval(fallback, readingFilter(r), notices = notices, planned = fallback == r.query))
         }
         val empty = Comparison(subjects, emptyList())
         if (model == null) return subjectsOnly(GuideStatus.LLM_UNAVAILABLE, r, present, empty, modelUsed = false)
@@ -71,6 +74,7 @@ internal class CompareAnswer(
         progress.chosen(proposal.rows.size)
         val byKey = present.associateBy { it.key }
         var rejected = 0
+        val removed = mutableListOf<RemovedSuggestion>()
         val rows = steps.step(q, "validate") {
             proposal.rows.asSequence()
                 .map { it.aspect.trim() }.zip(proposal.rows.asSequence())
@@ -81,9 +85,16 @@ internal class CompareAnswer(
                     ComparisonRow(aspect, subjects.map { s ->
                         val cell = row.cells.firstOrNull { it.subjectKey.trim() == s.key }
                         val c = byKey[s.key]
-                        val ok = cell != null && c != null && cell.text.isNotBlank() && cell.text.length <= limits.maxCellChars &&
-                            !GuideValidator.containsLink(cell.text) && validator.shortQuoteHolds(cell.quote, c.text)
+                        val check = when {
+                            cell == null || c == null -> null
+                            cell.text.isBlank() || cell.text.length > limits.maxCellChars || GuideValidator.containsLink(cell.text) -> TrailCheck.REASON_NOT_SUPPORTED
+                            !validator.shortQuoteHolds(cell.quote, c.text) -> TrailCheck.QUOTE_NOT_FOUND
+                            else -> null
+                        }
+                        val ok = cell != null && c != null && check == null
                         if (cell != null && !ok) rejected++
+                        // The trail names the subject whose cell was removed, never the cell or its aspect (ADR 0044).
+                        if (c != null && check != null) removed += RemovedSuggestion(c.result.title, check)
                         if (ok) ComparisonCell(s.key, cell!!.text.trim(), cell.quote.trim()) else ComparisonCell(s.key, null, null)
                     })
                 }
@@ -100,13 +111,17 @@ internal class CompareAnswer(
             row.copy(cells = row.cells.map { cell ->
                 when (val v = verdicts["r${i + 1}-${cell.subjectKey}"]) {
                     null -> cell
-                    ReasonCheck.REMOVED -> ComparisonCell(cell.subjectKey, null, null, ReasonCheck.REMOVED)
+                    ReasonCheck.REMOVED -> {
+                        removed += RemovedSuggestion(byKey.getValue(cell.subjectKey).result.title, TrailCheck.REASON_NOT_SUPPORTED)
+                        ComparisonCell(cell.subjectKey, null, null, ReasonCheck.REMOVED)
+                    }
                     else -> cell.copy(reasonCheck = v)
                 }
             })
         }
         val status = if (checkedRows.isEmpty()) GuideStatus.PARTIAL else if (rejected == 0) GuideStatus.OK else GuideStatus.PARTIAL
         return subjectsOnly(status, r, present, Comparison(subjects, checkedRows), modelUsed = true, rejected = rejected)
+            .copy(trail = ResearchTrail(removed = removed))
     }
 
     /**

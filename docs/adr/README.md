@@ -45,6 +45,7 @@ All diagrams: [docs/diagrams](../diagrams/README.md).
 | [0032](guide/0032-guide-intents.md) | Guide intents: understand the question, ask back when vague or ambiguous, retrieve and answer by intent | 0014, 0015, 0016, 0017, 0030 | [flow](../diagrams/flow-0032-guide-intents.svg) · [sequence](../diagrams/sequence-0032-guide-intents.svg) |
 | [0038](guide/0038-ai-content-marking.md) | Marking AI-written text: labels on screen, metadata in the API and the page | 0003, 0014, 0015, 0019 | [flow](../diagrams/flow-0038-ai-content-marking.svg) · [sequence](../diagrams/sequence-0038-ai-content-marking.svg) |
 | [0041](guide/0041-guide-answer-cache.md) | Guide answer cache: normalised keys, answers in the shared cache, reuse for a near-identical question read the same way | 0004, 0012, 0017, 0030, 0032, 0034, 0037, 0038 | [flow](../diagrams/flow-0041-guide-answer-cache.svg) · [sequence](../diagrams/sequence-0041-guide-answer-cache.svg) |
+| [0044](guide/0044-research-trail.md) | Research trail: the queries the guide ran and the suggestions its checks removed, by code; amends 0038 | 0015, 0016, 0038, 0041 | [flow](../diagrams/flow-0044-research-trail.svg) · [sequence](../diagrams/sequence-0044-research-trail.svg) |
 
 ## Scout and catalog features — [`scout/`](scout/)
 

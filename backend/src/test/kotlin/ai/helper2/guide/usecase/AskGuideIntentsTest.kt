@@ -1,5 +1,8 @@
 package ai.helper2.guide.usecase
 
+import kotlin.test.assertFalse
+import ai.helper2.guide.TrailCheck
+import ai.helper2.guide.RemovedSuggestion
 import ai.helper2.guide.Candidate
 import ai.helper2.guide.Clarification
 import ai.helper2.guide.ComparisonProposal
@@ -100,7 +103,10 @@ class AskGuideIntentsTest {
         val choose: (List<Candidate>) -> GuideProposal = { GuideProposal(emptyList(), null, emptyList()) },
         val compare: (List<Candidate>) -> ComparisonProposal = { ComparisonProposal(emptyList()) },
         val explain: (List<Candidate>) -> ExplanationProposal = { ExplanationProposal(emptyList()) },
+        /** The reason check's verdicts; by default every claim is supported. */
+        val verify: (List<ReasonClaim>) -> Map<String, Boolean> = { claims -> claims.associate { it.key to true } },
     ) : GuideModel {
+        override fun verifyReasons(request: String, claims: List<ReasonClaim>) = verify(claims)
         override val provider = "fake"
         override val fastModel = "fast"
         override val reasoningModel = "reasoning"
@@ -128,7 +134,6 @@ class AskGuideIntentsTest {
             explained++
             return explain(candidates)
         }
-        override fun verifyReasons(request: String, claims: List<ReasonClaim>) = claims.associate { it.key to true }
     }
 
     private fun guide(model: GuideModel?) = AskGuide(search, model, clock)
@@ -371,6 +376,23 @@ class AskGuideIntentsTest {
         // "Apache 2.0" is not in LM Studio's text: not stated, never guessed.
         assertNull(licence.cells[1].text)
         assertEquals(1, a.rejected)
+        assertEquals(listOf(RemovedSuggestion("LM Studio", TrailCheck.QUOTE_NOT_FOUND)), a.trail.removed, "the subject, never the cell")
+    }
+
+    @Test
+    fun `a comparison cell the reason check removes is listed by its subject`() {
+        val model = Model(
+            GuideSearchPlan("local LLM runner", intent = GuideIntent.COMPARE, subjects = listOf("Ollama", "LM Studio")),
+            compare = { s ->
+                val ollama = s.first { it.result.title == "ollama" }.key
+                val lm = s.first { it.result.title == "LM Studio" }.key
+                ComparisonProposal(listOf(ProposedRow("Licence", listOf(ProposedCell(ollama, "MIT", "MIT License"), ProposedCell(lm, "Runs locally", "run local LLMs on your computer")))))
+            },
+            verify = { claims -> claims.associate { it.key to !it.key.endsWith("s2") } },
+        )
+        val a = guide(model).ask("Ollama vs LM Studio", null)
+        assertEquals(listOf(RemovedSuggestion("LM Studio", TrailCheck.REASON_NOT_SUPPORTED)), a.trail.removed)
+        assertFalse("Runs locally" in a.toString(), "the removed cell's text is kept nowhere")
     }
 
     @Test
@@ -393,6 +415,23 @@ class AskGuideIntentsTest {
         assertEquals(1, e.sentences.size)
         assertEquals("ollama", a.recommendations.first().result.title)
         assertEquals(1, a.rejected)
+        assertEquals(listOf(RemovedSuggestion("ollama", TrailCheck.QUOTE_NOT_FOUND)), a.trail.removed, "the source, never the sentence")
+        assertFalse("fastest runner" in a.trail.toString())
+    }
+
+    @Test
+    fun `an explanation sentence the reason check removes is listed by its source, and its text is kept nowhere`() {
+        val model = Model(
+            GuideSearchPlan("Ollama", intent = GuideIntent.WHAT_IS, subjects = listOf("Ollama")),
+            explain = { c ->
+                val own = c.first { it.result.title == "ollama" }.key
+                ExplanationProposal(listOf(ProposedSentence("SECRET-SENTENCE about Ollama.", own, "Get up and running with large language models locally.")))
+            },
+            verify = { claims -> claims.associate { it.key to false } },
+        )
+        val a = guide(model).ask("what is Ollama?", null)
+        assertEquals(listOf(RemovedSuggestion("ollama", TrailCheck.REASON_NOT_SUPPORTED)), a.trail.removed)
+        assertFalse("SECRET-SENTENCE" in a.toString())
     }
 
     @Test

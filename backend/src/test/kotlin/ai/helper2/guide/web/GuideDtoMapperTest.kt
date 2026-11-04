@@ -1,6 +1,10 @@
 package ai.helper2.guide.web
 
+import ai.helper2.api.generated.model.GuideTrailRemovedDto
 import ai.helper2.guide.GuideAnswer
+import ai.helper2.guide.RemovedSuggestion
+import ai.helper2.guide.ResearchTrail
+import ai.helper2.guide.TrailCheck
 import ai.helper2.guide.GuideStatus
 import ai.helper2.platform.llm.LlmSettings
 import ai.helper2.search.SearchOutcome
@@ -38,6 +42,18 @@ class GuideDtoMapperTest {
         assertEquals(listOf("nano", "super"), dto.aiContent!!.models)
         assertTrue("comparison.rows[].aspect" in dto.aiContent!!.fields)
         assertTrue("recommendations[].checks[].constraint" in dto.aiContent!!.fields)
+    }
+
+    @Test
+    fun `the trail's queries are marked AI-written, and each removed suggestion carries only its title and check`() {
+        val trail = ResearchTrail(listOf("speech recognition"), listOf(RemovedSuggestion("promo", TrailCheck.CONSTRAINT_NOT_MET)))
+        val dto = mapper.toDto(answer(modelUsed = true, planned = true).copy(trail = trail))
+
+        assertTrue("trail.queries[]" in dto.aiContent!!.fields)
+        assertTrue(dto.aiContent!!.fields.none { it.startsWith("trail.removed") }, "titles come from the sources, checks are codes")
+        assertEquals(listOf("speech recognition"), dto.trail!!.queries)
+        assertEquals("promo", dto.trail!!.removed.single().title)
+        assertEquals(GuideTrailRemovedDto.CheckEnum.CONSTRAINT_NOT_MET, dto.trail!!.removed.single().check)
     }
 
     @Test

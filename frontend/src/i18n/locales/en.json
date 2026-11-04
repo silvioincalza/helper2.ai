@@ -649,6 +649,19 @@
     "kept_one": "{{count}} pick kept",
     "kept_other": "{{count}} picks kept",
     "noneRejected": "No pick rejected",
+    "trail": {
+      "searchedFor": "Searched for:",
+      "queries": "Search queries the guide wrote",
+      "noQueries": "No AI-written search terms to show",
+      "removed": "Suggestions the checks removed",
+      "removedLine": "{{title}}: {{check}}",
+      "noneRemoved": "None removed",
+      "check": {
+        "QUOTE_NOT_FOUND": "quote not found in the source",
+        "REASON_NOT_SUPPORTED": "reason not supported",
+        "CONSTRAINT_NOT_MET": "does not fit the kind or period asked for"
+      }
+    },
     "understood": "Understood as",
     "requirementsAi": "Requirements AI-written",
     "remove": "Remove “{{part}}” and ask again",
@@ -753,14 +766,14 @@
   },
   "privacy": {
     "title": "Privacy",
-    "updated": "Last updated: 2 November 2026",
+    "updated": "Last updated: 4 November 2026",
     "lede": "Helper2.ai collects as little as possible. You can search and ask the guide without an account. There are no ads, no analytics and no tracking cookies, and we never sell data.",
     "contactIntro": "Silvio Incalza, Switzerland, is responsible for this website. For any privacy question or request, write to",
     "sections": [
       {
         "title": "What we process and why",
         "items": [
-          "Your searches and guide questions: the text you type, used only to answer you. It is not linked to your account. Search results are cached for up to 30 minutes and guide answers for up to 24 hours, under a hash of the question, not its text. Please do not type personal or secret information.",
+          "Your searches and guide questions: the text you type, used only to answer you. It is not linked to your account. Search results are cached for up to 30 minutes and guide answers for up to 24 hours, under a hash of the question, not its text. A cached guide answer, with the search queries the guide wrote for it, can be shown to anyone who asks the same or a very similar question. Please do not type personal or secret information.",
           "Your account, if you sign in with GitHub: your GitHub user ID (a number), your display name and when you last signed in. We ask GitHub only for basic profile access. We never see your GitHub password or your e-mail address.",
           "Saved items: if you are signed in, each saved resource (its link, title and type) and when you saved it, stored on our server with your account. If you are not signed in, they stay only in your browser; when you sign in, they move to your account.",
           "Reports you send about a resource: the text you write, linked to your account if you are signed in.",

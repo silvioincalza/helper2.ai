@@ -12,6 +12,7 @@ import ai.helper2.guide.GuideStatus
 import ai.helper2.guide.GuideValidator
 import ai.helper2.guide.LEARN_TYPES
 import ai.helper2.guide.ReadingKey
+import ai.helper2.guide.ResearchTrail
 import ai.helper2.guide.SimilarQuestions
 import ai.helper2.guide.sha256Hex
 import ai.helper2.search.Asker
@@ -222,7 +223,9 @@ class AskGuide(
         asked.probe = probe
         val answer = similar.nearest(probe)?.let(cache::get) ?: return null
         asked.reused = true
-        return answer
+        // Its queries came from another asker's words (ADR 0044), the planned search query too; this copy is also what
+        // is stored under this key.
+        return answer.copy(searchQuery = "", trail = answer.trail.withoutQueries())
     }
 
     /** Subjects in the order the user wrote them, not the planner's: the order carries the direction ("python bindings for rust"). */
@@ -253,7 +256,10 @@ class AskGuide(
             )
             GuideIntent.HOW_TO, GuideIntent.SUGGEST -> picks.picks(q, r, progress, asked, usable, Retrieval(r.query, readingFilter(r), askBack = true))
         }
+        val planned = r.plan != null && !r.modelFailed
+        // Only the planner's words are AI-written queries; without a plan the searches ran with the asker's own text.
+        val trail = ResearchTrail.of(if (planned) q.queriesRun() else emptyList(), answer.trail.removed)
         return answer.copy(intent = r.intent, subjects = r.subjects, window = r.window, webFreshUntil = q.webFreshUntil,
-            planned = r.plan != null && !r.modelFailed)
+            planned = planned, trail = trail)
     }
 }

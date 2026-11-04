@@ -14,6 +14,7 @@ import ai.helper2.guide.READING_TYPES
 import ai.helper2.guide.ReasonCheck
 import ai.helper2.guide.ReasonClaim
 import ai.helper2.guide.Recommendation
+import ai.helper2.guide.ResearchTrail
 import ai.helper2.guide.TOOL_TYPES
 import ai.helper2.guide.isSubject
 import ai.helper2.search.Filtering
@@ -48,6 +49,8 @@ internal data class Retrieval(
     val think: Boolean = false,
     /** This search is the question's subject search: namesakes of different kinds are asked back ([namesakes]). */
     val askBack: Boolean = false,
+    /** [text] is the planner's query (or cut from it), not a name or a source's words: the research trail lists it. */
+    val planned: Boolean = true,
 )
 
 /**
@@ -100,7 +103,7 @@ internal class PickAnswer(
         val category = own?.let { listOfNotNull(it.useCases.joinToString(" ").ifBlank { null }, it.type.name.lowercase().replace('_', ' ')).joinToString(" ") }
         val notices = if (own == null) listOf(Notice(NoticeCode.GUIDE_SUBJECT_NOT_FOUND, "$name was not found in our sources; showing tools for: ${r.query}")) else emptyList()
         val text = category?.takeIf { IntentRules.subjectWords(it).isNotBlank() } ?: r.query
-        return picks(q, r, progress, asked, model, Retrieval(text, readingFilter(r), exclude = { isSubject(it, name) }, notices = notices))
+        return picks(q, r, progress, asked, model, Retrieval(text, readingFilter(r), exclude = { isSubject(it, name) }, notices = notices, planned = text == r.query))
     }
 
     /**
@@ -116,6 +119,7 @@ internal class PickAnswer(
                     text = retrieval.text, path = q.path, filters = retrieval.filters, sort = retrieval.sort, size = maxCandidates,
                     webQuery = r.webQuery, browse = retrieval.browse,
                 ),
+                planned = retrieval.planned,
             )
         }
         if (retrieval.askBack) namesakes(r, outcome)?.let { return askBack(clock, r, it, outcome, progress) }
@@ -157,8 +161,10 @@ internal class PickAnswer(
         val verdicts = if (checked.picks.isEmpty()) emptyMap() else reasonCheck.verdicts(q, model, claimsOf(checked), progress)
         q.counts += "candidates=${candidates.size} kept=${checked.picks.size} keptRanks=$keptRanks rejected=${checked.rejected} " +
             "rejectedBy=${checked.rejectedBy} reasons=${verdicts.values.groupingBy { it }.eachCount()}"
+        val trail = ResearchTrail(removed = validator.removedOf(checked))
         if (checked.picks.isEmpty()) {
-            return degraded(clock, GuideStatus.PARTIAL, query, candidates, outcome, checked.rejected, modelUsed = true, constraints).withNotices(retrieval.notices)
+            return degraded(clock, GuideStatus.PARTIAL, query, candidates, outcome, checked.rejected, modelUsed = true, constraints)
+                .withNotices(retrieval.notices).copy(trail = trail)
         }
         return GuideAnswer(
             status = if (checked.rejected == 0) GuideStatus.OK else GuideStatus.PARTIAL,
@@ -178,6 +184,7 @@ internal class PickAnswer(
             generatedAt = clock.instant(),
             constraints = constraints,
             notices = retrieval.notices,
+            trail = trail,
         )
     }
 
@@ -190,7 +197,12 @@ internal class PickAnswer(
         val inside = picks.filter { Filtering.apply(listOf(it.candidate.result), SearchFilters(publishedAfter = filters.publishedAfter, publishedBefore = filters.publishedBefore)).isNotEmpty() }
         val out = picks.size - inside.size
         if (out == 0) return this
-        return copy(picks = inside, rejected = rejected + out, rejectedBy = rejectedBy + (GuideValidator.Rejection.OUTSIDE_WINDOW to out))
+        val outside = (picks - inside.toSet()).map { GuideValidator.RejectedPick(it.candidate, GuideValidator.Rejection.OUTSIDE_WINDOW) }
+        return copy(
+            picks = inside, rejected = rejected + out,
+            rejectedBy = rejectedBy + (GuideValidator.Rejection.OUTSIDE_WINDOW to (rejectedBy[GuideValidator.Rejection.OUTSIDE_WINDOW] ?: 0) + out),
+            rejectedPicks = rejectedPicks + outside,
+        )
     }
 
     /**

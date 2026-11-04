@@ -39,7 +39,9 @@ internal class DateAnswer(private val steps: GuideSteps, private val maxCandidat
         } else {
             SearchRequest(text = text, path = q.path, size = maxCandidates)
         }
-        val outcome = steps.step(q, "search") { steps.find(q, r, request) }
+        // The text is cut from the planner's query only when no subject was named (and it is not the "AI" fallback).
+        val planned = subject == null && IntentRules.subjectWords(r.query).isNotBlank()
+        val outcome = steps.step(q, "search") { steps.find(q, r, request, planned) }
         namesakes(r, outcome)?.let { return askBack(clock, r, it, outcome, progress) }
         progress.retrieved(outcome.results.size, outcome)
         val window = r.window
