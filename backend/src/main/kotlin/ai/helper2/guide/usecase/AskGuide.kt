@@ -200,15 +200,25 @@ class AskGuide(
       if (e is InterruptedException) outcome = "timeout"
       throw e
     } finally {
-      if (Thread.currentThread().isInterrupted) outcome = "timeout"
-      observation.lowCardinalityKeyValue("outcome", outcome)
-      observation.stop()
-      if (cache != null) meters.counter("helper2.guide.cache", "result", cacheResult).increment()
-      meters.counter("helper2.guide.questions", "outcome", outcome).increment()
-      // Its own meter: adding a tag to helper2.guide.questions would split the series the dashboard
-      // and alerts read.
-      meters.counter("helper2.guide.intents", "intent", question.intentTag).increment()
+      recordOutcome(observation, outcome, cacheResult, question)
     }
+  }
+
+  /** Ends the question's span and counts it; a thread still interrupted ran out of time. */
+  private fun recordOutcome(
+    observation: Observation,
+    outcome: String,
+    cacheResult: String,
+    question: Question,
+  ) {
+    val recorded = if (Thread.currentThread().isInterrupted) "timeout" else outcome
+    observation.lowCardinalityKeyValue("outcome", recorded)
+    observation.stop()
+    if (cache != null) meters.counter("helper2.guide.cache", "result", cacheResult).increment()
+    meters.counter("helper2.guide.questions", "outcome", recorded).increment()
+    // Its own meter: adding a tag to helper2.guide.questions would split the series the dashboard
+    // and alerts read.
+    meters.counter("helper2.guide.intents", "intent", question.intentTag).increment()
   }
 
   /**
@@ -337,24 +347,7 @@ class AskGuide(
         GuideIntent.WHEN -> dates.answer(q, r, progress)
         GuideIntent.ALTERNATIVES -> picks.alternatives(q, r, progress, asked, usable)
         GuideIntent.NEWEST -> picks.newest(q, r, progress, asked, usable)
-        GuideIntent.LEARN ->
-          picks.picks(
-            q,
-            r,
-            progress,
-            asked,
-            usable,
-            // A stated period ("courses from last month") filters like it does for newest: undated
-            // courses drop out.
-            Retrieval(
-              r.query,
-              SearchFilters(
-                types = LEARN_TYPES,
-                publishedAfter = r.window?.from,
-                publishedBefore = r.window?.to,
-              ),
-            ),
-          )
+        GuideIntent.LEARN -> picks.picks(q, r, progress, asked, usable, learnRetrieval(r))
         GuideIntent.HOW_TO,
         GuideIntent.SUGGEST ->
           picks.picks(
@@ -379,4 +372,18 @@ class AskGuide(
       trail = trail,
     )
   }
+
+  /**
+   * The LEARN search. A stated period ("courses from last month") filters like it does for newest:
+   * undated courses drop out.
+   */
+  private fun learnRetrieval(r: Reading) =
+    Retrieval(
+      r.query,
+      SearchFilters(
+        types = LEARN_TYPES,
+        publishedAfter = r.window?.from,
+        publishedBefore = r.window?.to,
+      ),
+    )
 }

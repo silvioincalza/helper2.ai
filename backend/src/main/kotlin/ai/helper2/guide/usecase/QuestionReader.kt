@@ -1,10 +1,12 @@
 package ai.helper2.guide.usecase
 
 import ai.helper2.guide.Clarification
+import ai.helper2.guide.DateWindow
 import ai.helper2.guide.GuideBudgetExhausted
 import ai.helper2.guide.GuideIntent
 import ai.helper2.guide.GuideModel
 import ai.helper2.guide.GuideProgress
+import ai.helper2.guide.GuideSearchPlan
 import ai.helper2.guide.GuideValidator
 import ai.helper2.guide.IntentRules
 import ai.helper2.guide.PlannedQueries
@@ -27,34 +29,81 @@ internal class QuestionReader(private val clock: Clock) {
   }
 
   fun read(q: Question, progress: GuideProgress, asked: Asked, model: GuideModel?): Reading {
-    var modelFailed = model == null
-    val plan =
-      if (model == null) null
-      else
-        try {
-          // The two-argument form unless the user answered a clarification: a model that only
-          // implements it keeps working.
-          if (q.clarification == null) model.plan(q.text, q.path)
-          else model.plan(q.text, q.path, q.clarification)
-        } catch (e: RuntimeException) {
-          log.warn("guide plan failed: ${failure(e)}")
-          asked.budgetExhausted = e is GuideBudgetExhausted
-          modelFailed = true
-          null
-        }
+    val planCall = askPlanner(q, asked, model)
+    val plan = planCall.plan
+    val modelFailed = planCall.failed
     val text = q.fullText
-    // Only what the user's own words support: the fast model copies values from its examples.
-    val subjects =
-      plan
-        ?.subjects
-        .orEmpty()
-        .map { it.trim().replace(Regex("\\s+"), " ") }
-        .filter {
-          it.isNotEmpty() && it.length <= MAX_SUBJECT_CHARS && !GuideValidator.containsLink(it)
-        }
-        .filter { text.contains(it, ignoreCase = true) }
-        .distinctBy { it.lowercase() }
-        .take(MAX_SUBJECTS)
+    val subjects = groundedSubjects(plan, text)
+    val window = windowOf(q, plan, text)
+    val intent = intentOf(q, plan, text, subjects, window)
+    val constraints = constraintsOf(q, plan, text)
+    val query = plan?.let { PlannedQueries.searchQueryOf(it.searchQuery) }?.ifBlank { null } ?: text
+    val aboutEvent =
+      intent == GuideIntent.WHEN && (IntentRules.namesEvent(text) || IntentRules.namesEvent(query))
+    if (!modelFailed) progress.planned(query, constraints)
+    progress.understood(intent, subjects, window)
+    q.intentTag = intent.name.lowercase()
+    return Reading(
+      plan = plan,
+      modelFailed = modelFailed,
+      intent = intent,
+      subjects = subjects,
+      window = window,
+      newestFirst = intent == GuideIntent.NEWEST && window == null,
+      constraints = constraints,
+      query = query,
+      webQuery = plan?.let { PlannedQueries.webQueryOf(it.webQuery) },
+      allowReading = wantsReading(text, plan),
+      aboutEvent = aboutEvent,
+      askBackSubject = askBackSubject(q, modelFailed, intent, subjects, aboutEvent),
+    )
+  }
+
+  /** The planner's reading; none without a model, or when its call failed. */
+  private fun askPlanner(q: Question, asked: Asked, model: GuideModel?): PlanCall {
+    if (model == null) return PlanCall(plan = null, failed = true)
+    return try {
+      // The two-argument form unless the user answered a clarification: a model that only
+      // implements it keeps working.
+      val plan =
+        if (q.clarification == null) model.plan(q.text, q.path)
+        else model.plan(q.text, q.path, q.clarification)
+      PlanCall(plan = plan, failed = false)
+    } catch (e: RuntimeException) {
+      log.warn("guide plan failed: ${failure(e)}")
+      asked.budgetExhausted = e is GuideBudgetExhausted
+      PlanCall(plan = null, failed = true)
+    }
+  }
+
+  /** Only what the user's own words support: the fast model copies values from its examples. */
+  private fun groundedSubjects(plan: GuideSearchPlan?, text: String): List<String> =
+    plan
+      ?.subjects
+      .orEmpty()
+      .map { it.trim().replace(Regex("\\s+"), " ") }
+      .filter {
+        it.isNotEmpty() && it.length <= MAX_SUBJECT_CHARS && !GuideValidator.containsLink(it)
+      }
+      .filter { text.contains(it, ignoreCase = true) }
+      .distinctBy { it.lowercase() }
+      .take(MAX_SUBJECTS)
+
+  /** The question's period, resolved to days, unless the user removed it. */
+  private fun windowOf(q: Question, plan: GuideSearchPlan?, text: String): DateWindow? {
+    val modelWindow = plan?.window?.takeIf { IntentRules.mentionsTime(text) }
+    val planned = if (q.drops.window) null else modelWindow ?: IntentRules.windowOf(text)
+    return planned?.resolve(LocalDate.ofInstant(clock.instant(), ZoneOffset.UTC))
+  }
+
+  /** The planner's intent when the user's words support it, else the backup rules'. */
+  private fun intentOf(
+    q: Question,
+    plan: GuideSearchPlan?,
+    text: String,
+    subjects: List<String>,
+    window: DateWindow?,
+  ): GuideIntent {
     val modelIntent = plan?.intent?.takeIf { grounded(it, text, subjects) }
     val ruleIntent = IntentRules.intentOf(text)
     val intent =
@@ -65,38 +114,18 @@ internal class QuestionReader(private val clock: Clock) {
         modelIntent == GuideIntent.SUGGEST && ruleIntent == GuideIntent.NEWEST -> GuideIntent.NEWEST
         else -> modelIntent ?: ruleIntent ?: GuideIntent.SUGGEST
       }
-    val modelWindow = plan?.window?.takeIf { IntentRules.mentionsTime(text) }
-    val planned = if (q.drops.window) null else modelWindow ?: IntentRules.windowOf(text)
-    val window = planned?.resolve(LocalDate.ofInstant(clock.instant(), ZoneOffset.UTC))
     // A period with no other intent is a question about what is new ("AI tools from last month").
-    val effective =
-      if (window != null && intent == GuideIntent.SUGGEST) GuideIntent.NEWEST else intent
-    val constraints =
-      GuideValidator.normalizedConstraints(plan?.constraints.orEmpty()).filter {
-        it.lowercase() !in q.drops.constraints && IntentRules.constraintStated(it, text)
-      }
-    val query = plan?.let { PlannedQueries.searchQueryOf(it.searchQuery) }?.ifBlank { null } ?: text
-    val aboutEvent =
-      effective == GuideIntent.WHEN &&
-        (IntentRules.namesEvent(text) || IntentRules.namesEvent(query))
-    if (!modelFailed) progress.planned(query, constraints)
-    progress.understood(effective, subjects, window)
-    q.intentTag = effective.name.lowercase()
-    return Reading(
-      plan = plan,
-      modelFailed = modelFailed,
-      intent = effective,
-      subjects = subjects,
-      window = window,
-      newestFirst = effective == GuideIntent.NEWEST && window == null,
-      constraints = constraints,
-      query = query,
-      webQuery = plan?.let { PlannedQueries.webQueryOf(it.webQuery) },
-      allowReading = wantsReading(text, plan),
-      aboutEvent = aboutEvent,
-      askBackSubject = askBackSubject(q, modelFailed, effective, subjects, aboutEvent),
-    )
+    return if (window != null && intent == GuideIntent.SUGGEST) GuideIntent.NEWEST else intent
   }
+
+  /** The planner's constraints the user stated and did not remove. */
+  private fun constraintsOf(q: Question, plan: GuideSearchPlan?, text: String): List<String> =
+    GuideValidator.normalizedConstraints(plan?.constraints.orEmpty()).filter {
+      it.lowercase() !in q.drops.constraints && IntentRules.constraintStated(it, text)
+    }
+
+  /** The plan call's result: [failed] without a model or when the call threw. */
+  private class PlanCall(val plan: GuideSearchPlan?, val failed: Boolean)
 
   /**
    * The subject checked for namesakes (ADR 0032 §3): the one grounded subject of a question about

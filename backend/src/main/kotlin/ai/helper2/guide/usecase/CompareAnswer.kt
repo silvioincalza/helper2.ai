@@ -5,6 +5,7 @@ import ai.helper2.guide.Candidate
 import ai.helper2.guide.ComparedSubject
 import ai.helper2.guide.Comparison
 import ai.helper2.guide.ComparisonCell
+import ai.helper2.guide.ComparisonProposal
 import ai.helper2.guide.ComparisonRow
 import ai.helper2.guide.GuideAnswer
 import ai.helper2.guide.GuideBudgetExhausted
@@ -12,6 +13,7 @@ import ai.helper2.guide.GuideModel
 import ai.helper2.guide.GuideProgress
 import ai.helper2.guide.GuideStatus
 import ai.helper2.guide.GuideValidator
+import ai.helper2.guide.ProposedRow
 import ai.helper2.guide.ReasonCheck
 import ai.helper2.guide.ReasonClaim
 import ai.helper2.guide.Recommendation
@@ -67,22 +69,7 @@ internal class CompareAnswer(
       r.subjects.zip(found).mapIndexed { i, (name, res) -> ComparedSubject("s${i + 1}", name, res) }
     val present = subjects.mapNotNull { s -> s.result?.let { Candidate(s.key, it) } }
     progress.retrieved(present.size, SearchOutcome.empty(clock.instant()))
-    if (present.size < 2) {
-      val fallback = present.firstOrNull()?.result?.title ?: r.query
-      // The name is the planner's: a field of its own, so the page marks it AI-written (ADR 0038).
-      val notices =
-        subjects
-          .filter { it.result == null }
-          .map { Notice(NoticeCode.GUIDE_SUBJECT_NOT_FOUND, NOT_FOUND_COMPARED, subject = it.name) }
-      return picks.picks(
-        q,
-        r,
-        progress,
-        asked,
-        model,
-        Retrieval(fallback, readingFilter(r), notices = notices, planned = fallback == r.query),
-      )
-    }
+    if (present.size < 2) return picksOfFound(q, r, progress, asked, model, subjects, present)
     val empty = Comparison(subjects, emptyList())
     if (model == null)
       return subjectsOnly(GuideStatus.LLM_UNAVAILABLE, r, present, empty, modelUsed = false)
@@ -95,54 +82,127 @@ internal class CompareAnswer(
         return subjectsOnly(GuideStatus.LLM_UNAVAILABLE, r, present, empty, modelUsed = false)
       }
     progress.chosen(proposal.rows.size)
+    return compared(q, r, progress, model, proposal, subjects, present)
+  }
+
+  /** Fewer than two subjects found: the picks of the one found, or of the question's query. */
+  private fun picksOfFound(
+    q: Question,
+    r: Reading,
+    progress: GuideProgress,
+    asked: Asked,
+    model: GuideModel?,
+    subjects: List<ComparedSubject>,
+    present: List<Candidate>,
+  ): GuideAnswer {
+    val fallback = present.firstOrNull()?.result?.title ?: r.query
+    // The name is the planner's: a field of its own, so the page marks it AI-written (ADR 0038).
+    val notices =
+      subjects
+        .filter { it.result == null }
+        .map { Notice(NoticeCode.GUIDE_SUBJECT_NOT_FOUND, NOT_FOUND_COMPARED, subject = it.name) }
+    return picks.picks(
+      q,
+      r,
+      progress,
+      asked,
+      model,
+      Retrieval(fallback, readingFilter(r), notices = notices, planned = fallback == r.query),
+    )
+  }
+
+  /** The model's rows, each cell kept only with its quote and when the reason check keeps it. */
+  private fun compared(
+    q: Question,
+    r: Reading,
+    progress: GuideProgress,
+    model: GuideModel,
+    proposal: ComparisonProposal,
+    subjects: List<ComparedSubject>,
+    present: List<Candidate>,
+  ): GuideAnswer {
     val byKey = present.associateBy { it.key }
-    var rejected = 0
-    val removed = mutableListOf<RemovedSuggestion>()
-    val rows =
-      steps.step(q, "validate") {
-        proposal.rows
-          .asSequence()
-          .map { it.aspect.trim() }
-          .zip(proposal.rows.asSequence())
-          .filter { (aspect, _) ->
-            aspect.isNotEmpty() &&
-              aspect.length <= limits.maxAspectChars &&
-              !GuideValidator.containsLink(aspect)
-          }
-          .distinctBy { (aspect, _) -> aspect.lowercase() }
-          .take(limits.maxRows)
-          .map { (aspect, row) ->
-            ComparisonRow(
-              aspect,
-              subjects.map { s ->
-                val cell = row.cells.firstOrNull { it.subjectKey.trim() == s.key }
-                val c = byKey[s.key]
-                val check =
-                  when {
-                    cell == null || c == null -> null
-                    cell.text.isBlank() ||
-                      cell.text.length > limits.maxCellChars ||
-                      GuideValidator.containsLink(cell.text) -> TrailCheck.REASON_NOT_SUPPORTED
-                    !validator.shortQuoteHolds(cell.quote, c.text) -> TrailCheck.QUOTE_NOT_FOUND
-                    else -> null
-                  }
-                val ok = cell != null && c != null && check == null
-                if (cell != null && !ok) rejected++
-                // The trail names the subject whose cell was removed, never the cell or its aspect
-                // (ADR 0044).
-                if (c != null && check != null) removed += RemovedSuggestion(c.result.title, check)
-                if (ok) ComparisonCell(s.key, cell!!.text.trim(), cell.quote.trim())
-                else ComparisonCell(s.key, null, null)
-              },
-            )
-          }
-          .filter { row -> row.cells.any { it.text != null } }
-          .toList()
-      }
+    val gate = CellGate()
+    val rows = steps.step(q, "validate") { quotedRows(proposal, subjects, byKey, gate) }
+    val rejected = gate.rejected
     progress.validated(rows.sumOf { row -> row.cells.count { it.text != null } }, rejected)
     q.counts +=
       "subjects=${present.size} rows=${proposal.rows.size} keptRows=${rows.size} rejectedCells=$rejected"
-    val claims = rows.flatMapIndexed { i, row ->
+    val claims = claimsOf(rows, byKey)
+    val verdicts =
+      if (claims.isEmpty()) emptyMap() else reasonCheck.verdicts(q, model, claims, progress)
+    val checkedRows = reasonChecked(rows, verdicts, byKey, gate.removed)
+    val status =
+      if (checkedRows.isEmpty()) GuideStatus.PARTIAL
+      else if (rejected == 0) GuideStatus.OK else GuideStatus.PARTIAL
+    return subjectsOnly(
+        status,
+        r,
+        present,
+        Comparison(subjects, checkedRows),
+        modelUsed = true,
+        rejected = rejected,
+      )
+      .copy(trail = ResearchTrail(removed = gate.removed))
+  }
+
+  /**
+   * The proposed rows with a usable aspect, at most [AnswerLimits.maxRows], each cell through the
+   * quote gate; a row with no cell left is dropped.
+   */
+  private fun quotedRows(
+    proposal: ComparisonProposal,
+    subjects: List<ComparedSubject>,
+    byKey: Map<String, Candidate>,
+    gate: CellGate,
+  ): List<ComparisonRow> =
+    proposal.rows
+      .asSequence()
+      .map { it.aspect.trim() }
+      .zip(proposal.rows.asSequence())
+      .filter { (aspect, _) -> isUsableAspect(aspect) }
+      .distinctBy { (aspect, _) -> aspect.lowercase() }
+      .take(limits.maxRows)
+      .map { (aspect, row) ->
+        ComparisonRow(aspect, subjects.map { s -> quotedCell(s, row, byKey, gate) })
+      }
+      .filter { row -> row.cells.any { it.text != null } }
+      .toList()
+
+  private fun isUsableAspect(aspect: String) =
+    aspect.isNotEmpty() &&
+      aspect.length <= limits.maxAspectChars &&
+      !GuideValidator.containsLink(aspect)
+
+  /** [s]'s cell of [row] when its quote holds in [s]'s own text, else an empty cell. */
+  private fun quotedCell(
+    s: ComparedSubject,
+    row: ProposedRow,
+    byKey: Map<String, Candidate>,
+    gate: CellGate,
+  ): ComparisonCell {
+    val cell = row.cells.firstOrNull { it.subjectKey.trim() == s.key }
+    val c = byKey[s.key]
+    val check =
+      when {
+        cell == null || c == null -> null
+        cell.text.isBlank() ||
+          cell.text.length > limits.maxCellChars ||
+          GuideValidator.containsLink(cell.text) -> TrailCheck.REASON_NOT_SUPPORTED
+        !validator.shortQuoteHolds(cell.quote, c.text) -> TrailCheck.QUOTE_NOT_FOUND
+        else -> null
+      }
+    val ok = cell != null && c != null && check == null
+    if (cell != null && !ok) gate.rejected++
+    // The trail names the subject whose cell was removed, never the cell or its aspect
+    // (ADR 0044).
+    if (c != null && check != null) gate.removed += RemovedSuggestion(c.result.title, check)
+    return if (ok) ComparisonCell(s.key, cell!!.text.trim(), cell.quote.trim())
+    else ComparisonCell(s.key, null, null)
+  }
+
+  private fun claimsOf(rows: List<ComparisonRow>, byKey: Map<String, Candidate>) =
+    rows.flatMapIndexed { i, row ->
       row.cells
         .filter { it.text != null }
         .map { cell ->
@@ -155,39 +215,37 @@ internal class CompareAnswer(
           )
         }
     }
-    val verdicts =
-      if (claims.isEmpty()) emptyMap() else reasonCheck.verdicts(q, model, claims, progress)
-    val checkedRows = rows.mapIndexed { i, row ->
-      row.copy(
-        cells =
-          row.cells.map { cell ->
-            when (val v = verdicts["r${i + 1}-${cell.subjectKey}"]) {
-              null -> cell
-              ReasonCheck.REMOVED -> {
-                removed +=
-                  RemovedSuggestion(
-                    byKey.getValue(cell.subjectKey).result.title,
-                    TrailCheck.REASON_NOT_SUPPORTED,
-                  )
-                ComparisonCell(cell.subjectKey, null, null, ReasonCheck.REMOVED)
-              }
-              else -> cell.copy(reasonCheck = v)
+
+  /** The rows with each cell's verdict; a removed cell is emptied and goes to [removed]. */
+  private fun reasonChecked(
+    rows: List<ComparisonRow>,
+    verdicts: Map<String, ReasonCheck>,
+    byKey: Map<String, Candidate>,
+    removed: MutableList<RemovedSuggestion>,
+  ): List<ComparisonRow> = rows.mapIndexed { i, row ->
+    row.copy(
+      cells =
+        row.cells.map { cell ->
+          when (val v = verdicts["r${i + 1}-${cell.subjectKey}"]) {
+            null -> cell
+            ReasonCheck.REMOVED -> {
+              removed +=
+                RemovedSuggestion(
+                  byKey.getValue(cell.subjectKey).result.title,
+                  TrailCheck.REASON_NOT_SUPPORTED,
+                )
+              ComparisonCell(cell.subjectKey, null, null, ReasonCheck.REMOVED)
             }
+            else -> cell.copy(reasonCheck = v)
           }
-      )
-    }
-    val status =
-      if (checkedRows.isEmpty()) GuideStatus.PARTIAL
-      else if (rejected == 0) GuideStatus.OK else GuideStatus.PARTIAL
-    return subjectsOnly(
-        status,
-        r,
-        present,
-        Comparison(subjects, checkedRows),
-        modelUsed = true,
-        rejected = rejected,
-      )
-      .copy(trail = ResearchTrail(removed = removed))
+        }
+    )
+  }
+
+  /** What the quote gate rejected, over every gated cell, and the trail of what it removed. */
+  private class CellGate {
+    var rejected = 0
+    val removed = mutableListOf<RemovedSuggestion>()
   }
 
   /**
