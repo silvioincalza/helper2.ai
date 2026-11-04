@@ -21,8 +21,13 @@ public class TestcontainersConfiguration {
     public static final String POSTGRES_IMAGE = "pgvector/pgvector:0.8.6-pg18-trixie";
     public static final String REDIS_IMAGE = "redis:8.10.2-alpine";
 
+    /**
+     * Every cached Spring test context keeps its own pool (H2_DATABASE_POOL_SIZE, 10) on this one container, and
+     * Spring keeps up to 32 contexts: Postgres' default of 100 connections runs out ("too many clients already").
+     */
     static final PostgreSQLContainer POSTGRES =
-        new PostgreSQLContainer(DockerImageName.parse(POSTGRES_IMAGE).asCompatibleSubstituteFor("postgres"));
+        new PostgreSQLContainer(DockerImageName.parse(POSTGRES_IMAGE).asCompatibleSubstituteFor("postgres"))
+            .withCommand("postgres", "-c", "max_connections=400");
     static final GenericContainer<?> REDIS =
         new GenericContainer<>(DockerImageName.parse(REDIS_IMAGE)).withExposedPorts(6379);
 
