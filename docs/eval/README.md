@@ -40,6 +40,9 @@ relevant result: a 0 for each pooled result is the label.
    `H2_NVIDIA_API_KEY` in the repo-root `.env`: `cd backend && ./gradlew evalRecord`. One live search per query,
    100 queries, about 8 minutes with the default 4 s pause (`H2_EVAL_PAUSE`). Queries that already have a snapshot are
    skipped; delete `backend/eval-data/search-snapshots/` to record a new set.
+   **Starter set.** To judge less first, record every fourth query of `search-queries.json` (20 queries, all nine
+   groups, chosen by position, not by result): `H2_EVAL_ONLY=nav01,nav05,nav09,mcp03,mcp07,mcp11,mod03,mod07,lib01,lib05,lib09,pap03,pap07,new03,new07,lng03,lng07,typ01,typ05,non01 ./gradlew evalRecord`.
+   The metrics then cover these 20; the rest are recorded and judged later in the same way.
 2. **Pool.** `./gradlew evalTest` writes `backend/eval-data/search-pool.tsv`: every result in the top 20 of the baseline
    or of any source left out, plus the 10 nearest vectors, that has no grade yet.
 3. **Judge.** Fill the `grade` column, keep the first three columns and append them to `search-qrels.tsv`. Expect
