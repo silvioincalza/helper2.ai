@@ -7,8 +7,8 @@
 #   platform/llm/* (RedisCallCounter: h2:v1:budget:*), platform/http/ObservedHttp.java,
 #   platform/resilience/* (RedisOutboundThrottle: h2:v1:outbound:*), platform/quota/* (QuotaKeys: h2:v1:quota:*),
 #   platform/cache/* (JdbcSharedCache, SharedCacheRetention: ai_cache),
-#   backend/src/main/java/ai/helper2/identity/SecurityConfiguration.java, SessionConfiguration.java,
-#   AdminPortConfiguration.java, MeController.java, AuditController.java, identity/internal/*, identity/usecase/*,
+#   backend/src/main/java/ai/helper2/identity/config/SecurityConfiguration.java, SessionConfiguration.java,
+#   AdminPortConfiguration.java, identity/web/MeController.java, AuditController.java, identity/internal/*, identity/usecase/*,
 #   backend/src/main/resources/application.yaml (spring.session.data.redis.namespace, oauth-github profile).
 # Render: cd docs/diagrams && d2 fmt architecture-platform.d2 && d2 architecture-platform.d2 architecture-platform.svg
 
@@ -34,9 +34,9 @@ edge: "Request edge (platform)" {
 
 identity: "identity (Java)" {
   class: group
-  sec: "SecurityConfiguration\nCSRF · ADMIN allow-list\nAdminPortConfiguration" {class: app}
-  session: "SessionConfiguration\nfail-soft session store" {class: app}
-  me: "MeController · AuditController" {class: app}
+  sec: "SecurityConfiguration\nCSRF · ADMIN allow-list\nAdminPortConfiguration\n(identity.config)" {class: app}
+  session: "SessionConfiguration\nfail-soft session store\n(identity.config)" {class: app}
+  me: "MeController · AuditController\n(identity.web)" {class: app}
   usecase: "AddBookmark · ListBookmarks\nMergeLocalBookmarks · RemoveBookmark\nDeleteMyAccount · ListAuditEntries\nPurgeExpiredData" {class: app}
   store: "Users · Bookmarks · AuditLog\n(identity.internal)" {class: app}
   me -> usecase

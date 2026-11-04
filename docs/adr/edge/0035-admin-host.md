@@ -64,9 +64,9 @@ the cluster with an address from the vSwitch range (the Proxmox node masquerades
 - ADMIN for any allow-listed sign-in, on any port — a public session of the owner would be an admin session.
 
 ## Code
-- `backend/src/main/java/ai/helper2/identity/AdminPort.java`, `AdminPortConfiguration.java` — second connector, port filter.
-- `backend/src/main/java/ai/helper2/identity/SecurityConfiguration.java` — ADMIN per port, return after sign-in.
-- `backend/src/main/java/ai/helper2/identity/SessionConfiguration.java` — failed sign-in per port.
+- `backend/src/main/java/ai/helper2/identity/config/AdminPort.java`, `AdminPortConfiguration.java` — second connector, port filter.
+- `backend/src/main/java/ai/helper2/identity/config/SecurityConfiguration.java` — ADMIN per port, return after sign-in.
+- `backend/src/main/java/ai/helper2/identity/config/SessionConfiguration.java` — failed sign-in per port.
 - `backend/src/test/java/ai/helper2/api/HttpEdgeIT.java` (admin port, in the same test context), `identity/AdminAllowListTest.java`,
   `identity/AdminPortFailClosedTest.java` (refuses to start without an admin port).
 - `deploy/helm/helper2/templates/app.yaml` (Service `helper2-admin`), `networkpolicy.yaml`, `values*.yaml`;

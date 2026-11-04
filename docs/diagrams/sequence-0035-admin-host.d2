@@ -1,6 +1,6 @@
 # Sequence: the owner signs in on the admin host and opens the review queue; the same id on the public host is a plain
 # user, and the back office is not there (ADR 0035).
-# Source of truth: backend/src/main/java/ai/helper2/identity/AdminPortConfiguration.java (BackOfficeOffPublicPort),
+# Source of truth: backend/src/main/java/ai/helper2/identity/config/AdminPortConfiguration.java (BackOfficeOffPublicPort),
 #   AdminPort.java, SecurityConfiguration.java (oauthUsers, roles, afterSignIn),
 #   frontend/src/components/SignIn.tsx, Layout.tsx (SignInReturn), frontend/src/lib/signInReturn.ts,
 #   incalza-me-infra terraform/k8s/helper2.tf (helper2-admin Ingress, whitelist-source-range).

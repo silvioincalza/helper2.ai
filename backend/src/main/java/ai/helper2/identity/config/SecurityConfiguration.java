@@ -1,4 +1,4 @@
-package ai.helper2.identity;
+package ai.helper2.identity.config;
 
 import java.util.Arrays;
 import java.util.HashSet;

@@ -1,9 +1,9 @@
-package ai.helper2.identity;
+package ai.helper2.identity.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import ai.helper2.identity.SessionConfiguration.FailSoftSessionRepository;
+import ai.helper2.identity.config.SessionConfiguration.FailSoftSessionRepository;
 import ai.helper2.platform.resilience.CallRefused;
 import ai.helper2.platform.resilience.Resilience;
 import java.util.ArrayList;

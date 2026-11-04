@@ -1,4 +1,4 @@
-package ai.helper2.identity;
+package ai.helper2.identity.internal;
 
 import ai.helper2.identity.usecase.PurgeExpiredData;
 import ai.helper2.platform.ClusterLock;

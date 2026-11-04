@@ -1,4 +1,4 @@
-package ai.helper2.identity;
+package ai.helper2.identity.web;
 
 import ai.helper2.api.generated.MeApi;
 import ai.helper2.api.generated.model.BookmarkDto;
@@ -7,6 +7,7 @@ import ai.helper2.api.generated.model.MeDto;
 import ai.helper2.api.generated.model.MeLoginProvidersInnerDto;
 import ai.helper2.api.generated.model.ResourceTypeDto;
 import ai.helper2.identity.internal.Bookmarks.Bookmark;
+import ai.helper2.identity.internal.CurrentUser;
 import ai.helper2.identity.usecase.AddBookmark;
 import ai.helper2.identity.usecase.DeleteMyAccount;
 import ai.helper2.identity.usecase.ListBookmarks;

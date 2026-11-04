@@ -1,4 +1,4 @@
-package ai.helper2.identity;
+package ai.helper2.identity.web;
 
 import ai.helper2.api.generated.AuditApi;
 import ai.helper2.api.generated.model.AuditEntryDto;
