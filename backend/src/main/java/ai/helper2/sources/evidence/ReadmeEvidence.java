@@ -47,7 +47,8 @@ public class ReadmeEvidence implements ExtraEvidence {
 
     public static ReadmeEvidence of(SourceSettings github, SourceSettings hub, RestClient.Builder githubBuilder,
                                     RestClient.Builder hubBuilder, Resilience resilience, Clock clock) {
-        return new ReadmeEvidence(github.enabled() ? HttpClients.gitHubClient(githubBuilder, github) : null,
+        // Without a token GitHub allows 60 calls an hour: the gap round would spend them on 429s. Same rule as the awesome lists.
+        return new ReadmeEvidence(github.enabled() && github.hasToken() ? HttpClients.gitHubClient(githubBuilder, github) : null,
             hub.enabled() ? HttpClients.client(hubBuilder, hub) : null, resilience, clock);
     }
 
@@ -72,7 +73,8 @@ public class ReadmeEvidence implements ExtraEvidence {
             .uri("/repos/{owner}/{repo}", t.getOwner(), t.getName())
             .retrieve().body(String.class), clock)));
         String license = repo == null ? null : spdx(HttpClients.text(repo.path("license"), "spdx_id"));
-        return new ExtraText(link("https://github.com/{o}/{r}/blob/HEAD/README.md", t), clock.instant(), readme, license);
+        // The repository page shows whichever README the repository has (README.md, readme.rst, docs/README.md...).
+        return new ExtraText(link("https://github.com/{o}/{r}#readme", t), clock.instant(), readme, license);
     }
 
     private @Nullable ExtraText modelCard(GapTarget t) {

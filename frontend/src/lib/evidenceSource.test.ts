@@ -2,7 +2,7 @@ import { evidenceSource } from './evidenceSource';
 
 describe('evidenceSource', () => {
   it('names the repository of a README', () => {
-    expect(evidenceSource('https://github.com/acme/tool/blob/HEAD/README.md')).toEqual({ kind: 'readme', name: 'acme/tool' });
+    expect(evidenceSource('https://github.com/acme/tool#readme')).toEqual({ kind: 'readme', name: 'acme/tool' });
   });
 
   it('names the model of a model card', () => {
@@ -14,6 +14,6 @@ describe('evidenceSource', () => {
 
   it('says nothing about other pages', () => {
     expect(evidenceSource('https://github.com/acme/tool')).toBeNull();
-    expect(evidenceSource('https://github.com.evil.example/acme/tool/blob/HEAD/README.md')).toBeNull();
+    expect(evidenceSource('https://github.com.evil.example/acme/tool#readme')).toBeNull();
   });
 });

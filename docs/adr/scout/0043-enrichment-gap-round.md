@@ -1,6 +1,6 @@
 # 0043 — Enrichment gap round: read the README or model card once when a run leaves fields unproven
 
-**Status.** Accepted. **Builds on:** [0019](0019-evidence-gated-enrichment.md), [0020](0020-scout-collectors.md), [0034](../operations/0034-data-retention.md)
+**Status.** Accepted. **Builds on:** [0018](0018-scout-runner.md), [0019](0019-evidence-gated-enrichment.md), [0020](0020-scout-collectors.md), [0034](../operations/0034-data-retention.md)
 
 ## Context
 Enrichment ([0019](0019-evidence-gated-enrichment.md)) sees only what the sources store: a title and a short
@@ -37,12 +37,16 @@ decides where the extra text comes from, and the same evidence gate judges it.
 7. **Fingerprint.** The saved run carries the fingerprint of the source records alone. The README is not stored, so the
    next run with unchanged records is `UNCHANGED`: the README is read once per fingerprint, and fields do not flip back
    and forth. The run stores which text it used in `enrichment_run.extra_evidence` (`github-readme:owner/repo`).
-8. **Evidence.** A README excerpt is an `evidence` row with the README's URL and read time, anchored to the record it
+8. **Evidence.** A README excerpt is an `evidence` row with a link a person can open (`github.com/owner/repo#readme`,
+   `huggingface.co/owner/model/blob/main/README.md`) and the read time, anchored to the record it
    was read for, so it goes when that record goes ([0034](../operations/0034-data-retention.md)). The README text
    itself is not stored: only the 20–300-character excerpts the validator accepted. The detail page names the source
    of such a quote: `owner/repo · README`, `owner/model · model card`.
 9. **Cost.** `H2_SCOUT_GAP_DAILY_CALLS` (60) gap model calls a day, a share of the 300 enrichment calls, not on top
-   (both caps count them). Taken only when there is text to send; `0` turns the gap round off. Gauge
+   (both caps count them). Taken only when there is text to send; `0` turns the gap round off. The per-run enrichment
+   budget ([0018](0018-scout-runner.md) §6) counts resources, not gap calls: a gap call is part of its resource's
+   attempt, so a run can make up to its budget plus the gap calls left today. Reading a README needs `H2_GITHUB_TOKEN`
+   (without it GitHub allows 60 calls an hour); a model card needs no token. Gauge
    `helper2.scout.gap.budget.remaining`; counter `helper2.scout.gap` (source, outcome: `filled`, `not_better`,
    `no_text`, `source_failed`, `model_failed`, `skipped_cap`).
 

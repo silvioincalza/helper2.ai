@@ -119,7 +119,7 @@ class JdbcEnrichmentStoreIT {
 
     @Test
     void readmeEvidenceKeepsItsOwnPlaceAndBelongsToTheRecord() {
-        URI readme = URI.create("https://github.com/acme/tool/blob/HEAD/README.md");
+        URI readme = URI.create("https://github.com/acme/tool#readme");
         Instant read = Instant.parse("2026-11-04T10:00:00Z");
         CheckedCitation citation = new CheckedCitation(UUID.randomUUID(), "released under the MIT License", record, readme, read);
         ValidationResult result = new ValidationResult(EnrichmentOutcome.VALIDATED,

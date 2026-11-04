@@ -38,7 +38,7 @@ class EnrichResourceGapRoundTest {
         EnrichmentInput("tool", listOf(Material(record, URI("https://github.com/acme/tool"), NOW, "acme/tool\nA tool for agents."))),
         "source-text-hash", target)
     private val readme = "# Tool\nA tool for agents.\n\n## License\nThis project is released under the MIT License.\n"
-    private val readmeUrl = URI("https://github.com/acme/tool/blob/HEAD/README.md")
+    private val readmeUrl = URI("https://github.com/acme/tool#readme")
 
     /** Proposes a licence; cites the README when the model was given one, else nothing (so the first run is REJECTED). */
     private class LicenceModel : EnrichmentModel {

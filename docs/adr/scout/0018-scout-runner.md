@@ -128,5 +128,8 @@ at the same time. Prod runs 3 replicas ([0027](../operations/0027-runtime-topolo
 ## Diagrams
 [flow](../../diagrams/flow-0018-scout-runner.svg) · [sequence](../../diagrams/sequence-0018-scout-runner.svg)
 
+## Amended by
+- [0043](0043-enrichment-gap-round.md): a gap call is part of its resource's attempt; the per-run budget counts resources, the daily gap cap counts gap calls.
+
 ## Roadmap
 - Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).

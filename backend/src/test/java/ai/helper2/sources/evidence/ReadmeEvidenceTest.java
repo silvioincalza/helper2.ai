@@ -48,9 +48,19 @@ class ReadmeEvidenceTest {
         assertThat(text).isNotNull();
         assertThat(text.getRaw()).contains("MIT licensed");
         assertThat(text.getLicense()).isEqualTo("MIT");
-        assertThat(text.getSourceUrl()).hasToString("https://github.com/acme/tool/blob/HEAD/README.md");
+        assertThat(text.getSourceUrl()).hasToString("https://github.com/acme/tool#readme");
         assertThat(server.requestHeaders.getFirst()).containsKey("Accept");
         assertThat(server.requestHeaders.getFirst().get("Accept").getFirst()).contains("raw");
+    }
+
+    @Test
+    void noGitHubCallsWithoutAToken() {
+        SourceSettings anonymous = new SourceSettings(true, server.baseUrl(), null, Duration.ofSeconds(2), Duration.ZERO);
+        ReadmeEvidence evidence = ReadmeEvidence.of(anonymous, anonymous, ObservedHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP),
+            ObservedHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP), Resilience.NONE, SourceFixtures.CLOCK);
+
+        assertThat(evidence.fetch(target(GapKind.GITHUB_README))).isNull();
+        assertThat(server.requests).isEmpty();
     }
 
     @Test
