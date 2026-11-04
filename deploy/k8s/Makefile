@@ -8,6 +8,7 @@
 #
 #   make image                   build linux/amd64 image, push to Harbor (robot from OpenBao helper2/kv ci/harbor)
 #   make sbom                    CycloneDX SBOM of the pushed image TAG (syft), into sbom.cdx.json
+#   make postgres-sbom           the same for the Postgres image of postgres.image.tag
 #   make ENV=staging diff        what the next deploy would change
 #   make ENV=staging deploy      helm upgrade --install (chart ../helm/helper2) with TAG, wait, roll back on failure
 #   make ENV=staging rollback    previous helm revision
@@ -33,7 +34,7 @@ ifeq ($(filter $(ENV),staging prod),)
 $(error ENV must be staging or prod)
 endif
 
-.PHONY: help credentials backup-credentials image sbom postgres-image chart-check check-env release-ready deploy diff rollback status
+.PHONY: help credentials backup-credentials image sbom postgres-sbom postgres-image chart-check check-env release-ready deploy diff rollback status
 
 help: ## this list
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
@@ -107,6 +108,11 @@ sbom: ## CycloneDX SBOM of the image TAG, read from Harbor (needs syft), into SB
 	SYFT_REGISTRY_AUTH_AUTHORITY=$(REGISTRY) SYFT_REGISTRY_AUTH_USERNAME="$$user" SYFT_REGISTRY_AUTH_PASSWORD="$$pass" \
 		syft registry:$(IMAGE):$(TAG) -o cyclonedx-json=$(SBOM); \
 	echo "SBOM of $(IMAGE):$(TAG) in $(SBOM)"
+
+# The same SBOM for the Postgres image of postgres.image.tag (cd.yml scans it with the app's).
+postgres-sbom: ## CycloneDX SBOM of the Postgres image postgres.image.tag, read from Harbor, into SBOM
+	@test -n "$(PG_TAG)" || { echo "postgres.image.tag not found in $(CHART)/values.yaml"; exit 1; }
+	@$(MAKE) --no-print-directory sbom IMAGE=$(PG_REPO) TAG=$(PG_TAG)
 
 # Built only when postgres.image.tag is not in Harbor yet (the first run after a bump), otherwise a
 # no-op, so CD runs it on every push. Prints the digest to pin as postgres.image.digest.

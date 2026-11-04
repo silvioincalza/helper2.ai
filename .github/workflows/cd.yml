@@ -29,10 +29,8 @@ jobs:
   ci:
     if: github.event_name == 'push'
     uses: ./.github/workflows/ci.yml
-    # The ceiling for ci.yml's jobs: only its pull-request image scans ask for security-events (skipped here).
     permissions:
       contents: read
-      security-events: write
 
   image:
     needs: ci
@@ -66,6 +64,60 @@ jobs:
           name: sbom
           path: sbom.cdx.json
           retention-days: 90
+      # The Postgres image of postgres.image.tag, new or not: the daily scan below sees new CVEs in it too.
+      - run: make -C deploy/k8s postgres-sbom SBOM="$GITHUB_WORKSPACE/sbom-postgres.cdx.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: sbom-postgres
+          path: sbom-postgres.cdx.json
+          retention-days: 90
+
+  # Grype on the SBOMs of the images just pushed (ADR 0046), on a GitHub-hosted runner: it reads the run's artifacts,
+  # never Harbor. Report-only until 18 Nov 2026: findings with a fix go to code scanning (image/app, image/postgres
+  # on main) and the job log, nothing fails. Not a need of staging yet: the gate adds `--fail-on critical` and that need.
+  scan:
+    needs: image
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/install-scanners
+        with:
+          grype: 'true'
+      - uses: ./.github/actions/grype-db
+      - name: SBOMs of this run
+        run: |
+          set -euo pipefail
+          gh run download "$GITHUB_RUN_ID" -R "$GITHUB_REPOSITORY" -n sbom -D sboms
+          gh run download "$GITHUB_RUN_ID" -R "$GITHUB_REPOSITORY" -n sbom-postgres -D sboms
+      - name: Vulnerability scan (report-only)
+        run: |
+          set -euo pipefail
+          for image in app postgres; do
+            sbom=sboms/sbom.cdx.json; [[ $image == postgres ]] && sbom=sboms/sbom-postgres.cdx.json
+            echo "== $image"
+            grype "sbom:$sbom" --only-fixed -o table -o "sarif=grype-$image.sarif"
+          done
+      - uses: ./.github/actions/upload-sarif
+        continue-on-error: true
+        with:
+          sarif: grype-app.sarif
+          category: image/app
+          ref: ${{ github.ref }}
+          sha: ${{ github.sha }}
+      - uses: ./.github/actions/upload-sarif
+        continue-on-error: true
+        with:
+          sarif: grype-postgres.sarif
+          category: image/postgres
+          ref: ${{ github.ref }}
+          sha: ${{ github.sha }}
 
   staging:
     needs: image

@@ -17,8 +17,7 @@ checks: ci.yml (GitHub-hosted, on every PR) {
   frontend: "frontend:\nlint, typecheck,\nVitest, build" {class: app}
   backend: "backend:\ngradlew test\n(Testcontainers)" {class: app}
   chart: "chart:\nhelm lint + template\n| kubeconform" {class: app}
-  image: "PR only: app image\nbuild, no push" {class: app}
-  pg: "PR only: Postgres image\n+ tag bumped?" {class: app}
+  pg: "PR only: deploy/postgres changed\n→ tag bumped? (git, no build)" {class: app}
   monitoring: "monitoring:\npromtool check\n+ test rules" {class: app}
   d2: "PR only: diagrams\nre-rendered = committed?" {class: app}
 }
@@ -35,6 +34,7 @@ cd: cd.yml (push to main) {
   exists: "Tag already\nin Harbor?" {class: decision}
   reuse: "Not rebuilt" {class: app}
   push: "Build from git archive,\npush TAG = commit[0:12]" {class: data}
+  scan: "scan job (GitHub-hosted):\nGrype on the run's SBOMs\n(0046, report-only)" {class: app}
   staging: "deploy.yml env staging:\ndiff, deploy, status" {class: app}
   ok: "Staging rollout\nhealthy?" {class: decision}
   rollback: "helm --rollback-on-failure:\nprevious revision" {class: fail}
@@ -44,6 +44,7 @@ cd: cd.yml (push to main) {
   build -> exists
   exists -> reuse: yes
   exists -> push: no {class: hot}
+  build -> scan: "SBOM artifacts"
   reuse -> staging
   push -> staging: {class: hot}
   staging -> ok
