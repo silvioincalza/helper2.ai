@@ -70,8 +70,10 @@ Items are grouped by the order in which they matter. Inside a group, the first i
     (`--fail-on critical` in `cd.yml`) and make it a need of `staging` there
     ([ADR 0046](adr/operations/0046-supply-chain.md)).
 - **Release branches** ([ADR 0048](adr/operations/0048-release-branches-and-version-tags.md)):
-  - before the first release from a `release/*` branch: bind the OpenBao role `deploy` to `refs/heads/release/*` and
-    `refs/tags/v*` too (incalza-me-infra), and add a branch ruleset on `release/*` like `main`;
+  - before the change merges (every release needs it): let the OpenBao role `deploy-prod` read `ci/harbor`, check
+    the Harbor robot may create tags; before the first push to a `release/*` branch: bind the role `deploy` to
+    `refs/heads/release/*` too (incalza-me-infra), and add a branch ruleset on `release/*` like `main`;
+  - a narrower Harbor robot for the prod deployer that may only add tags, not push images;
   - a release from a release branch skips staging. If hotfixes become frequent, give them a staging run first (a
     second staging namespace, or staging switched to the release branch for the time of the fix).
 

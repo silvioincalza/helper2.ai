@@ -1,7 +1,7 @@
 # Flowchart: which push builds an image, which tag it gets, and how a release from main or from a release branch
 # reaches prod under its version (ADR 0048).
-# Source of truth: .github/workflows/cd.yml (on push, staging), release.yml (check step, staged, retag, prod),
-#   deploy.yml (Resolve tag), deploy/k8s/Makefile (image, retag).
+# Source of truth: .github/workflows/cd.yml (on push, staging), release.yml (check step, staged, prod),
+#   deploy.yml (Resolve tag, with make retag), deploy/k8s/Makefile (image, retag).
 # Render: cd docs/diagrams && d2 fmt flow-0048-release-branches-and-version-tags.d2 && d2 flow-0048-release-branches-and-version-tags.d2 flow-0048-release-branches-and-version-tags.svg
 
 ...@style
@@ -26,7 +26,7 @@ fail: "Fail: no release,\nno deploy" {class: fail}
 staged: "Commit's CD run passed?\n(main: staging passed;\nrelease/*: warning, no staging)" {class: decision}
 retag: "make retag: Harbor adds X.Y.Z\nto the commit's image\n(same digest; same digest again = no-op)" {class: data}
 approve: "Prod approval" {class: decision}
-resolve: "deploy.yml: X.Y.Z → commit of vX.Y.Z,\non main or release/*?\nnot older than what runs?" {class: decision}
+resolve: "deploy.yml: X.Y.Z → commit of vX.Y.Z,\non main or release/*? (a commit tag:\nmain only); not older than what runs?" {class: decision}
 prod: "Prod runs helper2:X.Y.Z" {class: end}
 
 pr -> light
@@ -45,8 +45,8 @@ onbranch -> patch: yes
 patch -> fail: no
 patch -> staged: yes
 staged -> fail: no
-staged -> retag: yes {class: hot}
-retag -> approve: {class: hot}
+staged -> approve: yes {class: hot}
 approve -> resolve: yes {class: hot}
 resolve -> fail: no
-resolve -> prod: yes {class: hot}
+resolve -> retag: yes {class: hot}
+retag -> prod: {class: hot}

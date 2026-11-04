@@ -76,10 +76,10 @@ release: release.yml (push of a tag vX.Y.Z) {
   valid -> publish: yes {class: hot}
   publish -> staged: {class: hot}
   staged -> blocked: no
-  staged -> retag: yes {class: hot}
-  retag -> approve: {class: hot}
+  staged -> approve: yes {class: hot}
   approve -> wait: no
-  approve -> prod: yes {class: hot}
+  approve -> retag: yes {class: hot}
+  retag -> prod: {class: hot}
   prod -> live: {class: hot}
 }
 

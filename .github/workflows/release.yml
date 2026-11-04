@@ -172,31 +172,11 @@ jobs:
           mv "$dir/sbom.cdx.json" "$dir/helper2-$TAG.cdx.json"
           gh release upload "$TAG" "$dir/helper2-$TAG.cdx.json" -R "$GITHUB_REPOSITORY" --clobber
 
-  # The image of the commit gets the release tag X.Y.Z in Harbor: the same digest, never rebuilt (ADR 0028, 0048).
-  # Self-hosted: Harbor is reachable only from the mesh. The OpenBao role `deploy` must accept refs/tags/v*.
-  retag:
-    needs: [release, staged]
-    runs-on: [self-hosted, incalzame]
-    timeout-minutes: 10
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/bao-login
-        with:
-          addr: ${{ vars.BAO_ADDR }}
-          audience: ${{ vars.BAO_AUDIENCE }}
-          role: deploy
-      - env:
-          COMMIT: ${{ needs.release.outputs.commit }}
-          VERSION: ${{ needs.release.outputs.version }}
-        run: make -C deploy/k8s retag TAG="$COMMIT" VERSION="$VERSION"
-
   # Only after every check above: the image of that commit, built by CD (and, from main, run on staging), goes to
-  # prod under its version tag.
+  # prod under its version tag. deploy.yml adds the tag X.Y.Z to that image in Harbor after the prod approval
+  # (ADR 0048), so no job reaches Harbor's credentials from a tag push before a reviewer said yes.
   prod:
-    needs: [release, staged, retag]
+    needs: [release, staged]
     uses: ./.github/workflows/deploy.yml
     permissions:
       contents: read

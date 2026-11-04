@@ -10,22 +10,28 @@ rebuilds one.
 
 ## Decision
 1. **Image tags.** CD tags every image with its commit (12 characters), on `main` and on a release branch. A
-   release adds its version: `release.yml` runs `make retag`, and Harbor adds the tag `X.Y.Z` to the image of the
-   commit (`POST …/artifacts/<commit>/tags`). One digest, two tags, nothing rebuilt. Run again, it does nothing;
+   release adds its version: the prod deploy job runs `make retag`, and Harbor adds the tag `X.Y.Z` to the image of
+   the commit (`POST …/artifacts/<commit>/tags`). One digest, two tags, nothing rebuilt. Run again, it does nothing;
    `X.Y.Z` already on another digest fails, and Harbor's tag-immutability rule refuses to move it anyway.
+   The retag runs in `deploy.yml`, after the prod approval and before the release commit is checked out: no job
+   reaches Harbor's credentials from a tag push before a reviewer said yes, and an older release, whose Makefile
+   has no `retag`, can still be deployed by version (a rollback).
 2. **Prod runs the version.** The `prod` job of `release.yml` deploys `X.Y.Z`. `deploy.yml` takes a 12-character
    commit or a version; a version resolves to the commit of the tag `vX.Y.Z`, and the chart is checked out from that
-   commit, as before. The "older than what runs" check compares commits, so the same commit under a commit tag and
+   commit, as before. The release notes name both tags. The "older than what runs" check compares commits, so the same commit under a commit tag and
    under a version tag is not a rollback.
 3. **Release branches `release/*`.** A push runs `cd.yml`: CI, then the `image` and `scan` jobs, with the commit
    tag. No staging deploy: staging follows `main`. A pull request to a release branch runs `ci.yml` like any other.
 4. **Patch only on a release branch.** A tag on a commit that is not on `main` must be on a `release/*` branch and
    must be the next patch after the release just below it in version order (`v1.0.5` → `v1.0.6`). Any other version
    fails the release check. From `main`, the rules of [0029](0029-release-versioning.md) stay as they are.
-5. **What may deploy.** `deploy.yml` hands deploy secrets only to a commit on `main` or on a `release/*` branch.
-6. **Outside this repository.** The OpenBao role `deploy`, the only one that reads `ci/harbor`, accepts
-   `refs/heads/main`, `refs/heads/release/*` and `refs/tags/v*`; the `release/*` branches have a ruleset like `main`
-   (pull requests only, no force push, no deletion).
+5. **What may deploy.** `deploy.yml` hands deploy secrets to a commit on `main`, and to a commit of a `release/*`
+   branch only under its release version (checked by `release.yml`, approved on `prod`); a commit tag of a release
+   branch is refused.
+6. **Outside this repository, required before this change runs.** The OpenBao role `deploy` (CD's `image` job)
+   also accepts `refs/heads/release/*`; the role `deploy-prod` also reads `ci/harbor`; the Harbor robot in
+   `ci/harbor` may create tags; the `release/*` branches have a ruleset like `main` (pull requests only, no force
+   push, no deletion). The `prod` environment needs no change: the prod deploy runs on the tag ref `v*`.
 
 ## Consequences
 - Harbor, the cluster and the release notes name the version that runs on prod; the commit tag stays for staging
@@ -36,8 +42,11 @@ rebuilds one.
   image went through CI, the Grype scan and the prod approval.
 - A release branch made before this decision carries the old `release.yml`, which refuses its tags: cut release
   branches from a commit that has this change.
-- A version tag that `retag` never added (a manual prod run with a version before its release ran) fails the
-  rollout, and Helm rolls back.
+- Every prod deploy by version adds the version tag first, so a manual prod run by version works too. Staging
+  takes a version only once a prod deploy has tagged it.
+- The guide-answer cache is kept per build (`H2_BUILD_VERSION`, the image tag): the first prod deploy by version
+  of a commit starts with an empty cache, once.
+- The prod deployer can now read the Harbor robot: it can push images, after the approval only.
 
 ## Alternatives considered
 - Rebuild the image on the release tag — prod would run a fresh build, not the image CI and staging had.
@@ -48,11 +57,13 @@ rebuilds one.
 
 ## Code
 - `deploy/k8s/Makefile` (`retag`) — the version tag on a pushed image, through Harbor's API.
-- `.github/workflows/release.yml` (`release` check step, `staged`, `retag`, `prod`) — release branches, patch only,
-  the version tag, prod by version.
-- `.github/workflows/deploy.yml` (Resolve tag) — commit or version, main or release branch, the rollback check.
+- `.github/workflows/release.yml` (`release` check step, `staged`, `prod`) — release branches, patch only, prod by
+  version.
+- `.github/workflows/deploy.yml` (Resolve tag) — commit or version, main or release branch, the rollback check,
+  `make retag` on prod.
 - `.github/workflows/cd.yml` — `release/**` pushes, staging on `main` only.
-- OpenBao role `deploy` and the GitHub ruleset for `release/*` — outside this repo (incalza-me-infra, repo settings).
+- OpenBao roles `deploy` and `deploy-prod`, the Harbor robot, the GitHub ruleset for `release/*` — outside this repo
+  (incalza-me-infra, Harbor, repo settings).
 
 ## Diagrams
 [flow](../../diagrams/flow-0048-release-branches-and-version-tags.svg) · [sequence](../../diagrams/sequence-0048-release-branches-and-version-tags.svg)

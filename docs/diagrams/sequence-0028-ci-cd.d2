@@ -32,7 +32,7 @@ login: OpenBao login (OIDC) {
 }
 
 tag: Resolve tag {
-  runner -> runner: "tag = 12 hex chars (no ref with that name)\nor X.Y.Z (the commit of tag vX.Y.Z);\ncommit on origin/main or a release/* branch"
+  runner -> runner: "tag = 12 hex chars (no ref with that name)\nor X.Y.Z (the commit of tag vX.Y.Z);\ncommit on origin/main (a version:\nor a release/* branch); prod by version:\nmake retag (0048)"
   runner -> runner: "git checkout <commit>:\nchart and image match"
   runner -> bao: "kv get ci/prod field app_env"
   bao -> runner: "prod/app.env"

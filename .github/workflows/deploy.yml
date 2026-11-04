@@ -105,10 +105,14 @@ jobs:
           }
           git fetch --quiet origin +refs/heads/main:refs/remotes/origin/main '+refs/heads/release/*:refs/remotes/origin/release/*'
           sha=$(commit_of "$tag") || exit 1
-          # Only commits that reached main or a release branch (and so passed CI) may run with deploy secrets.
-          if ! git merge-base --is-ancestor "$sha" refs/remotes/origin/main \
-            && [[ -z $(git for-each-ref --contains "$sha" refs/remotes/origin/release/) ]]; then
-            echo "$tag is not on main nor on a release/* branch"; exit 1
+          # Only commits that reached main (and so passed CI) may run with deploy secrets. A release version may also
+          # name a commit of a release/* branch (ADR 0048): release.yml checked it, a reviewer approved it.
+          if ! git merge-base --is-ancestor "$sha" refs/remotes/origin/main; then
+            if [[ ! $tag =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "$tag is not on main (a release/* commit deploys only as its release version)"; exit 1
+            fi
+            [[ -n $(git for-each-ref --contains "$sha" refs/remotes/origin/release/) ]] \
+              || { echo "$tag is not on main nor on a release/* branch"; exit 1; }
           fi
           # Never go back by accident: a run left waiting at the prod approval for days deploys its own,
           # older commit when approved (3 Nov 2026, prod). Older than what runs = rollback: true only.
@@ -120,6 +124,12 @@ jobs:
             && [[ $running_sha != "$sha" ]] \
             && git merge-base --is-ancestor "$sha" "$running_sha"; then
             echo "::error::$tag is older than $running, which $ENV runs; a rollback needs rollback: true"; exit 1
+          fi
+          # Prod by version: Harbor adds the tag X.Y.Z to the commit's image (same digest, ADR 0048). Here, after the
+          # approval and with this commit's Makefile: an older release's Makefile has no `retag`. Needs read on
+          # ci/harbor for the role deploy-prod. Staging takes a version only once its release has tagged it.
+          if [[ $ENV == prod && $tag =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            make retag TAG="${sha::12}" VERSION="$tag"
           fi
           # Chart and image from the same commit, so an old image never runs with a newer chart.
           git checkout --quiet --detach "$sha"

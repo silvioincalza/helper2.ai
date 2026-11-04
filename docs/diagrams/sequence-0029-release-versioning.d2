@@ -28,11 +28,10 @@ tag: Release vX.Y.Z {
   runner -> releases: "gh release create --verify-tag\nnotes = tag message + image\nhelper2:X.Y.Z (commit)" {class: hot}
   runner -> github: "job staged: the commit's CD run\n(waits while it runs)"
   github -> runner: "completed, success"
-  runner -> runner: "job retag (self-hosted): Harbor adds\nX.Y.Z to the commit's image (sequence 0048)"
   github -> owner: "job prod waits for the\napproval on environment prod"
   owner -> github: "approve"
   github -> prod: "deploy.yml env prod,\ntag = X.Y.Z" {class: hot}
-  prod -> prod: "helm upgrade; helper2.ai\nruns vX.Y.Z (sequence 0028)"
+  prod -> prod: "Harbor adds X.Y.Z to the commit's image\n(sequence 0048); helm upgrade;\nhelper2.ai runs vX.Y.Z (sequence 0028)"
 }
 
 blocked: Moving or deleting a release tag {
