@@ -1,0 +1,33 @@
+# Sequence: the owner opens the back office and follows a count into the filtered queue (ADR 0045).
+# Source of truth: frontend/src/pages/admin/AdminOverview.tsx, ReviewQueuePage.tsx,
+#   backend/src/main/java/ai/helper2/admin/usecase/GetOverview.java, admin/web/OverviewController.java,
+#   catalog/ReviewQueue.java (openCountsByKind), scout/internal/JdbcEnrichmentStore.java (pendingCount),
+#   platform/llm/BudgetLedger.java.
+# Render: cd docs/diagrams && d2 fmt sequence-0045-back-office.d2 && d2 sequence-0045-back-office.d2 sequence-0045-back-office.svg
+
+...@style
+
+shape: sequence_diagram
+
+owner: "Owner\n(admin host)" {class: person}
+spa: "Admin pages" {class: app}
+api: "Back office\n(admin module)" {class: app}
+db: PostgreSQL {class: data}
+redis: Redis {class: data}
+
+overview: Overview {
+  owner -> spa: "/admin" {class: hot}
+  spa -> api: "GET /api/v1/admin/overview"
+  api -> db: "open items per kind, backlog count,\nlast runs"
+  api -> redis: "today's count of each budget,\nweb credits"
+  api -> spa: "counts, counted at T\n(kept one minute)"
+  spa -> owner: "12 User report · 420 waiting ·\nEnrichment 120 of 500"
+}
+
+follow: Follow a count {
+  owner -> spa: "12 User report"
+  spa -> api: "GET /api/v1/admin/review-items?status=OPEN&kind=USER_REPORT"
+  api -> db: "page of open user reports"
+  api -> spa: "items"
+  spa -> owner: "/admin/review?kind=USER_REPORT"
+}

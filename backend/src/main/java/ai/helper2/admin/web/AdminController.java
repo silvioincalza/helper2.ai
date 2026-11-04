@@ -1,4 +1,4 @@
-package ai.helper2.scout.web;
+package ai.helper2.admin.web;
 
 import ai.helper2.api.generated.AdminApi;
 import ai.helper2.api.generated.model.ReviewItemDto;
@@ -87,7 +87,8 @@ class AdminController implements AdminApi {
             .resolvedAt(UtcTimes.odt(i.resolvedAt())).resolvedBy(i.resolvedBy());
     }
 
-    private static ScoutRunDto dto(RunSummary r) {
+    /** One Scout run as the contract shows it; the overview lists runs the same way. */
+    static ScoutRunDto dto(RunSummary r) {
         return new ScoutRunDto(r.getId(), r.getSourceId(), ScoutRunDto.StatusEnum.fromValue(r.getStatus().name()),
             UtcTimes.odt(r.getStartedAt()), r.getItemsSeen(), r.getItemsChanged())
             .finishedAt(UtcTimes.odt(r.getFinishedAt())).enrichmentsQueued(r.getEnrichmentsQueued()).message(r.getMessage());

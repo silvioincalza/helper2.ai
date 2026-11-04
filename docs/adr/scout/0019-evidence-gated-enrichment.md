@@ -87,7 +87,7 @@ source states. Every published value must point to the text it came from, and a 
 - `backend/src/main/resources/prompts/scout/enrich-v3.txt`.
 - `backend/src/main/java/ai/helper2/catalog/EnrichmentResults.java`, `catalog/internal/JdbcEnrichmentResults.java`.
 - `backend/src/main/java/ai/helper2/catalog/ReviewQueue.java`, `catalog/internal/ReviewDecisions.java`,
-  `catalog/usecase/ListReviewItems.java`, `catalog/usecase/ResolveReviewItem.java`, `scout/web/AdminController.java`.
+  `catalog/usecase/ListReviewItems.java`, `catalog/usecase/ResolveReviewItem.java`, `admin/web/AdminController.java`.
 - `deploy/monitoring/helper2-rules.yaml` — `Helper2ReviewBacklog`.
 
 ## Diagrams

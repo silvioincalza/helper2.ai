@@ -315,7 +315,7 @@ class SearchResources @JvmOverloads constructor(
             notices += Notice(NoticeCode.ALL_SOURCES_FAILED, "No source could be reached.")
         }
 
-        metrics.searchCompleted(partial, Duration.ofNanos(System.nanoTime() - startedNanos))
+        metrics.searchCompleted(partial, sorted.isEmpty(), Duration.ofNanos(System.nanoTime() - startedNanos))
         return SearchOutcome(
             request = request,
             interpretation = analyzed,

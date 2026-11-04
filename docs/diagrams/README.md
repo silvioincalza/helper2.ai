@@ -64,6 +64,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0042](../adr/frontend/0042-redesign-design-system-v4.md) | [flow](flow-0042-redesign.svg) | [sequence](sequence-0042-redesign.svg) | the redesign: home with the radar and pinned box, the folding title on phones, the guide on its own for a question and Ask the guide for a few words. |
 | [0043](../adr/scout/0043-enrichment-gap-round.md) | [flow](flow-0043-enrichment-gap-round.svg) | [sequence](sequence-0043-enrichment-gap-round.svg) | the gap round inside EnrichResource.attempt: when it reads a README or model card, and which run is saved. |
 | [0044](../adr/guide/0044-research-trail.md) | [flow](flow-0044-research-trail.svg) | [sequence](sequence-0044-research-trail.svg) | which queries and removed suggestions a guide answer lists in its research trail, and what a reused answer keeps. |
+| [0045](../adr/edge/0045-back-office.md) | [flow](flow-0045-back-office.svg) | [sequence](sequence-0045-back-office.svg) | the back office overview: one computation a minute, counts from PostgreSQL and Redis, and a count followed into the filtered queue. |
 
 ## Colors
 

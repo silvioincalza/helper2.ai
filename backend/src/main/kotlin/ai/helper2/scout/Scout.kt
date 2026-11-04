@@ -78,6 +78,9 @@ interface EnrichmentBacklog {
     /** Resources that still need enrichment (never run, LLM was down, or a retryable failure). */
     fun pending(limit: Int): List<UUID>
 
+    /** How many resources [pending] would return without a limit; for the back office overview. */
+    fun pendingCount(): Long
+
     /** The subset of [resourceIds] with enough source text for the model to cite, in the given order. */
     fun eligible(resourceIds: List<UUID>): List<UUID>
 }

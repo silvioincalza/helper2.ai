@@ -331,6 +331,7 @@ class RunScoutTest {
     private fun backlog(eligible: (List<UUID>) -> List<UUID> = { it }, pending: (Int) -> List<UUID>) = object : EnrichmentBacklog {
         override fun pending(limit: Int) = pending(limit)
         override fun eligible(resourceIds: List<UUID>) = eligible(resourceIds)
+        override fun pendingCount() = 0L
     }
 
     private fun model(available: Boolean) = object : EnrichmentModel {

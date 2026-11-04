@@ -9,7 +9,7 @@ import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.util.List;
 
-/** Metrics: per-source outcome/latency, cache events, partial-result frequency. No query text. */
+/** Metrics: per-source outcome/latency, cache events, partial-result and zero-result frequency. No query text. */
 class MicrometerSearchMetrics implements SearchMetrics {
 
     private final MeterRegistry registry;
@@ -37,8 +37,10 @@ class MicrometerSearchMetrics implements SearchMetrics {
     }
 
     @Override
-    public void searchCompleted(boolean partial, Duration latency) {
+    public void searchCompleted(boolean partial, boolean empty, Duration latency) {
         registry.counter("helper2.search.requests", "partial", Boolean.toString(partial)).increment();
+        // Zero-result rate: a count only, never the query (Privacy page).
+        registry.counter("helper2.search.results", "empty", Boolean.toString(empty)).increment();
         Timer.builder("helper2.search.latency").publishPercentiles(0.5, 0.95).register(registry).record(latency);
     }
 

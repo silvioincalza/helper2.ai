@@ -10,6 +10,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.data.redis.core.script.RedisScript;
 
 /** Redis is optional: when it is down the budget counts in memory without waiting on Redis each time. */
@@ -25,6 +26,19 @@ class RedisCallCounterTest {
             calls++;
             throw new RedisConnectionFailureException("down");
         }
+
+        @Override
+        public ValueOperations<String, String> opsForValue() {
+            calls++;
+            throw new RedisConnectionFailureException("down");
+        }
+    }
+
+    @Test
+    void aReadRedisCannotAnswerIsUnknownNotZero() {
+        RedisCallCounter counter = new RedisCallCounter(new DownRedis(), TestPolicies.redis(new MovableClock(Instant.parse("2026-10-26T10:00:00Z"))));
+
+        assertThat(counter.current("guide", DAY)).isNull();
     }
 
     @Test

@@ -110,6 +110,18 @@ public class ReviewQueue {
         return new Page(items, total);
     }
 
+    /** Open items per kind, every kind listed (0 when none waits); for the back office overview. */
+    public java.util.Map<Kind, Long> openCountsByKind() {
+        java.util.Map<Kind, Long> counts = new java.util.EnumMap<>(Kind.class);
+        for (Kind kind : Kind.values()) {
+            counts.put(kind, 0L);
+        }
+        jdbc.sql("SELECT kind, count(*) AS n FROM review_item WHERE status = 'OPEN' GROUP BY kind")
+            .query((rs, i) -> counts.put(Kind.valueOf(rs.getString("kind")), rs.getLong("n")))
+            .list();
+        return counts;
+    }
+
     /** Items waiting for a person; for the review backlog gauge. */
     public long openCount() {
         return jdbc.sql("SELECT count(*) FROM review_item WHERE status = 'OPEN'").query(Long.class).single();

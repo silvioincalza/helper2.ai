@@ -20,3 +20,8 @@
 .h2-admin__note { display: inline-flex; flex-direction: column; gap: var(--space-1); font-size: 0.9rem; color: var(--ink-2); }
 .h2-admin__note input { min-height: var(--target-min); min-width: 16rem; }
 .h2-admin__id { font-family: var(--font-mono); font-size: 0.85rem; overflow-wrap: anywhere; }
+.h2-admin__h3 { margin: var(--space-3) 0 0; font: 500 1rem/1.3 var(--font-display); color: var(--ink); }
+.h2-admin__caption { text-align: left; font: 500 1rem/1.3 var(--font-display); color: var(--ink); padding-bottom: var(--space-2); }
+.h2-admin__usage { display: inline-flex; align-items: center; gap: var(--space-2); }
+.h2-admin__usage meter { width: 6rem; }
+.h2-admin__runs { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--space-2); }

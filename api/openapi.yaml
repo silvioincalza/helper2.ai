@@ -27,6 +27,7 @@ tags:
   - name: me
   - name: admin
   - name: audit
+  - name: overview
 
 paths:
   /search:
@@ -417,6 +418,24 @@ paths:
         '401': { $ref: '#/components/responses/Problem' }
         '403': { $ref: '#/components/responses/Problem' }
         '409': { $ref: '#/components/responses/Problem' }
+
+  /admin/overview:
+    get:
+      tags: [overview]
+      operationId: getAdminOverview
+      summary: What needs a person now, for the back office landing page.
+      description: >-
+        Open review items per kind, the enrichment backlog, today's model budgets and web credits, the recent Scout
+        runs and the failed ones of the last 24 hours. Counts only, no personal data. Computed at most once a minute
+        (generatedAt says when).
+      responses:
+        '200':
+          description: The overview.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminOverview' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
 
   /admin/audit:
     get:
@@ -1333,6 +1352,45 @@ components:
       type: string
       description: COURSE_CANDIDATE is a course page found by Scout and not yet in the catalog (no resource; URL in details).
       enum: [ENRICHMENT_VALIDATION, RELATIONSHIP_CANDIDATE, USER_REPORT, COURSE_CANDIDATE]
+
+    AdminOverview:
+      type: object
+      required: [generatedAt, openReviewItems, enrichmentBacklog, budgets, recentRuns, failedRunsLast24h]
+      properties:
+        generatedAt: { type: string, format: date-time }
+        openReviewItems:
+          type: array
+          description: Every kind, 0 when none waits.
+          items: { $ref: '#/components/schemas/ReviewKindCount' }
+        enrichmentBacklog: { type: integer, minimum: 0, description: Resources waiting for enrichment (the Scout takes them by its own order). }
+        budgets:
+          type: array
+          description: Every daily model budget, by name.
+          items: { $ref: '#/components/schemas/BudgetToday' }
+        webCredits:
+          oneOf: [{ $ref: '#/components/schemas/WebCredits' }, { type: 'null' }]
+          description: Live web search calls today; null when the metered source is off or its counter cannot answer.
+        recentRuns:
+          type: array
+          description: The last Scout runs, newest first (at most 10).
+          items: { $ref: '#/components/schemas/ScoutRun' }
+        failedRunsLast24h: { type: integer, minimum: 0 }
+        grafanaUrl: { type: [string, 'null'], format: uri, description: "The metrics dashboard for trends (H2_ADMIN_GRAFANA_URL); null when not set." }
+
+    ReviewKindCount:
+      type: object
+      required: [kind, count]
+      properties:
+        kind: { $ref: '#/components/schemas/ReviewKind' }
+        count: { type: integer, minimum: 0 }
+
+    BudgetToday:
+      type: object
+      required: [name, dailyLimit]
+      properties:
+        name: { type: string, description: "guide, translation, enrichment, enrichment-gap, classifier, tool-guide, ..." }
+        dailyLimit: { type: integer, description: Model calls a UTC day; 0 turns the use off. }
+        usedToday: { type: [integer, 'null'], minimum: 0, description: Calls counted today across every replica; null when the shared counter cannot answer. }
 
     ReviewItemPage:
       type: object
