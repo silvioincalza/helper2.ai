@@ -37,6 +37,9 @@ class AdminOverviewApiIT extends ApiTestBase {
         .doesNotHaveDuplicates()
         .isSorted()
         .contains("guide");
+    assertThat(budgets)
+        .as("never a budget per visitor")
+        .noneMatch(name -> name.startsWith("guide-client:"));
   }
 
   /** One computation a minute: a second call shows the same overview. */

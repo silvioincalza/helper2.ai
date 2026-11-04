@@ -27,4 +27,25 @@ class BudgetLedgerTest {
             new BudgetLedger.Reading("enrichment", 500, null),
             new BudgetLedger.Reading("guide", 200, null));
   }
+
+  @Test
+  void theListIsBoundedAndAListedBudgetKeepsItsPlace() {
+    BudgetLedger ledger = new BudgetLedger(null, clock);
+    for (int i = 0; i < BudgetLedger.MAX_LISTED + 10; i++) {
+      ledger.declare("b" + i, 1);
+    }
+    ledger.declare("b0", 5);
+
+    assertThat(ledger.today())
+        .hasSize(BudgetLedger.MAX_LISTED)
+        .contains(new BudgetLedger.Reading("b0", 5, null));
+  }
+
+  @Test
+  void anUnlistedCounterCountsButNeverDeclares() {
+    BudgetLedger ledger = new BudgetLedger(null, clock);
+    new DailyBudget(3, clock, "guide-client:abc", ledger.unlisted());
+
+    assertThat(ledger.today()).isEmpty();
+  }
 }
