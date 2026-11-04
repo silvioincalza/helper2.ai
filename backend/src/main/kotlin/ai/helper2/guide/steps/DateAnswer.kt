@@ -1,4 +1,4 @@
-package ai.helper2.guide.usecase
+package ai.helper2.guide.steps
 
 import ai.helper2.guide.Candidate
 import ai.helper2.guide.DateWindow

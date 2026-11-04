@@ -3,7 +3,7 @@
 # over events only. At most one round trip: a request with a clarification is never asked back.
 # Source of truth: frontend/src/components/guide/ (Clarify.tsx, Understood.tsx: "Understood as" chips),
 #   backend/src/main/java/ai/helper2/guide/web/GuideStreamController.java (events planned, understood, clarify, answer),
-#   backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt, QuestionReader.kt (read, clarificationOf, askBackSubject),
+#   backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt, guide/steps/QuestionReader.kt (read, clarificationOf, askBackSubject),
 #   Question.kt (askBack, namesakes), PickAnswer.kt (newest, picks), DateAnswer.kt, Intents.kt (AmbiguousSubject),
 #   backend/src/main/kotlin/ai/helper2/guide/GuideCost.kt (GuideAnswerCache.isCacheable).
 # Render: cd docs/diagrams && d2 fmt sequence-0032-guide-intents.d2 && d2 sequence-0032-guide-intents.d2 sequence-0032-guide-intents.svg

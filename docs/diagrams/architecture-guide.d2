@@ -1,5 +1,6 @@
 # Architecture, view 3 of 6: one guide question. The guide module, the search it reuses, the LLM layer and its guards.
 # Source of truth: backend/src/main/kotlin/ai/helper2/guide/Guide.kt, guide/GuideCost.kt,
+#   guide/usecase/AskGuide.kt, guide/steps/* (QuestionReader, PickAnswer, CompareAnswer, ExplainAnswer, DateAnswer),
 #   backend/src/main/java/ai/helper2/guide/internal/*, backend/src/main/java/ai/helper2/platform/llm/*.
 # Render: cd docs/diagrams && d2 fmt architecture-guide.d2 && d2 architecture-guide.d2 architecture-guide.svg
 
@@ -18,7 +19,7 @@ browser: "Browser" {class: person}
 guide: "guide (Kotlin domain)" {
   class: group
   ctl: "GuideStreamController (SSE)" {class: app}
-  core: "AskGuide\nplan → retrieve → choose → check" {class: app}
+  core: "AskGuide (guide.usecase)\nplan → retrieve → choose → check\nsteps per intent (guide.steps)" {class: app}
   gate: "GuideValidator\nverbatim quote, candidate keys" {class: app}
   quota: "ClientQuota · GuideAnswerCache" {class: app}
   p_model: GuideModel {class: port}

@@ -15,6 +15,19 @@ import ai.helper2.guide.ReadingKey
 import ai.helper2.guide.ResearchTrail
 import ai.helper2.guide.SimilarQuestions
 import ai.helper2.guide.sha256Hex
+import ai.helper2.guide.steps.Asked
+import ai.helper2.guide.steps.CompareAnswer
+import ai.helper2.guide.steps.DateAnswer
+import ai.helper2.guide.steps.ExplainAnswer
+import ai.helper2.guide.steps.GuideSteps
+import ai.helper2.guide.steps.PickAnswer
+import ai.helper2.guide.steps.Question
+import ai.helper2.guide.steps.QuestionReader
+import ai.helper2.guide.steps.Reading
+import ai.helper2.guide.steps.ReasonCheckStep
+import ai.helper2.guide.steps.Retrieval
+import ai.helper2.guide.steps.askBack
+import ai.helper2.guide.steps.readingFilter
 import ai.helper2.search.Asker
 import ai.helper2.search.Feature
 import ai.helper2.search.Notice
@@ -99,15 +112,6 @@ class AskGuide(
         NoticeCode.GUIDE_DAILY_QUOTA,
         "You have used today's AI answers; showing the top search results. AI answers are back after 00:00 UTC.",
       )
-
-    /** Search rank of a kept pick as a low-cardinality tag: `1-3`, `4-8` or `9+`. */
-    @JvmStatic
-    fun rankBand(rank: Int): String =
-      when {
-        rank <= 3 -> "1-3"
-        rank <= 8 -> "4-8"
-        else -> "9+"
-      }
 
     /**
      * Above the slowest source's timeout plus the query translation: a subject still searching by

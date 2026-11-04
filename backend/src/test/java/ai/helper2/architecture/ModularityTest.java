@@ -35,8 +35,8 @@ class ModularityTest {
           .importPackages("ai.helper2");
 
   /**
-   * Packages that hold the business rules (Kotlin): the top-level packages and their use cases —
-   * not their web/cache/config/internal adapters.
+   * Packages that hold the business rules (Kotlin): the top-level packages, their use cases and the
+   * guide's answer steps — not their web/cache/config/internal adapters.
    */
   private static final String[] DOMAIN = {
     "ai.helper2.shared",
@@ -46,7 +46,8 @@ class ModularityTest {
     "ai.helper2.setup",
     "ai.helper2.search.usecase",
     "ai.helper2.scout.usecase",
-    "ai.helper2.guide.usecase"
+    "ai.helper2.guide.usecase",
+    "ai.helper2.guide.steps"
   };
 
   @Test

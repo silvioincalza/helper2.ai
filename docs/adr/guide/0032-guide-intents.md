@@ -323,9 +323,9 @@ exactly when expected ("new tools?", "Gemini", "what is Gemini?" are; "what is O
 
 ## Code
 - `backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt` — dispatch by intent, clarification answer.
-- `backend/src/main/kotlin/ai/helper2/guide/usecase/QuestionReader.kt` — plan, grounding, backup rules, window,
+- `backend/src/main/kotlin/ai/helper2/guide/steps/QuestionReader.kt` — plan, grounding, backup rules, window,
   `clarificationOf`, `askBackSubject`, about an event.
-- `backend/src/main/kotlin/ai/helper2/guide/usecase/PickAnswer.kt`, `CompareAnswer.kt`, `ExplainAnswer.kt`,
+- `backend/src/main/kotlin/ai/helper2/guide/steps/PickAnswer.kt`, `CompareAnswer.kt`, `ExplainAnswer.kt`,
   `DateAnswer.kt` — retrieval and answer per intent; `Question.kt` — step spans, searches, `askBack`, `namesakes`.
 - `backend/src/main/kotlin/ai/helper2/guide/Intents.kt` — `GuideIntent`, `IntentRules` (with `namesEvent`),
   `Clarification`, `SubjectKind`, `AmbiguousSubject`, `isSubject`;

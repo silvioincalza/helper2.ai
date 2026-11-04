@@ -20,6 +20,7 @@ import ai.helper2.guide.ProposedPick
 import ai.helper2.guide.READING_TYPES
 import ai.helper2.guide.ReasonCheck
 import ai.helper2.guide.ReasonClaim
+import ai.helper2.guide.steps.rankBand
 import ai.helper2.guide.wantsReading
 import ai.helper2.search.NoticeCode
 import ai.helper2.search.ResultObserver
@@ -726,7 +727,7 @@ class AskGuideTest {
   fun `rank bands keep the tag low-cardinality`() {
     assertEquals(
       listOf("1-3", "1-3", "4-8", "4-8", "9+", "9+"),
-      listOf(1, 3, 4, 8, 9, 24).map { AskGuide.rankBand(it) },
+      listOf(1, 3, 4, 8, 9, 24).map { rankBand(it) },
     )
   }
 

@@ -110,8 +110,8 @@ Inside the folded "How the guide decided" (`GuidePicks.FullAnswer` → `GuideAns
 - `api/openapi.yaml` — `GuideTrail`, `GuideTrailRemoved`, `GuideResponse.trail`.
 - `backend/src/main/kotlin/ai/helper2/guide/Guide.kt` — `ResearchTrail`, `RemovedSuggestion`, `TrailCheck`,
   `GuideValidator.Rejection.trailCheck`, `GuideValidator.removedOf`.
-- `backend/src/main/kotlin/ai/helper2/guide/usecase/Question.kt` — `Question.ran`, `GuideSteps.find`.
-- `backend/src/main/kotlin/ai/helper2/guide/usecase/PickAnswer.kt`, `CompareAnswer.kt`, `ExplainAnswer.kt`,
+- `backend/src/main/kotlin/ai/helper2/guide/steps/Question.kt` — `Question.ran`, `GuideSteps.find`.
+- `backend/src/main/kotlin/ai/helper2/guide/steps/PickAnswer.kt`, `CompareAnswer.kt`, `ExplainAnswer.kt`,
   `AskGuide.kt` (`answerByIntent`, `similarAnswer`).
 - `backend/src/main/kotlin/ai/helper2/guide/GuideCost.kt` — `SHAPE`.
 - `backend/src/main/java/ai/helper2/guide/web/GuideDtoMapper.java` — `trail`, `AI_WRITTEN_FIELDS`.
