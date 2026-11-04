@@ -19,18 +19,24 @@ import ai.helper2.search.SourceQuery
 import ai.helper2.search.descriptor
 import ai.helper2.search.hit
 import ai.helper2.shared.AudiencePath
+import ai.helper2.testing.MdcTraceIds
 import io.github.resilience4j.bulkhead.BulkheadConfig
 import io.github.resilience4j.bulkhead.BulkheadRegistry
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry
 import io.github.resilience4j.retry.RetryRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
+import io.micrometer.observation.Observation
 import java.time.Clock
 import java.time.Duration
 import java.time.ZoneOffset
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import kotlin.test.AfterTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import org.slf4j.MDC
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch
@@ -145,5 +151,22 @@ class GuideLimitsTest {
         val events = stream(mvc)
 
         assertTrue(events.contains("\"status\":504"), events)
+    }
+
+    @Test
+    fun `the deadline callback logs with the trace id of the question's request`() {
+        val bulkheads = BulkheadRegistry.of(BulkheadConfig.custom().maxConcurrentCalls(1).maxWaitDuration(Duration.ZERO).build())
+        bulkheads.bulkhead("guide")
+        val shared = GuideLimits(Resilience4jPolicies(CircuitBreakerRegistry.ofDefaults(), bulkheads, RetryRegistry.ofDefaults()),
+            Duration.ofMillis(100)).also { limits += it }
+        val request = Observation.start("http.server.requests", MdcTraceIds.registry())
+        val seen = CompletableFuture<String?>()
+
+        request.openScope().use {
+            shared.tryStart({ Thread.sleep(Duration.ofSeconds(30)) }, { seen.complete(MDC.get(MdcTraceIds.KEY)) })
+        }
+        request.stop()
+
+        assertEquals(MdcTraceIds.traceId(request), seen.get(5, TimeUnit.SECONDS))
     }
 }

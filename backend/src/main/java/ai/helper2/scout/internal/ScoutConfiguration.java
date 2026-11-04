@@ -29,6 +29,8 @@ import ai.helper2.scout.usecase.RunScout;
 import ai.helper2.scout.usecase.StartScoutRun;
 import ai.helper2.scout.ScoutStore;
 import io.micrometer.core.instrument.Gauge;
+import io.micrometer.context.ContextSnapshotFactory;
+import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
 import java.time.Clock;
@@ -156,8 +158,16 @@ class ScoutConfiguration {
         return new StartScoutRun(scoutRunner, audit);
     }
 
-    /** A run started from the admin page collects on its own virtual thread; the request answers at once. */
-    static final Executor RUN_THREADS = task -> Thread.ofVirtual().name("scout-run").start(task);
+    /** Only the observation: the run must not inherit the admin's SecurityContext (least privilege). */
+    private static final ContextSnapshotFactory RUN_CONTEXT = ContextSnapshotFactory.builder()
+        .captureKeyPredicate(ObservationThreadLocalAccessor.KEY::equals).build();
+
+    /**
+     * A run started from the admin page collects on its own virtual thread; the request answers at once. The thread
+     * carries the request's observation, so its log lines have the request's trace and span ids (ADR 0026).
+     */
+    static final Executor RUN_THREADS = task -> Thread.ofVirtual().name("scout-run")
+        .start(RUN_CONTEXT.captureAll().wrap(task));
 
     /**
      * At startup, run records still RUNNING belong to a replica that stopped mid-run (a crash, a deploy): closed as
