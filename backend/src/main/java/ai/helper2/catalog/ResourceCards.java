@@ -12,6 +12,7 @@ import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.DateFact;
 import ai.helper2.shared.ResourceId;
 import ai.helper2.shared.SourceMode;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -37,7 +38,28 @@ public class ResourceCards {
 
     /** The card of resource [id]; empty when it is gone or its records no longer merge. */
     public Optional<MergedResult> cardOf(UUID id) {
-        return store.findResource(id).flatMap(row -> card(row, store.recordsOf(id)));
+        return cardsOf(List.of(id)).stream().findFirst();
+    }
+
+    /**
+     * The cards of [ids] in the same order, in a fixed number of statements (the rows with their facts, then the
+     * records of all of them). An id whose resource is gone or whose records no longer merge has no card.
+     */
+    public List<MergedResult> cardsOf(List<UUID> ids) {
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        Map<UUID, ResourceRow> rows = store.findResources(ids).stream()
+            .collect(Collectors.toMap(ResourceRow::id, r -> r, (a, b) -> a));
+        Map<UUID, List<RecordRow>> records = store.recordsOf(rows.keySet());
+        List<MergedResult> out = new ArrayList<>();
+        for (UUID id : ids) {
+            ResourceRow row = rows.get(id);
+            if (row != null) {
+                card(row, records.getOrDefault(id, List.of())).ifPresent(out::add);
+            }
+        }
+        return out;
     }
 
     /**

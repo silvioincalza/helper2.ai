@@ -698,6 +698,19 @@ public class ResourceStore {
     }
 
     /**
+     * The rows of [ids] that exist, in no particular order, with their facts: four statements for any number of ids
+     * (the rows, then {@link #withFacts}). Served by resource_pkey.
+     */
+    public List<ResourceRow> findResources(Collection<UUID> ids) {
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        return withFacts(jdbc.sql("SELECT r.*, 0 AS score FROM resource r WHERE id = ANY(:ids)")
+            .param("ids", ids.stream().distinct().toArray(UUID[]::new))
+            .query(this::mapResource).list());
+    }
+
+    /**
      * The resource that now owns the record whose own URL has resource id [id]: when an npm package turns out
      * to belong to a GitHub repository, its record moves there and links to the package's id still resolve.
      * Served by source_record_identity_idx (same expression, same namespace as ResourceId).
@@ -714,11 +727,35 @@ public class ResourceStore {
     public List<RecordRow> recordsOf(UUID resourceId) {
         return jdbc.sql("SELECT * FROM source_record WHERE resource_id = :id ORDER BY source_id, retrieved_at DESC")
             .param("id", resourceId)
-            .query((rs, i) -> new RecordRow(
-                rs.getObject("id", UUID.class), rs.getString("source_id"), rs.getString("external_id"),
-                rs.getObject("resource_id", UUID.class), rs.getString("source_url"),
-                rs.getTimestamp("retrieved_at").toInstant(), rs.getString("fingerprint"), toHit(rs)))
+            .query(this::mapRecord)
             .list();
+    }
+
+    /**
+     * The records of every resource in [resourceIds] in one statement, grouped by resource, each group in the order
+     * of {@link #recordsOf(UUID)}. A resource without records has no entry. Served by source_record_resource_idx.
+     */
+    public Map<UUID, List<RecordRow>> recordsOf(Collection<UUID> resourceIds) {
+        if (resourceIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<UUID, List<RecordRow>> byResource = new HashMap<>();
+        jdbc.sql("""
+                SELECT * FROM source_record WHERE resource_id = ANY(:ids)
+                ORDER BY resource_id, source_id, retrieved_at DESC
+                """)
+            .param("ids", resourceIds.stream().distinct().toArray(UUID[]::new))
+            .query(this::mapRecord)
+            .list()
+            .forEach(r -> byResource.computeIfAbsent(r.resourceId(), k -> new ArrayList<>()).add(r));
+        return byResource;
+    }
+
+    private RecordRow mapRecord(ResultSet rs, int i) throws SQLException {
+        return new RecordRow(
+            rs.getObject("id", UUID.class), rs.getString("source_id"), rs.getString("external_id"),
+            rs.getObject("resource_id", UUID.class), rs.getString("source_url"),
+            rs.getTimestamp("retrieved_at").toInstant(), rs.getString("fingerprint"), toHit(rs));
     }
 
     public List<UUID> resourcesOfRecords(Collection<UUID> recordIds) {

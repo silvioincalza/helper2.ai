@@ -170,7 +170,7 @@ tasks.withType<Test>().configureEach {
 
 tasks.named<Test>("test") {
     useJUnitPlatform {
-        excludeTags("live", "eval", "eval-record")
+        excludeTags("live", "eval", "eval-record", "perf")
     }
 }
 
@@ -195,6 +195,18 @@ tasks.register<Test>("evalRecord") {
     useJUnitPlatform { includeTags("eval-record") }
     systemProperty("helper2.dotenv-import", "optional:file:../.env[.properties]")
     systemProperty("helper2.embedding.api-key", System.getenv("H2_NVIDIA_API_KEY") ?: "")
+    outputs.upToDateWhen { false }
+}
+
+// Latency tests on a seeded catalog (Postgres in a container), before/after numbers for a PR: ./gradlew perfTest
+// Prints p50/p95/p99 and writes them to build/perf/. Not part of test: they take minutes and the numbers depend on the machine.
+tasks.register<Test>("perfTest") {
+    description = "Runs @Tag(\"perf\") tests: latency percentiles on a seeded catalog."
+    group = "verification"
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    useJUnitPlatform { includeTags("perf") }
+    testLogging { showStandardStreams = true }
     outputs.upToDateWhen { false }
 }
 

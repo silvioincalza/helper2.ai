@@ -4,9 +4,7 @@ import ai.helper2.catalog.ResourceCards;
 import ai.helper2.catalog.internal.ResourceStore;
 import ai.helper2.search.MergedResult;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 /** The home page's upcoming events. */
@@ -21,12 +19,8 @@ public class ListUpcomingEvents {
         this.cards = cards;
     }
 
-    /** Events that have not ended by [today], soonest first, as the same cards search shows. */
+    /** Events that have not ended by [today], soonest first, as the same cards search shows; six statements for any limit. */
     public List<MergedResult> list(Instant today, int limit) {
-        List<MergedResult> out = new ArrayList<>();
-        for (UUID id : store.upcomingEvents(today, limit)) {
-            cards.cardOf(id).ifPresent(out::add);
-        }
-        return out;
+        return cards.cardsOf(store.upcomingEvents(today, limit));
     }
 }
