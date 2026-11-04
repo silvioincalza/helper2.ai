@@ -24,9 +24,10 @@ internals. Microservices would add network calls and deploys without a scaling n
    (Spring AI, Redis, Java Database Connectivity (JDBC)). The `sources` module implements `SearchSource` and `Collector` for each
    public application programming interface (API). The `catalog` module implements `ResultObserver`, `RecordedOutcomes` and two
    `SearchSource`s over PostgreSQL.
-   The base package of a Java module holds only what other modules use. `catalog` keeps `ResourceCatalog`,
-   `ReviewQueue`, `Embedder` and `ResourceDetail` there; its adapters and its configuration
-   (`CatalogConfiguration`, `CatalogSearchSource`, `SemanticSearchSource`, `ResourceCards`) are in `catalog.internal`.
+   The base package of a Java module holds only what other modules use. `catalog` keeps `ReviewQueue`,
+   `Embedder`, `EnrichmentFacts` and `ResourceDetail` there, and its use cases in `catalog.usecase`; its adapters and
+   its configuration (`CatalogConfiguration`, `CatalogResultObserver`, `CatalogSearchSource`, `SemanticSearchSource`,
+   `ResourceCards`) are in `catalog.internal`.
    `sources` has no API: its base package is empty, and its own configuration wires its adapters into the ports of
    `search` and `scout`.
 4. **One class per use case.** What a caller can ask a module to do lives in its `usecase` sub-package, one

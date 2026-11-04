@@ -110,7 +110,7 @@ and how many web credits the day has used. Two sources can describe the same res
 - `backend/src/main/java/ai/helper2/search/internal/JdbcWebResultStore.java`, `search/WebSearch.kt` — the metered source's
   store and quota ([0037](0037-tavily-store-and-daily-quota.md)).
 - `backend/src/main/java/ai/helper2/search/web/SearchController.java` — `GET /api/v1/search`, `GET /api/v1/sources`.
-- `backend/src/main/java/ai/helper2/catalog/ResourceCatalog.java` — `ResultObserver` implementation.
+- `backend/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java` — `ResultObserver` implementation.
 
 ## Diagrams
 [flow](../../diagrams/flow-0008-federated-search.svg) · [sequence](../../diagrams/sequence-0008-federated-search.svg)

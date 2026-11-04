@@ -106,7 +106,7 @@ used up. The counts must hold across 3 replicas, store no address and no query t
 - `backend/src/main/kotlin/ai/helper2/search/WebSearch.kt` — `Asker`, `IntentClass`, `WebFreshness`, `WebSearchQuota`, `WebCredits`.
 - `backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — store first, quota, `webSearchesLeft`.
 - `backend/src/main/kotlin/ai/helper2/search/Ports.kt` — `WebResultStore`, `WebResultRetention`, `ResultObserver.recordedHits`.
-- `backend/src/main/java/ai/helper2/search/internal/JdbcWebResultStore.java`, `catalog/ResourceCatalog.java` (`recordedHits`).
+- `backend/src/main/java/ai/helper2/search/internal/JdbcWebResultStore.java`, `catalog/internal/CatalogResultObserver.java` (`recordedHits`).
 - `backend/src/main/kotlin/ai/helper2/search/usecase/PurgeExpiredData.kt`, `search/config/SearchRetentionSchedule.java`.
 - `backend/src/main/java/ai/helper2/platform/quota/` — `QuotaCounter`, `RedisQuotaCounter` (Lua), `QuotaKeys` (HMAC).
 - `backend/src/main/java/ai/helper2/sources/tavily/TavilySource.java` — the metered descriptor.

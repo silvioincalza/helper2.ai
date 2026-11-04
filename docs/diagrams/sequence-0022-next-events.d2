@@ -1,7 +1,7 @@
 # Sequence: the ai-deadlines collector stores a conference's next edition, then the home page lists it.
 # Source of truth: backend/src/main/java/ai/helper2/sources/aideadlines/AiDeadlinesCollector.java,
 #   backend/src/main/java/ai/helper2/catalog/internal/ResourceStore.java (refreshEventDates, upcomingEvents),
-#   backend/src/main/java/ai/helper2/catalog/ResourceCatalog.java (index), usecase/ListUpcomingEvents.java, ResourceCards.java,
+#   backend/src/main/java/ai/helper2/catalog/usecase/IndexResources.java (index), usecase/ListUpcomingEvents.java, ResourceCards.java,
 #   backend/src/main/java/ai/helper2/catalog/web/ResourcesController.java, frontend/src/components/NextEvents.tsx.
 # Render: cd docs/diagrams && d2 fmt sequence-0022-next-events.d2 && d2 sequence-0022-next-events.d2 sequence-0022-next-events.svg
 
@@ -13,7 +13,7 @@ runner: RunScout {class: app}
 col: AiDeadlinesCollector {class: app}
 gh: "GitHub contents API" {class: ext}
 raw: "raw.githubusercontent.com" {class: ext}
-cat: ResourceCatalog {class: app}
+cat: IndexResources {class: app}
 home: "NextEvents\n(home page)" {class: person}
 ctrl: ResourcesController {class: app}
 details: ListUpcomingEvents {class: app}

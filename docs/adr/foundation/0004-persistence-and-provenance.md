@@ -46,12 +46,12 @@ the search down.
    The events seed also removes the curated events that are not in its research file ([0022](../scout/0022-next-events.md)).
 6. **Catalog writes off the request path.** `SearchResources` reads first-discovery dates in one batched
    query (`ResultObserver.firstDiscovered`), then hands only the results fetched live in this search to
-   `ResultObserver.record`. `ResourceCatalog.record` queues the write in `ObservationQueue`: one thread
+   `ResultObserver.record`. `CatalogResultObserver.record` queues the write in `ObservationQueue`: one thread
    (`catalog-observations`), a bounded queue (`helper2.catalog.observation-queue`, 256). A full queue drops
    the new write. Meters: `helper2.catalog.observations{outcome=written|dropped|failed}` and
-   `helper2.catalog.observations.queued`. The Scout writes synchronously (`ResourceCatalog.index`).
+   `helper2.catalog.observations.queued`. The Scout writes synchronously (`IndexResources.index`).
 7. **The catalog owns its tables.** Other modules write through catalog ports: search through `ResultObserver`,
-   the Scout through `ResourceCatalog.index`, `ReviewQueue` and `EnrichmentResults` ([0019](../scout/0019-evidence-gated-enrichment.md)).
+   the Scout through `IndexResources.index`, `ReviewQueue` and `EnrichmentResults` ([0019](../scout/0019-evidence-gated-enrichment.md)).
    The SQL is in `catalog/internal` (`ResourceStore`, `JdbcEnrichmentResults`, `IssueReports`, `ReviewDecisions`);
    catalog use cases call those classes and hold no SQL of their own.
 8. **Model answers shared by the replicas in `ai_cache`.** One table, owned by the open `platform` module
@@ -109,7 +109,8 @@ the search down.
 
 ## Code
 - `backend/src/main/kotlin/ai/helper2/shared/CanonicalUrl.kt`, `ResourceId.kt`, `DateFact.kt` — identity and dates.
-- `backend/src/main/java/ai/helper2/catalog/ResourceCatalog.java` — `ResultObserver`, `index`.
+- `backend/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java` — `ResultObserver`.
+- `backend/src/main/java/ai/helper2/catalog/usecase/IndexResources.java` — `index`, the Scout's write.
 - `backend/src/main/java/ai/helper2/catalog/internal/ObservationQueue.java` — background writer.
 - `backend/src/main/java/ai/helper2/catalog/internal/ResourceStore.java` — upserts, origin rank, labels, moved
   reports, orphan deletion.

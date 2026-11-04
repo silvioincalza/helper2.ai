@@ -7,7 +7,7 @@
 #   backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt, ResultMerger.kt, Ranking.kt, Filtering.kt,
 #   backend/src/main/java/ai/helper2/search/cache/RedisSearchCache.java,
 #   backend/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java,
-#   backend/src/main/java/ai/helper2/catalog/ResourceCatalog.java, catalog/internal/ObservationQueue.java.
+#   backend/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java, catalog/internal/ObservationQueue.java.
 # Render: cd docs/diagrams && d2 fmt sequence-0008-federated-search.d2 && d2 sequence-0008-federated-search.d2 sequence-0008-federated-search.svg
 
 ...@style
@@ -23,7 +23,7 @@ idx: "CatalogSearchSource\n(helper2-index)" {class: app}
 hf: "HuggingFaceModelsSource\n(slow today)" {class: app}
 npm: "NpmSource\n(down for an hour)" {class: app}
 merger: ResultMerger {class: app}
-catalog: ResourceCatalog {class: app}
+catalog: CatalogResultObserver {class: app}
 health: "SourceHealth\n(this replica)" {class: data}
 list: ListSources {class: app}
 policies: Resilience4jPolicies {class: app}
