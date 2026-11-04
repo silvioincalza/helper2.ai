@@ -123,6 +123,9 @@ redis:
     enabled: true
     existingSecret: ""
     existingSecretKey: H2_REDIS_PASSWORD
+    # Only with existingSecret: the chart cannot see that Secret change. After a rotation, raise this number and
+    # deploy: Redis and the app restart and read the new password (annotation checksum/redis-auth-revision).
+    revision: 0
   resources:
     requests: { cpu: 20m, memory: 64Mi }
     limits: { memory: 192Mi }

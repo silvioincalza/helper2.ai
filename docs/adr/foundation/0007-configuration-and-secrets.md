@@ -35,7 +35,9 @@ or in GitHub settings, and the deploy must not need a person to copy them.
    The app reads it with `envFrom`; Postgres, Redis and the backup job read single keys. The job deletes
    the file and the kubeconfig at the end, even on failure.
 6. **Restart on change.** The app pod carries `checksum/env` of the file, and Redis `checksum/auth` of its
-   password, so a changed value restarts them on the next deploy.
+   password, so a changed value restarts them on the next deploy. With `redis.auth.existingSecret` the chart cannot
+   read the password: both pods carry `checksum/redis-auth-revision` with the number `redis.auth.revision` instead,
+   and a rotation is "update the Secret, raise the revision, deploy".
 7. **Values that are not secret** (database address, Redis host, profiles, Scout settings, tracing endpoint,
    management port 8081) are set in the chart's Deployment, per environment through `values-<env>.yaml`.
 
@@ -51,6 +53,9 @@ or in GitHub settings, and the deploy must not need a person to copy them.
 - Spring Cloud Config — a config server for one service.
 - Plain Spring names (`SPRING_DATASOURCE_URL`) — long, tied to Spring's internal property names, and
   mixed with our own settings under no common prefix.
+- A checksum of the existing Redis Secret read with Helm's `lookup` — needs read access to Secrets at deploy time
+  and renders nothing in `helm template` (CI); a controller that restarts pods on Secret changes (Reloader) — one
+  more component. A revision number in the values is explicit and testable.
 
 ## Code
 - `backend/src/main/resources/application.yaml` — every `H2_` variable, defaults, profiles.
@@ -58,12 +63,12 @@ or in GitHub settings, and the deploy must not need a person to copy them.
 - `deploy/k8s/Makefile` (`credentials`, `backup-credentials`, `deploy`) — writes and uses the secrets.
 - `.github/actions/bao-login/action.yml`, `.github/workflows/deploy.yml` — OIDC login, `app_env` to file.
 - `deploy/helm/helper2/templates/_helpers.tpl` (`helper2.env`, `helper2.redisPasswordFrom`),
-  `templates/secret.yaml`, `templates/app.yaml` — Secret and pod environment.
+  `templates/secret.yaml`, `templates/app.yaml`, `templates/redis.yaml` — Secret, pod environment, restart
+  annotations.
 
 ## Diagrams
 [flow](../../diagrams/flow-0007-configuration-and-secrets.svg) · [sequence](../../diagrams/sequence-0007-configuration-and-secrets.svg)
 
 ## Roadmap
 - Short-lived deployer token from the OpenBao Kubernetes secrets engine: [roadmap](../../roadmap.md#2-operations).
-- Restart Redis on rotation when `redis.auth.existingSecret` is used: [roadmap](../../roadmap.md#2-operations).
 - Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

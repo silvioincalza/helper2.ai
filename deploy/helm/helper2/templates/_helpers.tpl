@@ -58,3 +58,11 @@ secretKeyRef: { name: helper2-env, key: H2_REDIS_PASSWORD }
 {{- with .digest }}{{ if not (regexMatch "^sha256:[0-9a-f]{64}$" .) }}{{ fail "postgres.image.digest must be sha256:<64 hex>" }}{{ end }}@{{ . }}{{ end }}
 {{- end }}
 {{- end }}
+
+{{/* redis.auth.revision as a plain number. Anything else fails: `int` would turn "v2" into 0, and a rotation would
+     then restart nothing. */}}
+{{- define "helper2.redisAuthRevision" -}}
+{{- $r := toString .Values.redis.auth.revision -}}
+{{- if not (regexMatch "^[0-9]+$" $r) }}{{ fail "redis.auth.revision must be a non-negative integer" }}{{ end -}}
+{{ $r | quote }}
+{{- end }}

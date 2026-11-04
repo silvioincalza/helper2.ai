@@ -17,6 +17,10 @@ spec:
       annotations:
         # A new app.env (e.g. a rotated token) restarts the app; Postgres reads its password only at init.
         checksum/env: {{ include "helper2.env" . | sha256sum }}
+        {{- if and .Values.redis.auth.enabled .Values.redis.auth.existingSecret }}
+        # The Redis password from an existing Secret: a new redis.auth.revision restarts the app with Redis.
+        checksum/redis-auth-revision: {{ include "helper2.redisAuthRevision" . }}
+        {{- end }}
         # For a Prometheus-style scraper (allow its namespace with networkPolicy.metricsNamespace).
         prometheus.io/scrape: "true"
         prometheus.io/port: "8081"
