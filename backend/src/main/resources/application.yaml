@@ -366,8 +366,9 @@ helper2:
     # Enrichment model calls per UTC day, apart from the guide's cap; past it resources wait in the backlog.
     daily-enrichment-calls: ${H2_SCOUT_DAILY_ENRICHMENT_CALLS:300}
     # Gap rounds per UTC day (ADR 0043): a second enrichment call with the README or model card. Counted inside
-    # daily-enrichment-calls, not on top. 0 turns the gap round off.
-    gap-daily-calls: ${H2_SCOUT_GAP_DAILY_CALLS:60}
+    # daily-enrichment-calls, not on top, so a value above it has no effect until that cap is raised. 0 turns the
+    # gap round off.
+    gap-daily-calls: ${H2_SCOUT_GAP_DAILY_CALLS:250}
     hf-trending:
       interval: ${H2_SCOUT_HF_INTERVAL:P1D}
       min-likes: 20

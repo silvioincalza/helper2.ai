@@ -109,7 +109,7 @@ class ScoutConfiguration {
                             ObjectProvider<ExtraEvidence> extraEvidence, CallCounter budgetCounter,
                             @Value("${helper2.scout.max-items-per-run:500}") int maxItemsPerRun,
                             @Value("${helper2.scout.max-enrichments-per-run:20}") int maxEnrichmentsPerRun,
-                            @Value("${helper2.scout.gap-daily-calls:60}") int gapDailyCalls) {
+                            @Value("${helper2.scout.gap-daily-calls:250}") int gapDailyCalls) {
         return new RunScout(collectors, store, index, new EnrichResource(model, enrichmentStore, clock,
             new EvidenceValidator(), meters, extraEvidence.getIfAvailable(), gapBudget(gapDailyCalls, clock, budgetCounter, meters)),
             clock, new ClusterRunLock(scoutRunLock), maxItemsPerRun, maxEnrichmentsPerRun,
