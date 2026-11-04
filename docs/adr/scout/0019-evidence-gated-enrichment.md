@@ -69,6 +69,8 @@ source states. Every published value must point to the text it came from, and a 
 - The cost is bounded per run (`H2_SCOUT_MAX_ENRICHMENTS`: 20 by default, 200 in the Helm chart) and per day (500);
   unchanged text costs nothing and does not use up a slot of the run.
 - Source-stated `type` is a fact, so a model that disagrees (for example LIBRARY vs MCP_SERVER) opens a review item.
+  Any field that contradicts a source-provided value opens one `ENRICHMENT_VALIDATION` item for the run; there is no
+  separate source-conflict kind.
 
 ## Alternatives considered
 - Trust the model's output — no traceability; invented licenses would be published.

@@ -1332,7 +1332,7 @@ components:
     ReviewKind:
       type: string
       description: COURSE_CANDIDATE is a course page found by Scout and not yet in the catalog (no resource; URL in details).
-      enum: [ENRICHMENT_VALIDATION, SOURCE_CONFLICT, RELATIONSHIP_CANDIDATE, USER_REPORT, COURSE_CANDIDATE]
+      enum: [ENRICHMENT_VALIDATION, RELATIONSHIP_CANDIDATE, USER_REPORT, COURSE_CANDIDATE]
 
     ReviewItemPage:
       type: object

@@ -1,7 +1,7 @@
 import type { ReviewKind, ReviewStatus, ScoutRun } from '@/api/types';
 import type { StatusTone } from '@/components/ui/StatusPill';
 
-export const REVIEW_KINDS: readonly ReviewKind[] = ['ENRICHMENT_VALIDATION', 'SOURCE_CONFLICT', 'RELATIONSHIP_CANDIDATE', 'USER_REPORT', 'COURSE_CANDIDATE'];
+export const REVIEW_KINDS: readonly ReviewKind[] = ['ENRICHMENT_VALIDATION', 'RELATIONSHIP_CANDIDATE', 'USER_REPORT', 'COURSE_CANDIDATE'];
 export const REVIEW_STATUSES: readonly ReviewStatus[] = ['OPEN', 'ACCEPTED', 'REJECTED', 'SUPERSEDED'];
 /** Each status in words; the pill's tone only repeats it. */
 export const REVIEW_TONE: Record<ReviewStatus, StatusTone> = { OPEN: 'next', ACCEPTED: 'ok', REJECTED: 'warn', SUPERSEDED: 'later' };

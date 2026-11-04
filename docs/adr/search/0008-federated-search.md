@@ -52,7 +52,7 @@ and how many web credits the day has used. Two sources can describe the same res
    not `repository.directory`; the sub-directory is known when the package states it in the URL.
    The result's id comes from its hits' own URLs, a GitHub URL first ([0004](../foundation/0004-persistence-and-provenance.md)).
    Display text comes from the preferred source. License, pricing and open source: if sources disagree, the value is
-   null and every claim is kept in `conflicts`. Dates: published and event start = earliest, event end = latest,
+   null and every claim is kept in `conflicts`. The user sees every claim; nothing goes to the review queue. Dates: published and event start = earliest, event end = latest,
    last update = most recent; the others stay as alternatives. Published and event dates are `CONFLICTING` when two
    sources state different days ([0010](0010-filters-facets-dates-timeline.md)).
 9. **Catalog link** ([0004](../foundation/0004-persistence-and-provenance.md)). One read for first-discovered dates; only hits fetched

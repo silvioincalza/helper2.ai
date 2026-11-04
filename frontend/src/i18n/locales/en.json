@@ -496,7 +496,6 @@
     },
     "kind": {
       "ENRICHMENT_VALIDATION": "Enrichment validation",
-      "SOURCE_CONFLICT": "Source conflict",
       "RELATIONSHIP_CANDIDATE": "Relationship candidate",
       "USER_REPORT": "User report",
       "COURSE_CANDIDATE": "Course candidate"
