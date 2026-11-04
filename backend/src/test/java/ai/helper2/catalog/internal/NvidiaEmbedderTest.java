@@ -81,4 +81,19 @@ class NvidiaEmbedderTest {
             assertThat(server.requestBodies).isEmpty();
         }
     }
+
+    /** A response that keeps trickling in stops at the embedder's timeout, used as the call's total deadline. */
+    @Test
+    void aResponseThatTricklesInStopsAtTheTimeout() {
+        try (FixtureServer server = new FixtureServer()
+                .route("/v1/embeddings", FixtureServer.Reply.drip("{\"data\":[{\"index\":0,\"embedding\":[0.5,0.5]}]}", 50))) {
+            NvidiaEmbedder embedder = new NvidiaEmbedder(server.baseUrl() + "/v1", "key", "m", 2, Duration.ofMillis(500),
+                ObservationRegistry.NOOP, Resilience.NONE);
+            long start = System.nanoTime();
+
+            assertThatThrownBy(() -> embedder.embed(List.of("query"), Embedder.Kind.QUERY))
+                .isInstanceOf(Embedder.EmbeddingFailure.class).hasMessageContaining("deadline exceeded");
+            assertThat((System.nanoTime() - start) / 1_000_000).isLessThan(1_500);
+        }
+    }
 }

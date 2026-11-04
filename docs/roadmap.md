@@ -134,8 +134,6 @@ Open items:
 ## 5. Search and catalog
 
 - Indexed resources left without source records are not deleted (only observed ones are).
-- The Apache client's response timeout applies per read, not as a total deadline per call
-  ([ADR 0006](adr/foundation/0006-outbound-http.md)).
 - On a resource's first search, the discovery date is unknown, because catalog writes run off the request path
   ([ADR 0004](adr/foundation/0004-persistence-and-provenance.md)).
 - "Works with" flags on index hits name `helper2-index` as their source, not the source that set the tag, and only
@@ -205,7 +203,7 @@ Fix an item or accept it; when it no longer holds, remove it.
 - A resource seen for the first time has no discovery date in that first response (the write is still queued); a dropped write delays it until the resource is seen again. On shutdown the queue gets 5 s; later writes are lost. ([ADR 0004](adr/foundation/0004-persistence-and-provenance.md))
 - Bookmarks and reports are user data; the backup is the only copy. ([ADR 0004](adr/foundation/0004-persistence-and-provenance.md), [ADR 0027](adr/operations/0027-runtime-topology.md))
 - During a Redis outage, budgets count in memory per replica (up to three times what was left of the day on prod); Redis is not ready while it loads the AOF; with `everysec` a crash loses at most the last second. ([ADR 0005](adr/foundation/0005-redis-disposable-cache.md))
-- arXiv is not called while Redis is down. The HTTP response timeout applies per read, not per call; a Scout collector has no deadline of its own, and a retried call can add 1 + 2 + 4 s of backoff. ([ADR 0006](adr/foundation/0006-outbound-http.md), [ADR 0033](adr/foundation/0033-resilience-policies.md))
+- arXiv is not called while Redis is down. The total deadline of an HTTP call is checked on each read of the body, not while the request waits: the worst case is pool wait + connect + header wait + deadline + one read timeout. A retried call starts a new deadline and can add 1 + 2 + 4 s of backoff. ([ADR 0006](adr/foundation/0006-outbound-http.md), [ADR 0033](adr/foundation/0033-resilience-policies.md))
 - The Kubernetes Secret is base64 in the cluster: namespace access means secret access. A renamed variable needs its OpenBao entry rewritten by hand (an old name is ignored); an `app_env` change needs `make credentials` and a deploy. ([ADR 0007](adr/foundation/0007-configuration-and-secrets.md))
 - Resilience4j is one more library to keep current with Spring Boot. ([ADR 0033](adr/foundation/0033-resilience-policies.md))
 

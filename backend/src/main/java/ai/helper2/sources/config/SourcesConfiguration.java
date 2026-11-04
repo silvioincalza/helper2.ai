@@ -40,6 +40,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.web.client.RestClient;
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties({SourcesConfiguration.SourcesProperties.class, CollectorProperties.HfTrending.class,
@@ -57,10 +58,19 @@ class SourcesConfiguration {
             if (s == null) {
                 throw new IllegalStateException("missing helper2.sources." + key);
             }
-            return new SourceSettings(s.enabled(), s.baseUrl(), s.token(),
-                s.timeout() == null ? Duration.ofSeconds(2) : s.timeout(),
-                s.cacheTtl() == null ? Duration.ofMinutes(30) : s.cacheTtl());
+            Duration timeout = s.timeout() == null ? Duration.ofSeconds(2) : s.timeout();
+            return new SourceSettings(s.enabled(), s.baseUrl(), s.token(), timeout,
+                s.cacheTtl() == null ? Duration.ofMinutes(30) : s.cacheTtl(),
+                s.deadline() == null ? timeout.multipliedBy(2) : s.deadline());
         }
+    }
+
+    /**
+     * A Scout collector's client: its calls may take up to the source's deadline in all (H2_SOURCE_<ID>_DEADLINE,
+     * default twice the timeout). Search sources keep their timeout as the deadline.
+     */
+    private static RestClient.Builder collectorClient(SourceSettings s, ObservationRegistry observations) {
+        return ObservedHttp.restClientBuilder(s.timeout(), s.deadline(), observations);
     }
 
     @Bean
@@ -103,7 +113,7 @@ class SourcesConfiguration {
     HuggingFaceTrendingCollector huggingFaceTrendingCollector(SourcesProperties p, CollectorProperties.HfTrending c, Clock clock,
             Resilience resilience, ObservationRegistry observations) {
         SourceSettings s = p.get("hf-trending");
-        return new HuggingFaceTrendingCollector(s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock, resilience,
+        return new HuggingFaceTrendingCollector(s, collectorClient(s, observations), clock, resilience,
             new RunInterval(c.interval()), c.minLikes());
     }
 
@@ -111,7 +121,7 @@ class SourcesConfiguration {
     TavilyCollector tavilyCollector(SourcesProperties p, CollectorProperties.TavilyScout c, Clock clock, Resilience resilience,
             ObservationRegistry observations) {
         SourceSettings s = p.get("tavily-scout");
-        return new TavilyCollector(s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock, resilience, new RunInterval(c.interval()),
+        return new TavilyCollector(s, collectorClient(s, observations), clock, resilience, new RunInterval(c.interval()),
             c.queries());
     }
 
@@ -120,7 +130,7 @@ class SourcesConfiguration {
     CourseCollector courseCollector(SourcesProperties p, CollectorProperties.Courses c, Clock clock, Resilience resilience,
             ObservationRegistry observations) {
         SourceSettings s = p.get("course-scout");
-        return new CourseCollector(s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock, resilience, new RunInterval(c.interval()),
+        return new CourseCollector(s, collectorClient(s, observations), clock, resilience, new RunInterval(c.interval()),
             c.query(), c.platforms());
     }
 
@@ -145,7 +155,7 @@ class SourcesConfiguration {
             classifier = new SpringAiRepoClassifier(model, llm.fast(), c.classifyMaxTokens(), budget, metrics, resilience);
         }
         log.info("GitHub awesome lists: enabled={}, classifier={}", s.enabled() && s.hasToken(), classifier.name());
-        return new GitHubAwesomeCollector(s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock, resilience, new RunInterval(c.interval()),
+        return new GitHubAwesomeCollector(s, collectorClient(s, observations), clock, resilience, new RunInterval(c.interval()),
             c.topicQueries(),
             new GitHubAwesomeCollector.Limits(c.maxLists(), c.minListStars(), c.maxEntriesPerPass(), c.maxEntriesPerRun(), c.minRepoStars(),
                 c.classifyBatch()),
@@ -156,7 +166,7 @@ class SourcesConfiguration {
     HuggingFaceProviderOrgsCollector huggingFaceProviderOrgsCollector(SourcesProperties p, CollectorProperties.HfProviderOrgs c, Clock clock,
             Resilience resilience, ObservationRegistry observations) {
         SourceSettings s = p.get("hf-provider-orgs");
-        return new HuggingFaceProviderOrgsCollector(s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock, resilience,
+        return new HuggingFaceProviderOrgsCollector(s, collectorClient(s, observations), clock, resilience,
             new RunInterval(c.interval()), c.orgs(), c.perOrg());
     }
 
@@ -164,7 +174,7 @@ class SourcesConfiguration {
     AiDeadlinesCollector aiDeadlinesCollector(SourcesProperties p, CollectorProperties.AiDeadlines c, Clock clock, Resilience resilience,
             ObservationRegistry observations) {
         SourceSettings s = p.get("ai-deadlines");
-        return new AiDeadlinesCollector(s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock, resilience, new RunInterval(c.interval()));
+        return new AiDeadlinesCollector(s, collectorClient(s, observations), clock, resilience, new RunInterval(c.interval()));
     }
 
     /** README and model-card text for the Scout's gap round (ADR 0043), with the GitHub and Hub settings and tokens. */
@@ -180,6 +190,6 @@ class SourcesConfiguration {
     McpRegistryCollector mcpRegistryCollector(SourcesProperties p, CollectorProperties.McpRegistry c, Clock clock, Resilience resilience,
             ObservationRegistry observations) {
         SourceSettings s = p.get("mcp-registry");
-        return new McpRegistryCollector(s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock, resilience, new RunInterval(c.interval()));
+        return new McpRegistryCollector(s, collectorClient(s, observations), clock, resilience, new RunInterval(c.interval()));
     }
 }

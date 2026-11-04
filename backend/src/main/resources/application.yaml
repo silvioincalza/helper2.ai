@@ -462,39 +462,47 @@ helper2:
       base-url: https://huggingface.co
       token: ${H2_HF_TOKEN:}
       timeout: 10s
+      # Total time per call, body included (ADR 0006 §2); empty = twice the timeout.
+      deadline: ${H2_SOURCE_HF_TRENDING_DEADLINE:}
     tavily-scout:
       # Disabled (reported as SKIPPED) until H2_TAVILY_API_KEY is set.
       enabled: ${H2_SOURCE_TAVILY_SCOUT_ENABLED:true}
       base-url: https://api.tavily.com
       token: ${H2_TAVILY_API_KEY:}
       timeout: 10s
+      deadline: ${H2_SOURCE_TAVILY_SCOUT_DEADLINE:}
     course-scout:
       # Disabled (reported as SKIPPED) until H2_TAVILY_API_KEY is set.
       enabled: ${H2_SOURCE_COURSE_SCOUT_ENABLED:true}
       base-url: https://api.tavily.com
       token: ${H2_TAVILY_API_KEY:}
       timeout: 10s
+      deadline: ${H2_SOURCE_COURSE_SCOUT_DEADLINE:}
     github-awesome:
       # Disabled (reported as SKIPPED) until H2_GITHUB_TOKEN is set: GraphQL rejects anonymous calls.
       enabled: ${H2_SOURCE_GITHUB_AWESOME_ENABLED:true}
       base-url: https://api.github.com
       token: ${H2_GITHUB_TOKEN:}
       timeout: 15s
+      deadline: ${H2_SOURCE_GITHUB_AWESOME_DEADLINE:}
     hf-provider-orgs:
       enabled: ${H2_SOURCE_HF_ORGS_ENABLED:true}
       base-url: https://huggingface.co
       token: ${H2_HF_TOKEN:}
       timeout: 10s
+      deadline: ${H2_SOURCE_HF_ORGS_DEADLINE:}
     ai-deadlines:
       enabled: ${H2_SOURCE_AI_DEADLINES_ENABLED:true}
       base-url: https://api.github.com
       # Optional: raises the contents API limit from 60 to 5,000 calls per hour.
       token: ${H2_GITHUB_TOKEN:}
       timeout: 15s
+      deadline: ${H2_SOURCE_AI_DEADLINES_DEADLINE:}
     mcp-registry:
       enabled: ${H2_SOURCE_MCP_ENABLED:true}
       base-url: https://registry.modelcontextprotocol.io
       timeout: 10s
+      deadline: ${H2_SOURCE_MCP_DEADLINE:}
     semantic:
       # Embedding call (~0.3 s) plus the HNSW query; parallel with live sources, like the index.
       timeout: ${H2_SOURCE_SEMANTIC_TIMEOUT:3s}
