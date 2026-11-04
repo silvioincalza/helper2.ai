@@ -44,9 +44,9 @@ decides where the extra text comes from, and the same evidence gate judges it.
    was read for, so it goes when that record goes ([0034](../operations/0034-data-retention.md)). The README text
    itself is not stored: only the 20–300-character excerpts the validator accepted. The detail page names the source
    of such a quote: `owner/repo · README`, `owner/model · model card`.
-9. **Cost.** `H2_SCOUT_GAP_DAILY_CALLS` (250) gap model calls a day, a share of the 300 enrichment calls, not on top
-   (both caps count them). At least 50 calls a day stay for first runs of new resources. A gap cap above the
-   enrichment cap has no effect: to allow up to 500 gap calls, raise `H2_SCOUT_DAILY_ENRICHMENT_CALLS` too. Taken only when there is text to send; when none is left today, or with `0` (off), no README is read either. The per-run enrichment
+9. **Cost.** `H2_SCOUT_GAP_DAILY_CALLS` (400) gap model calls a day, a share of the 500 enrichment calls
+   (`H2_SCOUT_DAILY_ENRICHMENT_CALLS`, raised from 300 with this decision), not on top (both caps count them). At
+   least 100 calls a day stay for first runs of new resources. A gap cap above the enrichment cap has no effect. Taken only when there is text to send; when none is left today, or with `0` (off), no README is read either. The per-run enrichment
    budget ([0018](0018-scout-runner.md) §6) counts resources, not gap calls: a gap call is part of its resource's
    attempt, so a run can make up to its budget plus the gap calls left today. Reading a README needs `H2_GITHUB_TOKEN`
    (without it GitHub allows 60 calls an hour); a model card needs no token. Gauge
@@ -54,7 +54,7 @@ decides where the extra text comes from, and the same evidence gate judges it.
    `no_text`, `source_failed`, `model_failed`, `skipped_cap`).
 
 ## Consequences
-- Fewer unproven fields and fewer review items, at most 250 extra model calls a day, inside the 300.
+- Fewer unproven fields and fewer review items, at most 400 extra model calls a day, inside the 500.
 - A resource is read again only when its source records change, or the prompt or model changes.
 - The demo profile has no adapter, so it has no gap round.
 - A README that fails to load (timeout, 5xx) is not tried again until the source records change: the run is saved

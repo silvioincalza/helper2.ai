@@ -9,7 +9,7 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 ## 1. Before the hackathon deadline (30 Oct 2026, 18:00 Zurich)
 
 - **Full vector index before recording the video.** Every resource has an embedding
-  ([ADR 0012](adr/search/0012-vector-search-pgvector.md)). The Scout fills the index over a few days (300 enrichments
+  ([ADR 0012](adr/search/0012-vector-search-pgvector.md)). The Scout fills the index over a few days (500 enrichments
   per day).
 
 ## 2. Launch hardening

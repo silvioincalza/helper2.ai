@@ -76,7 +76,7 @@ at the same time. Prod runs 3 replicas ([0027](../operations/0027-runtime-topolo
 - One broken source shows as `FAILED` in its own row; the others keep the index fresh.
 - A crash mid-pass loses nothing: the next run resumes from the saved cursor or repeats the pass.
 - Credit-priced sources (Tavily) run rarely. The 1-hour MCP Registry interval follows the registry's polling advice.
-- Enrichment cost per run is bounded (20 calls by default, 200 in the Helm chart, and 300 per day), and the backlog catches up after an outage or a day with a spent budget.
+- Enrichment cost per run is bounded (20 calls by default, 200 in the Helm chart, and 500 per day), and the backlog catches up after an outage or a day with a spent budget.
 - The admin call answers in milliseconds; the run's progress is the run listing, so no request is held for the
   length of a run and no extra status endpoint exists.
 - 3 replicas, no double work: one run at a time, one scheduled run per period. The lock and the end time are a few

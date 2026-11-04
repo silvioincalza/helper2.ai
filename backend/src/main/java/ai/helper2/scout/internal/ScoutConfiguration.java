@@ -65,7 +65,7 @@ class ScoutConfiguration {
     EnrichmentModel enrichmentModel(ObjectProvider<ChatModel> chatModel, LlmSettings llm, Clock clock, CallCounter budgetCounter,
                                     ModelCallMetrics metrics, MeterRegistry meters, Resilience resilience,
                                     @Value("${helper2.llm.enrich-max-tokens:" + SpringAiEnrichmentModel.DEFAULT_MAX_TOKENS + "}") int maxTokens,
-                                    @Value("${helper2.scout.daily-enrichment-calls:300}") int dailyCalls) {
+                                    @Value("${helper2.scout.daily-enrichment-calls:500}") int dailyCalls) {
         ChatModel model = chatModel.getIfAvailable();
         if (!llm.usable(model) || !llm.hasReasoningModel()) {
             log.info("No LLM configured: enrichment disabled, deterministic source metadata only");
@@ -109,7 +109,7 @@ class ScoutConfiguration {
                             ObjectProvider<ExtraEvidence> extraEvidence, CallCounter budgetCounter,
                             @Value("${helper2.scout.max-items-per-run:500}") int maxItemsPerRun,
                             @Value("${helper2.scout.max-enrichments-per-run:20}") int maxEnrichmentsPerRun,
-                            @Value("${helper2.scout.gap-daily-calls:250}") int gapDailyCalls) {
+                            @Value("${helper2.scout.gap-daily-calls:400}") int gapDailyCalls) {
         return new RunScout(collectors, store, index, new EnrichResource(model, enrichmentStore, clock,
             new EvidenceValidator(), meters, extraEvidence.getIfAvailable(), gapBudget(gapDailyCalls, clock, budgetCounter, meters)),
             clock, new ClusterRunLock(scoutRunLock), maxItemsPerRun, maxEnrichmentsPerRun,
