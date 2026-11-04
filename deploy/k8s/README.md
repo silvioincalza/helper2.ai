@@ -107,7 +107,7 @@ To upgrade, build a new tag and run the same `helm upgrade --install` command wi
 | What | Values |
 |---|---|
 | Traces (OTLP/HTTP) | `app.tracing.export: true`, `app.tracing.endpoint`, `networkPolicy.egress.otlp.namespace` of the collector |
-| Metrics scraping | `networkPolicy.metricsNamespace` of the scraper. The pods carry `prometheus.io/*` annotations (port 8081). |
+| Metrics scraping | `networkPolicy.metricsNamespace` of the scraper. The pods carry `prometheus.io/*` annotations: app 8081, Redis exporter 9121, Postgres exporter 9187 (`redis.exporter`, `postgres.exporter`). The scraper must keep the `redis_*` and `pg_*` metric names. |
 | Replicas | `app.replicas` (default 3) |
 | Nightly backup | `backup.enabled: true`, see [Backups](#backups) |
 | DNS for the egress policy | `networkPolicy.egress.dns` (default: CoreDNS in `kube-system`) |

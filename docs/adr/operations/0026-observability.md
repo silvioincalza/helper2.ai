@@ -54,9 +54,18 @@ the guide work long before that, and what makes the wait feel long is the first 
      `resilience4j.circuitbreaker.failure.rate`, `resilience4j.circuitbreaker.slow.call.rate`,
      `resilience4j.bulkhead.available.concurrent.calls{name}`, `resilience4j.retry.calls{name,kind}`.
    Tag values are fixed words, source ids, policy names and configured model ids; never a query, a prompt or a user.
+   Redis and Postgres have their own exporters, as sidecars in their pods (`redis.exporter`, `postgres.exporter` in
+   the chart): `oliver006/redis_exporter` on :9121 and `prometheus-community/postgres_exporter` on :9187, pinned by
+   digest. Each pod announces its exporter with `prometheus.io/scrape`, `port` and `path`, and declares that port as
+   a container port; the NetworkPolicy lets only `networkPolicy.metricsNamespace` reach it. Default metrics only:
+   no Redis key names, no `pg_stat_statements`. The Postgres exporter logs in as the helper2 user over localhost.
+   Both exporters can also scrape a target given in the URL (`/scrape?target=`, `/probe?target=`). The default-deny
+   egress of the Redis and Postgres pods is what keeps them on localhost: do not open that egress.
+   Their series carry the scraper's labels (`namespace`, `pod`, `app`), not `application` and `environment`. The
+   scraper must keep the `redis_*` and `pg_*` metric names.
 5. **Dashboard.** `deploy/grafana/helper2.json` (uid `helper2`, variable `environment`, datasource uid `prometheus`).
    Rows: overview, Hypertext Transfer Protocol (HTTP), search and sources, artificial intelligence (AI) guide, Scout,
-   embeddings, runtime. Latency panels (HTTP, search, source, model call, Scout run, guide first useful event) use
+   embeddings, runtime, pod, data stores (Redis and Postgres exporters), logs. Latency panels (HTTP, search, source, model call, Scout run, guide first useful event) use
    `histogram_quantile` over the `_bucket` series, so they are percentiles across all pods; `helper2.guide.ask` has no buckets, so its panel
    shows the mean. One panel per daily budget (guide, translation, enrichment, classifier) shows the calls left, and
    "Rate-limit decisions in memory" shows `helper2.rate-limit.fallback`. Loaded by file provisioning or the Grafana
@@ -66,7 +75,7 @@ the guide work long before that, and what makes the wait feel long is the first 
    custom resource exists only where the Prometheus Operator runs); the template reads the file through the symlink
    `files/helper2-rules.yaml`, so the rules are never copied. Without the operator, Prometheus loads the file in
    `rule_files`. App rules group by `environment`; pod and Job rules read kube-state-metrics in the namespaces
-   `helper2-<environment>`. Each rule has a `severity` (`critical`: users get errors now; `warning`: look within
+   `helper2-<environment>`; data-store rules read the exporters' series by `namespace`. Each rule has a `severity` (`critical`: users get errors now; `warning`: look within
    the day), a `for:`, a summary and description in plain English, and a `runbook` hint naming the dashboard panel
    and the first command. The rules:
    - `Helper2HighServerErrorRatio` (critical): more than 5% of requests answer 5xx for 10 min, above one request a
@@ -90,7 +99,11 @@ the guide work long before that, and what makes the wait feel long is the first 
    - `Helper2GuideFirstUsefulSlow`: the p95 of `helper2.guide.first_useful` above its 8 s target for 15 min, above
      3 questions in 15 min (item 8);
    - `Helper2BackupFailed` (critical): a `pg-backup` Job that started in the last 24 h failed;
-     `Helper2PodRestarting`: more than 2 restarts of a container in an hour.
+     `Helper2PodRestarting`: more than 2 restarts of a container in an hour;
+   - group `helper2-data`: `Helper2RedisEvictingKeys`: any `redis_evicted_keys_total` increase in 15 min;
+     `Helper2RedisMemoryHigh`: Redis above 90% of its maxmemory for 15 min; `Helper2ExporterDown`: an exporter not
+     scraped (`up{job="kubernetes-pods"}` of the `redis-N` or `postgres-N` pod), or unable to reach its data store
+     (`redis_up`, `pg_up`), for 10 min.
    `promtool check rules` and `promtool test rules` (unit tests in `deploy/monitoring/tests/`) run in CI; chart-check
    renders the `PrometheusRule` once and validates it against its CRD schema.
 7. **Retention.** Required of the observability stack, which lives outside this repository and must use these values:
@@ -116,8 +129,8 @@ the guide work long before that, and what makes the wait feel long is the first 
 ## Consequences
 - A slow search shows per-source latency and outcome; a slow guide shows the model step and model.
 - Logs, traces and meters share the trace id.
-- A failing source, an open circuit, a spent budget, a stalled indexer or Scout, a failed backup or a poisoned
-  pick raises an alert, and each alert says where to look first.
+- A failing source, an open circuit, a spent budget, a stalled indexer or Scout, a failed backup, a full Redis or a
+  poisoned pick raises an alert, and each alert says where to look first.
 - One rule file serves a plain Prometheus and the operator; the unit tests pin each threshold.
 - The guide's latency is held by one number the asker feels; the model step and the search behind a slow first
   event are in `helper2.llm.call` and `helper2.source.latency`.
@@ -133,6 +146,10 @@ the guide work long before that, and what makes the wait feel long is the first 
 - Rules only as a `PrometheusRule` template — ties the chart to the Prometheus Operator; a plain rule file works
   with any Prometheus.
 - A copy of the rules in the chart — two sources drift; the symlink and `.Files.Get` keep one.
+- Exporters as their own Deployments — one more workload each, and a network path to Redis and Postgres to open;
+  a sidecar reads over localhost and lives and dies with its data store.
+- A `pg_monitor` role for the Postgres exporter now — least privilege, but a role and its password to create and
+  rotate outside the chart; on the roadmap.
 - End-to-end p50 as the guide's latency target — it adds the choose call and the reason check, which the asker
   waits for while already seeing the results being read; the evaluation reports it.
 - `understood` as the first useful event — earlier, but empty on the page for a plain suggestion.
@@ -154,6 +171,8 @@ the guide work long before that, and what makes the wait feel long is the first 
   translation and classifier budget gauges.
 - `backend/src/main/java/ai/helper2/catalog/internal/EmbeddingIndexer.java`, `ObservationQueue.java` — catalog meters.
 - `deploy/grafana/helper2.json` (Grafana dashboard); `deploy/helm/helper2/templates/app.yaml` — scrape annotations, tracing env.
+- `deploy/helm/helper2/templates/redis.yaml`, `postgres.yaml` — exporter sidecars and their scrape annotations;
+  `networkpolicy.yaml` — the scraper's access to 9121 and 9187.
 - `deploy/monitoring/helper2-rules.yaml` (alert rules), `deploy/monitoring/tests/` (promtool unit tests);
   `deploy/helm/helper2/templates/prometheusrule.yaml`, `files/helper2-rules.yaml` (symlink) — optional `PrometheusRule`.
 
@@ -161,5 +180,5 @@ the guide work long before that, and what makes the wait feel long is the first 
 [flow](../../diagrams/flow-0026-observability.svg) · [sequence](../../diagrams/sequence-0026-observability.svg)
 
 ## Roadmap
-- [Postgres and Redis exporters in the Helm chart](../../roadmap.md#2-operations).
+- [A `pg_monitor` role for the Postgres exporter](../../roadmap.md#2-operations).
 - Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

@@ -26,7 +26,7 @@ app:
   # and sign-in sessions are in Redis. Above 1: a PodDisruptionBudget keeps replicas - 1 available.
   # Postgres connections: (replicas + 1) x H2_DATABASE_POOL_SIZE (10) = 40 at 3 replicas during a deploy, plus the
   # pools of pods still terminating (up to shutdown.drainSeconds; at worst one more pod, 50), under Postgres' default
-  # max_connections of 100 (backup and psql need a few more).
+  # max_connections of 100 (backup, psql and the exporter need a few more).
   replicas: 3
   # Rolling update and shutdown of a pod (ADR 0027). preStopSeconds: the pod keeps serving while the Service
   # endpoints and the Ingress controller drop it (native preStop sleep, Kubernetes 1.30 and later). Then SIGTERM:
@@ -106,6 +106,16 @@ postgres:
     # Vectors: ~25k rows x 1024 floats = ~100 MB, plus the HNSW index of about the same size.
     requests: { cpu: 50m, memory: 512Mi }
     limits: { memory: 1Gi }
+  # Prometheus metrics of Postgres (prometheus-community/postgres_exporter, Apache-2.0): a sidecar on port 9187,
+  # announced by the pod annotations prometheus.io/scrape, port and path. It logs in as the helper2 user over
+  # localhost, with the same password. Default collectors only (pg_stat_statements stays off). Turning it on or
+  # off restarts Postgres once. The scraper must keep the pg_* metric names.
+  exporter:
+    enabled: true
+    image: docker.io/prometheuscommunity/postgres-exporter:v0.20.1@sha256:ac5ec343104fae0e2d84a27bb8d69b38430a11910c5382cad85d478d2bab713e
+    resources:
+      requests: { cpu: 10m, memory: 32Mi }
+      limits: { memory: 64Mi }
 
 redis:
   # Pinned by the digest of its multi-arch index (ADR 0046); Dependabot updates tag and digest together.
@@ -129,10 +139,20 @@ redis:
   resources:
     requests: { cpu: 20m, memory: 64Mi }
     limits: { memory: 192Mi }
+  # Prometheus metrics of Redis (oliver006/redis_exporter, MIT): a sidecar on port 9121, announced by the pod
+  # annotations prometheus.io/scrape, port and path. Default metrics only: no key names, no per-key series.
+  # The scraper must keep the redis_* metric names.
+  exporter:
+    enabled: true
+    image: docker.io/oliver006/redis_exporter:v1.96.0@sha256:3d57b9eb142a62ffc600063606a41cd471cd53d81bed10be5b56b3a8918f2c26
+    resources:
+      requests: { cpu: 10m, memory: 16Mi }
+      limits: { memory: 64Mi }
 
 # templates/networkpolicy.yaml: ingress and egress denied for every pod in the namespace, then allowed
 # per workload. Ingress: app <- the Ingress controller on 8080 and the admin port, the metrics scraper on 8081;
-# postgres <- app and pg-backup; redis <- app; pg-backup: nothing. Egress: app -> DNS, postgres, redis, the
+# postgres <- app and pg-backup, the metrics scraper on 9187; redis <- app, the metrics scraper on 9121;
+# pg-backup: nothing. Egress: app -> DNS, postgres, redis, the
 # OTLP collector, HTTPS to `external`; pg-backup -> DNS, postgres, HTTPS to `external` when backup.offsite
 # is on; postgres and redis: nothing.
 networkPolicy:
@@ -142,7 +162,8 @@ networkPolicy:
     namespace: ""
     # Optional pod labels that narrow the controller pods in that namespace, e.g. app.kubernetes.io/name: ingress-nginx.
     podLabels: {}
-  # Namespace of the metrics scraper allowed on the management port 8081. Empty = no scraper access.
+  # Namespace of the metrics scraper allowed on the management port 8081 and on the exporters (9121, 9187).
+  # Empty = no scraper access.
   metricsNamespace: ""
   egress:
     enabled: true

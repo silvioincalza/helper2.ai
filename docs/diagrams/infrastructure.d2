@@ -39,11 +39,11 @@ cluster: KUBERNETES {
   prod: "ns helper2-prod · ingress + egress default-deny\none policy per workload · ServiceAccount helper2: no RBAC, no token" {
     class: group
     app: "helper2 Deployment · 3 pods\nRollingUpdate: maxSurge 1, maxUnavailable 0\nPDB minAvailable 2 · spread by node\nJava 25 JRE, heap 60% of 1Gi\n:8080 site + /api/v1 (Service helper2)\n:8082 back office (Service helper2-admin)\n:8081 Actuator (in no Service)" {class: app}
-    postgres: "postgres StatefulSet\nPostgreSQL 18.6 + pgvector 0.8.6\nPVC 5Gi local-path" {
+    postgres: "postgres StatefulSet\nPostgreSQL 18.6 + pgvector 0.8.6\nPVC 5Gi local-path\nsidecar postgres_exporter :9187" {
       shape: cylinder
       class: data
     }
-    redis: "redis StatefulSet\nRedis 8.10.2 · requirepass (H2_REDIS_PASSWORD)\nAOF everysec, no RDB · 128mb LRU\nPVC 1Gi local-path\ncache, sessions, rate limits" {
+    redis: "redis StatefulSet\nRedis 8.10.2 · requirepass (H2_REDIS_PASSWORD)\nAOF everysec, no RDB · 128mb LRU\nPVC 1Gi local-path\ncache, sessions, rate limits\nsidecar redis_exporter :9121" {
       shape: cylinder
       class: data
     }
@@ -73,7 +73,7 @@ cluster: KUBERNETES {
 
   observability: "ns observability" {
     class: group
-    alloy: "Alloy\nscrapes :8081/actuator/prometheus\nreceives OTLP :4318" {class: app}
+    alloy: "Alloy\nscrapes :8081/actuator/prometheus,\nexporters :9121 and :9187 /metrics\nreceives OTLP :4318" {class: app}
   }
 
   kubesystem: "ns kube-system" {
@@ -84,6 +84,8 @@ cluster: KUBERNETES {
   ingress.nginx -> prod.app: ":8080, :8082\n(only allowed caller)" {class: hot}
   ingress.nginx -> staging.note: ":8080, :8082"
   observability.alloy -> prod.app: "scrape :8081" {class: config}
+  observability.alloy -> prod.redis: "scrape :9121" {class: config}
+  observability.alloy -> prod.postgres: "scrape :9187" {class: config}
   prod.app -> observability.alloy: "traces OTLP/HTTP :4318"
   prod.app -> kubesystem.dns: "DNS (every workload)" {class: config}
 }

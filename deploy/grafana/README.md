@@ -2,9 +2,11 @@
 
 `helper2.json`: one dashboard (uid `helper2`) for the app, with an `environment` variable (prod, staging).
 Rows: overview, HTTP, search and sources, AI guide, Scout (empty on staging, where Scout is off), embeddings
-(empty without `H2_NVIDIA_API_KEY`), runtime, pod, logs.
-The pod row reads the cluster's cAdvisor and kube-state-metrics series, and the logs row reads Loki (datasource uid
-`loki`); both select the namespace `helper2-$environment`, and the logs row adds a `level` variable.
+(empty without `H2_NVIDIA_API_KEY`), runtime, pod, data stores, logs.
+The pod row reads the cluster's cAdvisor and kube-state-metrics series, the data stores row reads the Redis and
+Postgres exporters (sidecars in their pods), and the logs row reads Loki (datasource uid `loki`); all three select
+the namespace `helper2-$environment`, and the logs row adds a `level` variable. The data stores row stays empty
+unless the scraper keeps the `redis_*` and `pg_*` metric names.
 Meters and tags: [ADR 0026](../../docs/adr/operations/0026-observability.md).
 
 The datasources are referenced by uid (`prometheus`, `loki`): provision them with these uids. There are no

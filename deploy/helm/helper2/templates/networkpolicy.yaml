@@ -1,7 +1,7 @@
 # Ingress: nothing for any pod here (pg-backup stays at that), then allowed per workload below.
 # app <- the Ingress controller's pods (networkPolicy.ingressController) on 8080 and the admin port; <- the
-# metrics scraper's namespace (networkPolicy.metricsNamespace) on 8081; postgres <- app and pg-backup;
-# redis <- app.
+# metrics scraper's namespace (networkPolicy.metricsNamespace) on 8081; postgres <- app and pg-backup, the
+# metrics scraper on 9187 (exporter); redis <- app, the metrics scraper on 9121 (exporter).
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -62,6 +62,10 @@ spec:
         - podSelector: { matchLabels: { app: pg-backup } }
         {{- end }}
       ports: [{ port: 5432, protocol: TCP }]
+    {{- if and .Values.postgres.exporter.enabled .Values.networkPolicy.metricsNamespace }}
+    - from: [{ namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: {{ .Values.networkPolicy.metricsNamespace }} } } }]
+      ports: [{ port: 9187, protocol: TCP }]
+    {{- end }}
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -76,6 +80,10 @@ spec:
   ingress:
     - from: [{ podSelector: { matchLabels: { app: helper2 } } }]
       ports: [{ port: 6379, protocol: TCP }]
+    {{- if and .Values.redis.exporter.enabled .Values.networkPolicy.metricsNamespace }}
+    - from: [{ namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: {{ .Values.networkPolicy.metricsNamespace }} } } }]
+      ports: [{ port: 9121, protocol: TCP }]
+    {{- end }}
 {{- with .Values.networkPolicy.egress }}
 {{- if .enabled }}
 {{- $dns := dict "to" (list (dict "namespaceSelector" (dict "matchLabels" (dict "kubernetes.io/metadata.name" .dns.namespace)) "podSelector" (dict "matchLabels" .dns.podLabels))) "ports" (list (dict "port" 53 "protocol" "UDP") (dict "port" 53 "protocol" "TCP")) }}

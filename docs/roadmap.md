@@ -53,8 +53,8 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 
 ## 2. Operations
 
-- **Exporters.** Postgres and Redis exporters in the Helm chart, and an alert on Redis evicted keys
-  (`allkeys-lru` can drop sessions, rate-limit windows and web-search counters under memory pressure).
+- **Postgres exporter role.** The exporter logs in as the helper2 user. Give it its own `pg_monitor` role, with
+  its own password ([ADR 0026](adr/operations/0026-observability.md)).
 - **Backups:**
   - test a restore;
   - add a periodic restore-check job;
@@ -87,9 +87,6 @@ query vectors and setup guide answers in the Postgres table `ai_cache`. Still pe
 
 Open items:
 
-- **Redis memory.** Sign-in sessions, rate-limit windows and web-search counters share the 128 MB `allkeys-lru`
-  cache: under pressure an admin is signed out, or a client gets a fresh window or a fresh day early. Alert on
-  Redis evictions (with the Redis exporter, section 2).
 
 ## 4. AI quality and cost
 
@@ -193,7 +190,7 @@ Fix an item or accept it; when it no longer holds, remove it.
 - Generated API code is not committed: after a fresh checkout, run Gradle or npm once before the editor resolves the types. The guide SSE handler is hand-written, so the compiler checks only its event names. ([ADR 0003](adr/foundation/0003-contract-first-rest-api.md), [ADR 0015](adr/guide/0015-ai-guide-evidence-gate.md))
 - A resource seen for the first time has no discovery date in that first response (the write is still queued); a dropped write delays it until the resource is seen again. On shutdown the queue gets 5 s; later writes are lost. ([ADR 0004](adr/foundation/0004-persistence-and-provenance.md))
 - Bookmarks and reports are user data; the backup is the only copy. ([ADR 0004](adr/foundation/0004-persistence-and-provenance.md), [ADR 0027](adr/operations/0027-runtime-topology.md))
-- During a Redis outage, budgets count in memory per replica (up to three times what was left of the day on prod); Redis is not ready while it loads the AOF; with `everysec` a crash loses at most the last second. ([ADR 0005](adr/foundation/0005-redis-disposable-cache.md))
+- During a Redis outage, budgets count in memory per replica (up to three times what was left of the day on prod); Redis is not ready while it loads the AOF; with `everysec` a crash loses at most the last second. Sign-in sessions, rate-limit windows and web-search counters share the 128 MB `allkeys-lru` cache: when it is full, an admin is signed out, or a client gets a fresh window or a fresh day early (alert `Helper2RedisEvictingKeys`). ([ADR 0005](adr/foundation/0005-redis-disposable-cache.md))
 - arXiv is not called while Redis is down. The total deadline of an HTTP call is checked on each read of the body, not while the request waits: the worst case is pool wait + connect + header wait + deadline + one read timeout. A retried call starts a new deadline and can add 1 + 2 + 4 s of backoff. ([ADR 0006](adr/foundation/0006-outbound-http.md), [ADR 0033](adr/foundation/0033-resilience-policies.md))
 - The Kubernetes Secret is base64 in the cluster: namespace access means secret access. A renamed variable needs its OpenBao entry rewritten by hand (an old name is ignored); an `app_env` change needs `make credentials` and a deploy. ([ADR 0007](adr/foundation/0007-configuration-and-secrets.md))
 - Resilience4j is one more library to keep current with Spring Boot. ([ADR 0033](adr/foundation/0033-resilience-policies.md))
@@ -254,7 +251,7 @@ Fix an item or accept it; when it no longer holds, remove it.
 
 ### Operations
 
-- Alert delivery is configured in the observability stack, not here. A collector disabled on purpose keeps alerting until its value is 9 days old. Histogram buckets add series per timer. ([ADR 0026](adr/operations/0026-observability.md))
+- Alert delivery is configured in the observability stack, not here. The exporters' metrics reach Prometheus only if the scraper keeps the `redis_*` and `pg_*` names; the Postgres exporter holds one more connection to Postgres. A collector disabled on purpose keeps alerting until its value is 9 days old. Histogram buckets add series per timer. ([ADR 0026](adr/operations/0026-observability.md))
 - A guide stream or any request still running 30 s after SIGTERM is cut during a deploy (`app.shutdown.drainSeconds`); the guide's own deadline is 90 s. ([ADR 0027](adr/operations/0027-runtime-topology.md))
 - Staging (1 replica) has no failover; a prod deploy starts pods one after another (up to 300 s each). Plain HTTP inside the cluster; sign-in for everyone changes that. Never run `helm uninstall`: it deletes the Postgres and Redis StatefulSets. ([ADR 0027](adr/operations/0027-runtime-topology.md))
 - The scanner versions (Syft, Grype in `.github/actions/install-scanners`) are pinned by hand: Dependabot does not see them. Grype is built from source in each scan job (about 2 minutes); the weekly scan reads only the latest release, not an older one still on prod after a rollback. ([ADR 0046](adr/operations/0046-supply-chain.md))

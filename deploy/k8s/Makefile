@@ -133,7 +133,7 @@ HELM_ARGS = helper2 $(CHART) -n $(NS) -f $(CHART)/values-$(ENV).yaml \
 # PrometheusRule is checked against its CRD schema from the CRDs-catalog, pinned to a commit, and must hold the
 # alerts of deploy/monitoring/helper2-rules.yaml (read through the chart's files/ symlink).
 CRD_SCHEMAS := https://raw.githubusercontent.com/datreeio/CRDs-catalog/3eb90d47aba8d61919d4419dd38301536e32a94b/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json
-chart-check: ## helm lint + helm template | kubeconform, for staging and prod; Redis AOF + PVC; preStop, drain and grace period; images pinned by digest; redis.auth.revision restarts; daily limits only where set; admin Service, ingress-nginx on 8080 and the admin port; PrometheusRule = rule file; an envFile key without H2_ fails
+chart-check: ## helm lint + helm template | kubeconform, for staging and prod; Redis AOF + PVC; preStop, drain and grace period; images pinned by digest; redis.auth.revision restarts; exporters scrapeable; daily limits only where set; admin Service, ingress-nginx on 8080 and the admin port; PrometheusRule = rule file; an envFile key without H2_ fails
 	@set -euo pipefail; \
 	env=$$(mktemp); bad=$$(mktemp); trap 'rm -f "$$env" "$$bad"' EXIT; \
 	printf 'H2_DATABASE_PASSWORD=ci\nH2_REDIS_PASSWORD=00000000000000000000000000000000\n' > "$$env"; \
@@ -190,6 +190,19 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 	if "$${r[@]}" | grep -q 'checksum/redis-auth-revision'; then echo "chart-managed password: no revision annotation expected"; exit 1; fi; \
 	if "$${r[@]}" --set redis.auth.existingSecret=redis-auth --set redis.auth.revision=v2 >/dev/null 2>&1; then \
 		echo "redis.auth.revision=v2 must fail the render"; exit 1; fi; \
+	echo "== exporters: each pod's prometheus.io/port is a declared containerPort; the scraper's namespace may reach it"; \
+	r=(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --set-file envFile=$$env); \
+	np=$$("$${r[@]}" --show-only templates/networkpolicy.yaml); \
+	for x in redis:9121 postgres:9187; do \
+		w=$${x%%:*}; p=$${x##*:}; pod=$$("$${r[@]}" --show-only templates/$$w.yaml); \
+		grep -qF "prometheus.io/port: \"$$p\"" <<< "$$pod" || { echo "$$w: no prometheus.io/port $$p"; exit 1; }; \
+		[ "$$(grep -c 'prometheus.io/port:' <<< "$$pod")" -eq 1 ] || { echo "$$w: one prometheus.io/port per pod"; exit 1; }; \
+		grep -qE "containerPort: $$p," <<< "$$pod" || { echo "$$w: no container declares port $$p (the scraper keeps only a declared port)"; exit 1; }; \
+		grep -B1 "port: $$p, protocol: TCP" <<< "$$np" | grep -q 'kubernetes.io/metadata.name: observability' \
+			|| { echo "$$w: the metrics namespace may not reach $$p"; exit 1; }; \
+	done; \
+	off=$$("$${r[@]}" --set redis.exporter.enabled=false --set postgres.exporter.enabled=false); \
+	if grep -qE '(containerPort|port): (9121|9187)|prometheus.io/port: "(9121|9187)"' <<< "$$off"; then echo "exporters off still render 9121 or 9187"; exit 1; fi; \
 	echo "== edge (ADR 0035): Service helper2-admin; ingress-nginx may reach the app on 8080 and the admin port"; \
 	for e in prod staging; do \
 		r=(helm template helper2 $(CHART) -f $(CHART)/values-$$e.yaml --set image.tag=000000000000 --set-file envFile=$$env); \

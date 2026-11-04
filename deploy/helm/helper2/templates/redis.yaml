@@ -15,8 +15,9 @@ spec:
   template:
     metadata:
       labels: { app: redis }
-      {{- if .Values.redis.auth.enabled }}
+      {{- if or .Values.redis.auth.enabled .Values.redis.exporter.enabled }}
       annotations:
+        {{- if .Values.redis.auth.enabled }}
         {{- if .Values.redis.auth.existingSecret }}
         # Redis reads its password at start only. The chart cannot see the existing Secret change: a new
         # redis.auth.revision restarts Redis (with the app).
@@ -24,6 +25,13 @@ spec:
         {{- else }}
         # Redis reads its password at start only: a new one in app.env restarts it (with the app).
         checksum/auth: {{ get (include "helper2.env" . | fromJson) "H2_REDIS_PASSWORD" | sha256sum }}
+        {{- end }}
+        {{- end }}
+        {{- if .Values.redis.exporter.enabled }}
+        # For a Prometheus-style scraper: the exporter sidecar (allow its namespace with networkPolicy.metricsNamespace).
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9121"
+        prometheus.io/path: /metrics
         {{- end }}
       {{- end }}
     spec:
@@ -57,6 +65,21 @@ spec:
             {{- toYaml .Values.redis.resources | nindent 12 }}
           securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }
           volumeMounts: [{ name: data, mountPath: /data }]
+        {{- if .Values.redis.exporter.enabled }}
+        # Reads INFO over localhost. Default metrics only: no --check-keys, so no key names leave Redis.
+        - name: redis-exporter
+          image: {{ .Values.redis.exporter.image }}
+          env:
+            - { name: REDIS_ADDR, value: "redis://localhost:6379" }
+            {{- if .Values.redis.auth.enabled }}
+            - name: REDIS_PASSWORD
+              valueFrom: { {{ include "helper2.redisPasswordFrom" . }} }
+            {{- end }}
+          ports: [{ containerPort: 9121, name: redis-metrics }]
+          resources:
+            {{- toYaml .Values.redis.exporter.resources | nindent 12 }}
+          securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }
+        {{- end }}
   # Immutable after creation: a new size or storage class needs a new StatefulSet (the cache refills).
   volumeClaimTemplates:
     - metadata: { name: data }

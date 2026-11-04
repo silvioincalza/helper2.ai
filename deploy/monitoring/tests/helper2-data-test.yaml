@@ -1,0 +1,101 @@
+# Unit tests of the group helper2-data (Redis and Postgres exporters): promtool test rules deploy/monitoring/tests/*.yaml
+# Series carry the scraper's labels (job, namespace, pod, app, instance), as the exporters' are scraped.
+rule_files:
+  - ../helper2-rules.yaml
+
+evaluation_interval: 1m
+
+tests:
+  # Evictions: any evicted key in 15 minutes fires at once; a flat counter stays quiet.
+  - interval: 1m
+    input_series:
+      - series: 'redis_evicted_keys_total{job="kubernetes-pods", namespace="helper2-prod", pod="redis-0", app="redis", instance="10.0.0.5:9121"}'
+        values: '0x10 3 3 3 3 3'
+      - series: 'redis_evicted_keys_total{job="kubernetes-pods", namespace="helper2-staging", pod="redis-0", app="redis", instance="10.0.1.5:9121"}'
+        values: '7x15'
+    alert_rule_test:
+      - eval_time: 9m
+        alertname: Helper2RedisEvictingKeys
+        exp_alerts: []
+      - eval_time: 14m
+        alertname: Helper2RedisEvictingKeys
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: helper2-prod
+            exp_annotations:
+              summary: "Redis evicts keys (helper2-prod)."
+              description: "3 keys were evicted in the last 15 minutes: Redis is full (maxmemory)."
+              runbook: "Dashboard row 'Data stores', 'Redis memory vs maxmemory' and 'Redis keys evicted and expired'. Raise redis.maxMemory (and the container memory limit) in the chart's values, then deploy."
+
+  # Memory: 95% of maxmemory for 15 minutes fires; 50% does not; a Redis without maxmemory (0) is left out.
+  - interval: 1m
+    input_series:
+      - series: 'redis_memory_used_bytes{job="kubernetes-pods", namespace="helper2-prod", pod="redis-0", app="redis", instance="10.0.0.5:9121"}'
+        values: '127506841.6x30'
+      - series: 'redis_memory_max_bytes{job="kubernetes-pods", namespace="helper2-prod", pod="redis-0", app="redis", instance="10.0.0.5:9121"}'
+        values: '134217728x30'
+      - series: 'redis_memory_used_bytes{job="kubernetes-pods", namespace="helper2-staging", pod="redis-0", app="redis", instance="10.0.1.5:9121"}'
+        values: '67108864x30'
+      - series: 'redis_memory_max_bytes{job="kubernetes-pods", namespace="helper2-staging", pod="redis-0", app="redis", instance="10.0.1.5:9121"}'
+        values: '134217728x30'
+      - series: 'redis_memory_used_bytes{job="kubernetes-pods", namespace="helper2-dev", pod="redis-0", app="redis", instance="10.0.2.5:9121"}'
+        values: '67108864x30'
+      - series: 'redis_memory_max_bytes{job="kubernetes-pods", namespace="helper2-dev", pod="redis-0", app="redis", instance="10.0.2.5:9121"}'
+        values: '0x30'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: Helper2RedisMemoryHigh
+        exp_alerts: []
+      - eval_time: 20m
+        alertname: Helper2RedisMemoryHigh
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: helper2-prod
+            exp_annotations:
+              summary: "Redis uses more than 90% of its maxmemory (helper2-prod)."
+              description: "Redis memory is at 95% of maxmemory, for 15 minutes. Evictions come next."
+              runbook: "Dashboard row 'Data stores', 'Redis memory vs maxmemory'. A growing key count with the same traffic: look for keys without a TTL (redis-cli --bigkeys in the redis-0 pod). Otherwise raise redis.maxMemory."
+
+  # Exporter down: the Redis exporter not scraped and the Postgres exporter unable to log in both fire after
+  # 10 minutes; the app pod's up and a healthy exporter do not count.
+  - interval: 1m
+    input_series:
+      - series: 'up{job="kubernetes-pods", namespace="helper2-prod", pod="redis-0", app="redis", instance="10.0.0.5:9121"}'
+        values: '1x5 0x20'
+      - series: 'up{job="kubernetes-pods", namespace="helper2-prod", pod="postgres-0", app="postgres", instance="10.0.0.6:9187"}'
+        values: '1x25'
+      - series: 'pg_up{job="kubernetes-pods", namespace="helper2-prod", pod="postgres-0", app="postgres", instance="10.0.0.6:9187"}'
+        values: '1x5 0x20'
+      - series: 'up{job="kubernetes-pods", namespace="helper2-prod", pod="helper2-7d9f8-abcde", app="helper2", instance="10.0.0.7:8081"}'
+        values: '0x25'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: Helper2ExporterDown
+        exp_alerts: []
+      - eval_time: 20m
+        alertname: Helper2ExporterDown
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: kubernetes-pods
+              namespace: helper2-prod
+              pod: redis-0
+              app: redis
+              instance: "10.0.0.5:9121"
+            exp_annotations:
+              summary: "No metrics from the exporter in pod redis-0 (helper2-prod)."
+              description: "The exporter of pod redis-0 has reported nothing, or a data store it cannot reach, for 10 minutes: the data-store alerts and panels are blind."
+              runbook: "kubectl -n helper2-prod logs redis-0 -c redis-exporter. up = 0: check the NetworkPolicy (networkPolicy.metricsNamespace) and the pod annotations; redis_up or pg_up = 0: check the password in the Secret and the data store's own logs."
+          - exp_labels:
+              severity: warning
+              job: kubernetes-pods
+              namespace: helper2-prod
+              pod: postgres-0
+              app: postgres
+              instance: "10.0.0.6:9187"
+            exp_annotations:
+              summary: "No metrics from the exporter in pod postgres-0 (helper2-prod)."
+              description: "The exporter of pod postgres-0 has reported nothing, or a data store it cannot reach, for 10 minutes: the data-store alerts and panels are blind."
+              runbook: "kubectl -n helper2-prod logs postgres-0 -c postgres-exporter. up = 0: check the NetworkPolicy (networkPolicy.metricsNamespace) and the pod annotations; redis_up or pg_up = 0: check the password in the Secret and the data store's own logs."
