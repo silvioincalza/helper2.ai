@@ -259,6 +259,10 @@ Fix an item or accept it; when it no longer holds, remove it.
 - Similar-question reuse shares an answer only between questions read the same way; the reading cannot tell "this
   year" from "last year", and a question with no subject keeps no direction, which is why the threshold is high and
   most paraphrases still miss. ([ADR 0041](adr/guide/0041-guide-answer-cache.md))
+- The research trail lists no duplicate, no pick dropped for lack of room and no prompt, so `rejected` can be larger
+  than the list. A reused answer shows no queries and no search query. Lawyer: are AI-written
+  search queries covered by Art. 50(2), and does the privacy text cover showing a cached answer built from someone
+  else's question? ([ADR 0044](adr/guide/0044-research-trail.md))
 - Lawyer: is metadata-only marking enough for text (it is lost on copy)? A new AI-written field must be added to the marking and its tests by hand. ([ADR 0038](adr/guide/0038-ai-content-marking.md))
 
 ### Edge and identity

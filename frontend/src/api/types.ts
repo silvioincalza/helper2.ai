@@ -14,6 +14,7 @@ export type ValueOrigin = S['ValueOrigin'];
 export type Verification = S['Verification'];
 export type DateFact = S['DateFact'];
 export type ResultCard = S['ResultCard'];
+export type TrailRemoved = S['GuideTrailRemoved'];
 export type SourceStatus = S['SourceStatus'];
 export type SearchResponse = S['SearchResponse'];
 export type RecentResponse = S['RecentResponse'];

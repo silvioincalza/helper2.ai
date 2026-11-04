@@ -293,13 +293,15 @@ h1, h2 { font-weight: 500; letter-spacing: -0.03em; }
 
 /* guide answer: proof first */
 .proof-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: var(--radius-xl); overflow: hidden; margin-bottom: var(--space-4); background: var(--bg); }
-.proof-strip li { display: flex; flex-direction: column; gap: 2px; padding: var(--space-4); border-right: 1px solid var(--border); min-width: 0; }
-.proof-strip li:last-child { border-right: 0; }
-.proof-strip li.is-checked { background: var(--checked-bg); color: var(--checked-ink); }
+.proof-strip > li { display: flex; flex-direction: column; gap: 2px; padding: var(--space-4); border-right: 1px solid var(--border); min-width: 0; }
+.proof-strip > li:last-child { border-right: 0; }
+.proof-strip > li.is-checked { background: var(--checked-bg); color: var(--checked-ink); }
 .proof-strip strong { font-size: 0.95rem; overflow-wrap: anywhere; }
 .proof-n { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
-.proof-strip li.is-checked .proof-n, .proof-strip li.is-checked .proof-sub { color: var(--checked-ink); }
+.proof-strip > li.is-checked .proof-n, .proof-strip > li.is-checked .proof-sub { color: var(--checked-ink); }
 .proof-sub { font-size: 0.8rem; color: var(--muted); overflow-wrap: anywhere; }
+.proof-trail { display: flex; flex-direction: column; gap: 2px; font-size: 0.85rem; overflow-wrap: anywhere; }
+.proof-trail li { padding: 0; border: 0; }
 .guide-prompt { margin-top: var(--space-4); background: var(--console); color: #f3f1ea; border-radius: 20px; padding: var(--space-5); }
 .guide-prompt h3 { margin: 0; font-size: 1rem; }
 .guide-prompt .badge { background: transparent; color: #c9cae3; border-color: #45477a; }
@@ -311,8 +313,8 @@ h1, h2 { font-weight: 500; letter-spacing: -0.03em; }
 
 @media (max-width: 760px) {
   .proof-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .proof-strip li:nth-child(2) { border-right: 0; }
-  .proof-strip li:nth-child(-n+2) { border-bottom: 1px solid var(--border); }
+  .proof-strip > li:nth-child(2) { border-right: 0; }
+  .proof-strip > li:nth-child(-n+2) { border-bottom: 1px solid var(--border); }
 }
 @media (max-width: 520px) {
   /* The same inset as the box on the results page, so the question starts at the same place on both pages. */

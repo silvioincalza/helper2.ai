@@ -137,7 +137,7 @@ class GuideAnswerCache(
         val WINDOWED_TTL: Duration = Duration.ofHours(6)
 
         /** Bumped when the answer's shape changes, so answers cached in the old shape are not served after a deploy. */
-        private const val SHAPE = "v2"
+        private const val SHAPE = "v3"
 
         /**
          * Same [normalized] question, same [config] (models, prompts, limits) → same key. A clarification answer and
