@@ -88,10 +88,12 @@ app:
 postgres:
   # postgres:18.6-alpine plus pgvector (deploy/postgres/Dockerfile), pushed to your registry. A pushed
   # tag is never rebuilt, so any change under deploy/postgres needs a new tag (CI checks this on PRs).
+  # Tag: <postgres>-pgvector<pgvector>-<n>, where n counts the builds of the same two versions (a new base digest,
+  # a Dockerfile change). The first build had no -<n>.
   image:
     # Required, e.g. ghcr.io/<owner>/helper2-postgres.
     repository: ""
-    tag: 18.6-pgvector0.8.6
+    tag: 18.6-pgvector0.8.6-2
     # Optional pin, "sha256:<hex>" of that tag. When set, the pods run repository:tag@digest, so the
     # runtime takes exactly that image even if the tag were overwritten. Setting or changing it
     # restarts Postgres once; change it together with tag.
@@ -106,7 +108,8 @@ postgres:
     limits: { memory: 1Gi }
 
 redis:
-  image: docker.io/library/redis:8.10.2-alpine
+  # Pinned by the digest of its multi-arch index (ADR 0046); Dependabot updates tag and digest together.
+  image: docker.io/library/redis:8.10.2-alpine@sha256:9f8d2d789b9a1d1e3f283f979aa9cbf393373806472e1ccd460e2f9c869b833b
   maxMemory: 128mb
   # The AOF volume (append-only file, fsync every second). volumeClaimTemplates are immutable: changing
   # these needs a new StatefulSet. Empty storageClassName = the cluster's default storage class.
@@ -169,7 +172,8 @@ backup:
   # is its lifecycle rule. Needs networkPolicy.egress.external to allow the endpoint.
   offsite:
     enabled: false
-    image: docker.io/rclone/rclone:1.75.2
+    # Pinned by the digest of its multi-arch index (ADR 0046); Dependabot updates tag and digest together.
+    image: docker.io/rclone/rclone:1.75.2@sha256:2687085f718d3c628f7fdfb77c52a1d344332aed543110bb88088f2c70d43eb5
     # e.g. https://<account-id>.r2.cloudflarestorage.com
     endpoint: ""
     bucket: ""

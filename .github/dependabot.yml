@@ -29,10 +29,11 @@ updates:
     groups:
       actions: { patterns: ["*"] }
 
-  # Base images of deploy/Dockerfile and deploy/postgres/Dockerfile. A change under deploy/postgres also
-  # needs a new postgres.image.tag in the chart's values.yaml (CI fails the PR until it has one).
+  # Base images of deploy/Dockerfile and deploy/postgres/Dockerfile, and the images in the chart's values.yaml
+  # (Redis, rclone), all pinned by digest (ADR 0046). A change under deploy/postgres also needs a new
+  # postgres.image.tag in the chart's values.yaml (CI fails the PR until it has one).
   - package-ecosystem: docker
-    directories: [/deploy, /deploy/postgres]
+    directories: [/deploy, /deploy/postgres, /deploy/helm/helper2]
     schedule: { interval: weekly, day: monday }
     ignore:
       # A Postgres major needs pg_upgrade or dump/restore of the data directory, never a base-image bump.
