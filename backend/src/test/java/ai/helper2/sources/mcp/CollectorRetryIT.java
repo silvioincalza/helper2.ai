@@ -33,13 +33,17 @@ class CollectorRetryIT {
     }
 
     private McpRegistryCollector collector() {
+        return collector(Duration.ofSeconds(2));
+    }
+
+    private McpRegistryCollector collector(Duration deadline) {
         RetryRegistry retries = RetryRegistry.ofDefaults();
         retries.retry(McpRegistryCollector.POLICY, RetryConfig.custom().maxAttempts(3)
             .intervalFunction(IntervalFunction.ofExponentialRandomBackoff(Duration.ofMillis(10), 2, 0.5))
             .retryOnException(new TransientSourceFailure()).build());
         Resilience policies = new Resilience4jPolicies(CircuitBreakerRegistry.ofDefaults(), BulkheadRegistry.ofDefaults(), retries);
         return new McpRegistryCollector(new SourceSettings(true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ZERO),
-            ObservedHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP), SourceFixtures.CLOCK, policies);
+            ObservedHttp.restClientBuilder(Duration.ofSeconds(2), deadline, ObservationRegistry.NOOP), SourceFixtures.CLOCK, policies);
     }
 
     @Test
@@ -56,5 +60,15 @@ class CollectorRetryIT {
 
         assertThatThrownBy(() -> collector().collect(null, null, 10)).isInstanceOf(SourceFailure.Unavailable.class);
         assertThat(server.requests).hasSize(1);
+    }
+
+    /** A body still arriving at the deadline is cut and retried like a timeout: it may be quick next time. */
+    @Test
+    void aCallPastItsDeadlineIsRetried() {
+        server.route("/v0.1/servers", FixtureServer.Reply.drip("{\"servers\":[],\"metadata\":{}}", 50));
+
+        assertThatThrownBy(() -> collector(Duration.ofMillis(300)).collect(null, null, 10))
+            .isInstanceOfSatisfying(SourceFailure.Unavailable.class, e -> assertThat(e.getMessage()).contains("deadline exceeded"));
+        assertThat(server.requests).hasSize(3);
     }
 }

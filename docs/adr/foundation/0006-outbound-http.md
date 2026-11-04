@@ -17,10 +17,23 @@ state what happened.
    can use it too without depending on `sources`. `sources.support.HttpClients` adds only the base URL, the token and
    the error mapping. The client sends each request once (its automatic retries are off): retries belong to the
    caller's resilience policy ([0033](0033-resilience-policies.md)), where they are counted and bounded.
-2. **Timeouts.** The source's timeout is used once as the connect timeout and once as the response timeout.
-   Waiting for a free pooled connection is limited to 250 ms (`POOL_WAIT`). Search source timeouts are
+2. **Timeouts and a total deadline.** The source's timeout is used once as the connect timeout and once as the
+   response timeout. Waiting for a free pooled connection is limited to 250 ms (`POOL_WAIT`). Search source timeouts are
    2.5 s (GitHub, Hugging Face, npm), 3 s (arXiv) and 6 s (Tavily, `H2_SOURCE_TAVILY_TIMEOUT`); Scout
    collectors use 10 s or 15 s.
+   The response timeout applies to each read, so a body that keeps trickling in never trips it. So every call also
+   has a total deadline (`BoundedResponse`, `CappedStream`). Its clock starts once, before the request goes out: the
+   pool wait, the connect and the wait for the headers count inside it, never on top. Every read of the body checks
+   it, before and after the read. Past it, the read throws `DeadlineExceeded`, the connection is dropped (not drained:
+   Spring and Apache would read the rest of the body first), and `HttpClients` maps it to
+   `Unavailable("deadline exceeded")`, transient like a timeout. The deadline is:
+   - for search sources and the setup guide's fetches, the timeout (`restClientBuilder(timeout, …)`), so a search
+     waits as before;
+   - for Scout collectors, `H2_SOURCE_<ID>_DEADLINE` (`hf-trending` `HF_TRENDING`, `tavily-scout` `TAVILY_SCOUT`,
+     `course-scout` `COURSE_SCOUT`, `github-awesome` `GITHUB_AWESOME`, `hf-provider-orgs` `HF_ORGS`, `ai-deadlines`
+     `AI_DEADLINES`, `mcp-registry` `MCP`), by default twice the timeout (`SourceSettings.deadline`);
+   - for one call, its own with `ObservedHttp.deadline(d)`: an awesome-list README may take 60 s (5 MB);
+   - for embeddings, the embedder's timeout (11).
 3. **Redirects.** `NoDowngradeRedirects` follows redirects, except one from `https` to `http`. A request that
    carries `Authorization` is not redirected to another scheme, host or port (HttpClient's `isRedirectAllowed`,
    kept by `NoDowngradeRedirects`): a token only ever reaches the configured host, and the unfollowed 3xx ends the call
@@ -58,8 +71,9 @@ state what happened.
 11. **Embeddings.** `NvidiaEmbedder` uses the same observed client with its own settings
    (`ObservedHttp.requestFactory(timeout, timeout, false)`): its timeout also bounds the pool wait, redirects are
    not followed (the API key never goes to another host), and the body is buffered so the request carries a
-   `Content-Length` (on a chunked body of 50 texts the API hangs until the read timeout). Timeouts: 3 s for
-   queries, 30 s for indexing batches ([0012](../search/0012-vector-search-pgvector.md)).
+   `Content-Length` (on a chunked body of 50 texts the API hangs until the read timeout). Its timeout is also the
+   call's total deadline (`ObservedHttp.deadlineOnly`, placed under the buffering so it stops the buffered read).
+   Timeouts: 3 s for queries, 30 s for indexing batches ([0012](../search/0012-vector-search-pgvector.md)).
 12. **Model calls** go through Spring AI's own client, with `H2_LLM_TIMEOUT` (40 s) and `H2_LLM_MAX_RETRIES` (0, so the SDK does not retry);
    see [0014](../guide/0014-llm-integration.md). They are observed by `ModelCallMetrics`, not by `ObservedHttp`.
 13. **Live check, weekly.** Every source and collector adapter has one `@Tag("live")` test against the real API
@@ -69,6 +83,8 @@ state what happened.
 
 ## Consequences
 - A failing source costs at most its timeout, and the search still answers with the other sources.
+- A call ends at its deadline even when the body trickles in byte by byte: a collector pass cannot hang on one slow
+  host for longer than its deadline per attempt, plus one read that was already waiting (see the known limits).
 - Rate limits are respected: during the pause the source is not called (status `SKIPPED`).
 - arXiv gets at most one call every 3 seconds whatever the number of replicas.
 - One request per attempt: a provider that answers 503 sees exactly the calls the policies allow, never a hidden
@@ -79,12 +95,15 @@ state what happened.
 - An API that changes its response shape, its access or its limits shows up within a week as a failed `live` run,
   not as a source that quietly returns nothing.
 - `HttpClientsMappingTest`, `TokenRedirectTest`, `ArxivSourceTest`, `RedisOutboundThrottleIT`, `ObservedHttpRedirectTest`,
-  `ObservedHttpRetryTest`, `ObservedHttpObservationTest` and `ObservedHttpUserAgentTest` cover the rules.
+  `ObservedHttpRetryTest`, `ObservedHttpObservationTest`, `ObservedHttpUserAgentTest`, `ObservedHttpDeadlineTest`,
+  `CollectorRetryIT` and `NvidiaEmbedderTest` cover the rules.
 
 ## Alternatives considered
 - The Java Development Kit (JDK) `HttpClient` — no connection pool limits or redirect strategy hooks of this kind.
 - Spring WebClient (reactive) — a second programming model; virtual threads already make blocking calls cheap.
 - Retries in the HTTP client — invisible to the circuit breaker and multiplied by any retry of the caller.
+- A total deadline by a timer that aborts the request from another thread — one more thread or scheduler per call;
+  checking the clock on each read gives the same bound with one read of slack.
 - Retries on the search path — they would spend more of the search deadline; the pause after a rate limit and the
   stale cache cover the main cases ([0033](0033-resilience-policies.md)).
 - arXiv pace per pod, or with Resilience4j's rate limiter — both count in one JVM, so 3 replicas send up to 3 calls
@@ -95,7 +114,8 @@ state what happened.
 - `backend/src/main/java/ai/helper2/platform/http/ObservedHttp.java` — pooled client, timeouts, redirects,
   body cap, User-Agent, observation and `uri` tag.
 - `backend/src/main/java/ai/helper2/sources/support/HttpClients.java` — base URL, token, error mapping, per-item guard.
-- `backend/src/main/java/ai/helper2/sources/config/SourcesConfiguration.java` — one builder per source and collector.
+- `backend/src/main/java/ai/helper2/sources/config/SourcesConfiguration.java` — one builder per source and collector;
+  collectors get their deadline (`collectorClient`). `sources/support/SourceSettings.java` — `deadline`.
 - `backend/src/main/java/ai/helper2/sources/arxiv/ArxivSource.java`, `platform/resilience/RedisOutboundThrottle.java` —
   one arXiv call every 3 seconds across replicas.
 - `backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` (`Run.collect`) — deadlines and outcomes.
@@ -109,6 +129,5 @@ state what happened.
 The weekly live check (13) is a scheduled test run, not a runtime path, so the diagrams leave it out.
 
 ## Roadmap
-- Total deadline per call instead of a per-read timeout: [roadmap](../../roadmap.md#5-search-and-catalog).
 - Run `./gradlew liveTest` against production egress: [roadmap](../../roadmap.md#quality-gates).
 - Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

@@ -64,7 +64,9 @@ The domain (Kotlin) must not depend on the library that implements them ([0002](
    arXiv pace (`OutboundThrottle`, [0006](0006-outbound-http.md)).
 8. **No time limiter.** Search deadlines stay in `SearchResources` (one virtual thread per source, `Future.get` with
    the source's own timeout, [0008](../search/0008-federated-search.md)); a `TimeLimiter` would need futures of its own and
-   duplicate them.
+   duplicate them. Each HTTP call also has a total deadline of its own, in the client
+   ([0006](0006-outbound-http.md) §2): a retry starts a new one, so a collector call costs at most its deadline per
+   attempt plus the backoff.
 9. **Metrics** by `resilience4j-micrometer`, with the common tags `application` and `environment` ([0026](../operations/0026-observability.md)):
    `resilience4j.circuitbreaker.state{name,state}` (1 for the current state), `.calls{name,kind}`,
    `.not.permitted.calls{name}`, `.failure.rate`, `.slow.call.rate`; `resilience4j.bulkhead.available.concurrent.calls{name}`;

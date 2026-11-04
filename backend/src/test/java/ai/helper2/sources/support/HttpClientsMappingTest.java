@@ -71,6 +71,20 @@ class HttpClientsMappingTest {
             .isInstanceOfSatisfying(SourceFailure.Unavailable.class, e -> assertThat(e.getTransient()).as("timeout").isTrue());
     }
 
+    /** A body that keeps trickling in past the call's deadline is a transient failure, retried like a timeout. */
+    @Test
+    void aCallPastItsDeadlineIsATransientFailure() {
+        server.route("/drip", FixtureServer.Reply.drip("{\"items\":[1,2,3,4,5,6,7,8,9]}", 50));
+        RestClient http = ObservedHttp.restClientBuilder(Duration.ofSeconds(2), Duration.ofMillis(300), ObservationRegistry.NOOP)
+            .baseUrl(server.baseUrl()).build();
+
+        assertThatThrownBy(() -> HttpClients.getJson(() -> http.get().uri("/drip").retrieve().body(String.class), SourceFixtures.CLOCK))
+            .isInstanceOfSatisfying(SourceFailure.Unavailable.class, e -> {
+                assertThat(e.getMessage()).contains("deadline exceeded");
+                assertThat(e.getTransient()).isTrue();
+            });
+    }
+
     @Test
     void aSlowResponseFailsAfterTheResponseTimeout() {
         server.route("/slow", new FixtureServer.Reply(200, "late", Map.of(), 1_500));

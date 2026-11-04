@@ -14,9 +14,22 @@ import java.util.concurrent.CopyOnWriteArrayList;
 /** Tiny HTTP server replaying recorded API responses. Boundary tests only; no network. */
 public final class FixtureServer implements AutoCloseable {
 
-    public record Reply(int status, String body, Map<String, String> headers, long delayMs) {
+    /**
+     * [delayMs] before the headers; [dripMs] &gt; 0 sends the body one byte at a time with that pause before each byte,
+     * so every read gets data quickly while the whole body takes long (a per-read timeout never fires).
+     */
+    public record Reply(int status, String body, Map<String, String> headers, long delayMs, long dripMs) {
+        public Reply(int status, String body, Map<String, String> headers, long delayMs) {
+            this(status, body, headers, delayMs, 0);
+        }
+
         public static Reply ok(String body) {
             return new Reply(200, body, Map.of(), 0);
+        }
+
+        /** 200 with [body] sent byte by byte, [dripMs] apart. */
+        public static Reply drip(String body, long dripMs) {
+            return new Reply(200, body, Map.of(), 0, dripMs);
         }
     }
 
@@ -47,8 +60,25 @@ public final class FixtureServer implements AutoCloseable {
             reply.headers().forEach((k, v) -> exchange.getResponseHeaders().add(k, v));
             exchange.getResponseHeaders().add("Content-Type", "application/json");
             byte[] bytes = reply.body().getBytes(StandardCharsets.UTF_8);
-            exchange.sendResponseHeaders(reply.status(), bytes.length);
-            exchange.getResponseBody().write(bytes);
+            // A dripped body goes chunked: the server sends each flushed chunk at once, while a body of fixed length
+            // is held back until the exchange closes.
+            exchange.sendResponseHeaders(reply.status(), reply.dripMs() > 0 ? 0 : bytes.length);
+            if (reply.dripMs() > 0) {
+                try {
+                    exchange.getResponseBody().flush();
+                    for (byte b : bytes) {
+                        Thread.sleep(reply.dripMs());
+                        exchange.getResponseBody().write(b);
+                        exchange.getResponseBody().flush();
+                    }
+                } catch (InterruptedException ignored) {
+                    Thread.currentThread().interrupt();
+                } catch (IOException clientGone) {
+                    // The client stopped reading (its deadline): nothing left to send.
+                }
+            } else {
+                exchange.getResponseBody().write(bytes);
+            }
             exchange.close();
         });
         server.start();

@@ -23,6 +23,7 @@ import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
 import java.net.URI;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -170,6 +171,8 @@ public class GitHubAwesomeCollector implements Collector {
 
     /** Big awesome lists are long Markdown files; anything past this is not a list worth parsing. */
     static final int README_MAX_BYTES = 5 * 1024 * 1024;
+    /** Total time for one README (ADR 0006 §2): 5 MB at about 90 kB/s; other calls keep the collector's deadline. */
+    static final Duration README_DEADLINE = Duration.ofSeconds(60);
 
     private String readme(String list) {
         String[] parts = list.split("/", 2);
@@ -177,6 +180,7 @@ public class GitHubAwesomeCollector implements Collector {
             .uri("/repos/{owner}/{repo}/readme", parts[0], parts[1])
             .header("Accept", "application/vnd.github.raw+json")
             .attributes(ObservedHttp.maxResponseBytes(README_MAX_BYTES))
+            .attributes(ObservedHttp.deadline(README_DEADLINE))
             .retrieve().body(String.class), clock));
     }
 

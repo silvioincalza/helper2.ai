@@ -9,6 +9,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.LongSupplier;
 import java.util.regex.Pattern;
 import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -18,6 +19,7 @@ import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.apache.hc.core5.http.Header;
 import org.apache.hc.core5.http.HttpResponse;
+import org.apache.hc.core5.http.io.EofSensorInputStream;
 import org.apache.hc.core5.http.ProtocolException;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.util.Timeout;
@@ -51,6 +53,7 @@ public final class ObservedHttp {
     public static final int MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
 
     private static final String MAX_RESPONSE_BYTES_ATTRIBUTE = ObservedHttp.class.getName() + ".maxResponseBytes";
+    private static final String DEADLINE_ATTRIBUTE = ObservedHttp.class.getName() + ".deadline";
 
     private ObservedHttp() {
     }
@@ -62,7 +65,8 @@ public final class ObservedHttp {
 
     /**
      * Builder for source calls: redirects followed unless they downgrade https to http; response bodies read up
-     * to {@link #MAX_RESPONSE_BYTES} or the call's own {@link #maxResponseBytes}.
+     * to {@link #MAX_RESPONSE_BYTES} or the call's own {@link #maxResponseBytes}; the call ends at its deadline,
+     * here {@code timeout} (see {@link #restClientBuilder(Duration, Duration, ObservationRegistry)}).
      *
      * Timeouts: {@code timeout} once as the connect timeout and once as the client's single response timeout
      * (time to wait for response data), plus a short {@link #POOL_WAIT}. The response timeout is not repeated
@@ -70,7 +74,52 @@ public final class ObservedHttp {
      * (and cancelled) frees its pooled connection after about the timeout, not a multiple of it.
      */
     public static RestClient.Builder restClientBuilder(Duration timeout, ObservationRegistry registry) {
-        return observed(requestFactory(timeout, POOL_WAIT, true), registry).requestInterceptor(BoundedResponse.INSTANCE);
+        return restClientBuilder(timeout, timeout, registry);
+    }
+
+    /**
+     * As {@link #restClientBuilder(Duration, ObservationRegistry)}, with a total {@code deadline} per call. The response
+     * timeout applies to each read, so a body that keeps trickling in never trips it; the deadline does. Its clock
+     * starts once, before the request is sent, so the pool wait, the connect and the wait for the headers count
+     * inside it (never on top). It is checked on every read of the body: past it, the read throws
+     * {@link DeadlineExceeded}. A call may set its own with {@link #deadline}.
+     */
+    public static RestClient.Builder restClientBuilder(Duration timeout, Duration deadline, ObservationRegistry registry) {
+        return observed(requestFactory(timeout, POOL_WAIT, true), registry)
+            .requestInterceptor(new BoundedResponse(MAX_RESPONSE_BYTES, deadline, System::nanoTime));
+    }
+
+    /**
+     * Only the total deadline, no body cap: for a client that is not built by {@link #restClientBuilder}, such as the
+     * embedding client, add it with {@code builder.requestInterceptor(deadlineOnly(d))}.
+     */
+    public static ClientHttpRequestInterceptor deadlineOnly(Duration deadline) {
+        return new BoundedResponse(Long.MAX_VALUE, deadline, System::nanoTime);
+    }
+
+    /**
+     * Request attributes for a call that may take up to {@code deadline} in all (e.g. a big README), instead of the
+     * builder's: {@code http.get().uri(...).attributes(deadline(d))}.
+     */
+    public static Consumer<Map<String, Object>> deadline(Duration deadline) {
+        return attributes -> attributes.put(DEADLINE_ATTRIBUTE, deadline);
+    }
+
+    /** Thrown on a read of the body once the call's deadline has passed; RestClient wraps it, {@link #isDeadlineExceeded} finds it. */
+    public static final class DeadlineExceeded extends IOException {
+        DeadlineExceeded(Duration deadline) {
+            super("deadline of " + deadline.toMillis() + " ms exceeded");
+        }
+    }
+
+    /** Whether {@code failure}, or one of its causes, is a read past the call's deadline. */
+    public static boolean isDeadlineExceeded(Throwable failure) {
+        for (Throwable t = failure; t != null; t = t.getCause()) {
+            if (t instanceof DeadlineExceeded) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -83,7 +132,7 @@ public final class ObservedHttp {
 
     /** Thrown while reading a body past its cap; RestClient wraps it, {@link #isTooLarge} finds it. */
     public static final class ResponseTooLarge extends IOException {
-        ResponseTooLarge(int cap) {
+        ResponseTooLarge(long cap) {
             super("response larger than " + cap + " bytes");
         }
     }
@@ -98,14 +147,27 @@ public final class ObservedHttp {
         return false;
     }
 
-    /** Wraps each response body in a stream that fails once more bytes than the call's cap arrive. */
+    /**
+     * Wraps each response body in a stream that fails once more bytes than the call's cap arrive, or on a read past the
+     * call's deadline. The deadline's clock starts here, before the request goes out.
+     */
     static final class BoundedResponse implements ClientHttpRequestInterceptor {
-        static final BoundedResponse INSTANCE = new BoundedResponse();
+        private final long defaultMax;
+        private final Duration defaultDeadline;
+        private final LongSupplier ticker;
+
+        BoundedResponse(long defaultMax, Duration defaultDeadline, LongSupplier ticker) {
+            this.defaultMax = defaultMax;
+            this.defaultDeadline = defaultDeadline;
+            this.ticker = ticker;
+        }
 
         @Override
         public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
+            long start = ticker.getAsLong();
             Object cap = request.getAttributes().get(MAX_RESPONSE_BYTES_ATTRIBUTE);
-            int max = cap instanceof Integer n ? n : MAX_RESPONSE_BYTES;
+            long max = cap instanceof Integer n ? n : defaultMax;
+            Duration deadline = request.getAttributes().get(DEADLINE_ATTRIBUTE) instanceof Duration d ? d : defaultDeadline;
             ClientHttpResponse response = execution.execute(request, body);
             return new ClientHttpResponse() {
                 private InputStream bounded;
@@ -113,7 +175,8 @@ public final class ObservedHttp {
                 @Override
                 public InputStream getBody() throws IOException {
                     if (bounded == null) {
-                        bounded = new CappedStream(response.getBody(), max);
+                        InputStream raw = response.getBody();
+                        bounded = new CappedStream(raw, max, start, deadline.toNanos(), ticker, () -> abort(raw));
                     }
                     return bounded;
                 }
@@ -141,18 +204,56 @@ public final class ObservedHttp {
         }
     }
 
+    /**
+     * Drops the connection under a body we stop reading at its deadline. A plain close would read the rest first: Spring
+     * drains the body on close, and Apache reads a chunked or sized body to its end to reuse the connection, so a body
+     * that trickles in would hold the call until it ends, deadline or not.
+     */
+    private static void abort(InputStream raw) {
+        try {
+            if (raw instanceof EofSensorInputStream apache) {
+                apache.abort();
+            } else {
+                raw.close();
+            }
+        } catch (IOException ignored) {
+            // The call fails with DeadlineExceeded anyway.
+        }
+    }
+
+    /**
+     * A body read up to [max] bytes and until [start] + [deadlineNanos] on [ticker] (nanoseconds). The deadline is
+     * checked before each read and again after it, as one read may wait up to the response timeout. Past it,
+     * [onDeadline] runs once (it drops the connection), then the read throws {@link DeadlineExceeded}.
+     */
     static final class CappedStream extends FilterInputStream {
-        private final int max;
+        private final long max;
+        private final long start;
+        private final long deadlineNanos;
+        private final LongSupplier ticker;
+        private final Runnable onDeadline;
+        private boolean expired;
         private long read;
 
-        CappedStream(InputStream in, int max) {
+        CappedStream(InputStream in, long max, long start, long deadlineNanos, LongSupplier ticker) {
+            this(in, max, start, deadlineNanos, ticker, () -> {
+            });
+        }
+
+        CappedStream(InputStream in, long max, long start, long deadlineNanos, LongSupplier ticker, Runnable onDeadline) {
             super(in);
             this.max = max;
+            this.start = start;
+            this.deadlineNanos = deadlineNanos;
+            this.ticker = ticker;
+            this.onDeadline = onDeadline;
         }
 
         @Override
         public int read() throws IOException {
+            inTime();
             int b = super.read();
+            inTime();
             if (b != -1) {
                 count(1);
             }
@@ -161,11 +262,23 @@ public final class ObservedHttp {
 
         @Override
         public int read(byte[] buf, int off, int len) throws IOException {
+            inTime();
             int n = super.read(buf, off, len);
+            inTime();
             if (n > 0) {
                 count(n);
             }
             return n;
+        }
+
+        private void inTime() throws DeadlineExceeded {
+            if (expired || ticker.getAsLong() - start > deadlineNanos) {
+                if (!expired) {
+                    expired = true;
+                    onDeadline.run();
+                }
+                throw new DeadlineExceeded(Duration.ofNanos(deadlineNanos));
+            }
         }
 
         private void count(int n) throws IOException {

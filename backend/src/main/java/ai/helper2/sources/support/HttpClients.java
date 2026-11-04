@@ -100,6 +100,10 @@ public final class HttpClients {
             if (ObservedHttp.isTooLarge(e)) {
                 throw new SourceFailure.Unavailable("response too large");
             }
+            if (ObservedHttp.isDeadlineExceeded(e)) {
+                // Like a timeout: the same call may be quick in a moment, so a collector's policy retries it.
+                throw new SourceFailure.Unavailable("deadline exceeded", true);
+            }
             boolean network = e instanceof ResourceAccessException;
             throw new SourceFailure.Unavailable(network ? "network error or timeout" : "http error", network);
         }

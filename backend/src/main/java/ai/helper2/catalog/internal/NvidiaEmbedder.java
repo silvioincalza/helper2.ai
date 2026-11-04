@@ -15,6 +15,7 @@ import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.BufferingClientHttpRequestFactory;
+import org.springframework.http.client.InterceptingClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
@@ -43,15 +44,19 @@ public class NvidiaEmbedder implements Embedder {
     private final Resilience resilience;
 
     /**
-     * Observed like the source calls (ObservedHttp): {@code timeout} to connect, to wait for response data and
-     * to wait for a pooled connection; redirects are not followed, so the API key never goes to another host.
+     * Observed like the source calls (ObservedHttp): {@code timeout} to connect, to wait for response data, to wait
+     * for a pooled connection and as the call's total deadline; redirects are not followed, so the API key never goes
+     * to another host.
      */
     public NvidiaEmbedder(String baseUrl, String apiKey, String model, int dimensions, Duration timeout,
                           ObservationRegistry observations, Resilience resilience) {
         resilience.require(LlmPolicies.EMBED);
         // Buffered, so the request carries a Content-Length: a streamed (chunked) body of 50 texts made the
         // API catalog hang until the read timeout, while one short query went through (27 Oct 2026).
-        var factory = new BufferingClientHttpRequestFactory(ObservedHttp.requestFactory(timeout, timeout, false));
+        // Its timeout is also the call's total deadline (ADR 0006 §2, 11). The deadline sits under the buffering, so the
+        // buffered read of the response is the read it stops.
+        var factory = new BufferingClientHttpRequestFactory(new InterceptingClientHttpRequestFactory(
+            ObservedHttp.requestFactory(timeout, timeout, false), List.of(ObservedHttp.deadlineOnly(timeout))));
         this.http = ObservedHttp.observed(factory, observations).baseUrl(baseUrl)
             .defaultHeader("Authorization", "Bearer " + apiKey).build();
         this.model = model;
@@ -85,7 +90,8 @@ public class NvidiaEmbedder implements Embedder {
             boolean limited = e.getStatusCode().isSameCodeAs(HttpStatus.TOO_MANY_REQUESTS);
             throw new EmbeddingFailure("embedding call failed: HTTP " + e.getStatusCode().value(), limited);
         } catch (RestClientException e) {
-            throw new EmbeddingFailure("embedding call failed: " + e.getClass().getSimpleName(), false);
+            String why = ObservedHttp.isDeadlineExceeded(e) ? "deadline exceeded" : e.getClass().getSimpleName();
+            throw new EmbeddingFailure("embedding call failed: " + why, false);
         }
         return vectors(response, texts.size(), dimensions);
     }
