@@ -130,7 +130,7 @@ class AskGuideSimilarTest {
         assertEquals(2, model.plans, "the paraphrase is planned, to know how it is read")
         assertEquals(1, model.chooses, "but not answered again")
         assertEquals(1, webCalls.get(), "and not searched again")
-        assertEquals(first.copy(webSearches = null, trail = first.trail.withoutQueries()), reused.copy(webSearches = null))
+        assertEquals(first.copy(webSearches = null, searchQuery = "", trail = first.trail.withoutQueries()), reused.copy(webSearches = null))
         assertEquals(first.generatedAt, reused.generatedAt, "the page states the age of the answer it shows")
         assertEquals(listOf(1.0, 1.0, 0.0), listOf(cache("miss"), cache("similar"), cache("exact")))
         assertEquals(listOf(1.0, 1.0), listOf(questions("answered"), questions("cached")))
@@ -146,8 +146,10 @@ class AskGuideSimilarTest {
 
         assertEquals(listOf("pdf chat"), first.trail.queries, "the original asker sees the queries of their own question")
         assertEquals(emptyList(), reused.trail.queries)
+        assertEquals("", reused.searchQuery, "nor the planned search query")
         assertEquals(1.0, cache("exact"), "the second paraphrase is an exact hit")
         assertEquals(emptyList(), again.trail.queries)
+        assertEquals("", again.searchQuery)
     }
 
     @Test

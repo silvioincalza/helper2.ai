@@ -1,7 +1,7 @@
 # Flowchart: how one guide answer gets its research trail: which queries are listed, which removed suggestions,
 # and what a reused answer keeps.
 # Source of truth: backend/src/main/kotlin/ai/helper2/guide/usecase/Question.kt (Question.ran, GuideSteps.find),
-#   backend/src/main/kotlin/ai/helper2/guide/usecase/PickAnswer.kt (picks, insideWindow),
+#   backend/src/main/kotlin/ai/helper2/guide/usecase/PickAnswer.kt (picks, insideWindow), CompareAnswer.kt, ExplainAnswer.kt,
 #   backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (answerByIntent, similarAnswer),
 #   backend/src/main/kotlin/ai/helper2/guide/Guide.kt (ResearchTrail, GuideValidator.Rejection.trailCheck, removedOf),
 #   backend/src/main/java/ai/helper2/guide/web/GuideDtoMapper.java (trail, AI_WRITTEN_FIELDS),
@@ -17,17 +17,17 @@ plannedText: "Its text is the planner's query\n(or cut from it)?" {class: decisi
 recordText: "Record the query" {class: app}
 webRead: "Planned web query sent, and a\nsource that reads it not skipped?" {class: decision}
 recordWeb: "Record the web query" {class: app}
-validate: "Validator, then the window check" {class: app}
-rejected: "Rejected suggestion names\na real candidate?" {class: decision}
-mapped: "Rejection is a failed check?\nquote → QUOTE_NOT_FOUND\nreason → REASON_NOT_SUPPORTED\nkind, period → CONSTRAINT_NOT_MET" {class: decision}
-keptLater: "Same candidate kept\nas a pick?" {class: decision}
-removed: "Removed item:\nsource title + code\n(never the model's reason)" {class: data}
+validate: "Checks of a pick, a comparison cell\nor an explanation sentence:\ngate, window, reason check" {class: app}
+rejected: "Removed item names a real\ncandidate or subject?" {class: decision}
+mapped: "Removed by a failed check?\nquote → QUOTE_NOT_FOUND\nreason, text, reason check\n→ REASON_NOT_SUPPORTED\nkind, period → CONSTRAINT_NOT_MET" {class: decision}
+keptLater: "A pick whose candidate\nis kept as a pick?" {class: decision}
+removed: "Removed item:\nsource title + code\n(never the model's reason,\ncell or sentence)" {class: data}
 skip: "Not listed" {class: end}
 planRan: "Planner ran and did not fail?" {class: decision}
 cap: "ResearchTrail.of: trimmed, no repeats,\n≤ 3 queries of ≤ 200 chars,\n≤ 12 removed of ≤ 200 chars" {class: app}
 noQueries: "queries = []" {class: app}
 reused: "Answer reused from a\nsimilar question (ADR 0041)?" {class: decision}
-strip: "withoutQueries():\nanother asker's words" {class: app}
+strip: "withoutQueries(), searchQuery = \"\":\nanother asker's words" {class: app}
 dto: "GuideResponse.trail\ntrail.queries[] in AI_WRITTEN_FIELDS" {class: end}
 page: "Folded 'How the guide decided':\nqueries AI-marked and labelled;\n'title: check' lines or 'None removed'" {class: person}
 

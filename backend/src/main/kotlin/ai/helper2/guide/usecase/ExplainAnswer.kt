@@ -13,6 +13,9 @@ import ai.helper2.guide.GuideValidator
 import ai.helper2.guide.ReasonCheck
 import ai.helper2.guide.ReasonClaim
 import ai.helper2.guide.Recommendation
+import ai.helper2.guide.RemovedSuggestion
+import ai.helper2.guide.ResearchTrail
+import ai.helper2.guide.TrailCheck
 import ai.helper2.guide.isSubject
 import ai.helper2.search.MergedResult
 import ai.helper2.search.SearchRequest
@@ -79,12 +82,20 @@ internal class ExplainAnswer(
         progress.chosen(proposal.sentences.size)
         val byKey = candidates.associateBy { it.key }
         var rejected = 0
+        val removed = mutableListOf<RemovedSuggestion>()
         val kept = steps.step(q, "validate") {
             proposal.sentences.mapNotNull { p ->
                 val c = byKey[p.candidateKey.trim()]
-                val ok = c != null && p.text.isNotBlank() && p.text.length <= limits.maxSentenceChars && !GuideValidator.containsLink(p.text) &&
-                    validator.quoteHolds(p.quote, c.text)
+                val check = when {
+                    c == null -> null
+                    p.text.isBlank() || p.text.length > limits.maxSentenceChars || GuideValidator.containsLink(p.text) -> TrailCheck.REASON_NOT_SUPPORTED
+                    !validator.quoteHolds(p.quote, c.text) -> TrailCheck.QUOTE_NOT_FOUND
+                    else -> null
+                }
+                val ok = c != null && check == null
                 if (!ok) rejected++
+                // The trail names the source the sentence quoted, never the sentence (ADR 0044).
+                if (c != null && check != null) removed += RemovedSuggestion(c.result.title, check)
                 if (ok) c!!.key to p else null
             }.take(limits.maxSentences)
         }
@@ -94,7 +105,10 @@ internal class ExplainAnswer(
         val verdicts = if (claims.isEmpty()) emptyMap() else reasonCheck.verdicts(q, model, claims, progress)
         val sentences = kept.mapIndexedNotNull { i, (key, p) ->
             when (val v = verdicts["e${i + 1}"] ?: ReasonCheck.NOT_CHECKED) {
-                ReasonCheck.REMOVED -> null
+                ReasonCheck.REMOVED -> {
+                    removed += RemovedSuggestion(byKey.getValue(key).result.title, TrailCheck.REASON_NOT_SUPPORTED)
+                    null
+                }
                 else -> ExplainedSentence(p.text.trim(), p.quote.trim(), byKey.getValue(key).result, v)
             }
         }
@@ -104,5 +118,6 @@ internal class ExplainAnswer(
             else -> GuideStatus.PARTIAL
         }
         return cardsAnswer(status, true, Explanation(sentences).takeIf { sentences.isNotEmpty() }, rejected)
+            .copy(trail = ResearchTrail(removed = removed))
     }
 }

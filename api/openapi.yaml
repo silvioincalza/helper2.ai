@@ -1052,7 +1052,7 @@ components:
           type: string
           enum: [OK, PARTIAL, LLM_UNAVAILABLE, NO_CANDIDATES, NEEDS_CLARIFICATION]
           description: NEEDS_CLARIFICATION = the question was too vague to search (no search ran), or its one subject matches different kinds of resource (a search ran); see `clarification`.
-        searchQuery: { type: string, description: Search terms actually used to retrieve candidates. }
+        searchQuery: { type: string, description: "Search terms actually used to retrieve candidates. Empty on an answer reused from a similar question (ADR 0041, 0044): the planner wrote them from another asker's words." }
         recommendations: { type: array, items: { $ref: '#/components/schemas/GuideRecommendation' } }
         prompt: { oneOf: [{ $ref: '#/components/schemas/GuidePrompt' }, { type: 'null' }] }
         model: { oneOf: [{ $ref: '#/components/schemas/GuideModelInfo' }, { type: 'null' }] }
@@ -1092,14 +1092,16 @@ components:
         removed:
           type: array
           maxItems: 12
-          description: One per suggestion a check removed, in the order proposed.
+          description: >-
+            One per suggestion a check removed, in the order proposed: a pick, a comparison cell or an explanation
+            sentence. Named by the source it quoted (a comparison: its subject), never by the removed text.
           items: { $ref: '#/components/schemas/GuideTrailRemoved' }
 
     GuideTrailRemoved:
       type: object
       required: [title, check]
       properties:
-        title: { type: string, maxLength: 200, description: The candidate's own title, from its source. }
+        title: { type: string, maxLength: 200, description: "The title of the candidate, compared subject or quoted source, from its source." }
         check:
           type: string
           enum: [QUOTE_NOT_FOUND, REASON_NOT_SUPPORTED, CONSTRAINT_NOT_MET]

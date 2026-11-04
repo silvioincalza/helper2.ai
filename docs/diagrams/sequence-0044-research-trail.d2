@@ -2,7 +2,7 @@
 # without its queries.
 # Source of truth: backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (ask, answerByIntent, similarAnswer),
 #   backend/src/main/kotlin/ai/helper2/guide/usecase/Question.kt (GuideSteps.find, Question.ran),
-#   backend/src/main/kotlin/ai/helper2/guide/usecase/PickAnswer.kt (picks),
+#   backend/src/main/kotlin/ai/helper2/guide/usecase/PickAnswer.kt (picks); CompareAnswer.kt and ExplainAnswer.kt list removals alike,
 #   backend/src/main/kotlin/ai/helper2/guide/Guide.kt (GuideValidator, ResearchTrail),
 #   backend/src/main/java/ai/helper2/guide/web/GuideDtoMapper.java, GuideStreamController.java,
 #   frontend/src/components/guide/GuideAnswer.tsx.
@@ -43,7 +43,7 @@ web -> svc: "ask(paraphrase)"
 svc -> model: "plan(paraphrase)" {class: ai-call}
 svc -> cache: "near twin's answer (ADR 0041)"
 cache -> svc: "answer with trail"
-svc -> svc: "trail.withoutQueries()"
+svc -> svc: "trail.withoutQueries(), searchQuery = \"\""
 svc -> cache: "put(new key, answer without queries)"
 svc -> web: "GuideAnswer"
-web -> page: "answer: no queries, removed titles kept"
+web -> page: "answer: no queries, no search query,\nremoved titles kept"

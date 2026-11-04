@@ -21,8 +21,9 @@ Both must be safe to show:
 `GuideResponse.trail` (`GuideTrail`):
 - `queries`: the planner's search queries a search really sent, in order. At most 3, each at most 200 characters,
   trimmed, without repeats.
-- `removed`: one item per suggestion a check removed, in the order proposed. Each item has the candidate's own
-  `title` (from its source, at most 200 characters) and a `check` code. At most 12.
+- `removed`: one item per suggestion a check removed, in the order proposed: a pick, a comparison cell or an
+  explanation sentence. Each item has the `title` of the source it quoted (from that source, at most 200
+  characters) and a `check` code. At most 12.
 
 The trail never holds the removed AI reason, raw model output or the prompt. The domain type (`ResearchTrail`) has no
 field for them.
@@ -54,15 +55,19 @@ Its rejection maps to one code (`Rejection.trailCheck`):
 - A candidate rejected once and kept on a second proposal is a pick, not a removal.
 - A pick whose reason the second model call removes (ADR 0016) stays a pick: the page already says its explanation
   was removed. It is not listed, so no title shows both as a pick and as removed.
-- Only the pick pipeline (SUGGEST, HOW_TO, LEARN, NEWEST, ALTERNATIVES) lists removals. A comparison cell or an
-  explanation sentence is not a suggestion of a resource; they show their own state.
+- A comparison cell and an explanation sentence are listed too, by the same codes: text empty, too long or with a
+  link → `REASON_NOT_SUPPORTED`; quote not in the source → `QUOTE_NOT_FOUND`; removed by the reason check →
+  `REASON_NOT_SUPPORTED` (they are dropped, not kept without text like a pick). The line names the compared subject
+  or the quoted source, never the cell, its aspect or the sentence: those are AI-written and failed a check. The
+  subject's or the source's card can still show: what was removed is one claim about it, not the resource.
+- A comparison row dropped for its aspect alone names no source and is not listed.
 
 `rejected` keeps counting every rejection, so it can be larger than `removed`.
 
 ### 4. Reused answers
 An answer reused from a similar question carries no `queries` (`ResearchTrail.withoutQueries`, in
-`AskGuide.similarAnswer`). The copy stored under the new question's key has none either, so a later exact hit shows
-none. The removed titles stay: they come from the sources. An exact-key hit keeps its queries: its question has the
+`AskGuide.similarAnswer`), and its `searchQuery` is empty: the planner wrote both from another asker's words. The copy
+stored under the new question's key has neither, so a later exact hit shows neither. The removed titles stay: they come from the sources. An exact-key hit keeps its queries: its question has the
 same normalised text.
 
 ### 5. Marking (amends 0038)
@@ -75,8 +80,7 @@ same normalised text.
 ### 6. On the page
 Inside the folded "How the guide decided" (`GuidePicks.FullAnswer` → `GuideAnswer`), folded by default:
 - "Planned": "Searched for:" and one line per query, AI-marked and labelled. With no query: "No AI-written search
-  terms to show". Then the answer's own `searchQuery` is not shown either, because on a reused answer it is another
-  asker's query.
+  terms to show". The answer's own `searchQuery` is not shown in its place.
 - "Checked": one line per removed item, "title: check". With nothing removed and nothing rejected: "None removed".
 - All text is rendered as text by React. A title or query with HTML in it shows the HTML as characters.
 
@@ -88,7 +92,7 @@ Inside the folded "How the guide decided" (`GuidePicks.FullAnswer` → `GuideAns
 ## Consequences
 - A user can see what the guide searched for and what its checks removed, and check both against the sources.
 - The page shows no model words that failed a check.
-- A reused answer leaks neither the other asker's queries nor their planned search query on the page.
+- A reused answer leaks neither the other asker's queries nor their planned search query, on the page or in the API.
 - The trail adds no model call and no search. It adds two short lists to each answer and to each cached entry.
 - A lawyer must confirm: whether AI-written search queries fall under Art. 50(2) (we mark them anyway), and whether
   the privacy text covers showing a cached answer built from someone else's question.
@@ -105,16 +109,16 @@ Inside the folded "How the guide decided" (`GuidePicks.FullAnswer` → `GuideAns
 - `backend/src/main/kotlin/ai/helper2/guide/Guide.kt` — `ResearchTrail`, `RemovedSuggestion`, `TrailCheck`,
   `GuideValidator.Rejection.trailCheck`, `GuideValidator.removedOf`.
 - `backend/src/main/kotlin/ai/helper2/guide/usecase/Question.kt` — `Question.ran`, `GuideSteps.find`.
-- `backend/src/main/kotlin/ai/helper2/guide/usecase/PickAnswer.kt`, `AskGuide.kt` (`answerByIntent`, `similarAnswer`).
+- `backend/src/main/kotlin/ai/helper2/guide/usecase/PickAnswer.kt`, `CompareAnswer.kt`, `ExplainAnswer.kt`,
+  `AskGuide.kt` (`answerByIntent`, `similarAnswer`).
 - `backend/src/main/kotlin/ai/helper2/guide/GuideCost.kt` — `SHAPE`.
 - `backend/src/main/java/ai/helper2/guide/web/GuideDtoMapper.java` — `trail`, `AI_WRITTEN_FIELDS`.
 - `frontend/src/components/guide/GuideAnswer.tsx` — `PlannedQueries`, `RemovedList`.
-- Tests: `AskGuideTrailTest`, `AskGuideSimilarTest`, `GuideDtoMapperTest`, `SharedGuideAnswerStoreTest`,
+- Tests: `AskGuideTrailTest`, `AskGuideIntentsTest`, `AskGuideSimilarTest`, `GuideDtoMapperTest`, `SharedGuideAnswerStoreTest`,
   `GuideTrail.test.tsx`.
 
 ## Diagrams
 [flow](../../diagrams/flow-0044-research-trail.svg) · [sequence](../../diagrams/sequence-0044-research-trail.svg)
 
 ## Roadmap
-- [Research trail: removals of comparisons and explanations, and `searchQuery` on reused answers](../../roadmap.md#5-ai-quality-and-cost).
 - Known limits: [roadmap § 10](../../roadmap.md#10-known-limits).
