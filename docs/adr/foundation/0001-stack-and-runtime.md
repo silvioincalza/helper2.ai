@@ -51,7 +51,7 @@ The stack must be well known, typed end to end, and cheap to operate: one image,
 
 ## Diagrams
 [flow](../../diagrams/flow-0001-stack-and-runtime.svg) · [sequence](../../diagrams/sequence-0001-stack-and-runtime.svg)
-The modules are in the [software architecture](../../diagrams/software-architecture.svg) diagram.
+The modules are in the [context view](../../diagrams/architecture-context.svg); each module group has its own view in [architecture](../../architecture.md).
 
 ## Roadmap
 - Search engine support (robots.txt, sitemap, metadata for detail pages): [roadmap](../../roadmap.md#product-and-legal).

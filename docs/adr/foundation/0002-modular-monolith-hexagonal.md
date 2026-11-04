@@ -85,7 +85,7 @@ internals. Microservices would add network calls and deploys without a scaling n
 
 ## Diagrams
 [flow](../../diagrams/flow-0002-modular-monolith-hexagonal.svg) · [sequence](../../diagrams/sequence-0002-modular-monolith-hexagonal.svg)
-Modules, ports and adapters: [software architecture](../../diagrams/software-architecture.svg).
+Modules, ports and adapters: one view per module group, [context](../../diagrams/architecture-context.svg) · [search](../../diagrams/architecture-search.svg) · [guide](../../diagrams/architecture-guide.svg) · [index](../../diagrams/architecture-index.svg) · [setup](../../diagrams/architecture-setup.svg) · [platform](../../diagrams/architecture-platform.svg).
 
 ## Roadmap
 - The Scout writes `source.last_outcome` itself; move it behind a catalog port: [roadmap](../../roadmap.md#7-architecture).

@@ -1,5 +1,5 @@
-# Architecture, view 1 of 4: context. helper2 as one box of modules, what calls it, and what it calls.
-# The internals of each module are in the other views; the whole picture is software-architecture.d2.
+# Architecture, view 1 of 6: context. helper2 as one box of modules, what calls it, and what it calls.
+# The internals of each module are in the other views (search, guide, index, setup, platform).
 # Source of truth: backend/src/main/java/ai/helper2/*/package-info.java (modules),
 #   backend/src/main/resources/application.yaml (base URLs, llm-nebius profile, helper2.embedding).
 # Render: cd docs/diagrams && d2 fmt architecture-context.d2 && d2 architecture-context.d2 architecture-context.svg
@@ -24,6 +24,7 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
   scout: "scout\nindex growth, enrichment" {class: app}
   catalog: "catalog\nindex, resource pages, events" {class: app}
   sources: "sources\nlive adapters, collectors" {class: app}
+  setup: "setup\nGuide me: run options, tool guide" {class: app}
   identity: "identity\nsign-in, bookmarks" {class: app}
   backoffice: "admin\nback office: review, runs, overview" {class: app}
   platform: "platform\nLLM layer, HTTP, edge" {class: app}
@@ -35,6 +36,8 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
   scout -> catalog: "CatalogIndex" {class: config}
   guide -> platform: "model calls" {class: ai-call}
   scout -> platform: "model calls" {class: ai-call}
+  setup -> catalog: "resource detail"
+  setup -> platform: "model calls" {class: ai-call}
   backoffice -> catalog: "review queue"
   backoffice -> scout: "runs, backlog"
   backoffice -> platform: "budgets today"
@@ -50,6 +53,7 @@ oauth: "github.com OAuth" {class: ext}
 browser -> app.search: "search" {class: hot}
 browser -> app.guide: "ask (SSE)" {class: hot}
 browser -> app.catalog: "resource, events"
+browser -> app.setup: "Guide me"
 admin -> app.identity: "sign-in on the admin host"
 admin -> app.backoffice: "/admin"
 
@@ -62,4 +66,5 @@ app.platform -> redis: "daily budget"
 app.platform -> nebius: "plan, choose, check,\nenrich, translate" {class: ai-call}
 app.catalog -> nvapi: "/embeddings" {class: ai-call}
 app.sources -> hosts: HTTPS
+app.setup -> hosts: "HTTPS: registry,\nREADMEs, model cards"
 app.identity -> oauth: "sign-in" {class: config}
