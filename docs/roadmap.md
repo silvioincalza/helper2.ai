@@ -67,7 +67,6 @@ Items are grouped by the order in which they matter. Inside a group, the first i
   - set `postgres.image.digest`;
   - add an image scan and an SBOM.
 - Redis with `redis.auth.existingSecret` has no restart checksum, so a password rotation needs a manual restart.
-- Remove the unused duplicate `deploy/.dockerignore`.
 - Confirm that trace and span ids appear in every log line (only a configuration comment says so today).
 
 ## 3. More than one replica
