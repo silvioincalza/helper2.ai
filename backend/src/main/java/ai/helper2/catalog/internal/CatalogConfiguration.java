@@ -53,6 +53,12 @@ class CatalogConfiguration {
       ResourceStore store,
       Clock clock,
       @Value("${helper2.sources.index.timeout:3s}") Duration timeout) {
+    boolean enabled = true;
+    int priority = 50;
+    boolean usesWebQuery = false;
+    boolean usesTranslation = true;
+    boolean filtersByDate = true;
+    boolean browses = true;
     SourceDescriptor d =
         new SourceDescriptor(
             "helper2-index",
@@ -64,12 +70,12 @@ class CatalogConfiguration {
             EnumSet.allOf(ResourceType.class),
             timeout,
             Duration.ZERO,
-            true,
-            50,
-            false,
-            true,
-            true,
-            true);
+            enabled,
+            priority,
+            usesWebQuery,
+            usesTranslation,
+            filtersByDate,
+            browses);
     return new CatalogSearchSource(
         d, store, Set.of(DataOrigin.INDEXED, DataOrigin.OBSERVED), clock);
   }
@@ -80,6 +86,11 @@ class CatalogConfiguration {
       Clock clock,
       @Value("${helper2.sources.curated.enabled:true}") boolean enabled,
       @Value("${helper2.sources.curated.timeout:1000ms}") Duration timeout) {
+    int priority = 10;
+    boolean usesWebQuery = false;
+    boolean usesTranslation = true;
+    boolean filtersByDate = true;
+    boolean browses = true;
     SourceDescriptor d =
         new SourceDescriptor(
             "curated",
@@ -92,11 +103,11 @@ class CatalogConfiguration {
             timeout,
             Duration.ZERO,
             enabled,
-            10,
-            false,
-            true,
-            true,
-            true);
+            priority,
+            usesWebQuery,
+            usesTranslation,
+            filtersByDate,
+            browses);
     return new CatalogSearchSource(d, store, Set.of(DataOrigin.CURATED), clock);
   }
 
@@ -133,6 +144,11 @@ class CatalogConfiguration {
         @Value("${helper2.sources.semantic.timeout:3s}") Duration timeout,
         @Value("${helper2.sources.semantic.max-distance:0.65}") double maxDistance,
         @Value("${helper2.search.query-vector-ttl:7d}") Duration queryVectorTtl) {
+      boolean enabled = true;
+      int priority = 55;
+      boolean usesWebQuery = false;
+      // Embeds the query as typed, so it never waits for the English translation.
+      boolean usesTranslation = false;
       SourceDescriptor d =
           new SourceDescriptor(
               "helper2-semantic",
@@ -141,14 +157,13 @@ class CatalogConfiguration {
               URI.create("https://helper2.ai/sources"),
               null,
               "The Helper2 index searched by meaning with " + embedder.model() + " embeddings",
-              // Embeds the query as typed, so it never waits for the English translation.
               EnumSet.allOf(ResourceType.class),
               timeout,
               Duration.ZERO,
-              true,
-              55,
-              false,
-              false);
+              enabled,
+              priority,
+              usesWebQuery,
+              usesTranslation);
       var queryVectors =
           new QueryVectorCache(
               caches.named("query-vector"),

@@ -62,7 +62,11 @@ constructor(
    * daily [WebSearchQuota].
    */
   val metered: Boolean = false,
-)
+) {
+  /** The same source served in another mode; every other field is kept. */
+  fun withMode(mode: SourceMode): SourceDescriptor =
+    if (this.mode == mode) this else copy(mode = mode)
+}
 
 enum class PopularityKind {
   GITHUB_STARS,
