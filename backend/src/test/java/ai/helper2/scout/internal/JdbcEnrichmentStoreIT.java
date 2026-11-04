@@ -6,6 +6,8 @@ import ai.helper2.TestcontainersConfiguration;
 import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.catalog.usecase.ResolveReviewItem;
 import ai.helper2.scout.CheckedCitation;
+import ai.helper2.scout.CheckedField;
+import ai.helper2.scout.GapKind;
 import ai.helper2.scout.CheckedRelationship;
 import ai.helper2.scout.EnrichmentInput;
 import ai.helper2.scout.EnrichmentModel;
@@ -13,6 +15,7 @@ import ai.helper2.scout.EnrichmentOutcome;
 import ai.helper2.scout.EnrichmentProposal;
 import ai.helper2.scout.ValidationResult;
 import ai.helper2.shared.Verification;
+import java.net.URI;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -92,7 +95,7 @@ class JdbcEnrichmentStoreIT {
     }
 
     private void save(String fingerprint, EnrichmentOutcome outcome, ValidationResult result) {
-        store.save(resource, MODEL, fingerprint, Instant.now(), result, outcome, result == null ? "boom" : null);
+        store.save(resource, MODEL, fingerprint, Instant.now(), result, outcome, result == null ? "boom" : null, null);
     }
 
     private CheckedRelationship relationship(String target, Verification verification) {
@@ -112,6 +115,44 @@ class JdbcEnrichmentStoreIT {
     private List<String> reviewStatuses(ReviewQueue.Kind kind) {
         return jdbc.sql("SELECT status FROM review_item WHERE resource_id = :id AND kind = :k ORDER BY created_at, status")
             .param("id", resource).param("k", kind.name()).query(String.class).list();
+    }
+
+    @Test
+    void readmeEvidenceKeepsItsOwnPlaceAndBelongsToTheRecord() {
+        URI readme = URI.create("https://github.com/acme/tool/blob/HEAD/README.md");
+        Instant read = Instant.parse("2026-11-04T10:00:00Z");
+        CheckedCitation citation = new CheckedCitation(UUID.randomUUID(), "released under the MIT License", record, readme, read);
+        ValidationResult result = new ValidationResult(EnrichmentOutcome.VALIDATED,
+            List.of(new CheckedField("license", "MIT", Verification.VERIFIED, List.of(citation))), List.of(), List.of(), List.of());
+
+        store.save(resource, MODEL, "fp-1", Instant.now(), result, EnrichmentOutcome.VALIDATED, null, "github-readme:acme/tool");
+
+        assertThat(jdbc.sql("""
+                SELECT e.source_url || '|' || e.source_record_id || '|' || e.retrieved_at FROM evidence e
+                JOIN field_assertion_evidence x ON x.evidence_id = e.id JOIN field_assertion f ON f.id = x.assertion_id
+                WHERE f.resource_id = :id
+                """).param("id", resource).query(String.class).single())
+            .startsWith(readme + "|" + record + "|2026-11-04");
+        assertThat(jdbc.sql("SELECT extra_evidence FROM enrichment_run WHERE resource_id = :id").param("id", resource)
+            .query(String.class).single()).isEqualTo("github-readme:acme/tool");
+    }
+
+    @Test
+    void aGitHubRecordGivesTheGapTarget() {
+        assertThat(store.load(resource).getGapTarget()).isNull();
+        UUID github = UUID.randomUUID();
+        jdbc.sql("""
+                INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title,
+                                           description, type, retrieved_at, fingerprint)
+                VALUES (:id, 'github', :id::text, :rid, 'https://github.com/acme/tool', 'https://github.com/acme/tool',
+                        'acme/tool', 'A tool.', 'MCP_SERVER', now(), 'fp')
+                """).param("id", github).param("rid", resource).update();
+
+        var target = store.load(resource).getGapTarget();
+
+        assertThat(target).isNotNull();
+        assertThat(target.getKind()).isEqualTo(GapKind.GITHUB_README);
+        assertThat(target.getAnchorRecordId()).isEqualTo(github);
     }
 
     @Test

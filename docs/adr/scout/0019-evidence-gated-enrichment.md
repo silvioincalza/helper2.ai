@@ -91,6 +91,9 @@ source states. Every published value must point to the text it came from, and a 
 ## Diagrams
 [flow](../../diagrams/flow-0019-evidence-gated-enrichment.svg) · [sequence](../../diagrams/sequence-0019-evidence-gated-enrichment.svg)
 
+## Amended by
+- [0043](0043-enrichment-gap-round.md): a run that leaves fields unproven reads the resource's README or model card once.
+
 ## Roadmap
 - [Watch how often source `type` sends proposals to CONFLICTING review](../../roadmap.md#5-ai-quality-and-cost)
 - [One owner per table: the Scout reads catalog tables for its enrichment backlog](../../roadmap.md#8-architecture)

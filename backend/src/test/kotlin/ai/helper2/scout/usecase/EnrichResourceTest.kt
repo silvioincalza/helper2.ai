@@ -37,7 +37,7 @@ class EnrichResourceTest {
         override fun lastFingerprint(resourceId: UUID) = last
         override fun resourcesTitled(titles: Collection<String>, resourceId: UUID) = emptyMap<String, UUID>()
         override fun save(resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: Instant,
-                          result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?) {
+                          result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?) {
             saved += inputFingerprint
             last = inputFingerprint
         }

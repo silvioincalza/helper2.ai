@@ -62,6 +62,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0039](../adr/frontend/0039-frontend-recent-answers-cache.md) | [flow](flow-0039-frontend-recent-answers-cache.svg) | [sequence](sequence-0039-frontend-recent-answers-cache.svg) | when useApi shows a recent answer and when it asks the server, and a back move without a request. |
 | [0040](../adr/frontend/0040-frontend-design.md) | [flow](flow-0040-frontend-design.svg) | [sequence](sequence-0040-frontend-design.svg) | the results page: the list at once, the reserved picks bar, badges in place with no re-order, and the selected result in the URL. |
 | [0042](../adr/frontend/0042-redesign-design-system-v4.md) | [flow](flow-0042-redesign.svg) | [sequence](sequence-0042-redesign.svg) | the redesign: home with the radar and pinned box, the folding title on phones, the guide on its own for a question and Ask the guide for a few words. |
+| [0043](../adr/scout/0043-enrichment-gap-round.md) | [flow](flow-0043-enrichment-gap-round.svg) | [sequence](sequence-0043-enrichment-gap-round.svg) | the gap round inside EnrichResource.attempt: when it reads a README or model card, and which run is saved. |
 
 ## Colors
 

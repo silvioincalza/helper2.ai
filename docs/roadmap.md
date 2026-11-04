@@ -26,6 +26,10 @@ Items are grouped by the order in which they matter. Inside a group, the first i
   question is personal data, the basis for keeping it up to a day, and the transfer of search and guide text to the
   NVIDIA API catalog in the US (not yet listed under transfers abroad). 
 - Review each source's terms again for commercial use.
+- Lawyer review of README and model-card quotes ([ADR 0043](adr/scout/0043-enrichment-gap-round.md)): the quotation
+  right (Swiss URG Art. 25, EU InfoSoc Art. 5(3)(d)) for 20–300-character excerpts, also of repositories with no
+  licence; GitHub and Hugging Face terms for reading and keeping them (the Hub `raw` path is not its API); author names
+  in excerpts under the existing purpose with a public Art. 14 notice (Art. 14(5)(b)).
 - SEO: `robots.txt`, `sitemap.xml`, metadata and JSON-LD for detail pages. Detail pages are not crawlable
   today, because the frontend is a single-page app ([ADR 0025](adr/frontend/0025-frontend-one-box.md)).
 
@@ -107,6 +111,11 @@ Open items:
 - Watch whether the source `type`, now a source fact in enrichment, sends many proposals to CONFLICTING review
   (for example GitHub LIBRARY versus MCP_SERVER) ([ADR 0019](adr/scout/0019-evidence-gated-enrichment.md)).
 - Cross-language retrieval in vector search.
+- Gap round for resources enriched before it ([ADR 0043](adr/scout/0043-enrichment-gap-round.md)): they get one only when
+  their fingerprint changes. Either pick PARTIAL and REJECTED resources once from the backlog under the gap cap, or wait
+  for the next prompt version. Decide with `helper2.scout.gap{outcome="filled"}` after two weeks.
+- Resources whose description is under 40 characters are never enriched, so they never get a gap round, even when they
+  have a README. Lower the bar for them only if the gap round fills fields often.
 - Similar-question reuse of guide answers ([ADR 0041](adr/guide/0041-guide-answer-cache.md)): prod runs it at 0.96;
   watch `helper2.guide.cache{result="similar"}`, and raise or lower the threshold only with a new sweep. Live, the
   planner's readings of two wordings differ more often than the evaluation set assumes.
@@ -234,6 +243,7 @@ Fix an item or accept it; when it no longer holds, remove it.
 
 - A scheduled run can start up to one `H2_SCOUT_TICK` (1 h) late; a short `H2_SCOUT_EVERY` needs a shorter tick. A renewal-thread pause longer than one lease lets another replica start a second run. ([ADR 0018](adr/scout/0018-scout-runner.md))
 - Strict enrichment rules reject some correct values; the review queue grows with every partial run and needs a person. ([ADR 0019](adr/scout/0019-evidence-gated-enrichment.md))
+- The gap round reads a README once per fingerprint: a README that changes while the source records do not is not read again. README text never supports a summary claim. ([ADR 0043](adr/scout/0043-enrichment-gap-round.md))
 - Hugging Face provider models get no enrichment (the list API has no description). Consumer AI tools are thinly covered. Tavily finds news about tools, not the tools. Course pages wait for an admin each week. ([ADR 0020](adr/scout/0020-scout-collectors.md))
 - An event whose source gives no day is not listed; event days can be a few hours off far from UTC; conference dates are as correct as ai-deadlines; curated events need a research pass to stay current. ([ADR 0022](adr/scout/0022-next-events.md))
 

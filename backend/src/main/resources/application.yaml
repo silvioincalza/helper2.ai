@@ -204,6 +204,7 @@ resilience4j:
       collector-hf-provider-orgs: {base-config: collector}
       collector-ai-deadlines: {base-config: collector}
       collector-mcp-registry: {base-config: collector}
+      collector-gap-evidence: {base-config: collector}
       redis: {base-config: store}
       llm-chat:
         base-config: model
@@ -269,6 +270,7 @@ resilience4j:
       collector-hf-provider-orgs: {base-config: collector}
       collector-ai-deadlines: {base-config: collector}
       collector-mcp-registry: {base-config: collector}
+      collector-gap-evidence: {base-config: collector}
 
 logging:
   structured:
@@ -363,6 +365,9 @@ helper2:
     max-enrichments-per-run: ${H2_SCOUT_MAX_ENRICHMENTS:20}
     # Enrichment model calls per UTC day, apart from the guide's cap; past it resources wait in the backlog.
     daily-enrichment-calls: ${H2_SCOUT_DAILY_ENRICHMENT_CALLS:300}
+    # Gap rounds per UTC day (ADR 0043): a second enrichment call with the README or model card. Counted inside
+    # daily-enrichment-calls, not on top. 0 turns the gap round off.
+    gap-daily-calls: ${H2_SCOUT_GAP_DAILY_CALLS:60}
     hf-trending:
       interval: ${H2_SCOUT_HF_INTERVAL:P1D}
       min-likes: 20

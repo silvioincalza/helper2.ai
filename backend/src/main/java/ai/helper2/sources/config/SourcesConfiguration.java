@@ -11,6 +11,7 @@ import ai.helper2.sources.aideadlines.AiDeadlinesCollector;
 import ai.helper2.sources.arxiv.ArxivSource;
 import ai.helper2.sources.classifier.RepoClassifier;
 import ai.helper2.sources.classifier.SpringAiRepoClassifier;
+import ai.helper2.sources.evidence.ReadmeEvidence;
 import ai.helper2.sources.github.GitHubAwesomeCollector;
 import ai.helper2.sources.github.GitHubSource;
 import ai.helper2.sources.huggingface.HuggingFaceModelsSource;
@@ -164,6 +165,15 @@ class SourcesConfiguration {
             ObservationRegistry observations) {
         SourceSettings s = p.get("ai-deadlines");
         return new AiDeadlinesCollector(s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock, resilience, new RunInterval(c.interval()));
+    }
+
+    /** README and model-card text for the Scout's gap round (ADR 0043), with the GitHub and Hub settings and tokens. */
+    @Bean
+    ReadmeEvidence readmeEvidence(SourcesProperties p, Clock clock, Resilience resilience, ObservationRegistry observations) {
+        SourceSettings github = p.get("github");
+        SourceSettings hub = p.get("huggingface");
+        return ReadmeEvidence.of(github, hub, ObservedHttp.restClientBuilder(github.timeout(), observations),
+            ObservedHttp.restClientBuilder(hub.timeout(), observations), resilience, clock);
     }
 
     @Bean

@@ -96,7 +96,10 @@ interface EnrichmentStore {
     /** Resources other than [resourceId] titled exactly one of [titles] (case-insensitive), by lower-case title. */
     fun resourcesTitled(titles: Collection<String>, resourceId: UUID): Map<String, UUID>
 
-    /** [failure] is the short technical reason when no model output was validated (null otherwise). */
+    /**
+     * [failure] is the short technical reason when no model output was validated (null otherwise). [extraEvidence]
+     * names the text the gap round read when the saved result used it ("github-readme:owner/name"), else null.
+     */
     fun save(resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: Instant, result: ValidationResult?,
-             outcome: EnrichmentOutcome, failure: String?)
+             outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?)
 }

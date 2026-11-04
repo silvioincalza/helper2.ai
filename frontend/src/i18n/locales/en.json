@@ -398,6 +398,8 @@
     "sourceRecords": "Source records (provenance)",
     "noEvidence": "No evidence attached.",
     "evidenceLink": "Evidence",
+    "evidenceReadme": "{{name}} · README",
+    "evidenceModelCard": "{{name}} · model card",
     "retrievedAt": "Retrieved {{date}}"
   },
   "enrichment": {
@@ -753,7 +755,7 @@
   },
   "privacy": {
     "title": "Privacy",
-    "updated": "Last updated: 2 November 2026",
+    "updated": "Last updated: 4 November 2026",
     "lede": "Helper2.ai collects as little as possible. You can search and ask the guide without an account. There are no ads, no analytics and no tracking cookies, and we never sell data.",
     "contactIntro": "Silvio Incalza, Switzerland, is responsible for this website. For any privacy question or request, write to",
     "sections": [
@@ -776,7 +778,8 @@
           "Answering your searches and guide questions, your account and your saved items: to provide the service you ask for (Art. 6(1)(b) GDPR).",
           "Rate limits, technical logs and the security cookie: our legitimate interest in keeping the service secure and available (Art. 6(1)(f) GDPR).",
           "Web search counters and stored results: legitimate interest in a free service at bounded cost (Art. 6(1)(f) GDPR).",
-          "Reports you send: our legitimate interest in keeping the information on Helper2.ai correct (Art. 6(1)(f) GDPR)."
+          "Reports you send: our legitimate interest in keeping the information on Helper2.ai correct (Art. 6(1)(f) GDPR).",
+          "Describing public AI resources with names and short quotes from their public pages: our legitimate interest in showing what a resource is and where each fact comes from (Art. 6(1)(f) GDPR)."
         ]
       },
       {
@@ -802,6 +805,14 @@
         ]
       },
       {
+        "title": "Public data about AI resources",
+        "items": [
+          "To describe the AI resources we list, we read public pages about them, such as GitHub repositories, their README files and Hugging Face model cards.",
+          "From them we keep names of projects, organisations and authors, and short quotes of up to 300 characters, each with its source named and a link to it. We do not keep the rest of the text, and we remove email addresses before we quote.",
+          "This data is about the resources, not about you. If a quote names you and you want it removed, or you object, write to us at the address above."
+        ]
+      },
+      {
         "title": "How long we keep data",
         "items": [
           "Cached searches: up to 30 minutes. Cached guide answers and their question fingerprints: up to 24 hours, deleted by the next daily clean-up.",
@@ -810,7 +821,8 @@
           "English translations of searches typed in another language: 24 hours. Search vectors (the numbers we use to search by meaning): 7 days. Both are stored under a hash of the search, not its text, and deleted from the database within a day after they expire.",
           "Your account and saved items: until you delete them, or 24 months after you last signed in. Then we delete the account and its saved items.",
           "Reports: 12 months after they were handled. If your account is deleted, your reports stay without your name until then.",
-          "Database backups: 7 days. Anything deleted above is gone from the backups within 7 days."
+          "Database backups: 7 days. Anything deleted above is gone from the backups within 7 days.",
+          "Quotes from public pages about AI resources: as long as we list the resource, with the source record they belong to."
         ]
       },
       {
@@ -836,7 +848,7 @@
   },
   "terms": {
     "title": "Terms of use",
-    "updated": "Last updated: 30 October 2026",
+    "updated": "Last updated: 4 November 2026",
     "lede": "These terms apply when you use the Helper2.ai website. By using it, you accept them. If you do not accept them, please do not use the site.",
     "contactIntro": "Helper2.ai is run by Silvio Incalza, Switzerland. For any question about these terms, write to",
     "sections": [
@@ -882,7 +894,7 @@
       {
         "title": "Intellectual property",
         "paragraphs": [
-          "Results, titles and descriptions belong to their owners and are shown to help you find them. The Helper2.ai name and logo belong to Silvio Incalza. The source code has its own licence, linked in the footer."
+          "Results, titles and descriptions belong to their owners and are shown to help you find them. Short quotes from README files and model cards are shown as evidence, with their source named and a link to it. The Helper2.ai name and logo belong to Silvio Incalza. The source code has its own licence, linked in the footer."
         ]
       },
       {

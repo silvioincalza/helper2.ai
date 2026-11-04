@@ -8,6 +8,9 @@ import ai.helper2.scout.EnrichmentMaterial;
 import ai.helper2.scout.EnrichmentModel;
 import ai.helper2.scout.EnrichmentOutcome;
 import ai.helper2.scout.EnrichmentStore;
+import ai.helper2.scout.GapSourceRecord;
+import ai.helper2.scout.GapTarget;
+import ai.helper2.scout.GapTargets;
 import ai.helper2.scout.Material;
 import ai.helper2.scout.ValidationResult;
 import java.net.URI;
@@ -92,13 +95,15 @@ class JdbcEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
      */
     @Override
     public EnrichmentMaterial load(UUID resourceId) {
-        record Row(UUID id, String url, Instant retrieved, String text) {
+        record Row(UUID id, String url, Instant retrieved, String text, String sourceId, String externalId, String repositoryUrl) {
         }
         List<Row> rows = jdbc.sql("""
-                SELECT id, source_url, retrieved_at, title || E'\\n' || coalesce(description, '') AS text
+                SELECT id, source_url, retrieved_at, title || E'\\n' || coalesce(description, '') AS text,
+                       source_id, external_id, repository_url
                 FROM source_record WHERE resource_id = :id ORDER BY source_id
                 """).param("id", resourceId)
-            .query((rs, i) -> new Row(rs.getObject(1, UUID.class), rs.getString(2), rs.getTimestamp(3).toInstant(), rs.getString(4)))
+            .query((rs, i) -> new Row(rs.getObject(1, UUID.class), rs.getString(2), rs.getTimestamp(3).toInstant(), rs.getString(4),
+                rs.getString(5), rs.getString(6), rs.getString(7)))
             .list();
         if (rows.isEmpty()) {
             return null;
@@ -119,7 +124,9 @@ class JdbcEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
             facts.put("openSource", resource.openSource().toString());
         }
         String allText = String.join("\n", rows.stream().map(Row::text).toList());
-        return new EnrichmentMaterial(new EnrichmentInput(resource.title(), materials, facts, Map.of()), sha(allText));
+        GapTarget gap = GapTargets.select(rows.stream()
+            .map(r -> new GapSourceRecord(r.id(), r.sourceId(), r.externalId(), r.url(), r.repositoryUrl())).toList());
+        return new EnrichmentMaterial(new EnrichmentInput(resource.title(), materials, facts, Map.of()), sha(allText), gap);
     }
 
     /** Runs without a judged answer (LLM_UNAVAILABLE, FAILED) say nothing about the input, so they are passed over. */
@@ -156,10 +163,10 @@ class JdbcEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
 
     @Override
     public void save(UUID resourceId, EnrichmentModel model, String inputFingerprint, Instant startedAt,
-                     ValidationResult result, EnrichmentOutcome outcome, String failure) {
+                     ValidationResult result, EnrichmentOutcome outcome, String failure, String extraEvidence) {
         List<String> errors = result != null ? result.getErrors() : failure != null ? List.of(failure) : List.of();
         results.record(new EnrichmentResults.Run(resourceId, model.getProvider(), model.getModel(), model.getPromptVersion(),
-            inputFingerprint, startedAt, outcome.name(), errors), result == null ? null : checked(result));
+            inputFingerprint, startedAt, outcome.name(), errors, extraEvidence), result == null ? null : checked(result));
     }
 
     private static EnrichmentResults.Checked checked(ValidationResult result) {
@@ -172,7 +179,8 @@ class JdbcEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
     }
 
     private static List<EnrichmentResults.Citation> citations(List<CheckedCitation> citations) {
-        return citations.stream().map(c -> new EnrichmentResults.Citation(c.getEvidenceId(), c.getExcerpt())).toList();
+        return citations.stream().map(c -> new EnrichmentResults.Citation(c.getSourceRecordId(), c.getExcerpt(),
+            c.getSourceUrl(), c.getRetrievedAt())).toList();
     }
 
     private static String sha(String s) {

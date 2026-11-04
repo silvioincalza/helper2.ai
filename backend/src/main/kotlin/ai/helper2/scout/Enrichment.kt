@@ -12,8 +12,23 @@ import java.time.Instant
 import java.util.HexFormat
 import java.util.UUID
 
-/** One piece of retrieved source material the model may cite. */
-data class Material(val evidenceId: UUID, val sourceUrl: URI, val retrievedAt: Instant, val text: String)
+/**
+ * One piece of retrieved source material the model may cite. A source record is its own anchor. Extra text read in
+ * the gap round (ADR 0043) has its own evidence id, belongs to the record it was read for ([anchorRecordId]), and
+ * may support fields and relationships but not summary claims ([supportsClaims]): a claim is the model's own
+ * sentence, and a README is written by anyone.
+ */
+data class Material @JvmOverloads constructor(
+    val evidenceId: UUID,
+    val sourceUrl: URI,
+    val retrievedAt: Instant,
+    val text: String,
+    val anchorRecordId: UUID = evidenceId,
+    val supportsClaims: Boolean = true,
+) {
+    /** True for text that is not a stored source record (a README or model card). */
+    val extra: Boolean get() = anchorRecordId != evidenceId
+}
 
 data class EnrichmentInput(
     val resourceTitle: String,
@@ -24,8 +39,11 @@ data class EnrichmentInput(
     val knownResources: Map<String, UUID> = emptyMap(),
 )
 
-/** What the store loaded for one resource: the model's input and a hash of its source text. */
-data class EnrichmentMaterial(val input: EnrichmentInput, val textHash: String) {
+/**
+ * What the store loaded for one resource: the model's input, a hash of its source text and, when one of its
+ * records names its own repository or model, where the gap round may read more ([gapTarget]).
+ */
+data class EnrichmentMaterial @JvmOverloads constructor(val input: EnrichmentInput, val textHash: String, val gapTarget: GapTarget? = null) {
     /**
      * The enrichment fingerprint: what a run of [model] would see. The same source text under another prompt
      * version or another model is a different input, so it is enriched again.
@@ -77,7 +95,17 @@ interface EnrichmentModel {
  */
 enum class EnrichmentOutcome { VALIDATED, PARTIAL, REJECTED, LLM_UNAVAILABLE, FAILED, UNCHANGED }
 
-data class CheckedCitation(val evidenceId: UUID, val excerpt: String)
+/**
+ * A citation that passed. For extra text, [sourceRecordId] is the record it belongs to and [sourceUrl] and
+ * [retrievedAt] say where and when it was read; for a source record they are null (the record says it).
+ */
+data class CheckedCitation @JvmOverloads constructor(
+    val evidenceId: UUID,
+    val excerpt: String,
+    val sourceRecordId: UUID = evidenceId,
+    val sourceUrl: URI? = null,
+    val retrievedAt: Instant? = null,
+)
 
 data class CheckedField(val field: String, val value: String, val verification: Verification, val citations: List<CheckedCitation>)
 data class CheckedRelationship(val kind: String, val target: String, val targetId: UUID?, val verification: Verification, val citations: List<CheckedCitation>)
@@ -91,6 +119,11 @@ data class ValidationResult(
     val summary: List<CheckedClaim>,
     val errors: List<String>,
 ) {
+    /** What the run keeps: verified fields, relationships not rejected, and claims. The gap round keeps the run with more. */
+    val accepted: Int
+        get() = fields.count { it.verification == Verification.VERIFIED } +
+            relationships.count { it.verification != Verification.REJECTED } + summary.size
+
     val needsReview: Boolean
         get() = errors.isNotEmpty() ||
             fields.any { it.verification != Verification.VERIFIED } ||
@@ -227,7 +260,8 @@ class EvidenceValidator(private val minExcerpt: Int = MIN_EXCERPT_CHARS, private
                     errors += "$what: excerpt not found in cited evidence"
                     return null
                 }
-                out += CheckedCitation(m.evidenceId, excerpt)
+                out += if (m.extra) CheckedCitation(m.evidenceId, excerpt, m.anchorRecordId, m.sourceUrl, m.retrievedAt)
+                else CheckedCitation(m.evidenceId, excerpt)
             }
             return out
         }
@@ -284,6 +318,10 @@ class EvidenceValidator(private val minExcerpt: Int = MIN_EXCERPT_CHARS, private
         val claims = proposal.summary.take(MAX_SUMMARY_CLAIMS).mapNotNull { c ->
             if (c.text.isBlank() || c.text.length > 300) {
                 errors += "summary claim: empty or too long"
+                return@mapNotNull null
+            }
+            if (c.citations.any { byId[it.evidenceId]?.supportsClaims == false }) {
+                errors += "summary claim: cites text that may not support a claim"
                 return@mapNotNull null
             }
             check(c.citations, "summary claim")?.let { CheckedClaim(c.text.trim(), it) }

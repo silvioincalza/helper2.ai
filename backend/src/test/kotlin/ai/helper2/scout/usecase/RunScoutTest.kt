@@ -94,7 +94,7 @@ class RunScoutTest {
         override fun lastFingerprint(resourceId: UUID): String? = null
         override fun resourcesTitled(titles: Collection<String>, resourceId: UUID): Map<String, UUID> = emptyMap()
         override fun save(resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: java.time.Instant,
-                          result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?) {}
+                          result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?) {}
     }
 
     private val changedIds = mutableListOf<UUID>()
@@ -172,7 +172,7 @@ class RunScoutTest {
     fun `every enrichment attempt is counted by outcome`() {
         val meters = SimpleMeterRegistry()
         val store = object : FakeEnrichmentStore() {
-            override fun save(resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: java.time.Instant, result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?) {}
+            override fun save(resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: java.time.Instant, result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?) {}
         }
         val model = object : EnrichmentModel {
             override val provider = "none"
@@ -205,7 +205,7 @@ class RunScoutTest {
     fun `an llm outage or a spent budget is recorded once, not fatal, and stops enrichment for the rest of the run`() {
         val saved = mutableListOf<EnrichmentOutcome>()
         val store = object : FakeEnrichmentStore() {
-            override fun save(resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: java.time.Instant, result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?) {
+            override fun save(resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: java.time.Instant, result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?) {
                 saved += outcome
             }
         }
@@ -233,7 +233,7 @@ class RunScoutTest {
         val store = object : FakeEnrichmentStore() {
             override fun lastFingerprint(resourceId: UUID) = material().fingerprintFor(model(true))
             override fun save(resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: java.time.Instant,
-                              result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?) {
+                              result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?) {
                 saved += outcome
             }
         }
@@ -262,7 +262,7 @@ class RunScoutTest {
             val enriched = mutableListOf<UUID>()
             override fun lastFingerprint(resourceId: UUID) = if (resourceId in unchanged) material().fingerprintFor(model(true)) else null
             override fun save(resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: java.time.Instant,
-                              result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?) {
+                              result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?) {
                 enriched += resourceId
             }
         }
@@ -295,7 +295,7 @@ class RunScoutTest {
             override fun resourcesTitled(titles: Collection<String>, resourceId: UUID) =
                 mapOf("claude desktop" to target).also { asked += titles }
             override fun save(resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: java.time.Instant,
-                              result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?) {
+                              result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?) {
                 checked = result
             }
         }
@@ -323,7 +323,7 @@ class RunScoutTest {
 
     private class RecordingEnrichmentStore : FakeEnrichmentStore() {
         val enriched = mutableListOf<UUID>()
-        override fun save(resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: java.time.Instant, result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?) {
+        override fun save(resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: java.time.Instant, result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?) {
             enriched += resourceId
         }
     }
@@ -375,7 +375,7 @@ class RunScoutTest {
         val reasons = mutableListOf<Pair<EnrichmentOutcome, String?>>()
         val store = object : FakeEnrichmentStore() {
             override fun save(resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: java.time.Instant,
-                              result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?) {
+                              result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?) {
                 reasons += outcome to failure
             }
         }
@@ -434,7 +434,7 @@ class RunScoutTest {
                 return material()
             }
             override fun save(resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: java.time.Instant,
-                              result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?) {
+                              result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?) {
                 enriched += resourceId
             }
         }
@@ -460,7 +460,7 @@ class RunScoutTest {
                 return material()
             }
             override fun save(resourceId: UUID, model: EnrichmentModel, inputFingerprint: String, startedAt: java.time.Instant,
-                              result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?) {
+                              result: ValidationResult?, outcome: EnrichmentOutcome, failure: String?, extraEvidence: String?) {
                 enriched += resourceId
             }
         }

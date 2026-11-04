@@ -48,13 +48,13 @@ public class JdbcEnrichmentResults implements EnrichmentResults {
         UUID runId = UUID.randomUUID();
         jdbc.sql("""
                 INSERT INTO enrichment_run (id, resource_id, provider, model, prompt_version, input_fingerprint,
-                                            started_at, finished_at, outcome, validation_errors)
-                VALUES (:id, :rid, :provider, :model, :pv, :fp, :started, :finished, :outcome, CAST(:errors AS jsonb))
+                                            started_at, finished_at, outcome, validation_errors, extra_evidence)
+                VALUES (:id, :rid, :provider, :model, :pv, :fp, :started, :finished, :outcome, CAST(:errors AS jsonb), :extra)
                 """)
             .param("id", runId).param("rid", run.resourceId()).param("provider", run.provider()).param("model", run.model())
             .param("pv", run.promptVersion()).param("fp", run.inputFingerprint()).param("started", Timestamp.from(run.startedAt()))
             .param("finished", Timestamp.from(clock.instant())).param("outcome", run.outcome())
-            .param("errors", json.writeValueAsString(run.errors()))
+            .param("errors", json.writeValueAsString(run.errors())).param("extra", run.extraEvidence())
             .update();
         jdbc.sql("UPDATE resource SET enrichment_status = :s WHERE id = :id")
             .param("s", "FAILED".equals(run.outcome()) ? "REJECTED" : run.outcome()).param("id", run.resourceId()).update();
@@ -213,16 +213,24 @@ public class JdbcEnrichmentResults implements EnrichmentResults {
                 """).param("ids", ids).update();
     }
 
-    /** One evidence row per (source record, excerpt), linked to the owner. joinTable/fk are constants. */
+    /**
+     * One evidence row per (source record, place, excerpt), linked to the owner. A citation with its own URL (a README
+     * or model card read for the record, ADR 0043) keeps that URL and time; the record still anchors the row, so it
+     * goes when the record goes (ADR 0034). joinTable/fk are constants.
+     */
     private void link(String joinTable, String fk, UUID owner, List<Citation> citations, Map<String, UUID> cache) {
         for (Citation c : citations) {
-            String key = c.sourceRecordId() + "|" + c.excerpt();
+            String key = c.sourceRecordId() + "|" + c.sourceUrl() + "|" + c.excerpt();
             UUID evidenceId = cache.computeIfAbsent(key, k -> {
                 UUID id = UUID.randomUUID();
                 jdbc.sql("""
                         INSERT INTO evidence (id, source_record_id, source_url, retrieved_at, excerpt)
-                        SELECT :id, sr.id, sr.source_url, sr.retrieved_at, :excerpt FROM source_record sr WHERE sr.id = :rec
-                        """).param("id", id).param("rec", c.sourceRecordId()).param("excerpt", c.excerpt()).update();
+                        SELECT :id, sr.id, coalesce(CAST(:url AS text), sr.source_url), coalesce(CAST(:retrieved AS timestamptz), sr.retrieved_at), :excerpt
+                        FROM source_record sr WHERE sr.id = :rec
+                        """).param("id", id).param("rec", c.sourceRecordId()).param("excerpt", c.excerpt())
+                    .param("url", c.sourceUrl() == null ? null : c.sourceUrl().toString())
+                    .param("retrieved", c.retrievedAt() == null ? null : Timestamp.from(c.retrievedAt()))
+                    .update();
                 return id;
             });
             jdbc.sql("INSERT INTO %s (%s, evidence_id) VALUES (:o, :e) ON CONFLICT DO NOTHING".formatted(joinTable, fk))

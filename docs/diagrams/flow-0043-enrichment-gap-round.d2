@@ -1,0 +1,41 @@
+# Flowchart: the gap round inside EnrichResource.attempt, after the first run is validated.
+# Shows when it runs, where the extra text comes from, the cleaning, the budget, and which run is saved.
+# Source of truth: backend/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt (gapRound),
+#   backend/src/main/kotlin/ai/helper2/scout/GapRound.kt (GapTargets.select, ReadmeText),
+#   backend/src/main/java/ai/helper2/sources/evidence/ReadmeEvidence.java,
+#   backend/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java (gapBudget).
+# Render: cd docs/diagrams && d2 fmt flow-0043-enrichment-gap-round.d2 && d2 flow-0043-enrichment-gap-round.d2 flow-0043-enrichment-gap-round.svg
+
+...@style
+
+direction: down
+
+first: "First run validated\n(source records only)" {class: app}
+weak: "Outcome PARTIAL\nor REJECTED?" {class: decision}
+target: "A record names its own repository\nor model? (github, github-awesome, hf-*;\nmcp-registry only if io.github.<owner>\nowns the repository)" {class: decision}
+fetch: "Read README (+ GitHub licence)\nor model card (+ card licence)" {class: app}
+gotText: "Text after cleaning?\n(no comments, tags, link targets,\nhidden characters, emails)" {class: decision}
+budget: "Gap budget left?\n(60 a day, inside the 300)" {class: decision}
+second: "Second run: records + README\n(licence from the API is a fact;\nREADME may not support claims)" {class: ai}
+better: "Keeps more accepted\nitems than the first?" {class: decision}
+keepFirst: "Save the first run" {class: end}
+keepGap: "Save the gap run;\nextra_evidence = github-readme:owner/repo\n(or hf-model-card:owner/model)" {class: end}
+fp: "Fingerprint = source records only:\nthe next unchanged run is UNCHANGED" {class: data}
+
+first -> weak
+weak -> keepFirst: "no (VALIDATED)"
+weak -> target: yes {class: hot}
+target -> keepFirst: no
+target -> fetch: yes {class: hot}
+fetch -> keepFirst: "source failed"
+fetch -> gotText
+gotText -> keepFirst: "no (404 or empty)"
+gotText -> budget: yes {class: hot}
+budget -> keepFirst: no
+budget -> second: yes {class: ai-call}
+second -> keepFirst: "model failed"
+second -> better
+better -> keepFirst: no
+better -> keepGap: yes {class: hot}
+keepFirst -> fp
+keepGap -> fp
