@@ -183,7 +183,6 @@ Open items:
 
 - `docs/diagrams/software-architecture.svg` is about 5,800 px wide: readable at full size, too small when scaled
   down. Split it into one diagram per module group.
-- `docs/diagrams/flow-0025-frontend-one-box.svg` has two crossing dashed edges near `HomePage`.
 
 ## 9. Known limits
 
