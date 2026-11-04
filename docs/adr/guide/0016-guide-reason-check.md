@@ -42,7 +42,7 @@ language; a model can, but its answer is a judgment, not a proof.
 - One call per pick — more calls and latency for the same result.
 
 ## Code
-- `backend/src/main/kotlin/ai/helper2/guide/usecase/ReasonCheckStep.kt` — `verdicts`; `guide/Guide.kt` — `ReasonClaim`, `ReasonCheck`.
+- `backend/src/main/kotlin/ai/helper2/guide/steps/ReasonCheckStep.kt` — `verdicts`; `guide/Guide.kt` — `ReasonClaim`, `ReasonCheck`.
 - `backend/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java` — `verifyReasons`.
 - `backend/src/main/resources/prompts/guide/verify-reasons.txt` — the checker's instructions.
 - `backend/src/main/java/ai/helper2/guide/web/GuideStreamController.java` — `checked` event.

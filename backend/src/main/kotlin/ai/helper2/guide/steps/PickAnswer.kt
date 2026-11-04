@@ -1,4 +1,4 @@
-package ai.helper2.guide.usecase
+package ai.helper2.guide.steps
 
 import ai.helper2.guide.Candidate
 import ai.helper2.guide.CheckStatus
@@ -395,7 +395,7 @@ internal class PickAnswer(
   ): List<Int> {
     val keptRanks = checked.picks.map { candidates.indexOf(it.candidate) + 1 }
     keptRanks.forEach {
-      meters.counter("helper2.guide.picks", "rank", AskGuide.rankBand(it)).increment()
+      meters.counter("helper2.guide.picks", "rank", rankBand(it)).increment()
     }
     return keptRanks
   }
@@ -489,3 +489,11 @@ internal class PickAnswer(
       )
     }
 }
+
+/** Search rank of a kept pick as a low-cardinality tag: `1-3`, `4-8` or `9+`. */
+internal fun rankBand(rank: Int): String =
+  when {
+    rank <= 3 -> "1-3"
+    rank <= 8 -> "4-8"
+    else -> "9+"
+  }
