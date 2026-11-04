@@ -1,6 +1,6 @@
 # 0038 — Marking AI-written text: labels on screen, metadata in the API and the page
 
-**Status.** Accepted. **Builds on:** [0003](../foundation/0003-contract-first-rest-api.md), [0014](0014-llm-integration.md), [0015](0015-ai-guide-evidence-gate.md), [0019](../scout/0019-evidence-gated-enrichment.md)
+**Status.** Accepted. Amended by [0044](0044-research-trail.md) (the research trail). **Builds on:** [0003](../foundation/0003-contract-first-rest-api.md), [0014](0014-llm-integration.md), [0015](0015-ai-guide-evidence-gate.md), [0019](../scout/0019-evidence-gated-enrichment.md)
 
 ## Context
 The EU AI Act applies to Helper2.ai because people in the EU use it. Helper2.ai builds the guide on top of NVIDIA
@@ -31,7 +31,7 @@ to the text.
 3. **Page: an attribute on every AI-written element.** `data-ai-generated="true"`, plus `data-ai-model` when the
    model is known (`src/lib/aiMark.ts`). The guide answer and the question back carry `data-ai-provider` and
    `data-ai-models`. Marked: reasons, requirements (chips and checks), the question back and its options, comparison
-   aspects and cells, explanation sentences, the prompt, the planned search query, AI summaries and values extracted
+   aspects and cells, explanation sentences, the prompt, the planned search query and the research trail's queries ([0044](0044-research-trail.md)), AI summaries and values extracted
    by AI on the resource page, and the instructions of the setup guide's steps ([0031](0031-setup-guide.md);
    `ToolGuide.model` names the model in the API). Quotes, titles, links and the setup guide's commands are never
    marked: they come from the sources. Our own labels and the subjects (the user's own words) are not marked.

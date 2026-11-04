@@ -229,6 +229,40 @@ data class Recommendation @JvmOverloads constructor(
 
 data class GuidePromptOut(val text: String, val basedOn: List<MergedResult>)
 
+/** Which check removed a suggestion, in the research trail (ADR 0044). A code, never the model's words. */
+enum class TrailCheck { QUOTE_NOT_FOUND, REASON_NOT_SUPPORTED, CONSTRAINT_NOT_MET }
+
+/** A suggestion a check removed: the candidate's own title (from its source) and the check it failed. */
+data class RemovedSuggestion(val title: String, val check: TrailCheck)
+
+/**
+ * The research trail (ADR 0044): the AI-written search queries actually run, and the suggestions the checks removed.
+ * It never holds a removed AI reason, raw model output or the prompt. Built through [of], which caps it.
+ */
+data class ResearchTrail(val queries: List<String> = emptyList(), val removed: List<RemovedSuggestion> = emptyList()) {
+    /** Without the queries: for an answer reused from another asker's question (ADR 0041), whose words they came from. */
+    fun withoutQueries() = copy(queries = emptyList())
+
+    companion object {
+        const val MAX_QUERIES = 3
+        const val MAX_QUERY_CHARS = 200
+        const val MAX_REMOVED = 12
+        const val MAX_TITLE_CHARS = 200
+
+        @JvmField
+        val EMPTY = ResearchTrail()
+
+        /** Trimmed, blank and repeated queries dropped, at most [MAX_QUERIES] of [MAX_QUERY_CHARS]; at most [MAX_REMOVED] removed. */
+        @JvmStatic
+        fun of(queries: List<String>, removed: List<RemovedSuggestion>) = ResearchTrail(
+            queries.asSequence().map { it.trim().replace(Regex("\\s+"), " ").take(MAX_QUERY_CHARS) }.filter { it.isNotEmpty() }
+                .distinctBy { it.lowercase() }.take(MAX_QUERIES).toList(),
+            removed.asSequence().map { it.copy(title = it.title.trim().take(MAX_TITLE_CHARS)) }.filter { it.title.isNotEmpty() }
+                .take(MAX_REMOVED).toList(),
+        )
+    }
+}
+
 data class GuideAnswer(
     val status: GuideStatus,
     val searchQuery: String,
@@ -262,6 +296,8 @@ data class GuideAnswer(
      * call then failed and [modelUsed] is false. Drives the AI-content marker (ADR 0038), not the cache.
      */
     val planned: Boolean = false,
+    /** The searches run and the suggestions removed (ADR 0044). */
+    val trail: ResearchTrail = ResearchTrail.EMPTY,
 )
 
 /**
@@ -287,7 +323,12 @@ class GuideValidator(
         val checks: Map<String, List<ConstraintCheck>> = emptyMap(),
         /** Why each rejected suggestion was rejected; sums to [rejected]. For logs and evaluation only. */
         val rejectedBy: Map<Rejection, Int> = emptyMap(),
+        /** Each rejected suggestion that named a real candidate, in the order proposed, with why (the research trail). */
+        val rejectedPicks: List<RejectedPick> = emptyList(),
     )
+
+    /** A suggestion that named a real candidate and failed a check. */
+    data class RejectedPick(val candidate: Candidate, val rejection: Rejection)
 
     /** A pick that passed the gate, with the candidate it names. */
     data class KeptPick(val candidate: Candidate, val pick: ProposedPick)
@@ -305,7 +346,27 @@ class GuideValidator(
         OUTSIDE_WINDOW,
         /** A valid pick beyond [maxPicks]: nothing wrong with it, only no room. */
         OVER_LIMIT,
-        PROMPT_INVALID,
+        PROMPT_INVALID;
+
+        /**
+         * The check this rejection means in the research trail (ADR 0044); null when no check failed (an unknown
+         * candidate, a duplicate, no room, the prompt).
+         */
+        val trailCheck: TrailCheck?
+            get() = when (this) {
+                QUOTE_NOT_IN_TEXT, QUOTE_TOO_SHORT, QUOTE_TOO_LONG -> TrailCheck.QUOTE_NOT_FOUND
+                NO_REASON, REASON_TOO_LONG, REASON_INVALID -> TrailCheck.REASON_NOT_SUPPORTED
+                READING_TYPE, OUTSIDE_WINDOW -> TrailCheck.CONSTRAINT_NOT_MET
+                UNKNOWN_CANDIDATE, DUPLICATE, OVER_LIMIT, PROMPT_INVALID -> null
+            }
+    }
+
+    /** The trail's removed suggestions of [result]: each rejected pick whose rejection is a failed check. */
+    fun removedOf(result: Result): List<RemovedSuggestion> {
+        // A candidate proposed twice, once rejected and once kept, is a pick: it is never listed as removed too.
+        val kept = result.picks.map { it.candidate.key }.toSet()
+        return result.rejectedPicks.filter { it.candidate.key !in kept }
+            .mapNotNull { (c, r) -> r.trailCheck?.let { RemovedSuggestion(c.result.title, it) } }
     }
 
     fun validate(
@@ -316,7 +377,11 @@ class GuideValidator(
     ): Result {
         val byKey = candidates.associateBy { it.key }
         val rejectedBy = mutableMapOf<Rejection, Int>()
-        fun reject(r: Rejection) { rejectedBy.merge(r, 1, Int::plus) }
+        val rejectedPicks = mutableListOf<RejectedPick>()
+        fun reject(r: Rejection, c: Candidate? = null) {
+            rejectedBy.merge(r, 1, Int::plus)
+            if (c != null) rejectedPicks += RejectedPick(c, r)
+        }
         val picks = mutableListOf<KeptPick>()
         for (p in proposal.picks) {
             val c = byKey[p.candidateKey.trim()]
@@ -332,7 +397,7 @@ class GuideValidator(
                 else -> quoteProblem(normalize(quote), normalize(c.text))
             }
             when {
-                problem != null -> reject(problem)
+                problem != null -> reject(problem, c)
                 picks.size >= maxPicks -> reject(Rejection.OVER_LIMIT)
                 else -> picks += KeptPick(c!!, p.copy(reason = p.reason.trim(), quote = quote))
             }
@@ -349,7 +414,7 @@ class GuideValidator(
             }
         }
         val checks = picks.associate { (c, p) -> c.key to checkConstraints(constraints, c, p.evidence) }
-        return Result(picks, prompt, rejectedBy.values.sum(), checks, rejectedBy)
+        return Result(picks, prompt, rejectedBy.values.sum(), checks, rejectedBy, rejectedPicks)
     }
 
     /**

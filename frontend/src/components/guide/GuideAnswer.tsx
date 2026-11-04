@@ -1,6 +1,6 @@
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
-import type { GuideResponse } from '@/api/types';
+import type { GuideResponse, TrailRemoved } from '@/api/types';
 import { Icon } from '@/components/Icon';
 import { aiMark } from '@/lib/aiMark';
 import { ComparisonTable, ExplanationBlock } from './AnswerBlocks';
@@ -27,6 +27,34 @@ export function noPickReason(answer: GuideResponse, t: TFunction): string | unde
 }
 
 /**
+ * The research trail's queries (ADR 0044): the planner's words, each marked AI-written. None on an answer reused from
+ * a similar question: they came from another asker's words, so not even the answer's own search query is shown then.
+ */
+function PlannedQueries({ queries, model }: { queries: string[]; model: string }) {
+  const { t } = useTranslation();
+  if (queries.length === 0) return <strong>{t('guide.trail.noQueries')}</strong>;
+  return (
+    <>
+      <strong>{t('guide.trail.searchedFor')}</strong>
+      <ul className="plain-list proof-trail" aria-label={t('guide.trail.queries')}>
+        {queries.map((q) => <li key={q}><span {...aiMark(model)}>{q}</span></li>)}
+      </ul>
+      <span><span className="badge">{t('picks.aiWritten')}</span></span>
+    </>
+  );
+}
+
+/** One line per suggestion a check removed: the source's own title and the check, in our words. Never the model's reason. */
+function RemovedList({ removed }: { removed: TrailRemoved[] }) {
+  const { t } = useTranslation();
+  return (
+    <ul className="plain-list proof-trail proof-sub" aria-label={t('guide.trail.removed')}>
+      {removed.map((r, i) => <li key={`${i}-${r.title}`}>{t('guide.trail.removedLine', { title: r.title, check: t(`guide.trail.check.${r.check}`) })}</li>)}
+    </ul>
+  );
+}
+
+/**
  * How the guide decided, folded under the picks bar: the steps (planned, found, chose, checked, from the response's
  * own counts), how it read the question with ✕ to ask again without a part, and the intent's own answer (comparison,
  * explanation, prompt). The picks themselves are in the result list and the preview, never repeated here; with no
@@ -47,8 +75,12 @@ export function GuideAnswer({ answer, onRefine }: { answer: GuideResponse; onRef
         <ol className="plain-list proof-strip" aria-label={t('guide.howMade')}>
           <li>
             <span className="proof-n">{t('guide.strip.planned')}</span>
-            <strong {...aiMark(answer.model.fastModel)}>{t('guide.searchedFor', { q: answer.searchQuery })}</strong>{' '}
-            <span className="badge">{t('picks.aiWritten')}</span>
+            {answer.trail ? <PlannedQueries queries={answer.trail.queries} model={answer.model.fastModel} /> : (
+              <>
+                <strong {...aiMark(answer.model.fastModel)}>{t('guide.searchedFor', { q: answer.searchQuery })}</strong>{' '}
+                <span className="badge">{t('picks.aiWritten')}</span>
+              </>
+            )}
             <span className="proof-sub">{answer.model.fastModel}</span>
           </li>
           <li>
@@ -64,7 +96,11 @@ export function GuideAnswer({ answer, onRefine }: { answer: GuideResponse; onRef
           <li className={kept > 0 ? 'is-checked' : undefined}>
             <span className="proof-n">{t('guide.strip.checked')}</span>
             <strong>{kept > 0 && <Icon name="check" />}{t('guide.kept', { count: kept })}</strong>
-            <span className="proof-sub">{rejected > 0 ? t('guide.rejected', { count: rejected }) : t('guide.noneRejected')}</span>
+            {answer.trail && answer.trail.removed.length > 0 ? <RemovedList removed={answer.trail.removed} /> : (
+              <span className="proof-sub">
+                {rejected > 0 ? t('guide.rejected', { count: rejected }) : t(answer.trail ? 'guide.trail.noneRemoved' : 'guide.noneRejected')}
+              </span>
+            )}
           </li>
         </ol>
       ) : (

@@ -57,7 +57,7 @@ internal class CompareAnswer(
         if (present.size < 2) {
             val fallback = present.firstOrNull()?.result?.title ?: r.query
             val notices = subjects.filter { it.result == null }.map { Notice(NoticeCode.GUIDE_SUBJECT_NOT_FOUND, "${it.name} was not found in our sources.") }
-            return picks.picks(q, r, progress, asked, model, Retrieval(fallback, readingFilter(r), notices = notices))
+            return picks.picks(q, r, progress, asked, model, Retrieval(fallback, readingFilter(r), notices = notices, planned = fallback == r.query))
         }
         val empty = Comparison(subjects, emptyList())
         if (model == null) return subjectsOnly(GuideStatus.LLM_UNAVAILABLE, r, present, empty, modelUsed = false)

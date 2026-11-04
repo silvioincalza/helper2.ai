@@ -20,6 +20,7 @@ import ai.helper2.search.IntentClass
 import ai.helper2.search.Notice
 import ai.helper2.search.SearchOutcome
 import ai.helper2.search.SearchRequest
+import ai.helper2.search.SourceOutcome
 import ai.helper2.search.usecase.SearchResources
 import ai.helper2.shared.AudiencePath
 import ai.helper2.shared.ResourceType
@@ -54,6 +55,18 @@ internal class Question(val text: String, val path: AudiencePath?, val clarifica
 
     /** What the steps found (`kept=2 keptRanks=[1, 4]`), for the question's log line; never user text. */
     val counts = mutableListOf<String>()
+
+    private val queries = mutableListOf<String>()
+
+    /** A planner-written query a search ran with; the comparison's searches run at the same time. */
+    @Synchronized
+    fun ran(query: String?) {
+        if (!query.isNullOrBlank()) queries += query
+    }
+
+    /** The planner-written queries run, in order: the research trail's (ADR 0044). */
+    @Synchronized
+    fun queriesRun(): List<String> = queries.toList()
 }
 
 /**
@@ -110,13 +123,19 @@ internal class GuideSteps(private val search: SearchResources, private val obser
      * Every search of a question: under its asker's web-search quota, with the freshness its intent needs (dates,
      * newest and learning questions are time-bound), and noting how long the web results it used stay fresh.
      */
-    fun find(q: Question, r: Reading, request: SearchRequest): SearchOutcome {
+    fun find(q: Question, r: Reading, request: SearchRequest, planned: Boolean = false): SearchOutcome {
         val intentClass = when (r.intent) {
             GuideIntent.NEWEST, GuideIntent.WHEN, GuideIntent.LEARN -> IntentClass.TIME_BOUND
             else -> IntentClass.GENERAL
         }
         val outcome = search.search(request.copy(asker = q.asker, intentClass = intentClass))
         outcome.webFreshUntil?.let(q::webResultsFreshUntil)
+        // The research trail (ADR 0044) lists only the planner's words that a search really sent: the planned query when
+        // [planned] says the text is it, the web query when a source that reads it was not skipped.
+        // A blank planned query falls back to the asker's own text (QuestionReader): that is not AI-written.
+        if (planned && r.plan?.searchQuery?.isNotBlank() == true) q.ran(request.text)
+        val web = request.webQuery
+        if (web != null && web == r.webQuery && outcome.statuses.any { it.source.usesWebQuery && it.outcome != SourceOutcome.SKIPPED }) q.ran(web)
         return outcome
     }
 }

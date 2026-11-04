@@ -1073,6 +1073,40 @@ components:
         comparison: { oneOf: [{ $ref: '#/components/schemas/GuideComparison' }, { type: 'null' }] }
         explanation: { oneOf: [{ $ref: '#/components/schemas/GuideExplanation' }, { type: 'null' }] }
         webSearches: { oneOf: [{ $ref: '#/components/schemas/WebSearches' }, { type: 'null' }] }
+        trail: { $ref: '#/components/schemas/GuideTrail' }
+
+    GuideTrail:
+      type: object
+      required: [queries, removed]
+      description: >-
+        The research trail (ADR 0044): the searches the guide ran and the suggestions its checks removed. Never the
+        removed AI reason, raw model output or the prompt.
+      properties:
+        queries:
+          type: array
+          maxItems: 3
+          description: >-
+            AI-written search queries actually run (the planned query, the web query). Empty when the planner did not
+            run, and on an answer reused from a similar question (ADR 0041): those came from another asker's words.
+          items: { type: string, maxLength: 200 }
+        removed:
+          type: array
+          maxItems: 12
+          description: One per suggestion a check removed, in the order proposed.
+          items: { $ref: '#/components/schemas/GuideTrailRemoved' }
+
+    GuideTrailRemoved:
+      type: object
+      required: [title, check]
+      properties:
+        title: { type: string, maxLength: 200, description: The candidate's own title, from its source. }
+        check:
+          type: string
+          enum: [QUOTE_NOT_FOUND, REASON_NOT_SUPPORTED, CONSTRAINT_NOT_MET]
+          description: >-
+            Which check removed it. QUOTE_NOT_FOUND = its quote is not in the source's text (or too short or too
+            long); REASON_NOT_SUPPORTED = its reason was empty, too long, held a link, or the second model call found
+            a claim the source does not show; CONSTRAINT_NOT_MET = a kind or period the question rules out.
 
     GuideIntent:
       type: string

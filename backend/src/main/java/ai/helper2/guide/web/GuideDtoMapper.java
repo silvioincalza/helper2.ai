@@ -16,6 +16,8 @@ import ai.helper2.api.generated.model.GuidePromptBasedOnInnerDto;
 import ai.helper2.api.generated.model.GuidePromptDto;
 import ai.helper2.api.generated.model.GuideRecommendationDto;
 import ai.helper2.api.generated.model.GuideResponseDto;
+import ai.helper2.api.generated.model.GuideTrailDto;
+import ai.helper2.api.generated.model.GuideTrailRemovedDto;
 import ai.helper2.api.generated.model.NoticeDto;
 import ai.helper2.api.generated.model.ResourceTypeDto;
 import ai.helper2.api.generated.model.ServedFromDto;
@@ -28,6 +30,7 @@ import ai.helper2.guide.Comparison;
 import ai.helper2.guide.DateWindow;
 import ai.helper2.guide.Explanation;
 import ai.helper2.guide.GuideAnswer;
+import ai.helper2.guide.ResearchTrail;
 import ai.helper2.platform.llm.LlmSettings;
 import ai.helper2.search.MergedResult;
 import ai.helper2.search.SearchOutcome;
@@ -45,7 +48,7 @@ class GuideDtoMapper {
     static final List<String> AI_WRITTEN_FIELDS = List.of(
         "searchQuery", "constraints[]", "recommendations[].reason", "recommendations[].checks[].constraint", "prompt.text",
         "clarification.question", "clarification.options[]", "comparison.rows[].aspect", "comparison.rows[].cells[].text",
-        "explanation.sentences[].text");
+        "explanation.sentences[].text", "trail.queries[]");
 
     /** The public page that explains the marking. A path, so the same build works on any host. */
     static final String AI_MARKING_POLICY = "/mission";
@@ -96,7 +99,14 @@ class GuideDtoMapper {
             .clarification(clarification(a.getClarification()))
             .comparison(comparison(a.getComparison()))
             .explanation(explanation(a.getExplanation()))
-            .webSearches(CardMapper.webSearches(a.getWebSearches()));
+            .webSearches(CardMapper.webSearches(a.getWebSearches()))
+            .trail(trail(a.getTrail()));
+    }
+
+    /** The research trail (ADR 0044): queries and removed suggestions with their check code; never a removed reason. */
+    static GuideTrailDto trail(ResearchTrail t) {
+        return new GuideTrailDto(t.getQueries(), t.getRemoved().stream()
+            .map(r -> new GuideTrailRemovedDto(r.getTitle(), GuideTrailRemovedDto.CheckEnum.fromValue(r.getCheck().name()))).toList());
     }
 
     /**

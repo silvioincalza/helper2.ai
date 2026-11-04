@@ -20,6 +20,7 @@ class SharedGuideAnswerStoreTest {
     fun `an answer reads back equal, for its build only, kept for the ttl it was given`() {
         val original = GuideAnswerFixture.answer()
         assertTrue(original.recommendations.any { it.aiReasoned }, "fixture must be a cacheable answer")
+        assertTrue(original.trail.queries.isNotEmpty() && original.trail.removed.isNotEmpty(), "fixture must carry a research trail")
 
         store().put(key, original, Duration.ofHours(23))
 

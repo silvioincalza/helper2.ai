@@ -56,7 +56,11 @@ object GuideAnswerFixture {
                 val whisper = candidates.first { it.result.title == "whisper-small" }.key
                 val prompt = candidates.first { it.result.title == "transcribe-prompt" }.key
                 return GuideProposal(
-                    listOf(ProposedPick(whisper, "Self-hostable.", "Speech recognition model you can self-host")),
+                    listOf(
+                        ProposedPick(whisper, "Self-hostable.", "Speech recognition model you can self-host"),
+                        // Rejected: its quote is not in the text, so the answer carries a research trail entry (ADR 0044).
+                        ProposedPick(prompt, "A prompt.", "a quote that is nowhere in this candidate's own text"),
+                    ),
                     "Clean up this transcript.", listOf(prompt),
                 )
             }

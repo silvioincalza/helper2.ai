@@ -110,6 +110,9 @@ Open items:
 - Similar-question reuse of guide answers ([ADR 0041](adr/guide/0041-guide-answer-cache.md)): prod runs it at 0.96;
   watch `helper2.guide.cache{result="similar"}`, and raise or lower the threshold only with a new sweep. Live, the
   planner's readings of two wordings differ more often than the evaluation set assumes.
+- Research trail ([ADR 0044](adr/guide/0044-research-trail.md)): list the cells and sentences a comparison or an
+  explanation lost to the checks, if users ask for it. Decide whether a reused answer should still return its
+  `searchQuery` in the API: the page no longer shows it, but it is the other asker's planner query.
 - A Grafana panel for the share of kept picks ranked 9+ (`helper2.guide.picks{rank="9+"}`), next to the alert
   `Helper2GuidePicksFromLowRanks` ([ADR 0015](adr/guide/0015-ai-guide-evidence-gate.md)).
 - Write the Scout's Tavily news and events to the same stored sets as searches, with their own share of credits
@@ -249,6 +252,10 @@ Fix an item or accept it; when it no longer holds, remove it.
 - Similar-question reuse shares an answer only between questions read the same way; the reading cannot tell "this
   year" from "last year", and a question with no subject keeps no direction, which is why the threshold is high and
   most paraphrases still miss. ([ADR 0041](adr/guide/0041-guide-answer-cache.md))
+- The research trail lists only removals of picks; `rejected` can be larger than the list (duplicates, no room, the
+  prompt). A reused answer shows no queries, and the API still returns its `searchQuery`. Lawyer: are AI-written
+  search queries covered by Art. 50(2), and does the privacy text cover showing a cached answer built from someone
+  else's question? ([ADR 0044](adr/guide/0044-research-trail.md))
 - Lawyer: is metadata-only marking enough for text (it is lost on copy)? A new AI-written field must be added to the marking and its tests by hand. ([ADR 0038](adr/guide/0038-ai-content-marking.md))
 
 ### Edge and identity
