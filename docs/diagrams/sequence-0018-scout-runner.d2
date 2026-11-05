@@ -29,21 +29,21 @@ review: "CandidateReview\n(ReviewQueueCandidateReview)" {class: app}
 backlog: "CatalogEnrichmentStore\n(catalog::enrichment)" {class: app}
 enrich: EnrichResource {class: app}
 
-sched -> runner: "tick: tryRunScheduled(H2_SCOUT_EVERY)\n(first after 20 s, then every H2_SCOUT_TICK)"
+sched -> runner: "tick: tryRunScheduled(cron calendar)\n(first after 20 s, then every H2_SCOUT_TICK)"
 runner -> lock: "RunLock.runExclusively\n(ClusterRunLock: \"scout-run\")"
 lock -> pg: "take \"scout-run\" where lock_until <= db now\n(lease 2 min; extended every minute\nwhile the run lives)"
 pg -> lock: "taken (another replica's\ntick would get BUSY here)"
 lock -> runner: "due check + runAll"
 runner -> store: "lastScheduledRunEnd()"
 store -> pg: "SELECT last_ended_at\nFROM scout_schedule"
-store -> runner: "ended ≥ H2_SCOUT_EVERY ago\n(else NOT_DUE)"
+store -> runner: "cron time after last end\nhas passed (else NOT_DUE)"
 runner -> store: "markInterrupted(now)"
 store -> pg: "rows still RUNNING\n(stopped replica) → FAILED"
 runner -> runner: "EnrichmentBudget(20)"
 runner -> store: "save(RUNNING) per collector"
 runner -> store: "cursor(sourceId)"
 store -> runner: "checkpoint, resumeCursor,\npassStartedAt"
-runner -> col: "collect(checkpoint, resumeCursor, 500)"
+runner -> col: "collect(checkpoint, resumeCursor, 1000)"
 col -> col: "RunInterval.allowsPass?"
 col -> ext: "GET …?updated_since=checkpoint" {class: hot}
 ext -> col: "items + nextCursor"

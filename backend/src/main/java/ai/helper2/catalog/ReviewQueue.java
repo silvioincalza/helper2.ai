@@ -23,6 +23,11 @@ public class ReviewQueue {
     /** A page a collector proposes for the catalog (ADR 0032 §8): no resource yet, only its URL. */
     COURSE_CANDIDATE,
     /**
+     * A product page a discovery collector proposes (ADR 0051): no resource yet; details are the
+     * candidate as JSON. Accepting it indexes it.
+     */
+    RESOURCE_CANDIDATE,
+    /**
      * A home example a model drafted for a catalog resource (ADR 0049 §6): the resource is its
      * expected result, the draft is in details. Accepting it adds the example.
      */
@@ -116,6 +121,14 @@ public class ReviewQueue {
             .param("details", details)
             .update()
         == 1;
+  }
+
+  /** True when the catalog has a resource at [canonicalUrl]. */
+  public boolean inCatalog(String canonicalUrl) {
+    return jdbc.sql("SELECT EXISTS (SELECT 1 FROM resource WHERE canonical_url = :url)")
+        .param("url", canonicalUrl)
+        .query(Boolean.class)
+        .single();
   }
 
   private static final String SELECT_ITEMS =

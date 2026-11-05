@@ -10,6 +10,7 @@ import ai.helper2.search.QueryTranslator;
 import ai.helper2.search.RecordedOutcomes;
 import ai.helper2.search.ResultObserver;
 import ai.helper2.search.SearchCache;
+import ai.helper2.search.SearchPolicy;
 import ai.helper2.search.SearchSource;
 import ai.helper2.search.SourceHealth;
 import ai.helper2.search.WebFreshness;
@@ -81,6 +82,22 @@ class SearchConfiguration {
             quota.registered().guide()),
         quota.registeredTierEnabled(),
         quota.globalDailyCredits());
+  }
+
+  /** Search's numbers for GET /api/v1/policy (ADR 0051). */
+  @Bean
+  SearchPolicy searchPolicy(SearchProperties search, SearchRetentionProperties retention) {
+    SearchProperties.Quota quota = search.web().quota();
+    return new SearchPolicy(
+        new DailyLimits(
+            quota.guest().search(),
+            quota.guest().guide(),
+            quota.registered().search(),
+            quota.registered().guide()),
+        quota.registeredTierEnabled(),
+        search.staleFor(),
+        search.translation().ttl(),
+        retention.tavilyResults());
   }
 
   @Bean

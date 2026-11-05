@@ -57,6 +57,7 @@ All diagrams: [docs/diagrams](../diagrams/README.md).
 | [0020](scout/0020-scout-collectors.md) | Scout collectors: MCP Registry, HF trending, HF provider orgs, Tavily discovery, courses, awesome lists with classifier, ai-deadlines | 0006, 0014, 0018 | [flow](../diagrams/flow-0020-scout-collectors.svg) · [sequence](../diagrams/sequence-0020-scout-collectors.svg) |
 | [0022](scout/0022-next-events.md) | Next events: stated event days, ai-deadlines and curated industry and community events | 0004, 0010, 0018, 0020 | [flow](../diagrams/flow-0022-next-events.svg) · [sequence](../diagrams/sequence-0022-next-events.svg) |
 | [0043](scout/0043-enrichment-gap-round.md) | Enrichment gap round: read the README or model card once when a run leaves fields unproven | 0018, 0019, 0020, 0034 | [flow](../diagrams/flow-0043-enrichment-gap-round.svg) · [sequence](../diagrams/sequence-0043-enrichment-gap-round.svg) |
+| [0051](scout/0051-tavily-discovery.md) | Tavily discovery: one web search per category of the AI world, lists indexed, products reviewed | 0018, 0019, 0020, 0033, 0037 | [flow](../diagrams/flow-0051-tavily-discovery.svg) · [sequence](../diagrams/sequence-0051-tavily-discovery.svg) |
 
 ## Edge and identity — [`edge/`](edge/)
 
@@ -88,6 +89,7 @@ All diagrams: [docs/diagrams](../diagrams/README.md).
 | [0034](operations/0034-data-retention.md) | Data retention: a period and a mechanism for every store; daily purges per module | 0004, 0005, 0023, 0026 | [flow](../diagrams/flow-0034-data-retention.svg) · [sequence](../diagrams/sequence-0034-data-retention.svg) |
 | [0046](operations/0046-supply-chain.md) | Supply chain: base images pinned by digest, an SBOM per image, a Grype scan, report-only first | 0027, 0028, 0029 | [flow](../diagrams/flow-0046-supply-chain.svg) |
 | [0048](operations/0048-release-branches-and-version-tags.md) | Release branches and version tags on images: patch-only fixes from release/*, prod runs X.Y.Z, no rebuild | 0028, 0029, 0046 | [flow](../diagrams/flow-0048-release-branches-and-version-tags.svg) · [sequence](../diagrams/sequence-0048-release-branches-and-version-tags.svg) |
+| [0051](operations/0051-policy-endpoint.md) | Policy endpoint: GET /api/v1/policy gives the limits and retention periods the text pages state, from the configuration; one policy value per owning module, a thin policy module | 0003, 0007, 0017, 0024, 0034, 0037 | [flow](../diagrams/flow-0051-policy-endpoint.svg) · [sequence](../diagrams/sequence-0051-policy-endpoint.svg) |
 
 ## Quality — [`quality/`](quality/)
 

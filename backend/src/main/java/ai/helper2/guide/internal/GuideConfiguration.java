@@ -6,6 +6,7 @@ import ai.helper2.guide.ClientQuota;
 import ai.helper2.guide.GuideAnswerCache;
 import ai.helper2.guide.GuideAnswerStore;
 import ai.helper2.guide.GuideModel;
+import ai.helper2.guide.GuidePolicy;
 import ai.helper2.guide.GuideValidator;
 import ai.helper2.guide.SimilarQuestionIndex;
 import ai.helper2.guide.SimilarQuestions;
@@ -102,6 +103,13 @@ class GuideConfiguration {
         question -> embedder.embed(List.of(question), Embedder.Kind.QUERY).getFirst(),
         index,
         clock);
+  }
+
+  /** The guide's numbers for GET /api/v1/policy (ADR 0051). */
+  @Bean
+  GuidePolicy guidePolicy(GuideProperties settings) {
+    return new GuidePolicy(
+        settings.clientDailyQuestions(), settings.maxCandidates(), settings.cacheTtl());
   }
 
   /** Fresh guide questions per client and day (ADR 0017); also read by GET /me. */

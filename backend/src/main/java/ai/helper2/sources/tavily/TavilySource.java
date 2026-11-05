@@ -132,6 +132,15 @@ public class TavilySource implements SearchSource {
    * about AI.
    */
   static SourceHit toHit(JsonNode r, String sourceId, Instant now, int position) {
+    return toHit(r, sourceId, now, position, ResourceType.NEWS, Set.of());
+  }
+
+  /**
+   * As above, with [type] for a result that is not an event (an ARTICLE for a list page) and the
+   * catalog [tags] it gets.
+   */
+  static SourceHit toHit(
+      JsonNode r, String sourceId, Instant now, int position, ResourceType type, Set<String> tags) {
     String url = HttpClients.text(r, "url");
     String title = HttpClients.text(r, "title");
     CanonicalUrl canonical = CanonicalUrl.of(url);
@@ -142,7 +151,7 @@ public class TavilySource implements SearchSource {
     if (!Classification.isAiRelated(title, content, Set.of())) {
       return null;
     }
-    ResourceType type = EVENT.matcher(title).find() ? ResourceType.EVENT : ResourceType.NEWS;
+    ResourceType kind = EVENT.matcher(title).find() ? ResourceType.EVENT : type;
     WebPageTitle page = WebPageTitle.of(title, canonical.getHost());
     String snippet = snippet(content != null ? content : page.getDescription());
     return new SourceHit(
@@ -154,11 +163,11 @@ public class TavilySource implements SearchSource {
         page.getTitle(),
         snippet,
         ValueOrigin.SOURCE_PROVIDED,
-        type,
+        kind,
         Audience.BOTH,
         null,
         Set.of(),
-        Set.of(),
+        tags,
         null,
         null,
         Set.of(),

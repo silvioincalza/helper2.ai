@@ -7,7 +7,7 @@
 #   backend/src/main/java/ai/helper2/scout/internal/JdbcScoutStore.java (scout_schedule),
 #   backend/src/main/kotlin/ai/helper2/scout/Ports.kt (CollectedBatch, CandidateReview),
 #   backend/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java,
-#   backend/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java (ScoutSchedule, scoutRunLock,
+#   backend/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java (ScoutSchedule, CronRunCalendar, scoutRunLock,
 #   ClusterRunLock, RUN_THREADS), backend/src/main/java/ai/helper2/platform/ClusterLock.java, ClusterLocks.java,
 #   backend/src/main/java/ai/helper2/admin/web/AdminController.java (startScoutRun),
 #   backend/src/main/java/ai/helper2/sources/support/RunInterval.java.
@@ -17,14 +17,14 @@
 
 direction: down
 
-trigger: "ScoutSchedule tick on each replica\n(H2_SCOUT_ENABLED): first after 20 s,\nthen every H2_SCOUT_TICK (1 h)" {class: end}
+trigger: "ScoutSchedule tick on each replica\n(H2_SCOUT_ENABLED): first after 20 s,\nthen every H2_SCOUT_TICK (10 min)" {class: end}
 admin: "POST /api/v1/admin/scout-runs\n(run starts on a virtual thread)" {class: end}
 guard: "Lock \"scout-run\" free\nin the cluster?\n(2 min lease, renewed every\nminute while the run lives)" {class: decision}
 startup: "Replica starts\n(ApplicationReadyEvent)" {class: end}
 startupClose: "Lock free: close rows left RUNNING\nas FAILED, release \"scout-run\"\n(held: the next run closes them)" {class: data}
 interrupted: "Close scout_run rows left RUNNING\nby a stopped replica: FAILED" {class: data}
 busy: "BUSY: next tick tries again (tick) /\n409 Conflict (admin)" {class: fail}
-due: "Last scheduled run ended\n≥ H2_SCOUT_EVERY ago, or none?\n(table scout_schedule)" {class: decision}
+due: "Cron time (H2_SCOUT_CRON, UTC)\nafter the last scheduled end\npassed, or none?\n(table scout_schedule)" {class: decision}
 notdue: "NOT_DUE:\nrelease \"scout-run\"" {class: end}
 plan: "Save one scout_run row per collector:\nRUNNING (SKIPPED if disabled)" {class: data}
 accepted: "Admin: 202 Accepted with those rows;\nthe page polls GET /admin/scout-runs" {class: end}
@@ -35,7 +35,7 @@ each: For each collector (isolated) {
   direction: down
   enabled: "Collector enabled?" {class: decision}
   skipped: "SKIPPED\n\"Disabled in configuration\"" {class: end}
-  collect: "collect(checkpoint, resumeCursor,\nmax-items-per-run 500)" {class: app}
+  collect: "collect(checkpoint, resumeCursor,\nmax-items-per-run 1000)" {class: app}
   due: "Interval passed or\npass unfinished?" {class: decision}
   notdue: "SKIPPED\n\"Not due yet (run interval)\"" {class: end}
   index: "Merge hits, CatalogIndex.index\n→ changed resource ids" {class: app}

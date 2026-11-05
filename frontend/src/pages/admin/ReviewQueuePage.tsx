@@ -178,6 +178,8 @@ export default function ReviewQueuePage() {
                     <p className="h2-admin__reason">{it.reason}</p>
                     {it.kind === 'EXAMPLE_CANDIDATE' ? (
                       <DraftedExample details={it.details} />
+                    ) : it.kind === 'RESOURCE_CANDIDATE' ? (
+                      <ResourceCandidate details={it.details} />
                     ) : (
                       it.details && <p className="h2-admin__details">{it.details}</p>
                     )}
@@ -278,6 +280,71 @@ function parseDraft(details: string | null | undefined): Draft | null {
       (d.path === 'USE_AI' || d.path === 'BUILD_WITH_AI') &&
       typeof d.model === 'string'
       ? (d as Draft)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+/** A product page Tavily discovery found (ADR 0051): the details are the candidate as JSON. */
+function ResourceCandidate({ details }: { details: string | null | undefined }) {
+  const { t } = useTranslation();
+  const candidate = parseCandidate(details);
+  if (!candidate) return details ? <p className="h2-admin__details">{details}</p> : null;
+  return (
+    <dl className="h2-admin__details h2-admin__draft">
+      <dt>{t('admin.review.candidate.page')}</dt>
+      <dd>
+        <a href={candidate.url} target="_blank" rel="noopener noreferrer nofollow">
+          {candidate.title}
+        </a>{' '}
+        <span className="muted">{candidate.url}</span>
+      </dd>
+      <dt>{t('admin.review.candidate.type')}</dt>
+      <dd>{t(`type.${candidate.type}`, { defaultValue: candidate.type })}</dd>
+      {candidate.tags.length > 0 && (
+        <>
+          <dt>{t('admin.review.candidate.tags')}</dt>
+          <dd>{candidate.tags.join(', ')}</dd>
+        </>
+      )}
+      {candidate.snippet && (
+        <>
+          <dt>{t('admin.review.candidate.excerpt')}</dt>
+          <dd>{candidate.snippet}</dd>
+        </>
+      )}
+      <dd className="h2-admin__draft-note">{t('admin.review.candidate.note')}</dd>
+    </dl>
+  );
+}
+
+interface Candidate {
+  url: string;
+  title: string;
+  type: string;
+  tags: string[];
+  snippet: string | undefined;
+}
+
+/** The candidate, or null when the details are not one; only https links are shown as links. */
+function parseCandidate(details: string | null | undefined): Candidate | null {
+  if (!details) return null;
+  try {
+    const d = JSON.parse(details) as Partial<Candidate>;
+    return typeof d.url === 'string' &&
+      d.url.startsWith('https://') &&
+      typeof d.title === 'string' &&
+      typeof d.type === 'string'
+      ? {
+          url: d.url,
+          title: d.title,
+          type: d.type,
+          tags: Array.isArray(d.tags)
+            ? d.tags.filter((x): x is string => typeof x === 'string')
+            : [],
+          snippet: typeof d.snippet === 'string' ? d.snippet : undefined,
+        }
       : null;
   } catch {
     return null;

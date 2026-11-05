@@ -1,6 +1,8 @@
 package ai.helper2.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -48,6 +50,9 @@ class SearchApiIT extends ApiTestBase {
             .andExpect(jsonPath("$.sources[?(@.sourceId=='github')].outcome").value("SKIPPED"))
             .andExpect(jsonPath("$.sources[?(@.sourceId=='github')].skipReason").value("DISABLED"))
             .andExpect(jsonPath("$.sources[?(@.sourceId=='fake-live')].outcome").value("SUCCEEDED"))
+            .andExpect(
+                jsonPath("$.sources[?(@.sourceId=='fake-live')].skipReason")
+                    .value(contains(nullValue())))
             .andExpect(jsonPath("$.sources[?(@.sourceId=='curated')].mode").value("CURATED"))
             .andReturn();
     String body = r.getResponse().getContentAsString();

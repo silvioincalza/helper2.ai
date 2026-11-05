@@ -74,7 +74,7 @@ spec:
             {{- end }}
             - { name: H2_SCOUT_ENABLED, value: {{ .Values.app.scoutEnabled | toString | quote }} }
             - { name: H2_SCOUT_INITIAL_DELAY, value: {{ required "app.scoutInitialDelay" .Values.app.scoutInitialDelay | quote }} }
-            - { name: H2_SCOUT_EVERY, value: {{ required "app.scoutEvery" .Values.app.scoutEvery | quote }} }
+            - { name: H2_SCOUT_CRON, value: {{ required "app.scoutCron" .Values.app.scoutCron | quote }} }
             - { name: H2_SCOUT_MAX_ENRICHMENTS, value: {{ .Values.app.scoutMaxEnrichments | toString | quote }} }
             {{- /* Daily limits: only the ones set in values, so an unset one keeps the app default or the env Secret. */}}
             {{- $limits := .Values.app.dailyLimits }}
