@@ -1,10 +1,10 @@
 package ai.helper2.platform;
 
 import jakarta.validation.ConstraintViolationException;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -16,34 +16,37 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 /**
- * RFC 9457 problem details. Never echoes internals or input back verbatim. Only what the client
- * sent can be a 400 ({@link BadRequestException}, contract validation, unparseable parameters);
- * every other exception is a bug or an outage and answers 500.
+ * RFC 9457 problem details with Spring's own {@link ProblemDetail} (ADR 0003): every answer has a
+ * {@link ProblemType} URI and its stable {@code code}. Never echoes internals or input back. Only
+ * what the client sent can be a 400; every other exception is a bug or an outage and answers 500.
  */
 @RestControllerAdvice
 class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
   private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
 
-  @ExceptionHandler({
-    BadRequestException.class,
-    ConstraintViolationException.class,
-    MethodArgumentTypeMismatchException.class
-  })
-  ProblemDetail badRequest(Exception e) {
-    return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Invalid request parameters.");
+  /** What a 400 says, whatever the caller sent: input is never echoed back. */
+  static final String INVALID = "Invalid request parameters.";
+
+  @ExceptionHandler(BadRequestException.class)
+  ProblemDetail badRequest(BadRequestException e) {
+    return Problems.of(ProblemType.INVALID_REQUEST, INVALID);
   }
 
-  @ExceptionHandler(NotFoundException.class)
-  ProblemDetail notFound(NotFoundException e) {
-    return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage());
+  @ExceptionHandler({ConstraintViolationException.class, MethodArgumentTypeMismatchException.class})
+  ProblemDetail invalidParameters(Exception e) {
+    return Problems.of(ProblemType.INVALID_REQUEST, INVALID);
+  }
+
+  @ExceptionHandler(ApiProblem.class)
+  ProblemDetail problem(ApiProblem e) {
+    return Problems.of(e.type(), e.detail());
   }
 
   @ExceptionHandler(RuntimeException.class)
   ProblemDetail unexpected(RuntimeException e) {
     log.error("Unhandled exception in a request", e);
-    return ProblemDetail.forStatusAndDetail(
-        HttpStatus.INTERNAL_SERVER_ERROR, "Something went wrong on our side.");
+    return Problems.of(ProblemType.INTERNAL, "Something went wrong on our side.");
   }
 
   @Override
@@ -52,9 +55,24 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
       HttpHeaders headers,
       HttpStatusCode status,
       WebRequest request) {
-    return ResponseEntity.badRequest()
-        .body(
-            ProblemDetail.forStatusAndDetail(
-                HttpStatus.BAD_REQUEST, "Invalid request parameters."));
+    return ResponseEntity.badRequest().body(Problems.of(ProblemType.INVALID_REQUEST, INVALID));
+  }
+
+  /**
+   * The errors Spring answers on its own (unreadable body, method not allowed, ...): the same
+   * problem, typed by its status.
+   */
+  @Override
+  protected ResponseEntity<Object> handleExceptionInternal(
+      Exception ex,
+      @Nullable Object body,
+      HttpHeaders headers,
+      HttpStatusCode status,
+      WebRequest request) {
+    if (body instanceof ProblemDetail problem) {
+      ProblemType type = ProblemType.forStatus(status.value());
+      Problems.typed(problem, type, type == ProblemType.INVALID_REQUEST ? INVALID : null);
+    }
+    return super.handleExceptionInternal(ex, body, headers, status, request);
   }
 }

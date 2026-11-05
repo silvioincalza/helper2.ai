@@ -285,7 +285,9 @@ class HttpEdgeIT {
     // Answered before the security filters: the same headers, and a body that does not echo the
     // path.
     assertThat(audit.body())
-        .isEqualTo("{\"type\":\"about:blank\",\"title\":\"Not Found\",\"status\":404}");
+        .isEqualTo(
+            "{\"type\":\"https://helper2.ai/problems/not-found\",\"title\":\"Not found\","
+                + "\"status\":404,\"code\":\"not-found\"}");
     assertThat(audit.headers().firstValue("Content-Type"))
         .hasValueSatisfying(v -> assertThat(v).startsWith("application/problem+json"));
     assertThat(audit.headers().firstValue("X-Content-Type-Options")).contains("nosniff");

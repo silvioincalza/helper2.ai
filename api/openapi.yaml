@@ -466,12 +466,19 @@ components:
   schemas:
     Problem:
       type: object
+      description: >-
+        RFC 9457 problem details (application/problem+json). `type` is https://helper2.ai/problems/<code>; `code` is
+        the same stable code on its own, so a client reacts to the code, never to the title text. Codes:
+        invalid-request (400), sign-in-required (401), forbidden (403), not-found (404), method-not-allowed (405),
+        not-acceptable (406), unsupported-media-type (415), already-decided, run-in-progress, version-conflict,
+        duplicate (409), rate-limited (429), internal (500), unavailable (503), timed-out (504).
       properties:
-        type: { type: string }
+        type: { type: string, format: uri }
         title: { type: string }
         status: { type: integer }
         detail: { type: string }
         instance: { type: string }
+        code: { type: string, description: The stable code of the problem type. }
 
     AudiencePath:
       type: string

@@ -11,7 +11,9 @@ import ai.helper2.api.generated.model.ScoutRunRequestDto;
 import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.catalog.usecase.ListReviewItems;
 import ai.helper2.catalog.usecase.ResolveReviewItem;
+import ai.helper2.platform.ApiProblem;
 import ai.helper2.platform.NotFoundException;
+import ai.helper2.platform.ProblemType;
 import ai.helper2.scout.RunSummary;
 import ai.helper2.scout.ScoutStore;
 import ai.helper2.scout.usecase.StartScoutRun;
@@ -24,7 +26,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -64,8 +65,9 @@ class AdminController implements AdminApi {
         id, ReviewQueue.Status.valueOf(body.getStatus().getValue()), adminId(), body.getNote())) {
       case ResolveReviewItem.Outcome.Resolved r -> ResponseEntity.ok(dto(r.item()));
       case ResolveReviewItem.Outcome.NotOpen n ->
-          throw new ResponseStatusException(
-              HttpStatus.CONFLICT, "This item was already decided: " + n.item().status() + ".");
+          throw new ApiProblem(
+              ProblemType.ALREADY_DECIDED,
+              "This item was already decided: " + n.item().status() + ".");
       case ResolveReviewItem.Outcome.NotFound f ->
           throw new NotFoundException("Review item not found.");
     };
@@ -80,8 +82,9 @@ class AdminController implements AdminApi {
   public ResponseEntity<List<ScoutRunDto>> startScoutRun(@Nullable ScoutRunRequestDto body) {
     List<RunSummary> runs = startRun.start(adminId(), body == null ? null : body.getSourceId());
     if (runs == null) {
-      throw new ResponseStatusException(
-          HttpStatus.CONFLICT, "A Scout run is already in progress. Try again when it ends.");
+      throw new ApiProblem(
+          ProblemType.RUN_IN_PROGRESS,
+          "A Scout run is already in progress. Try again when it ends.");
     }
     return ResponseEntity.status(HttpStatus.ACCEPTED)
         .body(runs.stream().map(AdminController::dto).toList());

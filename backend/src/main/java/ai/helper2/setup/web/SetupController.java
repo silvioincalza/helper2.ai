@@ -12,7 +12,9 @@ import ai.helper2.api.generated.model.ToolGuideDto;
 import ai.helper2.api.generated.model.ToolGuideSectionsInnerDto;
 import ai.helper2.api.generated.model.ToolGuideSectionsInnerStepsInnerCodeDto;
 import ai.helper2.api.generated.model.ToolGuideSectionsInnerStepsInnerDto;
+import ai.helper2.platform.ApiProblem;
 import ai.helper2.platform.NotFoundException;
+import ai.helper2.platform.ProblemType;
 import ai.helper2.setup.ClientGuide;
 import ai.helper2.setup.GuideStep;
 import ai.helper2.setup.RunOption;
@@ -28,11 +30,9 @@ import ai.helper2.shared.UtcTimes;
 import java.time.Duration;
 import java.util.UUID;
 import org.springframework.http.CacheControl;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -58,8 +58,8 @@ class SetupController implements SetupApi {
     try {
       guide = setup.setup(id).orElseThrow(() -> new NotFoundException("Resource not found."));
     } catch (SetupUnavailable e) {
-      throw new ResponseStatusException(
-          HttpStatus.SERVICE_UNAVAILABLE, "The setup data could not be read now. Try again later.");
+      throw new ApiProblem(
+          ProblemType.UNAVAILABLE, "The setup data could not be read now. Try again later.");
     }
     return ResponseEntity.ok().cacheControl(CACHE).body(dto(id, guide));
   }
