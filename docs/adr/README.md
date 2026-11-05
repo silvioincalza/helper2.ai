@@ -93,7 +93,7 @@ All diagrams: [docs/diagrams](../diagrams/README.md).
 | [0034](operations/0034-data-retention.md) | Data retention: a period and a mechanism for every store; daily purges per module | 0004, 0005, 0023, 0026 | [flow](../diagrams/flow-0034-data-retention.svg) · [sequence](../diagrams/sequence-0034-data-retention.svg) |
 | [0046](operations/0046-supply-chain.md) | Supply chain: base images pinned by digest, an SBOM per image, a Grype scan, report-only first | 0027, 0028, 0029 | [flow](../diagrams/flow-0046-supply-chain.svg) |
 | [0048](operations/0048-release-branches-and-version-tags.md) | Release branches and version tags on images: patch-only fixes from release/*, prod runs X.Y.Z, no rebuild | 0028, 0029, 0046 | [flow](../diagrams/flow-0048-release-branches-and-version-tags.svg) · [sequence](../diagrams/sequence-0048-release-branches-and-version-tags.svg) |
-| [0051](operations/0051-policy-endpoint.md) | Policy endpoint: GET /api/v1/policy gives the limits and retention periods the text pages state, from the configuration; one policy value per owning module, a thin policy module | 0003, 0007, 0017, 0024, 0034, 0037 | [flow](../diagrams/flow-0051-policy-endpoint.svg) · [sequence](../diagrams/sequence-0051-policy-endpoint.svg) |
+| [0052](operations/0052-policy-endpoint.md) | Policy endpoint: GET /api/v1/policy gives the limits and retention periods the text pages state, from the configuration; one policy value per owning module, a thin policy module | 0003, 0007, 0017, 0024, 0034, 0037 | [flow](../diagrams/flow-0052-policy-endpoint.svg) · [sequence](../diagrams/sequence-0052-policy-endpoint.svg) |
 
 ## Quality — [`quality/`](quality/)
 

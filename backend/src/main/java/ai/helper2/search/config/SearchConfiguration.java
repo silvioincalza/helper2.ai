@@ -85,7 +85,7 @@ class SearchConfiguration {
         quota.globalDailyCredits());
   }
 
-  /** Search's numbers for GET /api/v1/policy (ADR 0051). */
+  /** Search's numbers for GET /api/v1/policy (ADR 0052). */
   @Bean
   SearchPolicy searchPolicy(SearchProperties search, SearchRetentionProperties retention) {
     SearchProperties.Quota quota = search.web().quota();

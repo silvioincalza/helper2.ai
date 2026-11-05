@@ -594,7 +594,7 @@ paths:
       operationId: getPolicy
       summary: The limits and retention periods the Mission, Privacy and Terms pages state.
       description: >-
-        Read from the running configuration (ADR 0051), so the text pages show the numbers the code applies. The same
+        Read from the running configuration (ADR 0052), so the text pages show the numbers the code applies. The same
         answer for everyone, no personal data; cached for 5 minutes. Rate-limited like the other public reads.
       responses:
         '200':
