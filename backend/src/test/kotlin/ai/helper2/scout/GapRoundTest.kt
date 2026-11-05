@@ -205,6 +205,25 @@ class GapRoundTest {
   }
 
   @Test
+  fun `a self-closing hidden svg or math element closes itself, as in a browser`() {
+    for (raw in
+      listOf(
+        "Start <svg style=\"display:none\"/><p>Pricing five dollars</p>",
+        "Start <math hidden/><p>Pricing five dollars</p>",
+        "Start <svg><path d=\"M0\"/><g style=\"display:none\"/></svg><p>Pricing five dollars</p>",
+      )) {
+      assertTrue(UntrustedPageText.clean(raw).contains("Pricing five dollars"), raw)
+    }
+    val nested =
+      UntrustedPageText.clean(
+        "A <svg hidden><g><path d=\"M0\"/></g><text>secret</text></svg><p>End</p>"
+      )
+    assertFalse(nested.contains("secret"), nested)
+    assertTrue(nested.contains("End"), nested)
+    assertEquals("A", UntrustedPageText.clean("A <div hidden/>secret <p>more</p>"))
+  }
+
+  @Test
   fun `hidden elements cost linear time`() {
     for (raw in
       listOf(

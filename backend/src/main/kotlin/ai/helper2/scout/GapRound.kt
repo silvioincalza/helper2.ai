@@ -296,6 +296,7 @@ object UntrustedPageText {
     val out = StringBuilder(text.length)
     var from = 0
     var at = 0
+    var foreignDepth = 0
     while (true) {
       val lt = text.indexOf('<', at)
       if (lt < 0) break
@@ -308,12 +309,16 @@ object UntrustedPageText {
           } else {
             at = lt + 1
           }
-        tag.closing || !hides(tag) -> at = tag.end
+        tag.closing || !hides(tag) -> {
+          foreignDepth = foreignDepthAfter(tag, foreignDepth)
+          at = tag.end
+        }
         else -> {
           out.append(text, from, lt)
+          val foreign = foreignDepth > 0 || tag.name in FOREIGN_ROOTS
           from =
-            if (tag.name in VOID_ELEMENTS) tag.end
-            else closeOf(text, tag.name, tag.end) ?: return out.toString()
+            if (tag.name in VOID_ELEMENTS || (foreign && tag.selfClosing)) tag.end
+            else closeOf(text, tag.name, tag.end, foreign) ?: return out.toString()
           at = from
         }
       }
@@ -331,7 +336,21 @@ object UntrustedPageText {
     val attributesFrom: Int,
     val attributesTo: Int,
     val end: Int,
+    /** Ends in "/>": honoured only in SVG and MathML (foreign content) and for void elements. */
+    val selfClosing: Boolean = false,
   )
+
+  /** Elements whose content a browser reads as foreign: "/>" closes any element inside them. */
+  private val FOREIGN_ROOTS = setOf("svg", "math")
+
+  /** How deep in SVG or MathML the scan is after [tag]. */
+  private fun foreignDepthAfter(tag: Tag, depth: Int): Int =
+    when {
+      tag.name !in FOREIGN_ROOTS -> depth
+      tag.closing -> maxOf(0, depth - 1)
+      tag.selfClosing -> depth
+      else -> depth + 1
+    }
 
   /** A start in these sorted positions falls in [from, to). */
   private fun IntArray.any(from: Int, to: Int): Boolean {
@@ -361,7 +380,7 @@ object UntrustedPageText {
       val c = text[j]
       when {
         quote != ' ' -> if (c == quote) quote = ' '
-        c == '>' -> return Tag(name, closing, i, j, j + 1)
+        c == '>' -> return Tag(name, closing, i, j, j + 1, selfClosing = text[j - 1] == '/')
         afterEquals && (c == '"' || c == '\'') -> quote = c
       }
       if (quote == ' ') afterEquals = c == '=' || (afterEquals && c.isWhitespace())
@@ -371,7 +390,7 @@ object UntrustedPageText {
   }
 
   /** Where the element [name] opened before [from] ends, counting nested ones; null if never. */
-  private fun closeOf(text: String, name: String, from: Int): Int? {
+  private fun closeOf(text: String, name: String, from: Int, foreign: Boolean): Int? {
     var depth = 1
     var at = from
     while (true) {
@@ -384,7 +403,7 @@ object UntrustedPageText {
         tag.name != name -> at = tag.end
         tag.closing -> if (--depth == 0) return tag.end else at = tag.end
         else -> {
-          depth++
+          if (!(foreign && tag.selfClosing)) depth++
           at = tag.end
         }
       }
