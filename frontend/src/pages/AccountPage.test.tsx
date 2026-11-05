@@ -11,7 +11,8 @@ describe('Feature: delete my account', () => {
     await userEvent.click(
       await within(screen.getByRole('banner')).findByRole('link', { name: 'Ada' }),
     );
-    expect(router.state.location.pathname).toBe('/account');
+    // The account page loads on demand: the router moves once it has arrived.
+    await waitFor(() => expect(router.state.location.pathname).toBe('/account'));
     expect(await screen.findByRole('heading', { name: 'Your account' })).toBeInTheDocument();
   });
 
