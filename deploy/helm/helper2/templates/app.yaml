@@ -68,6 +68,21 @@ spec:
             - { name: H2_ADMIN_GRAFANA_URL, value: {{ . | quote }} }
             {{- end }}
             - { name: H2_NOINDEX, value: {{ .Values.app.noindex | toString | quote }} }
+            {{- with .Values.app.monetisation }}
+            # Monetisation parts that are on (ADR 0057); an empty value stays off.
+            {{- with .githubSponsorsUrl }}
+            - { name: H2_SUPPORT_GITHUB_SPONSORS_URL, value: {{ . | quote }} }
+            {{- end }}
+            {{- with .stripePaymentUrl }}
+            - { name: H2_SUPPORT_STRIPE_PAYMENT_URL, value: {{ . | quote }} }
+            {{- end }}
+            {{- with .ga4MeasurementId }}
+            - { name: H2_ANALYTICS_GA4_MEASUREMENT_ID, value: {{ . | quote }} }
+            {{- end }}
+            {{- with .ethicalAdsPublisher }}
+            - { name: H2_ADS_ETHICALADS_PUBLISHER, value: {{ . | quote }} }
+            {{- end }}
+            {{- end }}
             {{- with .Values.app.publicBaseUrl }}
             # The host every canonical link and sitemap address names (ADR 0050).
             - { name: H2_PUBLIC_BASE_URL, value: {{ . | quote }} }

@@ -341,6 +341,8 @@ Fix an item or accept it; when it no longer holds, remove it.
 
 ### Frontend
 
+- With ads on, public pages allow inline styles (`style-src 'unsafe-inline'`) for the EthicalAds client. The ad slot's height is fixed by hand; check it against real ads on staging. ([ADR 0057](adr/frontend/0057-monetisation.md))
+- Google Analytics hosts are listed by hand in the CSP; if Google changes them, hits are blocked until the list is updated. ([ADR 0057](adr/frontend/0057-monetisation.md))
 - A user who never presses Ask the guide (or Shift+Enter) never sees the guide's picks: Enter only searches. ([ADR 0025](adr/frontend/0025-frontend-one-box.md))
 - knip does not read locale files or CSS: a text key or a style that only dead code used stays until it is removed by hand (today the `freshness.*` texts and `.badge.freshness`). Moderate `npm audit` advisories in build and test tools are only reported. ([ADR 0054](adr/quality/0054-dead-code-and-dependency-audit.md))
 - No browser end-to-end tests: frontend tests run in jsdom only, also in CI. ([ADR 0025](adr/frontend/0025-frontend-one-box.md), [ADR 0028](adr/operations/0028-ci-cd.md))

@@ -84,6 +84,16 @@ app:
   adminPort: 8082
   # The metrics dashboard the back office overview links to for trends (H2_ADMIN_GRAFANA_URL; ADR 0045). Empty = no link.
   adminGrafanaUrl: ""
+  # Monetisation (ADR 0057). Each part is off while empty: no link, no script, no CSP origin. Not secrets: the
+  # browser sees them. Use a separate GA4 stream for staging, never the prod one.
+  monetisation:
+    # Support page links (H2_SUPPORT_GITHUB_SPONSORS_URL, H2_SUPPORT_STRIPE_PAYMENT_URL; https only).
+    githubSponsorsUrl: ""
+    stripePaymentUrl: ""
+    # Google Analytics 4 stream, loaded only after consent (H2_ANALYTICS_GA4_MEASUREMENT_ID, G-...).
+    ga4MeasurementId: ""
+    # EthicalAds publisher ID of the one ad slot (H2_ADS_ETHICALADS_PUBLISHER).
+    ethicalAdsPublisher: ""
   # prod | staging, set per environment; the `environment` tag on metrics and spans.
   environment: ""
   # Ask search engines not to index this deployment: X-Robots-Tag: noindex on every response (H2_NOINDEX).

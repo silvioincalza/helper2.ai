@@ -12,6 +12,8 @@ import { useDropServerHead } from '@/lib/head';
 import { useTranslation } from 'react-i18next';
 import { signOut } from '@/api/client';
 import { useMe } from '@/context/MeContext';
+import { useMonetisation } from '@/context/MonetisationContext';
+import { AnalyticsConsent, openConsentSettings } from './AnalyticsConsent';
 import { chooseTheme, currentTheme, otherTheme, subscribeTheme } from '@/lib/theme';
 import { hasOwnSearchBox, showsHome } from '@/lib/searchState';
 import { takeSignInReturn } from '@/lib/signInReturn';
@@ -224,10 +226,13 @@ function OutLink({ href, label, children }: { href: string; label: string; child
 
 /**
  * The footer in design v4 (Main board): the logo, one row of links (the pages, the code, the release, the theme),
- * then one line: what is searched, no ads, who and where.
+ * then one line: what is searched, no tracking ads, who and where. "Support" is there while a way to give is on;
+ * "Cookie settings" while analytics is on (ADR 0057).
  */
 function Footer() {
   const { t } = useTranslation();
+  const { githubSponsorsUrl, stripePaymentUrl, ga4MeasurementId } = useMonetisation();
+  const support = githubSponsorsUrl !== null || stripePaymentUrl !== null;
   return (
     <footer className="v4 site-footer">
       <div className="v4-wrap v4-footer__row">
@@ -247,6 +252,18 @@ function Footer() {
           <li>
             <Link to="/terms">{t('footer.terms')}</Link>
           </li>
+          {support && (
+            <li>
+              <Link to="/support">{t('footer.support')}</Link>
+            </li>
+          )}
+          {ga4MeasurementId !== null && (
+            <li>
+              <button type="button" className="v4-text-btn" onClick={openConsentSettings}>
+                {t('footer.cookieSettings')}
+              </button>
+            </li>
+          )}
           <li>
             <OutLink href={REPO_URL} label={t('footer.githubLabel')}>
               <GitHubMark />
@@ -271,10 +288,10 @@ function Footer() {
           </li>
         </ul>
       </div>
-      {/* No claim about tracking, so the footer stays true when tracking cookies come (ADR 0040, 9). Where it is run
-          and hosted, as the Privacy page states it (Hosting: Germany). */}
+      {/* "No tracking ads": the one ad slot is EthicalAds, which builds no profile (ADR 0057, replaces ADR 0040, 9).
+          Where it is run and hosted, as the Privacy page states it (Hosting: Germany). */}
       <p className="v4-wrap v4-footer__line">
-        {t('footer.coverage')} <span className="footer-no-ads">{t('footer.noAds')}</span>{' '}
+        {t('footer.coverage')} <span className="footer-no-ads">{t('footer.noTrackingAds')}</span>{' '}
         {t('footer.copyright', { year: new Date().getFullYear() })}
         <span className="footer-place"> · {t('footer.place')}</span>
       </p>
@@ -351,6 +368,7 @@ export function Layout() {
         <Outlet />
       </main>
       <Footer />
+      <AnalyticsConsent />
     </>
   );
 }
