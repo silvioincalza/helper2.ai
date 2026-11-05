@@ -16,7 +16,8 @@ Items are grouped by the order in which they matter. Inside a group, the first i
   the address or of the query is personal data, legitimate interest as the basis, and the wording on the transfer of
   queries to Tavily in the US.
 - Lawyer review of back-office records ([ADR 0045](adr/edge/0045-back-office.md)): `admin_audit` keeps an
-  administrator's GitHub id for 24 months, and a review item keeps who decided it and their note. Is the line on the
+  administrator's GitHub id for 24 months, a review item keeps who decided it and their note, and a skipped
+  resource keeps the reason for the skip (`enrichment_queue_control`, until requeued). Is the line on the
   Privacy page enough for the people who run the site, and is 24 months right?
 - Check each US source and GitHub for Data Privacy Framework certification, as the Privacy page states.
 - Lawyer review of guide question embeddings ([ADR 0041](adr/guide/0041-guide-answer-cache.md)): whether an embedding of a
