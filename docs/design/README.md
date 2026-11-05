@@ -46,8 +46,10 @@ them they show the system fonts.
 - Like a navigation radar: full rings around the title, and a beam that turns once every 5 s.
 - Only external sources. Our own index, the search by meaning and the curated list are not on it. The legend
   counts the same sources.
-- 5 to 10 sources at a time, each in its own spot. It starts with 5, one after another. Then every 1.6 s one step: a
-  new random source comes while it grows, up to 10; the oldest leaves while it shrinks, down to 5.
+- 5 to 10 sources at a time, each in its own spot. It starts with 5, one after another. Then every 1.6 s one step: the
+  next source of the queue comes while it grows, up to 10; the oldest leaves while it shrinks, down to 5. The queue
+  holds every source, shuffled once; a source that leaves goes to the back, so every source of a group is on the
+  radar once before any of them comes back.
 - A dot shows only when the beam passes it: full opacity, a short pop and a glow in its colour, then it fades to
   about a fifth until the next pass. A source that leaves is not painted again and fades out within 3 s.
 - Every dot is filled with its colour: orange answering, amber slow or limited, red failed.

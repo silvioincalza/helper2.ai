@@ -42,9 +42,11 @@ pages, Results and the resource page, and the text pages; this record says what 
      and its curated list are left out. Live sources sit on the two inner rings, the Scout collectors on the two outer
      ones. Each source has its own fixed spot from the order GET /sources lists it in, left and right of the title,
      never under the title or the box, and never touching another name (`radarLayout.ts`). A dot never slides.
-   - **5 to 10 at a time.** It starts with 5 random sources, 0.6 s apart. Then every 1.6 s one step: while it grows, a
-     new random source that is not on the radar comes, up to 10; then the oldest leaves, one at a time, down to 5; then
-     it grows again (`radarRotation.ts`).
+   - **5 to 10 at a time, every source in turn.** It starts with 5 sources, 0.6 s apart. Then every 1.6 s one step:
+     while it grows, the next source of the queue comes, up to 10; then the oldest leaves, one at a time, down to 5;
+     then it grows again. The queue holds every source, shuffled once when the radar starts; a source that leaves
+     goes to the back, so every source of a group is on the radar once before any of them comes back
+     (`radarRotation.ts`).
    - **Painted by the beam.** A dot shows only when the beam passes its angle: full opacity, a short pop (scale 1.35,
      back to 1 in 0.25 s) and a glow in its own colour (gone in 0.6 s); then it fades to 0.22 until the next pass. A
      new source shows the first time the beam passes it. A source that leaves is not painted again and fades to 0
@@ -240,8 +242,9 @@ pages, Results and the resource page, and the text pages; this record says what 
 - WCAG 2.2.2 asks for a way to pause moving content for every user. Signed-in users can turn the radar off; anonymous
   visitors have only reduced motion and the hold while the search box has focus. The radar never ends on its own and
   guests have no switch. This is a known limit, on the [roadmap](../../roadmap.md).
-- The radar shows 5 to 10 sources at a time, so a visitor sees every source only over time. The legend links to the
-  Sources page, which lists them all.
+- The radar shows 5 to 10 sources at a time, so a visitor sees every source only over time: with 47 sources, a
+  category comes back after about 5 minutes, a live source after about 1. The legend links to the Sources page, which
+  lists them all.
 - The radar's clock draws on every animation frame while the page is open and the box has no focus. It writes only
   CSS variables and one transform, and React renders only when a source comes or goes; the browser stops the frames
   on a hidden tab.

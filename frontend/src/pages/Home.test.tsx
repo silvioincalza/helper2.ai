@@ -60,9 +60,9 @@ describe('home (design v4)', () => {
     renderApp('/');
     await screen.findByText(/^5-10 of 13 sources at a time/);
     const radar = await screen.findByRole('list', { name: 'Some of the sources we search' });
-    // The first 3 come in one after another, 0.6 s apart.
-    await waitFor(() => expect(within(radar).getAllByRole('link')).toHaveLength(3), {
-      timeout: 4000,
+    // The first 5 come in one after another, 0.6 s apart.
+    await waitFor(() => expect(within(radar).getAllByRole('link')).toHaveLength(5), {
+      timeout: 6000,
     });
     const external = STAGING_SOURCES.filter((s) => s.external).map((s) => s.id);
     for (const dot of within(radar).getAllByRole('link'))

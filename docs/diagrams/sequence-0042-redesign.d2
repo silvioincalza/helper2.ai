@@ -24,7 +24,7 @@ landing: Home {
   home -> api: "sources, me, news, events?days=90 (once each)"
   api -> home: "sources (shortName, external, newThisWeek),\nlimits, preferences, rows, totals"
   home -> user: "helper2.ai, the title, rings and the beam,\nbox, 5-10 of N sources at a time,\n> new this week N | coming up N" {class: hot}
-  home -> user: "3 sources, 0.6 s apart; then every 1.6 s one comes\nor the oldest leaves; each lights up as the beam passes\n(still, 4 dots: reduced motion or motion off)"
+  home -> user: "5 sources, 0.6 s apart; then every 1.6 s the next of the queue\ncomes or the oldest leaves; each lights up as the beam passes\n(still, 7 dots: reduced motion or motion off)"
   user -> home: "focuses the box and types"
   home -> user: "the clock stops: beam and dots hold still"
   user -> home: "scrolls 24 px"

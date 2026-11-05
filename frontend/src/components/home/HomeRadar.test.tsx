@@ -91,9 +91,10 @@ describe('Feature: the radar works like a navigation radar (ADR 0042, decision 4
   it('Scenario: it starts with 5 sources, one after another', () => {
     render(<Page />);
     expect(shown()).toHaveLength(0);
+    advance(INTRO_MS + 50);
     for (let n = 1; n <= 5; n++) {
-      advance(n === 1 ? INTRO_MS + 50 : INTRO_MS);
       expect(shown()).toHaveLength(n);
+      advance(INTRO_MS);
     }
   });
 
@@ -162,7 +163,7 @@ describe('Feature: the radar works like a navigation radar (ADR 0042, decision 4
 
   it('Scenario: each dot shows only its short name, filled with its state colour', () => {
     const { container } = render(<Page />);
-    advance(INTRO_MS + 50);
+    advance(5 * INTRO_MS + 50);
     const link = within(screen.getByRole('list', { name: /sources we search/ })).getAllByRole(
       'link',
     )[0]!;
@@ -222,7 +223,7 @@ describe('Feature: the radar works like a navigation radar (ADR 0042, decision 4
 
   it('Scenario: while the search box has focus the clock stops: beam and dots hold still', () => {
     const { container } = render(<Page />);
-    advance(3 * INTRO_MS + 1000);
+    advance(5 * INTRO_MS + 1000);
     const box = screen.getByRole('textbox', { name: 'Search AI resources' });
     act(() => box.focus());
     expect(radar(container)).toHaveClass('is-paused');

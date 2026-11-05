@@ -92,8 +92,10 @@ under the title or the box, never touching another name. Under each dot only its
 | Last check | Every dot is filled. `accent` (orange): answering. `status-warn-ink` (amber): slow or limited. `danger` (red): failed. Each is 3:1 or more on `bg`. |
 | Size | New this week from that source (`newThisWeek` on GET /sources; null keeps the default size). |
 
-5 to 10 sources show at a time. It starts with 5, one after another (0.6 s apart). Then every 1.6 s one step: a new
-random source comes while it grows, up to 10; the oldest leaves while it shrinks, down to 5. A dot is painted only when
+5 to 10 sources show at a time. It starts with 5, one after another (0.6 s apart). Then every 1.6 s one step: the
+next source of the queue comes while it grows, up to 10; the oldest leaves while it shrinks, down to 5. The queue holds
+every source, shuffled once; a source that leaves goes to the back, so every source of a group (live sources, collectors,
+discovery categories, which take turns) is on the radar once before any of them comes back. A dot is painted only when
 the beam passes it: full opacity, a pop (scale 1.35, back in 0.25 s) and a glow in its colour (0.6 s), then it fades
 to 0.22 until the next pass. A new source shows the first time the beam passes it. A source that leaves is not painted
 again and fades out within 3 s. Beam and dots run on one clock (`requestAnimationFrame`), which stops while the search
@@ -120,7 +122,7 @@ Layout is flex and grid with `gap`. Side menus wrap above the content on phones 
 
 ## Accessibility
 
-- **Moving content.** No CSS animation repeats: the loading lines pulse 3 times, nothing prints in, no cursor blinks. A test in the frontend fails on any CSS or inline animation that repeats for ever. One exception: the home radar keeps turning (one JavaScript clock, see Radar). It holds still while the search box has focus; signed-in users can turn it off; under `prefers-reduced-motion` the beam stands still and 4 dots stay. Anonymous visitors have no Pause button yet: a known gap against WCAG 2.2.2, on the roadmap. Under `prefers-reduced-motion` nothing moves and nothing folds with animation.
+- **Moving content.** No CSS animation repeats: the loading lines pulse 3 times, nothing prints in, no cursor blinks. A test in the frontend fails on any CSS or inline animation that repeats for ever. One exception: the home radar keeps turning (one JavaScript clock, see Radar). It holds still while the search box has focus; signed-in users can turn it off; under `prefers-reduced-motion` the beam stands still and 7 dots stay. Anonymous visitors have no Pause button yet: a known gap against WCAG 2.2.2, on the roadmap. Under `prefers-reduced-motion` nothing moves and nothing folds with animation.
 - **Targets:** every control is at least 44px, also chips, toggles, tabs, Remove and admin buttons.
 - **Contrast:** text 4.5:1, control borders and focus 3:1. Saffron `accent` text on `bg` is 3:1, so small saffron text uses `accent-ink` (5.5:1).
 - **Headings:** one `h1` per page.
