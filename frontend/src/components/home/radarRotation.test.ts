@@ -69,6 +69,31 @@ describe('the radar cycle (ADR 0042): always 3 to 5 sources, the oldest leaves f
     expect(run(3, [])).toEqual([EMPTY, EMPTY, EMPTY]);
   });
 
+  it('picks new sources in turn from each group, so a big group does not crowd out the rest', () => {
+    const ids = [
+      ...Array.from({ length: 6 }, (_, i) => `live${i}`),
+      ...Array.from({ length: 7 }, (_, i) => `index${i}`),
+      ...Array.from({ length: 34 }, (_, i) => `discovery${i}`),
+    ];
+    const groupOf = (id: string) => id.replace(/\d+$/, '');
+    const random = seeded();
+    const arrivals: Record<string, number> = { live: 0, index: 0, discovery: 0 };
+    const seen = new Set<string>();
+    let c = EMPTY;
+    for (let i = 0; i < 1500; i++) {
+      const next = step(c, ids, random, groupOf);
+      for (const id of next.shown.filter((x) => !c.shown.includes(x))) {
+        arrivals[groupOf(id)]!++;
+        seen.add(id);
+      }
+      c = next;
+    }
+    const counts = Object.values(arrivals);
+    expect(Math.max(...counts) - Math.min(...counts)).toBeLessThanOrEqual(Math.max(...counts) / 5);
+    // Every source comes on sooner or later.
+    expect(seen.size).toBe(ids.length);
+  });
+
   it('standing still: a fixed random set of 4', () => {
     const set = stillSet(IDS, seeded());
     expect(set).toHaveLength(4);

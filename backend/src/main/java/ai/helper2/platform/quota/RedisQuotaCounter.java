@@ -48,6 +48,16 @@ public final class RedisQuotaCounter implements QuotaCounter {
           """,
           List.class);
 
+  /** KEYS: the key; ARGV: the field, the amount, the expiry in ms. */
+  private static final RedisScript<Long> ADD =
+      RedisScript.of(
+          """
+          local used = redis.call('HINCRBY', KEYS[1], ARGV[1], ARGV[2])
+          if redis.call('PTTL', KEYS[1]) < 0 then redis.call('PEXPIRE', KEYS[1], ARGV[3]) end
+          return used
+          """,
+          Long.class);
+
   /** KEYS: the key; ARGV: the field. Takes one off the field, never below 0. */
   private static final RedisScript<Long> GIVE_BACK =
       RedisScript.of(
@@ -94,6 +104,19 @@ public final class RedisQuotaCounter implements QuotaCounter {
                     Long.toString(KEEP.toMillis())));
     return new Result(
         VERDICTS[((Number) answer.get(0)).intValue()], ((Number) answer.get(1)).longValue());
+  }
+
+  @Override
+  public void add(Counter counter, long amount) {
+    resilience.call(
+        "redis",
+        () ->
+            redis.execute(
+                ADD,
+                List.of(counter.key()),
+                counter.field(),
+                Long.toString(amount),
+                Long.toString(KEEP.toMillis())));
   }
 
   @Override

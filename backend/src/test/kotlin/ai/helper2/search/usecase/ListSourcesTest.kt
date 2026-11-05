@@ -47,6 +47,8 @@ class ListSourcesTest {
     override fun take(own: Counter?, ownLimit: Int, global: Counter?, globalLimit: Long): Result =
       error("not counted here")
 
+    override fun add(counter: Counter, amount: Long) = error("not counted here")
+
     override fun giveBack(counter: Counter) = error("not counted here")
 
     override fun used(counter: Counter): Long = if (down) error("down") else counts[counter] ?: 0

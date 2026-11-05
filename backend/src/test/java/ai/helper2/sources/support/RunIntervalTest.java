@@ -62,6 +62,32 @@ class RunIntervalTest {
   }
 
   @Test
+  void aStaggeredCollectorIsFirstDueOnItsOwnDayThenEveryInterval() {
+    // 2026-10-22 is day 20748 since 1970: 20748 mod 7 = 0.
+    RunInterval onDayTwo = new RunInterval(Duration.ofDays(7), 2);
+    assertThat(onDayTwo.isDue(null, now)).isFalse();
+    assertThat(onDayTwo.isDue(null, now.plus(Duration.ofDays(2)))).isTrue();
+    assertThat(onDayTwo.nextDueDay(null, now)).hasToString("2026-10-24");
+    assertThat(onDayTwo.isDue("2026-10-15T10:00:00Z", now)).isTrue();
+    assertThat(onDayTwo.nextDueDay("2026-10-20T10:00:00Z", now)).hasToString("2026-10-27");
+  }
+
+  @Test
+  void staggeringSpreadsCollectorsOverTheDaysByTheirSlot() {
+    assertThat(RunInterval.staggered(Duration.ofDays(7), 9).firstDay()).isEqualTo(2);
+    assertThat(RunInterval.staggered(Duration.ofDays(1), 3).firstDay()).isNull();
+    assertThat(RunInterval.staggered(Duration.ofHours(36), 3).firstDay()).isNull();
+  }
+
+  @Test
+  void aFirstDayOutsideTheIntervalIsRejected() {
+    assertThatThrownBy(() -> new RunInterval(Duration.ofDays(7), 7))
+        .isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> new RunInterval(Duration.ofHours(1), 0))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
   void negativeIntervalIsRejected() {
     assertThatThrownBy(() -> new RunInterval(Duration.ofDays(-1)))
         .isInstanceOf(IllegalArgumentException.class);

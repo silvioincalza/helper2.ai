@@ -173,6 +173,37 @@ class ResourceStoreIT {
   }
 
   @Test
+  void aRawPageTitleFromADiscoveryCategoryReadsBackCleanAndKeepsItsFacts() {
+    String repo = "https://github.com/acme/found-" + run;
+    String raw = "GitHub - acme/found-" + run + ": An AI app to run models locally. · GitHub";
+    UUID id = ResourceId.of(CanonicalUrl.of(repo)).getValue();
+    store.upsert(
+        merge(
+            titled("discovery-local-ai", repo, raw)
+                .withFacts(
+                    Map.of(
+                        "discovery",
+                        Map.of("category", "local-ai", "rank", 3),
+                        "categories",
+                        List.of("local-ai"),
+                        // Never over a field the catalog writes itself.
+                        "tags",
+                        List.of("not-this")))),
+        DataOrigin.OBSERVED,
+        Set.of("discovery-local-ai"));
+
+    assertThat(store.findResource(id).orElseThrow().title()).isEqualTo("acme/found-" + run);
+    assertThat(
+            jdbc.sql(
+                    "SELECT extra -> 'discovery' ->> 'category' || ' ' || (extra -> 'tags')::text"
+                        + " FROM source_record WHERE resource_id = :id")
+                .param("id", id)
+                .query(String.class)
+                .single())
+        .isEqualTo("local-ai []");
+  }
+
+  @Test
   void aTitleFromAStructuredSourceIsNeverCleaned() {
     String repo = "https://github.com/acme/named-" + run;
     String name = "GitHub - acme/named-" + run + ": a name as the source states it · GitHub";

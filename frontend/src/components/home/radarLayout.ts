@@ -2,9 +2,10 @@ import type { SourceInfo } from '@/api/types';
 import { newThisWeek } from '@/lib/v4Fields';
 
 /**
- * Where the Home radar's dots go (ADR 0042). Full circles centred on the hero, the title in the middle. Every external
- * source gets a fixed slot from the order GET /sources lists it in, so a dot is in the same place on every visit; the
- * radar shows a few of them at a time. Pure functions: the component measures, this module places.
+ * Where the Home radar's dots go (ADR 0042). Full circles centred on the hero, the title in the middle. The radar shows a
+ * few external sources at a time; each is placed when it comes on (`placeDot`), clear of the ones already shown,
+ * starting from its own point, so it tends to come back to the same spot. Pure functions: the component measures, this
+ * module places.
  */
 
 export type DotTone = 'answering' | 'warn' | 'failed' | 'idle';
@@ -115,84 +116,85 @@ interface Slot {
   y: number;
 }
 
-/** Points on one circle, each side from top to bottom. */
-function circleSides(radius: number, f: RadarFrame): { left: Slot[]; right: Slot[] } {
-  const left: Slot[] = [];
-  const right: Slot[] = [];
-  for (let k = 0; k < STEPS; k++) {
-    const a = -Math.PI / 2 + (k / STEPS) * 2 * Math.PI;
-    const p = { x: f.cx + Math.cos(a) * radius, y: f.cy + Math.sin(a) * radius };
-    (p.x < f.cx ? left : right).push(p);
-  }
-  const topDown = (a: Slot, b: Slot) => a.y - b.y;
-  return { left: left.sort(topDown), right: right.sort(topDown) };
+/** The group a source belongs to on the radar: live sources, the Scout's collectors, the discovery categories. */
+export type RadarGroup = 'live' | 'index' | 'discovery';
+
+export function radarGroup(s: SourceInfo): RadarGroup {
+  if (s.mode === 'LIVE') return 'live';
+  return s.family ? 'discovery' : 'index';
 }
 
-/** Live sources on the two inner circles, the others (our index, Scout collectors) on the two outer ones. */
-function byCircle(sources: SourceInfo[]): SourceInfo[][] {
-  const live = sources.filter((s) => s.mode === 'LIVE');
-  const rest = sources.filter((s) => s.mode !== 'LIVE');
-  const split = (list: SourceInfo[]) => {
-    const first = Math.ceil(list.length / 2);
-    return [list.slice(0, first), list.slice(first)];
-  };
-  return [...split(live), ...split(rest)];
+/** A number in [0, 1) from a source id: the same on every visit, spread over the circle. */
+function homeOf(id: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < id.length; i++) {
+    h ^= id.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0) / 4294967296;
+}
+
+/** One candidate point every half degree on a circle, nearest to [start] (a turn fraction) first. */
+function* aroundCircle(radius: number, start: number, f: RadarFrame): Generator<Slot> {
+  const first = Math.round(start * STEPS);
+  for (let d = 0; d < STEPS; d++) {
+    const k = first + (d % 2 === 0 ? d / 2 : -(d + 1) / 2);
+    const a = (k / STEPS) * 2 * Math.PI;
+    yield { x: f.cx + Math.cos(a) * radius, y: f.cy + Math.sin(a) * radius };
+  }
+}
+
+/** Every point of the hero on an 8 px grid, top to bottom: the last resort when no circle has room. */
+function* anywhere(f: RadarFrame): Generator<Slot> {
+  for (let y = 8; y < f.height; y += 8) for (let x = 8; x < f.width; x += 8) yield { x, y };
 }
 
 /**
- * A fixed slot for each source. On each circle the sources alternate left and right of the title, spread evenly over
- * the free part of that side; a dot that would touch an earlier one moves along its circle to the nearest free point,
- * then to the other side, then to the other circle of its pair (live or not). A source with no free point anywhere is
- * left out (`placeDots` returns fewer dots).
+ * The spot of a source that comes onto the radar now (ADR 0042), clear of the dots already on it (`placed`): live
+ * sources on the two inner circles, the others on the two outer ones. It starts from the source's own point on one of
+ * its circles, so a source comes back to the same spot while that is free, then moves along the circle to the nearest
+ * free point, then to the other circle of its pair, then to the other pair, then anywhere in the hero. Only a few dots
+ * are on the radar at a time, so every source finds a spot: none is ever left out. With no free point at all (a
+ * hero too small for any label) it takes its own point anyway.
  */
-export function placeDots(sources: SourceInfo[], f: RadarFrame): RadarDot[] {
-  const placed: RadarDot[] = [];
-  const circles = f.radii.map((r) => circleSides(r, f));
-  byCircle(sources).forEach((list, c) => {
-    const sides = circles[c]!;
-    const sibling = circles[c % 2 === 0 ? c + 1 : c - 1]!;
-    const startRight = c % 2 === 1;
-    const onLeft = (i: number) => (i % 2 === 0) !== startRight;
-    const counts = { left: 0, right: 0 };
-    list.forEach((_, i) => counts[onLeft(i) ? 'left' : 'right']++);
-    const seen = { left: 0, right: 0 };
-    list.forEach((s, i) => {
-      const side = onLeft(i) ? 'left' : 'right';
-      const other = side === 'left' ? 'right' : 'left';
-      const k = seen[side]++;
-      const dot = place(s, f, placed, [
-        { slots: sides[side], target: (k + 0.5) / counts[side] },
-        { slots: sides[other], target: 0.5 },
-        { slots: sibling[side], target: 0.5 },
-        { slots: sibling[other], target: 0.5 },
-      ]);
-      if (dot) placed.push(dot);
-    });
-  });
-  return placed;
+export function placeDot(s: SourceInfo, f: RadarFrame, placed: RadarDot[]): RadarDot {
+  const r = radiusOf(s);
+  const home = homeOf(s.id);
+  const pair = s.mode === 'LIVE' ? [0, 1] : [2, 3];
+  const other = s.mode === 'LIVE' ? [2, 3] : [0, 1];
+  // Half of the sources start on each circle of their pair.
+  const order = home < 0.5 ? [...pair, ...other] : [pair[1]!, pair[0]!, other[1]!, other[0]!];
+  const fitsHere = (p: Slot): RadarDot | null => {
+    const box = boxOf(p.x, p.y, r, s.shortName, f);
+    if (!fits(box, f) || placed.some((o) => overlaps(box, o.box, f.gap))) return null;
+    return { source: s, x: p.x, y: p.y, r, tone: toneOf(s), box };
+  };
+  for (const c of order)
+    for (const p of aroundCircle(f.radii[c as 0 | 1 | 2 | 3], (home * 2) % 1, f)) {
+      const dot = fitsHere(p);
+      if (dot) return dot;
+    }
+  for (const p of anywhere(f)) {
+    const dot = fitsHere(p);
+    if (dot) return dot;
+  }
+  const own = aroundCircle(f.radii[order[0] as 0 | 1 | 2 | 3], (home * 2) % 1, f).next()
+    .value as Slot;
+  return {
+    source: s,
+    x: own.x,
+    y: own.y,
+    r,
+    tone: toneOf(s),
+    box: boxOf(own.x, own.y, r, s.shortName, f),
+  };
 }
 
-function place(
-  s: SourceInfo,
-  f: RadarFrame,
-  placed: RadarDot[],
-  tries: { slots: Slot[]; target: number }[],
-): RadarDot | null {
-  const r = radiusOf(s);
-  for (const { slots, target } of tries) {
-    const free = slots.filter((p) => fits(boxOf(p.x, p.y, r, s.shortName, f), f));
-    if (free.length === 0) continue;
-    const start = Math.min(free.length - 1, Math.max(0, Math.round(target * free.length - 0.5)));
-    // The target point first, then outwards: +1, -1, +2, -2, ...
-    for (let d = 0; d < free.length * 2; d++) {
-      const p = free[start + (d % 2 === 0 ? d / 2 : -(d + 1) / 2)];
-      if (!p) continue;
-      const box = boxOf(p.x, p.y, r, s.shortName, f);
-      if (placed.every((o) => !overlaps(box, o.box, f.gap)))
-        return { source: s, x: p.x, y: p.y, r, tone: toneOf(s), box };
-    }
-  }
-  return null;
+/** The sources placed one after another, each clear of the ones before (the fixed set when the radar stands still). */
+export function placeDots(sources: SourceInfo[], f: RadarFrame): RadarDot[] {
+  const placed: RadarDot[] = [];
+  for (const s of sources) placed.push(placeDot(s, f, placed));
+  return placed;
 }
 
 /** Where the beam meets a dot: its angle in degrees, clockwise from 3 o'clock, as the beam turns (radarClock.ts). */
