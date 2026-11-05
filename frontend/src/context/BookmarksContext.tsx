@@ -10,7 +10,7 @@ import {
 } from 'react';
 import { api } from '@/api/client';
 import type { Bookmark, BookmarkRequest } from '@/api/types';
-import { readLocalBookmarks, writeLocalBookmarks } from '@/lib/bookmarks';
+import { clearLocalBookmarks, readLocalBookmarks, writeLocalBookmarks } from '@/lib/bookmarks';
 import { useMe } from './MeContext';
 
 interface BookmarksValue {
@@ -53,8 +53,8 @@ export function BookmarksProvider({ children }: { children: ReactNode }) {
       ? api
           .mergeLocalBookmarks(localList.map(({ savedAt: _savedAt, ...request }) => request))
           .then((list) => {
-            // merged once: the server list is now the source of truth
-            if (writeLocalBookmarks([])) setLocal([]);
+            // merged once: the server list is now the source of truth, and the browser keeps nothing
+            if (clearLocalBookmarks()) setLocal([]);
             return list;
           })
       : api.listBookmarks();
