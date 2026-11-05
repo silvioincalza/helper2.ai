@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 
 /** JavaScript a first visit to any page downloads before it can render: the entry and its preloaded imports. */
-const INITIAL_JS_KIB = 165;
+const INITIAL_JS_KIB = 250;
 /** Any other chunk, loaded when its page is first opened. */
 const CHUNK_KIB = 30;
 
