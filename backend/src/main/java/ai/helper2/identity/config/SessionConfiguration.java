@@ -12,7 +12,6 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -60,7 +59,8 @@ class SessionConfiguration {
 
   @Bean
   FilterRegistrationBean<SessionStoreFailureFilter> sessionStoreFailureFilter(
-      @Value("${helper2.frontend-url:/}") String frontendUrl, AdminPort adminPort) {
+      IdentityProperties identity, AdminPort adminPort) {
+    String frontendUrl = identity.frontendUrl();
     FilterRegistrationBean<SessionStoreFailureFilter> registration =
         new FilterRegistrationBean<>(
             new SessionStoreFailureFilter(req ->

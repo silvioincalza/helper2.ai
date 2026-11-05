@@ -110,7 +110,7 @@ traceable to that administrator.
 - `backend/src/test/java/ai/helper2/api/AccountApiIT.java`, `AdminAuditApiIT.java` — bookmarks, account deletion, audit.
 - `frontend/src/context/MeContext.tsx`, `BookmarksContext.tsx`, `frontend/src/components/SignIn.tsx`,
   `frontend/src/pages/AccountPage.tsx`, `frontend/src/pages/admin/`.
-- `backend/src/main/resources/application.yaml` — profile `oauth-github`, `helper2.security.admins`.
+- `backend/src/main/resources/application.yaml` — profile `oauth-github`, `helper2.identity.admins`.
 
 ## Diagrams
 [flow](../../diagrams/flow-0023-identity-and-admin.svg) · [sequence](../../diagrams/sequence-0023-identity-and-admin.svg)

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.helper2.TestcontainersConfiguration;
+import ai.helper2.identity.config.IdentityRetentionProperties;
 import ai.helper2.identity.internal.AuditLog;
 import ai.helper2.identity.internal.Users;
 import java.sql.Timestamp;
@@ -38,7 +39,10 @@ class IdentityPurgeExpiredDataIT {
   /** The defaults of application.yaml: 24 months for both. */
   PurgeExpiredData purge() {
     return new PurgeExpiredData(
-        users, audit, Clock.fixed(NOW, ZoneOffset.UTC), Duration.ofDays(730), Duration.ofDays(730));
+        users,
+        audit,
+        Clock.fixed(NOW, ZoneOffset.UTC),
+        new IdentityRetentionProperties(Duration.ofDays(730), Duration.ofDays(730)));
   }
 
   UUID account(Instant lastSignedIn) {

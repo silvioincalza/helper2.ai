@@ -1,5 +1,6 @@
 package ai.helper2.admin.web;
 
+import ai.helper2.admin.config.AdminProperties;
 import ai.helper2.admin.usecase.GetOverview;
 import ai.helper2.api.generated.OverviewApi;
 import ai.helper2.api.generated.model.AdminOverviewDto;
@@ -15,7 +16,6 @@ import ai.helper2.api.generated.model.WebCreditsDto;
 import ai.helper2.examples.PoolCounts;
 import ai.helper2.shared.UtcTimes;
 import java.net.URI;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -28,10 +28,9 @@ class OverviewController implements OverviewApi {
   private final GetOverview overview;
   private final URI grafanaUrl;
 
-  OverviewController(
-      GetOverview overview, @Value("${helper2.admin.grafana-url:}") String grafanaUrl) {
+  OverviewController(GetOverview overview, AdminProperties admin) {
     this.overview = overview;
-    this.grafanaUrl = grafanaLink(grafanaUrl);
+    this.grafanaUrl = grafanaLink(admin.grafanaUrl());
   }
 
   /**

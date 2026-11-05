@@ -290,7 +290,7 @@ tests:
             exp_annotations:
               summary: "Resources have waited for an embedding for 3 hours (prod)."
               description: "The embedding backlog has stayed above 0 for 3 hours (120 resources now); a full reindex of the catalog takes about 2 hours."
-              runbook: "If Helper2EmbeddingIndexerStalled fires too, fix that first. Otherwise resources arrive faster than the indexer embeds them (helper2.embedding.batch 50 every 15 s = 200 a minute)."
+              runbook: "If Helper2EmbeddingIndexerStalled fires too, fix that first. Otherwise resources arrive faster than the indexer embeds them (helper2.catalog.indexer.batch 50 every 15 s = 200 a minute)."
 
   # Review backlog: 60 OPEN items for a day fire; 40 stay quiet. Two replicas report the same count.
   - interval: 1m
