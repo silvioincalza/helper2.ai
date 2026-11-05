@@ -85,7 +85,9 @@ export function Results() {
       {asked && (
         <GuidePicks
           stream={stream}
-          loaded={new Set((shown?.results ?? []).map((c) => c.id))}
+          anchored={
+            new Set(state.view === 'timeline' ? [] : (shown?.results ?? []).map((c) => c.id))
+          }
           webLine={webLineExpected(shown?.webSearches)}
         />
       )}
