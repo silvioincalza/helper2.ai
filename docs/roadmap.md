@@ -60,7 +60,7 @@ Items are grouped by the order in which they matter. Inside a group, the first i
   - turn on the off-site copy to R2 (`backup.offsite`) with a bucket-scoped token;
   - encrypt dumps on the client side before upload ([ADR 0027](adr/operations/0027-runtime-topology.md)).
 - **Short-lived deployer token.** Mint it with the OpenBao Kubernetes secrets engine. The deployer token
-  (incalza-me-infra) does not expire ([ADR 0028](adr/operations/0028-ci-cd.md)).
+  (the platform repo) does not expire ([ADR 0028](adr/operations/0028-ci-cd.md)).
 - **Supply chain:**
   - set `postgres.image.digest` to the digest of `18.6-pgvector0.8.6-2` once CD has pushed that tag (with the
     Postgres exporter: one restart);

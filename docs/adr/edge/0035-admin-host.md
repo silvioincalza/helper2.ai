@@ -7,8 +7,8 @@ The back office (review queue, Scout runs, audit trail) and the end users' featu
 web searches) both need GitHub sign-in, in every hosted environment.
 The back office must not be reachable from the internet: one leaked session or one bug in a rule would open it to
 everyone. End users must still sign in on the public site.
-The platform already runs ingress-nginx, cert-manager with DNS-01 and a WireGuard network. A WireGuard client reaches
-the cluster with an address from the vSwitch range (the Proxmox node masquerades it).
+The platform runs ingress-nginx, cert-manager with DNS-01 and a private network (a VPN). A client on that network
+reaches the cluster with an address from the platform's private ranges.
 
 ## Decision
 1. **Two ports in one app.** `H2_ADMIN_PORT` (chart `app.adminPort`, 8082) opens a second Tomcat connector
@@ -34,17 +34,17 @@ the cluster with an address from the vSwitch range (the Proxmox node masquerades
 5. **Host-only cookies.** The session and CSRF cookies set no `Domain`, so the browser never sends the public session
    to the admin host or the other way round.
 6. **The edge decides who reaches the admin host.** The chart ships the Service `helper2-admin` (port 80 → admin port).
-   The platform (incalza-me-infra `terraform/k8s/helper2.tf`) routes the admin host to it with the Ingress
-   `helper2-admin` on ingress-nginx: an allow-list of the vSwitch and mesh ranges, a DNS-only record to the ingress
+   The platform repo (outside this repo) routes the admin host to it with the Ingress
+   `helper2-admin` on ingress-nginx: an allow-list of the private ranges, a DNS-only record to the ingress
    IP and a DNS-01 certificate. The public names go through Cloudflare to the Ingress `helper2-public`, which routes
    only to the Service `helper2`. No public name reaches the admin port.
 7. **Network policy.** Only the ingress controller's pods (`networkPolicy.ingressController`) may reach the app:
    the public port and the admin port.
 
-| Host                                                           | Port | Back office | Sign-in                  | ADMIN            |
-|----------------------------------------------------------------|------|-------------|--------------------------|------------------|
-| helper2.ai, helper2.incalza.me (public)                        | 8080 | 404         | yes, returns to `/`      | never            |
-| admin.helper2.ai, helper2-admin.incalza.me (LAN and WireGuard) | 8082 | yes         | yes, returns to `/admin` | allow-listed ids |
+| Host                                                  | Port | Back office | Sign-in                  | ADMIN            |
+|-------------------------------------------------------|------|-------------|--------------------------|------------------|
+| helper2.ai, `<staging host>` (public)                 | 8080 | 404         | yes, returns to `/`      | never            |
+| admin.helper2.ai, `<staging admin host>` (VPN only)   | 8082 | yes         | yes, returns to `/admin` | allow-listed ids |
 
 ## Consequences
 - The back office is closed at three layers: the network edge, the port filter and the role. Each one alone keeps

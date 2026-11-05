@@ -64,7 +64,7 @@ rebuilds one.
   `make retag` on prod.
 - `.github/workflows/cd.yml` — `release/**` pushes, staging on `main` only.
 - OpenBao roles `deploy` and `deploy-prod`, the Harbor robot, the GitHub ruleset for `release/*` — outside this repo
-  (incalza-me-infra, Harbor, repo settings).
+  (the platform repo, Harbor, repo settings).
 
 ## Diagrams
 [flow](../../diagrams/flow-0048-release-branches-and-version-tags.svg) · [sequence](../../diagrams/sequence-0048-release-branches-and-version-tags.svg)
