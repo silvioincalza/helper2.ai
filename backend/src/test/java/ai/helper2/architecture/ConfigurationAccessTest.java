@@ -3,7 +3,6 @@ package ai.helper2.architecture;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.JavaCodeUnit;
@@ -16,8 +15,6 @@ import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
@@ -36,32 +33,9 @@ class ConfigurationAccessTest {
           .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
           .importPackages("ai.helper2");
 
-  /**
-   * FROZEN: the classes that still read settings with {@code @Value}. The list only shrinks: each
-   * module's PR moves its classes to records and removes them here. Never add a class.
-   */
-  private static final Set<String> NOT_YET_TYPED =
-      Set.of(
-          "ai.helper2.guide.internal.GuideConfiguration",
-          "ai.helper2.guide.web.GuideLimits",
-          "ai.helper2.guide.web.GuideStreamController",
-          "ai.helper2.setup.internal.SetupConfiguration");
-
   @Test
   void settingsAreReadOnlyThroughRecords() {
     noUntypedSettings().check(CLASSES);
-  }
-
-  /** A class that moved to records leaves the list, so the list cannot hide a new one later. */
-  @Test
-  void theAllowListHasNoClassThatIsAlreadyTyped() {
-    Set<String> stillUntyped = new TreeSet<>();
-    for (JavaClass type : CLASSES) {
-      if (!violations(type).isEmpty()) {
-        stillUntyped.add(topLevelName(type));
-      }
-    }
-    assertThat(NOT_YET_TYPED).containsExactlyInAnyOrderElementsOf(stillUntyped);
   }
 
   @Test
@@ -77,13 +51,7 @@ class ConfigurationAccessTest {
   }
 
   private static ArchRule noUntypedSettings() {
-    return classes()
-        .that(
-            DescribedPredicate.describe(
-                "are not on the frozen @Value list",
-                type -> !NOT_YET_TYPED.contains(topLevelName(type))))
-        .should(readNoSettingsByName())
-        .allowEmptyShould(true);
+    return classes().should(readNoSettingsByName());
   }
 
   private static ArchCondition<JavaClass> readNoSettingsByName() {
@@ -120,12 +88,6 @@ class ConfigurationAccessTest {
     String name = call.getTarget().getName();
     return (name.equals("getProperty") || name.equals("getRequiredProperty"))
         && call.getTargetOwner().isAssignableTo(PropertyResolver.class);
-  }
-
-  private static String topLevelName(JavaClass type) {
-    String name = type.getName();
-    int nested = name.indexOf('$');
-    return nested < 0 ? name : name.substring(0, nested);
   }
 
   // Offenders for theRuleFailsForANewClass; test classes are not imported by the main rule.

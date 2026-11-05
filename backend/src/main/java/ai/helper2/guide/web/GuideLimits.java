@@ -1,5 +1,6 @@
 package ai.helper2.guide.web;
 
+import ai.helper2.guide.config.GuideProperties;
 import ai.helper2.platform.resilience.Resilience;
 import io.micrometer.context.ContextExecutorService;
 import io.micrometer.context.ContextSnapshotFactory;
@@ -15,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -54,8 +55,12 @@ class GuideLimits implements DisposableBean {
   private final ExecutorService executor =
       ContextExecutorService.wrap(Executors.newVirtualThreadPerTaskExecutor(), snapshots);
 
-  GuideLimits(
-      Resilience resilience, @Value("${helper2.guide.question-deadline:PT90S}") Duration deadline) {
+  @Autowired
+  GuideLimits(Resilience resilience, GuideProperties settings) {
+    this(resilience, settings.questionDeadline());
+  }
+
+  GuideLimits(Resilience resilience, Duration deadline) {
     resilience.require(POLICY);
     this.resilience = resilience;
     this.deadline = deadline;

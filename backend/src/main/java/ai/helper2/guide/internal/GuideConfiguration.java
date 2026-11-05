@@ -9,8 +9,11 @@ import ai.helper2.guide.GuideModel;
 import ai.helper2.guide.GuideValidator;
 import ai.helper2.guide.SimilarQuestionIndex;
 import ai.helper2.guide.SimilarQuestions;
+import ai.helper2.guide.config.GuideProperties;
 import ai.helper2.guide.usecase.AskGuide;
 import ai.helper2.platform.cache.SharedCaches;
+import ai.helper2.platform.config.BuildInfoProperties;
+import ai.helper2.platform.config.LlmProperties;
 import ai.helper2.platform.llm.CallCounter;
 import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.LlmSettings;
@@ -22,13 +25,11 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
 import java.time.Clock;
-import java.time.Duration;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -48,10 +49,8 @@ class GuideConfiguration {
    */
   @Bean
   SharedGuideAnswerStore guideAnswerStore(
-      SharedCaches caches,
-      ObjectMapper json,
-      @Value("${helper2.build.version:local}") String build) {
-    return new SharedGuideAnswerStore(caches.named("guide-answer"), json, build);
+      SharedCaches caches, ObjectMapper json, BuildInfoProperties build) {
+    return new SharedGuideAnswerStore(caches.named("guide-answer"), json, build.version());
   }
 
   /**
@@ -66,11 +65,8 @@ class GuideConfiguration {
   /** Daily model-call cap of the guide (ADR 0017); every provider attempt takes one call. */
   @Bean
   DailyBudget guideBudget(
-      Clock clock,
-      CallCounter budgetCounter,
-      MeterRegistry meters,
-      @Value("${helper2.guide.daily-model-calls:600}") int dailyModelCalls) {
-    DailyBudget budget = new DailyBudget(dailyModelCalls, clock, "guide", budgetCounter);
+      Clock clock, CallCounter budgetCounter, MeterRegistry meters, GuideProperties settings) {
+    DailyBudget budget = new DailyBudget(settings.dailyModelCalls(), clock, "guide", budgetCounter);
     Gauge.builder("helper2.guide.budget.remaining", budget, DailyBudget::remaining)
         .description("Guide model calls left under today's cap (UTC day)")
         .register(meters);
@@ -83,8 +79,8 @@ class GuideConfiguration {
    * off, no question is embedded.
    */
   static SimilarQuestions similarQuestions(
-      String threshold, Embedder embedder, SimilarQuestionIndex index, Clock clock) {
-    if (threshold == null || threshold.isBlank()) {
+      Double threshold, Embedder embedder, SimilarQuestionIndex index, Clock clock) {
+    if (threshold == null) {
       return null;
     }
     if (embedder == null || embedder.dimensions() != INDEX_DIMENSIONS) {
@@ -95,7 +91,7 @@ class GuideConfiguration {
               : "the embeddings are not " + INDEX_DIMENSIONS + " long");
       return null;
     }
-    double value = Double.parseDouble(threshold.strip());
+    double value = threshold;
     log.info(
         "AI guide reuses the answer of a similar question: cosine at least {}, embeddings by {}",
         value,
@@ -111,11 +107,8 @@ class GuideConfiguration {
   /** Fresh guide questions per client and day (ADR 0017); also read by GET /me. */
   @Bean
   ClientQuota guideClientQuota(
-      Clock clock,
-      CallCounter budgetCounter,
-      QuotaKeys quotaKeys,
-      @Value("${helper2.guide.client-daily-questions:30}") int clientDailyQuestions) {
-    return new ClientQuota(clientDailyQuestions, clock, quotaKeys, budgetCounter);
+      Clock clock, CallCounter budgetCounter, QuotaKeys quotaKeys, GuideProperties settings) {
+    return new ClientQuota(settings.clientDailyQuestions(), clock, quotaKeys, budgetCounter);
   }
 
   @Bean
@@ -132,19 +125,15 @@ class GuideConfiguration {
       ObservationRegistry observations,
       MeterRegistry meters,
       Resilience resilience,
-      @Value("${helper2.llm.native-schema:true}") boolean nativeSchema,
-      @Value(
-              "${helper2.llm.choose-max-tokens:"
-                  + SpringAiGuideModel.DEFAULT_CHOOSE_MAX_TOKENS
-                  + "}")
-          int chooseMaxTokens,
-      @Value("${helper2.guide.cache-ttl:PT24H}") Duration cacheTtl,
-      @Value("${helper2.guide.similar-threshold:}") String similarThreshold,
-      @Value("${helper2.guide.max-candidates:24}") int maxCandidates,
       ClientQuota clientQuota,
-      @Value("${helper2.guide.thinking.plan:false}") boolean thinkPlan,
-      @Value("${helper2.guide.thinking.choose:false}") boolean thinkChoose,
-      @Value("${helper2.guide.thinking.verify:false}") boolean thinkVerify) {
+      LlmProperties llmProperties,
+      GuideProperties settings) {
+    boolean nativeSchema = llmProperties.nativeSchema();
+    int chooseMaxTokens = settings.chooseMaxTokens();
+    int maxCandidates = settings.maxCandidates();
+    boolean thinkPlan = settings.thinking().plan();
+    boolean thinkChoose = settings.thinking().choose();
+    boolean thinkVerify = settings.thinking().verify();
     ChatModel model = chatModel.getIfAvailable();
     GuideModel guideModel = null;
     if (llm.usable(model) && llm.hasReasoningModel()) {
@@ -184,12 +173,13 @@ class GuideConfiguration {
         clock,
         maxCandidates,
         new GuideValidator(),
-        new GuideAnswerCache(cacheTtl, clock, answerStore),
+        new GuideAnswerCache(settings.cacheTtl(), clock, answerStore),
         observations,
         meters,
         clientQuota,
         AskGuide.SUBJECT_SEARCH_DEADLINE,
         AnswerLimits.DEFAULT,
-        similarQuestions(similarThreshold, embedder.getIfAvailable(), similarQuestionIndex, clock));
+        similarQuestions(
+            settings.similarThreshold(), embedder.getIfAvailable(), similarQuestionIndex, clock));
   }
 }
