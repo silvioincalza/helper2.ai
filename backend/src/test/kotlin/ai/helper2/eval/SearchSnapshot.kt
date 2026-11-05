@@ -18,6 +18,7 @@ import ai.helper2.search.SourceOutcome
 import ai.helper2.search.SourceQuery
 import ai.helper2.search.usecase.SearchResources
 import ai.helper2.shared.Audience
+import ai.helper2.shared.AudiencePath
 import ai.helper2.shared.CanonicalUrl
 import ai.helper2.shared.LanguageDetector
 import ai.helper2.shared.ResourceType
@@ -47,6 +48,8 @@ data class SearchSnapshot(
    * cutoff sweep.
    */
   val semantic: List<SemanticHit>? = null,
+  /** The audience path the query was searched with; the replay ranks with the same one. */
+  val path: AudiencePath? = null,
 )
 
 data class SourceSnapshot(
@@ -97,9 +100,13 @@ class SnapshotTaker(
       translator = translator,
     )
 
-  fun take(queryId: String, text: String): Pair<SearchSnapshot, SearchOutcome> {
+  fun take(
+    queryId: String,
+    text: String,
+    path: AudiencePath? = null,
+  ): Pair<SearchSnapshot, SearchOutcome> {
     recording.forEach { it.hits = emptyList() }
-    val outcome = search.search(SearchRequest(text))
+    val outcome = search.search(SearchRequest(text, path))
     val sources =
       outcome.statuses.map { st ->
         val hits =
@@ -124,6 +131,7 @@ class SnapshotTaker(
       interpretation.requiredVariants.first().split(' '),
       interpretation.typeHints,
       sources,
+      path = path,
     ) to outcome
   }
 
@@ -191,7 +199,7 @@ class SearchReplay(
     return ranking.rank(
       merger.merge(hits, contexts),
       snapshot.text,
-      null,
+      snapshot.path,
       snapshot.typeHints,
       snapshot.titleTerms,
     )

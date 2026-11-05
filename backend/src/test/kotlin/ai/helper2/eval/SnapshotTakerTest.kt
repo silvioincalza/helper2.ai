@@ -8,6 +8,7 @@ import ai.helper2.search.SourceOutcome
 import ai.helper2.search.SourceQuery
 import ai.helper2.search.descriptor
 import ai.helper2.search.hit
+import ai.helper2.shared.AudiencePath
 import ai.helper2.shared.ResourceType
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -49,6 +50,27 @@ class SnapshotTakerTest {
     assertEquals(SourceOutcome.FAILED, snapshot.sources.last().outcome)
     assertEquals(setOf(ResourceType.MCP_SERVER), snapshot.typeHints)
     assertEquals("https://github.com/o/pg-mcp", snapshot.sources[1].hits.single().repositoryUrl)
+    assertEquals(
+      outcome.results.map { it.canonicalUrl },
+      SearchReplay().rank(snapshot).map { it.canonicalUrl },
+    )
+  }
+
+  @Test
+  fun `a query with an audience path is recorded and replayed with that path`() {
+    val github =
+      source("github") {
+        listOf(
+          hit("github", "https://github.com/o/lib", rank = 0),
+          hit("github", "https://github.com/o/app", rank = 1, type = ResourceType.PRODUCT),
+        )
+      }
+
+    val (snapshot, outcome) =
+      SnapshotTaker(listOf(github), null, QueryTranslator.NONE)
+        .take("hex01", "take meeting notes", AudiencePath.USE_AI)
+
+    assertEquals(AudiencePath.USE_AI, snapshot.path)
     assertEquals(
       outcome.results.map { it.canonicalUrl },
       SearchReplay().rank(snapshot).map { it.canonicalUrl },

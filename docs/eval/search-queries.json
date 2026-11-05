@@ -78,5 +78,16 @@
   {"id": "non01", "group": "nonsense", "text": "a quantum blockchain toaster that writes poems", "lang": "en", "from": "x01"},
   {"id": "non02", "group": "nonsense", "text": "purple elephant tax return", "lang": "en"},
   {"id": "non03", "group": "nonsense", "text": "asdf qwer zxcv", "lang": "en"},
-  {"id": "non04", "group": "nonsense", "text": "recipe for grandma's lasagna", "lang": "en"}
+  {"id": "non04", "group": "nonsense", "text": "recipe for grandma's lasagna", "lang": "en"},
+  {"id": "hex01", "group": "home-example", "text": "summarise research papers", "lang": "en", "path": "USE_AI"},
+  {"id": "hex02", "group": "home-example", "text": "take meeting notes", "lang": "en", "path": "USE_AI"},
+  {"id": "hex03", "group": "home-example", "text": "make images from text", "lang": "en", "path": "USE_AI"},
+  {"id": "hex04", "group": "home-example", "text": "remove image background", "lang": "en", "path": "USE_AI"},
+  {"id": "hex05", "group": "home-example", "text": "edit videos with AI", "lang": "en", "path": "USE_AI"},
+  {"id": "hex06", "group": "home-example", "text": "postgres mcp server", "lang": "en", "path": "BUILD_WITH_AI"},
+  {"id": "hex07", "group": "home-example", "text": "vector database", "lang": "en", "path": "BUILD_WITH_AI"},
+  {"id": "hex08", "group": "home-example", "text": "agent framework", "lang": "en", "path": "BUILD_WITH_AI"},
+  {"id": "hex09", "group": "home-example", "text": "run llms locally", "lang": "en", "path": "BUILD_WITH_AI"},
+  {"id": "hex10", "group": "home-example", "text": "rag framework", "lang": "en", "path": "BUILD_WITH_AI"},
+  {"id": "hex11", "group": "home-example", "text": "AI coding assistant", "lang": "en", "path": "BUILD_WITH_AI"}
 ]

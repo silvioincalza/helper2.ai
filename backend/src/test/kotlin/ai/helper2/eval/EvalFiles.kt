@@ -1,5 +1,6 @@
 package ai.helper2.eval
 
+import ai.helper2.shared.AudiencePath
 import ai.helper2.shared.CanonicalUrl
 import java.io.File
 import java.security.MessageDigest
@@ -8,13 +9,17 @@ import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.KotlinModule
 import tools.jackson.module.kotlin.readValue
 
-/** One query of a fixed set; [group] is the kind of need it stands for. */
+/**
+ * One query of a fixed set; [group] is the kind of need it stands for. [path] is the audience path
+ * the query is searched with, as a home example sends it; null for a query typed in the box.
+ */
 data class EvalQuery(
   val id: String,
   val group: String,
   val text: String,
   val lang: String = "en",
   val from: String? = null,
+  val path: AudiencePath? = null,
 )
 
 /**

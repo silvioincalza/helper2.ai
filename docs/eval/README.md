@@ -6,7 +6,7 @@ its relevance part with a message.
 
 | File | What | Read by |
 |---|---|---|
-| `search-queries.json` | 80 search queries in 9 groups ([ADR 0036](../adr/quality/0036-search-evaluation-harness.md)) | `./gradlew evalRecord`, `evalTest` |
+| `search-queries.json` | 91 search queries in 10 groups: 80 typed in the box, and the 11 home examples (group `home-example`, each with the `path` it is sent with) ([ADR 0036](../adr/quality/0036-search-evaluation-harness.md)) | `./gradlew evalRecord`, `evalTest` |
 | `semantic-gold.json` | 20 paraphrase queries for vector search and its cutoff (ADR 0012, 0036) | same |
 | `search-qrels.tsv` | graded judgements for both sets: `query_id`, `url`, `grade` 0–3 | `evalTest` |
 | `search-qrels-second.tsv` | the second judge's grades of a 20 % sample (same format, optional) | `evalTest` (Cohen's kappa) |
@@ -38,7 +38,7 @@ relevant result: a 0 for each pooled result is the label.
 
 1. **Record once.** With the catalog database to measure (`H2_DATABASE_URL`), `H2_GITHUB_TOKEN`, `H2_TAVILY_API_KEY` and
    `H2_NVIDIA_API_KEY` in the repo-root `.env`: `cd backend && ./gradlew evalRecord`. One live search per query,
-   100 queries, about 8 minutes with the default 4 s pause (`H2_EVAL_PAUSE`). Queries that already have a snapshot are
+   111 queries, about 9 minutes with the default 4 s pause (`H2_EVAL_PAUSE`). Queries that already have a snapshot are
    skipped; delete `backend/eval-data/search-snapshots/` to record a new set.
    **Starter set.** To judge less first, record every fourth query of `search-queries.json` (20 queries, all nine
    groups, chosen by position, not by result): `H2_EVAL_ONLY=nav01,nav05,nav09,mcp03,mcp07,mcp11,mod03,mod07,lib01,lib05,lib09,pap03,pap07,new03,new07,lng03,lng07,typ01,typ05,non01 ./gradlew evalRecord`.
@@ -46,8 +46,8 @@ relevant result: a 0 for each pooled result is the label.
 2. **Pool.** `./gradlew evalTest` writes `backend/eval-data/search-pool.tsv`: every result in the top 20 of the baseline
    or of any source left out, plus the 10 nearest vectors, that has no grade yet.
 3. **Judge.** Fill the `grade` column, keep the first three columns and append them to `search-qrels.tsv`. Expect
-   25–30 pooled results per query; at about 10 s per result, 80 search queries take about 5 hours, the 20 semantic
-   queries about 1.5 hours.
+   25–30 pooled results per query; at about 10 s per result, 80 search queries take about 5 hours, the 11 home examples
+   about 45 minutes, the 20 semantic queries about 1.5 hours.
 4. **Second judge.** Pick 20 % of the pooled lines at random (`shuf -n` over the pool), have a second person grade them
    without seeing the first grades, and save them as `search-qrels-second.tsv`. The report states Cohen's kappa; below
    0.6, agree on the grade definitions above and re-judge the disagreements.
@@ -57,6 +57,14 @@ relevant result: a 0 for each pooled result is the label.
    bootstrap interval. TREC files (`baseline.run`, `without-<source>.run`, `search.qrels`) work with
    `ranx` or `trec_eval` for any other comparison. Accept per ADR 0036 §6. A change that brings new results into the
    top 20 extends the pool: judge them before comparing.
+
+## Home examples (`home-example`)
+
+The examples under the home search box are the first search many visitors make, so each one is in the set with the
+words and the `path` it sends (`frontend/src/lib/examples.ts`). A change to the pool changes this group in the same
+pull request. Judge them like any query. The bar for an example is higher than nDCG: a result graded 3 or 2 in its
+top 3. The report lists each `hex` query; one that loses its top-3 answer after a ranking change is a reason to stop
+that change, or to take the example out of the pool.
 
 ## Guide relevance (P@3, nDCG@3)
 
