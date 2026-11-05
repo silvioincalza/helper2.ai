@@ -40,8 +40,8 @@ and chose between options for each part.
    selected, else the first row; an `id` the user chose (a click, a shared link, a reload) always wins, so the answer
    never takes the preview away from a result the user opened. An `id` that is not in the results counts as none.
    The `id` is untrusted input: it only selects among results already on the page.
-6. **Guide picks bar, picks first in one update.** The guide runs only for a question: four words or more, or
-   Shift+Enter. A name search ("pgvector") gets no picks bar and no model call
+6. **Guide picks bar, picks first in one update.** The guide runs only when the user asks it: the "Ask the guide"
+   button (it says so from four words), or the "Sounds like a question" hint. Enter always searches. A name search ("pgvector") gets no picks bar and no model call
    ([0017](../guide/0017-guide-cost-guard.md)). For a question, a box above the list is there from the first render:
    "Guide is reading N candidates… picks will appear here". Its height is reserved, and so are the lines that come
    with the answer ("web searches left" and "How the guide decided"), so the top of the list does not move when the

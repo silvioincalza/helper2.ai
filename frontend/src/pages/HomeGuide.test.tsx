@@ -536,14 +536,14 @@ describe('guide on the one page', () => {
     expect(firstSignal?.aborted).toBe(true);
   });
 
-  it('Shift+Enter asks the guide even for a short text, and keeps it as the search', async () => {
+  it('Shift+Enter searches like Enter: no question, no model call', async () => {
     const m = mockApi({ 'POST /guide/stream': () => sse(makeGuide()) });
     const { params } = renderApp('/');
     await userEvent.type(await screen.findByLabelText(BOX), 'postgres mcp{Shift>}{Enter}{/Shift}');
-    expect(await answered()).toBeInTheDocument();
-    expect(m.callsTo('POST', '/guide/stream')).toHaveLength(1);
-    expect(params().get('ask')).toBe('postgres mcp');
+    await screen.findByRole('list', { name: 'Search results' });
     expect(params().get('q')).toBe('postgres mcp');
+    expect(params().get('ask')).toBeNull();
+    expect(m.callsTo('POST', '/guide/stream')).toHaveLength(0);
   });
 
   it('a name search does not ask the guide: no picks bar, no model call', async () => {
