@@ -22,7 +22,16 @@ data class AnalyzedQuery(
   val requiredVariants: List<String> = listOf(normalized),
   /** Synonyms of query words, searched as optional alternatives (disclosed like expansions). */
   val synonyms: List<String> = emptyList(),
-)
+  /**
+   * The model's English translation of a non-English query, searched first and also the first of
+   * [expandedTerms]; null when none came back. AI-written (ADR 0011, 0038).
+   */
+  val translation: String? = null,
+) {
+  /** The [expandedTerms] from the fixed lexicon: everything but the [translation]. */
+  val lexiconTerms: List<String>
+    get() = expandedTerms.filter { it != translation }
+}
 
 /**
  * Deterministic query analysis from a fixed EN/IT lexicon. Not an LLM: the same query always yields

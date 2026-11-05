@@ -347,6 +347,37 @@ describe('results: list and preview', () => {
     expect(within(r).getByText('A short summary.')).toHaveAttribute('data-ai-generated', 'true');
   });
 
+  it('an AI-written description in the preview is labelled and marked, and never the proof of a pick', async () => {
+    const ai = makeCard({
+      id: 'dddddddd-dddd-5ddd-8ddd-dddddddddddd',
+      title: 'Summed Up',
+      description: 'A short summary.',
+      descriptionOrigin: 'AI_SUMMARY',
+    });
+    mockApi({
+      'GET /search': () => makeSearch({ results: [A, ai], total: 2, sources: [makeStatus()] }),
+    });
+    renderApp(`/search?q=postgres+mcp&id=${ai.id}`);
+    const pv = within(await screen.findByRole('article'));
+    const text = await pv.findByText('A short summary.');
+    expect(text).toHaveAttribute('data-ai-generated', 'true');
+    expect(text.previousElementSibling).toHaveTextContent('AI summary');
+  });
+
+  it('a pick on an AI-written description shows it labelled and marked, not as the proof', async () => {
+    const aiB = { ...B, descriptionOrigin: 'AI_EXTRACTED' as const };
+    mockApi({
+      'GET /search': () => makeSearch({ results: [A, aiB], total: 2, sources: [makeStatus()] }),
+      'POST /guide/stream': () => sse(guide()),
+    });
+    renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
+    await screen.findByRole('button', { name: '#1 Postgres MCP' });
+    const pv = within(screen.getByRole('article'));
+    expect(document.querySelector('article .h2-proof')).toBeNull();
+    expect(pv.getByText(/Easy to set up\./)).toHaveAttribute('data-ai-generated', 'true');
+    expect(pv.getByText('Extracted by AI')).toBeInTheDocument();
+  });
+
   it('a fact the sources disagree on says so, with each value and its source, not "Not stated"', async () => {
     const split = makeCard({
       id: 'eeeeeeee-eeee-5eee-8eee-eeeeeeeeeeee',

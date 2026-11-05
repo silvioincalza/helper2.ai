@@ -481,6 +481,47 @@ describe('search results', () => {
     await waitFor(() => expect(params().getAll('useCase')).toEqual(['translation']));
   });
 
+  it('labels and marks the AI translation of the query; the "not AI" note covers only the word-list terms (ADR 0038)', async () => {
+    mockApi({
+      'GET /search': () =>
+        makeSearch({
+          interpretation: {
+            expandedTerms: ['translation'],
+            detectedUseCases: [],
+            translatedQuery: 'document translation tool',
+          },
+        }),
+    });
+    renderApp('/search?q=strumento+per+tradurre+documenti');
+    const translated = await screen.findByText('document translation tool');
+    expect(translated).toHaveAttribute('data-ai-generated', 'true');
+    expect(translated.nextElementSibling).toHaveTextContent('Translated by AI');
+    const line = translated.closest('p') as HTMLElement;
+    expect(line).not.toHaveAttribute('data-ai-generated');
+    expect(line).toHaveTextContent(
+      'Also searched for: document translation tool Translated by AI, translation (added from a fixed word list, not AI)',
+    );
+    expect([...line.querySelectorAll('[data-ai-generated]')].map((m) => m.textContent)).toEqual([
+      'document translation tool',
+    ]);
+  });
+
+  it('a translation alone has no "not AI" note', async () => {
+    mockApi({
+      'GET /search': () =>
+        makeSearch({
+          interpretation: {
+            expandedTerms: [],
+            detectedUseCases: [],
+            translatedQuery: 'document translation tool',
+          },
+        }),
+    });
+    renderApp('/search?q=herramienta+para+traducir+documentos');
+    const translated = await screen.findByText('document translation tool');
+    expect(translated.closest('p')).not.toHaveTextContent('not AI');
+  });
+
   it('without a query it shows examples and makes no search call at all (the Radar reads /recent)', async () => {
     const m = mockApi();
     renderApp('/');

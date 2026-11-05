@@ -606,6 +606,7 @@ constructor(
       analyzed.copy(
         expandedTerms = (listOf(english) + analyzed.expandedTerms).distinct(),
         requiredVariants = (listOf(english) + analyzed.requiredVariants).distinct(),
+        translation = english,
       )
 
   private fun skipped(d: SourceDescriptor, at: Instant, reason: SkipReason, message: String) =

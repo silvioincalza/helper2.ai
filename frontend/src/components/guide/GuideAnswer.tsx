@@ -202,8 +202,10 @@ export function GuideAnswer({
               <PlannedQueries queries={answer.trail.queries} model={answer.model.fastModel} />
             ) : (
               <>
-                <strong {...aiMark(answer.model.fastModel)}>
-                  {t('guide.searchedFor', { q: answer.searchQuery })}
+                <strong>
+                  {fill(t, 'guide.searchedFor', {
+                    q: <span {...aiMark(answer.model.fastModel)}>{answer.searchQuery}</span>,
+                  })}
                 </strong>{' '}
                 <span className="badge">{t('picks.aiWritten')}</span>
               </>
@@ -243,9 +245,13 @@ export function GuideAnswer({
       ) : (
         <p className="muted small">
           {/* The planner may have written the query even when the answering model failed (aiContent says so). */}
-          <span {...(answer.aiContent ? aiMark(answer.aiContent.models[0]) : {})}>
-            {t('guide.searchedFor', { q: answer.searchQuery })}
-          </span>
+          {fill(t, 'guide.searchedFor', {
+            q: (
+              <span {...(answer.aiContent ? aiMark(answer.aiContent.models[0]) : {})}>
+                {answer.searchQuery}
+              </span>
+            ),
+          })}
           {answer.aiContent && (
             <>
               {' '}

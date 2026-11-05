@@ -903,12 +903,18 @@ components:
     QueryInterpretation:
       type: object
       description: |
-        Deterministic (non-AI) query analysis. `expandedTerms` are equivalents added from a
-        fixed EN/IT lexicon so English-only sources can match non-English queries.
+        How the query was read. `expandedTerms` and `detectedUseCases` are deterministic (non-AI): equivalents and use
+        cases from a fixed EN/IT lexicon, so English-only sources can match non-English queries. `translatedQuery` is
+        the one AI-written part (ADR 0011, 0038).
       required: [expandedTerms, detectedUseCases]
       properties:
-        expandedTerms: { type: array, items: { type: string } }
+        expandedTerms: { type: array, items: { type: string }, description: From the fixed lexicon only; never the translation. }
         detectedUseCases: { type: array, items: { type: string } }
+        translatedQuery:
+          type: [string, 'null']
+          description: |
+            AI-written: the model's English translation of a non-English query, searched first. Null when the query is
+            English or no translation came back (labelled as AI in the UI).
 
     SearchResponse:
       type: object
