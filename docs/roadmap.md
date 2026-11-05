@@ -137,6 +137,9 @@ Open items:
     watch `helper2.scout.recheck` and the backlog for the first week.
   - The results preview has no enrichment data: it shows the card's facts only. Show the AI-estimated audience there
     too if people miss it.
+  - The page cleaner reads HTML tags by hand, not with an HTML parser: a tag longer than 2000 characters stays as text,
+    so a hidden element with such a tag keeps its text. Pages come from Tavily as text, so this is rare; move to a
+    parser (jsoup or similar, compared first) if a page shows it.
 - Similar-question reuse of guide answers ([ADR 0041](adr/guide/0041-guide-answer-cache.md)): prod runs it at 0.96;
   watch `helper2.guide.cache{result="similar"}`, and raise or lower the threshold only with a new sweep. Live, the
   planner's readings of two wordings differ more often than the evaluation set assumes.

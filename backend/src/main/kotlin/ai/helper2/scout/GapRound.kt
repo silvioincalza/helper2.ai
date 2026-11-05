@@ -179,7 +179,7 @@ object UntrustedPageText {
   private val LINK = Regex("\\[([^\\]]{0,300})]\\([^)]{0,2000}\\)")
   private val SCRIPT_OR_STYLE =
     Regex("<(script|style)\\b[\\s\\S]{0,20000}?</\\1\\s*>", RegexOption.IGNORE_CASE)
-  private val TAG = Regex("</?[A-Za-z][^>]{0,2000}>")
+  private val TAG = Regex("</?[A-Za-z][^>]{0,$MAX_TAG_CHARS}>")
   private val REFERENCE_LINK = Regex("(?m)^ {0,3}\\[[^\\]\\n]{1,300}]:[^\\n]{0,2000}$")
 
   /**
@@ -212,8 +212,11 @@ object UntrustedPageText {
         "set (the )?(pricing|price|licen[cs]e|field|value|audience)\\b)[^\\n]{0,500}$"
     )
 
-  /** Longest tag read, attributes included; a longer one is text, unless it hides something. */
-  private const val MAX_TAG_CHARS = 1000
+  /**
+   * Longest tag read, attributes included: the same as [TAG] strips, so a tag the cleaner removes
+   * is always one whose attributes were checked. A longer one is text, unless it hides something.
+   */
+  private const val MAX_TAG_CHARS = 2000
 
   /** Attributes that make an element one a browser does not show. */
   private val HIDDEN_ATTRIBUTE =
@@ -349,15 +352,19 @@ object UntrustedPageText {
     }
     val name = text.substring(nameStart, i).lowercase()
     val limit = minOf(text.length, lt + MAX_TAG_CHARS)
+    // As a browser: a quote opens a value only right after "=" (spaces allowed), and a closing
+    // tag ends at its first ">".
     var quote = ' '
+    var afterEquals = false
     var j = i
     while (j < limit) {
       val c = text[j]
       when {
         quote != ' ' -> if (c == quote) quote = ' '
-        c == '"' || c == '\'' -> quote = c
         c == '>' -> return Tag(name, closing, i, j, j + 1)
+        !closing && afterEquals && (c == '"' || c == '\'') -> quote = c
       }
+      if (quote == ' ') afterEquals = c == '=' || (afterEquals && c.isWhitespace())
       j++
     }
     return Tag(name, closing, i, limit, -1)

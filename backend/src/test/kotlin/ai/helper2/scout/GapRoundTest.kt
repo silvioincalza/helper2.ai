@@ -191,10 +191,13 @@ class GapRoundTest {
         "A <div hidden/>secret</div> End",
         "A <div title=\"a>b\" hidden>secret</div> End",
         "A <div hidden><div title='x</div>'>secret</div>secret</div> End",
+        "A <b x\"><i hidden>secret</i><b y\"> End",
+        "A <div hidden>secret</div x\"> End \">",
+        "A <div class=\"${"c ".repeat(700)}\" hidden>secret</div> End",
       )) {
       val text = UntrustedPageText.clean(raw)
       assertFalse(text.contains("secret"), text)
-      assertTrue(text.startsWith("A") && text.endsWith("End"), text)
+      assertTrue(text.startsWith("A") && text.contains("End"), text)
     }
     assertEquals("A", UntrustedPageText.clean("A <div title=\"never closed hidden>secret"))
     assertEquals("if a<b then c", UntrustedPageText.clean("if a<b then c"))
