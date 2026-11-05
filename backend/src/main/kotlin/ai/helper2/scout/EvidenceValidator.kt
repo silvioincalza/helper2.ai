@@ -309,7 +309,13 @@ class EvidenceValidator(
       val cited =
         check(f.citations, label)
           ?: return CheckedField(f.field, f.value, Verification.REJECTED, emptyList())
-      val selfDeclared = cited.all { isSelfDeclared(it) }
+      // Self-declared by the quotes that state the value, not by every quote: a neutral record
+      // quote
+      // next to a vendor quote that states the price does not make the price the source's.
+      val stating =
+        if (f.field in MUST_STATE_VALUE) cited.filter { statesValue(it.excerpt, f.field, f.value) }
+        else cited
+      val selfDeclared = stating.ifEmpty { cited }.all { isSelfDeclared(it) }
       val origin = if (selfDeclared) ValueOrigin.SELF_DECLARED else ValueOrigin.AI_EXTRACTED
       val sourceValue = input.sourceFacts[f.field]
       val conflicts = sourceValue != null && !sourceValue.equals(f.value, ignoreCase = true)
@@ -343,11 +349,14 @@ class EvidenceValidator(
       val cited =
         check(r.citations, label)
           ?: return CheckedRelationship(r.kind, r.target, null, Verification.REJECTED, emptyList())
-      if (cited.none { normalize(it.excerpt).contains(normalize(r.target)) }) {
+      val naming = cited.filter { normalize(it.excerpt).contains(normalize(r.target)) }
+      if (naming.isEmpty()) {
         return rejected("$label: excerpt does not mention the target")
       }
       val targetId = input.knownResources[r.target.trim().lowercase()]
-      if (cited.all { isSelfDeclared(it) }) {
+      // Self-declared by the quotes that name the target: a neutral record quote cited next to
+      // them proves nothing about it.
+      if (naming.all { isSelfDeclared(it) }) {
         // What a vendor says it works with stays a candidate for a person to confirm.
         return CheckedRelationship(
           r.kind,
@@ -598,9 +607,14 @@ internal object ClaimCheck {
       return "superlative, certificate, popularity or comparison"
     }
     val source = normalize(excerpts.joinToString(" ") + " " + title)
+    // A number must be a whole number of the excerpts ("4" is not in "4000"; "4,000" is "4000").
+    val sourceNumbers = numbers(source)
+    if (numbers(lower).any { it !in sourceNumbers }) return "names or numbers not in its excerpts"
     val tokens = TOKEN.findAll(sentence).map { it.value.trimEnd('.', ',', '-', '/') }.toList()
     val unsupported =
-      tokens.withIndex().firstOrNull { (i, t) -> isNameOrNumber(t, i) && t.lowercase() !in source }
+      tokens.withIndex().firstOrNull { (i, t) ->
+        !NUMBER_TOKEN.matches(t) && isNameOrNumber(t, i) && !wholeWordIn(source, t.lowercase())
+      }
     if (unsupported != null) return "names or numbers not in its excerpts"
     val words = tokens.map { it.lowercase() }.filter { it.length >= 4 && it.all(Char::isLetter) }
     val content = words.filter { it !in STOP }
@@ -610,6 +624,38 @@ internal object ClaimCheck {
     return if (found < content.size * MIN_OVERLAP) "too few of its words are in its excerpts"
     else null
   }
+
+  /**
+   * A number standing alone: not part of a word ("GPT-4o", "v2") and not part of a longer number.
+   * Thousands separators, decimals and a k or m suffix are read as one value.
+   */
+  private val NUMBER =
+    Regex(
+      "(?<![\\p{L}\\p{N}.,])(\\d{1,3}(?:,\\d{3})+|\\d+)(\\.\\d+)?([km])?(?![\\p{L}\\p{N}]|[.,]\\d)"
+    )
+
+  /** A token that is only a number (its parts are checked as numbers, not as names). */
+  private val NUMBER_TOKEN = Regex("^[\\d.,]+[kmKM]?$")
+
+  /** The values of the numbers in [text] (lower case): "4,000", "4000" and "4k" are all 4000. */
+  private fun numbers(text: String): Set<java.math.BigDecimal> =
+    NUMBER.findAll(text)
+      .map { m ->
+        val whole = m.groupValues[1].replace(",", "")
+        val value = java.math.BigDecimal(whole + m.groupValues[2])
+        val scaled =
+          when (m.groupValues[3]) {
+            "k" -> value.multiply(java.math.BigDecimal(1_000))
+            "m" -> value.multiply(java.math.BigDecimal(1_000_000))
+            else -> value
+          }
+        scaled.stripTrailingZeros()
+      }
+      .toSet()
+
+  /** [word] in [text] as a whole word, not inside a longer one ("go" is not in "google"). */
+  private fun wholeWordIn(text: String, word: String): Boolean =
+    Regex("(?<![\\p{L}\\p{N}])${Regex.escape(word)}(?![\\p{L}\\p{N}])").containsMatchIn(text)
 
   /**
    * A capitalised word after the first, any word with a digit, and a first word with an inner

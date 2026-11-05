@@ -8,6 +8,10 @@ ALTER TABLE relationship DROP CONSTRAINT relationship_origin_check;
 ALTER TABLE relationship ADD CONSTRAINT relationship_origin_check CHECK (origin IN ('AI_EXTRACTED','SELF_DECLARED'));
 ALTER TABLE summary_claim ADD COLUMN self_declared boolean NOT NULL DEFAULT false;
 
+-- When a code re-check asked for a new enrichment run (ADR 0056): runs judged before it no longer skip the resource as
+-- UNCHANGED; the next run after it does again.
+ALTER TABLE resource ADD COLUMN enrichment_rerun_requested_at timestamptz;
+
 -- One-time maintenance tasks, claimed once across replicas (the first re-check of stored enrichment answers, ADR 0056).
 CREATE TABLE maintenance_task (
     name    text        PRIMARY KEY CHECK (length(name) <= 100),

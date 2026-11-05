@@ -175,7 +175,8 @@ public class JdbcEnrichmentResults
 
   @Override
   public void requestRun(UUID resourceId) {
-    jdbc.sql("UPDATE resource SET enrichment_status = 'NOT_RUN' WHERE id = :id")
+    jdbc.sql(
+            "UPDATE resource SET enrichment_status = 'NOT_RUN', enrichment_rerun_requested_at = now() WHERE id = :id")
         .param("id", resourceId)
         .update();
   }

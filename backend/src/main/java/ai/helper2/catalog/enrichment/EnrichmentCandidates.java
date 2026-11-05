@@ -40,8 +40,8 @@ public interface EnrichmentCandidates {
 
   /**
    * Input fingerprint of the latest run that judged the model's answer (not LLM_UNAVAILABLE, not
-   * FAILED); null when none, or when the resource is back to NOT_RUN because a re-check asked for a
-   * new run ({@link StoredEnrichments#requestRun}, ADR 0056).
+   * FAILED) that started after the last re-run request ({@link StoredEnrichments#requestRun}, ADR
+   * 0056); null when none.
    */
   @Nullable String lastJudgedFingerprint(UUID id);
 

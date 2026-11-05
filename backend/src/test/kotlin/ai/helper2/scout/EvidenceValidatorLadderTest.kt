@@ -230,4 +230,69 @@ class EvidenceValidatorLadderTest {
       )
     assertTrue(r.summary.isEmpty())
   }
+
+  /** Codex review of #217: a neutral record quote must not hide that only the vendor names it. */
+  @Test
+  fun `a relationship only the vendor page names stays self-declared next to a neutral record quote`() {
+    val r =
+      validator.validate(
+        input().copy(knownResources = mapOf("slack" to UUID.randomUUID())),
+        EnrichmentProposal(
+          relationships =
+            listOf(
+              ProposedRelationship(
+                "INTEGRATES_WITH",
+                "Slack",
+                listOf(
+                  Citation(page.toString(), "integrates with OpenAI, Anthropic, Google, Slack"),
+                  Citation(record.toString(), "is a writing assistant for teams"),
+                ),
+              )
+            )
+        ),
+      )
+    val rel = r.relationships.single()
+    assertEquals(ValueOrigin.SELF_DECLARED, rel.origin)
+    assertEquals(Verification.UNVERIFIED, rel.verification, "a candidate for review, not verified")
+  }
+
+  @Test
+  fun `a fact only the vendor page states stays self-declared next to a neutral record quote`() {
+    val f =
+      validator
+        .validate(
+          input(),
+          EnrichmentProposal(
+            fields =
+              listOf(
+                ProposedField(
+                  "pricing",
+                  "PAID",
+                  listOf(
+                    Citation(page.toString(), "Starter: \$12 per month per seat."),
+                    Citation(record.toString(), "is a writing assistant for teams"),
+                  ),
+                )
+              )
+          ),
+        )
+        .fields
+        .single()
+    assertEquals(Verification.VERIFIED, f.verification)
+    assertEquals(ValueOrigin.SELF_DECLARED, f.origin)
+  }
+
+  @Test
+  fun `a number must match a whole number of the excerpt`() {
+    fun problem(sentence: String, excerpt: String) =
+      EvidenceRules.claimProblem(sentence, listOf(excerpt), "Acme")
+    assertTrue(problem("Acme supports 4 tokens.", "Acme supports 4000 tokens.") != null)
+    assertTrue(problem("Acme supports 400 tokens.", "Acme supports 4,000 tokens.") != null)
+    assertEquals(null, problem("Acme supports 4,000 tokens.", "Acme supports 4000 tokens."))
+    assertEquals(null, problem("Acme supports 4000 tokens.", "Acme supports 4k tokens."))
+    assertEquals(null, problem("Acme supports 4.5 tokens.", "Acme supports 4.5 tokens."))
+    assertTrue(problem("Acme supports 4 tokens.", "Acme supports 4.5 tokens.") != null)
+    // A name is a whole word too: "Go" is not in "Google".
+    assertTrue(problem("Acme runs on Go servers.", "Acme runs on Google servers.") != null)
+  }
 }

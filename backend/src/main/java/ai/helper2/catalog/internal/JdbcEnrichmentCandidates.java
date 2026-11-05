@@ -146,9 +146,9 @@ class JdbcEnrichmentCandidates implements EnrichmentCandidates {
   public @Nullable String lastJudgedFingerprint(UUID id) {
     return jdbc.sql(
             """
-            SELECT e.input_fingerprint FROM enrichment_run e
+            SELECT e.input_fingerprint FROM enrichment_run e JOIN resource r ON r.id = e.resource_id
             WHERE e.resource_id = :id AND e.outcome NOT IN ('LLM_UNAVAILABLE', 'FAILED')
-              AND NOT EXISTS (SELECT 1 FROM resource r WHERE r.id = :id AND r.enrichment_status = 'NOT_RUN')
+              AND (r.enrichment_rerun_requested_at IS NULL OR e.started_at > r.enrichment_rerun_requested_at)
             ORDER BY e.started_at DESC LIMIT 1
             """)
         .param("id", id)

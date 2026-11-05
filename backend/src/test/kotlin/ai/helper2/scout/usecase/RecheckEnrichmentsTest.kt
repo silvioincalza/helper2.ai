@@ -178,4 +178,50 @@ class RecheckEnrichmentsTest {
     assertNull(recheck(answers).runOnce())
     assertEquals(setOf(RecheckEnrichments.TASK), answers.claimed)
   }
+
+  /** A stored sentence whose number is only part of a longer number in its excerpt is dropped. */
+  @Test
+  fun `a stored claim with a partial number is dropped, a separated thousand kept`() {
+    val partial = UUID.randomUUID()
+    val separated = UUID.randomUUID()
+    val dropped = mutableListOf<UUID>()
+    val answers =
+      object : StoredAnswers {
+        override fun judgedAfter(after: UUID?, limit: Int) =
+          if (after == null) listOf(withPage) else emptyList()
+
+        override fun stored(resourceId: UUID) =
+          StoredAnswer(
+            resourceId,
+            "Acme",
+            "enrich-v4",
+            emptyList(),
+            listOf(
+              StoredClaimAnswer(
+                partial,
+                "Acme supports 4 tokens.",
+                listOf("Acme supports 4000 tokens."),
+              ),
+              StoredClaimAnswer(
+                separated,
+                "Acme supports 4,000 tokens.",
+                listOf("Acme supports 4000 tokens."),
+              ),
+            ),
+          )
+
+        override fun rejectFields(ids: List<UUID>) = 0
+
+        override fun dropClaims(ids: List<UUID>): Int {
+          dropped += ids
+          return ids.size
+        }
+
+        override fun requestRun(resourceId: UUID) {}
+
+        override fun claimOnce(name: String) = true
+      }
+    RecheckEnrichments(answers, enrichment, "enrich-v4", true, trail, meters).runByAdmin("42")
+    assertEquals(listOf(partial), dropped)
+  }
 }

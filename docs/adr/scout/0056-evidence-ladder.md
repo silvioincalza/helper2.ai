@@ -102,7 +102,8 @@ are judgements: a model may estimate them, and the page says so. The description
     - A resource goes back to the model only when it still misses a target fact (`FieldTargets`), has more to read
       (a README or model card, or its own pages) and its last run used an older prompt. It is set back to `NOT_RUN`:
       the backlog takes it, accepted products first, inside the daily caps, and the unchanged fingerprint does not
-      skip it (`lastJudgedFingerprint` is null while a resource is `NOT_RUN`).
+      skip it: `resource.enrichment_rerun_requested_at` makes the runs judged before the request no
+      longer count for the UNCHANGED skip; the next run after it does again.
     - It runs once after the first start where the Scout is scheduled (marker `recheck-enrichment-enrich-v4` in the new
       table `maintenance_task`, claimed once across replicas), and whenever an admin presses "Re-check stored
       answers" (`POST /api/v1/admin/enrichment-recheck`, audit action `RECHECK_ENRICHMENT`). Idempotent: a second

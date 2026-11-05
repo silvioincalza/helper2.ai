@@ -237,6 +237,8 @@ class CatalogEnrichmentStoreIT {
     assertThat(results.relationships(resource))
         .extracting(r -> r.targetTitle() + ":" + r.origin())
         .containsExactly("Slack:SELF_DECLARED");
+    // A relationship only the vendor names waits for a person.
+    assertThat(reviewStatuses(ReviewQueue.Kind.RELATIONSHIP_CANDIDATE)).containsExactly("OPEN");
     assertThat(results.summary(resource).claims().getFirst().selfDeclared()).isTrue();
 
     // The next run replaces them all, estimated and self-declared values included.
@@ -291,6 +293,14 @@ class CatalogEnrichmentStoreIT {
         .as("an unchanged fingerprint no longer skips")
         .isNull();
     assertThat(store.pending(Integer.MAX_VALUE)).contains(resource);
+
+    // The run after the request counts again: the next unchanged attempt is UNCHANGED.
+    save(
+        "fp-after",
+        EnrichmentOutcome.VALIDATED,
+        new ValidationResult(
+            EnrichmentOutcome.VALIDATED, List.of(), List.of(), List.of(), List.of()));
+    assertThat(store.lastFingerprint(resource)).isEqualTo("fp-after");
   }
 
   @Test

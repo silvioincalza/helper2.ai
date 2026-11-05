@@ -50,8 +50,8 @@ public interface StoredEnrichments {
   int dropClaims(List<UUID> claimIds);
 
   /**
-   * Puts the resource back to NOT_RUN: the enrichment backlog takes it again and its unchanged
-   * fingerprint does not skip it.
+   * Puts the resource back to NOT_RUN and records when: the enrichment backlog takes it again, and
+   * the runs judged before the request no longer skip it as UNCHANGED.
    */
   void requestRun(UUID resourceId);
 
