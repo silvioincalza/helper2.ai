@@ -116,7 +116,7 @@ class SpringAiQueryTranslator implements QueryTranslator {
       log.info("Query translation skipped: {} is {}", e.policy(), e.reason());
       return null;
     } catch (RuntimeException e) {
-      log.info("Query translation failed: {}", e.toString());
+      log.info("Query translation failed: {}", e.getClass().getSimpleName());
       return null;
     }
     // Reasoning models may prepend their thinking; only the final line is the answer.

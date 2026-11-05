@@ -67,6 +67,7 @@ class ManagementPortIT {
             "environment=\"local\"");
     assertThat(metrics.body()).doesNotContain("uri=\"/actuator");
     assertThat(status(managementPort, "/actuator/health/readiness")).isEqualTo(200);
-    assertThat(status(managementPort, "/actuator/metrics")).isEqualTo(401);
+    assertThat(status(managementPort, "/actuator/metrics")).isIn(401, 404);
+    assertThat(status(managementPort, "/actuator/info")).isIn(401, 404);
   }
 }

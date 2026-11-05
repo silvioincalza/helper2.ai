@@ -45,7 +45,7 @@ must load the app on a direct visit, and a new release must reach browsers at on
    The session itself is in Redis ([0023](0023-identity-and-admin.md)).
 8. **Management port.** `H2_MANAGEMENT_PORT` (empty = app port). The chart sets 8081; the Services and the Ingresses never route
    it. The NetworkPolicy `ingress-app` opens 8081 only to the `observability` namespace, so `H2_METRICS_PUBLIC=true` exposes
-   `/actuator/prometheus` only there; the other actuator endpoints, except health and info, stay ADMIN only. Health shows no details; Redis is left out of health.
+   `/actuator/prometheus` only there; the actuator serves only health and prometheus, and health is the one open to all. Health shows no details; Redis is left out of health.
 9. **SPA fallback and caching** (`SinglePageApp`, rules in [0001](../foundation/0001-stack-and-runtime.md)): hashed assets are cached
    for one year, `index.html` and other files are `no-cache`, so a new release reaches browsers at once. Search and guide
    answers are `no-store`.

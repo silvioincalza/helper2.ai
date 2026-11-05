@@ -86,7 +86,7 @@ class SecurityConfiguration {
             .collect(Collectors.toUnmodifiableSet());
     http.authorizeHttpRequests(
             a -> {
-              a.requestMatchers("/actuator/health/**", "/actuator/info").permitAll();
+              a.requestMatchers("/actuator/health/**").permitAll();
               if (metricsPublic) {
                 a.requestMatchers("/actuator/prometheus").permitAll();
               }

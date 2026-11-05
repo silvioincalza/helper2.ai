@@ -572,7 +572,7 @@ constructor(
         Thread.currentThread().interrupt()
         null
       } catch (e: Exception) {
-        log.info("Query translation failed", e)
+        log.info("Query translation failed: {}", e.javaClass.simpleName)
         null
       } ?: return null
     if (URL_LIKE.containsMatchIn(raw)) return null
