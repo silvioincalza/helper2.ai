@@ -50,8 +50,7 @@ class RateLimitInterceptor implements HandlerInterceptor, WebMvcConfigurer {
     this.clock = clock;
     this.meters = meters;
     // Each guide question costs three LLM calls: keep it tighter than search. The guide and the
-    // tool guide
-    // share one limiter, so switching endpoint does not double a client's budget.
+    // tool guide share one limiter, so switching endpoint does not double a client's budget.
     RateLimiter guide = limiter("guide", guidePerMinute, Duration.ofMinutes(1));
     this.limiters =
         Map.of(

@@ -540,8 +540,7 @@ class GuideApiIT extends ApiTestBase {
   }
 
   // ADR 0032 §3 and §5: an ambiguous name asked back once, and a WHEN question about an event over
-  // events only.
-  // Dates come from records, so the plan call is the only model call.
+  // events only. Dates come from records, so the plan call is the only model call.
 
   private static final Pattern NEED = Pattern.compile("<need>\\n(.*?)\\n</need>", Pattern.DOTALL);
   private static final Pattern ANSWER =

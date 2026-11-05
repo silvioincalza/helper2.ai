@@ -134,8 +134,7 @@ class ResourcesController implements ResourcesApi {
         recent.list(since, now, types, size == null ? 12 : size).stream()
             .map(CardMapper::card)
             .toList();
-    // Short cache: the index changes at most every Scout run (15 min); the page asks on every
-    // visit.
+    // Short cache: the index changes at most every Scout run (15 min); the page asks each visit.
     return ResponseEntity.ok()
         .cacheControl(CacheControl.maxAge(Duration.ofMinutes(2)).cachePublic())
         .body(new RecentResponseDto(items, UtcTimes.odt(since), UtcTimes.odt(now)));

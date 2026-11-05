@@ -89,7 +89,6 @@ public class ResourceStore {
       Instant updatedAt,
       String updatedSourceId,
       Instant firstDiscoveredAt,
-      Instant lastSeenAt,
       DataOrigin dataOrigin,
       String enrichmentStatus,
       Set<String> tags,
@@ -117,7 +116,6 @@ public class ResourceStore {
           updatedAt,
           updatedSourceId,
           firstDiscoveredAt,
-          lastSeenAt,
           dataOrigin,
           enrichmentStatus,
           labels.getOrDefault("TAG", Set.of()),
@@ -154,7 +152,6 @@ public class ResourceStore {
               updatedAt,
               updatedSourceId,
               firstDiscoveredAt,
-              lastSeenAt,
               dataOrigin,
               enrichmentStatus,
               tags,
@@ -610,20 +607,19 @@ public class ResourceStore {
     }
     // Order: rows containing every word of a variant first (+2, more than the rest can add); within
     // each group, popularity (0..1, strongest metric, log-scaled per kind) plus half the text score
-    // (capped at 10 -> 0..0.5). Text score alone measures word density, not relevance: for
-    // "MCP server Postgres" it ranked short npm names first and crystaldba/postgres-mcp (3.4k
-    // stars)
+    // (capped at 10 -> 0..0.5). Text score alone measures word density, not relevance: for "MCP
+    // server Postgres" it ranked short npm names first and crystaldba/postgres-mcp (3.4k stars)
     // 368th; with this order it is 3rd (prod catalog, 2026-10-26). Popularity is the stored column
     // kept by a trigger on source_record, not computed per matched row.
     //
     // Two stages, because ts_rank_cd per matched row is the expensive part and grows with the
-    // catalog
-    // (11k resources, 2.9k matches for a 5-word query: 2.0 s in the app, close to the 3 s source
-    // timeout). Stage 1 orders every match by cheap facts (every-word match, popularity, title
-    // similarity) and keeps PRESELECT rows; stage 2 scores only those. Rows with every word are
-    // almost always fewer than PRESELECT, so they are never cut. 2.0 s -> 0.2 s (prod, 2026-10-26).
-    // The WHERE spells out any_terms instead of reading it from q: q is a CTE used twice, so it is
-    // materialized, and a condition on a CTE column is a join filter that no index can serve.
+    // catalog (11k resources, 2.9k matches for a 5-word query: 2.0 s in the app, close to the 3 s
+    // source timeout). Stage 1 orders every match by cheap facts (every-word match, popularity,
+    // title similarity) and keeps PRESELECT rows; stage 2 scores only those. Rows with every word
+    // are almost always fewer than PRESELECT, so they are never cut. 2.0 s -> 0.2 s (prod,
+    // 2026-10-26). The WHERE spells out any_terms instead of reading it from q: q is a CTE used
+    // twice, so it is materialized, and a condition on a CTE column is a join filter that no index
+    // can serve.
     return """
     WITH q AS (
       SELECT (%1$s) AS all_terms, %2$s AS any_terms
@@ -656,22 +652,8 @@ public class ResourceStore {
    * on its own and the variants are OR-ed as tsqueries: "a b OR c" in websearch syntax means (a AND
    * b) OR c, so a synonym cannot be written into the query text. Every variant is parsed as
    * English, language-neutral ('simple') and, when [language] is set, with that language's stemmer
-   * too (ISO code from LanguageDetector; null = English + simple only).
-   */
-  public List<ResourceRow> search(
-      String query,
-      List<String> requiredVariants,
-      List<String> extraTerms,
-      List<String> synonyms,
-      String language,
-      Set<DataOrigin> origins,
-      int limit) {
-    return search(query, requiredVariants, extraTerms, synonyms, language, origins, limit, null);
-  }
-
-  /**
-   * As {@link #search}, keeping only rows created on or after [publishedAfter] (by the source's
-   * date); null = any.
+   * too (ISO code from LanguageDetector; null = English + simple only). With [publishedAfter], only
+   * rows created on or after it (by the source's date); null = any.
    */
   public List<ResourceRow> search(
       String query,
@@ -1049,7 +1031,6 @@ public class ResourceStore {
         instant(rs.getTimestamp("updated_at")),
         rs.getString("updated_source_id"),
         instant(rs.getTimestamp("first_discovered_at")),
-        instant(rs.getTimestamp("last_seen_at")),
         DataOrigin.valueOf(rs.getString("data_origin")),
         rs.getString("enrichment_status"),
         Set.of(),

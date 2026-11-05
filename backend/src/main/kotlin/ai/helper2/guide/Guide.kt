@@ -733,11 +733,12 @@ class GuideValidator(
       Regex("&(?:#(\\d{1,7})|#[xX]([0-9a-fA-F]{1,6})|(colon|sol|period|tab|newline));?")
     private val NAMED_ENTITIES =
       mapOf("colon" to ":", "sol" to "/", "period" to ".", "tab" to "\t", "newline" to "\n")
+    /** Browsers ignore tabs and newlines inside a URL. */
+    private val URL_IGNORED_WHITESPACE = Regex("[\\t\\r\\n]")
     /**
      * Characters a browser or terminal drops or never shows: controls (not tab/newline), soft
      * hyphen, zero-width, BOM.
      */
-    private val URL_IGNORED_WHITESPACE = Regex("[\\t\\r\\n]")
     private val INVISIBLE =
       Regex(
         "[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F\\u007F\\u00AD\\u200B-\\u200F\\u2060-\\u2064\\uFEFF]"

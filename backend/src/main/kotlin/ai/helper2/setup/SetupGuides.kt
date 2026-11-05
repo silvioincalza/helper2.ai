@@ -43,17 +43,12 @@ constructor(
 
   /**
    * [registryName] is the server's name in the MCP Registry, or null when the resource has no
-   * registry record.
+   * registry record. The registry entry first; without one (or one with no usable option), the
+   * config example in the README of [ref], when the resource is an MCP server. When the registry
+   * cannot be read, the README example answers; without one, [SetupUnavailable] is thrown, since
+   * the registry may well have an entry.
    */
-  fun build(title: String, registryName: String?): SetupGuide = build(title, registryName, null)
-
-  /**
-   * The registry entry first; without one (or one with no usable option), the config example in the
-   * README of [ref], when the resource is an MCP server. When the registry cannot be read, the
-   * README example answers; without one, [SetupUnavailable] is thrown, since the registry may well
-   * have an entry.
-   */
-  fun build(title: String, registryName: String?, ref: ToolRef?): SetupGuide {
+  fun build(title: String, registryName: String?, ref: ToolRef? = null): SetupGuide {
     var registryDown: SetupUnavailable? = null
     val fromRegistry =
       try {

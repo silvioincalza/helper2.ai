@@ -336,8 +336,7 @@ class SpringAiGuideModelTest {
             .getConfigFingerprint();
 
     // Every rendered prompt is part of the answer cache key (AskGuide.configHash): editing any
-    // prompt file
-    // changes the key, so a new prompt never serves answers of the old one.
+    // prompt file changes the key, so a new prompt never serves answers of the old one.
     assertThat(off)
         .contains(
             SpringAiGuideModel.planSystem(),

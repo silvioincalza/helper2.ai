@@ -79,8 +79,7 @@ class ToolGuideValidator {
   private fun check(step: ProposedStep, material: Material?, parsed: Parsed?): Any {
     if (material == null || parsed == null) return Rejection.SOURCE
     val text = step.text.trim()
-    // The model saw third-party text with < > shown as ‹ › (UntrustedText): map them back before
-    // matching.
+    // The model saw third-party text with < > shown as ‹ › (UntrustedText): map them back first.
     val quote = unmask(step.quote).trim()
     if (text.isEmpty() || text.length > MAX_TEXT_CHARS || containsLink(text)) return Rejection.TEXT
     val quoteFound =
@@ -112,8 +111,7 @@ class ToolGuideValidator {
   private class Parsed(text: String) {
     val prose = loose(text)
 
-    // Each block as logical lines: a command continued with a trailing backslash is one line, never
-    // its parts.
+    // Each block as logical lines: a command continued with a trailing backslash is one line.
     private val blocks = Markdown.blocks(text).map { it to logicalLines(it.lines) }
     private val spans = Markdown.inlineSpans(text).associateBy(::tight)
 

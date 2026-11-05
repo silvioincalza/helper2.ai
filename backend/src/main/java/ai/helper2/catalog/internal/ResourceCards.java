@@ -39,11 +39,6 @@ public class ResourceCards {
     this.sources = sources;
   }
 
-  /** The card of resource [id]; empty when it is gone or its records no longer merge. */
-  public Optional<MergedResult> cardOf(UUID id) {
-    return cardsOf(List.of(id)).stream().findFirst();
-  }
-
   /**
    * The cards of [ids] in the same order, in a fixed number of statements (the rows with their
    * facts, then the records of all of them). An id whose resource is gone or whose records no
@@ -85,8 +80,7 @@ public class ResourceCards {
     for (RecordRow r : records) {
       SourceDescriptor d = descriptors.get(r.sourceId());
       if (d != null) {
-        // Data on a detail page comes from Helper2's store: INDEXED, unless curated or demo
-        // fixtures.
+        // Detail data comes from Helper2's store: INDEXED, unless curated or demo fixtures.
         SourceMode mode =
             d.getMode() == SourceMode.CURATED || d.getMode() == SourceMode.DEMO
                 ? d.getMode()

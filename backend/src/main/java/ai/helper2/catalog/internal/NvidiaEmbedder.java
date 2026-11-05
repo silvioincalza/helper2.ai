@@ -63,11 +63,10 @@ public class NvidiaEmbedder implements Embedder {
       Resilience resilience) {
     resilience.require(LlmPolicies.EMBED);
     // Buffered, so the request carries a Content-Length: a streamed (chunked) body of 50 texts made
-    // the
-    // API catalog hang until the read timeout, while one short query went through (27 Oct 2026).
+    // the API catalog hang until the read timeout, while one short query went through (27 Oct
+    // 2026).
     // Its timeout is also the call's total deadline (ADR 0006 §2, 11). The deadline sits under the
-    // buffering, so the
-    // buffered read of the response is the read it stops.
+    // buffering, so the buffered read of the response is the read it stops.
     var factory =
         new BufferingClientHttpRequestFactory(
             new InterceptingClientHttpRequestFactory(

@@ -70,8 +70,7 @@ public final class FixtureServer implements AutoCloseable {
           exchange.getResponseHeaders().add("Content-Type", "application/json");
           byte[] bytes = reply.body().getBytes(StandardCharsets.UTF_8);
           // A dripped body goes chunked: the server sends each flushed chunk at once, while a body
-          // of fixed length
-          // is held back until the exchange closes.
+          // of fixed length is held back until the exchange closes.
           exchange.sendResponseHeaders(reply.status(), reply.dripMs() > 0 ? 0 : bytes.length);
           if (reply.dripMs() > 0) {
             try {

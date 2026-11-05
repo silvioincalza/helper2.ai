@@ -60,8 +60,7 @@ class RelevanceMetricsTest {
   @Test
   fun `kappa corrects the judges' agreement for the agreement expected by chance`() {
     // 4 items, agree on 3: observed 0.75. Judge A: 2,2,0,0 -> p(2)=p(0)=0.5; judge B: 2,2,0,2 ->
-    // p(2)=0.75, p(0)=0.25
-    // chance = 0.5*0.75 + 0.5*0.25 = 0.5; kappa = (0.75-0.5)/(1-0.5) = 0.5
+    // p(2)=0.75, p(0)=0.25 chance = 0.5*0.75 + 0.5*0.25 = 0.5; kappa = (0.75-0.5)/(1-0.5) = 0.5
     assertEquals(0.5, RelevanceMetrics.cohensKappa(listOf(2 to 2, 2 to 2, 0 to 0, 0 to 2))!!, eps)
     assertEquals(1.0, RelevanceMetrics.cohensKappa(listOf(3 to 3, 0 to 0))!!, eps)
     assertNull(RelevanceMetrics.cohensKappa(emptyList()))

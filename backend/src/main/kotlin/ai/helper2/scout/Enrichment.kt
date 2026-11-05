@@ -176,12 +176,6 @@ data class ValidationResult(
       fields.count { it.verification == Verification.VERIFIED } +
         relationships.count { it.verification != Verification.REJECTED } +
         summary.size
-
-  val needsReview: Boolean
-    get() =
-      errors.isNotEmpty() ||
-        fields.any { it.verification != Verification.VERIFIED } ||
-        relationships.any { it.verification != Verification.VERIFIED }
 }
 
 /**

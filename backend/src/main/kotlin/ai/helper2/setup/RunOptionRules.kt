@@ -54,8 +54,7 @@ object RunOptionRules {
     return when (option) {
       is RunOption.Remote -> true
       is RunOption.Command -> target(option.command, option.args) != null
-      // The launcher part is checked like a README command; package arguments go to the server, as
-      // after npx.
+      // The launcher part is checked like a README command; package arguments go to the server.
       is RunOption.Package ->
         validIdentifier(option.registryType, option.identifier) &&
           (option.version == null || validVersion(option.version)) &&

@@ -1,4 +1,4 @@
-# The JVM image (SPA embedded). Anonymous-only demo: no oauth-github profile, so no sign-in.
+# The JVM image (SPA embedded).
 apiVersion: apps/v1
 kind: Deployment
 metadata:

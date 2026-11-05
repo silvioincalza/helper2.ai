@@ -199,9 +199,8 @@ internal class PickAnswer(
 
   private fun subjectNotFound(name: String, r: Reading): List<Notice> {
     // The name and the query are the planner's words: fields of their own, so the page marks them
-    // AI-written (ADR 0038).
-    // Only a query the planner wrote: without one, r.query is the user's own text, which must not
-    // be marked AI-written.
+    // AI-written (ADR 0038). Only a query the planner wrote: without one, r.query is the user's own
+    // text, which must not be marked AI-written.
     val plannedQuery =
       r.plan?.let { PlannedQueries.searchQueryOf(it.searchQuery) }?.ifBlank { null }
     return listOf(

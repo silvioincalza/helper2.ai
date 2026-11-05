@@ -108,8 +108,8 @@ class GuideLimits implements DisposableBean {
                   onTimeout.run();
                   running.cancel(true);
                   // The slot is free from the deadline on, also for a worker that never started (no
-                  // finally runs)
-                  // or that is slow to react to the interrupt (its own release is then a no-op).
+                  // finally runs) or that is slow to react to the interrupt (its own release is
+                  // then a no-op).
                   release.run();
                 }));
     return true;

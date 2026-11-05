@@ -41,7 +41,7 @@ class CatalogSearchRankingIT {
   private fun search(text: String): List<String> {
     val q = QueryAnalyzer().analyze(text)
     return store
-      .search(text, q.requiredVariants, q.expandedTerms, q.synonyms, null, origins, 50)
+      .search(text, q.requiredVariants, q.expandedTerms, q.synonyms, null, origins, 50, null)
       .map { it.title() }
   }
 

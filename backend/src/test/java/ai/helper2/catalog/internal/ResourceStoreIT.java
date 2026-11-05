@@ -431,7 +431,8 @@ class ResourceStoreIT {
             List.of(),
             null,
             Set.of(DataOrigin.OBSERVED),
-            10);
+            10,
+            null);
 
     assertThat(rows).extracting(ResourceRow::canonicalUrl).contains(repo);
   }

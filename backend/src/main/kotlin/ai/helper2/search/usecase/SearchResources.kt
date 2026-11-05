@@ -694,8 +694,6 @@ constructor(
      */
     private fun cacheMaterial(d: SourceDescriptor, q: SourceQuery): String {
       val normalized = QueryAnalyzer().analyze(q.text).normalized
-      // webQuery only for sources that read it, so other sources and plain searches keep sharing
-      // entries.
       val web = q.webQuery?.takeIf { d.usesWebQuery }?.let { "|web:$it" } ?: ""
       val after = q.publishedAfter?.takeIf { d.filtersByDate }?.let { "|after:$it" } ?: ""
       val browse =

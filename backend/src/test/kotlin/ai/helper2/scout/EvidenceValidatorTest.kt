@@ -121,7 +121,6 @@ class EvidenceValidatorTest {
         ),
       )
     assertEquals(Verification.CONFLICTING, r.fields.single().verification)
-    assertTrue(r.needsReview)
   }
 
   @Test
@@ -162,7 +161,6 @@ class EvidenceValidatorTest {
         ),
       )
     assertEquals(Verification.UNVERIFIED, r.relationships.single().verification)
-    assertTrue(r.needsReview)
   }
 
   @Test
@@ -262,7 +260,6 @@ class EvidenceValidatorTest {
       )
     assertEquals(Verification.UNVERIFIED, r.fields.single().verification)
     assertTrue(r.errors.any { "does not state the value" in it })
-    assertTrue(r.needsReview)
   }
 
   @Test

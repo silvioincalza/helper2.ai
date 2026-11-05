@@ -131,8 +131,7 @@ public class GetResourceDetail {
     Map<String, String> fields = new LinkedHashMap<>();
     fields.put("title", h.getTitle());
     fields.put("description", h.getDescription());
-    // "type" is omitted: for most sources it is assigned by Helper2 rules, not stated by the
-    // source.
+    // No "type": for most sources Helper2 rules assign it; the source does not state it.
     fields.put("license", h.getLicense());
     fields.put("published", textOf(h.getPublished().getValue()));
     fields.put("updated", textOf(h.getUpdated().getValue()));
