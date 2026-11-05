@@ -126,6 +126,7 @@ class ModularityTest {
           Map.entry("source", "catalog"),
           Map.entry("resource", "catalog"),
           Map.entry("resource_label", "catalog"),
+          Map.entry("catalog_marker", "catalog"),
           Map.entry("source_record", "catalog"),
           Map.entry("resource_embedding", "catalog"),
           Map.entry("evidence", "catalog"),

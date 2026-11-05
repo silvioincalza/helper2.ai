@@ -66,7 +66,8 @@ class UpcomingEventsApiIT extends ApiTestBase {
         "Paris, France",
         EventKind.HACKATHON,
         EventFormat.ONLINE,
-        h.getFacts());
+        h.getFacts(),
+        h.getCategories());
   }
 
   @Test

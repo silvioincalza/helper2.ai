@@ -51,6 +51,7 @@ public final class CardMapper {
                 r.getTechLevel() == null ? null : TechLevelDto.fromValue(r.getTechLevel().name()))
             .useCases(new ArrayList<>(r.getUseCases()))
             .tags(new ArrayList<>(r.getTags()))
+            .categories(new ArrayList<>(r.getCategories()))
             .license(r.getLicense())
             .pricing(r.getPricing() == null ? null : PricingDto.fromValue(r.getPricing().name()))
             .platforms(new ArrayList<>(r.getPlatforms()))

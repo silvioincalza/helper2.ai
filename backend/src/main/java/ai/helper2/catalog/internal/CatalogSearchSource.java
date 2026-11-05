@@ -16,6 +16,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.dao.DataAccessException;
@@ -113,7 +114,15 @@ public class CatalogSearchSource implements SearchSource {
               // Metrics keep their original source, like dates: the index only relays them.
               r.popularity(),
               now,
-              i));
+              i,
+              DateFact.unknown(),
+              DateFact.unknown(),
+              null,
+              null,
+              null,
+              Map.of(),
+              // Assigned by the catalog (ADR 0053), so a search can filter and count them.
+              r.categories()));
     }
     return hits;
   }

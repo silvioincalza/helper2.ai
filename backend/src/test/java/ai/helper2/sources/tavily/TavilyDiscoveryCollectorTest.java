@@ -11,6 +11,7 @@ import ai.helper2.scout.Candidate;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.search.SourceHit;
 import ai.helper2.shared.CanonicalUrl;
+import ai.helper2.shared.CategoryWords;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.sources.SourceFixtures;
 import ai.helper2.sources.support.SourceSettings;
@@ -91,7 +92,7 @@ class TavilyDiscoveryCollectorTest {
         "Name of " + id,
         type,
         queries,
-        DiscoveryCategory.Keywords.of(words),
+        CategoryWords.of(words),
         Duration.ofDays(7),
         enabled,
         minScore,
@@ -418,8 +419,8 @@ class TavilyDiscoveryCollectorTest {
 
   @Test
   void aCategoryFitsByItsWordsAtTheStartOfAWordWithHyphensAsSpaces() {
-    DiscoveryCategory.Keywords words =
-        DiscoveryCategory.Keywords.of(List.of("Fine tuning platform", " lora ", "text-to-speech"));
+    CategoryWords words =
+        CategoryWords.of(List.of("Fine tuning platform", " lora ", "text-to-speech"));
     assertThat(words.words()).containsExactly("fine tuning platform", "lora", "text-to-speech");
     assertThat(words.matchedIn("A Fine-Tuning platform")).containsExactly("fine tuning platform");
     assertThat(words.matchedIn("Train a LoRA adapter")).containsExactly("lora");

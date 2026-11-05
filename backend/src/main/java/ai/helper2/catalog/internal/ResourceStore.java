@@ -8,6 +8,8 @@ import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.SourceHit;
 import ai.helper2.shared.Audience;
 import ai.helper2.shared.CanonicalUrl;
+import ai.helper2.shared.CategoryInput;
+import ai.helper2.shared.CategoryMatcher;
 import ai.helper2.shared.DateFact;
 import ai.helper2.shared.DatePrecision;
 import ai.helper2.shared.EventFormat;
@@ -96,6 +98,7 @@ public class ResourceStore {
       Set<String> tags,
       Set<String> useCases,
       Set<String> platforms,
+      Set<String> categories,
       List<PopularityMetric> popularity) {
 
     ResourceRow withFacts(Map<String, Set<String>> labels, List<PopularityMetric> metrics) {
@@ -123,6 +126,7 @@ public class ResourceStore {
           labels.getOrDefault("TAG", Set.of()),
           labels.getOrDefault("USE_CASE", Set.of()),
           labels.getOrDefault("PLATFORM", Set.of()),
+          labels.getOrDefault("CATEGORY", Set.of()),
           metrics);
     }
 
@@ -159,6 +163,7 @@ public class ResourceStore {
               tags,
               useCases,
               platforms,
+              categories,
               popularity);
     }
   }
@@ -183,13 +188,19 @@ public class ResourceStore {
   private final JdbcTemplate template;
   private final ObjectMapper json;
   private final LanguageDetector languages;
+  private final CategoryMatcher categories;
 
   public ResourceStore(
-      JdbcClient jdbc, JdbcTemplate template, ObjectMapper json, LanguageDetector languages) {
+      JdbcClient jdbc,
+      JdbcTemplate template,
+      ObjectMapper json,
+      LanguageDetector languages,
+      CategoryMatcher categories) {
     this.jdbc = jdbc;
     this.template = template;
     this.json = json;
     this.languages = languages;
+    this.categories = categories;
   }
 
   @Transactional
@@ -292,6 +303,7 @@ public class ResourceStore {
     Set<UUID> touched = new HashSet<>(owners);
     touched.addAll(movedFrom);
     replaceLabels(touched);
+    assignCategories(touched);
     refreshEventDates(touched);
     return changed;
   }
@@ -550,7 +562,9 @@ public class ResourceStore {
       return;
     }
     UUID[] ids = resourceIds.toArray(UUID[]::new);
-    jdbc.sql("DELETE FROM resource_label WHERE resource_id = ANY(:ids)").param("ids", ids).update();
+    jdbc.sql("DELETE FROM resource_label WHERE resource_id = ANY(:ids) AND kind <> 'CATEGORY'")
+        .param("ids", ids)
+        .update();
     jdbc.sql(
             """
             WITH labels AS (
@@ -569,6 +583,128 @@ public class ResourceStore {
             """)
         .param("ids", ids)
         .param("maxTags", MAX_TAGS)
+        .update();
+  }
+
+  /**
+   * Assigns the categories of [resourceIds] again (ADR 0053), in one transaction; returns how many
+   * of them have at least one. Idempotent: the same records give the same categories.
+   */
+  @Transactional
+  public int refreshCategories(Collection<UUID> resourceIds) {
+    return assignCategories(resourceIds);
+  }
+
+  /**
+   * CATEGORY labels are what the matcher reads in the resource's records now: its title, what its
+   * sources wrote (never an AI-written description), every tag of every record (not only the 20
+   * kept as TAG labels), its type, and the collectors that found it (each record's source and the
+   * finders an accepted candidate keeps in foundBy).
+   */
+  private int assignCategories(Collection<UUID> resourceIds) {
+    if (resourceIds.isEmpty()) {
+      return 0;
+    }
+    UUID[] ids = resourceIds.toArray(UUID[]::new);
+    List<Object[]> labels = new ArrayList<>();
+    Set<UUID> categorized = new HashSet<>();
+    jdbc.sql(
+            """
+            SELECT r.id, r.title, r.type,
+                   (SELECT string_agg(DISTINCT sr.description, E'\\n') FROM source_record sr
+                    WHERE sr.resource_id = r.id AND sr.description IS NOT NULL
+                      AND coalesce(sr.extra ->> 'descriptionOrigin', 'SOURCE_PROVIDED') NOT LIKE 'AI\\_%') AS description,
+                   ARRAY(SELECT DISTINCT t.value FROM source_record sr
+                         CROSS JOIN LATERAL jsonb_array_elements_text(
+                             CASE WHEN jsonb_typeof(sr.extra -> 'tags') = 'array' THEN sr.extra -> 'tags'
+                                  ELSE '[]'::jsonb END) AS t(value)
+                         WHERE sr.resource_id = r.id) AS tags,
+                   ARRAY(SELECT sr.source_id FROM source_record sr WHERE sr.resource_id = r.id
+                         UNION
+                         SELECT f ->> 'sourceId' FROM source_record sr
+                         CROSS JOIN LATERAL jsonb_array_elements(
+                             CASE WHEN jsonb_typeof(sr.extra -> 'foundBy') = 'array' THEN sr.extra -> 'foundBy'
+                                  ELSE '[]'::jsonb END) AS f
+                         WHERE sr.resource_id = r.id AND f ->> 'sourceId' IS NOT NULL) AS finders
+            FROM resource r WHERE r.id = ANY(:ids)
+            """)
+        .param("ids", ids)
+        .query((rs, i) -> {
+          UUID id = rs.getObject("id", UUID.class);
+          List<String> found =
+              categories.match(
+                  new CategoryInput(
+                      rs.getString("title"),
+                      rs.getString("description"),
+                      textArray(rs, "tags"),
+                      enumOrNull(ResourceType.class, rs.getString("type")),
+                      textArray(rs, "finders")));
+          found.forEach(c -> labels.add(new Object[] {id, c}));
+          if (!found.isEmpty()) {
+            categorized.add(id);
+          }
+          return id;
+        })
+        .list();
+    jdbc.sql("DELETE FROM resource_label WHERE resource_id = ANY(:ids) AND kind = 'CATEGORY'")
+        .param("ids", ids)
+        .update();
+    template.batchUpdate(
+        "INSERT INTO resource_label (resource_id, kind, value) VALUES (?, 'CATEGORY', ?)"
+            + " ON CONFLICT DO NOTHING",
+        labels);
+    return categorized.size();
+  }
+
+  private static List<String> textArray(ResultSet rs, String column) throws SQLException {
+    java.sql.Array array = rs.getArray(column);
+    if (array == null) {
+      return List.of();
+    }
+    return Arrays.stream((Object[]) array.getArray())
+        .filter(Objects::nonNull)
+        .map(Object::toString)
+        .toList();
+  }
+
+  /** Up to [limit] resource ids after [after] (null: from the first), in id order: one batch. */
+  public List<UUID> resourceIdsAfter(@Nullable UUID after, int limit) {
+    return jdbc.sql("SELECT id FROM resource WHERE id > :after ORDER BY id LIMIT :limit")
+        .param("after", after == null ? new UUID(0, 0) : after)
+        .param("limit", limit)
+        .query(UUID.class)
+        .list();
+  }
+
+  /**
+   * How far the database migrations went: the number of the last one that ran. A seed (R__) that
+   * changed runs again with a new number, and writes rows the code did not see.
+   */
+  public String lastMigration() {
+    return jdbc.sql(
+            "SELECT coalesce(max(installed_rank), 0) FROM flyway_schema_history WHERE success")
+        .query(Long.class)
+        .single()
+        .toString();
+  }
+
+  /** The value a one-off catalog job left under [name], if it ran. */
+  public Optional<String> marker(String name) {
+    return jdbc.sql("SELECT value FROM catalog_marker WHERE name = :name")
+        .param("name", name)
+        .query(String.class)
+        .optional();
+  }
+
+  /** Records that the job [name] ran with [value]. */
+  public void mark(String name, String value) {
+    jdbc.sql(
+            """
+            INSERT INTO catalog_marker (name, value) VALUES (:name, :value)
+            ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value, updated_at = now()
+            """)
+        .param("name", name)
+        .param("value", value)
         .update();
   }
 
@@ -1191,6 +1327,7 @@ public class ResourceStore {
         Set.of(),
         Set.of(),
         Set.of(),
+        Set.of(),
         List.of());
   }
 
@@ -1215,6 +1352,12 @@ public class ResourceStore {
                 .computeIfAbsent(rs.getString(2), k -> new LinkedHashSet<>())
                 .add(rs.getString(3)))
         .list();
+    // Categories in the configured order, the order people see them in.
+    labels
+        .values()
+        .forEach(l ->
+            l.computeIfPresent(
+                "CATEGORY", (k, v) -> new LinkedHashSet<>(categories.getCatalog().ordered(v))));
     Map<UUID, List<PopularityMetric>> popularity = popularity(ids);
     Set<UUID> pageTitled = pageTitled(ids);
     return rows.stream()

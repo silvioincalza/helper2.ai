@@ -171,6 +171,11 @@ Open items:
   MLH (hackathons), Luma and Meetup (meetups, talks, workshops), Eventbrite. Each needs a terms review for public
   redisplay first, must state the days and the format (online, in person) in a form code can read, and Meetup's
   API needs a paid plan.
+- Categories ([ADR 0053](adr/search/0053-category-filter.md)): label 150 resources in
+  `backend/src/test/resources/eval/categories-labelled.csv` and run `./gradlew evalTest --tests
+  ai.helper2.eval.CategoryEvalTest`; tune the words of the categories with low precision or recall; consider a model
+  only for the categories where code stays below the bar. Then fold use case into category (one facet, not two).
+  Show the health and legal notices on the resource page of a resource in those categories.
 - An admin UI for the curated list.
 - Source requests: anyone can ask for a new source of information (a registry, an e-learning platform, a vendor's
   catalog, a newsletter) from the Sources page. A request names the site and what it lists; it goes to the admin
@@ -282,6 +287,7 @@ Fix an item or accept it; when it no longer holds, remove it.
 - A new or changed resource has no current vector until the indexer reaches it. The 0.65 cutoff comes from one set of measurements. ([ADR 0012](adr/search/0012-vector-search-pgvector.md))
 - “Works with” tag lists are kept by hand; no tag means no flag (not “does not work”); index hits name `helper2-index`; the 20-tag limit can drop a tag. ([ADR 0013](adr/search/0013-works-with-flags.md))
 - Accepted risk (owner, 30 Oct 2026): rotating addresses can drain the monthly Tavily credits while no cap is set; searches then answer from stored sets and other sources. Failing closed loses fresh web results for a Redis outage. ([ADR 0037](adr/search/0037-tavily-store-and-daily-quota.md))
+- Categories ([ADR 0053](adr/search/0053-category-filter.md)) are as good as their words: a tool that uses none of a category's words has no category. Facet counts see only the hits of this query. A changed category filter on a page where the guide was asked asks the guide again (one more AI answer, unless cached). The guide's comparison and explanation subject searches ignore the filter on purpose.
 - The web-search quota is taken before the call, so a call the circuit refuses still counts. A stored hit is read back with two short queries; a set not yet stored is a miss. ([ADR 0037](adr/search/0037-tavily-store-and-daily-quota.md))
 
 ### Scout
