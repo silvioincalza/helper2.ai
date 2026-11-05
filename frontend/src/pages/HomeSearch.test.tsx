@@ -363,10 +363,20 @@ describe('search results', () => {
     expect(months.map((h) => h.textContent)).toEqual([
       'October 2026',
       'July 2023',
-      'Creation date unknown',
+      'Date unknown',
     ]);
     expect(within(timeline).getByText('Oct 17, 2026')).toBeInTheDocument();
-    expect(within(timeline).getByText('Creation date not stated')).toBeInTheDocument();
+    // The undated results are one folded group at the end.
+    const showThem = within(timeline).getByRole('button', { name: 'Show them' });
+    expect(showThem).toHaveAttribute('aria-expanded', 'false');
+    expect(within(timeline).getByText(/^1 result\./)).toBeInTheDocument();
+    expect(within(timeline).queryByText('Creation date not stated')).not.toBeVisible();
+    await userEvent.click(showThem);
+    expect(within(timeline).getByRole('button', { name: 'Hide them' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    expect(within(timeline).getByText('Creation date not stated')).toBeVisible();
     // One line per result, linking to its resource page.
     expect(within(timeline).getByRole('link', { name: /New MCP/ })).toHaveAttribute(
       'href',

@@ -208,8 +208,12 @@
     "label": "Results by creation date",
     "created": "Created",
     "noDate": "Creation date not stated",
-    "unknown": "Creation date unknown",
-    "unknownHint": "No source states when these were created. We do not use the date Helper2.ai found them instead."
+    "unknown": "Date unknown",
+    "unknownCount_one": "{{count}} result.",
+    "unknownCount_other": "{{count}} results.",
+    "unknownHint": "No source states when these were created. We do not use the date Helper2.ai found them instead.",
+    "showThem": "Show them",
+    "hideThem": "Hide them"
   },
   "sort": {
     "label": "Sort by",

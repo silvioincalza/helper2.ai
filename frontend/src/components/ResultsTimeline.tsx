@@ -1,3 +1,4 @@
+import { useId, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import type { ResultCard } from '@/api/types';
@@ -10,13 +11,15 @@ import { creationDate, formatMonth, groupByCreationMonth } from '@/lib/timeline'
 /**
  * Search results on a time axis, newest first, by the date each item was CREATED as its source states it.
  * Helper2's discovery date (when we scanned it) is never used here; items with no stated creation date sit in
- * their own group at the end instead of being placed by a guess. Each month is a heading beside a line of dots; each
+ * one group at the end instead of being placed by a guess, folded: "Date unknown · N · Show them". Each month is a heading beside a line of dots; each
  * result its date, type, host, title and description. The title opens the resource page, which links back here.
  */
 export function ResultsTimeline({ cards }: { cards: ResultCard[] }) {
   const { t, i18n } = useTranslation();
   const location = useLocation();
   const from = `${location.pathname}${location.search}`;
+  const [unknownOpen, setUnknownOpen] = useState(false);
+  const unknownList = useId();
   return (
     <ol className="plain-list results-timeline" aria-label={t('timeline.label')}>
       {groupByCreationMonth(cards).map((group) => {
@@ -30,8 +33,27 @@ export function ResultsTimeline({ cards }: { cards: ResultCard[] }) {
                 t('timeline.unknown')
               )}
             </h3>
-            {!group.month && <p className="muted small">{t('timeline.unknownHint')}</p>}
-            <ol className="plain-list tl-items" aria-labelledby={id}>
+            {!group.month && (
+              <p className="tl-unknown">
+                {t('timeline.unknownCount', { count: group.cards.length })}{' '}
+                {t('timeline.unknownHint')}{' '}
+                <button
+                  type="button"
+                  className="v4-text-btn"
+                  aria-expanded={unknownOpen}
+                  aria-controls={unknownList}
+                  onClick={() => setUnknownOpen((o) => !o)}
+                >
+                  {t(unknownOpen ? 'timeline.hideThem' : 'timeline.showThem')}
+                </button>
+              </p>
+            )}
+            <ol
+              id={group.month ? undefined : unknownList}
+              hidden={!group.month && !unknownOpen}
+              className="plain-list tl-items"
+              aria-labelledby={id}
+            >
               {group.cards.map((card) => {
                 const created = creationDate(card);
                 const disputed = card.timeline.published.status === 'CONFLICTING';

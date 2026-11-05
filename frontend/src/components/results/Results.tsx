@@ -177,9 +177,7 @@ function ResultsBody({
   const added = focusPage === null ? 0 : more.countOf(focusPage);
   useEffect(() => {
     if (!firstNew) return;
-    listRef.current
-      ?.querySelector<HTMLElement>(`[data-id="${CSS.escape(firstNew)}"] a`)
-      ?.focus();
+    listRef.current?.querySelector<HTMLElement>(`[data-id="${CSS.escape(firstNew)}"] a`)?.focus();
     if (announce.current) announce.current.textContent = t('results.moreLoaded', { count: added });
   }, [firstNew, added, t]);
   const showMore = () => {
