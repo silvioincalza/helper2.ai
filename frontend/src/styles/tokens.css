@@ -1,6 +1,6 @@
 /*
  * Helper2.ai design system: warm paper, deep indigo ink, one saffron accent (spiritual editorial colour);
- * Space Grotesk for text and titles; the system monospace for code.
+ * Space Grotesk for text and titles on the pages still on version 3; the system monospace for code.
  * Light on :root, dark under [data-theme="dark"] (public/theme.js sets it from the saved choice; light is the default). Saffron is a fill, never small text on paper (2.9:1):
  * text on it is indigo, and saffron-coloured text uses --accent-ink.
  */
@@ -38,7 +38,6 @@
   --console: #1b1c3f;
   --status-ok: #2f8f5b;
   --status-warn: #c98a0b;
-  --header-bg: rgba(255, 253, 248, 0.94);
 
   /* Semantic tokens of design system v3 (tokens.json, `alias`): each follows its base token, in both themes. */
   --proof-bg: var(--quote-bg);
@@ -91,8 +90,6 @@
   --target-min: 44px;
   --box-height: 56px;
   --maxw: 1120px;
-  /* The sticky header row, so a jump to an anchor (#news) lands below it, not under it. */
-  --header-height: 64px;
   --motion: 160ms;
 }
 
@@ -129,11 +126,105 @@
   --console: #0f1024;
   --status-ok: #86efac;
   --status-warn: #fcd34d;
-  --header-bg: rgba(29, 30, 61, 0.94);
 }
 
 @media (prefers-reduced-motion: reduce) {
   :root {
     --motion: 0ms;
+  }
+}
+
+/*
+ * Design system version 4 (ADR 0042, docs/design/system/tokens.json), next to version 3 above. Only the parts that
+ * have moved use them: the header, the footer and Home. The names carry `--v4-`, so a v3 page never picks one up by
+ * accident. The terminal tokens (term-*) are left out: New this week and Coming up are tables and tabs, not terminals.
+ * When the last page has moved, the v3 tokens go and these lose their prefix.
+ */
+:root {
+  --v4-bg: #f7f2e9;
+  --v4-surface: #fffdf8;
+  --v4-surface-tint: #efe9dd;
+  --v4-quote-bg: #fbefe2;
+  --v4-ink: #1b1c3f;
+  --v4-ink-2: #35344f;
+  --v4-muted: #4f4b63;
+  --v4-border: #e7dfd0;
+  --v4-border-strong: #8f8470;
+  --v4-divider: #efe9dd;
+  --v4-accent: #e06a1d;
+  --v4-on-accent: #1b1c3f;
+  --v4-accent-ink: #a8420a;
+  --v4-accent-deep: #2d2e60;
+  --v4-focus: #1b1c3f;
+  --v4-selected: #1b1c3f;
+  --v4-on-selected: #ffffff;
+  --v4-checked-bg: #e3f3ee;
+  --v4-checked-ink: #0f4d3c;
+  --v4-not-stated: #7a3e00;
+  --v4-danger: #b42318;
+  --v4-status-ok: #2f8f5b;
+  --v4-status-warn: #c98a0b;
+  --v4-ring: #d3c7b2;
+  --v4-mark: #fde68a;
+  --v4-status-ok-ink: #2f6b3a;
+  --v4-status-warn-ink: #8a5a00;
+  --v4-header-bg: rgba(247, 242, 233, 0.94);
+
+  /* Geist Mono for the logo, headings, controls, labels, meta lines and the lists; Geist for running text. */
+  --v4-font-mono:
+    'Geist Mono Variable', 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --v4-font-body:
+    'Geist Variable', 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --v4-shadow-pinned: 0 8px 20px rgba(27, 28, 63, 0.12);
+  --v4-shadow-overlay: 0 16px 48px rgba(27, 28, 63, 0.18);
+  --v4-target-min: 44px;
+  --v4-box-height: 60px;
+  --v4-header-height: 74px;
+  --v4-content-wide: 1040px;
+  --v4-fold: 450ms;
+}
+
+:root[data-theme='dark'] {
+  --v4-bg: #15162f;
+  --v4-surface: #1d1e3d;
+  --v4-surface-tint: #26274f;
+  --v4-quote-bg: #2a2440;
+  --v4-ink: #f3f1ea;
+  --v4-ink-2: #d4d2e4;
+  --v4-muted: #aeacc6;
+  --v4-border: #2f3058;
+  --v4-border-strong: #6f71a8;
+  --v4-divider: #26274f;
+  --v4-accent: #f08a42;
+  --v4-on-accent: #15162f;
+  --v4-accent-ink: #f4a46a;
+  --v4-accent-deep: #c9cae3;
+  --v4-focus: #f3f1ea;
+  --v4-selected: #f3f1ea;
+  --v4-on-selected: #15162f;
+  --v4-checked-bg: #123528;
+  --v4-checked-ink: #86efac;
+  --v4-not-stated: #fbbf77;
+  --v4-danger: #ff8f8f;
+  --v4-status-ok: #86efac;
+  --v4-status-warn: #fcd34d;
+  --v4-ring: #2f3058;
+  --v4-mark: #6b5310;
+  --v4-status-ok-ink: #86efac;
+  --v4-status-warn-ink: #fcd34d;
+  --v4-header-bg: rgba(21, 22, 47, 0.94);
+}
+
+@media (max-width: 720px) {
+  :root {
+    --v4-box-height: 50px;
+    --v4-header-height: 65px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --v4-fold: 0ms;
   }
 }

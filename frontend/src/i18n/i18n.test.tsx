@@ -11,7 +11,9 @@ describe('i18n', () => {
     expect(screen.queryByLabelText('Language')).not.toBeInTheDocument();
     expect(localStorage.getItem('h2.lang')).toBeNull();
     expect(document.documentElement.lang).toBe('en');
-    expect(screen.getByRole('heading', { name: /Find the right AI tool/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: /The metasearch for the AI ecosystem/ }),
+    ).toBeInTheDocument();
   });
 
   it('falls back to the raw slug for unknown use cases', async () => {

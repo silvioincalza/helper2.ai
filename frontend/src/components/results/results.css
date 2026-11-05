@@ -376,7 +376,13 @@ details[open] > .h2-fold-toggle .icon {
   width: 90%;
   border-radius: 6px;
   background: var(--surface-tint);
-  animation: pulse 1.4s ease-in-out infinite;
+  /* Three pulses (4.2 s), then still (ADR 0042, decision 6). */
+  animation: h2-pulse 1.4s ease-in-out 3;
+}
+@keyframes h2-pulse {
+  50% {
+    opacity: 0.5;
+  }
 }
 .h2-skeleton__line.is-short {
   width: 30%;
@@ -419,4 +425,8 @@ details[open] > .h2-fold-toggle .icon {
 }
 .h2-results__guide .h2-web-left {
   margin: 0;
+}
+/* AI answers left today (ADR 0042): the same quiet line, there from the first render. */
+.h2-ai-left {
+  margin: var(--space-1) 0 0;
 }

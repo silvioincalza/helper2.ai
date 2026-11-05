@@ -1,8 +1,9 @@
-# Sequence: the redesign (design system v4) on a phone: Home with the radar and terminals, a scroll that folds the
-# title while the box stays pinned, a question that starts the guide on its own, and a short search that waits for
-# Ask the guide.
-# Source of truth: docs/adr/frontend/0042-redesign-design-system-v4.md, docs/design/system/README.md,
-#   docs/design/redesign/*.dc.html. The code follows page by page (decision 8).
+# Sequence: the redesign (design system v4) on a phone: Home with the radar and the two lists as tabs, a scroll that
+# folds the title while the box stays pinned, a question that starts the guide on its own (with today's AI answers in
+# sight), and a short search that waits for Ask the guide.
+# Code: frontend/src/pages/Home.tsx, components/home/HomeLists.tsx, homeFeeds.ts, components/guide/AiAnswersLeft.tsx,
+#   lib/v4Fields.ts. Results are still v3 (one column comes next, see the roadmap).
+# Source of truth: docs/adr/frontend/0042-redesign-design-system-v4.md, docs/design/system/README.md.
 # Render: cd docs/diagrams && d2 fmt sequence-0042-redesign.d2 && d2 sequence-0042-redesign.d2 sequence-0042-redesign.svg
 
 ...@style
@@ -10,17 +11,17 @@
 shape: sequence_diagram
 
 user: User {class: person}
-home: "Home\n(title, radar, pinned box,\nterminals)" {class: app}
-api: "GET /api/v1/sources,\n/recent, /events/upcoming" {class: ext}
+home: "Home\n(title, radar, pinned box,\nlists as tabs)" {class: app}
+api: "GET /api/v1/sources, /me,\n/recent, /events/upcoming" {class: ext}
 page: "Results\n(one column)" {class: app}
 search: "GET /api/v1/search" {class: ext}
 guide: "POST /api/v1/guide/stream\n(SSE)" {class: ext}
 
 landing: Home {
   user -> home: "/"
-  home -> api: "sources, news, events"
-  api -> home: "12 sources (newThisWeek),\nrows, totals"
-  home -> user: "title, radar dots, box,\nNew this week, Coming up" {class: hot}
+  home -> api: "sources, me, news, events?days=90 (once each)"
+  api -> home: "sources (newThisWeek), limits,\nrows, totals"
+  home -> user: "N AI sources, title, radar dots, box,\n> new this week N | coming up N" {class: hot}
   user -> home: "scrolls 24 px"
   home -> user: "title folds away,\nthe box stays pinned"
 }
@@ -32,7 +33,7 @@ question: A question {
   page -> user: "results at once; the guide's\nsteps where the picks sit"
   page -> guide: "4+ words: ask on its own" {class: hot}
   guide -> page: "picks: reason, quote, checks"
-  page -> user: "Recommended for you:\nAI-written reason labelled,\nquote checked word for word"
+  page -> user: "picks: AI-written reason labelled,\nquote checked word for word;\n2 of 3 AI answers left today"
 }
 
 short: A few words {

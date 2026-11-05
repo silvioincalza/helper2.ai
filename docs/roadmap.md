@@ -162,24 +162,34 @@ Open items:
   `typescript-eslint` 8.72 needs TypeScript <6.1 and `eslint-plugin-jsx-a11y` 6.10 needs ESLint <=9. Remove the
   ignore rules once both plugins support the new majors.
 
-- **Redesign, version 4 of the design system** ([design/system](design/system/README.md), boards in
-  [design/redesign](design/redesign)): build it page by page. `newThisWeek` on GET /sources, `limits` on GET /me and
-  `total` on the recent and upcoming responses are in the API. The design still needs these API features:
+- **Redesign, version 4 of the design system** ([0042](adr/frontend/0042-redesign-design-system-v4.md),
+  [design/system](design/system/README.md), boards in [design/redesign](design/redesign)). The fonts, the v4 tokens,
+  the header, the footer and Home are built. Still to do, one pull request each:
+  - **Results in v4:** one column, no preview panel. A row opens the resource page, and Back keeps the scroll
+    position (#151). Rows carry what the preview showed: type, host, date, guide pick, description, source. Guide
+    picks merged into the list; the partial-results banner becomes one quiet line in the count row; filters as a
+    drawer on phones.
+  - **The resource page in v4:** one primary button; "Guide me" becomes "Set it up", only for installable types.
+  - **The other pages** (Saved, Sources, Mission, Privacy, Terms, Account, sign-in, 404, admin), one by one.
+  - **Remove version 3** once the last page has moved: the v3 tokens and components, Space Grotesk, and the `--v4-`
+    prefix.
+  - **API fields:** `newThisWeek` on GET /sources, `limits` on GET /me and `total` on the recent and upcoming responses
+    are in the API and on Home. Still to use them: the account panel and the Account page (`limits`), the Sources
+    table (`newThisWeek`).
+  - **GET /api/v1/policy:** retention periods, daily limits and guide candidates from the typed config records, so
+    the text pages show them from data, not typed in. After config PRs 5-8.
+  - **Cost guard:** a "no pick" answer and a cached answer spend no AI answer
+    ([0017](adr/guide/0017-guide-cost-guard.md)). After config PRs 5-8. Then, with a week of data, check the share of
+    4+-word searches that are names and the share of "no pick" answers, and revisit the 4-word rule.
   - An `unknown` count per facet and an updated-date facet on the search response (Filters panel).
   - Sign-in with Google (phase 1). Passkey, email link and password (phase 2) need their own ADR, a threat model and
     the Privacy page first.
+  - The initial JavaScript is at 165.0 of 165 KiB gzip (the radar and the phone tabs already load on demand): the
+    next page that moves must make room first, for example by loading Results on demand.
 - **Frontend design** ([0040](adr/frontend/0040-frontend-design.md)) is done and on staging. Prod gets it with the next release:
   cut one once staging looks right.
 - Tracking cookies are planned. Before the first one: consent banner, cookie notice, Privacy page and record of
   processing, all in the same pull request, wording checked by a lawyer.
-
-- **Home examples** ([0049](adr/search/0049-home-examples.md)), next steps in this order:
-  - The page reads the pool from `GET /home/examples` at start, with the built-in list when it fails or does not
-    answer in 800 ms; the row keeps its height while it waits.
-  - The overview counts the examples the check hides, with a link to `/admin/examples?outcome=FAIL`.
-  - A lawyer confirms the Art. 50 points of [0049](adr/search/0049-home-examples.md) for accepted AI drafts; until then
-    they are labelled and marked like any AI-written text.
-  - Check now on one example, and an Italian example once one passes the check.
 
 ## 7. Architecture
 

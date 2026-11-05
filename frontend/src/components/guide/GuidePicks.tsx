@@ -14,6 +14,7 @@ import { guidePicks } from '@/lib/selection';
 import { GuideAnswer, noPickReason } from './GuideAnswer';
 import { progressOf, readingParts } from './reading';
 import type { Refine } from './types';
+import { AiAnswersLeft } from './AiAnswersLeft';
 import { WebSearchesLeft } from './WebSearchesLeft';
 import { resourcePath } from '@/lib/searchState';
 
@@ -89,6 +90,7 @@ export function GuidePicks({
             </p>
           )
         : !busy && <WebSearchesLeft feature="guide" value={answer?.webSearches} />}
+      <AiAnswersLeft answer={answer} />
       {error !== null && (
         <StatePanel
           tone="error"

@@ -114,6 +114,12 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
   const action = isQuestion(text) ? 'ask' : 'search';
   const submit = (e: FormEvent) => {
     e.preventDefault();
+    // The button is never disabled (a disabled button cannot be found or explained by keyboard and screen-reader
+    // users): with nothing to send it puts the cursor in the box.
+    if (cannotSubmit) {
+      field.current?.focus();
+      return;
+    }
     if (action === 'ask') ask();
     else runSearch();
   };
@@ -248,7 +254,7 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
         )}
         {/* One button whose job follows the text: a few words search, a sentence asks. A new question replaces one
             still being answered. */}
-        <button type="submit" className="btn btn-primary" disabled={cannotSubmit}>
+        <button type="submit" className="btn btn-primary">
           {asking ? t('guide.ask') : t('search.submit')}
           <kbd className="enter-key" aria-hidden="true">
             ↵

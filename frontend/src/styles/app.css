@@ -129,167 +129,6 @@ code {
   top: var(--space-3);
 }
 
-/* header / footer */
-.site-header {
-  border-bottom: 1px solid var(--border);
-  background: var(--header-bg);
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  backdrop-filter: blur(6px);
-}
-.header-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  flex-wrap: wrap;
-  min-height: 60px;
-  padding-top: var(--space-3);
-  padding-bottom: var(--space-2);
-}
-.header-box {
-  padding-bottom: var(--space-3);
-}
-.logo-link {
-  text-decoration: none;
-  color: var(--text);
-  border-radius: var(--radius-md);
-}
-.logo {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-4);
-}
-.logo-text {
-  display: inline-flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.logo-word {
-  font-family: var(--font-display);
-  font-size: 1.85rem;
-  line-height: 1;
-}
-.logo-mark {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  background: var(--accent);
-  color: var(--on-accent);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-}
-.main-nav {
-  flex: 1;
-}
-.main-nav ul {
-  display: flex;
-  gap: var(--space-1);
-  flex-wrap: wrap;
-}
-.main-nav a {
-  color: var(--text-muted);
-  text-decoration: none;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-sm);
-  display: inline-block;
-  border-bottom: 2px solid transparent;
-}
-.main-nav a:hover {
-  color: var(--text);
-}
-.main-nav a.active {
-  color: var(--text);
-  border-bottom-color: var(--cyan);
-}
-.header-tools {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  flex-wrap: wrap;
-  order: 4;
-}
-.auth {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-/* Tablet widths: from 721 px the menu stays on the logo's row. Tighter gaps, a long account name ends in "…", and up to 900 px
-   the tagline under the logo hides (the logo link keeps its name). */
-@media (min-width: 521px) and (max-width: 1024px) {
-  .header-row,
-  .header-tools,
-  .auth {
-    gap: var(--space-2);
-  }
-  .logo {
-    gap: var(--space-3);
-  }
-  .main-nav a {
-    padding-inline: var(--space-2);
-  }
-  .auth a {
-    max-width: 9rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-}
-/* The menu button and the panel (Header): from 721 px the panel is the header row itself and the button is hidden;
-   up to 720 px the logo, theme and menu button share one row and the pages and sign-in open below. */
-.header-quick .menu-toggle {
-  display: none;
-}
-.header-menu {
-  display: contents;
-}
-.header-quick {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  order: 3;
-  margin-left: auto;
-}
-@media (max-width: 720px) {
-  .header-quick .menu-toggle {
-    display: inline-flex;
-  }
-  .header-quick {
-    order: 0;
-  }
-  .header-menu {
-    display: none;
-    order: 4;
-    flex-basis: 100%;
-    flex-direction: column;
-    gap: var(--space-3);
-    border-top: 1px solid var(--border);
-    padding: var(--space-3) 0;
-  }
-  .header-menu.is-open {
-    display: flex;
-  }
-  .header-menu .main-nav ul {
-    flex-direction: column;
-    gap: 0;
-  }
-  .header-menu .main-nav a {
-    display: block;
-    padding: var(--space-3) var(--space-2);
-    min-height: var(--target-min);
-  }
-  .header-menu .main-nav a.active {
-    border-bottom-color: transparent;
-    border-left: 3px solid var(--cyan);
-  }
-  .header-menu .header-tools > .btn,
-  .header-menu .auth {
-    width: 100%;
-    justify-content: center;
-  }
-}
 .menu {
   position: relative;
 }
@@ -312,73 +151,6 @@ code {
   display: block;
   padding: var(--space-2);
 }
-/* At the end of the page (the bottom of the window on a short page), always under the content, with room above it. */
-.site-footer {
-  margin-top: var(--space-5);
-  border-top: 1px solid var(--border);
-  padding: var(--space-5) 0 var(--space-4);
-  color: var(--text-muted);
-  background: var(--surface-1);
-}
-.footer-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
-  gap: var(--space-5) var(--space-6);
-  align-items: start;
-}
-.footer-brand {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-3);
-  max-width: 28rem;
-}
-.footer-coverage {
-  margin: 0;
-  line-height: 1.5;
-}
-.footer-h {
-  margin: 0 0 var(--space-3);
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-2);
-}
-.footer-col ul {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-.site-footer a:not(.logo-link) {
-  color: var(--text-muted);
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  text-decoration: none;
-  text-underline-offset: 3px;
-}
-.site-footer a:not(.logo-link):hover,
-.site-footer a:not(.logo-link):focus-visible {
-  color: var(--cyan);
-  text-decoration: underline;
-}
-/* The Sources link sits inside a sentence, so it keeps its underline there. */
-.site-footer .footer-coverage a {
-  display: inline;
-  text-decoration: underline;
-}
-.footer-bottom {
-  margin-top: var(--space-5);
-  padding-top: var(--space-3);
-  border-top: 1px solid var(--divider);
-}
-.footer-bottom .theme-toggle {
-  margin-left: var(--space-2);
-  vertical-align: middle;
-}
-
 /* text pages (mission, privacy) */
 .text-page {
   max-width: 68ch;
@@ -803,7 +575,8 @@ textarea {
   border-bottom: 1px solid var(--border);
   background: linear-gradient(90deg, var(--surface-1), var(--surface-2), var(--surface-1));
   background-size: 200% 100%;
-  animation: shimmer 1.6s linear infinite;
+  /* Three passes (4.8 s), then still: nothing moves on its own for more than 5 s (ADR 0042, decision 6). */
+  animation: shimmer 1.6s linear 3;
 }
 .btn-icon {
   min-width: 2.75rem;
@@ -1031,16 +804,6 @@ tbody th {
     padding: var(--space-3);
     justify-content: center;
   }
-  /* Phone: the one box stays compact and scrolls away instead of covering half the screen. */
-  .site-header {
-    position: static;
-  }
-  :root {
-    --header-height: 0px;
-  }
-  .header-row {
-    gap: var(--space-2) var(--space-4);
-  }
   .searchbox.large {
     flex-flow: row wrap;
   }
@@ -1158,21 +921,11 @@ input[type='radio'] {
   gap: var(--space-2);
 }
 
-/* ===== Redesign 2026-10: warm paper, saffron accent, Space Grotesk headings ===== */
+/* ===== Redesign 2026-10 (design v3): warm paper, saffron accent, Space Grotesk headings on the pages still on v3 ===== */
 h1,
 h2 {
   font-weight: 500;
   letter-spacing: -0.03em;
-}
-.logo-word {
-  font-weight: 500;
-  letter-spacing: -0.02em;
-}
-.logo-word {
-  font-size: 1.6rem;
-}
-.main-nav a.active {
-  border-bottom-color: var(--accent);
 }
 
 /* the one box */
@@ -1357,13 +1110,6 @@ h2 {
   .searchbox.large .btn {
     flex-basis: 100%;
     justify-content: center;
-  }
-  /* On a phone the brand takes the full width; the two link columns sit side by side under it. */
-  .footer-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-  .footer-brand {
-    grid-column: 1 / -1;
   }
 }
 input[type='search']::-webkit-search-cancel-button {

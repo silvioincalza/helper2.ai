@@ -31,13 +31,14 @@
     "mission": "Mission",
     "privacy": "Privacy",
     "theme": {
-      "label": "Theme: {{current}}. Change to {{next}}",
-      "light": "light",
-      "dark": "dark"
+      "switchTo": "{{theme}} theme",
+      "light": "Light",
+      "dark": "Dark"
     },
     "terms": "Terms",
     "account": "Your account",
-    "signInFailed": "Sign-in did not work. Please try again."
+    "signInFailed": "Sign-in did not work. Please try again.",
+    "tagline": "AI on your radar"
   },
   "footer": {
     "coverage": "Helper2.ai searches the sources listed on the Sources page, not the whole web.",
@@ -56,9 +57,10 @@
     "noAds": "No ads."
   },
   "home": {
-    "title": "Find the right AI tool for your task.",
-    "lede": "Search models, apps, MCP servers and papers from {{count}} sources at once. Ask in plain words and get a recommendation, with a quote that proves it.",
-    "ledeNoCount": "Search models, apps, MCP servers and papers from many sources at once. Ask in plain words and get a recommendation, with a quote that proves it.",
+    "eyebrow": "One search · {{count}} AI sources",
+    "title": "The metasearch for the AI ecosystem.",
+    "lede": "Models, apps, agents, MCP servers and papers from Hugging Face, GitHub, arXiv and more, in one search. Ask in plain words and get a recommendation with a quote that proves it.",
+    "hint": "A few words search. A question of {{count}} words or more also gets the guide's picks.",
     "suggestGuide": "Sounds like a question — ask the guide: “{{q}}” →",
     "examples": "Try:",
     "example": {
@@ -912,14 +914,22 @@
     }
   },
   "radar": {
-    "title": "What’s new",
-    "lede": "The newest resources in the Helper2 index from the last 7 days, by the date each source states. Nothing is called live.",
-    "published": "Published",
-    "updated": "Updated",
-    "firstSeen": "First seen",
-    "noDate": "Date unknown",
     "empty": "Nothing with a stated publication date in the last 7 days.",
-    "error": "Could not load what’s new right now."
+    "error": "Could not load what’s new right now.",
+    "dot": {
+      "failed": "failed",
+      "timedOut": "timed out",
+      "rateLimited": "rate limited"
+    },
+    "legend": {
+      "each": "Each dot is a source.",
+      "live": "live, answered",
+      "index": "from our index",
+      "warn": "slow or limited",
+      "failed": "failed",
+      "size": "bigger = more new this week",
+      "distance": "closer = faster (live) or fresher (index)"
+    }
   },
   "textPage": {
     "onThisPage": "On this page"
@@ -1231,18 +1241,13 @@
   },
   "board": {
     "news": {
-      "title": "New this week",
-      "sub": "Newest first",
-      "list": "New resources"
+      "title": "New this week"
     },
     "events": {
-      "title": "Coming up",
-      "sub": "Next 3 months",
-      "list": "Next events"
+      "title": "Coming up"
     },
     "countdown": {
       "onNow": "On now",
-      "onNowUntil": "On now · until {{date}}",
       "today": "Today",
       "tomorrow": "Tomorrow",
       "days_one": "In {{count}} day",
@@ -1251,9 +1256,25 @@
       "weeks_other": "In {{count}} weeks",
       "months_one": "In {{count}} month",
       "months_other": "In {{count}} months"
+    }
+  },
+  "lists": {
+    "tabs": "New this week and Coming up",
+    "col": {
+      "date": "Date",
+      "type": "Type",
+      "title": "Title",
+      "source": "Source",
+      "when": "When",
+      "event": "Event",
+      "where": "Where"
     },
-    "showAll": "Show all {{count}}",
-    "showFewer": "Show fewer"
+    "showAll": "show all {{count}}",
+    "showFewer": "show fewer",
+    "onNow": "on now",
+    "until": "until {{date}}",
+    "firstSeen": "seen {{date}}",
+    "noDate": "date unknown"
   },
   "webSearches": {
     "feature": {
@@ -1267,5 +1288,9 @@
     "backToResults": "Back to results",
     "sourceText": "From the source",
     "checkedNote": "Highlighted: the sentence the guide checked against this source."
+  },
+  "quota": {
+    "left": "{{remaining}} of {{limit}} AI answers left today",
+    "none": "No AI answers left today. They come back at {{time}}; search still works."
   }
 }

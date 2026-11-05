@@ -1,7 +1,17 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axeViolations } from '@/test/a11y';
-import { ADMIN, HEALTH_SOURCES, USER, makeDetail, makeSearch, makeStatus } from '@/test/fixtures';
+import {
+  ADMIN,
+  HEALTH_SOURCES,
+  USER,
+  makeCard,
+  makeDetail,
+  makeRecent,
+  makeSearch,
+  makeStatus,
+} from '@/test/fixtures';
+import { mockViewport } from '@/test/viewport';
 import { mockApi } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
 import { clearApiCache } from '@/hooks/useApi';
@@ -21,7 +31,61 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
     mockApi();
     const { container } = renderApp('/');
     await screen.findByRole('banner');
+    await settle();
     expect(await axeViolations(container)).toEqual([]);
+  });
+
+  describe('home in design v4, with the lists loaded', () => {
+    const lists = {
+      'GET /recent': () => makeRecent(),
+      'GET /events/upcoming': () => ({
+        generatedAt: '2026-11-05T09:00:00Z',
+        items: [
+          makeCard({
+            id: '22222222-2222-5222-8222-222222222222',
+            title: 'AI Meetup',
+            type: 'EVENT',
+            location: 'Zurich',
+            eventKind: 'MEETUP',
+            timeline: {
+              ...makeCard().timeline,
+              eventStart: {
+                value: '2026-11-07T00:00:00Z',
+                precision: 'DAY',
+                status: 'KNOWN',
+                sourceId: 'x',
+              },
+              eventEnd: null,
+            },
+          }),
+        ],
+      }),
+    };
+    afterEach(() => {
+      delete document.documentElement.dataset.theme;
+    });
+
+    for (const theme of ['light', 'dark'] as const) {
+      it(`wide screen, ${theme} theme: the two tables`, async () => {
+        document.documentElement.dataset.theme = theme;
+        mockApi(lists);
+        const { container } = renderApp('/');
+        await screen.findByRole('link', { name: 'AI Meetup' });
+        await settle();
+        expect(await axeViolations(container)).toEqual([]);
+      });
+
+      it(`phone, ${theme} theme: the tabs and the open menu`, async () => {
+        document.documentElement.dataset.theme = theme;
+        mockViewport(390);
+        mockApi(lists);
+        const { container } = renderApp('/');
+        await screen.findByRole('link', { name: 'Fresh MCP server' });
+        await userEvent.click(screen.getByRole('button', { name: 'Menu' }));
+        await settle();
+        expect(await axeViolations(container)).toEqual([]);
+      });
+    }
   });
 
   it('search results with the sources grid and the partial banner', async () => {

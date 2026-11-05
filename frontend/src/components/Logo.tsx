@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 /** The radar mark: a sweep that has locked onto a found blip, an AI spark, on an accent tile. Strokes follow --on-accent, so it works in both themes. */
 function LogoMark() {
   return (
@@ -27,12 +29,15 @@ function LogoMark() {
   );
 }
 
+/** The mark, the wordmark and the tagline "AI on your radar" (design system v4, Logo). The tagline hides below 420 px. */
 export function Logo() {
+  const { t } = useTranslation();
   return (
     <span className="logo">
       <LogoMark />
       <span className="logo-text">
         <span className="logo-word">helper2.ai</span>
+        <span className="logo-tag">{t('nav.tagline')}</span>
       </span>
     </span>
   );
