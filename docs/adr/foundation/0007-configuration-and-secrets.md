@@ -48,8 +48,7 @@ or in GitHub settings, and the deploy must not need a person to copy them.
    records: one per module, or per clear concern, in that module's `config` package, under
    `helper2.<module>`. The open `platform` module uses concern prefixes such as `helper2.llm`.
    `helper2.retention` is shared, with one record per module for its own periods. No `@Value`, no
-   `Environment.getProperty`: an architecture test fails the build on either. It starts with a frozen
-   list of the classes that still use `@Value`; the list shrinks module by module and then goes away.
+   `Environment.getProperty`: an architecture test (`ConfigurationAccessTest`) fails the build on either.
    Records are `@Validated`, use `Duration`, `DataSize`, `URI` and lists, and mask secrets in `toString`
    (`Secrets.mask`). Spring binds and validates them before the context is ready, so a bad value stops
    startup with its name. Defaults live in one place, `application.yaml`, next to the `H2_` name that
