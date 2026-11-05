@@ -24,7 +24,7 @@ export const THEMES = {
 export type Tokens = Record<string, string>;
 
 /** A token's colour, following var() references. */
-export function resolve(tokens: Tokens, name: string): string {
+function resolve(tokens: Tokens, name: string): string {
   const value = tokens[name] ?? '';
   const ref = /^var\((--[\w-]+)\)$/.exec(value);
   return ref ? resolve(tokens, ref[1]!) : value;
@@ -39,7 +39,7 @@ function luminance(hex: string): number {
 }
 
 /** The contrast ratio of two #rrggbb colours. */
-export function contrast(a: string, b: string): number {
+function contrast(a: string, b: string): number {
   const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
   return (hi! + 0.05) / (lo! + 0.05);
 }
