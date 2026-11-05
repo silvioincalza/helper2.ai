@@ -29,6 +29,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -551,13 +553,21 @@ public class TavilyDiscoveryCollector implements Collector {
   }
 
   private Candidate candidate(Found f) {
+    Set<String> tags = candidateTags(f.foundBy.stream().map(Category::tag).toList(), f.tags);
     return new Candidate(
-        f.url,
-        f.title,
-        TavilySource.snippet(f.content),
-        String.join(", ", f.tags),
-        f.type(),
-        Set.copyOf(f.tags));
+        f.url, f.title, TavilySource.snippet(f.content), String.join(", ", tags), f.type(), tags);
+  }
+
+  /**
+   * At most {@link Candidate#MAX_TAGS} of a product's tags, so an admin can accept every candidate:
+   * the categories whose search found it first, in the configured order, then the ones whose words
+   * it has. Sorted.
+   */
+  static Set<String> candidateTags(List<String> foundBy, Set<String> all) {
+    return Stream.concat(foundBy.stream(), all.stream())
+        .distinct()
+        .limit(Candidate.MAX_TAGS)
+        .collect(Collectors.toCollection(TreeSet::new));
   }
 
   /**

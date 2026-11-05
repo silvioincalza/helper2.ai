@@ -18,7 +18,10 @@ import io.micrometer.observation.ObservationRegistry;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -158,6 +161,39 @@ class TavilyDiscoveryCollectorTest {
     assertThat(byUrl.get("https://openwebui.com").getPlatform()).isEqualTo("local-ai, self-hosted");
     assertThat(batch.getHits().getFirst().getTags())
         .containsExactlyInAnyOrder("self-hosted", "local-ai");
+  }
+
+  @Test
+  void aProductInMoreCategoriesThanACandidateCanHaveKeepsAsManyAsCanBeAccepted() {
+    server.route("/search", FixtureServer.Reply.ok(RESULTS));
+    List<String> categories =
+        IntStream.rangeClosed(1, Candidate.MAX_TAGS + 3)
+            .mapToObj(i -> "PRODUCT|category-" + i + "|self-hosted AI app " + i + "|self-hosted")
+            .toList();
+
+    CollectedBatch batch = collector("tvly-test", categories).collect(null, null, 1000);
+
+    // Every search found every result: the first categories, in the configured order, are kept.
+    assertThat(batch.getCandidates())
+        .allSatisfy(c -> assertThat(c.getTags()).hasSize(Candidate.MAX_TAGS));
+    assertThat(batch.getCandidates().getFirst().getTags())
+        .contains("category-1", "category-12")
+        .doesNotContain("category-13", "category-15");
+  }
+
+  @Test
+  void theCategoriesWhoseSearchFoundAProductComeBeforeTheOnesWhoseWordsItHas() {
+    List<String> words =
+        IntStream.rangeClosed(1, Candidate.MAX_TAGS)
+            .mapToObj(i -> String.format("words-%02d", i))
+            .toList();
+    Set<String> all = new TreeSet<>(words);
+    all.add("z-found");
+
+    assertThat(TavilyDiscoveryCollector.candidateTags(List.of("z-found"), all))
+        .hasSize(Candidate.MAX_TAGS)
+        .contains("z-found", "words-01")
+        .doesNotContain("words-12");
   }
 
   @Test

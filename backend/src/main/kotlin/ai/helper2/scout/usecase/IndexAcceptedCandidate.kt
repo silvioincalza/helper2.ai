@@ -1,5 +1,6 @@
 package ai.helper2.scout.usecase
 
+import ai.helper2.scout.Candidate
 import ai.helper2.scout.CatalogIndex
 import ai.helper2.scout.Collector
 import ai.helper2.search.ResultMerger
@@ -58,7 +59,6 @@ class IndexAcceptedCandidate(
   private companion object {
     const val MAX_TITLE = 300
     const val MAX_SNIPPET = 1000
-    const val MAX_TAGS = 12
     val TAG = Regex("[a-z0-9]+(-[a-z0-9]+)*")
     val TYPES =
       setOf(
@@ -107,7 +107,7 @@ class IndexAcceptedCandidate(
     if (title.isEmpty() || title.length > MAX_TITLE)
       throw InvalidCandidate("title missing or too long")
     if (c.type !in TYPES) throw InvalidCandidate("type ${c.type} cannot be a candidate")
-    if (c.tags.size > MAX_TAGS || c.tags.any { it.length > 40 || !TAG.matches(it) }) {
+    if (c.tags.size > Candidate.MAX_TAGS || c.tags.any { it.length > 40 || !TAG.matches(it) }) {
       throw InvalidCandidate("unreadable tags")
     }
     return SourceHit(
