@@ -41,7 +41,7 @@ app:
       search: 1000
       guide: 1000
     guideQuestions: 1000
-    webSearchCredits: "200"
+    webSearchCredits: "150"
     guideModelCalls: 150
   # The nightly guide evaluation measures fresh answers: a guide answer expires after one second (ADR 0030).
   guideCacheTtl: PT1S

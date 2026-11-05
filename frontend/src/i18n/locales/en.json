@@ -567,7 +567,8 @@
       "RELATIONSHIP_CANDIDATE": "Relationship candidate",
       "USER_REPORT": "User report",
       "COURSE_CANDIDATE": "Course candidate",
-      "EXAMPLE_CANDIDATE": "Drafted example"
+      "EXAMPLE_CANDIDATE": "Drafted example",
+      "RESOURCE_CANDIDATE": "Resource candidate"
     },
     "runStatus": {
       "RUNNING": "Running",
@@ -741,6 +742,13 @@
         "query": "Searches",
         "path": "For",
         "model": "Drafted with AI ({{model}}). The resource above is its expected result. Accept adds it; the check decides when it is shown."
+      },
+      "candidate": {
+        "page": "Page",
+        "type": "Type",
+        "tags": "Categories",
+        "excerpt": "Search excerpt",
+        "note": "Found by a web search. Accept adds it to the catalog; the next Scout run describes it."
       }
     }
   },
@@ -1052,7 +1060,7 @@
           "Rate limits, technical logs, usage totals and the security cookie: our legitimate interest in keeping the service secure and available (Art. 6(1)(f) GDPR).",
           "Web search counters, guide question counters and stored results: legitimate interest in a free service at bounded cost (Art. 6(1)(f) GDPR).",
           "Reports you send: our legitimate interest in keeping the information on Helper2.ai correct (Art. 6(1)(f) GDPR).",
-          "Describing public AI resources with names and short quotes from their public pages: our legitimate interest in showing what a resource is and where each fact comes from (Art. 6(1)(f) GDPR)."
+          "Describing public AI resources with names, titles and short quotes or excerpts from their public pages and from web pages found by our searches: our legitimate interest in showing what a resource is and where each fact comes from (Art. 6(1)(f) GDPR)."
         ]
       },
       {
@@ -1070,7 +1078,7 @@
           "Search sources: to find results, your search text is sent to the sources that answer live, such as GitHub, Hugging Face, npm, arXiv and Tavily. The Sources page lists them all. Each provider handles the request under its own privacy policy, and some of them are in the United States.",
           "Tavily (United States): your search text or the guide's web query, unless a stored result answers.",
           "AI models: guide questions, and searches written in a language other than English, are sent to NVIDIA Nemotron models on Nebius Token Factory, processed in the European Union. We send only the text, never your account data.",
-          "AI models also read public text about AI resources (source descriptions, README files and model cards) to describe them, and to draft example searches for the home page, on NVIDIA Nemotron models on Nebius Token Factory in the European Union. It is public text about the resources, not about our visitors.",
+          "AI models also read public text about AI resources (source descriptions, web page excerpts, README files and model cards) to describe them, and to draft example searches for the home page, on NVIDIA Nemotron models on Nebius Token Factory in the European Union. It is public text about the resources, not about our visitors.",
           "Embeddings: your search text, and your guide question when similar-question reuse is on, is sent to the NVIDIA API catalog (United States) to compute its embedding. We send only the text, never your IP address or account data. NVIDIA is certified under the Data Privacy Framework (see Transfers abroad).",
           "GitHub, when you choose to sign in with it.",
           "Network edge: every request to helper2.ai passes through Cloudflare (United States), which routes traffic to our servers. Cloudflare sees your IP address and the request.",
@@ -1081,9 +1089,10 @@
       {
         "title": "Public data about AI resources",
         "items": [
-          "To describe the AI resources we list, we read public pages about them, such as GitHub repositories, their README files and Hugging Face model cards.",
+          "To describe the AI resources we list, we read public pages about them, such as GitHub repositories, their README files and Hugging Face model cards. Once a week we also run fixed web searches through Tavily to find new AI products and articles that compare them. These searches contain no data about you.",
           "From README files and model cards we keep names of projects, organisations and authors, and short quotes of up to 300 characters, each with its source named and a link to it. We do not keep the rest of their text, and we replace email addresses with \"[email]\" before anything is quoted.",
-          "This data is about the resources. If a quote names you, you can object or ask us to remove it: write to us at the address above."
+          "From web pages found by these searches we keep the page title, its link and a short excerpt of up to 400 characters that Tavily takes from the page. Articles that compare AI tools are shown in search with their excerpt. A product page is shown only after we have checked it by hand. A title or excerpt can name people, for example an article's author or a product's founder.",
+          "This data is about the resources. If a quote, title or excerpt names you, you can object or ask us to remove it: write to us at the address above."
         ]
       },
       {
@@ -1096,7 +1105,8 @@
           "Your account, its display settings and your saved items: until you delete them, or 24 months after you last signed in. Then we delete the account, its settings and its saved items.",
           "Reports: 12 months after they were handled. If your account is deleted, your reports stay without your name until then.",
           "Database backups: 7 days. Anything deleted above is gone from the backups within 7 days.",
-          "Quotes from public pages about AI resources: as long as we keep the source record they were read for, and never longer than we list the resource."
+          "Quotes from public pages about AI resources: as long as we keep the source record they were read for, and never longer than we list the resource.",
+          "Articles and news found by web search, with their titles and excerpts: 180 days after we last retrieved them. Product pages we accepted from a web search: as long as we list the product. Pages waiting for our review: until we decide, then 180 days."
         ]
       },
       {

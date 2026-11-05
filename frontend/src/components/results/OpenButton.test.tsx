@@ -17,6 +17,6 @@ describe('OpenButton', () => {
     const open = screen.getByRole('link', { name: /Open on github.com/ });
     expect(open).toHaveAttribute('href', 'https://github.com/acme/translator');
     expect(open).toHaveAttribute('target', '_blank');
-    expect(open).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(open).toHaveAttribute('rel', 'noopener noreferrer nofollow ugc');
   });
 });

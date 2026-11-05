@@ -27,9 +27,9 @@ class ScoutPropertiesBindingTest {
               new ScoutProperties(
                   false,
                   Duration.ofSeconds(20),
-                  Duration.ofHours(1),
-                  Duration.ofMinutes(15),
-                  500,
+                  Duration.ofMinutes(10),
+                  "0 7 3 * * *",
+                  1000,
                   20,
                   500,
                   400,
@@ -51,18 +51,28 @@ class ScoutPropertiesBindingTest {
     context
         .withSystemProperties(
             "H2_SCOUT_ENABLED=true",
-            "H2_SCOUT_EVERY=PT6H",
+            "H2_SCOUT_CRON=0 30 4 * * *",
             "H2_SCOUT_MAX_ENRICHMENTS=5",
             "H2_NEBIUS_ENRICH_MAX_TOKENS=4096",
             "H2_RETENTION_SCOUT_RUNS=P30D")
         .run(c -> {
           ScoutProperties scout = c.getBean(ScoutProperties.class);
           assertThat(scout.enabled()).isTrue();
-          assertThat(scout.every()).isEqualTo(Duration.ofHours(6));
+          assertThat(scout.cron()).isEqualTo("0 30 4 * * *");
           assertThat(scout.maxEnrichmentsPerRun()).isEqualTo(5);
           assertThat(scout.enrichMaxTokens()).isEqualTo(4096);
           assertThat(c.getBean(ScoutRetentionProperties.class).scoutRuns())
               .isEqualTo(Duration.ofDays(30));
+        });
+  }
+
+  @Test
+  void anUnreadableCronStopsStartup() {
+    context
+        .withSystemProperties("H2_SCOUT_CRON=every day")
+        .run(c -> {
+          assertThat(c).hasFailed();
+          assertThat(c.getStartupFailure()).rootCause().hasMessageContaining("cron");
         });
   }
 

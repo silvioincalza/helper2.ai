@@ -10,7 +10,12 @@ export function OpenButton({ url, host }: { url: string; host: string }) {
   const href = safeHref(url);
   if (!href) return null;
   return (
-    <a className="btn btn-primary" href={href} target="_blank" rel="noopener noreferrer">
+    <a
+      className="btn btn-primary"
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer nofollow ugc"
+    >
       {t('results.openOn', { host })} <span aria-hidden="true">↗</span>
     </a>
   );

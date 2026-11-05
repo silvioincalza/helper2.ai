@@ -88,6 +88,8 @@ class PageHtmlTest {
     assertThat(page).doesNotContain("<script>alert").doesNotContain("<b>&amp;");
     assertThat(page).doesNotContain("\" onload=\"x\"");
     assertThat(page).doesNotContain("javascript:");
+    // Source links point at sites nobody reviewed (web search): they pass no ranking.
+    assertThat(page).contains("<a href=\"https://github.com/acme/x\" rel=\"nofollow ugc\">");
     String jsonLd =
         page.substring(
             page.indexOf("application/ld+json\">"),

@@ -7,6 +7,7 @@ import ai.helper2.scout.CollectedBatch
 import ai.helper2.scout.Collector
 import ai.helper2.scout.EnrichmentBacklog
 import ai.helper2.scout.EnrichmentOutcome
+import ai.helper2.scout.RunCalendar
 import ai.helper2.scout.RunLock
 import ai.helper2.scout.RunStatus
 import ai.helper2.scout.RunSummary
@@ -26,7 +27,6 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.micrometer.observation.Observation
 import io.micrometer.observation.ObservationRegistry
 import java.time.Clock
-import java.time.Duration
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
@@ -179,18 +179,21 @@ class RunScout(
   }
 
   /**
-   * One tick of the schedule, on any replica: runs every collector when the last scheduled run
-   * ended at least [every] ago (or none ever did), then records the end. Due check, run and record
-   * are under the run lock, so replicas ticking in the same period run once; a tick that finds the
-   * lock taken changes nothing.
+   * One tick of the schedule, on any replica: runs every collector when the [calendar] says a run
+   * is due after the last scheduled one (or none ever ran), then records the end. A replica that
+   * was down at the due time runs it at its next tick. Due check, run and record are under the run
+   * lock, so replicas ticking in the same period run once; a tick that finds the lock taken changes
+   * nothing.
    */
-  fun tryRunScheduled(every: Duration, schedule: ScheduledRunStore): ScheduledRun =
-    lock.runExclusively(Supplier { runIfDue(every, schedule) }) ?: ScheduledRun.BUSY
+  fun tryRunScheduled(calendar: RunCalendar, schedule: ScheduledRunStore): ScheduledRun =
+    lock.runExclusively(Supplier { runIfDue(calendar, schedule) }) ?: ScheduledRun.BUSY
 
   /** Called under the run lock. */
-  private fun runIfDue(every: Duration, schedule: ScheduledRunStore): ScheduledRun {
+  private fun runIfDue(calendar: RunCalendar, schedule: ScheduledRunStore): ScheduledRun {
     val last = schedule.lastScheduledRunEnd()
-    if (last != null && last.plus(every).isAfter(clock.instant())) return ScheduledRun.NOT_DUE
+    if (last != null && calendar.nextRunAfter(last).isAfter(clock.instant())) {
+      return ScheduledRun.NOT_DUE
+    }
     closeInterrupted()
     runAll(plan(null))
     schedule.scheduledRunEnded(clock.instant())

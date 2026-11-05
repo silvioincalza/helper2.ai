@@ -45,6 +45,7 @@ class AdminOverviewApiIT extends ApiTestBase {
             "RELATIONSHIP_CANDIDATE",
             "USER_REPORT",
             "COURSE_CANDIDATE",
+            "RESOURCE_CANDIDATE",
             "EXAMPLE_CANDIDATE");
     List<String> budgets = JsonPath.read(body, "$.budgets[*].name");
     assertThat(budgets)

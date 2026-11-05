@@ -6,7 +6,8 @@
 #   backend/src/main/java/ai/helper2/catalog/internal/CatalogConfiguration.java (index, embedder),
 #   backend/src/main/java/ai/helper2/catalog/enrichment/ (EnrichmentCandidates, EnrichmentResults: the Scout's way in),
 #   backend/src/main/java/ai/helper2/catalog/EnrichmentFacts.java, catalog/usecase/GetResourceDetail.java (the detail page's way out),
-#   backend/src/main/java/ai/helper2/scout/internal/CatalogEnrichmentStore.java.
+#   backend/src/main/java/ai/helper2/scout/internal/CatalogEnrichmentStore.java,
+#   scout/usecase/IndexAcceptedCandidate.kt, scout/internal/ResourceCandidateJson.java, admin/usecase/ResolveReview.java.
 # Render: cd docs/diagrams && d2 fmt architecture-index.d2 && d2 architecture-index.d2 architecture-index.svg
 
 ...@style
@@ -24,6 +25,13 @@ admin: "Admin" {class: person}
 scout: "scout (Kotlin domain)" {
   class: group
   core: "RunScout · EnrichResource\nEvidenceValidator\nGapTargets · ReadmeText (gap round)" {class: app}
+  accept: "IndexAcceptedCandidate\n(accept a resource candidate,\nADR 0051)" {class: app}
+  p_candidates: "CandidateReview\nCandidateDetails · CatalogLookup" {class: port}
+  json: "ReviewQueueCandidateReview\nResourceCandidateJson" {class: app}
+  core -> p_candidates: "candidates to review"
+  accept -> p_candidates
+  accept -> p_index
+  json -> p_candidates: implements {class: config}
   p_collector: Collector {class: port}
   p_extra: "ExtraEvidence\nGapBudget" {class: port}
   p_index: CatalogIndex {class: port}
@@ -42,7 +50,7 @@ scout: "scout (Kotlin domain)" {
 
 sources: "sources (collectors, gap evidence)" {
   class: group
-  collectors: "McpRegistryCollector · TavilyCollector\nHuggingFaceTrendingCollector\nHuggingFaceProviderOrgsCollector\nGitHubAwesomeCollector · AiDeadlinesCollector" {class: app}
+  collectors: "McpRegistryCollector · TavilyCollector\nTavilyDiscoveryCollector · CourseCollector\nHuggingFaceTrendingCollector\nHuggingFaceProviderOrgsCollector\nGitHubAwesomeCollector · AiDeadlinesCollector" {class: app}
   classifier: "SpringAiRepoClassifier\n(or Heuristic)" {class: app}
   evidence: "ReadmeEvidence\n(README, model card)" {class: app}
   collectors -> classifier: "awesome-list entries" {class: ai-call}
@@ -70,9 +78,11 @@ nebius: "Nebius Token Factory\nNemotron 3 Super" {class: ai}
 nvapi: "NVIDIA API catalog\nnemotron-3.5-embed-1b" {class: ai}
 hosts: "registry.modelcontextprotocol.io\nhuggingface.co · api.github.com\nraw.githubusercontent.com · api.tavily.com" {class: ext}
 
-backoffice: "admin module\nAdminController\nPOST /admin/scout-runs" {class: app}
+backoffice: "admin module\nAdminController · ResolveReview\nPOST /admin/scout-runs\nPUT /admin/review-items/{id}/resolution" {class: app}
 admin -> backoffice: "trigger run, review"
 backoffice -> scout.core
+backoffice -> scout.accept: "accept a resource candidate"
+scout.json -> catalog.catalog: "RESOURCE_CANDIDATE items"
 sources.collectors -> scout.p_collector: implements {class: config}
 sources.evidence -> scout.p_extra: implements {class: config}
 catalog.catalog -> scout.p_index: implements {class: config}
