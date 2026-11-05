@@ -66,6 +66,21 @@ class HttpToolMaterialsTest {
   }
 
   @Test
+  void hostsNeverPrintTheirTokens() {
+    var hosts =
+        new HttpToolMaterials.Hosts(
+            "https://api.github.com",
+            "https://cdn.jsdelivr.net",
+            "https://huggingface.co",
+            "ghp_secret",
+            "hf_secret");
+
+    assertThat(hosts.toString())
+        .doesNotContain("ghp_secret", "hf_secret")
+        .contains("githubToken=***", "hfToken=***", "https://api.github.com");
+  }
+
+  @Test
   void readsTheGithubReadmeRawWithTheSetupToken_andLinksTheRepositoryPage() {
     server.route("/repos/acme/x/readme", FixtureServer.Reply.ok(README));
 

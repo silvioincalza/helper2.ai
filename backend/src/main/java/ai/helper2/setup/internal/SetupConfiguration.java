@@ -15,6 +15,7 @@ import ai.helper2.setup.ToolGuideModel;
 import ai.helper2.setup.ToolGuideTtls;
 import ai.helper2.setup.ToolGuides;
 import ai.helper2.setup.ToolMaterials;
+import ai.helper2.shared.Secrets;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -68,6 +69,26 @@ class SetupConfiguration {
      */
     record Guide(
         int dailyModelCalls, boolean reasoning, Duration cacheTtl, Duration unreadableTtl) {}
+
+    /** The default record text would print the token. */
+    @Override
+    public String toString() {
+      return "SetupProperties[documentTimeout="
+          + documentTimeout
+          + ", npmReadmeBaseUrl="
+          + npmReadmeBaseUrl
+          + ", cacheTtl="
+          + cacheTtl
+          + ", documentCacheMb="
+          + documentCacheMb
+          + ", hourlyFetches="
+          + hourlyFetches
+          + ", githubToken="
+          + Secrets.mask(githubToken)
+          + ", guide="
+          + guide
+          + "]";
+    }
   }
 
   /**

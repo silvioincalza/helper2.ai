@@ -33,6 +33,8 @@ Run the relevant tests before calling a change done.
   hexagonal: domain and use cases in the core, adapters for DB, LLM, HTTP, queue.
   One explicit use case per business action. Lightweight DDD: ubiquitous language, clear modules.
 - TDD for domain logic, BDD for user-visible behaviour, integration tests for adapters.
+- Configuration only through `@ConfigurationProperties` records (one per module or concern); no `@Value`, no
+  `Environment.getProperty` (ADR 0007).
 - Code format (ADR 0047): Google style for the backend, google-java-format for Java and ktfmt
   Google style for Kotlin, through Spotless; Prettier for the frontend. Run `./gradlew spotlessApply`
   and `npm run format` before a commit; CI fails on unformatted code.

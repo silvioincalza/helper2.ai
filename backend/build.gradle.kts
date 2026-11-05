@@ -83,6 +83,9 @@ dependencies {
   // Size-bounded in-memory caches with expiry (setup guide: registry entries, tool documents
   // weighed by length).
   implementation("com.github.ben-manes.caffeine:caffeine:3.3.1")
+  // Metadata for the @ConfigurationProperties records (ADR 0007): IDE completion and a known key
+  // list for application.yaml. The records are Java, so javac runs it; Kotlin needs no kapt.
+  annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
   runtimeOnly("org.postgresql:postgresql")
   developmentOnly("org.springframework.boot:spring-boot-docker-compose")
 
