@@ -163,12 +163,13 @@ Open items:
 
 - **Redesign, version 4 of the design system** ([0042](adr/frontend/0042-redesign-design-system-v4.md),
   [design/system](design/system/README.md), boards in [design/redesign](design/redesign)). The fonts, the v4 tokens,
-  the header, the footer and Home are built. Still to do, one pull request each:
-  - **Results in v4:** one column, no preview panel. A row opens the resource page, and Back keeps the scroll
-    position (#151). Rows carry what the preview showed: type, host, date, guide pick, description, source. Guide
-    picks merged into the list; the partial-results banner becomes one quiet line in the count row; filters as a
-    drawer on phones.
-  - **The resource page in v4:** one primary button ("Set it up" is already only on types a user installs or runs).
+  the header, the footer, Home, Results (list and timeline) and the resource page are built. Still to do, one pull
+  request each:
+  - **Results, open points.** The boards draw "Show more" under the list and "Show them" for the timeline's
+    unknown dates; the list still pages, and the unknown dates show as their own group. The `$ helper2 search · N`
+    total is `total` after filters. The pagination buttons are still the version 3 buttons.
+  - **The resource page, open points.** The boards draw a date line under the title and "Where this information
+    comes from" folded; the page keeps the dates list and the provenance table.
   - **The other pages** (Saved, Sources, Mission, Privacy, Terms, Account, sign-in, 404, admin), one by one.
   - **Remove version 3** once the last page has moved: the v3 components and layout sizes, Space Grotesk, and the
     `--v4-` prefix on the v4 sizes and fonts.
@@ -187,14 +188,11 @@ Open items:
   - An `unknown` count per facet and an updated-date facet on the search response (Filters panel).
   - Sign-in with Google (phase 1). Passkey, email link and password (phase 2) need their own ADR, a threat model and
     the Privacy page first.
-  - The initial JavaScript is at 165.9 KiB gzip, over the 165 KiB budget (main alone 164.5, this Home alone 164.5;
-    together with the pool examples 165.9). The radar, the phone tabs, Sources and Account already load on demand.
-    Make room before the next page moves, for example by loading Results on demand, or raise the budget.
   - **Radar pause for everyone (WCAG 2.2.2), open point.** The radar's beam turns without end and its sources come and
     go. Signed-in users can turn it off on the account page; guests have only reduced motion and the hold while the
     search box has focus, and no switch. Find a pause for them that needs no new browser storage key, or decide the
     storage key with the Privacy page.
-  - **The terminal style on the list pages:** Results, Timeline, Sources, Saved and Admin get the look of `TermList`
+  - **The terminal style on the list pages:** Sources, Saved and Admin get the look of `TermList`
     on Home (a `$ helper2 …` line with the count from the API, `ls -l` columns, dashed rules, titles in Geist, the
     rest in Geist Mono). One pull request each.
 - **Frontend design** ([0040](adr/frontend/0040-frontend-design.md)) is done and on staging. Prod gets it with the next release:

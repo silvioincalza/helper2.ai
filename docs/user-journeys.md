@@ -26,8 +26,8 @@ The success criteria at the end say which tests verify each journey today. What 
    height and shows nothing to click, so the page does not jump. An example a model drafted and a person checked has
    a small "AI" mark: "Drafted with AI, checked by a person".
 3. Types a name ("ollama"), keywords ("mcp postgres"), an intent ("I want to summarise PDFs"), or a use case ("traduzione").
-4. On the home page, Enter (or the button) opens the results on `/search`; focus moves to the results. There, results follow typing when it pauses (or on Enter). The first search shows skeleton rows and a per-source "querying…" line; a later search keeps the previous results on screen, dimmed, until the new ones arrive.
-5. Results arrive in one response, once every source has answered or hit its timeout. The list is on the left, a preview of the selected result on the right; the selected result is in the URL. Each result title is a link to its resource page: a click selects the result, a ctrl or cmd click opens the page in a new tab. On a phone nothing is selected on load, and a row opens the resource page; its back link returns to the list with that result open under its row. Under the results, a line states e.g. "4 of 5 sources answered" and a tile per source shows its outcome, response time or cache age.
+4. On the home page, Enter (or the button) opens the results on `/search`; focus moves to the results. There, results follow typing when it pauses (or on Enter). The first search shows skeleton rows and one "Searching the listed sources…" line; a later search keeps the previous results on screen, dimmed, until the new ones arrive.
+5. Results arrive in one response, once every source has answered or hit its timeout. They load on demand: until the results view arrives, skeleton rows of the list's shape hold its place under the box, so nothing moves. One column, no preview: the heading says **All results** over `$ helper2 search · 104` (the total from the API), with Filters, the sort and List / Timeline next to it, then the type tabs (All, the four types with most results, More). Each row shows the type, host and date ("updated Oct 2026", or "first seen" when no source states one), the title, the description and the sources that list it. Nothing is selected, also on a phone. The title opens the resource page; a ctrl or cmd click opens it in a new tab. Back returns to the same place in the list. Under the results, a line states e.g. "4 of 5 sources answered" and a tile per source shows its outcome, response time or cache age.
 
 **Key decisions:** whether to refine, or to ask the guide. **Success:** relevant result in the first page; user understands where results came from.
 
@@ -35,7 +35,7 @@ The success criteria at the end say which tests verify each journey today. What 
 |---|---|
 | Success | Aggregated, deduplicated results; every configured source listed with outcome. |
 | Empty | "No results from the N sources searched" + the list of sources + suggestions: remove filters, ask the guide, try English keywords. Never "nothing exists". |
-| Partial | Banner: "Only 7 of 8 queried sources responded". Results from other sources still shown. Coverage marked `partial`. A source that is paused or failing counts as queried; a source left out on purpose (disabled, no web credits left) does not, and its tile says why. The banner and the line under the results use the same two numbers. |
+| Partial | One quiet line under the heading: "Only 7 of 8 queried sources responded…" with **Which ones?** (to the tiles). It is not announced on every search. **Try again** only when a source failed or timed out; a source on pause (circuit open, rate limit, busy) would be skipped again, so there is none. Results from other sources still shown. Coverage marked `partial`. A source that is paused or failing counts as queried; a source left out on purpose (disabled, no web credits left) does not, and its tile says why. The line and the one under the results use the same two numbers. |
 | Stale cache | Source failed live but a recent cached response exists: results shown, badge "cached 14 min ago — live check failed". |
 | All failed / API down | Error state with retry; no fake results. |
 | Rate-limited | Source marked RATE_LIMITED (not hidden), others continue. |
@@ -45,7 +45,7 @@ The success criteria at the end say which tests verify each journey today. What 
 
 1. With a query and filters on the page, the user clicks **Ask the guide** (the box's button says so from 4 words), or follows the "Sounds like a question" hint after 4+ words. Enter always searches, also with 4+ words: the guide runs only from its button, because each answer costs model calls.
 2. The results show at once; the picks bar above them says the guide is reading. Query, filters, sort and page persist (they live in the URL: `q`, `ask`, filters).
-3. The answer arrives: the picks show as chips in the bar and move to a **Guide picks** group at the top of the list, and the preview opens on pick #1. It says **Why the guide picked it** (AI-written) with the source's own sentence as proof. A result the user already opened stays open. Other results keep the search order under **More results**; their preview says **About**.
+3. The answer arrives: the picks show as chips in the bar; a chip jumps to its row. The rows keep the search order, so nothing moves: a picked row shows **Guide pick #1**, the guide's reason (labelled AI-written) and its quote, highlighted in the source's own words with "Checked word for word in the source". The row opens the resource page, which says **Why the guide picked it**: the reason, whether a second model call checked it, and the requirements checked against the source.
 4. Nothing fits: the bar says why in one line and offers **Ask without “…”** for each requirement the guide read (when it is short enough to keep in the URL), and **Rephrase**. **How the guide decided** stays folded under the bar: the steps, and how the guide read the question.
 5. Back/forward and shared links reproduce the same state. A shared link that asks the guide works on the first visit too: when the browser has no CSRF cookie yet, the page gets it and sends the question once more.
 
@@ -55,17 +55,18 @@ Changing the words in the box searches again and drops the old question with its
 
 ## UJ-3 Refine: filter and sort
 
-1. User opens **Filters** (drawer on mobile); the use cases the search detected sit next to it as one-tap chips. Filters: type, audience, use case, tech level, source, license, pricing, platform, open-source, updated-after.
+1. User opens **Filters**: in place under the heading on a wide screen, a drawer over the page on a phone (up to 720px) with **Close** and **Show N results**; Escape and Close give focus back to Filters. The button says how many are on ("Filters · 2 on"). The type tabs choose one type. The use cases the search detected sit under the tabs as one-tap chips. Filters: type, audience, use case, tech level, source, license, pricing, platform, open-source, updated-after.
 2. Each facet shows counts and an **Unknown** bucket for results where the source did not say.
 3. Sort: Relevance (default), Newest (publication date), Recently updated. Results with unknown dates sort last and are labeled "date unknown".
+4. **Timeline** shows the same results on a time axis, `$ helper2 search --timeline · N`: one month beside a line of dots, newest first, by the date each item was created as its source states it. Items with no stated creation date sit in their own group at the end; the date Helper2 found them is never used. It pages like the list.
 
 **Key decision:** include or exclude unknowns. Selecting a value excludes unknowns; selecting "Unknown" includes them explicitly.
 **Failure case:** filters produce zero results → empty state lists the active filters with one-click removal.
 
-## UJ-4 Evaluate a result (card → detail)
+## UJ-4 Evaluate a result (row → resource page)
 
-1. Card shows: title, concise description (+ where the text came from), type, tags, audience, source badges, the three dates (published / last updated / discovered by Helper2), freshness, real popularity metrics with their source, link to the original.
-2. User opens the detail page: metadata per field with origin and verification, evidence (source URL, retrieval time, excerpt), relationships (verified vs unverified candidates kept apart), optional AI summary with citations per claim, source records (provenance).
+1. A result row shows: type, host, a date (updated, created, or first seen by Helper2), the title, the description (labelled when AI wrote it), a guide pick with its reason and quote, and the sources that list it.
+2. The row opens the resource page, one column: **← Back to results** (back in history, so the list keeps its place; "Back to search" when opened directly), the type, host and who lists it, the title, one primary button **Open on host ↗**, Save, and **Set it up** only for things you install or run. Then **Why the guide picked it** (only when opened from a pick), **From the source** (the checked sentence highlighted), **At a glance** (Use and Build facts, "Not stated" where no source says), **Listed by**, the three dates, then metadata per field with origin and verification, evidence, relationships (verified vs unverified candidates kept apart), the optional AI summary with citations per claim, and source records (provenance).
 3. User follows "Open original" (new tab, `noopener noreferrer`), hostname visible before clicking.
 
 **Success:** user can answer "who says so, and when?" for every displayed fact.
@@ -80,7 +81,7 @@ Changing the words in the box searches again and drops the old question with its
 
 ## UJ-6 Save resources
 
-1. Anonymous user bookmarks a card → stored in `localStorage`; visible on **Saved**.
+1. Anonymous user saves a resource with **Save** on its page → stored in `localStorage`; visible on **Saved**.
 2. If storage is unavailable (private mode), the toggle explains saving is unavailable in this browser.
 3. Signed out, the Saved page says "Saved in this browser only." and offers sign-in. After sign-in (UJ-7) the browser's saved items move to the account once and are removed from the browser; from then on they follow the account across devices. If the merge fails, the browser's items stay on screen with **Try again**.
 

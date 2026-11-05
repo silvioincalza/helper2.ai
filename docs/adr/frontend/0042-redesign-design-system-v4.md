@@ -1,7 +1,8 @@
 # 0042 — Redesign: design system version 4
 
-**Status.** Accepted. Built for the header, the footer and Home; the other pages follow (decision 8).
-**Replaces parts of:** [0040](0040-frontend-design.md): decisions 1 and 2 now; 4 and 7 when Results moves.
+**Status.** Accepted. Built for the header, the footer, Home, Results (list and timeline) and the resource page; the
+other pages follow (decision 10).
+**Replaces parts of:** [0040](0040-frontend-design.md): decisions 1, 2, 4 and 7.
 **Builds on:** [0015](../guide/0015-ai-guide-evidence-gate.md), [0017](../guide/0017-guide-cost-guard.md),
 [0025](0025-frontend-one-box.md), [0038](../guide/0038-ai-content-marking.md)
 
@@ -101,6 +102,35 @@ they do now and how version 3 and 4 live side by side until the other pages move
     moved, the version 3 components, sizes and Space Grotesk go, and the `--v4-` sizes and fonts lose their prefix.
     No design flag: a page is either version 3 or 4.
 
+11. **Results: one column, no preview (v4-2).** Results load on demand (`React.lazy` in `HomePage`); the page's
+    `h1`, the box and a skeleton of the list's shape are in the first download, so nothing mounts twice or moves while
+    the chunk loads. The skeleton pulses three times and stops.
+    - **The heading.** "All results" over `$ helper2 search · N` (`--timeline` on the timeline; N = `total`), then
+      Filters ("· 2 on"), the sort and List / Timeline (links with `aria-current`: the view is in the URL). Under it
+      the type tabs: All, the four types with most results, More with the rest; a type chosen under More shows as a
+      tab. Filters open in place on a wide screen and as a drawer (a modal `dialog`) up to 720 px, with Close and
+      "Show N results"; Escape and Close give focus back to Filters.
+    - **Rows.** Dashed rules between rows. A row: type · host · date (updated, else created, else "first seen" in the
+      not-stated colour), the guide pick, the title, the description, "From" the sources. The title's link covers the
+      row and opens the resource page; nothing is selected or opens in place, on any width. The resource page's
+      **Back to results** goes back in history, so the list keeps its place; opened directly it is a plain link.
+    - **Guide picks merged into the list.** The rows keep the search order, so nothing moves when the answer comes and
+      nothing is announced. A picked row shows "Guide pick #1", the reason (labelled "AI-written", marked
+      `data-ai-generated`) and its quote, highlighted where it stands in the source's own words, with "Checked word
+      for word in the source". On an AI-written description there is no quote. The chips in the picks bar jump to the
+      rows. The row passes the pick (rank, reason, quote, checks) on in the history entry's state, so the resource
+      page says **Why the guide picked it**, whether a second model call checked it, and the requirements checked
+      against the source. Nothing of it leaves the browser.
+    - **Some sources did not answer:** one quiet line under the heading, no banner and no live region. Try again only
+      when a source FAILED or TIMED_OUT: a source on pause (circuit open, rate limit, busy) is SKIPPED and would be
+      skipped again.
+    - **The timeline:** the month beside a line of dots, each item its creation date, type, host, title and
+      description.
+    - **The resource page:** one column in v4 fonts and tokens. The type, host and who lists it, the title, one
+      primary button (Open on host ↗), Save, and Set it up (outlined) only for what a user installs or runs. Then the
+      pick, From the source, At a glance, Listed by, the dates and the detail sections; its tables in Geist Mono with
+      capital headers and dashed rules.
+
 ## Alternatives
 - **Fonts: `geist` (Vercel).** The upstream package, but built for `next/font` (it imports `next/font/local`) and
   its files carry every script (70 KB each). Static `@fontsource/geist`: 13 KB per weight, so three weights of two
@@ -114,6 +144,10 @@ they do now and how version 3 and 4 live side by side until the other pages move
 - **The guide on every search.** Simpler, but it spends model calls and the daily AI answers on searches that are
   only a name ([0017](../guide/0017-guide-cost-guard.md)).
 - **One big pull request.** Fastest to finish, hardest to review and to roll back.
+- **Results: keep the preview beside the list** ([0040](0040-frontend-design.md), 4). Fast to compare, but it splits a
+  phone and a desktop into two behaviours, and the picks moving to the top shifted the list under the reader.
+- **Results: load the whole page on demand, the box included.** A smaller first download, but the box and the `h1`
+  would mount twice and focus would be lost on the way from Home.
 
 ## Consequences
 - Users see what the site does in one line, and the box never leaves the screen.
@@ -130,9 +164,11 @@ they do now and how version 3 and 4 live side by side until the other pages move
   `total` on GET /recent and GET /events/upcoming (which also takes `days`). The Unknown count per facet is still open.
 - For a while the site shows two designs and loads two font families on the pages still on version 3. The header and
   footer are already version 4 on every page.
-- The initial JavaScript is 165.9 KiB gzip, over the 165 KiB budget, with the examples from the pool on Home: the
-  radar, the phone tabs, the Sources page and the account page already load on demand. Making room is on the
-  [roadmap](../../roadmap.md).
+- The initial JavaScript is 156.9 KiB gzip (budget 165 KiB): Results load on demand (10.5 KiB gzip), like the radar,
+  the phone tabs, the Sources page and the account page. A first visit to /search waits for that chunk behind the
+  skeleton.
+- Results show one screen of rows and one place per result; comparing two results means opening both. A shared link
+  with the old `id` parameter shows the list without selecting anything.
 - What is not built yet is on the [roadmap](../../roadmap.md) (section 6).
 
 Flowchart: [flow-0042-redesign](../../diagrams/flow-0042-redesign.svg). Sequence:
