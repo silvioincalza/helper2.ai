@@ -78,9 +78,10 @@ nebius: "Nebius Token Factory\nNemotron 3 Super" {class: ai}
 nvapi: "NVIDIA API catalog\nnemotron-3.5-embed-1b" {class: ai}
 hosts: "registry.modelcontextprotocol.io\nhuggingface.co · api.github.com\nraw.githubusercontent.com · api.tavily.com" {class: ext}
 
-backoffice: "admin module\nAdminController · ResolveReview\nPOST /admin/scout-runs\nPUT /admin/review-items/{id}/resolution" {class: app}
+backoffice: "admin module\nAdminController · ResolveReview\nPOST /admin/scout-runs\nPUT /admin/review-items/{id}/resolution\nGET /admin/enrichment-queue" {class: app}
 admin -> backoffice: "trigger run, review"
 backoffice -> scout.core
+backoffice -> scout.jdbc: "enrichment queue (read)"
 backoffice -> scout.accept: "accept a resource candidate"
 scout.json -> catalog.catalog: "RESOURCE_CANDIDATE items"
 sources.collectors -> scout.p_collector: implements {class: config}

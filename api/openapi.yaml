@@ -28,6 +28,7 @@ tags:
   - name: admin
   - name: audit
   - name: overview
+  - name: enrichment-queue
   - name: examples
   - name: examples-admin
   - name: policy
@@ -466,6 +467,27 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/AdminOverview' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+
+  /admin/enrichment-queue:
+    get:
+      tags: [enrichment-queue]
+      operationId: listEnrichmentQueue
+      summary: The enrichment backlog, in the order the Scout takes it.
+      description: >-
+        Never-run resources first, then model-unavailable and failed ones with retries left, each part newest
+        discovery first. Paged by cursor: pass `next` from the previous page as `after`. Read-only.
+      parameters:
+        - { name: after, in: query, description: The previous page's next cursor; omit for the first page., schema: { type: string, maxLength: 200 } }
+        - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        '200':
+          description: One page of the backlog.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EnrichmentQueuePage' }
+        '400': { $ref: '#/components/responses/Problem' }
         '401': { $ref: '#/components/responses/Problem' }
         '403': { $ref: '#/components/responses/Problem' }
 
@@ -1874,6 +1896,30 @@ components:
       properties:
         outcome: { $ref: '#/components/schemas/ExampleCheckOutcome' }
         count: { type: integer, minimum: 0 }
+
+    EnrichmentQueuePage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/EnrichmentQueueEntry' }
+        next: { type: [string, 'null'], description: The cursor of the next page; null on the last page. }
+
+    EnrichmentQueueEntry:
+      type: object
+      required: [resourceId, title, waiting, firstDiscoveredAt, failedRuns]
+      properties:
+        resourceId: { type: string, format: uuid }
+        title: { type: string }
+        waiting:
+          type: string
+          description: "NEW: never enriched. MODEL_UNAVAILABLE: the last run found no model. RETRY: the last run FAILED and retries are left."
+          enum: [NEW, MODEL_UNAVAILABLE, RETRY]
+        firstDiscoveredAt: { type: string, format: date-time }
+        failedRuns: { type: integer, minimum: 0 }
+        lastOutcome: { type: [string, 'null'], enum: [VALIDATED, PARTIAL, REJECTED, LLM_UNAVAILABLE, FAILED, null] }
+        lastRunAt: { type: [string, 'null'], format: date-time }
 
     ReviewKindCount:
       type: object
