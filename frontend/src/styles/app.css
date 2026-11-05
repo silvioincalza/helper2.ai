@@ -1195,9 +1195,13 @@ h2 {
   border-radius: var(--radius-lg);
   padding: 6px 6px 6px var(--space-4);
 }
+/* The field draws no ring of its own: the whole box gets the standard focus ring; the saffron border is decoration. */
 .searchbox.large:focus-within {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+.searchbox.large:has(.searchbox-field:focus-visible) {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
 }
 .searchbox.large .searchbox-field {
   border: 0;
@@ -1437,10 +1441,6 @@ input[type='search']::-webkit-search-cancel-button {
 .tl-row:hover .h2-row__title {
   text-decoration: underline;
   text-underline-offset: 3px;
-}
-.tl-row:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
 }
 
 /* Guide intents (ADR 0032): how the question was read, the question back, comparison and explanation. */
