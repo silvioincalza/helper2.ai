@@ -15,6 +15,7 @@ const PARTS = [
   { to: '/admin/enrichment', key: 'enrichment', end: false },
   { to: '/admin/examples', key: 'examples', end: false },
   { to: '/admin/audit', key: 'audit', end: false },
+  { to: '/admin/settings', key: 'settings', end: false },
 ] as const;
 
 /**

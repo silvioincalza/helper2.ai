@@ -8,6 +8,8 @@ import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.LlmSettings;
 import ai.helper2.platform.llm.ModelCallMetrics;
 import ai.helper2.platform.resilience.Resilience;
+import ai.helper2.platform.settings.Setting;
+import ai.helper2.platform.settings.SettingsGroup;
 import ai.helper2.setup.McpServerSpecs;
 import ai.helper2.setup.ReadmeConfigs;
 import ai.helper2.setup.SetupGuides;
@@ -23,6 +25,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
 import java.time.Clock;
 import java.time.Duration;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ChatModel;
@@ -95,6 +98,35 @@ class SetupConfiguration {
   @Bean
   SetupGuides setupGuides(McpServerSpecs specs, ReadmeConfigs readme) {
     return new SetupGuides(specs, readme);
+  }
+
+  /** The setup guide's settings for the back office's Settings page (ADR 0045). */
+  @Bean
+  SettingsGroup setupSettings(
+      SetupProperties setup, LlmSettings llm, ObjectProvider<ChatModel> chatModel) {
+    String model =
+        !llm.usable(chatModel.getIfAvailable())
+            ? null
+            : setup.guide().reasoning() && llm.hasReasoningModel()
+                ? llm.reasoningModel()
+                : llm.fast();
+    return new SettingsGroup(
+        "setup",
+        "Setup guide",
+        SettingsGroup.SETUP,
+        List.of(
+            Setting.count(
+                "setup.dailyModelCalls",
+                "Model calls a day",
+                setup.guide().dailyModelCalls(),
+                "calls a day",
+                "H2_SETUP_GUIDE_DAILY_MODEL_CALLS"),
+            Setting.model("setup.model", "Setup guide model", model, null),
+            Setting.fixedCount(
+                "setup.hourlyFetches",
+                "Documents fetched an hour",
+                setup.hourlyFetches(),
+                "fetches an hour")));
   }
 
   /** The tool guide's own daily model-call cap, apart from the guide's and the Scout's. */

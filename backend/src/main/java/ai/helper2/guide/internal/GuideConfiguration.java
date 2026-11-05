@@ -21,6 +21,8 @@ import ai.helper2.platform.llm.LlmSettings;
 import ai.helper2.platform.llm.ModelCallMetrics;
 import ai.helper2.platform.quota.QuotaKeys;
 import ai.helper2.platform.resilience.Resilience;
+import ai.helper2.platform.settings.Setting;
+import ai.helper2.platform.settings.SettingsGroup;
 import ai.helper2.search.usecase.SearchResources;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -198,5 +200,55 @@ class GuideConfiguration {
         AnswerLimits.DEFAULT,
         similarQuestions(
             settings.similarThreshold(), embedder.getIfAvailable(), similarQuestionIndex, clock));
+  }
+
+  /** The guide's settings for the back office's Settings page (ADR 0045). */
+  @Bean
+  SettingsGroup guideSettings(GuideProperties settings, LlmSettings llm, AskGuide guideService) {
+    return guideSettingsGroup(
+        settings, llm, guideService.getAnswersWithModel(), guideService.getConfigHash());
+  }
+
+  static SettingsGroup guideSettingsGroup(
+      GuideProperties settings, LlmSettings llm, boolean withModel, String configHash) {
+    return new SettingsGroup(
+        "guide",
+        "AI guide",
+        SettingsGroup.GUIDE,
+        List.of(
+            Setting.count(
+                "guide.dailyModelCalls",
+                "Model calls a day, all visitors",
+                settings.dailyModelCalls(),
+                "calls a day",
+                "H2_GUIDE_DAILY_MODEL_CALLS"),
+            Setting.count(
+                "guide.clientDailyQuestions",
+                "Questions a day per visitor",
+                settings.clientDailyQuestions(),
+                "questions a day",
+                "H2_GUIDE_CLIENT_DAILY_QUESTIONS"),
+            Setting.count(
+                "guide.clientDailyFreeAnswers",
+                "Answers with no pick given back a day",
+                settings.clientDailyFreeAnswers(),
+                "answers a day",
+                "H2_GUIDE_CLIENT_DAILY_FREE_ANSWERS"),
+            Setting.count(
+                "guide.maxCandidates",
+                "Results the model chooses from",
+                settings.maxCandidates(),
+                "results",
+                "H2_GUIDE_MAX_CANDIDATES"),
+            Setting.count(
+                "guide.chooseMaxTokens",
+                "Output cap of the choose call",
+                settings.chooseMaxTokens(),
+                "tokens",
+                "H2_NEBIUS_CHOOSE_MAX_TOKENS"),
+            Setting.model("guide.planModel", "Plan model", withModel ? llm.fast() : null, null),
+            Setting.model(
+                "guide.chooseModel", "Choose model", withModel ? llm.reasoningModel() : null, null),
+            Setting.version("guide.configHash", "Configuration hash", configHash)));
   }
 }

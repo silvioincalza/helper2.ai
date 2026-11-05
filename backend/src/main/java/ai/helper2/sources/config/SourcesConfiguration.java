@@ -9,6 +9,8 @@ import ai.helper2.platform.quota.QuotaCounter;
 import ai.helper2.platform.quota.QuotaKeys;
 import ai.helper2.platform.resilience.OutboundThrottle;
 import ai.helper2.platform.resilience.Resilience;
+import ai.helper2.platform.settings.Setting;
+import ai.helper2.platform.settings.SettingsGroup;
 import ai.helper2.shared.CategoryMatcher;
 import ai.helper2.sources.aideadlines.AiDeadlinesCollector;
 import ai.helper2.sources.arxiv.ArxivSource;
@@ -244,6 +246,29 @@ class SourcesConfiguration {
         new RunInterval(c.interval()),
         c.queries(),
         credits);
+  }
+
+  /** The Scout sources' daily caps for the back office's Settings page (ADR 0045). */
+  @Bean
+  SettingsGroup scoutSourceSettings(
+      CollectorProperties.ScoutCredits credits, CollectorProperties.GitHubAwesome awesome) {
+    return new SettingsGroup(
+        "scoutSources",
+        "Scout sources",
+        SettingsGroup.SCOUT_SOURCES,
+        List.of(
+            Setting.count(
+                "scoutSources.dailyCredits",
+                "Tavily credits a day, Scout searches",
+                credits.dailyCredits(),
+                "credits a day",
+                "H2_SCOUT_DAILY_CREDITS"),
+            Setting.count(
+                "scoutSources.classifierDailyCalls",
+                "Awesome-list classifier calls a day",
+                awesome.classifierDailyCalls(),
+                "calls a day",
+                "H2_SCOUT_AWESOME_CLASSIFIER_DAILY_CALLS")));
   }
 
   /**

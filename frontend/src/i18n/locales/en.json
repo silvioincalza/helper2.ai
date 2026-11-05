@@ -678,7 +678,8 @@
       "runs": "Scout runs",
       "examples": "Examples",
       "audit": "Audit",
-      "enrichment": "Enrichment"
+      "enrichment": "Enrichment",
+      "settings": "Settings"
     },
     "overview": {
       "title": "What needs you now",
@@ -845,6 +846,21 @@
         "REJECTED_one": "Rejected. {{count}} left.",
         "REJECTED_other": "Rejected. {{count}} left."
       }
+    },
+    "settings": {
+      "title": "Settings",
+      "lede": "What the app runs with now, read from its configuration. Read-only: a change needs a new value for the variable and a restart. Secrets are never shown.",
+      "loadError": "Could not load the settings.",
+      "col": {
+        "setting": "Setting",
+        "value": "Value",
+        "variable": "Variable"
+      },
+      "on": "On",
+      "off": "Off",
+      "noCap": "No cap",
+      "none": "None",
+      "fixed": "No variable"
     },
     "enrichment": {
       "title": "Enrichment queue",

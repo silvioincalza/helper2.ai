@@ -13,6 +13,8 @@ import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.LlmSettings;
 import ai.helper2.platform.llm.ModelCallMetrics;
 import ai.helper2.platform.resilience.Resilience;
+import ai.helper2.platform.settings.Setting;
+import ai.helper2.platform.settings.SettingsGroup;
 import ai.helper2.scout.CandidateReview;
 import ai.helper2.scout.CatalogIndex;
 import ai.helper2.scout.Collector;
@@ -50,6 +52,7 @@ import ai.helper2.scout.usecase.RunScout;
 import ai.helper2.scout.usecase.SkipEnrichment;
 import ai.helper2.scout.usecase.StartScoutRun;
 import ai.helper2.scout.usecase.StoredAnswers;
+import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.WebSearchQuota;
 import io.micrometer.context.ContextSnapshotFactory;
 import io.micrometer.core.instrument.Gauge;
@@ -123,6 +126,72 @@ class ScoutConfiguration {
         dailyCalls);
     return new SpringAiEnrichmentModel(
         model, llm.provider(), llm.reasoningModel(), maxTokens, budget, metrics, resilience);
+  }
+
+  /** The Scout's settings for the back office's Settings page (ADR 0045). */
+  @Bean
+  SettingsGroup scoutSettings(
+      ScoutProperties scout, EnrichmentModel enrichmentModel, List<Collector> collectors) {
+    return scoutSettingsGroup(
+        scout,
+        enrichmentModel.getAvailable() ? enrichmentModel.getModel() : null,
+        enrichmentModel.getPromptVersion(),
+        collectors.stream()
+            .map(Collector::getDescriptor)
+            .filter(SourceDescriptor::getEnabled)
+            .map(SourceDescriptor::getId)
+            .toList());
+  }
+
+  static SettingsGroup scoutSettingsGroup(
+      ScoutProperties scout,
+      @Nullable String model,
+      String promptVersion,
+      List<String> enabledCollectors) {
+    return new SettingsGroup(
+        "scout",
+        "Scout",
+        SettingsGroup.SCOUT,
+        List.of(
+            Setting.flag("scout.scheduleOn", "Daily run on", scout.enabled(), "H2_SCOUT_ENABLED"),
+            Setting.schedule(
+                "scout.cron", "Daily run at (cron, UTC)", scout.cron(), "H2_SCOUT_CRON"),
+            Setting.names(
+                "scout.collectorsOn", "Collectors on", enabledCollectors, "H2_SOURCE_<ID>_ENABLED"),
+            Setting.fixedCount(
+                "scout.maxItemsPerRun", "Items a run collects", scout.maxItemsPerRun(), "items"),
+            Setting.count(
+                "scout.maxEnrichmentsPerRun",
+                "Enrichments a run",
+                scout.maxEnrichmentsPerRun(),
+                "calls a run",
+                "H2_SCOUT_MAX_ENRICHMENTS"),
+            Setting.count(
+                "scout.dailyEnrichmentCalls",
+                "Enrichment calls a day",
+                scout.dailyEnrichmentCalls(),
+                "calls a day",
+                "H2_SCOUT_DAILY_ENRICHMENT_CALLS"),
+            Setting.count(
+                "scout.gapDailyCalls",
+                "Gap rounds a day",
+                scout.gapDailyCalls(),
+                "calls a day",
+                "H2_SCOUT_GAP_DAILY_CALLS"),
+            Setting.count(
+                "scout.evidenceDailyExtractCredits",
+                "Tavily Extract credits a day, product pages",
+                scout.evidence().dailyExtractCredits(),
+                "credits a day",
+                "H2_SCOUT_EVIDENCE_DAILY_EXTRACT_CREDITS"),
+            Setting.count(
+                "scout.enrichMaxTokens",
+                "Output cap of one enrichment call",
+                scout.enrichMaxTokens(),
+                "tokens",
+                "H2_NEBIUS_ENRICH_MAX_TOKENS"),
+            Setting.model("scout.enrichmentModel", "Enrichment model", model, null),
+            Setting.version("scout.enrichmentPrompt", "Enrichment prompt version", promptVersion)));
   }
 
   @Bean

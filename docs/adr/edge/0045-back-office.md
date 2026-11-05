@@ -111,7 +111,6 @@ them without each module growing an admin corner.
    box (x picks the selected item); a bar under the list says "4 selected · Accept · Reject · Clear"; Accept and Reject
    ask first in a dialog that repeats the count by kind, with focus on Cancel. The line after says "11 done, 1 failed
    (already decided)", and the items that failed stay picked.
-
 ## Consequences
 - One place for every admin endpoint; a new part is a route, a controller method and a use case here.
 - The overview shows only what to act on now. Trends stay in Grafana; the overview does not rebuild them.
@@ -128,8 +127,7 @@ them without each module growing an admin corner.
   stays right. Low risk, and one transaction per item stays simple.
 - Bulk accept takes an enrichment check whose fields are UNVERIFIED or AI_ESTIMATED, as long as licence, open source
   and pricing are not CONFLICTING. This is a product choice: those values are already shown with their origin and
-  verification, and accepting the check publishes nothing new. I may revisit it.
-- The queue has no total of its own: the overview's count is the total, up to a minute old. A resource that changes
+  verification, and accepting the check publishes nothing new. I may revisit it.- The queue has no total of its own: the overview's count is the total, up to a minute old. A resource that changes
   part between two pages (a run finishes) can be skipped or shown twice; the next visit shows it in its place.
 - A skip or a move to the top changes which resources get the daily model calls, never how many.
 - Moves to the top run one at a time (the advisory lock). They are rare admin clicks, so the wait is short.
@@ -158,13 +156,11 @@ them without each module growing an admin corner.
 - Bulk accept for every kind — one click could add 100 resources to the catalog or verify 100 relationships nobody read.
 - An undo for bulk decisions — a decision can publish or verify at once; an undo would have to reverse that. Decisions
   stay final, and the confirm dialog says so.
-
 ## Code
 - `backend/src/main/java/ai/helper2/admin/` — `package-info.java`, `web/AdminController.java`, `web/OverviewController.java`,
   `web/EnrichmentQueueController.java`, `usecase/GetOverview.java`, `usecase/ListEnrichmentQueue.java`,
   `usecase/ResolveReview.java`, `ExampleDrafts.java` and `internal/JsonExampleDrafts.java` (the drafted example in a
-  review item), `config/AdminUseCaseConfiguration.java` (wiring, the transaction of `ResolveReview`).
-- `backend/src/main/resources/db/migration/V10__resource_enrichment_backlog_idx.sql`; `catalog/enrichment/EnrichmentCandidates.java`
+  review item), `config/AdminUseCaseConfiguration.java` (wiring, the transaction of `ResolveReview`).- `backend/src/main/resources/db/migration/V10__resource_enrichment_backlog_idx.sql`; `catalog/enrichment/EnrichmentCandidates.java`
   and `catalog/internal/JdbcEnrichmentCandidates.java` (`pending`, `pendingCount`, `backlog`, `standing`, `prioritisedCount`),
   `catalog/internal/BacklogRule.java`.
 - Queue actions: `V14__enrichment_queue_control.sql`; `backend/src/main/kotlin/ai/helper2/scout/EnrichmentQueue.kt`
@@ -181,8 +177,7 @@ them without each module growing an admin corner.
 - `backend/src/main/java/ai/helper2/admin/BulkDecisionRule.java`, `admin/usecase/ResolveReviewItems.java`,
   `admin/usecase/ResolveReview.java` and `catalog/usecase/ResolveReviewItem.java` (the batch in the audit outcome).
 - `frontend/src/pages/admin/` — `AdminLayout.tsx`, `AdminOverview.tsx`, `ReviewQueuePage.tsx`, `ReviewEvidence.tsx`,
-  `ReviewItemDetails.tsx`, `ReviewKeysHelp.tsx`, `ReviewBulk.tsx`, `AdminDialog.tsx`, `ScoutRunsPage.tsx`, `EnrichmentQueuePage.tsx`, `AuditPage.tsx`.
-- Tests: `api/AdminOverviewApiIT.java`, `admin/usecase/GetOverviewTest.java`, `platform/llm/BudgetLedgerTest.java`,
+  `ReviewItemDetails.tsx`, `ReviewKeysHelp.tsx`, `ReviewBulk.tsx`, `AdminDialog.tsx`, `ScoutRunsPage.tsx`, `EnrichmentQueuePage.tsx`, `AuditPage.tsx`.- Tests: `api/AdminOverviewApiIT.java`, `admin/usecase/GetOverviewTest.java`, `platform/llm/BudgetLedgerTest.java`,
   `RedisCallCounterIT.java`, `scout/internal/CatalogEnrichmentStoreIT.java`, `search/config/MicrometerSearchMetricsTest.java`,
   `api/EnrichmentQueueApiIT.java`, `admin/web/EnrichmentQueueCursorTest.java`, `catalog/internal/JdbcEnrichmentCandidatesIT.java`,
   `api/ReviewEvidenceApiIT.java`, `catalog/internal/JdbcReviewEvidenceIT.java`,
@@ -191,7 +186,6 @@ them without each module growing an admin corner.
   `architecture/ModularityTest.java` (the table-owner exception),
   `frontend/src/pages/admin/Admin.test.tsx`, `EnrichmentQueuePage.test.tsx`, `ReviewEvidence.test.tsx`, `ReviewBulk.test.tsx`,
   `src/a11y.test.tsx`.
-
 ## Diagrams
 [flow](../../diagrams/flow-0045-back-office.svg) · [sequence](../../diagrams/sequence-0045-back-office.svg)
 

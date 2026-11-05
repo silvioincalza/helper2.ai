@@ -10,6 +10,8 @@ import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.LlmSettings;
 import ai.helper2.platform.llm.ModelCallMetrics;
 import ai.helper2.platform.resilience.Resilience;
+import ai.helper2.platform.settings.Setting;
+import ai.helper2.platform.settings.SettingsGroup;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Clock;
@@ -26,6 +28,25 @@ import org.springframework.context.annotation.Configuration;
 class ExamplesConfiguration {
 
   private static final Logger log = LoggerFactory.getLogger(ExamplesConfiguration.class);
+
+  /** The example drafts' settings for the back office's Settings page (ADR 0045). */
+  @Bean
+  SettingsGroup exampleSettings(
+      ExamplesProperties examples, LlmSettings llm, ObjectProvider<ChatModel> chatModel) {
+    boolean on = llm.usable(chatModel.getIfAvailable()) && examples.draftCalls() > 0;
+    return new SettingsGroup(
+        "examples",
+        "Home examples",
+        SettingsGroup.EXAMPLES,
+        List.of(
+            Setting.count(
+                "examples.draftCalls",
+                "Draft runs a day",
+                examples.draftCalls(),
+                "calls a day",
+                "H2_EXAMPLES_DRAFT_CALLS"),
+            Setting.model("examples.draftModel", "Draft model", on ? llm.fast() : null, null)));
+  }
 
   /** The drafts' own daily model-call cap, apart from the guide's, the Scout's and the setup's. */
   @Bean

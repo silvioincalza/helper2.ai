@@ -31,6 +31,7 @@ tags:
   - name: audit
   - name: overview
   - name: enrichment-queue
+  - name: settings
   - name: examples
   - name: examples-admin
   - name: policy
@@ -678,6 +679,24 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/AuditEntryPage' }
         '400': { $ref: '#/components/responses/Problem' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+
+  /admin/config:
+    get:
+      tags: [settings]
+      operationId: getEffectiveConfig
+      summary: The settings the app runs with now, read-only.
+      description: >-
+        Grouped by module, each read from the module's typed settings: model ids per use, prompt versions, the guide's
+        configuration hash, daily budgets and caps, the Scout's schedule and the sources that are on. An allow-list:
+        never a secret, a key, a credential in a URL or a secret's path. Fixed until the next restart.
+      responses:
+        '200':
+          description: Every group, in page order.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EffectiveConfig' }
         '401': { $ref: '#/components/responses/Problem' }
         '403': { $ref: '#/components/responses/Problem' }
 
@@ -2140,6 +2159,41 @@ components:
       properties:
         outcome: { $ref: '#/components/schemas/ExampleCheckOutcome' }
         count: { type: integer, minimum: 0 }
+
+    EffectiveConfig:
+      type: object
+      required: [groups]
+      properties:
+        groups:
+          type: array
+          items: { $ref: '#/components/schemas/ConfigGroup' }
+
+    ConfigGroup:
+      type: object
+      required: [id, title, settings]
+      properties:
+        id: { type: string, description: "A stable id: models, guide, search, scout, ..." }
+        title: { type: string }
+        settings:
+          type: array
+          items: { $ref: '#/components/schemas/ConfigSetting' }
+
+    ConfigSetting:
+      type: object
+      required: [key, label, kind, value, unit, variable]
+      properties:
+        key: { type: string, description: "A stable id, <group>.<name>." }
+        label: { type: string }
+        kind:
+          type: string
+          description: >-
+            How to read value. COUNT and CAP are whole numbers (CAP null = no cap); FLAG is true or false; DURATION is
+            seconds; MODEL and VERSION are null when there is none; SCHEDULE is a Spring cron, UTC; NAMES are
+            comma-separated.
+          enum: [COUNT, CAP, FLAG, DURATION, MODEL, VERSION, SCHEDULE, NAMES]
+        value: { type: [string, 'null'], maxLength: 500 }
+        unit: { type: [string, 'null'], description: "The unit of a COUNT or CAP: calls a day, tokens, ..." }
+        variable: { type: [string, 'null'], description: The H2_ variable that sets it; null when the code or the chart fixes it. }
 
     EnrichmentQueuePage:
       type: object
