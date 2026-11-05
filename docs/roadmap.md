@@ -187,6 +187,10 @@ Open items:
   - An `unknown` count per facet and an updated-date facet on the search response (Filters panel).
   - Sign-in with Google (phase 1). Passkey, email link and password (phase 2) need their own ADR, a threat model and
     the Privacy page first.
+  - **Account, from the boards:** "higher daily limits when signed in" only once the API says the signed-in limits
+    (from `limits` on GET /me, never typed), and "Saved items 4 of 500" once GET /bookmarks returns the account cap.
+  - **Sign-in page, phase 2:** passkey, email link and password buttons, shown only when a provider is configured, after
+    the phase 2 ADR above.
   - The initial JavaScript is at 165.7 KiB gzip, over the 165 KiB budget (165.9 before the text pages moved to
     loading on demand). The radar, the phone tabs, Sources, Account, Sign in, Mission, Privacy, Terms and the 404
     already load on demand.
