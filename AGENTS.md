@@ -149,6 +149,10 @@ deferred (safe for now, say why).
 - Every change reaches `main` through a pull request. Open it with `gh` from Silvio's machine
   (never through a tool that adds an AI footer). Silvio reviews and merges it himself: never
   merge to `main`, never push to `main` directly, never deploy to prod.
+- This holds even when Silvio asks for a merge in a session ("merge", "merge all"). Get the PR
+  ready (checks green, review threads answered), then give him the command to run, one line per
+  PR: `gh pr merge <n> --squash --delete-branch`. For a stack, give the order. Never use
+  `gh pr merge`, `gh stack merge` or auto-merge yourself.
 - AI-tool setup and settings are committed (`AGENTS.md`, `CLAUDE.md`, `.claude/settings.json`,
   `.claude/agents/`, `.claude/commands/`). AI notes, reviews, plans, memory and machine-local
   settings never are: they go in the git-ignored `.private/` folder (or `CLAUDE.local.md`,
