@@ -1214,7 +1214,7 @@
           "We may change, limit or stop the service, or parts of it, at any time and without notice.",
           {
             "text": "Tavily web searches: {{webSearches}}; stored results are free. The AI guide: {{guideQuestions}} new questions a day per IP address; a question whose answer is still stored does not count, and an answer with no pick, or a question that fails, does not count either (up to 30 a day). After that, the guide shows the top search results without AI picks. Limits reset at 00:00 UTC.",
-            "withoutNumbers": "Tavily web searches: a daily limit each for search and the guide; stored results are free. The AI guide: a daily limit of new questions per IP address; a question whose answer is still stored does not count, and an answer with no pick, or a question that fails, does not count either (up to 30 a day). After that, the guide shows the top search results without AI picks. Limits reset at 00:00 UTC."
+            "withoutNumbers": "Tavily web searches: a daily limit each for search and the guide; stored results are free. The AI guide: a daily limit of new questions per IP address; a question whose answer is still stored does not count, and an answer with no pick, or a question that fails, does not count either (within a daily limit). After that, the guide shows the top search results without AI picks. Limits reset at 00:00 UTC."
           },
           "You can use Helper2.ai without an account. If you sign in, you can delete your account at any time: select your name at the top of the page, then \"Delete my account\". You can also write to us."
         ]
