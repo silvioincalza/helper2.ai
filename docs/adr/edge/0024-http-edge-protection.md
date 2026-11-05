@@ -86,5 +86,4 @@ must load the app on a direct visit, and a new release must reach browsers at on
 ## Roadmap
 - [Redis memory shared by rate limits, sessions and cache; alert on evictions](../../roadmap.md#3-more-than-one-replica).
 - [Load test of search at the expected peak; check the rate limits](../../roadmap.md#quality-gates).
-- [Serve the back office on admin.helper2.ai, reachable only through WireGuard via ingress-nginx](../../roadmap.md#domain-and-identity) ([0023](0023-identity-and-admin.md)).
 - Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

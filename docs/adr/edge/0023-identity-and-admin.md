@@ -106,8 +106,5 @@ traceable to that administrator.
 [flow](../../diagrams/flow-0023-identity-and-admin.svg) · [sequence](../../diagrams/sequence-0023-identity-and-admin.svg)
 
 ## Roadmap
-- [Serve the back office on admin.helper2.ai, reachable only through WireGuard via ingress-nginx](../../roadmap.md#domain-and-identity).
-- [Register a production GitHub OAuth App, enable `oauth-github`, set `H2_ADMINS`](../../roadmap.md#domain-and-identity).
-- [Sign-in for everyone: a public sign-in entry point for bookmarks and account deletion](../../roadmap.md#domain-and-identity).
 - [Redis memory shared by sessions, rate limits and cache; alert on evictions](../../roadmap.md#3-more-than-one-replica).
 - Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

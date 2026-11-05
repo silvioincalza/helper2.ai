@@ -95,7 +95,5 @@ screen reader, and in light and dark mode.
 ## Roadmap
 - [Browser end-to-end tests (skipped for now)](../../roadmap.md#quality-gates).
 - [Manual accessibility pass on real browsers](../../roadmap.md#quality-gates).
-- [The shared `/sources` data can be old during a long visit](../../roadmap.md#6-frontend).
-- [A fixed theme can be overridden by a device change when storage is blocked](../../roadmap.md#6-frontend).
 - [Search engine optimization (SEO): detail pages are not crawlable](../../roadmap.md#product-and-legal).
 - Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

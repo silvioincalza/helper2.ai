@@ -29,7 +29,6 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 
 ### Domain and identity
 - DNS: `CAA` record for the edge's certificate authority; `v=spf1 -all` and DMARC `p=reject` if no mail is sent.
-- ADMIN is decided at sign-in, so a change to `H2_ADMINS` needs a new sign-in.
 - Optional `H2_HF_TOKEN` on prod.
 - `H2_SETUP_GITHUB_TOKEN` (read-only, public repositories) in `app_env` on staging and prod; without it Guide me reads
   GitHub anonymously, 60 calls an hour ([ADR 0031](adr/guide/0031-setup-guide.md)).
@@ -107,8 +106,6 @@ Open items:
   AI-written in the API and the page ([ADR 0038](adr/guide/0038-ai-content-marking.md)), and keep the word-list note for
   lexicon terms. LAWYER: does a model translation of the user's own query fall under the Art. 50(2) exemption for
   assistive or standard-editing functions? Even if it does, a "not AI" label on model text must go.
-- The guide reason check is a model judgment and can miss a claim. Only the quote is proven
-  ([ADR 0016](adr/guide/0016-guide-reason-check.md)).
 - Watch whether the source `type`, now a source fact in enrichment, sends many proposals to CONFLICTING review
   (for example GitHub LIBRARY versus MCP_SERVER) ([ADR 0019](adr/scout/0019-evidence-gated-enrichment.md)).
 - Cross-language retrieval in vector search.
@@ -173,7 +170,6 @@ Open items:
   - An `unknown` count per facet and an updated-date facet on the search response (Filters panel).
   - Sign-in with Google (phase 1). Passkey, email link and password (phase 2) need their own ADR, a threat model and
     the Privacy page first.
-  - The guide starts on its own only for questions of 4 words or more; shorter searches show Ask the guide.
 - **Frontend design** ([0040](adr/frontend/0040-frontend-design.md)) is done and on staging. Prod gets it with the next release:
   cut one once staging looks right.
 - Tracking cookies are planned. Before the first one: consent banner, cookie notice, Privacy page and record of
@@ -188,9 +184,14 @@ Open items:
   checks them for framework types. Put the stores behind ports, then add the packages to the
   `DOMAIN` rule of `ModularityTest`. Only the JDBC adapters are guarded today
   (`useCasesDoNotNameJdbcAdapters`).
+- The model helpers live in the open `platform` module (`platform.llm`), so every module can use all of them. A
+  closed `llm` module with a small public API would make each use explicit
+  ([ADR 0014](adr/guide/0014-llm-integration.md)).
 
 ## 8. Documentation
 
+- After the hackathon judging ends (15 Dec 2026), move `docs/hackathon` and the README's hackathon section out of
+  the repo.
 
 ## 9. Known limits
 

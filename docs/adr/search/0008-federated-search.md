@@ -116,6 +116,5 @@ and how many web credits the day has used. Two sources can describe the same res
 [flow](../../diagrams/flow-0008-federated-search.svg) · [sequence](../../diagrams/sequence-0008-federated-search.svg)
 
 ## Roadmap
-- The Sources page shows response time, circuit state and Tavily credits: [roadmap](../../roadmap.md#6-frontend).
 - [Source cooldowns, circuits and source health stay per replica, on purpose](../../roadmap.md#3-more-than-one-replica).
 - Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

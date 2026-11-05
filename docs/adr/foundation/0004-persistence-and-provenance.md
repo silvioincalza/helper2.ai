@@ -134,6 +134,5 @@ Shared cache lookups: [flow 0011](../../diagrams/flow-0011-language-aware-search
 ## Roadmap
 - Discovery date unknown on a resource's first search: [roadmap](../../roadmap.md#5-search-and-catalog).
 - Delete indexed resources left without source records: [roadmap](../../roadmap.md#5-search-and-catalog).
-- Batch the per-item queries of recent items, events and evidence: [roadmap](../../roadmap.md#5-search-and-catalog).
 - One owner per table: the Scout still writes `source.last_outcome` itself: [roadmap](../../roadmap.md#7-architecture).
 - Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

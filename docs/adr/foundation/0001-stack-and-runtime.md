@@ -55,5 +55,5 @@ The modules are in the [context view](../../diagrams/architecture-context.svg); 
 
 ## Roadmap
 - Search engine support (robots.txt, sitemap, metadata for detail pages): [roadmap](../../roadmap.md#product-and-legal).
-- Pin base images by digest, image scan and software bill of materials: [roadmap](../../roadmap.md#2-operations).
+- The open supply-chain steps ([0046](../operations/0046-supply-chain.md)): [roadmap](../../roadmap.md#2-operations).
 - Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).
