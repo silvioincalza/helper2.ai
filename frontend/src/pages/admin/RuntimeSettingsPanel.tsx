@@ -149,10 +149,11 @@ export function RuntimeSettingsPanel({
           {pending.value === 0 && <p className="muted">{t('admin.settings.runtime.zeroOff')}</p>}
           <label>
             {t('admin.settings.runtime.reason')}
-            <textarea
+            {/* One line: the server refuses line breaks and other control characters. */}
+            <input
+              type="text"
               value={reason}
               maxLength={500}
-              rows={2}
               onChange={(e) => setReason(e.target.value)}
             />
           </label>

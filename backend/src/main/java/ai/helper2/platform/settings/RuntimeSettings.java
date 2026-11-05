@@ -53,10 +53,15 @@ public final class RuntimeSettings {
     };
   }
 
-  /** A daily cap whose default may be "no cap" (null). */
-  public Supplier<@Nullable Long> declareCap(RuntimeSetting setting, @Nullable Long defaultValue) {
-    register(setting, defaultValue);
-    return () -> current(setting);
+  /**
+   * A daily cap whose {@code H2_} value may be empty ("no cap"). A runtime setting is always
+   * finite: an empty value applies as the code maximum, so neither a reset nor an unset variable
+   * removes the cap.
+   */
+  public Supplier<Long> declareCap(RuntimeSetting setting, @Nullable Long defaultValue) {
+    long finiteDefault = defaultValue == null ? setting.max() : defaultValue;
+    register(setting, finiteDefault);
+    return () -> Objects.requireNonNull(current(setting));
   }
 
   /**
@@ -123,13 +128,28 @@ public final class RuntimeSettings {
     return reloadIfChanged();
   }
 
-  /** Reads the settings again when the store's version is not the one applied (after a change). */
+  /**
+   * Reads the settings again when the store's version is not the one applied (after a change). The
+   * refresh thread and a request that made a change can read at the same time: an older snapshot
+   * never replaces a newer one.
+   */
   public boolean reloadIfChanged() {
-    if (store.version() == snapshot.get().version()) {
+    long stored = store.version();
+    long applied = snapshot.get().version();
+    if (stored == applied) {
       return false;
     }
-    snapshot.set(read());
-    return true;
+    Snapshot next = read();
+    if (stored < applied) {
+      // The store went back (restored from a backup): what it holds now wins.
+      snapshot.set(next);
+      return true;
+    }
+    return snapshot.accumulateAndGet(next, RuntimeSettings::newer) == next;
+  }
+
+  private static Snapshot newer(Snapshot applied, Snapshot next) {
+    return next.version() >= applied.version() ? next : applied;
   }
 
   /**

@@ -52,6 +52,9 @@ class RuntimeSettingsTest {
     int versionReads;
     boolean down;
 
+    /** Runs after newest() has read, before it answers: another reader finishing first. */
+    Runnable afterRead = () -> {};
+
     void set(RuntimeSetting setting, @Nullable Long value) {
       changes.add(new Change(changes.size() + 1L, setting.key(), value, "1", Instant.EPOCH, null));
     }
@@ -69,6 +72,9 @@ class RuntimeSettingsTest {
     public Map<String, Change> newest() {
       Map<String, Change> newest = new LinkedHashMap<>();
       changes.forEach(c -> newest.put(c.name(), c));
+      Runnable other = afterRead;
+      afterRead = () -> {};
+      other.run();
       return newest;
     }
 
@@ -141,12 +147,21 @@ class RuntimeSettingsTest {
   }
 
   @Test
-  void aCapWithNoDefaultIsNoCapUntilSet() {
-    var credits = runtime.declareCap(RuntimeSetting.SEARCH_WEB_GLOBAL_DAILY_CREDITS, null);
-    assertThat(credits.get()).isNull();
-    store.set(RuntimeSetting.SEARCH_WEB_GLOBAL_DAILY_CREDITS, 120L);
+  void aCapWithAnEmptyDefaultIsTheCodeMaximumAndAResetNeverRemovesIt() {
+    RuntimeSetting global = RuntimeSetting.SEARCH_WEB_GLOBAL_DAILY_CREDITS;
+    var credits = runtime.declareCap(global, null);
+    assertThat(credits.get()).as("no H2_ value: the code maximum").isEqualTo(global.max());
+    assertThat(runtime.defaultValue(global)).isEqualTo(global.max());
+
+    store.set(global, 120L);
     runtime.reloadIfChanged();
     assertThat(credits.get()).isEqualTo(120L);
+
+    store.set(global, null);
+    runtime.reloadIfChanged();
+    assertThat(credits.get())
+        .as("reset: back to the code maximum, not to no cap")
+        .isEqualTo(global.max());
   }
 
   @Test
@@ -174,6 +189,35 @@ class RuntimeSettingsTest {
     clock.now = clock.now.plus(REFRESH);
     assertThatThrownBy(runtime::tick).isInstanceOf(IllegalStateException.class);
     assertThat(guide.getAsInt()).isEqualTo(50);
+  }
+
+  @Test
+  void anOlderSnapshotNeverReplacesANewerOne() {
+    IntSupplier guide = runtime.declare(RuntimeSetting.GUIDE_DAILY_MODEL_CALLS, 600);
+    store.set(RuntimeSetting.GUIDE_DAILY_MODEL_CALLS, 50L);
+    store.afterRead =
+        () -> {
+          store.set(RuntimeSetting.GUIDE_DAILY_MODEL_CALLS, 30L);
+          assertThat(runtime.reloadIfChanged()).as("the change's own reload").isTrue();
+        };
+
+    assertThat(runtime.reloadIfChanged()).as("the refresh read version 1, too late").isFalse();
+
+    assertThat(guide.getAsInt()).isEqualTo(30);
+    assertThat(runtime.version()).isEqualTo(2);
+  }
+
+  @Test
+  void aStoreRestoredToAnOlderVersionWins() {
+    IntSupplier guide = runtime.declare(RuntimeSetting.GUIDE_DAILY_MODEL_CALLS, 600);
+    store.set(RuntimeSetting.GUIDE_DAILY_MODEL_CALLS, 50L);
+    runtime.reloadIfChanged();
+
+    store.changes.removeLast();
+
+    assertThat(runtime.reloadIfChanged()).isTrue();
+    assertThat(guide.getAsInt()).isEqualTo(600);
+    assertThat(runtime.version()).isZero();
   }
 
   @Test

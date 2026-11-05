@@ -16,6 +16,8 @@ change: ChangeRuntimeSetting {
   direction: down
   known: "Key in the allow-list?" {class: decision}
   notfound: "404" {class: fail}
+  reason: "Reason one plain line?\n(no control or format character)" {class: decision}
+  badreason: "400, nothing stored" {class: fail}
   range: "0 ≤ value ≤ code max?" {class: decision}
   bad: "400, audited OUT_OF_RANGE" {class: fail}
   lock: "Advisory lock;\nnewest version = sent version?" {class: decision}
@@ -23,7 +25,9 @@ change: ChangeRuntimeSetting {
   append: "Append row (value, who, when, reason)\n+ audit row before/after, one transaction" {class: data}
   commit: "After commit: this replica\nreads the settings again" {class: app}
   known -> notfound: no
-  known -> range: yes
+  known -> reason: yes
+  reason -> badreason: no
+  reason -> range: yes
   range -> bad: no
   range -> lock: yes
   lock -> stale: no
@@ -39,11 +43,16 @@ refresh: "Each replica, every second" {
   due: "Refresh interval\npassed? (20 s)" {class: decision}
   wait: "Keep the snapshot" {class: end}
   version: "Store version changed?" {class: decision}
-  read: "Read newest row per setting;\nclamp to code max; new snapshot" {class: data}
+  read: "Read newest row per setting;\nclamp to code max" {class: data}
+  newer: "Snapshot read is newer than the one\napplied, or the store went back?" {class: decision}
+  apply: "New snapshot" {class: data}
   due -> wait: no
   due -> version: yes
   version -> wait: "no, or the store cannot answer"
   version -> read: yes
+  read -> newer
+  newer -> apply: yes
+  newer -> wait: "no (another reader applied a newer one)"
 }
 
 use: "Hot path (guide, translation, Tavily, enrichment)" {
@@ -51,10 +60,10 @@ use: "Hot path (guide, translation, Tavily, enrichment)" {
   direction: down
   limit: "Supplier: override in snapshot?" {class: decision}
   override: "Override" {class: end}
-  default: "H2_ default" {class: end}
+  default: "H2_ default\n(an empty cap: the code max)" {class: end}
   limit -> override: yes
   limit -> default: no
 }
 
 change.commit -> refresh.read: "same replica, at once" {style.stroke-dash: 3}
-refresh.read -> use.limit: "AtomicReference" {style.stroke-dash: 3}
+refresh.apply -> use.limit: "AtomicReference" {style.stroke-dash: 3}

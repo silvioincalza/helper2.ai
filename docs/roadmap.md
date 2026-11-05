@@ -15,28 +15,13 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 - Lawyer review of the web-search quota ([ADR 0037](adr/search/0037-tavily-store-and-daily-quota.md)): whether an HMAC of
   the address or of the query is personal data, legitimate interest as the basis, and the wording on the transfer of
   queries to Tavily in the US.
-- Lawyer review of back-office records ([ADR 0045](adr/edge/0045-back-office.md)): `admin_audit` keeps an
-  administrator's GitHub id for 24 months, a review item keeps who decided it and their note, and a skipped
-  resource keeps the reason for the skip (`enrichment_queue_control`, until requeued). Is the line on the
-  Privacy page enough for the people who run the site, and is 24 months right?
+- Lawyer review of back-office records ([ADR 0058](adr/operations/0058-runtime-settings.md)): `admin_audit` and
+  `runtime_setting` keep an administrator's GitHub id and a free-text reason for 24 months. Is the line on the Privacy
+  page enough for the people who run the site, and is 24 months right?
 - Check each US source and GitHub for Data Privacy Framework certification, as the Privacy page states.
 - Lawyer review of guide question embeddings ([ADR 0041](adr/guide/0041-guide-answer-cache.md)): whether an embedding of a
   question is personal data, the basis for keeping it up to a day, and the transfer of search and guide text to the
-  NVIDIA API catalog in the US. The Privacy page lists the transfer, what NVIDIA receives and what its terms let it do
-  with the text (6 Nov 2026); the lawyer confirms the wording and whether Art. 49(1)(b) GDPR can carry transfers made
-  on every search.
-- Silvio: buy the NVIDIA API subscription before the next prod release; the trial terms forbid production
-  ([NVIDIA API Trial Terms of Service](https://assets.ngc.nvidia.com/products/api-catalog/legal/NVIDIA%20API%20Trial%20Terms%20of%20Service.pdf),
-  v. 19 Sep 2025, §1.2 and §1.4). NVIDIA publishes no terms for a paid use of `integrate.api.nvidia.com`: §1.4 says the
-  subscription's own terms govern production use. Before signing, get in writing that the subscription covers calls to
-  the hosted endpoint, what NVIDIA does with the text (the trial terms let it improve its models, §3.3(iv)), how long it
-  keeps it (§2.3, §2.4), where the endpoint runs, and whether a data processing agreement with standard contractual
-  clauses is part of it. Then update the Embeddings sentence on the Privacy page.
-- Confirm with Nebius where `nvidia/nemotron-3-super-120b-a12b` is served; the Privacy page says guide questions are
-  processed in the European Union. The Nebius Token Factory model catalog (read 6 Nov 2026) lists the model in
-  `us-central1` (Kansas City, US) only; Nemotron 3 Nano is in `eu-north1` (Finland). The choose and reason-check calls
-  use the reasoning model (`H2_NEBIUS_REASONING_MODEL` on prod, in OpenBao). If it runs in the US: Nebius Inc. is
-  DPF-certified EU-US only, not Swiss-US, so the Swiss transfer needs the SCCs of the Nebius DPA, and the page changes.
+  NVIDIA API catalog in the US (not yet listed under transfers abroad). 
 - Review each source's terms again for commercial use.
 - Monetisation ([ADR 0057](adr/frontend/0057-monetisation.md)), before a setting is filled on prod:
   - Manual: create the GA4 property (EU data), retention 2 months; in enhanced measurement turn off "Page changes based
@@ -64,10 +49,6 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 - Lawyer review of the awesome-list search index ([ADR 0055](adr/search/0055-search-inside-awesome-lists.md)): whether a
   tsvector of a list's words is a reproduction or a database extraction, keeping and showing section headings, and
   GitHub's terms for reading README files to build it.
-- Lawyer review of deep search in awesome lists ([ADR 0058](adr/scout/0058-awesome-deep-search.md)): GitHub's terms
-  for reading up to 40 README files a day and following links from list to list; keeping and showing links to
-  third-party product sites with the link's words and the list's section (consent, liability for links under the DSA
-  and Swiss law); a section heading used as a category as reuse of the list's selection or arrangement.
 - Lawyer review of README and model-card quotes ([ADR 0043](adr/scout/0043-enrichment-gap-round.md)): the quotation
   right (Swiss URG Art. 25, EU InfoSoc Art. 5(3)(d)) for 20–300-character excerpts, also of repositories with no
   licence; GitHub and Hugging Face terms for reading and keeping them (the Hub `raw` path is not its API); author names
@@ -231,9 +212,6 @@ Open items:
 - Search inside awesome lists ([ADR 0055](adr/search/0055-search-inside-awesome-lists.md)): once the search set has
   grades, compare recall and nDCG@10 with and without list words, and tune the half weight from that, not before.
   Then decide on embeddings of entry lines.
-- Deep search in awesome lists ([ADR 0058](adr/scout/0058-awesome-deep-search.md)): follow a list known only by its
-  topics (one facts call per candidate link, measured first); read `<a href>` links in READMEs; measure the category
-  precision from headings once the category labels exist.
 - Source requests: anyone can ask for a new source of information (a registry, an e-learning platform, a vendor's
   catalog, a newsletter) from the Sources page. A request names the site and what it lists; it goes to the admin
   review list, and an accepted request becomes a collector or a curated entry after a terms review for public
@@ -298,10 +276,12 @@ Open items:
 
 ## 7. Architecture
 
-- The Java use cases of catalog read its `internal` stores directly (`ResourceStore`, `ResourceCards`), and nothing
-  checks them for framework types. Put the stores behind ports, then add the packages to the `DOMAIN` rule of
-  `ModularityTest`, as identity and admin do
-  ([ADR 0002](adr/foundation/0002-modular-monolith-hexagonal.md)). Only the JDBC adapters are guarded today
+- The Scout writes `source.last_outcome` (`JdbcScoutStore`); move it behind a catalog port
+  ([ADR 0002](adr/foundation/0002-modular-monolith-hexagonal.md)).
+- The Java use cases of catalog, identity and admin read their module's `internal` stores
+  directly (`ResourceStore`, `ResourceCards`, `Users`, `Bookmarks`, `AuditLog`), and nothing
+  checks them for framework types. Put the stores behind ports, then add the packages to the
+  `DOMAIN` rule of `ModularityTest`. Only the JDBC adapters are guarded today
   (`useCasesDoNotNameJdbcAdapters`).
 - The model helpers live in the open `platform` module (`platform.llm`), so every module can use all of them. A
   closed `llm` module with a small public API would make each use explicit
@@ -344,7 +324,6 @@ Fix an item or accept it; when it no longer holds, remove it.
 - Accepted risk (owner, 30 Oct 2026): rotating addresses can drain the monthly Tavily credits while no cap is set; searches then answer from stored sets and other sources. Failing closed loses fresh web results for a Redis outage. ([ADR 0037](adr/search/0037-tavily-store-and-daily-quota.md))
 - Categories ([ADR 0053](adr/search/0053-category-filter.md)) are as good as their words: a tool that uses none of a category's words has no category. Facet counts see only the hits of this query. A changed category filter on a page where the guide was asked asks the guide again (one more AI answer, unless cached). The guide's comparison and explanation subject searches ignore the filter on purpose.
 - Awesome-list words are English-stemmed: a list in another language matches only exact word forms. An entry whose repository was renamed since the list was written links the old URL and is left out of the index. ([ADR 0055](adr/search/0055-search-inside-awesome-lists.md))
-- Deep search in awesome lists skips product sites on plain http, on an IDN (punycode) name or linked only through HTML. A list linked under a plain heading whose name does not say "awesome" is not followed. A category given by a list heading stays until the resource's categories are assigned again. All seed lists are read every pass, even when the first ones fill the entry cap. ([ADR 0058](adr/scout/0058-awesome-deep-search.md))
 - The web-search quota is taken before the call, so a call the circuit refuses still counts. A stored hit is read back with two short queries; a set not yet stored is a miss. ([ADR 0037](adr/search/0037-tavily-store-and-daily-quota.md))
 
 ### Scout
@@ -381,17 +360,13 @@ Fix an item or accept it; when it no longer holds, remove it.
 
 - Roles live in the session: removing an admin takes effect at the next sign-in; a Redis outage signs the admin out. ([ADR 0023](adr/edge/0023-identity-and-admin.md))
 - A GitHub OAuth App allows only one callback URL, and each environment needs two (public host and admin host): use a GitHub App, or one OAuth App per host. A manual step, outside the repo. ([ADR 0035](adr/edge/0035-admin-host.md))
-- The overview's enrichment backlog count reads every resource that may wait (0.65 s at 250 000 synthetic resources, cached a minute; 1.7 to 1.9 s with 37 500 REJECTED resources and the queue decisions). A queue page where no REJECTED resource is due for a retry walks every REJECTED resource (0.4 s at 250 000), and so does the out-of-retries view (1.1 to 1.6 s with 37 500 REJECTED); a stored "last run failed" flag would let the index skip them. A budget that is never built (no model configured) is not listed. ([ADR 0045](adr/edge/0045-back-office.md))
-- The catalog's backlog query reads the Scout's `enrichment_queue_control` (a listed exception in the table-owner test). If it starts to hurt, the catalog can own the table behind a port, as for the re-run request of ADR 0056. ([ADR 0045](adr/edge/0045-back-office.md) §7)
-- Privacy check (privacy-legal): the skip reason in the enrichment queue is free text, like the review note. The form says "No personal data" and the code drops control characters, but nothing stops a name. Confirm whether the Privacy page must list the skip reason, and whether it needs a retention rule (today it stays until a requeue, a new skip or the resource's delete). ([ADR 0045](adr/edge/0045-back-office.md) §7)
+- The overview's enrichment backlog count reads every resource that may wait (0.65 s at 250 000 synthetic resources, cached a minute); acting on the queue (requeue, skip, prioritise) is not built yet. A queue page where no REJECTED resource is due for a retry walks every REJECTED resource (0.4 s at 250 000); a stored "last run failed" flag would let the index skip them. A budget that is never built (no model configured) is not listed. ([ADR 0045](adr/edge/0045-back-office.md))
 - The admin pages ship in the public bundle (the server still refuses every admin call without ADMIN). Load them lazily so the back office's shape stays out of the public JavaScript.
 - Privacy check: the review decision note is free text kept with the review item. Write no personal data in it; confirm with privacy-legal whether the Privacy page must list it.
 - While Redis is down each replica counts alone (up to 3× the limit on prod). Clients behind one shared address share one limit. ([ADR 0024](adr/edge/0024-http-edge-protection.md))
 
 ### Frontend
 
-- With ads on, public pages allow inline styles (`style-src 'unsafe-inline'`) for the EthicalAds client. The ad slot's height is fixed by hand; check it against real ads on staging. ([ADR 0057](adr/frontend/0057-monetisation.md))
-- Google Analytics hosts are listed by hand in the CSP; if Google changes them, hits are blocked until the list is updated. ([ADR 0057](adr/frontend/0057-monetisation.md))
 - A user who never presses Ask the guide (or Shift+Enter) never sees the guide's picks: Enter only searches. ([ADR 0025](adr/frontend/0025-frontend-one-box.md))
 - knip does not read locale files or CSS: a text key or a style that only dead code used stays until it is removed by hand (today the `freshness.*` texts and `.badge.freshness`). Moderate `npm audit` advisories in build and test tools are only reported. ([ADR 0054](adr/quality/0054-dead-code-and-dependency-audit.md))
 - No browser end-to-end tests: frontend tests run in jsdom only, also in CI. ([ADR 0025](adr/frontend/0025-frontend-one-box.md), [ADR 0028](adr/operations/0028-ci-cd.md))

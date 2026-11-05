@@ -163,6 +163,30 @@ class AdminRuntimeSettingsApiIT extends ApiTestBase {
   }
 
   @Test
+  void aReasonWithControlOrFormatCharactersIsABadRequest() throws Exception {
+    // JSON escapes: a line break, a zero-width space, a right-to-left override.
+    for (String reason : List.of("two\\nlines", "zero\\u200bwidth", "right\\u202eto left")) {
+      mvc.perform(
+              put("/api/v1/admin/runtime-settings/" + GAP)
+                  .with(admin)
+                  .with(csrf())
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(change(10, version(), reason)))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.code").value("invalid-request"));
+      mvc.perform(
+              post("/api/v1/admin/runtime-settings/" + GAP + "/reset")
+                  .with(admin)
+                  .with(csrf())
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"version\":%d,\"reason\":\"%s\"}".formatted(version(), reason)))
+          .andExpect(status().isBadRequest());
+    }
+    assertThat(audit()).as("nothing stored, nothing audited").isEmpty();
+    assertThat(runtime.current(RuntimeSetting.SCOUT_GAP_DAILY_CALLS)).isEqualTo(400L);
+  }
+
+  @Test
   void aKeyOutsideTheAllowListIsNotFound() throws Exception {
     mvc.perform(
             put("/api/v1/admin/runtime-settings/models.reasoning")

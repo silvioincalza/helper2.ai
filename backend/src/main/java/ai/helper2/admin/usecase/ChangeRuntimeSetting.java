@@ -1,10 +1,12 @@
 package ai.helper2.admin.usecase;
 
 import ai.helper2.identity.AuditTrail;
+import ai.helper2.platform.BadRequestException;
 import ai.helper2.platform.settings.RuntimeSetting;
 import ai.helper2.platform.settings.RuntimeSettingStore;
 import ai.helper2.platform.settings.RuntimeSettings;
 import java.time.Clock;
+import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -112,12 +114,24 @@ public class ChangeRuntimeSetting {
         });
   }
 
-  /** The administrator's reason: trimmed, and none when blank. */
+  /**
+   * The administrator's reason: trimmed, and none when blank. A control or format character (a line
+   * break, a zero-width or bidirectional mark) is refused: the reason is shown in the audit trail
+   * and the history as one plain line. Plain spaces stay.
+   */
   static final class Reasons {
+    private static final Pattern HIDDEN_CHARACTERS = Pattern.compile("[\\p{Cc}\\p{Cf}]");
+
     private Reasons() {}
 
     static @Nullable String clean(@Nullable String reason) {
-      return reason == null || reason.isBlank() ? null : reason.strip();
+      if (reason == null || reason.isBlank()) {
+        return null;
+      }
+      if (HIDDEN_CHARACTERS.matcher(reason).find()) {
+        throw new BadRequestException("reason: no control or format characters");
+      }
+      return reason.strip();
     }
   }
 }

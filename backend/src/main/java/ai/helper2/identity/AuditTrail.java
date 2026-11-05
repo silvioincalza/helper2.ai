@@ -17,6 +17,11 @@ public interface AuditTrail {
     REMOVE_HOME_EXAMPLE,
     DRAFT_HOME_EXAMPLES,
     RECHECK_ENRICHMENT,
+    BACKFILL_CATEGORIES,
+    // The enrichment queue actions (V14): listed here so the enum matches the check of V15.
+    REQUEUE_ENRICHMENT,
+    SKIP_ENRICHMENT,
+    PRIORITISE_ENRICHMENT,
     CHANGE_SETTING
   }
 

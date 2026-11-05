@@ -189,6 +189,8 @@
     "pick": "Guide pick #{{rank}}",
     "checkedQuote": "Checked word for word in the source",
     "from": "From {{sources}}",
+    "foundIn": "Found in {{list}} under {{heading}}",
+    "foundInList": "Found in {{list}}",
     "dateUpdated": "updated {{date}}",
     "dateCreated": "created {{date}}",
     "dateFirstSeen": "first seen {{date}}",
@@ -257,7 +259,22 @@
     "license": "License",
     "pricing": "Pricing",
     "platform": "Platform",
-    "openSource": "Open source"
+    "openSource": "Open source",
+    "category": "Category"
+  },
+  "categories": {
+    "title": "Categories",
+    "loading": "Loading categories…",
+    "error": "Could not load the categories.",
+    "retry": "Try again",
+    "empty": "None of these results has a category yet.",
+    "none": "No category yet",
+    "searchIn": "Search in {{name}}",
+    "byCode": "Categories are set by fixed rules from what the sources say, not by AI.",
+    "backfill": "Assign categories again",
+    "backfillHint": "Runs in the background over the whole catalog. Counts go to the log and the metrics.",
+    "backfillStarted": "Started. It runs in the background.",
+    "backfillFailed": "Could not start it. Try again."
   },
   "sources": {
     "latencyMs": "{{ms}} ms",
@@ -716,6 +733,10 @@
         "CHANGE_HOME_EXAMPLE": "Example changed",
         "REMOVE_HOME_EXAMPLE": "Example removed",
         "DRAFT_HOME_EXAMPLES": "Examples drafted with AI",
+        "BACKFILL_CATEGORIES": "Categories assigned again",
+        "REQUEUE_ENRICHMENT": "Enrichment requeued",
+        "SKIP_ENRICHMENT": "Enrichment skipped",
+        "PRIORITISE_ENRICHMENT": "Enrichment moved to the top",
         "CHANGE_SETTING": "Setting changed"
       },
       "change": "{{before}} → {{after}}"
@@ -1212,7 +1233,7 @@
   },
   "privacy": {
     "title": "Privacy",
-    "updated": "Last updated: 5 November 2026",
+    "updated": "Last updated: 6 November 2026",
     "lede": "Helper2.ai collects as little as possible. You can search and ask the guide without an account. There are no ads, no analytics and no tracking cookies, and we never sell data.",
     "contactIntro": "Silvio Incalza, Switzerland, is responsible for this website. For any privacy question or request, write to",
     "sections": [
@@ -1220,8 +1241,8 @@
         "title": "What we process and why",
         "items": [
           {
-            "text": "Your searches and guide questions: the text you type, used only to answer you. It is not linked to your account. A source's search results count as fresh for a short time, set per source; we keep the stored copy for up to {{cachedSearches}}, so results can still be shown when a source fails. Guide answers are kept for up to {{cachedGuideAnswers}}. Both are stored under a hash of the question, not its text. A cached guide answer, with the search queries the guide wrote for it, can be shown to anyone who asks the same or a very similar question. Please do not type personal or secret information.",
-            "withoutNumbers": "Your searches and guide questions: the text you type, used only to answer you. It is not linked to your account. A source's search results count as fresh for a short time, set per source; we keep the stored copy for a limited time, so results can still be shown when a source fails. Guide answers are kept for a limited time too. Both are stored under a hash of the question, not its text. A cached guide answer, with the search queries the guide wrote for it, can be shown to anyone who asks the same or a very similar question. Please do not type personal or secret information."
+            "text": "Your searches and guide questions: the text you type, used only to answer you. It is not linked to your account. A source's search results count as fresh for a short time, set per source; we keep the stored copy for up to {{cachedSearches}}, so results can still be shown when a source fails. Guide answers are kept for up to {{cachedGuideAnswers}}. Both are stored under a hash of the question, not its text. When you ask the guide on a results page filtered by category, it also gets the ids of the categories you chose: they come from our fixed list, never from what you type. They are part of that hash and are kept with the cached answer for up to {{cachedGuideAnswers}}, not linked to you or your account. A cached guide answer, with the search queries the guide wrote for it, can be shown to anyone who asks the same or a very similar question. Please do not type personal or secret information.",
+            "withoutNumbers": "Your searches and guide questions: the text you type, used only to answer you. It is not linked to your account. A source's search results count as fresh for a short time, set per source; we keep the stored copy for a limited time, so results can still be shown when a source fails. Guide answers are kept for a limited time too. Both are stored under a hash of the question, not its text. When you ask the guide on a results page filtered by category, it also gets the ids of the categories you chose: they come from our fixed list, never from what you type. They are part of that hash and are kept with the cached answer for the same limited time, not linked to you or your account. A cached guide answer, with the search queries the guide wrote for it, can be shown to anyone who asks the same or a very similar question. Please do not type personal or secret information."
           },
           "Your account, if you sign in with GitHub: your GitHub user ID (a number), your display name and when you last signed in. We ask GitHub only for basic profile access. We never see your GitHub password or your e-mail address.",
           "Your display settings, if you are signed in: whether the radar on Home moves between its sources. Kept with your account until you delete it.",
@@ -1232,6 +1253,7 @@
           "Your limits for today: when you open the site, we read these two counters under the same daily hash of your IP address, or your account once account limits are on, and send only what is left today (guide questions, and web searches for search and the guide) back to your browser, with the time they reset. Reading them does not count as a use, stores nothing new and does not send your address.",
           "Stored Tavily results, under a keyed hash of the question, not its text.",
           "Guide question fingerprints, only when similar-question reuse is on: a list of numbers (an embedding) computed from your guide question, kept with its cached answer so a later question with the same meaning can get that answer. Not linked to you or your account.",
+          "Records of our administrators: when a person who runs Helper2.ai acts in the back office (decides a review item, starts a Scout run, changes a spending limit), we keep their GitHub user ID, the time, what changed and the reason they wrote. This is about the people who run the site, never about visitors.",
           "Usage totals: how many searches we answer, how many had results from only some sources, and how many found nothing. They are counts only: never the text you typed, your IP address or your account.",
           "Technical data: to limit abuse (rate limits and the number of guide questions per day), we count your requests under a keyed hash of your IP address that changes every day. The address itself is not stored with these counts, and the counts of two days cannot be linked. Only when our counter store is down, your IP address is kept in our server's memory for the length of the limit instead. Our servers and our web gateway also write technical logs, which can include your IP address and the pages you request. The address of a search page contains what you typed: your search words and, when you ask the guide, your question. So these logs can keep your search text next to your IP address. Do not type personal data into the search box. Our servers also record request traces: the timing of each step of a request, linked to its log lines by an ID, without your IP address or your search text. We keep these logs and traces for up to 3 months to keep the service running and secure, then delete them."
         ]
@@ -1274,6 +1296,7 @@
         "items": [
           "To describe the AI resources we list, we read public pages about them, such as GitHub repositories, their README files and Hugging Face model cards. We also run fixed web searches through Tavily to find new AI products and articles that compare them: 34 categories of AI tools (such as coding, writing, health and legal tools), each searched once a week, 39 searches in all. Once a week we also search for public LinkedIn pages about AI through Tavily: articles, posts, company pages and events. We never visit LinkedIn ourselves: Tavily finds the pages. These searches contain no data about you.",
           "From README files and model cards we keep names of projects, organisations and authors, and short quotes of up to 300 characters, each with its source named and a link to it. We do not keep the rest of their text, and we replace email addresses with \"[email]\" before anything is quoted.",
+          "From awesome lists on GitHub (curated lists of AI tools) we also build a search index, so a search can find a tool by the words a list uses around it. We keep only the index (word forms, not the text) and the short section heading the tool sits under, for example \"Tools > Vector databases\". We do not keep the text of the list.",
           "From web pages found by these searches we keep the page title, its link and the excerpt Tavily takes from the page: up to 400 characters for an article, up to 2,400 characters for a product page, which we use as evidence to describe the product. We also keep what the search said about the page: which search found it, its rank and relevance score, its publication date, the categories its words fit and the address of its small site icon (we do not load or show the icon). We do not keep the full text of the page, its images or any answer Tavily writes. Articles that compare AI tools are shown in search with their excerpt. A product page is shown only after we have checked it by hand. A title or excerpt can name people, for example an article's author or a product's founder.",
           "From LinkedIn pages we keep the link, a title without the author's name and an excerpt of up to 300 characters. A LinkedIn page is shown only after we have checked it by hand. The link and the text of a post can still name its author.",
           "When a product's facts (price, platforms, licence) are missing, we read up to 4 pages of the product's own website through Tavily, such as its home, pricing and download pages. We only read pages on the product's own site. Before an AI model reads the text, we remove hidden text and replace email addresses with \"[email]\" and phone numbers with \"[phone]\". We never store the raw page. We keep the cleaned text of the product's public pages (hidden text removed, email addresses and phone numbers replaced) for up to 24 hours in our cache, only so we can try again if describing the product fails, then it is deleted. We keep short quotes of up to 300 characters that prove a fact, each with a link to its page. Once a product is described, we keep for 30 days the page address with a fingerprint (a hash) of its text, so we do not read the same page twice.",
@@ -1306,10 +1329,15 @@
             "text": "Reports: {{handledReports}} after they were handled. If your account is deleted, your reports stay without your name until then.",
             "withoutNumbers": "Reports: a set time after they were handled. If your account is deleted, your reports stay without your name until then."
           },
+          {
+            "text": "Records of our administrators' actions in the back office, with their GitHub user ID and the reason they wrote: {{adminRecords}}.",
+            "withoutNumbers": "Records of our administrators' actions in the back office, with their GitHub user ID and the reason they wrote: for a set time."
+          },
           "Database backups: 7 days. Anything deleted above is gone from the backups within 7 days.",
           "Quotes from public pages about AI resources: as long as we keep the source record they were read for, and never longer than we list the resource.",
           "Pages of a product's own website: the raw page is never stored. Their cleaned text: up to 24 hours, to try again. The page address and a fingerprint of its text: 30 days.",
-          "Articles and news found by web search, LinkedIn articles and posts included, with their titles, excerpts and what the search said about them: 180 days after we last retrieved them. Product pages we accepted from a web search, with the same: as long as we list the product. LinkedIn company pages and events we accepted: as long as we list them. Pages waiting for our review: until we decide, then 180 days."
+          "Articles and news found by web search, LinkedIn articles and posts included, with their titles, excerpts and what the search said about them: 180 days after we last retrieved them. Product pages we accepted from a web search, with the same: as long as we list the product. LinkedIn company pages and events we accepted: as long as we list them. Pages waiting for our review: until we decide, then 180 days.",
+          "The search index of awesome lists and their section headings: as long as we list the list and the tool, and 30 days after a list was last read."
         ]
       },
       {
