@@ -14,8 +14,10 @@ runs of the same query compare two inputs, not two rankings. Their data is third
 repository. Relevance needs a human judgement per result, and judging every result of every variant does not scale.
 
 ## Decision
-1. **Fixed query set.** `docs/eval/search-queries.json`: 80 fixed queries, never tuned on results. Groups: navigational (10), MCP server for a task (12), model for a task (10), library for a language (10),
-   paper (8), news and events (8), Italian and other languages (10), typos and synonyms (8), nonsense control (4).
+1. **Fixed query set.** `docs/eval/search-queries.json`: 111 fixed queries, never tuned on results. Groups: navigational (10), MCP server for a task (12), model for a task (10), library for a language (10),
+   paper (8), news and events (8), Italian and other languages (10), typos and synonyms (8), nonsense control (4),
+   the home examples (11, `home-example`) and everyday tasks in plain words (20, `everyday`); the last two are sent
+   with their audience `path`.
    The guide questions of [0030](0030-guide-evaluation.md) that fit are reused (`from` names the guide id).
    `docs/eval/semantic-gold.json` adds 20 paraphrase queries with few words in common with their answers, for vector
    search and its cutoff.
