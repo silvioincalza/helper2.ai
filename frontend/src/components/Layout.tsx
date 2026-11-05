@@ -34,7 +34,7 @@ function ThemeToggle() {
 }
 
 /** Up to this width the header is the logo and a menu button; the pages, sign-in and the theme open in a panel. */
-export const PHONE_HEADER = '(max-width: 720px)';
+const PHONE_HEADER = '(max-width: 720px)';
 
 function MenuButton({ open, onToggle }: { open: boolean; onToggle: () => void }) {
   const { t } = useTranslation();

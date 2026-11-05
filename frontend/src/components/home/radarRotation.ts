@@ -6,9 +6,9 @@
  */
 
 /** The fewest and the most sources on the radar at a time, and the fixed set when it stands still. */
-export const FEWEST = 3;
-export const MOST = 5;
-export const STILL = 4;
+const FEWEST = 3;
+const MOST = 5;
+const STILL = 4;
 /** Time between two steps while the first 3 arrive, and after that. */
 export const INTRO_MS = 600;
 export const STEP_MS = 1600;
