@@ -11,7 +11,10 @@ import { api } from '@/api/client';
 import type { Me } from '@/api/types';
 
 /** The session as the page knows it: the daily limits are unknown until GET /me answers. */
-export type Session = Omit<Me, 'limits'> & { limits?: Me['limits'] };
+export type Session = Omit<Me, 'limits' | 'monetisation'> & {
+  limits?: Me['limits'];
+  monetisation?: Me['monetisation'];
+};
 
 interface MeValue {
   me: Session;

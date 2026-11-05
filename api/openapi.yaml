@@ -1914,7 +1914,7 @@ components:
 
     Me:
       type: object
-      required: [authenticated, roles, loginProviders, limits]
+      required: [authenticated, roles, loginProviders, limits, monetisation]
       properties:
         authenticated: { type: boolean }
         displayName: { type: [string, 'null'] }
@@ -1932,6 +1932,19 @@ components:
         preferences:
           oneOf: [{ $ref: '#/components/schemas/Preferences' }, { type: 'null' }]
           description: The signed-in user's display settings; null for a guest.
+        monetisation: { $ref: '#/components/schemas/Monetisation' }
+
+    Monetisation:
+      type: object
+      description: >-
+        How the site funds itself (ADR 0057), as configured. Each value is null while that part is off (no link, no
+        script), and all are null on the admin host. Read with GET /me, which every page already calls.
+      required: [githubSponsorsUrl, stripePaymentUrl, ga4MeasurementId, ethicalAdsPublisher]
+      properties:
+        githubSponsorsUrl: { type: [string, 'null'], format: uri, description: "GitHub Sponsors page (`H2_SUPPORT_GITHUB_SPONSORS_URL`)." }
+        stripePaymentUrl: { type: [string, 'null'], format: uri, description: "Stripe Payment Link (`H2_SUPPORT_STRIPE_PAYMENT_URL`)." }
+        ga4MeasurementId: { type: [string, 'null'], description: "Google Analytics 4 stream, loaded only after consent (`H2_ANALYTICS_GA4_MEASUREMENT_ID`)." }
+        ethicalAdsPublisher: { type: [string, 'null'], description: "EthicalAds publisher of the one ad slot (`H2_ADS_ETHICALADS_PUBLISHER`)." }
 
     Preferences:
       type: object

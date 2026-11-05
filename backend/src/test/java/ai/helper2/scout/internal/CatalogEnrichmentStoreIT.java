@@ -140,11 +140,16 @@ class CatalogEnrichmentStoreIT {
   }
 
   private void save(String fingerprint, EnrichmentOutcome outcome, ValidationResult result) {
+    save(fingerprint, outcome, result, Instant.now());
+  }
+
+  private void save(
+      String fingerprint, EnrichmentOutcome outcome, ValidationResult result, Instant startedAt) {
     store.save(
         resource,
         MODEL,
         fingerprint,
-        Instant.now(),
+        startedAt,
         result,
         outcome,
         result == null ? "boom" : null,
@@ -294,12 +299,17 @@ class CatalogEnrichmentStoreIT {
         .isNull();
     assertThat(store.pending(Integer.MAX_VALUE)).contains(resource);
 
-    // The run after the request counts again: the next unchanged attempt is UNCHANGED.
+    // The run after the request counts again: the next unchanged attempt is UNCHANGED. The request
+    // is stamped by the database's clock (now()) and the run by this JVM's; the Postgres
+    // container's
+    // clock can run a few milliseconds ahead of the host's, which hid a run started "at once"
+    // (5 Nov 2026), so this run starts clearly later.
     save(
         "fp-after",
         EnrichmentOutcome.VALIDATED,
         new ValidationResult(
-            EnrichmentOutcome.VALIDATED, List.of(), List.of(), List.of(), List.of()));
+            EnrichmentOutcome.VALIDATED, List.of(), List.of(), List.of(), List.of()),
+        Instant.now().plusSeconds(60));
     assertThat(store.lastFingerprint(resource)).isEqualTo("fp-after");
   }
 

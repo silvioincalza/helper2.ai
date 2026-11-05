@@ -1,3 +1,4 @@
+import { SponsorSlot } from '@/components/SponsorSlot';
 import { useEffect, useId, useMemo, useRef, useState, type RefObject } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
@@ -80,6 +81,10 @@ export function Results() {
     state.q ? api.search(apiParams, signal) : Promise.resolve(null),
   );
   const shown = search.loading ? (search.previous ?? undefined) : (search.data ?? undefined);
+  // No ad on an error state (ADR 0057, 6): a failed request, or an answer where no source could search.
+  const failed =
+    !search.loading &&
+    (search.error !== undefined || (search.data != null && searchedNothing(search.data)));
 
   return (
     <>
@@ -92,6 +97,8 @@ export function Results() {
           webLine={webLineExpected(shown?.webSearches)}
         />
       )}
+      {/* The one ad slot, above the results and never next to the guide's answer (ADR 0057). */}
+      {!asked && state.q && !failed && <SponsorSlot query={key} loading={search.loading} />}
       {/* The skeleton only on the first load; later the last results stay, dimmed, under one status line. */}
       {search.loading &&
         (shown ? (
@@ -182,10 +189,7 @@ function ResultsBody({
   };
   const hintsId = useId();
   const missed = useMemo(() => missedSources(res.sources), [res.sources]);
-  const nothingSearched =
-    res.results.length === 0 &&
-    (res.coverage.sourcesSucceeded === 0 ||
-      res.notices.some((n) => n.code === 'ALL_SOURCES_FAILED'));
+  const nothingSearched = searchedNothing(res);
 
   return (
     <>
@@ -476,5 +480,14 @@ function AlsoSearched({ interpretation }: { interpretation: SearchResponse['inte
         </>
       )}
     </p>
+  );
+}
+
+/** No result, and no source could search: the page shows the all-sources-failed state. */
+function searchedNothing(res: SearchResponse): boolean {
+  return (
+    res.results.length === 0 &&
+    (res.coverage.sourcesSucceeded === 0 ||
+      res.notices.some((n) => n.code === 'ALL_SOURCES_FAILED'))
   );
 }
