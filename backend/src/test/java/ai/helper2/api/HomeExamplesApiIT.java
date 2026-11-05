@@ -12,7 +12,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import ai.helper2.catalog.ReviewQueue;
+import ai.helper2.examples.DraftSource;
+import ai.helper2.examples.DraftSources;
+import ai.helper2.examples.ExampleDrafter;
+import ai.helper2.examples.HomeExamples;
+import ai.helper2.examples.ProposedDraft;
+import ai.helper2.examples.config.ExamplesProperties;
+import ai.helper2.examples.usecase.DraftHomeExamples;
+import ai.helper2.identity.AuditTrail;
+import ai.helper2.shared.AudiencePath;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +32,9 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.OAuth2LoginRequestPostProcessor;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
 /** The home examples (ADR 0049): the public pool, and the back office's add, change and remove. */
@@ -309,6 +322,63 @@ class HomeExamplesApiIT extends ApiTestBase {
     for (JsonNode e : pool.get("examples")) {
       assertThat(e.get("aiDrafted").asBoolean()).isEqualTo(e.get("id").asString().equals(id));
     }
+  }
+
+  @Autowired HomeExamples examples;
+  @Autowired AuditTrail auditTrail;
+  @Autowired ObjectMapper objectMapper;
+  @Autowired TransactionTemplate transaction;
+  @Autowired ExamplesProperties examplesProperties;
+
+  @Test
+  void aSecondDraftRunSkipsTheResourcesAndTextsOfDraftsStillWaiting() {
+    UUID other =
+        jdbc.sql("SELECT id FROM resource WHERE id <> :d ORDER BY id LIMIT 1")
+            .param("d", deepl())
+            .query(UUID.class)
+            .single();
+    queue.open(
+        ReviewQueue.Kind.EXAMPLE_CANDIDATE,
+        deepl(),
+        "Drafted example: Waiting " + tag,
+        """
+        {"label":"Waiting %s","query":"translate a lease %s","path":"USE_AI","model":"nemotron-test"}
+        """
+            .formatted(tag, tag),
+        ReviewQueue.Links.NONE);
+    Set<UUID> excluded = new HashSet<>();
+    DraftSources sources =
+        (limit, excluding) -> {
+          excluded.addAll(excluding);
+          return List.of(new DraftSource(other, "Other", "PRODUCT", "USE_AI", null));
+        };
+    ExampleDrafter drafter =
+        new ExampleDrafter() {
+          @Override
+          public String getModel() {
+            return "nemotron-test";
+          }
+
+          @Override
+          public List<ProposedDraft> draft(List<DraftSource> given) {
+            return List.of(
+                new ProposedDraft(
+                    other, "waiting " + tag, "a new query " + tag, AudiencePath.USE_AI));
+          }
+        };
+    var run =
+        new DraftHomeExamples(
+            examples,
+            sources,
+            drafter,
+            queue,
+            auditTrail,
+            objectMapper,
+            transaction,
+            examplesProperties);
+
+    assertThat(run.draft(adminId).count()).as("the label is a waiting draft's").isZero();
+    assertThat(excluded).as("the waiting draft's resource is not given again").contains(deepl());
   }
 
   @Test

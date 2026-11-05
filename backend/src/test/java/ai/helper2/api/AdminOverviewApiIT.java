@@ -30,7 +30,11 @@ class AdminOverviewApiIT extends ApiTestBase {
     ContractValidator.assertMatches("AdminOverview", body);
     assertThat(JsonPath.<List<String>>read(body, "$.openReviewItems[*].kind"))
         .containsExactlyInAnyOrder(
-            "ENRICHMENT_VALIDATION", "RELATIONSHIP_CANDIDATE", "USER_REPORT", "COURSE_CANDIDATE");
+            "ENRICHMENT_VALIDATION",
+            "RELATIONSHIP_CANDIDATE",
+            "USER_REPORT",
+            "COURSE_CANDIDATE",
+            "EXAMPLE_CANDIDATE");
     List<String> budgets = JsonPath.read(body, "$.budgets[*].name");
     assertThat(budgets)
         .as("every budget once, by name")

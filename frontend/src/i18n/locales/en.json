@@ -561,6 +561,7 @@
     "allKinds": "All kinds",
     "note": "Note (optional)",
     "alreadyDecided": "This item was already decided. The list now shows its current status.",
+    "refused": "Not accepted, the item stays open: {{detail}}",
     "nav": {
       "label": "Back office",
       "overview": "Overview",

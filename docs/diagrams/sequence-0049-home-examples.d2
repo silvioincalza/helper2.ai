@@ -20,7 +20,7 @@ model: "Nemotron\n(fast)" {class: ai}
 
 draft: "Draft with AI (optional)" {
   owner -> api: "POST /api/v1/admin/home-examples/drafts"
-  api -> db: "well-known resources no example expects"
+  api -> db: "well-known resources no example expects\nand no waiting draft is about"
   api -> model: "titles, types, descriptions\n(untrusted, one call, own budget)" {class: ai-call}
   model -> api: "JSON drafts"
   api -> db: "kept drafts: review items EXAMPLE_CANDIDATE"

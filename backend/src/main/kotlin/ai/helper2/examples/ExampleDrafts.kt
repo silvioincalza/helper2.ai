@@ -20,6 +20,9 @@ data class ProposedDraft(
   val path: AudiencePath?,
 )
 
+/** A label and query already in use: an example's, or a draft's that waits for review. */
+data class TakenText(val label: String, val query: String)
+
 /** A draft that follows every rule; it waits in the review queue for a person. */
 data class ExampleDraft(val resourceId: UUID, val input: ExampleInput, val model: String)
 
@@ -49,13 +52,14 @@ class DraftsUnavailable(val reason: Reason) : RuntimeException(reason.name) {
 /**
  * The rules a model's proposal must pass before a person sees it (ADR 0049 §6): grounded (it names
  * a resource it was given, which becomes its expected result), the same text rules as an admin's
- * example, one per resource, and no repeat of an example or of another draft.
+ * example, one per resource, and no repeat of an example or of another draft (one waiting for
+ * review included).
  */
 object DraftRules {
   fun keep(
     proposed: List<ProposedDraft>,
     sources: List<DraftSource>,
-    taken: Collection<HomeExample>,
+    taken: Collection<TakenText>,
     model: String,
   ): List<ExampleDraft> {
     val given = sources.map { it.resourceId }.toSet()
@@ -65,9 +69,12 @@ object DraftRules {
     return proposed.mapNotNull { p ->
       val id = p.resourceId?.takeIf { it in given && it !in used } ?: return@mapNotNull null
       val input = valid(p, id) ?: return@mapNotNull null
-      if (!labels.add(input.label.lowercase()) || !queries.add(input.query.lowercase())) {
-        return@mapNotNull null
-      }
+      val label = input.label.lowercase()
+      val query = input.query.lowercase()
+      // Both checked before either is reserved: a refused draft must not block a later one.
+      if (label in labels || query in queries) return@mapNotNull null
+      labels += label
+      queries += query
       used += id
       ExampleDraft(id, input, model)
     }

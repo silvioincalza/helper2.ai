@@ -18,7 +18,21 @@ const PAGE_SIZE = 20;
 /** The API's limit for a decision note. */
 const NOTE_MAX = 1000;
 
-type ActionError = 'failed' | 'alreadyDecided';
+/** What went wrong with the last decision: refused carries the server's reason, in its words. */
+type ActionError = { kind: 'failed' | 'alreadyDecided' } | { kind: 'refused'; detail: string };
+
+/**
+ * A 409 is someone else's decision, except a duplicate draft: that item stays open, with the reason. A drafted
+ * example refused for a rule (400) says which.
+ */
+function actionErrorOf(e: unknown): ActionError {
+  if (!(e instanceof ApiError)) return { kind: 'failed' };
+  const { code, detail } = e.problem ?? {};
+  if ((code === 'duplicate' || code === 'invalid-request') && detail)
+    return { kind: 'refused', detail };
+  if (e.status === 409) return { kind: 'alreadyDecided' };
+  return { kind: 'failed' };
+}
 
 /**
  * The review queue (UJ-9): rows like the saved rows, the status as a pill. Status, kind and page live in the address,
@@ -51,7 +65,8 @@ export default function ReviewQueuePage() {
 
   /**
    * One action at a time: while a request runs, every action button is aria-disabled (it keeps focus) and a second
-   * click does nothing. An item someone else decided first (409) is not an error to retry: the list is reloaded.
+   * click does nothing. An item someone else decided first (409) is not an error to retry: the list is reloaded. A
+   * refused draft stays open, with the reason.
    */
   const resolve = async (item: ReviewItem, decision: 'ACCEPTED' | 'REJECTED') => {
     if (busy) return;
@@ -63,9 +78,9 @@ export default function ReviewQueuePage() {
       setNotes(({ [item.id]: _, ...rest }) => rest);
       items.reload();
     } catch (e) {
-      const conflict = e instanceof ApiError && e.status === 409;
-      setActionError(conflict ? 'alreadyDecided' : 'failed');
-      if (conflict) items.reload();
+      const error = actionErrorOf(e);
+      setActionError(error);
+      if (error.kind === 'alreadyDecided') items.reload();
     } finally {
       setBusy(false);
     }
@@ -81,7 +96,13 @@ export default function ReviewQueuePage() {
       {actionError && (
         <p role="alert" className="banner banner-warn">
           <Icon name="warn" />{' '}
-          {t(actionError === 'alreadyDecided' ? 'admin.alreadyDecided' : 'admin.actionFailed')}
+          {actionError.kind === 'refused'
+            ? t('admin.refused', { detail: actionError.detail })
+            : t(
+                actionError.kind === 'alreadyDecided'
+                  ? 'admin.alreadyDecided'
+                  : 'admin.actionFailed',
+              )}
         </p>
       )}
       <div className="h2-admin__tools">

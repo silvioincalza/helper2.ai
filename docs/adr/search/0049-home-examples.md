@@ -43,12 +43,13 @@ same for every visitor.
 
 6. **AI drafts, a person decides.** **Draft examples with AI** makes one model call (the fast Nemotron model, the
    drafts' own daily budget `H2_EXAMPLES_DRAFT_CALLS`, 0 = off, inside the `llm-chat` circuit). The model gets public
-   facts about well-known catalog resources that no example expects yet (`H2_EXAMPLES_DRAFT_SOURCES`, curated first),
-   each fenced as untrusted text, and answers JSON. Code keeps a draft only when it names a resource it was given
-   (that resource becomes its expected result), follows the example rules, and repeats no example or other draft. A
+   facts about well-known catalog resources that no example expects yet and no waiting draft is about
+   (`H2_EXAMPLES_DRAFT_SOURCES`, curated first), each fenced as untrusted text, and answers JSON. Code keeps a draft
+   only when it names a resource it was given (that resource becomes its expected result), follows the example rules,
+   and repeats the label or query of no example, no other draft of the run and no draft still waiting for review. A
    kept draft is a review item `EXAMPLE_CANDIDATE` (the draft as JSON in its details). Accepting it adds the example,
    `AI_DRAFTED` with its model, in the same transaction as the decision; a refused example (a duplicate) keeps the item
-   open. It is then checked like any example. The model never writes to the pool, and nothing it writes is shown
+   open, and the review page says why. It is then checked like any example. The model never writes to the pool, and nothing it writes is shown
    before a person accepts it and the check passes it.
 7. **AI-drafted examples are marked.** An accepted draft is human-reviewed text, but until a lawyer confirms how
    Art. 50 treats it, the house rule applies: the public pool carries `aiDrafted` per example and an

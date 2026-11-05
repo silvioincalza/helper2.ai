@@ -1,7 +1,6 @@
 package ai.helper2.examples
 
 import ai.helper2.shared.AudiencePath
-import java.time.Instant
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -18,23 +17,9 @@ class DraftRulesTest {
   private fun draft(id: UUID?, label: String, query: String) =
     ProposedDraft(id, label, query, AudiencePath.USE_AI)
 
-  private fun taken(label: String, query: String) =
-    HomeExample(
-      UUID.randomUUID(),
-      label,
-      query,
-      AudiencePath.USE_AI,
-      "en",
-      ExampleStatus.ACTIVE,
-      listOf(UUID.randomUUID()),
-      ExampleOrigin.BUILT_IN,
-      null,
-      CheckResult.PENDING,
-      0,
-      Instant.EPOCH,
-    )
+  private fun taken(label: String, query: String) = TakenText(label, query)
 
-  private fun keep(vararg proposed: ProposedDraft, taken: List<HomeExample> = emptyList()) =
+  private fun keep(vararg proposed: ProposedDraft, taken: List<TakenText> = emptyList()) =
     DraftRules.keep(proposed.toList(), sources, taken, "nemotron")
 
   @Test
@@ -77,5 +62,16 @@ class DraftRulesTest {
         taken = listOf(taken("Take notes", "Take Meeting Notes")),
       )
     assertEquals(emptyList(), repeat)
+  }
+
+  @Test
+  fun `a draft refused for its query does not reserve its label for a later one`() {
+    val kept =
+      keep(
+        draft(deepl.resourceId, "Translate documents", "translate text"),
+        draft(otter.resourceId, "Translate documents", "translate documents"),
+        taken = listOf(taken("Translate", "translate text")),
+      )
+    assertEquals(listOf(otter.resourceId), kept.map { it.resourceId })
   }
 }

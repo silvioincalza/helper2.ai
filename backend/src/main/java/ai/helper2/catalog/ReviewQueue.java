@@ -121,6 +121,18 @@ public class ReviewQueue {
   private static final String SELECT_ITEMS =
       "SELECT i.*, r.title AS resource_title FROM review_item i LEFT JOIN resource r ON r.id = i.resource_id";
 
+  /**
+   * Every open item of [kind], oldest first. For kinds with few open items (drafts, candidates).
+   */
+  public List<Item> openItems(Kind kind) {
+    return jdbc.sql(
+            SELECT_ITEMS
+                + " WHERE i.status = 'OPEN' AND i.kind = :kind ORDER BY i.created_at, i.id")
+        .param("kind", kind.name())
+        .query(ReviewQueue::item)
+        .list();
+  }
+
   /** One page of items: [items] in the page, [total] across every page. */
   public record Page(List<Item> items, long total) {}
 
