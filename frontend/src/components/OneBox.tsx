@@ -22,6 +22,7 @@ import {
   RESULTS_PATH,
   type SearchState,
 } from '@/lib/searchState';
+import { GuideAnswersLeft, useGuideAnswersLeft } from '@/components/guide/GuideAnswersLeft';
 
 /** Waits this long after the last keystroke before searching: live, but not one request per letter. */
 const LIVE_SEARCH_MS = 700;
@@ -118,6 +119,9 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
     else runSearch();
   };
   const asking = action === 'ask';
+  // Said while the button asks: the visitor sees what an answer costs before spending one.
+  const answersLeft = useGuideAnswersLeft();
+  const quota = asking ? answersLeft : null;
   const cannotSubmit = asking ? !clampQuestion(text) : !text.trim();
   /** × and Esc: empty the box and keep the results on the page; the cursor stays in the box. */
   const emptyBox = () => {
@@ -175,6 +179,8 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
     return () => document.removeEventListener('keydown', onSlash);
   }, []);
   const left = MAX_QUESTION - text.length;
+  const describedBy =
+    [left <= SHOW_LEFT_FROM && 'q-left', quota && 'q-quota'].filter(Boolean).join(' ') || undefined;
 
   return (
     <div className={`one-box${hero ? ' is-hero' : ''}`}>
@@ -209,7 +215,7 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
           placeholder={t('search.placeholder')}
           onChange={(e) => onType(e.target.value)}
           onKeyDown={onKey}
-          aria-describedby={left <= SHOW_LEFT_FROM ? 'q-left' : undefined}
+          aria-describedby={describedBy}
         />
         {left <= SHOW_LEFT_FROM && (
           <span
@@ -257,6 +263,7 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
           )}
         </button>
       </form>
+      {quota && <GuideAnswersLeft id="q-quota" value={quota} />}
     </div>
   );
 }
