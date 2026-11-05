@@ -27,6 +27,7 @@ class GuidePropertiesBindingTest {
                 new GuideProperties(
                     600,
                     30,
+                    30,
                     Duration.ofSeconds(90),
                     Duration.ofSeconds(15),
                     Duration.ofHours(24),
@@ -55,9 +56,21 @@ class GuidePropertiesBindingTest {
           GuideProperties guide = c.getBean(GuideProperties.class);
           assertThat(guide.similarThreshold()).isEqualTo(0.96);
           assertThat(guide.clientDailyQuestions()).isEqualTo(5);
+          assertThat(guide.clientDailyFreeAnswers())
+              .as("free answers default to the daily questions")
+              .isEqualTo(5);
           assertThat(guide.chooseMaxTokens()).isEqualTo(4096);
           assertThat(guide.thinking().verify()).isTrue();
         });
+  }
+
+  @Test
+  void theFreeAnswersHaveTheirOwnVariable() {
+    context
+        .withSystemProperties(
+            "H2_GUIDE_CLIENT_DAILY_QUESTIONS=5", "H2_GUIDE_CLIENT_DAILY_FREE_ANSWERS=2")
+        .run(c ->
+            assertThat(c.getBean(GuideProperties.class).clientDailyFreeAnswers()).isEqualTo(2));
   }
 
   @Test

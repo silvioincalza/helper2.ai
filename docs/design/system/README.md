@@ -2,11 +2,11 @@
 
 The design system for every part of Helper2.ai: the search box, results, the AI guide, New this week and Coming up, resource pages, saved resources, sign-in, the sources page and admin. Version 4, from the November 2026 redesign ([ADR 0042](../../adr/frontend/0042-redesign-design-system-v4.md)): minimal and editorial, warm paper with one saffron accent, one tech font for the interface and a calm font for reading. The reference is the redesign canvas, saved in [../redesign](../redesign). Every page, its states and the dark theme are drawn there.
 
-`frontend/src/styles/tokens.css` has the version 4 colours and names. The header, the footer and Home run the version 4 layout, with its own sizes and fonts (`--v4-*`); the other pages still follow the version 3 layout and Space Grotesk, and move page by page.
+`frontend/src/styles/tokens.css` has the version 4 colours, sizes and fonts under plain names (`--font-mono` Geist Mono, `--font-body` Geist, `--font-code` the system monospace for code, `--box-height`). Every page runs the version 4 layout; version 3 is gone. The list pages (Sources, Saved, the back office, Results) use the terminal style. The text pages stay prose: Geist for headings and reading text, Geist Mono only for small interface labels, no terminal look (`pages/text.css`).
 
 ## Principles
 
-1. **One entry point.** One search box: in the middle of the home page, in the header everywhere else. A few words search. A question of 4 words or more also starts the guide. Short searches show **Ask the guide**. Never add a second search field, a scope switch or a mode switch.
+1. **One entry point.** One search box: in the middle of the home page, in the header everywhere else. Two buttons, always: **Search** (primary, Enter) and **Ask the guide** (outline, Shift+Enter; an icon button on a phone). The guide runs only when the user asks for it. Never add a second search field, a scope switch or a mode switch.
 2. **Show where every fact came from.** Each result, fact and pick names its source. A value no source stated is **not stated**, in `status-warn-ink`, grouped in one line. Dates are the source's own; otherwise "First seen" with the date Helper2.ai first saw it.
 3. **Checked versus not checked.** A guide quote the validator matched word for word sits on `quote-bg` under "Checked word for word in the source". The model's own reason carries its own "AI-written reason" label and is never styled like the quote.
 4. **State in words, not color alone.** Every status (answered, slow, rate limited, timed out, failed, sources disagree) has a word and an icon: ✓ ! × ○ …. Color only repeats it.
@@ -16,7 +16,7 @@ The design system for every part of Helper2.ai: the search box, results, the AI 
 
 ## Content fundamentals
 
-- Write the way a knowledgeable colleague talks: "A few words search. A question of 4 words or more can also ask the guide for picks."
+- Write the way a knowledgeable colleague talks: "Enter searches. For picks with a quote that proves them, ask the guide (⇧↵)."
 - Buttons say what happens: **Search**, **Ask the guide**, **Save**, **Remove**, **Send report**, **Try again**.
 - Errors say what went wrong and what to do next, without apology.
 - Never invent popularity, dates, limits or facts. Mock content uses brackets: `[stated date]`, `[Numbers set in the limits ADR]`.
@@ -44,7 +44,7 @@ The design system for every part of Helper2.ai: the search box, results, the AI 
 - **Controls:** at least `target-min` (44px) tall, also chips, toggles and the `$ … --all` buttons. The home search box is `box-height` (60px).
 - **Focus:** a 3px `focus` outline with 2px offset on every control. `scroll-padding-top` keeps a focused item below the sticky header and the pinned search box.
 - **Elevation:** three shadows only: `shadow-raised` (not used on Home any more), `shadow-pinned` (the pinned search box), `shadow-overlay` (dialogs, the account panel, the phone menu). Everything else is set apart by `border`.
-- **Width:** the page column stops at `content-wide` (1040px); one-column pages at `reading-max` (808px). Gutters 24px, 16px on phones.
+- **Width:** the page column is 1120px wide with its gutters: `content-wide` (1088px) plus 16px on each side, on every page, the header and the footer included. One-column pages stop at `reading-max` (808px).
 - **Themes:** light and dark; every token has both values. The footer button switches light ↔ dark; light is the default.
 
 ## Type tags
@@ -73,8 +73,8 @@ On phones (below 720px) the title and text fold away after 24px of scroll; the s
 One column, `reading-max`.
 
 - **Header:** logo, the search box with the query, Saved, Sign in. News and Events are not in this header.
-- **A question (4 words or more):** "Recommended for you", then up to 3 PickCards, then "How the guide decided" (a disclosure: search terms, candidates, removed suggestions, models).
-- **A few words:** an **Ask the guide** bar above the list instead of picks.
+- **The guide was asked:** "Recommended for you", then up to 3 PickCards, then "How the guide decided" (a disclosure: search terms, candidates, removed suggestions, models).
+- **The guide was not asked:** no picks; **Ask the guide** stays next to Search in the box.
 - **Guide states**, drawn where the picks sit: working (streamed steps), needs one more detail, no pick, AI model not available (top 3 by search score, no AI label because no AI wrote it), busy (503), timeout or stalled stream (504, 45 seconds), daily AI answers used up.
 - **All results:** count, Filters (opens a panel: Type, Price, Licence, Updated, each with counts and an Unknown bucket), Sort (Best match, Newest, Recently updated), List or Timeline. A partial-results notice when some sources did not answer. Rows link to the resource page. Guide picks carry "Guide pick #n" in the meta line.
 - **Coverage** under the list: "This search: N of M sources answered · cached 14 min ago", opening to one line per source with its outcome.
@@ -130,7 +130,7 @@ Layout is flex and grid with `gap`. Side menus wrap above the content on phones 
 
 ## Components
 
-The redesign boards in [../redesign](../redesign) are the reference. The component folders below still show version 3.
+The redesign boards in [../redesign](../redesign) and the design canvas "helper2.ai: ui v4" are the reference. The code is in `frontend/src/components/`.
 
 | Component | Used for |
 |---|---|
@@ -138,12 +138,12 @@ The redesign boards in [../redesign](../redesign) are the reference. The compone
 | **AccountPanel** | Under the account button: signed in with, searches left today, Your account, Sign out. A disclosure. |
 | **AdminHeader** | Ink band: "helper2.ai admin", VPN note, who is signed in. No public links. |
 | **Footer** | Logo, Mission, Sources, Privacy, Terms, GitHub, licence, the theme switch, the coverage line. |
-| **SearchBox** | Box and Search button. Pinned on Home; in the header elsewhere. |
+| **SearchBox** | Box, **Search** (primary, ↵) and **Ask the guide** (outline, ⇧↵; a 44px icon button on a phone). No word count decides anything. Pinned on Home; in the header elsewhere. |
 | **PinnedSearchBar** | The home box with hint, chips and legend; sticks under the header; compact once scrolled. |
 | **Radar** | See Radar. |
 | **HomeLists** | New this week, Coming up: one component, `TermList`. A `$ helper2 news · N` line (N = `total` from the API), `ls -l` columns, dashed rules, titles in Geist, the rest in Geist Mono. Wide: two tables (DATE · TYPE · TITLE · SOURCE, WHEN · TYPE · EVENT · WHERE), "on now" in `status-ok-ink`, `$ helper2 news --all · show all N` expands in place. Below 768px: a tablist `> new this week N | coming up N` (real tab buttons, 44px) with log rows. No terminal windows, no blinking cursor, no lines that print in. Rows open the resource page. Loading, empty and error (with Retry) are StatePanels. |
+| **ListPages** | Sources, Saved and the back office: the heading with `$ helper2 … · N` (N from the API), tables in Geist Mono with UPPERCASE column headers and dashed rules, names that are titles in Geist, a status as a coloured word with a glyph (✓ ! × ○) in the radar's colours. A wide table scrolls in its own box on a phone. Loading, empty and error as in HomeLists. |
 | **PickCard** | Rank, name, AI-written reason with its label and check note, the checked quote, Open ↗, Details, Save. |
-| **AskGuideBar** | On short searches: "Want a recommendation?" and **Ask the guide about "…"**. |
 | **GuideSteps** | The streamed steps while the guide works. |
 | **ResultRow** | Meta line, title, one-line description, "From source". The whole row is a link. |
 | **FiltersPanel** | Checkbox groups with counts and an Unknown bucket; Show N results; Remove all filters. |
@@ -154,8 +154,9 @@ The redesign boards in [../redesign](../redesign) are the reference. The compone
 | **Callout** | Notice, warning, error, success: a 4px left line, a title, one sentence, one action. |
 | **ConfirmDialog** | Delete account. Focus starts on Cancel. |
 | **PhoneMenu** | Full-width menu under the header on phones. |
-| **Chip** | Example needs, filters, saved-by-type. 44px. |
-| **Button** | Primary, ghost, ink, danger, text. 44px; an external link ends with `↗`. |
+| **Chip** | Example needs, filters, saved-by-type, use cases. A Geist Mono pill with the control border, 44px; the picked one is a `selected` fill. |
+| **Button** | Secondary (outline on `surface`, like Ask the guide), primary (`accent` fill, one per area), ink (sign in), ghost (outline, no fill), danger (`danger` outline; filled to confirm), icon, text (an underlined word). Geist Mono, `radius-md`, 44px; hover draws a line or ring of 3:1 or more. An external link ends with `↗`. |
+| **Field** | Inputs, selects, text areas: Geist Mono on `surface`, `border-strong`, `radius-md`, 44px. Checkboxes in `ink`. |
 | **AiLabel** | "AI-written", "AI-written reason", "AI summary". Geist Mono 12px, uppercase, outlined. |
 
 ### In the frontend
@@ -166,9 +167,15 @@ The shared parts are React components in `frontend/src/components/ui/` (ADR 0040
 |---|---|
 | HomeLists (New this week, Coming up) | `TermList`, used by `HomeLists` (tables) and `HomeTabs` (phone), fed by `homeFeeds.ts` (`components/home/`) |
 | Radar | `HomeRadar` (`components/home/`) |
-| PickCard | `PicksBar` and the pick rows |
+| ListPages | `TermCommand` (from `TermList`), the `v4-table`, `ScrollBox` and `components/ui/term.css`; `AdminHead` in the back office |
+| PickCard | `PicksBar` (the chips) and the picked rows: the reason and the quote are in the row, in search order |
+| ResultRow | `ResultRow` (`components/results/`): the title's link covers the row |
+| FiltersPanel | `FiltersPanel` (in place, or a drawer up to 720px) around `FilterPanel` |
 | CoverageDetails | `SourceTiles` |
-| Callout (error, empty, 404) | `StatePanel`, with `RetryButton` for Try again |
+| Callout (error, empty) | `StatePanel`, with `RetryButton` for Try again |
+| Button, Chip, Field | `.btn` with `.btn-primary`, `.btn-ink`, `.btn-ghost`, `.btn-danger`, `.btn-danger-fill`, `.btn-icon`; `.btn-text`; `.chip` in `.chips`; the plain form elements. One definition each, in `styles/app.css`, on every page |
+| AiLabel, badges | `.badge` (`styles/app.css`), `StatusPill` (`components/ui/`) |
+| Text pages (Mission, Privacy, Terms, Not found, Sign in, Account) | `TextPage`, `SignInPage`, `AccountPage`, `NotFoundPage`, styled by `.h2-prose` in `pages/text.css` |
 
 New components are added with the page that first needs them.
 
@@ -180,7 +187,7 @@ redesign and not in the API yet. They are on the roadmap (section 6).
 | Feature | Where | API change |
 |---|---|---|
 | New this week per source | Radar dot size, Sources table | `newThisWeek` on `SourceInfo` in GET /sources |
-| Searches left today | Account, account panel | `limits` (web searches and AI answers left, reset time) on GET /me |
+| Searches left today | Account (built), account panel | `limits` (web searches and AI answers left, reset time) on GET /me |
 | Totals for Show all | Home lists | `total` on the recent and upcoming responses |
 | Sign-in with Google | Sign in | a second OAuth2 provider (phase 1) |
 | Passkey, email link, password | Sign in, sign-in states | sign-in ADR, threat model, Privacy page (phase 2) |

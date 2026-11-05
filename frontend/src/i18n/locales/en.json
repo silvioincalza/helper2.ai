@@ -11,8 +11,7 @@
     "opensNewTab": "(opens in a new tab)"
   },
   "guideMe": {
-    "label": "Set it up",
-    "aria": "Set up {{title}}"
+    "label": "Set it up"
   },
   "nav": {
     "main": "Main",
@@ -38,6 +37,7 @@
     "terms": "Terms",
     "account": "Your account",
     "signInFailed": "Sign-in did not work. Please try again.",
+    "signInAgain": "Choose how to sign in",
     "tagline": "AI on your radar"
   },
   "footer": {
@@ -60,8 +60,7 @@
     "name": "helper2.ai",
     "title": "The metasearch for the AI universe.",
     "lede": "One search across the world of AI for models, apps, MCP servers and papers. A pick with proof, plus the latest AI news and events.",
-    "hint": "A few words search. A question of {{count}} words or more can also ask the guide for picks.",
-    "suggestGuide": "Sounds like a question — ask the guide: “{{q}}” →",
+    "hint": "Enter searches. For picks with a quote that proves them, ask the guide (⇧↵).",
     "examples": "Try:",
     "exampleAi": "Drafted with AI, checked by a person",
     "exampleAiMark": "AI",
@@ -140,12 +139,10 @@
   },
   "results": {
     "title": "Search results",
-    "count_one": "{{count}} result",
-    "count_other": "{{count}} results",
-    "picksGroup": "Guide picks",
-    "moreResults": "More results",
-    "picksOnTop_one": "The guide’s pick is now at the top of the list.",
-    "picksOnTop_other": "The guide’s {{count}} picks are now at the top of the list.",
+    "all": "All results",
+    "command": "helper2 search",
+    "commandTimeline": "helper2 search --timeline",
+    "filtersOn": " · {{count}} on",
     "loading": "Searching the listed sources…",
     "errorTitle": "Search is unavailable",
     "errorBody": "We could not reach the Helper2.ai service. Nothing was searched.",
@@ -188,10 +185,15 @@
     "heading": "Results for {{q}}",
     "types": "Result types",
     "allTypes": "All",
-    "pick": "Pick #{{rank}}",
+    "moreTypes": "More",
+    "pick": "Guide pick #{{rank}}",
+    "checkedQuote": "Checked word for word in the source",
+    "from": "From {{sources}}",
+    "dateUpdated": "updated {{date}}",
+    "dateCreated": "created {{date}}",
+    "dateFirstSeen": "first seen {{date}}",
     "fullAnswer": "How the guide decided",
     "openOn": "Open on {{host}}",
-    "fullDetails": "Full details",
     "whyPicked": "Why the guide picked it",
     "reasonChecked": "A second model call checked this reason against the quote.",
     "reasonNotChecked": "Not checked by a second model call.",
@@ -201,11 +203,15 @@
     "use": "Use",
     "build": "Build",
     "notStated": "Not stated",
-    "listedBy": "Listed by",
     "timeline": "Timeline",
     "fanOut_one": "{{ok}} of {{total}} sources answered · {{count}} result after merging",
     "fanOut_other": "{{ok}} of {{total}} sources answered · {{count}} results after merging",
     "seeSources": "See the sources we search",
+    "showMore": "Show more",
+    "loadingMore": "Loading more…",
+    "moreLoaded_one": "{{count}} more result",
+    "moreLoaded_other": "{{count}} more results",
+    "moreFailed": "Could not load more results",
     "askGuide": "Ask the guide instead"
   },
   "timeline": {
@@ -218,8 +224,12 @@
     "label": "Results by creation date",
     "created": "Created",
     "noDate": "Creation date not stated",
-    "unknown": "Creation date unknown",
-    "unknownHint": "No source states when these were created. We do not use the date Helper2.ai found them instead."
+    "unknown": "Date unknown",
+    "unknownCount_one": "{{count}} result.",
+    "unknownCount_other": "{{count}} results.",
+    "unknownHint": "No source states when these were created. We do not use the date Helper2.ai found them instead.",
+    "showThem": "Show them",
+    "hideThem": "Hide them"
   },
   "sort": {
     "label": "Sort by",
@@ -233,7 +243,10 @@
     "clearAll": "Clear all filters",
     "remove": "Remove filter: {{filter}}",
     "updatedAfter": "Updated after",
-    "updatedAfterHint": "Only results with a known last-updated date on or after this day."
+    "updatedAfterHint": "Only results with a known last-updated date on or after this day.",
+    "close": "Close",
+    "showResults_one": "Show {{count}} result",
+    "showResults_other": "Show {{count}} results"
   },
   "facet": {
     "type": "Type",
@@ -256,12 +269,12 @@
     "covers": "Covers",
     "lastCheck": "Last check",
     "summary": "{{ok}} of {{total}} sources answered at their last check",
-    "warn_one": "{{count}} rate limited or skipped",
-    "warn_other": "{{count}} rate limited or skipped",
+    "warn_one": "{{count}} slow or limited",
+    "warn_other": "{{count}} slow or limited",
     "failed_one": "{{count}} failed",
     "failed_other": "{{count}} failed",
-    "never_one": "{{count}} not checked yet",
-    "never_other": "{{count}} not checked yet",
+    "idle_one": "{{count}} skipped or not checked",
+    "idle_other": "{{count}} skipped or not checked",
     "steps": {
       "ask": {
         "title": "One search, every source",
@@ -290,14 +303,6 @@
   },
   "servedFrom": {
     "STALE_CACHE": "Stale cache"
-  },
-  "freshness": {
-    "LIVE": "Live",
-    "CACHED": "Cached",
-    "STALE": "Stale data",
-    "INDEXED": "Indexed",
-    "CURATED": "Curated",
-    "DEMO": "Demo"
   },
   "mode": {
     "LIVE": {
@@ -487,15 +492,21 @@
     "storageFailed": "Your browser blocked storage, so saved items will be lost when you leave this page.",
     "serverError": "Could not sync with your account.",
     "types": "Saved by type",
-    "localNoteSignIn": "Saved in this browser only. Sign in to keep them on every device."
+    "localNoteSignIn": "Saved in this browser only. Sign in to keep them on every device.",
+    "emptyHint": "Press Save on any result to keep it here."
   },
   "account": {
     "title": "Your account",
     "signedInAs": "Signed in with GitHub as {{name}}.",
     "signedOut": "You are not signed in, so there is no account to delete.",
+    "signedInTitle": "Signed in",
+    "name": "Name",
+    "aiAnswersLeft": "AI answers left today",
+    "webSearchesLeft": "Web searches left today",
+    "leftOf": "{{remaining}} of {{limit}} · resets {{time}}",
     "displayTitle": "Display",
-    "radarMotion": "Radar: move between sources",
-    "radarMotionText": "On Home the radar beam turns and the sources come and go, 3 to 5 at a time. Off: the beam stands still and 4 sources stay.",
+    "radarMotion": "Radar: keep moving",
+    "radarMotionText": "Turn off to keep the Home radar still. It is also still when your system asks for reduced motion.",
     "saveFailed": "Not saved. Please try again later.",
     "deleteTitle": "Delete your account",
     "deleteText": "This deletes your account and everything saved on it. Reports you sent stay, without your name.",
@@ -510,15 +521,19 @@
   "sourcesPage": {
     "title": "Sources",
     "lede": "These are all the sources Helper2.ai can search. Anything not listed here is not covered.",
-    "modes": "How sources work",
     "error": "Could not load the source list.",
     "disabled": "Disabled",
     "terms": "Terms",
     "neverChecked": "Never checked",
     "col": {
       "terms": "Terms",
-      "attribution": "Attribution"
+      "mode": "Mode",
+      "when": "When",
+      "newThisWeek": "New this week"
     },
+    "radar_one": "The Home radar shows {{shown}} of these {{count}} external source at a time.",
+    "radar_other": "The Home radar shows {{shown}} of these {{count}} external sources at a time.",
+    "internal": "ours, not on the radar",
     "responseTime": "Response time",
     "noCalls": "No calls yet",
     "pause": {
@@ -582,7 +597,12 @@
       "seen": "Items seen",
       "changed": "Items changed",
       "message": "Message",
-      "run": "Run"
+      "run": "Run",
+      "kind": "Kind",
+      "resource": "Resource",
+      "check": "What to check",
+      "opened": "Opened",
+      "decision": "Decision"
     },
     "kindFilter": "Kind",
     "allKinds": "All kinds",
@@ -753,6 +773,7 @@
     }
   },
   "notFound": {
+    "label": "404",
     "title": "Page not found",
     "body": "This page does not exist, or it moved. Search for what you need in the box above, or go to the home page.",
     "home": "Go to the home page"
@@ -987,7 +1008,41 @@
     }
   },
   "textPage": {
-    "onThisPage": "On this page"
+    "onThisPage": "On this page",
+    "numbersUnavailable": "Some limits and periods could not be loaded, so this page states them without numbers. Reload the page to see them."
+  },
+  "policy": {
+    "webSearches": "{{search}} a day for search and {{guide}} for the guide",
+    "webSearchesByTier": "{{guest}} without an account, and {{registered}} when signed in",
+    "duration": {
+      "seconds_one": "{{count}} second",
+      "seconds_other": "{{count}} seconds",
+      "minutes_one": "{{count}} minute",
+      "minutes_other": "{{count}} minutes",
+      "hours_one": "{{count}} hour",
+      "hours_other": "{{count}} hours",
+      "days_one": "{{count}} day",
+      "days_other": "{{count}} days",
+      "months_one": "{{count}} month",
+      "months_other": "{{count}} months"
+    }
+  },
+  "signInPage": {
+    "title": "Sign in to keep what you find.",
+    "lede": "You can search without an account. Sign in when you want more.",
+    "savedTitle": "Saved on every device.",
+    "savedText": "What you save follows you to every browser where you sign in.",
+    "settingsTitle": "Your settings.",
+    "settingsText": "Set the Home radar once; it stays that way on every device.",
+    "how": "Choose how to sign in",
+    "continueWith": "Continue with {{provider}}",
+    "termsIntro": "By signing in you accept the",
+    "privacyIntro": "See what we keep on the",
+    "privacyOutro": "page.",
+    "signedInTitle": "You are signed in",
+    "signedInText": "Signed in as {{name}}.",
+    "noneTitle": "Sign-in is not offered here",
+    "noneText": "This site has no sign-in set up. You can still search, ask the guide and save in this browser."
   },
   "mission": {
     "title": "Our mission",
@@ -1039,13 +1094,16 @@
       {
         "title": "What we process and why",
         "items": [
-          "Your searches and guide questions: the text you type, used only to answer you. It is not linked to your account. Search results are cached for up to 30 minutes and guide answers for up to 24 hours, under a hash of the question, not its text. A cached guide answer, with the search queries the guide wrote for it, can be shown to anyone who asks the same or a very similar question. Please do not type personal or secret information.",
+          {
+            "text": "Your searches and guide questions: the text you type, used only to answer you. It is not linked to your account. A source's search results count as fresh for a short time, set per source; we keep the stored copy for up to {{cachedSearches}}, so results can still be shown when a source fails. Guide answers are kept for up to {{cachedGuideAnswers}}. Both are stored under a hash of the question, not its text. A cached guide answer, with the search queries the guide wrote for it, can be shown to anyone who asks the same or a very similar question. Please do not type personal or secret information.",
+            "withoutNumbers": "Your searches and guide questions: the text you type, used only to answer you. It is not linked to your account. A source's search results count as fresh for a short time, set per source; we keep the stored copy for a limited time, so results can still be shown when a source fails. Guide answers are kept for a limited time too. Both are stored under a hash of the question, not its text. A cached guide answer, with the search queries the guide wrote for it, can be shown to anyone who asks the same or a very similar question. Please do not type personal or secret information."
+          },
           "Your account, if you sign in with GitHub: your GitHub user ID (a number), your display name and when you last signed in. We ask GitHub only for basic profile access. We never see your GitHub password or your e-mail address.",
           "Your display settings, if you are signed in: whether the radar on Home moves between its sources. Kept with your account until you delete it.",
           "Saved items: if you are signed in, each saved resource (its link, title and type) and when you saved it, stored on our server with your account. If you are not signed in, they stay only in your browser; when you sign in, they move to your account.",
           "Reports you send about a resource: the text you write, linked to your account if you are signed in.",
           "Web search counters: Tavily searches per day and feature, under a keyed hash of your IP address and the date (no address stored; days cannot be linked), or your account ID once account limits are on.",
-          "Guide question counters: how many new questions the guide answered for you today, under a keyed hash of your IP address (for IPv6, its /64 network) that changes every day, so we can apply the daily limit in the Terms. The address itself is not stored.",
+          "Guide question counters: how many new questions the guide answered for you today, and random ids of the questions we gave back (an answer with no pick, or a question that failed), under a keyed hash of your IP address (for IPv6, its /64 network) that changes every day, so we can apply the daily limit in the Terms. The address itself is not stored.",
           "Your limits for today: when you open the site, we read these two counters under the same daily hash of your IP address, or your account once account limits are on, and send only what is left today (guide questions, and web searches for search and the guide) back to your browser, with the time they reset. Reading them does not count as a use, stores nothing new and does not send your address.",
           "Stored Tavily results, under a keyed hash of the question, not its text.",
           "Guide question fingerprints, only when similar-question reuse is on: a list of numbers (an embedding) computed from your guide question, kept with its cached answer so a later question with the same meaning can get that answer. Not linked to you or your account.",
@@ -1068,7 +1126,7 @@
         "items": [
           "A session cookie, only when you sign in, so you stay signed in.",
           "A security cookie (XSRF-TOKEN) that protects forms against cross-site request forgery.",
-          "Browser storage for your light or dark theme, the AI tool you chose in the setup guide and, if you are not signed in, your saved items. When you sign in, the page you were on is kept in this tab until you are back on it, then removed. The tab also keeps where you had scrolled on each page, so Back returns you there; it is gone when you close the tab. This data stays in your browser and is not sent to us, with one exception: when you sign in, the items you saved in this browser are moved to your account and removed from the browser.",
+          "Browser storage for your light or dark theme, the AI tool you chose in the setup guide and, if you are not signed in, your saved items. When you sign in, the page you were on is kept in this tab until you are back on it, then removed. The tab also keeps where you had scrolled on each page, so Back returns you there. When you open a result, the tab's history keeps, with that step, the address of your search and, if the guide picked the result, the pick: its rank, its AI-written reason, the quote it checked and the requirements from your question it checked, so the resource page can say why the guide picked it. All of this is gone when you close the tab. This data stays in your browser and is not sent to us, with one exception: when you sign in, the items you saved in this browser are moved to your account and removed from the browser.",
           "All of these are strictly necessary for the site to work. We use no advertising, analytics or third-party cookies."
         ]
       },
@@ -1099,12 +1157,27 @@
       {
         "title": "How long we keep data",
         "items": [
-          "Cached searches: up to 30 minutes. Cached guide answers and their question fingerprints: up to 24 hours, deleted by the next daily clean-up.",
+          {
+            "text": "Cached searches: a source's results count as fresh for a short time, set per source, and the stored copy is kept up to {{cachedSearches}}. Cached guide answers and their question fingerprints: up to {{cachedGuideAnswers}}, deleted by the next daily clean-up.",
+            "withoutNumbers": "Cached searches: a source's results count as fresh for a short time, set per source, and the stored copy is kept for a limited time. Cached guide answers and their question fingerprints: for a limited time, deleted by the next daily clean-up."
+          },
           "Technical logs and request traces: up to 3 months. Usage totals: 90 days.",
-          "Web search counters: 24 hours. Rate-limit counters: 1 minute or 1 hour (the length of the limit). Guide questions per day: 2 days. Stored results: 7 days.",
-          "English translations of searches typed in another language: 24 hours. Search vectors (the numbers we use to search by meaning): 7 days. Both are stored under a hash of the search, not its text, and deleted from the database within a day after they expire.",
-          "Your account, its display settings and your saved items: until you delete them, or 24 months after you last signed in. Then we delete the account, its settings and its saved items.",
-          "Reports: 12 months after they were handled. If your account is deleted, your reports stay without your name until then.",
+          {
+            "text": "Web search counters: 24 hours. Rate-limit counters: 1 minute or 1 hour (the length of the limit). Guide questions per day: 2 days. Stored results: {{storedWebResults}}.",
+            "withoutNumbers": "Web search counters: 24 hours. Rate-limit counters: 1 minute or 1 hour (the length of the limit). Guide questions per day: 2 days. Stored results: for a limited time."
+          },
+          {
+            "text": "English translations of searches typed in another language: {{translations}}. Search vectors (the numbers we use to search by meaning): {{queryVectors}}. Both are stored under a hash of the search, not its text, and deleted from the database within a day after they expire.",
+            "withoutNumbers": "English translations of searches typed in another language, and search vectors (the numbers we use to search by meaning): for a limited time. Both are stored under a hash of the search, not its text, and deleted from the database within a day after they expire."
+          },
+          {
+            "text": "Your account, its display settings and your saved items: until you delete them, or {{inactiveAccounts}} after you last signed in. Then we delete the account, its settings and its saved items.",
+            "withoutNumbers": "Your account, its display settings and your saved items: until you delete them, or a set time after you last signed in. Then we delete the account, its settings and its saved items."
+          },
+          {
+            "text": "Reports: {{handledReports}} after they were handled. If your account is deleted, your reports stay without your name until then.",
+            "withoutNumbers": "Reports: a set time after they were handled. If your account is deleted, your reports stay without your name until then."
+          },
           "Database backups: 7 days. Anything deleted above is gone from the backups within 7 days.",
           "Quotes from public pages about AI resources: as long as we keep the source record they were read for, and never longer than we list the resource.",
           "Articles and news found by web search, LinkedIn articles and posts included, with their titles and excerpts: 180 days after we last retrieved them. Product pages, LinkedIn company pages and LinkedIn events we accepted from a web search: as long as we list them. Pages waiting for our review: until we decide, then 180 days."
@@ -1140,7 +1213,10 @@
         "items": [
           "Helper2.ai is a free search over public sources about the AI ecosystem, with an AI guide that answers questions from those results.",
           "We may change, limit or stop the service, or parts of it, at any time and without notice.",
-          "Tavily web searches: 3 a day each for search and the guide; stored results are free. The AI guide: 30 new questions a day per IP address; a question whose answer is still stored does not count. After that, the guide shows the top search results without AI picks. Limits reset at 00:00 UTC.",
+          {
+            "text": "Tavily web searches: {{webSearches}}; stored results are free. The AI guide: {{guideQuestions}} new questions a day per IP address; a question whose answer is still stored does not count, and an answer with no pick, or a question that fails, does not count either (up to 30 a day). After that, the guide shows the top search results without AI picks. Limits reset at 00:00 UTC.",
+            "withoutNumbers": "Tavily web searches: a daily limit each for search and the guide; stored results are free. The AI guide: a daily limit of new questions per IP address; a question whose answer is still stored does not count, and an answer with no pick, or a question that fails, does not count either (within a daily limit). After that, the guide shows the top search results without AI picks. Limits reset at 00:00 UTC."
+          },
           "You can use Helper2.ai without an account. If you sign in, you can delete your account at any time: select your name at the top of the page, then \"Delete my account\". You can also write to us."
         ]
       },
@@ -1202,11 +1278,17 @@
     "steps": {
       "search": {
         "title": "Search real sources",
-        "body": "A fast Nemotron model turns your words, in any language, into search terms. A normal search across every source then finds up to 24 real candidates."
+        "body": {
+          "text": "A fast Nemotron model turns your words, in any language, into search terms. A normal search across every source then finds up to {{maxCandidates}} real candidates.",
+          "withoutNumbers": "A fast Nemotron model turns your words, in any language, into search terms. A normal search across every source then finds the real candidates."
+        }
       },
       "choose": {
         "title": "Nemotron chooses",
-        "body": "A reasoning model picks at most 3 of those candidates, explains why with a quote, and can adapt a ready-to-use prompt from catalog prompts."
+        "body": {
+          "text": "A reasoning model picks at most {{maxPicks}} of those candidates, explains why with a quote, and can adapt a ready-to-use prompt from catalog prompts.",
+          "withoutNumbers": "A reasoning model picks a few of those candidates, explains why with a quote, and can adapt a ready-to-use prompt from catalog prompts."
+        }
       },
       "check": {
         "title": "A validator checks",
@@ -1335,7 +1417,8 @@
     "onNow": "on now",
     "until": "until {{date}}",
     "firstSeen": "seen {{date}}",
-    "noDate": "date unknown"
+    "noDate": "date unknown",
+    "scrollBox": "{{name}}, the whole table"
   },
   "webSearches": {
     "feature": {
@@ -1348,6 +1431,10 @@
   "resource": {
     "backToResults": "Back to results",
     "sourceText": "From the source",
-    "checkedNote": "Highlighted: the sentence the guide checked against this source."
+    "checkedNote": "Highlighted: the sentence the guide checked against this source.",
+    "atAGlance": "At a glance",
+    "whereFrom": "Where this information comes from",
+    "readAt": "read {{date}}",
+    "allSources": "All sources and their last check"
   }
 }

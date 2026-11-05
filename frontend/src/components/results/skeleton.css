@@ -1,0 +1,69 @@
+/* The results skeleton (ADR 0042, decision 7): in the first download, so it shows while the results view loads. It has the
+   list's shape and a screen of height, so the footer is already below the fold and the rows do not push it (CLS).
+   The page's column is here too, so it does not change width when the view arrives. */
+.h2-results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: var(--reading-max);
+  margin: 0 auto;
+  padding: var(--space-4) 0 var(--space-7);
+}
+.h2-results__box {
+  max-width: 680px;
+}
+.h2-results__loading-line {
+  margin: 0;
+  font: 400 0.8125rem/1.4 var(--font-mono);
+  color: var(--muted);
+}
+.h2-skeleton {
+  min-height: 100dvh;
+  margin-top: var(--space-3);
+}
+.h2-skeleton__head {
+  display: block;
+  height: 28px;
+  width: 40%;
+  margin-bottom: var(--space-3);
+  border-radius: 4px;
+  background: var(--surface-tint);
+  animation: h2-pulse 1.6s ease-in-out 3;
+}
+.h2-skeleton__row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-5) 0;
+  border-top: 1px dashed var(--border-strong);
+}
+.h2-skeleton__line {
+  display: block;
+  height: 12px;
+  width: 90%;
+  border-radius: 4px;
+  background: var(--surface-tint);
+  /* Three pulses (4.8 s), then still (ADR 0042, decision 12). */
+  animation: h2-pulse 1.6s ease-in-out 3;
+}
+.h2-skeleton__line.is-short {
+  width: 30%;
+}
+.h2-skeleton__line.is-half {
+  width: 45%;
+}
+.h2-skeleton__line.is-title {
+  height: 20px;
+  width: 60%;
+}
+@keyframes h2-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .h2-skeleton__head,
+  .h2-skeleton__line {
+    animation: none;
+  }
+}

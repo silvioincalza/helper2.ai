@@ -4,16 +4,17 @@ import { useTranslation } from 'react-i18next';
 import { api, ApiError } from '@/api/client';
 import type { AdminHomeExample, AudiencePath, ResultCard } from '@/api/types';
 import { Icon } from '@/components/Icon';
-import '@/components/saved/saved.css';
 import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { useApi } from '@/hooks/useApi';
 import { useRetry } from '@/hooks/useRetry';
 import { formatDate } from '@/lib/format';
 import { resourcePath } from '@/lib/searchState';
+import { AdminEmpty, AdminHead, AdminLoading } from './AdminHead';
 import { CHECK_OUTCOMES, CHECK_TONE, oneOf, PATHS, SHOWN_PER_PATH } from './adminModel';
 
 const EXPECTED_MAX = 3;
+const COMMAND = 'helper2 examples';
 
 interface Expected {
   id: string;
@@ -159,9 +160,13 @@ export default function ExamplesPage() {
 
   return (
     <section aria-labelledby="ex-h" className="h2-admin__part">
-      <h2 id="ex-h" ref={heading} tabIndex={-1} className="h2-admin__h">
-        {t('admin.examples.title')}
-      </h2>
+      <AdminHead
+        id="ex-h"
+        title={t('admin.examples.title')}
+        command={COMMAND}
+        total={examples.loading ? null : (examples.data?.length ?? null)}
+        headingRef={heading}
+      />
       {all.data && (
         <p className="muted">
           {t('admin.examples.lede', { use: shown('USE_AI'), build: shown('BUILD_WITH_AI') })}
@@ -227,9 +232,7 @@ export default function ExamplesPage() {
       </div>
 
       {examples.loading ? (
-        <p role="status" className="muted">
-          {t('common.loading')}
-        </p>
+        <AdminLoading command={COMMAND} />
       ) : examples.error !== undefined ? (
         <StatePanel
           tone="error"
@@ -238,12 +241,12 @@ export default function ExamplesPage() {
           next={<RetryButton onClick={retry} />}
         />
       ) : list.length === 0 ? (
-        <p className="muted">{t('admin.examples.empty')}</p>
+        <AdminEmpty command={COMMAND} text={t('admin.examples.empty')} />
       ) : (
-        <ul className="h2-saved__list" aria-labelledby="ex-h">
+        <ul className="h2-admin__list" aria-labelledby="ex-h">
           {list.map((e) => (
-            <li key={e.id} className="h2-saved__row">
-              <p className="h2-saved__meta">
+            <li key={e.id} className="v4-row h2-admin__row">
+              <p className="h2-admin__meta">
                 <span>{t(`admin.examples.path.${e.path}`)}</span>
                 <span>{t(`admin.examples.origin.${e.origin}`)}</span>
                 {e.check.checkedAt && (
@@ -279,7 +282,7 @@ export default function ExamplesPage() {
                 ))}
               </p>
               {removing === e.id ? (
-                <div className="h2-saved__actions h2-admin__actions" role="group">
+                <div className="h2-admin__actions" role="group">
                   <span>{t('admin.examples.confirmRemove', { label: e.label })}</span>
                   <button
                     type="button"
@@ -299,7 +302,7 @@ export default function ExamplesPage() {
                   </button>
                 </div>
               ) : (
-                <div className="h2-saved__actions h2-admin__actions">
+                <div className="h2-admin__actions">
                   <button
                     type="button"
                     className="btn"
@@ -414,7 +417,7 @@ function ExampleForm({
       </label>
       <ExpectedPicker expected={draft.expected} onChange={(expected) => set({ expected })} />
       <p className="muted small">{t('admin.examples.form.pendingNote')}</p>
-      <div className="h2-saved__actions h2-admin__actions">
+      <div className="h2-admin__actions">
         <button
           type="submit"
           className="btn btn-primary"

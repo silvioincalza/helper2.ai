@@ -1,13 +1,4 @@
-import {
-  createContext,
-  type HTMLAttributes,
-  type Ref,
-  useContext,
-  useEffect,
-  useId,
-  useRef,
-  useState,
-} from 'react';
+import { type HTMLAttributes, type Ref, useEffect, useId, useRef, useState } from 'react';
 import { aiMark } from '@/lib/aiMark';
 import { useTranslation } from 'react-i18next';
 import { api } from '@/api/client';
@@ -47,47 +38,26 @@ function H({
   return <Tag {...props} />;
 }
 
-/** One open guide per list: opening a card's guide closes the one that was open. */
-export const OpenGuideContext = createContext<{
-  openId: string | null;
-  setOpenId: (id: string | null) => void;
-} | null>(null);
-
-/** Open state of one tool's guide: shared through [OpenGuideContext] in a list, local elsewhere. */
-export function useGuideToggle(id: string) {
-  const shared = useContext(OpenGuideContext);
-  const [local, setLocal] = useState(false);
-  const open = shared ? shared.openId === id : local;
-  const toggle = () => (shared ? shared.setOpenId(open ? null : id) : setLocal(!open));
-  return { open, toggle };
-}
-
 /** The "Set it up" button; [bodyId] is the panel it opens. */
-export function GuideMeButton({
-  title,
+function GuideMeButton({
   open,
   onToggle,
   bodyId,
-  primary = false,
 }: {
-  title: string;
   open: boolean;
   onToggle: () => void;
   bodyId: string;
-  primary?: boolean;
 }) {
   const { t } = useTranslation();
-  const name = { title, interpolation: { escapeValue: false } };
   return (
     <button
       type="button"
-      className={`btn ${primary ? 'btn-primary' : 'btn-ghost'} guide-me`}
+      className="btn guide-me"
       aria-expanded={open}
       aria-controls={bodyId}
-      aria-label={primary ? undefined : t('guideMe.aria', name)}
       onClick={onToggle}
     >
-      {!primary && <Icon name="sparkle" />}
+      <Icon name="sparkle" />
       {t('guideMe.label')}
     </button>
   );
@@ -99,7 +69,7 @@ export function GuideMeButton({
  * steps from its README or model card (POST /resources/{id}/guide, AI-picked, every quote and command checked against the
  * document). Focus moves to its heading when it opens.
  */
-export function GuideBody({ id, title, level }: { id: string; title: string; level: number }) {
+function GuideBody({ id, title, level }: { id: string; title: string; level: number }) {
   const { t } = useTranslation();
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => heading.current?.focus(), []);
@@ -114,17 +84,18 @@ export function GuideBody({ id, title, level }: { id: string; title: string; lev
   );
 }
 
-/** The detail page's "Set it up": a primary button, the panel under it. */
+/** The resource page's "Set it up": a secondary button (Open is the one primary), the panel under it. */
 export function SetupGuidePanel({ id, title }: { id: string; title: string }) {
   const { t } = useTranslation();
-  const { open, toggle } = useGuideToggle(id);
+  const [open, setOpen] = useState(false);
+  const toggle = () => setOpen((o) => !o);
   const bodyId = `setup-${useId()}`;
   return (
     <section
       className="setup"
       aria-label={t('setup.title', { title, interpolation: { escapeValue: false } })}
     >
-      <GuideMeButton title={title} open={open} onToggle={toggle} bodyId={bodyId} primary />
+      <GuideMeButton open={open} onToggle={toggle} bodyId={bodyId} />
       <div id={bodyId} hidden={!open}>
         {open && <GuideBody id={id} title={title} level={2} />}
       </div>

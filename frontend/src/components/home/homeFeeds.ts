@@ -38,7 +38,7 @@ const EVENTS_SIZE = 60;
 const EVENTS_DAYS = 90;
 
 /** Which date a row shows: the one its source stated, else the day Helper2.ai first saw it. */
-export type DateKind = 'published' | 'updated' | 'firstSeen';
+type DateKind = 'published' | 'updated' | 'firstSeen';
 
 export interface NewsRow {
   id: string;
@@ -93,7 +93,7 @@ function newsDate(card: ResultCard): { kind: DateKind; value: string } | null {
   return null;
 }
 
-export function toNewsRow(card: ResultCard): NewsRow {
+function toNewsRow(card: ResultCard): NewsRow {
   const date = newsDate(card);
   return {
     id: card.id,
@@ -106,7 +106,7 @@ export function toNewsRow(card: ResultCard): NewsRow {
   };
 }
 
-export function toEventRow(card: ResultCard, now: number): EventRow {
+function toEventRow(card: ResultCard, now: number): EventRow {
   const start = card.timeline.eventStart?.value ?? '';
   const days = start ? daysUntil(start, now) : Number.NaN;
   return {

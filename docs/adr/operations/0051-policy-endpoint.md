@@ -67,5 +67,7 @@ day" while the server allows 50, and nothing fails. For the Privacy page that is
 ## Diagrams
 [flow](../../diagrams/flow-0051-policy-endpoint.svg) · [sequence](../../diagrams/sequence-0051-policy-endpoint.svg)
 
-## Roadmap
-- The Mission, Privacy and Terms pages read the numbers from `GET /api/v1/policy` ([roadmap](../../roadmap.md)).
+## Frontend
+The Mission, Privacy and Terms pages read the numbers from `GET /api/v1/policy`
+([0042](../frontend/0042-redesign-design-system-v4.md), decision 13): `frontend/src/hooks/usePolicy.ts`,
+`lib/duration.ts`, `components/TextSections.tsx`, `routes.tsx`.

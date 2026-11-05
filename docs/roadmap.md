@@ -171,37 +171,43 @@ Open items:
 
 - **Redesign, version 4 of the design system** ([0042](adr/frontend/0042-redesign-design-system-v4.md),
   [design/system](design/system/README.md), boards in [design/redesign](design/redesign)). The fonts, the v4 tokens,
-  the header, the footer and Home are built. Still to do, one pull request each:
-  - **Results in v4:** one column, no preview panel. A row opens the resource page, and Back keeps the scroll
-    position (#151). Rows carry what the preview showed: type, host, date, guide pick, description, source. Guide
-    picks merged into the list; the partial-results banner becomes one quiet line in the count row; filters as a
-    drawer on phones.
-  - **The resource page in v4:** one primary button ("Set it up" is already only on types a user installs or runs).
-  - **The other pages** (Saved, Sources, Mission, Privacy, Terms, Account, sign-in, 404, admin), one by one.
-  - **Remove version 3** once the last page has moved: the v3 components and layout sizes, Space Grotesk, and the
-    `--v4-` prefix on the v4 sizes and fonts.
-  - **Font, open point.** The decision of 2 November 2026 (#173) keeps Space Grotesk for every page, with no new
-    download. The header, the footer and Home are built in Geist Mono and Geist, as the boards draw them. Decide
-    one: Geist for every page as they move, or Space Grotesk on the v4 parts too (two tokens in `tokens.css` and the
-    two `@fontsource-variable` packages).
+  the header, the footer, Home, Results (list and timeline), the resource page, Sources, Saved, the back office and
+  the text pages (Mission, Privacy, Terms, Account, sign-in, 404) are built. Open points:
+  - **Saved, drawn but not built:** Undo for a few seconds after Remove, "4 of 500" on the account list, and "We moved
+    3 saved items to your account" right after sign-in. Each needs a decision first: Undo changes how Remove works,
+    the cap and the moved count need fields on the bookmarks API.
+  - **Sources, open point:** the board shows the last check as "2 min ago"; the table shows the time in UTC, as before.
+    A relative time needs the server's clock on GET /sources, or it goes wrong on a client with a wrong clock.
+  - **Mission: section order.** The board puts how the guide answers between What we promise and How we mark AI
+    text; the page shows it after the locale sections. Needs a way to place it among them.
   - **API fields:** `newThisWeek` on GET /sources, `limits` on GET /me and `total` on the recent and upcoming responses
-    are in the API and on Home. `skipReason` on every source status and GET /api/v1/policy
-    ([0051](adr/operations/0051-policy-endpoint.md)) are in the API. Still to use them: the account panel and the
-    Account page (`limits`), the Sources table (`newThisWeek`), "Try again" on Results only when it helps
-    (`skipReason`), and the numbers of the Mission, Privacy and Terms pages (`/policy`).
-  - **Cost guard:** a "no pick" answer and a cached answer spend no AI answer
-    ([0017](adr/guide/0017-guide-cost-guard.md)). After config PRs 5-8. Then, with a week of data, check the share of
-    4+-word searches that are names and the share of "no pick" answers, and revisit the 4-word rule.
+    are in the API, on Home, in the Sources table and on the Account page. `skipReason` on every source status is
+    used by the coverage line on Results. The Mission, Privacy and Terms pages take their numbers from GET
+    /api/v1/policy. Still to use: `limits` in the account panel.
+  - **Text pages: numbers still typed.** The API does not have them, so the pages type them: the 00:00 UTC reset, the
+    web search counters (24 hours), the rate-limit counters (1 minute or 1 hour), the guide question counters
+    (2 days), logs and request traces (3 months), usage totals (90 days), backups (7 days), articles and news from
+    web search (180 days), quotes up to 300 and excerpts up to 400 characters. Each one moves to GET /policy when
+    the code reads it from configuration.
+  - **Terms with the registered tier on:** the guide question limit is stated per IP address only. When signed-in
+    users get their own guide limit, it needs a field on GET /policy and a sentence on Terms.
+  - **Cost guard data:** with a week of data, check the share of "no pick" and failed questions that are given back
+    (`helper2.guide.quota.give_back`, by `reason`) and how often a client reaches the free-answer cap
+    ([0017](adr/guide/0017-guide-cost-guard.md)).
+  - **Free answers on /policy:** GET /api/v1/policy has the daily guide questions but not
+    `H2_GUIDE_CLIENT_DAILY_FREE_ANSWERS`, so the Terms page types "up to 30 a day" by hand. Add it to GET /policy
+    and read it there.
   - An `unknown` count per facet and an updated-date facet on the search response (Filters panel).
   - Sign-in with Google (phase 1). Passkey, email link and password (phase 2) need their own ADR, a threat model and
     the Privacy page first.
+  - **Account, from the boards:** "higher daily limits when signed in" only once the API says the signed-in limits
+    (from `limits` on GET /me, never typed), and "Saved items 4 of 500" once GET /bookmarks returns the account cap.
+  - **Sign-in page, phase 2:** passkey, email link and password buttons, shown only when a provider is configured, after
+    the phase 2 ADR above.
   - **Radar pause for everyone (WCAG 2.2.2), open point.** The radar's beam turns without end and its sources come and
     go. Signed-in users can turn it off on the account page; guests have only reduced motion and the hold while the
     search box has focus, and no switch. Find a pause for them that needs no new browser storage key, or decide the
     storage key with the Privacy page.
-  - **The terminal style on the list pages:** Results, Timeline, Sources, Saved and Admin get the look of `TermList`
-    on Home (a `$ helper2 …` line with the count from the API, `ls -l` columns, dashed rules, titles in Geist, the
-    rest in Geist Mono). One pull request each.
 - **Frontend design** ([0040](adr/frontend/0040-frontend-design.md)) is done and on staging. Prod gets it with the next release:
   cut one once staging looks right.
 - Tracking cookies are planned. Before the first one: consent banner, cookie notice, Privacy page and record of
@@ -270,7 +276,6 @@ Fix an item or accept it; when it no longer holds, remove it.
 - Hugging Face provider models get no enrichment (the list API has no description). Tavily discovery finds consumer tools, hosting and prompt libraries, but each product waits for an admin ([ADR 0051](adr/scout/0051-tavily-discovery.md)); measure the weekly review load and the share accepted, then tune `min-score` and the categories. Course pages wait for an admin each week, and an accepted course is still added to the curated list by hand: index it on accept, like resource candidates. ([ADR 0020](adr/scout/0020-scout-collectors.md))
 - Tavily discovery follow-ups ([ADR 0051](adr/scout/0051-tavily-discovery.md)): count the Scout's Tavily credits in `helper2_tavily_credits_total` with a weekly alert; a host deny list and at most 2 list pages per host per pass; record score, rank, finding search, rule and tag reasons per candidate, then a replay evaluation on a recorded snapshot to tune `min-score`, the list-title rule and the keywords; drop vendor compare and alternatives pages; take the type from the best-ranked finding search; recognise Chrome Web Store, Firefox add-on and GPT links; shorter excerpts for press pages and no email addresses in excerpts; a removal line on the Terms page; expire open candidates; allow only collectors that propose candidates as their source. A rejected candidate can come back once its review item is purged (180 days after the decision).
 - LinkedIn via Tavily ([ADR 0053](adr/scout/0053-linkedin-via-tavily.md)): an accepted company page links to LinkedIn, not to the product's own site, until enrichment or an admin adds it; an accepted LinkedIn event has no days and is not in Next events until it is added to the curated list by hand; measure in the first weeks how many candidates a pass sends and how many are accepted, and drop a query or a page kind that brings only noise.
-- Scout settings are read with `@Value` in `ScoutConfiguration`; move them to a `@ConfigurationProperties` record (ADR 0007).
 - A catch-up run that ends just before the cron time is followed by the cron's run a few minutes later ([ADR 0018](adr/scout/0018-scout-runner.md)).
 - An event whose source gives no day is not listed; event days can be a few hours off far from UTC; conference dates are as correct as ai-deadlines; curated events need a research pass to stay current. ([ADR 0022](adr/scout/0022-next-events.md))
 
@@ -303,7 +308,8 @@ Fix an item or accept it; when it no longer holds, remove it.
 
 ### Frontend
 
-- The four-word rule labels the button "Ask the guide" for a long keyword list and "Search" for a short question; Enter always searches. ([ADR 0025](adr/frontend/0025-frontend-one-box.md))
+- A user who never presses Ask the guide (or Shift+Enter) never sees the guide's picks: Enter only searches. ([ADR 0025](adr/frontend/0025-frontend-one-box.md))
+- knip does not read locale files or CSS: a text key or a style that only dead code used stays until it is removed by hand (today the `freshness.*` texts and `.badge.freshness`). Moderate `npm audit` advisories in build and test tools are only reported. ([ADR 0054](adr/quality/0054-dead-code-and-dependency-audit.md))
 - No browser end-to-end tests: frontend tests run in jsdom only, also in CI. ([ADR 0025](adr/frontend/0025-frontend-one-box.md), [ADR 0028](adr/operations/0028-ci-cd.md))
 - A recent answer can be up to 5 minutes old (50 entries, 5 minutes, fixed). A new page that shows data the user changes must pass `cache: false`. ([ADR 0039](adr/frontend/0039-frontend-recent-answers-cache.md))
 - The picks bar takes about 110 px also when the guide has nothing to say, and shows no step-by-step progress; there is no button to close the guide's answer. Two result layouts to build and test. ([ADR 0040](adr/frontend/0040-frontend-design.md))

@@ -1,38 +1,8 @@
 /*
- * Shared components of the design (ADR 0040; docs/design/system/README.md, Components), prefix h2- like the design
- * system's bundle.css. Imported by the components themselves, so a page that uses none of them loads none of it.
+ * Shared components of the design (ADR 0040; docs/design/system/README.md, Components), prefix h2-. Imported by the components themselves, so a page that uses none of them loads none of it.
  */
 
-/* TypeTag: mono capitals, 5px by 8px, 6px corners. */
-.h2-type-tag {
-  display: inline-block;
-  padding: 5px 8px;
-  border-radius: 6px;
-  font: 500 11px/1 var(--font-mono);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  background: var(--tag-other-bg);
-  color: var(--ink-2);
-}
-.h2-type-tag--paper {
-  background: var(--tag-paper-bg);
-  color: var(--accent-deep);
-}
-.h2-type-tag--model {
-  background: var(--tag-model-bg);
-  color: var(--tag-model-ink);
-}
-.h2-type-tag--news {
-  background: var(--tag-news-bg);
-  color: var(--tag-news-ink);
-}
-.h2-type-tag--mcp {
-  background: var(--tag-mcp-bg);
-  color: var(--checked-ink);
-}
-
-/* StatusPill: mono capitals in a pill; next and later are outlined. */
+/* StatusPill: Geist Mono capitals in a pill; next and later are outlined. */
 .h2-status-pill {
   display: inline-block;
   padding: 4px 8px;
@@ -73,7 +43,7 @@
 }
 .h2-proof blockquote {
   margin: 0;
-  font: 400 17px/24px var(--font-display);
+  font: 400 17px/24px var(--font-body);
   color: var(--ink);
   overflow-wrap: anywhere;
 }
@@ -84,7 +54,7 @@
   padding: 0 2px;
 }
 .h2-proof figcaption {
-  font: 400 12px/16px var(--font-mono);
+  font: 400 12px/16px var(--font-code);
   color: var(--muted);
 }
 
@@ -106,7 +76,7 @@
   border: 1px solid var(--source-tile-line);
   border-radius: var(--radius-lg);
   background: var(--source-tile-bg);
-  font: 400 12px/16px var(--font-mono);
+  font: 400 12px/16px var(--font-code);
   color: var(--ink);
 }
 .h2-source-tile__dot {
@@ -135,45 +105,6 @@
   background: var(--border-strong);
 }
 
-/* SelectableRow: a row whose link covers it all; the selected one has the row-selected-line outline. */
-.h2-select-row {
-  position: relative;
-  display: block;
-  width: 100%;
-  min-height: var(--target-min);
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-lg);
-  background: var(--surface);
-  color: var(--ink);
-  text-align: left;
-  cursor: pointer;
-  transition: box-shadow var(--motion);
-}
-.h2-select-row:hover {
-  background: var(--surface-tint);
-}
-.h2-select-row.is-selected {
-  box-shadow: inset 0 0 0 2px var(--row-selected-line);
-}
-.h2-select-row__link {
-  color: inherit;
-  text-decoration: none;
-}
-/* The link's box stretches over the whole row, so a click anywhere on the row is a click on the link. */
-.h2-select-row__link::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-}
-.h2-select-row__link:focus-visible {
-  outline: none;
-}
-.h2-select-row__link:focus-visible::after {
-  outline: 3px solid var(--focus);
-  outline-offset: 2px;
-}
-
 /* PicksBar: height reserved from the first render; one line when there is no pick. */
 .h2-picks {
   min-height: 110px;
@@ -196,7 +127,7 @@
 }
 .h2-picks__title {
   margin: 0;
-  font: 600 13px/18px var(--font-sans);
+  font: 600 13px/18px var(--font-body);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--muted);
@@ -205,13 +136,13 @@
   padding: 2px 8px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--border-strong);
-  font: 500 12px/16px var(--font-sans);
+  font: 500 12px/16px var(--font-body);
   color: var(--ink-2);
 }
 .h2-picks__line {
   flex-basis: 100%;
   margin: 0;
-  font: 400 14px/21px var(--font-sans);
+  font: 400 14px/21px var(--font-body);
   color: var(--ink-2);
 }
 .h2-picks.is-none .h2-picks__line {
@@ -229,36 +160,6 @@
   gap: var(--space-2);
 }
 
-/* Type tabs: a row of filter buttons with counts; the pressed one is underlined (results, saved). */
-.h2-tabs {
-  display: flex;
-  gap: 2px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  border-bottom: 1px solid var(--border);
-}
-.h2-tab {
-  min-height: 46px;
-  padding: 0 var(--space-3);
-  border: 0;
-  border-bottom: 3px solid transparent;
-  background: none;
-  color: var(--muted);
-  font: 500 0.875rem/1 var(--font-sans);
-  white-space: nowrap;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.h2-tab[aria-pressed='true'] {
-  color: var(--ink);
-  border-bottom-color: var(--accent);
-}
-.h2-tab__n {
-  font: 500 12px/1 var(--font-mono);
-}
-
 /* StatePanel (ADR 0040, 8): what happened in the heading, why under it, the next step in the last row. */
 .h2-state {
   display: flex;
@@ -267,7 +168,7 @@
   padding: var(--space-4) var(--space-5);
   margin-bottom: var(--space-4);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   background: var(--surface);
 }
 .h2-state > * {
@@ -280,12 +181,12 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font: 600 1rem/1.35 var(--font-sans);
+  font: 600 1rem/1.35 var(--font-mono);
   letter-spacing: normal;
   color: var(--ink);
 }
 h1.h2-state__title {
-  font: 400 clamp(1.9rem, 2vw + 1.1rem, 2.6rem)/1.1 var(--font-display);
+  font: 400 clamp(1.9rem, 2vw + 1.1rem, 2.6rem)/1.1 var(--font-body);
   letter-spacing: -0.015em;
 }
 .h2-state__title:focus:not(:focus-visible) {
@@ -297,9 +198,19 @@ h1.h2-state__title {
   align-items: center;
   gap: var(--space-2) var(--space-4);
 }
-.h2-state__next > .btn,
-.h2-state__next > a {
+/* A plain link as the next step is a 44px target too. */
+.h2-state__next > a:not(.btn) {
   min-height: var(--target-min);
   display: inline-flex;
   align-items: center;
+}
+
+/* The "AI-written" label next to a text a model wrote (ADR 0038): on the results and the resource page. */
+.h2-row__ai {
+  padding: 1px 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font: 500 0.6875rem/16px var(--font-mono);
+  color: var(--ink-2);
+  white-space: nowrap;
 }

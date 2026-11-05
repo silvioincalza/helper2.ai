@@ -1,12 +1,15 @@
 import { useTranslation } from 'react-i18next';
-import { HowItWorks } from '@/components/HowItWorks';
+import { HowItWorks, useHowItWorksToc } from '@/components/HowItWorks';
 import { REPO_URL } from '@/components/Layout';
 import { useTitle } from '@/hooks/useTitle';
 import { TextPage } from '@/components/TextPage';
+import { usePolicyText } from '@/hooks/usePolicy';
 
 export default function MissionPage() {
   const { t } = useTranslation();
   useTitle(t('nav.mission'));
+  const policy = usePolicyText();
+  const howToc = useHowItWorksToc();
   const feedback = (
     <p>
       <a
@@ -22,6 +25,9 @@ export default function MissionPage() {
   return (
     <TextPage
       i18nKey="mission.sections"
+      values={policy.values}
+      numbersUnavailable={policy.failed}
+      afterToc={howToc}
       head={
         <>
           <h1>{t('mission.title')}</h1>
@@ -30,7 +36,7 @@ export default function MissionPage() {
       }
       after={
         <>
-          <HowItWorks />
+          <HowItWorks values={policy.values} />
           {feedback}
         </>
       }

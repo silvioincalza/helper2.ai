@@ -74,7 +74,7 @@ describe('Feature: a better search box', () => {
     expect(box()).toHaveFocus();
     await userEvent.type(box(), 'rag');
     expect(screen.queryByText('Type what you need first.')).toBeNull();
-    expect(box()).not.toHaveAttribute('aria-describedby');
+    expect(box().getAttribute('aria-describedby') ?? '').not.toContain('q-hint');
   });
 
   it('Scenario: only spaces count as an empty box too', async () => {

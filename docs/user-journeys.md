@@ -27,12 +27,12 @@ The success criteria at the end say which tests verify each journey today. What 
    height and shows nothing to click, so the page does not jump. An example a model drafted and a person checked has
    a small "AI" mark: "Drafted with AI, checked by a person".
 3. Types a name ("ollama"), keywords ("mcp postgres"), an intent ("I want to summarise PDFs"), or a use case ("traduzione").
-4. On the home page, Enter (or the button) opens the results on `/search`; focus moves to the results. There, results follow typing when it pauses (or on Enter). The first search shows skeleton rows and a per-source "querying…" line; a later search keeps the previous results on screen, dimmed, until the new ones arrive.
-5. Next to **Filters**, **Best for** offers three chips: **All**, **Apps I can use** (`path=USE_AI`) and **Build
+4. On the home page, Enter (or the button) opens the results on `/search`; focus moves to the results. There, results follow typing when it pauses (or on Enter). The first search shows skeleton rows and one "Searching the listed sources…" line; a later search keeps the previous results on screen, dimmed, until the new ones arrive.
+5. Results arrive in one response, once every source has answered or hit its timeout. They load on demand: until the results view arrives, skeleton rows of the list's shape hold its place under the box, so nothing moves. One column, no preview: the heading says **All results** over `$ helper2 search · 104` (the total from the API), with Filters, the sort and List / Timeline next to it, then the type tabs (All, the four types with most results, More). Each row shows the type, host and date ("updated Oct 2026", or "first seen" when no source states one), the title, the description and the sources that list it. Nothing is selected, also on a phone. The title opens the resource page; a ctrl or cmd click opens it in a new tab. Back returns to the same place in the list. Under the list, **Show more** adds the next page in place: focus moves to its first row and "20 more results" is said once, politely. The page is in the URL (`page`), so Back and a reload come back to the same rows. Under it, a line states e.g. "4 of 5 sources answered" and a tile per source shows its outcome, response time or cache age.
+6. Under the type tabs, **Best for** offers three chips: **All**, **Apps I can use** (`path=USE_AI`) and **Build
    with AI** (`path=BUILD_WITH_AI`). A chip searches again with that path: it changes what ranks first and never
    hides a result. The path is in the URL, so Back returns to the previous choice. New words in the box go back to
    **All**: the choice was for the old words.
-6. Results arrive in one response, once every source has answered or hit its timeout. The list is on the left, a preview of the selected result on the right; the selected result is in the URL. Each result title is a link to its resource page: a click selects the result, a ctrl or cmd click opens the page in a new tab. On a phone nothing is selected on load, and a row opens the resource page; its back link returns to the list with that result open under its row. Under the results, a line states e.g. "4 of 5 sources answered" and a tile per source shows its outcome, response time or cache age.
 
 **Key decisions:** whether to refine, or to ask the guide. **Success:** relevant result in the first page; user understands where results came from.
 
@@ -40,7 +40,7 @@ The success criteria at the end say which tests verify each journey today. What 
 |---|---|
 | Success | Aggregated, deduplicated results; every configured source listed with outcome. |
 | Empty | "No results from the N sources searched" + the list of sources + suggestions: remove filters, ask the guide, try English keywords. Never "nothing exists". |
-| Partial | One quiet line next to the result count, no banner: "40 results · 2 of 5 sources did not answer · Which?". **Which?** lists those sources and why, in words: took too long, returned an error, paused after a rate limit, paused after repeated errors, busy. **Try again** shows only when a retry can help (an error, a timeout, a busy source); never while a source is paused or its circuit is open. The line is not announced to screen readers: the count next to it already is, once per search. Coverage marked `partial`. A source that is paused or failing counts as queried; a source left out on purpose (disabled, no web credits left) does not, and its tile says why. This line and the one under the results use the same two numbers. |
+| Partial | One quiet line under the heading, no banner: "2 of 5 sources did not answer · Which?". **Which?** lists those sources and why, in words: took too long, returned an error, paused after a rate limit, paused after repeated errors, busy. **Try again** shows only when a retry can help (an error, a timeout, a busy source); never while a source is paused or its circuit is open. The line is not announced to screen readers: it is read with the heading. Coverage marked `partial`. A source that is paused or failing counts as queried; a source left out on purpose (disabled, no web credits left) does not, and its tile says why. This line and the one under the results use the same two numbers. |
 | Stale cache | Source failed live but a recent cached response exists: results shown, badge "cached 14 min ago — live check failed". |
 | All failed / API down | A prominent error state: "No source responded", not an empty result; no fake results. It offers Try again, except when every source is paused (a retry cannot help then), and a link to the Sources page. |
 | Rate-limited | Source marked RATE_LIMITED (not hidden), others continue. |
@@ -48,31 +48,32 @@ The success criteria at the end say which tests verify each journey today. What 
 
 ## UJ-2 Ask the guide without losing the search
 
-1. With a query and filters on the page, the user clicks **Ask the guide** (the box's button says so from 4 words), or follows the "Sounds like a question" hint after 4+ words. Enter always searches, also with 4+ words: the guide runs only from its button, because each answer costs model calls.
+1. With a query and filters on the page, the user clicks **Ask the guide** next to **Search** (any length; an icon button on a phone) or presses Shift+Enter. Enter and **Search** only search, also for a long question: the guide runs only when the user chooses it, because each answer costs model calls.
 2. The results show at once; the picks bar above them says the guide is reading. Query, filters, sort and page persist (they live in the URL: `q`, `ask`, filters).
-3. The answer arrives: the picks show as chips in the bar and move to a **Guide picks** group at the top of the list, and the preview opens on pick #1. It says **Why the guide picked it** (AI-written) with the source's own sentence as proof. A result the user already opened stays open. Other results keep the search order under **More results**; their preview says **About**.
+3. The answer arrives: the picks show as chips in the bar; a chip jumps to its row. The rows keep the search order, so nothing moves: a picked row shows **Guide pick #1**, the guide's reason (labelled AI-written) and its quote, highlighted in the source's own words with "Checked word for word in the source". The row opens the resource page, which says **Why the guide picked it**: the reason, whether a second model call checked it, and the requirements checked against the source.
 4. Nothing fits: the bar says why in one line and offers **Ask without “…”** for each requirement the guide read (when it is short enough to keep in the URL), and **Rephrase**. **How the guide decided** stays folded under the bar: the steps, and how the guide read the question.
 5. Back/forward and shared links reproduce the same state. A shared link that asks the guide works on the first visit too: when the browser has no CSRF cookie yet, the page gets it and sends the question once more.
 
-**AI answers left:** while the button says **Ask the guide**, a quiet line under the box says how many AI answers are left today, e.g. "2 of 3 AI answers left today". The numbers come from `limits.guideQuestions` on `/me`; the page reads `/me` again after each answer. The limit is per address, so a signed-in user sees it too. With none left the line says so in words, and when the guide shows search results without AI picks again (the next 00:00 UTC, in the user's own clock). The button still works and Enter still searches. No line when the guide has no model, or for a test environment's high ceiling while answers are left.
+**AI answers left:** once there are words in the box, a quiet line under it says how many AI answers are left today, e.g. "2 of 3 AI answers left today". The numbers come from `limits.guideQuestions` on `/me`; the page reads `/me` again after each answer. The limit is per address, so a signed-in user sees it too. With none left the line says so in words, and when the guide shows search results without AI picks again (the next 00:00 UTC, in the user's own clock). The button still works and Enter still searches. No line when the guide has no model, or for a test environment's high ceiling while answers are left.
 
 **Success:** zero re-typing; URL fully describes the state. A new question while one is being answered replaces it.
-Changing the words in the box searches again and drops the old question with its picks: the picks answered that question, not the new words. **Ask the guide** asks again.
+Changing the words in the box searches again and drops the old question with its picks: the picks answered that question, not the new words. Shift+Enter or **Ask the guide** asks again.
 **Failure case:** the guide fails or is unavailable, or its stream stalls for 45 s or ends without an answer → the search results stay, the answer area says what went wrong and offers **Try again**.
 
 ## UJ-3 Refine: filter and sort
 
-1. User opens **Filters** (drawer on mobile); the use cases the search detected sit next to it as one-tap chips. Filters: type, use case, tech level, source, license, pricing, platform, open-source, updated-after.
+1. User opens **Filters**: in place under the heading on a wide screen, a drawer over the page on a phone (up to 720px) with **Close** and **Show N results**; Escape and Close give focus back to Filters. The button says how many are on ("Filters · 2 on"). The type tabs choose one type. The use cases the search detected sit under the tabs as one-tap chips. Filters: type, use case, tech level, source, license, pricing, platform, open-source, updated-after.
 2. Each facet shows counts and an **Unknown** bucket for results where the source did not say.
 3. Sort: Relevance (default), Newest (publication date), Recently updated. Results with unknown dates sort last and are labeled "date unknown".
+4. **Timeline** shows the same results on a time axis, `$ helper2 search --timeline · N`: one month beside a line of dots, newest first, by the date each item was created as its source states it. Items with no stated creation date sit in one folded group at the end, "Date unknown · N · Show them" (a button with `aria-expanded`); the date Helper2 found them is never used. **Show more** works as in the list.
 
 **Key decision:** include or exclude unknowns. Selecting a value excludes unknowns; selecting "Unknown" includes them explicitly.
 **Failure case:** filters produce zero results → empty state lists the active filters with one-click removal.
 
-## UJ-4 Evaluate a result (card → detail)
+## UJ-4 Evaluate a result (row → resource page)
 
-1. Card shows: title, concise description (+ where the text came from), type, tags, source badges, the three dates (published / last updated / discovered by Helper2), freshness, real popularity metrics with their source, link to the original.
-2. User opens the detail page: metadata per field with origin and verification, evidence (source URL, retrieval time, excerpt), relationships (verified vs unverified candidates kept apart), optional AI summary with citations per claim, source records (provenance).
+1. A result row shows: type, host, a date (updated, created, or first seen by Helper2), the title, the description (labelled when AI wrote it), a guide pick with its reason and quote, and the sources that list it.
+2. The row opens the resource page, one column: **← Back to results** (back in history, so the list keeps its place; "Back to search" when opened directly), the title, under it type · host · the same date as the row, one primary button **Open on host ↗**, Save, and **Set it up** only for things you install or run. Then **Why the guide picked it** (only when opened from a pick), **From the source** (the checked sentence highlighted), **At a glance** (Use and Build facts, "Not stated" where no source says), the three dates, **Where this information comes from** (folded: each source, its mode and when it was read, a link to Sources), then metadata per field with origin and verification, evidence, relationships (verified vs unverified candidates kept apart), the optional AI summary with citations per claim, and source records (provenance).
 3. User follows "Open original" (new tab, `noopener noreferrer`), hostname visible before clicking.
 
 **Success:** user can answer "who says so, and when?" for every displayed fact.
@@ -87,7 +88,7 @@ Changing the words in the box searches again and drops the old question with its
 
 ## UJ-6 Save resources
 
-1. Anonymous user bookmarks a card → stored in `localStorage`; visible on **Saved**.
+1. Anonymous user saves a resource with **Save** on its page → stored in `localStorage`; visible on **Saved**.
 2. If storage is unavailable (private mode), the toggle explains saving is unavailable in this browser.
 3. Signed out, the Saved page says "Saved in this browser only." and offers sign-in. After sign-in (UJ-7) the browser's saved items move to the account once and are removed from the browser; from then on they follow the account across devices. If the merge fails, the browser's items stay on screen with **Try again**.
 
@@ -95,13 +96,13 @@ Changing the words in the box searches again and drops the old question with its
 
 Anyone can sign in, to keep saved items on the account and get a larger daily quota. Nothing needs an account: search, the guide and saving in the browser work signed out. Administrators use the same sign-in on the back office host ([ADR 0023](adr/edge/0023-identity-and-admin.md), [ADR 0035](adr/edge/0035-admin-host.md)).
 
-1. Signed out, the header shows **Sign in with GitHub** on every page (a **Sign in** menu when more than one provider is configured; nothing when none is). The Saved page offers it too.
+1. Signed out, the header shows **Sign in** on every page (nothing when no provider is configured). It opens the sign-in page (`/signin`): why to sign in (saved items and settings on every device), then **Continue with GitHub**, one button per configured provider. The Saved page offers the provider buttons directly. Opened directly, the page returns to Home after sign-in; signed in, it links to the account; on a site with no provider it says sign-in is not offered here.
 2. The page the user was on is kept in this tab. After the provider, the user comes back to that page, signed in; saved items merge (UJ-6).
 3. Signed in, the header shows the display name, which opens the account page, and **Sign out**. Sign-out returns to anonymous mode; search keeps working.
 
-**Failure case:** sign-in fails or the provider is down → the user lands back with `?signin=failed`, and the page says "Sign-in did not work. Please try again."; anonymous use is unaffected.
+**Failure case:** sign-in fails or the provider is down → the user lands back with `?signin=failed`, and the page says "Sign-in did not work. Please try again." with a link to the sign-in page; anonymous use is unaffected.
 
-**Delete the account.** The signed-in name in the header opens the account page (`/account`): who is signed in, and **Delete my account**. A dialog asks to confirm, with focus on Cancel; Escape closes it and focus goes back to the button. On confirm the account and its saved items are deleted and the page reloads, signed out. If the deletion fails, an alert says so and the account stays. While the page asks who is signed in it says "Loading…". Signed out, the page says there is no account to delete and links to Privacy; it offers no sign-in.
+**Delete the account.** The signed-in name in the header opens the account page (`/account`): who is signed in, the AI answers and web searches left today with their reset time (from GET /me; a count the server does not give is not shown), the setting **Radar: keep moving**, and **Delete my account**. A dialog asks to confirm, with focus on Cancel; Escape closes it and focus goes back to the button. On confirm the account and its saved items are deleted and the page reloads, signed out. If the deletion fails, an alert says so and the account stays. While the page asks who is signed in it says "Loading…". Signed out, the page says there is no account to delete, links to Privacy and, when the site has a provider, to the sign-in page.
 
 ## UJ-8 Understand coverage and sources
 
@@ -162,6 +163,19 @@ Each item is a row: the kind, the date and the resource in the meta line, the re
 | Loading | Skeleton rows. |
 | Empty | The list says there is nothing in its window ("Nothing with a stated publication date in the last 7 days."). The box above is the next step. |
 | Error | An alert under the list's heading with Try again. |
+
+## UJ-11 Read the mission, the privacy notice and the terms
+
+1. The footer links to **Mission**, **Privacy** and **Terms** on every page. Each opens a text page: the title, the date of the last change (Privacy, Terms), a short lede, the contact, then the sections, with **On this page** beside the text on a wide screen and folded under the head on a phone.
+2. The numbers in the text come from the server (GET /policy): how many candidates and picks the guide uses (Mission), the daily limits (Terms) and how long each store keeps data (Privacy). They are the numbers the code applies, never typed ones. Periods read as "24 hours", "7 days", "24 months".
+3. The page and its numbers load together; the page waits for them at most half a second, so it usually opens with them in place.
+
+| State | Behavior |
+|---|---|
+| Loading | The numbers are late: the sentences say it in words ("a daily limit", "for a limited time"), then the numbers take their place. No wrong number, no placeholder in the text. |
+| Error | The same sentences in words, and one line under the head: "Some limits and periods could not be loaded, so this page states them without numbers. Reload the page to see them." |
+
+Numbers the server does not give (the 00:00 UTC reset, counter lifetimes, logs, backups, usage totals) stay typed in the text.
 
 ## Success criteria (product level)
 

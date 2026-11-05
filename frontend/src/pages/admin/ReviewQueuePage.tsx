@@ -5,13 +5,14 @@ import { api, ApiError } from '@/api/client';
 import type { ReviewItem } from '@/api/types';
 import { Icon } from '@/components/Icon';
 import { Pagination } from '@/components/Pagination';
-import '@/components/saved/saved.css';
 import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
+import { ScrollBox } from '@/components/ui/ScrollBox';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { useApi } from '@/hooks/useApi';
 import { useRetry } from '@/hooks/useRetry';
 import { formatDate } from '@/lib/format';
 import { resourcePath } from '@/lib/searchState';
+import { AdminEmpty, AdminHead, AdminLoading } from './AdminHead';
 import { REVIEW_KINDS, REVIEW_STATUSES, REVIEW_TONE, oneOf } from './adminModel';
 
 const PAGE_SIZE = 20;
@@ -35,7 +36,8 @@ function actionErrorOf(e: unknown): ActionError {
 }
 
 /**
- * The review queue (UJ-9): rows like the saved rows, the status as a pill. Status, kind and page live in the address,
+ * The review queue (UJ-9): a table in the terminal style (ADR 0042), `$ helper2 review --open · N` with N the
+ * matching items on the server; the status as a word. Status, kind and page live in the address,
  * so the overview can link into a filtered queue and Back works. One decision at a time, with an optional note.
  */
 export default function ReviewQueuePage() {
@@ -87,12 +89,17 @@ export default function ReviewQueuePage() {
   };
   const disabled = busy || undefined;
   const list = items.data?.items ?? [];
+  const command = `helper2 review --${status.toLowerCase()}`;
 
   return (
     <section aria-labelledby="rq-h" className="h2-admin__part">
-      <h2 id="rq-h" ref={heading} tabIndex={-1} className="h2-admin__h">
-        {t('admin.reviewQueue')}
-      </h2>
+      <AdminHead
+        id="rq-h"
+        title={t('admin.reviewQueue')}
+        command={command}
+        total={items.loading ? null : (items.data?.total ?? null)}
+        headingRef={heading}
+      />
       {actionError && (
         <p role="alert" className="banner banner-warn">
           <Icon name="warn" />{' '}
@@ -132,9 +139,7 @@ export default function ReviewQueuePage() {
         </label>
       </div>
       {items.loading ? (
-        <p role="status" className="muted">
-          {t('common.loading')}
-        </p>
+        <AdminLoading command={command} />
       ) : items.error !== undefined ? (
         <StatePanel
           tone="error"
@@ -143,68 +148,89 @@ export default function ReviewQueuePage() {
           next={<RetryButton onClick={retry} />}
         />
       ) : list.length === 0 ? (
-        <p className="muted">{t('admin.queueEmpty')}</p>
+        <AdminEmpty command={command} text={t('admin.queueEmpty')} />
       ) : (
-        <ul className="h2-saved__list" aria-labelledby="rq-h">
-          {list.map((it) => (
-            <li key={it.id} className="h2-saved__row">
-              <p className="h2-saved__meta">
-                <span>{t(`admin.kind.${it.kind}`)}</span>
-                <span>{formatDate(it.createdAt, i18n.language, 'INSTANT')}</span>
-                {it.resourceId && (
-                  <Link to={resourcePath(it.resourceId)}>{it.resourceTitle ?? it.resourceId}</Link>
-                )}
-              </p>
-              <p className="h2-admin__reason">{it.reason}</p>
-              {it.kind === 'EXAMPLE_CANDIDATE' ? (
-                <DraftedExample details={it.details} />
-              ) : it.kind === 'RESOURCE_CANDIDATE' ? (
-                <ResourceCandidate details={it.details} />
-              ) : (
-                it.details && <p className="h2-admin__details">{it.details}</p>
-              )}
-              {it.status === 'OPEN' ? (
-                <div className="h2-admin__decide">
-                  <label className="h2-admin__note">
-                    {t('admin.note')}
-                    <input
-                      type="text"
-                      maxLength={NOTE_MAX}
-                      value={notes[it.id] ?? ''}
-                      onChange={(e) => setNotes((n) => ({ ...n, [it.id]: e.target.value }))}
-                    />
-                  </label>
-                  <div className="h2-saved__actions h2-admin__actions">
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      aria-disabled={disabled}
-                      onClick={() => void resolve(it, 'ACCEPTED')}
-                    >
-                      {t('admin.accept')}
-                      <span className="sr-only"> {it.reason}</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="btn"
-                      aria-disabled={disabled}
-                      onClick={() => void resolve(it, 'REJECTED')}
-                    >
-                      {t('admin.reject')}
-                      <span className="sr-only"> {it.reason}</span>
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <p>
-                  <StatusPill tone={REVIEW_TONE[it.status]}>
-                    {t(`admin.reviewStatus.${it.status}`)}
-                  </StatusPill>
-                </p>
-              )}
-            </li>
-          ))}
-        </ul>
+        <ScrollBox label={t('admin.reviewQueue')}>
+          <table className="v4-table h2-admin__table h2-admin__queue" aria-labelledby="rq-h">
+            <thead>
+              <tr>
+                <th scope="col">{t('admin.col.kind')}</th>
+                <th scope="col">{t('admin.col.resource')}</th>
+                <th scope="col">{t('admin.col.check')}</th>
+                <th scope="col">{t('admin.col.opened')}</th>
+                <th scope="col">{t('admin.col.decision')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {list.map((it) => (
+                <tr key={it.id} className="v4-row">
+                  <td className="v4-nowrap">{t(`admin.kind.${it.kind}`)}</td>
+                  <td>
+                    {it.resourceId ? (
+                      <Link className="v4-title" to={resourcePath(it.resourceId)}>
+                        {it.resourceTitle ?? it.resourceId}
+                      </Link>
+                    ) : (
+                      '—'
+                    )}
+                  </td>
+                  <td className="h2-admin__what">
+                    <p className="h2-admin__reason">{it.reason}</p>
+                    {it.kind === 'EXAMPLE_CANDIDATE' ? (
+                      <DraftedExample details={it.details} />
+                    ) : it.kind === 'RESOURCE_CANDIDATE' ? (
+                      <ResourceCandidate details={it.details} />
+                    ) : (
+                      it.details && <p className="h2-admin__details">{it.details}</p>
+                    )}
+                  </td>
+                  <td className="v4-nowrap">
+                    {formatDate(it.createdAt, i18n.language, 'INSTANT')}
+                  </td>
+                  <td>
+                    {it.status === 'OPEN' ? (
+                      <div className="h2-admin__decide">
+                        <label className="h2-admin__note">
+                          {t('admin.note')}
+                          <input
+                            type="text"
+                            maxLength={NOTE_MAX}
+                            value={notes[it.id] ?? ''}
+                            onChange={(e) => setNotes((n) => ({ ...n, [it.id]: e.target.value }))}
+                          />
+                        </label>
+                        <div className="h2-admin__actions">
+                          <button
+                            type="button"
+                            className="btn btn-primary"
+                            aria-disabled={disabled}
+                            onClick={() => void resolve(it, 'ACCEPTED')}
+                          >
+                            {t('admin.accept')}
+                            <span className="sr-only"> {it.reason}</span>
+                          </button>
+                          <button
+                            type="button"
+                            className="btn"
+                            aria-disabled={disabled}
+                            onClick={() => void resolve(it, 'REJECTED')}
+                          >
+                            {t('admin.reject')}
+                            <span className="sr-only"> {it.reason}</span>
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <StatusPill tone={REVIEW_TONE[it.status]}>
+                        {t(`admin.reviewStatus.${it.status}`)}
+                      </StatusPill>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </ScrollBox>
       )}
       {items.data && (
         <Pagination

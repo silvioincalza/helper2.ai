@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { axeViolations } from '@/test/a11y';
 import {
   ADMIN,
+  ANON,
   HEALTH_SOURCES,
   STAGING_SOURCES,
   USER,
@@ -13,7 +14,7 @@ import {
   makeStatus,
 } from '@/test/fixtures';
 import { mockViewport } from '@/test/viewport';
-import { mockApi } from '@/test/mockApi';
+import { mockApi, sse } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
 import { clearApiCache } from '@/hooks/useApi';
 
@@ -115,6 +116,77 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
     await screen.findByRole('list', { name: 'Sources searched' });
     await userEvent.click(screen.getByRole('button', { name: 'Which?' }));
     expect(await axeViolations(container)).toEqual([]);
+  });
+
+  describe('results and the resource page in design v4', () => {
+    const picked = makeCard({ id: '33333333-3333-5333-8333-333333333333', title: 'Picked One' });
+    const answers = {
+      'GET /search': () => makeSearch({ results: [makeCard(), picked], total: 2 }),
+      'POST /guide/stream': () =>
+        sse({
+          status: 'OK',
+          searchQuery: 'translate',
+          candidatesConsidered: 2,
+          rejected: 0,
+          sources: [],
+          notices: [],
+          generatedAt: '2026-11-05T10:00:00Z',
+          prompt: null,
+          model: { provider: 'nebius-token-factory', fastModel: 'f', reasoningModel: 'r' },
+          recommendations: [
+            {
+              resourceId: picked.id,
+              title: picked.title,
+              url: picked.url,
+              type: picked.type,
+              reason: 'It translates.',
+              quote: 'Translates documents',
+              sourceIds: ['github'],
+              aiReasoned: true,
+              reasonCheck: 'NOT_CHECKED',
+            },
+          ],
+        }),
+      [`GET /resources/${ID}`]: () => makeDetail(),
+    };
+    afterEach(() => {
+      delete document.documentElement.dataset.theme;
+    });
+
+    for (const theme of ['light', 'dark'] as const) {
+      it(`wide screen, ${theme} theme: the picks, the list and the filters`, async () => {
+        document.documentElement.dataset.theme = theme;
+        mockApi(answers);
+        const { container } = renderApp(
+          '/search?q=translate+my+docs+free&ask=translate+my+docs+free',
+        );
+        await screen.findByRole('link', { name: '#1 Picked One' });
+        await userEvent.click(screen.getByRole('button', { name: 'Filters' }));
+        await settle();
+        expect(await axeViolations(container)).toEqual([]);
+      });
+
+      it(`phone, ${theme} theme: the list and the filters drawer`, async () => {
+        document.documentElement.dataset.theme = theme;
+        mockViewport(390);
+        mockApi(answers);
+        const { container } = renderApp('/search?q=translate');
+        await screen.findByRole('link', { name: 'Picked One' });
+        await userEvent.click(screen.getByRole('button', { name: 'Filters' }));
+        await screen.findByRole('dialog', { name: 'Filters' });
+        await settle();
+        expect(await axeViolations(container)).toEqual([]);
+      });
+
+      it(`${theme} theme: the resource page`, async () => {
+        document.documentElement.dataset.theme = theme;
+        mockApi(answers);
+        const { container } = renderApp(`/resource/${ID}`);
+        await screen.findByRole('heading', { level: 1 });
+        await settle();
+        expect(await axeViolations(container)).toEqual([]);
+      });
+    }
   });
 
   it('search empty and error states', async () => {
@@ -286,6 +358,99 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
     const audit = renderApp('/admin/audit');
     await within(await screen.findByRole('main')).findByText('Review decision');
     expect(await axeViolations(audit.container)).toEqual([]);
+  });
+
+  describe('list pages with the shared controls: Saved, Sources, the review queue', () => {
+    afterEach(() => {
+      delete document.documentElement.dataset.theme;
+    });
+    const api = {
+      'GET /me/bookmarks': () => [
+        {
+          resourceId: ID,
+          title: 'Postgres MCP',
+          url: 'https://github.com/a/pg',
+          type: 'MCP_SERVER',
+          savedAt: '2026-10-20T10:00:00Z',
+        },
+        {
+          resourceId: '22222222-2222-5222-8222-222222222222',
+          title: 'pgvector',
+          url: 'https://github.com/pgvector/pgvector',
+          type: 'LIBRARY',
+          savedAt: '2026-10-21T10:00:00Z',
+        },
+      ],
+      'GET /sources': () => HEALTH_SOURCES,
+      'GET /admin/review-items': () => ({
+        items: [
+          {
+            id: '66666666-6666-5666-8666-666666666666',
+            kind: 'USER_REPORT',
+            status: 'OPEN',
+            reason: 'Wrong price',
+            details: 'It is free',
+            resourceId: ID,
+            resourceTitle: 'Acme',
+            createdAt: '2026-10-21T10:00:00Z',
+          },
+        ],
+        total: 1,
+      }),
+    };
+    // The heading, then a row of the list, so axe sees the chips, the table and the row's buttons.
+    const pages: Array<{ path: string; me: () => unknown; ready: string; row: string }> = [
+      { path: '/saved', me: () => USER, ready: 'Saved resources', row: 'Postgres MCP' },
+      { path: '/sources', me: () => ANON, ready: 'Every source', row: 'All' },
+      { path: '/admin/review', me: () => ADMIN, ready: 'Review queue', row: 'Wrong price' },
+    ];
+    for (const theme of ['light', 'dark'] as const) {
+      for (const width of [1280, 390]) {
+        it(`${theme} theme, ${width} px wide`, async () => {
+          document.documentElement.dataset.theme = theme;
+          mockViewport(width);
+          for (const { path, me, ready, row } of pages) {
+            mockApi({ ...api, 'GET /me': me });
+            const view = renderApp(path);
+            await screen.findByRole('heading', { name: ready });
+            await within(await screen.findByRole('main')).findAllByText(row);
+            await settle();
+            expect(await axeViolations(view.container)).toEqual([]);
+            view.unmount();
+          }
+        });
+      }
+    }
+  });
+
+  describe('text pages in design v4: Mission, Privacy, Terms, Not found, Sign in, Account', () => {
+    afterEach(() => {
+      delete document.documentElement.dataset.theme;
+    });
+    const pages: Array<{ path: string; me: () => unknown; ready: string }> = [
+      { path: '/mission', me: () => ANON, ready: 'Our mission' },
+      { path: '/privacy', me: () => ANON, ready: 'Privacy' },
+      { path: '/terms', me: () => ANON, ready: 'Terms of use' },
+      { path: '/no/such/page', me: () => ANON, ready: 'Page not found' },
+      { path: '/signin', me: () => ANON, ready: 'Choose how to sign in' },
+      { path: '/account', me: () => USER, ready: 'Delete your account' },
+    ];
+    for (const theme of ['light', 'dark'] as const) {
+      for (const width of [1280, 390]) {
+        it(`${theme} theme, ${width} px wide`, async () => {
+          document.documentElement.dataset.theme = theme;
+          mockViewport(width);
+          for (const { path, me, ready } of pages) {
+            mockApi({ 'GET /me': me });
+            const view = renderApp(path);
+            await screen.findByRole('heading', { name: ready });
+            await settle();
+            expect(await axeViolations(view.container)).toEqual([]);
+            view.unmount();
+          }
+        });
+      }
+    }
   });
 
   it('account, with the delete confirmation open', async () => {

@@ -60,9 +60,17 @@ constructor(
    * waits as a resource candidate, which an admin's acceptance indexes (ADR 0051).
    */
   val type: ResourceType = ResourceType.COURSE,
-  /** Catalog tags the page gets when it is accepted: the categories it belongs to (ADR 0051). */
+  /**
+   * Catalog tags the page gets when it is accepted: the categories it belongs to, at most
+   * [MAX_TAGS] (ADR 0051).
+   */
   val tags: Set<String> = emptySet(),
-)
+) {
+  companion object {
+    /** The most tags a candidate can have and still be accepted. */
+    const val MAX_TAGS = 12
+  }
+}
 
 /**
  * Outbound port: the admin review list for collector proposals (ADR 0019 review queue, ADR 0032

@@ -1,5 +1,6 @@
 package ai.helper2.scout.usecase
 
+import ai.helper2.scout.Candidate
 import ai.helper2.scout.CatalogIndex
 import ai.helper2.scout.CollectedBatch
 import ai.helper2.scout.Collector
@@ -129,6 +130,14 @@ class IndexAcceptedCandidateTest {
       records.map { it.type },
     )
     assertEquals(setOf("linkedin"), records.first().tags)
+  }
+
+  @Test
+  fun `a candidate takes as many tags as a collector gives it, and no more`() {
+    val most = (1..Candidate.MAX_TAGS).map { "category-$it" }.toSet()
+    accept.index(candidate(tags = most))
+    assertEquals(most, catalog.indexed.single().first.single().hits.single().tags)
+    assertThrows<InvalidCandidate> { accept.index(candidate(tags = most + "one-more")) }
   }
 
   @Test

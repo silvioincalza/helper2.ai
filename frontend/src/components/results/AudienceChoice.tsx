@@ -20,8 +20,8 @@ export function AudienceChoice({
   const labelId = useId();
   const choices: (AudiencePath | '')[] = ['', ...audiencePathValues];
   return (
-    <div className="hints" role="group" aria-labelledby={labelId}>
-      <span id={labelId} className="muted small">
+    <div className="hints h2-hints" role="group" aria-labelledby={labelId}>
+      <span id={labelId} className="h2-hints__label">
         {t('results.path.label')}
       </span>
       {choices.map((path) => (

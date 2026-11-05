@@ -1,7 +1,6 @@
 /*
  * Helper2.ai design system v4 (docs/design/system/tokens.json, ADR 0042): warm paper, deep indigo ink, one saffron
- * accent. Geist Mono and Geist on the parts that have moved (the header, the footer and Home; `--v4-font-*` below);
- * Space Grotesk for text and titles on the pages still on version 3; the system monospace for code.
+ * accent. Geist Mono for the interface, Geist for running text and titles, the system monospace for code.
  * Light on :root, dark under [data-theme="dark"] (public/theme.js sets it from the saved choice; light is the default). Saffron is a fill, never small text on paper (2.9:1):
  * text on it is indigo, and saffron-coloured text uses --accent-ink.
  */
@@ -72,11 +71,13 @@
   --source-tile-line: var(--border);
   --row-selected-line: var(--accent);
 
-  /* One font for text and titles; code and commands in the system's monospace font (nothing to download). */
-  --font-sans:
-    'Space Grotesk', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-display: var(--font-sans);
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  /* Geist Mono for the logo, headings, controls, labels, meta lines and the lists; Geist for running text and titles;
+     code in the system's monospace font (nothing to download). */
+  --font-mono:
+    'Geist Mono Variable', 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-body:
+    'Geist Variable', 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-code: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   /* The app's own spacing steps, plus the design system's sizes. */
   --space-1: 0.25rem;
@@ -93,9 +94,8 @@
   --radius-pill: 999px;
   --radius: var(--radius-md);
   --target-min: 44px;
-  --box-height: 56px;
-  --maxw: 1120px;
-  --content-wide: 1040px;
+  --box-height: 60px;
+  --content-wide: 1088px;
   --reading-max: 808px;
   --list-max: 460px;
   /* The sticky header row (version 4 on every page), so a jump to an anchor (#news) lands below it, not under it. */
@@ -157,23 +157,9 @@
   }
 }
 
-/*
- * The sizes and fonts of the version 4 layout. Only the parts that have moved use them: the header, the footer and Home.
- * The v3 pages keep --box-height, --maxw and Space Grotesk until they move (ADR 0042, decision 8).
- */
-:root {
-  /* Geist Mono for the logo, headings, controls, labels, meta lines and the lists; Geist for running text. */
-  --v4-font-mono:
-    'Geist Mono Variable', 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  --v4-font-body:
-    'Geist Variable', 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-
-  --v4-box-height: 60px;
-}
-
 @media (max-width: 720px) {
   :root {
-    --v4-box-height: 50px;
+    --box-height: 50px;
     --header-height: 65px;
   }
 }

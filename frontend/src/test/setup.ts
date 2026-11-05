@@ -2,6 +2,7 @@ import '@testing-library/jest-dom/vitest';
 import { act, cleanup } from '@testing-library/react';
 import { afterEach, beforeEach } from 'vitest';
 import { clearApiCache } from '@/hooks/useApi';
+import { clearPolicyCache } from '@/hooks/usePolicy';
 import i18n from '@/i18n';
 
 // A state update outside act() means a test checked the screen before React finished: fail it, do not just warn.
@@ -18,6 +19,7 @@ beforeEach(async () => {
   };
   window.localStorage.clear();
   clearApiCache();
+  clearPolicyCache();
   // jsdom has no layout: <ScrollRestoration/> scrolls through this spy.
   vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
   // Nor scrollIntoView (the home page's jump to #news and #events): a stub a test can watch.
@@ -33,6 +35,7 @@ afterEach(async () => {
     });
   cleanup();
   clearApiCache();
+  clearPolicyCache();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
   console.error = realError;

@@ -15,7 +15,6 @@ import {
   clampQuestion,
   hasOwnSearchBox,
   homeParams,
-  isQuestion,
   MAX_QUESTION,
   parseSearchParams,
   patchState,
@@ -37,8 +36,8 @@ function typingIn(target: EventTarget | null): boolean {
 }
 /**
  * The one search box: the hero on /, above the results on /search, in the header on every other page. On /search
- * typing searches live; elsewhere Enter opens /search. Enter (and Shift+Enter) always searches: only the "Ask the
- * guide" button, shown for a question (four words or more), asks the AI guide. Everything lives in the URL: `q` =
+ * typing searches live; elsewhere Enter opens /search. Two buttons, for any length: Search (also Enter) and Ask the
+ * guide (also Shift+Enter). The AI guide runs only when the user chooses it. Everything lives in the URL: `q` =
  * search, `ask` = the question the guide answered, plus the search filters. `hero`: the large box of the home page.
  */
 export function OneBox({ hero = false }: { hero?: boolean }) {
@@ -90,8 +89,8 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
     timer.current = window.setTimeout(() => {
       const now = latest.current;
       // Only on the results page: on the home page a search moves to /search, so it waits for Enter.
-      // New words drop the old question: the guide's picks answered that question, not these words. "Ask the
-      // guide" asks again.
+      // New words drop the old question: the guide's picks answered that question, not these words. Shift+Enter
+      // or "Ask the guide" asks again.
       if (now.pathname === RESULTS_PATH && q !== now.state.q)
         go(patchState(now.state, { q }), '', now.sp, true);
     }, LIVE_SEARCH_MS);
@@ -107,31 +106,31 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
     cancelLive();
     if (onHome && (state.q || asked)) go(parseSearchParams(new URLSearchParams()), '', sp);
   };
+  /** With nothing to ask (an empty box, or under 3 characters) it only puts the cursor in the box. */
   const ask = () => {
     const q = clampQuestion(text);
-    if (!q) return;
+    if (!q) return field.current?.focus();
     cancelLive();
     go(patchState(state, { q }), q, sp);
   };
-  const action = isQuestion(text) ? 'ask' : 'search';
-  /** The button with an empty box: nothing to search yet, so the cursor goes to the box with a short hint. */
+  /** Search with an empty box: nothing to search yet, so the cursor goes to the box with a short hint. */
   const [typeFirst, setTypeFirst] = useState(false);
   const askToType = () => {
     if (typeFirst) field.current?.focus();
     else setTypeFirst(true);
   };
+  // Neither button is ever disabled (a disabled button cannot be found or explained by keyboard and screen-reader
+  // users): with nothing to send it puts the cursor in the box. Enter always searches; the guide runs only when asked.
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (!text.trim()) askToType();
-    else if (action === 'ask') ask();
     else runSearch();
   };
-  const asking = action === 'ask';
   // Words from elsewhere (an example, Back) answer the hint too.
   const hint = typeFirst && !text.trim();
-  // Said while the button asks: the visitor sees what an answer costs before spending one.
+  // Said once there are words, next to Ask the guide: the visitor sees what an answer costs before spending one.
   const answersLeft = useGuideAnswersLeft();
-  const quota = asking ? answersLeft : null;
+  const quota = text.trim() ? answersLeft : null;
   /** × and Esc: empty the box and keep the results on the page; the cursor stays in the box. */
   const emptyBox = () => {
     cancelLive();
@@ -147,9 +146,10 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
     }
     if (e.key !== 'Enter' || e.nativeEvent.isComposing) return;
     // A textarea would add a line: Enter searches instead, as a one-line search field does, whatever the button
-    // says. Asking the guide spends an AI answer, so it takes the button (a decision by Silvio, UJ-2).
+    // says. Asking the guide spends an AI answer, so the user chooses it: Shift+Enter or the button (Silvio, UJ-2).
     e.preventDefault();
     if (!text.trim()) clear();
+    else if (e.shiftKey) ask();
     else runSearch();
   };
 
@@ -268,16 +268,33 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
             /
           </kbd>
         )}
-        {/* One button whose job follows the text: a few words search, a sentence asks. A new question replaces one
-            still being answered. The ↵ hint shows only when Enter does what the button does. */}
-        {/* Never disabled: a greyed primary button reads as broken. With an empty box it asks for words instead. */}
+        {/* Two buttons for any length of text. A new question replaces one still being answered. Each shows its key:
+            ↵ on Search, ⇧↵ on Ask the guide (CSS hides key hints on touch devices and on a narrow box, where Ask the
+            guide is an icon button). */}
         <button type="submit" className="btn btn-primary">
-          {asking ? t('guide.ask') : t('search.submit')}
-          {!asking && (
-            <kbd className="enter-key" aria-hidden="true">
-              ↵
-            </kbd>
-          )}
+          {t('search.submit')}
+          <kbd className="enter-key" aria-hidden="true">
+            ↵
+          </kbd>
+        </button>
+        <button type="button" className="btn one-box-ask" title={t('guide.ask')} onClick={ask}>
+          <svg
+            className="one-box-ask__icon"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z" />
+          </svg>
+          <span className="one-box-ask__label">{t('guide.ask')}</span>
+          <kbd className="enter-key" aria-hidden="true">
+            ⇧↵
+          </kbd>
         </button>
       </form>
       {hint && (

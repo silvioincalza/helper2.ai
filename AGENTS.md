@@ -23,6 +23,7 @@ cd backend && ./gradlew spotlessApply  # format Java and Kotlin (CI runs spotles
 cd backend && ./gradlew liveTest    # opt-in, real external APIs
 cd frontend && npm test -- --run && npm run lint && npm run typecheck
 cd frontend && npm run format        # Prettier (CI runs format:check)
+cd frontend && npm run knip          # dead code and unused dependencies, strict (CI runs it)
 ```
 
 Run the relevant tests before calling a change done.

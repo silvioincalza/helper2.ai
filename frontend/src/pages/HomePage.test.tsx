@@ -1,5 +1,8 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { makeSearch } from '@/test/fixtures';
 import { mockApi } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
 
@@ -7,46 +10,76 @@ import { renderApp, settle } from '@/test/render';
 const results = async () => within(await screen.findByRole('list', { name: 'Search results' }));
 
 describe('one box', () => {
-  it('has one search box and one button whose job follows the text, with no mode switch', async () => {
+  it('has one search box with two buttons, Search and Ask the guide, for 1 word and for 8 words', async () => {
     mockApi();
     renderApp('/');
     expect(screen.getAllByRole('search')).toHaveLength(1);
     expect(screen.queryByRole('radio')).not.toBeInTheDocument();
-    // Never disabled: with an empty box it asks for words instead (see OneBoxBetter.test).
-    expect(screen.getByRole('button', { name: 'Search' })).toBeEnabled();
-    await userEvent.type(screen.getByRole('textbox', { name: 'Search AI resources' }), 'rag');
-    expect(screen.getByRole('button', { name: 'Search' })).toBeEnabled();
-    await userEvent.type(
-      screen.getByRole('textbox', { name: 'Search AI resources' }),
-      ' for my own notes',
-    );
-    expect(screen.getByRole('button', { name: 'Ask the guide' })).toBeEnabled();
-    expect(screen.queryByRole('button', { name: 'Search' })).not.toBeInTheDocument();
+    const box = screen.getByRole('textbox', { name: 'Search AI resources' });
+    const both = () => [
+      screen.getByRole('button', { name: 'Search' }),
+      screen.getByRole('button', { name: 'Ask the guide' }),
+    ];
+    expect(both().every((b) => b.matches(':enabled'))).toBe(true);
+    await userEvent.type(box, 'rag');
+    expect(both().every((b) => b.matches(':enabled'))).toBe(true);
+    await userEvent.type(box, ' for my own notes and my own papers');
+    expect(both().every((b) => b.matches(':enabled'))).toBe(true);
   });
 
-  it('Enter always searches, a sentence too, and Shift+Enter as well; only the button asks the guide', async () => {
+  it('given an empty box, when the user clicks either button, then the cursor goes to the box and nothing is sent', async () => {
     const m = mockApi();
-    const { router, params } = renderApp('/');
-    const box = () => screen.getByRole('textbox', { name: 'Search AI resources' });
-    await userEvent.type(box(), 'an MCP server for Postgres{Enter}');
-    await waitFor(() => expect(router.state.location.pathname).toBe('/search'));
-    expect(params().get('q')).toBe('an MCP server for Postgres');
-    expect(params().get('ask')).toBeNull();
-    // The button still says what it does for a sentence; its ↵ hint is gone, since Enter does not ask.
-    const button = screen.getByRole('button', { name: 'Ask the guide' });
-    expect(button.querySelector('kbd')).toBeNull();
-
-    await userEvent.clear(box());
-    await userEvent.type(box(), 'vector db{Shift>}{Enter}{/Shift}');
-    await waitFor(() => expect(params().get('q')).toBe('vector db'));
-    expect(params().get('ask')).toBeNull();
-    expect(m.callsTo('POST', '/guide/stream')).toHaveLength(0);
-
-    await userEvent.clear(box());
-    await userEvent.type(box(), 'an MCP server for Postgres');
+    const { router } = renderApp('/');
+    const box = screen.getByRole('textbox', { name: 'Search AI resources' });
+    await userEvent.click(screen.getByRole('button', { name: 'Search' }));
+    expect(box).toHaveFocus();
+    await userEvent.click(document.body);
     await userEvent.click(screen.getByRole('button', { name: 'Ask the guide' }));
-    await waitFor(() => expect(params().get('ask')).toBe('an MCP server for Postgres'));
-    await waitFor(() => expect(m.callsTo('POST', '/guide/stream')).toHaveLength(1));
+    expect(box).toHaveFocus();
+    expect(router.state.location.pathname).toBe('/');
+    expect(m.callsTo('GET', '/search')).toHaveLength(0);
+    expect(m.callsTo('POST', '/guide/stream')).toHaveLength(0);
+  });
+
+  it('shows the key of each button: ↵ on Search, ⇧↵ on Ask the guide', async () => {
+    mockApi();
+    renderApp('/');
+    expect(screen.getByRole('button', { name: 'Search' }).querySelector('kbd')).toHaveTextContent(
+      /^↵$/,
+    );
+    expect(
+      screen.getByRole('button', { name: 'Ask the guide' }).querySelector('kbd'),
+    ).toHaveTextContent(/^⇧↵$/);
+    await settle();
+  });
+
+  it('on a phone, Ask the guide is an icon button with its accessible name and a tooltip', async () => {
+    mockApi();
+    renderApp('/');
+    const guide = screen.getByRole('button', { name: 'Ask the guide' });
+    expect(guide).toHaveAttribute('title', 'Ask the guide');
+    expect(guide.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    // The narrow box hides the label and the key hint and keeps a 44 px target.
+    const css = readFileSync(join(process.cwd(), 'src/styles/app.css'), 'utf8');
+    expect(css).toMatch(
+      /\.one-box-ask \{[^}]*min-width: var\(--target-min\);[^}]*min-height: var\(--target-min\);/,
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 520px\) \{[^@]*\.searchbox\.large \.enter-key \{\s*display: none;[^@]*\.one-box-ask__label \{[^}]*clip: rect\(0, 0, 0, 0\);/,
+    );
+    await settle();
+  });
+
+  it('given a desktop, the key hints show on Home and in the header; given a touch device, they are hidden', () => {
+    const v4 = readFileSync(join(process.cwd(), 'src/styles/v4.css'), 'utf8');
+    const outsideMedia = v4.replace(/@media[^{]*\{(?:[^{}]*\{[^}]*\})*\s*\}/g, '');
+    expect(outsideMedia).not.toMatch(/\.enter-key[^{]*\{[^}]*display: none/);
+    for (const file of ['src/styles/app.css', 'src/styles/v4.css']) {
+      const css = readFileSync(join(process.cwd(), file), 'utf8');
+      expect(css).toMatch(
+        /@media \(hover: none\), \(pointer: coarse\) \{[^}]*\.enter-key \{\s*display: none;/,
+      );
+    }
   });
 
   it('Enter on the home page opens the results on /search, and focus lands on the results heading', async () => {
@@ -118,7 +151,7 @@ describe('one box', () => {
     mockApi();
     const { router, params } = renderApp('/mission');
     await userEvent.type(
-      screen.getByRole('textbox', { name: 'Search AI resources' }),
+      await screen.findByRole('textbox', { name: 'Search AI resources' }),
       'vector database{Enter}',
     );
     await waitFor(() => expect(router.state.location.pathname).toBe('/search'));
@@ -134,14 +167,22 @@ describe('one box', () => {
     ).toBeInTheDocument();
   });
 
-  it('a long query suggests asking the guide', async () => {
-    mockApi();
-    renderApp('/?q=summarise+my+meeting+notes+quickly');
+  it('given a long search on the results, then no word count adds a hint: the box offers Ask the guide as always', async () => {
+    const m = mockApi();
+    renderApp('/search?q=summarise+my+meeting+notes+quickly');
+    await (await results()).findByText('Acme Translator');
+    expect(screen.queryByText(/Sounds like a question/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Ask the guide' })).toBeInTheDocument();
+    expect(m.callsTo('POST', '/guide/stream')).toHaveLength(0);
+  });
+
+  it('the results offer no second Ask the guide: the box has it; an empty result keeps "Ask the guide instead"', async () => {
+    mockApi({ 'GET /search': () => makeSearch({ results: [], total: 0 }) });
+    renderApp('/search?q=translate');
     expect(
-      await screen.findByRole('button', {
-        name: /ask the guide: “summarise my meeting notes quickly”/,
-      }),
+      await screen.findByRole('button', { name: 'Ask the guide instead' }),
     ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Ask the guide about/ })).not.toBeInTheDocument();
   });
 
   it('typing then asking at once keeps the question: a pending live search must not drop `ask`', async () => {

@@ -4,14 +4,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.platform.http.ObservedHttp;
 import ai.helper2.search.SourceQuery;
+import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.WebPageTitle;
 import ai.helper2.sources.SourceFixtures;
 import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.testing.FixtureServer;
 import java.time.Duration;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * What the live Tavily source sends: the guide's web query when planned, the catalog keywords
@@ -103,6 +107,45 @@ class TavilySourceTest {
             TavilyCollector.ID,
             TavilyDiscoveryCollector.ID,
             CourseCollector.ID);
+  }
+
+  @Test
+  void aNewsResultWhoseTitleNamesAnEventIsAnEvent() {
+    JsonNode result =
+        JsonMapper.builder()
+            .build()
+            .readTree(
+                """
+                {"url":"https://news.example.com/ai-summit-2026","title":"The AI Summit 2026 opens in Paris",
+                 "content":"Speakers talk about LLM agents."}\
+                """);
+
+    var hit = TavilySource.toHit(result, "tavily", SourceFixtures.CLOCK.instant(), 0);
+
+    assertThat(hit.getType()).isEqualTo(ResourceType.EVENT);
+  }
+
+  @Test
+  void aTypeTheCallerGivesIsKeptWhateverTheTitleSays() {
+    JsonNode result =
+        JsonMapper.builder()
+            .build()
+            .readTree(
+                """
+                {"url":"https://lists.example.com/blog/ai-event-tools","title":"10 Best AI Tools for Event Planning",
+                 "content":"LLM assistants for planning a conference."}\
+                """);
+
+    var hit =
+        TavilySource.toHit(
+            result,
+            TavilyDiscoveryCollector.ID,
+            SourceFixtures.CLOCK.instant(),
+            0,
+            ResourceType.ARTICLE,
+            Set.of());
+
+    assertThat(hit.getType()).isEqualTo(ResourceType.ARTICLE);
   }
 
   @Test

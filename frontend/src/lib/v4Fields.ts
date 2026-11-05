@@ -1,7 +1,7 @@
 import type { SourceInfo } from '@/api/types';
 
 /**
- * The API fields design v4 asked for (ADR 0042, decision 7), read in one place: `newThisWeek` on GET /sources,
+ * The API fields design v4 asked for (ADR 0042, decision 13), read in one place: `newThisWeek` on GET /sources,
  * `total` on GET /recent and GET /events/upcoming. Each reader says plainly what the page does when a value is null or
  * not there yet: a dot of the default size, the rows as the count. `limits` on GET /me is read by GuideAnswersLeft.
  */

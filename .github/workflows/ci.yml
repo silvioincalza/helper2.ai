@@ -36,10 +36,18 @@ jobs:
       # Code format (Prettier): fails on any unformatted file.
       - run: npm run format:check
       - run: npm run lint
+      # Dead code (knip, ADR 0054): fails on any unused file, export, type or dependency.
+      - run: npm run knip
       - run: npm run typecheck
       - run: npx vitest run
       - run: npm run build
       - run: npm run check:bundle
+      # Known vulnerabilities (ADR 0054): a High or Critical one in a library the browser gets fails the job.
+      - run: npm audit --omit=dev --audit-level=high
+      # Every library, the build and test tools too: a report in the log, never a failure.
+      - name: npm audit (report only)
+        run: npm audit
+        continue-on-error: true
 
   backend:
     runs-on: ubuntu-latest

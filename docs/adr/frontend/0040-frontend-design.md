@@ -1,6 +1,6 @@
 # 0040 — Frontend design: home page, results with preview, guide picks bar, design system
 
-**Status.** Accepted. Superseded in part by [0042](0042-redesign-design-system-v4.md) for Home, header and footer (decisions 1 and 2); decisions 4 and 7 follow when Results moves. **Builds on:** [0025](0025-frontend-one-box.md),
+**Status.** Accepted. Superseded in part by [0042](0042-redesign-design-system-v4.md) (decisions 1, 2, 4 and 7: the look, the fonts, Results and the preview). **Builds on:** [0025](0025-frontend-one-box.md),
 [0015](../guide/0015-ai-guide-evidence-gate.md), [0038](../guide/0038-ai-content-marking.md), [0039](0039-frontend-recent-answers-cache.md)
 
 ## Context
@@ -15,9 +15,9 @@ We drew the design as clickable prototypes (Home, Results, Resource, States, Sav
 and chose between options for each part.
 
 ## Decision
-1. **Same palette, one font, one design system.** Paper, indigo ink, one saffron accent. One font, Space Grotesk
-   (400, 500, 600), for text and titles on the pages still on version 3 (Home, the header and the footer use Geist and
-   Geist Mono, [0042](0042-redesign-design-system-v4.md)); code and commands in the system's monospace font.
+1. **Same palette, one font, one design system.** Paper, indigo ink, one saffron accent. The fonts are Geist and
+   Geist Mono ([0042](0042-redesign-design-system-v4.md), decision 1); code and commands in the system's monospace
+   font.
    `docs/design/system/tokens.json` holds the base tokens, the semantic tokens (type tags, status
    pills, proof quote, sources tile, selected row) and the breakpoints 560, 640, 860 and 1000 px.
 2. **Home is only the home page, and says what the site is for.** One headline ("Find the right AI tool for your
@@ -42,7 +42,7 @@ and chose between options for each part.
    never takes the preview away from a result the user opened. An `id` that is not in the results counts as none.
    The `id` is untrusted input: it only selects among results already on the page.
 6. **Guide picks bar, picks first in one update.** The guide runs only when the user asks it: the "Ask the guide"
-   button (it says so from four words), or the "Sounds like a question" hint. Enter always searches. A name search ("pgvector") gets no picks bar and no model call
+   button next to Search, or Shift+Enter. Enter always searches. A name search ("pgvector") gets no picks bar and no model call
    ([0017](../guide/0017-guide-cost-guard.md)). For a question, a box above the list is there from the first render:
    "Guide is reading N candidates… picks will appear here". Its height is reserved, and so are the lines that come
    with the answer ("web searches left" and "How the guide decided"), so the top of the list does not move when the

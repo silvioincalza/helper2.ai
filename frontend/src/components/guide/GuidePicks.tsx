@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { ApiError } from '@/api/client';
@@ -16,38 +16,33 @@ import { progressOf, readingParts } from './reading';
 import type { Refine } from './types';
 import { WebSearchesLeft } from './WebSearchesLeft';
 import { resourcePath } from '@/lib/searchState';
+import { rowAnchor } from '@/components/results/ResultRow';
+import { toFromResults } from '@/components/results/fromResults';
 
 /**
  * The picks bar for the question in the URL: reading, then the picks, or one line when there is none. While the guide
  * works, the line says how it read the question and how many results it reads, as the steps arrive. With no AI pick
  * the line says why in a few words (ADR 0040, 6), with the next steps: ask again without one of the requirements, or
- * rephrase. How the guide decided stays folded under the bar. A pick that is not on this page of results links to its
- * own page. Try again moves focus to the bar's heading. [webLine] keeps the place of "web searches left" while the
- * guide reads.
+ * rephrase. How the guide decided stays folded under the bar. A pick with a row in the list ([anchored]) jumps to it;
+ * any other pick, and every pick on the timeline (it has no rows to jump to), opens its own page, with the pick and the
+ * way back, as a row does. Try again moves focus to the bar's heading. [webLine] keeps the place of "web searches
+ * left" while the guide reads.
  */
 export function GuidePicks({
   stream,
-  loaded,
+  anchored,
   webLine,
 }: {
   stream: GuideStream;
-  loaded: ReadonlySet<string>;
+  /** The results with a row to jump to. */
+  anchored: ReadonlySet<string>;
   webLine: boolean;
 }) {
   const { t } = useTranslation();
+  const location = useLocation();
   const { answer, error, busy, refine } = stream;
   const { retry, focusRef } = useRetry(stream.retry, busy);
-  const [, setSp] = useSearchParams();
   const picks = guidePicks(answer);
-  const select = (id: string) =>
-    setSp(
-      (prev) => {
-        const next = new URLSearchParams(prev);
-        next.set('id', id);
-        return next;
-      },
-      { replace: true, preventScrollReset: true },
-    );
   const state = picksState(stream, picks.length, t);
   const answered = answer !== null && answer.status !== 'NEEDS_CLARIFICATION';
   return (
@@ -60,17 +55,21 @@ export function GuidePicks({
             <ul className="h2-picks__chips">
               {picks.map((p) => (
                 <li key={p.resourceId}>
-                  {loaded.has(p.resourceId) ? (
-                    <button
-                      type="button"
+                  {anchored.has(p.resourceId) ? (
+                    <a
                       className="h2-pick-chip"
                       title={p.title}
-                      onClick={() => select(p.resourceId)}
+                      href={`#${rowAnchor(p.resourceId)}`}
                     >
                       <b>#{p.rank}</b> <span className="h2-pick-chip__title">{p.title}</span>
-                    </button>
+                    </a>
                   ) : (
-                    <Link className="h2-pick-chip" title={p.title} to={resourcePath(p.resourceId)}>
+                    <Link
+                      className="h2-pick-chip"
+                      title={p.title}
+                      to={resourcePath(p.resourceId)}
+                      state={toFromResults(location, p)}
+                    >
                       <b>#{p.rank}</b> <span className="h2-pick-chip__title">{p.title}</span>
                     </Link>
                   )}

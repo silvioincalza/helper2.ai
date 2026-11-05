@@ -45,15 +45,20 @@ export function ShowAll({
   );
 }
 
-/** Loading, error and empty, announced politely; the rows themselves are not read aloud on load. */
+/**
+ * Loading, error and empty, announced politely; the rows themselves are not read aloud on load. [level] is the
+ * heading level of the error and empty panels: 3 under a list heading, 2 right under a page title.
+ */
 export function ListState({
   feed,
   errorText,
   emptyText,
+  level = 3,
 }: {
   feed: Feed<unknown>;
   errorText: string;
   emptyText: string;
+  level?: number;
 }) {
   const { t } = useTranslation();
   return (
@@ -69,19 +74,19 @@ export function ListState({
       {!feed.loading && feed.error && (
         <StatePanel
           tone="error"
-          level={3}
+          level={level}
           title={errorText}
           next={<RetryButton onClick={feed.reload} />}
         />
       )}
       {!feed.loading && !feed.error && feed.rows.length === 0 && (
-        <StatePanel tone="notice" level={3} title={emptyText} />
+        <StatePanel tone="notice" level={level} title={emptyText} />
       )}
     </div>
   );
 }
 
-export function NewsDate({ row, now }: { row: NewsRow; now: number }) {
+function NewsDate({ row, now }: { row: NewsRow; now: number }) {
   const { t, i18n } = useTranslation();
   if (!row.date) return <span className="v4-not-stated">{t('lists.noDate')}</span>;
   const day = shortDay(row.date, i18n.language, now);
@@ -95,7 +100,7 @@ export function NewsDate({ row, now }: { row: NewsRow; now: number }) {
   );
 }
 
-export function EventWhen({ row, now }: { row: EventRow; now: number }) {
+function EventWhen({ row, now }: { row: EventRow; now: number }) {
   const { t, i18n } = useTranslation();
   if (row.left?.key === 'onNow') return <span className="v4-on-now">{t('lists.onNow')}</span>;
   return row.start ? (
@@ -103,7 +108,7 @@ export function EventWhen({ row, now }: { row: EventRow; now: number }) {
   ) : null;
 }
 
-export function useEventText() {
+function useEventText() {
   const { t, i18n } = useTranslation();
   return {
     kind: (row: EventRow) => (row.kind ? t(`events.kind.${row.kind}`) : ''),

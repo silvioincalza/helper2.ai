@@ -324,6 +324,9 @@ helper2:
     daily-model-calls: ${H2_GUIDE_DAILY_MODEL_CALLS:600}
     # Fresh (not cached) questions per client (IP; IPv6 by /64) per UTC day; past it the answer is search results only.
     client-daily-questions: ${H2_GUIDE_CLIENT_DAILY_QUESTIONS:30}
+    # An answer with no AI pick gives its question back, at most this many times per client per UTC day, so no-pick
+    # questions cannot loop for free. Default: the daily questions. Their model calls still count in daily-model-calls.
+    client-daily-free-answers: ${H2_GUIDE_CLIENT_DAILY_FREE_ANSWERS:${H2_GUIDE_CLIENT_DAILY_QUESTIONS:30}}
     # A question is cancelled after this long and the client gets a timeout (504).
     question-deadline: ${H2_GUIDE_QUESTION_DEADLINE:PT90S}
     # The streamed guide sends a keep-alive comment this often while a question runs (the client gives up after 45 s).

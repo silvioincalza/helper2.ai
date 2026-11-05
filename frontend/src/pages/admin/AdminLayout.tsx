@@ -4,6 +4,7 @@ import { SignIn } from '@/components/SignIn';
 import { useMe } from '@/context/MeContext';
 import { StatePanel } from '@/components/ui/StatePanel';
 import { useTitle } from '@/hooks/useTitle';
+import '@/components/ui/term.css';
 import './admin.css';
 
 /** The back office's parts, in the order of the sub-navigation. The overview is the landing page. */
@@ -26,13 +27,20 @@ export default function AdminLayout() {
   const [params] = useSearchParams();
   useTitle(t('nav.admin'));
 
-  if (!loaded) return <p role="status">{t('common.loading')}</p>;
+  if (!loaded)
+    return (
+      <div className="v4 v4-term h2-admin">
+        <p role="status" className="v4-term__state">
+          {t('common.loading')}
+        </p>
+      </div>
+    );
   if (!isAdmin && !me.authenticated && me.loginProviders.length > 0) {
     return (
-      <div className="h2-admin">
-        <header className="h2-page-head">
+      <div className="v4 v4-term h2-admin">
+        <header className="v4-term__head">
           <h1>{t('admin.title')}</h1>
-          <p className="h2-page-head__lede">{t('admin.signInPrompt')}</p>
+          <p className="v4-term__lede">{t('admin.signInPrompt')}</p>
         </header>
         {params.get('signin') === 'failed' && (
           <p role="alert" className="banner banner-warn">
@@ -40,15 +48,15 @@ export default function AdminLayout() {
           </p>
         )}
         <div className="h2-admin__tools">
-          <SignIn />
+          <SignIn className="btn" />
         </div>
       </div>
     );
   }
   if (!isAdmin) {
     return (
-      <div className="h2-admin">
-        <header className="h2-page-head">
+      <div className="v4 v4-term h2-admin">
+        <header className="v4-term__head">
           <h1>{t('admin.title')}</h1>
         </header>
         <StatePanel
@@ -65,8 +73,8 @@ export default function AdminLayout() {
     );
   }
   return (
-    <div className="h2-admin">
-      <header className="h2-page-head">
+    <div className="v4 v4-term h2-admin">
+      <header className="v4-term__head">
         <h1>{t('admin.title')}</h1>
       </header>
       <nav aria-label={t('admin.nav.label')} className="h2-admin__nav">

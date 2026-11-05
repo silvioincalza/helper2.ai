@@ -416,15 +416,15 @@ describe('Feature: deciding review items', () => {
     );
   });
 
-  it('Scenario: a row shows its kind, date and resource, and a closed item its status as a pill', async () => {
+  it('Scenario: a row shows its kind, date and resource, and a closed item its status in words', async () => {
     mockApi({
       'GET /me': () => ADMIN,
       'GET /admin/review-items': () =>
         page([{ ...item, status: 'ACCEPTED', resourceId: 'a/b c', details: 'It is free' }]),
     });
     renderApp('/admin/review?status=ACCEPTED');
-    const queue = await screen.findByRole('list', { name: 'Review queue' });
-    const row = within(queue).getByRole('listitem');
+    const queue = await screen.findByRole('table', { name: 'Review queue' });
+    const row = within(queue).getAllByRole('row')[1] as HTMLElement;
     expect(within(row).getByText('User report')).toBeInTheDocument();
     // The resource link encodes the id, so an id can never add a path segment.
     expect(within(row).getByRole('link', { name: 'Acme' })).toHaveAttribute(
@@ -432,6 +432,29 @@ describe('Feature: deciding review items', () => {
       '/resource/a%2Fb%20c',
     );
     expect(within(row).getByText('Accepted')).toHaveClass('h2-status-pill', 'h2-status-pill--ok');
+  });
+});
+
+describe('Feature: the back office in the terminal style', () => {
+  it('Scenario: the review queue says `$ helper2 review --open · N`, with N the open items on the server', async () => {
+    mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/review-items': () => ({ items: [item], total: 4 }),
+    });
+    renderApp('/admin/review');
+    await screen.findByRole('table', { name: 'Review queue' });
+    expect(document.querySelector('.h2-admin__part .v4-list__cmd')).toHaveTextContent(
+      '$ helper2 review --open · 4',
+    );
+  });
+
+  it('Scenario: the Scout runs say `$ helper2 scouts --runs · N`, and Run now per source stays', async () => {
+    mockApi({ 'GET /me': () => ADMIN, 'GET /admin/scout-runs': () => [run] });
+    renderApp('/admin/runs');
+    expect(await screen.findByRole('button', { name: 'Run github now' })).toBeInTheDocument();
+    expect(document.querySelector('.h2-admin__part .v4-list__cmd')).toHaveTextContent(
+      '$ helper2 scouts --runs · 1',
+    );
   });
 });
 

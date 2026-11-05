@@ -77,18 +77,20 @@ const STEPS: ToolGuide = {
   ],
 };
 
+/** The title link of a result row on the results page. */
+const rowLink = (name: string) =>
+  screen.getAllByRole('link', { name }).find((l) => l.classList.contains('h2-row__title'))!;
+
 describe('the resource page', () => {
-  it('opened from a guide pick: shows the checked sentence highlighted, and the back link returns to the same search and result', async () => {
+  it('opened from a guide pick: shows the checked sentence highlighted, and the back link goes back to the same search', async () => {
     mockApi({
       'GET /search': () => makeSearch({ results: [PG], total: 1, sources: [makeStatus()] }),
       'POST /guide/stream': () => sse(guide()),
       [`GET /resources/${PG.id}`]: () => makeDetail({ card: PG }),
     });
     const { params, router } = renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
-    await screen.findByRole('button', { name: '#1 Postgres MCP' });
-    await userEvent.click(
-      within(screen.getByRole('article')).getByRole('link', { name: 'Postgres MCP' }),
-    );
+    await screen.findByRole('link', { name: '#1 Postgres MCP' });
+    await userEvent.click(rowLink('Postgres MCP'));
 
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Postgres MCP' }),
@@ -100,7 +102,8 @@ describe('the resource page', () => {
     await userEvent.click(back);
     expect(router.state.location.pathname).toBe('/search');
     expect(params().get('q')).toBe('postgres mcp');
-    expect(params().get('id')).toBe(PG.id);
+    // Back in history, so the list is where the reader left it.
+    expect(router.state.historyAction).toBe('POP');
   });
 
   it('a checked quote from the title alone is still shown when there is no description', async () => {
@@ -113,10 +116,8 @@ describe('the resource page', () => {
       [`GET /resources/${PG.id}`]: () => makeDetail({ card: bare }),
     });
     renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
-    await screen.findByRole('button', { name: '#1 Postgres MCP' });
-    await userEvent.click(
-      within(screen.getByRole('article')).getByRole('link', { name: 'Postgres MCP' }),
-    );
+    await screen.findByRole('link', { name: '#1 Postgres MCP' });
+    await userEvent.click(rowLink('Postgres MCP'));
     await screen.findByRole('heading', { level: 1, name: 'Postgres MCP' });
     expect(document.querySelector('.h2-proof mark')).toHaveTextContent('Postgres MCP');
     expect(screen.queryByText('No description available.')).not.toBeInTheDocument();
@@ -142,10 +143,8 @@ describe('the resource page', () => {
       [`GET /resources/${PG.id}`]: () => makeDetail({ card: ai }),
     });
     renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
-    await screen.findByRole('button', { name: '#1 Postgres MCP' });
-    await userEvent.click(
-      within(screen.getByRole('article')).getByRole('link', { name: 'Postgres MCP' }),
-    );
+    await screen.findByRole('link', { name: '#1 Postgres MCP' });
+    await userEvent.click(rowLink('Postgres MCP'));
     await screen.findByRole('heading', { level: 1, name: 'Postgres MCP' });
     expect(screen.getByText(/read-only access to a PostgreSQL database/)).toHaveAttribute(
       'data-ai-generated',
@@ -174,9 +173,22 @@ describe('the resource page', () => {
     ).toBeInTheDocument();
     expect(screen.getByText(PG.description!)).toBeInTheDocument();
     expect(document.querySelector('mark')).toBeNull();
-    const facts = screen.getByRole('complementary', { name: 'Facts' });
+    const facts = screen.getByRole('region', { name: 'At a glance' });
     expect(within(facts).getAllByText('Not stated').length).toBeGreaterThan(0);
-    expect(within(facts).getByText('GitHub')).toBeInTheDocument();
+    // Under the title: type · host · the date a row shows.
+    expect(screen.getByRole('heading', { level: 1 }).nextElementSibling).toHaveTextContent(
+      /^MCP server · github\.com · updated /,
+    );
+    // Where the information comes from, folded: each source, its mode and when it was read.
+    const where = screen.getByText('Where this information comes from').closest('details')!;
+    expect(where).not.toHaveAttribute('open');
+    expect(within(where).getByText('GitHub').closest('li')).toHaveTextContent(/Live · read /);
+    expect(
+      within(where).getByRole('link', { name: 'All sources and their last check' }),
+    ).toHaveAttribute('href', '/sources');
+    // One primary button at the top: Open. Set it up is there for an MCP server, outlined.
+    expect(document.querySelectorAll('.h2-res__head .btn-primary')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Set it up' })).not.toHaveClass('btn-primary');
     expect(screen.getByRole('link', { name: /Back to search/ })).toHaveAttribute('href', '/');
     expect(screen.getByRole('link', { name: /Open on github.com/ })).toHaveAttribute(
       'href',
@@ -207,7 +219,7 @@ describe('the resource page', () => {
     };
     mockApi({ [`GET /resources/${PG.id}`]: () => makeDetail({ card }) });
     renderApp(`/resource/${PG.id}`);
-    const facts = await screen.findByRole('complementary', { name: 'Facts' });
+    const facts = await screen.findByRole('region', { name: 'At a glance' });
     expect(within(facts).getByText('Works with')).toBeInTheDocument();
     expect(within(facts).getByText('Ollama').closest('li')).toHaveAttribute(
       'title',
@@ -235,6 +247,27 @@ describe('the resource page', () => {
     expect(step).toHaveAttribute('data-ai-generated', 'true');
     expect(step).toHaveAttribute('data-ai-model', 'nemotron-nano');
     expect(screen.getByText(/Steps written by AI/)).toBeInTheDocument();
+  });
+
+  it('a fact the sources disagree on says so, with each value and its source, not "Not stated"', async () => {
+    const split = {
+      ...PG,
+      conflicts: [
+        {
+          field: 'license',
+          values: [
+            { value: 'MIT', sourceId: 'github' },
+            { value: 'Apache-2.0', sourceId: 'npm' },
+          ],
+        },
+      ],
+    };
+    mockApi({ [`GET /resources/${PG.id}`]: () => makeDetail({ card: split }) });
+    renderApp(`/resource/${PG.id}`);
+    await screen.findByRole('heading', { level: 1, name: 'Postgres MCP' });
+    const conflict = document.querySelector('.h2-res dd.is-conflict');
+    expect(conflict).toHaveTextContent('Sources disagree: MIT (github) · Apache-2.0 (npm)');
+    expect(conflict).not.toHaveTextContent('Not stated');
   });
 
   it('has no axe violations', async () => {

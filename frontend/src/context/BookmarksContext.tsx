@@ -22,6 +22,8 @@ interface BookmarksValue {
   mode: 'local' | 'server';
   storageFailed: boolean;
   serverError: boolean;
+  /** Signed in, and the account list has not arrived yet (nor failed). */
+  loading: boolean;
   /** Asks the account list again after it failed to load or merge. */
   retry: () => void;
 }
@@ -129,9 +131,10 @@ export function BookmarksProvider({ children }: { children: ReactNode }) {
       mode: server ? 'server' : 'local',
       storageFailed,
       serverError,
+      loading: server && remote === null && !serverError,
       retry,
     }),
-    [items, toggle, remove, server, storageFailed, serverError, retry],
+    [items, toggle, remove, server, remote, storageFailed, serverError, retry],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

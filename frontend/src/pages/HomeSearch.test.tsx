@@ -251,7 +251,7 @@ describe('search results', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Search is unavailable');
   });
 
-  it('marks stale-cache sources in the preview and in the sources grid', async () => {
+  it('marks stale-cache sources in the row and in the sources grid', async () => {
     const card = makeCard({ freshness: 'STALE' });
     mockApi({
       'GET /search': () =>
@@ -262,9 +262,8 @@ describe('search results', () => {
     });
     renderApp(url);
     await (await results()).findByText('Acme Translator');
-    const preview = screen.getByRole('article', { name: 'Acme Translator' });
-    expect(within(preview).getAllByText('Stale cache').length).toBeGreaterThan(0);
-    expect(within(preview).getByText('Stale data')).toBeInTheDocument();
+    const row = screen.getByRole('link', { name: 'Acme Translator' }).closest('li')!;
+    expect(within(row).getByText(/Stale cache/)).toBeInTheDocument();
     expect(
       within(screen.getByRole('list', { name: 'Sources searched' })).getByText(/cached/),
     ).toBeInTheDocument();
@@ -346,8 +345,8 @@ describe('search results', () => {
     const m = mockApi({ 'GET /search': () => makeSearch({ results: cards, total: 3 }) });
     const { params } = renderApp('/search?q=translate&sort=RECENTLY_UPDATED');
     await (await results()).findByText('New MCP');
-    await openFilters();
-    await userEvent.click(screen.getByRole('button', { name: 'Timeline' }));
+    expect(screen.getByRole('link', { name: 'List' })).toHaveAttribute('aria-current', 'page');
+    await userEvent.click(screen.getByRole('link', { name: 'Timeline' }));
 
     await waitFor(() => expect(params().get('view')).toBe('timeline'));
     // The chosen sort stays in the URL for the list; the API gets NEWEST for the timeline.
@@ -361,13 +360,19 @@ describe('search results', () => {
     const months = within(timeline)
       .getAllByRole('heading', { level: 3 })
       .filter((h) => h.classList.contains('tl-month'));
-    expect(months.map((h) => h.textContent)).toEqual([
-      'October 2026',
-      'July 2023',
-      'Creation date unknown',
-    ]);
+    expect(months.map((h) => h.textContent)).toEqual(['October 2026', 'July 2023', 'Date unknown']);
     expect(within(timeline).getByText('Oct 17, 2026')).toBeInTheDocument();
-    expect(within(timeline).getByText('Creation date not stated')).toBeInTheDocument();
+    // The undated results are one folded group at the end.
+    const showThem = within(timeline).getByRole('button', { name: 'Show them' });
+    expect(showThem).toHaveAttribute('aria-expanded', 'false');
+    expect(within(timeline).getByText(/^1 result\./)).toBeInTheDocument();
+    expect(within(timeline).queryByText('Creation date not stated')).not.toBeVisible();
+    await userEvent.click(showThem);
+    expect(within(timeline).getByRole('button', { name: 'Hide them' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    expect(within(timeline).getByText('Creation date not stated')).toBeVisible();
     // One line per result, linking to its resource page.
     expect(within(timeline).getByRole('link', { name: /New MCP/ })).toHaveAttribute(
       'href',
@@ -375,7 +380,8 @@ describe('search results', () => {
     );
     expect(screen.queryByRole('combobox', { name: /Sort by/ })).not.toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: 'List' }));
+    expect(screen.getByRole('link', { name: 'Timeline' })).toHaveAttribute('aria-current', 'page');
+    await userEvent.click(screen.getByRole('link', { name: 'List' }));
     await waitFor(() => expect(params().get('view')).toBeNull());
     expect(await screen.findByRole('combobox', { name: /Sort by/ })).toHaveValue(
       'RECENTLY_UPDATED',
@@ -435,23 +441,79 @@ describe('search results', () => {
     ).toHaveAttribute('aria-busy', 'false');
   });
 
-  it('after paging, focus moves to the results count', async () => {
-    mockApi({ 'GET /search': () => makeSearch({ total: 45, size: 20 }) });
-    renderApp('/search?q=translate');
-    await screen.findByText('Page 1 of 3');
-    await userEvent.click(screen.getByRole('button', { name: 'Next' }));
-    expect(screen.getByText('45 results')).toHaveFocus();
-  });
+  describe('Show more', () => {
+    /** Page n of a 3-page search: one card per page, ids that do not repeat. */
+    const paged = (more: Parameters<typeof mockApi>[0] = {}) => {
+      const m = mockApi({
+        ...more,
+        'GET /search': ({ url }) => {
+          const page = Number(url.searchParams.get('page') ?? '0');
+          return makeSearch({
+            total: 3,
+            size: 1,
+            page,
+            results: [
+              makeCard({
+                id: `11111111-1111-5111-8111-00000000000${page}`,
+                title: `Result ${page + 1}`,
+              }),
+            ],
+          });
+        },
+      });
+      return m;
+    };
 
-  it('paginates', async () => {
-    const m = mockApi({ 'GET /search': () => makeSearch({ total: 45, size: 20 }) });
-    const { params } = renderApp('/search?q=translate');
-    await screen.findByText('Page 1 of 3');
-    await userEvent.click(screen.getByRole('button', { name: 'Next' }));
-    await waitFor(() => expect(params().get('page')).toBe('1'));
-    await waitFor(() =>
-      expect(m.callsTo('GET', '/search').some((c) => c.search.includes('page=1'))).toBe(true),
-    );
+    it('adds the next page in place, moves focus to its first row and says how many came, once', async () => {
+      const m = paged();
+      const { params } = renderApp('/search?q=translate');
+      await screen.findByRole('link', { name: 'Result 1' });
+      expect(screen.queryByRole('navigation', { name: 'Pagination' })).not.toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'Show more' }));
+      const second = await screen.findByRole('link', { name: 'Result 2' });
+      await waitFor(() => expect(second).toHaveFocus());
+      expect(screen.getByRole('link', { name: 'Result 1' })).toBeInTheDocument();
+      expect(params().get('page')).toBe('1');
+      expect(screen.getByText('1 more result')).toHaveAttribute('aria-live', 'polite');
+      await userEvent.click(screen.getByRole('button', { name: 'Show more' }));
+      await screen.findByRole('link', { name: 'Result 3' });
+      // All 3 are shown: nothing more to show.
+      expect(screen.queryByRole('button', { name: 'Show more' })).not.toBeInTheDocument();
+      expect(
+        m.callsTo('GET', '/search').map((c) => new URLSearchParams(c.search).get('page')),
+      ).toEqual([null, '1', '2']);
+    });
+
+    it('a reload with a page in the URL shows every page up to it', async () => {
+      paged();
+      renderApp('/search?q=translate&page=2');
+      expect(await screen.findByRole('link', { name: 'Result 3' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Result 1' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Result 2' })).toBeInTheDocument();
+      expect(document.activeElement).not.toBe(screen.getByRole('link', { name: 'Result 3' }));
+    });
+
+    it('back from a result on an added page shows every page before the scroll position is restored', async () => {
+      const id = '11111111-1111-5111-8111-000000000002';
+      const m = paged({
+        [`GET /resources/${id}`]: () => makeDetail({ card: makeCard({ id, title: 'Result 3' }) }),
+      });
+      const { router } = renderApp('/search?q=translate&page=2');
+      const third = await screen.findByRole('link', { name: 'Result 3' });
+      vi.spyOn(window, 'scrollY', 'get').mockReturnValue(2400);
+      await userEvent.click(third);
+      await screen.findByRole('heading', { level: 1, name: 'Result 3' });
+      // When the browser restores the place, the rows of the added pages must already be there, or it clamps the
+      // place to the shorter page and never comes back to it.
+      const rowsAtRestore: boolean[] = [];
+      vi.mocked(window.scrollTo).mockImplementation(() => {
+        rowsAtRestore.push(screen.queryByRole('link', { name: 'Result 3' }) !== null);
+      });
+      await act(() => router.navigate(-1));
+      expect(window.scrollTo).toHaveBeenLastCalledWith(0, 2400);
+      expect(rowsAtRestore.at(-1)).toBe(true);
+      expect(m.callsTo('GET', '/search')).toHaveLength(3);
+    });
   });
 
   it('renders notices, expanded terms and use-case suggestions', async () => {
@@ -473,10 +535,10 @@ describe('search results', () => {
       await screen.findByText('Cache unavailable: every source was queried live for this search.'),
     ).toBeInTheDocument();
     expect(screen.getByText(/Also searched for: translation, writing/)).toBeInTheDocument();
-    // The use cases are a labelled group on the same row as the Filters toggle.
+    // The use cases are a labelled group on the same row as Best for.
     const useCases = screen.getByRole('group', { name: 'Narrow by use case:' });
     expect(useCases.parentElement).toContainElement(
-      screen.getByRole('button', { name: 'Filters' }),
+      screen.getByRole('group', { name: 'Best for:' }),
     );
     await userEvent.click(screen.getByRole('button', { name: 'Translation' }));
     await waitFor(() => expect(params().getAll('useCase')).toEqual(['translation']));
@@ -561,16 +623,14 @@ describe('search results', () => {
       'GET /resources/11111111-1111-5111-8111-111111111111': () => makeDetail(),
     });
     const { router } = renderApp('/search?q=translate');
-    const title = within(await screen.findByRole('article')).getByRole('link', {
-      name: 'Acme Translator',
-    });
+    const title = await screen.findByRole('link', { name: 'Acme Translator' });
     vi.spyOn(window, 'scrollY', 'get').mockReturnValue(840);
     await userEvent.click(title);
     await screen.findByRole('heading', { level: 1, name: 'Acme Translator' });
     expect(window.scrollTo).toHaveBeenLastCalledWith(0, 0);
 
     await act(() => router.navigate(-1));
-    expect(screen.getAllByRole('link', { name: 'Acme Translator' })).toHaveLength(2);
+    expect(screen.getByRole('link', { name: 'Acme Translator' })).toBeInTheDocument();
     expect(screen.queryByText('Searching the listed sources…')).not.toBeInTheDocument();
     expect(window.scrollTo).toHaveBeenLastCalledWith(0, 840);
     expect(m.callsTo('GET', '/search')).toHaveLength(1);

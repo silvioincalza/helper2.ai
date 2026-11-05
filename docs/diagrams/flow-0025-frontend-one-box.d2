@@ -1,6 +1,6 @@
 # Flowchart: the one box. What typed text does: live search, or "Ask the guide".
-# Shows the 3-character minimum and the 700 ms pause for live search, the four-word rule of the one button, Enter
-# (always a search; only the button asks the guide), Enter in an empty box, and what each choice writes to the URL. The box itself: line breaks become
+# Shows the 3-character minimum and the 700 ms pause for live search, the two buttons (Search, Ask the guide), Enter
+# (always a search), Shift+Enter (always asks the guide), Enter in an empty box, and what each choice writes to the URL. The box itself: line breaks become
 # spaces, it grows up to six lines, Enter during IME composition is left alone, × or Esc empties it (results stay),
 # "/" from anywhere puts the cursor in it.
 # Every writer goes through the URL: HomePage (frontend/src/pages/HomePage.tsx) renders from it
@@ -34,13 +34,16 @@ live: Live search (onType) {
   home -> nothing: no
 }
 
-key: "Enter (Shift+Enter too)" {class: app}
-button: "The one button" {class: app}
+key: "Enter or Shift+Enter" {class: app}
+shift: "Shift held?" {class: decision}
+sbutton: "Search button" {class: app}
+gbutton: "Ask the guide button" {class: app}
 ime: "Composing (IME)?" {class: decision}
 imeend: "Ignored: the input method\nkeeps the key" {class: end}
 empty: "Enter in an empty box?" {class: decision}
 clear: "Back to the empty home page" {class: end}
-words: "4 words or more?\n(the button label follows)" {class: decision}
+nothing: "Nothing to send?\n(empty, or under 3 characters to ask)" {class: decision}
+focus: "Cursor in the box" {class: end}
 search: "Search: ?q=… (cancel live timer)" {class: app}
 ask: "Ask the guide: ?q=…&ask=…\n(question ≤ 500 chars;\na new question drops clar and drop)" {class: app}
 
@@ -49,7 +52,6 @@ page: "HomePage on /search: Results" {
   direction: down
   results: "useApi: GET /api/v1/search\n(old request aborted; previous results\nstay, dimmed, aria-busy; a key answered\n< 5 min ago renders from memory, no request)" {class: app}
   guide: "GuidePicks + useGuideStream:\nPOST /api/v1/guide/stream\n(picks bar: how it read the question,\nhow many results, then picks)" {class: app}
-  suggest: "q has 4+ words and no ask:\n\"Ask the guide\" suggestion" {class: app}
 }
 
 url: "URL on /search: ?q=… (&ask=…)\nHomePage reads it (useSearchParams)" {class: app}
@@ -61,16 +63,21 @@ type -> norm: "each key or paste"
 norm -> live.min
 type -> emptybox: "× / Esc"
 type -> key: "Enter"
-type -> button: "click"
+type -> sbutton: "click"
+type -> gbutton: "click"
 live.replace -> url: {class: hot}
 key -> ime
 ime -> imeend: yes
 ime -> empty: no
 empty -> clear: yes
-empty -> search: no {class: hot}
-button -> words
-words -> ask: yes
-words -> search: no
+empty -> shift: no
+shift -> search: no {class: hot}
+shift -> ask: yes
+sbutton -> nothing
+gbutton -> nothing
+nothing -> focus: yes
+nothing -> search: "no (Search)"
+nothing -> ask: "no (Ask the guide)"
 search -> url: {class: hot}
 ask -> url: "&ask=…"
 search -> other: "not on /search"
@@ -78,4 +85,3 @@ ask -> other: "not on /search"
 other -> url: "same parameters"
 url -> page.results: {class: hot}
 url -> page.guide: "ask set" {class: ai-call}
-url -> page.suggest: "4+ words, no ask"

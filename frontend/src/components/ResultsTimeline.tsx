@@ -1,8 +1,8 @@
-import { Link } from 'react-router';
+import { useId, useState } from 'react';
+import { Link, useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import type { ResultCard } from '@/api/types';
 import { OriginLabel } from '@/components/Badges';
-import { TypeTag } from '@/components/ui/TypeTag';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
 import { displayHost, formatDate } from '@/lib/format';
 import { resourcePath } from '@/lib/searchState';
@@ -11,11 +11,15 @@ import { creationDate, formatMonth, groupByCreationMonth } from '@/lib/timeline'
 /**
  * Search results on a time axis, newest first, by the date each item was CREATED as its source states it.
  * Helper2's discovery date (when we scanned it) is never used here; items with no stated creation date sit in
- * their own group at the end instead of being placed by a guess. One line per result, as in the list; the
- * resource page has the rest.
+ * one group at the end instead of being placed by a guess, folded: "Date unknown · N · Show them". Each month is a heading beside a line of dots; each
+ * result its date, type, host, title and description. The title opens the resource page, which links back here.
  */
 export function ResultsTimeline({ cards }: { cards: ResultCard[] }) {
   const { t, i18n } = useTranslation();
+  const location = useLocation();
+  const from = `${location.pathname}${location.search}`;
+  const [unknownOpen, setUnknownOpen] = useState(false);
+  const unknownList = useId();
   return (
     <ol className="plain-list results-timeline" aria-label={t('timeline.label')}>
       {groupByCreationMonth(cards).map((group) => {
@@ -29,14 +33,33 @@ export function ResultsTimeline({ cards }: { cards: ResultCard[] }) {
                 t('timeline.unknown')
               )}
             </h3>
-            {!group.month && <p className="muted small">{t('timeline.unknownHint')}</p>}
-            <ol className="plain-list tl-items" aria-labelledby={id}>
+            {!group.month && (
+              <p className="tl-unknown">
+                {t('timeline.unknownCount', { count: group.cards.length })}{' '}
+                {t('timeline.unknownHint')}{' '}
+                <button
+                  type="button"
+                  className="btn-text"
+                  aria-expanded={unknownOpen}
+                  aria-controls={unknownList}
+                  onClick={() => setUnknownOpen((o) => !o)}
+                >
+                  {t(unknownOpen ? 'timeline.hideThem' : 'timeline.showThem')}
+                </button>
+              </p>
+            )}
+            <ol
+              id={group.month ? undefined : unknownList}
+              hidden={!group.month && !unknownOpen}
+              className="plain-list tl-items"
+              aria-labelledby={id}
+            >
               {group.cards.map((card) => {
                 const created = creationDate(card);
                 const disputed = card.timeline.published.status === 'CONFLICTING';
                 return (
-                  <li key={card.id} className="tl-item">
-                    <p className="tl-date small">
+                  <li key={card.id} className="tl-item" data-id={card.id}>
+                    <p className="tl-date">
                       {created ? (
                         <>
                           {t('timeline.created')}{' '}
@@ -49,24 +72,23 @@ export function ResultsTimeline({ cards }: { cards: ResultCard[] }) {
                         t('timeline.noDate')
                       )}
                     </p>
-                    <Link to={resourcePath(card.id)} className="h2-row tl-row">
-                      <span className="h2-row__meta">
-                        <TypeTag type={card.type} />
-                        <span className="h2-row__host">{displayHost(card.url)}</span>
-                      </span>
-                      <span className="h2-row__title">{card.title}</span>
-                      {card.description &&
-                        (isAiOrigin(card.descriptionOrigin) ? (
-                          <span className="h2-row__text">
-                            <span className="h2-row__ai">
-                              <OriginLabel origin={card.descriptionOrigin} />
-                            </span>{' '}
-                            <span {...aiMark()}>{card.description}</span>
-                          </span>
-                        ) : (
-                          <span className="h2-row__text">{card.description}</span>
-                        ))}
+                    <p className="tl-meta">
+                      {t(`type.${card.type}`)} · {displayHost(card.url)}
+                    </p>
+                    <Link to={resourcePath(card.id)} state={{ from }} className="tl-title">
+                      {card.title}
                     </Link>
+                    {card.description &&
+                      (isAiOrigin(card.descriptionOrigin) ? (
+                        <p className="tl-text">
+                          <span className="h2-row__ai">
+                            <OriginLabel origin={card.descriptionOrigin} />
+                          </span>{' '}
+                          <span {...aiMark()}>{card.description}</span>
+                        </p>
+                      ) : (
+                        <p className="tl-text">{card.description}</p>
+                      ))}
                   </li>
                 );
               })}

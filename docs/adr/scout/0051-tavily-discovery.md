@@ -59,12 +59,14 @@ are candidates in the admin review list.
    of a word, with hyphens read as spaces: `text-to-speech` fits "text to speech", `fine tun` fits "fine-tuning",
    and `lora` does not fit "flora"). A product's type is the most
    specific type of the categories whose search found it: a self-hosted agent platform is an `AGENT`.
+   A candidate keeps at most 12 tags (`Candidate.MAX_TAGS`), the most a candidate can have and still be accepted:
+   the categories whose search found it first, in the configured order, then the ones whose words it has.
 6. **Candidates wait for a person.** A product is a `RESOURCE_CANDIDATE` review item (migration `V8`). Its details
    are the candidate as JSON: source, URL, title, type, tags, excerpt. The page is proposed once per URL, and never
    when the catalog already has it (the same rules as course candidates).
 7. **Accepting indexes it.** `ResolveReview` passes the item's details to `IndexAcceptedCandidate` (scout use case).
    `ResourceCandidateJson` writes the details when the page is proposed and reads them back here: one codec, in one
-   module. The use case checks the candidate first (known source, URL, title, a type its collector declares, tags), then:
+   module. The use case checks the candidate first (known source, URL, title, a type its collector declares, at most 12 tags), then:
    - a page another source indexed after it was proposed is left as that source wrote it: only the decision is
      recorded (port `CatalogLookup`);
    - otherwise it is indexed as a `tavily-discovery` record with its tags, in the same transaction as the decision.

@@ -2,7 +2,8 @@
 # Source of truth: backend/src/main/java/ai/helper2/policy/web/PolicyController.java,
 #   platform/RateLimitInterceptor.java, identity/config/SecurityConfiguration.java,
 #   search/config/SearchConfiguration.java, guide/internal/GuideConfiguration.java,
-#   identity/config/IdentityPolicyConfiguration.java, catalog/internal/CatalogConfiguration.java.
+#   identity/config/IdentityPolicyConfiguration.java, catalog/internal/CatalogConfiguration.java;
+#   frontend/src/routes.tsx (textPage), hooks/usePolicy.ts, components/TextSections.tsx, lib/duration.ts.
 # Render: cd docs/diagrams && d2 fmt sequence-0051-policy-endpoint.d2 && d2 sequence-0051-policy-endpoint.d2 sequence-0051-policy-endpoint.svg
 
 ...@style
@@ -20,11 +21,12 @@ boot: "Startup" {
 }
 
 read: "Read" {
+  visitor -> visitor: "open a text page: load its chunk\nand the numbers side by side\n(once per session)"
   visitor -> edge: "GET /api/v1/policy"
   edge -> api: "GET /api/v1/policy"
   api -> redis: "rate window of the client\n(keyed hash of the address and the day)"
   redis -> api: "under the limit"
   api -> api: "map the four values\nto the Policy DTO"
   api -> visitor: "200 Policy\n(public, max-age=300)" {class: hot}
-  visitor -> visitor: "show the numbers in the text;\nthe typed text while the answer is late or fails"
+  visitor -> visitor: "open the page with the numbers,\nor after 500 ms with the sentences\nwithout numbers; on an error, one line says so"
 }

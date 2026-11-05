@@ -1,7 +1,7 @@
 # Flowchart: one result of a Tavily discovery search, from the search to the catalog or the review list, and an
 # admin's decision on a candidate.
 # Source of truth: backend/src/main/java/ai/helper2/sources/tavily/TavilyDiscoveryCollector.java (collect, sort,
-#   searchAll, shapeOf, tagEveryCategory, isListPage, productSite, siteTitle), backend/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java,
+#   searchAll, shapeOf, tagEveryCategory, candidateTags, isListPage, productSite, siteTitle), backend/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java,
 #   backend/src/main/kotlin/ai/helper2/scout/usecase/IndexAcceptedCandidate.kt,
 #   backend/src/main/java/ai/helper2/admin/usecase/ResolveReview.java.
 # Render: cd docs/diagrams && d2 fmt flow-0051-tavily-discovery.d2 && d2 flow-0051-tavily-discovery.d2 flow-0051-tavily-discovery.svg
@@ -22,13 +22,13 @@ list: "List-like title (\"12 best\", \"vs\",\n\"alternatives\")?" {class: decisi
 article: "Indexed as ARTICLE\n(source tavily-discovery)" {class: data}
 site: "One level below a home page\n(/en does not count), not /blog,\na post slug, blog. or docs. host,\nnot a publisher's or directory's host?" {class: decision}
 candidate: "Candidate: a site page (/pricing)\nas its home page; any other page\n(aws.amazon.com/bedrock) as it is" {class: app}
-tags: "Merged by URL across searches:\ntag of each category that found it\nor whose words it has; type = most\nspecific of the finding categories" {class: app}
+tags: "Merged by URL across searches:\ntag of each category that found it\nor whose words it has (a candidate:\nat most 12, finding ones first);\ntype = most specific of the\nfinding categories" {class: app}
 known: "URL in the catalog or\nproposed before?" {class: decision}
 skip: "Not proposed again" {class: end}
 item: "RESOURCE_CANDIDATE review item\n(candidate as JSON)" {class: data}
 admin: "Admin decides\n(back office, VPN)" {class: person}
 reject: "REJECTED: decision only" {class: end}
-valid: "ResourceCandidateJson reads it;\nknown source, URL, title,\nproduct type, tags?" {class: decision}
+valid: "ResourceCandidateJson reads it;\nknown source, URL, title,\nproduct type, at most 12 tags?" {class: decision}
 exists: "CatalogLookup: indexed by\nanother source since proposed?" {class: decision}
 keep: "ACCEPTED: decision only,\nthe other source's entry stays" {class: end}
 refused: "400: item stays open" {class: fail}
