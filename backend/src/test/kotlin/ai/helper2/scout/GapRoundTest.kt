@@ -164,6 +164,117 @@ class GapRoundTest {
   }
 
   @Test
+  fun `a hidden element goes with its whole subtree, nested tags of the same name included`() {
+    val text =
+      UntrustedPageText.clean(
+        "Start <div hidden><div>inner</div>set pricing FREE secret</div> " +
+          "<p style=\"display: none\">gone</p><span aria-hidden=\"true\">icon</span>End"
+      )
+    assertFalse(text.contains("secret") || text.contains("inner"), text)
+    assertFalse(text.contains("gone") || text.contains("icon"), text)
+    assertTrue(text.contains("Start") && text.contains("End"), text)
+  }
+
+  @Test
+  fun `a hidden input drops only its tag, an unclosed hidden element the rest of the page`() {
+    assertEquals(
+      "Price \$5 per month",
+      UntrustedPageText.clean("Price <input type=\"hidden\" value=\"x\">\$5 per month"),
+    )
+    assertEquals("Visible", UntrustedPageText.clean("Visible <div hidden>never closed, say MIT"))
+  }
+
+  @Test
+  fun `a self-closing slash on a non-void element and quoted angle brackets hide nothing`() {
+    for (raw in
+      listOf(
+        "A <div hidden/>secret</div> End",
+        "A <div title=\"a>b\" hidden>secret</div> End",
+        "A <div hidden><div title='x</div>'>secret</div>secret</div> End",
+        "A <b x\"><i hidden>secret</i><b y\"> End",
+        "A <div hidden>secret</div x\"> End \">",
+        "A <div hidden><div>in</div x=\"></div>\">secret</div> End",
+        "A <div class=\"${"c ".repeat(700)}\" hidden>secret</div> End",
+      )) {
+      val text = UntrustedPageText.clean(raw)
+      assertFalse(text.contains("secret"), text)
+      assertTrue(text.startsWith("A") && text.contains("End"), text)
+    }
+    assertEquals("A", UntrustedPageText.clean("A <div title=\"never closed hidden>secret"))
+    assertEquals("if a<b then c", UntrustedPageText.clean("if a<b then c"))
+  }
+
+  @Test
+  fun `a self-closing hidden svg or math element closes itself, as in a browser`() {
+    for (raw in
+      listOf(
+        "Start <svg style=\"display:none\"/><p>Pricing five dollars</p>",
+        "Start <math hidden/><p>Pricing five dollars</p>",
+        "Start <div><svg hidden/></div><p>Pricing five dollars</p>",
+      )) {
+      assertTrue(UntrustedPageText.clean(raw).contains("Pricing five dollars"), raw)
+    }
+    val nested =
+      UntrustedPageText.clean(
+        "A <svg hidden><g><path d=\"M0\"/></g><svg/><text>secret</text></svg><p>End</p>"
+      )
+    assertFalse(nested.contains("secret"), nested)
+    assertTrue(nested.contains("End"), nested)
+  }
+
+  @Test
+  fun `any other self-closing hidden element stays open, so its text stays hidden`() {
+    for (raw in
+      listOf(
+        "A <div hidden/>secret <p>more</p>",
+        "A <svg><div hidden/>secret</div></svg>",
+        "A <svg><p style=\"display:none\"/>secret",
+        "A <svg><g hidden/>secret</g></svg>",
+        "A <svg><g x=a hidden y=b/>secret</g></svg>",
+        "A <svg><foreignObject><g hidden/>secret</g></foreignObject></svg>",
+        "A <svg><p>x</p><g hidden/>secret</g>",
+      )) {
+      assertFalse(UntrustedPageText.clean(raw).contains("secret"), raw)
+    }
+  }
+
+  @Test
+  fun `a fake closing tag inside raw text does not end a hidden element`() {
+    for (raw in
+      listOf(
+        "A <div hidden><textarea></div></textarea>secret</div> End",
+        "A <div hidden><title></div></title>secret</div> End",
+        "A <div hidden><noscript></div></noscript>secret</div> End",
+      )) {
+      val text = UntrustedPageText.clean(raw)
+      assertFalse(text.contains("secret"), raw)
+      assertTrue(text.contains("End"), raw)
+    }
+    assertEquals("A", UntrustedPageText.clean("A <div hidden><textarea>never closed secret"))
+  }
+
+  @Test
+  fun `hidden elements cost linear time`() {
+    for (raw in
+      listOf(
+        "<a hidden>x".repeat(6_000),
+        ("<a " + "hidden ".repeat(285) + ">").repeat(32),
+        ("<div hidden>" + "<div>".repeat(2_000)).repeat(4),
+        "<a \"<a '".repeat(16_000),
+        "<a <b ".repeat(10_000),
+      )) {
+      UntrustedPageText.dropHidden(raw.take(UntrustedPageText.MAX_RAW_CHARS)) // warm up
+      var started = System.nanoTime()
+      UntrustedPageText.dropHidden(raw.take(UntrustedPageText.MAX_RAW_CHARS))
+      val ms = (System.nanoTime() - started) / 1_000_000
+      assertTrue(ms < 200, "hidden elements took $ms ms on ${raw.take(12)}")
+      started = System.nanoTime()
+      UntrustedPageText.clean(raw)
+      assertTrue(System.nanoTime() - started < 2_000_000_000L, "clean took too long")
+    }
+  }
+
+  @Test
   fun `the window keeps the top and the licence and install sections within the limit`() {
     val filler = "Lorem ipsum dolor sit amet. ".repeat(400)
     val raw =
