@@ -91,6 +91,9 @@ class WebSearchQuotaApiIT extends ApiTestBase {
     assertThat(read(over, "$.sources[?(@.sourceId == 'fake-web')].message"))
         .asList()
         .containsExactly("Daily limit of web searches reached; back at 00:00 UTC");
+    assertThat(read(over, "$.sources[?(@.sourceId == 'fake-web')].skipReason"))
+        .asList()
+        .containsExactly("DAILY_LIMIT");
     assertThat(read(over, "$.sources[?(@.sourceId == 'fake-live')].outcome"))
         .asList()
         .containsExactly("SUCCEEDED");
