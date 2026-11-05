@@ -10,7 +10,8 @@ private canvas.
 Snapshot: [`redesign/`](redesign) (one `.dc.html` per board,
 `canvas.json` lays them out). The rules are in the design system, version 4: [system/README.md](system/README.md).
 The code moves to it page by page ([ADR 0042](../adr/frontend/0042-redesign-design-system-v4.md)): the header, the
-footer and Home are built; the other pages still follow the boards below.
+footer, Home and the text pages (Mission, Privacy, Terms, Not found, Sign in, Account) are built; the other pages
+still follow the boards below.
 
 | Mockup | What |
 |---|---|

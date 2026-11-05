@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { HowItWorks } from '@/components/HowItWorks';
+import { HowItWorks, useHowItWorksToc } from '@/components/HowItWorks';
 import { REPO_URL } from '@/components/Layout';
 import { useTitle } from '@/hooks/useTitle';
 import { TextPage } from '@/components/TextPage';
@@ -7,6 +7,7 @@ import { TextPage } from '@/components/TextPage';
 export default function MissionPage() {
   const { t } = useTranslation();
   useTitle(t('nav.mission'));
+  const howToc = useHowItWorksToc();
   const feedback = (
     <p>
       <a
@@ -22,6 +23,7 @@ export default function MissionPage() {
   return (
     <TextPage
       i18nKey="mission.sections"
+      afterToc={howToc}
       head={
         <>
           <h1>{t('mission.title')}</h1>

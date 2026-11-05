@@ -15,9 +15,9 @@ We drew the design as clickable prototypes (Home, Results, Resource, States, Sav
 and chose between options for each part.
 
 ## Decision
-1. **Same palette, one font, one design system.** Paper, indigo ink, one saffron accent. One font, Space Grotesk
-   (400, 500, 600), for text and titles on the pages still on version 3 (Home, the header and the footer use Geist and
-   Geist Mono, [0042](0042-redesign-design-system-v4.md)); code and commands in the system's monospace font.
+1. **Same palette, one font, one design system.** Paper, indigo ink, one saffron accent. The fonts are Geist and
+   Geist Mono ([0042](0042-redesign-design-system-v4.md), decision 1); code and commands in the system's monospace
+   font.
    `docs/design/system/tokens.json` holds the base tokens, the semantic tokens (type tags, status
    pills, proof quote, sources tile, selected row) and the breakpoints 560, 640, 860 and 1000 px.
 2. **Home is only the home page, and says what the site is for.** One headline ("Find the right AI tool for your

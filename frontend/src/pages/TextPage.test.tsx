@@ -6,8 +6,22 @@ import { axeViolations } from '@/test/a11y';
 import { mockApi } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
 
-const PAGES: Array<{ path: string; title: string; sections: TextSection[] }> = [
-  { path: '/mission', title: en.mission.title, sections: en.mission.sections as TextSection[] },
+const PAGES: Array<{
+  path: string;
+  title: string;
+  sections: TextSection[];
+  /** Sections after the locale ones that "On this page" links to as well (Mission: how the guide answers). */
+  more?: Array<{ id: string; title: string }>;
+}> = [
+  {
+    path: '/mission',
+    title: en.mission.title,
+    sections: en.mission.sections as TextSection[],
+    more: [
+      { id: 'how-the-guide-answers', title: en.how.title },
+      { id: 'never-guessed', title: en.how.rulesTitle },
+    ],
+  },
   { path: '/privacy', title: en.privacy.title, sections: en.privacy.sections as TextSection[] },
   { path: '/terms', title: en.terms.title, sections: en.terms.sections as TextSection[] },
 ];
@@ -33,17 +47,19 @@ describe('Feature: text pages', () => {
 
   it.each(PAGES)(
     'Scenario: on a wide screen, "On this page" for $path links to every section',
-    async ({ path, sections }) => {
+    async ({ path, sections, more = [] }) => {
       narrowScreen(true);
       mockApi();
       renderApp(path);
-      await settle();
-      const toc = screen.getByRole('navigation', { name: 'On this page' });
+      const toc = await screen.findByRole('navigation', { name: 'On this page' });
       const links = within(toc).getAllByRole('link');
-      expect(links.map((l) => l.textContent)).toEqual(sections.map((s) => s.title));
-      for (const s of sections) {
-        const id = sectionAnchor(s.title);
-        expect(within(toc).getByRole('link', { name: s.title })).toHaveAttribute('href', `#${id}`);
+      const all = [
+        ...sections.map((s) => ({ id: sectionAnchor(s.title), title: s.title })),
+        ...more,
+      ];
+      expect(links.map((l) => l.textContent)).toEqual(all.map((s) => s.title));
+      for (const { id, title } of all) {
+        expect(within(toc).getByRole('link', { name: title })).toHaveAttribute('href', `#${id}`);
         expect(document.getElementById(id)).not.toBeNull();
       }
     },

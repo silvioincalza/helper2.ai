@@ -1,7 +1,7 @@
 # 0042 — Redesign: design system version 4
 
-**Status.** Accepted. Built for the header, the footer, Home, Sources, Saved and the back office; the other pages
-follow (decision 10).
+**Status.** Accepted. Built for the header, the footer, Home, Sources, Saved, the back office and the text pages
+(Mission, Privacy, Terms, Not found, Sign in, Account); the other pages follow (decision 10).
 **Replaces parts of:** [0040](0040-frontend-design.md): decisions 1 and 2 now; 4 and 7 when Results moves.
 **Builds on:** [0015](../guide/0015-ai-guide-evidence-gate.md), [0017](../guide/0017-guide-cost-guard.md),
 [0025](0025-frontend-one-box.md), [0038](../guide/0038-ai-content-marking.md)
@@ -23,13 +23,13 @@ they do now and how version 3 and 4 live side by side until the other pages move
    monospace font reads slowly. Both are the variable fonts from `@fontsource-variable/geist` and
    `@fontsource-variable/geist-mono` (SIL Open Font License), bundled by Vite and served from our own origin: no
    third-party request, and the CSP stays `font-src 'self'`. One file per script covers every weight; an English page
-   loads only the Latin files (29 KB and 23 KB), and the build preloads those two. The pages still on version 3 keep
-   Space Grotesk (400, 500, 600) until they move.
+   loads only the Latin files (29 KB and 23 KB), and the build preloads those two. These are the fonts of the whole
+   site (5 November 2026). The pages still on version 3 load the version 3 font until they move (decision 10).
 2. **One set of version 4 tokens.** `tokens.css` holds the version 4 colours (light and dark), shadows and sizes
    under their own names, from `docs/design/system/tokens.json`; the version 3 names are gone. Only what the moved
    parts do differently carries `--v4-`: the box height (60 px) and the two font stacks. The header is version 4 on
-   every page, so `header-height` is its 74 px. The pages still on version 3 keep `maxw`, `box-height` and Space
-   Grotesk until they move.
+   every page, so `header-height` is its 74 px. The pages still on version 3 keep `maxw`, `box-height` and the
+   version 3 font until they move.
 3. **Header and footer.** The header: the logo (mark, wordmark, "AI on your radar"), News, Events, Saved, Sign in or
    the account. Up to 720 px: the logo and a menu button; the menu holds New this week, Coming up, Saved, Sources,
    Mission, Sign in and the theme; Escape closes it. On the pages without their own box, the box sits in the header.
@@ -60,7 +60,7 @@ they do now and how version 3 and 4 live side by side until the other pages move
    - **The legend** under the box: "3-5 of N sources at a time" (N from GET /sources), a filled swatch for answering,
      slow or limited and failed, and a link to the Sources page.
    - **When it holds still.** The clock stops while the search box has focus: the beam and the dots hold still. Under
-     reduced motion, or for a signed-in user who turned "Radar: move between sources" off on the account page
+     reduced motion, or for a signed-in user who turned "Radar: keep moving" off on the account page
      (`preferences.radarMotion` on GET /me, saved with PATCH /me/preferences, ADR
      [0023](../edge/0023-identity-and-admin.md)), there is no clock: the beam stands still and a fixed random set of 4
      shows at full opacity. Up to 900 px only the rings and the beam show.
@@ -97,9 +97,10 @@ they do now and how version 3 and 4 live side by side until the other pages move
    selected line (saffron underline in the header, an ink folder tab in the tabs). The Search button is never
    disabled: with nothing to send it puts the cursor in the box. Key hints (`/`, `↵`) show only where there is a
    keyboard. Text and controls meet AA in light and dark (muted 7.5:1 and 8:1, links 5.5:1 and 8.7:1, control borders
-   3.3:1 and 3.9:1). The axe test runs on Home in both themes, on a wide screen and on a phone with the menu open.
+   3.3:1 and 3.9:1). The axe test runs on Home in both themes, on a wide screen and on a phone with the menu open, and on
+   the text pages in both themes at 1280 and 390 px.
 10. **Version 3 and 4 side by side, page by page.** Each page moves in its own pull request. When the last page has
-    moved, the version 3 components, sizes and Space Grotesk go, and the `--v4-` sizes and fonts lose their prefix.
+    moved, the version 3 components, sizes and font go, and the `--v4-` sizes and fonts lose their prefix.
     No design flag: a page is either version 3 or 4.
 11. **Sources, Saved and the back office in the terminal style.** Each list page has a `$ helper2 … · N` line next to
     its heading, with N from the API (`TermCommand` from `TermList`): `$ helper2 sources --all · N` (every source on
@@ -127,6 +128,24 @@ they do now and how version 3 and 4 live side by side until the other pages move
       still loaded on demand and only over the VPN.
     - Saved now loads on demand too, like Sources and Account: few visits start there. The initial JavaScript is
       165.5 KiB gzip with this change (165.9 before).
+12. **Text pages stay prose.** Mission, Privacy, Terms, Not found, Sign in and Account have no terminal look: Geist for
+    headings and reading text, Geist Mono only for small interface labels (On this page, the date, the 404 label,
+    buttons), a column of about 68 characters with a line height of 1.65, lined up with the header (`text.css`,
+    `.h2-prose`). They load on demand, like Sources and Account.
+    - **Mission** has its sections, then how the guide answers (three numbered steps) and the rules, as prose; "On
+      this page" links to all of them.
+    - **Not found** keeps the real 404 (the server answers 404 and writes the head): a `404` label, the title, one
+      line that points to the box in the header, and a link to the home page. No second search box.
+    - **Sign in** (`/signin`): why to sign in on the left, the ways to sign in in a card on the right, one button per
+      provider in `loginProviders` on GET /me ("Continue with GitHub"). A provider that is not configured is not
+      shown; with none, the card says sign-in is not offered here. "Sign in" in the header opens this page and
+      carries the current page, so the visitor comes back to it (ADR [0035](../edge/0035-admin-host.md)). A failed
+      sign-in lands on `?signin=failed`; the alert links back to this page. The Saved page and the admin page keep
+      their direct provider links.
+    - **Account:** who is signed in, with the AI answers and web searches left today and their reset time
+      (`limits` on GET /me; a null count is not shown), the radar setting "Radar: keep moving" (on by default; off
+      keeps the Home radar still, as reduced motion does), and Delete my account in a card, with the confirmation
+      under it (focus on Cancel).
 
 ## Alternatives
 - **Fonts: `geist` (Vercel).** The upstream package, but built for `next/font` (it imports `next/font/local`) and
@@ -135,9 +154,11 @@ they do now and how version 3 and 4 live side by side until the other pages move
 - **Lists as terminal windows** (the first boards). Strong look, but heavy on a phone and the window frame adds
   nothing. **Tabs on every width** (option 2): one component, but a wide screen hides half of what is new.
 - **Monospace everywhere.** The strongest tech look, but slow to read on Privacy, Terms and the guide's reasons.
-- **One font, Space Grotesk, everywhere.** Kept on 2 November 2026: no new font downloads. The header, the footer
-  and Home are built in Geist Mono and Geist, as the boards draw them. Which one stays for every page is open on the
-  [roadmap](../../roadmap.md).
+- **One font, Space Grotesk, everywhere.** No new font download. Chosen on 2 November 2026, dropped on 5 November:
+  the boards and the moved parts are drawn in Geist and Geist Mono, and the two variable files cost 52 KB on an
+  English page.
+- **Sign in straight from the header** (main before v4): one click less with one provider, but the visitor never
+  sees why to sign in, and a second provider needs a menu. The page is one click more and says it.
 - **The guide on every search.** Simpler, but it spends model calls and the daily AI answers on searches that are
   only a name ([0017](../guide/0017-guide-cost-guard.md)).
 - **One big pull request.** Fastest to finish, hardest to review and to roll back.
@@ -158,7 +179,8 @@ they do now and how version 3 and 4 live side by side until the other pages move
 - For a while the site shows two designs and loads two font families on the pages still on version 3. The header and
   footer are already version 4 on every page.
 - The initial JavaScript is 166 of 250 KiB gzip ([0025](0025-frontend-one-box.md)), with the examples from the pool
-  on Home: the radar, the phone tabs, the Sources page and the account page load on demand.
+  on Home: the radar, the phone tabs, Sources, Saved, the back office and the text pages (Mission, Privacy, Terms,
+  Not found, Sign in, Account) load on demand.
 - What is not built yet is on the [roadmap](../../roadmap.md) (section 6).
 
 Flowchart: [flow-0042-redesign](../../diagrams/flow-0042-redesign.svg). Sequence:

@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { axeViolations } from '@/test/a11y';
 import {
   ADMIN,
+  ANON,
   HEALTH_SOURCES,
   STAGING_SOURCES,
   USER,
@@ -286,6 +287,36 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
     const audit = renderApp('/admin/audit');
     await within(await screen.findByRole('main')).findByText('Review decision');
     expect(await axeViolations(audit.container)).toEqual([]);
+  });
+
+  describe('text pages in design v4: Mission, Privacy, Terms, Not found, Sign in, Account', () => {
+    afterEach(() => {
+      delete document.documentElement.dataset.theme;
+    });
+    const pages: Array<{ path: string; me: () => unknown; ready: string }> = [
+      { path: '/mission', me: () => ANON, ready: 'Our mission' },
+      { path: '/privacy', me: () => ANON, ready: 'Privacy' },
+      { path: '/terms', me: () => ANON, ready: 'Terms of use' },
+      { path: '/no/such/page', me: () => ANON, ready: 'Page not found' },
+      { path: '/signin', me: () => ANON, ready: 'Choose how to sign in' },
+      { path: '/account', me: () => USER, ready: 'Delete your account' },
+    ];
+    for (const theme of ['light', 'dark'] as const) {
+      for (const width of [1280, 390]) {
+        it(`${theme} theme, ${width} px wide`, async () => {
+          document.documentElement.dataset.theme = theme;
+          mockViewport(width);
+          for (const { path, me, ready } of pages) {
+            mockApi({ 'GET /me': me });
+            const view = renderApp(path);
+            await screen.findByRole('heading', { name: ready });
+            await settle();
+            expect(await axeViolations(view.container)).toEqual([]);
+            view.unmount();
+          }
+        });
+      }
+    }
   });
 
   it('account, with the delete confirmation open', async () => {

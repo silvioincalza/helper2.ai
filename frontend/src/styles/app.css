@@ -890,67 +890,8 @@ input[type='radio'] {
   max-width: 46rem;
 }
 .section-head h2,
-.section-head p,
-.how-step h3,
-.how-step p,
-.rule h3,
-.rule p {
+.section-head p {
   margin: 0;
-}
-.how,
-.rules {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  margin-top: var(--space-6);
-}
-.how h2,
-.rules h2 {
-  font-size: 1.35rem;
-}
-.rules + p {
-  margin-top: var(--space-6);
-}
-.how-steps {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
-  gap: var(--space-4);
-}
-.how-step {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  padding: 1.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-.how-n {
-  font-family: var(--font-display);
-  font-size: 2.5rem;
-  line-height: 1;
-  color: var(--accent);
-}
-.how-step h3,
-.rule h3 {
-  font-size: 1.05rem;
-}
-.how-step p,
-.rule p {
-  color: var(--ink-2);
-  font-size: 0.95rem;
-}
-.rules-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
-  gap: var(--space-4);
-}
-.rule {
-  border-top: 2px solid var(--ink);
-  padding-top: var(--space-3);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
 }
 
 /* ===== Redesign 2026-10 (design v3): warm paper, saffron accent, Space Grotesk headings on the pages still on v3 ===== */

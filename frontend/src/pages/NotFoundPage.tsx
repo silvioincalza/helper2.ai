@@ -1,27 +1,23 @@
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { Robots } from '@/components/Robots';
-import { StatePanel } from '@/components/ui/StatePanel';
-import './notfound.css';
+import './text.css';
 
-/** Not found (ADR 0040, 8): say what happened, then two ways on: the search box in the header, or the home page. */
+/**
+ * Not found (ADR 0040, 8; design v4, ADR 0042): say what happened, then two ways on: the search box in the header, or
+ * the home page. The server already answered 404 and wrote the head (#169); this is only what the page shows.
+ */
 export default function NotFoundPage() {
   const { t } = useTranslation();
   return (
-    <div className="h2-notfound">
+    <div className="h2-prose h2-notfound">
       <Robots content="noindex" />
-      <StatePanel
-        tone="notice"
-        level={1}
-        title={t('notFound.title')}
-        next={
-          <Link to="/" className="btn btn-primary">
-            {t('notFound.home')}
-          </Link>
-        }
-      >
-        <p>{t('notFound.body')}</p>
-      </StatePanel>
+      <p className="h2-label">{t('notFound.label')}</p>
+      <h1>{t('notFound.title')}</h1>
+      <p>{t('notFound.body')}</p>
+      <Link to="/" className="v4-btn">
+        {t('notFound.home')}
+      </Link>
     </div>
   );
 }

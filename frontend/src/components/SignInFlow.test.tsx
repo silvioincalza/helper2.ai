@@ -10,13 +10,62 @@ const header = () => document.querySelector<HTMLElement>('header.site-header')!;
 describe('Feature: end users sign in on the public site (ADR 0035)', () => {
   afterEach(() => window.sessionStorage.clear());
 
-  it('Scenario: a visitor sees "Sign in with GitHub" in the header when the site offers it', async () => {
+  it('Scenario: "Sign in" in the header opens the sign-in page, which offers the site\'s providers', async () => {
     mockApi({ 'GET /me': () => ANON });
-    renderApp('/sources');
+    const { router } = renderApp('/sources');
     // The sources page loads on demand: the header comes with it.
     await waitFor(() => expect(header()).not.toBeNull());
-    const link = await within(header()).findByRole('link', { name: 'Sign in with GitHub' });
-    expect(link).toHaveAttribute('href', '/oauth2/authorization/github');
+    await userEvent.click(await within(header()).findByRole('link', { name: 'Sign in' }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/signin'));
+    const main = await screen.findByRole('main');
+    expect(
+      await within(main).findByRole('heading', {
+        level: 1,
+        name: 'Sign in to keep what you find.',
+      }),
+    ).toBeInTheDocument();
+    expect(within(main).getByRole('link', { name: 'Continue with GitHub' })).toHaveAttribute(
+      'href',
+      '/oauth2/authorization/github',
+    );
+  });
+
+  it('Scenario: a provider the site has not set up is not offered', async () => {
+    mockApi({
+      'GET /me': () => ({
+        ...ANON,
+        loginProviders: [
+          { id: 'github', name: 'GitHub' },
+          { id: 'google', name: 'Google' },
+        ],
+      }),
+    });
+    renderApp('/signin');
+    const main = await screen.findByRole('main');
+    await within(main).findByRole('link', { name: 'Continue with GitHub' });
+    expect(within(main).getByRole('link', { name: 'Continue with Google' })).toBeInTheDocument();
+    expect(within(main).getAllByRole('link', { name: /^Continue with/ })).toHaveLength(2);
+  });
+
+  it('Scenario: on a site with no provider, the sign-in page says so and offers none', async () => {
+    mockApi({ 'GET /me': () => ({ ...ANON, loginProviders: [] }) });
+    renderApp('/signin');
+    const main = await screen.findByRole('main');
+    expect(
+      await within(main).findByRole('heading', { name: 'Sign-in is not offered here' }),
+    ).toBeInTheDocument();
+    expect(within(main).queryByRole('link', { name: /^Continue with/ })).toBeNull();
+  });
+
+  it('Scenario: a signed-in user on the sign-in page is pointed to the account', async () => {
+    mockApi({ 'GET /me': () => USER });
+    renderApp('/signin');
+    const main = await screen.findByRole('main');
+    expect(await within(main).findByText('Signed in as Ada.')).toBeInTheDocument();
+    expect(within(main).getByRole('link', { name: 'Your account' })).toHaveAttribute(
+      'href',
+      '/account',
+    );
   });
 
   it('Scenario: no sign-in is offered where the site has no provider', async () => {
@@ -32,7 +81,9 @@ describe('Feature: end users sign in on the public site (ADR 0035)', () => {
     const before = renderApp('/saved');
     // The saved page loads on demand: the header comes with it.
     await waitFor(() => expect(header()).not.toBeNull());
-    const link = await within(header()).findByRole('link', { name: 'Sign in with GitHub' });
+    await userEvent.click(await within(header()).findByRole('link', { name: 'Sign in' }));
+    const main = await screen.findByRole('main');
+    const link = await within(main).findByRole('link', { name: 'Continue with GitHub' });
     link.addEventListener('click', (e) => e.preventDefault(), { once: true });
     await userEvent.click(link);
     expect(window.sessionStorage.getItem(SIGN_IN_RETURN_KEY)).toBe('/saved');
@@ -51,7 +102,9 @@ describe('Feature: end users sign in on the public site (ADR 0035)', () => {
     renderApp('/saved?signin=failed&x=1');
     // The saved page loads on demand: the header comes with it.
     await waitFor(() => expect(header()).not.toBeNull());
-    const link = await within(header()).findByRole('link', { name: 'Sign in with GitHub' });
+    await userEvent.click(await within(header()).findByRole('link', { name: 'Sign in' }));
+    const main = await screen.findByRole('main');
+    const link = await within(main).findByRole('link', { name: 'Continue with GitHub' });
     link.addEventListener('click', (e) => e.preventDefault(), { once: true });
     await userEvent.click(link);
     // Only the page and its own parameters: the marker of the earlier attempt is not kept.
@@ -70,9 +123,12 @@ describe('Feature: end users sign in on the public site (ADR 0035)', () => {
   it('Scenario: a failed sign-in says so, and offers to try again', async () => {
     mockApi({ 'GET /me': () => ANON });
     renderApp('/?signin=failed');
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Sign-in did not work. Please try again.',
-    );
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Sign-in did not work. Please try again.');
+    // The link comes with GET /me: only a site with a provider offers it.
+    expect(
+      await within(alert).findByRole('link', { name: 'Choose how to sign in' }),
+    ).toHaveAttribute('href', '/signin');
   });
 
   it('Scenario: the Saved page offers sign-in to keep saved items on every device', async () => {

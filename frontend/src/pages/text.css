@@ -1,4 +1,81 @@
-/* Text pages (ADR 0040): a readable column, display headings. Only semantic tokens. */
+/*
+ * Text pages in design v4 (ADR 0042): Mission, Privacy, Terms, Not found, Sign in and Account. Prose, no terminal
+ * look: Geist for headings and reading text, Geist Mono only for small interface labels (On this page, the date, the
+ * 404 label, buttons). A readable column of about 68 characters. Only tokens from tokens.css.
+ */
+.h2-prose {
+  font-family: var(--v4-font-body);
+  color: var(--ink);
+}
+.h2-prose h1,
+.h2-prose h2,
+.h2-prose h3 {
+  font-family: var(--v4-font-body);
+  font-weight: 500;
+  color: var(--ink);
+}
+.h2-prose a {
+  color: var(--accent-ink);
+  text-underline-offset: 3px;
+}
+.h2-prose a:hover {
+  color: var(--ink);
+}
+.h2-prose :focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+/* A small interface label: Geist Mono, upper case. */
+.h2-prose .h2-label {
+  margin: 0;
+  font: 600 12px/16px var(--v4-font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Buttons on the text pages: the v4 button (v4.css), a filled ink one for the main action, a danger one. */
+.h2-prose a.v4-btn {
+  color: var(--ink);
+}
+.h2-prose .v4-btn--ink,
+.h2-prose a.v4-btn--ink {
+  color: var(--bg);
+  background: var(--ink);
+  border-color: var(--ink);
+}
+.h2-prose .v4-btn--ink:hover {
+  background: var(--accent-deep);
+}
+.h2-prose .v4-btn--danger {
+  color: var(--danger);
+  border-color: var(--danger);
+  font-weight: 600;
+}
+.h2-prose .v4-btn--danger-fill {
+  color: var(--bg);
+  background: var(--danger);
+  border-color: var(--danger);
+  font-weight: 600;
+}
+.h2-prose .v4-btn--danger-fill:hover {
+  background: var(--danger);
+  box-shadow: inset 0 0 0 2px var(--bg);
+}
+.h2-prose .v4-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* The text pages line up with the header and the footer (their content is --content-wide). */
+.h2-text-layout,
+.h2-signin {
+  max-width: var(--content-wide);
+  margin-inline: auto;
+}
+
+/* ===== The column ===== */
 .h2-text-page {
   max-width: 68ch;
   padding: var(--space-5) 0 var(--space-7);
@@ -7,35 +84,47 @@
 }
 .h2-text-page h1 {
   margin: 0 0 var(--space-3);
-  padding-bottom: var(--space-3);
-  border-bottom: 2px solid var(--ink);
-  font: 400 clamp(1.9rem, 2vw + 1.1rem, 2.6rem)/1.1 var(--font-display);
-  letter-spacing: -0.015em;
+  font-size: clamp(1.75rem, 3.2vw + 0.875rem, 2.75rem);
+  line-height: 1.08;
+  letter-spacing: -0.035em;
 }
-.h2-text-page h2 {
+.h2-prose .h2-text-page h2,
+.h2-prose.h2-text-page h2 {
   margin: var(--space-6) 0 var(--space-2);
-  font: 500 1.35rem/1.25 var(--font-display);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+  font-size: 1.5rem;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
 }
-.h2-text-page .btn {
-  min-height: var(--target-min);
+.h2-text-page h3 {
+  margin: 0 0 var(--space-1);
+  font-size: 1.0625rem;
+  font-weight: 600;
 }
-.h2-dialog {
-  margin-top: var(--space-4);
-  padding: var(--space-4) var(--space-5);
-  border: 1px solid var(--danger);
-  border-radius: var(--radius-lg);
-  background: var(--surface);
+.h2-text-page p,
+.h2-text-page li {
+  color: var(--ink-2);
 }
-.h2-dialog h2 {
-  margin-top: 0;
+.h2-text-page ul,
+.h2-text-page ol {
+  padding-left: var(--space-5);
 }
-.h2-dialog__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
+.h2-text-page li + li {
+  margin-top: var(--space-2);
+}
+.h2-text-page .updated {
+  margin: 0 0 var(--space-3);
+  font: 400 13px/18px var(--v4-font-mono);
+  color: var(--muted);
+}
+.h2-text-page .lede {
+  font-size: 1.1875rem;
+  line-height: 1.6;
+  color: var(--ink);
 }
 
-/* Text pages (step 7): the column with "On this page" beside it on a wide screen, folded under the head on a phone. */
+/* "On this page" beside the text on a wide screen, folded under the head on a phone. */
 .h2-text-layout {
   display: grid;
   grid-template-columns: minmax(10rem, 14rem) minmax(0, 68ch);
@@ -45,15 +134,6 @@
 .h2-text-layout .h2-text-page {
   grid-column: 2;
   grid-row: 1;
-}
-.h2-text-page .updated {
-  margin: 0 0 var(--space-3);
-  font: 400 13px/18px var(--font-mono);
-  color: var(--muted);
-}
-.h2-text-page .lede {
-  font-size: 1.125rem;
-  color: var(--ink-2);
 }
 /* A section link lands below the sticky header (its row and the box: about 9rem); from 520px down the header scrolls away. */
 .h2-text-page section {
@@ -67,12 +147,14 @@
 .h2-toc {
   grid-column: 1;
   grid-row: 1;
+  position: sticky;
+  top: calc(var(--header-height) + var(--space-4));
   padding-top: var(--space-5);
 }
 .h2-toc__title {
   margin: 0 0 var(--space-2);
-  font: 600 12px/16px var(--font-mono);
-  letter-spacing: 0.1em;
+  font: 600 12px/16px var(--v4-font-mono);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
 }
@@ -82,17 +164,22 @@
   padding: 0;
   border-left: 1px solid var(--border);
 }
-.h2-toc__list a {
+.h2-text-page .h2-toc__list {
+  padding-left: 0;
+}
+.h2-text-page .h2-toc__list li + li {
+  margin-top: 0;
+}
+.h2-prose .h2-toc__list a {
   display: flex;
   align-items: center;
   min-height: var(--target-min);
   padding: 0 var(--space-3);
   color: var(--ink-2);
   text-decoration: none;
-  font-size: 0.9375rem;
-  line-height: 1.3;
+  font: 400 0.875rem/1.3 var(--v4-font-mono);
 }
-.h2-toc__list a:hover {
+.h2-prose .h2-toc__list a:hover {
   color: var(--ink);
   text-decoration: underline;
 }
@@ -108,7 +195,10 @@
   align-items: center;
   padding: 0 var(--space-4);
   cursor: pointer;
-  font-weight: 600;
+  font: 600 12px/16px var(--v4-font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 .h2-toc-m .h2-toc__list {
   border-left: 0;
@@ -123,6 +213,215 @@
   }
 }
 
+/* Mission: how the guide answers, as numbered steps; the rules as a plain list. */
+.h2-text-page .h2-steps {
+  list-style: none;
+  padding: 0;
+  counter-reset: step;
+}
+.h2-text-page .h2-steps li {
+  display: grid;
+  grid-template-columns: 1.5rem minmax(0, 1fr);
+  column-gap: var(--space-2);
+  counter-increment: step;
+}
+.h2-text-page .h2-steps li::before {
+  content: counter(step);
+  grid-row: 1 / span 2;
+  font: 600 1rem/1.65 var(--v4-font-mono);
+  color: var(--accent-ink);
+}
+.h2-text-page .h2-steps h3,
+.h2-text-page .h2-steps p {
+  margin: 0;
+}
+
+/* ===== Not found ===== */
+.h2-notfound {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: var(--space-7) 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+.h2-notfound .h2-label {
+  color: var(--accent-ink);
+}
+.h2-notfound h1 {
+  margin: 0;
+  font-size: clamp(1.75rem, 3.2vw + 0.875rem, 3rem);
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+}
+.h2-notfound p {
+  margin: 0;
+  font-size: 1.125rem;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+/* ===== Sign in: why on the left, the ways to sign in in a card on the right ===== */
+.h2-signin {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-7);
+  align-items: flex-start;
+  padding: var(--space-7) 0;
+}
+.h2-signin__why {
+  flex: 1 1 18rem;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.h2-signin__why h1 {
+  margin: 0;
+  font-size: clamp(1.75rem, 3.2vw + 0.875rem, 3rem);
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+}
+.h2-signin__why > p {
+  margin: 0;
+  font-size: 1.125rem;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+.h2-signin__reasons {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  font-size: 1rem;
+  line-height: 1.55;
+  color: var(--ink-2);
+  counter-reset: reason;
+}
+.h2-signin__reasons li {
+  display: flex;
+  gap: var(--space-3);
+  counter-increment: reason;
+}
+.h2-signin__reasons li::before {
+  content: counter(reason);
+  font: 600 1rem/1.55 var(--v4-font-mono);
+  color: var(--accent-ink);
+}
+.h2-signin__reasons strong {
+  font-weight: 600;
+  color: var(--ink);
+}
+.h2-card {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+.h2-card h2 {
+  margin: 0 0 var(--space-1);
+  font-size: 1.375rem;
+  letter-spacing: -0.02em;
+}
+.h2-card p {
+  margin: 0;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+.h2-signin .h2-card {
+  flex: 1 1 20rem;
+}
+.h2-signin__provider {
+  width: 100%;
+  min-height: 52px;
+  font-size: 1rem;
+}
+.h2-signin__fine {
+  font-size: 0.875rem;
+}
+@media (max-width: 720px) {
+  .h2-signin {
+    padding: var(--space-5) 0;
+    gap: var(--space-6);
+  }
+  .h2-card {
+    padding: var(--space-5);
+  }
+}
+
+/* ===== Account ===== */
+.h2-prose.h2-account {
+  max-width: 47rem;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+.h2-account h1 {
+  margin: 0;
+}
+.h2-prose.h2-account h2 {
+  margin: 0;
+  border-top: 0;
+  padding-top: 0;
+}
+.h2-account section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.h2-prose.h2-account section > h2:first-child {
+  padding-bottom: var(--space-3);
+  border-bottom: 2px solid var(--ink);
+}
+.h2-account p {
+  margin: 0;
+}
+.h2-facts {
+  display: block;
+  margin: 0;
+  font-size: 0.9375rem;
+}
+.h2-facts > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border);
+}
+.h2-facts dt {
+  color: var(--muted);
+}
+.h2-facts dd {
+  margin: 0;
+  font-weight: 500;
+  text-align: right;
+}
+.h2-account .h2-card {
+  align-items: flex-start;
+}
+.h2-prose.h2-account .h2-card > h2:first-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+  font-size: 1.375rem;
+}
+@media (max-width: 520px) {
+  .h2-facts > div {
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+  .h2-facts dd {
+    text-align: left;
+  }
+}
+
 /* A setting on the account page: the box and its label, one target (the label clicks the box). */
 .h2-check {
   display: flex;
@@ -134,7 +433,51 @@
   width: 24px;
   height: 24px;
   margin: 0;
+  accent-color: var(--ink);
 }
 .h2-check label {
   cursor: pointer;
+  font-weight: 500;
+  color: var(--ink);
+}
+.h2-help {
+  font-size: 0.9375rem;
+  color: var(--muted);
+}
+/* A message on a text page: what happened in bold, then the next step. Danger for a failure. */
+.h2-note {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-5);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--danger);
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+}
+
+/* The delete confirmation, under its button. */
+.h2-dialog {
+  max-width: 29rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-6);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-overlay);
+}
+.h2-prose .h2-dialog h2 {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 1.375rem;
+}
+.h2-dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
 }

@@ -35,7 +35,7 @@ adminhost: Admin host {
 publichost: Public host {
   owner -> apub: "GET helper2.ai/api/v1/admin/review-items"
   apub -> owner: "404 (no back office here)"
-  owner -> apub: "Sign in with GitHub (header or Saved);\nthe page stays in sessionStorage"
+  owner -> apub: "Sign in with GitHub (the sign-in page or Saved);\nthe page stays in sessionStorage"
   apub -> owner: "ROLE_USER only, 302 /"
   owner -> owner: "SPA opens the stored page again\n(a path on this site only)"
 }
