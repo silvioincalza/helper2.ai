@@ -41,7 +41,7 @@ class CatalogConfiguration {
   /** The same index searched by meaning. */
   static final String SEMANTIC_SOURCE = "helper2-semantic";
 
-  /** The catalog's numbers for GET /api/v1/policy (ADR 0051). */
+  /** The catalog's numbers for GET /api/v1/policy (ADR 0052). */
   @Bean
   CatalogPolicy catalogPolicy(CatalogProperties catalog, CatalogRetentionProperties retention) {
     return new CatalogPolicy(retention.resolvedIssueReports(), catalog.semantic().queryVectorTtl());

@@ -37,6 +37,7 @@ import type {
   HomeExamplePool,
   SearchResponse,
   SourceInfo,
+  Category,
 } from './types';
 
 import { guideStreamEventValues } from './schema';
@@ -265,6 +266,8 @@ export const api = {
     request<IssueReportAccepted>('POST', `/resources/${encodeURIComponent(id)}/reports`, { body }),
   askGuideStream,
   listSources: (signal?: AbortSignal) => request<SourceInfo[]>('GET', '/sources', { signal }),
+  /** The categories search filters by (ADR 0053), in their order; the same for everyone, cached by the browser. */
+  listCategories: (signal?: AbortSignal) => request<Category[]>('GET', '/categories', { signal }),
   getMe: (signal?: AbortSignal) => request<Me>('GET', '/me', { signal }),
   /** A signed-in user's display settings; fields left out stay as they are. */
   changePreferences: (body: PreferencesChange) =>
@@ -312,6 +315,11 @@ export const api = {
     }),
   listScoutRuns: (signal?: AbortSignal) =>
     request<ScoutRun[]>('GET', '/admin/scout-runs', { signal }),
+  /** Starts assigning every resource's categories again, in the background (ADR 0053). */
+  backfillCategories: async (): Promise<void> => {
+    // 202 with no body.
+    await send('POST', absolute(`${API_BASE}/admin/category-backfill`), {});
+  },
   /** Answers at once with the started run's records (RUNNING); follow them with listScoutRuns. 409 while a run holds the lock. */
   startScoutRun: (sourceId?: string) =>
     request<ScoutRun[]>('POST', '/admin/scout-runs', { body: sourceId ? { sourceId } : {} }),

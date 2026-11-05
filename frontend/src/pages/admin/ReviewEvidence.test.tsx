@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReviewItem } from '@/api/types';
 import { ADMIN, makeReviewEvidence } from '@/test/fixtures';
@@ -66,6 +66,19 @@ describe('Feature: the evidence next to the selected item (ADR 0045)', () => {
     expect(within(evidence).getAllByText('Extracted by AI')).toHaveLength(2);
     const quote = within(evidence).getByText('Free for everyone.');
     expect(quote.closest('[data-ai-generated]')).toBeNull();
+    expect(within(evidence).getAllByText('Source quote')).toHaveLength(2);
+  });
+
+  it('Scenario: the refused values quote the model, so they say so and are marked as AI', async () => {
+    threeItems();
+    renderApp('/admin/review');
+    const evidence = await screen.findByRole('region', { name: 'Evidence' });
+    const error = await within(evidence).findByText('pricing: the quotes disagree');
+    expect(error.closest('ul')).toHaveAttribute('data-ai-generated', 'true');
+    expect(error.closest('ul')).toHaveAttribute('data-ai-model', 'nvidia/nemotron-test');
+    expect(
+      within(evidence).getByText('Includes model output: the check quotes what the AI wrote.'),
+    ).toBeInTheDocument();
   });
 
   it('Scenario: a source link opens only for http(s), safely; any other address stays text', async () => {
@@ -228,6 +241,17 @@ describe('Feature: reviewing with the keyboard (WCAG 2.1.4: keys only inside the
       }),
     );
     expect(await screen.findByText('Rejected. 2 left.')).toBeInTheDocument();
+  });
+
+  it('Scenario: a held a decides nothing', async () => {
+    const m = threeItems();
+    renderApp('/admin/review');
+    await screen.findByRole('region', { name: 'Item 1' });
+    rowButton('Item 1').focus();
+    fireEvent.keyDown(rowButton('Item 1'), { key: 'a', repeat: true });
+    fireEvent.keyDown(rowButton('Item 1'), { key: 'a', repeat: true });
+    expect(m.calls.filter((c) => c.method === 'PUT')).toHaveLength(0);
+    expect(rowButton('Item 1')).toHaveAttribute('aria-current', 'true');
   });
 
   it('Scenario: keys outside the queue do nothing', async () => {

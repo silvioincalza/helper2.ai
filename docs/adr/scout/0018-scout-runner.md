@@ -41,20 +41,26 @@ at the same time. Prod runs 3 replicas ([0027](../operations/0027-runtime-topolo
      alone; the next run closes them.
 3. **Per collector, isolated.** For each `Collector` (port in `scout/Ports.kt`):
    - disabled → `SKIPPED` "Disabled in configuration";
-   - the `RUNNING` row saved when the run started is followed by `collect(checkpoint, resumeCursor, max-items-per-run 500)`;
+   - the `RUNNING` row saved when the run started is followed by `collect(cursor, max-items-per-run 500)` (checkpoint, resume cursor and
+     pass start);
    - not due (its `RunInterval` has not passed and no pass is unfinished) → `SKIPPED` "Not due yet (run interval)";
    - otherwise the hits are merged and written with `CatalogIndex.index`, which returns the resources whose source
      records changed;
    - the batch's candidates (pages a person must accept first, such as `CourseCollector`'s course pages) go to the
      port `CandidateReview.propose(sourceId, candidates)`; the adapter `ReviewQueueCandidateReview` opens one
      `COURSE_CANDIDATE` review item per page not proposed before. Collectors never call the review list themselves;
-   - any exception, including a failing review list → `FAILED` "Collection failed: <class>", the cursor is not moved,
-     and the next collector runs. The next pass proposes the same pages again; the review list opens none twice.
+   - a pass that is due but cannot run now (`CollectedBatch.deferred`: the discovery's daily credit cap) → `SKIPPED`
+     with its reason, and the pass stays open (point 4);
+   - any exception, including a failing review list → `FAILED` "Collection failed: <class>", the checkpoint is not
+     moved, and the next collector runs. When `collect` itself throws, the pass stays open (point 4). The next pass proposes the same pages again; the review list opens none twice.
 4. **Cursor and checkpoint** (`ScoutCursor`, table `source_cursor`). The checkpoint is the start time of the last
    complete pass; collectors use it as `updated_since` or `start_date`. When a pass stops at the item limit, the
    collector returns `nextCursor`: it is saved with the pass start, and the checkpoint stays. When the pass completes,
    the checkpoint becomes the pass start, so items updated during a long pass are read again next time. Re-running a
-   pass upserts the same records with the same fingerprints, so it is idempotent.
+   pass upserts the same records with the same fingerprints, so it is idempotent. A pass that failed in `collect` or
+   was deferred stays open: its start is saved with no resume cursor, it becomes the checkpoint once the pass
+   completes, and the Scout passes the whole cursor (`collect(cursor, maxItems)`), so a collector can run an open pass
+   whatever its interval says (the staggered first pass of a discovery category, [0051](0051-tavily-discovery.md)).
 5. **Intervals per collector** (`RunInterval`): Model Context Protocol (MCP) Registry `H2_SCOUT_MCP_INTERVAL` (1 h), Hugging Face trending
    `H2_SCOUT_HF_INTERVAL` (1 day), Hugging Face provider orgs `H2_SCOUT_HF_ORGS_INTERVAL` (1 day), awesome lists
    `H2_SCOUT_AWESOME_INTERVAL` (1 day), ai-deadlines `H2_SCOUT_AI_DEADLINES_INTERVAL` (1 day), Tavily

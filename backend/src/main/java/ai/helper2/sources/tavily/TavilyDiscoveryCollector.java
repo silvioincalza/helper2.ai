@@ -4,6 +4,7 @@ import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.Candidate;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.scout.Collector;
+import ai.helper2.scout.ScoutCursor;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.SourceHit;
 import ai.helper2.shared.CanonicalUrl;
@@ -169,12 +170,23 @@ public class TavilyDiscoveryCollector implements Collector {
   @Override
   public CollectedBatch collect(
       @Nullable String checkpoint, @Nullable String resumeCursor, int maxItems) {
+    return collect(new ScoutCursor(checkpoint, resumeCursor, null), maxItems);
+  }
+
+  /**
+   * A pass that is open (its first try failed or met the cap) runs on the next run, whatever the
+   * day: the stagger only delays a category's first try.
+   */
+  @Override
+  public CollectedBatch collect(ScoutCursor cursor, int maxItems) {
+    String checkpoint = cursor.getCheckpoint();
     Instant startedAt = clock.instant();
-    if (!interval.allowsPass(checkpoint, resumeCursor, startedAt)) {
+    boolean open = cursor.getResumeCursor() != null || cursor.getPassStartedAt() != null;
+    if (!open && !interval.isDue(checkpoint, startedAt)) {
       return CollectedBatch.skipped(notDueReason(checkpoint, startedAt));
     }
     if (credits.capReached()) {
-      return CollectedBatch.skipped(
+      return CollectedBatch.deferred(
           "Daily Tavily credit cap of the Scout reached ("
               + credits.dailyCap()
               + " credits); next try tomorrow");

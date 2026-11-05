@@ -6,9 +6,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ai.helper2.platform.http.ObservedHttp;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CollectedBatch;
+import ai.helper2.scout.ListEntryText;
 import ai.helper2.search.PopularityKind;
 import ai.helper2.search.SourceFailure;
 import ai.helper2.search.SourceHit;
+import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.sources.SourceFixtures;
 import ai.helper2.sources.classifier.RepoClassifier;
@@ -27,14 +29,17 @@ class GitHubAwesomeCollectorTest {
   static final String SEARCH =
       """
       {"items":[
-        {"full_name":"acme/awesome-llm","stargazers_count":5000},
+        {"full_name":"acme/awesome-llm","html_url":"https://github.com/acme/awesome-llm","stargazers_count":5000,
+         "description":"A curated list of LLM tools","created_at":"2023-01-01T00:00:00Z","pushed_at":"2026-10-01T00:00:00Z",
+         "license":{"spdx_id":"CC0-1.0"},"topics":["llm","awesome-list"]},
         {"full_name":"f/prompts.chat","stargazers_count":170000}]}\
       """;
 
   static final String README =
       """
+      # Awesome LLM
       ## Agents
-      - [Interpreter](https://github.com/openinterpreter/openinterpreter)
+      - [Interpreter](https://github.com/openinterpreter/openinterpreter) - Runs code from chat. ![badge](https://img.shields.io/x.svg)
       - [Node](https://github.com/nodejs/node)
       - [Tiny](https://github.com/someone/tiny)
       - [Old](https://github.com/someone/archived)
@@ -112,6 +117,54 @@ class GitHubAwesomeCollectorTest {
     server.route("/graphql", FixtureServer.Reply.ok(GRAPHQL));
   }
 
+  /** The hits of the list's entries, without the list itself (ADR 0055). */
+  static List<SourceHit> entryHits(CollectedBatch batch) {
+    return batch.getHits().stream()
+        .filter(h -> !h.getTags().contains(GitHubAwesomeCollector.LIST_TAG))
+        .toList();
+  }
+
+  @Test
+  void theListItselfIsAnArticleWithItsGitHubFacts() {
+    routes();
+
+    CollectedBatch batch = collector(new FakeModel(), 200, "t").collect(null, null, 500);
+
+    assertThat(batch.getHits())
+        .filteredOn(h -> h.getTags().contains(GitHubAwesomeCollector.LIST_TAG))
+        .singleElement()
+        .satisfies(list -> {
+          assertThat(list.getExternalId()).isEqualTo("acme/awesome-llm");
+          assertThat(list.getType()).isEqualTo(ResourceType.ARTICLE);
+          assertThat(list.getDescription()).isEqualTo("A curated list of LLM tools");
+          assertThat(list.getLicense()).isEqualTo("CC0-1.0");
+          assertThat(list.getTags()).containsExactly("awesome-list", "llm");
+          assertThat(list.getPopularity().getFirst().getValue()).isEqualTo(5000);
+        });
+  }
+
+  @Test
+  void eachListReadGivesItsSearchTextButNeverTheReadme() {
+    routes();
+
+    CollectedBatch batch = collector(new FakeModel(), 2, "t").collect(null, null, 500);
+
+    assertThat(batch.getLists())
+        .singleElement()
+        .satisfies(list -> {
+          assertThat(list.getUrl().getValue()).isEqualTo("https://github.com/acme/awesome-llm");
+          assertThat(list.getHeadings()).isEqualTo("Awesome LLM\nAgents\n");
+          // Every entry of the list, not only this run's slice; cleaned of links and badges.
+          assertThat(list.getEntries()).hasSize(5);
+          assertThat(list.getEntries().getFirst())
+              .isEqualTo(
+                  new ListEntryText(
+                      CanonicalUrl.of("https://github.com/openinterpreter/openinterpreter"),
+                      "Interpreter - Runs code from chat.",
+                      "Agents"));
+        });
+  }
+
   @Test
   void keepsOnlyRepositoriesTheModelCallsAiAndThatPassTheFacts() {
     routes();
@@ -119,10 +172,10 @@ class GitHubAwesomeCollectorTest {
 
     CollectedBatch batch = collector(model, 200, "t").collect(null, null, 500);
 
-    assertThat(batch.getHits())
+    assertThat(entryHits(batch))
         .extracting(SourceHit::getExternalId)
         .containsExactly("openinterpreter/openinterpreter");
-    SourceHit hit = batch.getHits().getFirst();
+    SourceHit hit = entryHits(batch).getFirst();
     assertThat(hit.getSourceId()).isEqualTo("github-awesome");
     assertThat(hit.getType()).isEqualTo(ResourceType.AGENT);
     assertThat(hit.getDescription()).isEqualTo("A natural language interface for computers");
@@ -154,7 +207,7 @@ class GitHubAwesomeCollectorTest {
 
     CollectedBatch batch = collector(new FakeModel(), 200, "t").collect(null, null, 500);
 
-    assertThat(batch.getHits())
+    assertThat(entryHits(batch))
         .extracting(SourceHit::getExternalId)
         .containsExactly("openinterpreter/openinterpreter");
   }
@@ -180,7 +233,7 @@ class GitHubAwesomeCollectorTest {
     CollectedBatch batch = collector(model, 200, "t").collect(null, null, 500);
 
     // The heuristic keeps the LLM agent by its topics and drops the Node.js runtime.
-    assertThat(batch.getHits())
+    assertThat(entryHits(batch))
         .extracting(SourceHit::getExternalId)
         .containsExactly("openinterpreter/openinterpreter");
   }
@@ -192,7 +245,7 @@ class GitHubAwesomeCollectorTest {
 
     CollectedBatch first = c.collect(null, null, 500);
     assertThat(first.getNextCursor()).isEqualTo("2");
-    assertThat(first.getHits()).extracting(SourceHit::getRank).containsExactly(0);
+    assertThat(entryHits(first)).extracting(SourceHit::getRank).containsExactly(0);
 
     CollectedBatch second = c.collect(null, "2", 500);
     assertThat(second.getNextCursor()).isEqualTo("4");

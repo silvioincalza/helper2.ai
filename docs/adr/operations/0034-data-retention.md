@@ -30,6 +30,7 @@ The periods are a product decision the owner may change; changing one must not n
    | Postgres `ai_cache`, cache `tool-guide` | setup guide answers (checked steps, document links), no user text | 7 days (`H2_SETUP_GUIDE_CACHE_TTL`), 10 minutes for an unreadable model answer (`H2_SETUP_UNREADABLE_TTL`) | read ignores it after `expires_at`; shared cache purge |
    | Postgres `ai_cache`, cache `guide-answer` | guide answers, keyed by a hash of the question and the build ([0041](../guide/0041-guide-answer-cache.md)) | 24 h after the answer (`H2_GUIDE_CACHE_TTL`), 6 h for a dated question, never past its web results | read ignores it after `expires_at`; shared cache purge |
    | Postgres `guide_similar_question` | the query embedding of a cached answer's question, and its reading group (a hash), only with `H2_GUIDE_SIMILAR_THRESHOLD` set ([0041](../guide/0041-guide-answer-cache.md)) | as long as its answer (`expires_at`) | read ignores it after `expires_at`; guide purge |
+   | Postgres `awesome_list_entry`, `awesome_list` | tsvectors of awesome-list entry lines and headings, heading paths (≤ 200 characters); no list text ([0055](../search/0055-search-inside-awesome-lists.md)) | until the list or the resource goes; 30 days after a pass last refreshed them (`H2_RETENTION_LIST_INDEX`) | `ON DELETE CASCADE`, catalog purge |
    | Postgres `source_cursor`, `scout_schedule`, `source`, `shedlock` | one row per source, schedule or lock | overwritten in place | — |
    | Postgres `app_user` | GitHub numeric id, display name, last sign-in, the radar motion setting | until the user deletes it; 24 months after `last_signed_in_at` | `DeleteMyAccount`, identity purge |
    | Postgres `bookmark` | resource id, title, link, type, saved at | until the user removes it or the account goes | `RemoveBookmark`, `ON DELETE CASCADE` |
@@ -51,7 +52,8 @@ The periods are a product decision the owner may change; changing one must not n
 2. **Every period is configuration.** `helper2.retention.*` in `application.yaml`, each with an `H2_RETENTION_*`
    variable and an ISO-8601 default: `OBSERVED_UNSEEN` P180D, `ENRICHMENT_RUNS` P90D, `RESOLVED_REVIEW_ITEMS`
    P180D, `RESOLVED_ISSUE_REPORTS` P365D, `WEB_NEWS` P180D, `SCOUT_RUNS` P90D, `PAST_EVENTS` P365D,
-   `INACTIVE_ACCOUNTS` P730D, `ADMIN_AUDIT` P730D, `TAVILY_RESULTS` P7D. Cached guide answers keep the expiry
+   `INACTIVE_ACCOUNTS` P730D, `ADMIN_AUDIT` P730D, `TAVILY_RESULTS` P7D, `LIST_INDEX` P30D
+   ([0055](../search/0055-search-inside-awesome-lists.md)). Cached guide answers keep the expiry
    their own time to live gives them (`H2_GUIDE_CACHE_TTL`). `H2_RETENTION_CRON` (default `0 17 3 * * *`, UTC) sets when the
    purges run.
 3. **One purge per owning module.** The module that owns a table deletes from it:

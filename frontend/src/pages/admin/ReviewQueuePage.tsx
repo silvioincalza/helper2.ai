@@ -188,7 +188,8 @@ export default function ReviewQueuePage() {
   };
 
   const onKeyDown = (e: KeyboardEvent) => {
-    if (!isCommandKey(e)) return;
+    // A held key repeats: one press is one decision, never a run of them.
+    if (e.repeat || !isCommandKey(e)) return;
     const at = selected ? list.indexOf(selected) : -1;
     const act: Record<string, () => void> = {
       j: () => select(list[at + 1]?.id, true),

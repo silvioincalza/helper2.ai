@@ -41,6 +41,7 @@ import ai.helper2.search.usecase.SearchResources;
 import ai.helper2.search.usecase.SourceOverview;
 import ai.helper2.shared.Audience;
 import ai.helper2.shared.AudiencePath;
+import ai.helper2.shared.CategoryCatalog;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.UtcTimes;
 import jakarta.servlet.http.HttpServletRequest;
@@ -67,6 +68,7 @@ class SearchController implements SearchApi, SourcesApi {
   private final SearchResources search;
   private final ListSources sources;
   private final SignedInUser signedInUser;
+  private final CategoryCatalog categories;
 
   /** A proxy to the current request: the generated interface does not pass it. */
   private final HttpServletRequest http;
@@ -75,10 +77,12 @@ class SearchController implements SearchApi, SourcesApi {
       SearchResources search,
       ListSources sources,
       SignedInUser signedInUser,
+      CategoryCatalog categories,
       HttpServletRequest http) {
     this.search = search;
     this.sources = sources;
     this.signedInUser = signedInUser;
+    this.categories = categories;
     this.http = http;
   }
 
@@ -96,12 +100,14 @@ class SearchController implements SearchApi, SourcesApi {
       @Nullable List<TechLevelFilterDto> techLevel,
       @Nullable List<AudienceDto> audience,
       @Nullable LocalDate updatedAfter,
+      @Nullable List<String> category,
       @Nullable SortOrderDto sort,
       Integer page,
       Integer size) {
     if (q.isBlank()) {
       throw new BadRequestException("Query must not be blank");
     }
+    Set<String> categories = categoryFilter(category);
     SearchFilters filters =
         new SearchFilters(
             set(type, t -> ResourceType.valueOf(t.getValue())),
@@ -113,7 +119,10 @@ class SearchController implements SearchApi, SourcesApi {
             set(useCase, Function.identity()),
             set(techLevel, t -> t == TechLevelFilterDto.UNKNOWN ? "unknown" : t.getValue()),
             set(audience, a -> Audience.valueOf(a.getValue())),
-            updatedAfter);
+            updatedAfter,
+            null,
+            null,
+            categories);
     Asker asker =
         new Asker(
             Feature.SEARCH, ClientKey.of(http.getRemoteAddr()), signedInUser.id().orElse(null));
@@ -244,7 +253,18 @@ class SearchController implements SearchApi, SourcesApi {
         get.apply("platform"),
         get.apply("useCase"),
         get.apply("techLevel"),
-        get.apply("audience"));
+        get.apply("audience"),
+        get.apply("category"));
+  }
+
+  /** The category filter, each id checked against the configured categories (ADR 0053). */
+  private Set<String> categoryFilter(@Nullable List<String> category) {
+    Set<String> selected = set(category, Function.identity());
+    List<String> unknown = categories.notFilterValues(selected);
+    if (!unknown.isEmpty()) {
+      throw new BadRequestException("Unknown category: " + String.join(", ", unknown));
+    }
+    return selected;
   }
 
   private static <T, R> Set<R> set(@Nullable Collection<T> in, Function<T, R> f) {

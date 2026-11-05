@@ -54,11 +54,14 @@ them without each module growing an admin corner.
    run is the current one; a superseded item can show its run with no fields left, and the page says so.
    The values are model output (EU AI Act Art. 50, [0038](../guide/0038-ai-content-marking.md)): the response has an
    `aiContent` marker with the run's model and the AI-written paths, and the page labels each value with its origin in
-   words and marks it with `data-ai-generated` and `data-ai-model`. Quotes come from the sources and are not marked.
+   words and marks it with `data-ai-generated` and `data-ai-model`. The validation errors quote what the model wrote,
+   so the list says "Includes model output" and is marked the same way. Quotes come from the sources: each one says
+   "Source quote" and is not marked.
    Every text from a source or a model is plain text on the page; a source address is a link only when it is http(s).
    The review page is a list and the selected item, with keys for a fast review (j/k, a, r, n, ?; UJ-9). The keys
    work only while focus is inside the queue and never in a field (WCAG 2.1.4), and each control names its key
-   (`aria-keyshortcuts`). Decisions stay final: there is no undo.
+   (`aria-keyshortcuts`). A held key does not repeat: one press is one decision. Decisions stay final: there is no
+   undo.
 8. **Bulk decisions: each item on its own, accept only where it is safe.** `POST /api/v1/admin/review-items/resolutions`
    takes up to 100 ids, a decision and an optional note (CSRF applies). `ResolveReviewItems` sends each item through the
    one-item decision (`ResolveReview`) in its own transaction, so each item writes its own audit entry, the same as a

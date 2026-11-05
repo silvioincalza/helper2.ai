@@ -186,7 +186,7 @@ pages, Results and the resource page, and the text pages; this record says what 
     /events/upcoming (never fewer than the rows sent). One small reader (`lib/v4Fields.ts`) takes `newThisWeek` and
     `total` and says what the page does when a value is null: a dot of the default size, the rows as the count.
     The Mission, Privacy and Terms pages take their numbers from GET /policy
-    ([0051](../operations/0051-policy-endpoint.md)): the guide's candidates and picks, the daily limits and the
+    ([0052](../operations/0052-policy-endpoint.md)): the guide's candidates and picks, the daily limits and the
     retention periods. A locale sentence with numbers has two forms: `text` with `{{name}}` variables, and
     `withoutNumbers`, the same sentence in words ("a daily limit", "for a limited time"). The page and the numbers
     load side by side, read once per session (`hooks/usePolicy.ts`, its own chunk); the page waits for them at most

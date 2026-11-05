@@ -35,6 +35,11 @@ constructor(
   val publishedAfter: LocalDate? = null,
   /** Born on or before this day; strict like [publishedAfter]. */
   val publishedBefore: LocalDate? = null,
+  /**
+   * Category ids (ADR 0053): a result in any of them is kept; [UNKNOWN] keeps results with no
+   * category yet.
+   */
+  val categories: Set<String> = emptySet(),
 )
 
 /** A facet: how to read the values of a result, and which filter selection applies to it. */
@@ -70,6 +75,7 @@ internal val FACETS: List<Facet> =
     Facet("pricing", { it.pricing }, { r -> setOf(r.pricing?.name ?: UNKNOWN) }),
     Facet("platform", { it.platforms }, { r -> r.platforms.ifEmpty { setOf(UNKNOWN) } }),
     Facet("useCase", { it.useCases }, { r -> r.useCases.ifEmpty { setOf(UNKNOWN) } }),
+    Facet("category", { it.categories }, { r -> r.categories.ifEmpty { setOf(UNKNOWN) } }),
     Facet("techLevel", { it.techLevels }, { r -> setOf(r.techLevel?.name ?: UNKNOWN) }),
     Facet(
       "audience",

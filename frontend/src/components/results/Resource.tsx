@@ -11,6 +11,7 @@ import { Timeline } from '@/components/Timeline';
 import { ProofQuote } from '@/components/ui/ProofQuote';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
 import { displayHost, formatDate } from '@/lib/format';
+import { CategoryLinks } from './CategoryLinks';
 import { fromResults, type PickForPage } from './fromResults';
 import { ResultDate } from './ResultDate';
 import { ResultFacts } from './ResultFacts';
@@ -77,6 +78,7 @@ export function Resource({ detail: d, children }: { detail: ResourceDetail; chil
         </h2>
         <ResultFacts card={card} groupTag="h3" />
       </section>
+      <CategoryLinks ids={card.categories} />
       <section className="h2-res__sec" aria-labelledby="h2-res-time">
         <h2 id="h2-res-time" className="h2-res__h">
           {t('results.timeline')}

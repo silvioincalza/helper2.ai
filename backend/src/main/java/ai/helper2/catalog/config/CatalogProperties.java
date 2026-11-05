@@ -23,7 +23,15 @@ public record CatalogProperties(
     @Valid @NotNull Index index,
     @Valid @NotNull Curated curated,
     @Valid @NotNull Semantic semantic,
-    @Valid @NotNull Indexer indexer) {
+    @Valid @NotNull Indexer indexer,
+    @Valid @NotNull Categories categories) {
+
+  /**
+   * The categories of the catalog's resources (ADR 0053).
+   *
+   * @param backfillAtStartup assign them again at startup when the category words or rules changed
+   */
+  public record Categories(boolean backfillAtStartup) {}
 
   /** The keyword search of the index. */
   public record Index(@NotNull Duration timeout) {}
