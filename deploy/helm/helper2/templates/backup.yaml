@@ -56,7 +56,7 @@ spec:
                 - { name: PGUSER, value: helper2 }
                 - { name: PGDATABASE, value: helper2 }
                 - name: PGPASSWORD
-                  valueFrom: { secretKeyRef: { name: helper2-env, key: H2_DATABASE_PASSWORD } }
+                  valueFrom: { secretKeyRef: { name: {{ include "helper2.envSecret" . }}, key: H2_DATABASE_PASSWORD } }
               command: ["/bin/sh", "-ec"]
               args:
                 - |

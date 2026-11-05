@@ -21,9 +21,9 @@ spec:
         # Redis reads its password at start only. The chart cannot see the existing Secret change: a new
         # redis.auth.revision restarts Redis (with the app).
         checksum/redis-auth-revision: {{ include "helper2.redisAuthRevision" . }}
-        {{- else }}
+        {{- else if .Values.envSecret.redisPasswordRevision }}
         # Redis reads its password at start only: a new one in app.env restarts it (with the app).
-        checksum/auth: {{ get (include "helper2.env" . | fromJson) "H2_REDIS_PASSWORD" | sha256sum }}
+        checksum/auth: {{ .Values.envSecret.redisPasswordRevision | quote }}
         {{- end }}
       {{- end }}
     spec:

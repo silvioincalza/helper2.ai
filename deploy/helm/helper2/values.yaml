@@ -1,6 +1,6 @@
 # Generic defaults for any Kubernetes cluster. Per environment: a values file of your own
 # (values-staging.yaml and values-prod.yaml are the hosted helper2.ai environments).
-# Required: image.repository, image.tag, postgres.image.repository and envFile.
+# Required: image.repository, image.tag, postgres.image.repository and the env Secret (envSecret).
 # The chart creates no Ingress. Expose the app with your own Ingress or route: the public host to the Service
 # `helper2` (port 80), and an in-network host for the back office to the Service `helper2-admin` (port 80).
 # Then set networkPolicy.ingressController, so the controller's pods may reach the app.
@@ -16,9 +16,18 @@ image:
   tag: ""
   pullPolicy: IfNotPresent
 
-# Content of <env>/app.env (git-ignored), passed with --set-file envFile=... It becomes the Secret
-# helper2-env. Must contain H2_DATABASE_PASSWORD; every key matches ^H2_[A-Z0-9_]+$.
-envFile: ""
+# The app's settings and secrets (the H2_ keys of <env>/app.env) are in a Secret the chart does not
+# create, so no value is ever kept in Helm's release history. `make env-secret` writes it from app.env
+# (CI reads app.env from OpenBao). It holds H2_DATABASE_PASSWORD and, unless redis.auth.existingSecret
+# is set, H2_REDIS_PASSWORD.
+envSecret:
+  name: helper2-app-env
+  # The chart cannot see that Secret change: a new revision restarts the app. make deploy passes a
+  # hash of app.env. Empty: no restart on a change.
+  revision: ""
+  # The same for Redis, which reads its password at start only: make deploy passes a hash of
+  # H2_REDIS_PASSWORD. Only used without redis.auth.existingSecret.
+  redisPasswordRevision: ""
 
 app:
   springProfiles: llm-nebius
@@ -118,10 +127,10 @@ redis:
   # these needs a new StatefulSet. Empty storageClassName = the cluster's default storage class.
   storageClassName: ""
   storage: 1Gi
-  # requirepass, from a Secret. Default: the key H2_REDIS_PASSWORD of helper2-env, i.e. a line
+  # requirepass, from a Secret. Default: the key H2_REDIS_PASSWORD of the env Secret, i.e. a line
   # H2_REDIS_PASSWORD=<openssl rand -hex 32> in <env>/app.env (letters and digits only: it goes into the
-  # Redis config as is). Or existingSecret: a Secret managed outside the chart. The app gets the same
-  # value as H2_REDIS_PASSWORD (spring.data.redis.password).
+  # Redis config as is). Or existingSecret: another Secret. The app gets the same value as
+  # H2_REDIS_PASSWORD (spring.data.redis.password).
   auth:
     enabled: true
     existingSecret: ""

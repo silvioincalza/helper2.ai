@@ -1,7 +1,7 @@
 # Flowchart: what one Helm render of deploy/helm/helper2 decides from its values: the checks that fail the render,
 # then which workloads, PodDisruptionBudget and network policy rules it adds. Hosted values: values-staging.yaml,
 # values-prod.yaml. The resulting topology is drawn in infrastructure.d2.
-# Source of truth: deploy/helm/helper2/templates/_helpers.tpl, app.yaml, redis.yaml,
+# Source of truth: deploy/k8s/check-app-env.sh, deploy/helm/helper2/templates/_helpers.tpl, app.yaml, redis.yaml,
 #   backup.yaml, networkpolicy.yaml, values.yaml, values-staging.yaml, values-prod.yaml.
 # Render: cd docs/diagrams && d2 fmt flow-0027-runtime-topology.d2 && d2 flow-0027-runtime-topology.d2 flow-0027-runtime-topology.svg
 
@@ -9,13 +9,13 @@
 
 direction: down
 
-render: "make ENV=<env> deploy:\nhelm upgrade --install\n--set-file envFile=<env>/app.env" {class: person}
+render: "make ENV=<env> deploy:\nenv-secret, then\nhelm upgrade --install" {class: person}
 
-checks: Render checks (_helpers.tpl) {
+checks: "Checks (check-app-env.sh, _helpers.tpl)" {
   class: group
   direction: down
-  keys: "Every envFile key\nmatches ^H2_[A-Z0-9_]+\$\nand H2_DATABASE_PASSWORD set?" {class: decision}
-  redis: "redis.auth.enabled: existingSecret,\nor H2_REDIS_PASSWORD of\n16+ letters and digits?" {class: decision}
+  keys: "Every app.env key\nmatches ^H2_[A-Z0-9_]+\$\nand H2_DATABASE_PASSWORD set?" {class: decision}
+  redis: "redis.auth.enabled: existingSecret,\nor H2_REDIS_PASSWORD of\n32+ letters and digits?" {class: decision}
   fail: "Render fails,\nnothing applied" {class: fail}
   keys -> redis: yes {class: hot}
   keys -> fail: no
