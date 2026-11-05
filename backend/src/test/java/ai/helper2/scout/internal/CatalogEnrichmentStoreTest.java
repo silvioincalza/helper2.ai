@@ -45,6 +45,13 @@ class CatalogEnrichmentStoreTest {
     }
 
     @Override
+    public List<BacklogEntry> backlog(
+        @Nullable BacklogCursor after, int size, int minText, int maxFailed) {
+      calls.add("backlog " + size + " " + minText + " " + maxFailed);
+      return List.of();
+    }
+
+    @Override
     public List<UUID> withEnoughText(List<UUID> ids, int minText) {
       calls.add("withEnoughText " + minText);
       return ids;
@@ -122,10 +129,12 @@ class CatalogEnrichmentStoreTest {
     store.pending(5);
     long count = store.pendingCount();
     store.eligible(List.of(ID));
+    store.queue(null, 20);
 
     assertThat(count).isEqualTo(7);
     assertThat(candidates.calls)
-        .containsExactly("pending 5 40 3", "pendingCount 40 3", "withEnoughText 40");
+        .containsExactly(
+            "pending 5 40 3", "pendingCount 40 3", "withEnoughText 40", "backlog 20 40 3");
   }
 
   @Test

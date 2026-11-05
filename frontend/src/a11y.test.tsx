@@ -317,6 +317,20 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
           updatedAt: '2026-11-04T10:00:00Z',
         },
       ],
+      'GET /admin/enrichment-queue': () => ({
+        items: [
+          {
+            resourceId: '11111111-1111-5111-8111-111111111111',
+            title: 'Acme MCP',
+            waiting: 'RETRY',
+            firstDiscoveredAt: '2026-11-04T09:00:00Z',
+            failedRuns: 1,
+            lastOutcome: 'FAILED',
+            lastRunAt: '2026-11-05T08:00:00Z',
+          },
+        ],
+        next: 'c2',
+      }),
       'GET /admin/audit': () => ({
         items: [
           {
@@ -355,6 +369,10 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
     await within(await screen.findByRole('main')).findByText('Shown · expected result at #2');
     expect(await axeViolations(examples.container)).toEqual([]);
     examples.unmount();
+    const enrichment = renderApp('/admin/enrichment');
+    await within(await screen.findByRole('main')).findByText('Acme MCP');
+    expect(await axeViolations(enrichment.container)).toEqual([]);
+    enrichment.unmount();
     const audit = renderApp('/admin/audit');
     await within(await screen.findByRole('main')).findByText('Review decision');
     expect(await axeViolations(audit.container)).toEqual([]);

@@ -30,12 +30,22 @@ them without each module growing an admin corner.
    name comes from the visitor's address, and there is one per visitor. The ledger lists at most 64 names.
 5. **The zero-result rate is a metric.** `helper2.search.results{empty}` counts searches that found nothing, with no
    query text. It goes to Grafana, not to the overview.
+6. **The enrichment queue: the backlog, page by page, in the Scout's order.** `GET /api/v1/admin/enrichment-queue` and
+   `/admin/enrichment` (read-only) list the resources that wait, never-run ones first, then the ones to try again
+   (model unavailable, or a FAILED run with retries left), each part newest discovery first. Each row says why it waits,
+   how many runs FAILED, and the last run. The page is a keyset (part, first discovered, id) behind an opaque cursor, not
+   an OFFSET: a deep page costs what the first one does. The overview's backlog count links here.
+   The Scout's next batch, the queue and the count share one rule, read in two parts from one partial index
+   (`resource_enrichment_backlog_idx`): the second part runs only when the first has too few rows. Measured on synthetic
+   data, 250 000 resources: the next 20 from 1.4 s to under 1 ms, the count from 1.3 s to 0.65 s.
 
 ## Consequences
 - One place for every admin endpoint; a new part is a route, a controller method and a use case here.
 - The overview shows only what to act on now. Trends stay in Grafana; the overview does not rebuild them.
 - The numbers can be up to a minute old; the page says when they were counted.
 - A budget that is never built (no model configured), or one that counts only in memory, is not listed.
+- The queue has no total of its own: the overview's count is the total, up to a minute old. A resource that changes
+  part between two pages (a run finishes) can be skipped or shown twice; the next visit shows it in its place.
 
 ## Alternatives considered
 - Each module keeps its own admin controller — the overview would still need one place to compose them, and the
@@ -47,17 +57,20 @@ them without each module growing an admin corner.
 
 ## Code
 - `backend/src/main/java/ai/helper2/admin/` — `package-info.java`, `web/AdminController.java`, `web/OverviewController.java`,
-  `usecase/GetOverview.java`.
+  `web/EnrichmentQueueController.java`, `usecase/GetOverview.java`, `usecase/ListEnrichmentQueue.java`.
+- `backend/src/main/resources/db/migration/V9__resource_enrichment_backlog_idx.sql`; `catalog/enrichment/EnrichmentCandidates.java`
+  and `catalog/internal/JdbcEnrichmentCandidates.java` (`pending`, `pendingCount`, `backlog`).
 - `backend/src/main/java/ai/helper2/platform/llm/BudgetLedger.java`, `CallCounter.java`, `DailyBudget.java`,
   `RedisCallCounter.java` (`current`), `LlmConfiguration.java`.
 - `backend/src/main/java/ai/helper2/catalog/ReviewQueue.java` (`openCountsByKind`),
   `scout/internal/CatalogEnrichmentStore.java` and `catalog/internal/JdbcEnrichmentCandidates.java` (`pendingCount`), `search/config/MicrometerSearchMetrics.java`.
 - `backend/src/main/java/ai/helper2/examples/usecase/CountHomeExamples.java`, `backend/src/main/kotlin/ai/helper2/examples/PoolCounts.kt`.
 - `frontend/src/pages/admin/` — `AdminLayout.tsx`, `AdminOverview.tsx`, `ReviewQueuePage.tsx`, `ScoutRunsPage.tsx`,
-  `AuditPage.tsx`.
+  `EnrichmentQueuePage.tsx`, `AuditPage.tsx`.
 - Tests: `api/AdminOverviewApiIT.java`, `admin/usecase/GetOverviewTest.java`, `platform/llm/BudgetLedgerTest.java`,
   `RedisCallCounterIT.java`, `scout/internal/CatalogEnrichmentStoreIT.java`, `search/config/MicrometerSearchMetricsTest.java`,
-  `frontend/src/pages/admin/Admin.test.tsx`.
+  `api/EnrichmentQueueApiIT.java`, `admin/web/EnrichmentQueueCursorTest.java`, `catalog/internal/JdbcEnrichmentCandidatesIT.java`,
+  `frontend/src/pages/admin/Admin.test.tsx`, `EnrichmentQueuePage.test.tsx`.
 
 ## Diagrams
 [flow](../../diagrams/flow-0045-back-office.svg) · [sequence](../../diagrams/sequence-0045-back-office.svg)

@@ -1,5 +1,6 @@
 package ai.helper2.scout
 
+import ai.helper2.catalog.enrichment.EnrichmentCandidates
 import ai.helper2.search.MergedResult
 import java.time.Instant
 import java.util.UUID
@@ -107,6 +108,15 @@ interface EnrichmentBacklog {
 
   /** How many resources [pending] would return without a limit; for the back office overview. */
   fun pendingCount(): Long
+
+  /**
+   * One page of the backlog in the order [pending] takes it, after [after] (null: from the start);
+   * for the back office queue.
+   */
+  fun queue(
+    after: EnrichmentCandidates.BacklogCursor?,
+    size: Int,
+  ): List<EnrichmentCandidates.BacklogEntry>
 
   /**
    * The subset of [resourceIds] with enough source text for the model to cite, in the given order.

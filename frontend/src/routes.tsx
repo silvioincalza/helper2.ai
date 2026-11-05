@@ -54,6 +54,7 @@ export const routes: RouteObject[] = [
           { index: true, lazy: page(() => import('@/pages/admin/AdminOverview')) },
           { path: 'review', lazy: page(() => import('@/pages/admin/ReviewQueuePage')) },
           { path: 'runs', lazy: page(() => import('@/pages/admin/ScoutRunsPage')) },
+          { path: 'enrichment', lazy: page(() => import('@/pages/admin/EnrichmentQueuePage')) },
           { path: 'examples', lazy: page(() => import('@/pages/admin/ExamplesPage')) },
           { path: 'audit', lazy: page(() => import('@/pages/admin/AuditPage')) },
         ],
