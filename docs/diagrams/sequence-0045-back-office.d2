@@ -2,7 +2,7 @@
 # Source of truth: frontend/src/pages/admin/AdminOverview.tsx, ReviewQueuePage.tsx,
 #   backend/src/main/java/ai/helper2/admin/usecase/GetOverview.java, admin/web/OverviewController.java,
 #   catalog/ReviewQueue.java (openCountsByKind), scout/internal/CatalogEnrichmentStore.java, catalog/internal/JdbcEnrichmentCandidates.java (pendingCount),
-#   platform/llm/BudgetLedger.java.
+#   examples/usecase/CountHomeExamples.java, examples/internal/JdbcHomeExamples.java (all), platform/llm/BudgetLedger.java.
 # Render: cd docs/diagrams && d2 fmt sequence-0045-back-office.d2 && d2 sequence-0045-back-office.d2 sequence-0045-back-office.svg
 
 ...@style
@@ -18,7 +18,7 @@ redis: Redis {class: data}
 overview: Overview {
   owner -> spa: "/admin" {class: hot}
   spa -> api: "GET /api/v1/admin/overview"
-  api -> db: "open items per kind, backlog count,\nlast runs"
+  api -> db: "open items per kind, backlog count,\nlast runs, every home example"
   api -> redis: "today's count of each budget,\nweb credits"
   api -> spa: "counts, counted at T\n(kept one minute)"
   spa -> owner: "12 User report · 420 waiting ·\nEnrichment 120 of 500"
