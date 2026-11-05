@@ -30,6 +30,8 @@ describe('Feature: end users sign in on the public site (ADR 0035)', () => {
   it('Scenario: after sign-in the visitor is back on the page where they started', async () => {
     mockApi({ 'GET /me': () => ANON });
     const before = renderApp('/saved');
+    // The saved page loads on demand: the header comes with it.
+    await waitFor(() => expect(header()).not.toBeNull());
     const link = await within(header()).findByRole('link', { name: 'Sign in with GitHub' });
     link.addEventListener('click', (e) => e.preventDefault(), { once: true });
     await userEvent.click(link);
@@ -47,6 +49,8 @@ describe('Feature: end users sign in on the public site (ADR 0035)', () => {
   it('Scenario: a retry after a failed sign-in does not bring the failure back', async () => {
     mockApi({ 'GET /me': () => ANON });
     renderApp('/saved?signin=failed&x=1');
+    // The saved page loads on demand: the header comes with it.
+    await waitFor(() => expect(header()).not.toBeNull());
     const link = await within(header()).findByRole('link', { name: 'Sign in with GitHub' });
     link.addEventListener('click', (e) => e.preventDefault(), { once: true });
     await userEvent.click(link);
