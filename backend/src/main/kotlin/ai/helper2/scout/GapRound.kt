@@ -212,8 +212,8 @@ object UntrustedPageText {
         "set (the )?(pricing|price|licen[cs]e|field|value|audience)\\b)[^\\n]{0,500}$"
     )
 
-  /** An opening tag: its name and attributes. The class stops at "<", so one scan is linear. */
-  private val OPEN_TAG = Regex("<([A-Za-z][A-Za-z0-9]{0,20})\\b([^<>]{0,2000})>")
+  /** Longest tag read, attributes included; a longer one is text, unless it hides something. */
+  private const val MAX_TAG_CHARS = 1000
 
   /** Attributes that make an element one a browser does not show. */
   private val HIDDEN_ATTRIBUTE =
@@ -282,40 +282,104 @@ object UntrustedPageText {
 
   /**
    * Elements a browser does not show go with their whole subtree, nested tags of the same name
-   * included, so no hidden text reaches the model as a quote. A hidden element that never closes
-   * takes the rest of the page. One pass: each part of the text is read once.
+   * included, so no hidden text reaches the model as a quote. Tags are read as a browser reads
+   * them: quoted attribute values may hold "<" and ">", and "/>" closes only a void element. A
+   * hidden element that never closes, or a tag that mentions hiding and never ends, takes the rest
+   * of the page. Each tag is read at most [MAX_TAG_CHARS] far, so the pass stays linear.
    */
   internal fun dropHidden(text: String): String {
+    val hiding = HIDDEN_ATTRIBUTE.findAll(text).map { it.range.first }.toList().toIntArray()
+    fun hides(tag: Tag) = hiding.any(tag.attributesFrom, tag.attributesTo)
     val out = StringBuilder(text.length)
     var from = 0
+    var at = 0
     while (true) {
-      val open = OPEN_TAG.find(text, from) ?: break
-      val afterOpen = open.range.last + 1
-      if (!HIDDEN_ATTRIBUTE.containsMatchIn(open.groupValues[2])) {
-        out.append(text, from, afterOpen)
-        from = afterOpen
-        continue
+      val lt = text.indexOf('<', at)
+      if (lt < 0) break
+      val tag = readTag(text, lt)
+      when {
+        tag == null -> at = lt + 1
+        tag.end < 0 ->
+          if (hides(tag)) {
+            return out.append(text, from, lt).toString()
+          } else {
+            at = lt + 1
+          }
+        tag.closing || !hides(tag) -> at = tag.end
+        else -> {
+          out.append(text, from, lt)
+          from =
+            if (tag.name in VOID_ELEMENTS) tag.end
+            else closeOf(text, tag.name, tag.end) ?: return out.toString()
+          at = from
+        }
       }
-      out.append(text, from, open.range.first)
-      val name = open.groupValues[1].lowercase()
-      from =
-        if (name in VOID_ELEMENTS || open.value.endsWith("/>")) afterOpen
-        else closeOf(text, name, afterOpen) ?: return out.toString()
     }
     return out.append(text, from, text.length).toString()
   }
 
+  /**
+   * A tag as read from "<": its lower-case name, where its attributes are, and where it ends (-1:
+   * not within [MAX_TAG_CHARS]).
+   */
+  private class Tag(
+    val name: String,
+    val closing: Boolean,
+    val attributesFrom: Int,
+    val attributesTo: Int,
+    val end: Int,
+  )
+
+  /** A start in these sorted positions falls in [from, to). */
+  private fun IntArray.any(from: Int, to: Int): Boolean {
+    val i = binarySearch(from).let { if (it >= 0) it else -it - 1 }
+    return i < size && this[i] < to
+  }
+
+  /** The tag that starts at [lt], or null when "<" starts no tag ("a<b", "< 3"). */
+  private fun readTag(text: String, lt: Int): Tag? {
+    var i = lt + 1
+    val closing = i < text.length && text[i] == '/'
+    if (closing) i++
+    val nameStart = i
+    if (i >= text.length || !text[i].isLetter() || text[i].code > 127) return null
+    while (i < text.length && i - nameStart <= 20 && text[i].isLetterOrDigit()) i++
+    if (i < text.length && !(text[i].isWhitespace() || text[i] == '/' || text[i] == '>')) {
+      return null
+    }
+    val name = text.substring(nameStart, i).lowercase()
+    val limit = minOf(text.length, lt + MAX_TAG_CHARS)
+    var quote = ' '
+    var j = i
+    while (j < limit) {
+      val c = text[j]
+      when {
+        quote != ' ' -> if (c == quote) quote = ' '
+        c == '"' || c == '\'' -> quote = c
+        c == '>' -> return Tag(name, closing, i, j, j + 1)
+      }
+      j++
+    }
+    return Tag(name, closing, i, limit, -1)
+  }
+
   /** Where the element [name] opened before [from] ends, counting nested ones; null if never. */
   private fun closeOf(text: String, name: String, from: Int): Int? {
-    val tags = Regex("<(/?)${Regex.escape(name)}\\b[^<>]{0,2000}>", RegexOption.IGNORE_CASE)
     var depth = 1
     var at = from
     while (true) {
-      val tag = tags.find(text, at) ?: return null
-      at = tag.range.last + 1
+      val lt = text.indexOf('<', at)
+      if (lt < 0) return null
+      val tag = readTag(text, lt)
       when {
-        tag.groupValues[1] == "/" -> if (--depth == 0) return at
-        !tag.value.endsWith("/>") -> depth++
+        tag == null -> at = lt + 1
+        tag.end < 0 -> return null
+        tag.name != name -> at = tag.end
+        tag.closing -> if (--depth == 0) return tag.end else at = tag.end
+        else -> {
+          depth++
+          at = tag.end
+        }
       }
     }
   }

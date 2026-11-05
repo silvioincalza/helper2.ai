@@ -185,16 +185,39 @@ class GapRoundTest {
   }
 
   @Test
+  fun `a self-closing slash on a non-void element and quoted angle brackets hide nothing`() {
+    for (raw in
+      listOf(
+        "A <div hidden/>secret</div> End",
+        "A <div title=\"a>b\" hidden>secret</div> End",
+        "A <div hidden><div title='x</div>'>secret</div>secret</div> End",
+      )) {
+      val text = UntrustedPageText.clean(raw)
+      assertFalse(text.contains("secret"), text)
+      assertTrue(text.startsWith("A") && text.endsWith("End"), text)
+    }
+    assertEquals("A", UntrustedPageText.clean("A <div title=\"never closed hidden>secret"))
+    assertEquals("if a<b then c", UntrustedPageText.clean("if a<b then c"))
+  }
+
+  @Test
   fun `hidden elements cost linear time`() {
     for (raw in
       listOf(
         "<a hidden>x".repeat(6_000),
         ("<a " + "hidden ".repeat(285) + ">").repeat(32),
         ("<div hidden>" + "<div>".repeat(2_000)).repeat(4),
+        "<a \"<a '".repeat(16_000),
+        "<a <b ".repeat(10_000),
       )) {
-      val started = System.nanoTime()
+      UntrustedPageText.dropHidden(raw.take(UntrustedPageText.MAX_RAW_CHARS)) // warm up
+      var started = System.nanoTime()
+      UntrustedPageText.dropHidden(raw.take(UntrustedPageText.MAX_RAW_CHARS))
+      val ms = (System.nanoTime() - started) / 1_000_000
+      assertTrue(ms < 200, "hidden elements took $ms ms on ${raw.take(12)}")
+      started = System.nanoTime()
       UntrustedPageText.clean(raw)
-      assertTrue(System.nanoTime() - started < 200_000_000L, "clean took too long")
+      assertTrue(System.nanoTime() - started < 2_000_000_000L, "clean took too long")
     }
   }
 
