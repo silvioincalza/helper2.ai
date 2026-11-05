@@ -27,7 +27,13 @@ class EnrichmentQueueCursorTest {
     String wrongPart =
         Base64.getUrlEncoder()
             .encodeToString(("X|2026-11-05T10:15:30Z|" + UUID.randomUUID()).getBytes());
-    for (String token : new String[] {"!!", "", wrongPart, "Tnx4eHg"}) {
+    String farFuture =
+        Base64.getUrlEncoder()
+            .encodeToString(("N|+1000000000-01-01T00:00:00Z|" + UUID.randomUUID()).getBytes());
+    String beforeEpoch =
+        Base64.getUrlEncoder()
+            .encodeToString(("R|-5000-01-01T00:00:00Z|" + UUID.randomUUID()).getBytes());
+    for (String token : new String[] {"!!", "", wrongPart, "Tnx4eHg", farFuture, beforeEpoch}) {
       assertThatThrownBy(() -> EnrichmentQueueController.decode(token))
           .isInstanceOf(BadRequestException.class);
     }

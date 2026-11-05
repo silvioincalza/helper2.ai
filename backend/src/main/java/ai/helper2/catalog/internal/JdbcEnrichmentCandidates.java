@@ -42,13 +42,15 @@ class JdbcEnrichmentCandidates implements EnrichmentCandidates {
         .param("maxFailed", maxFailed)
         .param("minText", minText)
         .param("limit", limit)
+        .withQueryTimeout(COUNT_TIMEOUT_SECONDS)
         .query(UUID.class)
         .list();
   }
 
   /**
-   * Longest the backlog count may run: the overview waits for it, and one slow plan must not hold
-   * the page.
+   * Longest a backlog read (next batch, a queue page, the count) may run: one slow plan must not
+   * hold the Scout or a page. The worst page, no row of the second part due for a retry, walks
+   * every REJECTED resource: 0.4 s at 250 000 synthetic resources.
    */
   static final int COUNT_TIMEOUT_SECONDS = 5;
 
@@ -108,7 +110,8 @@ class JdbcEnrichmentCandidates implements EnrichmentCandidates {
                     + " p.id DESC")
             .param("maxFailed", maxFailed)
             .param("minText", minText)
-            .param("size", size);
+            .param("size", size)
+            .withQueryTimeout(COUNT_TIMEOUT_SECONDS);
     if (after != null) {
       query =
           query

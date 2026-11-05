@@ -61,6 +61,9 @@ class EnrichmentQueueController implements EnrichmentQueueApi {
         .encodeToString(plain.getBytes(StandardCharsets.UTF_8));
   }
 
+  /** A discovery time the database can hold; anything outside is no cursor of ours. */
+  private static final Instant LATEST = Instant.parse("9999-12-31T23:59:59Z");
+
   static BacklogCursor decode(String cursor) {
     try {
       String[] parts =
@@ -69,8 +72,11 @@ class EnrichmentQueueController implements EnrichmentQueueApi {
       if (parts.length != 3 || !(parts[0].equals("N") || parts[0].equals("R"))) {
         throw new IllegalArgumentException("parts");
       }
-      return new BacklogCursor(
-          parts[0].equals("N"), Instant.parse(parts[1]), UUID.fromString(parts[2]));
+      Instant at = Instant.parse(parts[1]);
+      if (at.isBefore(Instant.EPOCH) || at.isAfter(LATEST)) {
+        throw new IllegalArgumentException("time");
+      }
+      return new BacklogCursor(parts[0].equals("N"), at, UUID.fromString(parts[2]));
     } catch (RuntimeException unreadable) {
       throw new BadRequestException("after is not a cursor from this queue");
     }

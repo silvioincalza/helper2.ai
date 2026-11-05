@@ -37,7 +37,9 @@ them without each module growing an admin corner.
    an OFFSET: a deep page costs what the first one does. The overview's backlog count links here.
    The Scout's next batch, the queue and the count share one rule, read in two parts from one partial index
    (`resource_enrichment_backlog_idx`): the second part runs only when the first has too few rows. Measured on synthetic
-   data, 250 000 resources: the next 20 from 1.4 s to under 1 ms, the count from 1.3 s to 0.65 s.
+   data, 250 000 resources: the next 20 from 1.4 s to under 1 ms, the count from 1.3 s to 0.65 s. Every backlog read
+   gives up after 5 seconds. The queue is read-only and admin-only and shows catalog data, no personal data; a cursor
+   that is not one of ours (wrong shape, a time outside what the database holds) is a 400.
 
 ## Consequences
 - One place for every admin endpoint; a new part is a route, a controller method and a use case here.
