@@ -50,6 +50,11 @@ describe('searchState', () => {
       toSearchParams(parseSearchParams(new URLSearchParams('q=a&path=ADMIN'))).toString(),
     ).toBe('q=a');
   });
+  it('an old link with the audience facet keeps its search and drops the facet: "Best for" is the one audience control', () => {
+    const s = parseSearchParams(new URLSearchParams('q=a&audience=USE_AI&type=MODEL'));
+    expect(s.filters).not.toHaveProperty('audience');
+    expect(toApiParams(s).toString()).toBe('q=a&type=MODEL');
+  });
   it('new words drop the path: it belonged to the example, not to what the user types next', () => {
     const fromExample = parseSearchParams(
       new URLSearchParams('q=vector database&path=BUILD_WITH_AI'),

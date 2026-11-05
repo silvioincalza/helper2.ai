@@ -9,12 +9,11 @@ export const MULTI_KEYS = [
   'platform',
   'useCase',
   'techLevel',
-  'audience',
 ] as const satisfies readonly (keyof SearchQuery)[];
 export type MultiKey = (typeof MULTI_KEYS)[number];
 
 /** Keys whose API enums spell the unknown bucket in upper case. */
-const ENUM_KEYS: readonly MultiKey[] = ['pricing', 'techLevel', 'audience', 'type'];
+const ENUM_KEYS: readonly MultiKey[] = ['pricing', 'techLevel', 'type'];
 
 /** `list`: ranked cards. `timeline`: every result grouped by the month it was created (see lib/timeline). */
 export type ResultsView = 'list' | 'timeline';
@@ -64,7 +63,6 @@ function emptyFilters(): Record<MultiKey, string[]> {
     platform: [],
     useCase: [],
     techLevel: [],
-    audience: [],
   };
 }
 

@@ -23,7 +23,6 @@ const ORDER: FacetKey[] = [
   'source',
   'platform',
   'techLevel',
-  'audience',
 ];
 const TERMS: Partial<Record<FacetKey, GlossaryKey>> = {
   license: 'license',
@@ -56,8 +55,6 @@ export function FilterPanel({ facets, state, sources, onChange }: Props) {
         return t(`pricing.${value}`, { defaultValue: value });
       case 'techLevel':
         return t(`techLevel.${value}`, { defaultValue: value });
-      case 'audience':
-        return t(`audience.${value}`, { defaultValue: value });
       case 'useCase':
         return t(`useCase.${value}`, { defaultValue: value });
       case 'openSource':
