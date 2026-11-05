@@ -59,6 +59,8 @@ import org.springframework.test.web.servlet.MockMvc;
       "helper2.rate-limit.report-per-hour=10000",
       "helper2.security.admins=test:admin-subject",
       "logging.structured.format.console=",
+      // A built app shell for the pages module (ADR 0050); here so PagesIT shares this context.
+      "helper2.pages.template=classpath:/pages/index.html",
     })
 @AutoConfigureMockMvc
 @Import({TestcontainersConfiguration.class, ApiTestBase.FakeSources.class})

@@ -12,10 +12,11 @@ import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.test.context.TestPropertySource;
 
-/** Pages for crawlers (ADR 0050): the head, the status, the sitemap and robots.txt. */
-@TestPropertySource(properties = "helper2.pages.template=classpath:/pages/index.html")
+/**
+ * Pages for crawlers (ADR 0050): the head, the status, the sitemap and robots.txt. The app shell is
+ * set in ApiTestBase, so this test shares the one test context (a second one ran CI out of memory).
+ */
 class PagesIT extends ApiTestBase {
 
   private static final Pattern SITEMAP_RESOURCE =
