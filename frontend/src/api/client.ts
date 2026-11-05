@@ -26,6 +26,7 @@ import type {
   AuditEntryPage,
   AdminOverview,
   EnrichmentQueuePage,
+  EnrichmentQueueView,
   AdminHomeExample,
   ExampleCheckOutcome,
   ExampleDrafts,
@@ -324,12 +325,35 @@ export const api = {
   draftHomeExamples: () => request<ExampleDrafts>('POST', '/admin/home-examples/drafts'),
   removeHomeExample: (id: string) =>
     request<void>('DELETE', `/admin/home-examples/${encodeURIComponent(id)}`),
-  /** The enrichment backlog in the Scout's order; pass the previous page's next as after. 400 for a foreign cursor. */
-  listEnrichmentQueue: (after: string | undefined, size: number, signal?: AbortSignal) =>
+  /**
+   * One view of the enrichment queue (WAITING: the Scout's order); pass the previous page's next as after, with the
+   * same view. 400 for a foreign cursor.
+   */
+  listEnrichmentQueue: (
+    view: EnrichmentQueueView,
+    after: string | undefined,
+    size: number,
+    signal?: AbortSignal,
+  ) =>
     request<EnrichmentQueuePage>('GET', '/admin/enrichment-queue', {
-      query: new URLSearchParams({ ...(after ? { after } : {}), size: String(size) }),
+      query: new URLSearchParams({
+        ...(view === 'WAITING' ? {} : { view }),
+        ...(after ? { after } : {}),
+        size: String(size),
+      }),
       signal,
     }),
+  /** 409 not-applicable when the resource is neither skipped nor out of retries; 404 for an unknown one. */
+  requeueEnrichment: (resourceId: string) =>
+    request<void>('POST', `/admin/enrichment-queue/${encodeURIComponent(resourceId)}/requeue`),
+  /** 409 not-applicable when the resource does not wait or is already skipped. */
+  skipEnrichment: (resourceId: string, reason: string) =>
+    request<void>('POST', `/admin/enrichment-queue/${encodeURIComponent(resourceId)}/skip`, {
+      body: reason.trim() ? { reason: reason.trim() } : {},
+    }),
+  /** 409 not-applicable when the resource does not wait, is already at the top, or the top is full. */
+  prioritiseEnrichment: (resourceId: string) =>
+    request<void>('POST', `/admin/enrichment-queue/${encodeURIComponent(resourceId)}/prioritise`),
   listAuditEntries: (page: number, size: number, signal?: AbortSignal) =>
     request<AuditEntryPage>('GET', '/admin/audit', {
       query: new URLSearchParams({ page: String(page), size: String(size) }),

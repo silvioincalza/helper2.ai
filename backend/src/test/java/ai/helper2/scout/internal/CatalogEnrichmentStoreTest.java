@@ -8,6 +8,7 @@ import ai.helper2.scout.EnrichmentMaterial;
 import ai.helper2.scout.GapKind;
 import ai.helper2.scout.GapTarget;
 import ai.helper2.scout.Material;
+import ai.helper2.scout.QueuePlace;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -46,9 +47,21 @@ class CatalogEnrichmentStoreTest {
 
     @Override
     public List<BacklogEntry> backlog(
-        @Nullable BacklogCursor after, int size, int minText, int maxFailed) {
-      calls.add("backlog " + size + " " + minText + " " + maxFailed);
+        View view, @Nullable BacklogCursor after, int size, int minText, int maxFailed) {
+      calls.add("backlog " + view + " " + size + " " + minText + " " + maxFailed);
       return List.of();
+    }
+
+    @Override
+    public @Nullable Standing standing(UUID id, int minText, int maxFailed) {
+      calls.add("standing " + minText + " " + maxFailed);
+      return id.equals(ID) ? new Standing(true, false, false, true) : null;
+    }
+
+    @Override
+    public int prioritisedCount(int minText, int maxFailed) {
+      calls.add("prioritisedCount " + minText + " " + maxFailed);
+      return 4;
     }
 
     @Override
@@ -129,12 +142,25 @@ class CatalogEnrichmentStoreTest {
     store.pending(5);
     long count = store.pendingCount();
     store.eligible(List.of(ID));
-    store.queue(null, 20);
+    store.queue(EnrichmentCandidates.View.SKIPPED, null, 20);
+    store.place(ID);
+    store.prioritisedCount();
 
     assertThat(count).isEqualTo(7);
     assertThat(candidates.calls)
         .containsExactly(
-            "pending 5 40 3", "pendingCount 40 3", "withEnoughText 40", "backlog 20 40 3");
+            "pending 5 40 3",
+            "pendingCount 40 3",
+            "withEnoughText 40",
+            "backlog SKIPPED 20 40 3",
+            "standing 40 3",
+            "prioritisedCount 40 3");
+  }
+
+  @Test
+  void aPlaceIsTheCatalogsStandingAndNoneForAnUnknownResource() {
+    assertThat(store.place(ID)).isEqualTo(new QueuePlace(true, false, false, true));
+    assertThat(store.place(UUID.randomUUID())).isNull();
   }
 
   @Test

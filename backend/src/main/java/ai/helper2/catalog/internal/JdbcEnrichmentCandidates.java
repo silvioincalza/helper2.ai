@@ -1,6 +1,19 @@
 package ai.helper2.catalog.internal;
 
+import static ai.helper2.catalog.internal.BacklogRule.DUE;
+import static ai.helper2.catalog.internal.BacklogRule.NEW_PART;
+import static ai.helper2.catalog.internal.BacklogRule.OUT_OF_RETRIES;
+import static ai.helper2.catalog.internal.BacklogRule.PRIORITISED;
+import static ai.helper2.catalog.internal.BacklogRule.PRIORITISED_FROM;
+import static ai.helper2.catalog.internal.BacklogRule.REST_PART;
+import static ai.helper2.catalog.internal.BacklogRule.SKIPPED;
+
 import ai.helper2.catalog.enrichment.EnrichmentCandidates;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -14,7 +27,8 @@ import org.springframework.stereotype.Component;
 
 /**
  * The enrichment backlog and a resource's stored source text, read from resource, source_record and
- * enrichment_run.
+ * enrichment_run, and the admin's decisions from the Scout's enrichment_queue_control (read only,
+ * see {@link BacklogRule}).
  */
 @Component
 class JdbcEnrichmentCandidates implements EnrichmentCandidates {
@@ -26,11 +40,13 @@ class JdbcEnrichmentCandidates implements EnrichmentCandidates {
   }
 
   /**
-   * Products a person accepted from the review queue first (ADR 0056): someone chose them, so they
-   * should not wait behind the daily collector intake. Then never-run resources, then the rest,
-   * each part newest first. Three parts, each with its own LIMIT: the accepted ones are read from
-   * the few ACCEPTED review items, the other two in index order (resource_enrichment_backlog_idx,
-   * ADR 0045), so the next batch never sorts the whole table. A resource in two parts counts once.
+   * The ones an admin moved to the top first (ADR 0045 §7), then products a person accepted from
+   * the review queue (ADR 0056): someone chose them, so they should not wait behind the daily
+   * collector intake. Then never-run resources, then the rest, each part newest first. Four parts,
+   * each with its own LIMIT: the prioritised ones are read from the few control rows, the accepted
+   * ones from the few ACCEPTED review items, the other two in index order
+   * (resource_enrichment_backlog_idx), so the next batch never sorts the whole table. A resource in
+   * two parts counts once, in the first.
    */
   @Override
   public List<UUID> pending(int limit, int minText, int maxFailed) {
@@ -43,53 +59,52 @@ class JdbcEnrichmentCandidates implements EnrichmentCandidates {
         .list();
   }
 
-  /** One index-ordered part of the backlog, newest first. */
-  private static String part(String condition) {
-    return "(SELECT r.id, r.first_discovered_at, r.enrichment_status, false AS accepted"
-        + " FROM resource r WHERE "
-        + condition
+  /** One part of the next batch, newest first, ranked by its place in the order. */
+  private static String batchPart(int rank, String from) {
+    return "(SELECT r.id, r.first_discovered_at, "
+        + rank
+        + " AS part_rank FROM "
+        + from
         + " ORDER BY r.first_discovered_at DESC, r.id DESC LIMIT :limit)";
   }
 
   /** The next batch of the Scout, see {@link #pending}; package-visible for the plan check. */
   static String pendingSql() {
     return "SELECT q.id FROM ("
-        + "(SELECT r.id, r.first_discovered_at, r.enrichment_status, true AS accepted"
-        + " FROM review_item i JOIN resource r ON r.canonical_url = i.candidate_url"
-        + " WHERE i.kind = 'RESOURCE_CANDIDATE' AND i.status = 'ACCEPTED' AND (("
-        + NEVER_RUN
-        + ") OR ("
-        + TO_RETRY
-        + ")) ORDER BY r.first_discovered_at DESC, r.id DESC LIMIT :limit)"
+        + batchPart(0, PRIORITISED_FROM)
         + " UNION ALL "
-        + part(NEVER_RUN)
+        + batchPart(
+            1,
+            "review_item i JOIN resource r ON r.canonical_url = i.candidate_url"
+                + " WHERE i.kind = 'RESOURCE_CANDIDATE' AND i.status = 'ACCEPTED' AND (("
+                + NEW_PART
+                + ") OR ("
+                + REST_PART
+                + "))")
         + " UNION ALL "
-        + part(TO_RETRY)
-        + ") q GROUP BY q.id, q.first_discovered_at, q.enrichment_status"
-        + " ORDER BY bool_or(q.accepted) DESC, (q.enrichment_status = 'NOT_RUN') DESC,"
-        + " q.first_discovered_at DESC, q.id DESC LIMIT :limit";
+        + batchPart(2, "resource r WHERE " + NEW_PART)
+        + " UNION ALL "
+        + batchPart(3, "resource r WHERE " + REST_PART)
+        + ") q GROUP BY q.id, q.first_discovered_at"
+        + " ORDER BY min(q.part_rank), q.first_discovered_at DESC, q.id DESC LIMIT :limit";
   }
 
   /**
    * Longest a backlog read (next batch, a queue page, the count) may run: one slow plan must not
    * hold the Scout or a page. The worst page, no row of the second part due for a retry, walks
-   * every REJECTED resource: 0.4 s at 250 000 synthetic resources.
+   * every REJECTED resource: 0.4 s at 250 000 synthetic resources. The out-of-retries view walks
+   * them too: 1.1 to 1.6 s with 37 500 REJECTED resources (ADR 0045 §7).
    */
   static final int COUNT_TIMEOUT_SECONDS = 5;
 
   /**
    * The same rule as {@link #pending}, counted. It reads every resource that may wait (the backlog
-   * index), not the whole table; the overview caches it, and the query gives up after {@link
-   * #COUNT_TIMEOUT_SECONDS}.
+   * index) and the few prioritised control rows, not the whole table; the overview caches it, and
+   * the query gives up after {@link #COUNT_TIMEOUT_SECONDS}.
    */
   @Override
   public long pendingCount(int minText, int maxFailed) {
-    return jdbc.sql(
-            "SELECT (SELECT count(*) FROM resource r WHERE "
-                + NEVER_RUN
-                + ") + (SELECT count(*) FROM resource r WHERE "
-                + TO_RETRY
-                + ")")
+    return jdbc.sql(countSql())
         .param("maxFailed", maxFailed)
         .param("minText", minText)
         .withQueryTimeout(COUNT_TIMEOUT_SECONDS)
@@ -97,94 +112,200 @@ class JdbcEnrichmentCandidates implements EnrichmentCandidates {
         .single();
   }
 
+  /** The backlog count, see {@link #pendingCount}; package-visible for the measurement. */
+  static String countSql() {
+    return "SELECT (SELECT count(*) FROM "
+        + PRIORITISED_FROM
+        + ") + (SELECT count(*) FROM resource r WHERE "
+        + NEW_PART
+        + ") + (SELECT count(*) FROM resource r WHERE "
+        + REST_PART
+        + ")";
+  }
+
+  @Override
+  public @Nullable Standing standing(UUID id, int minText, int maxFailed) {
+    return jdbc.sql(standingSql())
+        .param("id", id)
+        .param("maxFailed", maxFailed)
+        .param("minText", minText)
+        .query((rs, i) ->
+            new Standing(
+                rs.getBoolean("due"),
+                rs.getBoolean("out_of_retries"),
+                rs.getBoolean("skipped"),
+                rs.getBoolean("prioritised")))
+        .optional()
+        .orElse(null);
+  }
+
+  /** One resource against the rule, see {@link #standing}; package-visible for the measurement. */
+  static String standingSql() {
+    return "SELECT "
+        + DUE
+        + " AS due, ("
+        + OUT_OF_RETRIES
+        + ") AS out_of_retries, "
+        + SKIPPED
+        + " AS skipped, "
+        + PRIORITISED
+        + " AS prioritised FROM resource r WHERE r.id = :id";
+  }
+
+  @Override
+  public int prioritisedCount(int minText, int maxFailed) {
+    return jdbc.sql("SELECT count(*) FROM " + PRIORITISED_FROM)
+        .param("maxFailed", maxFailed)
+        .param("minText", minText)
+        .query(Integer.class)
+        .single();
+  }
+
+  /** A page row's rank: the part of the WAITING view, or the view it belongs to. */
+  private static final int AT_TOP = 0;
+
+  private static final int NEVER_RUN = 1;
+  private static final int REST = 2;
+  private static final int SKIPPED_VIEW = 3;
+  private static final int OUT_OF_RETRIES_VIEW = 4;
+
   /**
-   * A page of the backlog in {@link #pending} order, keyset by (part, first discovered, id): no
-   * OFFSET, so a deep page costs what the first one does. Runs so far are read for the page only.
+   * A page of [view], keyset by (part, time, id): no OFFSET, so a deep page costs what the first
+   * one does. Runs so far are read for the page only.
    */
   @Override
   public List<BacklogEntry> backlog(
-      @Nullable BacklogCursor after, int size, int minText, int maxFailed) {
-    boolean fromNeverRun = after == null || after.neverRun();
-    String afterCursor = " AND (r.first_discovered_at, r.id) < (:at, :id)";
-    String neverRun =
-        "(SELECT r.id, r.title, r.enrichment_status, r.first_discovered_at FROM resource r WHERE "
-            + NEVER_RUN
-            + (after != null && after.neverRun() ? afterCursor : "")
-            + " ORDER BY r.first_discovered_at DESC, r.id DESC LIMIT :size)";
-    String toRetry =
-        "(SELECT r.id, r.title, r.enrichment_status, r.first_discovered_at FROM resource r WHERE "
-            + TO_RETRY
-            + (after != null && !after.neverRun() ? afterCursor : "")
-            + " ORDER BY r.first_discovered_at DESC, r.id DESC LIMIT :size)";
-    String page =
-        fromNeverRun ? neverRun + " UNION ALL " + toRetry : "SELECT * FROM " + toRetry + " t";
+      View view, @Nullable BacklogCursor after, int size, int minText, int maxFailed) {
     var query =
-        jdbc.sql(
-                "SELECT p.id, p.title, p.enrichment_status, p.first_discovered_at,"
-                    + " (SELECT count(*) FROM enrichment_run e WHERE e.resource_id = p.id"
-                    + "   AND e.outcome = 'FAILED') AS failed_runs,"
-                    + " last.outcome AS last_outcome, last.started_at AS last_run_at"
-                    + " FROM ("
-                    + page
-                    + " LIMIT :size) p"
-                    + " LEFT JOIN LATERAL (SELECT e.outcome, e.started_at FROM enrichment_run e"
-                    + "   WHERE e.resource_id = p.id ORDER BY e.started_at DESC LIMIT 1) last ON true"
-                    + " ORDER BY (p.enrichment_status = 'NOT_RUN') DESC, p.first_discovered_at DESC,"
-                    + " p.id DESC")
+        jdbc.sql(backlogSql(view, after))
             .param("maxFailed", maxFailed)
             .param("minText", minText)
             .param("size", size)
             .withQueryTimeout(COUNT_TIMEOUT_SECONDS);
     if (after != null) {
-      query =
-          query
-              .param("at", java.sql.Timestamp.from(after.firstDiscoveredAt()))
-              .param("id", after.id());
+      query = query.param("at", Timestamp.from(after.at())).param("id", after.id());
     }
-    return query
-        .query((rs, i) ->
-            new BacklogEntry(
-                rs.getObject("id", UUID.class),
-                rs.getString("title"),
-                switch (rs.getString("enrichment_status")) {
-                  case "NOT_RUN" -> Waiting.NEW;
-                  case "LLM_UNAVAILABLE" -> Waiting.MODEL_UNAVAILABLE;
-                  default -> Waiting.RETRY;
-                },
-                rs.getTimestamp("first_discovered_at").toInstant(),
-                rs.getInt("failed_runs"),
-                rs.getString("last_outcome"),
-                rs.getTimestamp("last_run_at") == null
-                    ? null
-                    : rs.getTimestamp("last_run_at").toInstant()))
-        .list();
+    return query.query(JdbcEnrichmentCandidates::entry).list();
   }
 
-  /** Resources the Scout may enrich: indexed, observed or curated, with enough source text. */
-  private static final String ELIGIBLE =
-      """
-      r.data_origin IN ('INDEXED', 'OBSERVED', 'CURATED')
-        AND EXISTS (SELECT 1 FROM source_record s
-                    WHERE s.resource_id = r.id AND length(coalesce(s.description, '')) >= :minText)
-      """;
-
-  /** Never enriched: the first part of the backlog. */
-  private static final String NEVER_RUN = "r.enrichment_status = 'NOT_RUN' AND " + ELIGIBLE;
+  /** A resource part: newest discovery first. */
+  private static final String BY_DISCOVERY = "r.first_discovered_at";
 
   /**
-   * Enriched while no model was available, or whose last run FAILED (stored as REJECTED) with fewer
-   * than [maxFailed] FAILED runs: the second part.
+   * The skipped view: the latest skip first, read from the few skipped control rows (ordering by
+   * discovery made the planner walk the resource table instead).
    */
-  private static final String TO_RETRY =
-      "r.enrichment_status IN ('LLM_UNAVAILABLE', 'REJECTED') AND "
-          + ELIGIBLE
-          + """
-            AND (r.enrichment_status = 'LLM_UNAVAILABLE'
-                 OR ((SELECT e.outcome FROM enrichment_run e WHERE e.resource_id = r.id
-                      ORDER BY e.started_at DESC LIMIT 1) = 'FAILED'
-                     AND (SELECT count(*) FROM enrichment_run e
-                          WHERE e.resource_id = r.id AND e.outcome = 'FAILED') < :maxFailed))
-          """;
+  private static final String BY_SKIP = "c.skipped_at";
+
+  /** A page of [view], see {@link #backlog}; package-visible for the plan check. */
+  static String backlogSql(View view, @Nullable BacklogCursor after) {
+    String parts =
+        switch (view) {
+          case WAITING -> waitingParts(after);
+          case SKIPPED ->
+              pagePart(
+                  SKIPPED_VIEW,
+                  "enrichment_queue_control c JOIN resource r ON r.id = c.resource_id"
+                      + " WHERE c.skipped_at IS NOT NULL",
+                  BY_SKIP,
+                  after != null);
+          case OUT_OF_RETRIES ->
+              pagePart(
+                  OUT_OF_RETRIES_VIEW,
+                  "resource r WHERE " + OUT_OF_RETRIES + " AND NOT " + SKIPPED,
+                  BY_DISCOVERY,
+                  after != null);
+        };
+    return "SELECT p.id, p.title, p.enrichment_status, p.first_discovered_at, p.part_rank,"
+        + " ctl.skipped_at, ctl.skip_reason,"
+        + " (SELECT count(*) FROM enrichment_run e WHERE e.resource_id = p.id"
+        + "   AND e.outcome = 'FAILED'"
+        + "   AND e.started_at > coalesce(ctl.failures_reset_at, '-infinity'))"
+        + "   AS failed_runs,"
+        + " last.outcome AS last_outcome, last.started_at AS last_run_at"
+        + " FROM (SELECT * FROM ("
+        + parts
+        + ") u ORDER BY u.part_rank, u.sort_at DESC, u.id DESC LIMIT :size) p"
+        + " LEFT JOIN enrichment_queue_control ctl ON ctl.resource_id = p.id"
+        + " LEFT JOIN LATERAL (SELECT e.outcome, e.started_at FROM enrichment_run e"
+        + "   WHERE e.resource_id = p.id ORDER BY e.started_at DESC LIMIT 1) last ON true"
+        + " ORDER BY p.part_rank, p.sort_at DESC, p.id DESC";
+  }
+
+  /**
+   * The parts of the WAITING view from the cursor's part on: the cursor applies to its own part,
+   * the parts after it start from their top.
+   */
+  private static String waitingParts(@Nullable BacklogCursor after) {
+    Part from = after == null ? Part.PRIORITISED : after.part();
+    List<String> parts = new ArrayList<>();
+    if (from == Part.PRIORITISED) {
+      parts.add(pagePart(AT_TOP, PRIORITISED_FROM, BY_DISCOVERY, after != null));
+    }
+    if (from != Part.REST) {
+      parts.add(
+          pagePart(
+              NEVER_RUN,
+              "resource r WHERE " + NEW_PART,
+              BY_DISCOVERY,
+              after != null && from == Part.NEW));
+    }
+    parts.add(
+        pagePart(
+            REST,
+            "resource r WHERE " + REST_PART,
+            BY_DISCOVERY,
+            after != null && from == Part.REST));
+    return String.join(" UNION ALL ", parts);
+  }
+
+  /** One part of a page, newest [orderAt] first, after the cursor when [afterCursor]. */
+  private static String pagePart(int rank, String from, String orderAt, boolean afterCursor) {
+    return "(SELECT r.id, r.title, r.enrichment_status, r.first_discovered_at, "
+        + orderAt
+        + " AS sort_at, "
+        + rank
+        + " AS part_rank FROM "
+        + from
+        + (afterCursor ? " AND (" + orderAt + ", r.id) < (:at, :id)" : "")
+        + " ORDER BY "
+        + orderAt
+        + " DESC, r.id DESC LIMIT :size)";
+  }
+
+  private static BacklogEntry entry(ResultSet rs, int row) throws SQLException {
+    int rank = rs.getInt("part_rank");
+    State state =
+        switch (rank) {
+          case AT_TOP -> State.PRIORITISED;
+          case SKIPPED_VIEW -> State.SKIPPED;
+          case OUT_OF_RETRIES_VIEW -> State.OUT_OF_RETRIES;
+          default -> State.WAITING;
+        };
+    return new BacklogEntry(
+        rs.getObject("id", UUID.class),
+        rs.getString("title"),
+        state,
+        rank <= REST ? waiting(rs.getString("enrichment_status")) : null,
+        rs.getTimestamp("first_discovered_at").toInstant(),
+        rs.getInt("failed_runs"),
+        rs.getString("last_outcome"),
+        instant(rs.getTimestamp("last_run_at")),
+        instant(rs.getTimestamp("skipped_at")),
+        rs.getString("skip_reason"));
+  }
+
+  private static @Nullable Instant instant(@Nullable Timestamp at) {
+    return at == null ? null : at.toInstant();
+  }
+
+  private static Waiting waiting(String status) {
+    return switch (status) {
+      case "NOT_RUN" -> Waiting.NEW;
+      case "LLM_UNAVAILABLE" -> Waiting.MODEL_UNAVAILABLE;
+      default -> Waiting.RETRY;
+    };
+  }
 
   @Override
   public List<UUID> withEnoughText(List<UUID> ids, int minText) {

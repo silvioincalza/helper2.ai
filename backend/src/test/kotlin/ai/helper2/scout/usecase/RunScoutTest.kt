@@ -565,9 +565,14 @@ class RunScoutTest {
       override fun pendingCount() = 0L
 
       override fun queue(
+        view: ai.helper2.catalog.enrichment.EnrichmentCandidates.View,
         after: ai.helper2.catalog.enrichment.EnrichmentCandidates.BacklogCursor?,
         size: Int,
       ) = emptyList<ai.helper2.catalog.enrichment.EnrichmentCandidates.BacklogEntry>()
+
+      override fun place(resourceId: UUID) = null
+
+      override fun prioritisedCount() = 0
     }
 
   private fun model(available: Boolean) =

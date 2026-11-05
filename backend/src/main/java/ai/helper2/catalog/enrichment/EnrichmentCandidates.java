@@ -16,10 +16,11 @@ public interface EnrichmentCandidates {
 
   /**
    * Resources never enriched, enriched while no LLM was available, or whose last attempt FAILED
-   * with fewer than [maxFailed] FAILED runs so far. Only indexed, observed and curated resources
-   * with at least one source description of [minText] characters. Products a person accepted from
-   * the review queue first (ADR 0056), then never-run resources, then newest discoveries first; at
-   * most [limit].
+   * with fewer than [maxFailed] FAILED runs since an admin last requeued it. Only indexed, observed
+   * and curated resources with at least one source description of [minText] characters, and none an
+   * admin skipped. The ones an admin moved to the top first (ADR 0045 §7), then products a person
+   * accepted from the review queue (ADR 0056), then never-run resources, then the rest, each part
+   * newest discoveries first; at most [limit].
    */
   List<UUID> pending(int limit, int minText, int maxFailed);
 
@@ -30,10 +31,43 @@ public interface EnrichmentCandidates {
   long pendingCount(int minText, int maxFailed);
 
   /**
-   * One page of the backlog in the order [pending] takes it, after [after] (null: from the start),
-   * at most [size] entries, with why each waits and its runs so far (back office queue).
+   * One page of [view] after [after] (null: from the start), at most [size] entries, with why each
+   * waits and its runs so far (back office queue). The WAITING view is the backlog in the order
+   * [pending] takes it.
    */
-  List<BacklogEntry> backlog(@Nullable BacklogCursor after, int size, int minText, int maxFailed);
+  List<BacklogEntry> backlog(
+      View view, @Nullable BacklogCursor after, int size, int minText, int maxFailed);
+
+  /**
+   * Where one resource stands against the backlog rule and the admin's decisions; null for an
+   * unknown resource.
+   */
+  @Nullable Standing standing(UUID id, int minText, int maxFailed);
+
+  /** How many resources an admin moved to the top still wait for their next run. */
+  int prioritisedCount(int minText, int maxFailed);
+
+  /** Which resources a queue page lists. */
+  enum View {
+    /** The backlog, in the Scout's order. */
+    WAITING,
+    /** Resources an admin skipped, until requeued; the latest skip first. */
+    SKIPPED,
+    /** Resources whose FAILED runs reached the cap, and not skipped. */
+    OUT_OF_RETRIES
+  }
+
+  /** Where a resource stands in the queue, as the page shows it. */
+  enum State {
+    /** Moved to the top by an admin: taken before every other part. */
+    PRIORITISED,
+    /** In the backlog, in its own part. */
+    WAITING,
+    /** Skipped by an admin: not taken until requeued. */
+    SKIPPED,
+    /** Its FAILED runs reached the cap: not taken until requeued. */
+    OUT_OF_RETRIES
+  }
 
   /** Why a resource waits for enrichment. */
   enum Waiting {
@@ -45,26 +79,60 @@ public interface EnrichmentCandidates {
     RETRY
   }
 
-  /** One resource in the backlog, with its runs so far. */
+  /**
+   * One resource in a queue page, with its runs so far. [waiting] is null for a resource that does
+   * not wait (skipped, out of retries). [failedRuns] counts the FAILED runs since an admin last
+   * requeued it: the number the cap is checked against. [skippedAt] and [skipReason] are set for a
+   * skipped resource only.
+   */
   record BacklogEntry(
       UUID id,
       String title,
-      Waiting waiting,
+      State state,
+      @Nullable Waiting waiting,
       Instant firstDiscoveredAt,
       int failedRuns,
       @Nullable String lastOutcome,
-      @Nullable Instant lastRunAt) {
+      @Nullable Instant lastRunAt,
+      @Nullable Instant skippedAt,
+      @Nullable String skipReason) {
 
     /** Where the next page starts. */
     public BacklogCursor cursor() {
-      return new BacklogCursor(waiting == Waiting.NEW, firstDiscoveredAt, id);
+      if (state == State.SKIPPED && skippedAt != null) {
+        return new BacklogCursor(Part.REST, skippedAt, id);
+      }
+      Part part =
+          state == State.PRIORITISED
+              ? Part.PRIORITISED
+              : waiting == Waiting.NEW ? Part.NEW : Part.REST;
+      return new BacklogCursor(part, firstDiscoveredAt, id);
     }
   }
 
+  /** The parts of the backlog, in the order a page lists them. */
+  enum Part {
+    /** Moved to the top by an admin. */
+    PRIORITISED,
+    /** Never run. */
+    NEW,
+    /** Model unavailable, or retries left; the only part of the other views. */
+    REST
+  }
+
   /**
-   * A place in the backlog: the never-run part or the rest, then newest first by discovery and id.
+   * A place in a queue view: the part, then newest first by [at] and id. [at] is the first
+   * discovery, or the skip in the SKIPPED view (latest skip first, so a mistake is easy to undo).
    */
-  record BacklogCursor(boolean neverRun, Instant firstDiscoveredAt, UUID id) {}
+  record BacklogCursor(Part part, Instant at, UUID id) {}
+
+  /**
+   * One resource against the backlog rule. [due]: the rule takes it before any admin decision
+   * (never run, model unavailable, or FAILED with retries left). [outOfRetries]: its last run
+   * FAILED and its FAILED runs reached the cap. [skipped], [prioritised]: an admin's decision that
+   * holds.
+   */
+  record Standing(boolean due, boolean outOfRetries, boolean skipped, boolean prioritised) {}
 
   /**
    * The subset of [ids] with a source description of at least [minText] characters, in the given

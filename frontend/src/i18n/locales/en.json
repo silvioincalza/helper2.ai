@@ -712,7 +712,11 @@
         "ADD_HOME_EXAMPLE": "Example added",
         "CHANGE_HOME_EXAMPLE": "Example changed",
         "REMOVE_HOME_EXAMPLE": "Example removed",
-        "DRAFT_HOME_EXAMPLES": "Examples drafted with AI"
+        "DRAFT_HOME_EXAMPLES": "Examples drafted with AI",
+        "RECHECK_ENRICHMENT": "Enrichment answers re-checked",
+        "REQUEUE_ENRICHMENT": "Enrichment requeued",
+        "SKIP_ENRICHMENT": "Enrichment skipped",
+        "PRIORITISE_ENRICHMENT": "Enrichment moved to the top"
       }
     },
     "budget": {
@@ -818,21 +822,56 @@
     },
     "enrichment": {
       "title": "Enrichment queue",
-      "lede": "What the Scout enriches next, in its order: never-run resources first, then the ones to try again, newest first.",
-      "empty": "Nothing waits for enrichment.",
+      "lede": {
+        "WAITING": "What the Scout enriches next, in its order: the ones you moved to the top first, then never-run resources, then the ones to try again, newest first. An action changes the order only: the daily enrichment limit stays the same.",
+        "SKIPPED": "The resources you skipped, the latest first. The Scout does not take them until you requeue them.",
+        "OUT_OF_RETRIES": "The resources whose runs failed too many times. The Scout does not try them again until you requeue them."
+      },
+      "show": "Show",
+      "view": {
+        "WAITING": "Waiting, in the Scout's order",
+        "SKIPPED": "Skipped",
+        "OUT_OF_RETRIES": "Out of retries"
+      },
+      "empty": {
+        "WAITING": "Nothing waits for enrichment.",
+        "SKIPPED": "No resource is skipped.",
+        "OUT_OF_RETRIES": "No resource is out of retries."
+      },
       "loadError": "Could not load the enrichment queue.",
       "col": {
         "resource": "Resource",
-        "waiting": "Why it waits",
+        "state": "Status",
         "discovered": "Discovered",
         "failed": "Failed runs",
-        "lastRun": "Last run"
+        "lastRun": "Last run",
+        "actions": "Actions"
       },
       "waiting": {
         "NEW": "Not run yet",
         "MODEL_UNAVAILABLE": "Model was unavailable",
         "RETRY": "Retry after a failure"
       },
+      "state": {
+        "PRIORITISED": "At the top",
+        "SKIPPED": "Skipped",
+        "OUT_OF_RETRIES": "Out of retries"
+      },
+      "action": {
+        "prioritise": "Move to top",
+        "skip": "Skip",
+        "requeue": "Requeue"
+      },
+      "confirmSkip": "Skip “{{title}}”? The Scout does not take it until you requeue it.",
+      "reason": "Reason (optional)",
+      "cancel": "Cancel",
+      "done": {
+        "prioritise": "“{{title}}” is at the top. The Scout takes it in its next run, within the daily limit.",
+        "skip": "“{{title}}” is skipped. Find it under Skipped to requeue it.",
+        "requeue": "“{{title}}” is back in the queue, in its own place."
+      },
+      "refused": "Nothing changed: {{detail}}",
+      "failed": "The action failed. Nothing changed. Try again.",
       "noRun": "None",
       "lastRun": "{{outcome}}, {{at}}",
       "next": "Next page",

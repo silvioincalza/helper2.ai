@@ -1,5 +1,7 @@
 import type {
   AudiencePath,
+  EnrichmentQueueEntry,
+  EnrichmentQueueView,
   ExampleCheckOutcome,
   ReviewKind,
   ReviewStatus,
@@ -33,6 +35,21 @@ export const RUN_TONE: Record<ScoutRun['status'], StatusTone> = {
   SUCCEEDED: 'ok',
   FAILED: 'warn',
   SKIPPED: 'later',
+};
+
+export const QUEUE_VIEWS: readonly EnrichmentQueueView[] = ['WAITING', 'SKIPPED', 'OUT_OF_RETRIES'];
+/** Why a resource waits, or why it does not, in words first; the tone only repeats it. */
+export const QUEUE_TONE: Record<
+  NonNullable<EnrichmentQueueEntry['waiting']> | EnrichmentQueueEntry['state'],
+  StatusTone
+> = {
+  NEW: 'next',
+  MODEL_UNAVAILABLE: 'later',
+  RETRY: 'warn',
+  PRIORITISED: 'ok',
+  WAITING: 'next',
+  SKIPPED: 'later',
+  OUT_OF_RETRIES: 'warn',
 };
 
 export const CHECK_OUTCOMES: readonly ExampleCheckOutcome[] = ['PASS', 'WEAK', 'FAIL', 'PENDING'];

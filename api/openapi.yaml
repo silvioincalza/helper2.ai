@@ -494,9 +494,13 @@ paths:
       operationId: listEnrichmentQueue
       summary: The enrichment backlog, in the order the Scout takes it.
       description: >-
-        Never-run resources first, then model-unavailable and failed ones with retries left, each part newest
-        discovery first. Paged by cursor: pass `next` from the previous page as `after`. Read-only.
+        WAITING (the default): the ones an admin moved to the top first, then never-run resources, then
+        model-unavailable and failed ones with retries left, each part newest discovery first. SKIPPED: the ones an
+        admin skipped, the latest skip first. OUT_OF_RETRIES: the ones whose failed runs reached the cap, newest
+        discovery first. Paged by cursor: pass `next` from the
+        previous page as `after`, with the same view.
       parameters:
+        - { name: view, in: query, schema: { $ref: '#/components/schemas/EnrichmentQueueView' } }
         - { name: after, in: query, description: The previous page's next cursor; omit for the first page., schema: { type: string, maxLength: 200 } }
         - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
       responses:
@@ -508,6 +512,65 @@ paths:
         '400': { $ref: '#/components/responses/Problem' }
         '401': { $ref: '#/components/responses/Problem' }
         '403': { $ref: '#/components/responses/Problem' }
+
+  /admin/enrichment-queue/{resourceId}/requeue:
+    post:
+      tags: [enrichment-queue]
+      operationId: requeueEnrichment
+      summary: Put a skipped resource, or one out of retries, back into the enrichment queue.
+      description: >-
+        Undoes a skip. For a resource out of retries, only the failed runs from now on count against the cap. The
+        resource takes its own place again; the daily enrichment cap still applies. 409 not-applicable when the
+        resource is neither skipped nor out of retries. Every call is in the audit trail (REQUEUE_ENRICHMENT).
+      parameters:
+        - { name: resourceId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204': { description: Requeued. }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+
+  /admin/enrichment-queue/{resourceId}/skip:
+    post:
+      tags: [enrichment-queue]
+      operationId: skipEnrichment
+      summary: Take a waiting resource out of the enrichment queue until it is requeued.
+      description: >-
+        Drops a move to the top. 409 not-applicable when the resource does not wait or is already skipped. Every call
+        is in the audit trail (SKIP_ENRICHMENT).
+      parameters:
+        - { name: resourceId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EnrichmentSkip' }
+      responses:
+        '204': { description: Skipped. }
+        '400': { $ref: '#/components/responses/Problem' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+
+  /admin/enrichment-queue/{resourceId}/prioritise:
+    post:
+      tags: [enrichment-queue]
+      operationId: prioritiseEnrichment
+      summary: Move a waiting resource to the top of the enrichment queue until its next run.
+      description: >-
+        The Scout takes it in its next batch, within the daily enrichment cap: the order changes, the number of model
+        calls does not. At most 50 resources wait at the top. 409 not-applicable when the resource does not wait, is
+        already at the top, or the top is full. Every call is in the audit trail (PRIORITISE_ENRICHMENT).
+      parameters:
+        - { name: resourceId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204': { description: Moved to the top. }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
 
   /admin/audit:
     get:
@@ -816,7 +879,7 @@ components:
         the same stable code on its own, so a client reacts to the code, never to the title text. Codes:
         invalid-request (400), sign-in-required (401), forbidden (403), not-found (404), method-not-allowed (405),
         not-acceptable (406), unsupported-media-type (415), already-decided, run-in-progress, version-conflict,
-        duplicate (409), rate-limited (429), internal (500), unavailable (503), timed-out (504).
+        duplicate, not-applicable (409), rate-limited (429), internal (500), unavailable (503), timed-out (504).
       properties:
         type: { type: string, format: uri }
         title: { type: string }
@@ -1933,18 +1996,35 @@ components:
           items: { $ref: '#/components/schemas/EnrichmentQueueEntry' }
         next: { type: [string, 'null'], description: The cursor of the next page; null on the last page. }
 
+    EnrichmentQueueView:
+      type: string
+      description: "WAITING: the backlog in the Scout's order. SKIPPED: skipped by an admin. OUT_OF_RETRIES: failed runs reached the cap."
+      enum: [WAITING, SKIPPED, OUT_OF_RETRIES]
+      default: WAITING
+
+    EnrichmentSkip:
+      type: object
+      properties:
+        reason: { type: [string, 'null'], maxLength: 200, description: Why the resource is skipped; optional. }
+
     EnrichmentQueueEntry:
       type: object
-      required: [resourceId, title, waiting, firstDiscoveredAt, failedRuns]
+      required: [resourceId, title, state, firstDiscoveredAt, failedRuns]
       properties:
         resourceId: { type: string, format: uuid }
         title: { type: string }
-        waiting:
+        state:
           type: string
-          description: "NEW: never enriched. MODEL_UNAVAILABLE: the last run found no model. RETRY: the last run FAILED and retries are left."
-          enum: [NEW, MODEL_UNAVAILABLE, RETRY]
+          description: "PRIORITISED: moved to the top by an admin. WAITING: in its own part. SKIPPED: skipped by an admin. OUT_OF_RETRIES: failed runs reached the cap."
+          enum: [PRIORITISED, WAITING, SKIPPED, OUT_OF_RETRIES]
+        waiting:
+          type: [string, 'null']
+          description: "Why it waits; null when it does not (SKIPPED, OUT_OF_RETRIES). NEW: never enriched. MODEL_UNAVAILABLE: the last run found no model. RETRY: the last run FAILED and retries are left."
+          enum: [NEW, MODEL_UNAVAILABLE, RETRY, null]
+        skippedAt: { type: [string, 'null'], format: date-time, description: When it was skipped; null unless SKIPPED. }
+        skipReason: { type: [string, 'null'], description: The reason given when it was skipped. }
         firstDiscoveredAt: { type: string, format: date-time }
-        failedRuns: { type: integer, minimum: 0 }
+        failedRuns: { type: integer, minimum: 0, description: Failed runs since an admin last requeued it; the number the cap is checked against. }
         lastOutcome: { type: [string, 'null'], enum: [VALIDATED, PARTIAL, REJECTED, LLM_UNAVAILABLE, FAILED, null] }
         lastRunAt: { type: [string, 'null'], format: date-time }
 
@@ -2011,10 +2091,10 @@ components:
       properties:
         id: { type: string, format: uuid }
         adminId: { type: string, description: "The administrator's provider subject (GitHub: the numeric user id)." }
-        action: { type: string, enum: [RESOLVE_REVIEW_ITEM, START_SCOUT_RUN, ADD_HOME_EXAMPLE, CHANGE_HOME_EXAMPLE, REMOVE_HOME_EXAMPLE, DRAFT_HOME_EXAMPLES, RECHECK_ENRICHMENT] }
-        targetId: { type: [string, 'null'], description: "The review item id, the source id or the home example id; null when a run covered every source." }
+        action: { type: string, enum: [RESOLVE_REVIEW_ITEM, START_SCOUT_RUN, ADD_HOME_EXAMPLE, CHANGE_HOME_EXAMPLE, REMOVE_HOME_EXAMPLE, DRAFT_HOME_EXAMPLES, RECHECK_ENRICHMENT, REQUEUE_ENRICHMENT, SKIP_ENRICHMENT, PRIORITISE_ENRICHMENT] }
+        targetId: { type: [string, 'null'], description: "The review item id, the source id, the home example id or the resource id; null when a run covered every source." }
         at: { type: string, format: date-time }
-        outcome: { type: string, description: "ACCEPTED, REJECTED, NOT_OPEN or NOT_FOUND for a review item; STARTED or BUSY for a Scout run; ADDED, CHANGED, PAUSED, ACTIVATED, REMOVED, DUPLICATE, CONFLICT, INVALID or NOT_FOUND for a home example." }
+        outcome: { type: string, description: "ACCEPTED, REJECTED, NOT_OPEN or NOT_FOUND for a review item; STARTED or BUSY for a Scout run; ADDED, CHANGED, PAUSED, ACTIVATED, REMOVED, DUPLICATE, CONFLICT, INVALID or NOT_FOUND for a home example; REQUEUED, SKIPPED, PRIORITISED, NOT_FOUND, NOT_STOPPED, NOT_WAITING, ALREADY_SKIPPED, ALREADY_PRIORITISED or TOP_FULL for the enrichment queue." }
 
     EnrichmentRecheck:
       type: object

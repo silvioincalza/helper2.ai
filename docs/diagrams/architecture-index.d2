@@ -7,7 +7,9 @@
 #   backend/src/main/java/ai/helper2/catalog/enrichment/ (EnrichmentCandidates, EnrichmentResults: the Scout's way in),
 #   backend/src/main/java/ai/helper2/catalog/EnrichmentFacts.java, catalog/usecase/GetResourceDetail.java (the detail page's way out),
 #   backend/src/main/java/ai/helper2/scout/internal/CatalogEnrichmentStore.java,
-#   scout/usecase/IndexAcceptedCandidate.kt, scout/internal/ResourceCandidateJson.java, admin/usecase/ResolveReview.java.
+#   scout/usecase/IndexAcceptedCandidate.kt, scout/internal/ResourceCandidateJson.java, admin/usecase/ResolveReview.java,
+#   scout/EnrichmentQueue.kt, scout/usecase/{Requeue,Skip,Prioritise}Enrichment.kt, scout/internal/JdbcEnrichmentQueueControl.java,
+#   catalog/internal/BacklogRule.java, admin/web/EnrichmentQueueController.java (enrichment queue actions, ADR 0045 §7).
 # Render: cd docs/diagrams && d2 fmt architecture-index.d2 && d2 architecture-index.d2 architecture-index.svg
 
 ...@style
@@ -26,6 +28,10 @@ scout: "scout (Kotlin domain)" {
   class: group
   core: "RunScout · EnrichResource\nEvidenceValidator · FieldTargets\nGapTargets · PageTargets\nOfficialPages · UntrustedPageText\n(evidence ladder)" {class: app}
   accept: "IndexAcceptedCandidate\n(accept a resource candidate,\nADR 0051)" {class: app}
+  queue: "RequeueEnrichment · SkipEnrichment\nPrioritiseEnrichment · QueuePlace\n(enrichment queue actions,\nADR 0045 §7)" {class: app}
+  p_queue: "EnrichmentQueueControl\nUnitOfWork" {class: port}
+  queue -> p_queue
+  queue -> p_stores: "where it stands"
   p_candidates: "CandidateReview\nCandidateDetails · CatalogLookup" {class: port}
   json: "ReviewQueueCandidateReview\nResourceCandidateJson" {class: app}
   core -> p_candidates: "candidates to review"
@@ -38,7 +44,8 @@ scout: "scout (Kotlin domain)" {
   p_enrich: EnrichmentModel {class: port}
   p_stores: "ScoutStore\nEnrichmentStore\nEnrichmentBacklog" {class: port}
   model: "SpringAiEnrichmentModel" {class: app}
-  jdbc: "JdbcScoutStore\nCatalogEnrichmentStore" {class: app}
+  jdbc: "JdbcScoutStore\nCatalogEnrichmentStore\nJdbcEnrichmentQueueControl" {class: app}
+  jdbc -> p_queue: implements {class: config}
   core -> p_collector
   core -> p_extra: "evidence ladder\n(ADR 0043, 0056)"
   core -> p_index
@@ -78,10 +85,11 @@ nebius: "Nebius Token Factory\nNemotron 3 Super" {class: ai}
 nvapi: "NVIDIA API catalog\nnemotron-3.5-embed-1b" {class: ai}
 hosts: "registry.modelcontextprotocol.io\nhuggingface.co · api.github.com\nraw.githubusercontent.com · api.tavily.com" {class: ext}
 
-backoffice: "admin module\nAdminController · ResolveReview\nPOST /admin/scout-runs\nPUT /admin/review-items/{id}/resolution\nGET /admin/enrichment-queue" {class: app}
-admin -> backoffice: "trigger run, review"
+backoffice: "admin module\nAdminController · ResolveReview\nPOST /admin/scout-runs\nPUT /admin/review-items/{id}/resolution\nGET /admin/enrichment-queue\nPOST /admin/enrichment-queue/{id}/\nrequeue · skip · prioritise" {class: app}
+admin -> backoffice: "trigger run, review,\norder the enrichment queue"
 backoffice -> scout.core
 backoffice -> scout.jdbc: "enrichment queue (read)"
+backoffice -> scout.queue: "requeue, skip, prioritise"
 backoffice -> scout.accept: "accept a resource candidate"
 scout.json -> catalog.catalog: "RESOURCE_CANDIDATE items"
 sources.collectors -> scout.p_collector: implements {class: config}
@@ -92,7 +100,7 @@ sources.evidence -> hosts: "HTTPS: evidence ladder\nREADMEs, model cards,\nPOST 
 sources.classifier -> nebius: "classify repos" {class: ai-call}
 scout.model -> nebius: "enrich" {class: ai-call}
 scout.jdbc -> catalog.p_enrichment: "backlog, source text,\nrecord runs"
-scout.jdbc -> pg: "JDBC: scout_run, cursors,\nsource.last_outcome"
+scout.jdbc -> pg: "JDBC: scout_run, cursors,\nsource.last_outcome,\nenrichment_queue_control (writes)"
 catalog.store -> pg: JDBC
-catalog.enrichment -> pg: JDBC
+catalog.enrichment -> pg: "JDBC; the backlog reads\nenrichment_queue_control"
 catalog.embed -> nvapi: "/embeddings" {class: ai-call}

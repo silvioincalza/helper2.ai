@@ -322,11 +322,22 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
           {
             resourceId: '11111111-1111-5111-8111-111111111111',
             title: 'Acme MCP',
+            state: 'WAITING',
             waiting: 'RETRY',
             firstDiscoveredAt: '2026-11-04T09:00:00Z',
             failedRuns: 1,
             lastOutcome: 'FAILED',
             lastRunAt: '2026-11-05T08:00:00Z',
+          },
+          {
+            resourceId: '22222222-2222-5222-8222-222222222222',
+            title: 'Top MCP',
+            state: 'PRIORITISED',
+            waiting: 'NEW',
+            firstDiscoveredAt: '2026-11-04T08:00:00Z',
+            failedRuns: 0,
+            lastOutcome: null,
+            lastRunAt: null,
           },
         ],
         next: 'c2',
@@ -370,7 +381,11 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
     expect(await axeViolations(examples.container)).toEqual([]);
     examples.unmount();
     const enrichment = renderApp('/admin/enrichment');
-    await within(await screen.findByRole('main')).findByText('Acme MCP');
+    await within(await screen.findByRole('main')).findByRole('link', { name: 'Acme MCP' });
+    expect(await axeViolations(enrichment.container)).toEqual([]);
+    // The skip confirm, with its reason field, open in the row.
+    await userEvent.click(screen.getByRole('button', { name: 'Skip Acme MCP' }));
+    await screen.findByRole('textbox', { name: 'Reason (optional)' });
     expect(await axeViolations(enrichment.container)).toEqual([]);
     enrichment.unmount();
     const audit = renderApp('/admin/audit');

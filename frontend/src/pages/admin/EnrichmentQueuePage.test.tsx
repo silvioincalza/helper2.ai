@@ -10,6 +10,7 @@ const entry = (
 ): EnrichmentQueuePage['items'][number] => ({
   resourceId: '11111111-1111-5111-8111-111111111111',
   title: 'Acme MCP',
+  state: 'WAITING',
   waiting: 'NEW',
   firstDiscoveredAt: '2026-11-04T09:00:00Z',
   failedRuns: 0,
@@ -65,12 +66,12 @@ describe('Feature: the enrichment queue shows what the Scout takes next', () => 
           : { items: [entry({ title: 'First page item' })], next: 'c2' },
     });
     renderApp('/admin/enrichment');
-    await screen.findByText('First page item');
+    await screen.findByRole('link', { name: 'First page item' });
     await userEvent.click(screen.getByRole('button', { name: 'Next page' }));
-    expect(await screen.findByText('Second page')).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: 'Second page' })).toBeInTheDocument();
     expect(m.callsTo('GET', '/admin/enrichment-queue').at(-1)?.search).toBe('?after=c2&size=20');
     await userEvent.click(screen.getByRole('button', { name: 'First page' }));
-    expect(await screen.findByText('First page item')).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: 'First page item' })).toBeInTheDocument();
   });
 
   it('Scenario: an empty queue says so, and a failed load offers Try again', async () => {
@@ -89,5 +90,110 @@ describe('Feature: the enrichment queue shows what the Scout takes next', () => 
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: 'Enrichment queue' })).toHaveFocus(),
     );
+  });
+});
+
+const ACME = '/admin/enrichment-queue/11111111-1111-5111-8111-111111111111';
+
+describe('Feature: the admin changes the order of the enrichment queue', () => {
+  it('Scenario: Move to top puts a waiting resource first, says so, and reloads the queue', async () => {
+    let top = false;
+    const m = mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/enrichment-queue': () => ({
+        items: [entry(top ? { state: 'PRIORITISED' } : {})],
+        next: null,
+      }),
+      [`POST ${ACME}/prioritise`]: () => {
+        top = true;
+      },
+    });
+    renderApp('/admin/enrichment');
+    await userEvent.click(await screen.findByRole('button', { name: 'Move to top Acme MCP' }));
+
+    const done = await screen.findByText(/^“Acme MCP” is at the top\./);
+    expect(done).toHaveAttribute('role', 'status');
+    await waitFor(() => expect(done).toHaveFocus());
+    expect(m.callsTo('POST', `${ACME}/prioritise`)).toHaveLength(1);
+    expect(await screen.findByText('At the top')).toHaveClass('h2-status-pill--ok');
+    expect(screen.queryByRole('button', { name: 'Move to top Acme MCP' })).not.toBeInTheDocument();
+  });
+
+  it('Scenario: Skip asks first, takes an optional reason, and Cancel gives focus back', async () => {
+    const m = mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/enrichment-queue': () => ({ items: [entry()], next: null }),
+      [`POST ${ACME}/skip`]: () => undefined,
+    });
+    renderApp('/admin/enrichment');
+    const skip = await screen.findByRole('button', { name: 'Skip Acme MCP' });
+
+    await userEvent.click(skip);
+    expect(screen.getByRole('textbox', { name: 'Reason (optional)' })).toHaveFocus();
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(m.callsTo('POST', `${ACME}/skip`)).toHaveLength(0);
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Skip Acme MCP' })).toHaveFocus(),
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'Skip Acme MCP' }));
+    await userEvent.type(screen.getByRole('textbox', { name: 'Reason (optional)' }), 'Not AI');
+    await userEvent.click(screen.getByRole('button', { name: 'Skip' }));
+
+    expect(await screen.findByText(/is skipped\. Find it under Skipped/)).toBeInTheDocument();
+    expect(m.callsTo('POST', `${ACME}/skip`).map((c) => c.body)).toEqual([{ reason: 'Not AI' }]);
+  });
+
+  it('Scenario: the Skipped view lists the skips with their reason, and Requeue undoes one', async () => {
+    const m = mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/enrichment-queue': ({ url }) =>
+        url.searchParams.get('view') === 'SKIPPED'
+          ? {
+              items: [
+                entry({
+                  state: 'SKIPPED',
+                  waiting: null,
+                  skippedAt: '2026-11-05T09:00:00Z',
+                  skipReason: 'Not AI',
+                }),
+              ],
+              next: null,
+            }
+          : { items: [], next: null },
+      [`POST ${ACME}/requeue`]: () => undefined,
+    });
+    renderApp('/admin/enrichment');
+    await screen.findByText('Nothing waits for enrichment.');
+
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Show' }), 'Skipped');
+    expect(await screen.findByText('Not AI')).toBeInTheDocument();
+    expect(screen.getByText('Skipped', { selector: '.h2-status-pill' })).toBeInTheDocument();
+    expect(m.callsTo('GET', '/admin/enrichment-queue').at(-1)?.search).toBe(
+      '?view=SKIPPED&size=20',
+    );
+    expect(screen.queryByRole('button', { name: /^Skip / })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Requeue Acme MCP' }));
+    expect(
+      await screen.findByText('“Acme MCP” is back in the queue, in its own place.'),
+    ).toHaveFocus();
+    expect(m.callsTo('POST', `${ACME}/requeue`)).toHaveLength(1);
+  });
+
+  it('Scenario: an action that no longer applies says why, and the queue reloads', async () => {
+    const m = mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/enrichment-queue': () => ({ items: [entry()], next: null }),
+      [`POST ${ACME}/prioritise`]: () =>
+        problem(409, 'Not applicable', '50 resources already wait at the top.'),
+    });
+    renderApp('/admin/enrichment');
+    await userEvent.click(await screen.findByRole('button', { name: 'Move to top Acme MCP' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Nothing changed: 50 resources already wait at the top.');
+    await waitFor(() => expect(alert).toHaveFocus());
+    await waitFor(() => expect(m.callsTo('GET', '/admin/enrichment-queue')).toHaveLength(2));
   });
 });

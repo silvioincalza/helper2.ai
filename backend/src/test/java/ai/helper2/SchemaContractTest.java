@@ -93,6 +93,8 @@ class SchemaContractTest {
                     // A source's checkpoint and run history go with it.
                     Map.entry("source_cursor.source_id", "source CASCADE"),
                     Map.entry("scout_run.source_id", "source CASCADE"),
+                    // An admin's queue decision on a resource goes with it (ADR 0045 §7).
+                    Map.entry("enrichment_queue_control.resource_id", "resource CASCADE"),
                     // The facts of a resource live as long as the resource.
                     Map.entry("resource_label.resource_id", "resource CASCADE"),
                     Map.entry("source_record.resource_id", "resource CASCADE"),
