@@ -47,8 +47,8 @@ them without each module growing an admin corner.
    - **Move to top** puts a waiting resource before every other part, the accepted products included. It holds until
      the resource's next run starts. At most 50 wait at the top: with no limit, the order would be whatever I clicked
      last.
-   - **Skip** takes a waiting resource out of the backlog until I requeue it, with an optional reason (200 characters).
-     It drops a move to the top.
+   - **Skip** takes a waiting resource out of the backlog until I requeue it, with an optional reason (200 characters,
+     control characters dropped; the form says "No personal data"). It drops a move to the top.
    - **Requeue** undoes a skip. For a resource out of retries (its last run FAILED, and 3 FAILED runs), only the FAILED
      runs from now on count against the cap, so it gets 3 more tries.
    - The page has three views, in the address: waiting (the Scout's order), skipped (the latest skip first), out of
@@ -56,7 +56,11 @@ them without each module growing an admin corner.
    - An unknown resource is a 404. An action that does not apply (requeue a waiting resource, skip a skipped one, move
      one more to a full top) is a 409 `not-applicable` with the reason in words. Every call writes one audit row, in
      the same transaction as the change: `REQUEUE_ENRICHMENT`, `SKIP_ENRICHMENT`, `PRIORITISE_ENRICHMENT`, with the
-     outcome (`REQUEUED`, `SKIPPED`, `PRIORITISED`, or the reason it did not apply, `NOT_FOUND` included).
+     outcome (`REQUEUED`, `REQUEUED_RESET` when the retries start again, `SKIPPED`, `PRIORITISED`, or the reason it
+     did not apply, `NOT_FOUND` included).
+   - A move to the top first takes a Postgres advisory lock for the rest of its transaction
+     (`pg_advisory_xact_lock`), then counts. Two moves at the same second wait for each other, so the limit of 50 is
+     strict.
    - **Who owns what.** The decisions are the Scout's: the rules are `QueuePlace` (Kotlin, no framework) and one use
      case per action. They are stored in a Scout table, `enrichment_queue_control`, one row per resource I touched,
      gone with the resource. The Scout is its only writer. The backlog SQL stays in the catalog (`BacklogRule`), and
@@ -77,8 +81,7 @@ them without each module growing an admin corner.
 - The queue has no total of its own: the overview's count is the total, up to a minute old. A resource that changes
   part between two pages (a run finishes) can be skipped or shown twice; the next visit shows it in its place.
 - A skip or a move to the top changes which resources get the daily model calls, never how many.
-- The limit of 50 at the top is checked, then written, in one transaction, without a lock: two admins at the same
-  second could make it 51. With one admin, that is fine.
+- Moves to the top run one at a time (the advisory lock). They are rare admin clicks, so the wait is short.
 - The catalog's SQL names a Scout table. The table-owner test lists it as an exception, so it stays visible.
 
 ## Alternatives considered
@@ -102,7 +105,7 @@ them without each module growing an admin corner.
 - `backend/src/main/resources/db/migration/V10__resource_enrichment_backlog_idx.sql`; `catalog/enrichment/EnrichmentCandidates.java`
   and `catalog/internal/JdbcEnrichmentCandidates.java` (`pending`, `pendingCount`, `backlog`, `standing`, `prioritisedCount`),
   `catalog/internal/BacklogRule.java`.
-- Queue actions: `V12__enrichment_queue_control.sql`; `backend/src/main/kotlin/ai/helper2/scout/EnrichmentQueue.kt`
+- Queue actions: `V14__enrichment_queue_control.sql`; `backend/src/main/kotlin/ai/helper2/scout/EnrichmentQueue.kt`
   (`QueuePlace`), `scout/Scout.kt` (`EnrichmentQueueControl`, `UnitOfWork`), `scout/usecase/RequeueEnrichment.kt`,
   `SkipEnrichment.kt`, `PrioritiseEnrichment.kt`; `scout/internal/JdbcEnrichmentQueueControl.java`,
   `ScoutConfiguration.java`; `admin/web/EnrichmentQueueController.java`; `platform/ProblemType.java` (`NOT_APPLICABLE`).

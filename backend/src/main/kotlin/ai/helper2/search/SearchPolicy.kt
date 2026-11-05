@@ -3,7 +3,7 @@ package ai.helper2.search
 import java.time.Duration
 
 /**
- * What search allows and keeps, as the text pages state it (GET /api/v1/policy, ADR 0051). Built
+ * What search allows and keeps, as the text pages state it (GET /api/v1/policy, ADR 0052). Built
  * once from the module's settings; read, never counted.
  *
  * @property webSearches live web searches per visitor, feature and UTC day (ADR 0037)

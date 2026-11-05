@@ -7,6 +7,7 @@
 #   backend/src/main/java/ai/helper2/catalog/enrichment/ (EnrichmentCandidates, EnrichmentResults: the Scout's way in),
 #   backend/src/main/java/ai/helper2/catalog/EnrichmentFacts.java, catalog/usecase/GetResourceDetail.java (the detail page's way out),
 #   backend/src/main/java/ai/helper2/scout/internal/CatalogEnrichmentStore.java,
+#   catalog/usecase/IndexAwesomeLists.java, catalog/internal/AwesomeListIndex.java (ADR 0055),
 #   scout/usecase/IndexAcceptedCandidate.kt, scout/internal/ResourceCandidateJson.java, admin/usecase/ResolveReview.java,
 #   scout/EnrichmentQueue.kt, scout/usecase/{Requeue,Skip,Prioritise}Enrichment.kt, scout/internal/JdbcEnrichmentQueueControl.java,
 #   catalog/internal/BacklogRule.java, admin/web/EnrichmentQueueController.java (enrichment queue actions, ADR 0045 §7).
@@ -40,7 +41,7 @@ scout: "scout (Kotlin domain)" {
   json -> p_candidates: implements {class: config}
   p_collector: Collector {class: port}
   p_extra: "ExtraEvidence · GapBudget\nPageReader · ExtractBudget\nPageLedger · PageTextCache\nDomainRoots · StoredAnswers" {class: port}
-  p_index: CatalogIndex {class: port}
+  p_index: "CatalogIndex\nListIndex (ADR 0055)" {class: port}
   p_enrich: EnrichmentModel {class: port}
   p_stores: "ScoutStore\nEnrichmentStore\nEnrichmentBacklog" {class: port}
   model: "SpringAiEnrichmentModel" {class: app}
@@ -65,10 +66,10 @@ sources: "sources (collectors, gap evidence)" {
 
 catalog: "catalog (Java)" {
   class: group
-  catalog: "IndexResources · ReviewQueue" {class: app}
+  catalog: "IndexResources · IndexAwesomeLists\nReviewQueue · BackfillCategories" {class: app}
   p_enrichment: "catalog::enrichment\nEnrichmentCandidates\nEnrichmentResults" {class: port}
   enrichment: "JdbcEnrichmentCandidates\nJdbcEnrichmentResults" {class: app}
-  store: ResourceStore {class: app}
+  store: "ResourceStore\nAwesomeListIndex" {class: app}
   enrichment -> p_enrichment: implements {class: config}
   detail: GetResourceDetail {class: app}
   p_facts: "EnrichmentFacts\n(detail page)" {class: port}
@@ -80,7 +81,7 @@ catalog: "catalog (Java)" {
   embed -> store: "pending texts, vectors"
 }
 
-pg: "PostgreSQL\nresources, facts with evidence,\nreview items, embeddings" {shape: cylinder; class: data}
+pg: "PostgreSQL\nresources, facts with evidence,\nreview items, embeddings,\nawesome-list search index" {shape: cylinder; class: data}
 nebius: "Nebius Token Factory\nNemotron 3 Super" {class: ai}
 nvapi: "NVIDIA API catalog\nnemotron-3.5-embed-1b" {class: ai}
 hosts: "registry.modelcontextprotocol.io\nhuggingface.co · api.github.com\nraw.githubusercontent.com · api.tavily.com" {class: ext}

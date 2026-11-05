@@ -22,6 +22,14 @@ class JdbcEnrichmentQueueControl implements EnrichmentQueueControl {
     this.jdbc = jdbc;
   }
 
+  /** A transaction-level advisory lock: Postgres releases it at commit or rollback. */
+  @Override
+  public void lockTop() {
+    jdbc.sql("SELECT pg_advisory_xact_lock(hashtext('enrichment_queue_control'))")
+        .query()
+        .singleRow();
+  }
+
   @Override
   public void prioritise(UUID resourceId, Instant at) {
     jdbc.sql(

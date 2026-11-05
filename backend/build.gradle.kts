@@ -201,6 +201,9 @@ tasks.withType<Test>().configureEach {
   // A slow CI runner can take more than production's 250 ms for one Redis round trip to the
   // container. Set for every test, not per class, so the tests keep sharing one Spring context.
   systemProperty("spring.data.redis.timeout", "5s")
+  // The category backfill (ADR 0053) would run in the background of every new test context and
+  // race the test's own writes; the tests that need it call it.
+  systemProperty("helper2.catalog.categories.backfill-at-startup", "false")
   doFirst {
     val socket = podmanSocket.get()
     if (

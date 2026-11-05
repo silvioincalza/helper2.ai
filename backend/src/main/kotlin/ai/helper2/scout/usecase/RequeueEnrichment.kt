@@ -12,7 +12,8 @@ import java.util.UUID
  * An administrator puts a resource back into the enrichment queue (ADR 0045 §7): a skip is undone,
  * and for a resource out of retries only the FAILED runs from now on count against the cap. It
  * takes its own place in the backlog again, within the daily enrichment cap. The audit entry's
- * outcome is REQUEUED, or why the action did not apply; it commits with the change.
+ * outcome is REQUEUED_RESET when the retries start again, REQUEUED otherwise, or why the action did
+ * not apply; it commits with the change.
  */
 class RequeueEnrichment(
   private val backlog: EnrichmentBacklog,
@@ -32,7 +33,7 @@ class RequeueEnrichment(
       adminId,
       AuditTrail.Action.REQUEUE_ENRICHMENT,
       resourceId.toString(),
-      recorded(outcome, "REQUEUED"),
+      recorded(outcome, if (place?.outOfRetries == true) "REQUEUED_RESET" else "REQUEUED"),
     )
     outcome
   }

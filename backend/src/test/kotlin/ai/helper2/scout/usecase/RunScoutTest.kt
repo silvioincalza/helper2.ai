@@ -13,6 +13,9 @@ import ai.helper2.scout.EnrichmentModel
 import ai.helper2.scout.EnrichmentOutcome
 import ai.helper2.scout.EnrichmentProposal
 import ai.helper2.scout.EnrichmentStore
+import ai.helper2.scout.ListEntryText
+import ai.helper2.scout.ListIndex
+import ai.helper2.scout.ListText
 import ai.helper2.scout.LlmUnavailable
 import ai.helper2.scout.Material
 import ai.helper2.scout.ModelAnswerInvalid
@@ -863,6 +866,42 @@ class RunScoutTest {
   }
 
   @Test
+  fun `a pass that fails or is deferred stays open, and the next run gets it`() {
+    val failing = FakeCollector(descriptor("failing")) { throw IllegalStateException("boom") }
+    val capped = FakeCollector(descriptor("capped")) { CollectedBatch.deferred("cap reached") }
+    val idle = FakeCollector(descriptor("idle")) { CollectedBatch.notDue() }
+    val runs =
+      RunScout(listOf(failing, capped, idle), history, catalog, null, clock, NO_LOCK).runNow()!!
+
+    assertEquals(
+      listOf(RunStatus.FAILED, RunStatus.SKIPPED, RunStatus.SKIPPED),
+      runs.map { it.status },
+    )
+    assertEquals("cap reached", runs[1].message)
+    assertEquals(ScoutCursor(null, null, NOW.toString()), history.cursors["failing"])
+    assertEquals(ScoutCursor(null, null, NOW.toString()), history.cursors["capped"])
+    assertNull(history.cursors["idle"])
+
+    val seen = mutableListOf<ScoutCursor>()
+    val retry =
+      object : Collector {
+        override val descriptor = descriptor("failing")
+
+        override fun collect(checkpoint: String?, resumeCursor: String?, maxItems: Int) =
+          error("the Scout passes the whole cursor")
+
+        override fun collect(cursor: ScoutCursor, maxItems: Int): CollectedBatch {
+          seen += cursor
+          return CollectedBatch(emptyList(), null, "done")
+        }
+      }
+    RunScout(listOf(retry), history, catalog, null, clock, NO_LOCK).runNow()
+
+    assertEquals(listOf(ScoutCursor(null, null, NOW.toString())), seen)
+    assertEquals(ScoutCursor(NOW.toString(), null, null), history.cursors["failing"])
+  }
+
+  @Test
   fun `unfinished pass resumes from the saved cursor and checkpoints at the pass start`() {
     val first = java.time.Instant.parse("2026-10-26T10:00:00Z")
     val second = java.time.Instant.parse("2026-10-26T11:00:00Z")
@@ -1020,6 +1059,66 @@ class RunScoutTest {
     assertEquals(listOf("course-scout" to found), proposed)
     assertEquals(emptyList(), changedIds)
     assertEquals(NOW.toString(), history.cursors["course-scout"]!!.checkpoint)
+  }
+
+  private fun listText(url: String) =
+    ListText(
+      CanonicalUrl.of(url)!!,
+      "Tools\n",
+      listOf(ListEntryText(CanonicalUrl.of("https://github.com/a/b")!!, "B - a tool", "Tools")),
+    )
+
+  @Test
+  fun `list text a collector returns reaches the list index after its hits are indexed`() {
+    val order = mutableListOf<String>()
+    val indexed = mutableListOf<ListText>()
+    val lists = ListIndex { texts ->
+      order += "lists"
+      indexed += texts
+    }
+    val texts = listOf(listText("https://github.com/acme/awesome-llm"))
+    val c =
+      FakeCollector(descriptor("github-awesome")) {
+        CollectedBatch(
+          listOf(hit("github-awesome", "https://github.com/a/b")),
+          null,
+          "cp",
+          lists = texts,
+        )
+      }
+    val indexingCatalog = CatalogIndex { results, source ->
+      order += "hits"
+      catalog.index(results, source)
+    }
+
+    val run =
+      RunScout(listOf(c), history, indexingCatalog, null, clock, NO_LOCK, lists = lists)
+        .runNow()!!
+        .single()
+
+    assertEquals(RunStatus.SUCCEEDED, run.status)
+    assertEquals(texts, indexed)
+    assertEquals(listOf("hits", "lists"), order)
+  }
+
+  @Test
+  fun `a list index that fails does not fail the pass`() {
+    val lists = ListIndex { throw IllegalStateException("database down") }
+    val c =
+      FakeCollector(descriptor("github-awesome")) {
+        CollectedBatch(
+          emptyList(),
+          null,
+          "cp",
+          lists = listOf(listText("https://github.com/acme/awesome-llm")),
+        )
+      }
+
+    val run =
+      RunScout(listOf(c), history, catalog, null, clock, NO_LOCK, lists = lists).runNow()!!.single()
+
+    assertEquals(RunStatus.SUCCEEDED, run.status)
+    assertEquals(NOW.toString(), history.cursors["github-awesome"]!!.checkpoint)
   }
 
   @Test

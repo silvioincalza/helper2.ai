@@ -130,6 +130,9 @@ describe('Feature: the admin changes the order of the enrichment queue', () => {
 
     await userEvent.click(skip);
     expect(screen.getByRole('textbox', { name: 'Reason (optional)' })).toHaveFocus();
+    expect(screen.getByRole('textbox', { name: 'Reason (optional)' })).toHaveAccessibleDescription(
+      'No personal data',
+    );
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(m.callsTo('POST', `${ACME}/skip`)).toHaveLength(0);
     await waitFor(() =>

@@ -179,7 +179,7 @@ object UntrustedPageText {
   private val LINK = Regex("\\[([^\\]]{0,300})]\\([^)]{0,2000}\\)")
   private val SCRIPT_OR_STYLE =
     Regex("<(script|style)\\b[\\s\\S]{0,20000}?</\\1\\s*>", RegexOption.IGNORE_CASE)
-  private val TAG = Regex("</?[A-Za-z][^>]{0,2000}>")
+  private val TAG = Regex("</?[A-Za-z][^>]{0,$MAX_TAG_CHARS}>")
   private val REFERENCE_LINK = Regex("(?m)^ {0,3}\\[[^\\]\\n]{1,300}]:[^\\n]{0,2000}$")
 
   /**
@@ -212,12 +212,35 @@ object UntrustedPageText {
         "set (the )?(pricing|price|licen[cs]e|field|value|audience)\\b)[^\\n]{0,500}$"
     )
 
-  /** An element a browser does not show: its text goes with it. */
-  private val HIDDEN_ELEMENT =
+  /**
+   * Longest tag read, attributes included: the same as [TAG] strips, so a tag the cleaner removes
+   * is always one whose attributes were checked. A longer one is text, unless it hides something.
+   */
+  private const val MAX_TAG_CHARS = 2000
+
+  /** Attributes that make an element one a browser does not show. */
+  private val HIDDEN_ATTRIBUTE =
     Regex(
-      "<([A-Za-z][A-Za-z0-9]{0,20})\\b[^>]{0,2000}?(?:\\bhidden\\b|display\\s*:\\s*none|" +
-        "visibility\\s*:\\s*hidden|aria-hidden\\s*=\\s*[\"']?true)[^>]{0,2000}>[\\s\\S]{0,20000}?</\\1\\s*>",
+      "\\bhidden\\b|display\\s*:\\s*none|visibility\\s*:\\s*hidden|aria-hidden\\s*=\\s*[\"']?true",
       RegexOption.IGNORE_CASE,
+    )
+
+  /** Elements with no closing tag: a hidden one ("<input type=hidden>") is only its tag. */
+  private val VOID_ELEMENTS =
+    setOf(
+      "area",
+      "base",
+      "br",
+      "col",
+      "embed",
+      "hr",
+      "img",
+      "input",
+      "link",
+      "meta",
+      "source",
+      "track",
+      "wbr",
     )
   private val FRONT_MATTER = Regex("\\A---\\n[\\s\\S]*?\\n---\\n")
   private val BLANK_LINES = Regex("\\n{3,}")
@@ -249,7 +272,7 @@ object UntrustedPageText {
     s = s.replace(FRONT_MATTER, "")
     s = s.replace(COMMENT, "")
     s = s.replace(SCRIPT_OR_STYLE, "")
-    s = s.replace(HIDDEN_ELEMENT, "")
+    s = dropHidden(s)
     s = s.replace(IMAGE, "")
     s = s.replace(LINK, "$1")
     s = s.replace(REFERENCE_LINK, "")
@@ -258,6 +281,150 @@ object UntrustedPageText {
     s = s.replace(PHONE, "[phone]")
     s = s.replace(INSTRUCTION_LINE, "")
     return s.replace(TRAILING_SPACE, "\n").replace(BLANK_LINES, "\n\n").trim()
+  }
+
+  /**
+   * Elements a browser does not show go with their whole subtree, nested tags of the same name
+   * included, so no hidden text reaches the model as a quote. Tags are read as a browser reads
+   * them: quoted attribute values may hold "<" and ">", and "/>" closes only a void element. A
+   * hidden element that never closes, or a tag that mentions hiding and never ends, takes the rest
+   * of the page. Each tag is read at most [MAX_TAG_CHARS] far, so the pass stays linear.
+   */
+  internal fun dropHidden(text: String): String {
+    val hiding = HIDDEN_ATTRIBUTE.findAll(text).map { it.range.first }.toList().toIntArray()
+    fun hides(tag: Tag) = hiding.any(tag.attributesFrom, tag.attributesTo)
+    val out = StringBuilder(text.length)
+    var from = 0
+    var at = 0
+    while (true) {
+      val lt = text.indexOf('<', at)
+      if (lt < 0) break
+      val tag = readTag(text, lt)
+      when {
+        tag == null -> at = lt + 1
+        tag.end < 0 ->
+          if (hides(tag)) {
+            return out.append(text, from, lt).toString()
+          } else {
+            at = lt + 1
+          }
+        tag.closing -> at = tag.end
+        !hides(tag) -> at = if (tag.name in RAW_TEXT) rawTextEnd(text, tag) ?: break else tag.end
+        else -> {
+          out.append(text, from, lt)
+          from =
+            if (tag.name in VOID_ELEMENTS || closesItself(tag)) tag.end
+            else closeOf(text, tag.name, tag.end) ?: return out.toString()
+          at = from
+        }
+      }
+    }
+    return out.append(text, from, text.length).toString()
+  }
+
+  /**
+   * A tag as read from "<": its lower-case name, where its attributes are, and where it ends (-1:
+   * not within [MAX_TAG_CHARS]).
+   */
+  private class Tag(
+    val name: String,
+    val closing: Boolean,
+    val attributesFrom: Int,
+    val attributesTo: Int,
+    val end: Int,
+    /** Ends in "/>": honoured only in SVG and MathML (foreign content) and for void elements. */
+    val selfClosing: Boolean = false,
+  )
+
+  /**
+   * "/>" closes an element only where a browser honours it: on svg and math, which the browser
+   * always reads as SVG or MathML, wherever they stand. Any other hidden element with "/>" stays
+   * open, so its text stays hidden (to its closing tag, or the end of the page).
+   */
+  private fun closesItself(tag: Tag): Boolean = tag.selfClosing && tag.name in FOREIGN_ROOTS
+
+  private val FOREIGN_ROOTS = setOf("svg", "math")
+
+  /** Elements whose content a browser reads as text, not tags: a "</div>" inside closes nothing. */
+  private val RAW_TEXT =
+    setOf("textarea", "title", "xmp", "iframe", "noembed", "noframes", "noscript")
+
+  /** Where the raw-text element [tag] ends, after its closing tag; null if it never closes. */
+  private fun rawTextEnd(text: String, tag: Tag): Int? {
+    var at = tag.end
+    while (true) {
+      val lt = text.indexOf("</", at)
+      if (lt < 0) return null
+      val close = readTag(text, lt)
+      if (close != null && close.closing && close.name == tag.name) {
+        return if (close.end < 0) null else close.end
+      }
+      at = lt + 2
+    }
+  }
+
+  /** A start in these sorted positions falls in [from, to). */
+  private fun IntArray.any(from: Int, to: Int): Boolean {
+    val i = binarySearch(from).let { if (it >= 0) it else -it - 1 }
+    return i < size && this[i] < to
+  }
+
+  /** The tag that starts at [lt], or null when "<" starts no tag ("a<b", "< 3"). */
+  private fun readTag(text: String, lt: Int): Tag? {
+    var i = lt + 1
+    val closing = i < text.length && text[i] == '/'
+    if (closing) i++
+    val nameStart = i
+    if (i >= text.length || !text[i].isLetter() || text[i].code > 127) return null
+    while (i < text.length && i - nameStart <= 20 && text[i].isLetterOrDigit()) i++
+    if (i < text.length && !(text[i].isWhitespace() || text[i] == '/' || text[i] == '>')) {
+      return null
+    }
+    val name = text.substring(nameStart, i).lowercase()
+    val limit = minOf(text.length, lt + MAX_TAG_CHARS)
+    // As a browser: a quote opens a value only right after "=" (spaces allowed), in an end tag
+    // too.
+    // A "/" that ends an unquoted value ("x=a/>") is part of the value, not a self-closing slash.
+    var quote = ' '
+    var afterEquals = false
+    var unquoted = false
+    var j = i
+    while (j < limit) {
+      val c = text[j]
+      when {
+        quote != ' ' -> if (c == quote) quote = ' '
+        c == '>' ->
+          return Tag(name, closing, i, j, j + 1, selfClosing = text[j - 1] == '/' && !unquoted)
+        afterEquals && (c == '"' || c == '\'') -> quote = c
+        afterEquals && !c.isWhitespace() -> unquoted = true
+        unquoted && c.isWhitespace() -> unquoted = false
+      }
+      if (quote == ' ') afterEquals = !unquoted && (c == '=' || (afterEquals && c.isWhitespace()))
+      j++
+    }
+    return Tag(name, closing, i, limit, -1)
+  }
+
+  /** Where the element [name] opened before [from] ends, counting nested ones; null if never. */
+  private fun closeOf(text: String, name: String, from: Int): Int? {
+    var depth = 1
+    var at = from
+    while (true) {
+      val lt = text.indexOf('<', at)
+      if (lt < 0) return null
+      val tag = readTag(text, lt)
+      when {
+        tag == null -> at = lt + 1
+        tag.end < 0 -> return null
+        !tag.closing && tag.name in RAW_TEXT -> at = rawTextEnd(text, tag) ?: return null
+        tag.name != name -> at = tag.end
+        tag.closing -> if (--depth == 0) return tag.end else at = tag.end
+        else -> {
+          if (!closesItself(tag)) depth++
+          at = tag.end
+        }
+      }
+    }
   }
 
   /**

@@ -31,6 +31,9 @@ class EnrichmentQueueActionsTest {
   private val changes = mutableListOf<String>()
   private val audit = mutableListOf<String>()
 
+  /** The order of the top lock and the count, for the strict limit of 50. */
+  private val topSteps = mutableListOf<String>()
+
   private val backlog =
     object : EnrichmentBacklog {
       override fun pending(limit: Int) = emptyList<UUID>()
@@ -45,13 +48,20 @@ class EnrichmentQueueActionsTest {
 
       override fun place(resourceId: UUID) = if (resourceId == id) place else null
 
-      override fun prioritisedCount() = atTop
+      override fun prioritisedCount(): Int {
+        topSteps += "count"
+        return atTop
+      }
 
       override fun eligible(resourceIds: List<UUID>) = resourceIds
     }
 
   private val control =
     object : EnrichmentQueueControl {
+      override fun lockTop() {
+        topSteps += "lock"
+      }
+
       override fun prioritise(resourceId: UUID, at: Instant) {
         changes += "prioritise $resourceId $at"
       }
@@ -92,6 +102,12 @@ class EnrichmentQueueActionsTest {
   }
 
   @Test
+  fun `prioritise locks the top before it counts, so the limit holds for two admins at once`() {
+    prioritise.prioritise("42", id)
+    assertEquals(listOf("lock", "count"), topSteps)
+  }
+
+  @Test
   fun `prioritise changes nothing when the top is full, and records why`() {
     atTop = QueuePlace.MAX_PRIORITISED
     assertEquals(QueueOutcome.TOP_FULL, prioritise.prioritise("42", id))
@@ -109,6 +125,12 @@ class EnrichmentQueueActionsTest {
   }
 
   @Test
+  fun `skip drops control characters from the reason`() {
+    skip.skip("42", id, "\u0000 not\u0007 AI\n\t")
+    assertEquals(listOf("skip $id not AI $now"), changes)
+  }
+
+  @Test
   fun `a reason longer than the limit is refused before anything`() {
     assertThrows<IllegalArgumentException> {
       skip.skip("42", id, "x".repeat(SkipEnrichment.MAX_REASON + 1))
@@ -118,13 +140,16 @@ class EnrichmentQueueActionsTest {
   }
 
   @Test
-  fun `requeue resets the failures only for a resource out of retries`() {
+  fun `requeue resets the failures only for a resource out of retries, and records REQUEUED_RESET`() {
     place = waiting.copy(skipped = true)
     assertEquals(QueueOutcome.DONE, requeue.requeue("42", id))
     place = QueuePlace(due = false, outOfRetries = true, skipped = false, prioritised = false)
     assertEquals(QueueOutcome.DONE, requeue.requeue("42", id))
     assertEquals(listOf("requeue $id false $now", "requeue $id true $now"), changes)
-    assertEquals(List(2) { "42 REQUEUE_ENRICHMENT $id REQUEUED" }, audit)
+    assertEquals(
+      listOf("42 REQUEUE_ENRICHMENT $id REQUEUED", "42 REQUEUE_ENRICHMENT $id REQUEUED_RESET"),
+      audit,
+    )
   }
 
   @Test

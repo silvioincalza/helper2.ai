@@ -11,7 +11,8 @@ import java.util.UUID
 /**
  * An administrator moves a waiting resource to the top of the enrichment queue (ADR 0045 §7). It is
  * taken in the Scout's next batch, within the daily enrichment cap. The audit entry's outcome is
- * PRIORITISED, or why the action did not apply; it commits with the change.
+ * PRIORITISED, or why the action did not apply; it commits with the change. The top is locked
+ * before the count, so two admins at the same second cannot pass the limit together.
  */
 class PrioritiseEnrichment(
   private val backlog: EnrichmentBacklog,
@@ -22,6 +23,7 @@ class PrioritiseEnrichment(
 ) {
 
   fun prioritise(adminId: String, resourceId: UUID): QueueOutcome = unitOfWork.run {
+    control.lockTop()
     val outcome =
       backlog.place(resourceId)?.prioritise(backlog.prioritisedCount()) ?: QueueOutcome.NOT_FOUND
     if (outcome == QueueOutcome.DONE) {

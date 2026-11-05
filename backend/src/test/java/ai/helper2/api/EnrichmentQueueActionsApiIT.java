@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ai.helper2.scout.EnrichmentQueueControl;
 import com.jayway.jsonpath.JsonPath;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -16,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +26,8 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.OAuth2LoginRequestPostProcessor;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * POST /admin/enrichment-queue/{id}/requeue|skip|prioritise (ADR 0045 §7): ADMIN only with CSRF,
@@ -35,6 +39,8 @@ class EnrichmentQueueActionsApiIT extends ApiTestBase {
   static final String TEXT = "A description long enough for the model to cite something.";
 
   @Autowired JdbcClient jdbc;
+  @Autowired EnrichmentQueueControl control;
+  @Autowired PlatformTransactionManager transactions;
 
   final String adminId = "queue-" + UUID.randomUUID();
   final OAuth2LoginRequestPostProcessor admin =
@@ -223,6 +229,31 @@ class EnrichmentQueueActionsApiIT extends ApiTestBase {
         .containsEntry("state", "WAITING")
         .containsEntry("waiting", "RETRY")
         .containsEntry("failedRuns", 0);
+    assertThat(audit())
+        .containsExactly("SKIP_ENRICHMENT NOT_WAITING", "REQUEUE_ENRICHMENT REQUEUED_RESET");
+  }
+
+  /**
+   * The top lock holds until the transaction ends, so a second move to the top waits for the first
+   * one's count and write: the limit of 50 is strict.
+   */
+  @Test
+  void theTopLockHoldsUntilTheTransactionEnds() {
+    new TransactionTemplate(transactions)
+        .executeWithoutResult(status -> {
+          control.lockTop();
+          assertThat(tryTopLockElsewhere()).isFalse();
+        });
+    assertThat(tryTopLockElsewhere()).isTrue();
+  }
+
+  /** On another thread, so on another connection and outside the transaction above. */
+  boolean tryTopLockElsewhere() {
+    return CompletableFuture.supplyAsync(() ->
+            jdbc.sql("SELECT pg_try_advisory_xact_lock(hashtext('enrichment_queue_control'))")
+                .query(Boolean.class)
+                .single())
+        .join();
   }
 
   @Test

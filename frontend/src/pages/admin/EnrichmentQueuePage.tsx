@@ -191,9 +191,13 @@ export default function EnrichmentQueuePage() {
                             ref={focusOnMount}
                             value={reason}
                             maxLength={REASON_MAX}
+                            aria-describedby="skip-reason-hint"
                             onChange={(ev) => setReason(ev.target.value)}
                           />
                         </label>
+                        <span id="skip-reason-hint" className="muted small">
+                          {t('admin.enrichment.reasonHint')}
+                        </span>
                         <button type="button" className="btn" onClick={() => cancelSkip(e)}>
                           {t('admin.enrichment.cancel')}
                         </button>

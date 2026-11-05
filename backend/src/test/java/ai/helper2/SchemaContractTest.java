@@ -99,6 +99,10 @@ class SchemaContractTest {
                     Map.entry("resource_label.resource_id", "resource CASCADE"),
                     Map.entry("source_record.resource_id", "resource CASCADE"),
                     Map.entry("resource_embedding.resource_id", "resource CASCADE"),
+                    // The awesome-list search index goes with the list or the entry (ADR 0055).
+                    Map.entry("awesome_list_entry.list_id", "resource CASCADE"),
+                    Map.entry("awesome_list_entry.resource_id", "resource CASCADE"),
+                    Map.entry("awesome_list.list_id", "resource CASCADE"),
                     Map.entry("evidence.source_record_id", "source_record CASCADE"),
                     Map.entry("enrichment_run.resource_id", "resource CASCADE"),
                     Map.entry("field_assertion.resource_id", "resource CASCADE"),

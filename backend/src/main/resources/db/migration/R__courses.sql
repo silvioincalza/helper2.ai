@@ -153,7 +153,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET
     tech_level = EXCLUDED.tech_level, pricing = EXCLUDED.pricing, data_origin = EXCLUDED.data_origin, modified_at = now();
 
 DELETE FROM resource_label
-WHERE resource_id IN (SELECT uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, canonical_url) FROM course_seed);
+WHERE kind <> 'CATEGORY' AND resource_id IN (SELECT uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, canonical_url) FROM course_seed);
 
 INSERT INTO resource_label (resource_id, kind, value)
 SELECT uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, s.canonical_url), l.kind, l.value

@@ -4,6 +4,7 @@
 #   searchAll, keep, matchedWords, candidateTags), backend/src/main/java/ai/helper2/sources/tavily/DiscoveryPages.java (classify,
 #   isListPage, productSite, siteTitle), backend/src/main/java/ai/helper2/sources/tavily/ScoutTavilyCredits.java,
 #   backend/src/main/java/ai/helper2/sources/support/RunInterval.java (staggered),
+#   backend/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt (keepPassOpen),
 #   backend/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java,
 #   backend/src/main/java/ai/helper2/scout/internal/ResourceCandidateJson.java (merge, mergedTags),
 #   backend/src/main/kotlin/ai/helper2/scout/usecase/IndexAcceptedCandidate.kt,
@@ -14,14 +15,14 @@
 
 direction: down
 
-due: "Scout run: is this category due?\n(its first day of the week, then\n7 days since its last pass)" {class: decision}
+due: "Scout run: is this category due?\n(its first day of the week, then\n7 days since its last pass;\nan open pass always is)" {class: decision}
 notdue: "SKIPPED\n\"Not due yet: next pass on ...\"" {class: end}
 cap: "Scout's Tavily credits today\nunder the daily cap (40)?" {class: decision}
-capped: "SKIPPED\n\"Daily Tavily credit cap\nof the Scout reached\"" {class: end}
+capped: "SKIPPED\n\"Daily Tavily credit cap\nof the Scout reached\";\npass stays open" {class: end}
 search: "The category's 1 or 2 searches\n(general, advanced, 10 results; date,\nicon URL and credits asked; no page text,\nimages or answer; excluded sites;\nonly pages since the last pass)" {class: ext}
 count: "Credits counted on the global\nand the Scout's counters" {class: data}
 outage: "Half or more of\nthe searches failed?" {class: decision}
-failed: "Pass FAILED,\ncheckpoint stays" {class: fail}
+failed: "Pass FAILED,\ncheckpoint stays,\npass stays open" {class: fail}
 score: "Score ≥ the category's min-score\nand about AI?" {class: decision}
 drop: "Dropped" {class: end}
 own: "GitHub repository\nor home page?" {class: decision}

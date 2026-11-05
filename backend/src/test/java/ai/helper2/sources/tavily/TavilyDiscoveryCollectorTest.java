@@ -9,8 +9,10 @@ import ai.helper2.platform.quota.QuotaKeys;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.Candidate;
 import ai.helper2.scout.CollectedBatch;
+import ai.helper2.scout.ScoutCursor;
 import ai.helper2.search.SourceHit;
 import ai.helper2.shared.CanonicalUrl;
+import ai.helper2.shared.CategoryWords;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.sources.SourceFixtures;
 import ai.helper2.sources.support.SourceSettings;
@@ -91,7 +93,7 @@ class TavilyDiscoveryCollectorTest {
         "Name of " + id,
         type,
         queries,
-        DiscoveryCategory.Keywords.of(words),
+        CategoryWords.of(words),
         Duration.ofDays(7),
         enabled,
         minScore,
@@ -315,28 +317,44 @@ class TavilyDiscoveryCollectorTest {
     CollectedBatch batch = collector("tvly-test", 40, SELF_HOSTED).collect(null, null, 1000);
 
     assertThat(batch.getNotDue()).isTrue();
+    assertThat(batch.getDeferred()).isTrue();
     assertThat(batch.getSkipReason()).contains("credit cap");
     assertThat(server.requestBodies).isEmpty();
   }
 
   @Test
   void aCategoryWhoseDayHasNotComeSaysWhenItWill() {
-    // The second category of the list starts on day 1 of the week; the fixtures' day is day 0.
-    TavilyDiscoveryCollector second =
-        new TavilyDiscoveryCollector(
-            new SourceSettings(true, server.baseUrl(), "t", Duration.ofSeconds(2), Duration.ZERO),
-            ObservedHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP),
-            SourceFixtures.CLOCK,
-            Resilience.NONE,
-            new TavilyDiscoveryCollector.Search("advanced", 10),
-            SELF_HOSTED,
-            List.of(LOCAL_AI, SELF_HOSTED),
-            new ScoutTavilyCredits(counter, keys, 40, meters));
-    CollectedBatch batch = second.collect(null, null, 1000);
+    CollectedBatch batch = secondOfTheList().collect(null, null, 1000);
 
     assertThat(batch.getNotDue()).isTrue();
+    assertThat(batch.getDeferred()).isFalse();
     assertThat(batch.getSkipReason()).isEqualTo("Not due yet: next pass on 2026-10-23");
     assertThat(server.requestBodies).isEmpty();
+  }
+
+  @Test
+  void aFirstPassThatDidNotFinishIsTriedAgainOnTheNextRunWhateverTheDay() {
+    server.route("/search", FixtureServer.Reply.ok(RESULTS));
+    // Its first try, on its own day, failed or met the daily cap: the Scout kept the pass open.
+    ScoutCursor open = new ScoutCursor(null, null, "2026-10-16T03:00:00Z");
+
+    CollectedBatch batch = secondOfTheList().collect(open, 1000);
+
+    assertThat(batch.getNotDue()).isFalse();
+    assertThat(server.requestBodies).hasSize(1);
+  }
+
+  /** The second category of the list starts on day 1 of the week; the fixtures' day is day 0. */
+  private TavilyDiscoveryCollector secondOfTheList() {
+    return new TavilyDiscoveryCollector(
+        new SourceSettings(true, server.baseUrl(), "t", Duration.ofSeconds(2), Duration.ZERO),
+        ObservedHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP),
+        SourceFixtures.CLOCK,
+        Resilience.NONE,
+        new TavilyDiscoveryCollector.Search("advanced", 10),
+        SELF_HOSTED,
+        List.of(LOCAL_AI, SELF_HOSTED),
+        new ScoutTavilyCredits(counter, keys, 40, meters));
   }
 
   @Test
@@ -418,8 +436,8 @@ class TavilyDiscoveryCollectorTest {
 
   @Test
   void aCategoryFitsByItsWordsAtTheStartOfAWordWithHyphensAsSpaces() {
-    DiscoveryCategory.Keywords words =
-        DiscoveryCategory.Keywords.of(List.of("Fine tuning platform", " lora ", "text-to-speech"));
+    CategoryWords words =
+        CategoryWords.of(List.of("Fine tuning platform", " lora ", "text-to-speech"));
     assertThat(words.words()).containsExactly("fine tuning platform", "lora", "text-to-speech");
     assertThat(words.matchedIn("A Fine-Tuning platform")).containsExactly("fine tuning platform");
     assertThat(words.matchedIn("Train a LoRA adapter")).containsExactly("lora");

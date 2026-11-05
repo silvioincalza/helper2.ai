@@ -24,11 +24,15 @@ class SkipEnrichment(
 
   companion object {
     const val MAX_REASON = 200
+    private val CONTROL_CHARACTERS = Regex("\\p{Cc}")
   }
 
-  /** A blank reason counts as none; one longer than [MAX_REASON] is refused before anything. */
+  /**
+   * Control characters are dropped and the reason is trimmed; a blank reason counts as none, and
+   * one longer than [MAX_REASON] is refused before anything.
+   */
   fun skip(adminId: String, resourceId: UUID, reason: String?): QueueOutcome {
-    val note = reason?.trim()?.ifEmpty { null }
+    val note = reason?.replace(CONTROL_CHARACTERS, "")?.trim()?.ifEmpty { null }
     require(note == null || note.length <= MAX_REASON) {
       "reason must be at most $MAX_REASON characters"
     }

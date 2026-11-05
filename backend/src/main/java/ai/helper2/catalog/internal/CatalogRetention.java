@@ -84,6 +84,22 @@ public class CatalogRetention {
     return owners.size();
   }
 
+  /**
+   * Awesome-list search index rows (ADR 0055) that no pass refreshed since [cutoff]: the list left
+   * the lists the collector reads. Returns the rows deleted, entries and lists together.
+   */
+  public int deleteListIndexUpdatedBefore(Instant cutoff) {
+    int entries =
+        jdbc.sql("DELETE FROM awesome_list_entry WHERE updated_at < :cutoff")
+            .param("cutoff", Timestamp.from(cutoff))
+            .update();
+    int lists =
+        jdbc.sql("DELETE FROM awesome_list WHERE updated_at < :cutoff")
+            .param("cutoff", Timestamp.from(cutoff))
+            .update();
+    return entries + lists;
+  }
+
   /** Observed and indexed events that ended (or, without an end, started) before [cutoff]. */
   public int deleteEventsEndedBefore(Instant cutoff) {
     return jdbc.sql(

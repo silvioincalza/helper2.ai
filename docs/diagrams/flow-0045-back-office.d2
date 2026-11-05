@@ -85,10 +85,10 @@ act: "RequeueEnrichment · SkipEnrichment · PrioritiseEnrichment\n(one transact
   direction: down
   known: "Resource known?" {class: decision}
   notfound: "404, audit NOT_FOUND" {class: fail}
-  applies: "Action applies?\nrequeue: skipped or out of retries\nskip: waits, not skipped\nprioritise: waits, not at the top,\nfewer than 50 at the top" {class: decision}
+  applies: "Action applies?\nrequeue: skipped or out of retries\nskip: waits, not skipped\nprioritise (after the top lock): waits,\nnot at the top, fewer than 50 at the top" {class: decision}
   refused: "409 not-applicable,\naudit the reason" {class: fail}
   write: "Write the control row\n(priority until the next run;\nskip; failures counted from now)" {class: data}
-  done: "204, audit REQUEUED,\nSKIPPED or PRIORITISED" {class: end}
+  done: "204, audit REQUEUED (REQUEUED_RESET\nwhen the retries start again),\nSKIPPED or PRIORITISED" {class: end}
   known -> notfound: no
   known -> applies: yes
   applies -> refused: no

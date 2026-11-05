@@ -1,6 +1,8 @@
 package ai.helper2.scout.internal;
 
+import ai.helper2.catalog.AwesomeListText;
 import ai.helper2.catalog.ReviewQueue;
+import ai.helper2.catalog.usecase.IndexAwesomeLists;
 import ai.helper2.catalog.usecase.IndexResources;
 import ai.helper2.identity.AuditTrail;
 import ai.helper2.platform.ClusterLock;
@@ -24,6 +26,8 @@ import ai.helper2.scout.EnrichmentStore;
 import ai.helper2.scout.EvidenceValidator;
 import ai.helper2.scout.ExtraEvidence;
 import ai.helper2.scout.GapBudget;
+import ai.helper2.scout.ListIndex;
+import ai.helper2.scout.ListText;
 import ai.helper2.scout.LlmUnavailable;
 import ai.helper2.scout.OfficialPages;
 import ai.helper2.scout.PageLedger;
@@ -126,6 +130,22 @@ class ScoutConfiguration {
     return indexResources::index;
   }
 
+  /** The catalog's search index of awesome lists (ADR 0055). */
+  @Bean
+  ListIndex listIndex(IndexAwesomeLists indexAwesomeLists) {
+    return lists ->
+        indexAwesomeLists.replace(lists.stream().map(ScoutConfiguration::catalogText).toList());
+  }
+
+  private static AwesomeListText catalogText(ListText list) {
+    return new AwesomeListText(
+        list.getUrl(),
+        list.getHeadings(),
+        list.getEntries().stream()
+            .map(e -> new AwesomeListText.Entry(e.getUrl(), e.getText(), e.getHeadingPath()))
+            .toList());
+  }
+
   /**
    * Held by every Scout run, scheduled or from the admin button, on whichever replica, for as long
    * as the run lives: a lease of {@link #RUN_LOCK_LEASE}, extended every half lease. A pod that
@@ -154,6 +174,7 @@ class ScoutConfiguration {
       Clock clock,
       ClusterLock scoutRunLock,
       CandidateReview review,
+      ListIndex listIndex,
       MeterRegistry meters,
       ObservationRegistry observations,
       ObjectProvider<ExtraEvidence> extraEvidence,
@@ -201,7 +222,8 @@ class ScoutConfiguration {
         meters,
         RUN_THREADS,
         observations,
-        review);
+        review,
+        listIndex);
   }
 
   /**

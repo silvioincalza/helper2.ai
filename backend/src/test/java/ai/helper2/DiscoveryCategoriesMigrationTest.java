@@ -59,12 +59,7 @@ class DiscoveryCategoriesMigrationTest {
             "{\"sourceId\":\"tavily-discovery\",\"url\":\"https://x\",\"tags\":[\"coding\"]}")
         .update();
 
-    try (Connection c = dataSource.getConnection();
-        Statement s = c.createStatement()) {
-      c.setAutoCommit(false);
-      s.execute(Files.readString(V9));
-      c.commit();
-    }
+    runV9();
 
     assertThat(sourceOf(tagged)).isEqualTo("discovery-local-ai");
     assertThat(categoriesOf(tagged)).isEqualTo("[\"local-ai\", \"self-hosted\"]");
@@ -82,9 +77,47 @@ class DiscoveryCategoriesMigrationTest {
         .isZero();
   }
 
-  private static UUID record(String run, String name, String tags) {
+  @Test
+  void aResourceWhoseDiscoveryRecordIsGoneMovesToTheFallbackCollector() throws Exception {
+    String run = UUID.randomUUID().toString().substring(0, 8);
+    jdbc.sql(
+            """
+            INSERT INTO source (id, name, mode, homepage) VALUES ('tavily-discovery', 'Old', 'INDEXED', 'https://tavily.com')
+            ON CONFLICT (id) DO NOTHING
+            """)
+        .update();
+    UUID kept = resource("https://v9-" + run + ".example/kept");
+    jdbc.sql("UPDATE resource SET updated_source_id = 'tavily-discovery' WHERE id = :id")
+        .param("id", kept)
+        .update();
+
+    runV9();
+
+    assertThat(
+            jdbc.sql(
+                    "SELECT published_source_id || ' ' || updated_source_id FROM resource WHERE id = :id")
+                .param("id", kept)
+                .query(String.class)
+                .single())
+        .isEqualTo("discovery-ai-assistants discovery-ai-assistants");
+    assertThat(
+            jdbc.sql("SELECT count(*) FROM source WHERE id = 'tavily-discovery'")
+                .query(Long.class)
+                .single())
+        .isZero();
+  }
+
+  private static void runV9() throws Exception {
+    try (Connection c = dataSource.getConnection();
+        Statement s = c.createStatement()) {
+      c.setAutoCommit(false);
+      s.execute(Files.readString(V9));
+      c.commit();
+    }
+  }
+
+  private static UUID resource(String url) {
     UUID resource = UUID.randomUUID();
-    String url = "https://v9-" + run + ".example/" + name;
     jdbc.sql(
             """
             INSERT INTO resource (id, canonical_url, url, title, description_origin, type, audience, data_origin,
@@ -94,6 +127,12 @@ class DiscoveryCategoriesMigrationTest {
         .param("id", resource)
         .param("url", url)
         .update();
+    return resource;
+  }
+
+  private static UUID record(String run, String name, String tags) {
+    String url = "https://v9-" + run + ".example/" + name;
+    UUID resource = resource(url);
     UUID id = UUID.randomUUID();
     jdbc.sql(
             """

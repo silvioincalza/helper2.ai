@@ -498,11 +498,16 @@ class JdbcEnrichmentCandidatesIT {
     assertThat(candidates.lastJudgedFingerprint(id)).isEqualTo("after");
   }
 
-  /** The two backlog parts read the partial backlog index (#219), not the whole table. */
+  /**
+   * The two backlog parts read the partial backlog index (#219), not the whole table. Fresh
+   * statistics first: rows that other tests in the same run added and removed must not change the
+   * plan.
+   */
   @Test
   void theNextBatchReadsTheBacklogIndex() {
     String plan =
         tx.execute(status -> {
+          jdbc.sql("ANALYZE resource").update();
           jdbc.sql("SET LOCAL enable_seqscan = off").update();
           return String.join(
               "\n",

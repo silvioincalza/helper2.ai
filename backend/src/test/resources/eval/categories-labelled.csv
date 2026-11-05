@@ -1,0 +1,8 @@
+# Category labels for the CategoryMatcher evaluation (ADR 0053). One row per resource, labelled by a person.
+# Columns: title, description (what its sources wrote), tags (";"-separated), type (ResourceType), finders (source ids,
+# ";"-separated), expected (the category ids a person would give it, ";"-separated, empty = none), note.
+# Lines starting with # are skipped: the two rows below only show the format, they are not labels.
+# Run: cd backend && ./gradlew evalTest --tests ai.helper2.eval.CategoryEvalTest  (report: build/eval/categories.md)
+title,description,tags,type,finders,expected,note
+# "Example coding tool","An AI coding assistant for your editor","code-review;ide",PRODUCT,github,coding,format example
+# "Example notes app","Takes notes in meetings and writes the summary","",PRODUCT,discovery-meetings-and-transcription,meetings-and-transcription,format example

@@ -37,7 +37,7 @@ follow: Follow a count {
 act: Act on the enrichment queue {
   owner -> spa: "/admin/enrichment: Move to top"
   spa -> api: "POST /api/v1/admin/enrichment-queue/{id}/prioritise (CSRF)"
-  api -> db: "where the resource stands,\nhow many at the top (backlog rule)"
+  api -> db: "lock the top (pg_advisory_xact_lock),\nwhere the resource stands,\nhow many at the top (backlog rule)"
   api -> db: "one transaction: control row\n+ audit PRIORITISE_ENRICHMENT"
   api -> spa: "204 (409 not-applicable with the reason)"
   spa -> api: "GET /api/v1/admin/enrichment-queue"

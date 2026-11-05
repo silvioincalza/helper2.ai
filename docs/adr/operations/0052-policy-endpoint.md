@@ -1,4 +1,4 @@
-# 0051 — Policy endpoint: the limits and retention periods the text pages state, read from the configuration
+# 0052 — Policy endpoint: the limits and retention periods the text pages state, read from the configuration
 
 **Status.** Accepted. **Builds on:** [0003](../foundation/0003-contract-first-rest-api.md), [0007](../foundation/0007-configuration-and-secrets.md), [0017](../guide/0017-guide-cost-guard.md), [0024](../edge/0024-http-edge-protection.md), [0034](0034-data-retention.md), [0037](../search/0037-tavily-store-and-daily-quota.md)
 
@@ -65,7 +65,7 @@ day" while the server allows 50, and nothing fails. For the Privacy page that is
 - `backend/src/test/java/ai/helper2/api/PolicyApiIT.java` — contract, cache header, values from configuration, rate limit.
 
 ## Diagrams
-[flow](../../diagrams/flow-0051-policy-endpoint.svg) · [sequence](../../diagrams/sequence-0051-policy-endpoint.svg)
+[flow](../../diagrams/flow-0052-policy-endpoint.svg) · [sequence](../../diagrams/sequence-0052-policy-endpoint.svg)
 
 ## Frontend
 The Mission, Privacy and Terms pages read the numbers from `GET /api/v1/policy`

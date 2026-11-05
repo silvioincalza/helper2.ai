@@ -251,6 +251,75 @@ class ResourceStoreIT {
     assertThat(tags(id)).containsExactly("mcp");
   }
 
+  private List<String> categories(UUID id) {
+    return jdbc.sql(
+            "SELECT value FROM resource_label WHERE resource_id = :id AND kind = 'CATEGORY'"
+                + " ORDER BY value")
+        .param("id", id)
+        .query(String.class)
+        .list();
+  }
+
+  @Test
+  void indexingAssignsCategoriesFromEveryRecordForEverySource() {
+    String repo = "https://github.com/acme/coder-" + run;
+    UUID id = ResourceId.of(CanonicalUrl.of(repo)).getValue();
+    store.upsert(
+        merge(titled("github", repo, "Acme AI coding assistant " + run)),
+        DataOrigin.OBSERVED,
+        LIVE);
+
+    assertThat(categories(id)).containsExactly("coding");
+    assertThat(store.findResource(id).orElseThrow().categories()).containsExactly("coding");
+    assertThat(details.find(id).orElseThrow().card().getCategories()).containsExactly("coding");
+  }
+
+  @Test
+  void categoriesDoNotTakeTheRoomOfTheTwentyTags() {
+    String repo = "https://github.com/acme/tagged-" + run;
+    UUID id = ResourceId.of(CanonicalUrl.of(repo)).getValue();
+    Set<String> many = new java.util.TreeSet<>();
+    for (int i = 0; i < 25; i++) {
+      many.add("aa-tag-" + (char) ('a' + i));
+    }
+    many.add("self-hosted");
+    store.upsert(merge(hit("github", repo, null, many, List.of())), DataOrigin.OBSERVED, LIVE);
+
+    assertThat(tags(id)).hasSize(ResourceStore.MAX_TAGS).doesNotContain("self-hosted");
+    assertThat(categories(id)).containsExactly("self-hosted");
+  }
+
+  @Test
+  void aDiscoveryFinderGivesItsCategoryAndAHealthTagAloneDoesNot() {
+    String repo = "https://github.com/acme/finder-" + run;
+    UUID id = ResourceId.of(CanonicalUrl.of(repo)).getValue();
+    SourceHit found =
+        titled("discovery-legal", repo, "Acme " + run).withFacts(Map.of("foundBy", List.of()));
+    store.upsert(
+        merge(found, hit("github", repo, null, Set.of("health"), List.of())),
+        DataOrigin.OBSERVED,
+        Set.of("discovery-legal", "github"));
+
+    assertThat(categories(id)).containsExactly("legal");
+  }
+
+  @Test
+  void refreshingCategoriesTwiceGivesTheSameLabels() {
+    String repo = "https://github.com/acme/again-" + run;
+    UUID id = ResourceId.of(CanonicalUrl.of(repo)).getValue();
+    store.upsert(
+        merge(titled("github", repo, "A self-hosted coding assistant " + run)),
+        DataOrigin.OBSERVED,
+        LIVE);
+    jdbc.sql("DELETE FROM resource_label WHERE resource_id = :id AND kind = 'CATEGORY'")
+        .param("id", id)
+        .update();
+
+    assertThat(store.refreshCategories(List.of(id))).isEqualTo(1);
+    assertThat(store.refreshCategories(List.of(id))).isEqualTo(1);
+    assertThat(categories(id)).containsExactly("coding", "self-hosted");
+  }
+
   @Test
   void onlyChangedRecordsAreReportedAndAListingTwiceIsOneRecord() {
     String repo = "https://github.com/acme/changes-" + run;
