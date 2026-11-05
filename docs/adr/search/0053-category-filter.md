@@ -95,7 +95,9 @@ them assigned by code first, and measured on labelled items before a model is ev
   collector.
 - **Repudiation:** the admin backfill is in the audit trail (`BACKFILL_CATEGORIES`).
 - **Information disclosure:** no personal data. Categories come from public source data; the filter values are
-  category ids from a fixed list. The guide's category filter is part of the cache key as ids only.
+  category ids from a fixed list. The guide's category filter is part of the cache key as ids only, and the cached
+  answer keeps it for as long as the answer (`H2_GUIDE_CACHE_TTL`, 24 h), not linked to a person. The Privacy page
+  says so, next to what the guide receives and caches.
 - **Denial of service:** `category` has at most 40 values, each tag-shaped and at most 30 characters, checked against
   the list before the search runs. The facet is computed in memory over at most 30 hits per source. The backfill is
   batched, holds a cluster lock and runs in the background. `GET /categories` is cached and rate-limited.
