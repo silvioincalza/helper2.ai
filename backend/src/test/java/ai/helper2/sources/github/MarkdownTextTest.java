@@ -1,7 +1,9 @@
 package ai.helper2.sources.github;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
+import java.time.Duration;
 import org.junit.jupiter.api.Test;
 
 class MarkdownTextTest {
@@ -53,5 +55,20 @@ class MarkdownTextTest {
   /** One code point as a string: invisible characters stay visible in the source. */
   private static String c(int codePoint) {
     return Character.toString(codePoint);
+  }
+
+  /** A README line of unmatched delimiters must not stall the Scout (5 MiB README limit). */
+  @Test
+  void unmatchedDelimitersCostLinearTime() {
+    for (String open : new String[] {"<", "[", "](", "![x]("}) {
+      String line = "- [a](https://github.com/a/b) " + open.repeat(200_000);
+      assertTimeoutPreemptively(Duration.ofSeconds(1), () -> MarkdownText.plain(line), open);
+    }
+  }
+
+  @Test
+  void aLongLineIsCutBeforeItIsCleaned() {
+    String line = "word ".repeat(10_000);
+    assertThat(MarkdownText.plain(line).length()).isLessThanOrEqualTo(MarkdownText.MAX_RAW);
   }
 }

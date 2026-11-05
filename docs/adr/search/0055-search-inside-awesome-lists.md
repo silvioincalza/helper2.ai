@@ -137,7 +137,7 @@ OWASP LLM Top 10: no model reads or writes this text. The classifier gets the se
   `internal/CatalogSearchSource.java`, `internal/CatalogRetention.java` (`deleteListIndexUpdatedBefore`).
 - `backend/src/main/kotlin/ai/helper2/search/Model.kt` (`ListMatch`, `SourceHit.foundIn`, `MergedResult.foundIn`),
   `backend/src/main/java/ai/helper2/search/web/CardMapper.java`, `search/cache/SourceHitCodec.java`.
-- `backend/src/main/resources/db/migration/V12__awesome_list_search.sql`; `api/openapi.yaml` (`ResultCard.foundIn`,
+- `backend/src/main/resources/db/migration/V13__awesome_list_search.sql`; `api/openapi.yaml` (`ResultCard.foundIn`,
   `ListMatch`).
 - `frontend/src/components/results/ResultRow.tsx`, `results.css`; `frontend/src/i18n/locales/en.json`
   (`results.foundIn`, the Privacy page).
