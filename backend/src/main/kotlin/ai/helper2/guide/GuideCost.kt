@@ -48,9 +48,30 @@ constructor(
         size > maxClients
     }
 
+  /** Fresh questions per client and day. */
+  val limit: Int
+    get() = maxOf(0, questionsPerDay)
+
+  /**
+   * Questions [client] has left today, without taking one: the durable count when it answers, else
+   * this replica's count in memory (as [tryAcquire] counts).
+   */
+  fun left(client: String): Int {
+    val name = nameOf(client)
+    val durable =
+      try {
+        counter.current(name, today())
+      } catch (_: RuntimeException) {
+        null
+      }
+    val inMemory = synchronized(this) { if (day == today()) budgets[name]?.usedToday() ?: 0 else 0 }
+    val used = maxOf(durable ?: 0L, inMemory.toLong())
+    return maxOf(0L, limit - used).toInt()
+  }
+
   /** Takes one question from [client]'s quota for today; false when it is used up. */
   fun tryAcquire(client: String): Boolean {
-    val name = "guide-client:" + keys.client(client)
+    val name = nameOf(client)
     val budget =
       synchronized(this) {
         val now = today()
@@ -69,6 +90,8 @@ constructor(
     get() = synchronized(this) { budgets.size }
 
   private fun today(): LocalDate = LocalDate.ofInstant(clock.instant(), ZoneOffset.UTC)
+
+  private fun nameOf(client: String) = "guide-client:" + keys.client(client)
 
   companion object {
     /**

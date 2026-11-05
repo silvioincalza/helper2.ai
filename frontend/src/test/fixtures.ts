@@ -230,22 +230,31 @@ export const HEALTH_SOURCES: SourceInfo[] = [
   { ...SOURCES[1]!, circuit: null, webCredits: null },
 ];
 
+const LIMITS: Me['limits'] = {
+  guideQuestions: { limit: 30, remaining: 30 },
+  webSearches: { search: { limit: 3, remaining: 3 }, guide: { limit: 3, remaining: 3 } },
+  resetsAt: '2026-10-23T00:00:00Z',
+};
+
 export const ANON: Me = {
   authenticated: false,
   roles: [],
   loginProviders: [{ id: 'github', name: 'GitHub' }],
+  limits: LIMITS,
 };
 export const USER: Me = {
   authenticated: true,
   displayName: 'Ada',
   roles: ['USER'],
   loginProviders: [],
+  limits: LIMITS,
 };
 export const ADMIN: Me = {
   authenticated: true,
   displayName: 'Root',
   roles: ['USER', 'ADMIN'],
   loginProviders: [],
+  limits: LIMITS,
 };
 
 export function makeRecent(over: Partial<RecentResponse> = {}): RecentResponse {
@@ -257,6 +266,7 @@ export function makeRecent(over: Partial<RecentResponse> = {}): RecentResponse {
         type: 'MCP_SERVER',
       }),
     ],
+    total: 1,
     since: '2026-10-08T09:00:00Z',
     generatedAt: '2026-10-22T09:00:00Z',
     ...over,

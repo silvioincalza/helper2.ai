@@ -32,6 +32,12 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 class CatalogConfiguration {
 
+  /** The Helper2 index searched by words: it serves the whole index. */
+  static final String INDEX_SOURCE = "helper2-index";
+
+  /** The same index searched by meaning. */
+  static final String SEMANTIC_SOURCE = "helper2-semantic";
+
   /** Background writer for what searches observed; see CatalogResultObserver. */
   @Bean(destroyMethod = "close")
   ObservationQueue observationQueue(
@@ -61,7 +67,7 @@ class CatalogConfiguration {
     boolean browses = true;
     SourceDescriptor d =
         new SourceDescriptor(
-            "helper2-index",
+            INDEX_SOURCE,
             "Helper2 index",
             SourceMode.INDEXED,
             URI.create("https://helper2.ai/sources"),
@@ -151,7 +157,7 @@ class CatalogConfiguration {
       boolean usesTranslation = false;
       SourceDescriptor d =
           new SourceDescriptor(
-              "helper2-semantic",
+              SEMANTIC_SOURCE,
               "Helper2 index (by meaning)",
               SourceMode.INDEXED,
               URI.create("https://helper2.ai/sources"),

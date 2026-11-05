@@ -19,7 +19,7 @@ guide: "POST /api/v1/guide/stream\n(SSE)" {class: ext}
 landing: Home {
   user -> home: "/"
   home -> api: "sources, news, events"
-  api -> home: "12 sources, rows"
+  api -> home: "12 sources (newThisWeek),\nrows, totals"
   home -> user: "title, radar dots, box,\nNew this week, Coming up" {class: hot}
   user -> home: "scrolls 24 px"
   home -> user: "title folds away,\nthe box stays pinned"

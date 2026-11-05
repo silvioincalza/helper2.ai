@@ -236,6 +236,7 @@ class SearchApiIT extends ApiTestBase {
   void italianQueryIsExpandedAndDisclosed() throws Exception {
     mvc.perform(get("/api/v1/search").param("q", "app per tradurre"))
         .andExpect(jsonPath("$.interpretation.expandedTerms[0]").value("translation"))
+        .andExpect(jsonPath("$.interpretation.translatedQuery").doesNotExist())
         .andExpect(jsonPath("$.notices[?(@.code=='QUERY_EXPANDED')]").exists());
   }
 
@@ -311,6 +312,42 @@ class SearchApiIT extends ApiTestBase {
     assertThat(metered).as("metered even while disabled").containsExactly("tavily");
     assertThat(source(body, "github").get("metered")).isEqualTo(false);
     assertThat(source(body, "mcp-registry").get("metered")).isEqualTo(false);
+  }
+
+  private long newThisWeek(String sourceId) throws Exception {
+    String body =
+        mvc.perform(get("/api/v1/sources"))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    ContractValidator.assertArrayMatches("SourceInfo", body);
+    return ((Number) source(body, sourceId).get("newThisWeek")).longValue();
+  }
+
+  @Test
+  void sourcesEndpointCountsWhatEachSourceBroughtThisWeek() throws Exception {
+    long before = newThisWeek("fake-live");
+    long indexBefore = newThisWeek("helper2-index");
+    String q = unique("weekly");
+    FAKE.set(query ->
+        List.of(
+            fakeHit(
+                "https://example.org/weekly/" + UUID.randomUUID(),
+                q,
+                "A tool seen for the first time",
+                ResourceType.LIBRARY,
+                null,
+                null,
+                null,
+                0)));
+
+    mvc.perform(get("/api/v1/search").param("q", q)).andExpect(status().isOk());
+
+    eventually(() -> assertThat(newThisWeek("fake-live")).isEqualTo(before + 1));
+    assertThat(newThisWeek("helper2-index"))
+        .as("the index counts every resource it serves")
+        .isGreaterThanOrEqualTo(indexBefore + 1);
   }
 
   @Test

@@ -101,6 +101,16 @@ fun interface RecordedOutcomes {
   fun lastOutcomes(): Map<String, SourceHealth.Entry>
 }
 
+/**
+ * Outbound port: per source, how many catalog resources it brought that Helper2 first discovered at
+ * or after a time (ADR 0042: the radar's "new this week"). Implemented by the catalog. A source
+ * that brought none is absent; a source mapped to null has no count of its own. May throw; the
+ * Sources page then shows no count.
+ */
+fun interface DiscoveredResources {
+  fun countsSince(since: Instant): Map<String, Long?>
+}
+
 /** Outbound port for operational metrics. */
 interface SearchMetrics {
   fun sourceCompleted(status: SourceStatus) {}

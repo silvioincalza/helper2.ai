@@ -7,7 +7,9 @@
 #   backend/src/main/java/ai/helper2/catalog/usecase/ResolveReviewItem.java,
 #   backend/src/main/java/ai/helper2/platform/quota/QuotaKeys.java, RedisQuotaCounter.java,
 #   frontend/src/pages/admin/, frontend/src/pages/AccountPage.tsx, frontend/src/components/SignIn.tsx,
-#   frontend/src/context/MeContext.tsx, BookmarksContext.tsx, frontend/src/api/client.ts.
+#   frontend/src/context/MeContext.tsx, BookmarksContext.tsx, frontend/src/api/client.ts,
+#   backend/src/main/java/ai/helper2/identity/VisitorLimits.java, guide/internal/GuideVisitorLimits.java,
+#   guide/GuideCost.kt (ClientQuota.left), search/usecase/SearchResources.kt (webSearchesLeft).
 # Render: cd docs/diagrams && d2 fmt sequence-0023-identity-and-admin.d2 && d2 sequence-0023-identity-and-admin.d2 sequence-0023-identity-and-admin.svg
 
 ...@style
@@ -21,14 +23,19 @@ gh: GitHub {class: ext}
 cu: CurrentUser {class: app}
 users: Users {class: app}
 me: MeController {class: app}
+limits: "VisitorLimits\n(GuideVisitorLimits)" {class: app}
 uc: "MergeLocalBookmarks /\nDeleteMyAccount" {class: app}
 db: "PostgreSQL\n(app_user, bookmark,\nadmin_audit)" {class: data}
-redis: "Redis\n(h2:v1:quota:*)" {class: data}
+redis: "Redis\n(h2:v1:quota:*,\nh2:v1:budget:*)" {class: data}
 admin: "AdminController →\nResolveReviewItem" {class: app}
 
 owner -> spa: "open /admin"
 spa -> me: "GET /api/v1/me"
-me -> spa: "authenticated=false,\nloginProviders=[github]"
+me -> limits: "of(ClientKey, no user)"
+limits -> redis: "GET guide-client budget, HGET quota\n(read only, nothing counted)"
+redis -> limits: "counts"
+limits -> me: "guide questions, web searches left"
+me -> spa: "authenticated=false,\nloginProviders=[github],\nlimits (numbers only, resetsAt)"
 spa -> owner: "SignIn button (only here)"
 owner -> sec: "GET /oauth2/authorization/github" {class: hot}
 sec -> gh: "redirect, scope read:user" {class: hot}

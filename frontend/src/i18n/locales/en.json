@@ -147,7 +147,8 @@
     "partialBody": "Only {{ok}} of {{total}} queried sources responded, so these results may be incomplete.",
     "noticeInfo": "Notice",
     "noticeWarning": "Warning",
-    "alsoSearched": "Also searched for: {{terms}}",
+    "alsoSearchedLabel": "Also searched for:",
+    "translatedNote": "Translated by AI",
     "lexiconNote": "added from a fixed word list, not AI",
     "suggestUseCase": "Narrow by use case:",
     "emptyTitle": "No results from the sources searched",
@@ -528,7 +529,12 @@
     "actionFailed": "The action failed. Please try again.",
     "scoutRuns": "Scout runs",
     "runNow": "Run now",
+    "runAll": "Run all now",
+    "runSource": "Run {{source}} now",
+    "runWaits": "A run is in progress. You can start the next one when it ends.",
     "noRuns": "No runs yet.",
+    "runsLoadError": "Could not load the Scout runs.",
+    "runsRefreshError": "Could not reload the Scout runs. The list is from the last load.",
     "runInProgress": "A Scout run is already in progress. Try again when it ends.",
     "reviewStatus": {
       "OPEN": "Open",
@@ -554,7 +560,8 @@
       "started": "Started",
       "seen": "Items seen",
       "changed": "Items changed",
-      "message": "Message"
+      "message": "Message",
+      "run": "Run"
     },
     "kindFilter": "Kind",
     "allKinds": "All kinds",
@@ -948,9 +955,9 @@
       {
         "title": "How we mark AI text",
         "items": [
-          "On the screen, every text written by an AI model has a label next to it: “AI-written” in the guide’s picks bar, on its search terms, on a name it did not find in our sources, on its reasons in the result list and the preview, and on its comparison, explanation and prompt; “Read by AI” on the requirements it read from your question; “AI summary” and “Extracted by AI” on a description or a value in the preview and on the resource page; and “Steps written by AI” in the setup guide.",
+          "On the screen, every text written by an AI model has a label next to it: “AI-written” in the guide’s picks bar, on its search terms, on its question back to you, on a name it did not find in our sources, on its reasons in the result list and the preview, and on its comparison, explanation and prompt; “Read by AI” on the requirements it read from your question; “AI summary” and “Extracted by AI” on a description or a value in the result list, the preview and on the resource page; “Translated by AI” on the English translation of a query in another language; and “Steps written by AI” in the setup guide.",
           "In the page, the same text carries the HTML attribute data-ai-generated=\"true\", and data-ai-model with the model name when we know it.",
-          "In our API, a guide answer has an aiContent object that names the provider, the models and the fields they wrote. Catalog values carry an origin such as AI_SUMMARY or AI_EXTRACTED.",
+          "In our API, a guide answer has an aiContent object that names the provider, the models and the fields they wrote. Catalog values carry an origin such as AI_SUMMARY or AI_EXTRACTED. A search gives the translation of a query in its own field, translatedQuery.",
           "Quotes, titles and links are never written by AI. They come from the sources."
         ]
       },
@@ -979,6 +986,7 @@
           "Reports you send about a resource: the text you write, linked to your account if you are signed in.",
           "Web search counters: Tavily searches per day and feature, under a keyed hash of your IP address and the date (no address stored; days cannot be linked), or your account ID once account limits are on.",
           "Guide question counters: how many new questions the guide answered for you today, under a keyed hash of your IP address (for IPv6, its /64 network) that changes every day, so we can apply the daily limit in the Terms. The address itself is not stored.",
+          "Your limits for today: when you open the site, we read these two counters under the same daily hash of your IP address, or your account once account limits are on, and send only what is left today (guide questions, and web searches for search and the guide) back to your browser, with the time they reset. Reading them does not count as a use, stores nothing new and does not send your address.",
           "Stored Tavily results, under a keyed hash of the question, not its text.",
           "Guide question fingerprints, only when similar-question reuse is on: a list of numbers (an embedding) computed from your guide question, kept with its cached answer so a later question with the same meaning can get that answer. Not linked to you or your account.",
           "Usage totals: how many searches we answer, how many had results from only some sources, and how many found nothing. They are counts only: never the text you typed, your IP address or your account.",

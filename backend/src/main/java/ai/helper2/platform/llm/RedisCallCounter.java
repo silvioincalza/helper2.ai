@@ -45,7 +45,8 @@ public final class RedisCallCounter implements CallCounter {
    * Today's shared count, without adding one: 0 when Redis has no key yet (nothing used today),
    * null only when Redis cannot answer.
    */
-  Long current(String name, LocalDate day) {
+  @Override
+  public Long current(String name, LocalDate day) {
     try {
       String value = resilience.call("redis", () -> redis.opsForValue().get(key(name, day)));
       return value == null ? 0L : Long.valueOf(value);

@@ -31,7 +31,9 @@ describe('GuideAnswer intents (ADR 0032)', () => {
       status: 'NEEDS_CLARIFICATION',
       clarification: { question: 'New tools for what?', options: ['coding', 'agents'] },
     });
-    expect(screen.getByRole('heading', { name: 'New tools for what?' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'New tools for what? AI-written' }),
+    ).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'agents' }));
     expect(onRefine).toHaveBeenLastCalledWith({ clarification: 'agents' });
     await userEvent.type(screen.getByLabelText('Your answer'), 'speech to text');
@@ -64,16 +66,16 @@ describe('GuideAnswer intents (ADR 0032)', () => {
     expect(onRefine).toHaveBeenLastCalledWith({ drop: ['constraint:free'] });
   });
 
-  it('marks the model-written question, options and requirements as AI-generated (ADR 0038)', () => {
+  it('labels the model-written question back on screen and marks it and its options, not our label (ADR 0038)', () => {
     view({
       ...base,
       status: 'NEEDS_CLARIFICATION',
       clarification: { question: 'New tools for what?', options: ['coding', 'agents'] },
     });
-    expect(screen.getByRole('heading', { name: 'New tools for what?' })).toHaveAttribute(
-      'data-ai-generated',
-      'true',
-    );
+    const heading = screen.getByRole('heading', { name: 'New tools for what? AI-written' });
+    expect(heading).not.toHaveAttribute('data-ai-generated');
+    expect(screen.getByText('New tools for what?')).toHaveAttribute('data-ai-generated', 'true');
+    expect(screen.getByText('AI-written').closest('[data-ai-generated]')).toBeNull();
     expect(screen.getByText('coding')).toHaveAttribute('data-ai-generated', 'true');
   });
 
@@ -170,7 +172,7 @@ describe('GuideAnswer marks every planner-written text (EU AI Act Art. 50(2), AD
       aiContent: planner,
       clarification: { question: 'New tools for what?', options: ['coding', 'agents'] },
     });
-    const question = screen.getByRole('heading', { name: 'New tools for what?' });
+    const question = screen.getByText('New tools for what?');
     expect(question).toHaveAttribute('data-ai-generated', 'true');
     expect(question).toHaveAttribute('data-ai-model', 'nvidia/nemotron-nano');
     expect(question.closest('section')).toHaveAttribute('data-ai-provider', 'nebius-token-factory');
@@ -229,9 +231,11 @@ describe('GuideAnswer marks every planner-written text (EU AI Act Art. 50(2), AD
         reasoningModel: 'r',
       },
     });
-    const terms = screen.getByText(/AI tools/);
+    const terms = screen.getByText('AI tools');
     expect(terms).toHaveAttribute('data-ai-model', 'nvidia/nemotron-nano');
-    expect(terms.nextElementSibling).toHaveTextContent('AI-written');
+    // Only the terms are marked; "Searched the catalog for:" is ours (ADR 0038).
+    expect(terms.parentElement).not.toHaveAttribute('data-ai-generated');
+    expect(terms.parentElement?.nextElementSibling).toHaveTextContent('AI-written');
   });
 
   it('marks the planner-written search query when the answering model failed', () => {

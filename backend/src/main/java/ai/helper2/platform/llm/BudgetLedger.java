@@ -36,6 +36,11 @@ public final class BudgetLedger implements CallCounter {
     return store == null ? null : store.increment(name, day);
   }
 
+  @Override
+  public @Nullable Long current(String name, LocalDate day) {
+    return store == null ? null : store.current(name, day);
+  }
+
   /**
    * Budgets the app has: one per use, a handful. A name past this many is not listed, so a budget
    * per visitor that forgot {@link CallCounter#unlisted()} can never grow the list without bound.

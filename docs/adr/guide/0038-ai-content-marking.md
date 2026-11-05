@@ -27,25 +27,32 @@ to the text.
    holds the planner's search query and requirements: the marker is present and names the fast model only.
    `modelUsed` keeps its meaning for the cache and the "answered by" line.
 2. **API: catalog values keep their origin.** `ResultCard.descriptionOrigin` and `Assertion.origin` say
-   `AI_SUMMARY` or `AI_EXTRACTED`, and `AiSummary.model` names the model.
+   `AI_SUMMARY` or `AI_EXTRACTED`, and `AiSummary.model` names the model. The search's translation of a
+   non-English query ([0011](../search/0011-language-aware-search.md)) is its own field,
+   `interpretation.translatedQuery`, AI-written by contract; `interpretation.expandedTerms` holds only the terms from
+   the fixed word list.
 3. **Page: an attribute on every AI-written element.** `data-ai-generated="true"`, plus `data-ai-model` when the
    model is known (`src/lib/aiMark.ts`). The guide answer and the question back carry `data-ai-provider` and
    `data-ai-models`. Marked: reasons, requirements (chips and checks), the question back and its options, comparison
-   aspects and cells, explanation sentences, the prompt, the planned search query and the research trail's queries ([0044](0044-research-trail.md)), AI summaries and values extracted
-   by AI on the resource page, and the instructions of the setup guide's steps ([0031](0031-setup-guide.md);
+   aspects and cells, explanation sentences, the prompt, the planned search query (not our "Searched the catalog
+   for:" around it) and the research trail's queries ([0044](0044-research-trail.md)), AI summaries and values extracted
+   by AI in the result list, the preview and on the resource page, the search's translation of the query in "Also
+   searched for", and the instructions of the setup guide's steps ([0031](0031-setup-guide.md);
    `ToolGuide.model` names the model in the API). Also the name and the search in the "not found" notice
    (`GUIDE_SUBJECT_NOT_FOUND`): the planner picked them, so they are their own fields (`notices[].subject`,
    `notices[].query`), and the page puts them in our sentence ("X was not found in our sources; showing tools for:
-   Y"), each in a marked element. A notice's `message` is our own words (except `QUERY_EXPANDED`, whose terms can hold a model translation: see the roadmap): the page never shows it for this
-   code, so an older answer from the browser cache ([0039](../frontend/0039-frontend-recent-answers-cache.md)) says the sentence without the
+   Y"), each in a marked element. A notice's `message` is our own words (except `QUERY_EXPANDED`, whose terms can hold the model translation): the page never shows it for these
+   codes, so an older answer from the browser cache ([0039](../frontend/0039-frontend-recent-answers-cache.md)) says the sentence without the
    planner's words. Quotes, titles, links and the setup guide's commands are never
    marked: they come from the sources. Our own labels and the subjects (the user's own words) are not marked.
-   Every marked group also has a label on screen (Art. 50(1)): "AI-written" on the picks bar, on the reasons in the
-   result list and the preview, on the requirements ("Requirements AI-written", in the reading chips, over their
+   Every marked group also has a label on screen (Art. 50(1)): "AI-written" on the picks bar, on the question back,
+   on the reasons in the result list and the preview, on the requirements ("Read by AI", in the reading chips, over their
    checks in the preview and next to "Ask without" when nothing fits), on the planner's search terms, on the
    comparison, the explanation and the prompt, and "Name AI-written" or "Name and search AI-written" on the "not found"
-   notice; "AI summary" and "Extracted by AI"; "Steps written by AI" in the
-   setup guide. An AI-written label never shows without its text: a reason the check removed shows neither.
+   notice; "AI summary" and "Extracted by AI" on a description or a value (an AI-written description is headed
+   "About", never "From the source", and is never shown as the proof of a pick); "Translated by AI" on the
+   translation in "Also searched for", whose "not AI" note covers only the word-list terms; "Steps written by AI" in
+   the setup guide. An AI-written label never shows without its text: a reason the check removed shows neither.
 4. **Explained in public.** The Mission page has a section "How we mark AI text".
 5. **No hidden characters in the text.** We do not add zero-width or other invisible characters.
 
@@ -64,9 +71,12 @@ to the text.
 - **Only the visible labels** — meets Art. 50(1), not Art. 50(2).
 
 ## Code
-- `api/openapi.yaml` — `AiContentMarker`, `GuideResponse.aiContent`.
+- `api/openapi.yaml` — `AiContentMarker`, `GuideResponse.aiContent`, `QueryInterpretation.translatedQuery`.
 - `backend/.../guide/web/GuideDtoMapper.java` — builds the marker.
-- `frontend/src/lib/aiMark.ts` — the page attributes; used in `GuideAnswer.tsx`, `ResultsTimeline.tsx`, `ResourcePage.tsx`.
+- `backend/.../search/web/SearchController.java` — `translatedQuery` apart from the word-list terms
+  (`AnalyzedQuery.translation`, `lexiconTerms`).
+- `frontend/src/lib/aiMark.ts` — the page attributes; used in `GuideAnswer.tsx`, `Clarify.tsx`, `Results.tsx`,
+  `Resource.tsx`, `ResultsTimeline.tsx`, `ResourcePage.tsx`.
 
 ## Diagrams
 [flow](../../diagrams/flow-0038-ai-content-marking.svg) · [sequence](../../diagrams/sequence-0038-ai-content-marking.svg)

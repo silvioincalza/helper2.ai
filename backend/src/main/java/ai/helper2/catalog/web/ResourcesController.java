@@ -29,6 +29,7 @@ import ai.helper2.shared.UtcTimes;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -130,26 +131,28 @@ class ResourcesController implements ResourcesApi {
         type == null
             ? Set.of()
             : type.stream().map(ResourceTypeDto::getValue).collect(Collectors.toSet());
-    List<ResultCardDto> items =
-        recent.list(since, now, types, size == null ? 12 : size).stream()
-            .map(CardMapper::card)
-            .toList();
+    ListRecentResources.Page page = recent.list(since, now, types, size == null ? 12 : size);
+    List<ResultCardDto> items = page.items().stream().map(CardMapper::card).toList();
     // Short cache: the index changes at most every Scout run (15 min); the page asks each visit.
     return ResponseEntity.ok()
         .cacheControl(CacheControl.maxAge(Duration.ofMinutes(2)).cachePublic())
-        .body(new RecentResponseDto(items, UtcTimes.odt(since), UtcTimes.odt(now)));
+        .body(new RecentResponseDto(items, page.total(), UtcTimes.odt(since), UtcTimes.odt(now)));
   }
 
   @Override
-  public ResponseEntity<UpcomingEventsResponseDto> listUpcomingEvents(Integer size) {
+  public ResponseEntity<UpcomingEventsResponseDto> listUpcomingEvents(
+      @Nullable Integer days, Integer size) {
     Instant now = clock.instant();
     // Start of today (UTC): an event on today's date is still "next" until the day is over.
-    Instant today = now.truncatedTo(java.time.temporal.ChronoUnit.DAYS);
-    List<ResultCardDto> items =
-        upcoming.list(today, size == null ? 6 : size).stream().map(CardMapper::card).toList();
+    Instant today = now.truncatedTo(ChronoUnit.DAYS);
+    Instant until = days == null ? null : today.plus(Duration.ofDays(days));
+    ListUpcomingEvents.Page page = upcoming.list(today, until, size == null ? 6 : size);
+    List<ResultCardDto> items = page.items().stream().map(CardMapper::card).toList();
     return ResponseEntity.ok()
         .cacheControl(CacheControl.maxAge(Duration.ofMinutes(5)).cachePublic())
-        .body(new UpcomingEventsResponseDto(items, UtcTimes.odt(now)));
+        .body(
+            new UpcomingEventsResponseDto(items, page.total(), UtcTimes.odt(now))
+                .until(UtcTimes.odt(until)));
   }
 
   @Override

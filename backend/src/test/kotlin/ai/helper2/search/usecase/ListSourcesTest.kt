@@ -7,6 +7,7 @@ import ai.helper2.platform.quota.QuotaKeys
 import ai.helper2.platform.resilience.Resilience
 import ai.helper2.platform.resilience.Resilience.Circuit
 import ai.helper2.search.DescribedSource
+import ai.helper2.search.DiscoveredResources
 import ai.helper2.search.RecordedOutcomes
 import ai.helper2.search.ServedFrom
 import ai.helper2.search.SourceHealth
@@ -68,7 +69,9 @@ class ListSourcesTest {
     recorded: RecordedOutcomes = RecordedOutcomes { emptyMap() },
     resilience: Resilience = Circuits(emptyMap()),
     quota: WebSearchQuota = quota(),
-  ) = ListSources(sources, health, recorded, resilience, quota).list()
+    discovered: DiscoveredResources = DiscoveredResources { emptyMap() },
+  ) =
+    ListSources(sources, health, recorded, resilience, quota, discovered, MovableClock(now)).list()
 
   @Test
   fun `sources are listed by priority, then id`() {
@@ -156,5 +159,36 @@ class ListSourcesTest {
 
     val unreadable = list(health = health, recorded = { error("database down") })
     assertEquals(SourceOutcome.FAILED, unreadable.first().last!!.outcome)
+  }
+
+  @Test
+  fun `each source shows what it brought in the last 7 days, 0 when nothing`() {
+    var asked: Instant? = null
+    val discovered = DiscoveredResources { since ->
+      asked = since
+      mapOf("github" to 4L)
+    }
+
+    val byId = list(discovered = discovered).associateBy { it.descriptor.id }
+
+    assertEquals(now.minus(Duration.ofDays(7)), asked)
+    assertEquals(4L, byId.getValue("github").newThisWeek)
+    assertEquals(0L, byId.getValue("npm").newThisWeek)
+  }
+
+  @Test
+  fun `a source the catalog maps to null has no count of its own`() {
+    val listed = list(discovered = { mapOf("npm" to null, "github" to 2L) })
+
+    assertNull(listed.single { it.descriptor.id == "npm" }.newThisWeek)
+    assertEquals(2L, listed.single { it.descriptor.id == "github" }.newThisWeek)
+  }
+
+  @Test
+  fun `new counts the catalog cannot give are left out, the rest still shows`() {
+    val listed = list(discovered = { error("database down") })
+
+    assertEquals(3, listed.size)
+    assertNull(listed.first().newThisWeek)
   }
 }

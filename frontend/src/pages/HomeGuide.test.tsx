@@ -114,6 +114,17 @@ describe('guide on the one page', () => {
       expect(q.closest('[data-ai-generated]')).toBeNull();
   });
 
+  it('marks the planned search query, not our words around it', async () => {
+    mockApi({ 'POST /guide/stream': () => sse(makeGuide()) });
+    renderApp('/');
+    await ask('an MCP server for Postgres');
+    await answered();
+    const q = screen.getByText('mcp server postgres');
+    expect(q).toHaveAttribute('data-ai-generated', 'true');
+    expect(q.parentElement).toHaveTextContent('Searched the catalog for: mcp server postgres');
+    expect(q.parentElement).not.toHaveAttribute('data-ai-generated');
+  });
+
   it('shows each requirement as confirmed with its quote or as not confirmed, in words', async () => {
     const base = makeGuide();
     mockApi({

@@ -100,12 +100,9 @@ Open items:
 
 ## 4. AI quality and cost
 
-- "Also searched for" (`QUERY_EXPANDED`, `interpretation.expandedTerms`) can hold the model's English translation of a
-  non-English query ([ADR 0011](adr/search/0011-language-aware-search.md)), but the search page labels the list "added
-  from a fixed word list, not AI" and the API calls it deterministic. Split the translation into its own field, marked
-  AI-written in the API and the page ([ADR 0038](adr/guide/0038-ai-content-marking.md)), and keep the word-list note for
-  lexicon terms. LAWYER: does a model translation of the user's own query fall under the Art. 50(2) exemption for
-  assistive or standard-editing functions? Even if it does, a "not AI" label on model text must go.
+- LAWYER: does a model translation of the user's own query fall under the Art. 50(2) exemption for assistive or
+  standard-editing functions? Until then it is labelled "Translated by AI" and marked (`interpretation.translatedQuery`,
+  [ADR 0038](adr/guide/0038-ai-content-marking.md)).
 - Watch whether the source `type`, now a source fact in enrichment, sends many proposals to CONFLICTING review
   (for example GitHub LIBRARY versus MCP_SERVER) ([ADR 0019](adr/scout/0019-evidence-gated-enrichment.md)).
 - Cross-language retrieval in vector search.
@@ -163,10 +160,8 @@ Open items:
   ignore rules once both plugins support the new majors.
 
 - **Redesign, version 4 of the design system** ([design/system](design/system/README.md), boards in
-  [design/redesign](design/redesign)): build it page by page. The design needs these API features first:
-  - `newThisWeek` per source on GET /sources (radar dot size, Sources table).
-  - `limits` on GET /me: web searches and AI answers left today, and the reset time (account panel, Account page).
-  - `total` on the recent and upcoming responses (Show all on the home terminals).
+  [design/redesign](design/redesign)): build it page by page. `newThisWeek` on GET /sources, `limits` on GET /me and
+  `total` on the recent and upcoming responses are in the API. The design still needs these API features:
   - An `unknown` count per facet and an updated-date facet on the search response (Filters panel).
   - Sign-in with Google (phase 1). Passkey, email link and password (phase 2) need their own ADR, a threat model and
     the Privacy page first.

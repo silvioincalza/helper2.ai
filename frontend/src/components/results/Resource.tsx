@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import type { ResourceDetail } from '@/api/types';
+import { OriginLabel } from '@/components/Badges';
 import { BookmarkButton } from '@/components/BookmarkButton';
 import { canGuide } from '@/components/GuideMe';
 import { SetupGuidePanel } from '@/components/SetupGuide';
@@ -43,6 +44,8 @@ export function Resource({ detail: d, children }: { detail: ResourceDetail; chil
   const { from, quote } = fromResults(useLocation().state);
   const card = d.card;
   const host = displayHost(card.url);
+  // A model wrote it: labelled and marked, never headed "From the source" nor shown as a checked quote (ADR 0038).
+  const aiDescription = !!card.description && isAiOrigin(card.descriptionOrigin);
   return (
     <div className="h2-res">
       <p className="h2-res__back">
@@ -66,19 +69,22 @@ export function Resource({ detail: d, children }: { detail: ResourceDetail; chil
 
           <section className="h2-res__sec" aria-labelledby="h2-res-text">
             <h2 id="h2-res-text" className="h2-pv__sec">
-              {t('resource.sourceText')}
+              {t(aiDescription ? 'results.about' : 'resource.sourceText')}
             </h2>
             {/* A checked quote can come from the title alone, so it shows even without a description. */}
-            {quote ? (
+            {aiDescription ? (
+              <p className="h2-res__text">
+                <OriginLabel origin={card.descriptionOrigin} />{' '}
+                <span {...aiMark()}>{card.description}</span>
+              </p>
+            ) : quote ? (
               <ProofQuote text={card.description ?? ''} quote={quote} source={host} />
             ) : card.description ? (
-              <p className="h2-res__text" {...(isAiOrigin(card.descriptionOrigin) ? aiMark() : {})}>
-                {card.description}
-              </p>
+              <p className="h2-res__text">{card.description}</p>
             ) : (
               <p className="muted">{t('card.noDescription')}</p>
             )}
-            {quote && <p className="muted small">{t('resource.checkedNote')}</p>}
+            {quote && !aiDescription && <p className="muted small">{t('resource.checkedNote')}</p>}
           </section>
 
           <div className="h2-res__details">{children}</div>

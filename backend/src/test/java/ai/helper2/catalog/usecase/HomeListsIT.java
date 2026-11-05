@@ -194,24 +194,63 @@ class HomeListsIT {
   }
 
   @Test
-  void theRecentListTakesSixStatementsForAnyNumberOfCards() {
+  void theRecentListTakesSevenStatementsForAnyNumberOfCards() {
     var counted = StatementCounting.count(() -> recent.list(SINCE, UNTIL, Set.of(), 24));
 
-    assertThat(counted.result())
+    assertThat(counted.result().items())
         .hasSize(13)
         .as("the row without records is dropped")
         .noneMatch(c -> c.getId().getValue().equals(withoutRecords));
+    assertThat(counted.result().total()).as("but counted").isEqualTo(14);
     // Before batching: 1 + 5 per card (here 1 + 5 × 14 = 71, the row without records included).
-    assertThat(counted.statements()).isLessThanOrEqualTo(6);
+    // The seventh statement is the total.
+    assertThat(counted.statements()).isLessThanOrEqualTo(7);
   }
 
   @Test
-  void theUpcomingListTakesSixStatementsForAnyNumberOfCards() {
-    var counted = StatementCounting.count(() -> upcoming.list(SINCE, 60));
+  void theRecentTotalCountsTheWholeWindowNotThePage() {
+    ListRecentResources.Page page = recent.list(SINCE, UNTIL, Set.of(), 5);
 
-    assertThat(counted.result()).hasSize(6);
-    // Before batching: 1 + 5 × 6 = 31.
-    assertThat(counted.statements()).isLessThanOrEqualTo(6);
+    // The newest five include the row without records: it is counted, not shown.
+    assertThat(page.items()).hasSize(4);
+    assertThat(page.total()).isEqualTo(14);
+  }
+
+  @Test
+  void theUpcomingListTakesSevenStatementsForAnyNumberOfCards() {
+    var counted = StatementCounting.count(() -> upcoming.list(SINCE, null, 60));
+
+    assertThat(counted.result().items()).hasSize(6);
+    assertThat(counted.result().total()).isEqualTo(6);
+    // Before batching: 1 + 5 × 6 = 31. The seventh statement is the total.
+    assertThat(counted.statements()).isLessThanOrEqualTo(7);
+  }
+
+  @Test
+  void theUpcomingWindowEndsBeforeItsLastDayAndTheTotalFollowsIt() {
+    // Events start on days 0..5 after SINCE; a 3-day window holds days 0, 1 and 2.
+    ListUpcomingEvents.Page page = upcoming.list(SINCE, SINCE.plus(Duration.ofDays(3)), 2);
+
+    assertThat(page.items()).hasSize(2);
+    assertThat(page.total()).isEqualTo(3);
+  }
+
+  @Test
+  void eachSourceCountsTheResourcesFirstDiscoveredSinceAGivenTime() {
+    Instant since = now.minus(Duration.ofMinutes(5));
+    Map<String, Long> before = store.discoveredSince(since);
+    UUID old = upsert(hit("npm", "https://npmjs.com/package/old-" + run, null, 0)).getFirst();
+    jdbc.sql("UPDATE resource SET first_discovered_at = :at WHERE id = :id")
+        .param("at", Timestamp.from(now.minus(Duration.ofDays(30))))
+        .param("id", old)
+        .update();
+    upsert(hit("npm", "https://npmjs.com/package/fresh-" + run, null, 0));
+
+    Map<String, Long> after = store.discoveredSince(since);
+
+    assertThat(after.get("npm") - before.getOrDefault("npm", 0L))
+        .as("only the fresh package")
+        .isEqualTo(1L);
   }
 
   @Test
@@ -220,7 +259,7 @@ class HomeListsIT {
         new ArrayList<>(
             store.recentlyPublished(SINCE, UNTIL, Set.of(), Set.of(DataOrigin.OBSERVED), 24));
     ids.add(1, UUID.randomUUID());
-    ids.addAll(store.upcomingEvents(SINCE, 60));
+    ids.addAll(store.upcomingEvents(SINCE, null, 60));
 
     List<MergedResult> batched = cards.cardsOf(ids);
 

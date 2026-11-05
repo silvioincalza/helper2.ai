@@ -123,4 +123,64 @@ class UpcomingEventsApiIT extends ApiTestBase {
         JsonPath.read(body, "$.items[?(@.title=='evtconf Soon Expo')].eventFormat");
     assertThat(format).containsExactly("ONLINE");
   }
+
+  @Test
+  void aWindowOfDaysKeepsOnlyEventsStartingInItAndTheTotalCountsThemAll() throws Exception {
+    FAKE.set(q ->
+        List.of(
+            event("win-in", "evtwin Inside Days", 3, null, 0),
+            event("win-running", "evtwin Running Now", -1, 1, 1),
+            event("win-out", "evtwin Outside Days", 20, null, 2)));
+    mvc.perform(get("/api/v1/search").param("q", "evtwin")).andExpect(status().isOk());
+
+    eventually(() -> {
+      String all =
+          mvc.perform(get("/api/v1/events/upcoming").param("size", "60"))
+              .andExpect(status().isOk())
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+      assertThat(JsonPath.<List<String>>read(all, "$.items[*].title"))
+          .contains("evtwin Outside Days");
+    });
+    String body =
+        mvc.perform(get("/api/v1/events/upcoming").param("days", "10").param("size", "60"))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    ContractValidator.assertMatches("UpcomingEventsResponse", body);
+
+    List<String> titles = JsonPath.read(body, "$.items[*].title");
+    assertThat(titles)
+        .contains("evtwin Inside Days", "evtwin Running Now")
+        .doesNotContain("evtwin Outside Days");
+    assertThat(JsonPath.<Integer>read(body, "$.total")).isEqualTo(titles.size());
+    String until = JsonPath.read(body, "$.until");
+    assertThat(java.time.OffsetDateTime.parse(until).toLocalDate())
+        .isEqualTo(LocalDate.now(ZoneOffset.UTC).plusDays(10));
+
+    String one =
+        mvc.perform(get("/api/v1/events/upcoming").param("days", "10").param("size", "1"))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    assertThat(JsonPath.<List<String>>read(one, "$.items")).hasSize(1);
+    assertThat(JsonPath.<Integer>read(one, "$.total")).isEqualTo(titles.size());
+  }
+
+  @Test
+  void withoutDaysTheWindowIsOpen() throws Exception {
+    String body =
+        mvc.perform(get("/api/v1/events/upcoming"))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    ContractValidator.assertMatches("UpcomingEventsResponse", body);
+    assertThat(JsonPath.<Object>read(body, "$.until")).isNull();
+    mvc.perform(get("/api/v1/events/upcoming").param("days", "0"))
+        .andExpect(status().isBadRequest());
+  }
 }

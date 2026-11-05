@@ -89,4 +89,51 @@ class ClientQuotaTest {
       counts.keys,
     )
   }
+
+  /** The durable counter with a read, as Redis has. */
+  private val readable =
+    object : CallCounter {
+      override fun increment(name: String, day: java.time.LocalDate) = counter.increment(name, day)
+
+      override fun current(name: String, day: java.time.LocalDate): Long =
+        counts["$name:$day"] ?: 0L
+    }
+
+  @Test
+  fun `left reads the count without taking a question`() {
+    val quota = ClientQuota(3, clock, keys, readable)
+    assertEquals(3, quota.left("a"))
+
+    quota.tryAcquire("a")
+
+    assertEquals(2, quota.left("a"))
+    assertEquals(2, quota.left("a"), "reading does not count")
+    assertEquals(3, quota.left("b"))
+  }
+
+  @Test
+  fun `left is never below zero, also when refused questions were counted`() {
+    val quota = ClientQuota(1, clock, keys, readable)
+    repeat(3) { quota.tryAcquire("a") }
+
+    assertEquals(0, quota.left("a"))
+  }
+
+  @Test
+  fun `another replica's count is seen through the durable counter`() {
+    ClientQuota(2, clock, keys, readable).tryAcquire("a")
+
+    assertEquals(1, ClientQuota(2, clock, keys, readable).left("a"))
+  }
+
+  @Test
+  fun `without a durable read, left follows this replica's count and a new day resets it`() {
+    val quota = ClientQuota(2, clock, keys)
+    quota.tryAcquire("a")
+    assertEquals(1, quota.left("a"))
+
+    clock.now = clock.now.plus(Duration.ofHours(3))
+
+    assertEquals(2, quota.left("a"))
+  }
 }
