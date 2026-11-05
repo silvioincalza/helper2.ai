@@ -169,7 +169,6 @@ The shared parts are React components in `frontend/src/components/ui/` (ADR 0040
 | PickCard | `PicksBar` (the chips) and the picked rows: the reason and the quote are in the row, in search order |
 | ResultRow | `ResultRow` (`components/results/`): the title's link covers the row |
 | FiltersPanel | `FiltersPanel` (in place, or a drawer up to 720px) around `FilterPanel` |
-| AskGuideBar | the suggestion at the top of `Results` |
 | CoverageDetails | `SourceTiles` |
 | Callout (error, empty, 404) | `StatePanel`, with `RetryButton` for Try again |
 

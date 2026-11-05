@@ -165,11 +165,9 @@ Open items:
   [design/system](design/system/README.md), boards in [design/redesign](design/redesign)). The fonts, the v4 tokens,
   the header, the footer, Home, Results (list and timeline) and the resource page are built. Still to do, one pull
   request each:
-  - **Results, open points.** The boards draw "Show more" under the list and "Show them" for the timeline's
-    unknown dates; the list still pages, and the unknown dates show as their own group. The `$ helper2 search · N`
-    total is `total` after filters. The pagination buttons are still the version 3 buttons.
-  - **The resource page, open points.** The boards draw a date line under the title and "Where this information
-    comes from" folded; the page keeps the dates list and the provenance table.
+  - **`skipReason` on `SourceStatus` in the search response**, so Results shows Try again exactly when it helps (not
+    during a circuit pause). Today the page treats every SKIPPED source as paused and offers Try again only for
+    FAILED and TIMED_OUT.
   - **The other pages** (Saved, Sources, Mission, Privacy, Terms, Account, sign-in, 404, admin), one by one.
   - **Remove version 3** once the last page has moved: the v3 components and layout sizes, Space Grotesk, and the
     `--v4-` prefix on the v4 sizes and fonts.
