@@ -222,7 +222,6 @@
   },
   "facet": {
     "type": "Type",
-    "audience": "Audience",
     "useCase": "Use case",
     "techLevel": "Technical level",
     "source": "Source",
@@ -332,12 +331,6 @@
     "EVENT": "Event",
     "COURSE": "Course",
     "OTHER": "Other"
-  },
-  "audience": {
-    "USE_AI": "For using AI",
-    "BUILD_WITH_AI": "For building with AI",
-    "BOTH": "Both",
-    "UNKNOWN": "Unknown"
   },
   "techLevel": {
     "BEGINNER": "Beginner",

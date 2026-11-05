@@ -60,7 +60,7 @@ Changing the words in the box searches again and drops the old question with its
 
 ## UJ-3 Refine: filter and sort
 
-1. User opens **Filters** (drawer on mobile); the use cases the search detected sit next to it as one-tap chips. Filters: type, audience, use case, tech level, source, license, pricing, platform, open-source, updated-after.
+1. User opens **Filters** (drawer on mobile); the use cases the search detected sit next to it as one-tap chips. Filters: type, use case, tech level, source, license, pricing, platform, open-source, updated-after.
 2. Each facet shows counts and an **Unknown** bucket for results where the source did not say.
 3. Sort: Relevance (default), Newest (publication date), Recently updated. Results with unknown dates sort last and are labeled "date unknown".
 
@@ -69,7 +69,7 @@ Changing the words in the box searches again and drops the old question with its
 
 ## UJ-4 Evaluate a result (card → detail)
 
-1. Card shows: title, concise description (+ where the text came from), type, tags, audience, source badges, the three dates (published / last updated / discovered by Helper2), freshness, real popularity metrics with their source, link to the original.
+1. Card shows: title, concise description (+ where the text came from), type, tags, source badges, the three dates (published / last updated / discovered by Helper2), freshness, real popularity metrics with their source, link to the original.
 2. User opens the detail page: metadata per field with origin and verification, evidence (source URL, retrieval time, excerpt), relationships (verified vs unverified candidates kept apart), optional AI summary with citations per claim, source records (provenance).
 3. User follows "Open original" (new tab, `noopener noreferrer`), hostname visible before clicking.
 
