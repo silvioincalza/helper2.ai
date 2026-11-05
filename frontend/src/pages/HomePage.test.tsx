@@ -1,5 +1,6 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { makeSearch } from '@/test/fixtures';
 import { mockApi } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
 
@@ -137,17 +138,12 @@ describe('one box', () => {
     ).toBeInTheDocument();
   });
 
-  it('a search of any length offers to ask the guide, which asks once when chosen', async () => {
-    const m = mockApi();
-    const { params } = renderApp('/search?q=translate');
-    const ask = await screen.findByRole('button', { name: 'Ask the guide about “translate”' });
+  it('the results offer no second Ask the guide: the box has it; an empty result keeps "Ask the guide instead"', async () => {
+    mockApi({ 'GET /search': () => makeSearch({ results: [], total: 0 }) });
+    renderApp('/search?q=translate');
     expect(
-      screen.getByText('Want picks with a quote that proves them? Ask the guide.'),
+      await screen.findByRole('button', { name: 'Ask the guide instead' }),
     ).toBeInTheDocument();
-    expect(m.callsTo('POST', '/guide/stream')).toHaveLength(0);
-    await userEvent.click(ask);
-    await waitFor(() => expect(params().get('ask')).toBe('translate'));
-    await waitFor(() => expect(m.callsTo('POST', '/guide/stream')).toHaveLength(1));
     expect(screen.queryByRole('button', { name: /Ask the guide about/ })).not.toBeInTheDocument();
   });
 

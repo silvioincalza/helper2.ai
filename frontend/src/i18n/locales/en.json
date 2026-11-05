@@ -192,10 +192,7 @@
     "moreLoaded_one": "{{count}} more result",
     "moreLoaded_other": "{{count}} more results",
     "moreFailed": "Could not load more results",
-    "askGuide": "Ask the guide instead",
-    "suggestLabel": "Ask the guide",
-    "suggestText": "Want picks with a quote that proves them? Ask the guide.",
-    "suggestButton": "Ask the guide about “{{q}}”"
+    "askGuide": "Ask the guide instead"
   },
   "timeline": {
     "viewLabel": "Show results as",

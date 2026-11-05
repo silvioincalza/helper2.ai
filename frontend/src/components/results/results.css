@@ -4,22 +4,7 @@
   color: var(--accent-ink);
 }
 
-/* ===== The guide: suggestion, picks bar, how it decided ===== */
-.h2-suggest {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-3) var(--space-4);
-  padding: var(--space-3) var(--space-4);
-  border: 1px dashed var(--border-strong);
-  border-radius: var(--radius-md);
-}
-.h2-suggest p {
-  flex: 1 1 18rem;
-  margin: 0;
-  font-size: 0.9375rem;
-  color: var(--ink-2);
-}
+/* ===== The guide: picks bar, how it decided ===== */
 .h2-results__guide {
   display: flex;
   flex-direction: column;

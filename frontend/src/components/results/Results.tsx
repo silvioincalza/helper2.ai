@@ -80,23 +80,12 @@ export function Results() {
 
   return (
     <>
-      {asked ? (
+      {asked && (
         <GuidePicks
           stream={stream}
           loaded={new Set((shown?.results ?? []).map((c) => c.id))}
           webLine={webLineExpected(shown?.webSearches)}
         />
-      ) : (
-        // Any length of words can ask the guide (ADR 0042, decision 11); the empty state has its own button.
-        clampQuestion(state.q) &&
-        shown?.results.length !== 0 && (
-          <section className="h2-suggest" aria-label={t('results.suggestLabel')}>
-            <p>{t('results.suggestText')}</p>
-            <button type="button" className="v4-btn" onClick={() => ask(state.q)}>
-              {t('results.suggestButton', { q: state.q })}
-            </button>
-          </section>
-        )
       )}
       {/* The skeleton only on the first load; later the last results stay, dimmed, under one status line. */}
       {search.loading &&
