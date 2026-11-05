@@ -174,7 +174,7 @@ they do now and how version 3 and 4 live side by side until the other pages move
   `total` on GET /recent and GET /events/upcoming (which also takes `days`). The Unknown count per facet is still open.
 - For a while the site shows two designs and loads two font families on the pages still on version 3. The header and
   footer are already version 4 on every page.
-- The initial JavaScript is 157.1 KiB gzip (budget 165 KiB): Results load on demand (11.2 KiB gzip), like the radar,
+- The initial JavaScript is 157.0 KiB gzip (budget 165 KiB): Results load on demand (11.2 KiB gzip), like the radar,
   the phone tabs, the Sources page and the account page. A first visit to /search waits for that chunk behind the
   skeleton.
 - Results show one screen of rows and one place per result; comparing two results means opening both. A reload
