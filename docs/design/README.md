@@ -36,6 +36,15 @@ them they show the system fonts.
   off, the beam stands still and a fixed set of 4 shows at full opacity.
 - Under the box: "3-5 of N sources at a time", the three colours, and a link to the Sources page.
 
+### Sources, Saved and the back office (5 Nov 2026)
+
+- A `$ helper2 … · N` line next to each list heading, N from the API: `sources --all`, `saved`, `review --open`,
+  `scouts --runs`, `examples`, `audit`.
+- Sources is one table with every source, ours included. Same short names and colours as the radar. One line says
+  the radar shows 3-5 of the external ones at a time.
+- Saved keeps its rows and chips. Loading, sync error and empty are the states of the Home lists.
+- The review queue, the Scout runs, the budgets and the audit trail are tables. Only the look changed.
+
 ## `boards/` — the agreed design (ADR 0040)
 
 The boards the frontend follows, saved from the design canvas, agreed on 30 October 2026. Each `.dc.html` is one board; `canvas.json`

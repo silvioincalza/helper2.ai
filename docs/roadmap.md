@@ -169,7 +169,13 @@ Open items:
     picks merged into the list; the partial-results banner becomes one quiet line in the count row; filters as a
     drawer on phones.
   - **The resource page in v4:** one primary button ("Set it up" is already only on types a user installs or runs).
-  - **The other pages** (Saved, Sources, Mission, Privacy, Terms, Account, sign-in, 404, admin), one by one.
+  - **The other pages** (Mission, Privacy, Terms, Account, sign-in, 404), one by one. Sources, Saved and the back
+    office are built (decision 11).
+  - **Saved, drawn but not built:** Undo for a few seconds after Remove, "4 of 500" on the account list, and "We moved
+    3 saved items to your account" right after sign-in. Each needs a decision first: Undo changes how Remove works,
+    the cap and the moved count need fields on the bookmarks API.
+  - **Sources, open point:** the board shows the last check as "2 min ago"; the table shows the time in UTC, as before.
+    A relative time needs the server's clock on GET /sources, or it goes wrong on a client with a wrong clock.
   - **Remove version 3** once the last page has moved: the v3 components and layout sizes, Space Grotesk, and the
     `--v4-` prefix on the v4 sizes and fonts.
   - **Font, open point.** The decision of 2 November 2026 (#173) keeps Space Grotesk for every page, with no new
@@ -177,8 +183,8 @@ Open items:
     one: Geist for every page as they move, or Space Grotesk on the v4 parts too (two tokens in `tokens.css` and the
     two `@fontsource-variable` packages).
   - **API fields:** `newThisWeek` on GET /sources, `limits` on GET /me and `total` on the recent and upcoming responses
-    are in the API and on Home. Still to use them: the account panel and the Account page (`limits`), the Sources
-    table (`newThisWeek`).
+    are in the API, on Home and in the Sources table. Still to use them: the account panel and the Account page
+    (`limits`).
   - **GET /api/v1/policy:** retention periods, daily limits and guide candidates from the typed config records, so
     the text pages show them from data, not typed in. After config PRs 5-8.
   - **Cost guard:** a "no pick" answer and a cached answer spend no AI answer
@@ -194,9 +200,9 @@ Open items:
     go. Signed-in users can turn it off on the account page; guests have only reduced motion and the hold while the
     search box has focus, and no switch. Find a pause for them that needs no new browser storage key, or decide the
     storage key with the Privacy page.
-  - **The terminal style on the list pages:** Results, Timeline, Sources, Saved and Admin get the look of `TermList`
-    on Home (a `$ helper2 …` line with the count from the API, `ls -l` columns, dashed rules, titles in Geist, the
-    rest in Geist Mono). One pull request each.
+  - **The terminal style on the list pages:** Results and Timeline get the look of `TermList` on Home (a
+    `$ helper2 …` line with the count from the API, `ls -l` columns, dashed rules, titles in Geist, the rest in Geist
+    Mono). Sources, Saved and Admin have it.
 - **Frontend design** ([0040](adr/frontend/0040-frontend-design.md)) is done and on staging. Prod gets it with the next release:
   cut one once staging looks right.
 - Tracking cookies are planned. Before the first one: consent banner, cookie notice, Privacy page and record of
