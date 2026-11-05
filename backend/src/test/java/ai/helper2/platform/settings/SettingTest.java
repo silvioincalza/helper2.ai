@@ -30,15 +30,23 @@ class SettingTest {
   }
 
   @Test
-  void aUrlWithCredentialsOrAQuotedValueIsRefused() {
-    assertThatThrownBy(
-            () -> Setting.model("a.b", "B", "https://user:secret@token.example/v1", null))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageNotContaining("secret");
-    assertThatThrownBy(() -> Setting.model("a.b", "B", "\"x\"", null))
-        .isInstanceOf(IllegalArgumentException.class);
-    assertThatThrownBy(() -> Setting.model("a.b", "B", "x".repeat(Setting.MAX_LENGTH + 1), null))
-        .isInstanceOf(IllegalArgumentException.class);
+  void aUrlWithCredentialsOrAQuotedValueIsHidden() {
+    assertThat(Setting.model("a.b", "B", "https://user:secret@token.example/v1", null).value())
+        .isEqualTo(Setting.HIDDEN);
+    assertThat(Setting.model("a.b", "B", "\"x\"", null).value()).isEqualTo(Setting.HIDDEN);
+    assertThat(Setting.model("a.b", "B", "x".repeat(Setting.MAX_LENGTH + 1), null).value())
+        .isEqualTo(Setting.HIDDEN);
+    assertThat(Setting.model("a.b", "B", "x".repeat(Setting.MAX_LENGTH), null).value())
+        .as("at the limit")
+        .hasSize(Setting.MAX_LENGTH);
+  }
+
+  @Test
+  void aValidValueThePageCannotShowDoesNotStopTheApp() {
+    Setting daily = Setting.schedule("scout.schedule", "Schedule", "@daily", "H2_SCOUT_CRON");
+
+    assertThat(daily.value()).isEqualTo(Setting.HIDDEN);
+    assertThat(daily.variable()).as("still says which variable sets it").isEqualTo("H2_SCOUT_CRON");
   }
 
   @Test
