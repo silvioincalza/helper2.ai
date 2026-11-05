@@ -42,8 +42,8 @@ pages, Results and the resource page, and the text pages; this record says what 
      and its curated list are left out. Live sources sit on the two inner rings, the Scout collectors on the two outer
      ones. Each source has its own fixed spot from the order GET /sources lists it in, left and right of the title,
      never under the title or the box, and never touching another name (`radarLayout.ts`). A dot never slides.
-   - **3 to 5 at a time.** It starts with 3 random sources, 0.6 s apart. Then every 1.6 s one step: while it grows, a
-     new random source that is not on the radar comes, up to 5; then the oldest leaves, one at a time, down to 3; then
+   - **5 to 10 at a time.** It starts with 5 random sources, 0.6 s apart. Then every 1.6 s one step: while it grows, a
+     new random source that is not on the radar comes, up to 10; then the oldest leaves, one at a time, down to 5; then
      it grows again (`radarRotation.ts`).
    - **Painted by the beam.** A dot shows only when the beam passes its angle: full opacity, a short pop (scale 1.35,
      back to 1 in 0.25 s) and a glow in its own colour (gone in 0.6 s); then it fades to 0.22 until the next pass. A
@@ -57,12 +57,12 @@ pages, Results and the resource page, and the text pages; this record says what 
      Colour is never the only key: each dot is a link to the Sources page whose accessible name and tooltip say the
      state ("GitHub, live, answered in 410 ms, 14 new this week"; "Awesome, from our index, last check failed"). A dot
      that is not on the radar is hidden from screen readers and the keyboard.
-   - **The legend** under the box: "3-5 of N sources at a time" (N from GET /sources), a filled swatch for answering,
+   - **The legend** under the box: "5-10 of N sources at a time" (N from GET /sources), a filled swatch for answering,
      slow or limited and failed, and a link to the Sources page.
    - **When it holds still.** The clock stops while the search box has focus: the beam and the dots hold still. Under
      reduced motion, or for a signed-in user who turned "Radar: keep moving" off on the account page
      (`preferences.radarMotion` on GET /me, saved with PATCH /me/preferences, ADR
-     [0023](../edge/0023-identity-and-admin.md)), there is no clock: the beam stands still and a fixed random set of 4
+     [0023](../edge/0023-identity-and-admin.md)), there is no clock: the beam stands still and a fixed random set of 7
      shows at full opacity. Up to 900 px only the rings and the beam show.
 
    The search box, its hint, the "Try:" examples and the radar legend stay pinned under the header while the page
@@ -91,7 +91,7 @@ pages, Results and the resource page, and the text pages; this record says what 
      orange, slow or limited amber (timed out, rate limited), failed red, skipped, not checked or disabled grey. Each
      state is a word with a glyph (✓ ! × ○); the colour only repeats it. The table lists every source, ours included:
      the mode column says "ours, not on the radar" when `external` is false. One line says how many the radar shows:
-     "The Home radar shows 3-5 of these N external sources at a time". The pause line and the metered source's web
+     "The Home radar shows 5-10 of these N external sources at a time". The pause line and the metered source's web
      credits sit under the name, the response time under the check time, the attribution under Terms. The mode chips
      and the refresh on return stay as they were.
    - **Saved** keeps its rows (type, host, saved date in Geist Mono, the title in Geist, the original link, Remove)
@@ -180,7 +180,7 @@ pages, Results and the resource page, and the text pages; this record says what 
     fails on any CSS or inline animation that repeats for ever. The exception is the radar (decision 4). It moves by a
     JavaScript clock, not a CSS animation; it holds still while the search box has focus, stands still under reduced
     motion, and a signed-in user can turn it off.
-13. **Every number comes from data.** The radar legend's "3-5 of N sources at a time" counts the enabled external
+13. **Every number comes from data.** The radar legend's "5-10 of N sources at a time" counts the enabled external
     sources of GET /sources, the same sources the radar shows (13 on staging; not shown before the answer); the dot
     names say the response time or the age of the last check; the list counts are `total` on GET /recent and GET
     /events/upcoming (never fewer than the rows sent). One small reader (`lib/v4Fields.ts`) takes `newThisWeek` and
@@ -240,7 +240,7 @@ pages, Results and the resource page, and the text pages; this record says what 
 - WCAG 2.2.2 asks for a way to pause moving content for every user. Signed-in users can turn the radar off; anonymous
   visitors have only reduced motion and the hold while the search box has focus. The radar never ends on its own and
   guests have no switch. This is a known limit, on the [roadmap](../../roadmap.md).
-- The radar shows 3 to 5 sources at a time, so a visitor sees every source only over time. The legend links to the
+- The radar shows 5 to 10 sources at a time, so a visitor sees every source only over time. The legend links to the
   Sources page, which lists them all.
 - The radar's clock draws on every animation frame while the page is open and the box has no focus. It writes only
   CSS variables and one transform, and React renders only when a source comes or goes; the browser stops the frames

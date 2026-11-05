@@ -19,7 +19,7 @@ describe('home (design v4)', () => {
     expect(within(h1).getByText('helper2.ai')).toHaveClass('v4-hero__name');
     // No line above the title; the number of sources is in the radar legend, from GET /sources.
     expect(screen.queryByText(/AI sources$/)).not.toBeInTheDocument();
-    expect(await screen.findByText(/^3-5 of 13 sources at a time/)).toBeInTheDocument();
+    expect(await screen.findByText(/^5-10 of 13 sources at a time/)).toBeInTheDocument();
     expect(screen.getByText(/^One search across the world of AI/)).not.toHaveTextContent(/\d/);
     // The hint says what each key does: Enter searches, Shift+Enter asks the guide.
     expect(
@@ -55,10 +55,10 @@ describe('home (design v4)', () => {
     expect(await screen.findByText(/^1 of 1 source at a time/)).toBeInTheDocument();
   });
 
-  it('the radar shows 3 to 5 of the 13 external sources, the same ones the legend counts', async () => {
+  it('the radar shows 5 to 10 of the 13 external sources, the same ones the legend counts', async () => {
     mockApi({ 'GET /sources': () => STAGING_SOURCES });
     renderApp('/');
-    await screen.findByText(/^3-5 of 13 sources at a time/);
+    await screen.findByText(/^5-10 of 13 sources at a time/);
     const radar = await screen.findByRole('list', { name: 'Some of the sources we search' });
     // The first 3 come in one after another, 0.6 s apart.
     await waitFor(() => expect(within(radar).getAllByRole('link')).toHaveLength(3), {
@@ -70,7 +70,7 @@ describe('home (design v4)', () => {
     // The legend: how many of how many, the three colours, and the Sources page.
     const legend = screen.getByText(/sources at a time/);
     expect(legend).toHaveTextContent(
-      '3-5 of 13 sources at a time · ● answering ● slow or limited ● failed · Sources page',
+      '5-10 of 13 sources at a time · ● answering ● slow or limited ● failed · Sources page',
     );
     expect(within(legend).getByRole('link', { name: 'Sources page' })).toHaveAttribute(
       'href',

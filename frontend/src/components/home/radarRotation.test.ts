@@ -28,21 +28,21 @@ function run(n: number, ids = IDS, random = seeded()): Cycle[] {
   return out;
 }
 
-describe('the radar cycle (ADR 0042): always 3 to 5 sources, the oldest leaves first', () => {
-  it('starts with 3 sources, one after another, quicker than the later steps', () => {
-    const [a, b, c] = run(3);
-    expect([a!.shown.length, b!.shown.length, c!.shown.length]).toEqual([1, 2, 3]);
+describe('the radar cycle (ADR 0042): always 5 to 10 sources, the oldest leaves first', () => {
+  it('starts with 5 sources, one after another, quicker than the later steps', () => {
+    const first = run(5);
+    expect(first.map((c) => c.shown.length)).toEqual([1, 2, 3, 4, 5]);
     expect(delayAfter(EMPTY, 13)).toBe(INTRO_MS);
-    expect(delayAfter(c!, 13)).toBe(STEP_MS);
+    expect(delayAfter(first[4]!, 13)).toBe(STEP_MS);
   });
 
-  it('after the start the count stays between 3 and 5: up to 5, down to 3, up again', () => {
+  it('after the start the count stays between 5 and 10: up to 10, down to 5, up again', () => {
     const counts = run(40)
-      .slice(2)
+      .slice(4)
       .map((c) => c.shown.length);
-    expect(Math.min(...counts)).toBe(3);
-    expect(Math.max(...counts)).toBe(5);
-    expect(counts.slice(0, 9)).toEqual([3, 4, 5, 4, 3, 4, 5, 4, 3]);
+    expect(Math.min(...counts)).toBe(5);
+    expect(Math.max(...counts)).toBe(10);
+    expect(counts.slice(0, 11)).toEqual([5, 6, 7, 8, 9, 10, 9, 8, 7, 6, 5]);
   });
 
   it('a new source is never one already shown', () => {
@@ -50,11 +50,11 @@ describe('the radar cycle (ADR 0042): always 3 to 5 sources, the oldest leaves f
   });
 
   it('the oldest leaves first', () => {
-    const cycles = run(8);
-    const full = cycles[4]!; // 5 shown
-    expect(full.shown).toHaveLength(5);
-    expect(cycles[5]!.shown).toEqual(full.shown.slice(1));
-    expect(cycles[6]!.shown).toEqual(full.shown.slice(2));
+    const cycles = run(12);
+    const full = cycles[9]!; // 10 shown
+    expect(full.shown).toHaveLength(10);
+    expect(cycles[10]!.shown).toEqual(full.shown.slice(1));
+    expect(cycles[11]!.shown).toEqual(full.shown.slice(2));
   });
 
   it('is random in the page and fixed in tests', () => {
@@ -94,10 +94,10 @@ describe('the radar cycle (ADR 0042): always 3 to 5 sources, the oldest leaves f
     expect(seen.size).toBe(ids.length);
   });
 
-  it('standing still: a fixed random set of 4', () => {
+  it('standing still: a fixed random set of 7', () => {
     const set = stillSet(IDS, seeded());
-    expect(set).toHaveLength(4);
-    expect(new Set(set).size).toBe(4);
+    expect(set).toHaveLength(7);
+    expect(new Set(set).size).toBe(7);
     expect(stillSet(IDS, seeded())).toEqual(set);
   });
 });

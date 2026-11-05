@@ -1,15 +1,15 @@
 /**
- * Which sources the Home radar shows (ADR 0042, decision 4): always 3 to 5 at a time. It starts with 3 random sources,
- * one after another; then each step adds one new random source while it grows, up to 5, and takes away the oldest
- * while it shrinks, down to 3; then it grows again. Pure functions: the component runs the timer. `random` is
+ * Which sources the Home radar shows (ADR 0042, decision 4): always 5 to 10 at a time. It starts with 5 random sources,
+ * one after another; then each step adds one new random source while it grows, up to 10, and takes away the oldest
+ * while it shrinks, down to 5; then it grows again. Pure functions: the component runs the timer. `random` is
  * injected, so tests can fix the order.
  */
 
 /** The fewest and the most sources on the radar at a time, and the fixed set when it stands still. */
-const FEWEST = 3;
-const MOST = 5;
-const STILL = 4;
-/** Time between two steps while the first 3 arrive, and after that. */
+const FEWEST = 5;
+const MOST = 10;
+const STILL = 7;
+/** Time between two steps while the first 5 arrive, and after that. */
 export const INTRO_MS = 600;
 export const STEP_MS = 1600;
 
@@ -21,7 +21,7 @@ export interface Cycle {
 
 export const EMPTY: Cycle = { shown: [], growing: true };
 
-/** The range the radar keeps to with `n` sources: 3-5, or fewer when there are fewer sources. */
+/** The range the radar keeps to with `n` sources: 5-10, or fewer when there are fewer sources. */
 export function bounds(n: number): { fewest: number; most: number } {
   return { fewest: Math.min(FEWEST, n), most: Math.min(MOST, n) };
 }
@@ -74,7 +74,7 @@ export function step(
   return { shown, growing: shown.length <= fewest };
 }
 
-/** A fixed random set of 4 (reduced motion, or the account setting off). */
+/** A fixed random set of 7 (reduced motion, or the account setting off). */
 export function stillSet(ids: string[], random: () => number): string[] {
   const out = [...ids];
   for (let i = out.length - 1; i > 0; i--) {

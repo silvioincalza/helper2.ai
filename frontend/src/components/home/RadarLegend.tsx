@@ -4,7 +4,7 @@ import type { SourceInfo } from '@/api/types';
 import { bounds } from './radarRotation';
 
 /**
- * Under the box: how many sources the radar shows of how many ("3-5 of 13 sources at a time", 13 from GET /sources),
+ * Under the box: how many sources the radar shows of how many ("5-10 of 13 sources at a time", 13 from GET /sources),
  * a filled swatch for each colour (answering, slow or limited, failed), and a link to the Sources page, which lists
  * them all. Each dot also says its state in its accessible name and tooltip.
  */

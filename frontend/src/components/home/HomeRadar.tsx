@@ -137,10 +137,10 @@ function RadarArt({ f, beam }: { f: RadarFrame; beam: RefObject<SVGGElement | nu
 
 /**
  * The radar on Home (ADR 0042, decision 4), like a navigation radar: full rings around the title and a beam that turns
- * once every 5 s. Only external sources, 3 to 5 at a time, each placed where there is room when it comes on. A dot is painted when the beam
+ * once every 5 s. Only external sources, 5 to 10 at a time, each placed where there is room when it comes on. A dot is painted when the beam
  * passes it (radarClock.ts); one source comes or goes every 1.6 s (radarRotation.ts). The beam and the dots run on
  * one clock, which stops while the search box has focus. Under reduced motion, or when a signed-in user turned the
- * motion off, the beam stands still and a fixed set of 4 shows at full opacity. Each dot links to the Sources page
+ * motion off, the beam stands still and a fixed set of 7 shows at full opacity. Each dot links to the Sources page
  * and says its state in words. Up to 900 px only the rings and the beam show.
  */
 export function HomeRadar({
@@ -227,7 +227,7 @@ interface View {
  * clear of the dots shown and still fading out, so none is ever left out for lack of room. New sources are picked in
  * turn from the live sources, the collectors and the discovery categories (`radarGroup`). On each frame the clock
  * turns the beam and sets each dot's `--o`, `--pop` and `--glow` (home.css); the React state changes only when a
- * source comes or goes. Standing still: a fixed random set of 4 at full opacity, no clock. Mounted again (a React key)
+ * source comes or goes. Standing still: a fixed random set of 7 at full opacity, no clock. Mounted again (a React key)
  * when the sources, the size or `still` change.
  */
 function RadarDots({
