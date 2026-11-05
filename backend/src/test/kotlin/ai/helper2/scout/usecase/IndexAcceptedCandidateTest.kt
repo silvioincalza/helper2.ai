@@ -119,10 +119,11 @@ class IndexAcceptedCandidateTest {
         )
       )
     }
-    val records = catalog.indexed.map { (results, sourceId) ->
-      assertEquals("linkedin-scout", sourceId)
-      results.single().hits.single()
-    }
+    val records =
+      catalog.indexed.map { (results, sourceId) ->
+        assertEquals("linkedin-scout", sourceId)
+        results.single().hits.single()
+      }
     assertEquals(
       listOf(ResourceType.NEWS, ResourceType.ARTICLE, ResourceType.EVENT),
       records.map { it.type },

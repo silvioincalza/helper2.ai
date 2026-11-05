@@ -109,7 +109,8 @@ class LinkedInCollectorTest {
                 "https://linkedin.com/events/genaimeetupzurich7391234567890",
                 ResourceType.EVENT,
                 "LinkedIn event"));
-    assertThat(batch.getCandidates()).allSatisfy(c -> assertThat(c.getTags()).containsExactly("linkedin"));
+    assertThat(batch.getCandidates())
+        .allSatisfy(c -> assertThat(c.getTags()).containsExactly("linkedin"));
   }
 
   @Test
@@ -159,8 +160,7 @@ class LinkedInCollectorTest {
         .isEqualTo(LinkedInCollector.Kind.POST);
     assertThat(kind("https://www.linkedin.com/company/acme/about/"))
         .isEqualTo(LinkedInCollector.Kind.COMPANY);
-    assertThat(kind("https://www.linkedin.com/events/x/"))
-        .isEqualTo(LinkedInCollector.Kind.EVENT);
+    assertThat(kind("https://www.linkedin.com/events/x/")).isEqualTo(LinkedInCollector.Kind.EVENT);
     assertThat(kind("https://www.linkedin.com/in/jane-doe")).isNull();
     assertThat(kind("https://www.linkedin.com/school/eth-zurich")).isNull();
     assertThat(kind("https://www.linkedin.com/pulse/topics/ai")).isNull();

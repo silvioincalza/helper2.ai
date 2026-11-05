@@ -43,9 +43,9 @@ fun interface CatalogLookup {
  * An admin accepted a resource candidate (ADR 0051): it is indexed as a record of the collector
  * that found it, with the collector's own title and excerpt, so it is catalogued like everything
  * the Scout collects. It has no enrichment yet: the next Scout run takes it from the backlog. The
- * values are checked again here, because the review item is stored text. A candidate's type must
- * be one its collector declares (ADR 0053): LinkedIn may propose articles, posts and events,
- * discovery only products.
+ * values are checked again here, because the review item is stored text. A candidate's type must be
+ * one its collector declares (ADR 0053): LinkedIn may propose articles, posts and events, discovery
+ * only products.
  */
 class IndexAcceptedCandidate(
   collectors: List<Collector>,

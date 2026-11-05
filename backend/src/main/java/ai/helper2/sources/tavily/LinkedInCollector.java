@@ -29,10 +29,10 @@ import tools.jackson.databind.JsonNode;
  * LinkedIn has no search API and forbids scraping, so we never call LinkedIn: one Tavily search per
  * fixed query, restricted to linkedin.com with include_domains, on a weekly interval (one credit
  * per query and pass, search_depth basic). The URL path alone decides what a page is; personal
- * profiles, jobs and learning pages are dropped. Every kept page is a candidate for the admin review
- * list, never a hit, so nothing reaches the catalog without a person accepting it. Titles carry no
- * author name, and excerpts are short. A pass asks only for pages published since the previous
- * complete pass (start_date), or the last month on the first. Docs:
+ * profiles, jobs and learning pages are dropped. Every kept page is a candidate for the admin
+ * review list, never a hit, so nothing reaches the catalog without a person accepting it. Titles
+ * carry no author name, and excerpts are short. A pass asks only for pages published since the
+ * previous complete pass (start_date), or the last month on the first. Docs:
  * https://docs.tavily.com/documentation/api-reference/endpoint/search
  */
 public class LinkedInCollector implements Collector {
@@ -71,8 +71,7 @@ public class LinkedInCollector implements Collector {
   private static final Pattern ARTICLE = Pattern.compile("^/pulse/[^/]+/?$");
   private static final Pattern POST =
       Pattern.compile("^/(posts/[^/]+|feed/update/[^/]+|company/[^/]+/posts/[^/]+)/?$");
-  private static final Pattern COMPANY =
-      Pattern.compile("^/(company|showcase)/[^/]+(/about)?/?$");
+  private static final Pattern COMPANY = Pattern.compile("^/(company|showcase)/[^/]+(/about)?/?$");
   private static final Pattern EVENT = Pattern.compile("^/events/[^/]+/?$");
 
   /** "Jane Doe on LinkedIn: text" and "Jane Doe's Post": the person goes, the text stays. */
@@ -81,8 +80,7 @@ public class LinkedInCollector implements Collector {
 
   private static final Pattern NAME_ONLY =
       Pattern.compile(
-          "^.{1,100}?['’]s (Post|Activity|Article)$|^Post (by|from) .+$",
-          Pattern.CASE_INSENSITIVE);
+          "^.{1,100}?['’]s (Post|Activity|Article)$|^Post (by|from) .+$", Pattern.CASE_INSENSITIVE);
 
   /** " | LinkedIn", " - LinkedIn", " · LinkedIn" and what follows: the site, not the page. */
   private static final Pattern SITE_SUFFIX =
@@ -218,10 +216,10 @@ public class LinkedInCollector implements Collector {
   }
 
   /**
-   * The title without the author and without the site: "Jane Doe on LinkedIn: New model out" →
-   * "New model out"; "Agents in prod | Jane Doe | 3 comments" → "Agents in prod". A post whose
-   * title names only its author ("Jane Doe's Post") takes the start of its text. Null when nothing
-   * is left.
+   * The title without the author and without the site: "Jane Doe on LinkedIn: New model out" → "New
+   * model out"; "Agents in prod | Jane Doe | 3 comments" → "Agents in prod". A post whose title
+   * names only its author ("Jane Doe's Post") takes the start of its text. Null when nothing is
+   * left.
    */
   static String title(Kind kind, String raw, String content) {
     String t = clean(raw);
