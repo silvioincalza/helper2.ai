@@ -893,9 +893,12 @@
       "notFinished": "Not finished",
       "extra": "Also read",
       "errors": "What the code check refused",
+      "errorsAi": "Includes model output: the check quotes what the AI wrote.",
       "fields": "Fields of this run",
       "noFields": "This run has no stored fields left. A newer run may have replaced them.",
-      "noQuote": "No quote."
+      "noQuote": "No quote.",
+      "quotes": "Source quotes",
+      "sourceQuote": "Source quote"
     }
   },
   "notFound": {

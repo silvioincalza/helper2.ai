@@ -364,6 +364,7 @@
   font: 600 0.8125rem/1.5 var(--font-mono);
 }
 .h2-admin__ai-label,
+.h2-admin__quote-label,
 .h2-admin__quote-meta {
   font: 400 0.75rem/1.4 var(--font-mono);
   color: var(--muted);
@@ -373,6 +374,7 @@
   padding-left: var(--space-2);
   border-left: 2px solid var(--border-strong);
 }
+.h2-admin__quote-label,
 .h2-admin__quote-meta {
   margin: 0;
 }

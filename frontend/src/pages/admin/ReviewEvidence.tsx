@@ -18,7 +18,8 @@ const VERIFICATION_TONE: Record<Verification, StatusTone> = {
 /**
  * What a review item is about (ADR 0045): the run or the relationship it links to, read from the server for the
  * selected item only. Values a model wrote carry their origin in words ("Extracted by AI") and are marked in the
- * HTML (ADR 0038); quotes come from the sources and are not. Every text is plain React text.
+ * HTML (ADR 0038). The validation errors embed text the model wrote, so they carry the same label and mark. Quotes
+ * come from the sources: they say so and are not marked. Every text is plain React text.
  */
 export function ReviewEvidencePanel({ itemId }: { itemId: string }) {
   const { t } = useTranslation();
@@ -79,7 +80,8 @@ function EvidenceBody({ evidence }: { evidence: ReviewEvidence }) {
       {validationErrors.length > 0 && (
         <>
           <p className="h2-admin__h3">{t('admin.evidence.errors')}</p>
-          <ul className="h2-admin__errors">
+          <p className="h2-admin__ai-label">{t('admin.evidence.errorsAi')}</p>
+          <ul className="h2-admin__errors" {...aiMark(run?.model)}>
             {validationErrors.map((e, i) => (
               <li key={i}>{e}</li>
             ))}
@@ -126,17 +128,21 @@ function EvidenceBody({ evidence }: { evidence: ReviewEvidence }) {
   );
 }
 
-/** Quotes copied from the sources: plain text, and a link only for an http(s) address. */
+/**
+ * Quotes copied from the sources: third-party text, labelled as such and not marked as AI-written. Plain text, and a
+ * link only for an http(s) address.
+ */
 function Quotes({ quotes }: { quotes: ReviewQuote[] }) {
   const { t, i18n } = useTranslation();
   if (quotes.length === 0) return <p className="muted">{t('admin.evidence.noQuote')}</p>;
   return (
-    <ul className="h2-admin__quotes">
+    <ul className="h2-admin__quotes" aria-label={t('admin.evidence.quotes')}>
       {quotes.map((q, i) => {
         const href = safeHref(q.sourceUrl);
         const where = q.sourceId ?? q.sourceUrl;
         return (
           <li key={i}>
+            <p className="h2-admin__quote-label">{t('admin.evidence.sourceQuote')}</p>
             {q.excerpt && <blockquote>{q.excerpt}</blockquote>}
             <p className="h2-admin__quote-meta">
               {href ? (
