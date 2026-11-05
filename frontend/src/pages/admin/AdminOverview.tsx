@@ -7,7 +7,7 @@ import { StatusPill } from '@/components/ui/StatusPill';
 import { Icon } from '@/components/Icon';
 import { useApi } from '@/hooks/useApi';
 import { useRetry } from '@/hooks/useRetry';
-import { formatDate } from '@/lib/format';
+import { formatDate, safeHref } from '@/lib/format';
 import { RUN_TONE } from './adminModel';
 
 const SHOWN_RUNS = 5;
@@ -63,6 +63,8 @@ function OverviewParts({
 }) {
   const { t, i18n } = useTranslation();
   const open = data.openReviewItems.reduce((sum, k) => sum + k.count, 0);
+  // From server config, but only an http(s) link is ever rendered, like every other link built from data.
+  const grafana = data.grafanaUrl ? safeHref(data.grafanaUrl) : undefined;
   return (
     <>
       <div className="h2-admin__tools">
@@ -81,8 +83,8 @@ function OverviewParts({
         >
           {t('admin.overview.refresh')}
         </button>
-        {data.grafanaUrl && (
-          <a href={data.grafanaUrl} target="_blank" rel="noopener noreferrer">
+        {grafana && (
+          <a href={grafana} target="_blank" rel="noopener noreferrer">
             {t('admin.overview.trends')}
           </a>
         )}

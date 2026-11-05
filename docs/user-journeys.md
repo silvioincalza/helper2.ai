@@ -105,7 +105,7 @@ Anyone can sign in, to keep saved items on the account and get a larger daily qu
 1. Admin signs in (role ADMIN from an allow-list), opens **Admin**. A sub-navigation links the parts: **Overview**, **Review**, **Scout runs**, **Examples**, **Audit**. Each part has its own address.
 2. **Overview** (the landing page, [ADR 0045](adr/edge/0045-back-office.md)): what needs a person now. How many review items wait, per kind; each count is a link to the queue filtered by that kind (`/admin/review?kind=USER_REPORT`). The enrichment backlog, the failed Scout runs of the last 24 hours (a link to the runs), today's model budgets ("120 of 500", "Off" at 0, "Unknown" when the shared counter cannot answer), web credits today, the last Scout runs, and a link to Grafana for trends. "Counted at" says when; Refresh asks again (the server counts at most once a minute).
 3. **Review**: enrichment outputs that failed validation or contradict a source, unverified relationship candidates, user reports, course candidates. Filters by status and by kind; filters and page live in the address, so Back works. Accepts or rejects each, with an optional note.
-4. **Scout runs**: triggers a run now; sees run history with items seen/changed and failures.
+4. **Scout runs**: sees run history with items seen/changed and failures. **Run all now** starts every enabled collector; **Run now** on a source's newest run starts only that source. The listing follows a started run until it ends. One run at a time: while a start is pending or a run is running, every start button waits, and the page says a run is in progress.
 5. **Examples** ([ADR 0049](adr/search/0049-home-examples.md)): the example searches the home page picks from. One line
    says how many are shown now for each kind (people who use AI, builders); a warning when a kind has fewer than 2.
    **Add an example**: the label on the chip, what it searches, for whom, and 1 to 3 expected results found with a
@@ -125,7 +125,7 @@ Each item is a row: the kind, the date and the resource in the meta line, the re
 |---|---|
 | Loading | "Loading…" in each part. On Refresh the overview keeps showing the last counts. |
 | Empty | "Nothing in this queue." / "No runs yet." / "No entries yet." |
-| Error | "Could not load the overview." (or the review queue, or the audit trail) with Try again; focus stays on the part's heading. An action that fails says so above the queue. |
+| Error | "Could not load the overview." (or the review queue, the Scout runs, or the audit trail) with Try again; focus stays on the part's heading. A reload of the Scout runs that fails keeps the last list and says so, with Try again. An action that fails says so above the queue or the runs; a start refused because a run holds the lock says a run is in progress. |
 | Already decided | Someone else decided the item first (or a newer enrichment run replaced it): "This item was already decided." The list reloads and shows its current status. |
 | Example refused | The server's rule in words: "Not saved: query: no web addresses." A duplicate label or query: "Another example already has this label or this query." Someone changed the example first: the list reloads, and the change is made again. |
 | Unknown filter in the address | Falls back to open items of every kind, first page. |

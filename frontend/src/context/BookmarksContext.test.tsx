@@ -102,7 +102,7 @@ describe('bookmarks (signed in)', () => {
     expect(posts[0]?.body).toEqual([
       { resourceId: bm.resourceId, title: 'Local one', url: bm.url, type: 'MODEL' },
     ]);
-    await waitFor(() => expect(readLocalBookmarks()).toEqual([]));
+    await waitFor(() => expect(window.localStorage.getItem(BOOKMARK_KEY)).toBeNull());
     await act(() => router.navigate('/sources'));
     await act(() => router.navigate('/saved'));
     await screen.findByRole('link', { name: 'Server only' });
@@ -207,6 +207,6 @@ describe('bookmarks (signed in)', () => {
       expect(screen.queryByText('Could not sync with your account.')).not.toBeInTheDocument(),
     );
     expect(screen.getByRole('link', { name: 'Local one' })).toBeInTheDocument();
-    await waitFor(() => expect(readLocalBookmarks()).toEqual([]));
+    await waitFor(() => expect(window.localStorage.getItem(BOOKMARK_KEY)).toBeNull());
   });
 });

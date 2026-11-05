@@ -529,7 +529,12 @@
     "actionFailed": "The action failed. Please try again.",
     "scoutRuns": "Scout runs",
     "runNow": "Run now",
+    "runAll": "Run all now",
+    "runSource": "Run {{source}} now",
+    "runWaits": "A run is in progress. You can start the next one when it ends.",
     "noRuns": "No runs yet.",
+    "runsLoadError": "Could not load the Scout runs.",
+    "runsRefreshError": "Could not reload the Scout runs. The list is from the last load.",
     "runInProgress": "A Scout run is already in progress. Try again when it ends.",
     "reviewStatus": {
       "OPEN": "Open",
@@ -555,7 +560,8 @@
       "started": "Started",
       "seen": "Items seen",
       "changed": "Items changed",
-      "message": "Message"
+      "message": "Message",
+      "run": "Run"
     },
     "kindFilter": "Kind",
     "allKinds": "All kinds",
