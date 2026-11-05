@@ -77,6 +77,15 @@ class CatalogEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
   }
 
   /**
+   * The backlog page by page, with the same bars as {@link #pending}; for the back office queue.
+   */
+  @Override
+  public List<EnrichmentCandidates.BacklogEntry> queue(
+      EnrichmentCandidates.BacklogCursor after, int size) {
+    return candidates.backlog(after, size, MIN_DESCRIPTION, MAX_FAILED_ATTEMPTS);
+  }
+
+  /**
    * The source records as material, and what the sources themselves state (licence, type, open
    * source), which the model may not overwrite. A type of OTHER says nothing, so it is no fact.
    */

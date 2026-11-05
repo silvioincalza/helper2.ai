@@ -168,7 +168,7 @@ are judgements: a model may estimate them, and the page says so. The description
 | 4 | Tool & API | Covered: Tavily Extract behind a port, URLs only from code; model tool calling rejected (below). |
 | 5 | Memory | Covered: cleaned page text in Redis for at most 24 h (retry only); the ledger keeps URL and text hashes for 30 days. |
 | 6 | Knowledge & RAG | Covered: grounding by quotes from retrieved pages; no vector search needed here. |
-| 7 | Data | Covered: `V10` migration (origins, `summary_claim.self_declared`, `maintenance_task`); evidence anchored to its record (0034); a code re-check of stored answers. |
+| 7 | Data | Covered: `V11` migration (origins, `summary_claim.self_declared`, `maintenance_task`); evidence anchored to its record (0034); a code re-check of stored answers. |
 | 8 | Browser & Computer Use | Covered: none; Tavily reads the page, we never run a browser. |
 | 9 | Guardrails | Covered: URL scope, cleaning, stating words, claim checks, caps on relationships, source facts win. |
 | 10 | Observability | Covered: `helper2.scout.fields`, `helper2.scout.gap`, credits counter and gauge; no page text in logs. |
@@ -208,7 +208,7 @@ are judgements: a model may estimate them, and the page says so. The description
 - `backend/src/main/kotlin/ai/helper2/shared/Vocabulary.kt` — `ValueOrigin.AI_ESTIMATED`, `SELF_DECLARED`.
 - `backend/src/main/java/ai/helper2/sources/evidence/TavilyExtract.java`, `PublicSuffixDomains.java`; beans in `sources/config/SourcesConfiguration.java`.
 - `backend/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java` (`officialPages`), `TavilyCreditBudget.java`, `SharedCachePageLedger.java`, `CatalogEnrichmentStore.java` (type, page target), `SpringAiEnrichmentModel.java` (`enrich-v4`, material kind).
-- `backend/src/main/resources/prompts/scout/enrich-v4.txt`, `db/migration/V10__evidence_ladder_origins.sql`.
+- `backend/src/main/resources/prompts/scout/enrich-v4.txt`, `db/migration/V11__evidence_ladder_origins.sql`.
 - `backend/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java` (origins), `JdbcEnrichmentCandidates.java` (accepted products first).
 - `api/openapi.yaml` — `ValueOrigin`, `Relationship.origin`, `SummaryClaim.selfDeclared`.
 - `frontend/src/components/results/FieldStates.tsx`, `frontend/src/pages/ResourcePage.tsx`, `frontend/src/lib/aiMark.ts`.

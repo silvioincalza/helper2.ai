@@ -55,6 +55,7 @@ export type ExampleCheckOutcome = S['ExampleCheckOutcome'];
 export type ExampleDrafts = S['ExampleDrafts'];
 export type AuditEntryPage = S['AuditEntryPage'];
 export type AdminOverview = S['AdminOverview'];
+export type EnrichmentQueuePage = S['EnrichmentQueuePage'];
 export type Problem = S['Problem'];
 export type Notice = S['Notice'];
 export type GuideRequest = S['GuideRequest'];
