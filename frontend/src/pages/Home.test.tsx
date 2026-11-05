@@ -18,7 +18,7 @@ describe('home (design v4)', () => {
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
     expect(within(h1).getByText('helper2.ai')).toHaveClass('v4-hero__name');
     // No line above the title; the number of sources is in the radar legend, from GET /sources.
-    expect(screen.queryByText(/One search/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/AI sources$/)).not.toBeInTheDocument();
     expect(await screen.findByText(/^3-5 of 13 sources at a time/)).toBeInTheDocument();
     expect(screen.getByText(/^One search across the world of AI/)).not.toHaveTextContent(/\d/);
     // The 4-word rule comes from the code that applies it.
