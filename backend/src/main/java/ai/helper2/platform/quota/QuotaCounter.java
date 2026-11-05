@@ -34,6 +34,13 @@ public interface QuotaCounter {
    */
   Result take(Counter own, int ownLimit, Counter global, long globalLimit);
 
+  /**
+   * Adds {@code amount} to {@code counter} without a limit: work already done, such as the Scout's
+   * Tavily credits (ADR 0051). The key expires one day after its first count, as with {@link
+   * #take}.
+   */
+  void add(Counter counter, long amount);
+
   /** Takes one count off {@code counter}, never below 0: a count whose work did not run. */
   void giveBack(Counter counter);
 

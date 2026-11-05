@@ -40,7 +40,7 @@ class CollectorPropertiesTest {
       assertThat(discovery.interval()).isEqualTo(Duration.ofDays(7));
       assertThat(discovery.searchDepth()).isEqualTo("advanced");
       assertThat(discovery.maxResults()).isEqualTo(10);
-      assertThat(discovery.categories()).hasSize(33);
+      assertThat(discovery.dailyCredits()).isEqualTo(40);
       assertThat(discovery.excludeDomains()).contains("producthunt.com", "alternativeto.net");
       assertThat(c.getBean(CollectorProperties.HfTrending.class))
           .isEqualTo(new CollectorProperties.HfTrending(Duration.ofDays(1), 20));
@@ -157,25 +157,5 @@ class CollectorPropertiesTest {
               .rootCause()
               .hasMessageContaining("helper2.scout.hf-trending.interval");
         });
-  }
-
-  @Test
-  void anUnreadableDiscoveryCategoryStopsStartup() {
-    context
-        .withPropertyValues(
-            "helper2.scout.discovery.categories=PRODUCT|self-hosted|self-hosted AI app, PRODUCT|x")
-        .run(c -> {
-          assertThat(c).hasFailed();
-          assertThat(c.getStartupFailure())
-              .rootCause()
-              .hasMessageContaining("helper2.scout.discovery");
-        });
-  }
-
-  @Test
-  void aDiscoveryCategoryOfAReadingTypeStopsStartup() {
-    context
-        .withPropertyValues("helper2.scout.discovery.categories=NEWS|news|ai news")
-        .run(c -> assertThat(c).hasFailed());
   }
 }

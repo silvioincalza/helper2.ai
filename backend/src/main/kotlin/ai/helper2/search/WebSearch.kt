@@ -249,7 +249,7 @@ constructor(
       null
     }
 
-  private fun global() = Counter(keys.global(), GLOBAL_FIELD)
+  private fun global() = Counter(keys.global(), QuotaKeys.CREDITS)
 
   /** The quota counters [asker] uses. */
   private fun own(asker: Asker, tier: QuotaTier): Counter {
@@ -276,9 +276,5 @@ constructor(
       Verdict.GLOBAL_LIMIT_REACHED,
       null -> QuotaDecision.OverLimit(left(result.used()))
     }
-  }
-
-  private companion object {
-    const val GLOBAL_FIELD = "credits"
   }
 }

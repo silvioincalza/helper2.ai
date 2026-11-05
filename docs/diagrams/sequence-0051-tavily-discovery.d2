@@ -1,19 +1,23 @@
-# Sequence: a discovery pass that finds a self-hosted app, and an admin who accepts it.
-# Source of truth: backend/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt (collect, proposeCandidates),
-#   backend/src/main/java/ai/helper2/scout/internal/ResourceCandidateJson.java,
+# Sequence: the self-hosted category finds an app, the local-ai category finds it too a day later, and an admin
+# accepts it.
+# Source of truth: backend/src/main/java/ai/helper2/sources/config/DiscoveryCollectorRegistrar.java,
+#   backend/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt (collect, proposeCandidates),
 #   backend/src/main/java/ai/helper2/sources/tavily/TavilyDiscoveryCollector.java,
+#   backend/src/main/java/ai/helper2/sources/tavily/ScoutTavilyCredits.java,
 #   backend/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java,
-#   backend/src/main/java/ai/helper2/catalog/ReviewQueue.java (proposeCandidate),
+#   backend/src/main/java/ai/helper2/scout/internal/ResourceCandidateJson.java,
+#   backend/src/main/java/ai/helper2/catalog/ReviewQueue.java (proposeCandidate, openCandidate, updateCandidate),
 #   backend/src/main/java/ai/helper2/admin/usecase/ResolveReview.java,
 #   backend/src/main/kotlin/ai/helper2/scout/usecase/IndexAcceptedCandidate.kt.
-# Render: cd docs/diagrams && d2 fmt sequence-0051-tavily-discovery.d2 && d2 sequence-0051-tavily-discovery.d2 sequence-0051-tavily-discovery.svg
+# Render: cd docs/diagrams && ./render.sh
 
 ...@style
 
 shape: sequence_diagram
 
 runner: RunScout {class: app}
-col: TavilyDiscoveryCollector {class: app}
+col: "TavilyDiscoveryCollector\n(discovery-self-hosted,\none bean per category)" {class: app}
+credits: "ScoutTavilyCredits\n(Redis)" {class: data}
 tavily: "Tavily API" {class: ext}
 catalog: "CatalogIndex\n(catalog)" {class: app}
 review: ReviewQueueCandidateReview {class: app}
@@ -23,20 +27,26 @@ resolve: ResolveReview {class: app}
 accept: IndexAcceptedCandidate {class: app}
 
 runner -> col: "collect(checkpoint, null, 1000)"
-col -> tavily: "POST /search, 33 searches\n(\"open-source self-hosted AI app...\")"
-tavily -> col: "10 results with score and excerpt"
-col -> col: "sort: product sites, list pages,\ndropped; merge by URL; tag every\ncategory it belongs to"
+col -> credits: "capReached? no (12 of 40 today)"
+col -> tavily: "POST /search\n(\"open-source self-hosted AI app...\",\ninclude_usage, include_published_date)"
+tavily -> col: "10 results, request_id, usage.credits 2"
+col -> credits: "add 2 to the global and the Scout's credits"
+col -> col: "sort: product sites, list pages,\ndropped; tag every category whose\nwords it has; keep the search facts"
 col -> runner: "hits: 1 ARTICLE;\ncandidates: openwebui.com\n(PRODUCT; self-hosted, local-ai)"
-runner -> catalog: "index(ARTICLE)"
-runner -> review: "propose(tavily-discovery, candidates)"
-review -> queue: "proposeCandidate(RESOURCE_CANDIDATE,\nurl, reason, JSON)"
-queue -> review: "opened (not in catalog,\nnot proposed before)"
+runner -> catalog: "index(ARTICLE with its facts)"
+runner -> review: "propose(discovery-self-hosted, candidates)"
+review -> queue: "proposeCandidate(RESOURCE_CANDIDATE,\nurl, reason, JSON v2)"
+queue -> review: "opened"
+runner -> review: "next day: propose(discovery-local-ai,\nopenwebui.com)"
+review -> queue: "proposeCandidate: not opened"
+review -> queue: "openCandidate(url): OPEN item"
+review -> queue: "updateCandidate: tags joined,\nfoundBy + discovery-local-ai"
 person -> resolve: "PUT /admin/review-items/{id}/resolution\nACCEPTED"
 resolve -> queue: "find(id): OPEN RESOURCE_CANDIDATE"
 resolve -> accept: "accept(details)"
 accept -> accept: "ResourceCandidateJson.read;\ncheck source, URL, type, tags"
 accept -> queue: "CatalogLookup: listed? no"
-accept -> catalog: "index(record of tavily-discovery)"
+accept -> catalog: "index(one record of discovery-self-hosted,\nfacts: discovery, categories, foundBy)"
 catalog -> accept: "resource id"
 resolve -> queue: "decide ACCEPTED (same transaction)"
 resolve -> person: "200 ACCEPTED"

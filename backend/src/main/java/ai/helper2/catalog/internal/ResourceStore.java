@@ -18,6 +18,7 @@ import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.TechLevel;
 import ai.helper2.shared.ValueOrigin;
 import ai.helper2.shared.WebPageTitle;
+import ai.helper2.shared.WebSources;
 import java.net.URI;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -1228,18 +1229,19 @@ public class ResourceStore {
   }
 
   /**
-   * Resources of [ids] whose records all come from {@link WebPageTitle#SOURCES}: their title is a
-   * page title.
+   * Resources of [ids] whose records all come from web sources ({@link WebSources}): their title is
+   * a page title.
    */
   private Set<UUID> pageTitled(UUID[] ids) {
     return new HashSet<>(
         jdbc.sql(
                 """
                 SELECT resource_id FROM source_record WHERE resource_id = ANY(:ids)
-                GROUP BY resource_id HAVING bool_and(source_id = ANY(:web))
+                GROUP BY resource_id HAVING bool_and(source_id = ANY(:web) OR source_id LIKE :discovery)
                 """)
             .param("ids", ids)
-            .param("web", WebPageTitle.SOURCES.toArray(String[]::new))
+            .param("web", WebSources.FIXED.toArray(String[]::new))
+            .param("discovery", WebSources.DISCOVERY_LIKE)
             .query(UUID.class)
             .list());
   }
@@ -1327,6 +1329,13 @@ public class ResourceStore {
           .put("value", m.getValue())
           .put("asOf", m.getAsOf().toString());
     }
+    // The collector's own facts (ADR 0051 discovery metadata); never over a field above.
+    h.getFacts()
+        .forEach((key, value) -> {
+          if (!n.has(key)) {
+            n.set(key, json.valueToTree(value));
+          }
+        });
     return n;
   }
 

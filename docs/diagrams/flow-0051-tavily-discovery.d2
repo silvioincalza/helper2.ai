@@ -1,57 +1,76 @@
-# Flowchart: one result of a Tavily discovery search, from the search to the catalog or the review list, and an
-# admin's decision on a candidate.
-# Source of truth: backend/src/main/java/ai/helper2/sources/tavily/TavilyDiscoveryCollector.java (collect, sort,
-#   searchAll, shapeOf, tagEveryCategory, candidateTags, isListPage, productSite, siteTitle), backend/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java,
+# Flowchart: one discovery category's pass, from its searches to the catalog or the review list, and an admin's
+# decision on a candidate.
+# Source of truth: backend/src/main/java/ai/helper2/sources/tavily/TavilyDiscoveryCollector.java (collect,
+#   searchAll, keep, matchedWords, candidateTags), backend/src/main/java/ai/helper2/sources/tavily/DiscoveryPages.java (classify,
+#   isListPage, productSite, siteTitle), backend/src/main/java/ai/helper2/sources/tavily/ScoutTavilyCredits.java,
+#   backend/src/main/java/ai/helper2/sources/support/RunInterval.java (staggered),
+#   backend/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java,
+#   backend/src/main/java/ai/helper2/scout/internal/ResourceCandidateJson.java (merge, mergedTags),
 #   backend/src/main/kotlin/ai/helper2/scout/usecase/IndexAcceptedCandidate.kt,
 #   backend/src/main/java/ai/helper2/admin/usecase/ResolveReview.java.
-# Render: cd docs/diagrams && d2 fmt flow-0051-tavily-discovery.d2 && d2 flow-0051-tavily-discovery.d2 flow-0051-tavily-discovery.svg
+# Render: cd docs/diagrams && ./render.sh
 
 ...@style
 
 direction: down
 
-due: "Scout run: discovery due?\n(7 days since the last pass)" {class: decision}
-notdue: "SKIPPED\n\"Not due yet\"" {class: end}
-search: "33 Tavily searches\n(general, advanced, 10 results,\nno answer; social sites, directories\nand review sites excluded;\nonly pages since the last pass)" {class: ext}
+due: "Scout run: is this category due?\n(its first day of the week, then\n7 days since its last pass)" {class: decision}
+notdue: "SKIPPED\n\"Not due yet: next pass on ...\"" {class: end}
+cap: "Scout's Tavily credits today\nunder the daily cap (40)?" {class: decision}
+capped: "SKIPPED\n\"Daily Tavily credit cap\nof the Scout reached\"" {class: end}
+search: "The category's 1 or 2 searches\n(general, advanced, 10 results; date,\nicon URL and credits asked; no page text,\nimages or answer; excluded sites;\nonly pages since the last pass)" {class: ext}
+count: "Credits counted on the global\nand the Scout's counters" {class: data}
 outage: "Half or more of\nthe searches failed?" {class: decision}
 failed: "Pass FAILED,\ncheckpoint stays" {class: fail}
-score: "Score ≥ min-score (0.4)\nand about AI?" {class: decision}
+score: "Score ≥ the category's min-score\nand about AI?" {class: decision}
 drop: "Dropped" {class: end}
 own: "GitHub repository\nor home page?" {class: decision}
 list: "List-like title (\"12 best\", \"vs\",\n\"alternatives\")?" {class: decision}
-article: "Indexed as ARTICLE\n(source tavily-discovery)" {class: data}
+lists: "The category indexes lists?\n(not health, not legal)" {class: decision}
 site: "One level below a home page\n(/en does not count), not /blog,\na post slug, blog. or docs. host,\nnot a publisher's or directory's host?" {class: decision}
-candidate: "Candidate: a site page (/pricing)\nas its home page; any other page\n(aws.amazon.com/bedrock) as it is" {class: app}
-tags: "Merged by URL across searches:\ntag of each category that found it\nor whose words it has (a candidate:\nat most 12, finding ones first);\ntype = most specific of the\nfinding categories" {class: app}
+words: "Tag of this category and of every\ncategory whose words it has.\nWords required (health, legal)\nand none of its own?" {class: decision}
+article: "Indexed as ARTICLE (discovery-<id>),\neven when its title names an event;\n400-character excerpt, search facts\nin source_record.extra" {class: data}
+candidate: "Candidate: its site's home page or\nthe page; type = the category's;\nat most 12 tags, its own first;\nexcerpt up to 2,400 characters;\nsearch facts" {class: app}
 known: "URL in the catalog or\nproposed before?" {class: decision}
+open: "Its item still OPEN?" {class: decision}
+merge: "Merged into the item: tags joined\n(at most 12, finders' categories first),\nmost specific type, collector added\nto foundBy (once)" {class: data}
 skip: "Not proposed again" {class: end}
-item: "RESOURCE_CANDIDATE review item\n(candidate as JSON)" {class: data}
-admin: "Admin decides\n(back office, VPN)" {class: person}
+item: "RESOURCE_CANDIDATE review item\n(candidate JSON v2 with foundBy)" {class: data}
+admin: "Admin decides\n(back office, VPN; filter by category)" {class: person}
 reject: "REJECTED: decision only" {class: end}
-valid: "ResourceCandidateJson reads it;\nknown source, URL, title,\nproduct type, at most 12 tags?" {class: decision}
+valid: "ResourceCandidateJson reads it (v1 or v2);\nknown source, URL, title,\nproduct type, at most 12 tags?" {class: decision}
 exists: "CatalogLookup: indexed by\nanother source since proposed?" {class: decision}
 keep: "ACCEPTED: decision only,\nthe other source's entry stays" {class: end}
 refused: "400: item stays open" {class: fail}
-indexed: "Indexed as a tavily-discovery record\nwith its tags, item ACCEPTED (one\ntransaction); the next run enriches it" {class: end}
+indexed: "One record of the first finder, every\ncategory as a tag, search facts and\nfoundBy in extra; item ACCEPTED (one\ntransaction); the next run enriches it" {class: end}
 
 due -> notdue: no
-due -> search: yes {class: hot}
-search -> outage
+due -> cap: yes {class: hot}
+cap -> capped: no
+cap -> search: yes {class: hot}
+search -> count
+count -> outage
 outage -> score: no {class: hot}
 outage -> failed: yes
 score -> drop: no
 score -> own: yes {class: hot}
-own -> candidate: yes {class: hot}
+own -> words: product {class: hot}
 own -> list: no
-list -> article: yes
+list -> lists: yes
+lists -> words: list
+lists -> drop: no
 list -> site: no
 site -> drop: no
-site -> candidate: yes
-article -> tags
-candidate -> tags
-tags -> known: candidate {class: hot}
-known -> skip: yes
+site -> words: product
+words -> drop: yes
+words -> article: "no, a list"
+words -> candidate: "no, a product" {class: hot}
+candidate -> known: {class: hot}
 known -> item: no {class: hot}
+known -> open: yes
+open -> merge: yes
+open -> skip: no
+merge -> admin
 item -> admin
 admin -> reject: reject
 admin -> valid: accept {class: hot}

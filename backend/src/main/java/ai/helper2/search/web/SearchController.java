@@ -16,6 +16,7 @@ import ai.helper2.api.generated.model.SearchResponseDto;
 import ai.helper2.api.generated.model.ServedFromDto;
 import ai.helper2.api.generated.model.SkipReasonDto;
 import ai.helper2.api.generated.model.SortOrderDto;
+import ai.helper2.api.generated.model.SourceFamilyDto;
 import ai.helper2.api.generated.model.SourceInfoDto;
 import ai.helper2.api.generated.model.SourceModeDto;
 import ai.helper2.api.generated.model.SourceOutcomeDto;
@@ -155,6 +156,7 @@ class SearchController implements SearchApi, SourcesApi {
                     .toList())
             .termsUrl(d.getTermsUrl())
             .attribution(d.getAttribution())
+            .family(d.getFamily() == null ? null : SourceFamilyDto.fromValue(d.getFamily()))
             .responseTimeMs(o.getResponseTime() == null ? null : o.getResponseTime().toMillis())
             .newThisWeek(o.getNewThisWeek());
     if (o.getLast() != null) {

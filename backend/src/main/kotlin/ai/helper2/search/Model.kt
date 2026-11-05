@@ -69,6 +69,11 @@ constructor(
    * daily [WebSearchQuota].
    */
   val metered: Boolean = false,
+  /**
+   * The family a discovery category belongs to ("developers", ADR 0051), so the Sources page can
+   * group them; null for every other source.
+   */
+  val family: String? = null,
 ) {
   init {
     require(shortName.isNotBlank() && shortName.length <= SHORT_NAME_MAX) {
@@ -144,9 +149,18 @@ constructor(
    */
   val eventKind: EventKind? = null,
   val eventFormat: EventFormat? = null,
+  /**
+   * What the collector knew when it found the hit, kept with its record and never shown (e.g. the
+   * discovery search that found it, ADR 0051): JSON-ready values under top-level keys of
+   * `source_record.extra`. Not part of the record's fingerprint.
+   */
+  val facts: Map<String, Any> = emptyMap(),
 ) {
   /** The same hit at [rank] in its source's ranking. */
   fun withRank(rank: Int): SourceHit = copy(rank = rank)
+
+  /** The same hit with [facts] kept with its record. */
+  fun withFacts(facts: Map<String, Any>): SourceHit = copy(facts = facts)
 }
 
 /**

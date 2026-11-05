@@ -145,7 +145,8 @@ management:
 # has its meters (resilience4j_circuitbreaker_state, ..._not_permitted_calls) before its first call.
 #   source-<id>     circuit breaker + bulkhead, never a retry: the search deadline is the budget (SearchResources).
 #   collector-<id>  circuit breaker + retry with exponential backoff and jitter, only on 429, 503, network error or
-#                   timeout (TransientSourceFailure); Scout runs are background work and can wait.
+#                   timeout (TransientSourceFailure); Scout runs are background work and can wait. The discovery
+#                   categories share one: collector-discovery (ADR 0051).
 #   redis           circuit breaker shared by every Redis adapter: cache, guide answers, budgets, rate limits.
 #   db-cache        circuit breaker + bulkhead on the shared caches of model answers in PostgreSQL (SharedCaches).
 #   llm-chat        circuit breaker on every chat-model call (guide, translation, setup guide, enrichment, classifier);
@@ -208,7 +209,7 @@ resilience4j:
       collector-hf-trending: {base-config: collector}
       collector-tavily-scout: {base-config: collector}
       collector-course-scout: {base-config: collector}
-      collector-tavily-discovery: {base-config: collector}
+      collector-discovery: {base-config: collector}
       collector-linkedin-scout: {base-config: collector}
       collector-github-awesome: {base-config: collector}
       collector-hf-provider-orgs: {base-config: collector}
@@ -276,7 +277,7 @@ resilience4j:
       collector-hf-trending: {base-config: collector}
       collector-tavily-scout: {base-config: collector}
       collector-course-scout: {base-config: collector}
-      collector-tavily-discovery: {base-config: collector}
+      collector-discovery: {base-config: collector}
       collector-linkedin-scout: {base-config: collector}
       collector-github-awesome: {base-config: collector}
       collector-hf-provider-orgs: {base-config: collector}
@@ -498,61 +499,27 @@ helper2:
         AI event Switzerland,
         NVIDIA GTC
     discovery:
-      # Tavily discovery (ADR 0051): one search per category of the AI world, weekly. Lists and comparisons are
-      # indexed as ARTICLE; a product's own site or GitHub repository goes to the admin review list, never straight
-      # to the catalog. search_depth advanced costs 2 credits: 33 searches every 7 days ~ 285 credits/month.
+      # Tavily discovery (ADR 0051): what every category of helper2.categories shares. Each category is its own
+      # collector. Lists and comparisons are indexed as ARTICLE; a product's own site or GitHub repository goes to the
+      # admin review list, never straight to the catalog. search_depth advanced costs 2 credits: 39 searches every
+      # 7 days ~ 78 credits a week, ~ 335 a month. A category's first pass falls on day (its place in the list) mod 7 (UTC),
+      # so 4 or 5 categories run a day.
       interval: ${H2_SCOUT_DISCOVERY_INTERVAL:P7D}
       search-depth: ${H2_SCOUT_DISCOVERY_DEPTH:advanced}
       max-results: 10
-      # Tavily's relevance score, 0-1. Below it a result is dropped.
+      # Tavily's relevance score, 0-1. Below it a result is dropped; a category can raise it (min-score).
       min-score: 0.4
+      # Tavily credits all discovery searches may spend per UTC day; past it the categories due that day are SKIPPED
+      # and try again the next day. Counted on the global credit counter too (the Sources page's web credits).
+      daily-credits: ${H2_SCOUT_DISCOVERY_DAILY_CREDITS:40}
       # Social and video sites: no product pages, no lists worth indexing. AI directories and review sites: their
-      # terms forbid copying their listings, and their excerpts carry reviewers' names (ADR 0051).
+      # terms forbid copying their listings, and their excerpts carry reviewers' names (ADR 0051). A category adds its
+      # own (exclude-domains).
       exclude-domains: >-
         youtube.com, reddit.com, x.com, twitter.com, facebook.com, instagram.com, tiktok.com, linkedin.com,
         pinterest.com, quora.com, producthunt.com, theresanaiforthat.com, futurepedia.io, futuretools.io, toolify.ai,
         topai.tools, aitools.fyi, g2.com, capterra.com, getapp.com, softwareadvice.com, trustradius.com,
         trustpilot.com, alternativeto.net, saasworthy.com
-      # One search per entry: TYPE|tag|query|word;word. TYPE is what a product found by this search becomes; the tag
-      # goes on every result the category fits: the ones its search found, and any result whose title or excerpt has
-      # one of its words (at the start of a word; hyphens count as spaces, so "fine tun" fits "fine-tuning"). Two
-      # entries may share a tag: one category, two searches. Queries describe the product page in its own words,
-      # without "best" or "launched" (they pull SEO pages and news). No commas anywhere: the list is comma-separated.
-      # Models, datasets, MCP servers and awesome lists come from their own collectors.
-      categories: >-
-        PROMPT|prompt-libraries|free prompt library with ready-to-use prompts for ChatGPT Claude and Gemini|prompt library;prompt libraries;prompt marketplace;prompt collection;ready to use prompts;prompt pack,
-        SKILL|skills-and-gpts|open-source collection of Claude Code and agent skills with SKILL.md files|agent skill;claude skill;skill.md;custom gpt;gpt store,
-        PRODUCT|ai-assistants|AI chat assistant app for web and mobile that answers questions and remembers context|personal assistant;ai companion;ai chat app;chatgpt alternative,
-        PRODUCT|writing|AI writing assistant for emails documents and marketing copy|writing assistant;ai writer;ai writing;copywriting;paraphras;grammar checker,
-        PRODUCT|translation|AI translator for documents websites and conversations|ai translat;machine translation;document translat;translation app;real time translat,
-        PRODUCT|image-generation|AI image generator that creates and edits images from text prompts|image generat;text to image;ai art;photo editor;image editing;background remov;upscal,
-        PRODUCT|video-generation|AI video generator that turns text or images into video|video generat;text to video;image to video;ai video;video editor;avatar video;lip sync,
-        PRODUCT|voice-and-audio|realistic AI text to speech and voice cloning|text to speech;voice clon;voice generat;ai voice;speech synthesis;tts,
-        PRODUCT|voice-and-audio|AI music generator that creates songs from a text prompt|music generat;ai music;song generat,
-        AGENT|voice-agents|platform to build AI voice agents that answer phone calls|voice agent;phone agent;ai receptionist;conversational voice ai,
-        PRODUCT|meetings-and-transcription|AI notetaker that joins meetings and writes notes and action items|meeting assistant;meeting notes;meeting summar;notetaker;note taker;transcription;transcribe;speech to text,
-        PRODUCT|customer-support|AI customer support agent that answers tickets and live chat|customer support;customer service;helpdesk;help desk;support ticket,
-        PRODUCT|documents-and-pdf|AI that summarises and answers questions about PDFs and documents|chat with pdf;chat with your documents;pdf summar;document summar;ai pdf,
-        PRODUCT|research-and-papers|AI research assistant that finds and summarises scientific papers|research assistant;literature review;research papers;scientific papers;paper summar;deep research,
-        PRODUCT|coding|AI coding agent and code editor for software developers|coding assistant;coding agent;code assistant;ai coding;code review;code generat;ai ide;ai code editor,
-        PRODUCT|self-hosted|open-source self-hosted AI app you run on your own server with Docker|self hosted;selfhosted;on prem;docker compose;homelab,
-        PRODUCT|local-ai|desktop app to run LLMs locally and offline on your own computer|run locally;runs locally;run llms locally;local llm;local ai;offline ai;works offline;on device,
-        PRODUCT|model-hosting|serverless inference API for open-weight LLMs and image models|inference api;serverless inference;model hosting;deploy models;inference platform,
-        PRODUCT|ai-cloud-and-paas|GPU cloud platform to deploy and scale AI apps and models|serverless gpu;gpu cloud;gpu instances;rent gpus;deploy ai apps;ai cloud,
-        PRODUCT|ai-gateways|LLM gateway or router that gives one API for many model providers|llm gateway;ai gateway;llm router;model router;llm proxy,
-        AGENT|agent-platforms|platform to build deploy and run AI agents for business workflows|agent platform;agent builder;build ai agents;autonomous agent;multi agent,
-        LIBRARY|llm-frameworks|open-source framework or library to build LLM apps and agents|llm framework;agent framework;orchestration framework;llm library,
-        PRODUCT|rag-and-vector-databases|vector database or RAG platform for retrieval augmented generation|vector database;vector db;vector search;retrieval augmented;rag pipeline;rag platform,
-        PRODUCT|rag-and-vector-databases|API to parse PDFs and documents into clean text for LLMs|document parsing;pdf parsing;pdf to markdown;ocr;document extraction,
-        PRODUCT|llmops-and-evaluation|LLM observability evaluation and monitoring tool|llm observability;llmops;llm evaluation;llm evals;evals;llm tracing;llm monitoring;prompt management;prompt versioning,
-        PRODUCT|fine-tuning|platform to fine-tune and train open-source LLMs|fine tun;finetun;lora;qlora;model training,
-        PRODUCT|ai-security|AI guardrails and LLM security tool against prompt injection|guardrail;prompt injection;llm security;ai security;ai red team;jailbreak,
-        PRODUCT|no-code|no-code builder for AI apps and workflow automations|no code;nocode;low code;workflow automation;automation builder,
-        PRODUCT|browser-extensions|AI browser extension for Chrome or Firefox|browser extension;chrome extension;firefox add on;firefox extension;extension for chrome,
-        PRODUCT|ai-search|AI search engine that answers questions with cited sources|ai search;ai search engine;answer engine;ai powered search,
-        PRODUCT|data-and-analytics|AI data analyst that answers questions about spreadsheets and databases|data analysis;ai data analyst;ai analyst;text to sql;business intelligence;spreadsheet ai;chat with your data,
-        PRODUCT|design-and-presentations|AI presentation maker that creates slides from a prompt|ai presentation;presentation maker;slide deck;pitch deck;slides generat,
-        PRODUCT|design-and-presentations|AI website builder and UI design generator|ui design;ai website builder;website generat;logo generat;graphic design
     hf-provider-orgs:
       # Newest models of providers' official Hub organisations (one Hub call per org).
       interval: ${H2_SCOUT_HF_ORGS_INTERVAL:P1D}
@@ -644,15 +611,16 @@ helper2:
       timeout: 10s
       cache-ttl: 30m
       deadline: ${H2_SOURCE_LINKEDIN_SCOUT_DEADLINE:}
-    tavily-discovery:
-      # Disabled (reported as SKIPPED) until H2_TAVILY_API_KEY is set.
-      enabled: ${H2_SOURCE_TAVILY_DISCOVERY_ENABLED:true}
+    discovery:
+      # Every discovery category (helper2.categories, ADR 0051). Disabled (reported as SKIPPED) until
+      # H2_TAVILY_API_KEY is set.
+      enabled: ${H2_SOURCE_DISCOVERY_ENABLED:true}
       base-url: https://api.tavily.com
       token: ${H2_TAVILY_API_KEY:}
       # search_depth advanced is slower than basic.
       timeout: 20s
       cache-ttl: 30m
-      deadline: ${H2_SOURCE_TAVILY_DISCOVERY_DEADLINE:}
+      deadline: ${H2_SOURCE_DISCOVERY_DEADLINE:}
     github-awesome:
       # Disabled (reported as SKIPPED) until H2_GITHUB_TOKEN is set: GraphQL rejects anonymous calls.
       enabled: ${H2_SOURCE_GITHUB_AWESOME_ENABLED:true}
@@ -881,3 +849,340 @@ helper2:
   retention:
     # Stored Tavily result sets after they were fetched.
     tavily-results: ${H2_RETENTION_TAVILY_RESULTS:P7D}
+
+---
+# The categories of the AI world (ADR 0051): 34 categories in 7 families. Each is its own discovery collector
+# (discovery-<id>), its own dot on the Home radar and its own row on the Sources page, grouped by family.
+#   id          the catalog tag of every result the category fits; lower-case words with hyphens, at most 30 characters
+#   family      prompts-and-skills, everyday-apps, creative-and-media, business, developers, hosting-and-infra or
+#               run-it-yourself
+#   short-name  the radar label, at most 12 characters; name: the Sources page's
+#   words       put the tag on any result whose title or excerpt has one of them, whichever category found it: matched at
+#               the start of a word, hyphens count as spaces ("fine tuning platform" fits "fine-tuning platform")
+#   discovery   type: what a product its searches find becomes (a type a product page can have); queries: one Tavily
+#               search each, describing the product page in its own words, without "best" or "launched" (they pull
+#               SEO pages and news). Optional: interval, enabled, min-score, require-keyword (keep a result only when
+#               its own title or excerpt has one of this category's words), index-lists (false drops list pages),
+#               exclude-domains (added to helper2.scout.discovery.exclude-domains).
+# Startup fails on an unknown family or type, a bad id or short name, or a duplicate id. Models, datasets, MCP servers
+# and awesome lists come from their own collectors.
+helper2:
+  categories:
+    # Prompts and skills
+    - id: prompt-libraries
+      family: prompts-and-skills
+      short-name: Prompts
+      name: Prompt libraries
+      words: [prompt library, prompt libraries, prompt marketplace, prompt collection, ready to use prompts, prompt pack]
+      discovery:
+        type: PROMPT
+        queries: [free prompt library with ready-to-use prompts for ChatGPT Claude and Gemini]
+    - id: skills-and-gpts
+      family: prompts-and-skills
+      short-name: Skills
+      name: Agent skills and GPTs
+      words: [agent skill, claude skill, skill.md, custom gpt, gpt store]
+      discovery:
+        type: SKILL
+        queries: [open-source collection of Claude Code and agent skills with SKILL.md files]
+    # Everyday apps
+    - id: ai-assistants
+      family: everyday-apps
+      short-name: Assistants
+      name: AI assistants
+      words: [personal assistant, ai companion, ai chat app, chatgpt alternative]
+      discovery:
+        type: PRODUCT
+        queries: [AI chat assistant app for web and mobile that answers questions and remembers context]
+    - id: writing
+      family: everyday-apps
+      short-name: Writing
+      name: Writing
+      words: [writing assistant, ai writer, ai writing, copywriting, paraphras, grammar checker]
+      discovery:
+        type: PRODUCT
+        queries: [AI writing assistant for emails documents and marketing copy]
+    - id: translation
+      family: everyday-apps
+      short-name: Translation
+      name: Translation
+      words: [ai translat, machine translation, document translat, translation app, real time translat]
+      discovery:
+        type: PRODUCT
+        queries: [AI translator for documents websites and conversations]
+    - id: meetings-and-transcription
+      family: everyday-apps
+      short-name: Meetings
+      name: Meetings and transcription
+      words: [meeting assistant, meeting notes, meeting summar, notetaker, note taker, transcription, transcribe,
+              speech to text]
+      discovery:
+        type: PRODUCT
+        queries: [AI notetaker that joins meetings and writes notes and action items]
+    - id: documents-and-pdf
+      family: everyday-apps
+      short-name: Documents
+      name: Documents and PDF
+      words: [chat with pdf, chat with your documents, pdf summar, document summar, ai pdf]
+      discovery:
+        type: PRODUCT
+        queries: [AI that summarises and answers questions about PDFs and documents]
+    - id: research-and-papers
+      family: everyday-apps
+      short-name: Research
+      name: Research and papers
+      words: [research assistant, literature review, research papers, scientific papers, paper summar, deep research]
+      discovery:
+        type: PRODUCT
+        queries: [AI research assistant that finds and summarises scientific papers]
+    - id: ai-search
+      family: everyday-apps
+      short-name: AI search
+      name: AI search
+      words: [ai search, ai search engine, answer engine, ai powered search]
+      discovery:
+        type: PRODUCT
+        queries: [AI search engine that answers questions with cited sources]
+    - id: browser-extensions
+      family: everyday-apps
+      short-name: Extensions
+      name: Browser extensions
+      words: [browser extension, chrome extension, firefox add on, firefox extension, extension for chrome]
+      discovery:
+        type: PRODUCT
+        queries: [AI browser extension for Chrome or Firefox]
+    - id: education-and-tutors
+      family: everyday-apps
+      short-name: Education
+      name: Education and tutors
+      words: [ai tutor, ai tutoring, homework help, homework helper, study assistant, flashcard generat, quiz generat,
+              ai teaching assistant, lesson plan generat, ai for teachers, grading assistant, ai grading]
+      discovery:
+        type: PRODUCT
+        queries:
+          - AI tutor app that explains homework step by step and makes quizzes and flashcards for students
+          - AI tools for teachers that create lesson plans and grade assignments
+        # Course platforms: their courses come from course discovery, not here.
+        exclude-domains: [coursera.org, udemy.com, edx.org, skillshare.com, udacity.com, pluralsight.com]
+    - id: health
+      family: everyday-apps
+      short-name: Health
+      name: Health
+      words: [medical scribe, ai scribe, clinical documentation, clinical notes, ambient clinical, healthcare ai,
+              ai for healthcare, medical ai, medical coding, prior authori, patient intake, symptom checker,
+              ai health assistant, ai health app]
+      discovery:
+        type: PRODUCT
+        # Tools for professionals and for patients.
+        queries:
+          - AI medical scribe that writes clinical notes from doctor and patient visits
+          - AI health app that answers health questions and tracks symptoms for patients
+        # Health searches pull general advice pages: only results that name a health tool, no list pages.
+        min-score: 0.5
+        require-keyword: true
+        index-lists: false
+        exclude-domains: [webmd.com, mayoclinic.org, clevelandclinic.org, healthline.com, medicalnewstoday.com,
+                          verywellhealth.com, medlineplus.gov, nih.gov, cdc.gov, who.int, nhs.uk, drugs.com,
+                          wikipedia.org]
+    # Creative and media
+    - id: image-generation
+      family: creative-and-media
+      short-name: Images
+      name: Image generation
+      words: [image generat, text to image, ai art generat, ai artwork, photo editor, image editing, background remov,
+              upscal]
+      discovery:
+        type: PRODUCT
+        queries: [AI image generator that creates and edits images from text prompts]
+    - id: video-generation
+      family: creative-and-media
+      short-name: Video
+      name: Video generation
+      words: [video generat, text to video, image to video, ai video, video editor, avatar video, lip sync]
+      discovery:
+        type: PRODUCT
+        queries: [AI video generator that turns text or images into video]
+    - id: voice-and-audio
+      family: creative-and-media
+      short-name: Voice, audio
+      name: Voice and audio
+      words: [text to speech, voice clon, voice generat, ai voice, speech synthesis, tts api, music generat, ai music,
+              song generat]
+      discovery:
+        type: PRODUCT
+        queries:
+          - realistic AI text to speech and voice cloning
+          - AI music generator that creates songs from a text prompt
+    - id: design-and-presentations
+      family: creative-and-media
+      short-name: Design
+      name: Design and presentations
+      words: [ai presentation, presentation maker, slide deck, pitch deck, slides generat, ui design,
+              ai website builder, website generat, logo generat, graphic design]
+      discovery:
+        type: PRODUCT
+        queries:
+          - AI presentation maker that creates slides from a prompt
+          - AI website builder and UI design generator
+    # Business
+    - id: customer-support
+      family: business
+      short-name: Support
+      name: Customer support
+      words: [customer support, customer service, helpdesk, help desk, support ticket]
+      discovery:
+        type: PRODUCT
+        queries: [AI customer support agent that answers tickets and live chat]
+    - id: voice-agents
+      family: business
+      short-name: Voice agents
+      name: Voice agents
+      words: [voice agent, phone agent, ai receptionist, conversational voice ai]
+      discovery:
+        type: AGENT
+        queries: [platform to build AI voice agents that answer phone calls]
+    - id: data-and-analytics
+      family: business
+      short-name: Data
+      name: Data and analytics
+      words: [data analysis, ai data analyst, ai analyst, text to sql, business intelligence, spreadsheet ai,
+              chat with your data]
+      discovery:
+        type: PRODUCT
+        queries: [AI data analyst that answers questions about spreadsheets and databases]
+    - id: no-code
+      family: business
+      short-name: No-code
+      name: No-code
+      words: [no code ai, no code builder, no code app, nocode, low code, workflow automation, automation builder]
+      discovery:
+        type: PRODUCT
+        queries: [no-code builder for AI apps and workflow automations]
+    - id: marketing-and-seo
+      family: business
+      short-name: Marketing
+      name: Marketing and SEO
+      words: [ai marketing, marketing ai, seo tool, seo content, seo optimi, ai seo, keyword research, ad copy,
+              ad creative, social media post, social media content, email marketing, generative engine optimi]
+      discovery:
+        type: PRODUCT
+        queries: [AI marketing platform that writes SEO blog posts and ad copy and plans social media content]
+    - id: legal
+      family: business
+      short-name: Legal
+      name: Legal
+      words: [legal ai, ai legal, ai lawyer, legal assistant, contract review, contract analy, contract drafting,
+              legal research, legal drafting, ediscovery, e discovery, clause extraction]
+      discovery:
+        type: PRODUCT
+        queries: [AI legal assistant for lawyers that reviews contracts and drafts legal documents]
+        # Legal searches pull law firms and general advice pages: only results that name a legal tool, no list pages.
+        min-score: 0.5
+        require-keyword: true
+        index-lists: false
+        exclude-domains: [law.cornell.edu, findlaw.com, justia.com, nolo.com, avvo.com, lawinsider.com, legalzoom.com,
+                          rocketlawyer.com, upcounsel.com, eur-lex.europa.eu, wikipedia.org]
+    # Developers
+    - id: coding
+      family: developers
+      short-name: Coding
+      name: Coding
+      words: [coding assistant, coding agent, code assistant, ai coding, code review, code generat, ai ide,
+              ai code editor]
+      discovery:
+        type: PRODUCT
+        queries: [AI coding agent and code editor for software developers]
+    - id: agent-platforms
+      family: developers
+      short-name: Agents
+      name: Agent platforms
+      words: [agent platform, agent builder, build ai agents, autonomous agent, multi agent]
+      discovery:
+        type: AGENT
+        queries: [platform to build deploy and run AI agents for business workflows]
+    - id: llm-frameworks
+      family: developers
+      short-name: Frameworks
+      name: LLM frameworks
+      words: [llm framework, agent framework, orchestration framework, llm library]
+      discovery:
+        type: LIBRARY
+        queries: [open-source framework or library to build LLM apps and agents]
+    - id: rag-and-vector-databases
+      family: developers
+      short-name: RAG
+      name: RAG and vector databases
+      words: [vector database, vector db, vector search, retrieval augmented, rag pipeline, rag platform,
+              document parsing, pdf parsing, pdf to markdown, ocr api, ocr model, document extraction]
+      discovery:
+        type: PRODUCT
+        queries:
+          - vector database or RAG platform for retrieval augmented generation
+          - API to parse PDFs and documents into clean text for LLMs
+    - id: llmops-and-evaluation
+      family: developers
+      short-name: LLMOps
+      name: LLMOps and evaluation
+      words: [llm observability, llmops, llm evaluation, llm evals, evals, llm tracing, llm monitoring,
+              prompt management, prompt versioning]
+      discovery:
+        type: PRODUCT
+        queries: [LLM observability evaluation and monitoring tool]
+    - id: ai-security
+      family: developers
+      short-name: AI security
+      name: AI security
+      words: [guardrail, prompt injection, llm security, ai security, ai red team, jailbreak]
+      discovery:
+        type: PRODUCT
+        queries: [AI guardrails and LLM security tool against prompt injection]
+    - id: fine-tuning
+      family: developers
+      short-name: Fine-tuning
+      name: Fine-tuning
+      words: [fine tuning platform, fine tune llm, fine tune models, finetun, lora, qlora, model training]
+      discovery:
+        type: PRODUCT
+        queries: [platform to fine-tune and train open-source LLMs]
+    # Hosting and infrastructure
+    - id: model-hosting
+      family: hosting-and-infra
+      short-name: Hosting
+      name: Model hosting
+      words: [inference api, serverless inference, model hosting, deploy models, inference platform]
+      discovery:
+        type: PRODUCT
+        queries: [serverless inference API for open-weight LLMs and image models]
+    - id: ai-cloud-and-paas
+      family: hosting-and-infra
+      short-name: AI cloud
+      name: AI cloud and PaaS
+      words: [serverless gpu, gpu cloud, gpu instances, rent gpus, deploy ai apps, ai cloud]
+      discovery:
+        type: PRODUCT
+        queries: [GPU cloud platform to deploy and scale AI apps and models]
+    - id: ai-gateways
+      family: hosting-and-infra
+      short-name: Gateways
+      name: AI gateways
+      words: [llm gateway, ai gateway, llm router, model router, llm proxy]
+      discovery:
+        type: PRODUCT
+        queries: [LLM gateway or router that gives one API for many model providers]
+    # Run it yourself
+    - id: self-hosted
+      family: run-it-yourself
+      short-name: Self-hosted
+      name: Self-hosted
+      words: [self hosted, selfhosted, on prem, docker compose, homelab]
+      discovery:
+        type: PRODUCT
+        queries: [open-source self-hosted AI app you run on your own server with Docker]
+    - id: local-ai
+      family: run-it-yourself
+      short-name: Local AI
+      name: Local AI
+      words: [run locally, runs locally, run llms locally, local llm, local ai, offline ai, works offline, on device]
+      discovery:
+        type: PRODUCT
+        queries: [desktop app to run LLMs locally and offline on your own computer]

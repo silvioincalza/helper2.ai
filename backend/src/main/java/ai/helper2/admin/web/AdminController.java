@@ -47,11 +47,16 @@ class AdminController implements AdminApi {
 
   @Override
   public ResponseEntity<ReviewItemPageDto> listReviewItems(
-      @Nullable ReviewStatusDto status, @Nullable ReviewKindDto kind, Integer page, Integer size) {
+      @Nullable ReviewStatusDto status,
+      @Nullable ReviewKindDto kind,
+      @Nullable String category,
+      Integer page,
+      Integer size) {
     ReviewQueue.Page found =
         items.list(
             status == null ? null : ReviewQueue.Status.valueOf(status.getValue()),
             kind == null ? null : ReviewQueue.Kind.valueOf(kind.getValue()),
+            category,
             page,
             size);
     return ResponseEntity.ok(
@@ -107,7 +112,8 @@ class AdminController implements AdminApi {
         .resourceTitle(i.resourceTitle())
         .details(i.details())
         .resolvedAt(UtcTimes.odt(i.resolvedAt()))
-        .resolvedBy(i.resolvedBy());
+        .resolvedBy(i.resolvedBy())
+        .categories(i.categories());
   }
 
   /** One Scout run as the contract shows it; the overview lists runs the same way. */

@@ -33,7 +33,7 @@ page title and in the URL.
    Anything else is dropped: personal profiles (`/in/`), jobs, learning, schools, topic pages, other hosts. There is no
    score or AI check: the queries are about AI, and a doubtful page is for the admin to decide.
 3. **Every kept page waits for a person.** It is a `RESOURCE_CANDIDATE` review item, as in
-   [0051](0051-tavily-discovery.md) §6, with the tag `linkedin`. The batch has no hits: nothing from LinkedIn reaches
+   [0051](0051-tavily-discovery.md) §8, with the tag `linkedin`. The batch has no hits: nothing from LinkedIn reaches
    the catalog without an admin accepting it.
 4. **No author in the title.**
    - "Jane Doe on LinkedIn: text" keeps the text;
@@ -51,15 +51,16 @@ page title and in the URL.
 6. **Event days.** A LinkedIn event page is not the event's own site, so its days are not stated days
    ([0022](0022-next-events.md) §1). An accepted LinkedIn event has no days: it is found by search and never listed
    in Next events. To list it, an admin adds the event to the curated list with the days from its own site.
-7. **`linkedin.com` stays excluded from Tavily discovery** ([0051](0051-tavily-discovery.md) §3), so this collector
+7. **`linkedin.com` stays excluded from Tavily discovery** ([0051](0051-tavily-discovery.md) §4), so this collector
    is the only way LinkedIn pages come in.
 8. **Failed searches.** A failed search fails the pass, and its checkpoint stays: the next daily run repeats the
    pass. That costs at most 20 credits.
 
 ## Consequences
 - The review list gets LinkedIn launches and events every week. No LinkedIn page enters the catalog without a person.
-- Credits: 20 searches × 1 credit × ~4.3 passes ≈ 86 credits a month. With the other Scout collectors, about 456 of
-  the plan's 14,000 credits a month.
+- Credits: 20 searches × 1 credit × ~4.3 passes ≈ 86 credits a month. With the other Scout collectors, about 506 of
+  the plan's 14,000 credits a month. Like `tavily-scout` and `course-scout`, they are not counted on the Scout's daily
+  credit cap, which only the discovery categories use ([0051](0051-tavily-discovery.md) §10).
 - Retention ([0034](../operations/0034-data-retention.md)): accepted articles and posts are deleted 180 days after
   `retrieved_at` (`H2_RETENTION_WEB_NEWS`), like other web news; an accepted company page or event stays as long as
   it is listed; a review item stays until it is decided, then 180 days.

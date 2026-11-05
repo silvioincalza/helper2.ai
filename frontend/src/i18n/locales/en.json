@@ -548,7 +548,26 @@
       "unavailable": "Not available right now"
     },
     "replicaNote": "Response time and pauses are from the server that answered this page.",
-    "refreshFailed": "Could not refresh; showing the list from {{time}}"
+    "refreshFailed": "Could not refresh; showing the list from {{time}}",
+    "discovery": {
+      "group": "Discovery · {{family}}",
+      "lede": "Discovery categories: once a week, each one runs its own web search through Tavily to find new AI tools and articles that compare them.",
+      "lists": "List articles are added without review.",
+      "products": "Products are added only after a person checks them."
+    },
+    "family": {
+      "prompts-and-skills": "Prompts and skills",
+      "everyday-apps": "Everyday apps",
+      "creative-and-media": "Creative and media",
+      "business": "Business",
+      "developers": "Developers",
+      "hosting-and-infra": "Hosting and infrastructure",
+      "run-it-yourself": "Run it yourself"
+    },
+    "notice": {
+      "health": "Not medical advice. We do not check whether a tool is approved as a medical device. Claims are the vendor's own, quoted with their source.",
+      "legal": "Not legal advice. We do not check whether a tool is right for your country or case."
+    }
   },
   "admin": {
     "title": "Admin",
@@ -606,6 +625,9 @@
     },
     "kindFilter": "Kind",
     "allKinds": "All kinds",
+    "categoryFilter": "Category",
+    "allCategories": "All categories",
+    "neverRan": "Never ran",
     "note": "Note (optional)",
     "alreadyDecided": "This item was already decided. The list now shows its current status.",
     "refused": "Not accepted, the item stays open: {{detail}}",
@@ -768,6 +790,7 @@
         "type": "Type",
         "tags": "Categories",
         "excerpt": "Search excerpt",
+        "foundBy": "Found by",
         "note": "Found by a web search. Accept adds it to the catalog; the next Scout run describes it."
       }
     }
@@ -1147,9 +1170,9 @@
       {
         "title": "Public data about AI resources",
         "items": [
-          "To describe the AI resources we list, we read public pages about them, such as GitHub repositories, their README files and Hugging Face model cards. Once a week we also run fixed web searches through Tavily to find new AI products, articles that compare them, and public LinkedIn pages about AI: articles, posts, company pages and events. We never visit LinkedIn ourselves: Tavily finds the pages. These searches contain no data about you.",
+          "To describe the AI resources we list, we read public pages about them, such as GitHub repositories, their README files and Hugging Face model cards. We also run fixed web searches through Tavily to find new AI products and articles that compare them: 34 categories of AI tools (such as coding, writing, health and legal tools), each searched once a week, 39 searches in all. Once a week we also search for public LinkedIn pages about AI through Tavily: articles, posts, company pages and events. We never visit LinkedIn ourselves: Tavily finds the pages. These searches contain no data about you.",
           "From README files and model cards we keep names of projects, organisations and authors, and short quotes of up to 300 characters, each with its source named and a link to it. We do not keep the rest of their text, and we replace email addresses with \"[email]\" before anything is quoted.",
-          "From web pages found by these searches we keep the page title, its link and a short excerpt of up to 400 characters that Tavily takes from the page. Articles that compare AI tools are shown in search with their excerpt. A product page is shown only after we have checked it by hand. A title or excerpt can name people, for example an article's author or a product's founder.",
+          "From web pages found by these searches we keep the page title, its link and the excerpt Tavily takes from the page: up to 400 characters for an article, up to 2,400 characters for a product page, which we use as evidence to describe the product. We also keep what the search said about the page: which search found it, its rank and relevance score, its publication date, the categories its words fit and the address of its small site icon (we do not load or show the icon). We do not keep the full text of the page, its images or any answer Tavily writes. Articles that compare AI tools are shown in search with their excerpt. A product page is shown only after we have checked it by hand. A title or excerpt can name people, for example an article's author or a product's founder.",
           "From LinkedIn pages we keep the link, a title without the author's name and an excerpt of up to 300 characters. A LinkedIn page is shown only after we have checked it by hand. The link and the text of a post can still name its author.",
           "This data is about the resources. If a quote, title or excerpt names you, you can object or ask us to remove it: write to us at the address above."
         ]
@@ -1180,7 +1203,7 @@
           },
           "Database backups: 7 days. Anything deleted above is gone from the backups within 7 days.",
           "Quotes from public pages about AI resources: as long as we keep the source record they were read for, and never longer than we list the resource.",
-          "Articles and news found by web search, LinkedIn articles and posts included, with their titles and excerpts: 180 days after we last retrieved them. Product pages, LinkedIn company pages and LinkedIn events we accepted from a web search: as long as we list them. Pages waiting for our review: until we decide, then 180 days."
+          "Articles and news found by web search, LinkedIn articles and posts included, with their titles, excerpts and what the search said about them: 180 days after we last retrieved them. Product pages we accepted from a web search, with the same: as long as we list the product. LinkedIn company pages and events we accepted: as long as we list them. Pages waiting for our review: until we decide, then 180 days."
         ]
       },
       {
@@ -1242,6 +1265,22 @@
           "Do not scrape or copy the service in bulk with automated tools.",
           "Do not use Helper2.ai for anything illegal, and do not send reports that are abusive or deliberately false.",
           "We may block access for anyone who breaks these rules."
+        ]
+      },
+      {
+        "title": "How we describe resources",
+        "items": [
+          "Some text about a resource is written by an AI model from its sources, and is labelled as such. “AI-written” is text a model wrote, such as the guide's picks and reasons. “AI summary” is a description a model wrote from the resource's own pages. “Extracted by AI” is a fact a model read from a source, shown with a quote of that source.",
+          "We find many resources with automatic web searches. A list article that compares tools is added without review; a product page is added only after a person checks it.",
+          "We do not list tools whose main purpose is illegal or deceptive, such as writing fake reviews or getting around the detection of AI-written content.",
+          "If you own a resource and its description is wrong, report it on its page or write to us, and we will correct or remove it."
+        ]
+      },
+      {
+        "title": "Health and legal tools",
+        "items": [
+          "Helper2.ai lists AI tools for health and for legal work. This is not medical or legal advice.",
+          "We do not check whether a health tool is approved as a medical device, whether a legal tool is right for your country or your case, or whether what a tool claims is correct. Claims are the vendor's own, quoted with their source. Ask a qualified professional before you rely on any of these tools."
         ]
       },
       {
