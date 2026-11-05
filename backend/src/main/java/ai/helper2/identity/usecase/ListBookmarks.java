@@ -1,13 +1,11 @@
 package ai.helper2.identity.usecase;
 
-import ai.helper2.identity.internal.Bookmarks;
-import ai.helper2.identity.internal.Bookmarks.Bookmark;
+import ai.helper2.identity.Bookmarks;
+import ai.helper2.identity.Bookmarks.Bookmark;
 import java.util.List;
 import java.util.UUID;
-import org.springframework.stereotype.Service;
 
 /** A signed-in user's saved resources, newest first. */
-@Service
 public class ListBookmarks {
 
   private final Bookmarks bookmarks;

@@ -3,7 +3,7 @@ package ai.helper2.identity.web;
 import ai.helper2.api.generated.AuditApi;
 import ai.helper2.api.generated.model.AuditEntryDto;
 import ai.helper2.api.generated.model.AuditEntryPageDto;
-import ai.helper2.identity.internal.AuditLog;
+import ai.helper2.identity.AuditLog;
 import ai.helper2.identity.usecase.ListAuditEntries;
 import java.time.ZoneOffset;
 import org.springframework.http.ResponseEntity;

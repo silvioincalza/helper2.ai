@@ -9,6 +9,7 @@
 #   platform/cache/* (JdbcSharedCache, SharedCacheRetention: ai_cache),
 #   backend/src/main/java/ai/helper2/identity/config/SecurityConfiguration.java, SessionConfiguration.java,
 #   AdminPortConfiguration.java, identity/web/MeController.java, AuditController.java, identity/internal/*, identity/usecase/*,
+#   identity/Users.java, Bookmarks.java, AuditLog.java, RetentionPeriods.java (ports), identity/config/IdentityUseCaseConfiguration.java,
 #   backend/src/main/resources/application.yaml (spring.session.data.redis.namespace, oauth-github profile).
 # Render: cd docs/diagrams && d2 fmt architecture-platform.d2 && d2 architecture-platform.d2 architecture-platform.svg
 
@@ -37,10 +38,12 @@ identity: "identity (Java)" {
   sec: "SecurityConfiguration\nCSRF · ADMIN allow-list\nAdminPortConfiguration\n(identity.config)" {class: app}
   session: "SessionConfiguration\nfail-soft session store\n(identity.config)" {class: app}
   me: "MeController · AuditController\n(identity.web)" {class: app}
-  usecase: "AddBookmark · ListBookmarks\nMergeLocalBookmarks · RemoveBookmark\nDeleteMyAccount · ListAuditEntries\nPurgeExpiredData" {class: app}
-  store: "Users · Bookmarks · AuditLog\n(identity.internal)" {class: app}
+  usecase: "AddBookmark · ListBookmarks\nMergeLocalBookmarks · RemoveBookmark\nDeleteMyAccount · ListAuditEntries\nPurgeExpiredData\n(plain classes, wired in identity.config)" {class: app}
+  ports: "Users · Bookmarks · AuditLog\nRetentionPeriods" {class: port}
+  store: "JdbcUsers · JdbcBookmarks\nJdbcAuditLog\n(identity.internal)" {class: app}
   me -> usecase
-  usecase -> store
+  usecase -> ports
+  store -> ports: implements {class: config}
 }
 
 modules: "search · guide · scout · catalog\nsources · setup" {class: app}

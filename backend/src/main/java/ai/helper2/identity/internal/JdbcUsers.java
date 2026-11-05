@@ -1,5 +1,6 @@
 package ai.helper2.identity.internal;
 
+import ai.helper2.identity.Users;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Optional;
@@ -7,20 +8,17 @@ import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
-/**
- * The app_user table: the provider's subject, a display name, the last sign-in and the display
- * settings, nothing else.
- */
+/** Accounts in the app_user table. */
 @Repository
-public class Users {
+class JdbcUsers implements Users {
 
   private final JdbcClient jdbc;
 
-  Users(JdbcClient jdbc) {
+  JdbcUsers(JdbcClient jdbc) {
     this.jdbc = jdbc;
   }
 
-  /** The local id of (provider, subject), while that account exists. */
+  @Override
   public Optional<UUID> find(String provider, String subject) {
     return jdbc.sql("SELECT id FROM app_user WHERE provider = :p AND subject = :s")
         .param("p", provider)
@@ -29,7 +27,7 @@ public class Users {
         .optional();
   }
 
-  /** Upsert by (provider, subject), on sign-in: refreshes the display name and the last sign-in. */
+  @Override
   public UUID signedIn(String provider, String subject, String displayName) {
     return jdbc.sql(
             """
@@ -45,10 +43,7 @@ public class Users {
         .single();
   }
 
-  /** A signed-in user's display settings. */
-  public record Preferences(boolean radarMotion) {}
-
-  /** The settings of the account, while it exists. */
+  @Override
   public Optional<Preferences> preferences(UUID userId) {
     return jdbc.sql("SELECT radar_motion FROM app_user WHERE id = :id")
         .param("id", userId)
@@ -56,7 +51,7 @@ public class Users {
         .optional();
   }
 
-  /** Sets whether the Home radar moves; returns the settings after the change. */
+  @Override
   public Optional<Preferences> changeRadarMotion(UUID userId, boolean radarMotion) {
     return jdbc.sql("UPDATE app_user SET radar_motion = :m WHERE id = :id RETURNING radar_motion")
         .param("m", radarMotion)
@@ -65,18 +60,12 @@ public class Users {
         .optional();
   }
 
-  /**
-   * Deletes the account; its bookmarks go with it, its issue reports stay without a reporter
-   * (foreign keys).
-   */
+  @Override
   public void delete(UUID userId) {
     jdbc.sql("DELETE FROM app_user WHERE id = :id").param("id", userId).update();
   }
 
-  /**
-   * Deletes the accounts whose last sign-in is before [cutoff], as {@link #delete} does; returns
-   * how many.
-   */
+  @Override
   public int deleteSignedInLastBefore(Instant cutoff) {
     return jdbc.sql("DELETE FROM app_user WHERE last_signed_in_at < :cutoff")
         .param("cutoff", Timestamp.from(cutoff))
