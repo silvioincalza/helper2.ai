@@ -72,20 +72,23 @@ export default function ExamplesPage() {
     examples.reload();
     all.reload();
   };
-  /** One action at a time; a 409 version-conflict reloads, so the next try starts from what is stored. */
-  const act = async (action: () => Promise<unknown>): Promise<boolean> => {
-    if (busy) return false;
+  /**
+   * One action at a time; a 409 version-conflict reloads, so the next try starts from what is stored.
+   * Resolves to null when done, else to what went wrong (also shown as the notice).
+   */
+  const act = async (action: () => Promise<unknown>): Promise<Notice | null> => {
+    if (busy) return { kind: 'failed' };
     setBusy(true);
     setNotice(null);
     try {
       await action();
       reload();
-      return true;
+      return null;
     } catch (e) {
       const n = noticeOf(e);
       setNotice(n);
       if (n.kind === 'conflict') reload();
-      return false;
+      return n;
     } finally {
       setBusy(false);
     }
@@ -106,9 +109,11 @@ export default function ExamplesPage() {
             version: editing.version,
           })
         : api.addHomeExample(body);
-    }).then((ok) => {
-      if (ok) setEditing(null);
-      return ok;
+    }).then((failed) => {
+      // After a conflict the editor would keep sending the old version: close it, so it opens again
+      // on what is stored now.
+      if (!failed || failed.kind === 'conflict') setEditing(null);
+      return !failed;
     });
   const setStatus = (e: AdminHomeExample, status: AdminHomeExample['status']) =>
     void act(() =>

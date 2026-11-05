@@ -144,6 +144,36 @@ describe('admin: home examples', () => {
     await waitFor(() => expect(m.callsTo('GET', '/admin/home-examples').length).toBeGreaterThan(2));
   });
 
+  it('closes the editor after a conflict, so the next change sends the stored version', async () => {
+    let stored = example();
+    const m = mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/home-examples': () => [stored],
+      'PUT /admin/home-examples/22222222-2222-5222-8222-222222222222': () => {
+        stored = example({ version: 4 });
+        return new Response(
+          JSON.stringify({ status: 409, title: 'Changed', code: 'version-conflict' }),
+          { status: 409, headers: { 'content-type': 'application/problem+json' } },
+        );
+      },
+    });
+    renderApp('/admin/examples');
+    await userEvent.click(
+      within(await list()).getByRole('button', { name: 'Edit Translate documents' }),
+    );
+    expect(
+      screen.getByRole('heading', { name: 'Change “Translate documents”' }),
+    ).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Save change' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Someone changed this example first',
+    );
+    expect(await screen.findByRole('heading', { name: 'Add an example' })).toBeInTheDocument();
+    const put = m.callsTo('PUT', '/admin/home-examples/22222222-2222-5222-8222-222222222222');
+    expect(put).toHaveLength(1);
+  });
+
   it('asks before removing, with focus on Cancel', async () => {
     const m = mockApi({
       'GET /me': () => ADMIN,
