@@ -28,7 +28,10 @@ Load it, either:
 
 Latency panels for HTTP, `helper2.search.latency`, `helper2.source.latency`, model calls and Scout runs take
 `histogram_quantile` over the `_bucket` series (`management.metrics.distribution.percentiles-histogram` in
-`application.yaml`), so they are percentiles across all pods. "Time to first useful event by intent" does the same
+`application.yaml`; set on the timer for `helper2.source.latency`), so they are percentiles across all pods.
+"Source latency p95" sums the outcomes of each source: a skipped source or a fresh cache hit records no latency,
+a failed or timed-out call does. The same p95 is the recording rule
+`environment_source:helper2_source_latency_seconds:p95_5m` (`deploy/monitoring/helper2-rules.yaml`). "Time to first useful event by intent" does the same
 with `helper2.guide.first_useful`, whose buckets (with exact ones at the 3 s and 8 s targets) are set on the timer.
 `helper2.guide.ask` has no buckets: its panel shows the mean and Micrometer's rolling max.
 Budget panels (guide, translation, enrichment, classifier) show the calls left under each daily cap;

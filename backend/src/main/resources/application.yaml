@@ -109,7 +109,6 @@ management:
         helper2.scout.run: true
         helper2.llm.call: true
         helper2.search.latency: true
-        helper2.source.latency: true
     tags:
       application: helper2
       environment: ${H2_ENVIRONMENT:local}
