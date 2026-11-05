@@ -34,7 +34,9 @@ A translation costs a model call and time, and it must not slow down sources tha
    at most 12 words and 120 characters. It is dropped if it equals the normalized query. Any failure, timeout or open
    circuit means the search runs untranslated.
 6. **Disclosed.** The English words go first into the expansions and the required-word variants, so live sources
-   receive them as extra terms and the user sees "Also searched for: …" (`QUERY_EXPANDED`).
+   receive them as extra terms and the user sees "Also searched for: …" (`QUERY_EXPANDED`). The API gives them apart
+   from the word-list terms, in `interpretation.translatedQuery`, and the page labels them "Translated by AI"
+   ([0038](../guide/0038-ai-content-marking.md)).
 
 ## Consequences
 - Queries in other languages find English resources, and the user sees the words that were added.

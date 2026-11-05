@@ -16,7 +16,8 @@ export function Clarify({
 }) {
   const { t } = useTranslation();
   const [other, setOther] = useState('');
-  // The planner wrote the question and the options; the label, the free-text field and its buttons are ours.
+  // The planner wrote the question and the options; the labels, the free-text field and its buttons are ours.
+  // One "AI-written" label for the group, on screen next to the question (ADR 0038).
   const model = aiContent?.models[0];
   return (
     <section
@@ -25,8 +26,9 @@ export function Clarify({
       data-ai-provider={aiContent?.provider}
       data-ai-models={aiContent?.models.join(' ')}
     >
-      <h3 id="guide-clarify-h" {...aiMark(model)}>
-        {clarification.question}
+      <h3 id="guide-clarify-h">
+        <span {...aiMark(model)}>{clarification.question}</span>{' '}
+        <span className="badge">{t('picks.aiWritten')}</span>
       </h3>
       <p className="muted small">{t('guide.clarify.label')}</p>
       <div className="clarify-options">

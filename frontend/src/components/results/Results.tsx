@@ -325,12 +325,7 @@ function ResultsBody({
 
       {/* QUERY_EXPANDED is shown by the interpretation line below; other notices are localized by code. */}
       <NoticeList notices={res.notices} exclude={['QUERY_EXPANDED']} />
-      {res.interpretation.expandedTerms.length > 0 && (
-        <p className="muted small interpretation">
-          {t('results.alsoSearched', { terms: res.interpretation.expandedTerms.join(', ') })}{' '}
-          <span>({t('results.lexiconNote')})</span>
-        </p>
-      )}
+      <AlsoSearched interpretation={res.interpretation} />
 
       <WebSearchesLeft feature="search" value={res.webSearches} />
 
@@ -528,6 +523,43 @@ function ResultRow({
   );
 }
 
+/**
+ * "Also searched for": the model's English translation of the query, labelled and marked AI-written (ADR 0038),
+ * then the terms from the fixed word list, which alone carry the "not AI" note.
+ */
+function AlsoSearched({ interpretation }: { interpretation: SearchResponse['interpretation'] }) {
+  const { t } = useTranslation();
+  const translated = interpretation.translatedQuery;
+  const lexicon = interpretation.expandedTerms;
+  if (!translated && lexicon.length === 0) return null;
+  return (
+    <p className="muted small interpretation">
+      {t('results.alsoSearchedLabel')}{' '}
+      {translated && (
+        <>
+          <span {...aiMark()}>{translated}</span>{' '}
+          <span className="badge">{t('results.translatedNote')}</span>
+          {lexicon.length > 0 && ', '}
+        </>
+      )}
+      {lexicon.length > 0 && (
+        <>
+          {lexicon.join(', ')} <span>({t('results.lexiconNote')})</span>
+        </>
+      )}
+    </p>
+  );
+}
+
+/** A description a model wrote: labelled and marked on its own (ADR 0038). */
+function AiDescription({ card }: { card: ResultCard }) {
+  return (
+    <p className="h2-pv__text">
+      <OriginLabel origin={card.descriptionOrigin} /> <span {...aiMark()}>{card.description}</span>
+    </p>
+  );
+}
+
 /** One row: type, host, the pick badge, the title and two lines of the source's own text; a pick adds its reason. */
 function RowContent({ card, pick }: { card: ResultCard; pick: GuidePick | undefined }) {
   const { t } = useTranslation();
@@ -575,6 +607,7 @@ function Preview({
 }) {
   const { t } = useTranslation();
   const host = displayHost(card.url);
+  const aiDescription = !!card.description && isAiOrigin(card.descriptionOrigin);
   const guide = useGuideToggle(card.id);
   const bodyId = `guide-${useId()}`;
   const location = useLocation();
@@ -629,17 +662,24 @@ function Preview({
         <>
           <SecTag className="h2-pv__sec">{t('results.whyPicked')}</SecTag>
           <PickReason pick={pick} />
-          <p className="h2-pv__proof-label">{t('guide.evidence')}</p>
-          <ProofQuote text={card.description ?? ''} quote={pick.quote} source={host} />
+          {/* The proof is the source's words: a quote from an AI-written description is not shown as one. */}
+          {aiDescription ? (
+            <AiDescription card={card} />
+          ) : (
+            <>
+              <p className="h2-pv__proof-label">{t('guide.evidence')}</p>
+              <ProofQuote text={card.description ?? ''} quote={pick.quote} source={host} />
+            </>
+          )}
           <PickChecks checks={pick.checks} />
         </>
       ) : (
         <>
           <SecTag className="h2-pv__sec">{t('results.about')}</SecTag>
-          {card.description ? (
-            <p className="h2-pv__text" {...(isAiOrigin(card.descriptionOrigin) ? aiMark() : {})}>
-              {card.description}
-            </p>
+          {aiDescription ? (
+            <AiDescription card={card} />
+          ) : card.description ? (
+            <p className="h2-pv__text">{card.description}</p>
           ) : (
             <p className="muted">{t('card.noDescription')}</p>
           )}

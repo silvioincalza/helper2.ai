@@ -79,6 +79,23 @@ class QueryTranslationTest {
   }
 
   @Test
+  fun `the translation is its own field, apart from the lexicon terms (AI-written, ADR 0038)`() {
+    val (q, out) =
+      run("uno strumento per tradurre i documenti") { _, _ -> "Document translation app" }
+    assertEquals("it", q.language)
+    assertEquals("document translation app", out.interpretation.translation)
+    assertEquals("document translation app", out.interpretation.expandedTerms.first())
+    assertEquals(listOf("translation"), out.interpretation.lexiconTerms)
+  }
+
+  @Test
+  fun `without a translation every expanded term is from the lexicon`() {
+    val (_, out) = run("uno strumento per tradurre i documenti", translator = QueryTranslator.NONE)
+    assertNull(out.interpretation.translation)
+    assertEquals(out.interpretation.expandedTerms, out.interpretation.lexiconTerms)
+  }
+
+  @Test
   fun `a long translation is cut to the word limit the prompt states`() {
     val long = (1..20).joinToString(" ") { "word$it" }
     val (q, _) = run("herramienta para traducir documentos") { _, _ -> long }

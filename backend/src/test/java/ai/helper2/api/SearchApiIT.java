@@ -236,6 +236,7 @@ class SearchApiIT extends ApiTestBase {
   void italianQueryIsExpandedAndDisclosed() throws Exception {
     mvc.perform(get("/api/v1/search").param("q", "app per tradurre"))
         .andExpect(jsonPath("$.interpretation.expandedTerms[0]").value("translation"))
+        .andExpect(jsonPath("$.interpretation.translatedQuery").doesNotExist())
         .andExpect(jsonPath("$.notices[?(@.code=='QUERY_EXPANDED')]").exists());
   }
 
