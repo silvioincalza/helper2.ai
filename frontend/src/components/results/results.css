@@ -573,8 +573,14 @@ details[open] > .h2-fold-toggle .icon {
   opacity: 0.55;
   transition: opacity var(--motion);
 }
-.h2-results .pagination {
-  font-family: var(--v4-font-mono);
+.h2-more {
+  display: flex;
+  margin: var(--space-5) auto 0;
+  border-color: var(--ink);
+}
+.h2-more[aria-disabled='true'] {
+  cursor: progress;
+  color: var(--muted);
 }
 
 @media (max-width: 720px) {

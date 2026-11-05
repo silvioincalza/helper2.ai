@@ -36,7 +36,7 @@ export function ResultsTimeline({ cards }: { cards: ResultCard[] }) {
                 const created = creationDate(card);
                 const disputed = card.timeline.published.status === 'CONFLICTING';
                 return (
-                  <li key={card.id} className="tl-item">
+                  <li key={card.id} className="tl-item" data-id={card.id}>
                     <p className="tl-date">
                       {created ? (
                         <>
