@@ -131,7 +131,7 @@ describe('search results', () => {
     expect(errors.mock.calls.flat().join(' ')).not.toMatch(/same key/);
   });
 
-  it('shows the partial banner only when coverage.partial', async () => {
+  it('shows the partial line only when coverage.partial', async () => {
     mockApi({
       'GET /search': () =>
         makeSearch({
@@ -145,14 +145,14 @@ describe('search results', () => {
         }),
     });
     renderApp(url);
-    expect(await screen.findByText(/Only 2 of 3 queried sources responded/)).toBeInTheDocument();
+    expect(await screen.findByText(/1 of 3 sources did not answer/)).toBeInTheDocument();
   });
 
-  it('has no partial banner on full coverage', async () => {
+  it('has no partial line on full coverage', async () => {
     mockApi();
     renderApp(url);
     await (await results()).findByText('Acme Translator');
-    expect(screen.queryByText(/queried sources responded/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/sources did not answer/)).not.toBeInTheDocument();
   });
 
   it('empty state suggests removing filters and shows the sources searched', async () => {

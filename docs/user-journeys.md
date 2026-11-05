@@ -40,9 +40,9 @@ The success criteria at the end say which tests verify each journey today. What 
 |---|---|
 | Success | Aggregated, deduplicated results; every configured source listed with outcome. |
 | Empty | "No results from the N sources searched" + the list of sources + suggestions: remove filters, ask the guide, try English keywords. Never "nothing exists". |
-| Partial | Banner: "Only 7 of 8 queried sources responded". Results from other sources still shown. Coverage marked `partial`. A source that is paused or failing counts as queried; a source left out on purpose (disabled, no web credits left) does not, and its tile says why. The banner and the line under the results use the same two numbers. |
+| Partial | One quiet line next to the result count, no banner: "40 results · 2 of 5 sources did not answer · Which?". **Which?** lists those sources and why, in words: took too long, returned an error, paused after a rate limit, paused after repeated errors, busy. **Try again** shows only when a retry can help (an error, a timeout, a busy source); never while a source is paused or its circuit is open. The line is not announced to screen readers: the count next to it already is, once per search. Coverage marked `partial`. A source that is paused or failing counts as queried; a source left out on purpose (disabled, no web credits left) does not, and its tile says why. This line and the one under the results use the same two numbers. |
 | Stale cache | Source failed live but a recent cached response exists: results shown, badge "cached 14 min ago — live check failed". |
-| All failed / API down | Error state with retry; no fake results. |
+| All failed / API down | A prominent error state: "No source responded", not an empty result; no fake results. It offers Try again, except when every source is paused (a retry cannot help then), and a link to the Sources page. |
 | Rate-limited | Source marked RATE_LIMITED (not hidden), others continue. |
 | Invalid input | A query longer than 200 characters is cut to 200 in the URL and the request (the guide takes 3–500); an empty box plus Enter returns to the empty home page. The API answers an invalid `q` with 400 problem+json. |
 
@@ -164,7 +164,7 @@ Each item is a row: the kind, the date and the resource in the meta line, the re
 
 | ID | Criterion | Verified by |
 |---|---|---|
-| SC-1 | One query returns aggregated results from every enabled source that responded within its timeout | Today: API integration tests; UI component tests (Vitest + Testing Library, API mocked) for results, partial banner and empty/all-failed states. [Roadmap](roadmap.md): E2E journey (not yet automated) |
+| SC-1 | One query returns aggregated results from every enabled source that responded within its timeout | Today: API integration tests; UI component tests (Vitest + Testing Library, API mocked) for results, the partial line and empty/all-failed states. [Roadmap](roadmap.md): E2E journey (not yet automated) |
 | SC-2 | Every configured source appears in the status list with a truthful outcome | Today: orchestrator unit tests; UI component tests for the source status panel (every outcome in words). [Roadmap](roadmap.md): E2E journey (not yet automated) |
 | SC-3 | Asking the guide never loses query/filters | Today: UI component tests: the URL keeps `q`, `ask` and filters; closing the answer keeps the search; back/forward restore the box; retry and replacing a running question. [Roadmap](roadmap.md): E2E journey (not yet automated) |
 | SC-4 | No invented dates/popularity; unknowns labeled | domain tests + UI tests |

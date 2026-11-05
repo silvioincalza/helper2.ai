@@ -61,6 +61,8 @@ import {
   type SearchState,
   resourcePath,
 } from '@/lib/searchState';
+import { missedSources, retryCanHelp } from '@/lib/coverage';
+import { CoverageLine } from './CoverageLine';
 import { AudienceChoice } from './AudienceChoice';
 import { ListedBy, ResultFacts } from './ResultFacts';
 import './results.css';
@@ -233,6 +235,7 @@ function ResultsBody({
   const [filtersOpen, setFiltersOpen] = useState(false);
   const pickedId = useId();
   const restId = useId();
+  const missed = useMemo(() => missedSources(res.sources), [res.sources]);
   const nothingSearched =
     res.results.length === 0 &&
     (res.coverage.sourcesSucceeded === 0 ||
@@ -338,24 +341,6 @@ function ResultsBody({
 
       <WebSearchesLeft feature="search" value={res.webSearches} />
 
-      {res.coverage.partial && (
-        <div role="status" className="banner banner-warn h2-partial">
-          <p>
-            <Icon name="warn" />{' '}
-            {t('results.partialBody', {
-              ok: res.coverage.sourcesSucceeded,
-              total: res.coverage.sourcesQueried,
-            })}
-          </p>
-          <p className="h2-partial__next">
-            <a href="#h2-sources-h">{t('results.seeWhich')}</a>
-            <button type="button" className="btn" onClick={retry}>
-              <Icon name="refresh" /> {t('common.retry')}
-            </button>
-          </p>
-        </div>
-      )}
-
       {nothingSearched ? (
         <StatePanel
           tone="error"
@@ -363,7 +348,7 @@ function ResultsBody({
           title={t('results.allFailedTitle')}
           next={
             <>
-              <RetryButton onClick={retry} />
+              {(missed.length === 0 || retryCanHelp(missed)) && <RetryButton onClick={retry} />}
               <Link to="/sources">{t('results.seeSources')}</Link>
             </>
           }
@@ -371,37 +356,55 @@ function ResultsBody({
           <p>{t('results.allFailedBody')}</p>
         </StatePanel>
       ) : res.results.length === 0 ? (
-        <StatePanel
-          tone="notice"
-          live
-          level={2}
-          title={t('results.emptyTitle')}
-          next={
-            <>
-              {activeFilterCount(state) > 0 && (
-                <button type="button" className="btn" onClick={() => update(clearFilters(state))}>
-                  {t('results.emptyRemoveFilters')}
-                </button>
-              )}
-              {ask && (
-                <button type="button" className="btn btn-primary" onClick={ask}>
-                  {t('results.askGuide')}
-                </button>
-              )}
-              <Link to="/sources">{t('results.seeSources')}</Link>
-            </>
-          }
-        >
-          <p>{t('results.emptyTryOther')}</p>
-        </StatePanel>
+        <>
+          {res.coverage.partial && (
+            <div className="h2-list__count">
+              <CoverageLine res={res} retry={retry} afterCount={false} />
+            </div>
+          )}
+          <StatePanel
+            tone="notice"
+            live
+            level={2}
+            title={t('results.emptyTitle')}
+            next={
+              <>
+                {activeFilterCount(state) > 0 && (
+                  <button type="button" className="btn" onClick={() => update(clearFilters(state))}>
+                    {t('results.emptyRemoveFilters')}
+                  </button>
+                )}
+                {ask && (
+                  <button type="button" className="btn btn-primary" onClick={ask}>
+                    {t('results.askGuide')}
+                  </button>
+                )}
+                <Link to="/sources">{t('results.seeSources')}</Link>
+              </>
+            }
+          >
+            <p>{t('results.emptyTryOther')}</p>
+          </StatePanel>
+        </>
       ) : state.view === 'timeline' ? (
-        <ResultsTimeline cards={res.results} />
+        <>
+          {res.coverage.partial && (
+            <div className="h2-list__count">
+              <CoverageLine res={res} retry={retry} afterCount={false} />
+            </div>
+          )}
+          <ResultsTimeline cards={res.results} />
+        </>
       ) : (
         <div className="h2-split">
           <div className="h2-list" ref={list} onFocus={keepFocus.onFocus} onBlur={keepFocus.onBlur}>
-            <p ref={count} tabIndex={-1} className="h2-list__count" aria-live="polite">
-              {t('results.count', { count: res.total })}
-            </p>
+            {/* The count is the live region; the coverage line next to it is not, so a partial answer is not said again. */}
+            <div className="h2-list__count">
+              <p ref={count} tabIndex={-1} aria-live="polite">
+                {t('results.count', { count: res.total })}
+              </p>
+              <CoverageLine res={res} retry={retry} afterCount />
+            </div>
             {/* Here from the first render, so the move of the picks to the top is said once, politely. */}
             <p className="sr-only" role="status">
               {picked.length > 0 ? t('results.picksOnTop', { count: picked.length }) : ''}
@@ -462,7 +465,7 @@ function ResultsBody({
 
       <section className="h2-results__sources" aria-labelledby="h2-sources-h">
         <h2 id="h2-sources-h" className="h2-results__fan">
-          {/* The same two numbers as the partial banner, so the page says one thing. */}
+          {/* The same two numbers as the coverage line, so the page says one thing. */}
           {t('results.fanOut', {
             ok: res.coverage.sourcesSucceeded,
             total: res.coverage.sourcesQueried,
