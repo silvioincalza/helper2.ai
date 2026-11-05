@@ -24,14 +24,13 @@ tags:
   - name: guide-stream
   - name: setup
   - name: sources
-  - name: categories
   - name: me
   - name: admin
-  - name: review
   - name: audit
   - name: overview
   - name: enrichment-queue
   - name: settings
+  - name: runtime-settings
   - name: examples
   - name: examples-admin
   - name: policy
@@ -62,14 +61,6 @@ paths:
         - { name: techLevel, in: query, schema: { type: array, maxItems: 20, items: { $ref: '#/components/schemas/TechLevelFilter' } }, style: form, explode: true }
         - { name: audience, in: query, schema: { type: array, maxItems: 20, items: { $ref: '#/components/schemas/Audience' } }, style: form, explode: true }
         - { name: updatedAfter, in: query, description: "Only results whose last-updated date is known and on/after this day.", schema: { type: string, format: date } }
-        - name: category
-          in: query
-          description: >-
-            Category ids from GET /categories (ADR 0053), or `unknown` for results with no category yet. A result in any
-            of them is kept (OR); with the other filters it is AND. An id that is not a category is a 400.
-          schema: { type: array, maxItems: 40, items: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$', maxLength: 30 } }
-          style: form
-          explode: true
         - { name: sort, in: query, schema: { $ref: '#/components/schemas/SortOrder' } }
         - { name: page, in: query, schema: { type: integer, minimum: 0, maximum: 50, default: 0 } }
         - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
@@ -270,28 +261,6 @@ paths:
                 type: array
                 items: { $ref: '#/components/schemas/SourceInfo' }
 
-  /categories:
-    get:
-      tags: [categories]
-      operationId: listCategories
-      summary: The categories of the AI world search can filter by, in the order people see them.
-      description: >-
-        Read from the running configuration (`helper2.categories`, ADR 0051, 0053). The same answer for everyone, no
-        personal data; cached for an hour and validated by its ETag. Rate-limited like the other public reads.
-      responses:
-        '200':
-          description: Every category, in the configured order.
-          headers:
-            Cache-Control: { schema: { type: string }, description: 'public, max-age=3600' }
-            ETag: { schema: { type: string }, description: 'Changes when a category is added, removed or renamed.' }
-          content:
-            application/json:
-              schema:
-                type: array
-                items: { $ref: '#/components/schemas/Category' }
-        '304': { description: Not modified (If-None-Match matched the ETag). }
-        '429': { $ref: '#/components/responses/Problem' }
-
   /me:
     get:
       tags: [me]
@@ -450,55 +419,6 @@ paths:
         '404': { $ref: '#/components/responses/Problem' }
         '409': { $ref: '#/components/responses/Problem' }
 
-  /admin/review-items/resolutions:
-    post:
-      tags: [review]
-      operationId: resolveReviewItems
-      summary: Decide several review items at once (ADR 0045).
-      description: >-
-        Each item is decided in its own transaction, the way one decision is, and writes its own audit entry; the
-        outcome carries the batch, e.g. `ACCEPTED bulk:<batch>`. Rejecting works for every kind. Accepting works only
-        for an enrichment check whose run has no CONFLICTING licence, open source or pricing; any other item is
-        NOT_ALLOWED and stays open. An item already decided is NOT_OPEN, an unknown one NOT_FOUND. Decisions are final.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/ReviewBulkResolution' }
-      responses:
-        '200':
-          description: One outcome per item, in the order sent.
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/ReviewBulkResult' }
-        '400': { $ref: '#/components/responses/Problem' }
-        '401': { $ref: '#/components/responses/Problem' }
-        '403': { $ref: '#/components/responses/Problem' }
-
-  /admin/review-items/{id}/evidence:
-    get:
-      tags: [review]
-      operationId: getReviewEvidence
-      summary: What a review item is about, with the quotes behind it (ADR 0045).
-      description: >-
-        Read through the item's link, never from its details. An item from an enrichment run: the run, its validation
-        errors and the fields it stored, each with at most 5 quotes, CONFLICTING first. A relationship candidate: the
-        run and the relationship, with at most 5 quotes. Any other item: the item only. Field values and the
-        relationship are AI-written (`aiContent`); quotes come from the sources. The run of a decided or superseded
-        item can have no fields left: a newer run replaced them.
-      parameters:
-        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
-      responses:
-        '200':
-          description: The item and its evidence.
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/ReviewEvidence' }
-        '400': { $ref: '#/components/responses/Problem' }
-        '401': { $ref: '#/components/responses/Problem' }
-        '403': { $ref: '#/components/responses/Problem' }
-        '404': { $ref: '#/components/responses/Problem' }
-
   /admin/scout-runs:
     get:
       tags: [admin]
@@ -549,16 +469,6 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/EnrichmentRecheck' }
-  /admin/category-backfill:
-    post:
-      tags: [admin]
-      operationId: backfillCategories
-      summary: Assign the categories of every resource again.
-      description: >-
-        Answers at once; the backfill then runs in the background on one replica, in batches (ADR 0053). It is
-        idempotent. Counts go to the metric `helper2.categories.backfill.resources` and the log.
-      responses:
-        '202': { description: Started (skipped when another replica is already running it). }
         '401': { $ref: '#/components/responses/Problem' }
         '403': { $ref: '#/components/responses/Problem' }
 
@@ -586,13 +496,9 @@ paths:
       operationId: listEnrichmentQueue
       summary: The enrichment backlog, in the order the Scout takes it.
       description: >-
-        WAITING (the default): the ones an admin moved to the top first, then never-run resources, then
-        model-unavailable and failed ones with retries left, each part newest discovery first. SKIPPED: the ones an
-        admin skipped, the latest skip first. OUT_OF_RETRIES: the ones whose failed runs reached the cap, newest
-        discovery first. Paged by cursor: pass `next` from the
-        previous page as `after`, with the same view.
+        Never-run resources first, then model-unavailable and failed ones with retries left, each part newest
+        discovery first. Paged by cursor: pass `next` from the previous page as `after`. Read-only.
       parameters:
-        - { name: view, in: query, schema: { $ref: '#/components/schemas/EnrichmentQueueView' } }
         - { name: after, in: query, description: The previous page's next cursor; omit for the first page., schema: { type: string, maxLength: 200 } }
         - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
       responses:
@@ -604,65 +510,6 @@ paths:
         '400': { $ref: '#/components/responses/Problem' }
         '401': { $ref: '#/components/responses/Problem' }
         '403': { $ref: '#/components/responses/Problem' }
-
-  /admin/enrichment-queue/{resourceId}/requeue:
-    post:
-      tags: [enrichment-queue]
-      operationId: requeueEnrichment
-      summary: Put a skipped resource, or one out of retries, back into the enrichment queue.
-      description: >-
-        Undoes a skip. For a resource out of retries, only the failed runs from now on count against the cap. The
-        resource takes its own place again; the daily enrichment cap still applies. 409 not-applicable when the
-        resource is neither skipped nor out of retries. Every call is in the audit trail (REQUEUE_ENRICHMENT).
-      parameters:
-        - { name: resourceId, in: path, required: true, schema: { type: string, format: uuid } }
-      responses:
-        '204': { description: Requeued. }
-        '401': { $ref: '#/components/responses/Problem' }
-        '403': { $ref: '#/components/responses/Problem' }
-        '404': { $ref: '#/components/responses/Problem' }
-        '409': { $ref: '#/components/responses/Problem' }
-
-  /admin/enrichment-queue/{resourceId}/skip:
-    post:
-      tags: [enrichment-queue]
-      operationId: skipEnrichment
-      summary: Take a waiting resource out of the enrichment queue until it is requeued.
-      description: >-
-        Drops a move to the top. 409 not-applicable when the resource does not wait or is already skipped. Every call
-        is in the audit trail (SKIP_ENRICHMENT).
-      parameters:
-        - { name: resourceId, in: path, required: true, schema: { type: string, format: uuid } }
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/EnrichmentSkip' }
-      responses:
-        '204': { description: Skipped. }
-        '400': { $ref: '#/components/responses/Problem' }
-        '401': { $ref: '#/components/responses/Problem' }
-        '403': { $ref: '#/components/responses/Problem' }
-        '404': { $ref: '#/components/responses/Problem' }
-        '409': { $ref: '#/components/responses/Problem' }
-
-  /admin/enrichment-queue/{resourceId}/prioritise:
-    post:
-      tags: [enrichment-queue]
-      operationId: prioritiseEnrichment
-      summary: Move a waiting resource to the top of the enrichment queue until its next run.
-      description: >-
-        The Scout takes it in its next batch, within the daily enrichment cap: the order changes, the number of model
-        calls does not. At most 50 resources wait at the top. 409 not-applicable when the resource does not wait, is
-        already at the top, or the top is full. Every call is in the audit trail (PRIORITISE_ENRICHMENT).
-      parameters:
-        - { name: resourceId, in: path, required: true, schema: { type: string, format: uuid } }
-      responses:
-        '204': { description: Moved to the top. }
-        '401': { $ref: '#/components/responses/Problem' }
-        '403': { $ref: '#/components/responses/Problem' }
-        '404': { $ref: '#/components/responses/Problem' }
-        '409': { $ref: '#/components/responses/Problem' }
 
   /admin/audit:
     get:
@@ -700,6 +547,79 @@ paths:
         '401': { $ref: '#/components/responses/Problem' }
         '403': { $ref: '#/components/responses/Problem' }
 
+  /admin/runtime-settings:
+    get:
+      tags: [runtime-settings]
+      operationId: listRuntimeSettings
+      summary: The spending limits an administrator may change at runtime, with their history.
+      description: >-
+        Each setting of the allow-list (ADR 0058): the value applied now, the default (the H2_ variable), the allowed
+        range, its version and its last changes. The value a replica applies can be up to one refresh interval
+        (20 s by default) behind.
+      responses:
+        '200':
+          description: Every runtime setting, in a fixed order.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RuntimeSettings' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+
+  /admin/runtime-settings/{key}:
+    parameters:
+      - { name: key, in: path, required: true, schema: { type: string, maxLength: 100 } }
+    put:
+      tags: [runtime-settings]
+      operationId: changeRuntimeSetting
+      summary: Set a runtime setting's value.
+      description: >-
+        400 when the value is outside 0 to the setting's maximum. 404 for a key that is not in the allow-list. 409
+        when the version is not the setting's newest (someone changed it first). Recorded in the audit trail with
+        the value before and after.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RuntimeSettingChange' }
+      responses:
+        '200':
+          description: Changed; this replica applies it now, the others within one refresh interval.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RuntimeSettingState' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+
+  /admin/runtime-settings/{key}/reset:
+    parameters:
+      - { name: key, in: path, required: true, schema: { type: string, maxLength: 100 } }
+    post:
+      tags: [runtime-settings]
+      operationId: resetRuntimeSetting
+      summary: Back to the default (the H2_ variable).
+      description: >-
+        Appends a change with no value. 404 for a key that is not in the allow-list; 409 when the version is not the
+        setting's newest.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RuntimeSettingReset' }
+      responses:
+        '200':
+          description: Back to the default.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RuntimeSettingState' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+
   /home/examples:
     get:
       tags: [examples]
@@ -726,7 +646,7 @@ paths:
       operationId: getPolicy
       summary: The limits and retention periods the Mission, Privacy and Terms pages state.
       description: >-
-        Read from the running configuration (ADR 0052), so the text pages show the numbers the code applies. The same
+        Read from the running configuration (ADR 0051), so the text pages show the numbers the code applies. The same
         answer for everyone, no personal data; cached for 5 minutes. Rate-limited like the other public reads.
       responses:
         '200':
@@ -871,7 +791,7 @@ components:
         retention:
           type: object
           description: How long each store keeps what it keeps (ADR 0034), in seconds.
-          required: [cachedSearchesSeconds, cachedGuideAnswersSeconds, translationsSeconds, queryVectorsSeconds, storedWebResultsSeconds, inactiveAccountsSeconds, handledReportsSeconds, adminRecordsSeconds]
+          required: [cachedSearchesSeconds, cachedGuideAnswersSeconds, translationsSeconds, queryVectorsSeconds, storedWebResultsSeconds, inactiveAccountsSeconds, handledReportsSeconds]
           properties:
             cachedSearchesSeconds: { type: integer, format: int64, minimum: 0, description: "Source answers in the search cache, served while a source fails (`H2_SEARCH_STALE_FOR`)." }
             cachedGuideAnswersSeconds: { type: integer, format: int64, minimum: 0, description: "Guide answers in the shared cache (`H2_GUIDE_CACHE_TTL`)." }
@@ -880,7 +800,6 @@ components:
             storedWebResultsSeconds: { type: integer, format: int64, minimum: 0, description: "Stored web search results (`H2_RETENTION_TAVILY_RESULTS`)." }
             inactiveAccountsSeconds: { type: integer, format: int64, minimum: 0, description: "An account, its settings and its saved items, after the last sign-in (`H2_RETENTION_INACTIVE_ACCOUNTS`)." }
             handledReportsSeconds: { type: integer, format: int64, minimum: 0, description: "Reports, after their review was resolved (`H2_RETENTION_RESOLVED_ISSUE_REPORTS`)." }
-            adminRecordsSeconds: { type: integer, format: int64, minimum: 0, description: "An administrator's action in the back office audit trail, with their id (`H2_RETENTION_ADMIN_AUDIT`, ADR 0045)." }
 
     WebSearchLimits:
       type: object
@@ -990,7 +909,7 @@ components:
         the same stable code on its own, so a client reacts to the code, never to the title text. Codes:
         invalid-request (400), sign-in-required (401), forbidden (403), not-found (404), method-not-allowed (405),
         not-acceptable (406), unsupported-media-type (415), already-decided, run-in-progress, version-conflict,
-        duplicate, not-applicable (409), rate-limited (429), internal (500), unavailable (503), timed-out (504).
+        duplicate (409), rate-limited (429), internal (500), unavailable (503), timed-out (504).
       properties:
         type: { type: string, format: uri }
         title: { type: string }
@@ -1137,7 +1056,7 @@ components:
 
     ResultCard:
       type: object
-      required: [id, title, type, audience, url, sources, timeline, freshness, tags, useCases, platforms, popularity, conflicts, descriptionOrigin, compatibleWith, categories]
+      required: [id, title, type, audience, url, sources, timeline, freshness, tags, useCases, platforms, popularity, conflicts, descriptionOrigin, compatibleWith]
       properties:
         id: { type: string, format: uuid, description: "Stable: UUIDv5 of the canonical URL." }
         title: { type: string }
@@ -1163,29 +1082,9 @@ components:
           type: array
           description: AI tools this resource works with, derived by disclosed rules from source tags, type and file formats. Never model-generated.
           items: { $ref: '#/components/schemas/CompatibilityFlag' }
-        categories:
-          type: array
-          description: >-
-            Ids of the categories it belongs to (GET /categories), in their order; empty when it has none yet. Assigned
-            by code from its title, what its sources wrote, its tags, type and the collectors that found it (ADR 0053).
-            Never model-generated.
-          items: { type: string }
         location: { type: [string, 'null'], description: "EVENT only: city and country as the source states it." }
         eventKind: { oneOf: [{ $ref: '#/components/schemas/EventKind' }, { type: 'null' }], description: "EVENT only: what kind of event the source calls it; null when it does not say." }
         eventFormat: { oneOf: [{ $ref: '#/components/schemas/EventFormat' }, { type: 'null' }], description: "EVENT only: online, in person or both, as the source states it; null when it does not say." }
-        foundIn:
-          description: >-
-            Set when the result was found only by the words an awesome list uses around it (its entry line and its
-            section heading), not by its own text (ADR 0055). The list's own words, not AI-written. Null when any source
-            matched the result directly.
-          oneOf: [{ $ref: '#/components/schemas/ListMatch' }, { type: 'null' }]
-
-    ListMatch:
-      type: object
-      required: [listTitle, headingPath]
-      properties:
-        listTitle: { type: string, description: "The list's title in the catalog, e.g. owner/awesome-llm." }
-        headingPath: { type: string, maxLength: 200, description: "The headings above the entry, e.g. \"Tools > Vector databases\"; empty when the entry has none." }
 
     CompatibilityFlag:
       type: object
@@ -1251,7 +1150,7 @@ components:
 
     Facets:
       type: object
-      required: [type, source, license, openSource, pricing, platform, useCase, techLevel, audience, category]
+      required: [type, source, license, openSource, pricing, platform, useCase, techLevel, audience]
       properties:
         type: { type: array, items: { $ref: '#/components/schemas/FacetValue' } }
         source: { type: array, items: { $ref: '#/components/schemas/FacetValue' } }
@@ -1262,12 +1161,6 @@ components:
         useCase: { type: array, items: { $ref: '#/components/schemas/FacetValue' } }
         techLevel: { type: array, items: { $ref: '#/components/schemas/FacetValue' } }
         audience: { type: array, items: { $ref: '#/components/schemas/FacetValue' } }
-        category:
-          type: array
-          description: >-
-            Category ids (ADR 0053) with their counts over the whole merged result set, every filter applied but the
-            category's own; `unknown` counts the results with no category yet.
-          items: { $ref: '#/components/schemas/FacetValue' }
 
     Notice:
       type: object
@@ -1601,13 +1494,6 @@ components:
             Parts of the reading the user removed from "Understood as": "intent" (answer as a plain suggestion),
             "window" (ignore the period) or "constraint:<text>". Applied by code; never sent to a model.
           items: { type: string, maxLength: 80 }
-        categories:
-          type: array
-          maxItems: 40
-          description: >-
-            The category filter active on the results page (ids from GET /categories, or `unknown`). The guide picks
-            only among results in one of them (ADR 0053). Applied by code; never sent to a model. Unknown ids are a 400.
-          items: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$', maxLength: 30 }
 
     GuideRecommendation:
       type: object
@@ -1944,16 +1830,6 @@ components:
             and observed). Null for `helper2-semantic` (the same index searched by meaning, no count of its own) and
             when the catalog cannot answer.
 
-    Category:
-      type: object
-      description: One category of the AI world (ADR 0051, 0053). Our own fixed words, from the configuration.
-      required: [id, name, shortName, family]
-      properties:
-        id: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$', description: The value of the search's `category` filter. }
-        name: { type: string }
-        shortName: { type: string, maxLength: 12 }
-        family: { $ref: '#/components/schemas/SourceFamily' }
-
     SourceFamily:
       type: string
       description: The seven families of the discovery categories.
@@ -1984,7 +1860,7 @@ components:
 
     Me:
       type: object
-      required: [authenticated, roles, loginProviders, limits, monetisation]
+      required: [authenticated, roles, loginProviders, limits]
       properties:
         authenticated: { type: boolean }
         displayName: { type: [string, 'null'] }
@@ -2002,25 +1878,6 @@ components:
         preferences:
           oneOf: [{ $ref: '#/components/schemas/Preferences' }, { type: 'null' }]
           description: The signed-in user's display settings; null for a guest.
-        monetisation: { $ref: '#/components/schemas/Monetisation' }
-
-    Monetisation:
-      type: object
-      description: >-
-        How the site funds itself (ADR 0057), as configured. Each value is null while that part is off (no link, no
-        script), and all are null on the admin host. Read with GET /me, which every page already calls.
-      required: [githubSponsorsUrl, stripePaymentUrl, ga4MeasurementId, ethicalAdsPublisher, adsenseClient, adsenseSlot]
-      properties:
-        githubSponsorsUrl: { type: [string, 'null'], format: uri, description: "GitHub Sponsors page (`H2_SUPPORT_GITHUB_SPONSORS_URL`)." }
-        stripePaymentUrl: { type: [string, 'null'], format: uri, description: "Stripe Payment Link (`H2_SUPPORT_STRIPE_PAYMENT_URL`)." }
-        ga4MeasurementId: { type: [string, 'null'], description: "Google Analytics 4 stream, loaded only after consent (`H2_ANALYTICS_GA4_MEASUREMENT_ID`)." }
-        ethicalAdsPublisher: { type: [string, 'null'], description: "EthicalAds publisher of the one ad slot (`H2_ADS_ETHICALADS_PUBLISHER`)." }
-        adsenseClient:
-          type: [string, 'null']
-          description: >-
-            Google AdSense publisher, ca-pub-... (`H2_ADS_ADSENSE_CLIENT`, ADR 0059). Null unless the ad unit is set too:
-            then the page loads Google's consent tool and shows the slot on resource pages.
-        adsenseSlot: { type: [string, 'null'], description: "AdSense ad unit of the slot on resource pages (`H2_ADS_ADSENSE_SLOT`, ADR 0059)." }
 
     Preferences:
       type: object
@@ -2106,7 +1963,7 @@ components:
 
     AdminOverview:
       type: object
-      required: [generatedAt, openReviewItems, enrichmentBacklog, budgets, recentRuns, failedRunsLast24h, homeExamples]
+      required: [generatedAt, openReviewItems, enrichmentBacklog, budgets, recentRuns, failedRunsLast24h, homeExamples, overridesActive]
       properties:
         generatedAt: { type: string, format: date-time }
         openReviewItems:
@@ -2127,6 +1984,7 @@ components:
           items: { $ref: '#/components/schemas/ScoutRun' }
         failedRunsLast24h: { type: integer, minimum: 0 }
         homeExamples: { $ref: '#/components/schemas/HomeExampleCounts' }
+        overridesActive: { type: integer, minimum: 0, description: Runtime settings whose value is not the default now (ADR 0058). }
         grafanaUrl: { type: [string, 'null'], format: uri, description: "The metrics dashboard for trends (H2_ADMIN_GRAFANA_URL); null when not set." }
 
     HomeExampleCounts:
@@ -2191,12 +2049,64 @@ components:
             seconds; MODEL and VERSION are null when there is none; SCHEDULE is a Spring cron, UTC; NAMES are
             comma-separated.
           enum: [COUNT, CAP, FLAG, DURATION, MODEL, VERSION, SCHEDULE, NAMES]
-        value:
-          type: [string, 'null']
-          maxLength: 500
-          description: "\"(hidden)\" when the value has a quote, an @ or more than 500 characters."
+        value: { type: [string, 'null'], maxLength: 500 }
         unit: { type: [string, 'null'], description: "The unit of a COUNT or CAP: calls a day, tokens, ..." }
         variable: { type: [string, 'null'], description: The H2_ variable that sets it; null when the code or the chart fixes it. }
+
+    RuntimeSettings:
+      type: object
+      required: [overridesActive, settings]
+      properties:
+        overridesActive: { type: integer, minimum: 0, description: Settings whose value is not the default now. }
+        settings:
+          type: array
+          items: { $ref: '#/components/schemas/RuntimeSettingState' }
+
+    RuntimeSettingState:
+      type: object
+      required: [key, label, unit, help, min, max, variable, defaultValue, value, overridden, inUse, version, history]
+      properties:
+        key: { type: string, description: The setting's key on the Settings page (ConfigSetting.key). }
+        label: { type: string }
+        unit: { type: string, description: "calls a day, calls a run, credits a day" }
+        help: { type: string, description: One line on what the setting does and what 0 means. }
+        min: { type: integer, minimum: 0, description: Always 0; 0 turns the use off. }
+        max: { type: integer, minimum: 0, description: The absolute maximum, in code; more needs a pull request. }
+        variable: { type: string, description: The H2_ variable whose value is the default. }
+        defaultValue: { type: [integer, 'null'], minimum: 0, description: The H2_ value; null = no cap, or the setting is not used on this replica. }
+        value: { type: [integer, 'null'], minimum: 0, description: The value applied now; null = no cap. }
+        overridden: { type: boolean, description: True when an administrator set the value; false when the default applies. }
+        inUse: { type: boolean, description: False when no module of this replica uses the setting (the feature is off); a change is kept and applies when it is on. }
+        version: { type: integer, minimum: 0, description: The setting's newest change; send it back with a change. 0 = never changed. }
+        history:
+          type: array
+          description: The last changes, newest first (at most 10).
+          items: { $ref: '#/components/schemas/RuntimeSettingHistoryEntry' }
+
+    RuntimeSettingHistoryEntry:
+      type: object
+      required: [version, value, changedBy, changedAt, reason]
+      properties:
+        version: { type: integer, minimum: 1 }
+        value: { type: [integer, 'null'], minimum: 0, description: The value set; null = back to the default. }
+        changedBy: { type: string, description: "The administrator's provider subject (GitHub: the numeric user id)." }
+        changedAt: { type: string, format: date-time }
+        reason: { type: [string, 'null'] }
+
+    RuntimeSettingChange:
+      type: object
+      required: [value, version]
+      properties:
+        value: { type: integer, minimum: 0, description: "0 to the setting's max; 0 turns the use off." }
+        version: { type: integer, minimum: 0, description: The version the change was made on. }
+        reason: { type: [string, 'null'], maxLength: 500 }
+
+    RuntimeSettingReset:
+      type: object
+      required: [version]
+      properties:
+        version: { type: integer, minimum: 0, description: The version the reset was made on. }
+        reason: { type: [string, 'null'], maxLength: 500 }
 
     EnrichmentQueuePage:
       type: object
@@ -2207,35 +2117,18 @@ components:
           items: { $ref: '#/components/schemas/EnrichmentQueueEntry' }
         next: { type: [string, 'null'], description: The cursor of the next page; null on the last page. }
 
-    EnrichmentQueueView:
-      type: string
-      description: "WAITING: the backlog in the Scout's order. SKIPPED: skipped by an admin. OUT_OF_RETRIES: failed runs reached the cap."
-      enum: [WAITING, SKIPPED, OUT_OF_RETRIES]
-      default: WAITING
-
-    EnrichmentSkip:
-      type: object
-      properties:
-        reason: { type: [string, 'null'], maxLength: 200, description: Why the resource is skipped; optional. }
-
     EnrichmentQueueEntry:
       type: object
-      required: [resourceId, title, state, firstDiscoveredAt, failedRuns]
+      required: [resourceId, title, waiting, firstDiscoveredAt, failedRuns]
       properties:
         resourceId: { type: string, format: uuid }
         title: { type: string }
-        state:
-          type: string
-          description: "PRIORITISED: moved to the top by an admin. WAITING: in its own part. SKIPPED: skipped by an admin. OUT_OF_RETRIES: failed runs reached the cap."
-          enum: [PRIORITISED, WAITING, SKIPPED, OUT_OF_RETRIES]
         waiting:
-          type: [string, 'null']
-          description: "Why it waits; null when it does not (SKIPPED, OUT_OF_RETRIES). NEW: never enriched. MODEL_UNAVAILABLE: the last run found no model. RETRY: the last run FAILED and retries are left."
-          enum: [NEW, MODEL_UNAVAILABLE, RETRY, null]
-        skippedAt: { type: [string, 'null'], format: date-time, description: When it was skipped; null unless SKIPPED. }
-        skipReason: { type: [string, 'null'], description: The reason given when it was skipped. }
+          type: string
+          description: "NEW: never enriched. MODEL_UNAVAILABLE: the last run found no model. RETRY: the last run FAILED and retries are left."
+          enum: [NEW, MODEL_UNAVAILABLE, RETRY]
         firstDiscoveredAt: { type: string, format: date-time }
-        failedRuns: { type: integer, minimum: 0, description: Failed runs since an admin last requeued it; the number the cap is checked against. }
+        failedRuns: { type: integer, minimum: 0 }
         lastOutcome: { type: [string, 'null'], enum: [VALIDATED, PARTIAL, REJECTED, LLM_UNAVAILABLE, FAILED, null] }
         lastRunAt: { type: [string, 'null'], format: date-time }
 
@@ -2282,114 +2175,6 @@ components:
         resolvedAt: { type: [string, 'null'], format: date-time }
         resolvedBy: { type: [string, 'null'] }
 
-    ReviewBulkResolution:
-      type: object
-      required: [ids, status]
-      properties:
-        ids:
-          type: array
-          minItems: 1
-          maxItems: 100
-          description: >-
-            Each id once. A repeated id is refused with 400. The list is not declared uniqueItems on purpose: a set would
-            drop the repeat before the server sees it.
-          items: { type: string, format: uuid }
-        status: { type: string, enum: [ACCEPTED, REJECTED] }
-        note: { type: [string, 'null'], maxLength: 1000 }
-
-    ReviewBulkResult:
-      type: object
-      required: [batch, items]
-      properties:
-        batch: { type: string, format: uuid, description: The id in the audit entries of this batch (`bulk:<batch>`). }
-        items:
-          type: array
-          items: { $ref: '#/components/schemas/ReviewBulkItem' }
-
-    ReviewBulkItem:
-      type: object
-      required: [id, outcome]
-      properties:
-        id: { type: string, format: uuid }
-        outcome:
-          type: string
-          description: >-
-            RESOLVED: decided now. NOT_OPEN: already decided. NOT_FOUND: no such item. NOT_ALLOWED: this item cannot be
-            accepted in bulk (it adds to the catalog or publishes, or its run has a conflict on licence, open source or
-            pricing); it stays open.
-          enum: [RESOLVED, NOT_OPEN, NOT_FOUND, NOT_ALLOWED]
-
-    ReviewEvidence:
-      type: object
-      required: [item, validationErrors, fields]
-      properties:
-        item: { $ref: '#/components/schemas/ReviewItem' }
-        run:
-          oneOf: [{ $ref: '#/components/schemas/ReviewRun' }, { type: 'null' }]
-          description: The enrichment run the item links to; null for items with no run.
-        validationErrors:
-          type: array
-          maxItems: 50
-          items: { type: string }
-          description: What the code check refused in the run, in its words. Each error can quote the refused model output, so aiContent lists it as AI-written. Empty for a relationship candidate.
-        fields:
-          type: array
-          maxItems: 50
-          items: { $ref: '#/components/schemas/ReviewField' }
-          description: The fields the run stored, CONFLICTING first, then UNVERIFIED, VERIFIED and REJECTED. Empty for a relationship candidate.
-        relationship:
-          oneOf: [{ $ref: '#/components/schemas/ReviewRelationship' }, { type: 'null' }]
-          description: The relationship a relationship candidate is about; null for every other kind.
-        aiContent:
-          oneOf: [{ $ref: '#/components/schemas/AiContentMarker' }, { type: 'null' }]
-          description: Present when the evidence holds AI-written values (ADR 0038).
-
-    ReviewRun:
-      type: object
-      required: [id, provider, model, promptVersion, outcome, startedAt]
-      properties:
-        id: { type: string, format: uuid }
-        provider: { type: string }
-        model: { type: string }
-        promptVersion: { type: string }
-        outcome: { type: string, enum: [VALIDATED, PARTIAL, REJECTED, LLM_UNAVAILABLE, FAILED] }
-        startedAt: { type: string, format: date-time }
-        finishedAt: { type: [string, 'null'], format: date-time }
-        extraEvidence:
-          type: [string, 'null']
-          description: The README or model card the run read in its gap round (ADR 0043), e.g. `github-readme:owner/name`.
-
-    ReviewField:
-      type: object
-      required: [field, value, origin, verification, quotes]
-      properties:
-        field: { type: string }
-        value: { type: string, description: AI-written. }
-        origin: { $ref: '#/components/schemas/ValueOrigin' }
-        verification: { $ref: '#/components/schemas/Verification' }
-        quotes: { type: array, maxItems: 5, items: { $ref: '#/components/schemas/ReviewQuote' } }
-
-    ReviewRelationship:
-      type: object
-      required: [kind, target, verification, origin, quotes]
-      properties:
-        kind: { type: string, enum: [INTEGRATES_WITH, USES, SUPPORTS, COMPATIBLE_WITH] }
-        target: { type: string, description: The name the model gave. AI-written. }
-        targetId: { type: [string, 'null'], format: uuid, description: The catalog resource of that name; null when none. }
-        verification: { $ref: '#/components/schemas/Verification' }
-        origin: { $ref: '#/components/schemas/ValueOrigin' }
-        quotes: { type: array, maxItems: 5, items: { $ref: '#/components/schemas/ReviewQuote' } }
-
-    ReviewQuote:
-      type: object
-      required: [sourceUrl, retrievedAt]
-      description: Copied from a source, not AI-written.
-      properties:
-        excerpt: { type: [string, 'null'], maxLength: 500 }
-        sourceUrl: { type: string, description: As the source gave it; a page shows it as a link only when it is http(s). }
-        sourceId: { type: [string, 'null'], description: The source the quote was read from; null for a page the run read itself. }
-        retrievedAt: { type: string, format: date-time }
-
     ReviewResolution:
       type: object
       required: [status]
@@ -2410,10 +2195,13 @@ components:
       properties:
         id: { type: string, format: uuid }
         adminId: { type: string, description: "The administrator's provider subject (GitHub: the numeric user id)." }
-        action: { type: string, enum: [RESOLVE_REVIEW_ITEM, START_SCOUT_RUN, ADD_HOME_EXAMPLE, CHANGE_HOME_EXAMPLE, REMOVE_HOME_EXAMPLE, DRAFT_HOME_EXAMPLES, RECHECK_ENRICHMENT, BACKFILL_CATEGORIES, REQUEUE_ENRICHMENT, SKIP_ENRICHMENT, PRIORITISE_ENRICHMENT] }
-        targetId: { type: [string, 'null'], description: "The review item id, the source id, the home example id or the resource id; null when a run covered every source." }
+        action: { type: string, enum: [RESOLVE_REVIEW_ITEM, START_SCOUT_RUN, ADD_HOME_EXAMPLE, CHANGE_HOME_EXAMPLE, REMOVE_HOME_EXAMPLE, DRAFT_HOME_EXAMPLES, RECHECK_ENRICHMENT, CHANGE_SETTING] }
+        targetId: { type: [string, 'null'], description: "The review item id, the source id, the home example id or the setting's key; null when a run covered every source." }
         at: { type: string, format: date-time }
-        outcome: { type: string, description: "ACCEPTED, REJECTED, NOT_OPEN or NOT_FOUND for a review item, NOT_ALLOWED for one refused in bulk, followed by bulk:<batch> when decided in bulk; STARTED or BUSY for a Scout run; STARTED for a category backfill; ADDED, CHANGED, PAUSED, ACTIVATED, REMOVED, DUPLICATE, CONFLICT, INVALID or NOT_FOUND for a home example; REQUEUED, REQUEUED_RESET, SKIPPED, PRIORITISED, NOT_FOUND, NOT_STOPPED, NOT_WAITING, ALREADY_SKIPPED, ALREADY_PRIORITISED or TOP_FULL for the enrichment queue." }
+        outcome: { type: string, description: "ACCEPTED, REJECTED, NOT_OPEN or NOT_FOUND for a review item; STARTED or BUSY for a Scout run; ADDED, CHANGED, PAUSED, ACTIVATED, REMOVED, DUPLICATE, CONFLICT, INVALID or NOT_FOUND for a home example; CHANGED, RESET, OUT_OF_RANGE or CONFLICT for a runtime setting." }
+        before: { type: [string, 'null'], description: "The value before a setting change (\"default\" for the default); null for other actions." }
+        after: { type: [string, 'null'], description: The value after a setting change; null for other actions. }
+        reason: { type: [string, 'null'], description: Why the administrator changed a setting (optional). }
 
     EnrichmentRecheck:
       type: object

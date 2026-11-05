@@ -125,6 +125,12 @@ function OverviewParts({
 
       <HomeExampleCounts counts={data.homeExamples} />
 
+      <p>
+        <Link to="/admin/settings">
+          {t('admin.overview.overrides', { count: data.overridesActive })}
+        </Link>
+      </p>
+
       <ScrollBox label={t('admin.overview.budgets')}>
         <table className="v4-table h2-admin__table" aria-labelledby="ov-budgets">
           <caption id="ov-budgets" className="h2-admin__caption">

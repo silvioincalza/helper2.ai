@@ -63,7 +63,7 @@ class ListSourcesTest {
   private fun quota(
     counter: QuotaCounter = Counts(mapOf(Counter(keys.global(), "credits") to 12L)),
     cap: Long? = 200,
-  ) = WebSearchQuota(counter, keys, globalDailyCredits = cap)
+  ) = WebSearchQuota(counter, keys, globalDailyCredits = { cap })
 
   private fun list(
     sources: List<DescribedSource> = listOf(npm, tavily, github),

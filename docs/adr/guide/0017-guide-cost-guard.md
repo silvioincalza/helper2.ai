@@ -87,7 +87,10 @@ The guards run in this order. Values are defaults; each has an `H2_` variable.
 6. **Global daily cap** (`H2_GUIDE_DAILY_MODEL_CALLS`, 600): one unit before each model attempt
    ([0014](0014-llm-integration.md)), taken inside the `llm-chat` circuit, so a call the open circuit refuses costs no
    unit. When spent, plan or choose fails with `GuideBudgetExhausted` and the answer is the degraded one; the reason
-   check leaves reasons `NOT_CHECKED`. Gauge `helper2.guide.budget.remaining`.
+   check leaves reasons `NOT_CHECKED`. Gauge `helper2.guide.budget.remaining`. The cap is a runtime setting
+   ([0058](../operations/0058-runtime-settings.md)): `H2_GUIDE_DAILY_MODEL_CALLS` is its default, an administrator
+   can lower it (0 = search-only answers) or raise it up to 3000 from the back office, and every replica applies
+   it within about 20 seconds.
 7. **Daily web searches** ([0037](../search/0037-tavily-store-and-daily-quota.md)): the question's searches take one web search
    from the asker's guide quota (3 a day for a guest), at the first live Tavily call; a cached, shared or reused answer
    takes none. Every answer states what the asker has left (`webSearches`).

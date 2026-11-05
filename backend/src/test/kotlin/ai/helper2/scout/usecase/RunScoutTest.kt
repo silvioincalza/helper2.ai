@@ -339,7 +339,7 @@ class RunScoutTest {
           EnrichResource(model, store, clock),
           clock,
           NO_LOCK,
-          maxEnrichmentsPerRun = 3,
+          maxEnrichmentsPerRun = { 3 },
           backlog =
             backlog { limit ->
               stranded += limit
@@ -455,7 +455,7 @@ class RunScoutTest {
           EnrichResource(model(true), store, clock),
           clock,
           NO_LOCK,
-          maxEnrichmentsPerRun = 2,
+          maxEnrichmentsPerRun = { 2 },
           backlog = backlog { limit -> stranded.take(limit) },
         )
         .runNow()!!
@@ -608,7 +608,7 @@ class RunScoutTest {
         EnrichResource(model(true), store, clock),
         clock,
         NO_LOCK,
-        maxEnrichmentsPerRun = 4,
+        maxEnrichmentsPerRun = { 4 },
         backlog = backlog,
       )
       .runNow()!!
@@ -698,7 +698,7 @@ class RunScoutTest {
           EnrichResource(model(true), store, clock),
           clock,
           NO_LOCK,
-          maxEnrichmentsPerRun = 4,
+          maxEnrichmentsPerRun = { 4 },
         )
         .runNow()!!
     assertEquals(listOf(3, 1), runs.map { it.enrichmentsQueued })

@@ -56,7 +56,7 @@ class WebSearchQuotaTest {
       keys,
       DailyLimits(guestSearch = 3, guestGuide = 3, registeredSearch = 10, registeredGuide = 10),
       registeredTier,
-      globalDailyCredits,
+      { globalDailyCredits },
     )
 
   @Test

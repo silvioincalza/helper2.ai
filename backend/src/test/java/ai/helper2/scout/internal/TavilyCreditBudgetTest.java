@@ -55,7 +55,7 @@ class TavilyCreditBudgetTest {
 
   private WebSearchQuota quota(MapCounter counter, long globalCap) {
     return new WebSearchQuota(
-        counter, new QuotaKeys("secret", clock), new DailyLimits(), false, globalCap);
+        counter, new QuotaKeys("secret", clock), new DailyLimits(), false, () -> globalCap);
   }
 
   private double spent() {

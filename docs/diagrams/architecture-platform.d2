@@ -7,6 +7,7 @@
 #   platform/llm/* (RedisCallCounter: h2:v1:budget:*), platform/http/ObservedHttp.java,
 #   platform/resilience/* (RedisOutboundThrottle: h2:v1:outbound:*), platform/quota/* (QuotaKeys: h2:v1:quota:*),
 #   platform/cache/* (JdbcSharedCache, SharedCacheRetention: ai_cache),
+#   platform/settings/* (RuntimeSettings, JdbcRuntimeSettingStore: runtime_setting; ADR 0058),
 #   backend/src/main/java/ai/helper2/identity/config/SecurityConfiguration.java, SessionConfiguration.java,
 #   AdminPortConfiguration.java, ContentSecurityPolicy.java, CspHeaderWriter.java, platform/CspNonce.java (ADR 0059),
 #   identity/web/MeController.java, AuditController.java, identity/internal/*, identity/usecase/*,
@@ -59,13 +60,14 @@ platform: "platform (open module)" {
   quota: "quota: QuotaCounter (Redis Lua)\nQuotaKeys (HMAC)" {class: app}
   cache: "cache: SharedCaches\nJdbcSharedCache\nSharedCacheRetention (daily purge)" {class: app}
   locks: "ClusterLock · ClusterLocks\n(ShedLock, database time)" {class: app}
+  settings: "settings: SettingsGroup · Setting\nRuntimeSetting (allow-list)\nRuntimeSettings (snapshot, 20 s refresh)" {class: app}
 }
 
 shared: "shared (open, Kotlin)\nCanonicalUrl · ResourceId · DateFact\nLanguageDetector · Vocabulary" {class: app}
 api: "api (open)\ngenerated from api/openapi.yaml" {class: app}
 
 redis: "Redis 8 (disposable)\nh2:v1:rate:* · h2:v1:budget:*\nh2:v1:outbound:* · h2:v1:quota:*\nhelper2:session:*" {shape: cylinder; class: data}
-pg: "PostgreSQL 18\napp_user · bookmark · admin_audit\nai_cache · shedlock" {shape: cylinder; class: data}
+pg: "PostgreSQL 18\napp_user · bookmark · admin_audit\nai_cache · shedlock · runtime_setting" {shape: cylinder; class: data}
 oauth: "github.com OAuth\n(profile oauth-github; off on\nstaging and prod)" {class: ext}
 
 browser -> edge.spa: "pages, assets"
@@ -95,3 +97,5 @@ platform.quota -> redis: "h2:v1:quota:*"
 identity.store -> pg: "app_user, bookmark,\nadmin_audit"
 platform.cache -> pg: "ai_cache"
 platform.locks -> pg: "shedlock"
+platform.settings -> pg: "runtime_setting"
+modules -> platform.settings: "spending limits\n(supplier per limit)"

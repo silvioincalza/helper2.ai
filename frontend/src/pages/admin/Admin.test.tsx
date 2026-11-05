@@ -107,6 +107,7 @@ const overview = (over: Partial<AdminOverview> = {}): AdminOverview => ({
     ],
     paused: 0,
   },
+  overridesActive: 0,
   grafanaUrl: 'https://grafana.example/d/helper2',
   ...over,
 });
@@ -702,5 +703,18 @@ describe('Feature: the audit trail', () => {
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('Could not load the audit trail.');
     expect(within(alert).getByRole('button', { name: /Try again/ })).toBeInTheDocument();
+  });
+});
+
+describe('Feature: the overview says how many spending limits were changed at runtime', () => {
+  it('Scenario: the count links to the Settings page', async () => {
+    mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/overview': () => overview({ overridesActive: 2 }),
+    });
+    renderApp('/admin');
+    expect(
+      await screen.findByRole('link', { name: '2 spending limits changed at runtime' }),
+    ).toHaveAttribute('href', '/admin/settings');
   });
 });

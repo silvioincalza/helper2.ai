@@ -17,11 +17,14 @@ public interface AuditTrail {
     REMOVE_HOME_EXAMPLE,
     DRAFT_HOME_EXAMPLES,
     RECHECK_ENRICHMENT,
-    BACKFILL_CATEGORIES,
-    REQUEUE_ENRICHMENT,
-    SKIP_ENRICHMENT,
-    PRIORITISE_ENRICHMENT
+    CHANGE_SETTING
   }
+
+  /**
+   * What a change made: the value before and after, and why. Values are short text ("500",
+   * "default"); the reason is the administrator's own words, at most 500 characters.
+   */
+  record Change(@Nullable String before, @Nullable String after, @Nullable String reason) {}
 
   /**
    * @param adminId the administrator's provider subject (GitHub: the numeric user id)
@@ -30,4 +33,13 @@ public interface AuditTrail {
    * @param outcome what happened, in a few upper-case words (ACCEPTED, STARTED, BUSY, ...)
    */
   void record(String adminId, Action action, @Nullable String targetId, String outcome);
+
+  /**
+   * The same, with the value before and after the change (a runtime setting, ADR 0058). A trail
+   * that keeps no values records the action only.
+   */
+  default void record(
+      String adminId, Action action, @Nullable String targetId, String outcome, Change change) {
+    record(adminId, action, targetId, outcome);
+  }
 }

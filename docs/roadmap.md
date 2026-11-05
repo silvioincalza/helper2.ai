@@ -407,6 +407,7 @@ Fix an item or accept it; when it no longer holds, remove it.
 - Deleting an old image needs the Harbor immutability rule disabled first, and enabled again after. ([ADR 0029](adr/operations/0029-release-versioning.md))
 - A release that has no version tag in Harbor (one made before release tags) is deployed by its commit, not by its version. ([ADR 0048](adr/operations/0048-release-branches-and-version-tags.md))
 - A deleted row stays in the backups for up to 7 days; purges run daily, so a row can outlive its period by a day; a purged observed resource seen again comes back with a new `first_discovered_at`. ([ADR 0034](adr/operations/0034-data-retention.md))
+- Runtime settings ([ADR 0058](adr/operations/0058-runtime-settings.md)): a change reaches the other replicas within about 20 s, so for those seconds two replicas can cut off at two limits. The Settings page's read-only groups show the startup value for every other setting. A change has no Grafana annotation yet, so a dashboard does not show when a limit moved. A limit raised for one day stays until someone resets it: an expiry ("until midnight UTC") would need one more column. The six maximums are first guesses (2.5 to 5 times today's prod values); revisit them after a month of use. A new `H2_` default with an override in place changes nothing until the override is reset.
 
 ### Quality
 

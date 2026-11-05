@@ -59,6 +59,11 @@ or in GitHub settings, and the deploy must not need a person to copy them.
    but only for keys a record owns. Env names never follow a record path: the yaml mapping is the
    contract, so renaming a field never renames an `H2_` variable. The database password has no default
    in the base document; only the `dev` profile has the local one from `compose.yaml`.
+9. **Six limits change at runtime.** For the spending limits in `RuntimeSetting` (Scout enrichments per run,
+   enrichment calls and gap rounds a day, the guide's model calls a day, translations a day, Tavily credits a day),
+   the `H2_` value is the default, not a ceiling: an administrator can change it from the back office, between 0
+   and a maximum in code ([0058](../operations/0058-runtime-settings.md)). The record still binds the value at
+   startup; the module reads the limit through a supplier. Every other setting changes only with a deploy.
 
 ## Consequences
 - One search for `H2_` finds every setting. A missing or misspelled prefix is easy to spot in review.

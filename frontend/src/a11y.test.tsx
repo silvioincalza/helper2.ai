@@ -304,6 +304,7 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
           ],
           paused: 0,
         },
+        overridesActive: 1,
         grafanaUrl: null,
       }),
       'GET /admin/home-examples': () => [

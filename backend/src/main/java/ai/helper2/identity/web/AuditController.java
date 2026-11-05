@@ -37,6 +37,9 @@ class AuditController implements AuditApi {
             AuditEntryDto.ActionEnum.fromValue(e.action().name()),
             e.at().atOffset(ZoneOffset.UTC),
             e.outcome())
-        .targetId(e.targetId());
+        .targetId(e.targetId())
+        .before(e.before())
+        .after(e.after())
+        .reason(e.reason());
   }
 }

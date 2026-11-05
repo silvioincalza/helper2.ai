@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.IntSupplier;
 
 /**
  * Ceiling on model calls per UTC day for one named use (guide, translation, enrichment, ...),
@@ -15,10 +16,13 @@ import java.util.Set;
  * <p>Counted in a {@link CallCounter} (Redis) when there is one, so restarts do not reset the day.
  * When the counter fails, the count continues in memory from the last value it returned: an outage
  * can only allow more calls, never block the model by mistake.
+ *
+ * <p>The limit is read through a supplier on every call, so a runtime setting (ADR 0058) applies at
+ * once, without a restart. A limit lowered below today's count refuses the next calls.
  */
 public final class DailyBudget {
 
-  private final int dailyCalls;
+  private final IntSupplier dailyCalls;
   private final Clock clock;
   private final String name;
   private final CallCounter counter;
@@ -28,13 +32,18 @@ public final class DailyBudget {
   /** The {@code once} ids given back today, in memory; the durable store keeps its own. */
   private final Set<String> givenBack = new HashSet<>();
 
-  public DailyBudget(int dailyCalls, Clock clock, String name, CallCounter counter) {
+  public DailyBudget(IntSupplier dailyCalls, Clock clock, String name, CallCounter counter) {
     this.dailyCalls = dailyCalls;
     this.clock = clock;
     this.name = name;
     this.counter = counter == null ? CallCounter.NONE : counter;
     this.day = today();
     this.counter.declare(name, dailyCalls);
+  }
+
+  /** A fixed limit. */
+  public DailyBudget(int dailyCalls, Clock clock, String name, CallCounter counter) {
+    this(() -> dailyCalls, clock, name, counter);
   }
 
   /** In memory only: for a budget that does not need to survive a restart. */
@@ -48,19 +57,20 @@ public final class DailyBudget {
 
   /** Takes one call from today's budget. False when the budget is used up (or set to 0). */
   public boolean tryAcquire() {
-    if (dailyCalls <= 0) {
+    int limit = limit();
+    if (limit <= 0) {
       return false;
     }
     LocalDate now = today();
     // Outside the lock: a slow store must not queue every caller behind it.
-    Long durable = durableCount(now);
+    Long durable = durableCount(now, limit);
     synchronized (this) {
       startDay(now);
       if (durable != null) {
-        used = Math.max(used, (int) Math.min(durable, dailyCalls));
-        return durable <= dailyCalls;
+        used = Math.max(used, (int) Math.min(durable, limit));
+        return durable <= limit;
       }
-      if (used >= dailyCalls) {
+      if (used >= limit) {
         return false;
       }
       used++;
@@ -128,12 +138,17 @@ public final class DailyBudget {
 
   /** Calls left today; for the budget gauges. */
   public int remaining() {
-    return Math.max(0, dailyCalls - usedToday());
+    return Math.max(0, limit() - usedToday());
   }
 
-  private Long durableCount(LocalDate now) {
+  /** Today's limit as it is now; 0 or less turns the use off. */
+  public int limit() {
+    return dailyCalls.getAsInt();
+  }
+
+  private Long durableCount(LocalDate now, int limit) {
     try {
-      return counter.increment(name, now, dailyCalls);
+      return counter.increment(name, now, limit);
     } catch (RuntimeException e) {
       return null;
     }

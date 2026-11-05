@@ -36,6 +36,7 @@ import java.util.concurrent.CompletionException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executor
 import java.util.concurrent.atomic.AtomicLong
+import java.util.function.IntSupplier
 import java.util.function.Supplier
 import org.slf4j.LoggerFactory
 
@@ -93,7 +94,8 @@ class RunScout(
   private val clock: Clock,
   private val lock: RunLock,
   private val maxItemsPerRun: Int = 500,
-  private val maxEnrichmentsPerRun: Int = 20,
+  /** Read once at the start of each run: a runtime setting (ADR 0058) applies from the next run. */
+  private val maxEnrichmentsPerRun: IntSupplier = IntSupplier { 20 },
   private val backlog: EnrichmentBacklog? = null,
   private val meters: MeterRegistry = SimpleMeterRegistry(),
   /** Where a started run collects; the default runs it on the caller's thread. */
@@ -240,7 +242,7 @@ class RunScout(
     Observation.createNotStarted("helper2.scout.cycle", observations)
       .observe(
         Supplier {
-          val budget = EnrichmentBudget(maxEnrichmentsPerRun)
+          val budget = EnrichmentBudget(maxEnrichmentsPerRun.asInt)
           val summaries = planned.map { run(it, budget) }
           drainBacklog(budget)
           summaries
