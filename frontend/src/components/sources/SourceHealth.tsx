@@ -3,7 +3,7 @@ import type { SourceInfo } from '@/api/types';
 import { clockTime, creditsOf, pauseOf, responseTimeLabel } from '@/lib/sourceHealth';
 
 /** A response time: the short form for the eye, the long form for screen readers. */
-export function ResponseTime({ ms }: { ms: number }) {
+function ResponseTime({ ms }: { ms: number }) {
   const { i18n } = useTranslation();
   const label = responseTimeLabel(ms, i18n.language);
   return (

@@ -11,13 +11,17 @@ public interface AuditTrail {
 
   enum Action {
     RESOLVE_REVIEW_ITEM,
-    START_SCOUT_RUN
+    START_SCOUT_RUN,
+    ADD_HOME_EXAMPLE,
+    CHANGE_HOME_EXAMPLE,
+    REMOVE_HOME_EXAMPLE,
+    DRAFT_HOME_EXAMPLES
   }
 
   /**
    * @param adminId the administrator's provider subject (GitHub: the numeric user id)
-   * @param targetId what the action was about (a review item id, a source id), or null for
-   *     "everything"
+   * @param targetId what the action was about (a review item id, a source id, a home example id),
+   *     or null for "everything"
    * @param outcome what happened, in a few upper-case words (ACCEPTED, STARTED, BUSY, ...)
    */
   void record(String adminId, Action action, @Nullable String targetId, String outcome);

@@ -25,6 +25,7 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
   catalog: "catalog\nindex, resource pages, events" {class: app}
   sources: "sources\nlive adapters, collectors" {class: app}
   setup: "setup\nGuide me: run options, tool guide" {class: app}
+  examples: "examples\nhome examples, quality check" {class: app}
   identity: "identity\nsign-in, bookmarks" {class: app}
   backoffice: "admin\nback office: review, runs, overview" {class: app}
   platform: "platform\nLLM layer, HTTP, edge" {class: app}
@@ -41,6 +42,9 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
   backoffice -> catalog: "review queue"
   backoffice -> scout: "runs, backlog"
   backoffice -> platform: "budgets today"
+  backoffice -> examples: "examples"
+  examples -> search: "check: the example's search" {class: config}
+  examples -> catalog: "expected results' titles"
 }
 
 pg: "PostgreSQL 18 + pgvector\nsystem of record" {shape: cylinder; class: data}
@@ -54,12 +58,14 @@ browser -> app.search: "search" {class: hot}
 browser -> app.guide: "ask (SSE)" {class: hot}
 browser -> app.catalog: "resource, events"
 browser -> app.setup: "Guide me"
+browser -> app.examples: "home examples"
 admin -> app.identity: "sign-in on the admin host"
 admin -> app.backoffice: "/admin"
 
 app.catalog -> pg: JDBC
 app.scout -> pg: JDBC
 app.identity -> pg: "bookmarks, users"
+app.examples -> pg: "home_example"
 app.search -> redis: "source cache"
 app.guide -> redis: "answers"
 app.platform -> redis: "daily budget"

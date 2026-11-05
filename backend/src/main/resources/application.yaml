@@ -631,6 +631,16 @@ resilience4j:
 ---
 # Data retention (ADR 0034): what the daily purges delete, and when. Every period can be changed without a release.
 helper2:
+  # Home examples (ADR 0049): the quality check runs each example's search on one replica at a time. New and changed
+  # ones are hidden until checked, so they are checked soon; every example again each night (UTC).
+  examples:
+    pending-delay: ${H2_EXAMPLES_PENDING_DELAY:PT1M}
+    pending-every: ${H2_EXAMPLES_PENDING_EVERY:PT5M}
+    cron: ${H2_EXAMPLES_CRON:0 41 2 * * *}
+    # AI drafts (ADR 0049 §6): model calls a day (one per draft run, two when an answer cannot be read; 0 = off), and
+    # resources given to the model per run.
+    draft-calls: ${H2_EXAMPLES_DRAFT_CALLS:5}
+    draft-sources: ${H2_EXAMPLES_DRAFT_SOURCES:12}
   retention:
     # When the purges run (UTC); each module's purge runs on one replica (cluster lock).
     cron: ${H2_RETENTION_CRON:0 17 3 * * *}

@@ -32,6 +32,7 @@ All diagrams: [docs/diagrams](../diagrams/README.md).
 | [0012](search/0012-vector-search-pgvector.md) | Vector search: pgvector + NVIDIA embeddings, indexer, fused by rank | 0004, 0008, 0009 | [flow](../diagrams/flow-0012-vector-search-pgvector.svg) · [sequence](../diagrams/sequence-0012-vector-search-pgvector.svg) |
 | [0013](search/0013-works-with-flags.md) | "Works with" flags derived from current source tags | 0004, 0008 | [flow](../diagrams/flow-0013-works-with-flags.svg) · [sequence](../diagrams/sequence-0013-works-with-flags.svg) |
 | [0037](search/0037-tavily-store-and-daily-quota.md) | Tavily: store first, per-feature daily quota | 0005, 0008, 0017, 0023, 0033, 0034 | [flow](../diagrams/flow-0037-tavily-store-and-quota.svg) · [sequence](../diagrams/sequence-0037-tavily-store-and-quota.svg) |
+| [0049](search/0049-home-examples.md) | Home examples: a pool in the database, a quality check (an expected result in the top 3 of the example's own search), a random pick in the browser | 0008, 0009, 0023, 0036, 0040, 0045 | [flow](../diagrams/flow-0049-home-examples.svg) · [sequence](../diagrams/sequence-0049-home-examples.svg) |
 
 ## AI guide — [`guide/`](guide/)
 

@@ -173,6 +173,14 @@ Open items:
 - Tracking cookies are planned. Before the first one: consent banner, cookie notice, Privacy page and record of
   processing, all in the same pull request, wording checked by a lawyer.
 
+- **Home examples** ([0049](adr/search/0049-home-examples.md)), next steps in this order:
+  - The page reads the pool from `GET /home/examples` at start, with the built-in list when it fails or does not
+    answer in 800 ms; the row keeps its height while it waits.
+  - The overview counts the examples the check hides, with a link to `/admin/examples?outcome=FAIL`.
+  - A lawyer confirms the Art. 50 points of [0049](adr/search/0049-home-examples.md) for accepted AI drafts; until then
+    they are labelled and marked like any AI-written text.
+  - Check now on one example, and an Italian example once one passes the check.
+
 ## 7. Architecture
 
 - The Scout writes `source.last_outcome` (`JdbcScoutStore`); move it behind a catalog port

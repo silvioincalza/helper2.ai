@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import type { Freshness, SourceMode, ValueOrigin, Verification } from '@/api/types';
-import { Icon } from './Icon';
+import { Icon, type IconName } from './Icon';
 
 export function ModeBadge({ mode }: { mode: SourceMode }) {
   const { t } = useTranslation();
@@ -26,7 +26,7 @@ export function OriginLabel({ origin }: { origin: ValueOrigin }) {
   return <span className="origin">{t(`origin.${origin}`)}</span>;
 }
 
-const VERIF_ICON: Record<Verification, string> = {
+const VERIF_ICON: Record<Verification, IconName> = {
   VERIFIED: 'check',
   UNVERIFIED: 'question',
   CONFLICTING: 'warn',

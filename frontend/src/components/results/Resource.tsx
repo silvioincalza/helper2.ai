@@ -9,7 +9,7 @@ import { Timeline } from '@/components/Timeline';
 import { ProofQuote } from '@/components/ui/ProofQuote';
 import { TypeTag } from '@/components/ui/TypeTag';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
-import { displayHost } from '@/lib/selection';
+import { displayHost } from '@/lib/format';
 import { ListedBy, ResultFacts } from './ResultFacts';
 import './results.css';
 import './resource.css';

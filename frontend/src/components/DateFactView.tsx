@@ -8,7 +8,7 @@ function fmtAlt(v: string, lang: string): string {
 }
 
 /** Renders a DateFact. UNKNOWN is always the word "Unknown"; never blank, never guessed. */
-export function DateFactValue({ fact }: { fact: DateFact }) {
+function DateFactValue({ fact }: { fact: DateFact }) {
   const { t, i18n } = useTranslation();
   if (fact.status === 'CONFLICTING') {
     // The value shown everywhere else (earliest or latest) first, then what the other sources state.

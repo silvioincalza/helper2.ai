@@ -18,7 +18,21 @@ const PAGE_SIZE = 20;
 /** The API's limit for a decision note. */
 const NOTE_MAX = 1000;
 
-type ActionError = 'failed' | 'alreadyDecided';
+/** What went wrong with the last decision: refused carries the server's reason, in its words. */
+type ActionError = { kind: 'failed' | 'alreadyDecided' } | { kind: 'refused'; detail: string };
+
+/**
+ * A 409 is someone else's decision, except a duplicate draft: that item stays open, with the reason. A drafted
+ * example refused for a rule (400) says which.
+ */
+function actionErrorOf(e: unknown): ActionError {
+  if (!(e instanceof ApiError)) return { kind: 'failed' };
+  const { code, detail } = e.problem ?? {};
+  if ((code === 'duplicate' || code === 'invalid-request') && detail)
+    return { kind: 'refused', detail };
+  if (e.status === 409) return { kind: 'alreadyDecided' };
+  return { kind: 'failed' };
+}
 
 /**
  * The review queue (UJ-9): rows like the saved rows, the status as a pill. Status, kind and page live in the address,
@@ -51,7 +65,8 @@ export default function ReviewQueuePage() {
 
   /**
    * One action at a time: while a request runs, every action button is aria-disabled (it keeps focus) and a second
-   * click does nothing. An item someone else decided first (409) is not an error to retry: the list is reloaded.
+   * click does nothing. An item someone else decided first (409) is not an error to retry: the list is reloaded. A
+   * refused draft stays open, with the reason.
    */
   const resolve = async (item: ReviewItem, decision: 'ACCEPTED' | 'REJECTED') => {
     if (busy) return;
@@ -63,9 +78,9 @@ export default function ReviewQueuePage() {
       setNotes(({ [item.id]: _, ...rest }) => rest);
       items.reload();
     } catch (e) {
-      const conflict = e instanceof ApiError && e.status === 409;
-      setActionError(conflict ? 'alreadyDecided' : 'failed');
-      if (conflict) items.reload();
+      const error = actionErrorOf(e);
+      setActionError(error);
+      if (error.kind === 'alreadyDecided') items.reload();
     } finally {
       setBusy(false);
     }
@@ -81,7 +96,13 @@ export default function ReviewQueuePage() {
       {actionError && (
         <p role="alert" className="banner banner-warn">
           <Icon name="warn" />{' '}
-          {t(actionError === 'alreadyDecided' ? 'admin.alreadyDecided' : 'admin.actionFailed')}
+          {actionError.kind === 'refused'
+            ? t('admin.refused', { detail: actionError.detail })
+            : t(
+                actionError.kind === 'alreadyDecided'
+                  ? 'admin.alreadyDecided'
+                  : 'admin.actionFailed',
+              )}
         </p>
       )}
       <div className="h2-admin__tools">
@@ -135,7 +156,11 @@ export default function ReviewQueuePage() {
                 )}
               </p>
               <p className="h2-admin__reason">{it.reason}</p>
-              {it.details && <p className="h2-admin__details">{it.details}</p>}
+              {it.kind === 'EXAMPLE_CANDIDATE' ? (
+                <DraftedExample details={it.details} />
+              ) : (
+                it.details && <p className="h2-admin__details">{it.details}</p>
+              )}
               {it.status === 'OPEN' ? (
                 <div className="h2-admin__decide">
                   <label className="h2-admin__note">
@@ -189,4 +214,46 @@ export default function ReviewQueuePage() {
       )}
     </section>
   );
+}
+
+/** A drafted example's details are JSON (label, query, path, model): shown as words, marked as AI-drafted. */
+function DraftedExample({ details }: { details: string | null | undefined }) {
+  const { t } = useTranslation();
+  const draft = parseDraft(details);
+  if (!draft) return details ? <p className="h2-admin__details">{details}</p> : null;
+  return (
+    <dl className="h2-admin__details h2-admin__draft" data-ai-generated="true">
+      <dt>{t('admin.review.drafted.label')}</dt>
+      <dd>{draft.label}</dd>
+      <dt>{t('admin.review.drafted.query')}</dt>
+      <dd>{draft.query}</dd>
+      <dt>{t('admin.review.drafted.path')}</dt>
+      <dd>{t(`admin.examples.path.${draft.path}`)}</dd>
+      <dd className="h2-admin__draft-note">
+        {t('admin.review.drafted.model', { model: draft.model })}
+      </dd>
+    </dl>
+  );
+}
+
+interface Draft {
+  label: string;
+  query: string;
+  path: 'USE_AI' | 'BUILD_WITH_AI';
+  model: string;
+}
+
+function parseDraft(details: string | null | undefined): Draft | null {
+  if (!details) return null;
+  try {
+    const d = JSON.parse(details) as Partial<Draft>;
+    return typeof d.label === 'string' &&
+      typeof d.query === 'string' &&
+      (d.path === 'USE_AI' || d.path === 'BUILD_WITH_AI') &&
+      typeof d.model === 'string'
+      ? (d as Draft)
+      : null;
+  } catch {
+    return null;
+  }
 }

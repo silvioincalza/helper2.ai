@@ -13,7 +13,9 @@ import {
   askedQuestion,
   clampQuery,
   clampQuestion,
+  hasOwnSearchBox,
   homeParams,
+  isQuestion,
   MAX_QUESTION,
   parseSearchParams,
   patchState,
@@ -32,27 +34,19 @@ function typingIn(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   return target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
 }
-/** A need of this many words or more is a question for the guide; fewer words are a search. */
-export const AUTO_ASK_WORDS = 4;
-
-/** What the main button does for this text. Shift+Enter always asks the guide. */
-export function actionFor(text: string): 'search' | 'ask' {
-  return text.trim().split(/\s+/).filter(Boolean).length >= AUTO_ASK_WORDS ? 'ask' : 'search';
-}
-
 /**
- * The one entry point, in the header of every page. Typing searches every source live on the home page;
- * "Ask the guide" (or Shift+Enter) also asks the AI guide. On any other page it takes you home with the query.
- * Everything lives in the URL: `q` = search, `ask` = the question the guide answered, plus the search filters.
- * `hero`: the large box at the top of the home page; elsewhere it sits in the header.
+ * The one search box: the hero on /, above the results on /search, in the header on every other page. On /search
+ * typing searches live; elsewhere Enter opens /search. A question (four words or more) also asks the AI guide, and
+ * Shift+Enter always does. Everything lives in the URL: `q` = search, `ask` = the question the guide answered, plus
+ * the search filters. `hero`: the large box of the home page.
  */
 export function OneBox({ hero = false }: { hero?: boolean }) {
   const { t } = useTranslation();
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [sp, setSp] = useSearchParams();
-  // The page that shows results (/, or /search) reads the box's state from the URL.
-  const onHome = pathname === '/' || pathname === RESULTS_PATH;
+  // A page with its own box (/, /search) shows the search in the URL; in the header the box starts empty.
+  const onHome = hasOwnSearchBox(pathname);
   const state = parseSearchParams(onHome ? sp : new URLSearchParams());
   const asked = onHome ? askedQuestion(sp) : '';
   // What the URL puts in the box: the question when the search is that question (cut to MAX_QUERY), else the search.
@@ -117,7 +111,7 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
     cancelLive();
     go(patchState(state, { q }), q, sp);
   };
-  const action = actionFor(text);
+  const action = isQuestion(text) ? 'ask' : 'search';
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (action === 'ask') ask();

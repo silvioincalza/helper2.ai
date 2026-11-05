@@ -20,7 +20,7 @@ export function responseTimeShown(s: SourceInfo): boolean {
   return s.responseTimeMs != null || (s.enabled && s.mode === 'LIVE');
 }
 
-export type Pause = { kind: 'paused'; since: string | null } | { kind: 'trying' };
+type Pause = { kind: 'paused'; since: string | null } | { kind: 'trying' };
 
 /** The circuit breaker in words: paused (OPEN) since when, or trying again (HALF_OPEN). Null when calls go through. */
 export function pauseOf(s: SourceInfo): Pause | null {
@@ -30,7 +30,7 @@ export function pauseOf(s: SourceInfo): Pause | null {
   return null;
 }
 
-export type Credits =
+type Credits =
   | { kind: 'capped'; used: number; cap: number }
   | { kind: 'uncapped'; used: number }
   | { kind: 'unavailable' };

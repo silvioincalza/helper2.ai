@@ -31,7 +31,8 @@ describe('admin: sign-in and role', () => {
   it('offers GitHub sign-in to anonymous visitors without calling admin endpoints', async () => {
     const m = mockApi({ 'GET /me': () => ANON });
     renderApp('/admin/review');
-    const main = screen.getByRole('main');
+    // The back office loads on demand: wait for its page.
+    const main = await screen.findByRole('main');
     expect(await within(main).findByRole('link', { name: 'Sign in with GitHub' })).toHaveAttribute(
       'href',
       '/oauth2/authorization/github',
@@ -231,6 +232,30 @@ describe('Feature: deciding review items', () => {
         note: 'price is right',
       }),
     );
+  });
+
+  it('Scenario: a drafted example that repeats one stays open and says why', async () => {
+    const m = mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/review-items': () => page([item]),
+      'PUT /admin/review-items/*': () =>
+        new Response(
+          JSON.stringify({
+            status: 409,
+            title: 'Duplicate',
+            code: 'duplicate',
+            detail: 'Another example already has this label or this query.',
+          }),
+          { status: 409, headers: { 'content-type': 'application/problem+json' } },
+        ),
+    });
+    renderApp('/admin/review');
+    await userEvent.click(await screen.findByRole('button', { name: /Accept/ }));
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Not accepted, the item stays open');
+    expect(alert).toHaveTextContent('Another example already has this label or this query.');
+    expect(alert).not.toHaveTextContent('already decided');
+    expect(m.callsTo('GET', '/admin/review-items')).toHaveLength(1);
   });
 
   it('Scenario: an item someone else decided first says so and shows the list as it is now', async () => {
