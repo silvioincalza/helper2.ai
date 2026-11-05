@@ -1,20 +1,9 @@
-import { lazy, Suspense, type ReactNode } from 'react';
-import { Link } from 'react-router';
+import { lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useEventsFeed, useNewsFeed, type EventRow, type Feed, type NewsRow } from './homeFeeds';
-import {
-  EventWhen,
-  FIRST_ROWS,
-  ListHead,
-  ListState,
-  NewsDate,
-  printIn,
-  ShowAll,
-  useEventText,
-  useFirstRows,
-  type ListId,
-} from './listParts';
+import { useEventCells, useNewsCells, type ListId } from './listParts';
+import { TermList } from './TermList';
 
 /** Below this width the two tables become tabs (ADR 0042): a table with four columns does not fit a phone. */
 export const PHONE_LISTS = '(max-width: 767px)';
@@ -22,8 +11,9 @@ export const PHONE_LISTS = '(max-width: 767px)';
 const ListTabs = lazy(() => import('./HomeTabs'));
 
 /**
- * New this week and Coming up (ADR 0042, decision 4). On a wide screen two tables side by side, like `ls -l`:
- * DATE · TYPE · TITLE · SOURCE and WHEN · TYPE · EVENT · WHERE. On a phone one panel with two tabs and log rows. The
+ * New this week and Coming up (ADR 0042, decision 5), both as one TermList. On a wide screen two tables side by side,
+ * like `ls -l`: DATE · TYPE · TITLE · SOURCE and WHEN · TYPE · EVENT · WHERE. On a phone one panel with two tabs and
+ * log rows. The
  * ids `news` and `events` are the targets of the header links (/#news, /#events).
  */
 export function HomeLists({ initial }: { initial: ListId }) {
@@ -42,65 +32,12 @@ export function HomeLists({ initial }: { initial: ListId }) {
   );
 }
 
-function ListTable({
-  id,
-  title,
-  command,
-  feed,
-  errorText,
-  emptyText,
-  columns,
-  row,
-}: {
-  id: ListId;
-  title: string;
-  command: string;
-  feed: Feed<{ id: string }>;
-  errorText: string;
-  emptyText: string;
-  columns: string[];
-  row: (index: number) => ReactNode;
-}) {
-  const { all, toggle, shown } = useFirstRows(feed.rows);
-  const tableId = `${id}-table`;
-  return (
-    <section id={id} className="v4-list" aria-labelledby={`${id}-h`}>
-      <ListHead id={id} title={title} total={feed.rows.length > 0 ? feed.total : null} />
-      <ListState feed={feed} errorText={errorText} emptyText={emptyText} />
-      {feed.rows.length > 0 && (
-        <>
-          <table id={tableId} className="v4-table" aria-labelledby={`${id}-h`}>
-            <thead>
-              <tr>
-                {columns.map((c) => (
-                  <th key={c} scope="col">
-                    {c}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>{shown.map((_, i) => row(i))}</tbody>
-          </table>
-          {feed.total > FIRST_ROWS && (
-            <ShowAll
-              command={command}
-              count={feed.total}
-              all={all}
-              controls={tableId}
-              onToggle={toggle}
-            />
-          )}
-        </>
-      )}
-    </section>
-  );
-}
-
 function NewsTable({ feed }: { feed: Feed<NewsRow> }) {
   const { t } = useTranslation();
   return (
-    <ListTable
+    <TermList
       id="news"
+      layout="table"
       title={t('board.news.title')}
       command="helper2 news"
       feed={feed}
@@ -112,31 +49,17 @@ function NewsTable({ feed }: { feed: Feed<NewsRow> }) {
         t('lists.col.title'),
         t('lists.col.source'),
       ]}
-      row={(i) => {
-        const row = feed.rows[i] as NewsRow;
-        return (
-          <tr key={row.id} className="v4-row" style={printIn(i)}>
-            <td className="v4-cell-date">
-              <NewsDate row={row} />
-            </td>
-            <td className="v4-cell-type">{t(`type.${row.type}`)}</td>
-            <td className="v4-cell-title">
-              <Link to={row.href}>{row.title}</Link>
-            </td>
-            <td className="v4-cell-meta">{row.host}</td>
-          </tr>
-        );
-      }}
+      cells={useNewsCells()}
     />
   );
 }
 
 function EventsTable({ feed }: { feed: Feed<EventRow> }) {
   const { t } = useTranslation();
-  const text = useEventText();
   return (
-    <ListTable
+    <TermList
       id="events"
+      layout="table"
       title={t('board.events.title')}
       command="helper2 events"
       feed={feed}
@@ -148,21 +71,7 @@ function EventsTable({ feed }: { feed: Feed<EventRow> }) {
         t('lists.col.event'),
         t('lists.col.where'),
       ]}
-      row={(i) => {
-        const row = feed.rows[i] as EventRow;
-        return (
-          <tr key={row.id} className="v4-row" style={printIn(i)}>
-            <td className="v4-cell-date">
-              <EventWhen row={row} />
-            </td>
-            <td className="v4-cell-type">{text.kind(row)}</td>
-            <td className="v4-cell-title">
-              <Link to={row.href}>{row.title}</Link>
-            </td>
-            <td className="v4-cell-meta">{text.where(row)}</td>
-          </tr>
-        );
-      }}
+      cells={useEventCells()}
     />
   );
 }

@@ -1,18 +1,15 @@
-import { useState, type CSSProperties } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
 import { shortDay } from '@/lib/format';
 import type { EventRow, Feed, NewsRow } from './homeFeeds';
+import type { TermCells } from './TermList';
 
 /** The parts New this week and Coming up share on every width: the tables (HomeLists) and the phone tabs (HomeTabs). */
 /** Rows shown before "show all": a short list reads at a glance. */
 export const FIRST_ROWS = 6;
 
 export type ListId = 'news' | 'events';
-
-/** The first rows print in once, 120 ms apart (ADR 0042, decision 6); rows opened later just appear. */
-export const printIn = (i: number): CSSProperties | undefined =>
-  i < FIRST_ROWS ? ({ '--i': i } as CSSProperties) : undefined;
 
 export function useFirstRows<Row>(rows: Row[]) {
   const [all, setAll] = useState(false);
@@ -84,32 +81,6 @@ export function ListState({
   );
 }
 
-/** The cursor after a list's command: it blinks three times, then stays on. */
-export const Cursor = () => <span className="v4-cursor" aria-hidden="true" />;
-
-export function ListHead({
-  id,
-  title,
-  total,
-}: {
-  id: ListId;
-  title: string;
-  total: number | null;
-}) {
-  return (
-    <div className="v4-list__head">
-      <h2 id={`${id}-h`} className="v4-list__title">
-        <span className="v4-prompt" aria-hidden="true">
-          ${' '}
-        </span>
-        {title}
-        <Cursor />
-      </h2>
-      {total !== null && <span className="v4-list__total">{total}</span>}
-    </div>
-  );
-}
-
 export function NewsDate({ row }: { row: NewsRow }) {
   const { t, i18n } = useTranslation();
   if (!row.date) return <span className="v4-not-stated">{t('lists.noDate')}</span>;
@@ -144,4 +115,29 @@ export function useEventText() {
       return t(`board.countdown.${left.key}`, 'count' in left ? { count: left.count } : {});
     },
   };
+}
+
+/** A news row in TermList's cells: date, type, title, host. */
+export function useNewsCells(): (row: NewsRow) => TermCells {
+  const { t } = useTranslation();
+  return (row) => ({
+    when: <NewsDate row={row} />,
+    type: t(`type.${row.type}`),
+    title: row.title,
+    href: row.href,
+    where: row.host ?? '',
+  });
+}
+
+/** An event row in TermList's cells: when, kind, title, where; a log row also says how far away. */
+export function useEventCells(): (row: EventRow) => TermCells {
+  const text = useEventText();
+  return (row) => ({
+    when: <EventWhen row={row} />,
+    type: text.kind(row),
+    title: row.title,
+    href: row.href,
+    where: text.where(row),
+    note: text.left(row),
+  });
 }

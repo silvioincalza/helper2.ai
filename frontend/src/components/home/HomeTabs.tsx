@@ -1,20 +1,11 @@
-import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
-import { Link } from 'react-router';
+import { Fragment, useRef, useState, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { EventRow, Feed, NewsRow } from './homeFeeds';
-import {
-  EventWhen,
-  FIRST_ROWS,
-  ListState,
-  NewsDate,
-  printIn,
-  ShowAll,
-  useEventText,
-  useFirstRows,
-  type ListId,
-} from './listParts';
+import { useEventCells, useNewsCells, type ListId } from './listParts';
+import { TermList, type TermCells } from './TermList';
 
-/** Phone: one panel with two tabs and log rows (ADR 0042, decision 5). Loaded only on a phone. */
+/** Phone: one panel with two tabs, `> new this week N | coming up N`, and TermList log rows (ADR 0042, decision 5).
+ * Loaded only on a phone. */
 
 const LISTS: readonly ListId[] = ['news', 'events'];
 
@@ -54,49 +45,65 @@ export default function ListTabs({
     tabs.current[next]?.focus();
   };
   const feeds = { news, events };
+  const newsCells = useNewsCells();
+  const eventCells = useEventCells();
   const titles = { news: t('board.news.title'), events: t('board.events.title') };
   return (
     <div className="v4-tabs">
       <div role="tablist" aria-label={t('lists.tabs')} className="v4-tabs__list">
-        {LISTS.map((id) => {
+        {LISTS.map((id, i) => {
           const isSelected = id === selected;
           const feed = feeds[id];
           return (
-            <button
-              key={id}
-              ref={(el) => {
-                tabs.current[id] = el;
-              }}
-              type="button"
-              role="tab"
-              id={id}
-              aria-selected={isSelected}
-              aria-controls={`${id}-panel`}
-              tabIndex={isSelected ? 0 : -1}
-              className="v4-tab"
-              onClick={() => setSelected(id)}
-              onKeyDown={onKey}
-            >
-              <span className="v4-prompt" aria-hidden="true">
-                {isSelected ? '> ' : ''}
-              </span>
-              {titles[id]}
-              {!feed.loading && feed.rows.length > 0 && (
-                <>
-                  {' '}
-                  <span className="v4-tab__total">{feed.total}</span>
-                </>
+            <Fragment key={id}>
+              {i > 0 && (
+                <span className="v4-tabs__sep" aria-hidden="true">
+                  |
+                </span>
               )}
-            </button>
+              <button
+                ref={(el) => {
+                  tabs.current[id] = el;
+                }}
+                type="button"
+                role="tab"
+                id={id}
+                aria-selected={isSelected}
+                aria-controls={`${id}-panel`}
+                tabIndex={isSelected ? 0 : -1}
+                className="v4-tab"
+                onClick={() => setSelected(id)}
+                onKeyDown={onKey}
+              >
+                <span className="v4-prompt" aria-hidden="true">
+                  {isSelected ? '> ' : ''}
+                </span>
+                {titles[id]}
+                {!feed.loading && feed.rows.length > 0 && (
+                  <>
+                    {' '}
+                    <span className="v4-tab__total">{feed.total}</span>
+                  </>
+                )}
+              </button>
+            </Fragment>
           );
         })}
       </div>
-      <TabPanel id="news" selected={selected} feed={news} command="helper2 news">
-        {(row) => <NewsLogRow row={row} />}
-      </TabPanel>
-      <TabPanel id="events" selected={selected} feed={events} command="helper2 events">
-        {(row) => <EventLogRow row={row} />}
-      </TabPanel>
+      <TabPanel
+        id="news"
+        selected={selected}
+        feed={news}
+        command="helper2 news"
+        cells={newsCells}
+      />
+      <TabPanel
+        id="events"
+        selected={selected}
+        feed={events}
+        command="helper2 events"
+        cells={eventCells}
+      />
     </div>
   );
 }
@@ -106,21 +113,19 @@ function TabPanel<Row extends { id: string }>({
   selected,
   feed,
   command,
-  children,
+  cells,
 }: {
   id: ListId;
   selected: ListId;
   feed: Feed<Row>;
   command: string;
-  children: (row: Row) => ReactNode;
+  cells: (row: Row) => TermCells;
 }) {
   const { t } = useTranslation();
-  const { all, toggle, shown } = useFirstRows(feed.rows);
-  const listId = `${id}-log`;
   const texts =
     id === 'news'
-      ? { error: t('radar.error'), empty: t('radar.empty') }
-      : { error: t('events.error'), empty: t('events.empty') };
+      ? { title: t('board.news.title'), error: t('radar.error'), empty: t('radar.empty') }
+      : { title: t('board.events.title'), error: t('events.error'), empty: t('events.empty') };
   return (
     <div
       role="tabpanel"
@@ -129,59 +134,17 @@ function TabPanel<Row extends { id: string }>({
       hidden={id !== selected}
       className="v4-tabs__panel"
     >
-      <ListState feed={feed} errorText={texts.error} emptyText={texts.empty} />
-      {feed.rows.length > 0 && (
-        <>
-          <ul id={listId} className="plain-list v4-log" aria-labelledby={id}>
-            {shown.map((row, i) => (
-              <li key={row.id} className="v4-row v4-log__row" style={printIn(i)}>
-                {children(row)}
-              </li>
-            ))}
-          </ul>
-          {feed.total > FIRST_ROWS && (
-            <ShowAll
-              command={command}
-              count={feed.total}
-              all={all}
-              controls={listId}
-              onToggle={toggle}
-            />
-          )}
-        </>
-      )}
+      <TermList
+        id={id}
+        layout="log"
+        title={texts.title}
+        command={command}
+        feed={feed}
+        errorText={texts.error}
+        emptyText={texts.empty}
+        columns={[]}
+        cells={cells}
+      />
     </div>
-  );
-}
-
-function NewsLogRow({ row }: { row: NewsRow }) {
-  const { t } = useTranslation();
-  return (
-    <>
-      <span className="v4-log__meta">
-        <NewsDate row={row} /> <span className="v4-cell-type">[{t(`type.${row.type}`)}]</span>
-      </span>
-      <Link className="v4-log__title" to={row.href}>
-        {row.title}
-      </Link>
-      {row.host && <span className="v4-log__where">{row.host}</span>}
-    </>
-  );
-}
-
-function EventLogRow({ row }: { row: EventRow }) {
-  const text = useEventText();
-  const kind = text.kind(row);
-  const where = [text.left(row), text.where(row)].filter(Boolean).join(' · ');
-  return (
-    <>
-      <span className="v4-log__meta">
-        <EventWhen row={row} /> {kind && <span className="v4-cell-type">[{kind}]</span>}
-      </span>
-      <Link className="v4-log__title" to={row.href}>
-        {row.title}
-      </Link>
-      {where && <span className="v4-log__where">{where}</span>}
-    </>
   );
 }
