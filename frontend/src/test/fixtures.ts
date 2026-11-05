@@ -293,7 +293,7 @@ export function makeRecent(over: Partial<RecentResponse> = {}): RecentResponse {
   };
 }
 
-/** GET /policy with the defaults of application.yaml (ADR 0051). */
+/** GET /policy with the defaults of application.yaml (ADR 0052). */
 export const POLICY: Policy = {
   guide: { maxCandidates: 24, maxPicks: 3 },
   dailyLimits: {

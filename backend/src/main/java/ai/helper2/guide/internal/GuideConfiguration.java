@@ -105,7 +105,7 @@ class GuideConfiguration {
         clock);
   }
 
-  /** The guide's numbers for GET /api/v1/policy (ADR 0051). */
+  /** The guide's numbers for GET /api/v1/policy (ADR 0052). */
   @Bean
   GuidePolicy guidePolicy(GuideProperties settings) {
     return new GuidePolicy(
