@@ -224,6 +224,37 @@ describe('results: one column, a row opens the resource page', () => {
     );
   });
 
+  it('a pick puts only what the resource page shows into the history entry: no title, no id, nothing else', async () => {
+    mockApi({
+      'GET /search': () => search(),
+      'POST /guide/stream': () =>
+        sse({
+          ...guide(),
+          recommendations: [
+            {
+              ...guide().recommendations[0]!,
+              checks: [{ constraint: 'read-only', status: 'CONFIRMED', quote: 'read-only access' }],
+            },
+          ],
+        }),
+      [`GET /resources/${B.id}`]: () => makeDetail({ card: B }),
+    });
+    const { router } = renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
+    await screen.findByRole('link', { name: '#1 Postgres MCP' });
+    await userEvent.click(row('Postgres MCP'));
+    await screen.findByRole('region', { name: /Why the guide picked it/ });
+    expect(router.state.location.state).toStrictEqual({
+      from: '/search?q=postgres+mcp&ask=postgres+mcp',
+      pick: {
+        rank: 1,
+        reason: 'Read-only access fits an agent that only reads.',
+        quote: 'gives agents read-only access to a PostgreSQL database',
+        reasonCheck: 'NOT_CHECKED',
+        checks: [{ constraint: 'read-only', status: 'CONFIRMED', quote: 'read-only access' }],
+      },
+    });
+  });
+
   it('a pick whose reason the check removed shows no lone "AI-written" label in its row', async () => {
     mockApi({
       'GET /search': () => search(),
