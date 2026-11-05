@@ -98,6 +98,8 @@ class SecurityConfiguration {
                   .authenticated()
                   .requestMatchers(HttpMethod.DELETE, "/api/v1/me")
                   .authenticated()
+                  .requestMatchers(HttpMethod.PATCH, "/api/v1/me/preferences")
+                  .authenticated()
                   .requestMatchers(
                       HttpMethod.GET,
                       "/api/v1/search",

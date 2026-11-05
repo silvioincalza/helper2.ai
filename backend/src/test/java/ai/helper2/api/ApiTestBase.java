@@ -148,6 +148,8 @@ abstract class ApiTestBase {
           new SourceDescriptor(
               "fake-live",
               "Fake live source",
+              "Fake live",
+              true,
               SourceMode.LIVE,
               URI.create("https://fake.example"),
               null,

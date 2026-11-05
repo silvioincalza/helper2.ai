@@ -104,6 +104,8 @@ public class GitHubAwesomeCollector implements Collector {
         new SourceDescriptor(
             ID,
             "GitHub awesome lists (AI)",
+            "Awesome",
+            true,
             SourceMode.INDEXED,
             URI.create("https://github.com/topics/awesome-list"),
             URI.create(

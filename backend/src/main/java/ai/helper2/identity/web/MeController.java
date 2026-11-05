@@ -8,16 +8,21 @@ import ai.helper2.api.generated.model.LimitsDto;
 import ai.helper2.api.generated.model.LimitsWebSearchesDto;
 import ai.helper2.api.generated.model.MeDto;
 import ai.helper2.api.generated.model.MeLoginProvidersInnerDto;
+import ai.helper2.api.generated.model.PreferencesChangeDto;
+import ai.helper2.api.generated.model.PreferencesDto;
 import ai.helper2.api.generated.model.ResourceTypeDto;
 import ai.helper2.api.generated.model.WebSearchesDto;
 import ai.helper2.identity.VisitorLimits;
 import ai.helper2.identity.internal.Bookmarks.Bookmark;
 import ai.helper2.identity.internal.CurrentUser;
+import ai.helper2.identity.internal.Users.Preferences;
 import ai.helper2.identity.usecase.AddBookmark;
+import ai.helper2.identity.usecase.ChangePreferences;
 import ai.helper2.identity.usecase.DeleteMyAccount;
 import ai.helper2.identity.usecase.ListBookmarks;
 import ai.helper2.identity.usecase.MergeLocalBookmarks;
 import ai.helper2.identity.usecase.RemoveBookmark;
+import ai.helper2.identity.usecase.ShowPreferences;
 import ai.helper2.platform.ApiProblem;
 import ai.helper2.platform.BadRequestException;
 import ai.helper2.platform.ClientKey;
@@ -54,6 +59,8 @@ class MeController implements MeApi {
   private final RemoveBookmark removeBookmark;
   private final MergeLocalBookmarks mergeLocalBookmarks;
   private final DeleteMyAccount deleteMyAccount;
+  private final ShowPreferences showPreferences;
+  private final ChangePreferences changePreferences;
   private final ObjectProvider<ClientRegistrationRepository> registrations;
   private final VisitorLimits limits;
   private final Clock clock;
@@ -67,6 +74,8 @@ class MeController implements MeApi {
       RemoveBookmark removeBookmark,
       MergeLocalBookmarks mergeLocalBookmarks,
       DeleteMyAccount deleteMyAccount,
+      ShowPreferences showPreferences,
+      ChangePreferences changePreferences,
       ObjectProvider<ClientRegistrationRepository> registrations,
       VisitorLimits limits,
       Clock clock,
@@ -78,6 +87,8 @@ class MeController implements MeApi {
     this.removeBookmark = removeBookmark;
     this.mergeLocalBookmarks = mergeLocalBookmarks;
     this.deleteMyAccount = deleteMyAccount;
+    this.showPreferences = showPreferences;
+    this.changePreferences = changePreferences;
     this.registrations = registrations;
     this.limits = limits;
     this.clock = clock;
@@ -91,7 +102,7 @@ class MeController implements MeApi {
     MeDto me =
         new MeDto().authenticated(false).roles(new ArrayList<>()).loginProviders(providers());
     if (a instanceof OAuth2AuthenticationToken t && t.isAuthenticated()) {
-      currentUser.id();
+      currentUser.id().flatMap(showPreferences::of).ifPresent(p -> me.preferences(dto(p)));
       me.authenticated(true).displayName(CurrentUser.displayName(t));
       t.getAuthorities()
           .forEach(g -> {
@@ -132,6 +143,11 @@ class MeController implements MeApi {
     new SecurityContextLogoutHandler()
         .logout(request, response, SecurityContextHolder.getContext().getAuthentication());
     return ResponseEntity.noContent().build();
+  }
+
+  @Override
+  public ResponseEntity<PreferencesDto> changePreferences(PreferencesChangeDto body) {
+    return ResponseEntity.ok(dto(changePreferences.change(user(), body.getRadarMotion())));
   }
 
   @Override
@@ -186,6 +202,10 @@ class MeController implements MeApi {
         r.getUrl(),
         r.getType() == null ? null : r.getType().getValue(),
         null);
+  }
+
+  private static PreferencesDto dto(Preferences p) {
+    return new PreferencesDto(p.radarMotion());
   }
 
   private static BookmarkDto dto(Bookmark b) {

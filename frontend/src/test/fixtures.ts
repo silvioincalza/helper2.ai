@@ -150,6 +150,8 @@ export const SOURCES: SourceInfo[] = [
   {
     id: 'github',
     name: 'GitHub',
+    shortName: 'GitHub',
+    external: true,
     mode: 'LIVE',
     enabled: true,
     metered: false,
@@ -163,6 +165,8 @@ export const SOURCES: SourceInfo[] = [
   {
     id: 'seed',
     name: 'Helper2 seed',
+    shortName: 'Curated',
+    external: false,
     mode: 'CURATED',
     enabled: true,
     metered: false,
@@ -181,6 +185,8 @@ export const HEALTH_SOURCES: SourceInfo[] = [
   {
     id: 'npm',
     name: 'npm',
+    shortName: 'npm',
+    external: true,
     mode: 'LIVE',
     enabled: true,
     metered: false,
@@ -197,6 +203,8 @@ export const HEALTH_SOURCES: SourceInfo[] = [
   {
     id: 'hf',
     name: 'Hugging Face',
+    shortName: 'HF models',
+    external: true,
     mode: 'LIVE',
     enabled: true,
     metered: false,
@@ -213,6 +221,8 @@ export const HEALTH_SOURCES: SourceInfo[] = [
   {
     id: 'tavily',
     name: 'Tavily web search (AI news)',
+    shortName: 'Web',
+    external: true,
     mode: 'LIVE',
     enabled: true,
     metered: true,

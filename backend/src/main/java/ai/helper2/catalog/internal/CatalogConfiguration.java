@@ -69,6 +69,8 @@ class CatalogConfiguration {
         new SourceDescriptor(
             INDEX_SOURCE,
             "Helper2 index",
+            "Index",
+            false,
             SourceMode.INDEXED,
             URI.create("https://helper2.ai/sources"),
             null,
@@ -101,6 +103,8 @@ class CatalogConfiguration {
         new SourceDescriptor(
             "curated",
             "Helper2 curated list",
+            "Curated",
+            false,
             SourceMode.CURATED,
             URI.create("https://helper2.ai/sources"),
             null,
@@ -159,6 +163,8 @@ class CatalogConfiguration {
           new SourceDescriptor(
               SEMANTIC_SOURCE,
               "Helper2 index (by meaning)",
+              "Meaning",
+              false,
               SourceMode.INDEXED,
               URI.create("https://helper2.ai/sources"),
               null,

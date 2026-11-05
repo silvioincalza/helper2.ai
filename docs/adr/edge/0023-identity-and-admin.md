@@ -26,8 +26,10 @@ traceable to that administrator.
    is the numeric user id, never the login. An OpenID Connect (OIDC) provider may also use `registrationId:email` when
    `email_verified` is true. Roles are set at sign-in; a change to `H2_ADMINS` needs a new sign-in.
 4. **User row on sign-in.** `CurrentUser.signedIn` (on `AuthenticationSuccessEvent`) calls `Users.signedIn`, an upsert
-   of `app_user`: provider, subject (GitHub: the numeric id), display name and `last_signed_in_at`, nothing else (no
-   login, no e-mail). Later calls only read the row; a session without a row (for example after a database rebuild)
+   of `app_user`: provider, subject (GitHub: the numeric id), display name and `last_signed_in_at`, and one display
+   setting, `radar_motion` (default true), nothing else (no login, no e-mail). `GET /api/v1/me` returns the setting as
+   `preferences.radarMotion` (null for a guest); `PATCH /api/v1/me/preferences` (`ChangePreferences`, CSRF token
+   required) changes it. It goes with the row. Later calls only read the row; a session without a row (for example after a database rebuild)
    gets one on first use.
 5. **Bookmarks are a signed-in user's feature, one use case per action** (`identity.usecase`). Anonymous: browser
    storage (`h2.bookmarks.v1`). Signed in: `ListBookmarks` (`GET /api/v1/me/bookmarks`), `AddBookmark`

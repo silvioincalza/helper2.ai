@@ -5,6 +5,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oauth2Login;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -20,7 +21,10 @@ import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.OAuth2LoginRequestPostProcessor;
 
-/** A signed-in user's bookmarks (one use case per action) and deleting the account. */
+/**
+ * A signed-in user's bookmarks (one use case per action), the display settings and deleting the
+ * account.
+ */
 class AccountApiIT extends ApiTestBase {
 
   @Autowired JdbcClient jdbc;
@@ -55,6 +59,59 @@ class AccountApiIT extends ApiTestBase {
         .andExpect(status().isForbidden());
     mvc.perform(delete("/api/v1/me").with(user)).andExpect(status().isForbidden());
     mvc.perform(delete("/api/v1/me").with(csrf())).andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  void theRadarMovesByDefaultAndASignedInUserCanTurnItOff() throws Exception {
+    mvc.perform(get("/api/v1/me")).andExpect(jsonPath("$.preferences").doesNotExist());
+    String me =
+        mvc.perform(get("/api/v1/me").with(user))
+            .andExpect(jsonPath("$.preferences.radarMotion").value(true))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    ContractValidator.assertMatches("Me", me);
+
+    String changed =
+        mvc.perform(
+                patch("/api/v1/me/preferences")
+                    .with(user)
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"radarMotion\":false}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.radarMotion").value(false))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    ContractValidator.assertMatches("Preferences", changed);
+    mvc.perform(get("/api/v1/me").with(user))
+        .andExpect(jsonPath("$.preferences.radarMotion").value(false));
+    // A field left out stays as it is.
+    mvc.perform(
+            patch("/api/v1/me/preferences")
+                .with(user)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+        .andExpect(jsonPath("$.radarMotion").value(false));
+  }
+
+  @Test
+  void settingsNeedSignInAndCsrf() throws Exception {
+    String off = "{\"radarMotion\":false}";
+    mvc.perform(
+            patch("/api/v1/me/preferences")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(off))
+        .andExpect(status().isUnauthorized());
+    mvc.perform(
+            patch("/api/v1/me/preferences")
+                .with(user)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(off))
+        .andExpect(status().isForbidden());
   }
 
   @Test
