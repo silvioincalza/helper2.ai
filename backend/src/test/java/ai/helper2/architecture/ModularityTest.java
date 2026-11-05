@@ -154,12 +154,6 @@ class ModularityTest {
           Map.entry("scout_run", "scout"),
           Map.entry("scout_schedule", "scout"));
 
-  /**
-   * Known exceptions, as "table module". The Scout writes source.last_outcome in JdbcScoutStore;
-   * moving it behind a catalog port is on the roadmap (section 7).
-   */
-  private static final Set<String> SHARED_TABLES = Set.of("source scout");
-
   private static final Pattern CREATE_TABLE =
       Pattern.compile("(?im)^CREATE TABLE (?:IF NOT EXISTS )?(\\w+)");
 
@@ -201,9 +195,7 @@ class ModularityTest {
               while (sql.find()) {
                 String table = sql.group(1).toLowerCase(java.util.Locale.ROOT);
                 String owner = TABLE_OWNERS.get(table);
-                if (owner != null
-                    && !owner.equals(module)
-                    && !SHARED_TABLES.contains(table + " " + module)) {
+                if (owner != null && !owner.equals(module)) {
                   foreign.add(relative + " uses " + table + " (owner: " + owner + ")");
                 }
               }

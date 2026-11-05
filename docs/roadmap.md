@@ -250,8 +250,6 @@ Open items:
 
 ## 7. Architecture
 
-- The Scout writes `source.last_outcome` (`JdbcScoutStore`); move it behind a catalog port
-  ([ADR 0002](adr/foundation/0002-modular-monolith-hexagonal.md)).
 - The Java use cases of catalog, identity and admin read their module's `internal` stores
   directly (`ResourceStore`, `ResourceCards`, `Users`, `Bookmarks`, `AuditLog`), and nothing
   checks them for framework types. Put the stores behind ports, then add the packages to the

@@ -4,7 +4,7 @@
 #   scout/GapRound.kt (gap round ports, ADR 0043), scout/OfficialPages.kt (evidence ladder ports, ADR 0056),
 #   backend/src/main/java/ai/helper2/sources/config/SourcesConfiguration.java (collectors, ReadmeEvidence, TavilyExtract),
 #   backend/src/main/java/ai/helper2/catalog/internal/CatalogConfiguration.java (index, embedder),
-#   backend/src/main/java/ai/helper2/catalog/enrichment/ (EnrichmentCandidates, EnrichmentResults: the Scout's way in),
+#   backend/src/main/java/ai/helper2/catalog/enrichment/ (EnrichmentCandidates, EnrichmentResults, SourceOutcomes: the Scout's way in),
 #   backend/src/main/java/ai/helper2/catalog/EnrichmentFacts.java, catalog/usecase/GetResourceDetail.java (the detail page's way out),
 #   backend/src/main/java/ai/helper2/scout/internal/CatalogEnrichmentStore.java,
 #   catalog/usecase/IndexAwesomeLists.java, catalog/internal/AwesomeListIndex.java (ADR 0055),
@@ -60,8 +60,8 @@ sources: "sources (collectors, gap evidence)" {
 catalog: "catalog (Java)" {
   class: group
   catalog: "IndexResources · IndexAwesomeLists\nReviewQueue · BackfillCategories" {class: app}
-  p_enrichment: "catalog::enrichment\nEnrichmentCandidates\nEnrichmentResults" {class: port}
-  enrichment: "JdbcEnrichmentCandidates\nJdbcEnrichmentResults" {class: app}
+  p_enrichment: "catalog::enrichment\nEnrichmentCandidates\nEnrichmentResults\nSourceOutcomes" {class: port}
+  enrichment: "JdbcEnrichmentCandidates\nJdbcEnrichmentResults\nJdbcSourceOutcomes" {class: app}
   store: "ResourceStore\nAwesomeListIndex" {class: app}
   enrichment -> p_enrichment: implements {class: config}
   detail: GetResourceDetail {class: app}
@@ -92,8 +92,8 @@ sources.collectors -> hosts: HTTPS
 sources.evidence -> hosts: "HTTPS: evidence ladder\nREADMEs, model cards,\nPOST /extract"
 sources.classifier -> nebius: "classify repos" {class: ai-call}
 scout.model -> nebius: "enrich" {class: ai-call}
-scout.jdbc -> catalog.p_enrichment: "backlog, source text,\nrecord runs"
-scout.jdbc -> pg: "JDBC: scout_run, cursors,\nsource.last_outcome"
+scout.jdbc -> catalog.p_enrichment: "backlog, source text,\nrecord runs,\nlast outcome per source"
+scout.jdbc -> pg: "JDBC: scout_run, cursors"
 catalog.store -> pg: JDBC
 catalog.enrichment -> pg: JDBC
 catalog.embed -> nvapi: "/embeddings" {class: ai-call}

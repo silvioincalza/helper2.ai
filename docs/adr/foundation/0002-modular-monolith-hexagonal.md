@@ -43,7 +43,8 @@ internals. Microservices would add network calls and deploys without a scaling n
    depend on a use case. A use case another module calls is exposed with `@NamedInterface("usecase")`
    (`search.usecase` for the guide, `catalog.usecase` for the setup guide and the admin page). The Scout reads and
    writes catalog tables only through `catalog.enrichment` (`@NamedInterface("enrichment")`): `EnrichmentCandidates`
-   (the backlog and a resource's source text) and `EnrichmentResults` (what a run leaves). The Scout keeps its own
+   (the backlog and a resource's source text), `EnrichmentResults` (what a run leaves) and `SourceOutcomes` (how a
+   source's last run ended, for the Sources page). The Scout keeps its own
    rules (the 40-character text bar, three FAILED attempts) and passes them in; the SQL stays in the catalog. Kotlin use
    cases are plain classes wired by `@Bean` methods in `config`/`internal`; catalog use cases are Spring
    services over SQL, because the catalog is not hexagonal.
@@ -54,7 +55,7 @@ internals. Microservices would add network calls and deploys without a scaling n
    - both rules also hold for the Kotlin `usecase` packages (`search.usecase`, `guide.usecase`, `scout.usecase`);
    - no class outside `sources` depends on a class of `sources`;
    - `tablesHaveOneOwner`: every table the migrations (`V*__*.sql`) create has one owning module, and only that module's code names
-     it in SQL (`FROM`, `JOIN`, `INTO`, `UPDATE`). One exception is listed in the test: the Scout writes `source`.
+     it in SQL (`FROM`, `JOIN`, `INTO`, `UPDATE`). There are no exceptions.
 
 ## Consequences
 - Domain tests are plain unit tests with fakes (for example `SearchResourcesTest`, `GuideValidatorTest`).
@@ -89,5 +90,4 @@ internals. Microservices would add network calls and deploys without a scaling n
 Modules, ports and adapters: one view per module group, [context](../../diagrams/architecture-context.svg) · [search](../../diagrams/architecture-search.svg) · [guide](../../diagrams/architecture-guide.svg) · [index](../../diagrams/architecture-index.svg) · [setup](../../diagrams/architecture-setup.svg) · [platform](../../diagrams/architecture-platform.svg).
 
 ## Roadmap
-- The Scout writes `source.last_outcome` itself; move it behind a catalog port: [roadmap](../../roadmap.md#7-architecture).
 - Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).
