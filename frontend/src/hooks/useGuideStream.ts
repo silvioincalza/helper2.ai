@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { api } from '@/api/client';
+import { useMe } from '@/context/MeContext';
 import type { GuideRequest, GuideResponse, GuideStep } from '@/api/types';
 import { askedQuestion, askedRefinement, refinedParams, type Refinement } from '@/lib/searchState';
 
@@ -50,6 +51,7 @@ export function useGuideStream(): GuideStream {
   const request = question ? JSON.stringify(guideRequest(question, askedRefinement(sp))) : '';
   const id = `${attempt}:${request}`;
   const [run, setRun] = useState<Run>(() => fresh(id));
+  const { refresh: refreshLimits } = useMe();
 
   useEffect(() => {
     if (!request) return;
@@ -65,13 +67,17 @@ export function useGuideStream(): GuideStream {
         ctrl.signal,
       )
       .then((answer) => update((r) => ({ ...r, answer, done: true })))
-      .catch((error: unknown) => update((r) => ({ ...r, error, done: true })));
+      .catch((error: unknown) => update((r) => ({ ...r, error, done: true })))
+      // A fresh question spends one of today's AI answers: read the count again for the box.
+      .finally(() => {
+        if (!ctrl.signal.aborted) refreshLimits();
+      });
     // Forget this run when it is replaced: coming back to the same request (Back) starts clean, not done.
     return () => {
       ctrl.abort();
       setRun((r) => (r.id === runId ? fresh('') : r));
     };
-  }, [request, attempt]);
+  }, [request, attempt, refreshLimits]);
 
   // Until the new request reports anything, the last one's steps and answer are not shown.
   const current = run.id === id ? run : fresh(id);

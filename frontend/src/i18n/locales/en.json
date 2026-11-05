@@ -130,6 +130,7 @@
     "placeholder": "e.g. summarise research papers",
     "submit": "Search",
     "clear": "Clear the box",
+    "typeFirst": "Type what you need first.",
     "slashHint": "Press / to search",
     "charsLeft_one": "{{count}} character left",
     "charsLeft_other": "{{count}} characters left",
@@ -825,6 +826,10 @@
   },
   "guide": {
     "ask": "Ask the guide",
+    "answersLeft": {
+      "some": "{{remaining}} of {{limit}} AI answers left today.",
+      "none": "No AI answers left today. The guide shows the top search results without AI picks until {{time}} your time."
+    },
     "searchedFor": "Searched the catalog for: {{q}}",
     "considered": "{{n}} candidates considered",
     "rejected_one": "{{count}} AI suggestion removed: no supporting evidence",

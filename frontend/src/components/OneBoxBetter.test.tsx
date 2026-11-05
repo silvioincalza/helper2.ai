@@ -1,7 +1,8 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockApi } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
+import { axeViolations } from '@/test/a11y';
 
 const box = () =>
   screen.getByRole('textbox', { name: 'Search AI resources' }) as HTMLTextAreaElement;
@@ -47,6 +48,56 @@ describe('Feature: a better search box', () => {
     await userEvent.keyboard('/');
     expect(other).toHaveFocus();
     other.remove();
+  });
+
+  it('Scenario: Search with an empty box puts the cursor in the box with a hint, and searches nothing', async () => {
+    const m = mockApi();
+    const { router } = renderApp('/');
+    await screen.findByRole('textbox', { name: 'Search AI resources' });
+    await settle();
+    const button = screen.getByRole('button', { name: 'Search' });
+    expect(button).toBeEnabled();
+    await userEvent.click(button);
+
+    const hint = screen.getByRole('status');
+    expect(hint).toHaveTextContent('Type what you need first.');
+    expect(box()).toHaveFocus();
+    expect(box()).toHaveAttribute('aria-describedby', expect.stringContaining(hint.id));
+    expect(router.state.location.pathname).toBe('/');
+    expect(m.callsTo('GET', '/search')).toHaveLength(0);
+    expect(await axeViolations(document.body)).toEqual([]);
+
+    // A second press keeps the hint and the cursor; typing takes the hint away.
+    (document.activeElement as HTMLElement | null)?.blur();
+    await userEvent.click(button);
+    expect(box()).toHaveFocus();
+    await userEvent.type(box(), 'rag');
+    expect(screen.queryByText('Type what you need first.')).toBeNull();
+    expect(box()).not.toHaveAttribute('aria-describedby');
+  });
+
+  it('Scenario: only spaces count as an empty box too', async () => {
+    const m = mockApi();
+    const { router } = renderApp('/');
+    await userEvent.type(
+      await screen.findByRole('textbox', { name: 'Search AI resources' }),
+      '   ',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Search' }));
+    expect(screen.getByText('Type what you need first.')).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/');
+    expect(m.callsTo('GET', '/search')).toHaveLength(0);
+  });
+
+  it('Scenario: Enter in an empty box on the results page still goes back to the empty home page', async () => {
+    mockApi();
+    const { router } = renderApp('/search?q=postgres');
+    await screen.findByRole('textbox', { name: 'Search AI resources' });
+    await settle();
+    await userEvent.clear(box());
+    await userEvent.keyboard('{Enter}');
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'));
+    expect(screen.queryByText('Type what you need first.')).toBeNull();
   });
 
   it('Scenario: near the limit the box says how many characters are left', async () => {
