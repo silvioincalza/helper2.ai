@@ -1,6 +1,6 @@
 # 0050 — Pages for crawlers: Spring writes the head and a short body, real 404s, sitemap and robots
 
-**Status.** Proposed (becomes Accepted with the code). **Builds on:** [0001](../foundation/0001-stack-and-runtime.md), [0024](../edge/0024-http-edge-protection.md), [0025](0025-frontend-one-box.md), [0038](../guide/0038-ai-content-marking.md), [0040](0040-frontend-design.md)
+**Status.** Accepted. **Builds on:** [0001](../foundation/0001-stack-and-runtime.md), [0024](../edge/0024-http-edge-protection.md), [0025](0025-frontend-one-box.md), [0038](../guide/0038-ai-content-marking.md), [0040](0040-frontend-design.md)
 
 ## Context
 Search engines and answer engines find almost nothing on helper2.ai today. Every address returns the same 552-byte
@@ -15,12 +15,14 @@ The pages that can rank are the resource pages: one per tool, model, MCP server 
 pages cannot. Nothing seems indexed yet, so this is the cheapest moment to decide.
 
 ## Decision
-1. **Spring fills the shell; React stays as it is.** `SinglePageApp` already serves `index.html` for every client
-   route. A small `pages` module reads the built `index.html` once at start-up and, per request, writes into it:
+1. **Spring fills the shell; React stays as it is.** A small `pages` module answers every GET of an address the
+   client router owns (`ClientRoutes`: no file extension, not a server path) with a router function, which Spring asks
+   before the static files. It reads the built `index.html` once at start-up and, per request, writes into it:
    the title, meta description, canonical link, robots meta, Open Graph and Twitter tags, JSON-LD, and for a
    resource a short plain HTML body inside `#root`. `createRoot` replaces that body when the app starts, so people see
    no change. Bots and people get the same HTML, so it is not cloaking. The start-up fails when the markers it needs
-   (`<title>`, `<div id="root"></div>`) are missing, and a test checks the built file.
+   (`<title>`, `</head>`, `<div id="root"></div>`) are missing, and a test checks the app's own shell. Without a built
+   app (development: Vite serves the UI) the module claims nothing and `SinglePageApp` answers as before.
 2. **What each address says, and its status.**
    | Address | Status | Robots | Head |
    |---|---|---|---|
@@ -32,9 +34,9 @@ pages cannot. Nothing seems indexed yet, so this is the cheapest moment to decid
    | `/admin/**` (admin host only) | as today | noindex | fixed title |
    | any other address without a file extension | 404 | noindex | "Page not found" |
 
-   The 404 pages still carry the app, so a person sees the same "not found" page as today. The list of client routes
-   lives in one place in the backend (`pages/routes.txt`); a frontend test checks that every path in `routes.tsx` is
-   in it, so a new page cannot ship as a 404.
+   The 404 pages still carry the app, so a person sees the same "not found" page as today. The pages the server knows
+   are one list (`PageKind`, `Routes.kt`); a test reads `routes.tsx` and fails when a path of the app is not in it, so a
+   new page cannot ship as a 404.
 3. **The resource head.**
    - Title, about 60 characters: `{title}: {type in words} · Helper2.ai`.
    - Meta description: the source's own description, cut at a word near 155 characters. An AI-written description
@@ -42,33 +44,34 @@ pages cannot. Nothing seems indexed yet, so this is the cheapest moment to decid
      a source description the text is built from facts: type, source, licence, pricing.
    - Canonical: always absolute and always the public host (`H2_PUBLIC_BASE_URL`, `https://helper2.ai` in prod),
      also when served from staging.
-   - Open Graph and Twitter: title, description, URL, `og:type=website`, one brand image (1200×630, in `public/`),
-     `twitter:card=summary_large_image`.
+   - Open Graph and Twitter: title, description, URL, `og:type=website`, `og:site_name`, `twitter:card=summary`. No
+     image yet (roadmap).
    - JSON-LD (schema.org) by type: `SoftwareApplication` for PRODUCT, AGENT and MODEL; `SoftwareSourceCode` with
      `codeRepository` and `license` for LIBRARY, MCP_SERVER and SKILL; `ScholarlyArticle` for PAPER; `Event` for EVENT;
      `Course` for COURSE; `Dataset` for DATASET; nothing for the rest. Every resource page also gets a
      `BreadcrumbList`; the home page gets `WebSite` and `Organization`. Only facts the page itself shows go in.
-   - Body: an `<h1>`, the same description, up to 6 facts as a list, the source links, and up to 8 links to related
-     resources (the relationships the page already has).
+   - Body (`main.h2-prerender`): an `<h1>`, the source's description, up to 6 facts, up to 5 source links (web
+     addresses only), and up to 8 links to related resources (relationships a person did not reject).
 4. **Escaping is the security rule.** Every title and description comes from a third party. Text goes through one
    HTML escaper; JSON-LD goes through Jackson with `<`, `>`, `&` and U+2028/U+2029 written as `\uXXXX`, so
    `</script>` in a description cannot close the tag. The id in the address is parsed as a UUID before any lookup. A
-   test feeds hostile titles and descriptions through every slot.
+   test feeds hostile titles, descriptions, licences and source names through every slot.
 5. **Index-worthy is one rule, in one place.** `IndexPolicy.indexWorthy(resource)`, used by the robots meta and by
    the sitemap: PRODUCT, AGENT, MODEL, MCP_SERVER, LIBRARY, SKILL, DATASET, PAPER, EVENT and COURSE with a source
-   description and at least one fact or relationship; a PROMPT only when the page shows its full text, at least 200
-   characters, and a source description. NEWS and ARTICLE are copies of someone else's text: the original ranks, not
+   description and at least one fact (licence, pricing, a date) or relationship; a PROMPT only when its source
+   description, the prompt text, has at least 200 characters. NEWS and ARTICLE are copies of someone else's text: the original ranks, not
    us. They, OTHER and thin pages get `noindex, follow`, so crawlers still follow their links. I tune the rule from
    Search Console numbers, not by adding cases elsewhere.
 6. **`/sitemap.xml` and `/robots.txt` come from Spring.** The sitemap lists the indexed static pages and every
-   index-worthy resource with `<lastmod>` from its last update; past 50,000 addresses it becomes a sitemap index.
-   It is built at most once an hour and kept in memory. `robots.txt` blocks `/oauth2/`, `/login`, `/logout` and
-   `/admin/`, never `/api/` (Google needs the API to render a page), and names the sitemap. When
+   index-worthy resource with `<lastmod>` from its last update, newest change first, at most 50,000 (one file, Google's
+   limit). The catalog query applies the same rule as `IndexPolicy`; an integration test opens every listed page and
+   checks it says `index`. It is built at most once an hour and kept in memory. `robots.txt` blocks `/oauth2/`, `/login`, `/logout` and
+   `/admin`, never `/api/` (Google needs the API to render a page), and names the sitemap. When
    `H2_NOINDEX` is on (staging), the `X-Robots-Tag: noindex, nofollow` header of #151 stays, `robots.txt` allows all
    (a blocked page never shows its noindex) and there is no sitemap.
-7. **Client navigation keeps the tags right.** The tags Spring writes carry `data-h2-head`. On its first route change
-   the app removes them and then sets title, description, canonical and robots itself (React 19 hoists `<title>` and
-   `<meta>` into the head). Crawlers read the first load, people get correct tags after every click.
+7. **Client navigation drops the server's tags.** The tags Spring writes carry `data-h2-head`. At the first move to
+   another page the app removes them (`useDropServerHead`); from then on it keeps the title itself, as before. Crawlers
+   and link previews read the first load.
 8. **Cache.** The HTML stays `no-cache`, as today, so a release is picked up at once. The resource lookup is the one
    the API makes (`GetResourceDetail`); the page asks for it again when it starts. That is one extra indexed read per
    full page load, not per click.
@@ -81,6 +84,8 @@ pages cannot. Nothing seems indexed yet, so this is the cheapest moment to decid
   description, facts, links) to limit drift, and the head rules have their own tests.
 - A full load of a resource page reads the resource twice (HTML, then API). Budget: the HTML answer adds at most
   20 ms at p95 over today's static file; measured with a load test before and after, on staging.
+- Until the app starts, a person sees the server's plain text of a resource page for a moment. Its nodes are
+  replaced, not moved, so it adds no layout shift.
 - No new runtime, no new data flow, no new cookie or storage: the Privacy page does not change.
 
 ## Security (STRIDE)
@@ -96,7 +101,8 @@ pages cannot. Nothing seems indexed yet, so this is the cheapest moment to decid
 ## AI architecture check
 No AI layer changes. Guardrails: AI-written text never reaches a meta tag or JSON-LD, and the body shows it only with
 its label and `data-ai-generated` (ADR 0038). Observability: the 404 and 301 counts per route show up in the existing
-HTTP metrics. Deployment: one new setting, `H2_PUBLIC_BASE_URL`; `H2_NOINDEX` is reused. The other layers are not
+HTTP metrics. Deployment: one new setting, `H2_PUBLIC_BASE_URL` (Helm `app.publicBaseUrl`, empty = the default);
+`H2_NOINDEX` is reused. The other layers are not
 touched.
 
 ## Alternatives considered
@@ -110,15 +116,20 @@ touched.
   link previews still see an empty page.
 
 ## Code
-To be written with this record: `backend/src/main/java/ai/helper2/pages/` (`web/PageController`, `PageTemplate`,
-`usecase/RenderPage`), `backend/src/main/kotlin/ai/helper2/pages/` (`PageHead`, `IndexPolicy`, `JsonLd`),
-`pages/routes.txt`, `SinglePageApp` (hands client routes to `pages`), `frontend/src/lib/head.ts`,
-`frontend/src/routes.test.ts`.
+- `backend/src/main/kotlin/ai/helper2/pages/` — `Routes.kt` (`PageKind`, `PageAddress`), `PageHead.kt` (`PageHead`,
+  `ResourceView`, `IndexPolicy`), `Pages.kt` (the head of each page, `JsonLd`).
+- `backend/src/main/java/ai/helper2/pages/` — `usecase/RenderPage`, `usecase/ListSitemap`, `internal/PageTemplate`,
+  `internal/PageHtml` (the escaping), `web/PageRoutes`, `web/CrawlerFiles`, `config/PagesProperties`.
+- `backend/src/main/java/ai/helper2/platform/ClientRoutes.java`; `catalog/usecase/ListIndexableResources.java`,
+  `catalog/internal/ResourceStore.indexable`.
+- `frontend/src/lib/head.ts` (`useDropServerHead`), `frontend/src/styles/app.css` (`.h2-prerender`).
+- Tests: `pages/PagesTest.kt`, `pages/PageHtmlTest.java`, `api/PagesIT.java`, `frontend/src/lib/head.test.tsx`.
 
 ## Diagrams
 [flow](../../diagrams/flow-0050-pages-for-crawlers.svg) · [sequence](../../diagrams/sequence-0050-pages-for-crawlers.svg)
 
 ## Roadmap
 - 410 for resources removed on purpose, once the catalog has a removed state.
+- A sitemap index when index-worthy pages pass 50,000; an Open Graph image (brand first, then per resource).
 - Readable slugs (`/resource/{id}/{slug}`): decide before Google indexes many pages.
 - Hub pages per type or use case (`/mcp-servers`), `llms.txt`, IndexNow pings, one Open Graph image per resource.

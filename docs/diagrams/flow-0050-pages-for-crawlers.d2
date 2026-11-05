@@ -1,7 +1,7 @@
 # Flowchart: what Spring answers for an address the client router owns (ADR 0050).
-# Source of truth (to be written with the record): backend/src/main/java/ai/helper2/pages/web/PageController.java,
-#   pages/PageTemplate.java, pages/usecase/RenderPage.java, backend/src/main/kotlin/ai/helper2/pages/PageHead.kt,
-#   IndexPolicy.kt, JsonLd.kt, backend/src/main/resources/pages/routes.txt, platform/SinglePageApp.java.
+# Source of truth: backend/src/main/java/ai/helper2/pages/web/PageRoutes.java,
+#   pages/usecase/RenderPage.java, pages/internal/PageTemplate.java, PageHtml.java, platform/ClientRoutes.java,
+#   backend/src/main/kotlin/ai/helper2/pages/Routes.kt, PageHead.kt (IndexPolicy), Pages.kt (JsonLd).
 # Render: cd docs/diagrams && d2 fmt flow-0050-pages-for-crawlers.d2 && d2 flow-0050-pages-for-crawlers.d2 flow-0050-pages-for-crawlers.svg
 
 ...@style
@@ -10,7 +10,7 @@ direction: down
 
 req: "GET an address without a file extension\n(not /api, /oauth2, /login, /logout, /actuator)" {class: end}
 
-route: "In pages/routes.txt?" {class: decision}
+route: "A page of the app?\n(PageAddress, Routes.kt)" {class: decision}
 notfound: "404 + app shell\nnoindex, \"Page not found\"" {class: fail}
 
 kind: "Which page?" {class: decision}
@@ -50,7 +50,11 @@ quiet: "Fixed title\nrobots: noindex, follow" {class: data}
 escape: "Every text HTML-escaped,\nJSON-LD with \\u003c \\u003e \\u0026" {class: app}
 out: "200 + filled index.html (no-cache)\ntags marked data-h2-head;\nReact replaces the body" {class: end}
 
-req -> route
+built: "A built app\n(index.html) present?" {class: decision}
+spa: "SinglePageApp as before\n(development: Vite serves the UI)" {class: end}
+req -> built
+built -> spa: no
+built -> route: yes
 route -> notfound: no
 route -> kind: yes
 kind -> static

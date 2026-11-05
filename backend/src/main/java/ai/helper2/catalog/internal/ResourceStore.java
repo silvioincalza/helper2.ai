@@ -476,6 +476,41 @@ public class ResourceStore {
         .list();
   }
 
+  /** One resource page for the sitemap: its id and when it last changed. */
+  public record Indexable(UUID id, Instant lastModified) {}
+
+  /**
+   * Every resource whose page is worth a search engine's index, newest change first, at most
+   * [limit]. The same rule as pages.IndexPolicy (ADR 0050 §5): a description a source or a person
+   * wrote; a prompt with at least [promptMin] characters of it; one of [types] with a licence,
+   * pricing, a date or a relationship.
+   */
+  public List<Indexable> indexable(Collection<String> types, int promptMin, int limit) {
+    return jdbc.sql(
+            """
+            SELECT r.id, coalesce(r.updated_at, r.modified_at) AS last_modified FROM resource r
+            WHERE r.description_origin IN ('SOURCE_PROVIDED', 'CURATED', 'COMMUNITY')
+              AND length(btrim(coalesce(r.description, ''))) > 0
+              AND (
+                (r.type = 'PROMPT' AND length(btrim(r.description)) >= :promptMin)
+                OR (r.type = ANY(:types)
+                    AND (r.license IS NOT NULL OR r.pricing IS NOT NULL OR r.published_at IS NOT NULL
+                         OR r.event_starts_at IS NOT NULL
+                         OR EXISTS (SELECT 1 FROM relationship rel
+                                    WHERE rel.from_resource_id = r.id AND rel.to_resource_id IS NOT NULL
+                                      AND rel.verification <> 'REJECTED'))))
+            ORDER BY last_modified DESC, r.id
+            LIMIT :limit
+            """)
+        .param("types", types.toArray(String[]::new))
+        .param("promptMin", promptMin)
+        .param("limit", limit)
+        .query((rs, n) ->
+            new Indexable(
+                rs.getObject("id", UUID.class), rs.getTimestamp("last_modified").toInstant()))
+        .list();
+  }
+
   /** The title of each of [ids] the catalog has; an unknown id is absent from the map. */
   public Map<UUID, String> titles(Collection<UUID> ids) {
     if (ids.isEmpty()) {
