@@ -114,8 +114,9 @@ and chose between options for each part.
   with no query; `/?q=` shows results with a canonical link to `/search`; there is no `/guide` route.
 - `frontend/src/components/results/Results.tsx` — the results page: the box, the picks bar (questions only), type
   tabs, one row with the "Filters" toggle (sort, list or timeline, the filter panel) and the detected use cases,
-  search notices, the list of `SelectableRow`s with the guide's picks first, the preview beside the list from 861 px
-  and inside it below, the pager, and the sources at the bottom. Every state says what happened and offers a next
+  search notices, the list of `SelectableRow`s with the guide's picks first (each title a link to its resource page;
+  from 861 px a plain click selects it), the preview beside the list from 861 px, on a phone a row opens the resource
+  page, the pager, and the sources at the bottom. Every state says what happened and offers a next
   step; after a page change, focus goes to the result count. `results.css`. `frontend/src/lib/selection.ts` — the
   selected result (`id` in the URL, else pick #1, else the first), the picks by resource id and the list with the
   picks first. `frontend/src/hooks/useMediaQuery.ts` — beside the list or inside it.

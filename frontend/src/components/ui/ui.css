@@ -135,17 +135,16 @@
   background: var(--border-strong);
 }
 
-/* SelectableRow: a row-wide button; the selected one has the row-selected-line outline. */
+/* SelectableRow: a row whose link covers it all; the selected one has the row-selected-line outline. */
 .h2-select-row {
+  position: relative;
   display: block;
   width: 100%;
   min-height: var(--target-min);
   padding: var(--space-3) var(--space-4);
-  border: 0;
   border-radius: var(--radius-lg);
   background: var(--surface);
   color: var(--ink);
-  font: inherit;
   text-align: left;
   cursor: pointer;
   transition: box-shadow var(--motion);
@@ -153,10 +152,24 @@
 .h2-select-row:hover {
   background: var(--surface-tint);
 }
-.h2-select-row[aria-current='true'] {
+.h2-select-row.is-selected {
   box-shadow: inset 0 0 0 2px var(--row-selected-line);
 }
-.h2-select-row:focus-visible {
+.h2-select-row__link {
+  color: inherit;
+  text-decoration: none;
+}
+/* The link's box stretches over the whole row, so a click anywhere on the row is a click on the link. */
+.h2-select-row__link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+.h2-select-row__link:focus-visible {
+  outline: none;
+}
+.h2-select-row__link:focus-visible::after {
   outline: 3px solid var(--focus);
   outline-offset: 2px;
 }

@@ -1,12 +1,13 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import { axeViolations } from '@/test/a11y';
 import { makeStatus } from '@/test/fixtures';
 import { CopyButton } from './CopyButton';
 import { PicksBar } from './PicksBar';
 import { RetryButton, StatePanel } from './StatePanel';
 import { ProofQuote } from './ProofQuote';
-import { SelectableRow } from './SelectableRow';
+import { RowLink, SelectableRow } from './SelectableRow';
 import { SourceTiles } from './SourceTiles';
 import { StatusPill } from './StatusPill';
 import { TypeTag } from './TypeTag';
@@ -113,30 +114,67 @@ describe('SourceTiles', () => {
 });
 
 describe('SelectableRow', () => {
-  it('is a real button; the selected row says so to assistive tech and gets the selected outline', async () => {
-    const onSelect = vi.fn();
-    const { container } = render(
-      <ul>
-        <li>
-          <SelectableRow selected onSelect={onSelect}>
-            Postgres MCP
-          </SelectableRow>
-        </li>
-        <li>
-          <SelectableRow selected={false} onSelect={onSelect}>
-            SQLite MCP
-          </SelectableRow>
-        </li>
-      </ul>,
+  function rows(onSelect?: () => void) {
+    return render(
+      <MemoryRouter>
+        <ul>
+          <li>
+            <SelectableRow selected>
+              <RowLink to="/resource/p" selected onSelect={onSelect}>
+                Postgres MCP
+              </RowLink>{' '}
+              A server for Postgres.
+            </SelectableRow>
+          </li>
+          <li>
+            <SelectableRow selected={false}>
+              <RowLink to="/resource/s" selected={false} onSelect={onSelect}>
+                SQLite MCP
+              </RowLink>
+            </SelectableRow>
+          </li>
+        </ul>
+        <Routes>
+          <Route path="/" element={null} />
+          <Route path="/resource/:id" element={<p>Resource page</p>} />
+        </Routes>
+      </MemoryRouter>,
     );
-    expect(screen.getByRole('button', { name: 'Postgres MCP' })).toHaveAttribute(
-      'aria-current',
-      'true',
-    );
-    expect(screen.getByRole('button', { name: 'SQLite MCP' })).not.toHaveAttribute('aria-current');
-    await userEvent.click(screen.getByRole('button', { name: 'SQLite MCP' }));
-    expect(onSelect).toHaveBeenCalledOnce();
+  }
+
+  it('is a real link named by its title; the selected row says so to assistive tech and gets the selected outline', async () => {
+    const { container } = rows(vi.fn());
+    const postgres = screen.getByRole('link', { name: 'Postgres MCP' });
+    expect(postgres).toHaveAttribute('href', '/resource/p');
+    expect(postgres).toHaveAttribute('aria-current', 'true');
+    expect(postgres.closest('.h2-select-row')).toHaveClass('is-selected');
+    expect(screen.getByRole('link', { name: 'SQLite MCP' })).not.toHaveAttribute('aria-current');
     expect(await axeViolations(container)).toEqual([]);
+  });
+
+  it('with onSelect, a plain click or Enter selects and stays; a modified click is left to the browser', async () => {
+    const onSelect = vi.fn();
+    rows(onSelect);
+    const sqlite = screen.getByRole('link', { name: 'SQLite MCP' });
+    await userEvent.click(sqlite);
+    sqlite.focus();
+    await userEvent.keyboard('{Enter}');
+    expect(onSelect).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText('Resource page')).not.toBeInTheDocument();
+
+    // A ctrl, cmd or shift click opens a new tab or window: not prevented, not a selection.
+    for (const mod of ['ctrlKey', 'metaKey', 'shiftKey'] as const) {
+      const e = new MouseEvent('click', { bubbles: true, cancelable: true, [mod]: true });
+      sqlite.dispatchEvent(e);
+      expect(e.defaultPrevented).toBe(false);
+    }
+    expect(onSelect).toHaveBeenCalledTimes(2);
+  });
+
+  it('without onSelect, a click follows the link', async () => {
+    rows();
+    await userEvent.click(screen.getByRole('link', { name: 'SQLite MCP' }));
+    expect(screen.getByText('Resource page')).toBeInTheDocument();
   });
 });
 

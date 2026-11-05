@@ -77,7 +77,8 @@ describe('home: only the home page', () => {
     );
     await waitFor(() => expect(router.state.location.pathname).toBe('/search'));
     expect(params().get('q')).toBe('mcp github');
-    expect(await screen.findByRole('link', { name: 'Acme Translator' })).toBeInTheDocument();
+    // The row's title and the preview's title: both link to the resource page.
+    expect(await screen.findAllByRole('link', { name: 'Acme Translator' })).toHaveLength(2);
     expect(m.callsTo('GET', '/search')).toHaveLength(1);
   });
 
@@ -198,7 +199,8 @@ describe('home: only the home page', () => {
   it('/?q=… still shows results and names /search as the canonical page', async () => {
     mockApi();
     renderApp('/?q=mcp');
-    expect(await screen.findByRole('link', { name: 'Acme Translator' })).toBeInTheDocument();
+    // The row's title and the preview's title: both link to the resource page.
+    expect(await screen.findAllByRole('link', { name: 'Acme Translator' })).toHaveLength(2);
     const canonical =
       document.head.querySelector('link[rel="canonical"]') ??
       document.querySelector('link[rel="canonical"]');
