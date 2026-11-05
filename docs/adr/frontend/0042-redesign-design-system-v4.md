@@ -85,14 +85,19 @@ they do now and how version 3 and 4 live side by side until the other pages move
 7. **Every number comes from data.** The radar legend's "3-5 of N sources at a time" counts the enabled external
    sources of GET /sources, the same sources the radar shows (13 on staging; not shown before the answer); the dot names say the response time
    or the age of the last check; the list counts
-   are `total` on GET /recent and GET /events/upcoming (never fewer than the rows sent); the hint's "4 words" is the
-   constant the box uses to tell a question from a search. One small reader (`lib/v4Fields.ts`) takes `newThisWeek` and
+   are `total` on GET /recent and GET /events/upcoming (never fewer than the rows sent). One small reader (`lib/v4Fields.ts`) takes `newThisWeek` and
    `total` and says what the page does when a value is null: a dot of the default size, the rows as the count.
-8. **The guide starts on its own only for a question, and the quota is in sight.** Four words or more start it, as in
-   [0017](../guide/0017-guide-cost-guard.md). While the button says **Ask the guide**, one quiet line under the box
-   says today's AI answers ("2 of 3 AI answers left today"; at none, when they come back and that search still works),
-   from `limits.guideQuestions` on GET /me, read again after each answer (`GuideAnswersLeft`, UJ-2). When the guide
-   has no model the field is null, nothing is spent, and the line is not shown.
+8. **Two buttons: Search and Ask the guide, and the quota is in sight.** The box has both buttons, always, for any
+   length of text: Search (primary, saffron) and Ask the guide (outline, quieter). Enter searches; Shift+Enter or Ask
+   the guide searches and asks ([0017](../guide/0017-guide-cost-guard.md)). No word count decides anything. The hint
+   under the box says so: "Enter searches. For picks with a quote that proves them, ask the guide (⇧↵)." Each button
+   shows its key, ↵ and ⇧↵, on Home and in the header on a desktop; key hints stay hidden on touch devices and on a
+   narrow box. Up to 520 px Ask the guide is a 44 px icon button (an inline stroke icon) with its name and a tooltip.
+   Neither button is ever disabled: with nothing to send, either puts the cursor in the box. Once there are words in
+   the box, one quiet line under it says today's AI answers ("2 of 3 AI answers left today"; at none, when they come
+   back and that search still works), from `limits.guideQuestions` on GET /me, read again after each answer
+   (`GuideAnswersLeft`, UJ-2). When the guide has no model the field is null, nothing is spent, and the line is not
+   shown.
 9. **Accessibility.** Every control is at least 44 px. The focus ring (3 px ink outline) never looks like the
    selected line (saffron underline in the header, an ink folder tab in the tabs). The Search button is never
    disabled: with nothing to send it puts the cursor in the box. Key hints (`/`, `↵`) show only where there is a
@@ -191,6 +196,8 @@ they do now and how version 3 and 4 live side by side until the other pages move
   sees why to sign in, and a second provider needs a menu. The page is one click more and says it.
 - **The guide on every search.** Simpler, but it spends model calls and the daily AI answers on searches that are
   only a name ([0017](../guide/0017-guide-cost-guard.md)).
+- **The guide on its own from four words** (the four-word rule). No extra key, but a long name spends an AI answer
+  and often gets "no pick".
 - **One big pull request.** Fastest to finish, hardest to review and to roll back.
 - **Results: keep the preview beside the list** ([0040](0040-frontend-design.md), 4). Fast to compare, but it splits a
   phone and a desktop into two behaviours, and the picks moving to the top shifted the list under the reader.

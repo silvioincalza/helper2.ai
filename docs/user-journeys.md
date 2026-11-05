@@ -48,7 +48,7 @@ The success criteria at the end say which tests verify each journey today. What 
 
 ## UJ-2 Ask the guide without losing the search
 
-1. With a query and filters on the page, the user clicks **Ask the guide** (the box's button says so from 4 words), or follows the "Sounds like a question" hint after 4+ words. Enter always searches, also with 4+ words: the guide runs only from its button, because each answer costs model calls.
+1. With a query and filters on the page, the user clicks **Ask the guide** next to **Search** (any length; an icon button on a phone) or presses Shift+Enter. Enter and **Search** only search, also for a long question: the guide runs only when the user chooses it, because each answer costs model calls.
 2. The results show at once; the picks bar above them says the guide is reading. Query, filters, sort and page persist (they live in the URL: `q`, `ask`, filters).
 3. The answer arrives: the picks show as chips in the bar; a chip jumps to its row. The rows keep the search order, so nothing moves: a picked row shows **Guide pick #1**, the guide's reason (labelled AI-written) and its quote, highlighted in the source's own words with "Checked word for word in the source". The row opens the resource page, which says **Why the guide picked it**: the reason, whether a second model call checked it, and the requirements checked against the source.
 4. Nothing fits: the bar says why in one line and offers **Ask without “…”** for each requirement the guide read (when it is short enough to keep in the URL), and **Rephrase**. **How the guide decided** stays folded under the bar: the steps, and how the guide read the question.
@@ -57,7 +57,7 @@ The success criteria at the end say which tests verify each journey today. What 
 **AI answers left:** while the button says **Ask the guide**, a quiet line under the box says how many AI answers are left today, e.g. "2 of 3 AI answers left today". The numbers come from `limits.guideQuestions` on `/me`; the page reads `/me` again after each answer. The limit is per address, so a signed-in user sees it too. With none left the line says so in words, and when the guide shows search results without AI picks again (the next 00:00 UTC, in the user's own clock). The button still works and Enter still searches. No line when the guide has no model, or for a test environment's high ceiling while answers are left.
 
 **Success:** zero re-typing; URL fully describes the state. A new question while one is being answered replaces it.
-Changing the words in the box searches again and drops the old question with its picks: the picks answered that question, not the new words. **Ask the guide** asks again.
+Changing the words in the box searches again and drops the old question with its picks: the picks answered that question, not the new words. Shift+Enter or **Ask the guide** asks again.
 **Failure case:** the guide fails or is unavailable, or its stream stalls for 45 s or ends without an answer → the search results stay, the answer area says what went wrong and offers **Try again**.
 
 ## UJ-3 Refine: filter and sort

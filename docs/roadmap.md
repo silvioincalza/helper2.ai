@@ -187,8 +187,7 @@ Open items:
     the text pages show them from data, not typed in. After config PRs 5-8. Until then Mission (up to 24 candidates,
     at most 3 picks), Privacy (the retention periods) and Terms (the daily limits) keep them in the locale text.
   - **Cost guard:** a "no pick" answer and a cached answer spend no AI answer
-    ([0017](adr/guide/0017-guide-cost-guard.md)). After config PRs 5-8. Then, with a week of data, check the share of
-    4+-word searches that are names and the share of "no pick" answers, and revisit the 4-word rule.
+    ([0017](adr/guide/0017-guide-cost-guard.md)). After config PRs 5-8.
   - An `unknown` count per facet and an updated-date facet on the search response (Filters panel).
   - Sign-in with Google (phase 1). Passkey, email link and password (phase 2) need their own ADR, a threat model and
     the Privacy page first.
@@ -297,7 +296,7 @@ Fix an item or accept it; when it no longer holds, remove it.
 
 ### Frontend
 
-- The four-word rule labels the button "Ask the guide" for a long keyword list and "Search" for a short question; Enter always searches. ([ADR 0025](adr/frontend/0025-frontend-one-box.md))
+- A user who never presses Ask the guide (or Shift+Enter) never sees the guide's picks: Enter only searches. ([ADR 0025](adr/frontend/0025-frontend-one-box.md))
 - No browser end-to-end tests: frontend tests run in jsdom only, also in CI. ([ADR 0025](adr/frontend/0025-frontend-one-box.md), [ADR 0028](adr/operations/0028-ci-cd.md))
 - A recent answer can be up to 5 minutes old (50 entries, 5 minutes, fixed). A new page that shows data the user changes must pass `cache: false`. ([ADR 0039](adr/frontend/0039-frontend-recent-answers-cache.md))
 - The picks bar takes about 110 px also when the guide has nothing to say, and shows no step-by-step progress; there is no button to close the guide's answer. Two result layouts to build and test. ([ADR 0040](adr/frontend/0040-frontend-design.md))

@@ -42,15 +42,15 @@ async function typeQuestion(text = QUESTION) {
 }
 
 describe('Feature: AI answers left today, next to "Ask the guide"', () => {
-  it('Scenario: a guest sees the count once the button asks, and the box is described by it', async () => {
+  it('Scenario: a guest sees the count once there are words in the box, and the box is described by it', async () => {
     mockApi({ 'GET /me': () => withGuide(ANON, { limit: 3, remaining: 2 }) });
     renderApp('/');
     await settle();
-    await userEvent.type(await screen.findByLabelText(BOX), 'rag');
-    // A few words search: no AI answer is at stake, so nothing is said.
+    // An empty box: nothing to ask yet, so nothing is said.
     expect(screen.queryByText(/AI answers left today/)).toBeNull();
 
-    await userEvent.type(screen.getByLabelText(BOX), ' for my own notes');
+    // One word is enough: Ask the guide is always there, so the cost is in sight.
+    await userEvent.type(await screen.findByLabelText(BOX), 'rag');
     const line = screen.getByText('2 of 3 AI answers left today.');
     expect(screen.getByLabelText(BOX)).toHaveAttribute(
       'aria-describedby',

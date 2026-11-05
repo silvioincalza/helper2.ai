@@ -60,8 +60,7 @@
     "name": "helper2.ai",
     "title": "The metasearch for the AI universe.",
     "lede": "One search across the world of AI for models, apps, MCP servers and papers. A pick with proof, plus the latest AI news and events.",
-    "hint": "A few words search. A question of {{count}} words or more can also ask the guide for picks.",
-    "suggestGuide": "Sounds like a question — ask the guide: “{{q}}” →",
+    "hint": "Enter searches. For picks with a quote that proves them, ask the guide (⇧↵).",
     "examples": "Try:",
     "exampleAi": "Drafted with AI, checked by a person",
     "exampleAiMark": "AI",
@@ -209,10 +208,7 @@
     "fanOut_one": "{{ok}} of {{total}} sources answered · {{count}} result after merging",
     "fanOut_other": "{{ok}} of {{total}} sources answered · {{count}} results after merging",
     "seeSources": "See the sources we search",
-    "askGuide": "Ask the guide instead",
-    "suggestLabel": "Ask the guide",
-    "suggestText": "Want a recommendation? Ask the guide to pick from these results.",
-    "suggestButton": "Ask the guide about “{{q}}”"
+    "askGuide": "Ask the guide instead"
   },
   "timeline": {
     "viewLabel": "Show results as",
