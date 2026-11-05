@@ -862,7 +862,7 @@ class AskGuideIntentsTest {
         override val descriptor = descriptor("s", timeout = Duration.ofSeconds(3))
 
         override fun search(query: SourceQuery): List<SourceHit> {
-          if (query.text.contains("lm studio", ignoreCase = true)) Thread.sleep(1_000)
+          if (query.text.contains("lm studio", ignoreCase = true)) Thread.sleep(2_500)
           return hits
         }
       }
@@ -876,7 +876,7 @@ class AskGuideIntentsTest {
       )
 
     val a =
-      AskGuide(search, ollamaVsLmStudio(), clock, subjectSearchDeadline = Duration.ofMillis(200))
+      AskGuide(search, ollamaVsLmStudio(), clock, subjectSearchDeadline = Duration.ofSeconds(1))
         .ask("Ollama vs LM Studio", null)
 
     assertNull(a.comparison)
