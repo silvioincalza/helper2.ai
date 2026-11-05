@@ -24,9 +24,11 @@ they do now and how version 3 and 4 live side by side until the other pages move
    third-party request, and the CSP stays `font-src 'self'`. One file per script covers every weight; an English page
    loads only the Latin files (29 KB and 23 KB), and the build preloads those two. The pages still on version 3 keep
    Space Grotesk (400, 500, 600) until they move.
-2. **Version 4 tokens next to version 3.** `tokens.css` holds the version 4 colours (light and dark), sizes and the
-   two font stacks as `--v4-*`, from `docs/design/system/tokens.json`. Only the parts that have moved use them: the
-   header, the footer and Home, under the `.v4` class. A v3 page never picks one up by accident.
+2. **One set of version 4 tokens.** `tokens.css` holds the version 4 colours (light and dark), shadows and sizes
+   under their own names, from `docs/design/system/tokens.json`; the version 3 names are gone. Only what the moved
+   parts do differently carries `--v4-`: the box height (60 px) and the two font stacks. The header is version 4 on
+   every page, so `header-height` is its 74 px. The pages still on version 3 keep `maxw`, `box-height` and Space
+   Grotesk until they move.
 3. **Header and footer.** The header: the logo (mark, wordmark, "AI on your radar"), News, Events, Saved, Sign in or
    the account. Up to 720 px: the logo and a menu button; the menu holds New this week, Coming up, Saved, Sources,
    Mission, Sign in and the theme; Escape closes it. On the pages without their own box, the box sits in the header.
@@ -96,7 +98,8 @@ they do now and how version 3 and 4 live side by side until the other pages move
    keyboard. Text and controls meet AA in light and dark (muted 7.5:1 and 8:1, links 5.5:1 and 8.7:1, control borders
    3.3:1 and 3.9:1). The axe test runs on Home in both themes, on a wide screen and on a phone with the menu open.
 10. **Version 3 and 4 side by side, page by page.** Each page moves in its own pull request. When the last page has
-    moved, the version 3 tokens, components and Space Grotesk go. No design flag: a page is either version 3 or 4.
+    moved, the version 3 components, sizes and Space Grotesk go, and the `--v4-` sizes and fonts lose their prefix.
+    No design flag: a page is either version 3 or 4.
 
 ## Alternatives
 - **Fonts: `geist` (Vercel).** The upstream package, but built for `next/font` (it imports `next/font/local`) and
@@ -105,6 +108,9 @@ they do now and how version 3 and 4 live side by side until the other pages move
 - **Lists as terminal windows** (the first boards). Strong look, but heavy on a phone and the window frame adds
   nothing. **Tabs on every width** (option 2): one component, but a wide screen hides half of what is new.
 - **Monospace everywhere.** The strongest tech look, but slow to read on Privacy, Terms and the guide's reasons.
+- **One font, Space Grotesk, everywhere.** Kept on 2 November 2026: no new font downloads. The header, the footer
+  and Home are built in Geist Mono and Geist, as the boards draw them. Which one stays for every page is open on the
+  [roadmap](../../roadmap.md).
 - **The guide on every search.** Simpler, but it spends model calls and the daily AI answers on searches that are
   only a name ([0017](../guide/0017-guide-cost-guard.md)).
 - **One big pull request.** Fastest to finish, hardest to review and to roll back.
@@ -124,8 +130,9 @@ they do now and how version 3 and 4 live side by side until the other pages move
   `total` on GET /recent and GET /events/upcoming (which also takes `days`). The Unknown count per facet is still open.
 - For a while the site shows two designs and loads two font families on the pages still on version 3. The header and
   footer are already version 4 on every page.
-- The initial JavaScript is 164.5 of 165 KiB gzip: the radar, the phone tabs, the Sources page and the account page
-  load on demand to fit. The next page that moves must make room first.
+- The initial JavaScript is 165.8 KiB gzip, over the 165 KiB budget, with the examples from the pool on Home: the
+  radar, the phone tabs, the Sources page and the account page already load on demand. Making room is on the
+  [roadmap](../../roadmap.md).
 - What is not built yet is on the [roadmap](../../roadmap.md) (section 6).
 
 Flowchart: [flow-0042-redesign](../../diagrams/flow-0042-redesign.svg). Sequence:

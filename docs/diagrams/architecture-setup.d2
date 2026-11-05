@@ -1,4 +1,4 @@
-# Architecture, view 5 of 6: Guide me on a resource page. The setup module, its ports and the adapters that answer them.
+# Architecture, view 5 of 6: Set it up on a resource page. The setup module, its ports and the adapters that answer them.
 # The registry entry and the README give the run options; the tool guide asks the model for steps, from the tool's own documents.
 # Source of truth: backend/src/main/java/ai/helper2/setup/web/SetupController.java,
 #   backend/src/main/java/ai/helper2/setup/usecase/GetResourceSetup.java, setup/usecase/GetToolGuide.java,
@@ -18,7 +18,7 @@ vars: {
 
 direction: right
 
-browser: "Browser\nresource page, \"Guide me\"" {class: person}
+browser: "Browser\nresource page, \"Set it up\"" {class: person}
 
 setup: "setup (Kotlin domain)" {
   class: group
@@ -66,7 +66,7 @@ registry: "registry.modelcontextprotocol.io" {class: ext}
 docs: "api.github.com · huggingface.co\ncdn.jsdelivr.net (npm READMEs)" {class: ext}
 nebius: "Nebius Token Factory\nNano, or Super with reasoning on" {class: ai}
 
-browser -> setup.ctl: "Guide me" {class: hot}
+browser -> setup.ctl: "Set it up" {class: hot}
 setup.usecase -> catalog: "resource detail"
 setup.specs -> platform.http
 setup.materials -> platform.http

@@ -29,6 +29,7 @@ import type {
   ExampleDrafts,
   HomeExampleChange,
   HomeExampleInput,
+  HomeExamplePool,
   SearchResponse,
   SourceInfo,
 } from './types';
@@ -235,6 +236,12 @@ export const api = {
     request<RecentResponse>('GET', '/recent', { query, signal }),
   listUpcomingEvents: (query: URLSearchParams, signal?: AbortSignal) =>
     request<UpcomingEventsResponse>('GET', '/events/upcoming', { query, signal }),
+  /** The examples the home page picks from (ADR 0049): the same for everyone, cached for 5 minutes. */
+  listHomeExamples: (lang: string, signal?: AbortSignal) =>
+    request<HomeExamplePool>('GET', '/home/examples', {
+      query: new URLSearchParams({ lang }),
+      signal,
+    }),
   getResource: (id: string, signal?: AbortSignal) =>
     request<ResourceDetail>('GET', `/resources/${encodeURIComponent(id)}`, { signal }),
   getResourceSetup: (id: string, signal?: AbortSignal) =>

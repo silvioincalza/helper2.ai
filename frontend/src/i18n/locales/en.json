@@ -11,8 +11,8 @@
     "opensNewTab": "(opens in a new tab)"
   },
   "guideMe": {
-    "label": "Guide me",
-    "aria": "Guide me: {{title}}"
+    "label": "Set it up",
+    "aria": "Set up {{title}}"
   },
   "nav": {
     "main": "Main",
@@ -60,9 +60,11 @@
     "name": "helper2.ai",
     "title": "The metasearch for the AI universe.",
     "lede": "One search across the world of AI for models, apps, MCP servers and papers. A pick with proof, plus the latest AI news and events.",
-    "hint": "A few words search. A question of {{count}} words or more also gets the guide's picks.",
+    "hint": "A few words search. A question of {{count}} words or more can also ask the guide for picks.",
     "suggestGuide": "Sounds like a question — ask the guide: “{{q}}” →",
     "examples": "Try:",
+    "exampleAi": "Drafted with AI, checked by a person",
+    "exampleAiMark": "AI",
     "example": {
       "papers": {
         "label": "Summarise research papers",
@@ -149,7 +151,8 @@
     "partialBody": "Only {{ok}} of {{total}} queried sources responded, so these results may be incomplete.",
     "noticeInfo": "Notice",
     "noticeWarning": "Warning",
-    "alsoSearched": "Also searched for: {{terms}}",
+    "alsoSearchedLabel": "Also searched for:",
+    "translatedNote": "Translated by AI",
     "lexiconNote": "added from a fixed word list, not AI",
     "suggestUseCase": "Narrow by use case:",
     "emptyTitle": "No results from the sources searched",
@@ -534,7 +537,12 @@
     "actionFailed": "The action failed. Please try again.",
     "scoutRuns": "Scout runs",
     "runNow": "Run now",
+    "runAll": "Run all now",
+    "runSource": "Run {{source}} now",
+    "runWaits": "A run is in progress. You can start the next one when it ends.",
     "noRuns": "No runs yet.",
+    "runsLoadError": "Could not load the Scout runs.",
+    "runsRefreshError": "Could not reload the Scout runs. The list is from the last load.",
     "runInProgress": "A Scout run is already in progress. Try again when it ends.",
     "reviewStatus": {
       "OPEN": "Open",
@@ -560,7 +568,8 @@
       "started": "Started",
       "seen": "Items seen",
       "changed": "Items changed",
-      "message": "Message"
+      "message": "Message",
+      "run": "Run"
     },
     "kindFilter": "Kind",
     "allKinds": "All kinds",
@@ -970,9 +979,10 @@
       {
         "title": "How we mark AI text",
         "items": [
-          "On the screen, every text written by an AI model has a label next to it: “AI-written” in the guide’s picks bar, on its search terms, on a name it did not find in our sources, on its reasons in the result list and the preview, and on its comparison, explanation and prompt; “Read by AI” on the requirements it read from your question; “AI summary” and “Extracted by AI” on a description or a value in the preview and on the resource page; and “Steps written by AI” in the setup guide.",
+          "On the screen, every text written by an AI model has a label next to it: “AI-written” in the guide’s picks bar, on its search terms, on its question back to you, on a name it did not find in our sources, on its reasons in the result list and the preview, and on its comparison, explanation and prompt; “Read by AI” on the requirements it read from your question; “AI summary” and “Extracted by AI” on a description or a value in the result list, the preview and on the resource page; “Translated by AI” on the English translation of a query in another language; and “Steps written by AI” in the setup guide.",
+          "On the home page, an example a model drafted and a person checked has a small “AI” mark: “Drafted with AI, checked by a person”.",
           "In the page, the same text carries the HTML attribute data-ai-generated=\"true\", and data-ai-model with the model name when we know it.",
-          "In our API, a guide answer has an aiContent object that names the provider, the models and the fields they wrote. Catalog values carry an origin such as AI_SUMMARY or AI_EXTRACTED.",
+          "In our API, a guide answer has an aiContent object that names the provider, the models and the fields they wrote. Catalog values carry an origin such as AI_SUMMARY or AI_EXTRACTED. A search gives the translation of a query in its own field, translatedQuery.",
           "Quotes, titles and links are never written by AI. They come from the sources."
         ]
       },
@@ -1001,11 +1011,12 @@
           "Saved items: if you are signed in, each saved resource (its link, title and type) and when you saved it, stored on our server with your account. If you are not signed in, they stay only in your browser; when you sign in, they move to your account.",
           "Reports you send about a resource: the text you write, linked to your account if you are signed in.",
           "Web search counters: Tavily searches per day and feature, under a keyed hash of your IP address and the date (no address stored; days cannot be linked), or your account ID once account limits are on.",
-          "Guide question counters: how many new questions the guide answered for your IP address today (for IPv6, its /64 network), under a hash of the address, so we can apply the daily limit in the Terms.",
+          "Guide question counters: how many new questions the guide answered for you today, under a keyed hash of your IP address (for IPv6, its /64 network) that changes every day, so we can apply the daily limit in the Terms. The address itself is not stored.",
+          "Your limits for today: when you open the site, we read these two counters under the same daily hash of your IP address, or your account once account limits are on, and send only what is left today (guide questions, and web searches for search and the guide) back to your browser, with the time they reset. Reading them does not count as a use, stores nothing new and does not send your address.",
           "Stored Tavily results, under a keyed hash of the question, not its text.",
           "Guide question fingerprints, only when similar-question reuse is on: a list of numbers (an embedding) computed from your guide question, kept with its cached answer so a later question with the same meaning can get that answer. Not linked to you or your account.",
           "Usage totals: how many searches we answer, how many had results from only some sources, and how many found nothing. They are counts only: never the text you typed, your IP address or your account.",
-          "Technical data: your IP address is kept in memory for a short time to limit abuse (rate limits). Our servers and our web gateway also write technical logs, which can include your IP address and the pages you request. The address of a search page contains what you typed: your search words and, when you ask the guide, your question. So these logs can keep your search text next to your IP address. Do not type personal data into the search box. Our servers also record request traces: the timing of each step of a request, linked to its log lines by an ID, without your IP address or your search text. We keep these logs and traces for up to 3 months to keep the service running and secure, then delete them."
+          "Technical data: to limit abuse (rate limits and the number of guide questions per day), we count your requests under a keyed hash of your IP address that changes every day. The address itself is not stored with these counts, and the counts of two days cannot be linked. Only when our counter store is down, your IP address is kept in our server's memory for the length of the limit instead. Our servers and our web gateway also write technical logs, which can include your IP address and the pages you request. The address of a search page contains what you typed: your search words and, when you ask the guide, your question. So these logs can keep your search text next to your IP address. Do not type personal data into the search box. Our servers also record request traces: the timing of each step of a request, linked to its log lines by an ID, without your IP address or your search text. We keep these logs and traces for up to 3 months to keep the service running and secure, then delete them."
         ]
       },
       {
@@ -1054,7 +1065,7 @@
         "items": [
           "Cached searches: up to 30 minutes. Cached guide answers and their question fingerprints: up to 24 hours, deleted by the next daily clean-up.",
           "Technical logs and request traces: up to 3 months. Usage totals: 90 days.",
-          "Web search counters: 24 hours. Guide question counters: 2 days. Stored results: 7 days.",
+          "Web search counters: 24 hours. Rate-limit counters: 1 minute or 1 hour (the length of the limit). Guide questions per day: 2 days. Stored results: 7 days.",
           "English translations of searches typed in another language: 24 hours. Search vectors (the numbers we use to search by meaning): 7 days. Both are stored under a hash of the search, not its text, and deleted from the database within a day after they expire.",
           "Your account, its display settings and your saved items: until you delete them, or 24 months after you last signed in. Then we delete the account, its settings and its saved items.",
           "Reports: 12 months after they were handled. If your account is deleted, your reports stay without your name until then.",

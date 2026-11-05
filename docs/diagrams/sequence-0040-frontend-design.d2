@@ -1,5 +1,5 @@
 # Sequence: the design from the home page to a question on the results page, the guide picks and a shared link.
-# Shows results shown before the guide answers (the guide runs only for a question: 4+ words or Shift+Enter), the
+# Shows results shown before the guide answers (the guide runs only from its button; Enter searches), the
 # reserved picks bar, the SSE answer that moves the picks to the top of the list in one update (the result the user
 # opened stays selected), the selected result written to the URL with replace, and a shared link that opens the same
 # result.
@@ -25,12 +25,12 @@ landing: Home {
   home -> feeds: "news of the last 7 days,\nevents of the next 3 months"
   feeds -> home: "rows"
   home -> user: "headline, box, the two lists,\nwhat helper2 does"
-  user -> home: "types a question, presses Enter"
+  user -> home: "types a question, clicks Ask the guide"
   home -> page: "navigate /search?q=…" {class: hot}
 }
 
 search_first: Results first {
-  user -> page: "/search?q=an MCP server for my Postgres database\n&ask=… (4+ words: a question)"
+  user -> page: "/search?q=an MCP server for my Postgres database\n&ask=… (asked with the button)"
   page -> search: "search"
   search -> page: "results"
   page -> user: "list at once; picks bar reserved:\n\"Guide is reading 14 candidates…\"" {class: hot}

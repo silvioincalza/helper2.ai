@@ -641,6 +641,13 @@ helper2:
     # resources given to the model per run.
     draft-calls: ${H2_EXAMPLES_DRAFT_CALLS:5}
     draft-sources: ${H2_EXAMPLES_DRAFT_SOURCES:12}
+  pages:
+    # Pages for crawlers (ADR 0050). Every canonical link and sitemap address uses this host, on staging too.
+    public-base-url: ${H2_PUBLIC_BASE_URL:https://helper2.ai}
+    # Same switch as helper2.security.noindex: robots.txt allows all and there is no sitemap.
+    noindex: ${H2_NOINDEX:false}
+    template: classpath:/static/index.html
+    sitemap-limit: 50000
   retention:
     # When the purges run (UTC); each module's purge runs on one replica (cluster lock).
     cron: ${H2_RETENTION_CRON:0 17 3 * * *}
@@ -698,7 +705,8 @@ helper2:
     fresh-time-bound: ${H2_TAVILY_FRESH_TIMEBOUND:PT24H}
     fresh-general: ${H2_TAVILY_FRESH_GENERAL:PT48H}
     quota:
-      # HMAC key of the guest counters and of the stored query keys (OpenBao). Required while Tavily is enabled.
+      # HMAC key of the client pseudonyms (rate limits, guide quota, guest counters) and of the stored query keys
+      # (OpenBao). Required while Tavily is enabled; without it the pseudonyms use a random key per process.
       key-secret: ${H2_QUOTA_KEY_SECRET:}
       # Per visitor and feature, per UTC day. Staging raises them for testing (chart app.dailyLimits).
       guest:

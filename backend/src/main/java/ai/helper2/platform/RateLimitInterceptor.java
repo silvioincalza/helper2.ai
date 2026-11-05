@@ -1,5 +1,6 @@
 package ai.helper2.platform;
 
+import ai.helper2.platform.quota.QuotaKeys;
 import ai.helper2.platform.resilience.Resilience;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.servlet.DispatcherType;
@@ -22,8 +23,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 /**
  * Per-client rate limits keyed on the handler method Spring actually routed the request to, not on
  * the raw request URI. Raw-URI matching can be bypassed with path variants (";param", encoding,
- * duplicate slashes) that still reach the same controller. Counted in Redis, shared by all
- * replicas; in each replica's memory while Redis is down (RedisRateLimiter).
+ * duplicate slashes) that still reach the same controller. Counted in Redis under the client's
+ * pseudonym of the day, shared by all replicas; in each replica's memory while Redis is down
+ * (RedisRateLimiter).
  */
 @Configuration(proxyBeanMethods = false)
 class RateLimitInterceptor implements HandlerInterceptor, WebMvcConfigurer {
@@ -32,6 +34,7 @@ class RateLimitInterceptor implements HandlerInterceptor, WebMvcConfigurer {
   private final Map<String, RateLimiter> limiters;
 
   private final StringRedisTemplate redis;
+  private final QuotaKeys keys;
   private final Resilience resilience;
   private final Clock clock;
   private final MeterRegistry meters;
@@ -39,6 +42,7 @@ class RateLimitInterceptor implements HandlerInterceptor, WebMvcConfigurer {
   RateLimitInterceptor(
       Clock clock,
       ObjectProvider<StringRedisTemplate> redis,
+      QuotaKeys keys,
       Resilience resilience,
       MeterRegistry meters,
       @Value("${helper2.rate-limit.search-per-minute:60}") int searchPerMinute,
@@ -46,6 +50,7 @@ class RateLimitInterceptor implements HandlerInterceptor, WebMvcConfigurer {
       @Value("${helper2.rate-limit.guide-per-minute:10}") int guidePerMinute,
       @Value("${helper2.rate-limit.recent-per-minute:60}") int recentPerMinute) {
     this.redis = redis.getIfAvailable();
+    this.keys = keys;
     this.resilience = resilience;
     this.clock = clock;
     this.meters = meters;
@@ -73,7 +78,7 @@ class RateLimitInterceptor implements HandlerInterceptor, WebMvcConfigurer {
     RateLimiter inMemory = new InMemoryRateLimiter(limit, window, clock);
     return redis == null
         ? inMemory
-        : new RedisRateLimiter(name, limit, window, redis, resilience, inMemory, meters);
+        : new RedisRateLimiter(name, limit, window, keys, redis, resilience, inMemory, meters);
   }
 
   @Override

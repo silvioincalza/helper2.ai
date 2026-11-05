@@ -22,6 +22,7 @@ import ai.helper2.guide.ReasonCheck
 import ai.helper2.guide.ReasonClaim
 import ai.helper2.guide.steps.rankBand
 import ai.helper2.guide.wantsReading
+import ai.helper2.platform.quota.QuotaKeys
 import ai.helper2.search.NoticeCode
 import ai.helper2.search.ResultObserver
 import ai.helper2.search.SearchCache
@@ -450,7 +451,7 @@ class AskGuideTest {
         model,
         clock,
         cache = GuideAnswerCache(Duration.ofHours(24), clock, MemoryAnswerStore()),
-        quota = ClientQuota(1, clock),
+        quota = ClientQuota(1, clock, QuotaKeys("test-secret", clock)),
       )
 
     assertTrue(guide.ask(need, null, client = "10.0.0.1").recommendations.any { it.aiReasoned })
@@ -762,7 +763,13 @@ class AskGuideTest {
   @Test
   fun `a question over the client quota is counted as client_quota`() {
     val guide =
-      AskGuide(search, whisperPick(), clock, meters = meters, quota = ClientQuota(0, clock))
+      AskGuide(
+        search,
+        whisperPick(),
+        clock,
+        meters = meters,
+        quota = ClientQuota(0, clock, QuotaKeys("test-secret", clock)),
+      )
 
     guide.ask(need, null, client = "10.0.0.1")
 

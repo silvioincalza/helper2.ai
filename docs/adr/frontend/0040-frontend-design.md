@@ -41,8 +41,8 @@ and chose between options for each part.
    selected, else the first row; an `id` the user chose (a click, a shared link, a reload) always wins, so the answer
    never takes the preview away from a result the user opened. An `id` that is not in the results counts as none.
    The `id` is untrusted input: it only selects among results already on the page.
-6. **Guide picks bar, picks first in one update.** The guide runs only for a question: four words or more, or
-   Shift+Enter. A name search ("pgvector") gets no picks bar and no model call
+6. **Guide picks bar, picks first in one update.** The guide runs only when the user asks it: the "Ask the guide"
+   button (it says so from four words), or the "Sounds like a question" hint. Enter always searches. A name search ("pgvector") gets no picks bar and no model call
    ([0017](../guide/0017-guide-cost-guard.md)). For a question, a box above the list is there from the first render:
    "Guide is reading N candidates… picks will appear here". Its height is reserved, and so are the lines that come
    with the answer ("web searches left" and "How the guide decided"), so the top of the list does not move when the
@@ -112,11 +112,14 @@ and chose between options for each part.
   resource page with the id encoded. `OneBox` sends results there and searches live only
   on that page.
 - `frontend/src/pages/HomePage.tsx`, `routes.tsx` — `/` empty is the home page; `/search` shows results and goes home
-  with no query; `/?q=` shows results with a canonical link to `/search`; there is no `/guide` route.
+  with no query; `/?q=` shows results too; there is no `/guide` route. Both result pages carry
+  `<meta name="robots" content="noindex, follow">`; so do `/saved` and `/account`, and the not-found pages say
+  `noindex` (`components/Robots.tsx`).
 - `frontend/src/components/results/Results.tsx` — the results page: the box, the picks bar (questions only), type
   tabs, one row with the "Filters" toggle (sort, list or timeline, the filter panel) and the detected use cases,
-  search notices, the list of `SelectableRow`s with the guide's picks first, the preview beside the list from 861 px
-  and inside it below, the pager, and the sources at the bottom. Every state says what happened and offers a next
+  search notices, the list of `SelectableRow`s with the guide's picks first (each title a link to its resource page;
+  from 861 px a plain click selects it), the preview beside the list from 861 px, on a phone a row opens the resource
+  page, the pager, and the sources at the bottom. Every state says what happened and offers a next
   step; after a page change, focus goes to the result count. `results.css`. `frontend/src/lib/selection.ts` — the
   selected result (`id` in the URL, else pick #1, else the first), the picks by resource id and the list with the
   picks first. `frontend/src/hooks/useMediaQuery.ts` — beside the list or inside it.

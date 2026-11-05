@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import { Robots } from '@/components/Robots';
 import { StatePanel } from '@/components/ui/StatePanel';
 import './notfound.css';
 
@@ -8,6 +9,7 @@ export default function NotFoundPage() {
   const { t } = useTranslation();
   return (
     <div className="h2-notfound">
+      <Robots content="noindex" />
       <StatePanel
         tone="notice"
         level={1}

@@ -36,9 +36,9 @@ function typingIn(target: EventTarget | null): boolean {
 }
 /**
  * The one search box: the hero on /, above the results on /search, in the header on every other page. On /search
- * typing searches live; elsewhere Enter opens /search. A question (four words or more) also asks the AI guide, and
- * Shift+Enter always does. Everything lives in the URL: `q` = search, `ask` = the question the guide answered, plus
- * the search filters. `hero`: the large box of the home page.
+ * typing searches live; elsewhere Enter opens /search. Enter (and Shift+Enter) always searches: only the "Ask the
+ * guide" button, shown for a question (four words or more), asks the AI guide. Everything lives in the URL: `q` =
+ * search, `ask` = the question the guide answered, plus the search filters. `hero`: the large box of the home page.
  */
 export function OneBox({ hero = false }: { hero?: boolean }) {
   const { t } = useTranslation();
@@ -79,7 +79,7 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
   const cancelLive = () => window.clearTimeout(timer.current);
   useEffect(() => cancelLive, []);
   const onType = (typed: string) => {
-    // Enter searches or asks, so the box holds one line of text: a pasted line break becomes a space.
+    // Enter searches, so the box holds one line of text: a pasted line break becomes a space.
     const value = typed.replace(/[\r\n]+/g, ' ');
     setText(value);
     cancelLive();
@@ -88,8 +88,8 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
     timer.current = window.setTimeout(() => {
       const now = latest.current;
       // Only on the results page: on the home page a search moves to /search, so it waits for Enter.
-      // New words drop the old question: the guide's picks answered that question, not these words. Enter (or
-      // "Ask the guide") asks again.
+      // New words drop the old question: the guide's picks answered that question, not these words. "Ask the
+      // guide" asks again.
       if (now.pathname === RESULTS_PATH && q !== now.state.q)
         go(patchState(now.state, { q }), '', now.sp, true);
     }, LIVE_SEARCH_MS);
@@ -138,11 +138,11 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
       return;
     }
     if (e.key !== 'Enter' || e.nativeEvent.isComposing) return;
-    // A textarea would add a line: Enter submits instead, as a one-line search field does.
+    // A textarea would add a line: Enter searches instead, as a one-line search field does, whatever the button
+    // says. Asking the guide spends an AI answer, so it takes the button (a decision by Silvio, UJ-2).
     e.preventDefault();
-    if (e.shiftKey) ask();
-    else if (!text.trim()) clear();
-    else if (!cannotSubmit) e.currentTarget.form?.requestSubmit();
+    if (!text.trim()) clear();
+    else runSearch();
   };
 
   // The box grows with the text. Measured at height auto with the transition off, then set back and moved to the
@@ -253,12 +253,14 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
           </kbd>
         )}
         {/* One button whose job follows the text: a few words search, a sentence asks. A new question replaces one
-            still being answered. */}
+            still being answered. The ↵ hint shows only when Enter does what the button does. */}
         <button type="submit" className="btn btn-primary">
           {asking ? t('guide.ask') : t('search.submit')}
-          <kbd className="enter-key" aria-hidden="true">
-            ↵
-          </kbd>
+          {!asking && (
+            <kbd className="enter-key" aria-hidden="true">
+              ↵
+            </kbd>
+          )}
         </button>
       </form>
     </div>

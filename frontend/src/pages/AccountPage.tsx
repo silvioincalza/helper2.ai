@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { api, deleteMyAccount } from '@/api/client';
 import { useMe } from '@/context/MeContext';
+import { Robots } from '@/components/Robots';
 import { useTitle } from '@/hooks/useTitle';
 import './text.css';
 
@@ -51,6 +52,16 @@ function RadarMotionSetting({ on, onSaved }: { on: boolean; onSaved: () => void 
  * confirmation.
  */
 export default function AccountPage() {
+  // A personal page: nothing in it for a search engine.
+  return (
+    <>
+      <Robots content="noindex, follow" />
+      <Account />
+    </>
+  );
+}
+
+function Account() {
   const { t } = useTranslation();
   const { me, loaded, refresh } = useMe();
   const [confirming, setConfirming] = useState(false);

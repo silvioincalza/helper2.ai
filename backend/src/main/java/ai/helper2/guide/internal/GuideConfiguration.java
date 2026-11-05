@@ -15,6 +15,7 @@ import ai.helper2.platform.llm.CallCounter;
 import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.LlmSettings;
 import ai.helper2.platform.llm.ModelCallMetrics;
+import ai.helper2.platform.quota.QuotaKeys;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.search.usecase.SearchResources;
 import io.micrometer.core.instrument.Gauge;
@@ -112,8 +113,9 @@ class GuideConfiguration {
   ClientQuota guideClientQuota(
       Clock clock,
       CallCounter budgetCounter,
+      QuotaKeys quotaKeys,
       @Value("${helper2.guide.client-daily-questions:30}") int clientDailyQuestions) {
-    return new ClientQuota(clientDailyQuestions, clock, budgetCounter);
+    return new ClientQuota(clientDailyQuestions, clock, quotaKeys, budgetCounter);
   }
 
   @Bean

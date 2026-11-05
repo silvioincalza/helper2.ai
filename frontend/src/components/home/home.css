@@ -1,5 +1,5 @@
 /* Home in design v4 (ADR 0042): title and radar, the pinned search box, New this week and Coming up, what helper2
-   does. Only `--v4-` tokens. Every CSS animation runs a fixed number of times and ends within 5 s; the radar moves by
+   does. The v4 tokens of tokens.css. Every CSS animation runs a fixed number of times and ends within 5 s; the radar moves by
    a JavaScript clock. */
 
 /* Home spans the window (the radar, the pinned box); the main column of the other pages does not apply. */
@@ -36,9 +36,9 @@
   padding-bottom: var(--space-5);
   max-height: 34rem;
   transition:
-    max-height var(--v4-fold) ease,
-    opacity var(--v4-fold) ease,
-    padding var(--v4-fold) ease;
+    max-height var(--fold) ease,
+    opacity var(--fold) ease,
+    padding var(--fold) ease;
 }
 .v4-home .v4-hero__title {
   margin: 0;
@@ -52,14 +52,14 @@
   display: block;
 }
 .v4-home .v4-hero__name {
-  color: var(--v4-accent-ink);
+  color: var(--accent-ink);
 }
 .v4-home .v4-hero__lede {
   margin: 0;
   max-width: 38rem;
   font-size: 1.0625rem;
   line-height: 1.65;
-  color: var(--v4-ink-2);
+  color: var(--ink-2);
 }
 
 /* The radar (ADR 0042, decision 4), like a navigation radar: full rings around the title, a beam that turns once
@@ -77,11 +77,11 @@
 }
 .v4-radar__rings circle {
   fill: none;
-  stroke: var(--v4-ring);
+  stroke: var(--ring);
   stroke-width: 1;
 }
 .v4-radar__beam path {
-  fill: color-mix(in srgb, var(--v4-accent) 10%, transparent);
+  fill: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 .v4-radar__dots {
   margin: 0;
@@ -140,13 +140,13 @@
   gap: 3px;
   min-width: 24px;
   min-height: 24px;
-  color: var(--v4-ink);
+  color: var(--ink);
   text-decoration: none;
   pointer-events: auto;
   border-radius: 4px;
 }
 .v4-dot:focus-visible {
-  outline: 2px solid var(--v4-focus, var(--v4-accent-deep));
+  outline: 2px solid var(--focus, var(--accent-deep));
   outline-offset: 2px;
 }
 .v4-dot:hover .v4-dot__name {
@@ -160,34 +160,34 @@
 }
 .v4-dot__name {
   font: 400 11px/1.3 var(--v4-font-mono);
-  color: var(--v4-ink-2);
+  color: var(--ink-2);
   white-space: nowrap;
 }
 .v4-dot--answering {
-  --tone: var(--v4-accent);
+  --tone: var(--accent);
 }
 .v4-dot--warn {
-  --tone: var(--v4-status-warn-ink);
+  --tone: var(--status-warn-ink);
 }
 .v4-dot--failed {
-  --tone: var(--v4-danger);
+  --tone: var(--danger);
 }
 .v4-dot--idle {
-  --tone: var(--v4-muted);
+  --tone: var(--muted);
 }
 
 /* ===== The pinned search box ===== */
 .v4-pinned {
   position: sticky;
-  top: var(--v4-header-height);
+  top: var(--header-height);
   z-index: 10;
-  background: var(--v4-bg);
+  background: var(--bg);
   border-bottom: 1px solid transparent;
   transition: box-shadow var(--motion);
 }
 .v4-pinned.is-stuck {
-  border-bottom-color: var(--v4-border);
-  box-shadow: var(--v4-shadow-pinned);
+  border-bottom-color: var(--border);
+  box-shadow: var(--shadow-pinned);
 }
 .v4-pinned__inner {
   max-width: calc(820px + 2 * var(--space-5));
@@ -196,7 +196,7 @@
   gap: var(--space-3);
   padding-top: var(--space-2);
   padding-bottom: var(--space-5);
-  transition: padding var(--v4-fold) ease;
+  transition: padding var(--fold) ease;
 }
 .v4-pinned.is-stuck .v4-pinned__inner {
   padding-top: var(--space-3);
@@ -210,8 +210,8 @@
   max-height: 20rem;
   overflow: hidden;
   transition:
-    max-height var(--v4-fold) ease,
-    opacity var(--v4-fold) ease;
+    max-height var(--fold) ease,
+    opacity var(--fold) ease;
 }
 .v4-pinned.is-stuck .v4-pinned__more {
   max-height: 0;
@@ -221,7 +221,7 @@
 .v4-home .v4-hint {
   margin: 0;
   font: 400 0.8125rem/1.5 var(--v4-font-mono);
-  color: var(--v4-muted);
+  color: var(--muted);
   text-align: center;
 }
 .v4-home .home-examples {
@@ -234,45 +234,61 @@
 .v4-home .home-examples__label {
   margin: 0;
   font: 400 0.875rem/1.4 var(--v4-font-mono);
-  color: var(--v4-muted);
+  color: var(--muted);
 }
 .v4-home .home-examples .inline-list {
   justify-content: center;
 }
+/* While the pool loads, the row holds the built-in pick, unseen, so the chips appear without moving the page. */
+.home-examples .chip {
+  position: relative;
+}
+.home-examples__waiting {
+  visibility: hidden;
+}
+/* The mark on an example a model drafted (EU AI Act Art. 50); the full words are its title and screen-reader text. */
+.v4-home .home-examples__ai {
+  padding: 0 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  font: 500 11px/16px var(--v4-font-mono);
+  color: var(--ink-2);
+  white-space: nowrap;
+}
 .v4-home .chip-ghost {
-  min-height: var(--v4-target-min);
+  min-height: var(--target-min);
   padding: 0 var(--space-4);
   font: 400 0.9375rem/1 var(--v4-font-mono);
-  color: var(--v4-ink);
+  color: var(--ink);
   background: transparent;
-  border: 1px solid var(--v4-border-strong);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-pill);
   cursor: pointer;
 }
 .v4-home .chip-ghost:hover {
-  background: var(--v4-surface);
+  background: var(--surface);
 }
 .v4-home .v4-legend {
   margin: 0;
   font: 400 0.75rem/1.7 var(--v4-font-mono);
-  color: var(--v4-muted);
+  color: var(--muted);
   text-align: center;
 }
 .v4-legend__key {
   font-weight: 600;
 }
 .v4-home .v4-legend__link {
-  color: var(--v4-accent-ink);
+  color: var(--accent-ink);
   text-underline-offset: 3px;
 }
 .v4-legend__key.v4-dot--answering {
-  color: var(--v4-accent);
+  color: var(--accent);
 }
 .v4-legend__key.v4-dot--warn {
-  color: var(--v4-status-warn-ink);
+  color: var(--status-warn-ink);
 }
 .v4-legend__key.v4-dot--failed {
-  color: var(--v4-danger);
+  color: var(--danger);
 }
 
 /* ===== New this week, Coming up ===== */
@@ -286,7 +302,7 @@
 .v4-tabs {
   min-width: 0;
   /* The pinned box sits under the header: a jump to #news lands below both. */
-  scroll-margin-top: calc(var(--v4-header-height) + var(--v4-box-height) + var(--space-6));
+  scroll-margin-top: calc(var(--header-height) + var(--v4-box-height) + var(--space-6));
 }
 .v4-list__head {
   display: flex;
@@ -294,7 +310,7 @@
   justify-content: space-between;
   gap: var(--space-3);
   padding-bottom: var(--space-2);
-  border-bottom: 1px dashed var(--v4-border-strong);
+  border-bottom: 1px dashed var(--border-strong);
 }
 .v4-home .v4-list__title {
   margin: 0;
@@ -303,16 +319,16 @@
   text-transform: lowercase;
 }
 .v4-prompt {
-  color: var(--v4-accent-ink);
+  color: var(--accent-ink);
 }
 .v4-home .v4-list__cmd {
   margin: 0;
   font: 400 0.8125rem/1.4 var(--v4-font-mono);
-  color: var(--v4-muted);
+  color: var(--muted);
 }
 .v4-list__total {
   font: 400 0.75rem/1 var(--v4-font-mono);
-  color: var(--v4-muted);
+  color: var(--muted);
 }
 .v4-table {
   width: 100%;
@@ -325,13 +341,13 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   text-align: left;
-  color: var(--v4-muted);
-  border-bottom: 1px solid var(--v4-ink);
+  color: var(--muted);
+  border-bottom: 1px solid var(--ink);
 }
 .v4-table td {
   padding: 6px var(--space-2) 6px 0;
   vertical-align: top;
-  border-bottom: 1px dashed var(--v4-border-strong);
+  border-bottom: 1px dashed var(--border-strong);
 }
 .v4-table th:last-child,
 .v4-table td:last-child {
@@ -340,15 +356,15 @@
 }
 .v4-cell-date {
   white-space: nowrap;
-  color: var(--v4-muted);
+  color: var(--muted);
 }
 .v4-cell-type {
-  color: var(--v4-accent-ink);
+  color: var(--accent-ink);
   text-transform: lowercase;
   white-space: nowrap;
 }
 .v4-cell-meta {
-  color: var(--v4-muted);
+  color: var(--muted);
   white-space: nowrap;
 }
 .v4-home .v4-cell-title a,
@@ -357,7 +373,7 @@
   min-height: 24px;
   padding: 4px 0;
   font: 400 0.9375rem/1.35 var(--v4-font-body);
-  color: var(--v4-ink);
+  color: var(--ink);
   text-decoration: none;
 }
 .v4-home .v4-cell-title a:hover,
@@ -367,19 +383,19 @@
 }
 .v4-on-now {
   font-weight: 600;
-  color: var(--v4-status-ok-ink);
+  color: var(--status-ok-ink);
 }
 .v4-not-stated {
-  color: var(--v4-status-warn-ink);
+  color: var(--status-warn-ink);
 }
 .v4-cmd {
   display: inline-block;
-  min-height: var(--v4-target-min);
+  min-height: var(--target-min);
   margin-top: var(--space-1);
   padding: 0;
-  font: 400 0.8125rem / var(--v4-target-min) var(--v4-font-mono);
+  font: 400 0.8125rem / var(--target-min) var(--v4-font-mono);
   text-align: left;
-  color: var(--v4-accent-ink);
+  color: var(--accent-ink);
   background: none;
   border: 0;
   cursor: pointer;
@@ -400,7 +416,7 @@
   display: block;
   height: 14px;
   border-radius: 4px;
-  background: var(--v4-surface-tint);
+  background: var(--surface-tint);
   animation: v4-pulse 1.6s ease-in-out 3;
 }
 @keyframes v4-pulse {
@@ -416,14 +432,14 @@
 .v4-tabs__list {
   display: flex;
   gap: var(--space-1);
-  border-bottom: 1px solid var(--v4-ink);
+  border-bottom: 1px solid var(--ink);
 }
 .v4-tab {
-  min-height: var(--v4-target-min);
+  min-height: var(--target-min);
   padding: 0 var(--space-3);
   font: 400 0.875rem/1 var(--v4-font-mono);
   text-transform: lowercase;
-  color: var(--v4-muted);
+  color: var(--muted);
   background: transparent;
   border: 1px solid transparent;
   border-bottom: 0;
@@ -434,26 +450,26 @@
 /* The selected tab: an open folder tab in ink, distinct from the focus outline. */
 .v4-tab[aria-selected='true'] {
   font-weight: 600;
-  color: var(--v4-ink);
-  background: var(--v4-bg);
-  border-color: var(--v4-ink);
+  color: var(--ink);
+  background: var(--bg);
+  border-color: var(--ink);
 }
 .v4-tabs__sep {
   align-self: center;
-  color: var(--v4-muted);
+  color: var(--muted);
   font: 400 0.875rem/1 var(--v4-font-mono);
 }
 .v4-tabs__panel .v4-list__cmd {
   padding: var(--space-2) 0;
-  border-bottom: 1px dashed var(--v4-border-strong);
+  border-bottom: 1px dashed var(--border-strong);
 }
 .v4-tab__total {
-  color: var(--v4-muted);
+  color: var(--muted);
   font-weight: 400;
 }
 .v4-tabs__panel {
   padding: var(--space-1) var(--space-3) var(--space-2);
-  border: 1px solid var(--v4-ink);
+  border: 1px solid var(--ink);
   border-top: 0;
   border-radius: 0 0 var(--radius-sm) var(--radius-sm);
 }
@@ -462,12 +478,12 @@
   flex-direction: column;
   gap: 2px;
   padding: var(--space-3) 0;
-  border-bottom: 1px dashed var(--v4-border-strong);
+  border-bottom: 1px dashed var(--border-strong);
 }
 .v4-log__meta,
 .v4-log__where {
   font: 400 0.8125rem/1.4 var(--v4-font-mono);
-  color: var(--v4-muted);
+  color: var(--muted);
 }
 .v4-home .v4-log__title {
   padding: 2px 0;
@@ -476,14 +492,14 @@
 /* ===== What helper2 does ===== */
 .v4-home .home-does {
   padding: var(--space-5) 0 var(--space-6);
-  border-top: 1px solid var(--v4-border);
+  border-top: 1px solid var(--border);
 }
 .v4-home .home-does__title {
   margin: 0 0 var(--space-4);
   font: 600 0.75rem/1.3 var(--v4-font-mono);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--v4-ink-2);
+  color: var(--ink-2);
 }
 .v4-home .home-does__list {
   display: grid;
@@ -499,7 +515,7 @@
 .v4-home .home-does__step {
   grid-row: span 2;
   font: 600 0.9375rem/1.5 var(--v4-font-mono);
-  color: var(--v4-accent-ink);
+  color: var(--accent-ink);
 }
 .v4-home .home-does__item h3 {
   margin: 0;
@@ -510,7 +526,7 @@
   margin: 0;
   font-size: 0.9375rem;
   line-height: 1.55;
-  color: var(--v4-ink-2);
+  color: var(--ink-2);
 }
 
 /* ===== Breakpoints ===== */

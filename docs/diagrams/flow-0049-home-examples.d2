@@ -2,7 +2,7 @@
 # Source of truth: backend/src/main/kotlin/ai/helper2/examples/ExampleCheck.kt, HomeExample.kt,
 #   backend/src/main/java/ai/helper2/examples/usecase/CheckHomeExamples.java, AddHomeExample.java, ChangeHomeExample.java,
 #   examples/internal/JdbcHomeExamples.java, SearchExampleSearch.java, HomeExampleCheckSchedule.java,
-#   frontend/src/lib/examples.ts.
+#   frontend/src/lib/examples.ts, frontend/src/components/home/HomeExamples.tsx.
 # Render: cd docs/diagrams && d2 fmt flow-0049-home-examples.d2 && d2 flow-0049-home-examples.d2 flow-0049-home-examples.svg
 
 ...@style
@@ -48,7 +48,7 @@ check: "Quality check\n(PENDING every 5 min, every example each night,\none repl
   rank -> fail: "none in 10"
 }
 
-home: "Home page\nGET /home/examples (ACTIVE and PASS, cached 5 min)\npicks 2 + 2 at random" {class: end}
+home: "Home page\nGET /home/examples (ACTIVE and PASS, cached 5 min)\npicks 2 + 2 at random;\nbuilt-in list if late (800 ms), failed or short" {class: end}
 
 write -> rules.text
 rules.unique -> pending: yes

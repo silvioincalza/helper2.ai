@@ -1,22 +1,15 @@
 import { lazy, Suspense, useEffect, useRef, useState, type RefObject } from 'react';
-import { useLocation, useNavigate } from 'react-router';
+import { useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import { HomeExamples } from '@/components/home/HomeExamples';
 import { HomeLists } from '@/components/home/HomeLists';
 import { RadarLegend } from '@/components/home/RadarLegend';
 import { OneBox } from '@/components/OneBox';
 import { api } from '@/api/client';
 import { useApi } from '@/hooks/useApi';
 import { useTitle } from '@/hooks/useTitle';
-import { pickExamples, type Example } from '@/lib/examples';
 import { radarSources } from '@/lib/v4Fields';
-import {
-  clampQuery,
-  parseSearchParams,
-  patchState,
-  QUESTION_WORDS,
-  RESULTS_PATH,
-  toSearchParams,
-} from '@/lib/searchState';
+import { QUESTION_WORDS } from '@/lib/searchState';
 import '@/components/home/home.css';
 
 /** The radar is decoration behind the title (absolutely placed, so nothing shifts when it arrives): it loads after the
@@ -71,19 +64,10 @@ function useScrollState(bar: RefObject<HTMLDivElement | null>) {
  */
 export default function Home() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const { hash, key } = useLocation();
   // One GET /sources for the radar and its legend (the cache shares it with the Sources page).
   const sources = useApi('sources', (signal) => api.listSources(signal));
   useTitle('');
-  // A new pick per page view, the same one while the page stays.
-  const [examples] = useState(() => pickExamples());
-  // An example searches with its path; asking the guide stays a choice on the results (it spends a daily answer).
-  const search = (example: Example) => {
-    const q = clampQuery(t(`home.example.${example.id}.query`));
-    const state = patchState(parseSearchParams(new URLSearchParams()), { q, path: example.path });
-    if (q) void navigate({ pathname: RESULTS_PATH, search: toSearchParams(state).toString() });
-  };
   // The radar and its legend show the same sources: the enabled ones run by someone else.
   const external = radarSources(sources.data ?? []);
   const bar = useRef<HTMLDivElement>(null);
@@ -118,24 +102,7 @@ export default function Home() {
           <OneBox hero />
           <div className="v4-pinned__more">
             <p className="v4-hint">{t('home.hint', { count: QUESTION_WORDS })}</p>
-            <section aria-labelledby="examples-h" className="home-examples">
-              <h2 id="examples-h" className="home-examples__label">
-                {t('home.examples')}
-              </h2>
-              <ul className="plain-list inline-list">
-                {examples.map((example) => (
-                  <li key={example.id}>
-                    <button
-                      type="button"
-                      className="chip chip-ghost"
-                      onClick={() => search(example)}
-                    >
-                      {t(`home.example.${example.id}.label`)}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </section>
+            <HomeExamples />
             {external.length > 0 && <RadarLegend sources={external} />}
           </div>
         </div>

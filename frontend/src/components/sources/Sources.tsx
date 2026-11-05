@@ -104,7 +104,11 @@ export function Sources() {
         <h2 id="all-h" ref={focusRef} tabIndex={-1} className="h2-sources__h">
           {t('sources.all')}
         </h2>
-        {q.loading && !list && <p role="status">{t('common.loading')}</p>}
+        {q.loading && !list && (
+          <p role="status" className="page-loading">
+            {t('common.loading')}
+          </p>
+        )}
         {!q.loading && q.error !== undefined && !list && (
           <StatePanel
             tone="error"

@@ -206,7 +206,7 @@ The evidence gate ([0015](0015-ai-guide-evidence-gate.md)) and the reason check 
 apply to every sentence the model writes, in every intent. The comparison and explanation limits are one
 `AnswerLimits`, rendered into their prompts and part of the answer cache key.
 
-- `SUGGEST`, `HOW_TO`, `LEARN`: picks. Every card carries its Guide me link ([0031](0031-setup-guide.md)); a course
+- `SUGGEST`, `HOW_TO`, `LEARN`: picks. Every card carries its "Set it up" link ([0031](0031-setup-guide.md)); a course
   card shows platform, credential, level, cost and format (§8).
 - `NEWEST`: picks newest first. The chooser and the reason check see each candidate's creation day as stated by its
   source (`created="…"`), so "a new tool" is checked against that date. A pick created outside the window is rejected

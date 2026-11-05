@@ -9,7 +9,7 @@ html {
 body {
   margin: 0;
   background: var(--bg);
-  color: var(--text);
+  color: var(--ink);
   font-family: var(--font-sans);
   font-size: 1rem;
   line-height: 1.55;
@@ -52,7 +52,7 @@ p {
   margin: 0 0 var(--space-3);
 }
 a {
-  color: var(--cyan);
+  color: var(--accent-ink);
   text-underline-offset: 3px;
 }
 a:hover {
@@ -63,13 +63,13 @@ code {
   font-size: 0.85em;
 }
 .muted {
-  color: var(--text-muted);
+  color: var(--muted);
 }
 .small {
   font-size: 0.85rem;
 }
 .lede {
-  color: var(--text-muted);
+  color: var(--muted);
   font-size: 1.1rem;
   max-width: 60ch;
 }
@@ -107,6 +107,12 @@ code {
   padding-bottom: var(--space-7);
   outline: none;
 }
+/* A page waiting for its data holds a screen of height, so the footer starts below the fold and the content does
+   not push it down when it arrives (CLS). Same idea as the results skeleton. */
+.page-loading {
+  min-height: 100dvh;
+  margin: 0;
+}
 
 :focus-visible {
   outline: 3px solid var(--focus);
@@ -117,10 +123,10 @@ code {
   position: absolute;
   left: var(--space-3);
   top: -4rem;
-  background: var(--surface-2);
-  color: var(--text);
+  background: var(--surface-tint);
+  color: var(--ink);
   padding: var(--space-2) var(--space-4);
-  border: 1px solid var(--cyan);
+  border: 1px solid var(--accent-ink);
   border-radius: var(--radius-sm);
   z-index: 100;
   transition: top var(--motion);
@@ -140,7 +146,7 @@ code {
   position: absolute;
   right: 0;
   margin-top: var(--space-1);
-  background: var(--surface-2);
+  background: var(--surface-tint);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   padding: var(--space-2);
@@ -150,6 +156,12 @@ code {
 .menu-list a {
   display: block;
   padding: var(--space-2);
+}
+/* On touch screens every button is at least target-min tall (v4: 44px). */
+@media (pointer: coarse) {
+  .btn {
+    min-height: var(--target-min);
+  }
 }
 /* text pages (mission, privacy) */
 .text-page {
@@ -172,8 +184,8 @@ code {
 /* controls */
 .btn {
   font: inherit;
-  color: var(--text);
-  background: var(--surface-2);
+  color: var(--ink);
+  background: var(--surface-tint);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   padding: var(--space-2) var(--space-4);
@@ -187,7 +199,7 @@ code {
     background var(--motion);
 }
 .btn:hover:not(:disabled, [aria-disabled='true']) {
-  border-color: var(--cyan);
+  border-color: var(--accent-ink);
 }
 .btn:disabled,
 .btn[aria-disabled='true'] {
@@ -200,24 +212,33 @@ code {
   border-color: var(--accent);
   font-weight: 600;
 }
+/* Hover lightens the saffron, so the ink text gets more contrast, not less (6.2:1 light, 8.5:1 dark). */
 .btn-primary:hover:not(:disabled, [aria-disabled='true']) {
-  background: var(--accent-ink);
-  border-color: var(--accent-ink);
+  background: color-mix(in srgb, var(--accent) 80%, #fff);
+  border-color: var(--on-accent);
+}
+/* A primary action that cannot run yet looks quiet, not broken: readable text, a control border, no fade. */
+.btn-primary:disabled,
+.btn-primary[aria-disabled='true'] {
+  opacity: 1;
+  background: var(--surface-tint);
+  color: var(--muted);
+  border-color: var(--border-strong);
 }
 .btn-ghost {
   background: transparent;
-  border-color: var(--border);
+  border-color: var(--border-strong);
   padding: var(--space-1) var(--space-3);
   font-size: 0.9rem;
 }
 .btn-ghost.is-saved {
-  border-color: var(--violet);
-  color: var(--violet);
+  border-color: var(--accent-deep);
+  color: var(--accent-deep);
 }
 .btn-link {
   background: none;
   border: 0;
-  color: var(--cyan);
+  color: var(--accent-ink);
   text-decoration: underline;
   padding: 0;
   text-underline-offset: 3px;
@@ -226,8 +247,8 @@ input,
 select,
 textarea {
   font: inherit;
-  color: var(--text);
-  background: var(--surface-1);
+  color: var(--ink);
+  background: var(--surface);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   padding: var(--space-2) var(--space-3);
@@ -235,7 +256,7 @@ textarea {
 }
 input[type='checkbox'],
 input[type='radio'] {
-  accent-color: var(--cyan);
+  accent-color: var(--accent-ink);
 }
 textarea {
   width: 100%;
@@ -266,13 +287,13 @@ textarea {
   padding: 0.1rem 0.5rem;
   border-radius: 999px;
   border: 1px solid var(--border-strong);
-  background: var(--surface-2);
-  color: var(--text);
+  background: var(--surface-tint);
+  color: var(--ink);
   white-space: nowrap;
 }
 .verif-verified {
-  border-color: var(--ok);
-  color: var(--ok);
+  border-color: var(--checked-ink);
+  color: var(--checked-ink);
 }
 .verif-rejected {
   border-color: var(--danger);
@@ -281,23 +302,23 @@ textarea {
 .verif-conflicting,
 .served-stale_cache,
 .freshness-stale {
-  border-color: var(--warn);
-  color: var(--warn);
+  border-color: var(--not-stated);
+  color: var(--not-stated);
 }
 .mode-live {
-  border-color: var(--cyan);
-  color: var(--cyan);
+  border-color: var(--accent-ink);
+  color: var(--accent-ink);
 }
 .mode-indexed {
-  border-color: var(--violet);
-  color: var(--violet);
+  border-color: var(--accent-deep);
+  color: var(--accent-deep);
 }
 .mode-curated {
   border-style: dashed;
 }
 .mode-demo {
   border-style: dotted;
-  color: var(--text-muted);
+  color: var(--muted);
 }
 .chip {
   display: inline-flex;
@@ -308,18 +329,19 @@ textarea {
   font-weight: 500;
   color: var(--accent-deep);
   background: var(--surface-tint);
-  border: 1px solid transparent;
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-pill);
-  min-height: 40px;
+  min-height: var(--target-min);
   padding: 0 0.875rem;
   cursor: pointer;
   text-decoration: none;
 }
 .chip:hover {
-  border-color: var(--border-strong);
+  background: var(--surface);
 }
 .chip[aria-pressed='true'] {
   background: var(--selected);
+  border-color: var(--selected);
   color: var(--on-selected);
 }
 .origin {
@@ -337,18 +359,18 @@ textarea {
   border: 0;
   padding: 0;
   cursor: help;
-  border-bottom: 1px dotted var(--text-muted);
+  border-bottom: 1px dotted var(--muted);
 }
 .term-hint {
-  color: var(--violet);
+  color: var(--accent-deep);
   margin-left: 0.2em;
 }
 .term-def {
   display: block;
   font-size: 0.85rem;
   font-weight: 400;
-  color: var(--text);
-  background: var(--surface-2);
+  color: var(--ink);
+  background: var(--surface-tint);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   padding: var(--space-2) var(--space-3);
@@ -436,6 +458,7 @@ textarea {
 }
 .setup-options .chip:has(input:checked) {
   background: var(--selected);
+  border-color: var(--selected);
   color: var(--on-selected);
 }
 .setup-facts p {
@@ -479,7 +502,7 @@ textarea {
 }
 .setup-code {
   margin: 0;
-  background: var(--console);
+  background: var(--term-bg);
   color: #e6e4f2;
   border-radius: var(--radius-lg);
   padding: var(--space-4);
@@ -573,7 +596,7 @@ textarea {
 .skeleton-row {
   height: 3rem;
   border-bottom: 1px solid var(--border);
-  background: linear-gradient(90deg, var(--surface-1), var(--surface-2), var(--surface-1));
+  background: linear-gradient(90deg, var(--surface), var(--surface-tint), var(--surface));
   background-size: 200% 100%;
   /* Three passes (4.8 s), then still: nothing moves on its own for more than 5 s (ADR 0042, decision 6). */
   animation: shimmer 1.6s linear 3;
@@ -609,7 +632,7 @@ textarea {
   border-radius: var(--radius);
 }
 .filters {
-  background: var(--surface-1);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: var(--space-4);
@@ -639,7 +662,7 @@ textarea {
   padding: 0.1rem 0;
 }
 .count {
-  color: var(--text-muted);
+  color: var(--muted);
 }
 .chips {
   display: flex;
@@ -669,7 +692,7 @@ textarea {
 
 /* panels (states: StatePanel in components/ui) */
 .panel {
-  background: var(--surface-1);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: var(--space-4) var(--space-5);
@@ -677,7 +700,7 @@ textarea {
 }
 .panel-candidates {
   border-style: dashed;
-  border-color: var(--warn);
+  border-color: var(--not-stated);
 }
 .banner {
   display: flex;
@@ -686,14 +709,14 @@ textarea {
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius);
   border: 1px solid var(--border-strong);
-  background: var(--surface-1);
+  background: var(--surface);
   margin-bottom: var(--space-3);
 }
 .banner-warn {
-  border-color: var(--warn);
+  border-color: var(--not-stated);
 }
 .banner-ok {
-  border-color: var(--ok);
+  border-color: var(--checked-ink);
 }
 .notices {
   display: grid;
@@ -701,7 +724,7 @@ textarea {
   margin-bottom: var(--space-3);
 }
 .notice {
-  color: var(--text-muted);
+  color: var(--muted);
   font-size: 0.92rem;
 }
 .hints {
@@ -741,7 +764,7 @@ td {
   vertical-align: top;
 }
 thead th {
-  color: var(--text-muted);
+  color: var(--muted);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -750,13 +773,13 @@ tbody th {
 }
 
 .host {
-  color: var(--text-muted);
+  color: var(--muted);
 }
 .timeline-compact {
   grid-template-columns: 1fr;
 }
 .timeline dt {
-  color: var(--text-muted);
+  color: var(--muted);
   font-size: 0.8rem;
 }
 .timeline dd {
@@ -772,7 +795,7 @@ tbody th {
   font-size: 0.9rem;
 }
 .date-unknown {
-  color: var(--text-muted);
+  color: var(--muted);
 }
 .evidence blockquote {
   margin: var(--space-1) 0;
@@ -823,12 +846,12 @@ tbody th {
 .guide-prompt-text {
   white-space: pre-wrap;
   font: inherit;
-  background: var(--surface-2);
+  background: var(--surface-tint);
   padding: var(--space-3);
   border-radius: var(--radius-sm);
 }
 .notice-warn {
-  color: var(--text);
+  color: var(--ink);
 }
 
 /* design system: guide picks, filters, home explainer */
@@ -937,9 +960,13 @@ h2 {
   border-radius: var(--radius-lg);
   padding: 6px 6px 6px var(--space-4);
 }
+/* The field draws no ring of its own: the whole box gets the standard focus ring; the saffron border is decoration. */
 .searchbox.large:focus-within {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+.searchbox.large:has(.searchbox-field:focus-visible) {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
 }
 .searchbox.large .searchbox-field {
   border: 0;
@@ -965,8 +992,8 @@ h2 {
   font-family: var(--font-mono);
   font-size: 0.75rem;
   border-radius: 6px;
-  padding: 2px 6px;
-  background: color-mix(in srgb, var(--on-accent) 12%, transparent);
+  padding: 1px 5px;
+  border: 1px solid currentColor;
 }
 .one-box.is-hero .searchbox.large {
   padding: 8px 8px 8px var(--space-5);
@@ -1039,7 +1066,7 @@ h2 {
 }
 .guide-prompt {
   margin-top: var(--space-4);
-  background: var(--console);
+  background: var(--term-bg);
   color: #f3f1ea;
   border-radius: 20px;
   padding: var(--space-5);
@@ -1173,10 +1200,6 @@ input[type='search']::-webkit-search-cancel-button {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-.tl-row:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
 
 /* Guide intents (ADR 0032): how the question was read, the question back, comparison and explanation. */
 .understood {
@@ -1253,7 +1276,7 @@ input[type='search']::-webkit-search-cancel-button {
   display: block;
   margin-top: 4px;
   font-size: 0.85rem;
-  color: var(--text-muted);
+  color: var(--muted);
 }
 .guide-explain {
   display: grid;
@@ -1262,7 +1285,7 @@ input[type='search']::-webkit-search-cancel-button {
 .guide-explain li q {
   display: block;
   font-size: 0.85rem;
-  color: var(--text-muted);
+  color: var(--muted);
 }
 
 /* The box grows with the text (OneBox): one row, then up to six lines, then it scrolls. The height animates; the
@@ -1293,8 +1316,8 @@ input[type='search']::-webkit-search-cancel-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: var(--target-min);
+  height: var(--target-min);
   border: 0;
   border-radius: 50%;
   background: transparent;
@@ -1307,7 +1330,7 @@ input[type='search']::-webkit-search-cancel-button {
 .searchbox-clear:hover,
 .searchbox-clear:focus-visible {
   background: color-mix(in srgb, var(--accent) 12%, transparent);
-  color: var(--text);
+  color: var(--ink);
 }
 .searchbox-slash {
   flex: none;
@@ -1321,8 +1344,10 @@ input[type='search']::-webkit-search-cancel-button {
 .searchbox.large:focus-within .searchbox-slash {
   visibility: hidden;
 }
-@media (hover: none) {
-  .searchbox-slash {
+/* Key hints only where there is a keyboard. */
+@media (hover: none), (pointer: coarse) {
+  .searchbox-slash,
+  .enter-key {
     display: none;
   }
 }
@@ -1337,7 +1362,7 @@ input[type='search']::-webkit-search-cancel-button {
   font-variant-numeric: tabular-nums;
 }
 .searchbox-left.is-full {
-  color: var(--warn);
+  color: var(--not-stated);
 }
 @media (prefers-reduced-motion: reduce) {
   .searchbox-clear {
@@ -1366,4 +1391,12 @@ input[type='search']::-webkit-search-cancel-button {
 .searchbox-field:hover::-webkit-scrollbar-thumb,
 .searchbox-field:focus::-webkit-scrollbar-thumb {
   background: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+/* The text the server writes into #root for crawlers (ADR 0050). People see it only until the app starts. */
+#root > .h2-prerender {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 32px 16px;
+  color: var(--ink);
 }

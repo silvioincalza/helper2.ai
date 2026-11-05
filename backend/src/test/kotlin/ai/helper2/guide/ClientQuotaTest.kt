@@ -1,6 +1,7 @@
 package ai.helper2.guide
 
 import ai.helper2.platform.llm.CallCounter
+import ai.helper2.platform.quota.QuotaKeys
 import ai.helper2.testing.MovableClock
 import java.time.Duration
 import java.time.Instant
@@ -12,6 +13,7 @@ import kotlin.test.assertTrue
 class ClientQuotaTest {
 
   private val clock = MovableClock(Instant.parse("2026-10-27T22:00:00Z"))
+  private val keys = QuotaKeys("test-secret", clock)
 
   /** A durable counter in memory, standing in for Redis. */
   private val counts = mutableMapOf<String, Long>()
@@ -19,7 +21,7 @@ class ClientQuotaTest {
 
   @Test
   fun `a new UTC day starts every client afresh and drops yesterday's clients`() {
-    val quota = ClientQuota(1, clock)
+    val quota = ClientQuota(1, clock, keys)
     assertTrue(quota.tryAcquire("10.0.0.1"))
     assertTrue(quota.tryAcquire("10.0.0.2"))
     assertFalse(quota.tryAcquire("10.0.0.1"))
@@ -33,7 +35,7 @@ class ClientQuotaTest {
 
   @Test
   fun `at most maxClients are held in memory, the least recently seen leaving first`() {
-    val quota = ClientQuota(5, clock, maxClients = 2)
+    val quota = ClientQuota(5, clock, keys, maxClients = 2)
     quota.tryAcquire("a")
     quota.tryAcquire("b")
     quota.tryAcquire("a")
@@ -55,7 +57,7 @@ class ClientQuotaTest {
           declared += name
         }
       }
-    val quota = ClientQuota(1, clock, listing)
+    val quota = ClientQuota(1, clock, keys, listing)
     assertTrue(quota.tryAcquire("10.0.0.1"))
     assertFalse(quota.tryAcquire("10.0.0.1"))
 
@@ -64,11 +66,28 @@ class ClientQuotaTest {
 
   @Test
   fun `a client that left memory keeps its count in the durable counter`() {
-    val quota = ClientQuota(1, clock, counter, maxClients = 1)
+    val quota = ClientQuota(1, clock, keys, counter, maxClients = 1)
     assertTrue(quota.tryAcquire("a"))
     assertTrue(quota.tryAcquire("b"))
 
     assertFalse(quota.tryAcquire("a"))
+  }
+
+  @Test
+  fun `the durable counter names the client by its pseudonym of the day, never by its address`() {
+    val quota = ClientQuota(1, clock, keys, counter)
+    quota.tryAcquire("203.0.113.7")
+    quota.tryAcquire("203.0.113.8")
+
+    assertEquals(2, counts.size)
+    assertTrue(counts.keys.none { it.contains("203.0.113") })
+    assertEquals(
+      setOf(
+        "guide-client:${keys.client("203.0.113.7")}:2026-10-27",
+        "guide-client:${keys.client("203.0.113.8")}:2026-10-27",
+      ),
+      counts.keys,
+    )
   }
 
   /** The durable counter with a read, as Redis has. */
@@ -82,7 +101,7 @@ class ClientQuotaTest {
 
   @Test
   fun `left reads the count without taking a question`() {
-    val quota = ClientQuota(3, clock, readable)
+    val quota = ClientQuota(3, clock, keys, readable)
     assertEquals(3, quota.left("a"))
 
     quota.tryAcquire("a")
@@ -94,7 +113,7 @@ class ClientQuotaTest {
 
   @Test
   fun `left is never below zero, also when refused questions were counted`() {
-    val quota = ClientQuota(1, clock, readable)
+    val quota = ClientQuota(1, clock, keys, readable)
     repeat(3) { quota.tryAcquire("a") }
 
     assertEquals(0, quota.left("a"))
@@ -102,14 +121,14 @@ class ClientQuotaTest {
 
   @Test
   fun `another replica's count is seen through the durable counter`() {
-    ClientQuota(2, clock, readable).tryAcquire("a")
+    ClientQuota(2, clock, keys, readable).tryAcquire("a")
 
-    assertEquals(1, ClientQuota(2, clock, readable).left("a"))
+    assertEquals(1, ClientQuota(2, clock, keys, readable).left("a"))
   }
 
   @Test
   fun `without a durable read, left follows this replica's count and a new day resets it`() {
-    val quota = ClientQuota(2, clock)
+    val quota = ClientQuota(2, clock, keys)
     quota.tryAcquire("a")
     assertEquals(1, quota.left("a"))
 

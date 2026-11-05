@@ -3,6 +3,7 @@ package ai.helper2.platform;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.TestcontainersConfiguration;
+import ai.helper2.platform.quota.QuotaKeys;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.testing.MovableClock;
 import ai.helper2.testing.TestPolicies;
@@ -32,10 +33,18 @@ class RedisRateLimiterIT {
   private final SimpleMeterRegistry meters = new SimpleMeterRegistry();
   private final Resilience resilience = TestPolicies.redis(clock);
   private final String name = "test-" + UUID.randomUUID();
+  private final QuotaKeys keys = new QuotaKeys("test-secret", clock);
 
   private RedisRateLimiter replica(StringRedisTemplate template) {
     return new RedisRateLimiter(
-        name, 3, MINUTE, template, resilience, new InMemoryRateLimiter(3, MINUTE, clock), meters);
+        name,
+        3,
+        MINUTE,
+        keys,
+        template,
+        resilience,
+        new InMemoryRateLimiter(3, MINUTE, clock),
+        meters);
   }
 
   private double fallbacks() {
@@ -53,7 +62,7 @@ class RedisRateLimiterIT {
     assertThat(b.acquire("203.0.113.7")).isBetween(1L, 60L);
     assertThat(a.acquire("203.0.113.8")).as("another client").isZero();
 
-    String key = RedisRateLimiter.key(name, "203.0.113.7");
+    String key = a.key("203.0.113.7");
     assertThat(redis.getExpire(key)).isBetween(1L, 60L);
     assertThat(fallbacks()).isZero();
   }
@@ -65,8 +74,27 @@ class RedisRateLimiterIT {
       assertThat(a.acquire("2001:db8:7:8::" + i)).isZero();
     }
     assertThat(replica(redis).acquire("2001:db8:7:8:ffff::1")).isPositive();
-    assertThat(redis.hasKey(RedisRateLimiter.key(name, "2001:db8:7:8::1"))).isTrue();
-    assertThat(RedisRateLimiter.key(name, "2001:db8:7:8::1")).endsWith(":20010db800070008::/64");
+    assertThat(a.key("2001:db8:7:8::1")).isEqualTo(a.key("2001:db8:7:8:ffff::1"));
+    assertThat(redis.hasKey(a.key("2001:db8:7:8::1"))).isTrue();
+  }
+
+  @Test
+  void theKeyNamesTheClientByItsPseudonymOfTheDayNeverByItsAddress() {
+    RedisRateLimiter a = replica(redis);
+    String today = a.key("203.0.113.7");
+
+    assertThat(today)
+        .isEqualTo(RedisRateLimiter.KEY_PREFIX + name + ":" + keys.client("203.0.113.7"))
+        .doesNotContain("203.0.113.7");
+    assertThat(a.key("2001:db8:7:8::1")).doesNotContain("2001").doesNotContain("20010db8");
+    assertThat(a.key("203.0.113.8")).as("another client").isNotEqualTo(today);
+    assertThat(a.acquire("203.0.113.7")).isZero();
+    assertThat(redis.keys(RedisRateLimiter.KEY_PREFIX + name + ":*"))
+        .containsExactly(today)
+        .noneMatch(k -> k.contains("203.0.113"));
+
+    clock.now = Instant.parse("2026-10-28T00:00:01Z");
+    assertThat(a.key("203.0.113.7")).as("a new UTC day, a new key").isNotEqualTo(today);
   }
 
   @Test

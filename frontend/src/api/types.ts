@@ -73,3 +73,4 @@ export type GuideStep = {
   [K in GuideStepEvent]: { kind: K; data: GuideStepData[K] };
 }[GuideStepEvent];
 export type GuideResponse = S['GuideResponse'];
+export type AiContentMarker = S['AiContentMarker'];

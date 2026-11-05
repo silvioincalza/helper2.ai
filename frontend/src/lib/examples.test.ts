@@ -1,5 +1,11 @@
 import en from '@/i18n/locales/en.json';
-import { EXAMPLE_POOL, pickExamples, type Example } from './examples';
+import {
+  draftingModel,
+  EXAMPLE_POOL,
+  fillsBothBuckets,
+  pickExamples,
+  type Example,
+} from './examples';
 
 const pool: Example[] = [
   { id: 'a', path: 'USE_AI' },
@@ -25,7 +31,7 @@ describe('pickExamples: random examples from a pool, per bucket', () => {
     const picked = pickExamples(pool, 2, () => 0.99);
     expect(picked.map((e) => e.id)).toEqual(['c', 'a', 'y', 'x']);
     for (let run = 0; run < 50; run++) {
-      const ids = pickExamples().map((e) => e.id);
+      const ids = pickExamples(EXAMPLE_POOL).map((e) => e.id);
       expect(new Set(ids).size).toBe(ids.length);
     }
   });
@@ -42,5 +48,24 @@ describe('pickExamples: random examples from a pool, per bucket', () => {
       expect(texts[id]?.query, id).toBeTruthy();
     }
     expect(Object.keys(texts).sort()).toEqual(EXAMPLE_POOL.map((e) => e.id).sort());
+  });
+});
+
+describe('the served pool: used only when it fills both buckets', () => {
+  it('needs two examples for people who use AI and two for builders', () => {
+    expect(fillsBothBuckets(pool)).toBe(true);
+    expect(fillsBothBuckets(pool.filter((e) => e.id !== 'y'))).toBe(false);
+    expect(fillsBothBuckets(pool.filter((e) => e.path === 'USE_AI'))).toBe(false);
+    expect(fillsBothBuckets([])).toBe(false);
+  });
+
+  it('names the drafting model only when the pool names exactly one', () => {
+    const marker = (models: string[]) => ({
+      examples: [],
+      ai: { aiGenerated: true, provider: 'nebius', models, fields: [], policy: '/mission' },
+    });
+    expect(draftingModel(marker(['nemotron-nano']))).toBe('nemotron-nano');
+    expect(draftingModel(marker(['a', 'b']))).toBeUndefined();
+    expect(draftingModel({ examples: [] })).toBeUndefined();
   });
 });

@@ -159,6 +159,16 @@ describe('Feature: the overview says what needs a person now', () => {
     expect(screen.getByText('No runs yet.')).toBeInTheDocument();
   });
 
+  it('Scenario: a Grafana link that is not http(s) is not rendered', async () => {
+    mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/overview': () => overview({ grafanaUrl: 'javascript:alert(1)' }),
+    });
+    renderApp('/admin');
+    await screen.findByRole('heading', { name: '16 open review items' });
+    expect(screen.queryByRole('link', { name: /Grafana/ })).not.toBeInTheDocument();
+  });
+
   it('Scenario: Refresh asks again and the overview cannot load says so with Try again', async () => {
     let fail = true;
     const m = mockApi({
@@ -377,7 +387,7 @@ describe('Feature: the review queue cannot load', () => {
 });
 
 describe('Feature: Scout runs', () => {
-  it('Scenario: run now starts a run and reloads the listing', async () => {
+  it('Scenario: run all now starts every collector and reloads the listing', async () => {
     const m = mockApi({
       'GET /me': () => ADMIN,
       'GET /admin/scout-runs': () => [run],
@@ -385,9 +395,92 @@ describe('Feature: Scout runs', () => {
     });
     renderApp('/admin/runs');
     expect(await screen.findByText('github')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Run now' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Run all now' }));
     await waitFor(() => expect(m.callsTo('POST', '/admin/scout-runs')).toHaveLength(1));
+    expect(m.callsTo('POST', '/admin/scout-runs')[0]?.body).toEqual({});
     await waitFor(() => expect(m.callsTo('GET', '/admin/scout-runs').length).toBeGreaterThan(1));
+  });
+
+  it('Scenario: run now on a source starts only that source and reloads the listing', async () => {
+    const older = { ...run, id: '88888888-8888-5888-8888-888888888888' };
+    const npm = { ...run, id: '99999999-9999-5999-8999-999999999999', sourceId: 'npm' };
+    const m = mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/scout-runs': () => [run, npm, older],
+      'POST /admin/scout-runs': () => [],
+    });
+    renderApp('/admin/runs');
+    // One Run now per source, on its newest run.
+    expect(await screen.findAllByRole('button', { name: 'Run github now' })).toHaveLength(1);
+    await userEvent.click(screen.getByRole('button', { name: 'Run npm now' }));
+    await waitFor(() =>
+      expect(m.callsTo('POST', '/admin/scout-runs')[0]?.body).toEqual({ sourceId: 'npm' }),
+    );
+    await waitFor(() => expect(m.callsTo('GET', '/admin/scout-runs').length).toBeGreaterThan(1));
+  });
+
+  it('Scenario: while a run is running, every start waits and says why', async () => {
+    const m = mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/scout-runs': () => [{ ...run, status: 'RUNNING' }],
+    });
+    renderApp('/admin/runs');
+    const one = await screen.findByRole('button', { name: 'Run github now' });
+    const all = screen.getByRole('button', { name: 'Run all now' });
+    expect(one).toHaveAttribute('aria-disabled', 'true');
+    expect(all).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByText(/A run is in progress/)).toBeInTheDocument();
+    await userEvent.click(one);
+    await userEvent.click(all);
+    expect(m.callsTo('POST', '/admin/scout-runs')).toHaveLength(0);
+  });
+
+  it('Scenario: a start for one source that fails says so', async () => {
+    mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/scout-runs': () => [run],
+      'POST /admin/scout-runs': () => problem(500, 'Boom'),
+    });
+    renderApp('/admin/runs');
+    await userEvent.click(await screen.findByRole('button', { name: 'Run github now' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('The action failed');
+  });
+
+  it('Scenario: the runs cannot load: it says so with Try again, not "No runs yet"', async () => {
+    let fail = true;
+    mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/scout-runs': () => (fail ? problem(500, 'Boom') : [run]),
+    });
+    renderApp('/admin/runs');
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Could not load the Scout runs.');
+    expect(screen.queryByText('No runs yet.')).not.toBeInTheDocument();
+    fail = false;
+    await userEvent.click(within(alert).getByRole('button', { name: /Try again/ }));
+    expect(await screen.findByText('github')).toBeInTheDocument();
+  });
+
+  it('Scenario: a reload that fails while following a run keeps the list and says so', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'], shouldAdvanceTime: true });
+    try {
+      let fail = false;
+      mockApi({
+        'GET /me': () => ADMIN,
+        'GET /admin/scout-runs': () =>
+          fail ? problem(500, 'Boom') : [{ ...run, status: 'RUNNING' }],
+      });
+      renderApp('/admin/runs');
+      expect(await screen.findByText('Running')).toBeInTheDocument();
+      fail = true;
+      await act(() => vi.advanceTimersByTimeAsync(RUN_POLL_MS));
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Could not reload the Scout runs. The list is from the last load.',
+      );
+      expect(screen.getByText('github')).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('Scenario: a started run is followed on the listing until it ends', async () => {
@@ -404,7 +497,7 @@ describe('Feature: Scout runs', () => {
         },
       });
       renderApp('/admin/runs');
-      await userEvent.click(await screen.findByRole('button', { name: 'Run now' }));
+      await userEvent.click(await screen.findByRole('button', { name: 'Run all now' }));
       expect(await screen.findByText('Running')).toBeInTheDocument();
 
       listed = [{ ...started, status: 'SUCCEEDED', itemsSeen: 4 }];
@@ -425,7 +518,7 @@ describe('Feature: Scout runs', () => {
       'POST /admin/scout-runs': () => problem(409, 'Conflict'),
     });
     renderApp('/admin/runs');
-    await userEvent.click(await screen.findByRole('button', { name: 'Run now' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Run all now' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'A Scout run is already in progress',
     );
@@ -442,7 +535,7 @@ describe('Feature: Scout runs', () => {
         }),
     });
     renderApp('/admin/runs');
-    const button = await screen.findByRole('button', { name: 'Run now' });
+    const button = await screen.findByRole('button', { name: 'Run all now' });
     await userEvent.click(button);
     expect(button).toHaveAttribute('aria-disabled', 'true');
     await userEvent.click(button);

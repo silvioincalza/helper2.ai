@@ -27,22 +27,29 @@ describe('one box', () => {
     expect(screen.queryByRole('button', { name: 'Search' })).not.toBeInTheDocument();
   });
 
-  it('a sentence asks the guide on Enter; Shift+Enter asks even for two words', async () => {
+  it('Enter always searches, a sentence too, and Shift+Enter as well; only the button asks the guide', async () => {
     const m = mockApi();
-    const { params } = renderApp('/');
-    await userEvent.type(
-      screen.getByRole('textbox', { name: 'Search AI resources' }),
-      'an MCP server for Postgres{Enter}',
-    );
+    const { router, params } = renderApp('/');
+    const box = () => screen.getByRole('textbox', { name: 'Search AI resources' });
+    await userEvent.type(box(), 'an MCP server for Postgres{Enter}');
+    await waitFor(() => expect(router.state.location.pathname).toBe('/search'));
+    expect(params().get('q')).toBe('an MCP server for Postgres');
+    expect(params().get('ask')).toBeNull();
+    // The button still says what it does for a sentence; its ↵ hint is gone, since Enter does not ask.
+    const button = screen.getByRole('button', { name: 'Ask the guide' });
+    expect(button.querySelector('kbd')).toBeNull();
+
+    await userEvent.clear(box());
+    await userEvent.type(box(), 'vector db{Shift>}{Enter}{/Shift}');
+    await waitFor(() => expect(params().get('q')).toBe('vector db'));
+    expect(params().get('ask')).toBeNull();
+    expect(m.callsTo('POST', '/guide/stream')).toHaveLength(0);
+
+    await userEvent.clear(box());
+    await userEvent.type(box(), 'an MCP server for Postgres');
+    await userEvent.click(screen.getByRole('button', { name: 'Ask the guide' }));
     await waitFor(() => expect(params().get('ask')).toBe('an MCP server for Postgres'));
     await waitFor(() => expect(m.callsTo('POST', '/guide/stream')).toHaveLength(1));
-    await userEvent.clear(screen.getByRole('textbox', { name: 'Search AI resources' }));
-    await userEvent.type(
-      screen.getByRole('textbox', { name: 'Search AI resources' }),
-      'vector db{Shift>}{Enter}{/Shift}',
-    );
-    await waitFor(() => expect(params().get('ask')).toBe('vector db'));
-    await waitFor(() => expect(m.callsTo('POST', '/guide/stream')).toHaveLength(2));
   });
 
   it('Enter on the home page opens the results on /search, and focus lands on the results heading', async () => {
@@ -84,7 +91,7 @@ describe('one box', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0);
     const m = mockApi();
     const { params } = renderApp('/');
-    await userEvent.click(screen.getByRole('button', { name: 'Summarise research papers' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Summarise research papers' }));
     await waitFor(() => expect(params().get('q')).toBe('summarise research papers'));
     expect(params().get('path')).toBe('USE_AI');
     expect(params().get('ask')).toBeNull();
@@ -98,9 +105,9 @@ describe('one box', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0);
     mockApi();
     renderApp('/');
-    const list = within(
+    const list = await within(
       (await screen.findByRole('heading', { name: 'Try:' })).closest('section') as HTMLElement,
-    ).getAllByRole('button');
+    ).findAllByRole('button');
     expect(list.map((b) => b.textContent)).toEqual([
       'Summarise research papers',
       'Take meeting notes',

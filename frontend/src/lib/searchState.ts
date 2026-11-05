@@ -209,7 +209,7 @@ export function refinedParams(sp: URLSearchParams, r: Partial<Refinement>): URLS
   return params;
 }
 
-/** Where results live (ADR 0040, 3): / is only the home page; /?q=… keeps working and names /search as canonical. */
+/** Where results live (ADR 0040, 3): / is only the home page; /?q=… keeps working. */
 export const RESULTS_PATH = '/search';
 
 /** / and /search draw their own search box; every other page has it in the header. */

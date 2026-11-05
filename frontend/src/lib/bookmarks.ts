@@ -30,3 +30,13 @@ export function writeLocalBookmarks(list: Bookmark[]): boolean {
     return false;
   }
 }
+
+/** Removes the key itself, so no empty list is left in the browser. Returns false when storage is unavailable. */
+export function clearLocalBookmarks(): boolean {
+  try {
+    window.localStorage.removeItem(BOOKMARK_KEY);
+    return true;
+  } catch {
+    return false;
+  }
+}

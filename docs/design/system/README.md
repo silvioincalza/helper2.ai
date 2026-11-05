@@ -2,7 +2,7 @@
 
 The design system for every part of Helper2.ai: the search box, results, the AI guide, New this week and Coming up, resource pages, saved resources, sign-in, the sources page and admin. Version 4, from the November 2026 redesign ([ADR 0042](../../adr/frontend/0042-redesign-design-system-v4.md)): minimal and editorial, warm paper with one saffron accent, one tech font for the interface and a calm font for reading. The reference is the redesign canvas, saved in [../redesign](../redesign). Every page, its states and the dark theme are drawn there.
 
-The frontend runs version 4 for the header, the footer and Home (`--v4-*` in `frontend/src/styles/tokens.css`); the other pages still run version 3 and move page by page.
+`frontend/src/styles/tokens.css` has the version 4 colours and names. The header, the footer and Home run the version 4 layout, with its own sizes and fonts (`--v4-*`); the other pages still follow the version 3 layout and Space Grotesk, and move page by page.
 
 ## Principles
 
@@ -16,7 +16,7 @@ The frontend runs version 4 for the header, the footer and Home (`--v4-*` in `fr
 
 ## Content fundamentals
 
-- Write the way a knowledgeable colleague talks: "A few words search. A question of 4 words or more also gets the guide's picks."
+- Write the way a knowledgeable colleague talks: "A few words search. A question of 4 words or more can also ask the guide for picks."
 - Buttons say what happens: **Search**, **Ask the guide**, **Save**, **Remove**, **Send report**, **Try again**.
 - Errors say what went wrong and what to do next, without apology.
 - Never invent popularity, dates, limits or facts. Mock content uses brackets: `[stated date]`, `[Numbers set in the limits ADR]`.

@@ -24,13 +24,15 @@ Items are grouped by the order in which they matter. Inside a group, the first i
   right (Swiss URG Art. 25, EU InfoSoc Art. 5(3)(d)) for 20–300-character excerpts, also of repositories with no
   licence; GitHub and Hugging Face terms for reading and keeping them (the Hub `raw` path is not its API); author names
   in excerpts under the existing purpose with a public Art. 14 notice (Art. 14(5)(b)).
-- SEO: `robots.txt`, `sitemap.xml`, metadata and JSON-LD for detail pages. Detail pages are not crawlable
-  today, because the frontend is a single-page app ([ADR 0025](adr/frontend/0025-frontend-one-box.md)).
+- SEO ([ADR 0050](adr/frontend/0050-pages-for-crawlers.md) is built): measure the resource page load before and after
+  on staging (+20 ms p95 budget). Later: 410 for removed resources, a sitemap index past 50,000 pages, an Open Graph
+  image, slugs, hub pages per type, `llms.txt`, IndexNow. Manual: Google Search Console and Bing Webmaster Tools
+  (domain property, DNS TXT), and a deliberate choice of the Cloudflare bot settings.
 
 ### Domain and identity
 - DNS: `CAA` record for the edge's certificate authority; `v=spf1 -all` and DMARC `p=reject` if no mail is sent.
 - Optional `H2_HF_TOKEN` on prod.
-- `H2_SETUP_GITHUB_TOKEN` (read-only, public repositories) in `app_env` on staging and prod; without it Guide me reads
+- `H2_SETUP_GITHUB_TOKEN` (read-only, public repositories) in `app_env` on staging and prod; without it "Set it up" reads
   GitHub anonymously, 60 calls an hour ([ADR 0031](adr/guide/0031-setup-guide.md)).
 - Turn on the registered Tavily tier (more web searches per day for signed-in users) once that sign-in is live
   ([ADR 0037](adr/search/0037-tavily-store-and-daily-quota.md)).
@@ -100,12 +102,9 @@ Open items:
 
 ## 4. AI quality and cost
 
-- "Also searched for" (`QUERY_EXPANDED`, `interpretation.expandedTerms`) can hold the model's English translation of a
-  non-English query ([ADR 0011](adr/search/0011-language-aware-search.md)), but the search page labels the list "added
-  from a fixed word list, not AI" and the API calls it deterministic. Split the translation into its own field, marked
-  AI-written in the API and the page ([ADR 0038](adr/guide/0038-ai-content-marking.md)), and keep the word-list note for
-  lexicon terms. LAWYER: does a model translation of the user's own query fall under the Art. 50(2) exemption for
-  assistive or standard-editing functions? Even if it does, a "not AI" label on model text must go.
+- LAWYER: does a model translation of the user's own query fall under the Art. 50(2) exemption for assistive or
+  standard-editing functions? Until then it is labelled "Translated by AI" and marked (`interpretation.translatedQuery`,
+  [ADR 0038](adr/guide/0038-ai-content-marking.md)).
 - Watch whether the source `type`, now a source fact in enrichment, sends many proposals to CONFLICTING review
   (for example GitHub LIBRARY versus MCP_SERVER) ([ADR 0019](adr/scout/0019-evidence-gated-enrichment.md)).
 - Cross-language retrieval in vector search.
@@ -169,10 +168,14 @@ Open items:
     position (#151). Rows carry what the preview showed: type, host, date, guide pick, description, source. Guide
     picks merged into the list; the partial-results banner becomes one quiet line in the count row; filters as a
     drawer on phones.
-  - **The resource page in v4:** one primary button; "Guide me" becomes "Set it up", only for installable types.
+  - **The resource page in v4:** one primary button ("Set it up" is already only on types a user installs or runs).
   - **The other pages** (Saved, Sources, Mission, Privacy, Terms, Account, sign-in, 404, admin), one by one.
-  - **Remove version 3** once the last page has moved: the v3 tokens and components, Space Grotesk, and the `--v4-`
-    prefix.
+  - **Remove version 3** once the last page has moved: the v3 components and layout sizes, Space Grotesk, and the
+    `--v4-` prefix on the v4 sizes and fonts.
+  - **Font, open point.** The decision of 2 November 2026 (#173) keeps Space Grotesk for every page, with no new
+    download. The header, the footer and Home are built in Geist Mono and Geist, as the boards draw them. Decide
+    one: Geist for every page as they move, or Space Grotesk on the v4 parts too (two tokens in `tokens.css` and the
+    two `@fontsource-variable` packages).
   - **API fields:** `newThisWeek` on GET /sources, `limits` on GET /me and `total` on the recent and upcoming responses
     are in the API and on Home. Still to use them: the account panel and the Account page (`limits`), the Sources
     table (`newThisWeek`).
@@ -184,8 +187,9 @@ Open items:
   - An `unknown` count per facet and an updated-date facet on the search response (Filters panel).
   - Sign-in with Google (phase 1). Passkey, email link and password (phase 2) need their own ADR, a threat model and
     the Privacy page first.
-  - The initial JavaScript is at 164.5 of 165 KiB gzip (the radar, the phone tabs, Sources and Account already load
-    on demand): the next page that moves must make room first, for example by loading Results on demand.
+  - The initial JavaScript is at 165.8 KiB gzip, over the 165 KiB budget (main alone 164.5, this Home alone 164.5;
+    together with the pool examples 165.8). The radar, the phone tabs, Sources and Account already load on demand.
+    Make room before the next page moves, for example by loading Results on demand, or raise the budget.
   - **Radar pause for everyone (WCAG 2.2.2), open point.** The radar's beam turns without end and its sources come and
     go. Signed-in users can turn it off on the account page; guests have only reduced motion and the hold while the
     search box has focus, and no switch. Find a pause for them that needs no new browser storage key, or decide the
@@ -197,6 +201,12 @@ Open items:
   cut one once staging looks right.
 - Tracking cookies are planned. Before the first one: consent banner, cookie notice, Privacy page and record of
   processing, all in the same pull request, wording checked by a lawyer.
+
+- **Home examples** ([0049](adr/search/0049-home-examples.md)), next steps in this order:
+  - The overview counts the examples the check hides, with a link to `/admin/examples?outcome=FAIL`.
+  - A lawyer confirms the Art. 50 points of [0049](adr/search/0049-home-examples.md) for accepted AI drafts; until then
+    they are labelled and marked like any AI-written text.
+  - Check now on one example, and an Italian example once one passes the check.
 
 ## 7. Architecture
 
@@ -285,7 +295,7 @@ Fix an item or accept it; when it no longer holds, remove it.
 
 ### Frontend
 
-- The four-word rule sends a short question to search and a long keyword list to the guide; Shift+Enter always asks. ([ADR 0025](adr/frontend/0025-frontend-one-box.md))
+- The four-word rule labels the button "Ask the guide" for a long keyword list and "Search" for a short question; Enter always searches. ([ADR 0025](adr/frontend/0025-frontend-one-box.md))
 - No browser end-to-end tests: frontend tests run in jsdom only, also in CI. ([ADR 0025](adr/frontend/0025-frontend-one-box.md), [ADR 0028](adr/operations/0028-ci-cd.md))
 - A recent answer can be up to 5 minutes old (50 entries, 5 minutes, fixed). A new page that shows data the user changes must pass `cache: false`. ([ADR 0039](adr/frontend/0039-frontend-recent-answers-cache.md))
 - The picks bar takes about 110 px also when the guide has nothing to say, and shows no step-by-step progress; there is no button to close the guide's answer. Two result layouts to build and test. ([ADR 0040](adr/frontend/0040-frontend-design.md))

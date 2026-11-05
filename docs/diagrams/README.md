@@ -13,7 +13,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [architecture-search](architecture-search.svg) | One search: the search ports and the adapters behind them. |
 | [architecture-guide](architecture-guide.svg) | One guide question: AskGuide, the search it reuses, the evidence gate, the LLM layer. |
 | [architecture-index](architecture-index.svg) | How the index grows: Scout, collectors, enrichment and its gap round, catalog storage and embeddings. |
-| [architecture-setup](architecture-setup.svg) | Guide me on a resource page: the setup ports, the registry, README and tool-guide adapters, the fetch budget and the shared cache. |
+| [architecture-setup](architecture-setup.svg) | "Set it up" on a resource page: the setup ports, the registry, README and tool-guide adapters, the fetch budget and the shared cache. |
 | [architecture-platform](architecture-platform.svg) | The edge and the shared services: identity, rate limits, errors, the SPA, and platform llm, http, resilience, quota, shared cache and locks, with their Redis keys and tables. |
 | [data-model](data-model.svg) | Data model: every PostgreSQL table from the versioned migrations with its columns and keys, grouped by area. Solid lines are foreign keys labelled with their ON DELETE rule (ADR 0034); dashed lines are links the code keeps without one (bookmark snapshot, Tavily hit ids, guide answer key). |
 | [infrastructure](infrastructure.svg) | Runtime infrastructure of the hosted helper2 on Kubernetes: Cloudflare and ingress-nginx, the public and the admin host, the two namespaces and their workloads, what the network policy lets each workload reach (egress), Redis auth, OpenBao and Harbor for delivery, Alloy -> Prometheus / Tempo for observability, and the prod backup with its optional off-site copy to Cloudflare R2 (off today). |
@@ -51,7 +51,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0028](../adr/operations/0028-ci-cd.md) | [flow](flow-0028-ci-cd.svg) | [sequence](sequence-0028-ci-cd.svg) | from a pull request to prod. |
 | [0029](../adr/operations/0029-release-versioning.md) | [flow](flow-0029-release-versioning.svg) | [sequence](sequence-0029-release-versioning.svg) | the release workflow, from a pushed v* tag to the published GitHub release. |
 | [0030](../adr/quality/0030-guide-evaluation.md) | [flow](flow-0030-guide-evaluation.svg) | [sequence](sequence-0030-guide-evaluation.svg) | scripts/eval-guide.mjs, from the fixed query set to docs/evaluation.md. |
-| [0031](../adr/guide/0031-setup-guide.md) | [flow](flow-0031-setup-guide.svg) | [sequence](sequence-0031-setup-guide.svg) | "Guide me" on a resource page: setup options and client snippets from source data, and the step-by-step guide checked against the documents. |
+| [0031](../adr/guide/0031-setup-guide.md) | [flow](flow-0031-setup-guide.svg) | [sequence](sequence-0031-setup-guide.svg) | "Set it up" on a resource page: setup options and client snippets from source data, and the step-by-step guide checked against the documents. |
 | [0032](../adr/guide/0032-guide-intents.md) | [flow](flow-0032-guide-intents.svg) | [sequence](sequence-0032-guide-intents.svg) | how AskGuide reads a question and answers by intent, and the clarification round trip. |
 | [0033](../adr/foundation/0033-resilience-policies.md) | [flow](flow-0033-resilience-policies.svg) | [sequence](sequence-0033-resilience-policies.svg) | one Resilience.call through retry, bulkhead and circuit breaker; a collector riding out a 503 and a source circuit opening. |
 | [0034](../adr/operations/0034-data-retention.md) | [flow](flow-0034-data-retention.svg) | [sequence](sequence-0034-data-retention.svg) | the daily purges per module under their cluster locks, and the catalog rules in order. |
@@ -70,6 +70,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0043](../adr/scout/0043-enrichment-gap-round.md) | [flow](flow-0043-enrichment-gap-round.svg) | [sequence](sequence-0043-enrichment-gap-round.svg) | the gap round inside EnrichResource.attempt: when it reads a README or model card, and which run is saved. |
 | [0044](../adr/guide/0044-research-trail.md) | [flow](flow-0044-research-trail.svg) | [sequence](sequence-0044-research-trail.svg) | which queries and removed suggestions a guide answer lists in its research trail, and what a reused answer keeps. |
 | [0045](../adr/edge/0045-back-office.md) | [flow](flow-0045-back-office.svg) | [sequence](sequence-0045-back-office.svg) | the back office overview: one computation a minute, counts from PostgreSQL and Redis, and a count followed into the filtered queue. |
+| [0050](../adr/frontend/0050-pages-for-crawlers.md) | [flow](flow-0050-pages-for-crawlers.svg) | [sequence](sequence-0050-pages-for-crawlers.svg) | what Spring answers for each client route (status, robots, head), and a crawler and a person opening a resource page. |
 
 ## Colors
 

@@ -1,4 +1,4 @@
-# 0031 — Setup guide: "Guide me" from source data, one snippet per AI client, checked steps from the README
+# 0031 — Setup guide: "Set it up" from source data, one snippet per AI client, checked steps from the README
 
 **Status.** Accepted. **Builds on:** [0002](../foundation/0002-modular-monolith-hexagonal.md), [0004](../foundation/0004-persistence-and-provenance.md), [0015](0015-ai-guide-evidence-gate.md)
 
@@ -110,11 +110,17 @@ and a snippet copied into an AI client's config file runs on the user's machine.
    `DOCUMENT_TIMEOUT` (10 s), `NPM_README_BASE_URL`, `CACHE_TTL`, `DOCUMENT_CACHE_MB`, `HOURLY_FETCHES`,
    `GITHUB_TOKEN` (empty), `GUIDE_DAILY_MODEL_CALLS`, `GUIDE_REASONING` (false), `GUIDE_CACHE_TTL` (7 days),
    `UNREADABLE_TTL` (10 minutes).
+13. **Offered only on things you install or run.** The button says "Set it up" (it said "Guide me", easy to mix up
+   with the AI guide). It shows on an MCP server, model, library, agent or skill, in the results preview and on the
+   resource page (`canGuide`, `frontend/src/components/GuideMe.tsx`). A product gets it only when you install or run it
+   yourself: pricing `OPEN_SOURCE_SELF_HOSTED`, or a platform `local`, `desktop`, `ios`, `android`, `cli`,
+   `browser-extension` or `vscode`. A web-only service has
+   nothing to set up. Papers, datasets, prompts, articles, courses, events, news and other types get none.
 
 ## Consequences
 - Every MCP server with a registry entry or a README config example gets copy-paste setup for 8 clients without a
   model call; every tool with a GitHub, npm or Hugging Face document gets checked steps.
-- A visitor types nothing into Guide me, so no user text reaches the model, the cache or the logs from this page.
+- A visitor types nothing into "Set it up", so no user text reaches the model, the cache or the logs from this page.
 - The guide never fills gaps: every step comes from the tool's own documentation.
 - README fetches never spend the Scout's GitHub quota; the hourly budget bounds the setup guide's own. Registry
   snippets need no fetch budget.
@@ -129,7 +135,7 @@ and a snippet copied into an AI client's config file runs on the user's machine.
   memory when one resource holds up to three 512 KB documents. Caffeine weighs entries by length, expires them by
   time and loads each key once under concurrency, in one small, widely used library (3.2.3, Apache 2.0).
 - **The Scout's GitHub token with a hard hourly budget.** No secret to add, but every README fetch still comes out of
-  the Scout's 5,000 calls, so a busy hour of Guide me slows the Scout. An own token (chosen) keeps the quotas apart.
+  the Scout's 5,000 calls, so a busy hour of "Set it up" slows the Scout. An own token (chosen) keeps the quotas apart.
 - **Free-form questions about a tool.** A text box answered from the tool's documents with the same checks. It turns
   the page into a chat with one README: a second prompt branch, user text in the cache key and the model input,
   and an answer type no other part of Helper2 needs. The plain guide covers what the page is for.
@@ -151,6 +157,6 @@ and a snippet copied into an AI client's config file runs on the user's machine.
 [flow](../../diagrams/flow-0031-setup-guide.svg) · [sequence](../../diagrams/sequence-0031-setup-guide.svg)
 
 ## Roadmap
-- Guide me on every result card (same panel, inline).
+- "Set it up" on every result card (same panel, inline).
 - PyPI package pages as a document source (no PyPI source in the catalog yet).
 - Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

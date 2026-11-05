@@ -13,14 +13,15 @@ const openFilters = async () =>
   userEvent.click(await screen.findByRole('button', { name: 'Filters', expanded: false }));
 
 describe('search results', () => {
-  it('/?q= links still show the results, with the same query, filters and path, and name /search as canonical', async () => {
+  it('/?q= links still show the results, with the same query, filters and path, not indexed and with no canonical link', async () => {
     const m = mockApi();
     const { router, params } = renderApp('/?q=translate&path=USE_AI&type=MODEL');
     await (await results()).findByText('Acme Translator');
     expect(router.state.location.pathname).toBe('/');
-    expect(document.querySelector('link[rel="canonical"]')).toHaveAttribute(
-      'href',
-      expect.stringMatching(/^\/search\?q=translate/),
+    expect(document.querySelector('link[rel="canonical"]')).toBeNull();
+    expect(document.head.querySelector('meta[name="robots"]')).toHaveAttribute(
+      'content',
+      'noindex, follow',
     );
     expect(params().get('q')).toBe('translate');
     expect(params().getAll('type')).toEqual(['MODEL']);
@@ -481,6 +482,47 @@ describe('search results', () => {
     await waitFor(() => expect(params().getAll('useCase')).toEqual(['translation']));
   });
 
+  it('labels and marks the AI translation of the query; the "not AI" note covers only the word-list terms (ADR 0038)', async () => {
+    mockApi({
+      'GET /search': () =>
+        makeSearch({
+          interpretation: {
+            expandedTerms: ['translation'],
+            detectedUseCases: [],
+            translatedQuery: 'document translation tool',
+          },
+        }),
+    });
+    renderApp('/search?q=strumento+per+tradurre+documenti');
+    const translated = await screen.findByText('document translation tool');
+    expect(translated).toHaveAttribute('data-ai-generated', 'true');
+    expect(translated.nextElementSibling).toHaveTextContent('Translated by AI');
+    const line = translated.closest('p') as HTMLElement;
+    expect(line).not.toHaveAttribute('data-ai-generated');
+    expect(line).toHaveTextContent(
+      'Also searched for: document translation tool Translated by AI, translation (added from a fixed word list, not AI)',
+    );
+    expect([...line.querySelectorAll('[data-ai-generated]')].map((m) => m.textContent)).toEqual([
+      'document translation tool',
+    ]);
+  });
+
+  it('a translation alone has no "not AI" note', async () => {
+    mockApi({
+      'GET /search': () =>
+        makeSearch({
+          interpretation: {
+            expandedTerms: [],
+            detectedUseCases: [],
+            translatedQuery: 'document translation tool',
+          },
+        }),
+    });
+    renderApp('/search?q=herramienta+para+traducir+documentos');
+    const translated = await screen.findByText('document translation tool');
+    expect(translated.closest('p')).not.toHaveTextContent('not AI');
+  });
+
   it('without a query it shows examples and makes no search call at all (the Radar reads /recent)', async () => {
     const m = mockApi();
     renderApp('/');
@@ -519,14 +561,16 @@ describe('search results', () => {
       'GET /resources/11111111-1111-5111-8111-111111111111': () => makeDetail(),
     });
     const { router } = renderApp('/search?q=translate');
-    const title = await screen.findByRole('link', { name: 'Acme Translator' });
+    const title = within(await screen.findByRole('article')).getByRole('link', {
+      name: 'Acme Translator',
+    });
     vi.spyOn(window, 'scrollY', 'get').mockReturnValue(840);
     await userEvent.click(title);
     await screen.findByRole('heading', { level: 1, name: 'Acme Translator' });
     expect(window.scrollTo).toHaveBeenLastCalledWith(0, 0);
 
     await act(() => router.navigate(-1));
-    expect(screen.getByRole('link', { name: 'Acme Translator' })).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: 'Acme Translator' })).toHaveLength(2);
     expect(screen.queryByText('Searching the listed sources…')).not.toBeInTheDocument();
     expect(window.scrollTo).toHaveBeenLastCalledWith(0, 840);
     expect(m.callsTo('GET', '/search')).toHaveLength(1);

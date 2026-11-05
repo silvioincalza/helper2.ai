@@ -8,6 +8,7 @@ import {
   useNavigate,
   useSearchParams,
 } from 'react-router';
+import { useDropServerHead } from '@/lib/head';
 import { useTranslation } from 'react-i18next';
 import { signOut } from '@/api/client';
 import { useMe } from '@/context/MeContext';
@@ -286,6 +287,7 @@ function Footer() {
  * #main, and a polite live region names the page: keyboard and screen-reader users start at the new content.
  */
 function RouteFocus() {
+  useDropServerHead();
   const { pathname } = useLocation();
   const live = useRef<HTMLParagraphElement>(null);
   const first = useRef(true);

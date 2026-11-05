@@ -2,6 +2,7 @@ package ai.helper2.guide
 
 import ai.helper2.platform.llm.CallCounter
 import ai.helper2.platform.llm.DailyBudget
+import ai.helper2.platform.quota.QuotaKeys
 import ai.helper2.shared.AudiencePath
 import java.security.MessageDigest
 import java.text.Normalizer
@@ -16,9 +17,10 @@ import java.util.Locale
 /**
  * Fresh (not cached) guide questions per client per UTC day. The per-minute rate limit alone lets
  * one client spend the global daily budget in about twenty minutes; past this quota the client
- * still gets an answer, from search only. Counted in [counter] (Redis) under a hash of the client,
- * so no address is stored; when the counter fails, counting goes on in memory. These budgets are
- * never listed in the back office.
+ * still gets an answer, from search only. Counted in [counter] (Redis) under the client's pseudonym
+ * of the UTC day ([QuotaKeys.client], a keyed hash), so no address is stored; when the counter
+ * fails, counting goes on in memory. The pseudonym changes at midnight UTC, when the quota starts
+ * afresh anyway. These budgets are never listed in the back office.
  *
  * In memory, only today's clients are kept, at most [maxClients], the least recently seen leaving
  * first. A client that left keeps its count in [counter]; only the in-memory fallback count is
@@ -29,6 +31,7 @@ class ClientQuota
 constructor(
   private val questionsPerDay: Int,
   private val clock: Clock,
+  private val keys: QuotaKeys,
   counter: CallCounter = CallCounter.NONE,
   private val maxClients: Int = MAX_CLIENTS,
 ) {
@@ -88,7 +91,7 @@ constructor(
 
   private fun today(): LocalDate = LocalDate.ofInstant(clock.instant(), ZoneOffset.UTC)
 
-  private fun nameOf(client: String) = "guide-client:" + sha256Hex(client).take(16)
+  private fun nameOf(client: String) = "guide-client:" + keys.client(client)
 
   companion object {
     /**

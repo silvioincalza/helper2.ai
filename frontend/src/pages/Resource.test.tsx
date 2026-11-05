@@ -122,6 +122,39 @@ describe('the resource page', () => {
     expect(screen.queryByText('No description available.')).not.toBeInTheDocument();
   });
 
+  it('an AI-written description is labelled and marked, and never headed "From the source" (ADR 0038)', async () => {
+    const ai = { ...PG, description: 'A short summary.', descriptionOrigin: 'AI_SUMMARY' as const };
+    mockApi({ [`GET /resources/${PG.id}`]: () => makeDetail({ card: ai }) });
+    renderApp(`/resource/${PG.id}`);
+    await screen.findByRole('heading', { level: 1, name: 'Postgres MCP' });
+    expect(screen.getByRole('heading', { name: 'About' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'From the source' })).not.toBeInTheDocument();
+    const text = screen.getByText('A short summary.');
+    expect(text).toHaveAttribute('data-ai-generated', 'true');
+    expect(text.previousElementSibling).toHaveTextContent('AI summary');
+  });
+
+  it('an AI-written description is not shown as the checked quote of a pick', async () => {
+    const ai = { ...PG, descriptionOrigin: 'AI_EXTRACTED' as const };
+    mockApi({
+      'GET /search': () => makeSearch({ results: [ai], total: 1, sources: [makeStatus()] }),
+      'POST /guide/stream': () => sse(guide()),
+      [`GET /resources/${PG.id}`]: () => makeDetail({ card: ai }),
+    });
+    renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
+    await screen.findByRole('button', { name: '#1 Postgres MCP' });
+    await userEvent.click(
+      within(screen.getByRole('article')).getByRole('link', { name: 'Postgres MCP' }),
+    );
+    await screen.findByRole('heading', { level: 1, name: 'Postgres MCP' });
+    expect(screen.getByText(/read-only access to a PostgreSQL database/)).toHaveAttribute(
+      'data-ai-generated',
+      'true',
+    );
+    expect(screen.getByText('Extracted by AI')).toBeInTheDocument();
+    expect(document.querySelector('.h2-res .h2-proof')).toBeNull();
+  });
+
   it('the timeline shows every date: published, updated and first seen', async () => {
     mockApi({ [`GET /resources/${PG.id}`]: () => makeDetail({ card: PG }) });
     renderApp(`/resource/${PG.id}`);
@@ -197,7 +230,7 @@ describe('the resource page', () => {
       [`POST /resources/${PG.id}/guide`]: () => STEPS,
     });
     renderApp(`/resource/${PG.id}`);
-    await userEvent.click(await screen.findByRole('button', { name: 'Guide me' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Set it up' }));
     const step = await screen.findByText('Install it with npm.');
     expect(step).toHaveAttribute('data-ai-generated', 'true');
     expect(step).toHaveAttribute('data-ai-model', 'nemotron-nano');
