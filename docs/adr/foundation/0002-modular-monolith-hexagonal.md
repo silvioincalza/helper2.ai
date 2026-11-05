@@ -20,8 +20,9 @@ internals. Microservices would add network calls and deploys without a scaling n
    `shared` hold the rules in Kotlin. They talk to the outside only through ports (Kotlin interfaces), for
    example `SearchSource`, `SearchCache`, `ResultObserver`, `QueryTranslator` (search), `Collector`,
    `EnrichmentModel`, `ScoutStore`, `CatalogIndex` (scout), `GuideModel`, `GuideAnswerStore`, `SimilarQuestionIndex`, `SimilarQuestionRetention`, `QuestionEmbedder` (guide).
-   The Java module `identity` has the same shape: its use cases are plain classes over ports in its base package
-   (`Users`, `Bookmarks`, `AuditLog`, `RetentionPeriods`), and the JDBC stores implement them in `identity.internal`.
+   The Java modules `identity` and `admin` have the same shape: their use cases are plain classes over ports in the
+   base package (`Users`, `Bookmarks`, `AuditLog`, `RetentionPeriods` in identity, `ExampleDrafts` in admin), and the
+   adapters implement them in `internal` (the JDBC stores, the JSON reader of drafted examples).
    A `@Bean` method in `config` wires each use case. A use case that must be all or nothing gets its transaction
    there, on a subclass with `@Transactional`, so the use case itself has no Spring type.
 3. **Adapters in Java, in sub-packages.** `web` (controllers), `cache`, `config` and `internal`
@@ -57,7 +58,7 @@ internals. Microservices would add network calls and deploys without a scaling n
    - the domain packages do not depend on `org.springframework..`, `tools.jackson..` or `java.sql..`;
    - the domain packages do not depend on any `web`, `cache`, `config` or `internal` package;
    - both rules also hold for the Kotlin `usecase` packages (`search.usecase`, `guide.usecase`, `scout.usecase`), and for
-     `identity` and `identity.usecase`;
+     `identity`, `identity.usecase`, `admin` and `admin.usecase`;
    - no class outside `sources` depends on a class of `sources`;
    - `tablesHaveOneOwner`: every table the migrations (`V*__*.sql`) create has one owning module, and only that module's code names
      it in SQL (`FROM`, `JOIN`, `INTO`, `UPDATE`). There are no exceptions.
@@ -85,9 +86,10 @@ internals. Microservices would add network calls and deploys without a scaling n
 - `backend/src/test/java/ai/helper2/architecture/ModularityTest.java` — module and hexagon rules.
 - `backend/src/main/kotlin/ai/helper2/search/Ports.kt`, `.../scout/Ports.kt`, `.../scout/Scout.kt`,
   `.../guide/Guide.kt`, `.../guide/GuideCost.kt` — ports.
-- `backend/src/main/java/ai/helper2/identity/{Users,Bookmarks,AuditLog,RetentionPeriods}.java` — identity's ports;
-  `.../identity/config/IdentityUseCaseConfiguration.java` — its use cases and their transactions.
-- `backend/src/main/kotlin/ai/helper2/{search,guide,scout}/usecase/`, `backend/src/main/java/ai/helper2/{catalog,identity}/usecase/`
+- `backend/src/main/java/ai/helper2/identity/{Users,Bookmarks,AuditLog,RetentionPeriods}.java`, `.../admin/ExampleDrafts.java`
+  — ports of the Java use cases; `.../identity/config/IdentityUseCaseConfiguration.java`,
+  `.../admin/config/AdminUseCaseConfiguration.java` — the use cases and their transactions.
+- `backend/src/main/kotlin/ai/helper2/{search,guide,scout}/usecase/`, `backend/src/main/java/ai/helper2/{catalog,identity,admin}/usecase/`
   — use cases; `.../{search,catalog}/usecase/package-info.java` — named interfaces.
 - `backend/src/main/java/ai/helper2/search/{web,cache,config}`, `.../guide/{web,internal}`,
   `.../scout/{web,internal}`, `.../catalog/internal`, `.../sources/*` — adapters.

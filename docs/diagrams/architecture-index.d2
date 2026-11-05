@@ -8,7 +8,8 @@
 #   backend/src/main/java/ai/helper2/catalog/EnrichmentFacts.java, catalog/usecase/GetResourceDetail.java (the detail page's way out),
 #   backend/src/main/java/ai/helper2/scout/internal/CatalogEnrichmentStore.java,
 #   catalog/usecase/IndexAwesomeLists.java, catalog/internal/AwesomeListIndex.java (ADR 0055),
-#   scout/usecase/IndexAcceptedCandidate.kt, scout/internal/ResourceCandidateJson.java, admin/usecase/ResolveReview.java.
+#   scout/usecase/IndexAcceptedCandidate.kt, scout/internal/ResourceCandidateJson.java, admin/usecase/ResolveReview.java,
+#   admin/ExampleDrafts.java, admin/internal/JsonExampleDrafts.java, admin/config/AdminUseCaseConfiguration.java.
 # Render: cd docs/diagrams && d2 fmt architecture-index.d2 && d2 architecture-index.d2 architecture-index.svg
 
 ...@style
@@ -79,7 +80,7 @@ nebius: "Nebius Token Factory\nNemotron 3 Super" {class: ai}
 nvapi: "NVIDIA API catalog\nnemotron-3.5-embed-1b" {class: ai}
 hosts: "registry.modelcontextprotocol.io\nhuggingface.co · api.github.com\nraw.githubusercontent.com · api.tavily.com" {class: ext}
 
-backoffice: "admin module\nAdminController · ResolveReview\nPOST /admin/scout-runs\nPUT /admin/review-items/{id}/resolution\nGET /admin/enrichment-queue" {class: app}
+backoffice: "admin module\nAdminController · ResolveReview\n(drafts read through ExampleDrafts)\nPOST /admin/scout-runs\nPUT /admin/review-items/{id}/resolution\nGET /admin/enrichment-queue" {class: app}
 admin -> backoffice: "trigger run, review"
 backoffice -> scout.core
 backoffice -> scout.jdbc: "enrichment queue (read)"

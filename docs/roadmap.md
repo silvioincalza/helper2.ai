@@ -250,9 +250,9 @@ Open items:
 
 ## 7. Architecture
 
-- The Java use cases of catalog read its `internal` stores directly (`ResourceStore`, `ResourceCards`). Those of
-  catalog and admin are Spring services, and nothing checks them for framework types. Put the stores behind ports,
-  then add the packages to the `DOMAIN` rule of `ModularityTest`, as identity does
+- The Java use cases of catalog read its `internal` stores directly (`ResourceStore`, `ResourceCards`), and nothing
+  checks them for framework types. Put the stores behind ports, then add the packages to the `DOMAIN` rule of
+  `ModularityTest`, as identity and admin do
   ([ADR 0002](adr/foundation/0002-modular-monolith-hexagonal.md)). Only the JDBC adapters are guarded today
   (`useCasesDoNotNameJdbcAdapters`).
 - The model helpers live in the open `platform` module (`platform.llm`), so every module can use all of them. A

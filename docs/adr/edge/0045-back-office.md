@@ -14,6 +14,9 @@ them without each module growing an admin corner.
 1. **A thin `admin` module.** `ai.helper2.admin` holds the back office's web adapters (`AdminController`,
    `OverviewController`) and use cases that only compose other modules (`GetOverview`). It owns no table and no module
    depends on it. The catalog and Scout use cases it calls are named interfaces (`catalog.usecase`, `scout.usecase`).
+   Its use cases are plain classes, wired in `admin.config`, and the `DOMAIN` rule of `ModularityTest` checks them
+   ([0002](../foundation/0002-modular-monolith-hexagonal.md)). It has one adapter of its own: `JsonExampleDrafts`
+   reads a drafted example from a review item, behind the `ExampleDrafts` port.
 2. **One page per part.** `/admin` (overview, the landing page), `/admin/review`, `/admin/runs`, `/admin/audit`, each with
    its state in the address, so a number on the overview links to the view that acts on it
    (`/admin/review?kind=USER_REPORT`).
@@ -60,7 +63,9 @@ them without each module growing an admin corner.
 
 ## Code
 - `backend/src/main/java/ai/helper2/admin/` — `package-info.java`, `web/AdminController.java`, `web/OverviewController.java`,
-  `web/EnrichmentQueueController.java`, `usecase/GetOverview.java`, `usecase/ListEnrichmentQueue.java`.
+  `web/EnrichmentQueueController.java`, `usecase/GetOverview.java`, `usecase/ListEnrichmentQueue.java`,
+  `usecase/ResolveReview.java`, `ExampleDrafts.java` and `internal/JsonExampleDrafts.java` (the drafted example in a
+  review item), `config/AdminUseCaseConfiguration.java` (wiring, the transaction of `ResolveReview`).
 - `backend/src/main/resources/db/migration/V10__resource_enrichment_backlog_idx.sql`; `catalog/enrichment/EnrichmentCandidates.java`
   and `catalog/internal/JdbcEnrichmentCandidates.java` (`pending`, `pendingCount`, `backlog`).
 - `backend/src/main/java/ai/helper2/platform/llm/BudgetLedger.java`, `CallCounter.java`, `DailyBudget.java`,

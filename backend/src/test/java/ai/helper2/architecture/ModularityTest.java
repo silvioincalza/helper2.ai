@@ -37,7 +37,7 @@ class ModularityTest {
   /**
    * Packages that hold the business rules: the top-level packages, their use cases and the guide's
    * answer steps — not their web/cache/config/internal adapters. Kotlin, and the Java use cases of
-   * identity, which reach its stores through ports.
+   * identity and admin, which reach the outside through ports.
    */
   private static final String[] DOMAIN = {
     "ai.helper2.shared",
@@ -52,7 +52,9 @@ class ModularityTest {
     "ai.helper2.guide.usecase",
     "ai.helper2.guide.steps",
     "ai.helper2.identity",
-    "ai.helper2.identity.usecase"
+    "ai.helper2.identity.usecase",
+    "ai.helper2.admin",
+    "ai.helper2.admin.usecase"
   };
 
   @Test
@@ -90,8 +92,8 @@ class ModularityTest {
 
   /**
    * Every use case reaches a JDBC adapter through a port, never by its class. The Java use cases of
-   * catalog, admin and examples are not in {@link #DOMAIN}: they are Spring services, and catalog's
-   * still read its internal stores (roadmap).
+   * catalog and examples are not in {@link #DOMAIN}: they are Spring services, and catalog's still
+   * read its internal stores (roadmap).
    */
   @Test
   void useCasesDoNotNameJdbcAdapters() {

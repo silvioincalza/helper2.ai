@@ -6,13 +6,11 @@ import ai.helper2.platform.BadRequestException;
 import ai.helper2.scout.EnrichmentBacklog;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import org.springframework.stereotype.Service;
 
 /**
  * The enrichment backlog page by page, in the order the Scout takes it (ADR 0045). Read-only: the
  * page shows what waits and why; acting on it is a separate use case.
  */
-@Service
 public class ListEnrichmentQueue {
 
   public static final int MAX_PAGE_SIZE = 100;

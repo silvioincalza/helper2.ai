@@ -13,7 +13,7 @@ rules: "Class A depends on class B: ModularityTest" {
   class: group
   direction: down
   dep: "A → B" {class: end}
-  domain: "A in a domain package?\n(shared, search, scout, guide,\nsetup, examples, pages,\nthe Kotlin search/scout/guide\n.usecase, identity and\nidentity.usecase)" {class: decision}
+  domain: "A in a domain package?\n(shared, search, scout, guide,\nsetup, examples, pages,\nthe Kotlin search/scout/guide\n.usecase, identity, admin\nand their .usecase)" {class: decision}
   fw: "B in org.springframework..,\ntools.jackson.. or java.sql..?" {class: decision}
   adapter: "B in a web, cache,\nconfig or internal package?" {class: decision}
   same: "B in A's own module?" {class: decision}

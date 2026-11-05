@@ -15,9 +15,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.stereotype.Service;
 
 /**
  * What needs a person now (ADR 0045): open review items per kind, the enrichment backlog, today's
@@ -25,7 +24,6 @@ import org.springframework.stereotype.Service;
  * many home examples are shown and hidden (ADR 0049). Counts only. Computed at most once per {@link
  * #FRESH}: the backlog count is a full pass, and one admin pressing Refresh must not repeat it.
  */
-@Service
 public class GetOverview {
 
   /** How long one computed overview is shown again. */
@@ -53,7 +51,7 @@ public class GetOverview {
   private final EnrichmentBacklog backlog;
   private final ScoutStore runs;
   private final BudgetLedger budgets;
-  private final ObjectProvider<WebSearchQuota> webSearchQuota;
+  private final Supplier<@Nullable WebSearchQuota> webSearchQuota;
   private final CountHomeExamples homeExamples;
   private final Clock clock;
   private @Nullable Overview last;
@@ -63,7 +61,7 @@ public class GetOverview {
       EnrichmentBacklog backlog,
       ScoutStore runs,
       BudgetLedger budgets,
-      ObjectProvider<WebSearchQuota> webSearchQuota,
+      Supplier<@Nullable WebSearchQuota> webSearchQuota,
       CountHomeExamples homeExamples,
       Clock clock) {
     this.reviewQueue = reviewQueue;
@@ -89,7 +87,7 @@ public class GetOverview {
 
   private Overview compute(Instant now) {
     List<RunSummary> recent = runs.recent(RUNS_FOR_FAILURES);
-    WebSearchQuota quota = webSearchQuota.getIfAvailable();
+    WebSearchQuota quota = webSearchQuota.get();
     return new Overview(
         now,
         reviewQueue.openCountsByKind(),
