@@ -1,4 +1,4 @@
-import type { GuideRequest, SearchQuery, SortOrder, TriState } from '@/api/types';
+import type { AudiencePath, GuideRequest, SearchQuery, SortOrder, TriState } from '@/api/types';
 
 export const MULTI_KEYS = [
   'type',
@@ -26,6 +26,8 @@ export interface SearchState {
   updatedAfter: string;
   openSource: TriState | '';
   filters: Record<MultiKey, string[]>;
+  /** Ranking emphasis set by a home example (never a choice in the UI); new words drop it. */
+  path: AudiencePath | '';
 }
 
 /** Longest search GET /search accepts. */
@@ -53,6 +55,7 @@ const SORT_VALUES = { RELEVANCE: true, NEWEST: true, RECENTLY_UPDATED: true } sa
 const TRI_VALUES = { true: true, false: true, unknown: true } satisfies Record<TriState, true>;
 const SORTS = Object.keys(SORT_VALUES) as SortOrder[];
 const TRI = Object.keys(TRI_VALUES) as TriState[];
+const PATHS: readonly AudiencePath[] = ['USE_AI', 'BUILD_WITH_AI'];
 
 export function emptyFilters(): Record<MultiKey, string[]> {
   return {
@@ -83,6 +86,7 @@ export function parseSearchParams(sp: URLSearchParams): SearchState {
     updatedAfter: /^\d{4}-\d{2}-\d{2}$/.test(updatedAfter) ? updatedAfter : '',
     openSource: TRI.includes(os as TriState) ? (os as TriState) : '',
     filters,
+    path: PATHS.includes(sp.get('path') as AudiencePath) ? (sp.get('path') as AudiencePath) : '',
   };
 }
 
@@ -96,6 +100,7 @@ export function toSearchParams(s: SearchState): URLSearchParams {
   for (const k of MULTI_KEYS) for (const v of s.filters[k]) sp.append(k, v);
   if (s.openSource) sp.set('openSource', s.openSource);
   if (s.updatedAfter) sp.set('updatedAfter', s.updatedAfter);
+  if (s.path) sp.set('path', s.path);
   if (s.page > 0) sp.set('page', String(s.page));
   return sp;
 }
@@ -121,6 +126,8 @@ export function toApiParams(s: SearchState): URLSearchParams {
 export function patchState(s: SearchState, patch: Partial<SearchState>): SearchState {
   const next = { ...s, ...patch };
   if (!('page' in patch)) next.page = 0;
+  // The path belongs to the example that set it, not to words the user types next.
+  if (patch.q !== undefined && patch.q !== s.q && !('path' in patch)) next.path = '';
   return next;
 }
 

@@ -40,10 +40,21 @@ describe('searchState', () => {
     );
     expect(s).toMatchObject({ sort: 'RELEVANCE', page: 0, updatedAfter: '', openSource: '' });
   });
-  it('drops the old path parameter: one entry point, no scopes', () => {
+  it('keeps the audience path a home example set, and drops an unknown one', () => {
     expect(
       toSearchParams(parseSearchParams(new URLSearchParams('q=a&path=BUILD_WITH_AI'))).toString(),
+    ).toBe('q=a&path=BUILD_WITH_AI');
+    expect(
+      toSearchParams(parseSearchParams(new URLSearchParams('q=a&path=ADMIN'))).toString(),
     ).toBe('q=a');
+  });
+  it('new words drop the path: it belonged to the example, not to what the user types next', () => {
+    const fromExample = parseSearchParams(
+      new URLSearchParams('q=vector database&path=BUILD_WITH_AI'),
+    );
+    expect(patchState(fromExample, { sort: 'NEWEST' }).path).toBe('BUILD_WITH_AI');
+    expect(patchState(fromExample, { q: 'vector database' }).path).toBe('BUILD_WITH_AI');
+    expect(patchState(fromExample, { q: 'graph database' }).path).toBe('');
   });
   it('toggles filters case-insensitively and clears them', () => {
     const s = toggleFilter(

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { EventsBoard } from '@/components/home/EventsBoard';
@@ -6,11 +6,16 @@ import { NewsBoard } from '@/components/home/NewsBoard';
 import { OneBox } from '@/components/OneBox';
 import { useSources } from '@/context/SourcesContext';
 import { useTitle } from '@/hooks/useTitle';
-import { askParams, clampQuestion, RESULTS_PATH } from '@/lib/searchState';
+import { pickExamples, type Example } from '@/lib/examples';
+import {
+  clampQuery,
+  parseSearchParams,
+  patchState,
+  RESULTS_PATH,
+  toSearchParams,
+} from '@/lib/searchState';
 import '@/components/home/home.css';
 
-/** Example needs (`home.example.<id>`): a short label, and the full need it sends, which both searches AND asks the guide. */
-const EXAMPLES = ['emails', 'pdf', 'laptop', 'postgres'] as const;
 /** What helper2 does, in three steps (`home.does.<id>`). */
 const DOES = ['search', 'recommend', 'proof'] as const;
 
@@ -25,9 +30,13 @@ export default function Home() {
   const { hash, key } = useLocation();
   const sources = useSources();
   useTitle('');
-  const ask = (need: string) => {
-    const q = clampQuestion(need);
-    if (q) void navigate({ pathname: RESULTS_PATH, search: askParams(q).toString() });
+  // A new pick per page view, the same one while the page stays.
+  const [examples] = useState(() => pickExamples());
+  // An example searches with its path; asking the guide stays a choice on the results (it spends a daily answer).
+  const search = (example: Example) => {
+    const q = clampQuery(t(`home.example.${example.id}.query`));
+    const state = patchState(parseSearchParams(new URLSearchParams()), { q, path: example.path });
+    if (q) void navigate({ pathname: RESULTS_PATH, search: toSearchParams(state).toString() });
   };
   const count = (sources.data ?? []).filter((s) => s.enabled).length;
 
@@ -51,21 +60,13 @@ export default function Home() {
             {t('home.examples')}
           </h2>
           <ul className="plain-list inline-list">
-            {EXAMPLES.map((id) => {
-              const need = t(`home.example.${id}.need`);
-              return (
-                <li key={id}>
-                  <button
-                    type="button"
-                    className="chip chip-ghost"
-                    title={need}
-                    onClick={() => ask(need)}
-                  >
-                    {t(`home.example.${id}.label`)}
-                  </button>
-                </li>
-              );
-            })}
+            {examples.map((example) => (
+              <li key={example.id}>
+                <button type="button" className="chip chip-ghost" onClick={() => search(example)}>
+                  {t(`home.example.${example.id}.label`)}
+                </button>
+              </li>
+            ))}
           </ul>
         </section>
       </section>

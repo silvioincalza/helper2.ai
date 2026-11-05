@@ -76,16 +76,34 @@ describe('one box', () => {
     ]);
   });
 
-  it('an example both searches and asks the guide', async () => {
+  it('an example searches with its audience path, and does not spend a guide answer', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
     const m = mockApi();
     const { params } = renderApp('/');
-    await userEvent.click(screen.getByRole('button', { name: 'Summarise long PDFs' }));
-    await waitFor(() => expect(params().get('ask')).toBe('summarise long PDF documents with AI'));
-    expect(params().get('q')).toBe('summarise long PDF documents with AI');
-    await waitFor(() => expect(m.callsTo('POST', '/guide/stream')).toHaveLength(1));
-    // Regression: a stale live-search timer used to drop `ask` (and the guide answer) ~700 ms later.
-    await new Promise((r) => setTimeout(r, 1000));
-    expect(params().get('ask')).toBe('summarise long PDF documents with AI');
+    await userEvent.click(screen.getByRole('button', { name: 'Summarise research papers' }));
+    await waitFor(() => expect(params().get('q')).toBe('summarise research papers'));
+    expect(params().get('path')).toBe('USE_AI');
+    expect(params().get('ask')).toBeNull();
+    await waitFor(() => expect(m.callsTo('GET', '/search')).toHaveLength(1));
+    expect(new URLSearchParams(m.callsTo('GET', '/search')[0]?.search).get('path')).toBe('USE_AI');
+    expect(m.callsTo('POST', '/guide/stream')).toHaveLength(0);
+    vi.restoreAllMocks();
+  });
+
+  it('shows two examples for people who use AI and two for builders', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    mockApi();
+    renderApp('/');
+    const list = within(
+      (await screen.findByRole('heading', { name: 'Try:' })).closest('section') as HTMLElement,
+    ).getAllByRole('button');
+    expect(list.map((b) => b.textContent)).toEqual([
+      'Summarise research papers',
+      'Take meeting notes',
+      'Postgres MCP server',
+      'Vector database',
+    ]);
+    vi.restoreAllMocks();
   });
 
   it('the header box works from any page and opens the results', async () => {

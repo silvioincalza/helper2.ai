@@ -7,6 +7,7 @@ export type SearchQuery = NonNullable<operations['search']['parameters']['query'
 
 export type ResourceType = S['ResourceType'];
 export type SortOrder = S['SortOrder'];
+export type AudiencePath = S['AudiencePath'];
 export type TriState = S['TriState'];
 export type SourceMode = S['SourceMode'];
 export type Freshness = S['Freshness'];

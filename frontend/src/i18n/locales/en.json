@@ -63,21 +63,49 @@
     "suggestGuide": "Sounds like a question — ask the guide: “{{q}}” →",
     "examples": "Try:",
     "example": {
-      "emails": {
-        "label": "Write emails faster",
-        "need": "an AI assistant that helps me write emails faster"
+      "papers": {
+        "label": "Summarise research papers",
+        "query": "summarise research papers"
       },
-      "pdf": {
-        "label": "Summarise long PDFs",
-        "need": "summarise long PDF documents with AI"
+      "meetings": {
+        "label": "Take meeting notes",
+        "query": "take meeting notes"
       },
-      "laptop": {
-        "label": "Run a model on my laptop",
-        "need": "a small open model that runs on my laptop"
+      "images": {
+        "label": "Make images from text",
+        "query": "make images from text"
+      },
+      "background": {
+        "label": "Remove a photo background",
+        "query": "remove image background"
+      },
+      "video": {
+        "label": "Edit videos with AI",
+        "query": "edit videos with AI"
       },
       "postgres": {
         "label": "Postgres MCP server",
-        "need": "an MCP server so my agent can query a Postgres database"
+        "query": "postgres mcp server"
+      },
+      "vectors": {
+        "label": "Vector database",
+        "query": "vector database"
+      },
+      "agents": {
+        "label": "Agent framework",
+        "query": "agent framework"
+      },
+      "local": {
+        "label": "Run LLMs locally",
+        "query": "run llms locally"
+      },
+      "rag": {
+        "label": "RAG framework",
+        "query": "rag framework"
+      },
+      "coding": {
+        "label": "AI coding assistant",
+        "query": "AI coding assistant"
       }
     },
     "does": {
@@ -98,7 +126,7 @@
   },
   "search": {
     "label": "Search AI resources",
-    "placeholder": "e.g. translate a newsletter for free",
+    "placeholder": "e.g. summarise research papers",
     "submit": "Search",
     "clear": "Clear the box",
     "slashHint": "Press / to search",
