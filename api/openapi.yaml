@@ -81,7 +81,7 @@ paths:
       parameters:
         - { name: days, in: query, schema: { type: integer, minimum: 1, maximum: 30, default: 14 } }
         - { name: type, in: query, schema: { type: array, maxItems: 20, items: { $ref: '#/components/schemas/ResourceType' } }, style: form, explode: true }
-        - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 24, default: 12 } }
+        - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 60, default: 12 } }
       responses:
         '200':
           description: Newest resources (possibly empty).

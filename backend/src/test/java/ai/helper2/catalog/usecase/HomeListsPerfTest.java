@@ -194,6 +194,11 @@ class HomeListsPerfTest {
         () -> recent.list(SINCE, UNTIL, Set.of(), 24).items(),
         24);
     measure(
+        "/recent size=60",
+        () -> oneByOne(recentIds(60)),
+        () -> recent.list(SINCE, UNTIL, Set.of(), 60).items(),
+        60);
+    measure(
         "/upcoming size=6",
         () -> oneByOne(store.upcomingEvents(TODAY, null, 6)),
         () -> upcoming.list(TODAY, null, 6).items(),

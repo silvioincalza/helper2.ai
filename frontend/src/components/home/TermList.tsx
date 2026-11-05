@@ -10,7 +10,7 @@ export interface TermCells {
   title: string;
   href: string;
   where: string;
-  /** Only in a log row, before `where`: e.g. "in 2 days". */
+  /** How soon, e.g. "In 2 days": under the date in a table, before `where` in a log row. */
   note?: string;
 }
 
@@ -39,7 +39,7 @@ export function TermList<Row extends { id: string }>({
   errorText: string;
   emptyText: string;
   columns: string[];
-  cells: (row: Row) => TermCells;
+  cells: (row: Row, now: number) => TermCells;
 }) {
   const { all, toggle, shown } = useFirstRows(feed.rows);
   const listId = `${id}-${layout}`;
@@ -58,14 +58,14 @@ export function TermList<Row extends { id: string }>({
         </thead>
         <tbody>
           {shown.map((row) => (
-            <TableRow key={row.id} cells={cells(row)} />
+            <TableRow key={row.id} cells={cells(row, feed.now)} />
           ))}
         </tbody>
       </table>
     ) : (
       <ul id={listId} className="plain-list v4-log" aria-labelledby={labelledBy}>
         {shown.map((row) => (
-          <LogRow key={row.id} cells={cells(row)} />
+          <LogRow key={row.id} cells={cells(row, feed.now)} />
         ))}
       </ul>
     );
@@ -75,10 +75,10 @@ export function TermList<Row extends { id: string }>({
       {feed.rows.length > 0 && (
         <>
           {body}
-          {feed.total > FIRST_ROWS && (
+          {feed.rows.length > FIRST_ROWS && (
             <ShowAll
               command={command}
-              count={feed.total}
+              count={feed.rows.length}
               all={all}
               controls={listId}
               onToggle={toggle}
@@ -142,7 +142,10 @@ function TermCommand({ command, total }: { command: string; total: number | null
 function TableRow({ cells }: { cells: TermCells }) {
   return (
     <tr className="v4-row">
-      <td className="v4-cell-date">{cells.when}</td>
+      <td className="v4-cell-date">
+        {cells.when}
+        {cells.note && <span className="v4-cell-note">{cells.note}</span>}
+      </td>
       <td className="v4-cell-type">{cells.type}</td>
       <td className="v4-cell-title">
         <Link to={cells.href}>{cells.title}</Link>
