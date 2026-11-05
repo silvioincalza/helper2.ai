@@ -136,6 +136,7 @@ public class CatalogSearchSource implements SearchSource {
         h.getEventKind(),
         h.getEventFormat(),
         h.getFacts(),
+        h.getCategories(),
         match);
   }
 

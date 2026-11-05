@@ -97,6 +97,7 @@ class SourceHitCodecTest {
             null,
             null,
             java.util.Map.of(),
+            java.util.Set.of(),
             new ListMatch("acme/awesome-llm", "Tools > Vector databases"));
 
     CachedHits back = codec.decode(codec.encode(new CachedHits(List.of(hit), now)));

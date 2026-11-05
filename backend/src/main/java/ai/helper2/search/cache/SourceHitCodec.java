@@ -138,6 +138,7 @@ final class SourceHitCodec {
                 text(n, "eventKind") == null ? null : EventKind.valueOf(text(n, "eventKind")),
                 text(n, "eventFormat") == null ? null : EventFormat.valueOf(text(n, "eventFormat")),
                 java.util.Map.of(),
+                java.util.Set.of(),
                 foundIn(n.path("foundIn"))));
       }
       return new CachedHits(hits, Instant.parse(root.path("fetchedAt").asString()));
