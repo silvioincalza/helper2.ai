@@ -65,6 +65,7 @@ class PolicyController implements PolicyApi {
         catalog.queryVectors().toSeconds(),
         search.getStoredWebResults().toSeconds(),
         accounts.inactiveAccounts().toSeconds(),
-        catalog.handledReports().toSeconds());
+        catalog.handledReports().toSeconds(),
+        accounts.adminRecords().toSeconds());
   }
 }

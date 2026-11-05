@@ -96,6 +96,12 @@ describe('mission, privacy and terms pages', () => {
     const keep = screen.getByRole('region', { name: 'How long we keep data' });
     expect(keep).toHaveTextContent('24 months after you last signed in');
     expect(keep).toHaveTextContent('Reports: 12 months after they were handled.');
+    expect(screen.getByRole('region', { name: 'What we process and why' })).toHaveTextContent(
+      'Records of our administrators',
+    );
+    expect(keep).toHaveTextContent(
+      "administrators' actions in the back office, with their GitHub user ID: 24 months.",
+    );
     expect(screen.getByRole('region', { name: 'Deleting your account' })).toHaveTextContent(
       'Delete my account',
     );

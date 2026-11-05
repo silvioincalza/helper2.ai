@@ -70,7 +70,8 @@ export type PolicyValues = Record<
   | 'queryVectors'
   | 'storedWebResults'
   | 'inactiveAccounts'
-  | 'handledReports',
+  | 'handledReports'
+  | 'adminRecords',
   string
 >;
 
@@ -111,6 +112,7 @@ export function policyValues(p: Policy, t: TFunction, lang: string): PolicyValue
     storedWebResults: d(r.storedWebResultsSeconds),
     inactiveAccounts: d(r.inactiveAccountsSeconds),
     handledReports: d(r.handledReportsSeconds),
+    adminRecords: d(r.adminRecordsSeconds),
   };
 }
 
