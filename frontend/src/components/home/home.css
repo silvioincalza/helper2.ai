@@ -471,11 +471,6 @@
   color: var(--v4-muted);
   white-space: nowrap;
 }
-.v4-list__more {
-  margin: var(--space-2) 0 0;
-  font: 400 0.8125rem/1.4 var(--v4-font-mono);
-  color: var(--v4-muted);
-}
 .v4-log__where {
   font: 400 0.8125rem/1.4 var(--v4-font-mono);
   color: var(--v4-muted);

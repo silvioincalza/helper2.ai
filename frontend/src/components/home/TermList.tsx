@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react';
-import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import type { Feed } from './homeFeeds';
 import { FIRST_ROWS, ListState, ShowAll, useFirstRows, type ListId } from './listParts';
@@ -42,11 +41,7 @@ export function TermList<Row extends { id: string }>({
   columns: string[];
   cells: (row: Row, now: number) => TermCells;
 }) {
-  const { t } = useTranslation();
   const { all, toggle, shown } = useFirstRows(feed.rows);
-  // The API counts more than it sends (its size cap, or records that no longer merge): say so once all are open.
-  const notSent = feed.total - feed.rows.length;
-  const showsAll = all || feed.rows.length <= FIRST_ROWS;
   const listId = `${id}-${layout}`;
   const labelledBy = layout === 'table' ? `${id}-h` : id;
   const body =
@@ -88,9 +83,6 @@ export function TermList<Row extends { id: string }>({
               controls={listId}
               onToggle={toggle}
             />
-          )}
-          {showsAll && notSent > 0 && (
-            <p className="v4-list__more">{t('lists.more', { count: notSent })}</p>
           )}
         </>
       )}

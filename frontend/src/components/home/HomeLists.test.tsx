@@ -107,9 +107,9 @@ describe('New this week and Coming up on a wide screen: two tables like ls -l', 
     const { section } = await table('New this week');
     const more = await within(section).findByRole('button', { name: 'show all 7' });
     expect(within(section).getByText('38')).toBeInTheDocument();
-    expect(within(section).queryByText(/more: search for them/)).not.toBeInTheDocument();
     await userEvent.click(more);
-    expect(within(section).getByText('31 more: search for them')).toBeInTheDocument();
+    expect(bodyRows(within(section).getByRole('table'))).toHaveLength(7);
+    expect(within(section).queryByText(/more/)).not.toBeInTheDocument();
   });
 
   it('asks the API for up to 60 rows', async () => {
@@ -117,14 +117,6 @@ describe('New this week and Coming up on a wide screen: two tables like ls -l', 
     renderApp('/');
     await table('New this week');
     expect(m.callsTo('GET', '/recent')[0]?.search).toContain('size=60');
-  });
-
-  it('a list of all its rows says nothing more', async () => {
-    mockApi({ 'GET /recent': () => makeRecent({ items: news(8), total: 8 }) });
-    renderApp('/');
-    const { section } = await table('New this week');
-    await userEvent.click(await within(section).findByRole('button', { name: 'show all 8' }));
-    expect(within(section).queryByText(/more: search for them/)).not.toBeInTheDocument();
   });
 
   it("a date in another year than the server's shows the year", async () => {
