@@ -443,8 +443,9 @@ describe('search results', () => {
 
   describe('Show more', () => {
     /** Page n of a 3-page search: one card per page, ids that do not repeat. */
-    const paged = () => {
+    const paged = (more: Parameters<typeof mockApi>[0] = {}) => {
       const m = mockApi({
+        ...more,
         'GET /search': ({ url }) => {
           const page = Number(url.searchParams.get('page') ?? '0');
           return makeSearch({
@@ -490,6 +491,28 @@ describe('search results', () => {
       expect(screen.getByRole('link', { name: 'Result 1' })).toBeInTheDocument();
       expect(screen.getByRole('link', { name: 'Result 2' })).toBeInTheDocument();
       expect(document.activeElement).not.toBe(screen.getByRole('link', { name: 'Result 3' }));
+    });
+
+    it('back from a result on an added page shows every page before the scroll position is restored', async () => {
+      const id = '11111111-1111-5111-8111-000000000002';
+      const m = paged({
+        [`GET /resources/${id}`]: () => makeDetail({ card: makeCard({ id, title: 'Result 3' }) }),
+      });
+      const { router } = renderApp('/search?q=translate&page=2');
+      const third = await screen.findByRole('link', { name: 'Result 3' });
+      vi.spyOn(window, 'scrollY', 'get').mockReturnValue(2400);
+      await userEvent.click(third);
+      await screen.findByRole('heading', { level: 1, name: 'Result 3' });
+      // When the browser restores the place, the rows of the added pages must already be there, or it clamps the
+      // place to the shorter page and never comes back to it.
+      const rowsAtRestore: boolean[] = [];
+      vi.mocked(window.scrollTo).mockImplementation(() => {
+        rowsAtRestore.push(screen.queryByRole('link', { name: 'Result 3' }) !== null);
+      });
+      await act(() => router.navigate(-1));
+      expect(window.scrollTo).toHaveBeenLastCalledWith(0, 2400);
+      expect(rowsAtRestore.at(-1)).toBe(true);
+      expect(m.callsTo('GET', '/search')).toHaveLength(3);
     });
   });
 

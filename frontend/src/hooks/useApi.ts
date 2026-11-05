@@ -50,6 +50,11 @@ function touch(key: string) {
   recent.set(key, entry);
 }
 
+/** A recent answer for [key], read during render without a request, or undefined when there is none. */
+export function recentAnswer<T>(key: string): T | undefined {
+  return peek(key)?.data as T | undefined;
+}
+
 /** Empties the recent-answers cache (between tests). */
 export function clearApiCache() {
   recent.clear();
