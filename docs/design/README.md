@@ -22,9 +22,10 @@ them they show the system fonts.
 
 ### Radar (5 Nov 2026)
 
+- No line above the title. The title is one `h1` on two lines: "helper2.ai" in accent ink, then "The metasearch for the AI universe."
 - Like a navigation radar: full rings around the title, and a beam that turns once every 5 s.
-- Only external sources. Our own index, the search by meaning and the curated list are not on it. The title counts
-  the same sources.
+- Only external sources. Our own index, the search by meaning and the curated list are not on it. The legend
+  counts the same sources.
 - 3 to 5 sources at a time, each in its own spot. It starts with 3, one after another. Then every 1.6 s one step: a
   new random source comes while it grows, up to 5; the oldest leaves while it shrinks, down to 3.
 - A dot shows only when the beam passes it: full opacity, a short pop and a glow in its colour, then it fades to

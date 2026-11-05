@@ -57,9 +57,8 @@
     "noAds": "No ads."
   },
   "home": {
-    "eyebrow_one": "One search · {{count}} AI source",
-    "eyebrow_other": "One search · {{count}} AI sources",
-    "title": "The metasearch for the AI ecosystem.",
+    "name": "helper2.ai",
+    "title": "The metasearch for the AI universe.",
     "lede": "Models, apps, agents, MCP servers and papers from Hugging Face, GitHub, arXiv and more, in one search. Ask in plain words and get a recommendation with a quote that proves it.",
     "hint": "A few words search. A question of {{count}} words or more also gets the guide's picks.",
     "suggestGuide": "Sounds like a question — ask the guide: “{{q}}” →",

@@ -73,7 +73,7 @@ export default function Home() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { hash, key } = useLocation();
-  // One GET /sources for the count and the radar (the cache shares it with the Sources page).
+  // One GET /sources for the radar and its legend (the cache shares it with the Sources page).
   const sources = useApi('sources', (signal) => api.listSources(signal));
   useTitle('');
   // A new pick per page view, the same one while the page stays.
@@ -84,7 +84,7 @@ export default function Home() {
     const state = patchState(parseSearchParams(new URLSearchParams()), { q, path: example.path });
     if (q) void navigate({ pathname: RESULTS_PATH, search: toSearchParams(state).toString() });
   };
-  // The radar and the count in the title show the same sources: the enabled ones run by someone else.
+  // The radar and its legend show the same sources: the enabled ones run by someone else.
   const external = radarSources(sources.data ?? []);
   const bar = useRef<HTMLDivElement>(null);
   const titleBlock = useRef<HTMLDivElement>(null);
@@ -104,11 +104,10 @@ export default function Home() {
           <HomeRadar sources={external} box={bar} title={titleBlock} />
         </Suspense>
         <div ref={titleBlock} className="v4-wrap v4-hero__text">
-          {external.length > 0 && (
-            <p className="v4-eyebrow">{t('home.eyebrow', { count: external.length })}</p>
-          )}
           <h1 id="home-h" className="v4-hero__title">
-            {t('home.title')}
+            {/* One h1 on two lines: the site's name, then what it is. The space keeps the two apart when read. */}
+            <span className="v4-hero__name">{t('home.name')}</span>{' '}
+            <span className="v4-hero__what">{t('home.title')}</span>
           </h1>
           <p className="v4-hero__lede">{t('home.lede')}</p>
         </div>

@@ -12,7 +12,7 @@ describe('i18n', () => {
     expect(localStorage.getItem('h2.lang')).toBeNull();
     expect(document.documentElement.lang).toBe('en');
     expect(
-      screen.getByRole('heading', { name: /The metasearch for the AI ecosystem/ }),
+      screen.getByRole('heading', { name: /The metasearch for the AI universe/ }),
     ).toBeInTheDocument();
   });
 

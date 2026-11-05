@@ -13,7 +13,7 @@ import {
 } from './radarLayout';
 
 const external = radarSources(STAGING_SOURCES);
-/** The title block as Chromium lays it out (eyebrow, two title lines, the lede) in the hero, at 1280 and 1024 px. */
+/** The title block as Chromium lays it out (the title lines, the lede) in the hero, at 1280 and 1024 px. */
 const wide = radarFrame(1280, 340, { left: 346, top: 47, right: 934, bottom: 281 });
 const laptop = radarFrame(1024, 340, { left: 218, top: 47, right: 806, bottom: 281 });
 const live = (over: Partial<SourceInfo> = {}): SourceInfo => ({

@@ -12,11 +12,14 @@ describe('home (design v4)', () => {
   it('says what the site is, with the box, the two lists and what it does, and no results', async () => {
     mockApi({ 'GET /sources': () => STAGING_SOURCES });
     renderApp('/');
-    expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent(
-      'The metasearch for the AI ecosystem.',
-    );
-    // The number of sources is the enabled external sources of GET /sources, never a number in the copy.
-    expect(await screen.findByText('One search · 13 AI sources')).toBeInTheDocument();
+    // One h1 that names the site: "helper2.ai" on its own line, then what it is.
+    const h1 = await screen.findByRole('heading', { level: 1 });
+    expect(h1).toHaveAccessibleName('helper2.ai The metasearch for the AI universe.');
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+    expect(within(h1).getByText('helper2.ai')).toHaveClass('v4-hero__name');
+    // No line above the title; the number of sources is in the radar legend, from GET /sources.
+    expect(screen.queryByText(/One search/)).not.toBeInTheDocument();
+    expect(await screen.findByText(/^3-5 of 13 sources at a time/)).toBeInTheDocument();
     expect(screen.getByText(/^Models, apps, agents/)).not.toHaveTextContent(/\d/);
     // The 4-word rule comes from the code that applies it.
     expect(screen.getByText(/A question of 4 words or more/)).toBeInTheDocument();
@@ -37,7 +40,7 @@ describe('home (design v4)', () => {
     expect(screen.getByRole('contentinfo')).toHaveTextContent('Switzerland · EU servers');
   });
 
-  it('counts only enabled external sources, and says no count while GET /sources has not answered', async () => {
+  it('the legend counts only enabled external sources, and shows no count while GET /sources has not answered', async () => {
     mockApi({
       'GET /sources': () => [
         ...SOURCES,
@@ -45,15 +48,15 @@ describe('home (design v4)', () => {
       ],
     });
     renderApp('/');
-    expect(screen.queryByText(/AI source/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/at a time/)).not.toBeInTheDocument();
     // GitHub counts; Helper2's own seed and the disabled source do not.
-    expect(await screen.findByText('One search · 1 AI source')).toBeInTheDocument();
+    expect(await screen.findByText(/^1 of 1 source at a time/)).toBeInTheDocument();
   });
 
-  it('the radar shows 3 to 5 of the 13 external sources, the same ones the title counts, with a legend', async () => {
+  it('the radar shows 3 to 5 of the 13 external sources, the same ones the legend counts', async () => {
     mockApi({ 'GET /sources': () => STAGING_SOURCES });
     renderApp('/');
-    await screen.findByText('One search · 13 AI sources');
+    await screen.findByText(/^3-5 of 13 sources at a time/);
     const radar = await screen.findByRole('list', { name: 'Some of the sources we search' });
     // The first 3 come in one after another, 0.6 s apart.
     await waitFor(() => expect(within(radar).getAllByRole('link')).toHaveLength(3), {

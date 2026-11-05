@@ -36,7 +36,7 @@ function textBounds(el: Element): DOMRect {
     : el.getBoundingClientRect();
 }
 
-/** The title block (eyebrow, title, lede) as one rectangle in the radar's own coordinates. */
+/** The title block (title, lede) as one rectangle in the radar's own coordinates. */
 function titleRect(root: HTMLElement, title: HTMLElement | null): Rect | null {
   if (!title) return null;
   const base = root.getBoundingClientRect();

@@ -1,5 +1,5 @@
 # Flowchart: the redesign (design system v4) from the home page to the guide. Home loads the sources once for the
-# count and the radar, and the two lists (tables on a wide screen, tabs on a phone); the search box stays pinned; a
+# radar and its legend, and the two lists (tables on a wide screen, tabs on a phone); the search box stays pinned; a
 # search opens the results; the guide starts on its own only for a question (4+ words), else Ask the guide.
 # Code: frontend/src/pages/Home.tsx, components/home/HomeRadar.tsx, radarLayout.ts, radarRotation.ts, radarClock.ts,
 #   useRadarMotion.ts, RadarLegend.tsx, TermList.tsx, HomeLists.tsx, HomeTabs.tsx, homeFeeds.ts, lib/v4Fields.ts, components/Layout.tsx (header, footer). Results are still v3 (one column comes next, see the roadmap).
@@ -15,7 +15,7 @@ home: Home {
   class: group
   direction: down
   hero: "Title inside full rings,\na beam that turns every 5 s" {class: app}
-  sources: "GET /api/v1/sources\n(N enabled external = the count,\na fixed spot per source)" {class: ext}
+  sources: "GET /api/v1/sources\n(N enabled external = the legend count,\na fixed spot per source)" {class: ext}
   fields: "newThisWeek a number?\n(lib/v4Fields.ts)" {class: decision}
   sized: "Dot size = new this week" {class: app}
   plain: "Default dot size" {class: app}

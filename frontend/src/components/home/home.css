@@ -40,19 +40,19 @@
     opacity var(--v4-fold) ease,
     padding var(--v4-fold) ease;
 }
-.v4-home .v4-eyebrow {
-  margin: 0;
-  font: 600 0.75rem/1.3 var(--v4-font-mono);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--v4-accent-ink);
-}
 .v4-home .v4-hero__title {
   margin: 0;
   max-width: 44rem;
   font: 500 clamp(30px, 3.6vw + 14px, 52px) / 1.08 var(--v4-font-mono);
   letter-spacing: -0.03em;
   text-wrap: balance;
+}
+.v4-hero__name,
+.v4-hero__what {
+  display: block;
+}
+.v4-home .v4-hero__name {
+  color: var(--v4-accent-ink);
 }
 .v4-home .v4-hero__lede {
   margin: 0;

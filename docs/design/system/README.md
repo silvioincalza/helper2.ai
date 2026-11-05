@@ -34,7 +34,7 @@ The frontend runs version 4 for the header, the footer and Home (`--v4-*` in `fr
 | Controls | `border-strong` | Inputs, selects, ghost buttons, chips, toggles. 3:1 on `bg`. |
 | Selected | `selected` + `on-selected` | The active chip or view (List, Timeline). |
 | Primary action | `accent` + `on-accent` | One per area: Search, Open on source ↗, Send report. |
-| Links | `accent-ink` | Text links, dates, ranks, the eyebrow. Saffron `accent` is never used for small text on `bg` (3:1 only). |
+| Links | `accent-ink` | Text links, dates, ranks, "helper2.ai" in the home title. Saffron `accent` is never used for small text on `bg` (3:1 only). |
 | Checked | `quote-bg`, `status-ok-ink` | Checked quotes, answered sources. |
 | Caution | `status-warn-ink` | Not stated, sources disagree, slow, rate limited, timed out. |
 | Error | `danger` | Failed sources and requests, form errors, delete. |
@@ -61,7 +61,7 @@ Apart from the radar mark, icons are small stroke glyphs beside words, never alo
 
 ## Home page
 
-1. **Hero**, centred: the eyebrow "One search · N AI sources" (N from GET /sources), the title "The metasearch for the AI ecosystem.", one line on what it does. Around it the radar (see Radar); N counts the same external sources.
+1. **Hero**, centred, with no line above it: the title, one `h1` on two lines: "helper2.ai" in `accent-ink` (same size and weight), then "The metasearch for the AI universe."; one line on what it does. Around it the radar (see Radar).
 2. **Pinned search box**, full width up to 820px: box, Search, one hint line, the "Try:" chips, the radar legend ("3-5 of N sources at a time", the three colours, a link to the Sources page). It sticks under the header while the page scrolls; once the title is gone, the hints and legend fold away and it gets `shadow-pinned`.
 3. **New this week** and **Coming up**: two tables side by side, like `ls -l`, stacked below 920px; tabs below 768px. See HomeLists.
 4. **What helper2 does for you**: a quiet strip of three steps.

@@ -32,8 +32,9 @@ they do now and how version 3 and 4 live side by side until the other pages move
    Mission, Sign in and the theme; Escape closes it. On the pages without their own box, the box sits in the header.
    The footer: the logo, one row of links (Mission, Sources, Privacy, Terms, GitHub ↗, the licence ↗, the release ↗,
    the theme switch), then one line: what is searched, no ads, who and where.
-4. **Home: the title, the radar, a pinned search box, two lists.** The title says what the site is: "The
-   metasearch for the AI ecosystem.", with one line under it. Around it sits a radar that works like a navigation
+4. **Home: the title, the radar, a pinned search box, two lists.** No line above it. The title is one `h1` on two lines: "helper2.ai"
+   (accent ink, same size and weight), then "The metasearch for the AI universe.", with one line under it. One
+   heading names the site, for search engines and screen readers. Around it sits a radar that works like a navigation
    radar (PPI): full rings around the title, and a beam (a sweep wedge) that turns once every 5 s.
    - **Which sources.** Only external sources (`external` on GET /sources): Helper2's own index, its search by meaning
      and its curated list are left out. Live sources sit on the two inner rings, the Scout collectors on the two
@@ -78,8 +79,8 @@ they do now and how version 3 and 4 live side by side until the other pages move
    fails on any CSS or inline animation that repeats for ever. The exception is the radar (decision 4). It moves by a
    JavaScript clock, not a CSS animation; it holds still while the search box has focus, stands still under reduced
    motion, and a signed-in user can turn it off.
-7. **Every number comes from data.** "One search · N AI sources" counts the enabled external sources of GET /sources,
-   the same sources the radar shows (13 on staging; not shown before the answer); the dot names say the response time
+7. **Every number comes from data.** The radar legend's "3-5 of N sources at a time" counts the enabled external
+   sources of GET /sources, the same sources the radar shows (13 on staging; not shown before the answer); the dot names say the response time
    or the age of the last check; the list counts
    are `total` on GET /recent and GET /events/upcoming (never fewer than the rows sent); the hint's "4 words" is the
    constant the box uses to tell a question from a search. One small reader (`lib/v4Fields.ts`) takes `newThisWeek`,
