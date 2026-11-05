@@ -9,13 +9,13 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | Diagram | Shows |
 |---|---|
 | [hexagonal-architecture](hexagonal-architecture.svg) | The classic hexagon: business logic (Kotlin domain) inside, ports on its edge, adapters around it, driving side left and driven side right. Hand-drawn SVG: edit the file itself. |
-| [architecture-context](architecture-context.svg) | Context view: the modules as boxes, who calls helper2 and what it calls. |
+| [architecture-context](architecture-context.svg) | Context view: the modules as boxes (examples included), who calls helper2 and what it calls. |
 | [architecture-search](architecture-search.svg) | One search: the search ports and the adapters behind them. |
 | [architecture-guide](architecture-guide.svg) | One guide question: AskGuide, the search it reuses, the evidence gate, the LLM layer. |
 | [architecture-index](architecture-index.svg) | How the index grows: Scout, collectors, enrichment and its gap round, catalog storage and embeddings. |
 | [architecture-setup](architecture-setup.svg) | Guide me on a resource page: the setup ports, the registry, README and tool-guide adapters, the fetch budget and the shared cache. |
 | [architecture-platform](architecture-platform.svg) | The edge and the shared services: identity, rate limits, errors, the SPA, and platform llm, http, resilience, quota, shared cache and locks, with their Redis keys and tables. |
-| [data-model](data-model.svg) | Data model: every PostgreSQL table from `V1__schema.sql` with its columns and keys, grouped by area. Solid lines are foreign keys labelled with their ON DELETE rule (ADR 0034); dashed lines are links the code keeps without one (bookmark snapshot, Tavily hit ids, guide answer key). |
+| [data-model](data-model.svg) | Data model: every PostgreSQL table from the versioned migrations with its columns and keys, grouped by area. Solid lines are foreign keys labelled with their ON DELETE rule (ADR 0034); dashed lines are links the code keeps without one (bookmark snapshot, Tavily hit ids, guide answer key). |
 | [infrastructure](infrastructure.svg) | Runtime infrastructure of the hosted helper2 on Kubernetes: Cloudflare and ingress-nginx, the public and the admin host, the two namespaces and their workloads, what the network policy lets each workload reach (egress), Redis auth, OpenBao and Harbor for delivery, Alloy -> Prometheus / Tempo for observability, and the prod backup with its optional off-site copy to Cloudflare R2 (off today). |
 
 ## Per ADR
@@ -57,6 +57,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0034](../adr/operations/0034-data-retention.md) | [flow](flow-0034-data-retention.svg) | [sequence](sequence-0034-data-retention.svg) | the daily purges per module under their cluster locks, and the catalog rules in order. |
 | [0046](../adr/operations/0046-supply-chain.md) | [flow](flow-0046-supply-chain.svg) | — (CI only, no runtime path) | the SBOM and the Grype scan on main, on a release and every week. |
 | [0048](../adr/operations/0048-release-branches-and-version-tags.md) | [flow](flow-0048-release-branches-and-version-tags.svg) | [sequence](sequence-0048-release-branches-and-version-tags.svg) | which push builds an image and with which tag, and a fix released from a release branch to prod under its version. |
+| [0049](../adr/search/0049-home-examples.md) | [flow](flow-0049-home-examples.svg) | [sequence](sequence-0049-home-examples.svg) | how an example gets on the home page: the rules of an admin write, the quality check (top 3 of its own search, no web), and the pick in the browser. |
 | [0035](../adr/edge/0035-admin-host.md) | [flow](flow-0035-admin-host.svg) | [sequence](sequence-0035-admin-host.svg) | which port and host answer the back office, and how a sign-in gets ADMIN only on the admin port. |
 | [0036](../adr/quality/0036-search-evaluation-harness.md) | [flow](flow-0036-search-evaluation-harness.svg) | [sequence](sequence-0036-search-evaluation-harness.svg) | the search evaluation harness: snapshots recorded once, offline replay, report and the nDCG@10 gate. |
 | [0047](../adr/quality/0047-code-format.md) | [flow](flow-0047-code-format.svg) | — (build and CI only, no runtime path) | which files Spotless and Prettier format with which formatter, and the spotlessCheck and format:check gates in CI. |

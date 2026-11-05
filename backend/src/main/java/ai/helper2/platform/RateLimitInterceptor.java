@@ -52,6 +52,9 @@ class RateLimitInterceptor implements HandlerInterceptor, WebMvcConfigurer {
     // Each guide question costs three LLM calls: keep it tighter than search. The guide and the
     // tool guide share one limiter, so switching endpoint does not double a client's budget.
     RateLimiter guide = limiter("guide", guidePerMinute, Duration.ofMinutes(1));
+    // Home page reads: cheap index reads, limited only so they cannot be looped against the
+    // database. They share one limiter: one home page view makes both.
+    RateLimiter home = limiter("recent", recentPerMinute, Duration.ofMinutes(1));
     this.limiters =
         Map.of(
             "search", limiter("search", searchPerMinute, Duration.ofMinutes(1)),
@@ -62,9 +65,8 @@ class RateLimitInterceptor implements HandlerInterceptor, WebMvcConfigurer {
             // Can fetch a README from GitHub (on the sources' token) when the server has no
             // registry entry.
             "getResourceSetup", limiter("setup", searchPerMinute, Duration.ofMinutes(1)),
-            // Home page "Today" list: a cheap index read, limited only so it cannot be looped
-            // against the database.
-            "listRecent", limiter("recent", recentPerMinute, Duration.ofMinutes(1)));
+            "listRecent", home,
+            "listHomeExamples", home);
   }
 
   private RateLimiter limiter(String name, int limit, Duration window) {

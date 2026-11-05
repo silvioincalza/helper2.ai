@@ -444,6 +444,19 @@ public class ResourceStore {
    * on their own, unless a user report or a review item still points at them: those cascade, so the
    * resource is kept.
    */
+  /** The title of each of [ids] the catalog has; an unknown id is absent from the map. */
+  public Map<UUID, String> titles(Collection<UUID> ids) {
+    if (ids.isEmpty()) {
+      return Map.of();
+    }
+    Map<UUID, String> titles = new LinkedHashMap<>();
+    jdbc.sql("SELECT id, title FROM resource WHERE id = ANY(:ids)")
+        .param("ids", ids.toArray(UUID[]::new))
+        .query((rs, n) -> titles.put(rs.getObject("id", UUID.class), rs.getString("title")))
+        .list();
+    return titles;
+  }
+
   private void deleteOrphans(Collection<UUID> candidates) {
     if (candidates.isEmpty()) {
       return;

@@ -25,6 +25,12 @@ constructor(
   val asker: Asker? = null,
   /** How fast web results for this request age; null = read from the request ([IntentClass.of]). */
   val intentClass: IntentClass? = null,
+  /**
+   * False: metered web sources are not called and not read from their store (SKIPPED,
+   * [SkipReason.WEB_NOT_ASKED]). For internal checks that must spend no web credits and must not
+   * depend on web answers that change every day.
+   */
+  val web: Boolean = true,
 )
 
 /**
