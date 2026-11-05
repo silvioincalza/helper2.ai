@@ -24,10 +24,17 @@ Items are grouped by the order in which they matter. Inside a group, the first i
   right (Swiss URG Art. 25, EU InfoSoc Art. 5(3)(d)) for 20–300-character excerpts, also of repositories with no
   licence; GitHub and Hugging Face terms for reading and keeping them (the Hub `raw` path is not its API); author names
   in excerpts under the existing purpose with a public Art. 14 notice (Art. 14(5)(b)).
-- SEO ([ADR 0050](adr/frontend/0050-pages-for-crawlers.md) is built): measure the resource page load before and after
-  on staging (+20 ms p95 budget). Later: 410 for removed resources, a sitemap index past 50,000 pages, an Open Graph
-  image, slugs, hub pages per type, `llms.txt`, IndexNow. Manual: Google Search Console and Bing Webmaster Tools
-  (domain property, DNS TXT), and a deliberate choice of the Cloudflare bot settings.
+- SEO ([ADR 0050](adr/frontend/0050-pages-for-crawlers.md) is built; the resource page adds about 1 ms at p95 on
+  staging, budget 20 ms). Next, in this order:
+  - Readable addresses `/resource/{id}/{slug}`: the id stays the key, a wrong or old slug gets a 301. Do it before
+    Google indexes many pages: changing addresses later costs ranking.
+  - One Open Graph image for the brand (1200×630 in `public/`); one per resource only if links get shared often.
+  - Hub pages per type (`/mcp-servers`, `/models`): when Search Console shows which types get impressions.
+  - 410 for resources removed on purpose, once the catalog has a removed state; a sitemap index past 50,000 pages.
+  - Not now: `llms.txt` (no major crawler uses it), IndexNow (the sitemap is enough at this size).
+  - Manual: Google Search Console and Bing Webmaster Tools (domain property, DNS TXT); submit
+    `https://helper2.ai/sitemap.xml` after the prod release; check the Cloudflare bot settings (today: AI training
+    bots blocked, search allowed).
 
 ### Domain and identity
 - DNS: `CAA` record for the edge's certificate authority; `v=spf1 -all` and DMARC `p=reject` if no mail is sent.
@@ -49,7 +56,8 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 - Run `./gradlew liveTest` against production egress.
 - Ranking measured on a labeled query set ([ADR 0009](adr/search/0009-ranking.md)). The harness and the queries exist
   ([ADR 0036](adr/quality/0036-search-evaluation-harness.md)); the grades do not. Label them as
-  [docs/eval](eval/README.md) describes, then record the baseline.
+  [docs/eval](eval/README.md) describes, then record the baseline. The set was developer-heavy: the 20 `everyday`
+  queries (plain words, path `USE_AI`) now exist and wait for labels like the rest.
 - Guide relevance judged by a second person, not only by the owner ([ADR 0030](adr/quality/0030-guide-evaluation.md)).
 
 ## 2. Operations

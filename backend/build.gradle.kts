@@ -187,6 +187,10 @@ val podmanSocket =
     .map { it.trim() }
 
 tasks.withType<Test>().configureEach {
+  // Gradle gives a test JVM 512 MB by default. The integration tests keep a few Spring contexts in
+  // the test context cache, and CI ran out of memory twice (5 Nov 2026: #169, then main after the
+  // config PRs). 2 GB leaves room for Postgres and Redis on a 7 GB GitHub runner.
+  maxHeapSize = "2g"
   systemProperty("openapi.spec", openApiSpec.asFile.absolutePath)
   // Hermetic tests: never pick up a developer's .env (keys, sources, ports).
   // spring.config.import="" alone did not stop it: application.yaml's own import still loaded

@@ -1,6 +1,12 @@
 {
   "includeCoAuthoredBy": false,
   "permissions": {
-    "deny": ["Read(./.env)", "Read(./.secrets)"]
+    "deny": [
+      "Read(./.env)",
+      "Read(./.secrets)",
+      "Bash(gh pr merge:*)",
+      "Bash(gh stack merge:*)",
+      "Bash(git push origin main:*)"
+    ]
   }
 }

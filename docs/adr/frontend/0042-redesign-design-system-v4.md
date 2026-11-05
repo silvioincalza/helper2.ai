@@ -225,7 +225,7 @@ pages, Results and the resource page, and the text pages; this record says what 
   on a hidden tab.
 - The API has the fields the drawings need: `newThisWeek` per source on GET /sources, `limits` on GET /me, and
   `total` on GET /recent and GET /events/upcoming (which also takes `days`). The Unknown count per facet is still open.
-- The initial JavaScript is 157.3 of 250 KiB gzip ([0025](0025-frontend-one-box.md)): Results load on demand, like
+- The initial JavaScript is 157.2 of 250 KiB gzip ([0025](0025-frontend-one-box.md)): Results load on demand, like
   the radar, the phone tabs, Sources, Saved, the back office and the text pages. A first visit to /search waits for
   that chunk behind the skeleton.
 - Results show one screen of rows and one place per result; comparing two results means opening both. A reload
