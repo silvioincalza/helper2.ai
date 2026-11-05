@@ -44,6 +44,19 @@ or in GitHub settings, and the deploy must not need a person to copy them.
    Secret, raise the revision, deploy".
 7. **Values that are not secret** (database address, Redis host, profiles, Scout settings, tracing endpoint,
    management port 8081) are set in the chart's Deployment, per environment through `values-<env>.yaml`.
+8. **Typed settings.** The code reads configuration only through immutable `@ConfigurationProperties`
+   records: one per module, or per clear concern, in that module's `config` package, under
+   `helper2.<module>`. The open `platform` module uses concern prefixes such as `helper2.llm`.
+   `helper2.retention` is shared, with one record per module for its own periods. No `@Value`, no
+   `Environment.getProperty`: an architecture test fails the build on either. It starts with a frozen
+   list of the classes that still use `@Value`; the list shrinks module by module and then goes away.
+   Records are `@Validated`, use `Duration`, `DataSize`, `URI` and lists, and mask secrets in `toString`
+   (`Secrets.mask`). Spring binds and validates them before the context is ready, so a bad value stops
+   startup with its name. Defaults live in one place, `application.yaml`, next to the `H2_` name that
+   overrides them. Records carry none. `@Scheduled` and `@ConditionalOnProperty` still use placeholders,
+   but only for keys a record owns. Env names never follow a record path: the yaml mapping is the
+   contract, so renaming a field never renames an `H2_` variable. The database password has no default
+   in the base document; only the `dev` profile has the local one from `compose.yaml`.
 
 ## Consequences
 - One search for `H2_` finds every setting. A missing or misspelled prefix is easy to spot in review.
@@ -64,12 +77,20 @@ or in GitHub settings, and the deploy must not need a person to copy them.
 - Spring Cloud Config — a config server for one service.
 - Plain Spring names (`SPRING_DATASOURCE_URL`) — long, tied to Spring's internal property names, and
   mixed with our own settings under no common prefix.
+- `@Value` in the code — scattered, not validated, defaults copied next to the yaml ones.
+- One global properties class — crosses module boundaries.
+- Relaxed binding of `H2_*` straight to records — cannot give one token to several sources, would rename
+  about 45 variables in OpenBao, and every field would become settable from outside.
 - A checksum of the existing Redis Secret read with Helm's `lookup` — needs read access to Secrets at deploy time
   and renders nothing in `helm template` (CI); a controller that restarts pods on Secret changes (Reloader) — one
   more component. A revision number in the values is explicit and testable.
 
 ## Code
 - `backend/src/main/resources/application.yaml` — every `H2_` variable, defaults, profiles.
+- `backend/src/main/java/ai/helper2/<module>/config/*Properties.java` — the typed settings;
+  `backend/src/main/kotlin/ai/helper2/shared/Secrets.kt` — masks secrets in `toString`.
+- `backend/src/test/java/ai/helper2/architecture/ConfigurationAccessTest.java` — the no-`@Value` rule and its
+  frozen list; `backend/src/test/java/ai/helper2/testing/ConfigBinding.java` — binding tests on the real yaml.
 - `.env.example`, `deploy/k8s/app.env.example` — templates.
 - `deploy/k8s/Makefile` (`credentials`, `backup-credentials`, `env-secret`, `deploy`), `deploy/k8s/check-app-env.sh`
   — writes, checks and uses the secrets.

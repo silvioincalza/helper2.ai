@@ -19,7 +19,8 @@ spring:
   datasource:
     url: ${H2_DATABASE_URL:jdbc:postgresql://localhost:5432/helper2}
     username: ${H2_DATABASE_USER:helper2}
-    password: ${H2_DATABASE_PASSWORD:helper2-local-only}
+    # No default: staging and prod set it from OpenBao. The known local password is only in the dev profile.
+    password: ${H2_DATABASE_PASSWORD}
     hikari:
       maximum-pool-size: ${H2_DATABASE_POOL_SIZE:10}
       connection-timeout: 3000
@@ -532,6 +533,9 @@ spring:
   config:
     activate:
       on-profile: dev
+  datasource:
+    # The same default as compose.yaml; never used outside a developer's machine.
+    password: ${H2_DATABASE_PASSWORD:helper2-local-only}
   docker:
     compose:
       enabled: true

@@ -4,6 +4,7 @@ import ai.helper2.setup.Material;
 import ai.helper2.setup.MaterialKind;
 import ai.helper2.setup.ToolMaterials;
 import ai.helper2.setup.ToolRef;
+import ai.helper2.shared.Secrets;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import java.io.InputStream;
@@ -38,7 +39,24 @@ class HttpToolMaterials implements ToolMaterials {
    * Base URLs of the fixed hosts, the setup guide's own GitHub token and the Hub token (empty for
    * none).
    */
-  record Hosts(String github, String npm, String hf, String githubToken, String hfToken) {}
+  record Hosts(String github, String npm, String hf, String githubToken, String hfToken) {
+
+    /** The default record text would print both tokens. */
+    @Override
+    public String toString() {
+      return "Hosts[github="
+          + github
+          + ", npm="
+          + npm
+          + ", hf="
+          + hf
+          + ", githubToken="
+          + Secrets.mask(githubToken)
+          + ", hfToken="
+          + Secrets.mask(hfToken)
+          + "]";
+    }
+  }
 
   /** How long documents are kept, and the most text (in characters) kept at once. */
   record CacheSettings(Duration ttl, long maxChars) {}
