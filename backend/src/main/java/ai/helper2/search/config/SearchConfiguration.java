@@ -23,13 +23,11 @@ import io.micrometer.context.ContextExecutorService;
 import io.micrometer.context.ContextSnapshotFactory;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Clock;
-import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -71,21 +69,18 @@ class SearchConfiguration {
 
   /** The daily web searches (ADR 0037); an empty global cap means none. */
   @Bean
-  WebSearchQuota webSearchQuota(
-      QuotaCounter counter,
-      QuotaKeys keys,
-      @Value("${helper2.tavily.quota.guest.search}") int guestSearch,
-      @Value("${helper2.tavily.quota.guest.guide}") int guestGuide,
-      @Value("${helper2.tavily.quota.registered.search}") int registeredSearch,
-      @Value("${helper2.tavily.quota.registered.guide}") int registeredGuide,
-      @Value("${helper2.tavily.quota.registered-tier-enabled}") boolean registeredTier,
-      @Value("${helper2.tavily.quota.global-daily-credits:}") String globalDailyCredits) {
+  WebSearchQuota webSearchQuota(QuotaCounter counter, QuotaKeys keys, SearchProperties search) {
+    SearchProperties.Quota quota = search.web().quota();
     return new WebSearchQuota(
         counter,
         keys,
-        new DailyLimits(guestSearch, guestGuide, registeredSearch, registeredGuide),
-        registeredTier,
-        globalDailyCredits.isBlank() ? null : Long.valueOf(globalDailyCredits.strip()));
+        new DailyLimits(
+            quota.guest().search(),
+            quota.guest().guide(),
+            quota.registered().search(),
+            quota.registered().guide()),
+        quota.registeredTierEnabled(),
+        quota.globalDailyCredits());
   }
 
   @Bean
@@ -119,12 +114,8 @@ class SearchConfiguration {
       JdbcWebResultStore webResults,
       WebSearchQuota quota,
       QuotaKeys keys,
-      @Value("${helper2.search.stale-for:24h}") Duration staleFor,
-      @Value("${helper2.search.per-source-limit:30}") int perSourceLimit,
-      @Value("${helper2.search.translate-timeout-ms:2500}") long translateTimeoutMillis,
-      @Value("${helper2.tavily.fresh-time-bound}") Duration freshTimeBound,
-      @Value("${helper2.tavily.fresh-general}") Duration freshGeneral,
-      @Value("${helper2.retention.tavily-results}") Duration keep) {
+      SearchProperties search,
+      SearchRetentionProperties retention) {
     List<SearchSource> ordered =
         sources.stream()
             .sorted(
@@ -143,18 +134,19 @@ class SearchConfiguration {
         observer,
         searchExecutor,
         clock,
-        staleFor,
-        perSourceLimit,
+        search.staleFor(),
+        search.perSourceLimit(),
         new MicrometerSearchMetrics(registry, List.of(health)),
         new ai.helper2.search.QueryAnalyzer(),
         new ai.helper2.search.ResultMerger(),
         new ai.helper2.search.Ranking(60),
         languages,
         translator.getIfAvailable(() -> QueryTranslator.NONE),
-        Duration.ofMillis(translateTimeoutMillis),
+        search.translateTimeout(),
         resilience,
         webResults,
         quota,
-        new WebFreshness(freshTimeBound, freshGeneral, keep));
+        new WebFreshness(
+            search.web().freshTimeBound(), search.web().freshGeneral(), retention.tavilyResults()));
   }
 }

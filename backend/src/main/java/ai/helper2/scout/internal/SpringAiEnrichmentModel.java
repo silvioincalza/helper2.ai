@@ -91,14 +91,6 @@ class SpringAiEnrichmentModel implements EnrichmentModel {
   private final ModelCallMetrics metrics;
   private final Resilience resilience;
 
-  /**
-   * Same limit as the guide's choose call: Nemotron 3 Super's reasoning tokens count against
-   * max_tokens on Token Factory. With the global 2048, 18 of 120 enrichment runs failed (7 empty
-   * answers: reasoning used the whole budget; ~10 truncated JSON). Measured in the local
-   * enrichment_run table, 2026-10-26.
-   */
-  static final int DEFAULT_MAX_TOKENS = 8192;
-
   SpringAiEnrichmentModel(
       ChatModel chatModel,
       String provider,

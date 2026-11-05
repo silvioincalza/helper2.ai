@@ -8,7 +8,6 @@ import java.time.Clock;
 import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -24,10 +23,8 @@ class SearchRetentionSchedule {
 
   @Bean("searchPurgeExpiredData")
   PurgeExpiredData searchPurgeExpiredData(
-      WebResultRetention retention,
-      Clock clock,
-      @Value("${helper2.retention.tavily-results}") Duration webResults) {
-    return new PurgeExpiredData(retention, clock, webResults);
+      WebResultRetention retention, Clock clock, SearchRetentionProperties periods) {
+    return new PurgeExpiredData(retention, clock, periods.tavilyResults());
   }
 
   @Bean

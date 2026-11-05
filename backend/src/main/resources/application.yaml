@@ -364,12 +364,17 @@ helper2:
     stale-for: ${H2_SEARCH_STALE_FOR:24h}
     # Most results asked of each source per search.
     per-source-limit: ${H2_SEARCH_PER_SOURCE_LIMIT:30}
-    # How long search waits for the English translation of a non-English query before running it untranslated.
-    translate-timeout-ms: ${H2_SEARCH_TRANSLATE_TIMEOUT_MS:2500}
-    # Non-English queries translated by the fast model per UTC day (ADR 0011); separate from the guide's cap.
-    daily-translations: ${H2_SEARCH_DAILY_TRANSLATIONS:300}
-    # Translations are shared by the replicas in Postgres this long (ADR 0011).
-    translation-ttl: ${H2_SEARCH_TRANSLATION_TTL:24h}
+    # How long search waits for the English translation of a non-English query before running it untranslated
+    # (a plain number is milliseconds).
+    translate-timeout: ${H2_SEARCH_TRANSLATE_TIMEOUT_MS:2500}
+    # Non-English queries in English words, by the fast model (ADR 0011).
+    translation:
+      # Off: queries run as typed.
+      enabled: true
+      # Translations per UTC day; separate from the guide's cap.
+      daily-calls: ${H2_SEARCH_DAILY_TRANSLATIONS:300}
+      # Translations are shared by the replicas in Postgres this long.
+      ttl: ${H2_SEARCH_TRANSLATION_TTL:24h}
   # Requests per client address; past them the answer is 429.
   rate-limit:
     search-per-minute: ${H2_RATE_LIMIT_SEARCH_PER_MINUTE:60}
@@ -417,6 +422,9 @@ helper2:
     # daily-enrichment-calls, not on top, so a value above it has no effect until that cap is raised. 0 turns the
     # gap round off.
     gap-daily-calls: ${H2_SCOUT_GAP_DAILY_CALLS:400}
+    # Output cap of one enrichment call. The reasoning model's thinking tokens count against it; 2048 failed
+    # 18 of 120 runs. See SpringAiEnrichmentModel.
+    enrich-max-tokens: ${H2_NEBIUS_ENRICH_MAX_TOKENS:8192}
     hf-trending:
       interval: ${H2_SCOUT_HF_INTERVAL:P1D}
       min-likes: 20
@@ -632,8 +640,6 @@ helper2:
     fast-model: ${H2_NEBIUS_FAST_MODEL:nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B}
     # Super's reasoning tokens count against max_tokens; 2048 truncated the choose JSON. See SpringAiGuideModel.
     choose-max-tokens: ${H2_NEBIUS_CHOOSE_MAX_TOKENS:8192}
-    # Same reason for the Scout's enrichment call (18/120 runs failed at 2048). See SpringAiEnrichmentModel.
-    enrich-max-tokens: ${H2_NEBIUS_ENRICH_MAX_TOKENS:8192}
 
 ---
 spring:
@@ -732,23 +738,24 @@ helper2:
     # HMAC key of the client pseudonyms (rate limits, guide quota, guest counters) and of the stored query keys
     # (OpenBao). Required while Tavily is enabled; without it the pseudonyms use a random key per process.
     key-secret: ${H2_QUOTA_KEY_SECRET:}
-  tavily:
-    # Stored result sets answer without a live call while fresh: news, courses, hackathons, conferences and events
-    # for 24 h, anything else for 48 h.
-    fresh-time-bound: ${H2_TAVILY_FRESH_TIMEBOUND:PT24H}
-    fresh-general: ${H2_TAVILY_FRESH_GENERAL:PT48H}
-    quota:
-      # Per visitor and feature, per UTC day. Staging raises them for testing (chart app.dailyLimits).
-      guest:
-        search: ${H2_TAVILY_GUEST_SEARCH:3}
-        guide: ${H2_TAVILY_GUEST_GUIDE:3}
-      registered:
-        search: 10
-        guide: 10
-      # Signed-in users get the registered limits only with this on (after end-user sign-in goes live).
-      registered-tier-enabled: ${H2_TAVILY_REGISTERED_TIER_ENABLED:false}
-      # Live calls a day for all of Helper2; empty = no cap.
-      global-daily-credits: ${H2_TAVILY_GLOBAL_DAILY_CREDITS:}
+  search:
+    web:
+      # Stored result sets answer without a live call while fresh: news, courses, hackathons, conferences and
+      # events for 24 h, anything else for 48 h.
+      fresh-time-bound: ${H2_TAVILY_FRESH_TIMEBOUND:PT24H}
+      fresh-general: ${H2_TAVILY_FRESH_GENERAL:PT48H}
+      quota:
+        # Per visitor and feature, per UTC day. Staging raises them for testing (chart app.dailyLimits).
+        guest:
+          search: ${H2_TAVILY_GUEST_SEARCH:3}
+          guide: ${H2_TAVILY_GUEST_GUIDE:3}
+        registered:
+          search: 10
+          guide: 10
+        # Signed-in users get the registered limits only with this on (after end-user sign-in goes live).
+        registered-tier-enabled: ${H2_TAVILY_REGISTERED_TIER_ENABLED:false}
+        # Live calls a day for all of Helper2; empty = no cap.
+        global-daily-credits: ${H2_TAVILY_GLOBAL_DAILY_CREDITS:}
   retention:
     # Stored Tavily result sets after they were fetched.
     tavily-results: ${H2_RETENTION_TAVILY_RESULTS:P7D}

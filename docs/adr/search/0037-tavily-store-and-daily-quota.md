@@ -112,7 +112,7 @@ used up. The counts must hold across 3 replicas, store no address and no query t
 - `backend/src/main/java/ai/helper2/sources/tavily/TavilySource.java` — the metered descriptor.
 - `backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt` (`find`, `forAsker`), `guide/GuideCost.kt` (`ttlOf`).
 - `backend/src/main/java/ai/helper2/identity/usecase/DeleteMyAccount.java` — counters deleted with the account.
-- `backend/src/main/resources/application.yaml` (`helper2.tavily.*`), `db/migration/V1__schema.sql`, `api/openapi.yaml` (`WebSearches`).
+- `backend/src/main/resources/application.yaml` (`helper2.search.web.*`), `db/migration/V1__schema.sql`, `api/openapi.yaml` (`WebSearches`).
 - `deploy/monitoring/helper2-rules.yaml` — `Helper2TavilyCreditsHigh`.
 
 ## Diagrams
