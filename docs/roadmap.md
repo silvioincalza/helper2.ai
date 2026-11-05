@@ -184,8 +184,15 @@ Open items:
   - An `unknown` count per facet and an updated-date facet on the search response (Filters panel).
   - Sign-in with Google (phase 1). Passkey, email link and password (phase 2) need their own ADR, a threat model and
     the Privacy page first.
-  - The initial JavaScript is at 165.0 of 165 KiB gzip (the radar and the phone tabs already load on demand): the
-    next page that moves must make room first, for example by loading Results on demand.
+  - The initial JavaScript is at 164.5 of 165 KiB gzip (the radar, the phone tabs, Sources and Account already load
+    on demand): the next page that moves must make room first, for example by loading Results on demand.
+  - **Radar pause for everyone (WCAG 2.2.2), open point.** The radar's beam turns without end and its sources come and
+    go. Signed-in users can turn it off on the account page; guests have only reduced motion and the hold while the
+    search box has focus, and no switch. Find a pause for them that needs no new browser storage key, or decide the
+    storage key with the Privacy page.
+  - **The terminal style on the list pages:** Results, Timeline, Sources, Saved and Admin get the look of `TermList`
+    on Home (a `$ helper2 …` line with the count from the API, `ls -l` columns, dashed rules, titles in Geist, the
+    rest in Geist Mono). One pull request each.
 - **Frontend design** ([0040](adr/frontend/0040-frontend-design.md)) is done and on staging. Prod gets it with the next release:
   cut one once staging looks right.
 - Tracking cookies are planned. Before the first one: consent banner, cookie notice, Privacy page and record of

@@ -32,26 +32,55 @@ they do now and how version 3 and 4 live side by side until the other pages move
    Mission, Sign in and the theme; Escape closes it. On the pages without their own box, the box sits in the header.
    The footer: the logo, one row of links (Mission, Sources, Privacy, Terms, GitHub ↗, the licence ↗, the release ↗,
    the theme switch), then one line: what is searched, no ads, who and where.
-4. **Home: the title, the radar, a pinned search box, two lists.** The title says what the site is: "The metasearch
-   for the AI ecosystem.", with one line under it. Behind it a radar draws one dot per enabled source from GET /sources:
-   ring = mode (live inside, index and curated outside), colour = last check, distance = speed (live) or freshness
-   (index), size = `newThisWeek` (the Helper2 index counts the whole index; the index by meaning has no count of its
-   own, so its dot keeps the default size). Each source has a fixed slot, left or right; below 900 px only
-   the rings show. The search box, its hint and the "Try:" examples stay pinned under the header while the page
-   scrolls; once pinned, the hint, the examples and the radar legend fold away. On phones (720 px or less) the title
-   folds away after 24 px of scroll and opens again at the top.
-5. **New this week and Coming up.** On a wide screen two tables side by side, like `ls -l`: DATE · TYPE · TITLE ·
-   SOURCE and WHEN · TYPE · EVENT · WHERE, in Geist Mono with dashed rules, a running event "on now" in green. Below
-   768 px one panel with two tabs, `> new this week N` and `coming up N`, and log rows (date and `[type]`, the title in
-   Geist, the host or how far away and where). Coming up asks GET /events/upcoming for `days=90`, so the window and
-   its `total` are the server's. Six rows show; `$ helper2 news --all · show all N` opens the rest in
-   place. The tabs are a real tablist (arrow keys, Home, End); the tables have column headers.
-6. **Nothing moves on its own for more than 5 seconds.** The radar sweeps once (4.5 s). The first six rows print in
-   once, 120 ms apart. The cursor after each list's name blinks three times (4.8 s) and stays on. The loading lines
-   pulse three times. Under reduced motion nothing moves, and nothing folds with an animation. So no Pause button is
-   needed (WCAG 2.2.2). A test fails on any CSS or inline animation that repeats for ever.
-7. **Every number comes from data.** "One search · N AI sources" counts the enabled sources of GET /sources (and is
-   not shown before the answer); the dot labels show the response time or the age of the last check; the list counts
+4. **Home: the title, the radar, a pinned search box, two lists.** The title says what the site is: "The
+   metasearch for the AI ecosystem.", with one line under it. Around it sits a radar that works like a navigation
+   radar (PPI): full rings around the title, and a beam (a sweep wedge) that turns once every 5 s.
+   - **Which sources.** Only external sources (`external` on GET /sources): Helper2's own index, its search by meaning
+     and its curated list are left out. Live sources sit on the two inner rings, the Scout collectors on the two
+     outer ones. Each source has its own fixed spot from the order GET /sources lists it in, left and right of the
+     title, never under the title or the box, and never touching another name (`radarLayout.ts`). A dot never slides.
+   - **3 to 5 at a time.** It starts with 3 random sources, 0.6 s apart. Then every 1.6 s one step: while it grows, a
+     new random source that is not on the radar comes, up to 5; then the oldest leaves, one at a time, down to 3; then
+     it grows again (`radarRotation.ts`).
+   - **Painted by the beam.** A dot shows only when the beam passes its angle: full opacity, a short pop (scale 1.35,
+     back to 1 in 0.25 s) and a glow in its own colour (gone in 0.6 s); then it fades to 0.22 until the next pass. A new
+     source shows the first time the beam passes it. A source that leaves is not painted again and fades to 0 within
+     3 s (`radarClock.ts`). The beam and the dots run on one clock, a `requestAnimationFrame` loop that sets the beam's
+     angle and each dot's opacity, pop and glow from the time since the beam last passed it. So they cannot drift apart.
+   - **What a dot says.** Under each dot only its short name (`shortName`). Every dot is filled with its colour: orange
+     (accent) answering, amber slow or limited, red failed (grey when skipped or not checked yet). The colours are 3:1 or
+     more on the page in both themes (a test checks it). Size = `newThisWeek`; null keeps the default size. Colour is
+     never the only key: each dot is a link to the Sources page whose accessible name and tooltip say the state
+     ("GitHub, live, answered in 410 ms, 14 new this week"; "Awesome, from our index, last check failed"). A dot that
+     is not on the radar is hidden from screen readers and the keyboard.
+   - **The legend** under the box: "3-5 of N sources at a time" (N from GET /sources), a filled swatch for answering,
+     slow or limited and failed, and a link to the Sources page.
+   - **When it holds still.** The clock stops while the search box has focus: the beam and the dots hold still. Under
+     reduced motion, or for a signed-in user who turned "Radar: move between sources" off on the account page
+     (`preferences.radarMotion` on GET /me, saved with PATCH /me/preferences, ADR
+     [0023](../edge/0023-identity-and-admin.md)), there is no clock: the beam stands still and a fixed random set of 4
+     shows at full opacity. Up to 900 px only the rings and the beam show.
+
+   The search box, its hint, the "Try:" examples and the radar legend stay pinned under the header while the page
+   scrolls; once pinned, the hint, the examples and the legend fold away. On phones (720 px or less) the title and
+   the radar fold away after 24 px of scroll and open again at the top.
+5. **New this week and Coming up: one list component.** Both lists are one `TermList`, in a terminal style without
+   terminal windows: a `$ helper2 news · N` line (N = `total` from the API), `ls -l` columns with dashed rules, the
+   titles in Geist and the rest in Geist Mono. On a wide screen two tables side by side: DATE · TYPE · TITLE · SOURCE
+   and WHEN · TYPE · EVENT · WHERE, a running event "on now" in green. Below 768 px one panel with two tabs,
+   `> new this week N | coming up N`, and log rows (date and `[type]`, the title, the host or how far away and
+   where). Coming up asks GET /events/upcoming for `days=90`, so the window and its `total` are the server's. Six rows
+   show; `$ helper2 news --all · show all N` opens the rest in place. Loading, empty and error (with Retry) are the
+   same in both. The tabs are real buttons in a tablist (`role="tab"`, `aria-selected`, arrow keys, Home, End), 44 px
+   tall; the tables have column headers. No blinking cursor, no lines that print in.
+6. **Nothing moves on its own for more than 5 seconds, with one exception.** No CSS animation repeats: the loading
+   lines pulse three times and stop. Under reduced motion nothing moves, and nothing folds with an animation. A test
+   fails on any CSS or inline animation that repeats for ever. The exception is the radar (decision 4). It moves by a
+   JavaScript clock, not a CSS animation; it holds still while the search box has focus, stands still under reduced
+   motion, and a signed-in user can turn it off.
+7. **Every number comes from data.** "One search · N AI sources" counts the enabled external sources of GET /sources,
+   the same sources the radar shows (13 on staging; not shown before the answer); the dot names say the response time
+   or the age of the last check; the list counts
    are `total` on GET /recent and GET /events/upcoming (never fewer than the rows sent); the hint's "4 words" is the
    constant the box uses to tell a question from a search. One small reader (`lib/v4Fields.ts`) takes `newThisWeek`,
    `total` and `limits` and says what the page does when a value is null: a dot of the default size, the rows as the
@@ -82,12 +111,20 @@ they do now and how version 3 and 4 live side by side until the other pages move
 ## Consequences
 - Users see what the site does in one line, and the box never leaves the screen.
 - The radar and the Sources page show the same data, so they cannot disagree.
+- WCAG 2.2.2 asks for a way to pause moving content for every user. Signed-in users can turn the radar off; anonymous
+  visitors have only reduced motion and the hold while the search box has focus. The radar never ends on its own and
+  guests have no switch. This is a known limit, on the [roadmap](../../roadmap.md).
+- The radar shows 3 to 5 sources at a time, so a visitor sees every source only over time. The legend links to the
+  Sources page, which lists them all.
+- The radar's clock draws on every animation frame while the page is open and the box has no focus. It writes only
+  CSS variables and one transform, and React renders only when a source comes or goes; the browser stops the frames
+  on a hidden tab.
 - The API has the fields the drawings need: `newThisWeek` per source on GET /sources, `limits` on GET /me, and
   `total` on GET /recent and GET /events/upcoming (which also takes `days`). The Unknown count per facet is still open.
 - For a while the site shows two designs and loads two font families on the pages still on version 3. The header and
   footer are already version 4 on every page.
-- The initial JavaScript is at its budget (165.0 of 165 KiB gzip, from 162.9): the radar and the phone tabs load on
-  demand to fit. The next page that moves must make room first.
+- The initial JavaScript is 164.5 of 165 KiB gzip: the radar, the phone tabs, the Sources page and the account page
+  load on demand to fit. The next page that moves must make room first.
 - What is not built yet is on the [roadmap](../../roadmap.md) (section 6).
 
 Flowchart: [flow-0042-redesign](../../diagrams/flow-0042-redesign.svg). Sequence:

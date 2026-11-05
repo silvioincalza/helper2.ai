@@ -12,7 +12,7 @@ The frontend runs version 4 for the header, the footer and Home (`--v4-*` in `fr
 4. **State in words, not color alone.** Every status (answered, slow, rate limited, timed out, failed, sources disagree) has a word and an icon: ✓ ! × ○ …. Color only repeats it.
 5. **One tech font, one reading font.** Geist Mono for the logo, headings, controls, labels, meta lines and the two home lists. Geist for running text: paragraphs, list items, quotes, descriptions.
 6. **Quiet surfaces, one accent.** Saffron `accent` marks the one primary action per area. Selection uses `selected` (ink), so state and action never look alike.
-7. **Nothing moves on its own for more than 5 seconds.** Lines print in once. The radar sweeps once and the cursor blinks three times. No auto-rotating lists, so no Pause button is needed.
+7. **Nothing moves on its own for more than 5 seconds, with one exception.** No CSS animation repeats, no line prints in, no cursor blinks. The exception: the home radar, like a navigation radar. It holds still while you type in the box, stands still under reduced motion, and a signed-in user can turn it off.
 
 ## Content fundamentals
 
@@ -38,7 +38,7 @@ The frontend runs version 4 for the header, the footer and Home (`--v4-*` in `fr
 | Checked | `quote-bg`, `status-ok-ink` | Checked quotes, answered sources. |
 | Caution | `status-warn-ink` | Not stated, sources disagree, slow, rate limited, timed out. |
 | Error | `danger` | Failed sources and requests, form errors, delete. |
-| Radar | `ring`, `accent`, `status-*` | The decorative radar behind the home title. |
+| Radar | `ring`, `accent`, `status-warn-ink`, `danger` | The radar around the home title: rings, beam, filled dots. |
 
 - **Spacing:** 4-based steps `space-1` to `space-7` (4, 8, 12, 16, 24, 32, 48px).
 - **Controls:** at least `target-min` (44px) tall, also chips, toggles and the `$ … --all` buttons. The home search box is `box-height` (60px).
@@ -61,8 +61,8 @@ Apart from the radar mark, icons are small stroke glyphs beside words, never alo
 
 ## Home page
 
-1. **Hero**, centred: the eyebrow "One search · N AI sources" (N from GET /sources), the title "The metasearch for the AI ecosystem.", one line on what it does. Behind it the radar (see Radar).
-2. **Pinned search box**, full width up to 820px: box, Search, one hint line, example chips, the radar legend. It sticks under the header while the page scrolls; once the title is gone, the hints and legend fold away and it gets `shadow-pinned`.
+1. **Hero**, centred: the eyebrow "One search · N AI sources" (N from GET /sources), the title "The metasearch for the AI ecosystem.", one line on what it does. Around it the radar (see Radar); N counts the same external sources.
+2. **Pinned search box**, full width up to 820px: box, Search, one hint line, the "Try:" chips, the radar legend ("3-5 of N sources at a time", the three colours, a link to the Sources page). It sticks under the header while the page scrolls; once the title is gone, the hints and legend fold away and it gets `shadow-pinned`.
 3. **New this week** and **Coming up**: two tables side by side, like `ls -l`, stacked below 920px; tabs below 768px. See HomeLists.
 4. **What helper2 does for you**: a quiet strip of three steps.
 
@@ -82,16 +82,28 @@ One column, `reading-max`.
 
 ## Radar
 
-Behind the home title, hidden from screen readers. One dot per enabled source from GET /sources:
+Like a navigation radar. Full rings around the home title, and a beam (a sweep wedge) that turns once every 5 s.
+Only external sources from GET /sources (`external`), each in a fixed spot from the order the API lists them, never
+under the title or the box, never touching another name. Under each dot only its `shortName`.
 
 | Encodes | How |
 |---|---|
-| Mode | Inner band: live sources. Outer band: index and curated. |
-| Last check | Filled saffron: live, answered. Hollow saffron: index. Amber: slow, rate limited, timed out. Red: failed. Grey: curated, not checked. |
-| Distance in the band | Live: faster answer = closer. Index: fresher check = closer. |
+| Ring | The two inner rings: live sources. The two outer rings: the Scout collectors. |
+| Last check | Every dot is filled. `accent` (orange): answering. `status-warn-ink` (amber): slow or limited. `danger` (red): failed. Each is 3:1 or more on `bg`. |
 | Size | New this week from that source (`newThisWeek` on GET /sources; null keeps the default size). |
 
-Each dot has a fixed slot left or right of the text and moves only inside its band. The label under it says the name and the response time or age, in `accent-ink` or the status color. Below 900px the dots and legend hide; the rings stay. The Sources page shows the same data as a table.
+3 to 5 sources show at a time. It starts with 3, one after another (0.6 s apart). Then every 1.6 s one step: a new
+random source comes while it grows, up to 5; the oldest leaves while it shrinks, down to 3. A dot is painted only when
+the beam passes it: full opacity, a pop (scale 1.35, back in 0.25 s) and a glow in its colour (0.6 s), then it fades
+to 0.22 until the next pass. A new source shows the first time the beam passes it. A source that leaves is not painted
+again and fades out within 3 s. Beam and dots run on one clock (`requestAnimationFrame`), which stops while the search
+box has focus. Under reduced motion, or with the account setting off, the beam stands still and a fixed random set of
+4 shows at full opacity.
+
+Each dot links to the Sources page; its accessible name and tooltip say the state ("GitHub, live, answered in 410 ms,
+14 new this week"). A dot that is not on the radar is hidden from screen readers and the keyboard. The legend under
+the box says "3-5 of N sources at a time", names the three colours next to a filled swatch, and links to the Sources
+page, which shows every source as a table. Up to 900px only the rings and the beam show.
 
 ## Layout and breakpoints
 
@@ -99,7 +111,7 @@ Each dot has a fixed slot left or right of the text and moves only inside its ba
 |---|---|
 | 920px | The two tables stack. |
 | 768px | The two tables become one panel with two tabs and log rows. |
-| 900px | Radar dots and legend hide. Four-column steps become two; two-column grids become one. |
+| 900px | Four-column steps become two; two-column grids become one. |
 | 720px | Gutter 16px. The header sticks with logo, Saved and Sign in only; News and Events move to the menu. The header search takes its own row. The home title folds on scroll. |
 | 560px | Steps and tables become cards. The timeline puts the month above its items. |
 | 420px | The tagline hides; the wordmark is 20px; the account button shows only its avatar. |
@@ -108,7 +120,7 @@ Layout is flex and grid with `gap`. Side menus wrap above the content on phones 
 
 ## Accessibility
 
-- **Moving content.** All automatic motion ends within 5 seconds of the page opening: the first six list rows print in once (about 1 second), the radar sweeps once (4.5 seconds), the cursor after each list's name blinks 3 times (4.8 seconds) and stays on, and loading lines pulse 3 times. A test in the frontend fails on any animation that repeats for ever. So WCAG 2.2.2 needs no Pause button. Under `prefers-reduced-motion` nothing moves and nothing folds with animation. Dots that move when GET /sources changes are updates, not animation loops.
+- **Moving content.** No CSS animation repeats: the loading lines pulse 3 times, nothing prints in, no cursor blinks. A test in the frontend fails on any CSS or inline animation that repeats for ever. One exception: the home radar keeps turning (one JavaScript clock, see Radar). It holds still while the search box has focus; signed-in users can turn it off; under `prefers-reduced-motion` the beam stands still and 4 dots stay. Anonymous visitors have no Pause button yet: a known gap against WCAG 2.2.2, on the roadmap. Under `prefers-reduced-motion` nothing moves and nothing folds with animation.
 - **Targets:** every control is at least 44px, also chips, toggles, tabs, Remove and admin buttons.
 - **Contrast:** text 4.5:1, control borders and focus 3:1. Saffron `accent` text on `bg` is 3:1, so small saffron text uses `accent-ink` (5.5:1).
 - **Headings:** one `h1` per page.
@@ -129,7 +141,7 @@ The redesign boards in [../redesign](../redesign) are the reference. The compone
 | **SearchBox** | Box and Search button. Pinned on Home; in the header elsewhere. |
 | **PinnedSearchBar** | The home box with hint, chips and legend; sticks under the header; compact once scrolled. |
 | **Radar** | See Radar. |
-| **HomeLists** | New this week, Coming up. Wide: two tables (DATE · TYPE · TITLE · SOURCE, WHEN · TYPE · EVENT · WHERE), Geist Mono, dashed rules, "on now" in `status-ok-ink`, `$ helper2 news --all · show all N` expands in place. Below 768px: a tablist `> new this week N` | `coming up N` with log rows. Rows open the resource page. Loading, empty and error are StatePanels. |
+| **HomeLists** | New this week, Coming up: one component, `TermList`. A `$ helper2 news · N` line (N = `total` from the API), `ls -l` columns, dashed rules, titles in Geist, the rest in Geist Mono. Wide: two tables (DATE · TYPE · TITLE · SOURCE, WHEN · TYPE · EVENT · WHERE), "on now" in `status-ok-ink`, `$ helper2 news --all · show all N` expands in place. Below 768px: a tablist `> new this week N | coming up N` (real tab buttons, 44px) with log rows. No terminal windows, no blinking cursor, no lines that print in. Rows open the resource page. Loading, empty and error (with Retry) are StatePanels. |
 | **PickCard** | Rank, name, AI-written reason with its label and check note, the checked quote, Open ↗, Details, Save. |
 | **AskGuideBar** | On short searches: "Want a recommendation?" and **Ask the guide about "…"**. |
 | **GuideSteps** | The streamed steps while the guide works. |
@@ -152,7 +164,7 @@ The shared parts are React components in `frontend/src/components/ui/` (ADR 0040
 
 | Design system | Code today |
 |---|---|
-| HomeLists (New this week, Coming up) | `HomeLists` (tables) and `HomeTabs` (phone), fed by `homeFeeds.ts` (`components/home/`) |
+| HomeLists (New this week, Coming up) | `TermList`, used by `HomeLists` (tables) and `HomeTabs` (phone), fed by `homeFeeds.ts` (`components/home/`) |
 | Radar | `HomeRadar` (`components/home/`) |
 | PickCard | `PicksBar` and the pick rows |
 | CoverageDetails | `SourceTiles` |
