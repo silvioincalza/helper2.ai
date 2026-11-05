@@ -107,6 +107,12 @@ code {
   padding-bottom: var(--space-7);
   outline: none;
 }
+/* A page waiting for its data holds a screen of height, so the footer starts below the fold and the content does
+   not push it down when it arrives (CLS). Same idea as the results skeleton. */
+.page-loading {
+  min-height: 100dvh;
+  margin: 0;
+}
 
 :focus-visible {
   outline: 3px solid var(--focus);

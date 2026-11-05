@@ -45,7 +45,7 @@ function ResourceView({ id }: { id: string }) {
 
   if (q.loading)
     return (
-      <p role="status" aria-busy="true">
+      <p role="status" aria-busy="true" className="page-loading">
         {t('common.loading')}
       </p>
     );
