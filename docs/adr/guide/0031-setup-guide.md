@@ -112,8 +112,9 @@ and a snippet copied into an AI client's config file runs on the user's machine.
    `UNREADABLE_TTL` (10 minutes).
 13. **Offered only on things you install or run.** The button says "Set it up" (it said "Guide me", easy to mix up
    with the AI guide). It shows on an MCP server, model, library, agent or skill, in the results preview and on the
-   resource page (`canGuide`, `frontend/src/components/GuideMe.tsx`). A product gets it only when you run it yourself:
-   pricing `OPEN_SOURCE_SELF_HOSTED`, or a platform `local`, `desktop`, `ios` or `android`. A web-only service has
+   resource page (`canGuide`, `frontend/src/components/GuideMe.tsx`). A product gets it only when you install or run it
+   yourself: pricing `OPEN_SOURCE_SELF_HOSTED`, or a platform `local`, `desktop`, `ios`, `android`, `cli`,
+   `browser-extension` or `vscode`. A web-only service has
    nothing to set up. Papers, datasets, prompts, articles, courses, events, news and other types get none.
 
 ## Consequences

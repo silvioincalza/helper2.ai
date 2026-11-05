@@ -11,13 +11,21 @@ describe('"Set it up" is offered only on things a user installs or runs', () => 
     (type) => expect(canGuide(makeCard({ type }))).toBe(false),
   );
 
-  it('a product gets it only when it is self-hosted, a desktop app or a mobile app', () => {
+  it('a product gets it only when you install or run it yourself', () => {
     expect(canGuide(makeCard({ type: 'PRODUCT', platforms: ['web'], pricing: 'FREEMIUM' }))).toBe(
       false,
     );
     expect(canGuide(makeCard({ type: 'PRODUCT', platforms: [], pricing: null }))).toBe(false);
     expect(canGuide(makeCard({ type: 'PRODUCT', pricing: 'OPEN_SOURCE_SELF_HOSTED' }))).toBe(true);
-    for (const platform of ['local', 'desktop', 'ios', 'android']) {
+    for (const platform of [
+      'local',
+      'desktop',
+      'ios',
+      'android',
+      'cli',
+      'browser-extension',
+      'vscode',
+    ]) {
       expect(canGuide(makeCard({ type: 'PRODUCT', platforms: ['web', platform] }))).toBe(true);
     }
   });

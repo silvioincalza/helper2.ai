@@ -12,8 +12,19 @@ const GUIDED: ReadonlySet<ResultCard['type']> = new Set([
   'SKILL',
 ]);
 
-/** A product gets it only when you run it yourself: self-hosted, a desktop app, or a mobile app. */
-const INSTALLED_PLATFORMS: ReadonlySet<string> = new Set(['local', 'desktop', 'ios', 'android']);
+/**
+ * A product gets it only when you install or run it yourself: self-hosted, a desktop or mobile app, a command-line
+ * tool, a browser or VS Code extension.
+ */
+const INSTALLED_PLATFORMS: ReadonlySet<string> = new Set([
+  'local',
+  'desktop',
+  'ios',
+  'android',
+  'cli',
+  'browser-extension',
+  'vscode',
+]);
 
 function isInstalledProduct(card: ResultCard): boolean {
   return (
