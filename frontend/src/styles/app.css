@@ -443,7 +443,7 @@ code {
 }
 .btn-ghost {
   background: transparent;
-  border-color: var(--border);
+  border-color: var(--border-strong);
   padding: var(--space-1) var(--space-3);
   font-size: 0.9rem;
 }
@@ -545,18 +545,19 @@ textarea {
   font-weight: 500;
   color: var(--accent-deep);
   background: var(--surface-tint);
-  border: 1px solid transparent;
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-pill);
-  min-height: 40px;
+  min-height: var(--target-min);
   padding: 0 0.875rem;
   cursor: pointer;
   text-decoration: none;
 }
 .chip:hover {
-  border-color: var(--border-strong);
+  background: var(--surface);
 }
 .chip[aria-pressed='true'] {
   background: var(--selected);
+  border-color: var(--selected);
   color: var(--on-selected);
 }
 .origin {
@@ -673,6 +674,7 @@ textarea {
 }
 .setup-options .chip:has(input:checked) {
   background: var(--selected);
+  border-color: var(--selected);
   color: var(--on-selected);
 }
 .setup-facts p {
