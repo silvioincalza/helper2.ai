@@ -65,7 +65,8 @@ class UpcomingEventsApiIT extends ApiTestBase {
             : DateFact.scheduledDay(today.plusDays(endInDays), "fake-live"),
         "Paris, France",
         EventKind.HACKATHON,
-        EventFormat.ONLINE);
+        EventFormat.ONLINE,
+        h.getFacts());
   }
 
   @Test

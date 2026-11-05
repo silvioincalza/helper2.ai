@@ -39,7 +39,7 @@ class IndexAcceptedCandidateTest {
   private var stored: AcceptedCandidate? = null
   private val accept =
     IndexAcceptedCandidate(
-      listOf(Found(descriptor("tavily-discovery"))),
+      listOf(Found(descriptor("discovery-self-hosted"))),
       catalog,
       { url -> url.value in listed },
       { details -> stored ?: throw InvalidCandidate("unreadable: $details") },
@@ -47,20 +47,21 @@ class IndexAcceptedCandidateTest {
     )
 
   private fun candidate(
-    sourceId: String = "tavily-discovery",
+    sourceId: String = "discovery-self-hosted",
     url: String = "https://www.openwebui.com/?utm_source=x",
     title: String = " Open WebUI ",
     snippet: String? = "Self-hosted AI platform.",
     type: ResourceType = ResourceType.PRODUCT,
     tags: Set<String> = setOf("self-hosted", "local-ai"),
-  ) = AcceptedCandidate(sourceId, url, title, snippet, type, tags)
+    facts: Map<String, Any> = emptyMap(),
+  ) = AcceptedCandidate(sourceId, url, title, snippet, type, tags, facts)
 
   @Test
   fun `indexes the candidate as a record of the collector that found it`() {
     assertEquals(resource, accept.index(candidate()))
 
     val (results, sourceId) = catalog.indexed.single()
-    assertEquals("tavily-discovery", sourceId)
+    assertEquals("discovery-self-hosted", sourceId)
     val record = results.single().hits.single()
     assertEquals("https://openwebui.com", record.canonicalUrl.value)
     assertEquals("Open WebUI", record.title)
@@ -68,6 +69,20 @@ class IndexAcceptedCandidateTest {
     assertEquals(ResourceType.PRODUCT, record.type)
     assertEquals(NOW, record.retrievedAt)
     assertEquals(setOf("self-hosted", "local-ai"), record.tags)
+  }
+
+  @Test
+  fun `keeps what the searches said and the whole excerpt as evidence`() {
+    val facts =
+      mapOf(
+        "discovery" to mapOf("category" to "self-hosted"),
+        "categories" to listOf("self-hosted"),
+      )
+    accept.index(candidate(snippet = "x".repeat(3000), facts = facts))
+
+    val record = catalog.indexed.single().first.single().hits.single()
+    assertEquals(facts, record.facts)
+    assertEquals(2400, record.description?.length)
   }
 
   @Test
@@ -99,7 +114,7 @@ class IndexAcceptedCandidateTest {
   fun `a candidate the catalog did not change is refused, so the item stays open`() {
     val unchanged =
       IndexAcceptedCandidate(
-        listOf(Found(descriptor("tavily-discovery"))),
+        listOf(Found(descriptor("discovery-self-hosted"))),
         RecordingIndex(emptyList()),
         { false },
         { candidate() },

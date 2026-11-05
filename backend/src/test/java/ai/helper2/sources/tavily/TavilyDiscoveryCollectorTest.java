@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.helper2.platform.http.ObservedHttp;
+import ai.helper2.platform.quota.QuotaCounter;
+import ai.helper2.platform.quota.QuotaKeys;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.Candidate;
 import ai.helper2.scout.CollectedBatch;
@@ -11,33 +13,40 @@ import ai.helper2.search.SourceHit;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.sources.SourceFixtures;
-import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.testing.FixtureServer;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
 import java.time.Duration;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 class TavilyDiscoveryCollectorTest {
 
-  static final String SELF_HOSTED =
-      "PRODUCT|self-hosted|open-source self-hosted AI app|self-hosted;self hosted";
-  static final String LOCAL_AI =
-      "PRODUCT|local-ai|desktop app to run LLMs locally|offline;run locally";
-  static final String AGENTS = "AGENT|agent-platforms|platform to build AI agents|ai agents";
+  static final DiscoveryCategory SELF_HOSTED =
+      category(
+          "self-hosted",
+          ResourceType.PRODUCT,
+          List.of("open-source self-hosted AI app"),
+          List.of("self-hosted", "self hosted"));
+  static final DiscoveryCategory LOCAL_AI =
+      category(
+          "local-ai",
+          ResourceType.PRODUCT,
+          List.of("desktop app to run LLMs locally"),
+          List.of("offline", "run locally"));
 
   static final String RESULTS =
       """
-      {"results":[
+      {"request_id":"req-1","usage":{"credits":2},"results":[
         {"url":"https://www.example-lists.com/blog/12-best-self-hosted-llm-apps","title":"12 Best Self-Hosted LLM Apps in 2026",
-         "content":"We compare Open WebUI, LibreChat and AnythingLLM for running AI models offline at home.","score":0.91},
+         "content":"We compare Open WebUI, LibreChat and AnythingLLM for running AI models offline at home.","score":0.91,
+         "published_date":"2026-10-20","favicon":"https://www.example-lists.com/favicon.ico"},
         {"url":"https://openwebui.com/","title":"Open WebUI","content":"Self-hosted AI platform for LLMs that runs offline.","score":0.88},
         {"url":"https://anythingllm.com/pricing","title":"Pricing | AnythingLLM","content":"Run any LLM privately on your desktop.","score":0.80},
         {"url":"https://github.com/danny-avila/LibreChat","title":"GitHub - danny-avila/LibreChat: an open-source alternative to ChatGPT","content":"Open-source AI chat for LLM providers.","score":0.77},
@@ -52,45 +61,92 @@ class TavilyDiscoveryCollectorTest {
       """;
 
   final FixtureServer server = new FixtureServer();
+  final MapCounter counter = new MapCounter();
+  final QuotaKeys keys = new QuotaKeys("", SourceFixtures.CLOCK);
+  final SimpleMeterRegistry meters = new SimpleMeterRegistry();
 
   @AfterEach
   void stop() {
     server.close();
   }
 
-  TavilyDiscoveryCollector collector(String token, List<String> categories) {
+  static DiscoveryCategory category(
+      String id, ResourceType type, List<String> queries, List<String> words) {
+    return options(id, type, queries, words, 0.4, false, true, true);
+  }
+
+  static DiscoveryCategory options(
+      String id,
+      ResourceType type,
+      List<String> queries,
+      List<String> words,
+      double minScore,
+      boolean requireKeyword,
+      boolean indexLists,
+      boolean enabled) {
+    return new DiscoveryCategory(
+        id,
+        DiscoveryFamily.RUN_IT_YOURSELF,
+        "Short",
+        "Name of " + id,
+        type,
+        queries,
+        DiscoveryCategory.Keywords.of(words),
+        Duration.ofDays(7),
+        enabled,
+        minScore,
+        requireKeyword,
+        indexLists,
+        List.of("youtube.com"));
+  }
+
+  /** The collector of the first of [all]; it is due on the fixtures' day (its first day is 0). */
+  TavilyDiscoveryCollector collector(String token, long cap, DiscoveryCategory... all) {
     return new TavilyDiscoveryCollector(
         new SourceSettings(true, server.baseUrl(), token, Duration.ofSeconds(2), Duration.ZERO),
         ObservedHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP),
         SourceFixtures.CLOCK,
         Resilience.NONE,
-        new RunInterval(Duration.ofDays(7)),
-        new TavilyDiscoveryCollector.Search("advanced", 10, 0.4, List.of("youtube.com")),
-        categories);
+        new TavilyDiscoveryCollector.Search("advanced", 10),
+        all[0],
+        List.of(all),
+        new ScoutTavilyCredits(counter, keys, cap, meters));
+  }
+
+  TavilyDiscoveryCollector collector(DiscoveryCategory... all) {
+    return collector("tvly-test", 40, all);
   }
 
   @Test
-  void searchesOncePerCategoryOnTheGeneralWebWithoutAnAnswer() {
+  void searchesEachQueryOnTheGeneralWebWithItsMetadataButNoPageText() {
     server.route("/search", FixtureServer.Reply.ok("{\"results\":[]}"));
-    collector("tvly-test", List.of(SELF_HOSTED, AGENTS)).collect(null, null, 1000);
+    DiscoveryCategory twoQueries =
+        category(
+            "health", ResourceType.PRODUCT, List.of("medical scribe", "health app"), List.of());
+    collector(twoQueries).collect(null, null, 1000);
 
     assertThat(server.requestBodies).hasSize(2);
     assertThat(server.requestBodies.get(0))
-        .contains("\"query\":\"open-source self-hosted AI app\"")
+        .contains("\"query\":\"medical scribe\"")
         .contains("\"topic\":\"general\"")
         .contains("\"search_depth\":\"advanced\"")
         .contains("\"max_results\":10")
         .contains("\"include_answer\":false")
+        .contains("\"include_raw_content\":false")
+        .contains("\"include_images\":false")
+        .contains("\"include_published_date\":true")
+        .contains("\"include_favicon\":true")
+        .contains("\"include_usage\":true")
         .contains("\"exclude_domains\":[\"youtube.com\"]")
         .contains("\"time_range\":\"month\"")
         .doesNotContain("start_date");
-    assertThat(server.requestBodies.get(1)).contains("platform to build AI agents");
+    assertThat(server.requestBodies.get(1)).contains("\"query\":\"health app\"");
   }
 
   @Test
   void aLaterPassAsksOnlyForPagesSinceThePreviousOne() {
     server.route("/search", FixtureServer.Reply.ok("{\"results\":[]}"));
-    collector("tvly-test", List.of(SELF_HOSTED)).collect("2026-10-01T03:07:00Z", null, 1000);
+    collector(SELF_HOSTED).collect("2026-10-01T03:07:00Z", null, 1000);
 
     assertThat(server.requestBodies.getFirst())
         .contains("\"start_date\":\"2026-10-01\"")
@@ -100,15 +156,14 @@ class TavilyDiscoveryCollectorTest {
   @Test
   void indexesListPagesAsArticlesAndProposesProductSites() {
     server.route("/search", FixtureServer.Reply.ok(RESULTS));
-    CollectedBatch batch =
-        collector("tvly-test", List.of(SELF_HOSTED, LOCAL_AI)).collect(null, null, 1000);
+    CollectedBatch batch = collector(SELF_HOSTED, LOCAL_AI).collect(null, null, 1000);
 
     assertThat(batch.getHits())
         .extracting(SourceHit::getCanonicalUrl)
         .extracting(CanonicalUrl::getValue)
         .containsExactly("https://example-lists.com/blog/12-best-self-hosted-llm-apps");
     assertThat(batch.getHits().getFirst().getType()).isEqualTo(ResourceType.ARTICLE);
-    assertThat(batch.getHits().getFirst().getSourceId()).isEqualTo("tavily-discovery");
+    assertThat(batch.getHits().getFirst().getSourceId()).isEqualTo("discovery-self-hosted");
 
     // A home page, a pricing page (its site's home page instead) and a repository whose title says
     // "alternative". Dropped: the topics page, the blog post, the blog host, the post slug, the
@@ -127,6 +182,192 @@ class TavilyDiscoveryCollectorTest {
   }
 
   @Test
+  void aResultGetsItsCategoryAndEveryCategoryWhoseWordsItHas() {
+    server.route("/search", FixtureServer.Reply.ok(RESULTS));
+    CollectedBatch batch = collector(SELF_HOSTED, LOCAL_AI).collect(null, null, 1000);
+
+    Map<String, Candidate> byUrl =
+        batch.getCandidates().stream()
+            .collect(Collectors.toMap(c -> c.getUrl().getValue(), c -> c));
+    assertThat(byUrl.get("https://openwebui.com").getTags())
+        .containsExactlyInAnyOrder("self-hosted", "local-ai");
+    assertThat(byUrl.get("https://openwebui.com").getPlatform()).isEqualTo("local-ai, self-hosted");
+    assertThat(byUrl.get("https://github.com/danny-avila/librechat").getTags())
+        .containsExactly("self-hosted");
+    assertThat(batch.getHits().getFirst().getTags())
+        .containsExactlyInAnyOrder("self-hosted", "local-ai");
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void everyKeptResultCarriesWhatTheSearchSaidAboutIt() {
+    server.route("/search", FixtureServer.Reply.ok(RESULTS));
+    CollectedBatch batch = collector(SELF_HOSTED, LOCAL_AI).collect(null, null, 1000);
+
+    Map<String, Object> list = batch.getHits().getFirst().getFacts();
+    assertThat(list.get("categories")).isEqualTo(List.of("local-ai", "self-hosted"));
+    Map<String, Object> discovery = (Map<String, Object>) list.get("discovery");
+    assertThat(discovery)
+        .containsEntry("category", "self-hosted")
+        .containsEntry("query", "open-source self-hosted AI app")
+        .containsEntry("rank", 0)
+        .containsEntry("score", 0.91)
+        .containsEntry("searchDepth", "advanced")
+        .containsEntry("shape", "LIST")
+        .containsEntry("publishedDate", "2026-10-20")
+        .containsEntry("requestId", "req-1")
+        .containsEntry("searchedAt", "2026-10-22T10:00:00Z")
+        .containsEntry("favicon", "https://www.example-lists.com/favicon.ico")
+        .containsEntry(
+            "matchedWords",
+            Map.of(
+                "self-hosted", List.of("self-hosted", "self hosted"),
+                "local-ai", List.of("offline")));
+    Map<String, Object> product =
+        (Map<String, Object>) batch.getCandidates().getFirst().getFacts().get("discovery");
+    assertThat(product).containsEntry("shape", "PRODUCT").containsEntry("rank", 1);
+    assertThat(product).doesNotContainKey("publishedDate");
+  }
+
+  @Test
+  void aProductKeepsTheWholeExcerptAsEvidenceAndAListKeepsTheShortSnippet() {
+    String longText = "Self-hosted AI platform. " + "x".repeat(3000);
+    server.route(
+        "/search",
+        FixtureServer.Reply.ok(
+            """
+            {"results":[
+              {"url":"https://openwebui.com/","title":"Open WebUI","content":"%s","score":0.9},
+              {"url":"https://lists.example/top","title":"12 Best Self-Hosted AI Apps","content":"%s","score":0.9}
+            ]}\
+            """
+                .formatted(longText, longText)));
+    CollectedBatch batch = collector(SELF_HOSTED).collect(null, null, 1000);
+
+    assertThat(batch.getCandidates().getFirst().getSnippet())
+        .hasSize(TavilyDiscoveryCollector.MAX_EVIDENCE);
+    assertThat(batch.getHits().getFirst().getDescription()).hasSizeLessThanOrEqualTo(400);
+  }
+
+  @Test
+  void aCategoryThatRequiresItsWordsDropsResultsWithoutThemAndCanSkipLists() {
+    server.route("/search", FixtureServer.Reply.ok(RESULTS));
+    DiscoveryCategory strict =
+        options(
+            "local-ai",
+            ResourceType.PRODUCT,
+            List.of("q"),
+            List.of("offline", "run any llm"),
+            0.5,
+            true,
+            false,
+            true);
+    CollectedBatch batch = collector(strict).collect(null, null, 1000);
+
+    assertThat(batch.getHits()).isEmpty();
+    assertThat(batch.getCandidates())
+        .extracting(c -> c.getUrl().getValue())
+        .containsExactly("https://openwebui.com", "https://anythingllm.com");
+  }
+
+  @Test
+  void aCategoryScoreFloorDropsLowerResults() {
+    server.route("/search", FixtureServer.Reply.ok(RESULTS));
+    DiscoveryCategory picky =
+        options(
+            "self-hosted", ResourceType.PRODUCT, List.of("q"), List.of(), 0.85, false, true, true);
+    CollectedBatch batch = collector(picky).collect(null, null, 1000);
+
+    assertThat(batch.getCandidates())
+        .extracting(c -> c.getUrl().getValue())
+        .containsExactly("https://openwebui.com");
+    assertThat(batch.getHits()).hasSize(1);
+  }
+
+  @Test
+  void eachSearchCountsItsCreditsOnTheGlobalAndTheScoutCounters() {
+    server.route("/search", FixtureServer.Reply.ok(RESULTS));
+    collector(SELF_HOSTED).collect(null, null, 1000);
+
+    assertThat(counter.counts)
+        .containsEntry(new QuotaCounter.Counter(keys.global(), QuotaKeys.CREDITS), 2L)
+        .containsEntry(new QuotaCounter.Counter(keys.global(), QuotaKeys.SCOUT_CREDITS), 2L);
+    assertThat(
+            meters
+                .get("helper2.tavily.credits")
+                .tag("feature", "scout-discovery")
+                .counter()
+                .count())
+        .isEqualTo(2.0);
+  }
+
+  @Test
+  void withoutUsageASearchCostsWhatItsDepthCosts() {
+    assertThat(ScoutTavilyCredits.creditsOf(tree("{}"), "advanced")).isEqualTo(2);
+    assertThat(ScoutTavilyCredits.creditsOf(tree("{}"), "basic")).isEqualTo(1);
+    assertThat(ScoutTavilyCredits.creditsOf(tree("{\"usage\":{\"credits\":4}}"), "basic"))
+        .isEqualTo(4);
+  }
+
+  @Test
+  void pastTheDailyCapTheCollectorSkipsWithoutSearching() {
+    counter.counts.put(new QuotaCounter.Counter(keys.global(), QuotaKeys.SCOUT_CREDITS), 40L);
+    CollectedBatch batch = collector("tvly-test", 40, SELF_HOSTED).collect(null, null, 1000);
+
+    assertThat(batch.getNotDue()).isTrue();
+    assertThat(batch.getSkipReason()).contains("credit cap");
+    assertThat(server.requestBodies).isEmpty();
+  }
+
+  @Test
+  void aCategoryWhoseDayHasNotComeSaysWhenItWill() {
+    // The second category of the list starts on day 1 of the week; the fixtures' day is day 0.
+    TavilyDiscoveryCollector second =
+        new TavilyDiscoveryCollector(
+            new SourceSettings(true, server.baseUrl(), "t", Duration.ofSeconds(2), Duration.ZERO),
+            ObservedHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP),
+            SourceFixtures.CLOCK,
+            Resilience.NONE,
+            new TavilyDiscoveryCollector.Search("advanced", 10),
+            SELF_HOSTED,
+            List.of(LOCAL_AI, SELF_HOSTED),
+            new ScoutTavilyCredits(counter, keys, 40, meters));
+    CollectedBatch batch = second.collect(null, null, 1000);
+
+    assertThat(batch.getNotDue()).isTrue();
+    assertThat(batch.getSkipReason()).isEqualTo("Not due yet: next pass on 2026-10-23");
+    assertThat(server.requestBodies).isEmpty();
+  }
+
+  @Test
+  void thePassFailsWhenHalfOrMoreOfItsSearchesFail() {
+    server.route("/search", new FixtureServer.Reply(500, "{}", Map.of(), 0));
+    DiscoveryCategory twoQueries =
+        category("voice", ResourceType.PRODUCT, List.of("tts", "music"), List.of());
+    assertThatThrownBy(() -> collector(twoQueries).collect(null, null, 1000))
+        .isInstanceOf(RuntimeException.class);
+    assertThat(server.requestBodies).hasSize(2);
+  }
+
+  @Test
+  void isOneSourcePerCategoryAndDisabledWithoutATokenOrWhenTheCategoryIsOff() {
+    TavilyDiscoveryCollector coding = collector(SELF_HOSTED);
+    assertThat(coding.getDescriptor().getId()).isEqualTo("discovery-self-hosted");
+    assertThat(coding.getDescriptor().getShortName()).isEqualTo("Short");
+    assertThat(coding.getDescriptor().getFamily()).isEqualTo("run-it-yourself");
+    assertThat(coding.getDescriptor().getEnabled()).isTrue();
+    assertThat(coding.getDescriptor().getResourceTypes())
+        .containsExactlyInAnyOrder(ResourceType.PRODUCT, ResourceType.ARTICLE);
+    assertThat(collector("", 40, SELF_HOSTED).getDescriptor().getEnabled()).isFalse();
+    DiscoveryCategory off =
+        options(
+            "self-hosted", ResourceType.PRODUCT, List.of("q"), List.of(), 0.4, false, false, false);
+    assertThat(collector(off).getDescriptor().getEnabled()).isFalse();
+    assertThat(collector(off).getDescriptor().getResourceTypes())
+        .containsExactly(ResourceType.PRODUCT);
+  }
+
+  @Test
   void aListPageStaysAnArticleWhenItsTitleNamesAnEvent() {
     // An EVENT without event dates escapes both retention rules (news after 180 days, events
     // after they end), so a list page must keep the ARTICLE type it is indexed with.
@@ -140,7 +381,7 @@ class TavilyDiscoveryCollectorTest {
                "content":"We compare self-hosted AI assistants for planning a conference.","score":0.9}
             ]}\
             """));
-    CollectedBatch batch = collector("tvly-test", List.of(SELF_HOSTED)).collect(null, null, 1000);
+    CollectedBatch batch = collector(SELF_HOSTED).collect(null, null, 1000);
 
     assertThat(batch.getHits())
         .extracting(SourceHit::getType)
@@ -148,169 +389,84 @@ class TavilyDiscoveryCollectorTest {
   }
 
   @Test
-  void aResultGetsEveryCategoryItBelongsTo() {
+  void aProductInMoreCategoriesThanACandidateCanHaveKeepsItsOwnFirstThenTheConfiguredOrder() {
     server.route("/search", FixtureServer.Reply.ok(RESULTS));
+    // Every category has the word "self-hosted": every result fits all 15.
+    List<DiscoveryCategory> others =
+        java.util.stream.IntStream.rangeClosed(1, Candidate.MAX_TAGS + 2)
+            .mapToObj(i ->
+                category(
+                    String.format("category-%02d", i),
+                    ResourceType.PRODUCT,
+                    List.of("q"),
+                    List.of("self-hosted")))
+            .toList();
+    List<DiscoveryCategory> all = new java.util.ArrayList<>();
+    all.add(SELF_HOSTED);
+    all.addAll(others);
+
     CollectedBatch batch =
-        collector("tvly-test", List.of(SELF_HOSTED, LOCAL_AI)).collect(null, null, 1000);
+        collector("tvly-test", 40, all.toArray(DiscoveryCategory[]::new)).collect(null, null, 1000);
 
-    Map<String, Candidate> byUrl =
-        batch.getCandidates().stream()
-            .collect(Collectors.toMap(c -> c.getUrl().getValue(), c -> c));
-    assertThat(byUrl.get("https://openwebui.com").getTags())
-        .containsExactlyInAnyOrder("self-hosted", "local-ai");
-    assertThat(byUrl.get("https://openwebui.com").getPlatform()).isEqualTo("local-ai, self-hosted");
-    assertThat(batch.getHits().getFirst().getTags())
-        .containsExactlyInAnyOrder("self-hosted", "local-ai");
-  }
-
-  @Test
-  void aProductInMoreCategoriesThanACandidateCanHaveKeepsAsManyAsCanBeAccepted() {
-    server.route("/search", FixtureServer.Reply.ok(RESULTS));
-    List<String> categories =
-        IntStream.rangeClosed(1, Candidate.MAX_TAGS + 3)
-            .mapToObj(i -> "PRODUCT|category-" + i + "|self-hosted AI app " + i + "|self-hosted")
-            .toList();
-
-    CollectedBatch batch = collector("tvly-test", categories).collect(null, null, 1000);
-
-    // Every search found every result: the first categories, in the configured order, are kept.
-    assertThat(batch.getCandidates())
-        .allSatisfy(c -> assertThat(c.getTags()).hasSize(Candidate.MAX_TAGS));
     assertThat(batch.getCandidates().getFirst().getTags())
-        .contains("category-1", "category-12")
-        .doesNotContain("category-13", "category-15");
-  }
-
-  @Test
-  void theCategoriesWhoseSearchFoundAProductComeBeforeTheOnesWhoseWordsItHas() {
-    List<String> words =
-        IntStream.rangeClosed(1, Candidate.MAX_TAGS)
-            .mapToObj(i -> String.format("words-%02d", i))
-            .toList();
-    Set<String> all = new TreeSet<>(words);
-    all.add("z-found");
-
-    assertThat(TavilyDiscoveryCollector.candidateTags(List.of("z-found"), all))
         .hasSize(Candidate.MAX_TAGS)
-        .contains("z-found", "words-01")
-        .doesNotContain("words-12");
+        .contains("self-hosted", "category-01", "category-11")
+        .doesNotContain("category-12", "category-14");
+    // A list page is not a candidate: it keeps every category it fits.
+    assertThat(batch.getHits().getFirst().getTags()).hasSize(Candidate.MAX_TAGS + 3);
   }
 
   @Test
-  void aProductFoundByAnAgentSearchIsAnAgentWithEveryTag() {
-    server.route("/search", FixtureServer.Reply.ok(RESULTS));
-    CollectedBatch batch =
-        collector("tvly-test", List.of(SELF_HOSTED, AGENTS)).collect(null, null, 1000);
-
-    assertThat(batch.getCandidates()).hasSize(3);
-    assertThat(batch.getCandidates()).allMatch(c -> c.getType() == ResourceType.AGENT);
-    assertThat(batch.getCandidates().getFirst().getTags())
-        .contains("self-hosted", "agent-platforms");
-    assertThat(batch.getHits()).hasSize(1);
+  void aCategoryFitsByItsWordsAtTheStartOfAWordWithHyphensAsSpaces() {
+    DiscoveryCategory.Keywords words =
+        DiscoveryCategory.Keywords.of(List.of("Fine tuning platform", " lora ", "text-to-speech"));
+    assertThat(words.words()).containsExactly("fine tuning platform", "lora", "text-to-speech");
+    assertThat(words.matchedIn("A Fine-Tuning platform")).containsExactly("fine tuning platform");
+    assertThat(words.matchedIn("Train a LoRA adapter")).containsExactly("lora");
+    assertThat(words.matchedIn("Explore the flora")).isEmpty();
+    assertThat(words.matchedIn("Realistic Text to Speech")).containsExactly("text-to-speech");
   }
 
   @Test
-  void thePassFailsOnlyWhenEverySearchFails() {
-    server.route("/search", new FixtureServer.Reply(500, "{}", Map.of(), 0));
+  void aCategoryNeedsATagIdAShortNameAProductTypeAndAQuery() {
+    assertThatThrownBy(() -> category("Self hosted", ResourceType.PRODUCT, List.of("q"), List.of()))
+        .isInstanceOf(IllegalArgumentException.class);
     assertThatThrownBy(
-            () -> collector("tvly-test", List.of(SELF_HOSTED, AGENTS)).collect(null, null, 1000))
-        .isInstanceOf(RuntimeException.class);
-    assertThat(server.requestBodies).hasSize(2);
+            () -> category("x".repeat(31), ResourceType.PRODUCT, List.of("q"), List.of()))
+        .isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> category("news", ResourceType.NEWS, List.of("q"), List.of()))
+        .isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> category("empty", ResourceType.PRODUCT, List.of(" "), List.of()))
+        .isInstanceOf(IllegalArgumentException.class);
   }
 
-  @Test
-  void isDisabledWithoutATokenOrWithoutCategories() {
-    assertThat(collector("", List.of(SELF_HOSTED)).getDescriptor().getEnabled()).isFalse();
-    assertThat(collector("tvly-test", List.of()).getDescriptor().getEnabled()).isFalse();
-    assertThat(collector("tvly-test", List.of(SELF_HOSTED)).getDescriptor().getEnabled()).isTrue();
+  private static tools.jackson.databind.JsonNode tree(String json) {
+    return tools.jackson.databind.json.JsonMapper.builder().build().readTree(json);
   }
 
-  @Test
-  void readsACategoryOnlyWithAProductTypeATagAndAQuery() {
-    assertThat(TavilyDiscoveryCollector.Category.parse(" agent | agents | agent platform "))
-        .isEqualTo(
-            new TavilyDiscoveryCollector.Category(
-                ResourceType.AGENT, "agents", "agent platform", List.of()));
-    assertThat(TavilyDiscoveryCollector.Category.parse("PRODUCT|fine-tuning|q| Fine-Tun ; lora ;"))
-        .isEqualTo(
-            new TavilyDiscoveryCollector.Category(
-                ResourceType.PRODUCT, "fine-tuning", "q", List.of("fine-tun", "lora")));
-    assertThat(TavilyDiscoveryCollector.Category.parse("NEWS|news|ai news")).isNull();
-    assertThat(TavilyDiscoveryCollector.Category.parse("COURSE|courses|ai course")).isNull();
-    assertThat(TavilyDiscoveryCollector.Category.parse("WIDGET|x|query")).isNull();
-    assertThat(TavilyDiscoveryCollector.Category.parse("PRODUCT|query only")).isNull();
-    assertThat(TavilyDiscoveryCollector.Category.parse("PRODUCT||query")).isNull();
-    assertThat(TavilyDiscoveryCollector.Category.parse("PRODUCT|Self hosted|query")).isNull();
-  }
+  /** The day's counters in memory. */
+  static final class MapCounter implements QuotaCounter {
+    final Map<Counter, Long> counts = new HashMap<>();
 
-  @Test
-  void aCategoryFitsByItsWordsAtTheStartOfAWord() {
-    TavilyDiscoveryCollector.Category fineTuning =
-        TavilyDiscoveryCollector.Category.parse("PRODUCT|fine-tuning|q|fine-tun;lora");
-    assertThat(fineTuning.describes("Fine-tuning made easy")).isTrue();
-    assertThat(fineTuning.describes("Train a LoRA adapter")).isTrue();
-    assertThat(fineTuning.describes("Explore the flora")).isFalse();
-  }
+    @Override
+    public Result take(Counter own, int ownLimit, Counter global, long globalLimit) {
+      throw new UnsupportedOperationException();
+    }
 
-  @Test
-  void hyphensAndSpacesAreTheSameInACategorysWords() {
-    TavilyDiscoveryCollector.Category voice =
-        TavilyDiscoveryCollector.Category.parse("PRODUCT|voice|q|text-to-speech;no code");
-    assertThat(voice.describes("Realistic text to speech")).isTrue();
-    assertThat(voice.describes("Text-to-Speech API")).isTrue();
-    assertThat(voice.describes("A no-code builder")).isTrue();
-  }
+    @Override
+    public void add(Counter counter, long amount) {
+      counts.merge(counter, amount, Long::sum);
+    }
 
-  @Test
-  void aProductSiteIsAHomePageOrOneLevelBelowItButNotWritingAboutOne() {
-    assertThat(site("https://cursor.com/")).isEqualTo("https://cursor.com");
-    assertThat(site("https://cursor.com/features")).isEqualTo("https://cursor.com");
-    // A big vendor has one product per page: the page is the product, not the company.
-    assertThat(site("https://aws.amazon.com/bedrock")).isEqualTo("https://aws.amazon.com/bedrock");
-    // A language segment does not count.
-    assertThat(site("https://deepl.com/en")).isEqualTo("https://deepl.com/en");
-    assertThat(site("https://deepl.com/de/pricing")).isEqualTo("https://deepl.com");
-    assertThat(site("https://deepl.com/en/blog/new-model")).isNull();
-    // AI directories link products; they are not one.
-    assertThat(site("https://theresanaiforthat.com/")).isNull();
-    assertThat(site("https://cursor.com/blog")).isNull();
-    assertThat(site("https://cursor.com/docs/agent")).isNull();
-    assertThat(site("https://cursor.com/why-we-rebuilt-our-editor")).isNull();
-    assertThat(site("https://docs.cursor.com/")).isNull();
-    assertThat(site("https://someone.substack.com/")).isNull();
-    assertThat(site("https://github.com/ollama/ollama"))
-        .isEqualTo("https://github.com/ollama/ollama");
-    assertThat(site("https://github.com/ollama")).isNull();
-    assertThat(site("https://github.com/topics/llm")).isNull();
-  }
+    @Override
+    public void giveBack(Counter counter) {}
 
-  @Test
-  void aListTitleCompares() {
-    CanonicalUrl page = CanonicalUrl.of("https://example.com/some-page");
-    assertThat(TavilyDiscoveryCollector.isListPage("12 Best AI Writing Tools", page)).isTrue();
-    assertThat(TavilyDiscoveryCollector.isListPage("Best AI coding tools in 2026", page)).isTrue();
-    assertThat(TavilyDiscoveryCollector.isListPage("Cursor vs Windsurf", page)).isTrue();
-    assertThat(TavilyDiscoveryCollector.isListPage("Top ChatGPT alternatives", page)).isTrue();
-    assertThat(TavilyDiscoveryCollector.isListPage("Acme – the best way to run LLMs", page))
-        .isFalse();
-    assertThat(TavilyDiscoveryCollector.isListPage("An open-source alternative to ChatGPT", page))
-        .isFalse();
-  }
+    @Override
+    public long used(Counter counter) {
+      return counts.getOrDefault(counter, 0L);
+    }
 
-  @Test
-  void theTitleOfAPageBelowTheHomePageIsTheSiteName() {
-    CanonicalUrl site = CanonicalUrl.of("https://anythingllm.com/");
-    CanonicalUrl pricing = CanonicalUrl.of("https://anythingllm.com/pricing");
-    assertThat(TavilyDiscoveryCollector.siteTitle("Pricing | AnythingLLM", pricing, site))
-        .isEqualTo("AnythingLLM");
-    assertThat(TavilyDiscoveryCollector.siteTitle("AnythingLLM - Pricing", pricing, site))
-        .isEqualTo("AnythingLLM");
-    assertThat(TavilyDiscoveryCollector.siteTitle("Plans and prices", pricing, site))
-        .isEqualTo("anythingllm.com");
-  }
-
-  private static String site(String url) {
-    CanonicalUrl found = TavilyDiscoveryCollector.productSite(CanonicalUrl.of(url));
-    return found == null ? null : found.getValue();
+    @Override
+    public void delete(Collection<String> keys) {}
   }
 }

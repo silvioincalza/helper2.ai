@@ -31,11 +31,39 @@ export function delayAfter(c: Cycle, n: number): number {
   return c.shown.length < bounds(n).fewest ? INTRO_MS : STEP_MS;
 }
 
-/** One step: a new random source in while growing, the oldest out while shrinking. */
-export function step(c: Cycle, ids: string[], random: () => number): Cycle {
+/**
+ * The sources a new one is picked from: those not shown, of the group (`groupOf`) with the fewest on the radar now, so
+ * live sources, collectors and discovery categories take turns whatever their numbers. Ties are drawn at random.
+ */
+function candidates(
+  c: Cycle,
+  ids: string[],
+  random: () => number,
+  groupOf: (id: string) => string,
+): string[] {
+  const fresh = ids.filter((id) => !c.shown.includes(id));
+  const groups = [...new Set(fresh.map(groupOf))];
+  if (groups.length < 2) return fresh;
+  const onRadar = (g: string) => c.shown.filter((id) => groupOf(id) === g).length;
+  const fewest = Math.min(...groups.map(onRadar));
+  const tied = groups.filter((g) => onRadar(g) === fewest);
+  const group = tied[Math.floor(random() * tied.length)];
+  return fresh.filter((id) => groupOf(id) === group);
+}
+
+/**
+ * One step: a new random source in while growing (balanced between the groups of `groupOf`), the oldest out while
+ * shrinking.
+ */
+export function step(
+  c: Cycle,
+  ids: string[],
+  random: () => number,
+  groupOf: (id: string) => string = () => '',
+): Cycle {
   const { fewest, most } = bounds(ids.length);
   if (c.growing && c.shown.length < most) {
-    const fresh = ids.filter((id) => !c.shown.includes(id));
+    const fresh = candidates(c, ids, random, groupOf);
     const next = fresh[Math.floor(random() * fresh.length)];
     if (next === undefined) return c;
     const shown = [...c.shown, next];

@@ -1,6 +1,5 @@
 package ai.helper2.sources.config;
 
-import ai.helper2.sources.tavily.TavilyDiscoveryCollector;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -63,7 +62,9 @@ final class CollectorProperties {
   }
 
   /**
-   * Tavily discovery (ADR 0051): one search per entry, results sorted into lists and candidates.
+   * Tavily discovery (ADR 0051): what every category's collector shares. A category's own options
+   * (helper2.categories) override the interval and the score floor and add to the excluded domains.
+   * {@code dailyCredits} caps the Tavily credits all discovery searches spend per UTC day.
    */
   @Validated
   @ConfigurationProperties("helper2.scout.discovery")
@@ -72,18 +73,12 @@ final class CollectorProperties {
       @NotNull @Pattern(regexp = "basic|advanced") String searchDepth,
       @Positive @Max(20) int maxResults,
       @DecimalMin("0") @DecimalMax("1") double minScore,
-      @NotNull List<String> excludeDomains,
-      @NotNull List<String> categories)
+      @PositiveOrZero long dailyCredits,
+      @NotNull List<String> excludeDomains)
       implements Scheduled {
 
     Discovery {
       excludeDomains = clean(excludeDomains);
-      categories = clean(categories);
-    }
-
-    @AssertTrue(message = "every category must read TYPE|tag|query|words with a product type")
-    boolean isEveryCategoryReadable() {
-      return categories.stream().allMatch(c -> TavilyDiscoveryCollector.Category.parse(c) != null);
     }
   }
 

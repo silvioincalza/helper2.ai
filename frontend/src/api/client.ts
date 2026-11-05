@@ -273,7 +273,11 @@ export const api = {
   deleteBookmark: (resourceId: string) =>
     request<void>('DELETE', `/me/bookmarks/${encodeURIComponent(resourceId)}`),
   listReviewItems: (
-    filter: { status?: ReviewStatus | undefined; kind?: ReviewKind | undefined },
+    filter: {
+      status?: ReviewStatus | undefined;
+      kind?: ReviewKind | undefined;
+      category?: string | undefined;
+    },
     page: number,
     size: number,
     signal?: AbortSignal,
@@ -282,6 +286,7 @@ export const api = {
       query: new URLSearchParams({
         ...(filter.status ? { status: filter.status } : {}),
         ...(filter.kind ? { kind: filter.kind } : {}),
+        ...(filter.category ? { category: filter.category } : {}),
         page: String(page),
         size: String(size),
       }),

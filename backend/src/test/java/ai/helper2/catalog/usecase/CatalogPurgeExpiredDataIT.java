@@ -262,9 +262,9 @@ class CatalogPurgeExpiredDataIT {
   @Test
   void discoveryListPagesGoAfterHalfAYearButAcceptedProductsStay() {
     UUID list = resource("INDEXED", "ARTICLE", NOW);
-    UUID oldList = record(list, "tavily-discovery", "ARTICLE", daysAgo(181));
+    UUID oldList = record(list, "discovery-self-hosted", "ARTICLE", daysAgo(181));
     UUID product = resource("INDEXED", "PRODUCT", NOW);
-    UUID accepted = record(product, "tavily-discovery", "PRODUCT", daysAgo(400));
+    UUID accepted = record(product, "discovery-self-hosted", "PRODUCT", daysAgo(400));
 
     purge().purge();
 
@@ -272,6 +272,19 @@ class CatalogPurgeExpiredDataIT {
     assertThat(exists("resource", list)).isFalse();
     assertThat(exists("source_record", accepted)).isTrue();
     assertThat(exists("resource", product)).isTrue();
+  }
+
+  @Test
+  void everyDiscoveryCategoryIsAWebSourceButNoOtherSourceIs() {
+    UUID legal = resource("INDEXED", "ARTICLE", NOW);
+    UUID legalList = record(legal, "discovery-legal", "ARTICLE", daysAgo(181));
+    UUID other = resource("INDEXED", "ARTICLE", NOW);
+    UUID otherList = record(other, "discoverer", "ARTICLE", daysAgo(181));
+
+    purge().purge();
+
+    assertThat(exists("source_record", legalList)).isFalse();
+    assertThat(exists("source_record", otherList)).isTrue();
   }
 
   @Test

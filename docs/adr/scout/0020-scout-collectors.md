@@ -53,14 +53,16 @@ A collector returns hits, which the runner indexes, and candidates, which the ru
    conference with no upcoming edition is not counted. When the circuit breaker refuses a file, the pass ends there:
    the run fails and the next run retries it.
 
-8. **Tavily discovery** (`tavily-discovery`, every `H2_SCOUT_DISCOVERY_INTERVAL`, 7 days;
-   [0051](0051-tavily-discovery.md)). One Tavily search per category of the AI world (prompt libraries, self-hosted
-   apps, model hosting, ... 33 searches in 30 categories). List pages are indexed as ARTICLE; a product's own site or repository
-   becomes a `RESOURCE_CANDIDATE` review item, and accepting it indexes it. Each result gets the tag of every
-   category it belongs to. About 285 credits a month. Off without `H2_TAVILY_API_KEY`.
+8. **Tavily discovery** (`discovery-<category>`, every `H2_SCOUT_DISCOVERY_INTERVAL`, 7 days, staggered so 4 or 5
+   categories search a day; [0051](0051-tavily-discovery.md)). One collector per category of the AI world: 34
+   categories in 7 families (prompt libraries, writing, health, legal, coding, model hosting, self-hosted, ...), 39
+   searches a week, registered from `helper2.categories` by a `BeanRegistrar`. List pages are indexed as ARTICLE; a
+   product's own site or repository becomes a `RESOURCE_CANDIDATE` review item, merged when another category finds
+   it, and accepting it indexes it. Each result gets the tag of every category it belongs to. About 335 credits a
+   month, capped at 40 a day. Off without `H2_TAVILY_API_KEY`.
 ## Consequences
 - The index grows from registries, the Hub, news and curated lists, with each record's source disclosed.
-- Intervals keep cost and load low: Tavily credits (about 370 a month: news ~42, courses ~43, discovery ~285), GitHub limits and
+- Intervals keep cost and load low: Tavily credits (about 420 a month: news ~42, courses ~43, discovery ~335), GitHub limits and
   Hub calls are bounded per pass.
 - The classifier keeps non-AI repositories of awesome lists out; the heuristic keeps the collector working without a model.
 - A course page reaches the catalog only after an admin accepts it.
@@ -74,7 +76,8 @@ A collector returns hits, which the runner indexes, and candidates, which the ru
 ## Code
 - `backend/src/main/java/ai/helper2/sources/` — one package per provider: `mcp/McpRegistryCollector.java`,
   `huggingface/HuggingFaceTrendingCollector.java`, `huggingface/HuggingFaceProviderOrgsCollector.java`,
-  `tavily/TavilyCollector.java`, `tavily/CourseCollector.java`, `tavily/TavilyDiscoveryCollector.java`, `github/GitHubAwesomeCollector.java`,
+  `tavily/TavilyCollector.java`, `tavily/CourseCollector.java`, `tavily/TavilyDiscoveryCollector.java` (one per category,
+  `config/DiscoveryCollectorRegistrar.java`), `github/GitHubAwesomeCollector.java`,
   `github/AwesomeListParser.java`, `aideadlines/AiDeadlinesCollector.java`.
 - `classifier/RepoClassifier.java`, `classifier/SpringAiRepoClassifier.java` — the awesome-list classifier.
 - `support/RunInterval.java`, `support/HttpClients.java` — shared by every collector.

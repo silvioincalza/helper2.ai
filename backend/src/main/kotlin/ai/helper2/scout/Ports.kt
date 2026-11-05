@@ -24,10 +24,17 @@ constructor(
   val notDue: Boolean = false,
   /** Pages proposed for review, not indexed. */
   val candidates: List<Candidate> = emptyList(),
+  /** Why the collector did not call its source ([notDue] only); null: its run interval. */
+  val skipReason: String? = null,
 ) {
   companion object {
     /** Nothing collected and nothing advanced: the previous checkpoint stays. */
     @JvmStatic fun notDue(): CollectedBatch = CollectedBatch(emptyList(), null, null, true)
+
+    /** As [notDue], with the reason the run record shows ("daily credit cap reached"). */
+    @JvmStatic
+    fun skipped(reason: String): CollectedBatch =
+      CollectedBatch(emptyList(), null, null, true, emptyList(), reason)
   }
 }
 
@@ -65,6 +72,11 @@ constructor(
    * [MAX_TAGS] (ADR 0051).
    */
   val tags: Set<String> = emptySet(),
+  /**
+   * What the collector knew when it found the page (the discovery search, ADR 0051), kept with the
+   * review item and, once accepted, with the record ([ai.helper2.search.SourceHit.facts]).
+   */
+  val facts: Map<String, Any> = emptyMap(),
 ) {
   companion object {
     /** The most tags a candidate can have and still be accepted. */
@@ -74,12 +86,14 @@ constructor(
 
 /**
  * Outbound port: the admin review list for collector proposals (ADR 0019 review queue, ADR 0032
- * §8).
+ * §8). A RESOURCE_CANDIDATE whose URL already waits OPEN is merged into the waiting item (ADR
+ * 0051): two categories that find the same product make one item.
  */
 fun interface CandidateReview {
   /**
    * Opens one review item per candidate that is neither in the catalog nor proposed before
-   * (whatever was decided then). Returns how many items were opened.
+   * (whatever was decided then), or merges it into the OPEN item of its URL. Returns how many items
+   * were opened.
    */
   fun propose(sourceId: String, candidates: List<Candidate>): Int
 }

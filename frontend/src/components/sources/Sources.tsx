@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { sourceModeValues } from '@/api/schema';
+import { sourceFamilyValues, sourceModeValues } from '@/api/schema';
 import type { SourceInfo, SourceMode } from '@/api/types';
 import { ExternalLink } from '@/components/ExternalLink';
 import { TermCommand } from '@/components/home/TermList';
@@ -15,6 +15,7 @@ import { useRetry } from '@/hooks/useRetry';
 import { formatDate } from '@/lib/format';
 import { clockTime, creditsOf, responseTimeShown } from '@/lib/sourceHealth';
 import { newThisWeek, radarSources } from '@/lib/v4Fields';
+import { CategoryNotice, categoryOf } from './DiscoveryCategories';
 import { ResponseTimeValue, SourceNotes, WebCreditsValue } from './SourceHealth';
 import '@/components/ui/term.css';
 import './sources.css';
@@ -56,6 +57,9 @@ export function Sources() {
   const all = list ?? [];
   const modes = sourceModeValues.filter((m) => all.some((s) => s.mode === m));
   const shown = mode ? all.filter((s) => s.mode === mode) : all;
+  // The discovery categories (ADR 0051) come after the other sources, a group of rows per family.
+  const others = shown.filter((s) => !s.family);
+  const families = sourceFamilyValues.filter((f) => shown.some((s) => s.family === f));
   const count = (st: DotTone) => all.filter((s) => stateOf(s) === st).length;
   const onRadar = radarSources(all).length;
   const { fewest, most } = bounds(onRadar);
@@ -179,12 +183,34 @@ export function Sources() {
                   </tr>
                 </thead>
                 <tbody>
-                  {shown.map((s) => (
+                  {others.map((s) => (
                     <SourceRow key={s.id} source={s} />
                   ))}
                 </tbody>
+                {families.map((family) => (
+                  <tbody key={family} className="h2-sources__family">
+                    <tr>
+                      <th scope="rowgroup" colSpan={7}>
+                        {t('sourcesPage.discovery.group', {
+                          family: t(`sourcesPage.family.${family}`),
+                        })}
+                      </th>
+                    </tr>
+                    {shown
+                      .filter((s) => s.family === family)
+                      .map((s) => (
+                        <SourceRow key={s.id} source={s} />
+                      ))}
+                  </tbody>
+                ))}
               </table>
             </ScrollBox>
+            {families.length > 0 && (
+              <p className="v4-term__note">
+                {t('sourcesPage.discovery.lede')} {t('sourcesPage.discovery.lists')}{' '}
+                {t('sourcesPage.discovery.products')}
+              </p>
+            )}
             <p className="v4-term__note">
               {modes.map((m) => `${t(`mode.${m}.label`)}: ${t(`mode.${m}.hint`)}`).join(' ')}
             </p>
@@ -215,6 +241,7 @@ function SourceRow({ source: s }: { source: SourceInfo }) {
           </ExternalLink>
         </span>
         {s.name !== s.shortName && <span className="v4-sub">{s.name}</span>}
+        {s.family && <CategoryNotice category={categoryOf(s)} />}
         <SourceNotes source={s} />
         {creditsOf(s) && (
           <span className="v4-sub h2-sources__credits">
