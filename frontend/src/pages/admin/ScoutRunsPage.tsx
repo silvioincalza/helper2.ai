@@ -4,11 +4,15 @@ import { api, ApiError } from '@/api/client';
 import type { ScoutRun } from '@/api/types';
 import { Icon } from '@/components/Icon';
 import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
+import { ScrollBox } from '@/components/ui/ScrollBox';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { useApi } from '@/hooks/useApi';
 import { useRetry } from '@/hooks/useRetry';
 import { formatDate } from '@/lib/format';
+import { AdminEmpty, AdminHead, AdminLoading } from './AdminHead';
 import { RUN_TONE } from './adminModel';
+
+const COMMAND = 'helper2 scouts --runs';
 
 /** How often the run listing is reloaded while a Scout run is RUNNING. */
 export const RUN_POLL_MS = 3000;
@@ -26,7 +30,7 @@ function firstRunPerSource(runs: ScoutRun[]): Set<string> {
 }
 
 /**
- * The Scout runs as a table, Run all now and Run now for one source. A started run is followed on the listing until
+ * The Scout runs as a table in the terminal style (ADR 0042), `$ helper2 scouts --runs · N` with N the runs listed, Run all now and Run now for one source. A started run is followed on the listing until
  * no run is RUNNING. One run holds the cluster-wide lock at a time, so every start waits while one is pending or running.
  */
 export default function ScoutRunsPage() {
@@ -70,9 +74,13 @@ export default function ScoutRunsPage() {
   const withRunNow = firstRunPerSource(runList);
   return (
     <section aria-labelledby="sr-h" className="h2-admin__part">
-      <h2 id="sr-h" ref={heading} tabIndex={-1} className="h2-admin__h">
-        {t('admin.scoutRuns')}
-      </h2>
+      <AdminHead
+        id="sr-h"
+        title={t('admin.scoutRuns')}
+        command={COMMAND}
+        total={loaded ? loaded.length : null}
+        headingRef={heading}
+      />
       {actionError && (
         <p role="alert" className="banner banner-warn">
           <Icon name="warn" />{' '}
@@ -82,7 +90,7 @@ export default function ScoutRunsPage() {
       <div className="h2-admin__tools">
         <button
           type="button"
-          className="btn btn-primary"
+          className="v4-btn h2-admin__primary"
           aria-disabled={waiting || undefined}
           onClick={() => void start()}
         >
@@ -91,7 +99,7 @@ export default function ScoutRunsPage() {
         {running && <p className="muted small">{t('admin.runWaits')}</p>}
       </div>
       {runs.loading && loaded === undefined ? (
-        <p role="status">{t('common.loading')}</p>
+        <AdminLoading command={COMMAND} />
       ) : runs.error !== undefined && loaded === undefined ? (
         <StatePanel
           tone="error"
@@ -110,10 +118,10 @@ export default function ScoutRunsPage() {
             </div>
           )}
           {runList.length === 0 ? (
-            <p className="muted">{t('admin.noRuns')}</p>
+            <AdminEmpty command={COMMAND} text={t('admin.noRuns')} />
           ) : (
-            <div className="table-wrap">
-              <table aria-labelledby="sr-h">
+            <ScrollBox label={t('admin.scoutRuns')}>
+              <table className="v4-table h2-admin__table" aria-labelledby="sr-h">
                 <thead>
                   <tr>
                     <th scope="col">{t('sources.col.source')}</th>
@@ -127,22 +135,24 @@ export default function ScoutRunsPage() {
                 </thead>
                 <tbody>
                   {runList.map((r) => (
-                    <tr key={r.id}>
+                    <tr key={r.id} className="v4-row">
                       <th scope="row">{r.sourceId}</th>
                       <td>
                         <StatusPill tone={RUN_TONE[r.status]}>
                           {t(`admin.runStatus.${r.status}`)}
                         </StatusPill>
                       </td>
-                      <td>{formatDate(r.startedAt, i18n.language, 'INSTANT')}</td>
-                      <td>{r.itemsSeen}</td>
-                      <td>{r.itemsChanged}</td>
+                      <td className="v4-nowrap">
+                        {formatDate(r.startedAt, i18n.language, 'INSTANT')}
+                      </td>
+                      <td className="is-num">{r.itemsSeen}</td>
+                      <td className="is-num">{r.itemsChanged}</td>
                       <td>{r.message ?? '—'}</td>
                       <td>
                         {withRunNow.has(r.id) && (
                           <button
                             type="button"
-                            className="btn"
+                            className="v4-btn"
                             aria-label={t('admin.runSource', { source: r.sourceId })}
                             aria-disabled={waiting || undefined}
                             onClick={() => void start(r.sourceId)}
@@ -155,7 +165,7 @@ export default function ScoutRunsPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </ScrollBox>
           )}
         </>
       )}

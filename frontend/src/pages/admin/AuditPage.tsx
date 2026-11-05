@@ -3,13 +3,19 @@ import { useTranslation } from 'react-i18next';
 import { api } from '@/api/client';
 import { Pagination } from '@/components/Pagination';
 import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
+import { ScrollBox } from '@/components/ui/ScrollBox';
 import { useApi } from '@/hooks/useApi';
 import { useRetry } from '@/hooks/useRetry';
 import { formatDate } from '@/lib/format';
+import { AdminEmpty, AdminHead, AdminLoading } from './AdminHead';
 
 const PAGE_SIZE = 20;
+const COMMAND = 'helper2 audit';
 
-/** What administrators did, newest first (ADR 0023, 7): read-only, paged, the page in the address. */
+/**
+ * What administrators did, newest first (ADR 0023, 7): read-only, paged, the page in the address. A table in the
+ * terminal style (ADR 0042), `$ helper2 audit · N` with N every entry on the server.
+ */
 export default function AuditPage() {
   const { t, i18n } = useTranslation();
   const [params, setParams] = useSearchParams();
@@ -22,13 +28,15 @@ export default function AuditPage() {
 
   return (
     <section aria-labelledby="au-h" className="h2-admin__part">
-      <h2 id="au-h" ref={heading} tabIndex={-1} className="h2-admin__h">
-        {t('admin.audit.title')}
-      </h2>
+      <AdminHead
+        id="au-h"
+        title={t('admin.audit.title')}
+        command={COMMAND}
+        total={entries.loading ? null : (entries.data?.total ?? null)}
+        headingRef={heading}
+      />
       {entries.loading ? (
-        <p role="status" className="muted">
-          {t('common.loading')}
-        </p>
+        <AdminLoading command={COMMAND} />
       ) : entries.error !== undefined ? (
         <StatePanel
           tone="error"
@@ -37,10 +45,10 @@ export default function AuditPage() {
           next={<RetryButton onClick={retry} />}
         />
       ) : list.length === 0 ? (
-        <p className="muted">{t('admin.audit.empty')}</p>
+        <AdminEmpty command={COMMAND} text={t('admin.audit.empty')} />
       ) : (
-        <div className="table-wrap">
-          <table aria-labelledby="au-h">
+        <ScrollBox label={t('admin.audit.title')}>
+          <table className="v4-table h2-admin__table" aria-labelledby="au-h">
             <thead>
               <tr>
                 <th scope="col">{t('admin.audit.at')}</th>
@@ -52,7 +60,7 @@ export default function AuditPage() {
             </thead>
             <tbody>
               {list.map((e) => (
-                <tr key={e.id}>
+                <tr key={e.id} className="v4-row">
                   <th scope="row">{formatDate(e.at, i18n.language, 'INSTANT')}</th>
                   <td>{t(`admin.audit.actions.${e.action}`)}</td>
                   <td className="h2-admin__id">{e.targetId ?? '—'}</td>
@@ -62,7 +70,7 @@ export default function AuditPage() {
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollBox>
       )}
       {entries.data && (
         <Pagination
