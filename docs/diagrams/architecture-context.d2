@@ -24,7 +24,7 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
   scout: "scout\nindex growth, enrichment" {class: app}
   catalog: "catalog\nindex, resource pages, events" {class: app}
   sources: "sources\nlive adapters, collectors" {class: app}
-  setup: "setup\nGuide me: run options, tool guide" {class: app}
+  setup: "setup\nSet it up: run options, tool guide" {class: app}
   examples: "examples\nhome examples, quality check" {class: app}
   pages: "pages\npages for crawlers, sitemap" {class: app}
   identity: "identity\nsign-in, bookmarks" {class: app}
@@ -59,7 +59,7 @@ oauth: "github.com OAuth" {class: ext}
 browser -> app.search: "search" {class: hot}
 browser -> app.guide: "ask (SSE)" {class: hot}
 browser -> app.catalog: "resource, events"
-browser -> app.setup: "Guide me"
+browser -> app.setup: "Set it up"
 browser -> app.examples: "home examples"
 crawler: "Crawler,\nlink preview" {class: person}
 crawler -> app.pages: "page head, sitemap.xml,\nrobots.txt"

@@ -66,13 +66,13 @@ function mock() {
   });
 }
 
-describe('Guide me in the result preview', () => {
+describe('Set it up in the result preview', () => {
   it('the preview of the selected result opens its setup guide, focus on its heading; papers get none', async () => {
     const m = mock();
     renderApp('/search?q=agents');
     const preview = () =>
       screen.getByRole('article', { name: /alpha-mcp|beta-lib|A survey of agents/ });
-    const alpha = await screen.findByRole('button', { name: 'Guide me: alpha-mcp' });
+    const alpha = await screen.findByRole('button', { name: 'Set up alpha-mcp' });
     expect(m.callsTo('POST', `/resources/${A}/guide`)).toHaveLength(0);
 
     await userEvent.click(alpha);
@@ -84,13 +84,13 @@ describe('Guide me in the result preview', () => {
     await userEvent.click(
       within(screen.getByRole('list', { name: 'Search results' })).getByText('beta-lib'),
     );
-    expect(await screen.findByRole('button', { name: 'Guide me: beta-lib' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Set up beta-lib' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Set up alpha-mcp' })).not.toBeInTheDocument();
 
     await userEvent.click(
       within(screen.getByRole('list', { name: 'Search results' })).getByText('A survey of agents'),
     );
     await waitFor(() => expect(preview()).toHaveTextContent('A survey of agents'));
-    expect(screen.queryByRole('button', { name: /^Guide me:/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Set up / })).not.toBeInTheDocument();
   });
 });

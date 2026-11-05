@@ -174,7 +174,7 @@ describe('resource detail', () => {
     ],
   };
 
-  it('Guide me opens snippets per AI tool and checked steps from the README, with no question box', async () => {
+  it('Set it up opens snippets per AI tool and checked steps from the README, with no question box', async () => {
     const m = mockApi({
       [`GET /resources/${ID}`]: () =>
         makeDetail({ card: makeCard({ type: 'MCP_SERVER', title: 'pg-mcp-server' }) }),
@@ -182,7 +182,7 @@ describe('resource detail', () => {
       [`POST /resources/${ID}/guide`]: () => STEPS,
     });
     const { container } = renderApp(`/resource/${ID}`);
-    const button = await screen.findByRole('button', { name: 'Guide me' });
+    const button = await screen.findByRole('button', { name: 'Set it up' });
     expect(button).toHaveAttribute('aria-expanded', 'false');
     expect(m.callsTo('GET', `/resources/${ID}/setup`)).toHaveLength(0);
     await userEvent.click(button);
@@ -265,7 +265,7 @@ describe('resource detail', () => {
       [`POST /resources/${ID}/guide`]: () => STEPS,
     });
     renderApp(`/resource/${ID}`);
-    await userEvent.click(await screen.findByRole('button', { name: 'Guide me' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Set it up' }));
     expect(
       await screen.findByText(
         /Runs locally with npx, copied from its README; not reviewed for safety/,
@@ -289,7 +289,7 @@ describe('resource detail', () => {
       [`POST /resources/${ID}/guide`]: () => (n++ === 0 ? problem(503, 'Unavailable') : STEPS),
     });
     renderApp(`/resource/${ID}`);
-    await userEvent.click(await screen.findByRole('button', { name: 'Guide me' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Set it up' }));
     const retry = await screen.findByRole('button', { name: /Try again/ });
     retry.focus();
     await userEvent.keyboard('{Enter}');
@@ -322,19 +322,19 @@ describe('resource detail', () => {
       }),
     });
     renderApp(`/resource/${ID}`);
-    await userEvent.click(await screen.findByRole('button', { name: 'Guide me' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Set it up' }));
     expect(await screen.findByText(/acme-lib has no README or model card/)).toBeInTheDocument();
     expect(screen.queryByLabelText('Your AI tool')).not.toBeInTheDocument();
   });
 
-  it('offers no Guide me on a paper', async () => {
+  it('offers no Set it up on a paper', async () => {
     mockApi({
       [`GET /resources/${ID}`]: () =>
         makeDetail({ card: makeCard({ type: 'PAPER', title: 'A survey' }) }),
     });
     renderApp(`/resource/${ID}`);
     await screen.findByRole('heading', { name: 'A survey' });
-    expect(screen.queryByRole('button', { name: 'Guide me' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Set it up' })).not.toBeInTheDocument();
   });
 
   it('omits the candidates section when there are none', async () => {

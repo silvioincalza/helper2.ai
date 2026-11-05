@@ -11,8 +11,8 @@
     "opensNewTab": "(opens in a new tab)"
   },
   "guideMe": {
-    "label": "Guide me",
-    "aria": "Guide me: {{title}}"
+    "label": "Set it up",
+    "aria": "Set up {{title}}"
   },
   "nav": {
     "main": "Main",

@@ -32,7 +32,7 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 ### Domain and identity
 - DNS: `CAA` record for the edge's certificate authority; `v=spf1 -all` and DMARC `p=reject` if no mail is sent.
 - Optional `H2_HF_TOKEN` on prod.
-- `H2_SETUP_GITHUB_TOKEN` (read-only, public repositories) in `app_env` on staging and prod; without it Guide me reads
+- `H2_SETUP_GITHUB_TOKEN` (read-only, public repositories) in `app_env` on staging and prod; without it "Set it up" reads
   GitHub anonymously, 60 calls an hour ([ADR 0031](adr/guide/0031-setup-guide.md)).
 - Turn on the registered Tavily tier (more web searches per day for signed-in users) once that sign-in is live
   ([ADR 0037](adr/search/0037-tavily-store-and-daily-quota.md)).

@@ -1,6 +1,9 @@
 import type { ResultCard } from '@/api/types';
 
-/** Things the guide can pick for a need. Papers, datasets, prompts and events get no "Guide me". */
+/**
+ * Things a user installs or runs, so the setup guide has something to show: they get "Set it up". Papers, datasets,
+ * prompts, articles, courses, events, news and other types get none.
+ */
 const GUIDED: ReadonlySet<ResultCard['type']> = new Set([
   'MCP_SERVER',
   'MODEL',

@@ -32,7 +32,7 @@ function RelList({ items }: { items: Relationship[] }) {
   );
 }
 
-/** Keyed by id: a new resource starts with fresh state (report form, Guide me panel), not the previous one's. */
+/** Keyed by id: a new resource starts with fresh state (report form, setup panel), not the previous one's. */
 export default function ResourcePage() {
   const { id = '' } = useParams();
   return <ResourceView key={id} id={id} />;
