@@ -24,6 +24,7 @@ import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.sources.tavily.CourseCollector;
 import ai.helper2.sources.tavily.TavilyCollector;
+import ai.helper2.sources.tavily.TavilyDiscoveryCollector;
 import ai.helper2.sources.tavily.TavilySource;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -50,6 +51,7 @@ import org.springframework.web.client.RestClient;
   CollectorProperties.HfTrending.class,
   CollectorProperties.TavilyScout.class,
   CollectorProperties.Courses.class,
+  CollectorProperties.Discovery.class,
   CollectorProperties.GitHubAwesome.class,
   CollectorProperties.HfProviderOrgs.class,
   CollectorProperties.AiDeadlines.class,
@@ -194,6 +196,29 @@ class SourcesConfiguration {
         new RunInterval(c.interval()),
         c.query(),
         c.platforms());
+  }
+
+  /**
+   * Weekly Tavily searches per category of the AI world: list pages are indexed, product pages go
+   * to the admin review list (ADR 0051).
+   */
+  @Bean
+  TavilyDiscoveryCollector tavilyDiscoveryCollector(
+      SourcesProperties p,
+      CollectorProperties.Discovery c,
+      Clock clock,
+      Resilience resilience,
+      ObservationRegistry observations) {
+    SourceSettings s = p.get("tavily-discovery");
+    return new TavilyDiscoveryCollector(
+        s,
+        collectorClient(s, observations),
+        clock,
+        resilience,
+        new RunInterval(c.interval()),
+        new TavilyDiscoveryCollector.Search(
+            c.searchDepth(), c.maxResults(), c.minScore(), c.excludeDomains()),
+        c.categories());
   }
 
   /**

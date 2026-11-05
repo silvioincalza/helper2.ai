@@ -260,6 +260,21 @@ class CatalogPurgeExpiredDataIT {
   }
 
   @Test
+  void discoveryListPagesGoAfterHalfAYearButAcceptedProductsStay() {
+    UUID list = resource("INDEXED", "ARTICLE", NOW);
+    UUID oldList = record(list, "tavily-discovery", "ARTICLE", daysAgo(181));
+    UUID product = resource("INDEXED", "PRODUCT", NOW);
+    UUID accepted = record(product, "tavily-discovery", "PRODUCT", daysAgo(400));
+
+    purge().purge();
+
+    assertThat(exists("source_record", oldList)).isFalse();
+    assertThat(exists("resource", list)).isFalse();
+    assertThat(exists("source_record", accepted)).isTrue();
+    assertThat(exists("resource", product)).isTrue();
+  }
+
+  @Test
   void tavilyNewsRecordsGoAfterHalfAYearWithTheResourcesTheyLeaveEmpty() {
     UUID news = resource("INDEXED", "NEWS", NOW);
     UUID oldRecord = record(news, "tavily-scout", "NEWS", daysAgo(181));

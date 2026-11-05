@@ -3,6 +3,7 @@ package ai.helper2.scout
 import ai.helper2.search.DescribedSource
 import ai.helper2.search.SourceHit
 import ai.helper2.shared.CanonicalUrl
+import ai.helper2.shared.ResourceType
 
 /**
  * One deterministic collection pass. [checkpoint] is what to pass next time for an incremental run
@@ -43,12 +44,24 @@ interface Collector : DescribedSource {
  * A web page a collector found and proposes for the catalog; a person decides before anything is
  * catalogued.
  */
-data class Candidate(
+data class Candidate
+@JvmOverloads
+constructor(
   val url: CanonicalUrl,
   val title: String,
   val snippet: String?,
-  /** The platform or vendor the page belongs to (e.g. "Coursera"), when the collector knows it. */
+  /**
+   * The platform or vendor the page belongs to (e.g. "Coursera"), or the category a discovery
+   * search found it in (e.g. "Self-hosted"), when the collector knows it.
+   */
   val platform: String?,
+  /**
+   * What the page would be in the catalog. COURSE pages wait as course candidates; any other type
+   * waits as a resource candidate, which an admin's acceptance indexes (ADR 0051).
+   */
+  val type: ResourceType = ResourceType.COURSE,
+  /** Catalog tags the page gets when it is accepted: the categories it belongs to (ADR 0051). */
+  val tags: Set<String> = emptySet(),
 )
 
 /**

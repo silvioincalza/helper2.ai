@@ -99,7 +99,10 @@ class TavilySourceTest {
   void theTavilySourcesAreTheOnesWhoseTitlesAreCleanedOnRead() {
     assertThat(WebPageTitle.SOURCES)
         .containsExactlyInAnyOrder(
-            source().getDescriptor().getId(), TavilyCollector.ID, CourseCollector.ID);
+            source().getDescriptor().getId(),
+            TavilyCollector.ID,
+            TavilyDiscoveryCollector.ID,
+            CourseCollector.ID);
   }
 
   @Test

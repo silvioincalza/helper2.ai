@@ -64,11 +64,19 @@ interface ScheduledRunStore {
   fun scheduledRunEnded(at: Instant)
 }
 
+/**
+ * The schedule's calendar: when the next scheduled run is due after one that ended at [lastEnd]. A
+ * fixed time of day (cron) in production: a long run or a late tick does not move the next start.
+ */
+fun interface RunCalendar {
+  fun nextRunAfter(lastEnd: Instant): Instant
+}
+
 /** What one tick of the schedule did. */
 enum class ScheduledRun {
   RAN,
 
-  /** The last scheduled run ended less than a period ago. */
+  /** The next run after the last scheduled one is not due yet. */
   NOT_DUE,
 
   /** Another run (another replica's, or an admin's) holds the lock: the next tick tries again. */

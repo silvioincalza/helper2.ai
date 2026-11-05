@@ -1715,8 +1715,12 @@ components:
       description: >-
         COURSE_CANDIDATE is a course page found by Scout and not yet in the catalog (no resource; URL in details).
         EXAMPLE_CANDIDATE is a home example a model drafted for the resource (the draft as JSON in details: label,
-        query, path, model); accepting it adds the example.
-      enum: [ENRICHMENT_VALIDATION, RELATIONSHIP_CANDIDATE, USER_REPORT, COURSE_CANDIDATE, EXAMPLE_CANDIDATE]
+        query, path, model); accepting it adds the example. RESOURCE_CANDIDATE is a product page found by the Scout's
+        Tavily discovery and not yet in the catalog (no resource; the candidate as JSON in details: sourceId, url,
+        title, type, tags, snippet); accepting it indexes it, unless another source listed the page
+        meanwhile.
+      enum: [ENRICHMENT_VALIDATION, RELATIONSHIP_CANDIDATE, USER_REPORT, COURSE_CANDIDATE, EXAMPLE_CANDIDATE,
+        RESOURCE_CANDIDATE]
 
     AdminOverview:
       type: object

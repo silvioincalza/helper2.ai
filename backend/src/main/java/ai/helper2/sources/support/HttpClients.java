@@ -207,10 +207,22 @@ public final class HttpClients {
     Metrics.counter(ITEMS_DROPPED, "source", sourceId, "reason", reason).increment();
   }
 
+  /**
+   * A field's text, without control characters (PostgreSQL text and jsonb refuse NUL, and the
+   * others have no place in a title or description); null when missing or blank.
+   */
   public static String text(JsonNode n, String field) {
     JsonNode v = n.path(field);
-    return v.isMissingNode() || v.isNull() || v.asString().isBlank() ? null : v.asString();
+    if (v.isMissingNode() || v.isNull()) {
+      return null;
+    }
+    String clean = CONTROL.matcher(v.asString()).replaceAll("");
+    return clean.isBlank() ? null : clean;
   }
+
+  /** C0 controls except tab, line feed and carriage return, and DEL. */
+  private static final java.util.regex.Pattern CONTROL =
+      java.util.regex.Pattern.compile("[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F\\u007F]");
 
   public static Instant instant(JsonNode n, String field) {
     String v = text(n, field);
