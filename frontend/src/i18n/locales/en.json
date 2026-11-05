@@ -541,7 +541,8 @@
       "ENRICHMENT_VALIDATION": "Enrichment validation",
       "RELATIONSHIP_CANDIDATE": "Relationship candidate",
       "USER_REPORT": "User report",
-      "COURSE_CANDIDATE": "Course candidate"
+      "COURSE_CANDIDATE": "Course candidate",
+      "EXAMPLE_CANDIDATE": "Drafted example"
     },
     "runStatus": {
       "RUNNING": "Running",
@@ -560,6 +561,7 @@
     "allKinds": "All kinds",
     "note": "Note (optional)",
     "alreadyDecided": "This item was already decided. The list now shows its current status.",
+    "refused": "Not accepted, the item stays open: {{detail}}",
     "nav": {
       "label": "Back office",
       "overview": "Overview",
@@ -608,7 +610,8 @@
         "START_SCOUT_RUN": "Scout run started",
         "ADD_HOME_EXAMPLE": "Example added",
         "CHANGE_HOME_EXAMPLE": "Example changed",
-        "REMOVE_HOME_EXAMPLE": "Example removed"
+        "REMOVE_HOME_EXAMPLE": "Example removed",
+        "DRAFT_HOME_EXAMPLES": "Examples drafted with AI"
       }
     },
     "budget": {
@@ -685,7 +688,24 @@
       "duplicate": "Another example already has this label or this query.",
       "conflict": "Someone changed this example first. The list is reloaded: make your change again.",
       "invalid": "Not saved: {{detail}}",
-      "failed": "The action failed. Please try again."
+      "failed": "The action failed. Please try again.",
+      "draft": {
+        "button": "Draft examples with AI",
+        "hint": "A model writes examples for well-known resources that no example expects yet. Each draft waits in the Review queue; nothing is shown before you accept it and the check passes it.",
+        "done_one": "{{count}} draft waits in the Review queue.",
+        "done_other": "{{count}} drafts wait in the Review queue.",
+        "none": "The model wrote no draft that follows the rules. Try again later.",
+        "open": "Open the drafts",
+        "unavailable": "No drafts now: {{detail}}"
+      }
+    },
+    "review": {
+      "drafted": {
+        "label": "Label",
+        "query": "Searches",
+        "path": "For",
+        "model": "Drafted with AI ({{model}}). The resource above is its expected result. Accept adds it; the check decides when it is shown."
+      }
     }
   },
   "notFound": {
@@ -990,7 +1010,7 @@
           "Search sources: to find results, your search text is sent to the sources that answer live, such as GitHub, Hugging Face, npm, arXiv and Tavily. The Sources page lists them all. Each provider handles the request under its own privacy policy, and some of them are in the United States.",
           "Tavily (United States): your search text or the guide's web query, unless a stored result answers.",
           "AI models: guide questions, and searches written in a language other than English, are sent to NVIDIA Nemotron models on Nebius Token Factory, processed in the European Union. We send only the text, never your account data.",
-          "AI models also read public text about AI resources (source descriptions, README files and model cards) to describe them, on NVIDIA Nemotron models on Nebius Token Factory in the European Union. It is public text about the resources, not about our visitors.",
+          "AI models also read public text about AI resources (source descriptions, README files and model cards) to describe them, and to draft example searches for the home page, on NVIDIA Nemotron models on Nebius Token Factory in the European Union. It is public text about the resources, not about our visitors.",
           "Embeddings: your search text, and your guide question when similar-question reuse is on, is sent to the NVIDIA API catalog (United States) to compute its embedding. We send only the text, never your IP address or account data. NVIDIA is certified under the Data Privacy Framework (see Transfers abroad).",
           "GitHub, when you choose to sign in with it.",
           "Network edge: every request to helper2.ai passes through Cloudflare (United States), which routes traffic to our servers. Cloudflare sees your IP address and the request.",

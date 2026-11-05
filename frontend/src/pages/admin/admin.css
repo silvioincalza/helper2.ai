@@ -172,3 +172,17 @@
   gap: var(--space-3);
   padding: var(--space-1) 0;
 }
+.h2-admin__draft {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-1) var(--space-3);
+}
+.h2-admin__draft dt {
+  color: var(--ink-2);
+}
+.h2-admin__draft dd {
+  margin: 0;
+}
+.h2-admin__draft-note {
+  grid-column: 1 / -1;
+}

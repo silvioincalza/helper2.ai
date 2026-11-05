@@ -512,6 +512,25 @@ paths:
         '403': { $ref: '#/components/responses/Problem' }
         '409': { $ref: '#/components/responses/Problem' }
 
+  /admin/home-examples/drafts:
+    post:
+      tags: [examples-admin]
+      operationId: draftHomeExamples
+      summary: Ask a model to draft examples for well-known catalog resources; each draft waits in the review queue.
+      description: >-
+        One model call from the drafts' own daily budget. A draft is kept only when it follows the example rules,
+        names one of the resources it was given, and does not repeat an example. 503 unavailable when no model is
+        configured, the budget is used up or the model cannot answer.
+      responses:
+        '202':
+          description: Drafts opened in the review queue (kind EXAMPLE_CANDIDATE).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ExampleDrafts' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '503': { $ref: '#/components/responses/Problem' }
+
   /admin/home-examples/{id}:
     parameters:
       - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
@@ -561,15 +580,19 @@ components:
       required: [examples]
       properties:
         examples: { type: array, maxItems: 50, items: { $ref: '#/components/schemas/HomeExample' } }
+        ai:
+          oneOf: [{ $ref: '#/components/schemas/AiContentMarker' }, { type: 'null' }]
+          description: Present when an example was drafted by a model; those carry aiDrafted true.
 
     HomeExample:
       type: object
-      required: [id, label, query, path]
+      required: [id, label, query, path, aiDrafted]
       properties:
         id: { type: string, format: uuid }
         label: { type: string, minLength: 2, maxLength: 32, description: The text on the chip. }
         query: { type: string, minLength: 3, maxLength: 200, description: What the example searches. }
         path: { $ref: '#/components/schemas/AudiencePath' }
+        aiDrafted: { type: boolean, description: "A model drafted the label and query, and a person accepted them (ADR 0049 §6). Labelled in the UI." }
 
     HomeExampleInput:
       type: object
@@ -595,6 +618,13 @@ components:
         expectedResourceIds: { type: array, minItems: 1, maxItems: 3, items: { type: string, format: uuid } }
         status: { $ref: '#/components/schemas/ExampleStatus' }
         version: { type: integer, minimum: 0, description: The version the change was made on. }
+
+    ExampleDrafts:
+      type: object
+      required: [drafted, model]
+      properties:
+        drafted: { type: integer, minimum: 0, description: Drafts opened in the review queue. }
+        model: { type: string }
 
     ExampleStatus: { type: string, enum: [ACTIVE, PAUSED] }
 
@@ -1556,8 +1586,11 @@ components:
 
     ReviewKind:
       type: string
-      description: COURSE_CANDIDATE is a course page found by Scout and not yet in the catalog (no resource; URL in details).
-      enum: [ENRICHMENT_VALIDATION, RELATIONSHIP_CANDIDATE, USER_REPORT, COURSE_CANDIDATE]
+      description: >-
+        COURSE_CANDIDATE is a course page found by Scout and not yet in the catalog (no resource; URL in details).
+        EXAMPLE_CANDIDATE is a home example a model drafted for the resource (the draft as JSON in details: label,
+        query, path, model); accepting it adds the example.
+      enum: [ENRICHMENT_VALIDATION, RELATIONSHIP_CANDIDATE, USER_REPORT, COURSE_CANDIDATE, EXAMPLE_CANDIDATE]
 
     AdminOverview:
       type: object
@@ -1640,7 +1673,7 @@ components:
       properties:
         id: { type: string, format: uuid }
         adminId: { type: string, description: "The administrator's provider subject (GitHub: the numeric user id)." }
-        action: { type: string, enum: [RESOLVE_REVIEW_ITEM, START_SCOUT_RUN, ADD_HOME_EXAMPLE, CHANGE_HOME_EXAMPLE, REMOVE_HOME_EXAMPLE] }
+        action: { type: string, enum: [RESOLVE_REVIEW_ITEM, START_SCOUT_RUN, ADD_HOME_EXAMPLE, CHANGE_HOME_EXAMPLE, REMOVE_HOME_EXAMPLE, DRAFT_HOME_EXAMPLES] }
         targetId: { type: [string, 'null'], description: "The review item id, the source id or the home example id; null when a run covered every source." }
         at: { type: string, format: date-time }
         outcome: { type: string, description: "ACCEPTED, REJECTED, NOT_OPEN or NOT_FOUND for a review item; STARTED or BUSY for a Scout run; ADDED, CHANGED, PAUSED, ACTIVATED, REMOVED, DUPLICATE, CONFLICT, INVALID or NOT_FOUND for a home example." }

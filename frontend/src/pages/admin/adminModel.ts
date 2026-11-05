@@ -6,6 +6,7 @@ export const REVIEW_KINDS: readonly ReviewKind[] = [
   'RELATIONSHIP_CANDIDATE',
   'USER_REPORT',
   'COURSE_CANDIDATE',
+  'EXAMPLE_CANDIDATE',
 ];
 export const REVIEW_STATUSES: readonly ReviewStatus[] = [
   'OPEN',

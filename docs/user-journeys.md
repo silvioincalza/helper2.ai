@@ -113,6 +113,10 @@ Anyone can sign in, to keep saved items on the account and get a larger daily qu
    at #7", "Hidden · no expected result in the top 10", "Waiting for the check". **Edit** loads it into the form;
    **Pause** / **Activate**; **Remove** asks first, with focus on Cancel. The check filter lives in the address
    (`/admin/examples?outcome=FAIL`). A new or changed search waits for the check, up to 5 minutes.
+   **Draft examples with AI** asks a model for examples for well-known resources that no example expects yet: "3 drafts
+   wait in the Review queue" with a link to them (`/admin/review?kind=EXAMPLE_CANDIDATE`), or why there is none (drafts
+   off, today's runs used, the model cannot answer). In the queue a draft shows its label, what it searches, for whom
+   and "Drafted with AI (model)"; **Accept** adds it as an example, which then waits for the check.
 6. **Audit**: what administrators did, newest first: when, the action, the target, the outcome, who.
 
 Each item is a row: the kind, the date and the resource in the meta line, the reason and the details, a note field, then **Accept** and **Reject**. A closed item, and each run, shows its status in words in a pill. One action runs at a time; the other buttons wait.

@@ -40,6 +40,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
@@ -444,6 +445,37 @@ public class ResourceStore {
    * on their own, unless a user report or a review item still points at them: those cascade, so the
    * resource is kept.
    */
+  /** A resource a home example may be drafted for: public facts only. */
+  public record WellKnown(
+      UUID id, String title, String type, String audience, @Nullable String description) {}
+
+  /**
+   * Up to [limit] resources a person would know: the curated list first, then indexed ones with a
+   * description, in random order so each draft run sees others; never one of [excluding].
+   */
+  public List<WellKnown> wellKnown(int limit, Collection<UUID> excluding) {
+    return jdbc.sql(
+            """
+            SELECT id, title, type, audience, description FROM resource
+            WHERE data_origin IN ('CURATED', 'INDEXED')
+              AND type IN ('PRODUCT', 'MCP_SERVER', 'LIBRARY', 'MODEL', 'AGENT')
+              AND (data_origin = 'CURATED' OR description IS NOT NULL)
+              AND NOT (id = ANY(:excluding))
+            ORDER BY (data_origin = 'CURATED') DESC, random()
+            LIMIT :limit
+            """)
+        .param("excluding", excluding.toArray(UUID[]::new))
+        .param("limit", limit)
+        .query((rs, n) ->
+            new WellKnown(
+                rs.getObject("id", UUID.class),
+                rs.getString("title"),
+                rs.getString("type"),
+                rs.getString("audience"),
+                rs.getString("description")))
+        .list();
+  }
+
   /** The title of each of [ids] the catalog has; an unknown id is absent from the map. */
   public Map<UUID, String> titles(Collection<UUID> ids) {
     if (ids.isEmpty()) {
