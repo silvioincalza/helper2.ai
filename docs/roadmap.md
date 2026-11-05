@@ -173,8 +173,6 @@ Open items:
     built.
   - **Mission: section order.** The board puts how the guide answers between What we promise and How we mark AI
     text; the page shows it after the locale sections. Needs a way to place it among them.
-  - **Sign-in diagram:** `sequence-0035-admin-host.d2` still says "Sign in with GitHub (header or Saved)"; the header
-    now opens the sign-in page. Update it and render with d2 v0.9.0.
   - **Remove version 3** once the last page has moved: the v3 components and layout sizes, the v3 font (`--font-sans`, `--font-display`), and the
     `--v4-` prefix on the v4 sizes and fonts.
   - **API fields:** `newThisWeek` on GET /sources, `limits` on GET /me and `total` on the recent and upcoming responses
