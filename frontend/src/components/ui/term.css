@@ -1,0 +1,227 @@
+/*
+ * Design v4 (ADR 0042) on the list pages: Sources, Saved and the back office. The page root carries `v4 v4-term`.
+ * The `$ helper2 …` line and the table come from TermList (`.v4-list__cmd`, `.v4-table`, home.css); this file adds
+ * what a page needs on top: a heading with its command, a table that scrolls in its own box, row headers and status
+ * words in the radar colours. Only semantic tokens.
+ */
+.v4-term {
+  padding: var(--space-5) 0 var(--space-7);
+}
+.v4-term h1 {
+  margin: 0;
+  font: 500 clamp(1.75rem, 3.2vw + 0.875rem, 2.75rem) / 1.08 var(--font-mono);
+  letter-spacing: -0.035em;
+}
+.v4-term__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-width: 45rem;
+  margin-bottom: var(--space-5);
+}
+.v4-term__lede {
+  margin: 0;
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+.v4-term .v4-list__cmd {
+  margin: 0;
+  font: 400 0.8125rem/1.4 var(--font-mono);
+  letter-spacing: 0;
+  color: var(--muted);
+}
+/* A list's heading and its `$ helper2 … · N` line on one row, over a solid ink rule. */
+.v4-term__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: 2px solid var(--ink);
+}
+.v4-term__bar h2,
+.v4-term__bar h1 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+}
+.v4-term__bar h2 {
+  font: 500 1.5rem/1.2 var(--font-mono);
+  letter-spacing: -0.03em;
+}
+.v4-term__bar h2:focus:not(:focus-visible),
+.v4-term__bar h1:focus:not(:focus-visible) {
+  outline: none;
+}
+.v4-term__sub {
+  margin: 0;
+  font: 600 0.75rem/1.3 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.v4-term__note {
+  margin: var(--space-3) 0 0;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+/* A wide table scrolls inside its own box on a phone; the page never scrolls sideways. */
+.v4-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.v4-term .v4-table {
+  font-size: 0.8125rem;
+}
+.v4-term .v4-table th,
+.v4-term .v4-table td {
+  padding: var(--space-3) var(--space-3) var(--space-3) 0;
+  text-align: left;
+}
+.v4-term .v4-table thead th {
+  padding-top: var(--space-2);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px dashed var(--border-strong);
+}
+.v4-term .v4-table th:last-child,
+.v4-term .v4-table td:last-child {
+  padding-right: 0;
+  text-align: left;
+}
+.v4-term .v4-table tbody th {
+  font: 400 0.8125rem/1.45 var(--font-mono);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink);
+  vertical-align: top;
+  border-bottom: 1px dashed var(--border-strong);
+}
+.v4-term .v4-table .is-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.v4-term .v4-table caption {
+  padding-bottom: var(--space-2);
+  text-align: left;
+  font: 600 0.75rem/1.3 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+/* A name that is a title: Geist. */
+.v4-term .v4-title {
+  font: 500 0.9375rem/1.35 var(--font-body);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.v4-term a.v4-title,
+.v4-term .v4-title a {
+  color: var(--ink);
+  text-decoration: none;
+}
+.v4-term a.v4-title:hover,
+.v4-term .v4-title a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.v4-term .v4-sub {
+  display: block;
+  font: 400 0.75rem/1.4 var(--font-mono);
+  color: var(--muted);
+}
+.v4-term .v4-nowrap {
+  white-space: nowrap;
+}
+
+/* Status in words, in the radar's colours: answering, slow or limited, failed, idle. */
+.v4-status {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4em;
+  white-space: nowrap;
+  font: 500 0.8125rem/1.45 var(--font-mono);
+}
+.v4-status--answering {
+  color: var(--accent-ink);
+}
+.v4-status--ok {
+  color: var(--status-ok-ink);
+}
+.v4-status--warn {
+  color: var(--status-warn-ink);
+}
+.v4-status--failed {
+  color: var(--danger);
+}
+.v4-status--idle {
+  color: var(--muted);
+}
+
+/* States in the terminal style: `$ helper2 saved · loading…`, `· 0 · nothing saved yet`, `× could not …`. */
+.v4-term__state {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+  padding: var(--space-3) 0;
+  border-bottom: 1px dashed var(--border-strong);
+  font: 400 0.875rem/1.5 var(--font-mono);
+  color: var(--muted);
+}
+.v4-term__state.is-error {
+  color: var(--danger);
+}
+.v4-term__state .v4-cmd {
+  margin: 0;
+}
+
+/* Filter chips: Geist Mono pills, the picked one in ink. */
+.v4-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-4) 0 0;
+}
+.v4-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--target-min);
+  padding: 0 var(--space-4);
+  font: 400 0.875rem/1 var(--font-mono);
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+.v4-chip:hover {
+  background: var(--surface);
+}
+.v4-chip[aria-pressed='true'] {
+  color: var(--bg);
+  background: var(--ink);
+  border-color: var(--ink);
+}
+.v4-chip__n {
+  opacity: 0.8;
+}
+
+/* A plain note on paper: who keeps the list, a quiet refresh line. */
+.v4-term__box {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--ink-2);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}

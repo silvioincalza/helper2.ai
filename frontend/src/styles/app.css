@@ -10,7 +10,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   font-size: 1rem;
   line-height: 1.55;
   min-height: 100vh;
@@ -32,7 +32,7 @@ h3 {
 }
 h1,
 h2 {
-  font-family: var(--font-display);
+  font-family: var(--font-body);
   font-weight: 400;
   line-height: 1.1;
 }
@@ -59,7 +59,7 @@ a:hover {
   color: var(--accent-deep);
 }
 code {
-  font-family: var(--font-mono);
+  font-family: var(--font-code);
   font-size: 0.85em;
 }
 .muted {
@@ -94,12 +94,6 @@ code {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
-}
-.container {
-  width: 100%;
-  max-width: var(--maxw);
-  margin: 0 auto;
-  padding: 0 var(--space-4);
 }
 .main {
   flex: 1;
@@ -164,9 +158,6 @@ code {
   }
 }
 /* text pages (mission, privacy) */
-.text-page {
-  max-width: 68ch;
-}
 .text-section {
   margin-top: var(--space-5);
 }
@@ -300,7 +291,6 @@ textarea {
   color: var(--danger);
 }
 .verif-conflicting,
-.served-stale_cache,
 .freshness-stale {
   border-color: var(--not-stated);
   color: var(--not-stated);
@@ -379,11 +369,6 @@ textarea {
 }
 
 /* one page, one box */
-.one-page {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5);
-}
 .one-box {
   display: flex;
   flex-direction: column;
@@ -475,7 +460,7 @@ textarea {
 }
 .setup-facts code,
 .setup-settings code {
-  font-family: var(--font-mono);
+  font-family: var(--font-code);
   overflow-wrap: anywhere;
 }
 .setup-settings {
@@ -515,7 +500,7 @@ textarea {
   color: #e6e4f2;
   border-radius: var(--radius-lg);
   padding: var(--space-4);
-  font-family: var(--font-mono);
+  font-family: var(--font-code);
   font-size: 0.875rem;
   line-height: 1.6;
   white-space: pre-wrap;
@@ -548,7 +533,7 @@ textarea {
 }
 .setup-section-h {
   margin: 0;
-  font-family: var(--font-mono);
+  font-family: var(--font-code);
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -601,25 +586,6 @@ textarea {
   .setup-step-code {
     flex-direction: column;
   }
-}
-.skeleton-row {
-  height: 3rem;
-  border-bottom: 1px solid var(--border);
-  background: linear-gradient(90deg, var(--surface), var(--surface-tint), var(--surface));
-  background-size: 200% 100%;
-  /* Three passes (4.8 s), then still: nothing moves on its own for more than 5 s (ADR 0042, decision 6). */
-  animation: shimmer 1.6s linear 3;
-}
-.btn-icon {
-  min-width: 2.75rem;
-  min-height: 2.75rem;
-  justify-content: center;
-  font-size: 1.25rem;
-  line-height: 1;
-}
-.suggest-guide {
-  align-self: flex-start;
-  border-style: dashed;
 }
 
 .searchbox {
@@ -680,17 +646,6 @@ textarea {
   align-items: center;
   margin-bottom: var(--space-3);
 }
-.results-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-3);
-  margin: var(--space-4) 0;
-  flex-wrap: wrap;
-}
-.results-head h2 {
-  margin: 0;
-}
 .pagination {
   display: flex;
   gap: var(--space-4);
@@ -745,16 +700,6 @@ textarea {
 }
 .interpretation {
   margin: var(--space-2) 0;
-}
-@keyframes shimmer {
-  to {
-    background-position: -200% 0;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .skeleton-row {
-    animation: none;
-  }
 }
 .table-wrap {
   overflow-x: auto;
@@ -811,7 +756,7 @@ tbody th {
   padding: var(--space-2) var(--space-3);
   background: var(--quote-bg);
   border-radius: var(--radius-md);
-  font-family: var(--font-display);
+  font-family: var(--font-body);
   font-size: 1.06rem;
   color: var(--ink);
 }
@@ -868,7 +813,7 @@ tbody th {
   border-radius: var(--radius-lg);
 }
 .filter-legend {
-  font-family: var(--font-mono);
+  font-family: var(--font-code);
   font-size: 0.75rem;
   font-weight: 500;
   letter-spacing: 0.06em;
@@ -883,77 +828,7 @@ input[type='radio'] {
   border-radius: var(--radius-lg);
 }
 
-.section-head {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  max-width: 46rem;
-}
-.section-head h2,
-.section-head p,
-.how-step h3,
-.how-step p,
-.rule h3,
-.rule p {
-  margin: 0;
-}
-.how,
-.rules {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  margin-top: var(--space-6);
-}
-.how h2,
-.rules h2 {
-  font-size: 1.35rem;
-}
-.rules + p {
-  margin-top: var(--space-6);
-}
-.how-steps {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
-  gap: var(--space-4);
-}
-.how-step {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  padding: 1.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-.how-n {
-  font-family: var(--font-display);
-  font-size: 2.5rem;
-  line-height: 1;
-  color: var(--accent);
-}
-.how-step h3,
-.rule h3 {
-  font-size: 1.05rem;
-}
-.how-step p,
-.rule p {
-  color: var(--ink-2);
-  font-size: 0.95rem;
-}
-.rules-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
-  gap: var(--space-4);
-}
-.rule {
-  border-top: 2px solid var(--ink);
-  padding-top: var(--space-3);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-/* ===== Redesign 2026-10 (design v3): warm paper, saffron accent, Space Grotesk headings on the pages still on v3 ===== */
+/* ===== Shared controls and parts: warm paper, saffron accent ===== */
 h1,
 h2 {
   font-weight: 500;
@@ -998,11 +873,39 @@ h2 {
   padding: 0 var(--space-5);
 }
 .enter-key {
-  font-family: var(--font-mono);
+  font-family: var(--font-code);
   font-size: 0.75rem;
   border-radius: 6px;
   padding: 1px 5px;
   border: 1px solid currentColor;
+}
+/* Ask the guide: the quieter second button of the box (ADR 0042, decision 11). On a narrow box only its icon shows. */
+.one-box-ask {
+  justify-content: center;
+  min-width: var(--target-min);
+  min-height: var(--target-min);
+  background: var(--surface);
+}
+.one-box-ask__icon {
+  flex: none;
+}
+@media (max-width: 520px) {
+  .searchbox.large .one-box-ask {
+    flex: 0 0 auto;
+    padding: 0;
+  }
+  .searchbox.large .enter-key {
+    display: none;
+  }
+  /* The label stays the button's accessible name; only its look goes. */
+  .one-box-ask__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
 }
 .one-box.is-hero .searchbox.large {
   padding: 8px 8px 8px var(--space-5);
@@ -1047,7 +950,7 @@ h2 {
   overflow-wrap: anywhere;
 }
 .proof-n {
-  font-family: var(--font-mono);
+  font-family: var(--font-code);
   font-size: 0.7rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1101,7 +1004,7 @@ h2 {
   margin: 0;
   background: transparent;
   padding: 0;
-  font-family: var(--font-mono);
+  font-family: var(--font-code);
   font-size: 0.9rem;
   line-height: 1.6;
   color: #d4d2e4;
@@ -1150,64 +1053,6 @@ h2 {
 }
 input[type='search']::-webkit-search-cancel-button {
   filter: grayscale(1);
-}
-
-/* Results timeline: a rail with one dot per item, grouped by creation month. */
-.view-switch {
-  display: flex;
-  gap: var(--space-2);
-}
-.results-timeline {
-  display: grid;
-  gap: var(--space-6);
-}
-.tl-month {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  margin: 0 0 var(--space-3);
-  padding: var(--space-2) 0;
-  font-size: 1rem;
-  color: var(--accent-deep);
-  background: var(--bg);
-}
-.tl-items {
-  display: grid;
-  gap: var(--space-4);
-  margin-left: var(--space-2);
-  padding-left: var(--space-5);
-  border-left: 2px solid var(--border);
-}
-.tl-item {
-  position: relative;
-}
-.tl-item::before {
-  content: '';
-  position: absolute;
-  left: calc(-1 * var(--space-5) - 6px);
-  top: 0.35rem;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 0 3px var(--bg);
-}
-.tl-date {
-  margin: 0 0 var(--space-1);
-  color: var(--accent-ink);
-  font-weight: 600;
-}
-/* One line per result, as in the list: the whole row links to the resource page. */
-.tl-row {
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-lg);
-  background: var(--surface);
-  color: var(--ink);
-  text-decoration: none;
-}
-.tl-row:hover .h2-row__title {
-  text-decoration: underline;
-  text-underline-offset: 3px;
 }
 
 /* Guide intents (ADR 0032): how the question was read, the question back, comparison and explanation. */
@@ -1343,7 +1188,7 @@ input[type='search']::-webkit-search-cancel-button {
 }
 .searchbox-slash {
   flex: none;
-  font-family: var(--font-mono);
+  font-family: var(--font-code);
   font-size: 0.8rem;
   color: var(--muted);
   border: 1px solid var(--border-strong);
@@ -1364,7 +1209,7 @@ input[type='search']::-webkit-search-cancel-button {
   flex: none;
   align-self: flex-end;
   margin-bottom: var(--space-3);
-  font-family: var(--font-mono);
+  font-family: var(--font-code);
   font-size: 0.75rem;
   color: var(--muted);
   white-space: nowrap;
@@ -1404,7 +1249,7 @@ input[type='search']::-webkit-search-cancel-button {
 
 /* The text the server writes into #root for crawlers (ADR 0050). People see it only until the app starts. */
 #root > .h2-prerender {
-  max-width: var(--maxw);
+  max-width: calc(var(--content-wide) + 2 * var(--space-4));
   margin: 0 auto;
   padding: 32px 16px;
   color: var(--ink);

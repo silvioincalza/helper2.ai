@@ -11,7 +11,7 @@ describe('Feature: delete my account', () => {
     await userEvent.click(
       await within(screen.getByRole('banner')).findByRole('link', { name: 'Ada' }),
     );
-    // The account page loads on demand: the router moves once it has arrived.
+    // The account page loads on demand: the address changes once it is there.
     await waitFor(() => expect(router.state.location.pathname).toBe('/account'));
     expect(await screen.findByRole('heading', { name: 'Your account' })).toBeInTheDocument();
   });
@@ -100,6 +100,47 @@ describe('Feature: delete my account', () => {
     expect(
       screen.getByText('You are not signed in, so there is no account to delete.'),
     ).toBeInTheDocument();
+    expect(within(screen.getByRole('main')).getByRole('link', { name: 'Sign in' })).toHaveAttribute(
+      'href',
+      '/signin',
+    );
+  });
+});
+
+describe('Feature: what the account has left today', () => {
+  it("Scenario: the page shows the name and today's AI answers and web searches from GET /me", async () => {
+    mockApi({
+      'GET /me': () => ({
+        ...USER,
+        limits: {
+          guideQuestions: { limit: 30, remaining: 28 },
+          webSearches: { search: { limit: 10, remaining: 8 }, guide: null },
+          resetsAt: '2026-11-06T00:00:00Z',
+        },
+      }),
+    });
+    renderApp('/account');
+    const who = await screen.findByRole('region', { name: 'Signed in' });
+    expect(within(who).getByText('Ada', { selector: 'dd' })).toBeInTheDocument();
+    expect(within(who).getByText('28 of 30 · resets 00:00 UTC')).toBeInTheDocument();
+    expect(within(who).getByText('8 of 10 · resets 00:00 UTC')).toBeInTheDocument();
+  });
+
+  it('Scenario: a count the server does not give is not shown', async () => {
+    mockApi({
+      'GET /me': () => ({
+        ...USER,
+        limits: {
+          guideQuestions: null,
+          webSearches: { search: null, guide: null },
+          resetsAt: '2026-11-06T00:00:00Z',
+        },
+      }),
+    });
+    renderApp('/account');
+    const who = await screen.findByRole('region', { name: 'Signed in' });
+    expect(within(who).queryByText('AI answers left today')).toBeNull();
+    expect(within(who).queryByText('Web searches left today')).toBeNull();
   });
 });
 
@@ -115,7 +156,7 @@ describe('Feature: the radar motion setting', () => {
       },
     });
     renderApp('/account');
-    const box = await screen.findByRole('checkbox', { name: 'Radar: move between sources' });
+    const box = await screen.findByRole('checkbox', { name: 'Radar: keep moving' });
     expect(box).toBeChecked();
     // When they turn it off
     await userEvent.click(box);
@@ -132,7 +173,7 @@ describe('Feature: the radar motion setting', () => {
       'PATCH /me/preferences': () => problem(503, 'Unavailable'),
     });
     renderApp('/account');
-    const box = await screen.findByRole('checkbox', { name: 'Radar: move between sources' });
+    const box = await screen.findByRole('checkbox', { name: 'Radar: keep moving' });
     await userEvent.click(box);
     expect(await screen.findByRole('alert')).toHaveTextContent('Not saved');
     expect(box).toBeChecked();

@@ -9,6 +9,14 @@ and visitors who try the same example question pay for it again and again. The g
 break the page.
 
 ## Decision
+**When the guide runs: the user chooses.** Enter always searches, whatever the length of the text. The guide runs only
+when the user asks for it: the "Ask the guide" button next to Search, for any length, or Shift+Enter; "Ask the guide
+instead" on an empty result asks too. No word count starts
+the guide, so a name search ("pgvector", or a long product name) spends no model call. The choice lives in the one box
+([0025](../frontend/0025-frontend-one-box.md), its flow diagram); the server answers every question it gets, behind
+the guards below. Where the guide answers, the page shows what is left today ("2 of 3 AI answers left today",
+[0042](../frontend/0042-redesign-design-system-v4.md)).
+
 The guards run in this order. Values are defaults; each has an `H2_` variable.
 1. **Per-minute rate limit** (`RateLimitInterceptor`, [0024](../edge/0024-http-edge-protection.md)): 10 questions per minute per
    client (`helper2.rate-limit.guide-per-minute`), one limiter shared by `askGuideStream` and the tool guide `askResourceGuide`. The client

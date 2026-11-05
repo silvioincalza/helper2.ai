@@ -1,82 +1,83 @@
-/* Page head and saved page (ADR 0040). Only semantic tokens. */
-.h2-page-head {
-  border-bottom: 2px solid var(--ink);
-  padding-bottom: var(--space-3);
-  margin-bottom: var(--space-4);
-}
-.h2-page-head h1 {
-  margin: 0 0 var(--space-2);
-  font: 400 clamp(1.9rem, 2vw + 1.1rem, 2.6rem)/1.1 var(--font-display);
-  letter-spacing: -0.015em;
-}
-.h2-page-head__lede {
-  margin: 0;
-  max-width: 60ch;
-  font-size: 1.0625rem;
-  color: var(--ink-2);
-}
-.h2-saved {
-  padding: var(--space-5) 0 var(--space-7);
-}
-.h2-saved__empty {
+/* Saved page (ADR 0040, design v4 in ADR 0042). The terminal look is in components/ui/term.css. Only semantic tokens. */
+.h2-saved__signin {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-3);
-  padding: var(--space-5);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--surface);
 }
-.h2-saved__empty p {
-  margin: 0;
+.h2-saved__next {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-4);
+  margin: var(--space-3) 0 0;
+  color: var(--ink-2);
 }
 .h2-saved__list {
   list-style: none;
-  margin: var(--space-3) 0 0;
+  margin: var(--space-4) 0 0;
   padding: 0;
+  border-top: 2px solid var(--ink);
 }
 .h2-saved__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-4) 0;
+  border-bottom: 1px dashed var(--border-strong);
+}
+.h2-saved__main {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-4) var(--space-2);
-  border-bottom: 1px solid var(--border);
+  gap: var(--space-1);
+  min-width: 0;
 }
 .h2-saved__meta {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-1) var(--space-3);
-  font-size: 0.8125rem;
+  gap: 0 var(--space-2);
+  margin: 0;
+  font: 400 0.8125rem/1.5 var(--font-mono);
   color: var(--muted);
 }
-.h2-saved__host {
-  font: 400 12px/16px var(--font-mono);
+.h2-saved__meta > span + span::before {
+  content: '· ';
 }
-.h2-saved__title {
+.h2-saved__type {
+  font-weight: 600;
+  color: var(--accent-ink);
+  text-transform: lowercase;
+}
+.v4 .h2-saved__title {
   margin: 0;
-  font: 500 1.2rem/1.3 var(--font-display);
+  font: 500 1.1875rem/1.3 var(--font-body);
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
 }
-.h2-saved__title a {
-  color: var(--accent-deep);
+.v4 .h2-saved__title a {
+  color: var(--ink);
   text-decoration: none;
 }
-.h2-saved__title a:hover {
+.v4 .h2-saved__title a:hover {
   text-decoration: underline;
+  text-underline-offset: 3px;
 }
 .h2-saved__actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--space-2) var(--space-4);
 }
 .h2-saved__actions .ext-link {
-  min-height: var(--target-min);
   display: inline-flex;
   align-items: center;
+  min-height: var(--target-min);
+  font: 400 0.875rem/1 var(--font-mono);
 }
-
-.h2-saved__signin {
-  margin-top: var(--space-3);
+@media (max-width: 560px) {
+  .h2-saved__row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .h2-saved__actions {
+    justify-content: flex-start;
+  }
 }

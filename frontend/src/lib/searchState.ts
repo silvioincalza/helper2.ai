@@ -47,13 +47,6 @@ export function clampQuestion(text: string): string {
   return q.length >= MIN_QUESTION ? q : '';
 }
 
-/** A need of this many words or more is a question for the guide; fewer words are a search (ADR 0025). */
-export const QUESTION_WORDS = 4;
-
-export function isQuestion(text: string): boolean {
-  return text.trim().split(/\s+/).filter(Boolean).length >= QUESTION_WORDS;
-}
-
 function emptyFilters(): Record<MultiKey, string[]> {
   return {
     type: [],

@@ -39,7 +39,7 @@ export function CoverageLine({
             <span aria-hidden="true"> · </span>
             <button
               type="button"
-              className="btn-link h2-coverage__which"
+              className="v4-text-btn h2-coverage__which"
               aria-expanded={open}
               aria-controls={listId}
               onClick={() => setOpen((o) => !o)}
@@ -51,7 +51,7 @@ export function CoverageLine({
         {retryCanHelp(missed) && (
           <>
             <span aria-hidden="true"> · </span>
-            <button type="button" className="btn-link h2-coverage__retry" onClick={retry}>
+            <button type="button" className="v4-text-btn h2-coverage__retry" onClick={retry}>
               {t('common.retry')}
             </button>
           </>

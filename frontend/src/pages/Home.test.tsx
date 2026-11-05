@@ -21,8 +21,10 @@ describe('home (design v4)', () => {
     expect(screen.queryByText(/AI sources$/)).not.toBeInTheDocument();
     expect(await screen.findByText(/^3-5 of 13 sources at a time/)).toBeInTheDocument();
     expect(screen.getByText(/^One search across the world of AI/)).not.toHaveTextContent(/\d/);
-    // The 4-word rule comes from the code that applies it.
-    expect(screen.getByText(/A question of 4 words or more/)).toBeInTheDocument();
+    // The hint says what each key does: Enter searches, Shift+Enter asks the guide.
+    expect(
+      screen.getByText(/Enter searches\. For picks with a quote that proves them/),
+    ).toBeInTheDocument();
     const does = screen
       .getByRole('heading', { name: 'What helper2 does for you' })
       .closest('section') as HTMLElement;
@@ -85,8 +87,11 @@ describe('home (design v4)', () => {
     );
     await waitFor(() => expect(router.state.location.pathname).toBe('/search'));
     expect(params().get('q')).toBe('mcp github');
-    // The row's title and the preview's title: both link to the resource page.
-    expect(await screen.findAllByRole('link', { name: 'Acme Translator' })).toHaveLength(2);
+    // The row's title links to the resource page; there is no preview.
+    expect(await screen.findByRole('link', { name: 'Acme Translator' })).toHaveAttribute(
+      'href',
+      expect.stringMatching(/^\/resource\//),
+    );
     expect(m.callsTo('GET', '/search')).toHaveLength(1);
   });
 
@@ -137,8 +142,11 @@ describe('home (design v4)', () => {
   it('/?q=… still shows results, marked noindex, follow like /search, with no canonical link', async () => {
     mockApi();
     renderApp('/?q=mcp');
-    // The row's title and the preview's title: both link to the resource page.
-    expect(await screen.findAllByRole('link', { name: 'Acme Translator' })).toHaveLength(2);
+    // The row's title links to the resource page; there is no preview.
+    expect(await screen.findByRole('link', { name: 'Acme Translator' })).toHaveAttribute(
+      'href',
+      expect.stringMatching(/^\/resource\//),
+    );
     expect(document.querySelector('link[rel="canonical"]')).toBeNull();
     expect(document.head.querySelector('meta[name="robots"]')).toHaveAttribute(
       'content',

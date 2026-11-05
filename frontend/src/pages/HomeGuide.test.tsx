@@ -4,9 +4,9 @@ import type { GuideResponse } from '@/api/types';
 import { mockApi as mockAll, problem, sse, type Handler } from '@/test/mockApi';
 import { renderApp } from '@/test/render';
 import { axeViolations } from '@/test/a11y';
-import { makeCard, makeSearch, makeStatus } from '@/test/fixtures';
+import { makeCard, makeDetail, makeSearch, makeStatus } from '@/test/fixtures';
 
-/** The guide's pick is on the page of results, so the list shows it first and the preview opens on it. */
+/** The guide's pick is on the page of results: its row in the list shows the pick. */
 const PICKED = makeCard({
   id: '22222222-2222-5222-8222-222222222222',
   title: 'Postgres MCP',
@@ -17,12 +17,18 @@ const PICKED = makeCard({
 const mockApi = (handlers: Record<string, Handler> = {}) =>
   mockAll({
     'GET /search': () => makeSearch({ results: [makeCard(), PICKED], total: 2 }),
+    [`GET /resources/${PICKED.id}`]: () => makeDetail({ card: PICKED }),
     ...handlers,
   });
-/** The preview of the selected result. */
-const preview = async () => within(await screen.findByRole('article'));
+/** The row of the picked result in the list. */
+const pickedRow = async () =>
+  within(
+    (await screen.findAllByRole('link', { name: 'Postgres MCP' }))
+      .find((l) => l.classList.contains('h2-row__title'))!
+      .closest('li')!,
+  );
 /** The guide answered: its pick #1 is in the bar. */
-const answered = () => screen.findByRole('button', { name: '#1 Postgres MCP' });
+const answered = () => screen.findByRole('link', { name: '#1 Postgres MCP' });
 
 function makeGuide(over: Partial<GuideResponse> = {}): GuideResponse {
   return {
@@ -71,7 +77,7 @@ async function ask(text: string) {
 }
 
 describe('guide on the one page', () => {
-  it('asks with the text in the box, also searches it, and opens the preview on pick #1 with its reason and checked quote', async () => {
+  it('asks with the text in the box, also searches it, and marks pick #1 in its row with its reason and checked quote', async () => {
     const m = mockApi({ 'POST /guide/stream': () => sse(makeGuide()) });
     const { params } = renderApp('/');
     await ask('an MCP server for Postgres');
@@ -82,16 +88,15 @@ describe('guide on the one page', () => {
     });
     expect(params().get('ask')).toBe('an MCP server for Postgres');
     expect(params().get('q')).toBe('an MCP server for Postgres');
-    const pv = await preview();
-    expect(pv.getByRole('link', { name: 'Postgres MCP' })).toHaveAttribute(
+    const r = await pickedRow();
+    expect(r.getByRole('link', { name: 'Postgres MCP' })).toHaveAttribute(
       'href',
       '/resource/22222222-2222-5222-8222-222222222222',
     );
-    expect(pv.getByRole('heading', { name: 'Why the guide picked it' })).toBeInTheDocument();
-    expect(pv.getByText('Lets an agent run read-only SQL against Postgres.')).toBeInTheDocument();
-    expect(pv.getByText('Not checked by a second model call.')).toBeInTheDocument();
-    expect(pv.getByText(/Evidence, checked word for word/)).toBeInTheDocument();
-    expect(pv.getByText(/read-only access to a PostgreSQL database/).tagName).toBe('MARK');
+    expect(r.getByText('Guide pick #1')).toBeInTheDocument();
+    expect(r.getByText('Lets an agent run read-only SQL against Postgres.')).toBeInTheDocument();
+    expect(r.getByText('Checked word for word in the source')).toBeInTheDocument();
+    expect(r.getByText(/read-only access to a PostgreSQL database/).tagName).toBe('MARK');
   });
 
   it('marks AI-written text machine-readable, and never the quote from the source (EU AI Act Art. 50(2))', async () => {
@@ -101,8 +106,8 @@ describe('guide on the one page', () => {
 
     await answered();
     const reasons = screen.getAllByText('Lets an agent run read-only SQL against Postgres.');
-    // In the row and in the preview, each labelled on screen and marked in the HTML.
-    expect(reasons).toHaveLength(2);
+    // In the row, labelled on screen and marked in the HTML.
+    expect(reasons).toHaveLength(1);
     for (const r of reasons) {
       expect(r).toHaveAttribute('data-ai-generated', 'true');
       expect(r.previousElementSibling).toHaveTextContent('AI-written');
@@ -125,7 +130,7 @@ describe('guide on the one page', () => {
     expect(q.parentElement).not.toHaveAttribute('data-ai-generated');
   });
 
-  it('shows each requirement as confirmed with its quote or as not confirmed, in words', async () => {
+  it('the resource page of a pick shows each requirement as confirmed with its quote or as not confirmed, in words', async () => {
     const base = makeGuide();
     mockApi({
       'POST /guide/stream': () =>
@@ -150,10 +155,13 @@ describe('guide on the one page', () => {
     });
     renderApp('/');
     await ask('a free open-source MCP server for Postgres');
+    await answered();
+    await userEvent.click((await pickedRow()).getByRole('link', { name: 'Postgres MCP' }));
 
-    const checks = (await preview()).getByRole('list', {
-      name: 'Your requirements, checked against the source',
-    });
+    const checks = (
+      await screen.findByRole('region', { name: /Why the guide picked it/ })
+    ).querySelector('ul')!;
+    expect(checks).toHaveAccessibleName('Your requirements, checked against the source');
     const items = within(checks).getAllByRole('listitem');
     expect(items[0]).toHaveTextContent(
       'open source: confirmed by the source: MIT licensed, open source',
@@ -420,7 +428,7 @@ describe('guide on the one page', () => {
     expect(within(bar).queryByText(/AI-written$/)).not.toBeInTheDocument();
   });
 
-  it('model chose nothing: the bar says nothing fits, no row is a pick, and the preview only says what the result is', async () => {
+  it('model chose nothing: the bar says nothing fits and no row is a pick or carries a quote', async () => {
     const base = makeGuide();
     const fallback = {
       ...base.recommendations[0]!,
@@ -435,10 +443,10 @@ describe('guide on the one page', () => {
     await ask('a quantum blockchain toaster that writes poems');
     const bar = await screen.findByRole('region', { name: 'Guide picks' });
     expect(await within(bar).findByText('Nothing clearly fits your need.')).toBeInTheDocument();
-    expect(screen.queryByText('Pick #1')).not.toBeInTheDocument();
+    expect(screen.queryByText('Guide pick #1')).not.toBeInTheDocument();
     expect(screen.queryByText(/Some AI suggestions were removed/)).not.toBeInTheDocument();
-    expect((await preview()).getByRole('heading', { name: 'About' })).toBeInTheDocument();
-    expect(screen.queryByText(/checked word for word/)).not.toBeInTheDocument();
+    expect((await pickedRow()).queryByText(/checked word for word/i)).not.toBeInTheDocument();
+    expect(document.querySelector('.h2-list mark')).toBeNull();
     expect(
       screen.queryByText('Top search result (no AI reasoning available).'),
     ).not.toBeInTheDocument();
@@ -536,16 +544,6 @@ describe('guide on the one page', () => {
     expect(firstSignal?.aborted).toBe(true);
   });
 
-  it('Shift+Enter searches like Enter: no question, no model call', async () => {
-    const m = mockApi({ 'POST /guide/stream': () => sse(makeGuide()) });
-    const { params } = renderApp('/');
-    await userEvent.type(await screen.findByLabelText(BOX), 'postgres mcp{Shift>}{Enter}{/Shift}');
-    await screen.findByRole('list', { name: 'Search results' });
-    expect(params().get('q')).toBe('postgres mcp');
-    expect(params().get('ask')).toBeNull();
-    expect(m.callsTo('POST', '/guide/stream')).toHaveLength(0);
-  });
-
   it('a name search does not ask the guide: no picks bar, no model call', async () => {
     const m = mockApi();
     renderApp('/search?q=pgvector');
@@ -554,7 +552,7 @@ describe('guide on the one page', () => {
     expect(m.callsTo('POST', '/guide/stream')).toHaveLength(0);
   });
 
-  it('highlights the checked quote inside the resource’s own description, in the preview of pick #1', async () => {
+  it('highlights the checked quote inside the resource’s own description, in the row of pick #1', async () => {
     const description =
       'Fast. An MCP server that gives agents  READ-ONLY access to a PostgreSQL database, with audit logs.';
     mockApi({
@@ -566,7 +564,7 @@ describe('guide on the one page', () => {
     await ask('an MCP server for Postgres');
 
     await answered();
-    const mark = screen.getByRole('article').querySelector('mark');
+    const mark = document.querySelector('.h2-list mark');
     expect(mark).toHaveTextContent(
       'MCP server that gives agents READ-ONLY access to a PostgreSQL database',
     );
@@ -598,5 +596,85 @@ describe('guide on the one page', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'The connection closed before the answer arrived.',
     );
+  });
+});
+
+/** The user chooses the guide (ADR 0017, ADR 0025, UJ-2): Enter always searches; Shift+Enter or the button asks. */
+describe('the guide runs when the user asks for it', () => {
+  const results = async () => within(await screen.findByRole('list', { name: 'Search results' }));
+
+  it('given 2 words, when the user presses Enter, then it only searches: no question, no model call', async () => {
+    const m = mockApi({ 'POST /guide/stream': () => sse(makeGuide()) });
+    const { router, params } = renderApp('/');
+    await userEvent.type(await screen.findByLabelText(BOX), 'postgres mcp{Enter}');
+    await (await results()).findByText('Postgres MCP');
+    expect(router.state.location.pathname).toBe('/search');
+    expect(params().get('q')).toBe('postgres mcp');
+    expect(params().get('ask')).toBeNull();
+    expect(m.callsTo('POST', '/guide/stream')).toHaveLength(0);
+  });
+
+  it('given a question of 6 words, when the user presses Enter, then it only searches: no /guide/stream call', async () => {
+    const m = mockApi({ 'POST /guide/stream': () => sse(makeGuide()) });
+    const { params } = renderApp('/');
+    await userEvent.type(await screen.findByLabelText(BOX), 'an MCP server for my Postgres{Enter}');
+    await (await results()).findByText('Postgres MCP');
+    expect(params().get('q')).toBe('an MCP server for my Postgres');
+    expect(params().get('ask')).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Guide picks' })).not.toBeInTheDocument();
+    expect(m.callsTo('GET', '/search')).toHaveLength(1);
+    expect(m.callsTo('POST', '/guide/stream')).toHaveLength(0);
+  });
+
+  it('given 8 words, when the user clicks Search, then it only searches: no question, no model call', async () => {
+    const m = mockApi({ 'POST /guide/stream': () => sse(makeGuide()) });
+    const { params } = renderApp('/');
+    await userEvent.type(
+      await screen.findByLabelText(BOX),
+      'an MCP server for my Postgres database please',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Search' }));
+    await (await results()).findByText('Postgres MCP');
+    expect(params().get('ask')).toBeNull();
+    expect(m.callsTo('POST', '/guide/stream')).toHaveLength(0);
+  });
+
+  it('given 1 word, when the user clicks Ask the guide, then it searches and the guide answers with its picks', async () => {
+    const m = mockApi({ 'POST /guide/stream': () => sse(makeGuide()) });
+    const { params } = renderApp('/');
+    await ask('pgvector');
+    expect(await answered()).toBeInTheDocument();
+    expect(params().get('q')).toBe('pgvector');
+    expect(params().get('ask')).toBe('pgvector');
+    expect(m.callsTo('POST', '/guide/stream')).toHaveLength(1);
+  });
+
+  it('given text in the box, then the page with both buttons has no axe violations', async () => {
+    mockApi();
+    const { container } = renderApp('/');
+    await userEvent.type(await screen.findByLabelText(BOX), 'an MCP server for Postgres');
+    expect(await axeViolations(container)).toEqual([]);
+  });
+
+  it('given 2 words, when the user presses Shift+Enter, then it searches and the guide answers with its picks', async () => {
+    const m = mockApi({ 'POST /guide/stream': () => sse(makeGuide()) });
+    const { params } = renderApp('/');
+    await userEvent.type(await screen.findByLabelText(BOX), 'postgres mcp{Shift>}{Enter}{/Shift}');
+    expect(await answered()).toBeInTheDocument();
+    expect(params().get('q')).toBe('postgres mcp');
+    expect(params().get('ask')).toBe('postgres mcp');
+    expect(m.callsTo('GET', '/search').length).toBeGreaterThanOrEqual(1);
+    expect(m.callsTo('POST', '/guide/stream')).toHaveLength(1);
+  });
+
+  it('given a question, when the user clicks Ask the guide, then it searches and the guide answers with its picks', async () => {
+    const m = mockApi({ 'POST /guide/stream': () => sse(makeGuide()) });
+    const { params } = renderApp('/');
+    await ask('an MCP server for Postgres');
+    expect(await answered()).toBeInTheDocument();
+    expect(params().get('q')).toBe('an MCP server for Postgres');
+    expect(params().get('ask')).toBe('an MCP server for Postgres');
+    expect(m.callsTo('GET', '/search').length).toBeGreaterThanOrEqual(1);
+    expect(m.callsTo('POST', '/guide/stream')).toHaveLength(1);
   });
 });

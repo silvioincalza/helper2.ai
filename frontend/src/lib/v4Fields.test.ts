@@ -1,7 +1,7 @@
 import { SOURCES } from '@/test/fixtures';
 import { listTotal, newThisWeek } from './v4Fields';
 
-describe('the API fields design v4 reads (ADR 0042, decision 7)', () => {
+describe('the API fields design v4 reads (ADR 0042, decision 13)', () => {
   it('newThisWeek: the count, or null for a source without its own (default dot size)', () => {
     const source = SOURCES[0]!;
     expect(newThisWeek({ ...source, newThisWeek: 7 })).toBe(7);

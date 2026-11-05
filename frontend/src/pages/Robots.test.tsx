@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import { makeDetail } from '@/test/fixtures';
 import { mockApi, problem } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
@@ -41,7 +41,8 @@ describe('Feature: search engines index only the pages worth finding (SEO review
       mockApi();
       renderApp(path);
       await settle();
-      expect(robots()).toBe('noindex, follow');
+      // The saved and account pages load on demand.
+      await waitFor(() => expect(robots()).toBe('noindex, follow'));
     },
   );
 

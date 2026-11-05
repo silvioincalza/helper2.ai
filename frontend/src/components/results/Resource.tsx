@@ -1,116 +1,209 @@
-import type { ReactNode } from 'react';
-import { Link, useLocation } from 'react-router';
+import type { MouseEvent, ReactNode } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import type { ResourceDetail } from '@/api/types';
-import { OriginLabel } from '@/components/Badges';
+import { ModeBadge, OriginLabel } from '@/components/Badges';
 import { BookmarkButton } from '@/components/BookmarkButton';
 import { canGuide } from '@/components/GuideMe';
+import { Icon } from '@/components/Icon';
 import { SetupGuidePanel } from '@/components/SetupGuide';
 import { Timeline } from '@/components/Timeline';
 import { ProofQuote } from '@/components/ui/ProofQuote';
-import { TypeTag } from '@/components/ui/TypeTag';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
-import { displayHost } from '@/lib/format';
-import { ListedBy, ResultFacts } from './ResultFacts';
-import './results.css';
+import { displayHost, formatDate } from '@/lib/format';
+import type { GuidePick } from '@/lib/selection';
+import { fromResults } from './fromResults';
+import { ResultDate } from './ResultDate';
+import { ResultFacts } from './ResultFacts';
+import './controls.css';
 import './resource.css';
 import { OpenButton } from './OpenButton';
 
-/** What the results page passes on: where to go back to, and the sentence the guide checked. */
-interface FromResults {
-  from?: string | undefined;
-  quote?: string | null;
-}
-
-function fromResults(state: unknown): FromResults {
-  if (!state || typeof state !== 'object') return {};
-  const s = state as Record<string, unknown>;
-  // Only a path inside the site, so the back link can never leave it.
-  const from =
-    typeof s.from === 'string' && s.from.startsWith('/') && !s.from.startsWith('//')
-      ? s.from
-      : undefined;
-  const quote = typeof s.quote === 'string' && s.quote.trim() ? s.quote : null;
-  return { from, quote };
-}
-
 /**
- * Resource page (ADR 0040, 4): the same parts as the results preview, full width. The main column has the
- * title, the actions, the source's own text (with the checked sentence when the guide picked it) and the detail
- * sections ([children]); the side column has the Use and Build facts, who lists it and its dates.
+ * Resource page (ADR 0042, decision 8): one column. The back link, the title, the date line (type · host · the same date as
+ * the result row), one primary button (Open) with Save and, for what you install or run, Set it up. Then why the guide
+ * picked it (when it came from a pick), the source's own text with the checked sentence, the facts, its dates, where
+ * the information comes from (folded) and the detail sections ([children]).
  */
 export function Resource({ detail: d, children }: { detail: ResourceDetail; children: ReactNode }) {
   const { t } = useTranslation();
-  const { from, quote } = fromResults(useLocation().state);
+  const { from, pick } = fromResults(useLocation().state);
   const card = d.card;
   const host = displayHost(card.url);
   // A model wrote it: labelled and marked, never headed "From the source" nor shown as a checked quote (ADR 0038).
   const aiDescription = !!card.description && isAiOrigin(card.descriptionOrigin);
+  const quote = pick?.quote ?? null;
   return (
-    <div className="h2-res">
-      <p className="h2-res__back">
-        <Link to={from ?? '/'}>
-          <span aria-hidden="true">← </span>
-          {from ? t('resource.backToResults') : t('detail.backToSearch')}
-        </Link>
-      </p>
-      <div className="h2-res__grid">
-        <div className="h2-res__main">
-          <div className="h2-pv__top">
-            <TypeTag type={card.type} />
-            <span className="h2-row__host">{host}</span>
-          </div>
-          <h1 className="h2-pv__title">{card.title}</h1>
-          <div className="h2-pv__actions">
-            <OpenButton url={card.url} host={host} />
-            <BookmarkButton card={card} />
-          </div>
-          {canGuide(card) && <SetupGuidePanel id={card.id} title={card.title} />}
-
-          <section className="h2-res__sec" aria-labelledby="h2-res-text">
-            <h2 id="h2-res-text" className="h2-pv__sec">
-              {t(aiDescription ? 'results.about' : 'resource.sourceText')}
-            </h2>
-            {/* A checked quote can come from the title alone, so it shows even without a description. */}
-            {aiDescription ? (
-              <p className="h2-res__text">
-                <OriginLabel origin={card.descriptionOrigin} />{' '}
-                <span {...aiMark()}>{card.description}</span>
-              </p>
-            ) : quote ? (
-              <ProofQuote text={card.description ?? ''} quote={quote} source={host} />
-            ) : card.description ? (
-              <p className="h2-res__text">{card.description}</p>
-            ) : (
-              <p className="muted">{t('card.noDescription')}</p>
-            )}
-            {quote && !aiDescription && <p className="muted small">{t('resource.checkedNote')}</p>}
-          </section>
-
-          <div className="h2-res__details">{children}</div>
+    <div className="v4 h2-res">
+      <BackLink from={from} />
+      <header className="h2-res__head">
+        <h1 className="h2-res__title">{card.title}</h1>
+        <p className="h2-res__meta">
+          <span className="h2-res__type">{t(`type.${card.type}`)}</span> · {host}
+          <ResultDate card={card} separator />
+        </p>
+        <div className="h2-res__actions">
+          <OpenButton url={card.url} host={host} />
+          <BookmarkButton card={card} />
         </div>
+        {canGuide(card) && <SetupGuidePanel id={card.id} title={card.title} />}
+      </header>
 
-        <aside className="h2-res__side" aria-label={t('results.facts')}>
-          <section aria-labelledby="h2-res-facts">
-            <h2 id="h2-res-facts" className="h2-pv__sec">
-              {t('results.facts')}
-            </h2>
-            <ResultFacts card={card} groupTag="h3" />
-          </section>
-          <section aria-labelledby="h2-res-listed">
-            <h2 id="h2-res-listed" className="h2-pv__sec">
-              {t('results.listedBy')}
-            </h2>
-            <ListedBy card={card} />
-          </section>
-          <section aria-labelledby="h2-res-time">
-            <h2 id="h2-res-time" className="h2-pv__sec">
-              {t('results.timeline')}
-            </h2>
-            <Timeline timeline={card.timeline} />
-          </section>
-        </aside>
-      </div>
+      {pick && <WhyPicked pick={pick} />}
+
+      <section className="h2-res__sec" aria-labelledby="h2-res-text">
+        <h2 id="h2-res-text" className="h2-res__h">
+          {t(aiDescription ? 'results.about' : 'resource.sourceText')}
+        </h2>
+        {/* A checked quote can come from the title alone, so it shows even without a description. */}
+        {aiDescription ? (
+          <p className="h2-res__text">
+            <span className="h2-row__ai">
+              <OriginLabel origin={card.descriptionOrigin} />
+            </span>{' '}
+            <span {...aiMark()}>{card.description}</span>
+          </p>
+        ) : quote ? (
+          <ProofQuote text={card.description ?? ''} quote={quote} source={host} />
+        ) : card.description ? (
+          <p className="h2-res__text">{card.description}</p>
+        ) : (
+          <p className="muted">{t('card.noDescription')}</p>
+        )}
+        {quote && !aiDescription && <p className="h2-res__note">{t('resource.checkedNote')}</p>}
+      </section>
+
+      <section className="h2-res__sec" aria-labelledby="h2-res-facts">
+        <h2 id="h2-res-facts" className="h2-res__h">
+          {t('resource.atAGlance')}
+        </h2>
+        <ResultFacts card={card} groupTag="h3" />
+      </section>
+      <section className="h2-res__sec" aria-labelledby="h2-res-time">
+        <h2 id="h2-res-time" className="h2-res__h">
+          {t('results.timeline')}
+        </h2>
+        <Timeline timeline={card.timeline} />
+      </section>
+
+      <WhereFrom card={card} />
+
+      <div className="h2-res__details">{children}</div>
     </div>
+  );
+}
+
+/**
+ * Where this information comes from, folded: each source that lists the resource, how it is searched (live, our index,
+ * curated) and when it was read, with a link to the Sources page.
+ */
+function WhereFrom({ card }: { card: ResourceDetail['card'] }) {
+  const { t, i18n } = useTranslation();
+  if (card.sources.length === 0) return null;
+  return (
+    <details className="h2-res__where">
+      <summary className="h2-res__fold">
+        {t('resource.whereFrom')} <Icon name="chevron" />
+      </summary>
+      <ul className="plain-list h2-res__sources">
+        {card.sources.map((s) => (
+          <li key={s.sourceId}>
+            <strong>{s.sourceName}</strong> <ModeBadge mode={s.mode} /> ·{' '}
+            {t('resource.readAt', { date: formatDate(s.retrievedAt, i18n.language, 'INSTANT') })}
+          </li>
+        ))}
+      </ul>
+      <p>
+        <Link to="/sources">{t('resource.allSources')}</Link>
+      </p>
+    </details>
+  );
+}
+
+/**
+ * Back to the results. Opened from a row, it goes back in history, so the list is where the reader left it (the
+ * browser keeps the scroll on Back); a new tab or a shared link has no history here and follows the link instead.
+ */
+function BackLink({ from }: { from: string | undefined }) {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { key } = useLocation();
+  const onClick = (e: MouseEvent<HTMLAnchorElement>) => {
+    const plain = e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey;
+    if (!from || key === 'default' || !plain) return;
+    e.preventDefault();
+    void navigate(-1);
+  };
+  return (
+    <p className="h2-res__back">
+      <Link to={from ?? '/'} onClick={onClick}>
+        <span aria-hidden="true">← </span>
+        {from ? t('resource.backToResults') : t('detail.backToSearch')}
+      </Link>
+    </p>
+  );
+}
+
+/**
+ * Why the guide picked it, when the page was opened from a pick: the rank, the reason (AI-written: labelled and
+ * marked, ADR 0038) with what the second model call made of it, and the requirements checked against the source.
+ * A reason that call removed is not shown; the line says why.
+ */
+function WhyPicked({ pick }: { pick: GuidePick }) {
+  const { t } = useTranslation();
+  const removed = pick.reasonCheck === 'REMOVED' || !pick.reason;
+  return (
+    <section className="h2-res__sec h2-res__pick" aria-labelledby="h2-res-why">
+      <h2 id="h2-res-why" className="h2-res__h">
+        {t('results.whyPicked')}{' '}
+        <span className="h2-res__rank">{t('results.pick', { rank: pick.rank })}</span>
+      </h2>
+      {removed ? (
+        <p className="h2-res__note">
+          {t(pick.reasonCheck === 'REMOVED' ? 'guide.reasonRemoved' : 'results.noReason')}
+        </p>
+      ) : (
+        <>
+          <p className="h2-res__reason">
+            <span className="h2-row__ai">{t('picks.aiWritten')}</span>{' '}
+            <span {...aiMark()}>{pick.reason}</span>
+          </p>
+          <p className="h2-res__note">
+            {t(
+              pick.reasonCheck === 'SUPPORTED'
+                ? 'results.reasonChecked'
+                : 'results.reasonNotChecked',
+            )}
+          </p>
+        </>
+      )}
+      {pick.checks.length > 0 && (
+        <>
+          {/* Art. 50: the planner wrote the requirements; labelled on screen once, marked on each. */}
+          <p className="h2-res__note">
+            {t('guide.checksLabel')} <span className="h2-row__ai">{t('guide.requirementsAi')}</span>
+          </p>
+          <ul className="plain-list h2-res__checks" aria-label={t('guide.checksLabel')}>
+            {pick.checks.map((c) => (
+              <li
+                key={c.constraint}
+                className={c.status === 'CONFIRMED' ? 'check-ok' : 'check-unknown'}
+              >
+                {/* Status in words, never colour alone (WCAG 1.4.1). */}
+                <Icon name={c.status === 'CONFIRMED' ? 'check' : 'info'} />{' '}
+                <strong {...aiMark()}>{c.constraint}</strong>:{' '}
+                {c.status === 'CONFIRMED' ? (
+                  <>
+                    {t('guide.checkConfirmed')} <q>{c.quote}</q>
+                  </>
+                ) : (
+                  t('guide.checkNotConfirmed')
+                )}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </section>
   );
 }

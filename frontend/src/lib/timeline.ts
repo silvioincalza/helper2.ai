@@ -18,17 +18,24 @@ export function creationDate(card: ResultCard): string | null {
 
 /**
  * Groups cards by creation month, keeping the order they arrive in. The API sorts NEWEST first with unknown
- * dates last, so groups come out newest first and the "unknown" group, if any, comes last.
+ * dates last, so groups come out newest first. Every card with no stated date goes into one group at the end, also
+ * when Show more brings a page that starts with dated cards again.
  */
 export function groupByCreationMonth(cards: ResultCard[]): TimelineGroup[] {
   const groups: TimelineGroup[] = [];
+  const unknown: ResultCard[] = [];
   for (const card of cards) {
     const date = creationDate(card);
     const month = date ? utcMonth(date) : null;
+    if (month === null) {
+      unknown.push(card);
+      continue;
+    }
     const last = groups.at(-1);
     if (last && last.month === month) last.cards.push(card);
     else groups.push({ month, cards: [card] });
   }
+  if (unknown.length > 0) groups.push({ month: null, cards: unknown });
   return groups;
 }
 

@@ -1,21 +1,21 @@
 /*
- * Design v4 (ADR 0042): the parts that have moved, under `.v4`: the header, the footer and Home. The v4 tokens
- * of tokens.css, with the v4 layout sizes and fonts (`--v4-*`).
- * Geist Mono for the logo, headings, controls, labels and meta lines; Geist for running text.
+ * Design v4 (ADR 0042): the header, the footer and Home, under `.v4`, and the shared v4 parts (`.v4-wrap`, `.v4-btn`,
+ * `.v4-text-btn`). The tokens of tokens.css. Geist Mono for the logo, headings, controls, labels and meta lines; Geist
+ * for running text.
  */
 .v4 {
-  font-family: var(--v4-font-mono);
+  font-family: var(--font-mono);
   color: var(--ink);
 }
 .v4 p,
 .v4 li,
 .v4 dd {
-  font-family: var(--v4-font-body);
+  font-family: var(--font-body);
 }
 .v4 h1,
 .v4 h2,
 .v4 h3 {
-  font-family: var(--v4-font-mono);
+  font-family: var(--font-mono);
   letter-spacing: -0.02em;
   color: var(--ink);
 }
@@ -33,9 +33,9 @@
 }
 .v4-wrap {
   width: 100%;
-  max-width: calc(var(--content-wide) + 2 * var(--space-5));
+  max-width: calc(var(--content-wide) + 2 * var(--space-4));
   margin: 0 auto;
-  padding: 0 var(--space-5);
+  padding: 0 var(--space-4);
 }
 
 /* Controls: at least 44px, Geist Mono. */
@@ -46,7 +46,7 @@
   gap: var(--space-2);
   min-height: var(--target-min);
   padding: 0 var(--space-4);
-  font: 500 0.9375rem/1 var(--v4-font-mono);
+  font: 500 0.9375rem/1 var(--font-mono);
   color: var(--ink);
   background: transparent;
   border: 1px solid var(--ink);
@@ -76,7 +76,7 @@
 .v4-text-btn {
   min-height: var(--target-min);
   padding: 0;
-  font: 400 0.9375rem/1 var(--v4-font-mono);
+  font: 400 0.9375rem/1 var(--font-mono);
   color: var(--ink-2);
   background: none;
   border: 0;
@@ -117,11 +117,11 @@
   gap: 4px;
 }
 .v4 .logo-word {
-  font: 500 24px/1 var(--v4-font-mono);
+  font: 500 24px/1 var(--font-mono);
   letter-spacing: -0.01em;
 }
 .v4 .logo-tag {
-  font: 600 11px/1 var(--v4-font-mono);
+  font: 600 11px/1 var(--font-mono);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted);
@@ -164,7 +164,7 @@
   align-items: center;
   min-height: var(--target-min);
   padding: 0 var(--space-2);
-  font: 400 0.9375rem/1 var(--v4-font-mono);
+  font: 400 0.9375rem/1 var(--font-mono);
   color: var(--ink-2);
   text-decoration: none;
   border-bottom: 2px solid transparent;
@@ -249,9 +249,6 @@
   align-items: stretch;
 }
 @media (max-width: 720px) {
-  .v4-wrap {
-    padding: 0 var(--space-4);
-  }
   .v4-header__row {
     gap: var(--space-3);
   }
@@ -278,7 +275,7 @@
   gap: 0 var(--space-5);
 }
 .v4 .v4-footer__links li {
-  font-family: var(--v4-font-mono);
+  font-family: var(--font-mono);
 }
 .v4 .v4-footer__links a {
   display: inline-flex;
@@ -326,7 +323,7 @@
 .v4 .searchbox.large .searchbox-field {
   min-height: 46px;
   padding: 11px var(--space-4);
-  font: 400 1.0625rem/1.4 var(--v4-font-mono);
+  font: 400 1.0625rem/1.4 var(--font-mono);
   color: var(--ink);
   background: var(--surface);
   border: 1px solid var(--border-strong);
@@ -351,7 +348,7 @@
 .v4 .searchbox.large .btn-primary {
   min-height: 46px;
   padding: 0 var(--space-5);
-  font: 600 1rem/1 var(--v4-font-mono);
+  font: 600 1rem/1 var(--font-mono);
   color: var(--on-accent);
   background: var(--accent);
   border: 1px solid var(--accent);
@@ -363,19 +360,33 @@
   border-color: var(--accent);
   box-shadow: inset 0 0 0 2px var(--on-accent);
 }
-.v4 .searchbox.large .enter-key,
+/* Key hints show where there is room and a keyboard: ↵ on Search, ⇧↵ on Ask the guide (hidden on touch, below). */
 .v4 .searchbox.large .searchbox-slash {
   display: none;
 }
+/* Ask the guide: an outline button, quieter than Search. */
+.v4 .searchbox.large .one-box-ask {
+  min-height: 46px;
+  padding: 0 var(--space-4);
+  font: 600 1rem/1 var(--font-mono);
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+}
+.v4 .searchbox.large .one-box-ask:hover {
+  border-color: var(--ink);
+}
 .v4 .one-box.is-hero .searchbox.large .searchbox-field,
+.v4 .one-box.is-hero .searchbox.large .one-box-ask,
 .v4 .one-box.is-hero .searchbox.large .btn-primary {
-  min-height: var(--v4-box-height);
+  min-height: var(--box-height);
   font-size: 1.0625rem;
 }
 .v4 .one-box.is-hero .searchbox.large .searchbox-field {
-  padding: calc((var(--v4-box-height) - 1.4em - 2px) / 2) var(--space-5);
+  padding: calc((var(--box-height) - 1.4em - 2px) / 2) var(--space-5);
 }
-/* Field and Search share one row, also on a phone (the v3 rule puts the button under the field). */
+/* Field and buttons share one row, also on a phone (app.css puts the buttons under the field elsewhere). */
 @media (max-width: 520px) {
   .v4 .searchbox.large {
     flex-flow: row nowrap;
@@ -383,6 +394,10 @@
   .v4 .searchbox.large .btn-primary {
     flex: 0 0 auto;
     padding: 0 var(--space-4);
+  }
+  .v4 .searchbox.large .one-box-ask {
+    flex: 0 0 auto;
+    padding: 0;
   }
 }
 /* Key hints only where there is a keyboard. */
@@ -393,7 +408,7 @@
   }
 }
 
-/* Nothing moves under reduced motion (ADR 0042, decision 6). */
+/* Nothing moves under reduced motion (ADR 0042, decision 12). */
 @media (prefers-reduced-motion: reduce) {
   .v4 *,
   .v4 *::before,
