@@ -23,7 +23,6 @@
     "saved": "Saved",
     "sources": "Sources",
     "admin": "Admin",
-    "language": "Language",
     "signIn": "Sign in",
     "signInWith": "Sign in with {{provider}}",
     "signOut": "Sign out",
@@ -979,6 +978,7 @@
           "Saved items: if you are signed in, each saved resource (its link, title and type) and when you saved it, stored on our server with your account. If you are not signed in, they stay only in your browser; when you sign in, they move to your account.",
           "Reports you send about a resource: the text you write, linked to your account if you are signed in.",
           "Web search counters: Tavily searches per day and feature, under a keyed hash of your IP address and the date (no address stored; days cannot be linked), or your account ID once account limits are on.",
+          "Guide question counters: how many new questions the guide answered for your IP address today (for IPv6, its /64 network), under a hash of the address, so we can apply the daily limit in the Terms.",
           "Stored Tavily results, under a keyed hash of the question, not its text.",
           "Guide question fingerprints, only when similar-question reuse is on: a list of numbers (an embedding) computed from your guide question, kept with its cached answer so a later question with the same meaning can get that answer. Not linked to you or your account.",
           "Usage totals: how many searches we answer, how many had results from only some sources, and how many found nothing. They are counts only: never the text you typed, your IP address or your account.",
@@ -990,7 +990,7 @@
         "items": [
           "Answering your searches and guide questions, your account and your saved items: to provide the service you ask for (Art. 6(1)(b) GDPR).",
           "Rate limits, technical logs, usage totals and the security cookie: our legitimate interest in keeping the service secure and available (Art. 6(1)(f) GDPR).",
-          "Web search counters and stored results: legitimate interest in a free service at bounded cost (Art. 6(1)(f) GDPR).",
+          "Web search counters, guide question counters and stored results: legitimate interest in a free service at bounded cost (Art. 6(1)(f) GDPR).",
           "Reports you send: our legitimate interest in keeping the information on Helper2.ai correct (Art. 6(1)(f) GDPR).",
           "Describing public AI resources with names and short quotes from their public pages: our legitimate interest in showing what a resource is and where each fact comes from (Art. 6(1)(f) GDPR)."
         ]
@@ -1000,7 +1000,7 @@
         "items": [
           "A session cookie, only when you sign in, so you stay signed in.",
           "A security cookie (XSRF-TOKEN) that protects forms against cross-site request forgery.",
-          "Browser storage for your language, your light or dark theme, the AI tool you chose in the setup guide and, if you are not signed in, your saved items. When you sign in, the page you were on is kept in this tab until you are back on it, then removed. The tab also keeps where you had scrolled on each page, so Back returns you there; it is gone when you close the tab. This data stays in your browser and is not sent to us, with one exception: when you sign in, the items you saved in this browser are moved to your account and removed from the browser.",
+          "Browser storage for your light or dark theme, the AI tool you chose in the setup guide and, if you are not signed in, your saved items. When you sign in, the page you were on is kept in this tab until you are back on it, then removed. The tab also keeps where you had scrolled on each page, so Back returns you there; it is gone when you close the tab. This data stays in your browser and is not sent to us, with one exception: when you sign in, the items you saved in this browser are moved to your account and removed from the browser.",
           "All of these are strictly necessary for the site to work. We use no advertising, analytics or third-party cookies."
         ]
       },
@@ -1031,7 +1031,7 @@
         "items": [
           "Cached searches: up to 30 minutes. Cached guide answers and their question fingerprints: up to 24 hours, deleted by the next daily clean-up.",
           "Technical logs and request traces: up to 3 months. Usage totals: 90 days.",
-          "Web search counters: 24 hours. Stored results: 7 days.",
+          "Web search counters: 24 hours. Guide question counters: 2 days. Stored results: 7 days.",
           "English translations of searches typed in another language: 24 hours. Search vectors (the numbers we use to search by meaning): 7 days. Both are stored under a hash of the search, not its text, and deleted from the database within a day after they expire.",
           "Your account and saved items: until you delete them, or 24 months after you last signed in. Then we delete the account and its saved items.",
           "Reports: 12 months after they were handled. If your account is deleted, your reports stay without your name until then.",
@@ -1060,7 +1060,7 @@
   },
   "terms": {
     "title": "Terms of use",
-    "updated": "Last updated: 4 November 2026",
+    "updated": "Last updated: 5 November 2026",
     "lede": "These terms apply when you use the Helper2.ai website. By using it, you accept them. If you do not accept them, please do not use the site.",
     "contactIntro": "Helper2.ai is run by Silvio Incalza, Switzerland. For any question about these terms, write to",
     "sections": [
@@ -1069,7 +1069,7 @@
         "items": [
           "Helper2.ai is a free search over public sources about the AI ecosystem, with an AI guide that answers questions from those results.",
           "We may change, limit or stop the service, or parts of it, at any time and without notice.",
-          "Tavily web searches: 3 a day each for search and the guide; stored results are free. Limits reset at 00:00 UTC.",
+          "Tavily web searches: 3 a day each for search and the guide; stored results are free. The AI guide: 30 new questions a day per IP address; a question whose answer is still stored does not count. After that, the guide shows the top search results without AI picks. Limits reset at 00:00 UTC.",
           "You can use Helper2.ai without an account. If you sign in, you can delete your account at any time: select your name at the top of the page, then \"Delete my account\". You can also write to us."
         ]
       },
@@ -1131,7 +1131,7 @@
     "steps": {
       "search": {
         "title": "Search real sources",
-        "body": "A fast Nemotron model turns your words, in any language, into search terms. A normal search across every source then finds up to 12 real candidates."
+        "body": "A fast Nemotron model turns your words, in any language, into search terms. A normal search across every source then finds up to 24 real candidates."
       },
       "choose": {
         "title": "Nemotron chooses",
