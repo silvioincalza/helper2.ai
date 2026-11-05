@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.helper2.TestcontainersConfiguration;
 import ai.helper2.catalog.ResourceDetail;
 import ai.helper2.catalog.ReviewQueue;
+import ai.helper2.catalog.enrichment.StoredEnrichments;
 import ai.helper2.catalog.internal.JdbcEnrichmentResults;
 import ai.helper2.catalog.usecase.ResolveReviewItem;
 import ai.helper2.scout.CheckedCitation;
@@ -19,6 +20,7 @@ import ai.helper2.scout.EnrichmentProposal;
 import ai.helper2.scout.GapKind;
 import ai.helper2.scout.Material;
 import ai.helper2.scout.ValidationResult;
+import ai.helper2.shared.ValueOrigin;
 import ai.helper2.shared.Verification;
 import ai.helper2.testing.StatementCounting;
 import ai.helper2.testing.StatementCounting.Counted;
@@ -186,6 +188,143 @@ class CatalogEnrichmentStoreIT {
     List<UUID> backlog = store.pending(Integer.MAX_VALUE);
     assertThat(backlog).contains(resource);
     assertThat(store.pendingCount()).isEqualTo(backlog.size());
+  }
+
+  /**
+   * ADR 0056: an AI-estimated judgement, a self-declared fact, a self-declared relationship and a
+   * self-declared claim keep their origin through the database to the detail page.
+   */
+  @Test
+  void estimatedAndSelfDeclaredValuesKeepTheirOrigin() {
+    URI page = URI.create("https://enrichment-store.example/pricing");
+    CheckedCitation fromPage =
+        new CheckedCitation(
+            UUID.randomUUID(), "Pro costs $12 per month", record, page, Instant.now());
+    ValidationResult result =
+        new ValidationResult(
+            EnrichmentOutcome.PARTIAL,
+            List.of(
+                new CheckedField(
+                    "pricing",
+                    "PAID",
+                    Verification.VERIFIED,
+                    List.of(fromPage),
+                    ValueOrigin.SELF_DECLARED),
+                new CheckedField(
+                    "audience",
+                    "USE_AI",
+                    Verification.UNVERIFIED,
+                    List.of(),
+                    ValueOrigin.AI_ESTIMATED)),
+            List.of(
+                new CheckedRelationship(
+                    "INTEGRATES_WITH",
+                    "Slack",
+                    null,
+                    Verification.UNVERIFIED,
+                    List.of(
+                        new CheckedCitation(
+                            UUID.randomUUID(), "Works with Slack", record, page, Instant.now())),
+                    ValueOrigin.SELF_DECLARED)),
+            List.of(new CheckedClaim("Pro costs $12 per month.", List.of(fromPage), true)),
+            List.of());
+
+    save("fp-ladder", EnrichmentOutcome.PARTIAL, result);
+
+    assertThat(results.assertions(resource))
+        .extracting(a -> a.field() + ":" + a.origin() + ":" + a.verification())
+        .containsExactly("audience:AI_ESTIMATED:UNVERIFIED", "pricing:SELF_DECLARED:VERIFIED");
+    assertThat(results.relationships(resource))
+        .extracting(r -> r.targetTitle() + ":" + r.origin())
+        .containsExactly("Slack:SELF_DECLARED");
+    assertThat(results.summary(resource).claims().getFirst().selfDeclared()).isTrue();
+
+    // The next run replaces them all, estimated and self-declared values included.
+    save(
+        "fp-next",
+        EnrichmentOutcome.VALIDATED,
+        new ValidationResult(
+            EnrichmentOutcome.VALIDATED, List.of(), List.of(), List.of(), List.of()));
+    assertThat(results.assertions(resource)).isEmpty();
+    assertThat(results.relationships(resource)).isEmpty();
+  }
+
+  /**
+   * ADR 0056: a re-check by code reads the stored answer, rejects a field, drops a claim and puts
+   * the resource back in the backlog past its unchanged fingerprint.
+   */
+  @Test
+  void aRecheckRejectsFieldsDropsClaimsAndRequestsARun() {
+    CheckedCitation cite = new CheckedCitation(record, "Works with Claude Desktop");
+    save(
+        "fp-recheck",
+        EnrichmentOutcome.VALIDATED,
+        new ValidationResult(
+            EnrichmentOutcome.VALIDATED,
+            List.of(new CheckedField("pricing", "FREE", Verification.VERIFIED, List.of(cite))),
+            List.of(),
+            List.of(new CheckedClaim("The best MCP server.", List.of(cite))),
+            List.of()));
+    assertThat(store.lastFingerprint(resource)).isEqualTo("fp-recheck");
+
+    StoredEnrichments.Stored stored = results.stored(resource);
+    assertThat(stored.promptVersion()).isEqualTo("enrich-v3");
+    assertThat(stored.fields())
+        .singleElement()
+        .satisfies(f -> assertThat(f.excerpts()).containsExactly("Works with Claude Desktop"));
+    assertThat(stored.claims())
+        .singleElement()
+        .extracting(StoredEnrichments.StoredClaim::text)
+        .isEqualTo("The best MCP server.");
+
+    assertThat(results.rejectFields(List.of(stored.fields().getFirst().id()))).isEqualTo(1);
+    assertThat(results.rejectFields(List.of(stored.fields().getFirst().id()))).isZero();
+    assertThat(results.dropClaims(List.of(stored.claims().getFirst().id()))).isEqualTo(1);
+    assertThat(results.summary(resource)).isNull();
+    assertThat(results.assertions(resource))
+        .singleElement()
+        .extracting(ResourceDetail.Assertion::verification)
+        .isEqualTo(Verification.REJECTED);
+
+    results.requestRun(resource);
+    assertThat(store.lastFingerprint(resource))
+        .as("an unchanged fingerprint no longer skips")
+        .isNull();
+    assertThat(store.pending(Integer.MAX_VALUE)).contains(resource);
+  }
+
+  @Test
+  void aMaintenanceTaskIsClaimedOnce() {
+    String name = "test-" + UUID.randomUUID();
+    try {
+      assertThat(results.claimOnce(name)).isTrue();
+      assertThat(results.claimOnce(name)).isFalse();
+    } finally {
+      jdbc.sql("DELETE FROM maintenance_task WHERE name = :n").param("n", name).update();
+    }
+  }
+
+  /** ADR 0056: a product a person accepted from the review queue is enriched first. */
+  @Test
+  void anAcceptedCandidateComesFirstInTheBacklog() {
+    String url =
+        jdbc.sql("SELECT canonical_url FROM resource WHERE id = :id")
+            .param("id", resource)
+            .query(String.class)
+            .single();
+    jdbc.sql(
+            """
+            INSERT INTO review_item (id, kind, status, candidate_url, reason, resolved_at)
+            VALUES (:id, 'RESOURCE_CANDIDATE', 'ACCEPTED', :url, 'test', now())
+            """)
+        .param("id", UUID.randomUUID())
+        .param("url", url)
+        .update();
+    try {
+      assertThat(store.pending(1)).containsExactly(resource);
+    } finally {
+      jdbc.sql("DELETE FROM review_item WHERE candidate_url = :url").param("url", url).update();
+    }
   }
 
   @Test

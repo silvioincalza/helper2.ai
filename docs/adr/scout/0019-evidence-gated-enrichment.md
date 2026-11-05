@@ -1,6 +1,6 @@
 # 0019 — Evidence-gated enrichment and review queue (value must appear in the excerpt; UNCHANGED skip; daily cap)
 
-**Status.** Accepted. **Builds on:** [0004](../foundation/0004-persistence-and-provenance.md), [0014](../guide/0014-llm-integration.md), [0018](0018-scout-runner.md)
+**Status.** Accepted. **Builds on:** [0004](../foundation/0004-persistence-and-provenance.md), [0014](../guide/0014-llm-integration.md), [0018](0018-scout-runner.md) **Amended by:** [0056](0056-evidence-ladder.md) (pricing, type and use case need the value in the quote; audience and tech level may be AI-estimated; summary sentences keep to their excerpts; prompt `enrich-v4`).
 
 ## Context
 Sources give a title, a description and a few facts. Search and filters work better with more: audience, technical
@@ -22,7 +22,7 @@ source states. Every published value must point to the text it came from, and a 
 3. **Daily cap.** Each call takes one unit of the enrichment budget `H2_SCOUT_DAILY_ENRICHMENT_CALLS` (500 per day; days are in Coordinated Universal Time, UTC),
    separate from the guide's. Gauge `helper2.scout.enrichment.budget.remaining`.
 4. **Call.** `SpringAiEnrichmentModel`: reasoning model, thinking off, `H2_NEBIUS_ENRICH_MAX_TOKENS` (8192), prompt
-   `prompts/scout/enrich-v3.txt` (version stored with every run). Material goes in `<material evidenceId=…>` tags
+   `prompts/scout/enrich-v4.txt` (version stored with every run). Material goes in `<material evidenceId=…>` tags
    through `UntrustedText`, at most 4000 characters per record; the prompt says the material is data, never
    instructions. The allowed values in the prompt are built from the validator's own sets.
 5. **Outcomes of the call.** A spent budget or a transient provider error (timeout, 429, 5xx) → `LLM_UNAVAILABLE`, kept in
@@ -84,7 +84,7 @@ source states. Every published value must point to the text it came from, and a 
 - `backend/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt` — `EnrichResource`.
 - `backend/src/main/kotlin/ai/helper2/scout/Enrichment.kt` — `EvidenceValidator`, proposal and result types.
 - `backend/src/main/java/ai/helper2/scout/internal/SpringAiEnrichmentModel.java`, `CatalogEnrichmentStore.java`, `ScoutConfiguration.java`.
-- `backend/src/main/resources/prompts/scout/enrich-v3.txt`.
+- `backend/src/main/resources/prompts/scout/enrich-v4.txt`.
 - `backend/src/main/java/ai/helper2/catalog/enrichment/EnrichmentCandidates.java`, `EnrichmentResults.java` (named
   interface `enrichment`), `catalog/internal/JdbcEnrichmentCandidates.java`, `JdbcEnrichmentResults.java`.
 - `backend/src/main/java/ai/helper2/catalog/ReviewQueue.java`, `catalog/internal/ReviewDecisions.java`,

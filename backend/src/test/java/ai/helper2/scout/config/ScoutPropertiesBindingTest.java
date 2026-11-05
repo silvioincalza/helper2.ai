@@ -33,7 +33,8 @@ class ScoutPropertiesBindingTest {
                   20,
                   500,
                   400,
-                  8192));
+                  8192,
+                  new ScoutProperties.Evidence(20, Duration.ofDays(30), Duration.ofHours(24))));
       assertThat(c.getBean(ScoutRetentionProperties.class))
           .isEqualTo(new ScoutRetentionProperties(Duration.ofDays(90)));
     });
@@ -54,10 +55,12 @@ class ScoutPropertiesBindingTest {
             "H2_SCOUT_CRON=0 30 4 * * *",
             "H2_SCOUT_MAX_ENRICHMENTS=5",
             "H2_NEBIUS_ENRICH_MAX_TOKENS=4096",
+            "H2_SCOUT_EVIDENCE_DAILY_EXTRACT_CREDITS=7",
             "H2_RETENTION_SCOUT_RUNS=P30D")
         .run(c -> {
           ScoutProperties scout = c.getBean(ScoutProperties.class);
           assertThat(scout.enabled()).isTrue();
+          assertThat(scout.evidence().dailyExtractCredits()).isEqualTo(7);
           assertThat(scout.cron()).isEqualTo("0 30 4 * * *");
           assertThat(scout.maxEnrichmentsPerRun()).isEqualTo(5);
           assertThat(scout.enrichMaxTokens()).isEqualTo(4096);
@@ -74,6 +77,29 @@ class ScoutPropertiesBindingTest {
           assertThat(c).hasFailed();
           assertThat(c.getStartupFailure()).rootCause().hasMessageContaining("cron");
         });
+  }
+
+  /** ADR 0056: the cleaned page text is kept for a retry within the day, never longer. */
+  @Test
+  void aPageTextTtlOverADayStopsStartup() {
+    context
+        .withSystemProperties("H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL=P2D")
+        .run(c -> {
+          assertThat(c).hasFailed();
+          assertThat(c.getStartupFailure())
+              .rootCause()
+              .isInstanceOf(BindValidationException.class)
+              .hasMessageContaining("pageTextTtl");
+        });
+  }
+
+  @Test
+  void aPageTextTtlOfADayStarts() {
+    context
+        .withSystemProperties("H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL=P1D")
+        .run(c ->
+            assertThat(c.getBean(ScoutProperties.class).evidence().pageTextTtl())
+                .isEqualTo(Duration.ofDays(1)));
   }
 
   @Test

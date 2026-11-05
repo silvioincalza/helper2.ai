@@ -1,7 +1,7 @@
 # Data model: every PostgreSQL table, its columns, keys and foreign keys, and what a delete of the target does.
 # Source of truth: backend/src/main/resources/db/migration/V1__schema.sql (the whole schema, ADR 0004 §5),
 #   V2__enrichment_extra_evidence.sql (ADR 0043), V3__review_item_drop_source_conflict.sql (review kinds),
-#   V4__home_example.sql (ADR 0049).
+#   V4__home_example.sql (ADR 0049), V10__evidence_ladder_origins.sql (ADR 0056: origins, maintenance_task).
 #   Delete rules on the lines: ADR 0034. Seeds (R__ migrations) add rows, no tables.
 # Lines: solid = foreign key, labelled with its ON DELETE rule; dashed = a link the code keeps, with no foreign key.
 # Render: cd docs/diagrams && d2 fmt data-model.d2 && d2 data-model.d2 data-model.svg
@@ -159,7 +159,7 @@ enrichment: "enrichment: AI facts, each backed by evidence" {
     resource_id: uuid {constraint: foreign_key}
     field: text
     value: text
-    origin: "text (AI_EXTRACTED|CURATED)"
+    origin: "text (AI_EXTRACTED|AI_ESTIMATED|SELF_DECLARED|CURATED)"
     verification: text
     enrichment_run_id: uuid {constraint: foreign_key}
     created_at: timestamptz
@@ -197,6 +197,7 @@ enrichment: "enrichment: AI facts, each backed by evidence" {
     enrichment_run_id: uuid {constraint: [foreign_key; unique]}
     position: int {constraint: unique}
     text: "text (≤ 400)"
+    self_declared: boolean
   }
 
   summary_claim_evidence: {
@@ -233,6 +234,12 @@ scout: "scout: collection checkpoints and runs" {
     class: table
     id: "boolean (one row)" {constraint: primary_key}
     last_ended_at: timestamptz
+  }
+
+  maintenance_task: {
+    class: table
+    name: "text (one-time task, e.g. the first enrichment re-check)" {constraint: primary_key}
+    done_at: timestamptz
   }
 }
 

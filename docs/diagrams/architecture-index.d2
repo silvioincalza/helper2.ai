@@ -1,8 +1,8 @@
 # Architecture, view 4 of 6: how the index grows. Scout runs collectors, enriches with evidence, and the catalog stores and embeds.
 # Source of truth: backend/src/main/java/ai/helper2/admin/web/AdminController.java (back office),
 #   backend/src/main/kotlin/ai/helper2/scout/Ports.kt, scout/Scout.kt, scout/Enrichment.kt,
-#   scout/GapRound.kt (gap round ports, ADR 0043),
-#   backend/src/main/java/ai/helper2/sources/config/SourcesConfiguration.java (collectors, ReadmeEvidence),
+#   scout/GapRound.kt (gap round ports, ADR 0043), scout/OfficialPages.kt (evidence ladder ports, ADR 0056),
+#   backend/src/main/java/ai/helper2/sources/config/SourcesConfiguration.java (collectors, ReadmeEvidence, TavilyExtract),
 #   backend/src/main/java/ai/helper2/catalog/internal/CatalogConfiguration.java (index, embedder),
 #   backend/src/main/java/ai/helper2/catalog/enrichment/ (EnrichmentCandidates, EnrichmentResults: the Scout's way in),
 #   backend/src/main/java/ai/helper2/catalog/EnrichmentFacts.java, catalog/usecase/GetResourceDetail.java (the detail page's way out),
@@ -24,7 +24,7 @@ admin: "Admin" {class: person}
 
 scout: "scout (Kotlin domain)" {
   class: group
-  core: "RunScout · EnrichResource\nEvidenceValidator\nGapTargets · ReadmeText (gap round)" {class: app}
+  core: "RunScout · EnrichResource\nEvidenceValidator · FieldTargets\nGapTargets · PageTargets\nOfficialPages · UntrustedPageText\n(evidence ladder)" {class: app}
   accept: "IndexAcceptedCandidate\n(accept a resource candidate,\nADR 0051)" {class: app}
   p_candidates: "CandidateReview\nCandidateDetails · CatalogLookup" {class: port}
   json: "ReviewQueueCandidateReview\nResourceCandidateJson" {class: app}
@@ -33,14 +33,14 @@ scout: "scout (Kotlin domain)" {
   accept -> p_index
   json -> p_candidates: implements {class: config}
   p_collector: Collector {class: port}
-  p_extra: "ExtraEvidence\nGapBudget" {class: port}
+  p_extra: "ExtraEvidence · GapBudget\nPageReader · ExtractBudget\nPageLedger · PageTextCache\nDomainRoots · StoredAnswers" {class: port}
   p_index: CatalogIndex {class: port}
   p_enrich: EnrichmentModel {class: port}
   p_stores: "ScoutStore\nEnrichmentStore\nEnrichmentBacklog" {class: port}
   model: "SpringAiEnrichmentModel" {class: app}
   jdbc: "JdbcScoutStore\nCatalogEnrichmentStore" {class: app}
   core -> p_collector
-  core -> p_extra: "gap round (ADR 0043)"
+  core -> p_extra: "evidence ladder\n(ADR 0043, 0056)"
   core -> p_index
   core -> p_enrich: {class: ai-call}
   core -> p_stores
@@ -52,7 +52,7 @@ sources: "sources (collectors, gap evidence)" {
   class: group
   collectors: "McpRegistryCollector · TavilyCollector\nTavilyDiscoveryCollector × 34 categories\n(DiscoveryCollectorRegistrar) · CourseCollector\nHuggingFaceTrendingCollector\nHuggingFaceProviderOrgsCollector\nGitHubAwesomeCollector · AiDeadlinesCollector" {class: app}
   classifier: "SpringAiRepoClassifier\n(or Heuristic)" {class: app}
-  evidence: "ReadmeEvidence\n(README, model card)" {class: app}
+  evidence: "ReadmeEvidence\n(README, model card)\nTavilyExtract (product pages)\nPublicSuffixDomains" {class: app}
   collectors -> classifier: "awesome-list entries" {class: ai-call}
 }
 
@@ -87,7 +87,7 @@ sources.collectors -> scout.p_collector: implements {class: config}
 sources.evidence -> scout.p_extra: implements {class: config}
 catalog.catalog -> scout.p_index: implements {class: config}
 sources.collectors -> hosts: HTTPS
-sources.evidence -> hosts: "HTTPS: gap round\nREADMEs, model cards"
+sources.evidence -> hosts: "HTTPS: evidence ladder\nREADMEs, model cards,\nPOST /extract"
 sources.classifier -> nebius: "classify repos" {class: ai-call}
 scout.model -> nebius: "enrich" {class: ai-call}
 scout.jdbc -> catalog.p_enrichment: "backlog, source text,\nrecord runs"

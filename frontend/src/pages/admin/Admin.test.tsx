@@ -481,6 +481,28 @@ describe('Feature: the review queue cannot load', () => {
 });
 
 describe('Feature: Scout runs', () => {
+  it('Scenario: re-check stored answers runs the code check and shows the counts (ADR 0056)', async () => {
+    const m = mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/scout-runs': () => [run],
+      'POST /admin/enrichment-recheck': () => ({
+        checked: 12,
+        fieldsRejected: 2,
+        claimsDropped: 3,
+        runsRequested: 4,
+      }),
+    });
+    renderApp('/admin/runs');
+    expect(await screen.findByText('github')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Re-check stored answers' }));
+    await waitFor(() => expect(m.callsTo('POST', '/admin/enrichment-recheck')).toHaveLength(1));
+    expect(
+      await screen.findByText(
+        'Checked 12 resources: 2 values rejected, 3 sentences dropped, 4 sent to the model again.',
+      ),
+    ).toBeInTheDocument();
+  });
+
   it('Scenario: run all now starts every collector and reloads the listing', async () => {
     const m = mockApi({
       'GET /me': () => ADMIN,

@@ -170,7 +170,7 @@ class ScoutPipelineIT {
            {"kind":"COMPATIBLE_WITH","target":"Claude Desktop","citations":[{"evidenceId":"EVID","excerpt":"lets Claude Desktop query PostgreSQL"}]}
          ],
          "summary":[
-           {"text":"Read-only MCP access to PostgreSQL.","citations":[{"evidenceId":"EVID","excerpt":"query PostgreSQL databases read-only"}]},
+           {"text":"Read-only MCP access to PostgreSQL.","citations":[{"evidenceId":"EVID","excerpt":"MCP server that lets Claude Desktop query PostgreSQL databases read-only"}]},
            {"text":"Trusted by 10,000 companies.","citations":[{"evidenceId":"EVID","excerpt":"Trusted by 10,000 companies"}]}
          ]}\
         """);

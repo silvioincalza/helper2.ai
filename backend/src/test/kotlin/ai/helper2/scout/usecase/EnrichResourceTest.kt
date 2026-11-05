@@ -79,14 +79,26 @@ class EnrichResourceTest {
     assertEquals(1, model.calls)
   }
 
+  /** ADR 0056: a wording change alone does not re-enrich the catalog. */
   @Test
-  fun `a new prompt version reprocesses unchanged text`() {
+  fun `a new prompt version alone does not reprocess unchanged text`() {
     val store = MemoryStore(material.fingerprintFor(CountingModel(promptVersion = "enrich-v3")))
     val model = CountingModel(promptVersion = "enrich-v4")
 
-    EnrichResource(model, store, clock).enrich(UUID.randomUUID())
+    val outcome = EnrichResource(model, store, clock).enrich(UUID.randomUUID())
 
-    assertEquals(1, model.calls)
+    assertEquals(EnrichmentOutcome.UNCHANGED, outcome)
+    assertEquals(0, model.calls)
+  }
+
+  /** The epoch is the prompt version the stored fingerprints were made with: they stay valid. */
+  @Test
+  fun `the fingerprint is the one enrich-v3 made`() {
+    val v3 =
+      ai.helper2.scout.sha256Prefix(
+        listOf(material.textHash, "enrich-v3", CountingModel().model).joinToString("\u001f")
+      )
+    assertEquals(v3, material.fingerprintFor(CountingModel(promptVersion = "enrich-v4")))
   }
 
   @Test
@@ -100,11 +112,11 @@ class EnrichResourceTest {
   }
 
   @Test
-  fun `the fingerprint covers the material, the prompt version and the model`() {
+  fun `the fingerprint covers the material and the model, not the prompt version`() {
     val base = material.fingerprintFor(CountingModel())
     assertEquals(base, material.fingerprintFor(CountingModel()))
     assertNotEquals(base, material.copy(textHash = "other-text").fingerprintFor(CountingModel()))
-    assertNotEquals(base, material.fingerprintFor(CountingModel(promptVersion = "enrich-v4")))
+    assertEquals(base, material.fingerprintFor(CountingModel(promptVersion = "enrich-v9")))
     assertNotEquals(base, material.fingerprintFor(CountingModel(model = "other")))
   }
 }

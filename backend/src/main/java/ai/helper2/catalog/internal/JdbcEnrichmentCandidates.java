@@ -25,13 +25,20 @@ class JdbcEnrichmentCandidates implements EnrichmentCandidates {
     this.jdbc = jdbc;
   }
 
+  /**
+   * Products a person accepted from the review queue first (ADR 0056): someone chose them, so they
+   * should not wait behind the daily collector intake. Then never-run resources, newest first.
+   */
   @Override
   public List<UUID> pending(int limit, int minText, int maxFailed) {
     return jdbc.sql(
             "SELECT r.id FROM resource r WHERE "
                 + PENDING
                 + """
-                ORDER BY (r.enrichment_status = 'NOT_RUN') DESC, r.first_discovered_at DESC
+                ORDER BY EXISTS (SELECT 1 FROM review_item i
+                                 WHERE i.kind = 'RESOURCE_CANDIDATE' AND i.candidate_url = r.canonical_url
+                                   AND i.status = 'ACCEPTED') DESC,
+                         (r.enrichment_status = 'NOT_RUN') DESC, r.first_discovered_at DESC
                 LIMIT :limit
                 """)
         .param("maxFailed", maxFailed)
@@ -139,9 +146,10 @@ class JdbcEnrichmentCandidates implements EnrichmentCandidates {
   public @Nullable String lastJudgedFingerprint(UUID id) {
     return jdbc.sql(
             """
-            SELECT input_fingerprint FROM enrichment_run
-            WHERE resource_id = :id AND outcome NOT IN ('LLM_UNAVAILABLE', 'FAILED')
-            ORDER BY started_at DESC LIMIT 1
+            SELECT e.input_fingerprint FROM enrichment_run e
+            WHERE e.resource_id = :id AND e.outcome NOT IN ('LLM_UNAVAILABLE', 'FAILED')
+              AND NOT EXISTS (SELECT 1 FROM resource r WHERE r.id = :id AND r.enrichment_status = 'NOT_RUN')
+            ORDER BY e.started_at DESC LIMIT 1
             """)
         .param("id", id)
         .query(String.class)

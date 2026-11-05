@@ -135,6 +135,7 @@ class ModularityTest {
           Map.entry("relationship", "catalog"),
           Map.entry("relationship_evidence", "catalog"),
           Map.entry("summary_claim", "catalog"),
+          Map.entry("maintenance_task", "catalog"),
           Map.entry("summary_claim_evidence", "catalog"),
           Map.entry("issue_report", "catalog"),
           Map.entry("review_item", "catalog"),

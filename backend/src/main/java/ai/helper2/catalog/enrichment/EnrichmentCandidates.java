@@ -17,8 +17,9 @@ public interface EnrichmentCandidates {
   /**
    * Resources never enriched, enriched while no LLM was available, or whose last attempt FAILED
    * with fewer than [maxFailed] FAILED runs so far. Only indexed, observed and curated resources
-   * with at least one source description of [minText] characters. Never-run resources first, then
-   * newest discoveries first; at most [limit].
+   * with at least one source description of [minText] characters. Products a person accepted from
+   * the review queue first (ADR 0056), then never-run resources, then newest discoveries first; at
+   * most [limit].
    */
   List<UUID> pending(int limit, int minText, int maxFailed);
 
@@ -39,7 +40,8 @@ public interface EnrichmentCandidates {
 
   /**
    * Input fingerprint of the latest run that judged the model's answer (not LLM_UNAVAILABLE, not
-   * FAILED); null when none.
+   * FAILED); null when none, or when the resource is back to NOT_RUN because a re-check asked for a
+   * new run ({@link StoredEnrichments#requestRun}, ADR 0056).
    */
   @Nullable String lastJudgedFingerprint(UUID id);
 

@@ -11,7 +11,15 @@ export function aiMark(model?: string | null): {
     : { 'data-ai-generated': 'true' };
 }
 
-/** Value origins written by a model (ValueOrigin in the API contract). */
+/**
+ * Value origins written by a model (ValueOrigin in the API contract). A self-declared value is the vendor's claim, but
+ * a model picked it from the page; an AI-estimated value is the model's own judgement (ADR 0056).
+ */
 export function isAiOrigin(origin: string): boolean {
-  return origin === 'AI_EXTRACTED' || origin === 'AI_SUMMARY';
+  return (
+    origin === 'AI_EXTRACTED' ||
+    origin === 'AI_SUMMARY' ||
+    origin === 'AI_ESTIMATED' ||
+    origin === 'SELF_DECLARED'
+  );
 }

@@ -4,6 +4,7 @@ import ai.helper2.catalog.EnrichmentFacts;
 import ai.helper2.catalog.ResourceDetail;
 import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.catalog.enrichment.EnrichmentResults;
+import ai.helper2.catalog.enrichment.StoredEnrichments;
 import ai.helper2.shared.ValueOrigin;
 import ai.helper2.shared.Verification;
 import java.net.URI;
@@ -12,6 +13,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -29,10 +31,12 @@ import tools.jackson.databind.ObjectMapper;
  * a review item. A new run with model output replaces the AI-extracted fields and the unreviewed
  * AI-extracted relationships of earlier runs, and supersedes their open review items, so a page and
  * the review queue never mix two runs. Relationships a reviewer decided stay. Runs themselves are
- * kept for audit. Also reads them back for the resource detail page.
+ * kept for audit. Also reads them back for the resource detail page, and for a re-check by code
+ * (ADR 0056), which may reject fields and drop claims.
  */
 @Component
-public class JdbcEnrichmentResults implements EnrichmentResults, EnrichmentFacts {
+public class JdbcEnrichmentResults
+    implements EnrichmentResults, EnrichmentFacts, StoredEnrichments {
 
   private final JdbcClient jdbc;
   private final ReviewQueue reviewQueue;
@@ -44,6 +48,145 @@ public class JdbcEnrichmentResults implements EnrichmentResults, EnrichmentFacts
     this.reviewQueue = reviewQueue;
     this.json = json;
     this.clock = clock;
+  }
+
+  @Override
+  public List<UUID> judgedAfter(@Nullable UUID after, int limit) {
+    return jdbc.sql(
+            """
+            SELECT id FROM resource
+            WHERE enrichment_status IN ('VALIDATED', 'PARTIAL', 'REJECTED')
+              AND (CAST(:after AS uuid) IS NULL OR id > CAST(:after AS uuid))
+            ORDER BY id LIMIT :limit
+            """)
+        .param("after", after)
+        .param("limit", limit)
+        .query(UUID.class)
+        .list();
+  }
+
+  /** Two statements: the fields with their excerpts, the claims with theirs. */
+  @Override
+  public Stored stored(UUID resourceId) {
+    String title =
+        jdbc.sql("SELECT title FROM resource WHERE id = :id")
+            .param("id", resourceId)
+            .query(String.class)
+            .optional()
+            .orElse("");
+    Map<UUID, StoredField> fields = new LinkedHashMap<>();
+    jdbc.sql(
+            """
+            SELECT f.id, f.field, f.value, f.origin, f.verification, e.excerpt FROM field_assertion f
+            LEFT JOIN field_assertion_evidence x ON x.assertion_id = f.id
+            LEFT JOIN evidence e ON e.id = x.evidence_id
+            WHERE f.resource_id = :id AND f.origin <> 'CURATED' ORDER BY f.id
+            """)
+        .param("id", resourceId)
+        .query(rs -> {
+          UUID id = rs.getObject("id", UUID.class);
+          StoredField f =
+              fields.computeIfAbsent(
+                  id,
+                  k -> {
+                    try {
+                      return new StoredField(
+                          k,
+                          rs.getString("field"),
+                          rs.getString("value"),
+                          ValueOrigin.valueOf(rs.getString("origin")),
+                          Verification.valueOf(rs.getString("verification")),
+                          new ArrayList<>());
+                    } catch (java.sql.SQLException e) {
+                      throw new IllegalStateException(e);
+                    }
+                  });
+          String excerpt = rs.getString("excerpt");
+          if (excerpt != null) {
+            f.excerpts().add(excerpt);
+          }
+        });
+    Map<UUID, StoredClaim> claims = new LinkedHashMap<>();
+    jdbc.sql(
+            """
+            SELECT c.id, c.text, e.excerpt FROM summary_claim c
+            LEFT JOIN summary_claim_evidence x ON x.claim_id = c.id
+            LEFT JOIN evidence e ON e.id = x.evidence_id
+            WHERE c.resource_id = :id ORDER BY c.id
+            """)
+        .param("id", resourceId)
+        .query(rs -> {
+          UUID id = rs.getObject("id", UUID.class);
+          String text = rs.getString("text");
+          StoredClaim c =
+              claims.computeIfAbsent(id, k -> new StoredClaim(k, text, new ArrayList<>()));
+          String excerpt = rs.getString("excerpt");
+          if (excerpt != null) {
+            c.excerpts().add(excerpt);
+          }
+        });
+    String promptVersion =
+        jdbc.sql(
+                """
+                SELECT prompt_version FROM enrichment_run
+                WHERE resource_id = :id AND outcome IN ('VALIDATED', 'PARTIAL', 'REJECTED')
+                ORDER BY started_at DESC LIMIT 1
+                """)
+            .param("id", resourceId)
+            .query(String.class)
+            .optional()
+            .orElse(null);
+    return new Stored(
+        resourceId,
+        title,
+        promptVersion,
+        List.copyOf(fields.values()),
+        List.copyOf(claims.values()));
+  }
+
+  @Override
+  @Transactional
+  public int rejectFields(List<UUID> fieldIds) {
+    if (fieldIds.isEmpty()) {
+      return 0;
+    }
+    return jdbc.sql(
+            "UPDATE field_assertion SET verification = 'REJECTED' WHERE id IN (:ids) AND verification <> 'REJECTED'")
+        .param("ids", fieldIds)
+        .update();
+  }
+
+  @Override
+  @Transactional
+  public int dropClaims(List<UUID> claimIds) {
+    if (claimIds.isEmpty()) {
+      return 0;
+    }
+    List<UUID> evidence =
+        jdbc.sql("SELECT DISTINCT evidence_id FROM summary_claim_evidence WHERE claim_id IN (:ids)")
+            .param("ids", claimIds)
+            .query(UUID.class)
+            .list();
+    int dropped =
+        jdbc.sql("DELETE FROM summary_claim WHERE id IN (:ids)").param("ids", claimIds).update();
+    deleteOrphanEvidence(evidence);
+    return dropped;
+  }
+
+  @Override
+  public void requestRun(UUID resourceId) {
+    jdbc.sql("UPDATE resource SET enrichment_status = 'NOT_RUN' WHERE id = :id")
+        .param("id", resourceId)
+        .update();
+  }
+
+  @Override
+  public boolean claimOnce(String name) {
+    return jdbc.sql(
+                "INSERT INTO maintenance_task (name, done_at) VALUES (:name, now()) ON CONFLICT (name) DO NOTHING")
+            .param("name", name)
+            .update()
+        == 1;
   }
 
   /**
@@ -92,12 +235,13 @@ public class JdbcEnrichmentResults implements EnrichmentResults, EnrichmentFacts
       jdbc.sql(
               """
               INSERT INTO field_assertion (id, resource_id, field, value, origin, verification, enrichment_run_id)
-              VALUES (:id, :rid, :f, :v, 'AI_EXTRACTED', :ver, :run)
+              VALUES (:id, :rid, :f, :v, :origin, :ver, :run)
               """)
           .param("id", id)
           .param("rid", resourceId)
           .param("f", f.field())
           .param("v", f.value())
+          .param("origin", f.origin().name())
           .param("ver", f.verification().name())
           .param("run", runId)
           .update();
@@ -112,7 +256,7 @@ public class JdbcEnrichmentResults implements EnrichmentResults, EnrichmentFacts
           jdbc.sql(
                   """
                   INSERT INTO relationship (id, from_resource_id, to_resource_id, to_title, kind, verification, origin, enrichment_run_id)
-                  VALUES (:id, :from, :to, :title, :kind, :ver, 'AI_EXTRACTED', :run)
+                  VALUES (:id, :from, :to, :title, :kind, :ver, :origin, :run)
                   ON CONFLICT (from_resource_id, kind, to_title) DO NOTHING
                   """)
               .param("id", id)
@@ -120,6 +264,7 @@ public class JdbcEnrichmentResults implements EnrichmentResults, EnrichmentFacts
               .param("to", r.targetId())
               .param("title", r.target())
               .param("kind", r.kind())
+              .param("origin", r.origin().name())
               .param("ver", r.verification().name())
               .param("run", runId)
               .update();
@@ -132,7 +277,9 @@ public class JdbcEnrichmentResults implements EnrichmentResults, EnrichmentFacts
             ReviewQueue.Kind.RELATIONSHIP_CANDIDATE,
             resourceId,
             "Unverified relationship: " + r.kind() + " " + r.target(),
-            "Evidence supports the text, but the target is not a known resource.",
+            r.origin() == ValueOrigin.SELF_DECLARED
+                ? "Only the product's own page names it (self-declared): confirm it before it shows as verified."
+                : "Evidence supports the text, but the target is not a known resource.",
             new ReviewQueue.Links(runId, id, null));
       }
     }
@@ -140,12 +287,16 @@ public class JdbcEnrichmentResults implements EnrichmentResults, EnrichmentFacts
     for (Claim c : checked.summary()) {
       UUID id = UUID.randomUUID();
       jdbc.sql(
-              "INSERT INTO summary_claim (id, resource_id, enrichment_run_id, position, text) VALUES (:id, :rid, :run, :p, :t)")
+              """
+              INSERT INTO summary_claim (id, resource_id, enrichment_run_id, position, text, self_declared)
+              VALUES (:id, :rid, :run, :p, :t, :self)
+              """)
           .param("id", id)
           .param("rid", resourceId)
           .param("run", runId)
           .param("p", pos++)
           .param("t", c.text())
+          .param("self", c.selfDeclared())
           .update();
       link("summary_claim_evidence", "claim_id", id, c.citations(), evidence);
     }
@@ -197,7 +348,7 @@ public class JdbcEnrichmentResults implements EnrichmentResults, EnrichmentFacts
     List<Owned<ResourceDetail.Relationship>> rows =
         jdbc.sql(
                 """
-                SELECT id, kind, to_resource_id, to_title, verification FROM relationship
+                SELECT id, kind, to_resource_id, to_title, verification, origin FROM relationship
                 WHERE from_resource_id = :id AND verification <> 'REJECTED' ORDER BY kind, to_title
                 """)
             .param("id", resourceId)
@@ -206,10 +357,12 @@ public class JdbcEnrichmentResults implements EnrichmentResults, EnrichmentFacts
               UUID target = rs.getObject("to_resource_id", UUID.class);
               String title = rs.getString("to_title");
               Verification verification = Verification.valueOf(rs.getString("verification"));
+              ValueOrigin origin = ValueOrigin.valueOf(rs.getString("origin"));
               return new Owned<>(
                   rs.getObject("id", UUID.class),
                   evidence ->
-                      new ResourceDetail.Relationship(kind, target, title, verification, evidence));
+                      new ResourceDetail.Relationship(
+                          kind, target, title, verification, evidence, origin));
             })
             .list();
     return withEvidence(rows, "relationship_evidence", "relationship_id");
@@ -236,13 +389,14 @@ public class JdbcEnrichmentResults implements EnrichmentResults, EnrichmentFacts
         .map(run -> {
           List<Owned<ResourceDetail.SummaryClaim>> rows =
               jdbc.sql(
-                      "SELECT id, text FROM summary_claim WHERE enrichment_run_id = :run ORDER BY position")
+                      "SELECT id, text, self_declared FROM summary_claim WHERE enrichment_run_id = :run ORDER BY position")
                   .param("run", run.id())
                   .query((c, m) -> {
                     String text = c.getString("text");
+                    boolean selfDeclared = c.getBoolean("self_declared");
                     return new Owned<>(
                         c.getObject("id", UUID.class),
-                        evidence -> new ResourceDetail.SummaryClaim(text, evidence));
+                        evidence -> new ResourceDetail.SummaryClaim(text, evidence, selfDeclared));
                   })
                   .list();
           return new ResourceDetail.Summary(
@@ -311,7 +465,8 @@ public class JdbcEnrichmentResults implements EnrichmentResults, EnrichmentFacts
     deleteOrphanEvidence(
         jdbc.sql(
                 """
-                WITH gone AS (DELETE FROM field_assertion WHERE resource_id = :rid AND origin = 'AI_EXTRACTED' RETURNING id)
+                WITH gone AS (DELETE FROM field_assertion WHERE resource_id = :rid
+                                AND origin IN ('AI_EXTRACTED', 'AI_ESTIMATED', 'SELF_DECLARED') RETURNING id)
                 SELECT DISTINCT fae.evidence_id FROM field_assertion_evidence fae JOIN gone ON gone.id = fae.assertion_id
                 """)
             .param("rid", resourceId)
@@ -329,7 +484,8 @@ public class JdbcEnrichmentResults implements EnrichmentResults, EnrichmentFacts
         jdbc.sql(
                 """
                 WITH gone AS (
-                    DELETE FROM relationship r WHERE r.from_resource_id = :rid AND r.origin = 'AI_EXTRACTED'
+                    DELETE FROM relationship r WHERE r.from_resource_id = :rid
+                      AND r.origin IN ('AI_EXTRACTED', 'SELF_DECLARED')
                       AND NOT EXISTS (SELECT 1 FROM review_item i
                                       WHERE i.relationship_id = r.id AND i.status IN ('ACCEPTED', 'REJECTED'))
                     RETURNING r.id)

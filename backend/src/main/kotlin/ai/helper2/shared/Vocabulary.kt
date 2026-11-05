@@ -113,6 +113,15 @@ enum class ValueOrigin {
   SOURCE_PROVIDED,
   AI_EXTRACTED,
   AI_SUMMARY,
+  /**
+   * A judgement (audience, tech level) the model estimated without a quote (ADR 0056). Never a
+   * fact.
+   */
+  AI_ESTIMATED,
+  /**
+   * Extracted by AI from a quote of the product's own page only: what the vendor says (ADR 0056).
+   */
+  SELF_DECLARED,
   CURATED,
   COMMUNITY,
   DEMO,
