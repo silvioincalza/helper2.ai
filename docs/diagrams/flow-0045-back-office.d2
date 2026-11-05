@@ -53,7 +53,7 @@ queue: ListEnrichmentQueue {
   direction: down
   view: "Which view?" {class: decision}
   part: "Which part is\nthe cursor in?" {class: decision}
-  top: "Rows at the top after it,\nthen never-run, then to retry" {class: data}
+  at_top: "Rows at the top after it,\nthen never-run, then to retry" {class: data}
   both: "Never-run rows after it,\nthen the rows to retry" {class: data}
   retry: "Rows to retry\nafter it" {class: data}
   skipped: "Skipped rows,\nlatest skip first" {class: data}
@@ -64,10 +64,10 @@ queue: ListEnrichmentQueue {
   view -> part: WAITING
   view -> skipped: SKIPPED
   view -> out: OUT_OF_RETRIES
-  part -> top: "at the top, or no cursor"
+  part -> at_top: "at the top, or no cursor"
   part -> both: "never-run"
   part -> retry: "to retry"
-  top -> more
+  at_top -> more
   both -> more
   retry -> more
   skipped -> more
