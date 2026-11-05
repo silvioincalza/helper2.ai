@@ -3,7 +3,8 @@
 #   catalog/internal/JdbcEnrichmentCandidates.java (backlog), admin/web/OverviewController.java,
 #   platform/llm/BudgetLedger.java, RedisCallCounter.java, examples/usecase/CountHomeExamples.java,
 #   backend/src/main/kotlin/ai/helper2/examples/PoolCounts.kt, frontend/src/pages/admin/AdminOverview.tsx,
-#   admin/usecase/GetReviewEvidence.java, admin/web/ReviewController.java, catalog/internal/JdbcReviewEvidence.java.
+#   admin/usecase/GetReviewEvidence.java, admin/web/ReviewController.java, catalog/internal/JdbcReviewEvidence.java,
+#   admin/usecase/ResolveReviewItems.java, admin/BulkDecisionRule.java.
 # Render: cd docs/diagrams && d2 fmt flow-0045-back-office.d2 && d2 flow-0045-back-office.d2 flow-0045-back-office.svg
 
 ...@style
@@ -90,3 +91,24 @@ evidence: GetReviewEvidence {
 }
 
 evidence_req -> evidence.item
+
+bulk_req: "POST /api/v1/admin/review-items/resolutions\n(1 to 100 ids, CSRF)" {class: end}
+
+bulk: "ResolveReviewItems, per item" {
+  class: group
+  direction: down
+  open: "Item open?" {class: decision}
+  reject: "Reject?" {class: decision}
+  kind: "Enrichment check with no CONFLICTING\nlicence, open source or pricing?" {class: decision}
+  refused: "NOT_ALLOWED, stays open\n(audit: NOT_ALLOWED bulk:<batch>)" {class: fail}
+  one: "ResolveReview, its own transaction\n(audit: ACCEPTED bulk:<batch>)" {class: app}
+  other: "ResolveReview: NOT_OPEN or NOT_FOUND" {class: end}
+  open -> reject: yes
+  open -> other: "no, or no item"
+  reject -> one: yes
+  reject -> kind: "no (accept)"
+  kind -> one: yes
+  kind -> refused: no
+}
+
+bulk_req -> bulk.open

@@ -854,7 +854,8 @@
       "n": "Go to the note (Escape goes back to the list)",
       "help": "Show these keys",
       "where": "The keys work only while focus is in the queue, and never while you type in a field.",
-      "close": "Close"
+      "close": "Close",
+      "x": "Pick the selected item for a bulk decision"
     },
     "evidence": {
       "title": "Evidence",
@@ -878,6 +879,41 @@
       "fields": "Fields of this run",
       "noFields": "This run has no stored fields left. A newer run may have replaced them.",
       "noQuote": "No quote."
+    },
+    "bulk": {
+      "label": "Bulk decision",
+      "pickColumn": "Pick",
+      "pick": "Pick: {{reason}}",
+      "selected_one": "{{count}} selected",
+      "selected_other": "{{count}} selected",
+      "accept": "Accept",
+      "reject": "Reject",
+      "clear": "Clear",
+      "cancel": "Cancel",
+      "tooMany": "At most {{max}} at once.",
+      "kindCount": "{{count}} {{kind}}",
+      "confirmTitle": {
+        "ACCEPTED_one": "Accept {{count}} item?",
+        "ACCEPTED_other": "Accept {{count}} items?",
+        "REJECTED_one": "Reject {{count}} item?",
+        "REJECTED_other": "Reject {{count}} items?"
+      },
+      "confirm": {
+        "ACCEPTED_one": "Accept {{count}}",
+        "ACCEPTED_other": "Accept {{count}}",
+        "REJECTED_one": "Reject {{count}}",
+        "REJECTED_other": "Reject {{count}}"
+      },
+      "acceptRule": "Only enrichment checks with no conflict on licence, open source or pricing are accepted together. The others stay open: accept them one by one.",
+      "final": "A decision is final.",
+      "allDone_one": "{{count}} done.",
+      "allDone_other": "{{count}} done.",
+      "someFailed": "{{done}} done, {{failed}} failed ({{why}}).",
+      "reason": {
+        "NOT_OPEN": "already decided",
+        "NOT_FOUND": "not found",
+        "NOT_ALLOWED": "not allowed in bulk"
+      }
     }
   },
   "notFound": {

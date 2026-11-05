@@ -373,6 +373,13 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
     expect(await axeViolations(review.container)).toEqual([]);
     await userEvent.click(screen.getByRole('button', { name: 'Keys (?)' }));
     expect(await axeViolations(review.container)).toEqual([]);
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }));
+    // A picked item: the bulk bar, then its confirm dialog.
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Pick: Wrong price' }));
+    expect(await axeViolations(review.container)).toEqual([]);
+    await userEvent.click(screen.getByRole('button', { name: 'Reject' }));
+    await screen.findByRole('dialog', { name: 'Reject 1 item?' });
+    expect(await axeViolations(review.container)).toEqual([]);
     review.unmount();
     const runs = renderApp('/admin/runs');
     await within(await screen.findByRole('main')).findByText('Failed');

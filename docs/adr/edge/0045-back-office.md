@@ -59,6 +59,18 @@ them without each module growing an admin corner.
    The review page is a list and the selected item, with keys for a fast review (j/k, a, r, n, ?; UJ-9). The keys
    work only while focus is inside the queue and never in a field (WCAG 2.1.4), and each control names its key
    (`aria-keyshortcuts`). Decisions stay final: there is no undo.
+8. **Bulk decisions: each item on its own, accept only where it is safe.** `POST /api/v1/admin/review-items/resolutions`
+   takes up to 100 ids, a decision and an optional note (CSRF applies). `ResolveReviewItems` sends each item through the
+   one-item decision (`ResolveReview`) in its own transaction, so each item writes its own audit entry, the same as a
+   single decision, with the batch at the end: `ACCEPTED bulk:<batch>`. One item that fails does not undo the others.
+   The answer gives one outcome per item, in the order sent: RESOLVED, NOT_OPEN, NOT_FOUND or NOT_ALLOWED. Rejecting is
+   allowed for every kind: nothing is added or shown. Accepting is allowed only for an enrichment check whose run has no
+   CONFLICTING licence, open source or pricing (`BulkDecisionRule`, a pure class): every other kind adds a resource,
+   verifies a relationship, publishes an example or closes a user's report, and a new kind is refused until the rule
+   names it. A refused item stays open and is recorded as `NOT_ALLOWED bulk:<batch>`. On the page each open row has a
+   box (x picks the selected item); a bar under the list says "4 selected · Accept · Reject · Clear"; Accept and Reject
+   ask first in a dialog that repeats the count by kind, with focus on Cancel. The line after says "11 done, 1 failed
+   (already decided)", and the items that failed stay picked.
 
 ## Consequences
 - One place for every admin endpoint; a new part is a route, a controller method and a use case here.
@@ -67,6 +79,9 @@ them without each module growing an admin corner.
 - A budget that is never built (no model configured), or one that counts only in memory, is not listed.
 - The admin sees the quotes behind a value before deciding, without opening the resource page. The evidence is read
   only for the selected item, one request per item.
+- A batch is not atomic: a server error halfway leaves the first items decided. The page reloads and shows them as
+  they are; the audit trail names the batch.
+- A repeated id in a batch is decided once (the contract's ids are unique).
 - The queue has no total of its own: the overview's count is the total, up to a minute old. A resource that changes
   part between two pages (a run finishes) can be skipped or shown twice; the next visit shows it in its place.
 
@@ -81,6 +96,11 @@ them without each module growing an admin corner.
   when a re-check rejects a field, and a format change for every writer of `details`.
 - Send the evidence with every row of the list — 20 items times their fields and quotes on every page, for the one
   item the admin looks at.
+- One transaction for a whole batch — one bad item would undo the others, and a long transaction holds locks on up to
+  100 rows. Each item on its own matches what one decision does.
+- Bulk accept for every kind — one click could add 100 resources to the catalog or verify 100 relationships nobody read.
+- An undo for bulk decisions — a decision can publish or verify at once; an undo would have to reverse that. Decisions
+  stay final, and the confirm dialog says so.
 
 ## Code
 - `backend/src/main/java/ai/helper2/admin/` — `package-info.java`, `web/AdminController.java`, `web/OverviewController.java`,
@@ -94,13 +114,17 @@ them without each module growing an admin corner.
 - `backend/src/main/java/ai/helper2/examples/usecase/CountHomeExamples.java`, `backend/src/main/kotlin/ai/helper2/examples/PoolCounts.kt`.
 - `backend/src/main/java/ai/helper2/admin/usecase/GetReviewEvidence.java`, `admin/web/ReviewController.java`,
   `catalog/ReviewEvidence.java`, `catalog/internal/JdbcReviewEvidence.java`.
+- `backend/src/main/java/ai/helper2/admin/BulkDecisionRule.java`, `admin/usecase/ResolveReviewItems.java`,
+  `admin/usecase/ResolveReview.java` and `catalog/usecase/ResolveReviewItem.java` (the batch in the audit outcome).
 - `frontend/src/pages/admin/` — `AdminLayout.tsx`, `AdminOverview.tsx`, `ReviewQueuePage.tsx`, `ReviewEvidence.tsx`,
-  `ReviewItemDetails.tsx`, `ReviewKeysHelp.tsx`, `ScoutRunsPage.tsx`, `EnrichmentQueuePage.tsx`, `AuditPage.tsx`.
+  `ReviewItemDetails.tsx`, `ReviewKeysHelp.tsx`, `ReviewBulk.tsx`, `AdminDialog.tsx`, `ScoutRunsPage.tsx`, `EnrichmentQueuePage.tsx`, `AuditPage.tsx`.
 - Tests: `api/AdminOverviewApiIT.java`, `admin/usecase/GetOverviewTest.java`, `platform/llm/BudgetLedgerTest.java`,
   `RedisCallCounterIT.java`, `scout/internal/CatalogEnrichmentStoreIT.java`, `search/config/MicrometerSearchMetricsTest.java`,
   `api/EnrichmentQueueApiIT.java`, `admin/web/EnrichmentQueueCursorTest.java`, `catalog/internal/JdbcEnrichmentCandidatesIT.java`,
-  `api/ReviewEvidenceApiIT.java`, `catalog/internal/JdbcReviewEvidenceIT.java`,
-  `frontend/src/pages/admin/Admin.test.tsx`, `EnrichmentQueuePage.test.tsx`, `ReviewEvidence.test.tsx`, `src/a11y.test.tsx`.
+  `api/ReviewEvidenceApiIT.java`, `catalog/internal/JdbcReviewEvidenceIT.java`, `api/ReviewBulkApiIT.java`,
+  `admin/BulkDecisionRuleTest.java`,
+  `frontend/src/pages/admin/Admin.test.tsx`, `EnrichmentQueuePage.test.tsx`, `ReviewEvidence.test.tsx`, `ReviewBulk.test.tsx`,
+  `src/a11y.test.tsx`.
 
 ## Diagrams
 [flow](../../diagrams/flow-0045-back-office.svg) · [sequence](../../diagrams/sequence-0045-back-office.svg)

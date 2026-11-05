@@ -1,8 +1,12 @@
 package ai.helper2.admin.web;
 
 import ai.helper2.admin.usecase.GetReviewEvidence;
+import ai.helper2.admin.usecase.ResolveReviewItems;
 import ai.helper2.api.generated.ReviewApi;
 import ai.helper2.api.generated.model.AiContentMarkerDto;
+import ai.helper2.api.generated.model.ReviewBulkItemDto;
+import ai.helper2.api.generated.model.ReviewBulkResolutionDto;
+import ai.helper2.api.generated.model.ReviewBulkResultDto;
 import ai.helper2.api.generated.model.ReviewEvidenceDto;
 import ai.helper2.api.generated.model.ReviewFieldDto;
 import ai.helper2.api.generated.model.ReviewQuoteDto;
@@ -11,6 +15,7 @@ import ai.helper2.api.generated.model.ReviewRunDto;
 import ai.helper2.api.generated.model.ValueOriginDto;
 import ai.helper2.api.generated.model.VerificationDto;
 import ai.helper2.catalog.ReviewEvidence;
+import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.platform.NotFoundException;
 import ai.helper2.shared.UtcTimes;
 import java.util.ArrayList;
@@ -18,10 +23,11 @@ import java.util.List;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** The review queue's evidence view (ADMIN only, admin port; ADR 0045). */
+/** The review queue's evidence view and bulk decisions (ADMIN only, admin port; ADR 0045). */
 @RestController
 @RequestMapping("/api/v1")
 class ReviewController implements ReviewApi {
@@ -30,9 +36,34 @@ class ReviewController implements ReviewApi {
   static final String AI_MARKING_POLICY = "/mission";
 
   private final GetReviewEvidence evidence;
+  private final ResolveReviewItems resolveMany;
 
-  ReviewController(GetReviewEvidence evidence) {
+  ReviewController(GetReviewEvidence evidence, ResolveReviewItems resolveMany) {
     this.evidence = evidence;
+    this.resolveMany = resolveMany;
+  }
+
+  @Override
+  public ResponseEntity<ReviewBulkResultDto> resolveReviewItems(ReviewBulkResolutionDto body) {
+    ResolveReviewItems.Outcome outcome =
+        resolveMany.resolve(
+            List.copyOf(body.getIds()),
+            ReviewQueue.Status.valueOf(body.getStatus().getValue()),
+            adminId(),
+            body.getNote());
+    return ResponseEntity.ok(
+        new ReviewBulkResultDto(
+            outcome.batch(),
+            outcome.items().stream()
+                .map(i ->
+                    new ReviewBulkItemDto(
+                        i.id(), ReviewBulkItemDto.OutcomeEnum.fromValue(i.result().name())))
+                .toList()));
+  }
+
+  /** The signed-in administrator's provider subject (GitHub: the numeric user id). */
+  private static String adminId() {
+    return SecurityContextHolder.getContext().getAuthentication().getName();
   }
 
   @Override
