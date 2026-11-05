@@ -36,8 +36,11 @@ not instants. Helper2 never invents a date ([0004](../foundation/0004-persistenc
    `CONFERENCE`, with no format. Industry events are `CONFERENCE`, hybrid where the page says so. The home page shows
    them as one tag, for example "Hackathon · Online".
 6. **Other events have no dates.** Tavily stores some news items as EVENT, but never with stated days, so they are never listed.
-7. **Application programming interface (API).** `GET /api/v1/events/upcoming?size=` (1–60, default 6): resources of type EVENT with a stated start whose
-   end (or start) is on or after today 00:00 UTC, soonest first, then by title. `Cache-Control: public, max-age=300`.
+7. **Application programming interface (API).** `GET /api/v1/events/upcoming?days=&size=` (`size` 1–60, default 6): resources of type EVENT with a stated start whose
+   end (or start) is on or after today 00:00 UTC, soonest first, then by title. With `days` (1–366), only events that
+   start before today 00:00 UTC plus `days`; the response says that end in `until` (null without `days`). An event
+   already running stays listed until it ends. `total` counts every event in the window, so "Show all N" is a real
+   number ([0042](../frontend/0042-redesign-design-system-v4.md)). `Cache-Control: public, max-age=300`.
    The home page component `EventsBoard` asks for 60 (about 45 curated events, plus conferences) and lists those that start within 90 days of the response's
    `generatedAt`.
 

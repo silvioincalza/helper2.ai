@@ -58,6 +58,14 @@ traceable to that administrator.
    the back office knows its decision was not applied. Not an exception inside the transaction, so the entry is kept.
 8. **Admin host.** The back office is on its own port and host, reachable only from a private network:
    [0035](0035-admin-host.md). Each environment turns sign-in on with the `oauth-github` profile.
+9. **Daily limits on `/me`.** `GET /api/v1/me` has `limits`: the guide's fresh questions
+   ([0017](../guide/0017-guide-cost-guard.md)), the web searches of search and of the guide
+   ([0037](../search/0037-tavily-store-and-daily-quota.md)), each as `limit` and `remaining`, and `resetsAt` (the next
+   00:00 UTC). The guide questions are null when the guide has no model: it then answers from search only and spends
+   nothing. A web search count is null without an enabled web source or when Redis cannot answer. Identity reads
+   them through the `VisitorLimits` port, which the guide implements (`GuideVisitorLimits`): the same counters that
+   enforce the limits, by `ClientKey` and, when signed in, the user id. Reading never counts. The response carries
+   only numbers, never the address, its hash or the id.
 9. **Sessions in Redis** (Spring Session Data Redis, namespace `helper2:session`), so every replica knows a signed-in
    admin. Timeout and cookie stay under `server.servlet.session`. Only sign-in creates a session: the saved-request
    cache is off (`NullRequestCache`), so an anonymous request never writes one. While Redis is down
@@ -90,6 +98,8 @@ traceable to that administrator.
 - `backend/src/test/java/ai/helper2/api/RedisDownIT.java` — anonymous use and sign-in with Redis unreachable.
 - `backend/src/main/java/ai/helper2/identity/internal/CurrentUser.java` — user row on sign-in, current user id.
 - `backend/src/main/java/ai/helper2/identity/web/MeController.java` — `/api/v1/me`, bookmarks endpoints, account deletion.
+- `backend/src/main/java/ai/helper2/identity/VisitorLimits.java`, `guide/internal/GuideVisitorLimits.java` — the daily
+  limits on `/me`.
 - `backend/src/main/java/ai/helper2/identity/usecase/` — `AddBookmark`, `RemoveBookmark`, `ListBookmarks`,
   `MergeLocalBookmarks`, `BookmarkRules` (http(s), 2000 characters, the 500 cap), `DeleteMyAccount`, `ListAuditEntries`.
 - `backend/src/main/java/ai/helper2/identity/internal/Users.java`, `Bookmarks.java`, `AuditLog.java` — `app_user`,

@@ -7,7 +7,9 @@
 #   backend/src/main/kotlin/ai/helper2/search/usecase/ListSources.kt, search/SourceHealth.kt, search/WebSearch.kt (creditsToday),
 #   backend/src/main/kotlin/ai/helper2/search/ResultMerger.kt,
 #   backend/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java (resilience4j.* in application.yaml),
-#   backend/src/main/java/ai/helper2/search/cache/RedisSearchCache.java, search/internal/JdbcWebResultStore.java.
+#   backend/src/main/java/ai/helper2/search/cache/RedisSearchCache.java, search/internal/JdbcWebResultStore.java,
+#   backend/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java (countsSince),
+#   catalog/internal/ResourceStore.java (discoveredSince, discoveredInIndexSince).
 # Render: cd docs/diagrams && d2 fmt flow-0008-federated-search.d2 && d2 flow-0008-federated-search.d2 flow-0008-federated-search.svg
 
 ...@style
@@ -94,6 +96,7 @@ sources: "GET /api/v1/sources: each disclosed source, by priority" {
   class: group
   direction: down
   last: "lastOutcome: the newer of this replica's\nlast search and the Scout's last run\n(record unreadable: this replica's only)" {class: app}
+  fresh: "newThisWeek: resources first discovered\nin the last 7 days, per source\n(helper2-index: the whole index;\nhelper2-semantic and DB down: null)" {class: data}
   time: "responseTimeMs: median of this replica's\nlast 20 calls (cache hits and\nskipped calls are not calls)" {class: app}
   enabled: "Enabled?" {class: decision}
   circuit: "circuit: state of this replica's\nsource-<id>; circuitOpenedAt\nwhile OPEN (none: null)" {class: app}
@@ -101,7 +104,8 @@ sources: "GET /api/v1/sources: each disclosed source, by priority" {
   credits: "webCredits: usedToday from the global\nRedis counter (whole cluster), dailyCap;\nnull when Redis cannot answer" {class: data}
   out: "200 SourceInfo[]" {class: end}
 
-  last -> time
+  last -> fresh
+  fresh -> time
   time -> enabled
   enabled -> circuit: yes
   enabled -> out: "no: no circuit,\nno credits"

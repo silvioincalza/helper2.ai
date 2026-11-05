@@ -152,7 +152,8 @@ class SearchController implements SearchApi, SourcesApi {
                     .toList())
             .termsUrl(d.getTermsUrl())
             .attribution(d.getAttribution())
-            .responseTimeMs(o.getResponseTime() == null ? null : o.getResponseTime().toMillis());
+            .responseTimeMs(o.getResponseTime() == null ? null : o.getResponseTime().toMillis())
+            .newThisWeek(o.getNewThisWeek());
     if (o.getLast() != null) {
       dto.lastOutcome(SourceOutcomeDto.fromValue(o.getLast().getOutcome().name()))
           .lastCheckedAt(UtcTimes.odt(o.getLast().getCheckedAt()));

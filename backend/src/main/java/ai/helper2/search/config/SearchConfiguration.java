@@ -5,6 +5,7 @@ import ai.helper2.platform.quota.QuotaKeys;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.search.DailyLimits;
 import ai.helper2.search.DescribedSource;
+import ai.helper2.search.DiscoveredResources;
 import ai.helper2.search.QueryTranslator;
 import ai.helper2.search.RecordedOutcomes;
 import ai.helper2.search.ResultObserver;
@@ -93,8 +94,10 @@ class SearchConfiguration {
       SourceHealth health,
       RecordedOutcomes recorded,
       Resilience resilience,
-      WebSearchQuota quota) {
-    return new ListSources(sources, health, recorded, resilience, quota);
+      WebSearchQuota quota,
+      DiscoveredResources discovered,
+      Clock clock) {
+    return new ListSources(sources, health, recorded, resilience, quota, discovered, clock);
   }
 
   /**

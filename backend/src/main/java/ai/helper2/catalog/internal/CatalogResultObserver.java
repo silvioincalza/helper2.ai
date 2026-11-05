@@ -2,6 +2,7 @@ package ai.helper2.catalog.internal;
 
 import ai.helper2.catalog.internal.ResourceStore.DataOrigin;
 import ai.helper2.search.DescribedSource;
+import ai.helper2.search.DiscoveredResources;
 import ai.helper2.search.MergedResult;
 import ai.helper2.search.RecordedOutcomes;
 import ai.helper2.search.ResultObserver;
@@ -25,14 +26,16 @@ import org.springframework.stereotype.Component;
  * The catalog seen from search. Implements the search module's {@link ResultObserver}: every
  * resource seen in a live search is recorded so Helper2 can state when it was first discovered, and
  * detail pages work for live results, and the hits a source gave can be read back for a stored web
- * result set (ADR 0037). Also {@link RecordedOutcomes}: the Scout's last run outcome per source.
+ * result set (ADR 0037). Also {@link RecordedOutcomes}: the Scout's last run outcome per source,
+ * and {@link DiscoveredResources}: what each source brought this week (ADR 0042).
  *
  * <p>Recording is asynchronous ({@link ObservationQueue}), so a search costs one batched read of
  * discovery dates and no writes. The trade-off: a resource seen for the first time has no discovery
  * date in that first response (it is not recorded yet); every later search shows it.
  */
 @Component
-public class CatalogResultObserver implements ResultObserver, RecordedOutcomes {
+public class CatalogResultObserver
+    implements ResultObserver, RecordedOutcomes, DiscoveredResources {
 
   private final ResourceStore store;
   private final List<DescribedSource> sources;
@@ -56,6 +59,20 @@ public class CatalogResultObserver implements ResultObserver, RecordedOutcomes {
             Collectors.toMap(
                 ResourceStore.RecordedOutcome::sourceId,
                 r -> new SourceHealth.Entry(SourceOutcome.valueOf(r.outcome()), r.checkedAt())));
+  }
+
+  /**
+   * Per source with records, the resources with a record from it; the Helper2 index brought every
+   * resource it serves; the index by meaning is the same index, so it has no count of its own.
+   */
+  @Override
+  public Map<String, Long> countsSince(Instant since) {
+    Map<String, Long> counts = store.discoveredSince(since);
+    counts.put(
+        CatalogConfiguration.INDEX_SOURCE,
+        store.discoveredInIndexSince(since, Set.of(DataOrigin.INDEXED, DataOrigin.OBSERVED)));
+    counts.put(CatalogConfiguration.SEMANTIC_SOURCE, null);
+    return counts;
   }
 
   @Override

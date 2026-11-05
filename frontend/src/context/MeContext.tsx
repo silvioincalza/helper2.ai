@@ -2,17 +2,23 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { api } from '@/api/client';
 import type { Me } from '@/api/types';
 
+/** The session as the page knows it: the daily limits are unknown until GET /me answers. */
+export type Session = Omit<Me, 'limits'> & { limits?: Me['limits'] };
+
 interface MeValue {
-  me: Me;
+  me: Session;
   loaded: boolean;
   isAdmin: boolean;
 }
 
-const ANON: Me = { authenticated: false, roles: [], loginProviders: [] };
+const ANON: Session = { authenticated: false, roles: [], loginProviders: [] };
 const MeContext = createContext<MeValue>({ me: ANON, loaded: false, isAdmin: false });
 
 export function MeProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<{ me: Me; loaded: boolean }>({ me: ANON, loaded: false });
+  const [state, setState] = useState<{ me: Session; loaded: boolean }>({
+    me: ANON,
+    loaded: false,
+  });
 
   useEffect(() => {
     const ac = new AbortController();

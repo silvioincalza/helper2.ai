@@ -1,8 +1,12 @@
 package ai.helper2.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import ai.helper2.shared.ResourceType;
+import com.jayway.jsonpath.JsonPath;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -35,5 +39,18 @@ class GuideWithoutModelApiIT extends ApiTestBase {
                 org.hamcrest.Matchers.containsString("no AI reasoning"))
             .json();
     ContractValidator.assertMatches("GuideResponse", json);
+  }
+
+  @Test
+  void withoutAModelTheAccountShowsNoGuideQuestionLimit() throws Exception {
+    String me =
+        mvc.perform(get("/api/v1/me"))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+    ContractValidator.assertMatches("Me", me);
+    assertThat((Object) JsonPath.read(me, "$.limits.guideQuestions")).isNull();
   }
 }

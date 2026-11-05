@@ -14,10 +14,10 @@ home: Home {
   class: group
   direction: down
   hero: "Title, radar behind it" {class: app}
-  sources: "GET /api/v1/sources\n(one dot per source)" {class: ext}
+  sources: "GET /api/v1/sources\n(one dot per source,\nsize = newThisWeek)" {class: ext}
   bar: "Search box, pinned\nunder the header" {class: app}
   terms: "New this week and Coming up\n(terminals, Show all in place)" {class: app}
-  feeds: "GET /api/v1/recent\nGET /api/v1/events/upcoming" {class: ext}
+  feeds: "GET /api/v1/recent\nGET /api/v1/events/upcoming?days=90\n(total for Show all N)" {class: ext}
   hero -> sources
   hero -> bar -> terms -> feeds
 }

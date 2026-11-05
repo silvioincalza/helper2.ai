@@ -556,23 +556,79 @@ public class ResourceStore {
         .update();
   }
 
+  /** The bound of an open window: later than any date a source states. */
+  private static final Instant NO_END = Instant.parse("9999-12-31T00:00:00Z");
+
   /**
-   * EVENTs that have not ended yet, soonest first: start (or end, when stated) on or after [today].
-   * Only dates a source stated take part; an event without a stated start is never listed.
+   * EVENTs that have not ended yet, soonest first: start (or end, when stated) on or after [today],
+   * and with [until] (null: no bound) a start before it. Only dates a source stated take part; an
+   * event without a stated start is never listed.
    */
-  public List<UUID> upcomingEvents(Instant today, int limit) {
+  public List<UUID> upcomingEvents(Instant today, @Nullable Instant until, int limit) {
     return jdbc.sql(
             """
             SELECT id FROM resource
             WHERE type = 'EVENT' AND event_starts_at IS NOT NULL
               AND coalesce(event_ends_at, event_starts_at) >= :today
+              AND event_starts_at < :until
             ORDER BY event_starts_at, title
             LIMIT :limit
             """)
         .param("today", Timestamp.from(today))
+        .param("until", Timestamp.from(until == null ? NO_END : until))
         .param("limit", limit)
         .query((rs, i) -> rs.getObject(1, UUID.class))
         .list();
+  }
+
+  /** How many events {@link #upcomingEvents} would list without a limit. */
+  public int countUpcomingEvents(Instant today, @Nullable Instant until) {
+    return jdbc.sql(
+            """
+            SELECT count(*) FROM resource
+            WHERE type = 'EVENT' AND event_starts_at IS NOT NULL
+              AND coalesce(event_ends_at, event_starts_at) >= :today
+              AND event_starts_at < :until
+            """)
+        .param("today", Timestamp.from(today))
+        .param("until", Timestamp.from(until == null ? NO_END : until))
+        .query(Integer.class)
+        .single();
+  }
+
+  /**
+   * Resources of [origins] that Helper2 first discovered at or after [since]. Served by
+   * resource_first_discovered_idx.
+   */
+  public long discoveredInIndexSince(Instant since, Set<DataOrigin> origins) {
+    return jdbc.sql(
+            """
+            SELECT count(*) FROM resource
+            WHERE first_discovered_at >= :since AND data_origin = ANY(:origins)
+            """)
+        .param("since", Timestamp.from(since))
+        .param("origins", origins.stream().map(Enum::name).toArray(String[]::new))
+        .query(Long.class)
+        .single();
+  }
+
+  /**
+   * Per source, the resources with a record from it that Helper2 first discovered at or after
+   * [since]; sources without one are absent. Served by resource_first_discovered_idx.
+   */
+  public Map<String, Long> discoveredSince(Instant since) {
+    Map<String, Long> out = new HashMap<>();
+    jdbc.sql(
+            """
+            SELECT sr.source_id, count(DISTINCT r.id)
+            FROM resource r JOIN source_record sr ON sr.resource_id = r.id
+            WHERE r.first_discovered_at >= :since
+            GROUP BY sr.source_id
+            """)
+        .param("since", Timestamp.from(since))
+        .query((rs, i) -> out.put(rs.getString(1), rs.getLong(2)))
+        .list();
+    return out;
   }
 
   public Map<UUID, Instant> firstDiscovered(Collection<UUID> ids) {
@@ -902,6 +958,24 @@ public class ResourceStore {
    * from [since] up to now; [types] empty = every type. Future dates are excluded: a source clock
    * or a time-zone slip must not pin an item to the top.
    */
+  /** How many resources {@link #recentlyPublished} would list without a limit. */
+  public int countRecentlyPublished(
+      Instant since, Instant now, Set<String> types, Set<DataOrigin> origins) {
+    return jdbc.sql(
+            """
+            SELECT count(*) FROM resource
+            WHERE published_at IS NOT NULL AND published_at >= :since AND published_at <= :now
+              AND data_origin = ANY(:origins)
+              AND (cardinality(:types) = 0 OR type = ANY(:types))
+            """)
+        .param("since", Timestamp.from(since))
+        .param("now", Timestamp.from(now))
+        .param("origins", origins.stream().map(Enum::name).toArray(String[]::new))
+        .param("types", types.toArray(String[]::new))
+        .query(Integer.class)
+        .single();
+  }
+
   public List<UUID> recentlyPublished(
       Instant since, Instant now, Set<String> types, Set<DataOrigin> origins, int limit) {
     return jdbc.sql(

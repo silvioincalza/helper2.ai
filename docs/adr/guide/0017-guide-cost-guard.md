@@ -46,7 +46,8 @@ The guards run in this order. Values are defaults; each has an `H2_` variable.
    answer with the notice `GUIDE_DAILY_QUOTA`, not an error. Cached and shared answers do not count; a question answered with a similar question's answer
    counts, because its plan ran ([0041](0041-guide-answer-cache.md)). In memory,
    `ClientQuota` keeps only today's clients, at most 10,000 (`MAX_CLIENTS`; the least recently seen leaves first),
-   and drops them all when the day changes.
+   and drops them all when the day changes. `ClientQuota.left` reads what a client has left without counting (the
+   Redis count, else this replica's count in memory); `GET /api/v1/me` shows it ([0023](../edge/0023-identity-and-admin.md)).
 6. **Global daily cap** (`H2_GUIDE_DAILY_MODEL_CALLS`, 600): one unit before each model attempt
    ([0014](0014-llm-integration.md)), taken inside the `llm-chat` circuit, so a call the open circuit refuses costs no
    unit. When spent, plan or choose fails with `GuideBudgetExhausted` and the answer is the degraded one; the reason

@@ -186,22 +186,22 @@ class HomeListsPerfTest {
     measure(
         "/recent size=12",
         () -> oneByOne(recentIds(12)),
-        () -> recent.list(SINCE, UNTIL, Set.of(), 12),
+        () -> recent.list(SINCE, UNTIL, Set.of(), 12).items(),
         12);
     measure(
         "/recent size=24",
         () -> oneByOne(recentIds(24)),
-        () -> recent.list(SINCE, UNTIL, Set.of(), 24),
+        () -> recent.list(SINCE, UNTIL, Set.of(), 24).items(),
         24);
     measure(
         "/upcoming size=6",
-        () -> oneByOne(store.upcomingEvents(TODAY, 6)),
-        () -> upcoming.list(TODAY, 6),
+        () -> oneByOne(store.upcomingEvents(TODAY, null, 6)),
+        () -> upcoming.list(TODAY, null, 6).items(),
         6);
     measure(
         "/upcoming size=60",
-        () -> oneByOne(store.upcomingEvents(TODAY, 60)),
-        () -> upcoming.list(TODAY, 60),
+        () -> oneByOne(store.upcomingEvents(TODAY, null, 60)),
+        () -> upcoming.list(TODAY, null, 60).items(),
         60);
   }
 }

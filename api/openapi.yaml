@@ -95,9 +95,12 @@ paths:
       operationId: listUpcomingEvents
       summary: Next AI events (conferences and industry events), soonest first.
       description: |
-        For the home page "Next events" list. Only EVENTs whose source states when they take place and
-        that have not ended yet; an event without a stated date is never listed. Served from the index.
+        For the home page "Coming up" list. Only EVENTs whose source states when they take place and
+        that have not ended yet; an event without a stated date is never listed. With `days`, only events
+        that start before the end of that window (counted from the start of today, UTC); an event already
+        running is listed until it ends. Served from the index.
       parameters:
+        - { name: days, in: query, schema: { type: integer, minimum: 1, maximum: 366 } }
         - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 60, default: 6 } }
       responses:
         '200':
@@ -1028,17 +1031,33 @@ components:
 
     RecentResponse:
       type: object
-      required: [items, since, generatedAt]
+      required: [items, total, since, generatedAt]
       properties:
         items: { type: array, items: { $ref: '#/components/schemas/ResultCard' } }
+        total:
+          type: integer
+          minimum: 0
+          description: >-
+            Resources in the window (and types) in all, of which `items` holds the first `size`; for "Show all N".
+            A resource whose records no longer merge is counted but not shown, so `items` can be shorter.
         since: { type: string, format: date-time, description: Oldest publication date included. }
         generatedAt: { type: string, format: date-time }
 
     UpcomingEventsResponse:
       type: object
-      required: [items, generatedAt]
+      required: [items, total, generatedAt]
       properties:
         items: { type: array, items: { $ref: '#/components/schemas/ResultCard' } }
+        total:
+          type: integer
+          minimum: 0
+          description: >-
+            Upcoming events (in the `days` window, when given) in all, of which `items` holds the first `size`; for
+            "Show all N".
+        until:
+          type: [string, 'null']
+          format: date-time
+          description: End of the `days` window (exclusive); null without `days`.
         generatedAt: { type: string, format: date-time }
 
     ResourceDetail:
@@ -1521,6 +1540,15 @@ components:
         webCredits:
           oneOf: [{ $ref: '#/components/schemas/WebCredits' }, { type: 'null' }]
           description: Only on an enabled metered source (`metered`); null on every other source and when the count cannot be read.
+        newThisWeek:
+          type: [integer, 'null']
+          format: int64
+          minimum: 0
+          description: >-
+            Resources this source brought that Helper2 first discovered in the last 7 days (a rolling window, not the
+            calendar week): those with a record from it, and for `helper2-index` every resource of the index (indexed
+            and observed). Null for `helper2-semantic` (the same index searched by meaning, no count of its own) and
+            when the catalog cannot answer.
 
     CircuitState:
       type: string
@@ -1545,7 +1573,7 @@ components:
 
     Me:
       type: object
-      required: [authenticated, roles, loginProviders]
+      required: [authenticated, roles, loginProviders, limits]
       properties:
         authenticated: { type: boolean }
         displayName: { type: [string, 'null'] }
@@ -1559,6 +1587,37 @@ components:
             properties:
               id: { type: string }
               name: { type: string }
+        limits: { $ref: '#/components/schemas/Limits' }
+
+    Limits:
+      type: object
+      description: |
+        What this visitor can still do today (UTC day). Read from the same counters that enforce the limits, without
+        counting: a guest is counted under a hash of the client address, a signed-in user (with the registered tier
+        on) under the user id for web searches. The response never carries the address, the hash or the id.
+      required: [guideQuestions, webSearches, resetsAt]
+      properties:
+        guideQuestions:
+          oneOf: [{ $ref: '#/components/schemas/DailyAllowance' }, { type: 'null' }]
+          description: >-
+            Fresh guide questions per client address (`H2_GUIDE_CLIENT_DAILY_QUESTIONS`, ADR 0017). An answer from the
+            cache costs none; past the limit the guide answers from search only. Null when the guide has no model: it
+            then always answers from search only and spends nothing.
+        webSearches:
+          type: object
+          description: Live web searches per feature (ADR 0037), the same numbers as `webSearches` on a search or guide answer.
+          required: [search, guide]
+          properties:
+            search: { oneOf: [{ $ref: '#/components/schemas/WebSearches' }, { type: 'null' }] }
+            guide: { oneOf: [{ $ref: '#/components/schemas/WebSearches' }, { type: 'null' }] }
+        resetsAt: { type: string, format: date-time, description: The next 00:00 UTC, when every count starts again. }
+
+    DailyAllowance:
+      type: object
+      required: [limit, remaining]
+      properties:
+        limit: { type: integer, minimum: 0 }
+        remaining: { type: integer, minimum: 0 }
 
     BookmarkRequest:
       type: object

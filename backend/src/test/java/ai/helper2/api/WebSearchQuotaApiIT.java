@@ -133,6 +133,47 @@ class WebSearchQuotaApiIT extends ApiTestBase {
     ContractValidator.assertMatches("GuideResponse", json);
   }
 
+  private String me() throws Exception {
+    String body =
+        mvc.perform(get("/api/v1/me").with(visitor))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    ContractValidator.assertMatches("Me", body);
+    return body;
+  }
+
+  @Test
+  void theAccountShowsWhatIsLeftTodayWithoutCountingAndWithoutTheAddress() throws Exception {
+    String fresh = me();
+    assertThat(read(fresh, "$.limits.webSearches.search.limit")).isEqualTo(3);
+    assertThat(read(fresh, "$.limits.webSearches.search.remaining")).isEqualTo(3);
+    assertThat(read(fresh, "$.limits.webSearches.guide.remaining")).isEqualTo(3);
+    assertThat(read(fresh, "$.limits.guideQuestions")).as("no guide model here").isNull();
+    assertThat(java.time.OffsetDateTime.parse(read(fresh, "$.limits.resetsAt").toString()))
+        .isEqualTo(
+            java.time.LocalDate.now(java.time.ZoneOffset.UTC)
+                .plusDays(1)
+                .atStartOfDay()
+                .atOffset(java.time.ZoneOffset.UTC));
+    assertThat(fresh).doesNotContain(address);
+    assertThat(read(me(), "$.limits.webSearches.search.remaining"))
+        .as("reading does not count")
+        .isEqualTo(3);
+
+    search("agents " + UUID.randomUUID());
+    GuideAnswers.ask(
+        mvc,
+        "{\"request\":\"open source agent frameworks " + UUID.randomUUID() + "\"}",
+        csrf(),
+        visitor);
+
+    String after = me();
+    assertThat(read(after, "$.limits.webSearches.search.remaining")).isEqualTo(2);
+    assertThat(read(after, "$.limits.webSearches.guide.remaining")).isEqualTo(2);
+  }
+
   private Number creditsToday() throws Exception {
     String body =
         mvc.perform(get("/api/v1/sources"))

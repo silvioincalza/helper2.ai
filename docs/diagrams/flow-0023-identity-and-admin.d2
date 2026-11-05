@@ -5,7 +5,8 @@
 #   backend/src/main/java/ai/helper2/identity/usecase/*.java, identity/internal/Users.java, Bookmarks.java, AuditLog.java,
 #   backend/src/main/java/ai/helper2/catalog/usecase/ResolveReviewItem.java, scout/usecase/StartScoutRun.kt,
 #   frontend/src/context/BookmarksContext.tsx, frontend/src/pages/AccountPage.tsx, frontend/src/pages/admin/,
-#   backend/src/main/java/ai/helper2/platform/quota/QuotaKeys.java, RedisQuotaCounter.java (counters deleted with the account).
+#   backend/src/main/java/ai/helper2/platform/quota/QuotaKeys.java, RedisQuotaCounter.java (counters deleted with the account),
+#   backend/src/main/java/ai/helper2/identity/VisitorLimits.java, guide/internal/GuideVisitorLimits.java (limits on GET /me).
 # Render: cd docs/diagrams && d2 fmt flow-0023-identity-and-admin.d2 && d2 flow-0023-identity-and-admin.d2 flow-0023-identity-and-admin.svg
 
 ...@style
@@ -28,7 +29,9 @@ access: SecurityConfiguration rules {
   e401: "401 (no redirect)" {class: fail}
   deny: "Any other /api/**: denied" {class: fail}
   e403: "403" {class: fail}
+  limits: "GET /me: limits of this visitor,\nread from the counters, never counted;\nguide questions null without a model,\nweb searches null without a web source;\nno address, hash or id in the answer" {class: data}
   open -> anon: yes {class: hot}
+  anon -> limits: "GET /me"
   open -> admin: no
   admin -> isadmin: yes
   admin -> bm: no
