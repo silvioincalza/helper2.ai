@@ -40,6 +40,7 @@ class PolicyApiIT extends ApiTestBase {
             .andExpect(jsonPath("$.retention.storedWebResultsSeconds").value(604_800))
             .andExpect(jsonPath("$.retention.inactiveAccountsSeconds").value(63_072_000))
             .andExpect(jsonPath("$.retention.handledReportsSeconds").value(31_536_000))
+            .andExpect(jsonPath("$.retention.adminRecordsSeconds").value(63_072_000))
             .andReturn()
             .getResponse()
             .getContentAsString();

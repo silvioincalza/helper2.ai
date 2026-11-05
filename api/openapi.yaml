@@ -789,7 +789,7 @@ components:
         retention:
           type: object
           description: How long each store keeps what it keeps (ADR 0034), in seconds.
-          required: [cachedSearchesSeconds, cachedGuideAnswersSeconds, translationsSeconds, queryVectorsSeconds, storedWebResultsSeconds, inactiveAccountsSeconds, handledReportsSeconds]
+          required: [cachedSearchesSeconds, cachedGuideAnswersSeconds, translationsSeconds, queryVectorsSeconds, storedWebResultsSeconds, inactiveAccountsSeconds, handledReportsSeconds, adminRecordsSeconds]
           properties:
             cachedSearchesSeconds: { type: integer, format: int64, minimum: 0, description: "Source answers in the search cache, served while a source fails (`H2_SEARCH_STALE_FOR`)." }
             cachedGuideAnswersSeconds: { type: integer, format: int64, minimum: 0, description: "Guide answers in the shared cache (`H2_GUIDE_CACHE_TTL`)." }
@@ -798,6 +798,7 @@ components:
             storedWebResultsSeconds: { type: integer, format: int64, minimum: 0, description: "Stored web search results (`H2_RETENTION_TAVILY_RESULTS`)." }
             inactiveAccountsSeconds: { type: integer, format: int64, minimum: 0, description: "An account, its settings and its saved items, after the last sign-in (`H2_RETENTION_INACTIVE_ACCOUNTS`)." }
             handledReportsSeconds: { type: integer, format: int64, minimum: 0, description: "Reports, after their review was resolved (`H2_RETENTION_RESOLVED_ISSUE_REPORTS`)." }
+            adminRecordsSeconds: { type: integer, format: int64, minimum: 0, description: "An administrator's action in the back office audit trail, with their id (`H2_RETENTION_ADMIN_AUDIT`, ADR 0045)." }
 
     WebSearchLimits:
       type: object
