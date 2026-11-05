@@ -71,8 +71,11 @@
   color: var(--muted);
 }
 
-/* A wide table scrolls inside its own box on a phone; the page never scrolls sideways. */
+/* A wide table scrolls inside its own box on a phone; the page never scrolls sideways. The box is the containing
+   block of what is positioned inside it (the sr-only text of the external links), so its overflow clips that too:
+   otherwise those spans are placed against the page and make it wider than the screen. */
 .v4-scroll {
+  position: relative;
   max-width: 100%;
   overflow-x: auto;
 }
