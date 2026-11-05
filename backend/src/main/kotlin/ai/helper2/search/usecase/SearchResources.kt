@@ -122,7 +122,12 @@ constructor(
   )
 
   /** What happened to each source in one search. */
-  private inner class Run(val startedAt: Instant, val asker: Asker?, val intentClass: IntentClass) {
+  private inner class Run(
+    val startedAt: Instant,
+    val asker: Asker?,
+    val intentClass: IntentClass,
+    val web: Boolean = true,
+  ) {
     val attempts = mutableListOf<Attempt>()
     private val pending = mutableListOf<Pending>()
     private val cachedFor = mutableMapOf<String, CachedHits?>()
@@ -142,11 +147,14 @@ constructor(
     }
 
     /**
-     * The attempt of a source that must not run now (disabled, nothing to browse, paused after a
-     * rate limit); null when it may run.
+     * The attempt of a source that must not run now (disabled, no web asked for, nothing to browse,
+     * paused after a rate limit); null when it may run.
      */
     private fun skippedAttempt(d: SourceDescriptor, query: SourceQuery): Attempt? {
       if (!d.enabled) return skipped(d, startedAt, SkipReason.DISABLED, "Disabled in configuration")
+      if (d.metered && !web) {
+        return skipped(d, startedAt, SkipReason.WEB_NOT_ASKED, "Web search not asked for")
+      }
       if (query.browse && !d.browses) {
         return skipped(d, startedAt, SkipReason.NOT_BROWSABLE, "No subject to search")
       }
@@ -356,7 +364,7 @@ constructor(
     val language = languages?.detect(request.text)?.takeIf { it != "en" }
     val untranslated = analyzer.analyze(request.text)
     val translation = language?.let { startTranslation(request.text, it) }
-    val run = Run(startedAt, request.asker, IntentClass.of(request, untranslated))
+    val run = Run(startedAt, request.asker, IntentClass.of(request, untranslated), request.web)
     val analyzed = runSources(run, request, untranslated, language, translation)
 
     val statuses = statusesOf(run.attempts)

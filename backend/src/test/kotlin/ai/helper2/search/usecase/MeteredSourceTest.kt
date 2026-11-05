@@ -169,6 +169,23 @@ class MeteredSourceTest {
   }
 
   @Test
+  fun `a search without web asks neither the source nor its store, and is not partial`() {
+    val svc = service()
+    svc.search(req())
+
+    val out = svc.search(SearchRequest(text = "rag frameworks", web = false))
+
+    val status = out.statuses.single()
+    assertEquals(SourceOutcome.SKIPPED, status.outcome)
+    assertEquals(SkipReason.WEB_NOT_ASKED, status.skipReason)
+    assertEquals(ServedFrom.NONE, status.servedFrom)
+    assertEquals(1, web.calls.get(), "only the first search called the source")
+    assertEquals(1, credits.spent.size)
+    assertEquals(0, out.total)
+    assertFalse(out.coverage.partial)
+  }
+
+  @Test
   fun `a fresh stored set answers without a live call and without using the quota`() {
     val svc = service()
     svc.search(req())

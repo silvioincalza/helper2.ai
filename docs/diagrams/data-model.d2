@@ -1,6 +1,7 @@
 # Data model: every PostgreSQL table, its columns, keys and foreign keys, and what a delete of the target does.
 # Source of truth: backend/src/main/resources/db/migration/V1__schema.sql (the whole schema, ADR 0004 §5),
-#   V2__enrichment_extra_evidence.sql (ADR 0043), V3__review_item_drop_source_conflict.sql (review kinds).
+#   V2__enrichment_extra_evidence.sql (ADR 0043), V3__review_item_drop_source_conflict.sql (review kinds),
+#   V4__home_example.sql (ADR 0049).
 #   Delete rules on the lines: ADR 0034. Seeds (R__ migrations) add rows, no tables.
 # Lines: solid = foreign key, labelled with its ON DELETE rule; dashed = a link the code keeps, with no foreign key.
 # Render: cd docs/diagrams && d2 fmt data-model.d2 && d2 data-model.d2 data-model.svg
@@ -297,6 +298,29 @@ people: "people and review" {
   }
 }
 
+examples: "examples: the home page's example searches" {
+  class: group
+  home_example: {
+    class: table
+    id: uuid {constraint: primary_key}
+    label: "text (2-32, unique per locale)"
+    query: "text (3-200, unique per locale)"
+    path: "text (USE_AI|BUILD_WITH_AI)"
+    locale: text
+    status: "text (ACTIVE|PAUSED)"
+    expected_resource_ids: "uuid[] (1-3)"
+    origin: "text (BUILT_IN|CURATED|AI_DRAFTED)"
+    model: text
+    check_outcome: "text (PENDING|PASS|WEAK|FAIL)"
+    check_best_rank: integer
+    check_result_count: integer
+    checked_at: timestamptz
+    version: integer
+    created_at: timestamptz
+    updated_at: timestamptz
+  }
+}
+
 caches: "shared caches: no query text stored, purged by expiry" {
   class: group
 
@@ -377,4 +401,5 @@ people.review_item.report_id -> people.issue_report.id: CASCADE
 
 people.bookmark.resource_id -> catalog.resource.id: "snapshot, may not be indexed" {class: soft}
 caches.tavily_query_result.result_ids -> catalog.resource.id: "ids of the hits" {class: soft}
+examples.home_example.expected_resource_ids -> catalog.resource.id: "expected results" {class: soft}
 caches.guide_similar_question.answer_key -> caches.ai_cache.key_hash: "guide-answer key" {class: soft}

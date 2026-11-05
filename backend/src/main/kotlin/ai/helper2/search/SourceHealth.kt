@@ -16,7 +16,8 @@ class SourceHealth : SearchMetrics {
   private val durations = ConcurrentHashMap<String, ArrayDeque<Duration>>()
 
   override fun sourceCompleted(status: SourceStatus) {
-    if (status.skipReason == SkipReason.DISABLED) return
+    if (status.skipReason == SkipReason.DISABLED || status.skipReason == SkipReason.WEB_NOT_ASKED)
+      return
     last[status.source.id] = Entry(status.outcome, status.checkedAt)
     val latency = status.latency
     if (

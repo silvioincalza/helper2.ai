@@ -203,6 +203,8 @@ enum class SkipReason {
   BUSY,
   DAILY_LIMIT,
   QUOTA_UNAVAILABLE,
+  /** The request asked for no web search ([SearchRequest.web]). */
+  WEB_NOT_ASKED,
 }
 
 enum class ServedFrom {
