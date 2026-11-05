@@ -210,35 +210,47 @@ class GapRoundTest {
       listOf(
         "Start <svg style=\"display:none\"/><p>Pricing five dollars</p>",
         "Start <math hidden/><p>Pricing five dollars</p>",
-        "Start <svg><path d=\"M0\"/><g style=\"display:none\"/></svg><p>Pricing five dollars</p>",
+        "Start <div><svg hidden/></div><p>Pricing five dollars</p>",
       )) {
       assertTrue(UntrustedPageText.clean(raw).contains("Pricing five dollars"), raw)
     }
     val nested =
       UntrustedPageText.clean(
-        "A <svg hidden><g><path d=\"M0\"/></g><text>secret</text></svg><p>End</p>"
+        "A <svg hidden><g><path d=\"M0\"/></g><svg/><text>secret</text></svg><p>End</p>"
       )
     assertFalse(nested.contains("secret"), nested)
     assertTrue(nested.contains("End"), nested)
-    assertEquals("A", UntrustedPageText.clean("A <div hidden/>secret <p>more</p>"))
-    // An HTML element leaves SVG in a browser, where "/>" means nothing: its text stays hidden.
-    assertFalse(
-      UntrustedPageText.clean("A <svg><div hidden/>secret</div></svg>").contains("secret")
-    )
-    assertFalse(
-      UntrustedPageText.clean("A <svg><p style=\"display:none\"/>secret").contains("secret")
-    )
-    // A "/" at the end of an unquoted value is part of the value, not a self-closing slash.
-    assertFalse(
-      UntrustedPageText.clean("A <svg><g x=a hidden y=b/>secret</g></svg>").contains("secret")
-    )
-    // Inside foreignObject the content is HTML again: "/>" means nothing there.
-    assertFalse(
-      UntrustedPageText.clean("A <svg><foreignObject><g hidden/>secret</g></foreignObject></svg>")
-        .contains("secret")
-    )
-    // An HTML breakout tag leaves SVG: a later "/>" means nothing.
-    assertFalse(UntrustedPageText.clean("A <svg><p>x</p><g hidden/>secret</g>").contains("secret"))
+  }
+
+  @Test
+  fun `any other self-closing hidden element stays open, so its text stays hidden`() {
+    for (raw in
+      listOf(
+        "A <div hidden/>secret <p>more</p>",
+        "A <svg><div hidden/>secret</div></svg>",
+        "A <svg><p style=\"display:none\"/>secret",
+        "A <svg><g hidden/>secret</g></svg>",
+        "A <svg><g x=a hidden y=b/>secret</g></svg>",
+        "A <svg><foreignObject><g hidden/>secret</g></foreignObject></svg>",
+        "A <svg><p>x</p><g hidden/>secret</g>",
+      )) {
+      assertFalse(UntrustedPageText.clean(raw).contains("secret"), raw)
+    }
+  }
+
+  @Test
+  fun `a fake closing tag inside raw text does not end a hidden element`() {
+    for (raw in
+      listOf(
+        "A <div hidden><textarea></div></textarea>secret</div> End",
+        "A <div hidden><title></div></title>secret</div> End",
+        "A <div hidden><noscript></div></noscript>secret</div> End",
+      )) {
+      val text = UntrustedPageText.clean(raw)
+      assertFalse(text.contains("secret"), raw)
+      assertTrue(text.contains("End"), raw)
+    }
+    assertEquals("A", UntrustedPageText.clean("A <div hidden><textarea>never closed secret"))
   }
 
   @Test

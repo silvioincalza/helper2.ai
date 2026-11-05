@@ -296,7 +296,6 @@ object UntrustedPageText {
     val out = StringBuilder(text.length)
     var from = 0
     var at = 0
-    val foreign = ForeignContext()
     while (true) {
       val lt = text.indexOf('<', at)
       if (lt < 0) break
@@ -309,16 +308,13 @@ object UntrustedPageText {
           } else {
             at = lt + 1
           }
-        tag.closing || !hides(tag) -> {
-          foreign.after(tag)
-          at = tag.end
-        }
+        tag.closing -> at = tag.end
+        !hides(tag) -> at = if (tag.name in RAW_TEXT) rawTextEnd(text, tag) ?: break else tag.end
         else -> {
           out.append(text, from, lt)
-          val selfClosingHere = foreign.honoursSelfClosing(tag.name)
           from =
-            if (tag.name in VOID_ELEMENTS || (selfClosingHere && tag.selfClosing)) tag.end
-            else closeOf(text, tag.name, tag.end, selfClosingHere) ?: return out.toString()
+            if (tag.name in VOID_ELEMENTS || closesItself(tag)) tag.end
+            else closeOf(text, tag.name, tag.end) ?: return out.toString()
           at = from
         }
       }
@@ -341,130 +337,31 @@ object UntrustedPageText {
   )
 
   /**
-   * Where the scan is: inside SVG or MathML (foreign content) or in HTML. A browser honours "/>"
-   * only on an SVG or MathML element in foreign content. When unsure this says HTML, so "/>" means
-   * nothing and a hidden element keeps its text hidden: an HTML breakout tag leaves foreign
-   * content, and the content of an integration point (foreignObject, desc, mi...) is HTML.
+   * "/>" closes an element only where a browser honours it: on svg and math, which the browser
+   * always reads as SVG or MathML, wherever they stand. Any other hidden element with "/>" stays
+   * open, so its text stays hidden (to its closing tag, or the end of the page).
    */
-  private class ForeignContext {
-    private var roots = 0
-    private var integrations = 0
-
-    fun honoursSelfClosing(name: String): Boolean =
-      name in FOREIGN_ELEMENTS && (name in FOREIGN_ROOTS || (roots > 0 && integrations == 0))
-
-    fun after(tag: Tag) {
-      val name = tag.name
-      when {
-        name in FOREIGN_ROOTS ->
-          if (tag.closing) roots = maxOf(0, roots - 1) else if (!tag.selfClosing) roots++
-        roots == 0 -> Unit
-        name in INTEGRATION_POINTS ->
-          if (tag.closing) integrations = maxOf(0, integrations - 1)
-          else if (!(tag.selfClosing && honoursSelfClosing(name))) integrations++
-        !tag.closing && integrations == 0 && name in HTML_BREAKOUT -> roots = 0
-      }
-    }
-  }
+  private fun closesItself(tag: Tag): Boolean = tag.selfClosing && tag.name in FOREIGN_ROOTS
 
   private val FOREIGN_ROOTS = setOf("svg", "math")
 
-  /** Element names that exist only in SVG or MathML (none HTML shares, like "a" or "title"). */
-  private val FOREIGN_ELEMENTS =
-    setOf(
-      "svg",
-      "g",
-      "path",
-      "circle",
-      "rect",
-      "line",
-      "polyline",
-      "polygon",
-      "ellipse",
-      "use",
-      "symbol",
-      "defs",
-      "stop",
-      "lineargradient",
-      "radialgradient",
-      "clippath",
-      "mask",
-      "pattern",
-      "filter",
-      "marker",
-      "text",
-      "tspan",
-      "textpath",
-      "animate",
-      "animatetransform",
-      "set",
-      "math",
-      "mi",
-      "mo",
-      "mn",
-      "ms",
-      "mtext",
-      "mspace",
-      "mrow",
-      "mfrac",
-      "msqrt",
-      "msup",
-      "msub",
-    )
+  /** Elements whose content a browser reads as text, not tags: a "</div>" inside closes nothing. */
+  private val RAW_TEXT =
+    setOf("textarea", "title", "xmp", "iframe", "noembed", "noframes", "noscript")
 
-  /** Inside these, in foreign content, the content is HTML again. */
-  private val INTEGRATION_POINTS =
-    setOf("foreignobject", "desc", "title", "annotation-xml", "mi", "mo", "mn", "ms", "mtext")
-
-  /** HTML start tags that make a browser leave foreign content. */
-  private val HTML_BREAKOUT =
-    setOf(
-      "b",
-      "big",
-      "blockquote",
-      "body",
-      "br",
-      "center",
-      "code",
-      "dd",
-      "div",
-      "dl",
-      "dt",
-      "em",
-      "embed",
-      "h1",
-      "h2",
-      "h3",
-      "h4",
-      "h5",
-      "h6",
-      "head",
-      "hr",
-      "i",
-      "img",
-      "li",
-      "listing",
-      "menu",
-      "meta",
-      "nobr",
-      "ol",
-      "p",
-      "pre",
-      "ruby",
-      "s",
-      "small",
-      "span",
-      "strong",
-      "strike",
-      "sub",
-      "sup",
-      "table",
-      "tt",
-      "u",
-      "ul",
-      "var",
-      "font",
-    )
+  /** Where the raw-text element [tag] ends, after its closing tag; null if it never closes. */
+  private fun rawTextEnd(text: String, tag: Tag): Int? {
+    var at = tag.end
+    while (true) {
+      val lt = text.indexOf("</", at)
+      if (lt < 0) return null
+      val close = readTag(text, lt)
+      if (close != null && close.closing && close.name == tag.name) {
+        return if (close.end < 0) null else close.end
+      }
+      at = lt + 2
+    }
+  }
 
   /** A start in these sorted positions falls in [from, to). */
   private fun IntArray.any(from: Int, to: Int): Boolean {
@@ -509,7 +406,7 @@ object UntrustedPageText {
   }
 
   /** Where the element [name] opened before [from] ends, counting nested ones; null if never. */
-  private fun closeOf(text: String, name: String, from: Int, foreign: Boolean): Int? {
+  private fun closeOf(text: String, name: String, from: Int): Int? {
     var depth = 1
     var at = from
     while (true) {
@@ -519,10 +416,11 @@ object UntrustedPageText {
       when {
         tag == null -> at = lt + 1
         tag.end < 0 -> return null
+        !tag.closing && tag.name in RAW_TEXT -> at = rawTextEnd(text, tag) ?: return null
         tag.name != name -> at = tag.end
         tag.closing -> if (--depth == 0) return tag.end else at = tag.end
         else -> {
-          if (!(foreign && tag.selfClosing)) depth++
+          if (!closesItself(tag)) depth++
           at = tag.end
         }
       }
