@@ -117,16 +117,20 @@ pages, Results and the resource page, and the text pages; this record says what 
    - **Show more.** Under the list (and the timeline) instead of pages: it adds the next page in place, moves focus to
      its first row and says "20 more results" once, politely. `page` in the URL is the last page shown, so Back and a
      reload show the same rows. Each page is its own GET /search through the recent-answers cache (`morePages.tsx`),
-     so Back needs no request. Up to page 50, as the API allows.
+     so Back needs no request. On Back the pages in that cache are read during render, so their rows are there before
+     the scroll position comes back, and the browser does not cut it to a shorter list. Up to page 50, as the API
+     allows.
    - **No guide suggestion over the list.** The box has the Ask the guide button; an empty result keeps "Ask the guide
      instead".
    - **Guide picks merged into the list.** The rows keep the search order, so nothing moves when the answer comes and
      nothing is announced. A picked row shows "Guide pick #1", the reason (labelled "AI-written", marked
      `data-ai-generated`) and its quote, highlighted where it stands in the source's own words, with "Checked word for
-     word in the source". On an AI-written description there is no quote. The chips in the picks bar jump to the rows.
-     The row passes the pick (rank, reason, quote, checks) on in the history entry's state, so the resource page says
-     **Why the guide picked it**, whether a second model call checked it, and the requirements checked against the
-     source. Nothing of it leaves the browser.
+     word in the source". On an AI-written description there is no quote. The chips in the picks bar jump to the rows
+     in the list. On the timeline, and for a pick not on the first page, a chip opens the resource page instead. The
+     row and the chip pass only what that page shows of the pick (rank, reason, quote, checks) on in the history
+     entry's state, so the resource page says **Why the guide picked it**, whether a second model call checked it, and
+     the requirements checked against the source. Nothing of it leaves the browser; it goes with the tab, and the
+     Privacy page says so.
    - **Some sources did not answer:** one quiet line under the heading, no banner and no live region: "2 of 5 sources
      did not answer · Which?" (`CoverageLine`). Which? lists them and why, in words. Try again only when a retry can
      help (an error, a timeout, busy); never while a source is paused or its circuit is open.
