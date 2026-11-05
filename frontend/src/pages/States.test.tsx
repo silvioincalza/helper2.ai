@@ -86,7 +86,7 @@ describe('states: every state says what happened and offers a next step', () => 
     ).toBeInTheDocument();
   });
 
-  it('some sources failed: results stay, the line says so, links to the tiles and retries', async () => {
+  it('some sources failed: results stay, one quiet line says so, links to the tiles and retries', async () => {
     let n = 0;
     mockApi({
       'GET /search': () =>
@@ -105,18 +105,44 @@ describe('states: every state says what happened and offers a next step', () => 
     });
     renderApp(url);
     expect((await screen.findAllByText('Acme Translator')).length).toBeGreaterThan(0);
-    const line = screen
-      .getByText(/Only 1 of 2 queried sources responded/)
-      .closest('[role="status"]') as HTMLElement;
-    expect(within(line).getByRole('link', { name: 'See which sources failed' })).toHaveAttribute(
+    const line = screen.getByText(/Only 1 of 2 queried sources responded/);
+    // Read with the heading, not announced on every search.
+    expect(line.closest('[role="status"], [aria-live]')).toBeNull();
+    expect(within(line).getByRole('link', { name: 'Which ones?' })).toHaveAttribute(
       'href',
-      '#h2-sources-h',
+      '#h2-sources',
     );
     expect(document.querySelector('.h2-source-tile.is-failed')).toHaveTextContent('Beta');
     await userEvent.click(within(line).getByRole('button', { name: /Try again/ }));
     await waitFor(() =>
       expect(screen.queryByText(/Only 1 of 2 queried sources responded/)).not.toBeInTheDocument(),
     );
+  });
+
+  it('a source on pause (its circuit open) is not retried: the line has no Try again', async () => {
+    const paused = makeStatus({
+      sourceId: 'b',
+      name: 'Beta',
+      outcome: 'SKIPPED',
+      servedFrom: 'NONE',
+    });
+    mockApi({
+      'GET /search': () =>
+        makeSearch({
+          sources: [makeStatus(), paused],
+          coverage: {
+            partial: true,
+            sourcesConfigured: 2,
+            sourcesQueried: 2,
+            sourcesSucceeded: 1,
+            note: 'n',
+          },
+        }),
+    });
+    renderApp(url);
+    const line = await screen.findByText(/Only 1 of 2 queried sources responded/);
+    expect(within(line).getByRole('link', { name: 'Which ones?' })).toBeInTheDocument();
+    expect(within(line).queryByRole('button', { name: /Try again/ })).not.toBeInTheDocument();
   });
 
   it('all sources failed: an alert, not an empty result, with retry and the sources page', async () => {

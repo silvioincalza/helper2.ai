@@ -1,5 +1,5 @@
 import { screen } from '@testing-library/react';
-import { makeCard, makeSearch } from '@/test/fixtures';
+import { makeCard, makeDetail } from '@/test/fixtures';
 import { mockApi } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
 
@@ -17,10 +17,9 @@ describe('i18n', () => {
   });
 
   it('falls back to the raw slug for unknown use cases', async () => {
-    mockApi({
-      'GET /search': () => makeSearch({ results: [makeCard({ useCases: ['quantum-baking'] })] }),
-    });
-    renderApp('/search?q=x');
+    const card = makeCard({ useCases: ['quantum-baking'] });
+    mockApi({ [`GET /resources/${card.id}`]: () => makeDetail({ card }) });
+    renderApp(`/resource/${card.id}`);
     expect(await screen.findByText('quantum-baking', { exact: false })).toBeInTheDocument();
   });
 });

@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { Link } from 'react-router';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { ApiError } from '@/api/client';
@@ -17,13 +17,14 @@ import type { Refine } from './types';
 import { AiAnswersLeft } from './AiAnswersLeft';
 import { WebSearchesLeft } from './WebSearchesLeft';
 import { resourcePath } from '@/lib/searchState';
+import { rowAnchor } from '@/components/results/ResultRow';
 
 /**
  * The picks bar for the question in the URL: reading, then the picks, or one line when there is none. While the guide
  * works, the line says how it read the question and how many results it reads, as the steps arrive. With no AI pick
  * the line says why in a few words (ADR 0040, 6), with the next steps: ask again without one of the requirements, or
  * rephrase. How the guide decided stays folded under the bar. A pick that is not on this page of results links to its
- * own page. Try again moves focus to the bar's heading. [webLine] keeps the place of "web searches left" while the
+ * own page; one on this page jumps to its row in the list. Try again moves focus to the bar's heading. [webLine] keeps the place of "web searches left" while the
  * guide reads.
  */
 export function GuidePicks({
@@ -38,17 +39,7 @@ export function GuidePicks({
   const { t } = useTranslation();
   const { answer, error, busy, refine } = stream;
   const { retry, focusRef } = useRetry(stream.retry, busy);
-  const [, setSp] = useSearchParams();
   const picks = guidePicks(answer);
-  const select = (id: string) =>
-    setSp(
-      (prev) => {
-        const next = new URLSearchParams(prev);
-        next.set('id', id);
-        return next;
-      },
-      { replace: true, preventScrollReset: true },
-    );
   const state = picksState(stream, picks.length, t);
   const answered = answer !== null && answer.status !== 'NEEDS_CLARIFICATION';
   return (
@@ -62,14 +53,13 @@ export function GuidePicks({
               {picks.map((p) => (
                 <li key={p.resourceId}>
                   {loaded.has(p.resourceId) ? (
-                    <button
-                      type="button"
+                    <a
                       className="h2-pick-chip"
                       title={p.title}
-                      onClick={() => select(p.resourceId)}
+                      href={`#${rowAnchor(p.resourceId)}`}
                     >
                       <b>#{p.rank}</b> <span className="h2-pick-chip__title">{p.title}</span>
-                    </button>
+                    </a>
                   ) : (
                     <Link className="h2-pick-chip" title={p.title} to={resourcePath(p.resourceId)}>
                       <b>#{p.rank}</b> <span className="h2-pick-chip__title">{p.title}</span>

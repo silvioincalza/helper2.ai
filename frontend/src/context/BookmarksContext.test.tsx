@@ -1,7 +1,7 @@
 import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BOOKMARK_KEY, readLocalBookmarks, writeLocalBookmarks } from '@/lib/bookmarks';
-import { ANON, USER, makeSearch } from '@/test/fixtures';
+import { ANON, USER, makeDetail, makeSearch } from '@/test/fixtures';
 import { mockApi, problem } from '@/test/mockApi';
 import { renderApp } from '@/test/render';
 
@@ -12,6 +12,10 @@ const bm = {
   type: 'MODEL' as const,
   savedAt: '2026-10-01T00:00:00.000Z',
 };
+
+/** The resource page of the default card, where Save is. */
+const ACME_PAGE = '/resource/11111111-1111-5111-8111-111111111111';
+const acmeDetail = { 'GET /resources/11111111-1111-5111-8111-111111111111': () => makeDetail() };
 
 describe('bookmarks (local)', () => {
   it('reads and writes localStorage', () => {
@@ -38,9 +42,9 @@ describe('bookmarks (local)', () => {
     expect(writeLocalBookmarks([bm])).toBe(false);
   });
 
-  it('saves from a result, lists on /saved and removes', async () => {
-    mockApi({ 'GET /me': () => ANON });
-    const { router } = renderApp('/search?q=translate');
+  it('saves from a resource page, lists on /saved and removes', async () => {
+    mockApi({ 'GET /me': () => ANON, ...acmeDetail });
+    const { router } = renderApp(ACME_PAGE);
     await userEvent.click(await screen.findByRole('button', { name: /Save Acme Translator/ }));
     expect(readLocalBookmarks()[0]).toMatchObject({ title: 'Acme Translator', type: 'PRODUCT' });
     await act(() => router.navigate('/saved'));
@@ -57,8 +61,8 @@ describe('bookmarks (local)', () => {
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error('quota');
     });
-    mockApi();
-    const { router } = renderApp('/search?q=translate');
+    mockApi(acmeDetail);
+    const { router } = renderApp(ACME_PAGE);
     await userEvent.click(await screen.findByRole('button', { name: /Save Acme Translator/ }));
     expect(screen.getByRole('button', { name: /Save Acme Translator/ })).toHaveAttribute(
       'aria-pressed',
@@ -151,8 +155,9 @@ describe('bookmarks (signed in)', () => {
         new Promise((r) => {
           answer = r;
         }),
+      ...acmeDetail,
     });
-    const { router } = renderApp('/search?q=translate');
+    const { router } = renderApp(ACME_PAGE);
     const save = (
       await screen.findAllByRole('button', { name: /Save Acme Translator/ })
     )[0] as HTMLElement;
@@ -170,8 +175,9 @@ describe('bookmarks (signed in)', () => {
       'GET /me': () => USER,
       'GET /me/bookmarks': () => [],
       [`PUT /me/bookmarks/${ACME}`]: () => problem(500, 'Boom'),
+      ...acmeDetail,
     });
-    renderApp('/search?q=translate');
+    renderApp(ACME_PAGE);
     const save = (
       await screen.findAllByRole('button', { name: /Save Acme Translator/ })
     )[0] as HTMLElement;

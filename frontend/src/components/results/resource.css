@@ -1,65 +1,217 @@
-/* Resource page (ADR 0040, 4). Reuses the preview classes from results.css. Only semantic tokens. */
+/* Resource page (ADR 0042, v4-2): one column, v4 fonts and tokens; the tables in the terminal style. */
 .h2-res {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-4);
+  max-width: var(--reading-max);
+  margin: 0 auto;
   padding: var(--space-4) 0 var(--space-7);
 }
-.h2-res__back {
+.h2-res p {
   margin: 0;
 }
 .h2-res__back a {
   min-height: var(--target-min);
   display: inline-flex;
   align-items: center;
-  font-weight: 600;
-  color: var(--accent-deep);
+  font: 500 0.9375rem/1 var(--v4-font-mono);
   text-decoration: none;
 }
 .h2-res__back a:hover {
   text-decoration: underline;
+  text-underline-offset: 3px;
 }
-.h2-res__grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
-  gap: var(--space-6);
-  align-items: start;
+.h2-res__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-bottom: var(--space-4);
+  border-bottom: 2px solid var(--ink);
 }
-.h2-res__main {
-  min-width: 0;
+.v4 .h2-res__meta {
+  font: 400 0.8125rem/1.4 var(--v4-font-mono);
+  color: var(--muted);
+  overflow-wrap: anywhere;
 }
-.h2-res__main .h2-pv__title {
-  font-size: clamp(1.8rem, 1.6vw + 1.2rem, 2.6rem);
+.h2-res__type {
+  font-weight: 600;
+  color: var(--ink-2);
 }
-.h2-res__text {
+.v4 .h2-res__title {
+  margin: 0;
+  font: 500 clamp(1.8rem, 1.6vw + 1.2rem, 2.6rem)/1.1 var(--v4-font-body);
+  letter-spacing: -0.03em;
+}
+.h2-res__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+/* One primary button: Open. Save and Set it up are outlined. */
+.h2-res__actions > *,
+.h2-res .guide-me {
+  min-height: var(--target-min);
+  white-space: nowrap;
+  font-family: var(--v4-font-mono);
+}
+.h2-res .btn-primary {
+  color: var(--on-accent);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.h2-res__sec {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.v4 .h2-res__h {
   margin: var(--space-2) 0 0;
+  padding-top: var(--space-3);
+  border-top: 1px dashed var(--border-strong);
+  font: 600 0.75rem/1.3 var(--v4-font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.h2-res__rank {
+  margin-left: var(--space-2);
+  color: var(--accent-ink);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.v4 .h2-res__text {
   font-size: 1.0625rem;
   line-height: 1.65;
   color: var(--ink-2);
 }
+.v4 .h2-res__reason {
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  color: var(--ink);
+}
+.v4 .h2-res__note {
+  font: 400 0.8125rem/1.5 var(--v4-font-mono);
+  color: var(--muted);
+}
+.h2-res__checks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: 0.9375rem;
+}
+.h2-res__checks .check-ok {
+  color: var(--checked-ink);
+}
+.h2-res__checks .check-unknown {
+  color: var(--muted);
+}
+
+/* Facts: Use and Build side by side, a column on a phone. */
+.h2-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4) var(--space-6);
+}
+.h2-facts__group h3,
+.h2-facts__group h4 {
+  margin: 0 0 var(--space-1);
+  font: 600 0.8125rem/1.3 var(--v4-font-mono);
+  color: var(--muted);
+}
+.h2-facts__group dl {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 6px var(--space-3);
+  margin: 0;
+  font-size: 0.9375rem;
+}
+.h2-facts__group dl > div {
+  display: contents;
+}
+.h2-facts__group dt {
+  font-family: var(--v4-font-mono);
+  color: var(--muted);
+}
+.h2-facts__tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px var(--space-2);
+}
+.h2-facts__tools li {
+  cursor: help;
+}
+.h2-facts__tools li:not(:last-child)::after {
+  content: ',';
+}
+.h2-facts__group dd {
+  margin: 0;
+  color: var(--ink);
+}
+.h2-facts__group dd.is-not-stated {
+  color: var(--not-stated);
+  font-style: italic;
+}
+.h2-facts__group dd.is-conflict {
+  color: var(--not-stated);
+}
+.h2-pv__source {
+  padding: 6px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font: 500 0.75rem/1 var(--v4-font-mono);
+  color: var(--ink-2);
+}
+
+/* The detail sections: no boxes, a dashed rule over each; tables in Geist Mono with capital headers. */
 .h2-res__details {
-  margin-top: var(--space-5);
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
 }
-.h2-res__side {
-  min-width: 0;
-  padding: var(--space-4) var(--space-5);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  background: var(--surface);
+.h2-res .panel {
+  margin: 0;
+  padding: var(--space-3) 0 0;
+  background: none;
+  border: 0;
+  border-top: 1px dashed var(--border-strong);
+  border-radius: 0;
 }
-.h2-res__side > section:first-child .h2-pv__sec {
-  margin-top: 0;
-  padding-top: 0;
-  border-top: 0;
+.h2-res .panel > h2 {
+  margin: 0 0 var(--space-2);
+  font: 600 0.75rem/1.3 var(--v4-font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
-.h2-res__side .h2-facts {
-  grid-template-columns: minmax(0, 1fr);
+.h2-res table {
+  width: 100%;
+  border-collapse: collapse;
+  font: 400 0.8125rem/1.45 var(--v4-font-mono);
 }
-@media (max-width: 860px) {
-  .h2-res__grid {
+.h2-res th[scope='col'] {
+  padding: var(--space-2) var(--space-2) var(--space-2) 0;
+  font: 600 0.6875rem/1.2 var(--v4-font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--muted);
+  border-bottom: 1px solid var(--ink);
+}
+.h2-res td,
+.h2-res th[scope='row'] {
+  padding: 6px var(--space-2) 6px 0;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px dashed var(--border-strong);
+}
+.h2-res .setup {
+  margin-top: var(--space-1);
+}
+
+@media (max-width: 640px) {
+  .h2-facts {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .h2-res__actions > * {
+    flex: 1 1 auto;
   }
 }

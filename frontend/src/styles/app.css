@@ -608,10 +608,6 @@ textarea {
   font-size: 1.25rem;
   line-height: 1;
 }
-.suggest-guide {
-  align-self: flex-start;
-  border-style: dashed;
-}
 
 .searchbox {
   display: flex;
@@ -670,17 +666,6 @@ textarea {
   gap: var(--space-3);
   align-items: center;
   margin-bottom: var(--space-3);
-}
-.results-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-3);
-  margin: var(--space-4) 0;
-  flex-wrap: wrap;
-}
-.results-head h2 {
-  margin: 0;
 }
 .pagination {
   display: flex;
@@ -1141,64 +1126,6 @@ h2 {
 }
 input[type='search']::-webkit-search-cancel-button {
   filter: grayscale(1);
-}
-
-/* Results timeline: a rail with one dot per item, grouped by creation month. */
-.view-switch {
-  display: flex;
-  gap: var(--space-2);
-}
-.results-timeline {
-  display: grid;
-  gap: var(--space-6);
-}
-.tl-month {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  margin: 0 0 var(--space-3);
-  padding: var(--space-2) 0;
-  font-size: 1rem;
-  color: var(--accent-deep);
-  background: var(--bg);
-}
-.tl-items {
-  display: grid;
-  gap: var(--space-4);
-  margin-left: var(--space-2);
-  padding-left: var(--space-5);
-  border-left: 2px solid var(--border);
-}
-.tl-item {
-  position: relative;
-}
-.tl-item::before {
-  content: '';
-  position: absolute;
-  left: calc(-1 * var(--space-5) - 6px);
-  top: 0.35rem;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 0 3px var(--bg);
-}
-.tl-date {
-  margin: 0 0 var(--space-1);
-  color: var(--accent-ink);
-  font-weight: 600;
-}
-/* One line per result, as in the list: the whole row links to the resource page. */
-.tl-row {
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-lg);
-  background: var(--surface);
-  color: var(--ink);
-  text-decoration: none;
-}
-.tl-row:hover .h2-row__title {
-  text-decoration: underline;
-  text-underline-offset: 3px;
 }
 
 /* Guide intents (ADR 0032): how the question was read, the question back, comparison and explanation. */

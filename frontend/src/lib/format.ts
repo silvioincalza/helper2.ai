@@ -38,6 +38,15 @@ export function shortDay(iso: string, lang: string, now?: number): string {
   }).format(d);
 }
 
+/** Month and year, read in UTC: "Oct 2026". Empty for a date it cannot read. */
+export function shortMonth(iso: string, lang: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return new Intl.DateTimeFormat(lang, { month: 'short', year: 'numeric', timeZone: 'UTC' }).format(
+    d,
+  );
+}
+
 /** The host of [url] without "www.", for "Open on …" and the row's source line; the url itself when it does not parse. */
 export function displayHost(url: string): string {
   try {

@@ -11,8 +11,7 @@
     "opensNewTab": "(opens in a new tab)"
   },
   "guideMe": {
-    "label": "Set it up",
-    "aria": "Set up {{title}}"
+    "label": "Set it up"
   },
   "nav": {
     "main": "Main",
@@ -139,12 +138,10 @@
   },
   "results": {
     "title": "Search results",
-    "count_one": "{{count}} result",
-    "count_other": "{{count}} results",
-    "picksGroup": "Guide picks",
-    "moreResults": "More results",
-    "picksOnTop_one": "The guide’s pick is now at the top of the list.",
-    "picksOnTop_other": "The guide’s {{count}} picks are now at the top of the list.",
+    "all": "All results",
+    "command": "helper2 search",
+    "commandTimeline": "helper2 search --timeline",
+    "filtersOn": " · {{count}} on",
     "loading": "Searching the listed sources…",
     "errorTitle": "Search is unavailable",
     "errorBody": "We could not reach the Helper2.ai service. Nothing was searched.",
@@ -168,10 +165,15 @@
     "heading": "Results for {{q}}",
     "types": "Result types",
     "allTypes": "All",
-    "pick": "Pick #{{rank}}",
+    "moreTypes": "More",
+    "pick": "Guide pick #{{rank}}",
+    "checkedQuote": "Checked word for word in the source",
+    "from": "From {{sources}}",
+    "dateUpdated": "updated {{date}}",
+    "dateCreated": "created {{date}}",
+    "dateFirstSeen": "first seen {{date}}",
     "fullAnswer": "How the guide decided",
     "openOn": "Open on {{host}}",
-    "fullDetails": "Full details",
     "whyPicked": "Why the guide picked it",
     "reasonChecked": "A second model call checked this reason against the quote.",
     "reasonNotChecked": "Not checked by a second model call.",
@@ -185,9 +187,12 @@
     "timeline": "Timeline",
     "fanOut_one": "{{ok}} of {{total}} sources answered · {{count}} result after merging",
     "fanOut_other": "{{ok}} of {{total}} sources answered · {{count}} results after merging",
-    "seeWhich": "See which sources failed",
+    "seeWhich": "Which ones?",
     "seeSources": "See the sources we search",
-    "askGuide": "Ask the guide instead"
+    "askGuide": "Ask the guide instead",
+    "suggestLabel": "Ask the guide",
+    "suggestText": "Want a recommendation? Ask the guide to pick from these results.",
+    "suggestButton": "Ask the guide about “{{q}}”"
   },
   "timeline": {
     "viewLabel": "Show results as",
@@ -214,7 +219,10 @@
     "clearAll": "Clear all filters",
     "remove": "Remove filter: {{filter}}",
     "updatedAfter": "Updated after",
-    "updatedAfterHint": "Only results with a known last-updated date on or after this day."
+    "updatedAfterHint": "Only results with a known last-updated date on or after this day.",
+    "close": "Close",
+    "showResults_one": "Show {{count}} result",
+    "showResults_other": "Show {{count}} results"
   },
   "facet": {
     "type": "Type",
@@ -1311,7 +1319,9 @@
   "resource": {
     "backToResults": "Back to results",
     "sourceText": "From the source",
-    "checkedNote": "Highlighted: the sentence the guide checked against this source."
+    "checkedNote": "Highlighted: the sentence the guide checked against this source.",
+    "listedBy": "listed by {{sources}}",
+    "atAGlance": "At a glance"
   },
   "quota": {
     "left": "{{remaining}} of {{limit}} AI answers left today",
