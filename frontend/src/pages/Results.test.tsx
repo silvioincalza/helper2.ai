@@ -114,6 +114,33 @@ describe('results: one column, a row opens the resource page', () => {
     expect(screen.queryByText(/PUBLISHED/i)).not.toBeInTheDocument();
   });
 
+  it('a result found only inside an awesome list says where, without an AI label', async () => {
+    const listed = makeCard({
+      id: 'cccccccc-cccc-5ccc-8ccc-cccccccccccc',
+      title: 'Quiet Store',
+      url: 'https://github.com/acme/quiet-store',
+      foundIn: { listTitle: 'acme/awesome-llm', headingPath: 'Tools > Vector databases' },
+    });
+    const bare = makeCard({
+      id: 'dddddddd-dddd-5ddd-8ddd-dddddddddddd',
+      title: 'Bare Store',
+      url: 'https://github.com/acme/bare-store',
+      foundIn: { listTitle: 'acme/awesome-rag', headingPath: '' },
+    });
+    mockApi({
+      'GET /search': () => makeSearch({ results: [A, listed, bare], total: 3 }),
+    });
+    renderApp('/search?q=vector');
+    await screen.findByText('Quiet Store');
+    const r = within(rowOf('Quiet Store'));
+    expect(
+      r.getByText('Found in acme/awesome-llm under Tools > Vector databases'),
+    ).toBeInTheDocument();
+    expect(rowOf('Quiet Store').querySelector('.h2-row__ai, [data-ai-generated]')).toBeNull();
+    expect(within(rowOf('Bare Store')).getByText('Found in acme/awesome-rag')).toBeInTheDocument();
+    expect(within(rowOf('Alpha Search')).queryByText(/^Found in/)).not.toBeInTheDocument();
+  });
+
   it('the heading says "All results" over the command line with the total from the API', async () => {
     mockApi({ 'GET /search': () => ({ ...search(), total: 104 }) });
     renderApp('/search?q=postgres');

@@ -90,6 +90,14 @@ fun interface CatalogIndex {
 }
 
 /**
+ * Outbound port: the catalog's search index of curated lists (ADR 0055). Replaces, for each list,
+ * what an earlier pass indexed; entries and lists not in the catalog are left out.
+ */
+fun interface ListIndex {
+  fun replace(lists: List<ListText>)
+}
+
+/**
  * Outbound port: at most one Scout run at a time across every replica, whether the schedule or the
  * admin button started it (two runs would collect and enrich the same items twice).
  */

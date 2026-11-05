@@ -388,6 +388,7 @@ details[open] > .h2-fold-toggle .icon {
 }
 .h2-results .h2-row__meta,
 .h2-results .h2-row__from,
+.h2-results .h2-row__found,
 .h2-results .h2-row__checked {
   font: 400 0.8125rem/1.4 var(--font-mono);
   color: var(--muted);

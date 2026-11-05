@@ -797,6 +797,8 @@ helper2:
     cron: ${H2_RETENTION_CRON:0 17 3 * * *}
     # OBSERVED resources (seen only in searches) no search has seen for this long.
     observed-unseen: ${H2_RETENTION_OBSERVED_UNSEEN:P180D}
+    # Awesome-list search index rows (ADR 0055) no pass refreshed for this long: the list left the top lists.
+    list-index: ${H2_RETENTION_LIST_INDEX:P30D}
     # Enrichment runs; each resource's latest run and any run current rows cite stay.
     enrichment-runs: ${H2_RETENTION_ENRICHMENT_RUNS:P90D}
     # Review items after they were decided or superseded.

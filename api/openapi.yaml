@@ -1040,6 +1040,19 @@ components:
         location: { type: [string, 'null'], description: "EVENT only: city and country as the source states it." }
         eventKind: { oneOf: [{ $ref: '#/components/schemas/EventKind' }, { type: 'null' }], description: "EVENT only: what kind of event the source calls it; null when it does not say." }
         eventFormat: { oneOf: [{ $ref: '#/components/schemas/EventFormat' }, { type: 'null' }], description: "EVENT only: online, in person or both, as the source states it; null when it does not say." }
+        foundIn:
+          description: >-
+            Set when the result was found only by the words an awesome list uses around it (its entry line and its
+            section heading), not by its own text (ADR 0055). The list's own words, not AI-written. Null when any source
+            matched the result directly.
+          oneOf: [{ $ref: '#/components/schemas/ListMatch' }, { type: 'null' }]
+
+    ListMatch:
+      type: object
+      required: [listTitle, headingPath]
+      properties:
+        listTitle: { type: string, description: "The list's title in the catalog, e.g. owner/awesome-llm." }
+        headingPath: { type: string, maxLength: 200, description: "The headings above the entry, e.g. \"Tools > Vector databases\"; empty when the entry has none." }
 
     CompatibilityFlag:
       type: object

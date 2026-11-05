@@ -4,6 +4,8 @@ import ai.helper2.platform.http.ObservedHttp;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.scout.Collector;
+import ai.helper2.scout.ListEntryText;
+import ai.helper2.scout.ListText;
 import ai.helper2.search.PopularityKind;
 import ai.helper2.search.PopularityMetric;
 import ai.helper2.search.ResultMerger;
@@ -51,6 +53,10 @@ import tools.jackson.databind.node.ObjectNode;
  * their order changed in between a few entries may wait until the next pass; upserts are
  * idempotent, so nothing is duplicated. Needs a GitHub token (GraphQL rejects anonymous calls):
  * without one the collector is disabled.
+ *
+ * <p>Search inside the lists (ADR 0055): every run also returns each list it read as a resource
+ * (ARTICLE, tag {@value #LIST_TAG}) and the list's search text (entry lines and headings, cleaned
+ * and capped), which the Scout hands to the catalog's list index.
  */
 public class GitHubAwesomeCollector implements Collector {
 
@@ -110,8 +116,9 @@ public class GitHubAwesomeCollector implements Collector {
             URI.create("https://github.com/topics/awesome-list"),
             URI.create(
                 "https://docs.github.com/en/site-policy/github-terms/github-terms-of-service"),
-            "Repository metadata from the GitHub API; lists are used only as links",
+            "Repository metadata from the GitHub API; list headings and entry lines are indexed for search, never stored",
             EnumSet.of(
+                ResourceType.ARTICLE,
                 ResourceType.LIBRARY,
                 ResourceType.MCP_SERVER,
                 ResourceType.AGENT,
@@ -137,15 +144,18 @@ public class GitHubAwesomeCollector implements Collector {
     if (!interval.allowsPass(checkpoint, resumeCursor, startedAt)) {
       return CollectedBatch.notDue();
     }
-    List<AwesomeListParser.Entry> all = entriesOf(discoverLists());
+    Pass pass = read(discoverListRepos());
+    List<AwesomeListParser.Entry> all = pass.entries();
     int offset = offset(resumeCursor);
+    List<SourceHit> listHits = listHits(pass.read(), startedAt);
     if (offset >= all.size()) {
-      return new CollectedBatch(List.of(), null, startedAt.toString());
+      return new CollectedBatch(
+          listHits, null, startedAt.toString(), false, List.of(), null, pass.texts());
     }
     int end =
         Math.min(all.size(), offset + Math.max(1, Math.min(maxItems, limits.maxEntriesPerRun())));
     List<AwesomeListParser.Entry> slice = all.subList(offset, end);
-    List<SourceHit> hits = toHits(slice, repoFacts(slice), offset, startedAt);
+    List<SourceHit> hits = new ArrayList<>(toHits(slice, repoFacts(slice), offset, startedAt));
     log.info(
         "awesome lists: entries {}-{} of {}, {} kept as AI resources (classifier {})",
         offset,
@@ -153,15 +163,31 @@ public class GitHubAwesomeCollector implements Collector {
         all.size(),
         hits.size(),
         classifier.name());
+    hits.addAll(listHits);
     return new CollectedBatch(
-        hits, end < all.size() ? String.valueOf(end) : null, startedAt.toString());
+        hits,
+        end < all.size() ? String.valueOf(end) : null,
+        startedAt.toString(),
+        false,
+        List.of(),
+        null,
+        pass.texts());
   }
+
+  /** Names of the lists a pass reads, most stars first. */
+  List<String> discoverLists() {
+    return discoverListRepos().stream().map(ListRepo::fullName).toList();
+  }
+
+  /** A list found by topic search, with the repository facts the search answer gives. */
+  record ListRepo(String fullName, JsonNode facts) {}
 
   /**
    * Lists by stars, most first. A search query that fails is skipped; rate limits stop the pass.
    */
-  List<String> discoverLists() {
+  List<ListRepo> discoverListRepos() {
     Map<String, Long> stars = new HashMap<>();
+    Map<String, JsonNode> facts = new HashMap<>();
     for (String topics : topicQueries) {
       String q = topics + " fork:false archived:false stars:>=" + limits.minListStars();
       JsonNode root;
@@ -193,6 +219,7 @@ public class GitHubAwesomeCollector implements Collector {
         // so in the name.
         if (name != null && name.toLowerCase(Locale.ROOT).contains("awesome")) {
           stars.merge(name, item.path("stargazers_count").asLong(0), Math::max);
+          facts.putIfAbsent(name, item);
         }
       }
     }
@@ -202,29 +229,134 @@ public class GitHubAwesomeCollector implements Collector {
                 .reversed()
                 .thenComparing(Map.Entry.comparingByKey()))
         .limit(limits.maxLists())
-        .map(Map.Entry::getKey)
+        .map(e -> new ListRepo(e.getKey(), facts.get(e.getKey())))
         .toList();
   }
 
-  private List<AwesomeListParser.Entry> entriesOf(List<String> lists) {
+  /**
+   * What one pass read: the entries to collect (unique across lists, at most maxEntriesPerPass),
+   * the lists whose README was read, and their search text (ADR 0055).
+   */
+  record Pass(List<AwesomeListParser.Entry> entries, List<ListRepo> read, List<ListText> texts) {}
+
+  /**
+   * Per list at most this much entry text and heading path goes to the search index (UTF-8 bytes),
+   * on top of the per-list entry cap (maxEntriesPerPass).
+   */
+  static final int MAX_LIST_TEXT_BYTES = 256 * 1024;
+
+  static final String LIST_TAG = "awesome-list";
+
+  private static final String GITHUB = "https://github.com/";
+
+  private Pass read(List<ListRepo> lists) {
     Map<String, AwesomeListParser.Entry> unique = new LinkedHashMap<>();
-    for (String list : lists) {
+    List<ListRepo> read = new ArrayList<>();
+    List<ListText> texts = new ArrayList<>();
+    for (ListRepo list : lists) {
       String readme;
       try {
-        readme = readme(list);
+        readme = readme(list.fullName());
       } catch (SourceFailure.Unavailable e) {
-        log.warn("awesome list {} README unavailable: {}", list, e.getMessage());
+        log.warn("awesome list {} README unavailable: {}", list.fullName(), e.getMessage());
         continue;
       }
-      for (AwesomeListParser.Entry e : AwesomeListParser.entries(readme, list)) {
+      AwesomeListParser.Parsed parsed = AwesomeListParser.parse(readme, list.fullName());
+      read.add(list);
+      ListText text = searchText(list, parsed);
+      if (text != null) {
+        texts.add(text);
+      }
+      for (AwesomeListParser.Entry e : parsed.entries()) {
         unique.putIfAbsent(e.fullName().toLowerCase(Locale.ROOT), e);
       }
       if (unique.size() >= limits.maxEntriesPerPass()) {
         break;
       }
     }
-    return new ArrayList<>(unique.values())
-        .subList(0, Math.min(unique.size(), limits.maxEntriesPerPass()));
+    List<AwesomeListParser.Entry> entries =
+        new ArrayList<>(unique.values())
+            .subList(0, Math.min(unique.size(), limits.maxEntriesPerPass()));
+    return new Pass(entries, read, texts);
+  }
+
+  /** The list's search text, capped; null when its page has no canonical URL. */
+  private ListText searchText(ListRepo list, AwesomeListParser.Parsed parsed) {
+    CanonicalUrl url = CanonicalUrl.of(GITHUB + list.fullName());
+    if (url == null) {
+      return null;
+    }
+    List<ListEntryText> entries = new ArrayList<>();
+    for (AwesomeListParser.Entry e :
+        parsed.searchEntries(limits.maxEntriesPerPass(), MAX_LIST_TEXT_BYTES)) {
+      CanonicalUrl entryUrl = CanonicalUrl.of(GITHUB + e.fullName());
+      if (entryUrl != null) {
+        entries.add(new ListEntryText(entryUrl, e.text(), e.headingPath()));
+      }
+    }
+    return new ListText(url, parsed.headingsText(), entries);
+  }
+
+  /**
+   * The lists themselves, as resources a search can find (ADR 0055): an awesome list is reading
+   * about AI tools, so ARTICLE, tagged {@link #LIST_TAG}. Facts from the search answer only.
+   */
+  private static List<SourceHit> listHits(List<ListRepo> lists, Instant now) {
+    List<SourceHit> hits = new ArrayList<>();
+    for (ListRepo list : lists) {
+      SourceHit hit = listHit(list, now);
+      if (hit != null) {
+        hits.add(hit);
+      }
+    }
+    return hits;
+  }
+
+  private static SourceHit listHit(ListRepo list, Instant now) {
+    JsonNode repo = list.facts();
+    String url = HttpClients.text(repo, "html_url");
+    CanonicalUrl canonical = CanonicalUrl.of(url == null ? GITHUB + list.fullName() : url);
+    if (canonical == null) {
+      return null;
+    }
+    String spdx = HttpClients.text(repo.path("license"), "spdx_id");
+    String license = spdx == null ? null : ResultMerger.normalizeLicense(spdx);
+    Set<String> tags = new LinkedHashSet<>();
+    tags.add(LIST_TAG);
+    repo.path("topics")
+        .forEach(t -> {
+          if (t.isString()) {
+            tags.add(t.asString());
+          }
+        });
+    return new SourceHit(
+        ID,
+        list.fullName(),
+        URI.create(canonical.getValue()),
+        canonical,
+        null,
+        list.fullName(),
+        HttpClients.text(repo, "description"),
+        ValueOrigin.SOURCE_PROVIDED,
+        ResourceType.ARTICLE,
+        Audience.BOTH,
+        null,
+        Set.of(),
+        tags,
+        license,
+        null,
+        Set.of(),
+        Classification.openSource(license),
+        DateFact.fromSource(HttpClients.instant(repo, "created_at"), "github", now),
+        DateFact.fromSource(HttpClients.instant(repo, "pushed_at"), "github", now),
+        List.of(
+            new PopularityMetric(
+                PopularityKind.GITHUB_STARS,
+                repo.path("stargazers_count").asLong(),
+                "github",
+                now)),
+        now,
+        0);
   }
 
   /** Big awesome lists are long Markdown files; anything past this is not a list worth parsing. */
