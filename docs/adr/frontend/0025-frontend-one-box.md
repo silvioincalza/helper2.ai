@@ -11,9 +11,10 @@ screen reader, and in light and dark mode.
 ## Decision
 1. **One box** (`OneBox`, `HomePage`). The box is the hero on `/` and sits at the top of the results on `/search`.
    On the results page, typing searches live: from 3 characters, 700 ms after the last key. One button follows the text: fewer than 4 words
-   search, 4 or more ask the guide. Enter always searches (Shift+Enter too): the guide runs only from its button, so a
-   question that costs model calls is always a choice. The ↵ hint shows on the button only when it searches. Enter
-   in an empty box goes back to the empty home page.
+   it says Search, 4 or more "Ask the guide". Enter always searches, whatever the length; Shift+Enter always asks the
+   guide, also for two words. So a question that costs model calls is always a choice. The button shows the key that
+   does the same: ↵ on Search, ⇧↵ on Ask the guide (not on touch devices). Enter in an empty box goes back to the
+   empty home page.
    The box is a one-row text area that grows with the text, up to six lines, then scrolls; the height animates
    (160 ms, none under reduced motion). Enter never adds a line, and a pasted line break becomes a space.
    × (or Esc) empties the box and keeps the results; "/" from anywhere on the page puts the cursor in the box (not
@@ -70,7 +71,8 @@ screen reader, and in light and dark mode.
 - Growth of the first visit's JavaScript fails CI, with room for a few more pages.
 - A slow model step does not look like a dead connection, thanks to the keep-alive comments. 45 s without any
   byte means the stream is stuck, and the user retries with one button.
-- Enter always searches, whatever the length of the text. A keyboard user asks the guide with Tab to the button.
+- Enter always searches, whatever the length of the text. A keyboard user asks the guide with Shift+Enter or Tab to
+  the button.
 
 ## Alternatives considered
 - Separate search and guide pages — the user must choose a mode before typing.

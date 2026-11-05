@@ -9,7 +9,6 @@ import { api } from '@/api/client';
 import { useApi } from '@/hooks/useApi';
 import { useTitle } from '@/hooks/useTitle';
 import { radarSources } from '@/lib/v4Fields';
-import { QUESTION_WORDS } from '@/lib/searchState';
 import '@/components/home/home.css';
 
 /** The radar is decoration behind the title (absolutely placed, so nothing shifts when it arrives): it loads after the
@@ -101,7 +100,7 @@ export default function Home() {
         <div className="v4-wrap v4-pinned__inner">
           <OneBox hero />
           <div className="v4-pinned__more">
-            <p className="v4-hint">{t('home.hint', { count: QUESTION_WORDS })}</p>
+            <p className="v4-hint">{t('home.hint')}</p>
             <HomeExamples />
             {external.length > 0 && <RadarLegend sources={external} />}
           </div>

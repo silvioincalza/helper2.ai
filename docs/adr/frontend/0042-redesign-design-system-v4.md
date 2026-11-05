@@ -88,8 +88,10 @@ they do now and how version 3 and 4 live side by side until the other pages move
    constant the box uses to tell a question from a search. One small reader (`lib/v4Fields.ts`) takes `newThisWeek`,
    `total` and `limits` and says what the page does when a value is null: a dot of the default size, the rows as the
    count, no quota line.
-8. **The guide starts on its own only for a question, and the quota is in sight.** Four words or more start it, as in
-   [0017](../guide/0017-guide-cost-guard.md). Where the guide answers, the visitor sees today's AI answers ("2 of 3 AI
+8. **The guide runs when the user asks for it, and the quota is in sight.** Enter searches; Shift+Enter or the "Ask
+   the guide" button asks ([0017](../guide/0017-guide-cost-guard.md)). The hint under the box says so: "Enter searches.
+   For picks with a quote that proves them, ask the guide (⇧↵)." The button shows ↵ on Search and ⇧↵ on Ask the
+   guide, only where there is a keyboard. Where the guide answers, the visitor sees today's AI answers ("2 of 3 AI
    answers left today"; at none, when they come back and that search still works), from `limits.guideQuestions` on
    GET /me. When the guide has no model the field is null, nothing is spent, and the line is not shown.
 9. **Accessibility.** Every control is at least 44 px. The focus ring (3 px ink outline) never looks like the
@@ -113,6 +115,8 @@ they do now and how version 3 and 4 live side by side until the other pages move
   [roadmap](../../roadmap.md).
 - **The guide on every search.** Simpler, but it spends model calls and the daily AI answers on searches that are
   only a name ([0017](../guide/0017-guide-cost-guard.md)).
+- **The guide on its own from four words** (the four-word rule). No extra key, but a long name spends an AI answer
+  and often gets "no pick".
 - **One big pull request.** Fastest to finish, hardest to review and to roll back.
 
 ## Consequences

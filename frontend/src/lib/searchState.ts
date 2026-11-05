@@ -48,7 +48,10 @@ export function clampQuestion(text: string): string {
   return q.length >= MIN_QUESTION ? q : '';
 }
 
-/** A need of this many words or more is a question for the guide; fewer words are a search (ADR 0025). */
+/**
+ * From this many words the box's button says "Ask the guide" and the results offer the "Sounds like a question" hint.
+ * It does not decide what Enter does: Enter always searches (ADR 0025).
+ */
 export const QUESTION_WORDS = 4;
 
 export function isQuestion(text: string): boolean {

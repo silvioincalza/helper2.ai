@@ -22,7 +22,9 @@ describe('home (design v4)', () => {
     expect(await screen.findByText(/^3-5 of 13 sources at a time/)).toBeInTheDocument();
     expect(screen.getByText(/^One search across the world of AI/)).not.toHaveTextContent(/\d/);
     // The 4-word rule comes from the code that applies it.
-    expect(screen.getByText(/A question of 4 words or more/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Enter searches\. For picks with a quote that proves them/),
+    ).toBeInTheDocument();
     const does = screen
       .getByRole('heading', { name: 'What helper2 does for you' })
       .closest('section') as HTMLElement;

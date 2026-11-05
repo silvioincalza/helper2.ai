@@ -36,8 +36,8 @@ function typingIn(target: EventTarget | null): boolean {
 }
 /**
  * The one search box: the hero on /, above the results on /search, in the header on every other page. On /search
- * typing searches live; elsewhere Enter opens /search. Enter (and Shift+Enter) always searches: only the "Ask the
- * guide" button, shown for a question (four words or more), asks the AI guide. Everything lives in the URL: `q` =
+ * typing searches live; elsewhere Enter opens /search. Enter always searches; the AI guide runs only when the user
+ * chooses it: Shift+Enter (any length) or the "Ask the guide" button (its label from four words). Everything lives in the URL: `q` =
  * search, `ask` = the question the guide answered, plus the search filters. `hero`: the large box of the home page.
  */
 export function OneBox({ hero = false }: { hero?: boolean }) {
@@ -88,8 +88,8 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
     timer.current = window.setTimeout(() => {
       const now = latest.current;
       // Only on the results page: on the home page a search moves to /search, so it waits for Enter.
-      // New words drop the old question: the guide's picks answered that question, not these words. "Ask the
-      // guide" asks again.
+      // New words drop the old question: the guide's picks answered that question, not these words. Shift+Enter
+      // or "Ask the guide" asks again.
       if (now.pathname === RESULTS_PATH && q !== now.state.q)
         go(patchState(now.state, { q }), '', now.sp, true);
     }, LIVE_SEARCH_MS);
@@ -139,9 +139,10 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
     }
     if (e.key !== 'Enter' || e.nativeEvent.isComposing) return;
     // A textarea would add a line: Enter searches instead, as a one-line search field does, whatever the button
-    // says. Asking the guide spends an AI answer, so it takes the button (a decision by Silvio, UJ-2).
+    // says. Asking the guide spends an AI answer, so the user chooses it: Shift+Enter or the button (Silvio, UJ-2).
     e.preventDefault();
     if (!text.trim()) clear();
+    else if (e.shiftKey) ask();
     else runSearch();
   };
 
@@ -253,14 +254,13 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
           </kbd>
         )}
         {/* One button whose job follows the text: a few words search, a sentence asks. A new question replaces one
-            still being answered. The ↵ hint shows only when Enter does what the button does. */}
+            still being answered. The key hint says which key does what the button does: ↵ on Search, ⇧↵ on Ask the guide
+            (CSS hides key hints on touch devices). */}
         <button type="submit" className="btn btn-primary">
           {asking ? t('guide.ask') : t('search.submit')}
-          {!asking && (
-            <kbd className="enter-key" aria-hidden="true">
-              ↵
-            </kbd>
-          )}
+          <kbd className="enter-key" aria-hidden="true">
+            {asking ? '⇧↵' : '↵'}
+          </kbd>
         </button>
       </form>
     </div>

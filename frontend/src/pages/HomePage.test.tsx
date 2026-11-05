@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockApi } from '@/test/mockApi';
@@ -27,29 +29,27 @@ describe('one box', () => {
     expect(screen.queryByRole('button', { name: 'Search' })).not.toBeInTheDocument();
   });
 
-  it('Enter always searches, a sentence too, and Shift+Enter as well; only the button asks the guide', async () => {
-    const m = mockApi();
-    const { router, params } = renderApp('/');
-    const box = () => screen.getByRole('textbox', { name: 'Search AI resources' });
-    await userEvent.type(box(), 'an MCP server for Postgres{Enter}');
-    await waitFor(() => expect(router.state.location.pathname).toBe('/search'));
-    expect(params().get('q')).toBe('an MCP server for Postgres');
-    expect(params().get('ask')).toBeNull();
-    // The button still says what it does for a sentence; its ↵ hint is gone, since Enter does not ask.
-    const button = screen.getByRole('button', { name: 'Ask the guide' });
-    expect(button.querySelector('kbd')).toBeNull();
+  it('given text in the box, then the button shows the key that does the same: ↵ on Search, ⇧↵ on Ask the guide', async () => {
+    mockApi();
+    renderApp('/');
+    const box = screen.getByRole('textbox', { name: 'Search AI resources' });
+    await userEvent.type(box, 'vector db');
+    expect(screen.getByRole('button', { name: 'Search' }).querySelector('kbd')).toHaveTextContent(
+      /^↵$/,
+    );
+    await userEvent.type(box, ' for my notes');
+    expect(
+      screen.getByRole('button', { name: 'Ask the guide' }).querySelector('kbd'),
+    ).toHaveTextContent(/^⇧↵$/);
+  });
 
-    await userEvent.clear(box());
-    await userEvent.type(box(), 'vector db{Shift>}{Enter}{/Shift}');
-    await waitFor(() => expect(params().get('q')).toBe('vector db'));
-    expect(params().get('ask')).toBeNull();
-    expect(m.callsTo('POST', '/guide/stream')).toHaveLength(0);
-
-    await userEvent.clear(box());
-    await userEvent.type(box(), 'an MCP server for Postgres');
-    await userEvent.click(screen.getByRole('button', { name: 'Ask the guide' }));
-    await waitFor(() => expect(params().get('ask')).toBe('an MCP server for Postgres'));
-    await waitFor(() => expect(m.callsTo('POST', '/guide/stream')).toHaveLength(1));
+  it('given a touch device, then no key hint shows: the stylesheets hide .enter-key without hover or a fine pointer', () => {
+    for (const file of ['src/styles/app.css', 'src/styles/v4.css']) {
+      const css = readFileSync(join(process.cwd(), file), 'utf8');
+      expect(css).toMatch(
+        /@media \(hover: none\), \(pointer: coarse\) \{[^}]*\.enter-key \{\s*display: none;/,
+      );
+    }
   });
 
   it('Enter on the home page opens the results on /search, and focus lands on the results heading', async () => {

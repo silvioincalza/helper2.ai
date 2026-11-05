@@ -1,6 +1,6 @@
 # Flowchart: the one box. What typed text does: live search, or "Ask the guide".
-# Shows the 3-character minimum and the 700 ms pause for live search, the four-word rule of the one button, Enter
-# (always a search; only the button asks the guide), Enter in an empty box, and what each choice writes to the URL. The box itself: line breaks become
+# Shows the 3-character minimum and the 700 ms pause for live search, the one button (its label from 4 words), Enter
+# (always a search), Shift+Enter (always asks the guide), Enter in an empty box, and what each choice writes to the URL. The box itself: line breaks become
 # spaces, it grows up to six lines, Enter during IME composition is left alone, × or Esc empties it (results stay),
 # "/" from anywhere puts the cursor in it.
 # Every writer goes through the URL: HomePage (frontend/src/pages/HomePage.tsx) renders from it
@@ -34,7 +34,8 @@ live: Live search (onType) {
   home -> nothing: no
 }
 
-key: "Enter (Shift+Enter too)" {class: app}
+key: "Enter or Shift+Enter" {class: app}
+shift: "Shift held?" {class: decision}
 button: "The one button" {class: app}
 ime: "Composing (IME)?" {class: decision}
 imeend: "Ignored: the input method\nkeeps the key" {class: end}
@@ -67,7 +68,9 @@ key -> ime
 ime -> imeend: yes
 ime -> empty: no
 empty -> clear: yes
-empty -> search: no {class: hot}
+empty -> shift: no
+shift -> search: no {class: hot}
+shift -> ask: yes
 button -> words
 words -> ask: yes
 words -> search: no

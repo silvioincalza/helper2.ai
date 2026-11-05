@@ -6,7 +6,7 @@ The design system for every part of Helper2.ai: the search box, results, the AI 
 
 ## Principles
 
-1. **One entry point.** One search box: in the middle of the home page, in the header everywhere else. A few words search. A question of 4 words or more also starts the guide. Short searches show **Ask the guide**. Never add a second search field, a scope switch or a mode switch.
+1. **One entry point.** One search box: in the middle of the home page, in the header everywhere else. Enter searches; the guide runs when the user asks for it (Shift+Enter, or **Ask the guide**). Never add a second search field, a scope switch or a mode switch.
 2. **Show where every fact came from.** Each result, fact and pick names its source. A value no source stated is **not stated**, in `status-warn-ink`, grouped in one line. Dates are the source's own; otherwise "First seen" with the date Helper2.ai first saw it.
 3. **Checked versus not checked.** A guide quote the validator matched word for word sits on `quote-bg` under "Checked word for word in the source". The model's own reason carries its own "AI-written reason" label and is never styled like the quote.
 4. **State in words, not color alone.** Every status (answered, slow, rate limited, timed out, failed, sources disagree) has a word and an icon: ✓ ! × ○ …. Color only repeats it.
@@ -16,7 +16,7 @@ The design system for every part of Helper2.ai: the search box, results, the AI 
 
 ## Content fundamentals
 
-- Write the way a knowledgeable colleague talks: "A few words search. A question of 4 words or more can also ask the guide for picks."
+- Write the way a knowledgeable colleague talks: "Enter searches. For picks with a quote that proves them, ask the guide (⇧↵)."
 - Buttons say what happens: **Search**, **Ask the guide**, **Save**, **Remove**, **Send report**, **Try again**.
 - Errors say what went wrong and what to do next, without apology.
 - Never invent popularity, dates, limits or facts. Mock content uses brackets: `[stated date]`, `[Numbers set in the limits ADR]`.
