@@ -55,7 +55,7 @@ export function Saved() {
         </p>
         {canSignIn && (
           <div className="h2-saved__signin">
-            <SignIn className="v4-btn" />
+            <SignIn className="btn" />
           </div>
         )}
       </header>
@@ -73,7 +73,7 @@ export function Saved() {
       {ready && !serverError && items.length === 0 && (
         <p className="h2-saved__next">
           <span>{t('saved.emptyHint')}</span>
-          <Link className="v4-btn" to="/">
+          <Link className="btn" to="/">
             {t('detail.backToSearch')}
           </Link>
         </p>
@@ -81,25 +81,25 @@ export function Saved() {
       {ready && items.length > 0 && (
         <>
           {types.length > 1 && (
-            <nav className="v4-chips" aria-label={t('saved.types')}>
+            <nav className="chips" aria-label={t('saved.types')}>
               <button
                 type="button"
-                className="v4-chip"
+                className="chip"
                 aria-pressed={type === null}
                 onClick={() => setType(null)}
               >
-                {t('results.allTypes')} <span className="v4-chip__n">{items.length}</span>
+                {t('results.allTypes')} <span className="chip__n">{items.length}</span>
               </button>
               {types.map((ty) => (
                 <button
                   key={ty}
                   type="button"
-                  className="v4-chip"
+                  className="chip"
                   aria-pressed={type === ty}
                   onClick={() => setType(ty)}
                 >
                   {t(`type.${ty}`)}{' '}
-                  <span className="v4-chip__n">{items.filter((b) => b.type === ty).length}</span>
+                  <span className="chip__n">{items.filter((b) => b.type === ty).length}</span>
                 </button>
               ))}
             </nav>
@@ -123,7 +123,7 @@ export function Saved() {
                   <ExternalLink url={b.url} showHost={false} />
                   <button
                     type="button"
-                    className="v4-btn"
+                    className="btn"
                     aria-label={t('saved.removeLabel', { title: b.title })}
                     onClick={() => remove(b.resourceId)}
                   >

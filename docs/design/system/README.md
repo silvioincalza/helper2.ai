@@ -154,8 +154,9 @@ The redesign boards in [../redesign](../redesign) and the design canvas "helper2
 | **Callout** | Notice, warning, error, success: a 4px left line, a title, one sentence, one action. |
 | **ConfirmDialog** | Delete account. Focus starts on Cancel. |
 | **PhoneMenu** | Full-width menu under the header on phones. |
-| **Chip** | Example needs, filters, saved-by-type. 44px. |
-| **Button** | Primary, ghost, ink, danger, text. 44px; an external link ends with `↗`. |
+| **Chip** | Example needs, filters, saved-by-type, use cases. A Geist Mono pill with the control border, 44px; the picked one is a `selected` fill. |
+| **Button** | Secondary (outline on `surface`, like Ask the guide), primary (`accent` fill, one per area), ink (sign in), ghost (outline, no fill), danger (`danger` outline; filled to confirm), icon, text (an underlined word). Geist Mono, `radius-md`, 44px; hover draws a line or ring of 3:1 or more. An external link ends with `↗`. |
+| **Field** | Inputs, selects, text areas: Geist Mono on `surface`, `border-strong`, `radius-md`, 44px. Checkboxes in `ink`. |
 | **AiLabel** | "AI-written", "AI-written reason", "AI summary". Geist Mono 12px, uppercase, outlined. |
 
 ### In the frontend
@@ -172,6 +173,8 @@ The shared parts are React components in `frontend/src/components/ui/` (ADR 0040
 | FiltersPanel | `FiltersPanel` (in place, or a drawer up to 720px) around `FilterPanel` |
 | CoverageDetails | `SourceTiles` |
 | Callout (error, empty) | `StatePanel`, with `RetryButton` for Try again |
+| Button, Chip, Field | `.btn` with `.btn-primary`, `.btn-ink`, `.btn-ghost`, `.btn-danger`, `.btn-danger-fill`, `.btn-icon`; `.btn-text`; `.chip` in `.chips`; the plain form elements. One definition each, in `styles/app.css`, on every page |
+| AiLabel, badges | `.badge` (`styles/app.css`), `StatusPill` (`components/ui/`) |
 | Text pages (Mission, Privacy, Terms, Not found, Sign in, Account) | `TextPage`, `SignInPage`, `AccountPage`, `NotFoundPage`, styled by `.h2-prose` in `pages/text.css` |
 
 New components are added with the page that first needs them.

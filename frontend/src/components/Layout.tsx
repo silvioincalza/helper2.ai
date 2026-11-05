@@ -27,7 +27,7 @@ function ThemeToggle() {
   const theme = useSyncExternalStore(subscribeTheme, currentTheme);
   const next = otherTheme(theme);
   return (
-    <button type="button" className="v4-text-btn theme-toggle" onClick={() => chooseTheme(next)}>
+    <button type="button" className="btn-text theme-toggle" onClick={() => chooseTheme(next)}>
       {t('nav.theme.switchTo', { theme: t(`nav.theme.${next}`) })}
     </button>
   );
@@ -41,7 +41,7 @@ function MenuButton({ open, onToggle }: { open: boolean; onToggle: () => void })
   return (
     <button
       type="button"
-      className="v4-icon-btn menu-toggle"
+      className="btn btn-icon menu-toggle"
       aria-expanded={open}
       aria-controls="site-menu"
       aria-label={t('nav.menu')}
@@ -70,13 +70,13 @@ function Account() {
   const { me } = useMe();
   const { pathname } = useLocation();
   if (!me.authenticated)
-    return pathname.startsWith('/admin') ? null : <SignInLink className="v4-btn" />;
+    return pathname.startsWith('/admin') ? null : <SignInLink className="btn" />;
   return (
     <span className="auth">
       <Link to="/account" className="v4-nav-link" title={t('nav.account')}>
         {me.displayName ?? t('nav.signedIn')}
       </Link>
-      <button type="button" className="v4-btn" onClick={() => void signOut()}>
+      <button type="button" className="btn" onClick={() => void signOut()}>
         {t('nav.signOut')}
       </button>
     </span>
