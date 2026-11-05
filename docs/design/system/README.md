@@ -1,8 +1,8 @@
 # Helper2.ai
 
-The design system for every part of Helper2.ai: the search box, results, the AI guide, New this week and Coming up, resource pages, saved resources, sign-in, the sources page and admin. Version 4, from the November 2026 redesign ([ADR 0042](../../adr/frontend/0042-redesign-design-system-v4.md)): minimal and editorial, warm paper with one saffron accent, one tech font for the interface and a calm font for reading. The reference is the redesign canvas, saved in [../redesign](../redesign). Every page, its states and the dark theme are drawn there.
+The design system for every part of Helper2.ai: the search box, results, the AI guide, New this week and Coming up, resource pages, saved resources, sign-in, the sources page and admin. Version 4, from the November 2026 redesign ([ADR 0042](../../adr/frontend/0042-redesign-design-system-v4.md)): minimal and editorial, warm paper with one saffron accent, one tech font for the whole interface. The reference is the redesign canvas, saved in [../redesign](../redesign). Every page, its states and the dark theme are drawn there. The boards are drawn in Geist; the font is Space Grotesk (see principle 5).
 
-The frontend still runs version 3 (`frontend/src/styles/tokens.css`). It moves to version 4 page by page when the redesign is built.
+`frontend/src/styles/tokens.css` has the version 4 colours and names. The page layouts still follow version 3; they move to version 4 page by page when the redesign is built.
 
 ## Principles
 
@@ -10,7 +10,7 @@ The frontend still runs version 3 (`frontend/src/styles/tokens.css`). It moves t
 2. **Show where every fact came from.** Each result, fact and pick names its source. A value no source stated is **not stated**, in `status-warn-ink`, grouped in one line. Dates are the source's own; otherwise "First seen" with the date Helper2.ai first saw it.
 3. **Checked versus not checked.** A guide quote the validator matched word for word sits on `quote-bg` under "Checked word for word in the source". The model's own reason carries its own "AI-written reason" label and is never styled like the quote.
 4. **State in words, not color alone.** Every status (answered, slow, rate limited, timed out, failed, sources disagree) has a word and an icon: ✓ ! × ○ …. Color only repeats it.
-5. **One tech font, one reading font.** Geist Mono for the logo, headings, controls, labels, meta lines and the terminals. Geist for running text: paragraphs, list items, quotes, descriptions.
+5. **One font.** Space Grotesk (400, 500, 600, self-hosted) for everything: the logo, headings, controls, labels, meta lines, the terminals and running text. Code and commands use the system's monospace font, so nothing else downloads. Decided on 2 November 2026; the boards still show Geist Mono and Geist, so take the font from here, not from the boards.
 6. **Quiet surfaces, one accent.** Saffron `accent` marks the one primary action per area. Selection uses `selected` (ink), so state and action never look alike.
 7. **Nothing moves on its own for more than 5 seconds.** Lines print in once. The radar sweeps once and the cursor blinks three times. No auto-rotating lists, so no Pause button is needed.
 
@@ -54,7 +54,7 @@ Type is a word, not a coloured badge. In lists and on resource pages it is the f
 
 ## Logo
 
-The mark is an ink-stroke radar (outer ring, faint inner ring, one sweep line, one filled four-point AI spark) on a 40px `accent` tile with 12px corners (`assets/Logos/radar-mark.svg`). It sits 14px left of the wordmark "helper2.ai" in Geist Mono 24px, weight 500. Under it, 4px below, the tagline **AI ON YOUR RADAR**: Geist Mono 11px, weight 600, uppercase, 0.1em tracking, in `muted`. Below 420px the tagline hides and the wordmark is 20px. Never recolor the radar, add effects, or drop the wordmark in the header.
+The mark is an ink-stroke radar (outer ring, faint inner ring, one sweep line, one filled four-point AI spark) on a 40px `accent` tile with 12px corners (`assets/Logos/radar-mark.svg`). It sits 14px left of the wordmark "helper2.ai" in Space Grotesk 24px, weight 500. Under it, 4px below, the tagline **AI ON YOUR RADAR**: Space Grotesk 11px, weight 600, uppercase, 0.1em tracking, in `muted`. Below 420px the tagline hides and the wordmark is 20px. Never recolor the radar, add effects, or drop the wordmark in the header.
 
 ## Iconography
 
@@ -144,7 +144,7 @@ The redesign boards in [../redesign](../redesign) are the reference. The compone
 | **PhoneMenu** | Full-width menu under the header on phones. |
 | **Chip** | Example needs, filters, saved-by-type. 44px. |
 | **Button** | Primary, ghost, ink, danger, text. 44px; an external link ends with `↗`. |
-| **AiLabel** | "AI-written", "AI-written reason", "AI summary". Geist Mono 12px, uppercase, outlined. |
+| **AiLabel** | "AI-written", "AI-written reason", "AI summary". Space Grotesk 12px, uppercase, outlined. |
 
 ### In the frontend
 

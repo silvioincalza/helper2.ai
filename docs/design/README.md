@@ -4,8 +4,8 @@ Snapshot of the design work, saved next to the code. The live, editable version 
 
 ## The redesign (November 2026)
 
-Minimal and editorial: Geist Mono for the interface, Geist for reading, the radar behind the home title, New this
-week and Coming up as terminals. Every page, its states and the dark theme are drawn, on a private canvas.
+Minimal and editorial: one font, Space Grotesk (the boards show Geist; the font was decided on 2 November 2026),
+the radar behind the home title, New this week and Coming up as terminals. Every page, its states and the dark theme are drawn, on a private canvas.
 Snapshot: [`redesign/`](redesign) (one `.dc.html` per board,
 `canvas.json` lays them out). The rules are in the design system, version 4: [system/README.md](system/README.md).
 The code moves to it page by page; until then the pages follow the boards below.
