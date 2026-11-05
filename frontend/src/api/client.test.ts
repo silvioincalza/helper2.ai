@@ -16,6 +16,46 @@ describe('api client', () => {
     });
     document.cookie = 'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT';
   });
+  it('on a 403 without a token, loads the token from GET /me and sends the write once more', async () => {
+    let posts = 0;
+    const m = mockApi({
+      'GET /me': () => {
+        document.cookie = 'XSRF-TOKEN=fresh';
+        return json({ authenticated: false });
+      },
+      'POST /me/bookmarks': () => {
+        posts += 1;
+        return posts === 1 ? problem(403, 'Forbidden') : json([]);
+      },
+    });
+    await expect(api.mergeLocalBookmarks([])).resolves.toEqual([]);
+    const sent = m.callsTo('POST', '/me/bookmarks');
+    expect(sent).toHaveLength(2);
+    expect(sent[0]?.headers.get('X-XSRF-TOKEN')).toBeNull();
+    expect(sent[1]?.headers.get('X-XSRF-TOKEN')).toBe('fresh');
+    document.cookie = 'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+  });
+  it('a write cancelled while the token loads ends as a cancel, not as a 403', async () => {
+    const ctrl = new AbortController();
+    mockApi({
+      'GET /me': () => {
+        ctrl.abort();
+        throw new DOMException('Aborted', 'AbortError');
+      },
+      'POST /resources/x/guide': () => problem(403, 'Forbidden'),
+    });
+    const err = await api.askResourceGuide('x', ctrl.signal).catch((e: unknown) => e);
+    expect(err).not.toBeInstanceOf(ApiError);
+    expect((err as DOMException).name).toBe('AbortError');
+  });
+  it('does not retry a 403 when a token was sent', async () => {
+    document.cookie = 'XSRF-TOKEN=tok';
+    const m = mockApi({ 'POST /me/bookmarks': () => problem(403, 'Forbidden') });
+    await expect(api.mergeLocalBookmarks([])).rejects.toMatchObject({ status: 403 });
+    expect(m.callsTo('POST', '/me/bookmarks')).toHaveLength(1);
+    expect(m.callsTo('GET', '/me')).toHaveLength(0);
+    document.cookie = 'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+  });
   it('sends Accept-Language from the document language', async () => {
     document.documentElement.lang = 'it';
     const m = mockApi();

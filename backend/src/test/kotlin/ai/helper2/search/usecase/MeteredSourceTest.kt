@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -253,6 +254,8 @@ class MeteredSourceTest {
     assertEquals(ServedFrom.NONE, out.statuses.single { it.source.id == "tavily" }.servedFrom)
     assertEquals(1, out.total)
     assertNull(out.webFreshUntil)
+    // Out of web credits is by design and shown by its own line, not by the partial banner.
+    assertFalse(out.coverage.partial)
   }
 
   @Test
@@ -266,6 +269,9 @@ class MeteredSourceTest {
     assertEquals(SkipReason.QUOTA_UNAVAILABLE, status.skipReason)
     assertEquals(0, web.calls.get())
     assertNull(out.webSearches)
+    // A broken counter is an outage, not a choice: the partial banner says so.
+    assertTrue(out.coverage.partial)
+    assertEquals(1, out.coverage.sourcesQueried)
   }
 
   @Test

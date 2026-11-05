@@ -3,7 +3,7 @@ import { countdown, daysUntil } from './countdown';
 describe('countdown: how far away an event is, in words', () => {
   it.each([
     [0, { key: 'today' }],
-    [-2, { key: 'today' }],
+    [-2, { key: 'onNow' }],
     [1, { key: 'tomorrow' }],
     [2, { key: 'days', count: 2 }],
     [13, { key: 'days', count: 13 }],

@@ -33,6 +33,7 @@ import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.csrf.CsrfTokenRequestHandler;
 import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.header.writers.StaticHeadersWriter;
 import org.springframework.security.web.savedrequest.NullRequestCache;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.util.StringUtils;
@@ -61,6 +62,13 @@ class SecurityConfiguration {
   static final String PERMISSIONS_POLICY =
       "camera=(), microphone=(), geolocation=(), payment=(), usb=()";
 
+  /**
+   * On a deployment that must stay out of search engines (staging), every response says so. A
+   * header and not a robots.txt Disallow: a crawler must fetch the page to see the noindex.
+   */
+  static final StaticHeadersWriter NOINDEX =
+      new StaticHeadersWriter("X-Robots-Tag", "noindex, nofollow");
+
   @Bean
   SecurityFilterChain api(
       HttpSecurity http,
@@ -68,6 +76,7 @@ class SecurityConfiguration {
       @Value("${helper2.security.admins:}") String admins,
       @Value("${helper2.security.metrics-public:false}") boolean metricsPublic,
       @Value("${helper2.frontend-url:/}") String frontendUrl,
+      @Value("${helper2.security.noindex:false}") boolean noindex,
       AdminPort adminPort)
       throws Exception {
     Set<String> adminSet =
@@ -131,13 +140,17 @@ class SecurityConfiguration {
             l.logoutUrl("/logout")
                 .logoutSuccessHandler(
                     new HttpStatusReturningLogoutSuccessHandler(HttpStatus.NO_CONTENT)))
-        .headers(h ->
-            h.contentSecurityPolicy(csp -> csp.policyDirectives(CSP))
-                .permissionsPolicyHeader(p -> p.policy(PERMISSIONS_POLICY))
-                .referrerPolicy(r ->
-                    r.policy(
-                        org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter
-                            .ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)));
+        .headers(h -> {
+          h.contentSecurityPolicy(csp -> csp.policyDirectives(CSP))
+              .permissionsPolicyHeader(p -> p.policy(PERMISSIONS_POLICY))
+              .referrerPolicy(r ->
+                  r.policy(
+                      org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter
+                          .ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN));
+          if (noindex) {
+            h.addHeaderWriter(NOINDEX);
+          }
+        });
     if (registrations.getIfAvailable() != null) {
       // Sign-in on both ports, each host with its own callback ({baseUrl}): end users on the public
       // host, the

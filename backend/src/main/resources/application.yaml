@@ -349,6 +349,8 @@ helper2:
     # Comma-separated "registrationId:subject" entries granted ADMIN (GitHub: numeric user id, never the
     # renameable login). OIDC providers may also use "registrationId:email" when email_verified=true.
     admins: ${H2_ADMINS:}
+    # X-Robots-Tag: noindex on every response. On for staging, so it never competes with the live site in search engines.
+    noindex: ${H2_NOINDEX:false}
   admin:
     # Second port for the back office (ADR 0035). Set: /admin and /api/v1/admin/** answer only there, and only a
     # sign-in made there carries ADMIN; the public port keeps end-user sign-in. 0 = one port for everything.

@@ -37,8 +37,9 @@ describe('mission, privacy and terms pages', () => {
     expect(screen.getByRole('region', { name: 'Never guessed' })).toBeInTheDocument();
     const marking = screen.getByRole('region', { name: 'How we mark AI text' });
     expect(marking).toHaveTextContent('data-ai-generated');
+    expect(marking).toHaveTextContent('“AI-written” in the guide’s picks bar, on its search terms');
     expect(marking).toHaveTextContent(
-      '“AI-written” in the guide’s picks bar, on its requirements and search terms',
+      '“Read by AI” on the requirements it read from your question',
     );
     expect(marking).toHaveTextContent('“Steps written by AI” in the setup guide');
     const issues = screen.getByRole('link', {

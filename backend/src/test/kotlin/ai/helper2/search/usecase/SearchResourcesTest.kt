@@ -181,6 +181,22 @@ class SearchResourcesTest {
   }
 
   @Test
+  fun `a paused source counts as queried, so the partial banner and its counts agree`() {
+    val limited =
+      FakeSource(descriptor("github")) { throw SourceFailure.RateLimited(Duration.ofSeconds(60)) }
+    val svc = service(listOf(limited, ok("hf", "https://huggingface.co/m/y")))
+    svc.search(req())
+    val paused = svc.search(req("other query"))
+    assertEquals(
+      SkipReason.RATE_LIMIT_PAUSE,
+      paused.statuses.single { it.source.id == "github" }.skipReason,
+    )
+    assertTrue(paused.coverage.partial)
+    assertEquals(2, paused.coverage.sourcesQueried)
+    assertEquals(1, paused.coverage.sourcesSucceeded)
+  }
+
+  @Test
   fun `disabled sources are listed as skipped`() {
     val off = FakeSource(descriptor("off", enabled = false)) { error("must not be called") }
     val out = service(listOf(off, ok("github", "https://github.com/a/x"))).search(req())
@@ -188,6 +204,7 @@ class SearchResourcesTest {
     assertEquals(SourceOutcome.SKIPPED, status.outcome)
     assertEquals(0, off.calls.get())
     assertFalse(out.coverage.partial, "disabled-by-config is disclosed, not partial")
+    assertEquals(1, out.coverage.sourcesQueried)
   }
 
   @Test

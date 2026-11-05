@@ -27,7 +27,7 @@ The success criteria at the end say which tests verify each journey today. What 
 |---|---|
 | Success | Aggregated, deduplicated results; every configured source listed with outcome. |
 | Empty | "No results from the N sources searched" + the list of sources + suggestions: remove filters, ask the guide, try English keywords. Never "nothing exists". |
-| Partial | Banner: "Partial results — GitHub timed out". Results from other sources still shown. Coverage marked `partial`. |
+| Partial | Banner: "Only 7 of 8 queried sources responded". Results from other sources still shown. Coverage marked `partial`. A source that is paused or failing counts as queried; a source left out on purpose (disabled, no web credits left) does not, and its tile says why. The banner and the line under the results use the same two numbers. |
 | Stale cache | Source failed live but a recent cached response exists: results shown, badge "cached 14 min ago — live check failed". |
 | All failed / API down | Error state with retry; no fake results. |
 | Rate-limited | Source marked RATE_LIMITED (not hidden), others continue. |
@@ -39,7 +39,7 @@ The success criteria at the end say which tests verify each journey today. What 
 2. The results show at once; the picks bar above them says the guide is reading. Query, filters, sort and page persist (they live in the URL: `q`, `ask`, filters).
 3. The answer arrives: the picks show as chips in the bar and move to a **Guide picks** group at the top of the list, and the preview opens on pick #1. It says **Why the guide picked it** (AI-written) with the source's own sentence as proof. A result the user already opened stays open. Other results keep the search order under **More results**; their preview says **About**.
 4. Nothing fits: the bar says why in one line and offers **Ask without “…”** for each requirement the guide read (when it is short enough to keep in the URL), and **Rephrase**. **How the guide decided** stays folded under the bar: the steps, and how the guide read the question.
-5. Back/forward and shared links reproduce the same state. `/search` and `/guide` links land on the one page.
+5. Back/forward and shared links reproduce the same state. A shared link that asks the guide works on the first visit too: when the browser has no CSRF cookie yet, the page gets it and sends the question once more.
 
 **Success:** zero re-typing; URL fully describes the state. A new question while one is being answered replaces it.
 Changing the words in the box searches again and drops the old question with its picks: the picks answered that question, not the new words. Enter or **Ask the guide** asks again.
@@ -123,7 +123,7 @@ Each item is a row: the kind, the date and the resource in the meta line, the re
 **Entry:** the home page, right under the box and the examples; or **News** or **Events** in the header (`/#news`, `/#events`).
 
 1. **New this week**: what came into the Helper2 index in the last 7 days, by the date each source states (Published, Updated), or First seen when no source states one. Tools and research only.
-2. **Coming up**: AI events in the next three months, soonest first, only those whose source states the dates. The status says how soon ("Today", "In 13 days"); the next one stands out.
+2. **Coming up**: AI events in the next three months, soonest first, only those whose source states the dates. The status says how soon ("Today", "In 13 days"), or "On now · until Nov 8" for an event that started before today ("On now" when the source states no last day); the next one stands out.
 3. Each row: the date, the type tag, the source or the place, the status pill, and the name; a News row also has the source's own line (an AI-written summary is left out). The name opens the resource page (UJ-4).
 4. A list shows its first six rows. **Show all** opens the rest in place; **Show fewer** closes them. Nothing moves on its own.
 

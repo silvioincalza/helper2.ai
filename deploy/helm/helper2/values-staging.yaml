@@ -26,6 +26,8 @@ app:
     export: true
     endpoint: http://alloy.observability.svc:4318/v1/traces
   environment: staging
+  # Staging shows the same resources as helper2.ai: keep it out of search engines.
+  noindex: true
   # One replica: staging has little traffic, and the cluster's memory goes to prod first.
   replicas: 1
   # No Scout on staging: it would spend Nemotron calls on the same sources prod already indexes.

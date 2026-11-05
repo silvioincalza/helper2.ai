@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { api } from '@/api/client';
 import type { ResultCard, UpcomingEventsResponse } from '@/api/types';
 import { useApi } from '@/hooks/useApi';
-import { countdown, daysUntil } from '@/lib/countdown';
+import { countdown, daysUntil, type Countdown } from '@/lib/countdown';
 import { shortDay } from '@/lib/format';
 import { HomeBoard, type BoardRow } from './HomeBoard';
 import { resourcePath } from '@/lib/searchState';
@@ -28,6 +28,14 @@ export function EventsBoard() {
   // The server's clock (generatedAt) decides the window and the countdown.
   const now = Date.parse(feed.data?.generatedAt ?? '');
   const cards = (feed.data?.items ?? []).filter((card) => startsSoon(card, now));
+  // A running event says until when, so "On now" never reads like a start date.
+  const statusText = (left: Countdown, end: string | undefined): string => {
+    if (left.key === 'onNow')
+      return end
+        ? t('board.countdown.onNowUntil', { date: shortDay(end, i18n.language) })
+        : t('board.countdown.onNow');
+    return t(`board.countdown.${left.key}`, 'count' in left ? { count: left.count } : {});
+  };
   const rows: BoardRow[] = cards.map((card, i) => {
     const start = card.timeline.eventStart?.value ?? '';
     const days = daysUntil(start, now);
@@ -44,9 +52,7 @@ export function EventsBoard() {
       dateTime: start || undefined,
       tag: kind ? <span className="h2-type-tag h2-type-tag--other">{kind}</span> : null,
       where: card.location ?? card.sources[0]?.sourceName,
-      status: left
-        ? t(`board.countdown.${left.key}`, 'count' in left ? { count: left.count } : {})
-        : '',
+      status: left ? statusText(left, card.timeline.eventEnd?.value ?? undefined) : '',
       tone: i === 0 ? 'next' : 'later',
       title: card.title,
       href: resourcePath(card.id),

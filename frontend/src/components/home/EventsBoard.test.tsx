@@ -41,6 +41,30 @@ function event(
 }
 
 describe('home page Events board', () => {
+  it('says a running event is on now, and until when', async () => {
+    mockApi({
+      'GET /events/upcoming': () => ({
+        generatedAt: '2026-11-05T09:00:00Z',
+        items: [
+          event('Agent Hackathon', '2026-11-03T00:00:00Z', '2026-11-08T00:00:00Z', null),
+          event('Open Meetup', '2026-11-04T00:00:00Z', null, null),
+          event('Starts Today', '2026-11-05T00:00:00Z', null, null),
+        ],
+      }),
+    });
+    renderApp('/');
+    const section = (await screen.findByRole('heading', { name: 'Coming up' })).closest(
+      'section',
+    ) as HTMLElement;
+    const rows = await within(
+      await within(section).findByRole('list', { name: 'Next events' }),
+    ).findAllByRole('listitem');
+    expect(rows[0]).toHaveTextContent('On now · until Nov 8');
+    expect(rows[1]).toHaveTextContent('On now');
+    expect(rows[1]).not.toHaveTextContent('until');
+    expect(rows[2]).toHaveTextContent('Today');
+  });
+
   it('lists upcoming events with their stated days, place and source', async () => {
     mockApi({
       'GET /events/upcoming': () => ({
