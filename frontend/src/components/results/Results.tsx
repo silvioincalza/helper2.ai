@@ -1,4 +1,4 @@
-import { useId, useMemo, useRef, useState, type RefObject } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type RefObject } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { api, ApiError } from '@/api/client';
@@ -8,7 +8,6 @@ import { ActiveFilters } from '@/components/ActiveFilters';
 import { FilterPanel } from '@/components/FilterPanel';
 import { GuidePicks } from '@/components/guide/GuidePicks';
 import { WebSearchesLeft, webLineExpected } from '@/components/guide/WebSearchesLeft';
-import { Pagination } from '@/components/Pagination';
 import { ResultsTimeline } from '@/components/ResultsTimeline';
 import { NoticeList } from '@/components/ui/NoticeList';
 import { SourceTiles } from '@/components/ui/SourceTiles';
@@ -36,9 +35,11 @@ import { missedSources, retryCanHelp } from '@/lib/coverage';
 import { AudienceChoice } from './AudienceChoice';
 import { CoverageLine } from './CoverageLine';
 import { FiltersPanel } from './FiltersPanel';
+import { useMorePages } from './morePages';
 import { ResultRow } from './ResultRow';
 import { ResultsSkeleton } from './ResultsSkeleton';
 import { TypeTabs } from './TypeTabs';
+import './controls.css';
 import './results.css';
 
 /** Up to this width the filters open as a drawer over the page (design v4 breakpoints). */
@@ -58,6 +59,12 @@ export function Results() {
   const go = (next: SearchState, ask: string) =>
     setSp(homeParams(next, ask, sp), { preventScrollReset: true });
   const update = (next: SearchState) => go(next, asked);
+  // Show more: the next page goes in the URL in place of this one, so Back leaves the search, not one page.
+  const showPage = (page: number) =>
+    setSp(homeParams(patchState(state, { page }), asked, sp), {
+      replace: true,
+      preventScrollReset: true,
+    });
   const ask = (question: string) => {
     const q = clampQuestion(question);
     if (q) go(patchState(state, { q }), q);
@@ -66,7 +73,8 @@ export function Results() {
   const stream = useGuideStream();
   const picks = useMemo(() => guidePicks(stream.answer), [stream.answer]);
 
-  const apiParams = toApiParams(state);
+  // The view's own search is the first page; Show more loads the others under it (morePages.tsx).
+  const apiParams = toApiParams({ ...state, page: 0 });
   const key = apiParams.toString();
   const search = useApi<SearchResponse | null>(`search?${key}`, (signal) =>
     state.q ? api.search(apiParams, signal) : Promise.resolve(null),
@@ -111,6 +119,7 @@ export function Results() {
             res={shown}
             state={state}
             update={update}
+            showPage={showPage}
             retry={search.reload}
             picks={picks}
             ask={asked || !clampQuestion(state.q) ? undefined : () => ask(state.q)}
@@ -125,6 +134,7 @@ function ResultsBody({
   res,
   state,
   update,
+  showPage,
   retry,
   picks,
   ask,
@@ -132,6 +142,7 @@ function ResultsBody({
   res: SearchResponse;
   state: SearchState;
   update: (s: SearchState) => void;
+  showPage: (page: number) => void;
   retry: () => void;
   picks: readonly GuidePick[];
   /** Asks the guide the same words; absent when the guide is already asked. */
@@ -149,11 +160,22 @@ function ResultsBody({
   const useCaseHints = res.interpretation.detectedUseCases.filter(
     (u) => !isSelected(state.filters.useCase, u),
   );
-  // After a page change the new list replaces the old one: reading starts again at the heading.
   const heading = useRef<HTMLHeadingElement>(null);
-  const toPage = (page: number) => {
-    update(patchState(state, { page }));
-    heading.current?.focus();
+  const more = useMorePages(res, toApiParams({ ...state, page: 0 }), state.page);
+  const listRef = useRef<HTMLDivElement>(null);
+  const announce = useRef<HTMLParagraphElement>(null);
+  // After Show more, focus goes to the first new row once it is in, and the count is said once, politely.
+  const [focusPage, setFocusPage] = useState<number | null>(null);
+  const firstNew = focusPage === null ? undefined : more.firstOf(focusPage);
+  const added = focusPage === null ? 0 : more.countOf(focusPage);
+  useEffect(() => {
+    if (!firstNew) return;
+    listRef.current?.querySelector<HTMLElement>(`[data-id="${CSS.escape(firstNew)}"] a`)?.focus();
+    if (announce.current) announce.current.textContent = t('results.moreLoaded', { count: added });
+  }, [firstNew, added, t]);
+  const showMore = () => {
+    setFocusPage(more.nextPage);
+    showPage(more.nextPage);
   };
   const hintsId = useId();
   const missed = useMemo(() => missedSources(res.sources), [res.sources]);
@@ -246,18 +268,41 @@ function ResultsBody({
         >
           <p>{t('results.emptyTryOther')}</p>
         </StatePanel>
-      ) : state.view === 'timeline' ? (
-        <ResultsTimeline cards={res.results} />
       ) : (
-        <ul className="plain-list h2-list" aria-label={t('results.title')}>
-          {res.results.map((c) => (
-            <ResultRow key={c.id} card={c} pick={byId.get(c.id)} stale={stale} />
-          ))}
-        </ul>
-      )}
-      {/* Under the list and under the timeline alike: the timeline asks for 50 per page, so it pages too. */}
-      {!nothingSearched && res.results.length > 0 && (
-        <Pagination page={res.page} size={res.size} total={res.total} onPage={toPage} />
+        <div ref={listRef}>
+          {state.view === 'timeline' ? (
+            <ResultsTimeline cards={more.cards} />
+          ) : (
+            <ul className="plain-list h2-list" aria-label={t('results.title')}>
+              {more.cards.map((c) => (
+                <ResultRow key={c.id} card={c} pick={byId.get(c.id)} stale={stale} />
+              ))}
+            </ul>
+          )}
+          {more.loaders}
+          {/* Under the list and under the timeline alike: one more page in place. */}
+          <p ref={announce} className="sr-only" aria-live="polite" />
+          {more.failed ? (
+            <StatePanel
+              tone="error"
+              level={3}
+              title={t('results.moreFailed')}
+              next={<RetryButton onClick={more.failed.reload} />}
+            />
+          ) : (
+            (more.more || more.loadingMore) && (
+              <button
+                type="button"
+                className="v4-btn h2-more"
+                aria-busy={more.loadingMore}
+                aria-disabled={more.loadingMore}
+                onClick={more.loadingMore ? undefined : showMore}
+              >
+                {t(more.loadingMore ? 'results.loadingMore' : 'results.showMore')}
+              </button>
+            )
+          )}
+        </div>
       )}
 
       <section id="h2-sources" className="h2-results__sources" aria-labelledby="h2-sources-h">

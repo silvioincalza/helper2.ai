@@ -3,11 +3,12 @@ import { useTranslation } from 'react-i18next';
 import type { ResultCard } from '@/api/types';
 import { OriginLabel } from '@/components/Badges';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
-import { displayHost, shortMonth } from '@/lib/format';
+import { displayHost } from '@/lib/format';
 import { locateQuote } from '@/lib/locateQuote';
 import { resourcePath } from '@/lib/searchState';
 import type { GuidePick } from '@/lib/selection';
 import { toFromResults } from './fromResults';
+import { ResultDate } from './ResultDate';
 
 /** The id a guide pick chip jumps to. */
 export const rowAnchor = (id: string) => `result-${id}`;
@@ -38,7 +39,7 @@ export function ResultRow({
         <span className="h2-row__type">{t(`type.${card.type}`)}</span>
         <span aria-hidden="true"> · </span>
         <span className="h2-row__host">{host}</span>
-        <RowDate card={card} />
+        <ResultDate card={card} separator />
         {pick && <span className="h2-row__pick">{t('results.pick', { rank: pick.rank })}</span>}
       </p>
       <Link
@@ -106,39 +107,6 @@ function RowText({ card, pick }: { card: ResultCard; pick: GuidePick | undefined
         <span aria-hidden="true">✓ </span>
         {t('results.checkedQuote')}
       </p>
-    </>
-  );
-}
-
-/**
- * The date people scan for: when it was last updated, else when it was created, as a source states it. With neither,
- * when helper2 first saw it, in the "not stated" colour, so it is never read as the source's date.
- */
-function RowDate({ card }: { card: ResultCard }) {
-  const { t, i18n } = useTranslation();
-  const { updated, published, discovered } = card.timeline;
-  const pickDate = () => {
-    if (updated.status !== 'UNKNOWN' && updated.value)
-      return { key: 'results.dateUpdated', value: updated.value };
-    if (published.status !== 'UNKNOWN' && published.value)
-      return { key: 'results.dateCreated', value: published.value };
-    if (discovered.status !== 'UNKNOWN' && discovered.value)
-      return { key: 'results.dateFirstSeen', value: discovered.value };
-    return null;
-  };
-  const date = pickDate();
-  if (!date) return null;
-  const month = shortMonth(date.value, i18n.language);
-  if (!month) return null;
-  return (
-    <>
-      <span aria-hidden="true"> · </span>
-      <time
-        dateTime={date.value}
-        className={date.key === 'results.dateFirstSeen' ? 'h2-row__date is-ours' : 'h2-row__date'}
-      >
-        {t(date.key, { date: month })}
-      </time>
     </>
   );
 }

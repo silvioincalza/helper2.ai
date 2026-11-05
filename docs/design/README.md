@@ -25,7 +25,12 @@ footer, Home, Results (list and timeline), the resource page, Sources, Saved, th
   only when a retry can help.
 - "Best for" (All, Apps I can use, Build with AI) sits with the use case chips under the type tabs.
 - The resource page: one primary button (Open), Save, Set it up only for things you install or run.
-- The board's "Show more" is not built: the list pages, as before (roadmap).
+- Show more under the list adds the next page in place; the page is in the URL, so Back and a reload keep it.
+- Timeline: the results with no stated date are one folded group at the end, "Date unknown · N · Show them".
+- The resource page: the date line under the title (type · host · the row's date), and "Where this information
+  comes from" folded, with each source, its mode and when it was read.
+- No "Ask the guide about …" bar over the list: the box has the button. An empty result keeps "Ask the guide
+  instead".
 
 | Mockup | What |
 |---|---|

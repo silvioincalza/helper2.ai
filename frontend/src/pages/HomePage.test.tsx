@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { makeSearch } from '@/test/fixtures';
 import { mockApi } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
 
@@ -173,6 +174,15 @@ describe('one box', () => {
     expect(screen.queryByText(/Sounds like a question/)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Ask the guide' })).toBeInTheDocument();
     expect(m.callsTo('POST', '/guide/stream')).toHaveLength(0);
+  });
+
+  it('the results offer no second Ask the guide: the box has it; an empty result keeps "Ask the guide instead"', async () => {
+    mockApi({ 'GET /search': () => makeSearch({ results: [], total: 0 }) });
+    renderApp('/search?q=translate');
+    expect(
+      await screen.findByRole('button', { name: 'Ask the guide instead' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Ask the guide about/ })).not.toBeInTheDocument();
   });
 
   it('typing then asking at once keeps the question: a pending live search must not drop `ask`', async () => {

@@ -165,11 +165,6 @@ Open items:
   [design/system](design/system/README.md), boards in [design/redesign](design/redesign)). The fonts, the v4 tokens,
   the header, the footer, Home, Results (list and timeline), the resource page, Sources, Saved, the back office and
   the text pages (Mission, Privacy, Terms, Account, sign-in, 404) are built. Open points:
-  - **Results, open points.** The boards draw "Show more" under the list and "Show them" for the timeline's
-    unknown dates; the list still pages, and the unknown dates show as their own group. The `$ helper2 search · N`
-    total is `total` after filters. The pagination buttons are still the version 3 buttons.
-  - **The resource page, open points.** The boards draw a date line under the title and "Where this information
-    comes from" folded; the page keeps the dates list and the provenance table.
   - **Saved, drawn but not built:** Undo for a few seconds after Remove, "4 of 500" on the account list, and "We moved
     3 saved items to your account" right after sign-in. Each needs a decision first: Undo changes how Remove works,
     the cap and the moved count need fields on the bookmarks API.

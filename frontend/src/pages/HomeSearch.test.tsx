@@ -360,13 +360,19 @@ describe('search results', () => {
     const months = within(timeline)
       .getAllByRole('heading', { level: 3 })
       .filter((h) => h.classList.contains('tl-month'));
-    expect(months.map((h) => h.textContent)).toEqual([
-      'October 2026',
-      'July 2023',
-      'Creation date unknown',
-    ]);
+    expect(months.map((h) => h.textContent)).toEqual(['October 2026', 'July 2023', 'Date unknown']);
     expect(within(timeline).getByText('Oct 17, 2026')).toBeInTheDocument();
-    expect(within(timeline).getByText('Creation date not stated')).toBeInTheDocument();
+    // The undated results are one folded group at the end.
+    const showThem = within(timeline).getByRole('button', { name: 'Show them' });
+    expect(showThem).toHaveAttribute('aria-expanded', 'false');
+    expect(within(timeline).getByText(/^1 result\./)).toBeInTheDocument();
+    expect(within(timeline).queryByText('Creation date not stated')).not.toBeVisible();
+    await userEvent.click(showThem);
+    expect(within(timeline).getByRole('button', { name: 'Hide them' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    expect(within(timeline).getByText('Creation date not stated')).toBeVisible();
     // One line per result, linking to its resource page.
     expect(within(timeline).getByRole('link', { name: /New MCP/ })).toHaveAttribute(
       'href',
@@ -435,23 +441,56 @@ describe('search results', () => {
     ).toHaveAttribute('aria-busy', 'false');
   });
 
-  it('after paging, focus moves to the list heading', async () => {
-    mockApi({ 'GET /search': () => makeSearch({ total: 45, size: 20 }) });
-    renderApp('/search?q=translate');
-    await screen.findByText('Page 1 of 3');
-    await userEvent.click(screen.getByRole('button', { name: 'Next' }));
-    expect(screen.getByRole('heading', { level: 2, name: /All results/ })).toHaveFocus();
-  });
+  describe('Show more', () => {
+    /** Page n of a 3-page search: one card per page, ids that do not repeat. */
+    const paged = () => {
+      const m = mockApi({
+        'GET /search': ({ url }) => {
+          const page = Number(url.searchParams.get('page') ?? '0');
+          return makeSearch({
+            total: 3,
+            size: 1,
+            page,
+            results: [
+              makeCard({
+                id: `11111111-1111-5111-8111-00000000000${page}`,
+                title: `Result ${page + 1}`,
+              }),
+            ],
+          });
+        },
+      });
+      return m;
+    };
 
-  it('paginates', async () => {
-    const m = mockApi({ 'GET /search': () => makeSearch({ total: 45, size: 20 }) });
-    const { params } = renderApp('/search?q=translate');
-    await screen.findByText('Page 1 of 3');
-    await userEvent.click(screen.getByRole('button', { name: 'Next' }));
-    await waitFor(() => expect(params().get('page')).toBe('1'));
-    await waitFor(() =>
-      expect(m.callsTo('GET', '/search').some((c) => c.search.includes('page=1'))).toBe(true),
-    );
+    it('adds the next page in place, moves focus to its first row and says how many came, once', async () => {
+      const m = paged();
+      const { params } = renderApp('/search?q=translate');
+      await screen.findByRole('link', { name: 'Result 1' });
+      expect(screen.queryByRole('navigation', { name: 'Pagination' })).not.toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'Show more' }));
+      const second = await screen.findByRole('link', { name: 'Result 2' });
+      await waitFor(() => expect(second).toHaveFocus());
+      expect(screen.getByRole('link', { name: 'Result 1' })).toBeInTheDocument();
+      expect(params().get('page')).toBe('1');
+      expect(screen.getByText('1 more result')).toHaveAttribute('aria-live', 'polite');
+      await userEvent.click(screen.getByRole('button', { name: 'Show more' }));
+      await screen.findByRole('link', { name: 'Result 3' });
+      // All 3 are shown: nothing more to show.
+      expect(screen.queryByRole('button', { name: 'Show more' })).not.toBeInTheDocument();
+      expect(
+        m.callsTo('GET', '/search').map((c) => new URLSearchParams(c.search).get('page')),
+      ).toEqual([null, '1', '2']);
+    });
+
+    it('a reload with a page in the URL shows every page up to it', async () => {
+      paged();
+      renderApp('/search?q=translate&page=2');
+      expect(await screen.findByRole('link', { name: 'Result 3' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Result 1' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Result 2' })).toBeInTheDocument();
+      expect(document.activeElement).not.toBe(screen.getByRole('link', { name: 'Result 3' }));
+    });
   });
 
   it('renders notices, expanded terms and use-case suggestions', async () => {

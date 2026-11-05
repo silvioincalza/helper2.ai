@@ -154,11 +154,39 @@
 .h2-facts__group dd.is-conflict {
   color: var(--not-stated);
 }
-.h2-pv__source {
-  padding: 6px 10px;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  font: 500 0.75rem/1 var(--v4-font-mono);
+
+/* Where this information comes from: folded under a dashed rule. */
+.h2-res__where {
+  border-top: 1px dashed var(--border-strong);
+}
+.h2-res__fold {
+  min-height: var(--target-min);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font: 500 0.9375rem/1.2 var(--v4-font-mono);
+  cursor: pointer;
+  list-style: none;
+}
+.h2-res__fold::-webkit-details-marker {
+  display: none;
+}
+.h2-res__fold:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.h2-res__fold .icon {
+  transition: transform var(--motion);
+}
+.h2-res__where[open] > .h2-res__fold .icon {
+  transform: rotate(180deg);
+}
+.h2-res__sources {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+  font: 400 0.875rem/1.5 var(--v4-font-mono);
   color: var(--ink-2);
 }
 

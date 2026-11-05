@@ -163,6 +163,12 @@ they do now and how version 3 and 4 live side by side until the other pages move
       not-stated colour), the guide pick, the title, the description, "From" the sources. The title's link covers the
       row and opens the resource page; nothing is selected or opens in place, on any width. The resource page's
       **Back to results** goes back in history, so the list keeps its place; opened directly it is a plain link.
+    - **Show more.** Under the list (and the timeline) instead of pages: it adds the next page in place, moves focus to
+      its first row and says "20 more results" once, politely. `page` in the URL is the last page shown, so Back and a
+      reload show the same rows. Each page is its own GET /search through the recent-answers cache
+      (`morePages.tsx`), so Back needs no request. Up to page 50, as the API allows.
+    - **No guide suggestion over the list.** The box has the Ask the guide button; an empty result keeps "Ask the
+      guide instead".
     - **Guide picks merged into the list.** The rows keep the search order, so nothing moves when the answer comes and
       nothing is announced. A picked row shows "Guide pick #1", the reason (labelled "AI-written", marked
       `data-ai-generated`) and its quote, highlighted where it stands in the source's own words, with "Checked word
@@ -176,11 +182,15 @@ they do now and how version 3 and 4 live side by side until the other pages move
     - **Best for** (All, Apps I can use, Build with AI) sits with the use case chips under the type tabs. It sets the
       audience `path`, which changes what ranks first and never hides a result.
     - **The timeline:** the month beside a line of dots, each item its creation date, type, host, title and
-      description.
-    - **The resource page:** one column in v4 fonts and tokens. The type, host and who lists it, the title, one
-      primary button (Open on host ↗), Save, and Set it up (outlined) only for what a user installs or runs. Then the
-      pick, From the source, At a glance, Listed by, the dates and the detail sections; its tables in Geist Mono with
+      description. The results with no stated date are one group at the end, folded: "Date unknown · N · Show them"
+      (a button with `aria-expanded`).
+    - **The resource page:** one column in v4 fonts and tokens. The title, under it type · host · the same date as the
+      row (`ResultDate`), one primary button (Open on host ↗), Save, and Set it up (outlined) only for what a user
+      installs or runs. Then the pick, From the source, At a glance, the dates, "Where this information comes from"
+      (folded: each source, its mode and when it was read) and the detail sections; its tables in Geist Mono with
       capital headers and dashed rules.
+    - **Controls.** The shared version 3 buttons, chips, fields and state panels take the v4 look on both pages
+      (`controls.css`), until the version 3 components go (decision 10).
 
 ## Alternatives
 - **Fonts: `geist` (Vercel).** The upstream package, but built for `next/font` (it imports `next/font/local`) and
@@ -222,7 +232,8 @@ they do now and how version 3 and 4 live side by side until the other pages move
 - The initial JavaScript is BUNDLE of 250 KiB gzip ([0025](0025-frontend-one-box.md)): Results load on demand, like
   the radar, the phone tabs, Sources, Saved, the back office and the text pages. A first visit to /search waits for
   that chunk behind the skeleton.
-- Results show one screen of rows and one place per result; comparing two results means opening both. A shared link
+- Results show one screen of rows and one place per result; comparing two results means opening both. A reload
+  with `page=5` asks for six pages at once. A shared link
   with the old `id` parameter shows the list without selecting anything.
 - What is not built yet is on the [roadmap](../../roadmap.md) (section 6).
 

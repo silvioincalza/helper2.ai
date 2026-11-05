@@ -36,11 +36,14 @@ describe('timeline', () => {
       card('4', known('2025-01-09T00:00:00Z')),
       card('5', unknownDate),
       card('6', unknownDate),
+      card('7', known('2024-03-01T00:00:00Z')),
+      card('8', unknownDate),
     ]);
     expect(groups.map((g) => [g.month, g.cards.map((c) => c.id)])).toEqual([
       ['2026-10', ['1', '2', '3']],
       ['2025-01', ['4']],
-      [null, ['5', '6']],
+      ['2024-03', ['7']],
+      [null, ['5', '6', '8']],
     ]);
   });
 
