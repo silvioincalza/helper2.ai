@@ -127,7 +127,8 @@ are candidates in the admin review list.
    they found it, then the others), the most specific type is kept (a self-hosted agent platform is an
    `AGENT`), and the collector is added to `foundBy` and to the item's reason. A decided page stays as it was.
 9. **Accepting indexes it.** `ResolveReview` passes the item's details to `IndexAcceptedCandidate` (scout use case).
-   The use case checks the candidate first (known source, URL, title, product type, at most 12 tags), then:
+   The use case checks the candidate first (known source, URL, title, a type that one of the collectors that found it
+   declares, at most 12 tags), then:
    - a page another source indexed after it was proposed is left as that source wrote it: only the decision is
      recorded (port `CatalogLookup`);
    - otherwise it is indexed as **one record** of the first collector that found it, with every category as a tag
@@ -137,20 +138,24 @@ are candidates in the admin review list.
      gate checks what the model says about it.
 
    A candidate that fails the checks is refused (400) and the item stays open. Rejecting records the decision only.
+   A category declares its product type and ARTICLE; a merged candidate may have the type of any category that found
+   it. LinkedIn ([0053](0053-linkedin-via-tavily.md)) declares ARTICLE, NEWS, PRODUCT and EVENT.
 10. **Credits are counted and capped.** Every discovery search adds its credits to the day's global credit counter,
     the one the live search counts on and the Sources page shows ([0037](../search/0037-tavily-store-and-daily-quota.md)),
     and to the Scout's own counter (`ScoutTavilyCredits`; Redis, same key, field `scout-credits`). A search costs
     Tavily's `usage.credits`, or 2 (advanced) or 1 (basic) when the answer does not say. The metric is
-    `helper2.tavily.credits{feature="scout-discovery"}`. Past `helper2.scout.discovery.daily-credits`
-    (`H2_SCOUT_DISCOVERY_DAILY_CREDITS`, 40) the categories due that day are SKIPPED ("Daily Tavily credit cap of the
+    `helper2.tavily.credits{feature="scout-discovery"}`. Past `helper2.scout.daily-credits`
+    (`H2_SCOUT_DAILY_CREDITS`, 40) the categories due that day are SKIPPED ("Daily Tavily credit cap of the
     Scout reached") and try again the next day: the skip is `CollectedBatch.deferred`, so their pass stays open. When
-    the counter cannot be read, the cap counts as reached.
+    the counter cannot be read, the cap counts as reached. LinkedIn ([0053](0053-linkedin-via-tavily.md)) counts on
+    the same counters and cap, with the feature `scout-linkedin`.
 11. **Failed searches.** A search that fails alone is logged and skipped; the others, already paid for, are kept. When
-    half or more of a category's searches fail (an outage, a circuit that opened mid-pass), its pass fails and its
+    half or more of a category's searches fail (an outage, a circuit that opened mid-pass), its pass fails, its
     checkpoint stays and its pass stays open, so the next daily run searches the same pages again.
-12. **Web sources are one predicate.** `WebSources.isWeb(id)` (`tavily`, `tavily-scout`, `course-scout` and every
-    `discovery-*`) decides which titles are cleaned as page titles (`WebPageTitle.forSource`, `ResourceStore`) and
-    which NEWS and ARTICLE records the web retention deletes (`CatalogRetention`).
+12. **Web sources are one predicate.** `WebSources.isWeb(id)` (`tavily`, `tavily-scout`, `course-scout`,
+    `linkedin-scout` and every `discovery-*`) decides which titles are cleaned as page titles
+    (`WebPageTitle.forSource`, `ResourceStore`) and which NEWS and ARTICLE records the web retention deletes
+    (`CatalogRetention`).
 13. **Where people see it.**
     - **Sources page**: the categories come after the other sources in the one v4 table, one row group per family
       ("Discovery · Developers"), with the honest rules in the note under it: "List articles are added without review",
@@ -186,8 +191,9 @@ are candidates in the admin review list.
   week), to measure in the first weeks. If it is too many, raise a category's `min-score`, turn on its
   `require-keyword`, or turn it off (`enabled: false`).
 - Credits: 39 searches × 2 credits = 78 a week, ~335 a month (390 in a month with 5 passes). With `tavily-scout`
-  (~42) and `course-scout` (~43) the Scout uses ~420 credits a month, out of the plan's 14,000 shared with live
-  search. The daily cap (40) is about four times a normal day (5 categories × ~1.2 searches × 2 credits).
+  (~42), `course-scout` (~43) and `linkedin-scout` (~86, [0053](0053-linkedin-via-tavily.md)) the Scout uses ~506
+  credits a month, out of the plan's 14,000 shared with live search. The daily cap (40) is about four times a normal
+  day (5 categories × ~1.2 searches × 2 credits); on LinkedIn's day its 20 basic searches bring the day to about 32.
 - The global daily credit cap of the live search (`H2_TAVILY_GLOBAL_DAILY_CREDITS`) now counts the Scout's discovery
   credits too: a day of discovery leaves less for visitors. The Scout itself checks only its own cap.
 - 34 run records a week instead of one, and 34 rows on the Sources page: grouped by family so they stay readable.

@@ -2,8 +2,9 @@ package ai.helper2.shared
 
 /**
  * The sources whose records are web pages found by a web search (Tavily): the live source, the
- * Scout's Tavily queries, course discovery and every discovery category (ADR 0051). One place for
- * the page titles ([WebPageTitle.forSource]) and the retention of web news and articles.
+ * Scout's Tavily queries, course discovery, every discovery category (ADR 0051) and LinkedIn via
+ * Tavily (ADR 0053). One place for the page titles ([WebPageTitle.forSource]) and the retention of
+ * web news and articles.
  */
 object WebSources {
   /** The id prefix of the discovery collectors: one per category ("discovery-coding"). */
@@ -13,7 +14,8 @@ object WebSources {
   const val DISCOVERY_LIKE = "discovery-_%"
 
   /** The web sources with a fixed id. */
-  @JvmField val FIXED: List<String> = listOf("tavily", "tavily-scout", "course-scout")
+  @JvmField
+  val FIXED: List<String> = listOf("tavily", "tavily-scout", "course-scout", "linkedin-scout")
 
   /** True when [sourceId] is a web source. */
   @JvmStatic

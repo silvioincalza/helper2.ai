@@ -27,6 +27,7 @@ import ai.helper2.sources.npm.NpmSource;
 import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.sources.tavily.CourseCollector;
+import ai.helper2.sources.tavily.LinkedInCollector;
 import ai.helper2.sources.tavily.ScoutTavilyCredits;
 import ai.helper2.sources.tavily.TavilyCollector;
 import ai.helper2.sources.tavily.TavilySource;
@@ -56,7 +57,9 @@ import org.springframework.web.client.RestClient;
   CollectorProperties.HfTrending.class,
   CollectorProperties.TavilyScout.class,
   CollectorProperties.Courses.class,
+  CollectorProperties.ScoutCredits.class,
   CollectorProperties.Discovery.class,
+  CollectorProperties.LinkedIn.class,
   CollectorProperties.GitHubAwesome.class,
   CollectorProperties.HfProviderOrgs.class,
   CollectorProperties.AiDeadlines.class,
@@ -204,14 +207,40 @@ class SourcesConfiguration {
   }
 
   /**
-   * The Tavily credits the discovery collectors spend, counted with the live search's and capped
-   * per UTC day (ADR 0051). The collectors themselves are registered per category by {@link
-   * DiscoveryCollectorRegistrar}.
+   * The Tavily credits the Scout's searches spend (discovery and LinkedIn), counted with the live
+   * search's and capped per UTC day (ADR 0051). The discovery collectors themselves are registered
+   * per category by {@link DiscoveryCollectorRegistrar}.
    */
   @Bean
   ScoutTavilyCredits scoutTavilyCredits(
-      CollectorProperties.Discovery c, QuotaCounter counter, QuotaKeys keys, MeterRegistry meters) {
+      CollectorProperties.ScoutCredits c,
+      QuotaCounter counter,
+      QuotaKeys keys,
+      MeterRegistry meters) {
     return new ScoutTavilyCredits(counter, keys, c.dailyCredits(), meters);
+  }
+
+  /**
+   * Weekly Tavily searches restricted to linkedin.com; every page it keeps goes to the admin review
+   * list (ADR 0053). Its credits count on the Scout's daily cap, as discovery's.
+   */
+  @Bean
+  LinkedInCollector linkedInCollector(
+      SourcesProperties p,
+      CollectorProperties.LinkedIn c,
+      Clock clock,
+      Resilience resilience,
+      ObservationRegistry observations,
+      ScoutTavilyCredits credits) {
+    SourceSettings s = p.get("linkedin-scout");
+    return new LinkedInCollector(
+        s,
+        collectorClient(s, observations),
+        clock,
+        resilience,
+        new RunInterval(c.interval()),
+        c.queries(),
+        credits);
   }
 
   /**

@@ -210,6 +210,7 @@ resilience4j:
       collector-tavily-scout: {base-config: collector}
       collector-course-scout: {base-config: collector}
       collector-discovery: {base-config: collector}
+      collector-linkedin-scout: {base-config: collector}
       collector-github-awesome: {base-config: collector}
       collector-hf-provider-orgs: {base-config: collector}
       collector-ai-deadlines: {base-config: collector}
@@ -278,6 +279,7 @@ resilience4j:
       collector-tavily-scout: {base-config: collector}
       collector-course-scout: {base-config: collector}
       collector-discovery: {base-config: collector}
+      collector-linkedin-scout: {base-config: collector}
       collector-github-awesome: {base-config: collector}
       collector-hf-provider-orgs: {base-config: collector}
       collector-ai-deadlines: {base-config: collector}
@@ -418,6 +420,10 @@ helper2:
     initial-delay: ${H2_SCOUT_INITIAL_DELAY:PT20S}
     tick: ${H2_SCOUT_TICK:PT10M}
     cron: ${H2_SCOUT_CRON:0 7 3 * * *}
+    # Tavily credits the Scout's searches (every discovery category and LinkedIn, ADR 0051 and 0053) may spend per
+    # UTC day; past it the collectors due that day are SKIPPED and try again the next day. Counted on the global
+    # credit counter too (the Sources page's web credits).
+    daily-credits: ${H2_SCOUT_DAILY_CREDITS:40}
     ai-deadlines:
       # Conference files change a few times a month; one contents call + ~70 raw files per pass.
       interval: ${H2_SCOUT_AI_DEADLINES_INTERVAL:P1D}
@@ -481,6 +487,35 @@ helper2:
         aws.amazon.com/certification=AWS,
         learn.microsoft.com/en-us/credentials=Microsoft Learn,
         nvidia.com=NVIDIA
+    linkedin:
+      # Public LinkedIn pages about AI (ADR 0053): one Tavily search per query, restricted to linkedin.com. The URL
+      # path decides the type (article, post, company or showcase page, event); profiles, jobs and learning pages are
+      # dropped. Every kept page goes to the admin review list, never straight to the catalog. One credit per query
+      # and pass (search_depth basic): 20 queries every 7 days = 20 credits a week, ~ 86 a month, all on one day.
+      # They count on the Scout's daily cap (helper2.scout.daily-credits) with discovery's; past it the
+      # pass is SKIPPED and tried again the next day. No commas inside a query.
+      interval: ${H2_SCOUT_LINKEDIN_INTERVAL:P7D}
+      queries: >-
+        new AI tool launched,
+        new open-source LLM released,
+        new MCP server released,
+        new AI agent framework released,
+        new model released OpenAI Anthropic Google Gemini,
+        new model released xAI Grok Meta Llama Mistral,
+        new model released NVIDIA Nemotron DeepSeek Qwen,
+        launches new AI product,
+        AI startup announces launch,
+        introducing our new AI agent,
+        now available generative AI platform,
+        open-source AI model release announcement,
+        MCP server launch announcement,
+        AI conference,
+        AI hackathon,
+        generative AI meetup,
+        AI summit Europe,
+        LLM workshop webinar,
+        AI event Switzerland,
+        NVIDIA GTC
     discovery:
       # Tavily discovery (ADR 0051): what every category of helper2.categories shares. Each category is its own
       # collector. Lists and comparisons are indexed as ARTICLE; a product's own site or GitHub repository goes to the
@@ -492,9 +527,6 @@ helper2:
       max-results: 10
       # Tavily's relevance score, 0-1. Below it a result is dropped; a category can raise it (min-score).
       min-score: 0.4
-      # Tavily credits all discovery searches may spend per UTC day; past it the categories due that day are SKIPPED
-      # and try again the next day. Counted on the global credit counter too (the Sources page's web credits).
-      daily-credits: ${H2_SCOUT_DISCOVERY_DAILY_CREDITS:40}
       # Social and video sites: no product pages, no lists worth indexing. AI directories and review sites: their
       # terms forbid copying their listings, and their excerpts carry reviewers' names (ADR 0051). A category adds its
       # own (exclude-domains).
@@ -586,6 +618,14 @@ helper2:
       timeout: 10s
       cache-ttl: 30m
       deadline: ${H2_SOURCE_COURSE_SCOUT_DEADLINE:}
+    linkedin-scout:
+      # Disabled (reported as SKIPPED) until H2_TAVILY_API_KEY is set. Calls Tavily, never LinkedIn (ADR 0053).
+      enabled: ${H2_SOURCE_LINKEDIN_SCOUT_ENABLED:true}
+      base-url: https://api.tavily.com
+      token: ${H2_TAVILY_API_KEY:}
+      timeout: 10s
+      cache-ttl: 30m
+      deadline: ${H2_SOURCE_LINKEDIN_SCOUT_DEADLINE:}
     discovery:
       # Every discovery category (helper2.categories, ADR 0051). Disabled (reported as SKIPPED) until
       # H2_TAVILY_API_KEY is set.
