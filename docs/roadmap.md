@@ -302,7 +302,7 @@ Fix an item or accept it; when it no longer holds, remove it.
 ### Frontend
 
 - A user who never presses Ask the guide (or Shift+Enter) never sees the guide's picks: Enter only searches. ([ADR 0025](adr/frontend/0025-frontend-one-box.md))
-- knip does not read locale files or CSS: a text key or a style that only dead code used stays until it is removed by hand (today the `freshness.*` texts and `.badge.freshness`). Moderate `npm audit` advisories in build and test tools are only reported. ([ADR 0053](adr/quality/0053-dead-code-and-dependency-audit.md))
+- knip does not read locale files or CSS: a text key or a style that only dead code used stays until it is removed by hand (today the `freshness.*` texts and `.badge.freshness`). Moderate `npm audit` advisories in build and test tools are only reported. ([ADR 0054](adr/quality/0054-dead-code-and-dependency-audit.md))
 - No browser end-to-end tests: frontend tests run in jsdom only, also in CI. ([ADR 0025](adr/frontend/0025-frontend-one-box.md), [ADR 0028](adr/operations/0028-ci-cd.md))
 - A recent answer can be up to 5 minutes old (50 entries, 5 minutes, fixed). A new page that shows data the user changes must pass `cache: false`. ([ADR 0039](adr/frontend/0039-frontend-recent-answers-cache.md))
 - The picks bar takes about 110 px also when the guide has nothing to say, and shows no step-by-step progress; there is no button to close the guide's answer. Two result layouts to build and test. ([ADR 0040](adr/frontend/0040-frontend-design.md))

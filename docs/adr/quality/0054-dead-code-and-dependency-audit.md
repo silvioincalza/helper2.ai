@@ -1,4 +1,4 @@
-# 0053 — Dead code and dependency audit: knip in strict mode and npm audit in the frontend CI job
+# 0054 — Dead code and dependency audit: knip in strict mode and npm audit in the frontend CI job
 
 **Status.** Accepted. **Builds on:** [0028](../operations/0028-ci-cd.md), [0046](../operations/0046-supply-chain.md), [0047](0047-code-format.md)
 
@@ -58,7 +58,7 @@ No runtime path: this decision runs in the build and in CI only, so it has no se
 - `.github/workflows/ci.yml` (`frontend`) — the knip step and the two `npm audit` steps.
 
 ## Diagrams
-[flow](../../diagrams/flow-0053-dead-code-and-dependency-audit.svg)
+[flow](../../diagrams/flow-0054-dead-code-and-dependency-audit.svg)
 
 ## Roadmap
 None.
