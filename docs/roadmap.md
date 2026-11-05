@@ -185,8 +185,8 @@ Open items:
     used by the coverage line on Results. GET /api/v1/policy is in
     the API. Still to use: `limits` in the account panel, and `/policy` for the numbers of the Mission, Privacy and
     Terms pages.
-  - **Cost guard data:** with a week of data, check the share of 4+-word searches that are names and the share of
-    "no pick" answers (`helper2.guide.quota.give_back`), and revisit the 4-word rule
+  - **Cost guard data:** with a week of data, check the share of "no pick" answers that are given back
+    (`helper2.guide.quota.give_back`) and how often a client reaches the free-answer cap
     ([0017](adr/guide/0017-guide-cost-guard.md)).
   - An `unknown` count per facet and an updated-date facet on the search response (Filters panel).
   - Sign-in with Google (phase 1). Passkey, email link and password (phase 2) need their own ADR, a threat model and
