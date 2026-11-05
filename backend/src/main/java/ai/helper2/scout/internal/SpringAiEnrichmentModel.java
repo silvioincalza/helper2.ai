@@ -21,6 +21,7 @@ import ai.helper2.scout.ModelAnswerInvalid;
 import ai.helper2.scout.ProposedClaim;
 import ai.helper2.scout.ProposedField;
 import ai.helper2.scout.ProposedRelationship;
+import ai.helper2.scout.UntrustedPageText;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -39,17 +40,17 @@ import org.springframework.ai.converter.BeanOutputConverter;
 class SpringAiEnrichmentModel implements EnrichmentModel {
 
   /**
-   * v3: the material is marked as untrusted data, the excerpt length comes from the validator, and
-   * license, openSource and platforms need the value in the excerpt. (v2 listed the allowed
-   * values.)
+   * v4 (ADR 0056): pricing, type and use case need the value in the excerpt too, audience and tech
+   * level may be estimated without a quote, vendor pages are marked, and summary sentences keep to
+   * their excerpts. (v3 marked the material as untrusted data; v2 listed the allowed values.)
    */
-  static final String PROMPT_VERSION = "enrich-v3";
+  static final String PROMPT_VERSION = "enrich-v4";
 
   /**
-   * Longest material text sent per source record; the validator matches excerpts against the full
-   * text.
+   * Longest material text sent per material: a source record or README keeps 4000 characters, a
+   * product page 6000 (UntrustedPageText). The validator matches excerpts against the full text.
    */
-  static final int MAX_MATERIAL_CHARS = 4000;
+  static final int MAX_MATERIAL_CHARS = UntrustedPageText.MAX_PAGE_CHARS;
 
   /**
    * The file is named after {@link #PROMPT_VERSION}: a new wording needs a new version, so
@@ -66,7 +67,9 @@ class SpringAiEnrichmentModel implements EnrichmentModel {
                 "maxExcerptChars",
                 EvidenceValidator.MAX_EXCERPT_CHARS,
                 "maxSummaryClaims",
-                EvidenceValidator.MAX_SUMMARY_CLAIMS));
+                EvidenceValidator.MAX_SUMMARY_CLAIMS,
+                "maxSelfDeclaredRelationships",
+                EvidenceValidator.MAX_SELF_DECLARED_RELATIONSHIPS));
   }
 
   /** Schema the model must follow. */
@@ -133,6 +136,8 @@ class SpringAiEnrichmentModel implements EnrichmentModel {
             .map((Material m) ->
                 "<material evidenceId=\""
                     + m.getEvidenceId()
+                    + "\" kind=\""
+                    + kind(m)
                     + "\" url=\""
                     + m.getSourceUrl()
                     + "\">\n"
@@ -229,6 +234,14 @@ class SpringAiEnrichmentModel implements EnrichmentModel {
               + e.getClass().getSimpleName(),
           e);
     }
+  }
+
+  /** What the model is told about a material: a source record, a README or a vendor's own page. */
+  static String kind(Material m) {
+    if (m.getSelfDeclared()) {
+      return "vendor-page";
+    }
+    return m.getExtra() ? "readme" : "record";
   }
 
   private static String abbreviate(String message) {

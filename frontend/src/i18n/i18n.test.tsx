@@ -20,6 +20,7 @@ describe('i18n', () => {
     const card = makeCard({ useCases: ['quantum-baking'] });
     mockApi({ [`GET /resources/${card.id}`]: () => makeDetail({ card }) });
     renderApp(`/resource/${card.id}`);
-    expect(await screen.findByText('quantum-baking', { exact: false })).toBeInTheDocument();
+    // The facts at a glance and the Fields panel (ADR 0056) both show it.
+    expect((await screen.findAllByText('quantum-baking', { exact: false }))[0]).toBeInTheDocument();
   });
 });

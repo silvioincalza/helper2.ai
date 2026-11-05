@@ -34,7 +34,7 @@ store -> svc: "different (text changed)"
 svc -> model: "propose(input)"
 model -> budget: "tryAcquire()"
 budget -> model: "true"
-model -> tf: "enrich-v3 prompt;\n<material evidenceId=…> text as ‹ ›\n(4000 chars per record)" {class: ai-call}
+model -> tf: "enrich-v4 prompt;\n<material evidenceId=… kind=…> text as ‹ ›\n(4000 chars per record)" {class: ai-call}
 tf -> model: "JSON: fields, relationships,\nsummary, each with citations"
 model -> svc: "EnrichmentProposal"
 svc -> store: "resourcesTitled(relationship targets)"

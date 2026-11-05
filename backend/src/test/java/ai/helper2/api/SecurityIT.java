@@ -34,6 +34,22 @@ class SecurityIT extends ApiTestBase {
         .andExpect(status().isOk());
   }
 
+  /** ADR 0056: only an administrator re-checks the stored enrichment answers; counts only. */
+  @Test
+  void anAdminRechecksStoredEnrichmentAnswers() throws Exception {
+    mvc.perform(post("/api/v1/admin/enrichment-recheck").with(oauth2Login()).with(csrf()))
+        .andExpect(status().isForbidden());
+    mvc.perform(
+            post("/api/v1/admin/enrichment-recheck")
+                .with(oauth2Login().authorities(new SimpleGrantedAuthority("ROLE_ADMIN")))
+                .with(csrf()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.checked").isNumber())
+        .andExpect(jsonPath("$.fieldsRejected").isNumber())
+        .andExpect(jsonPath("$.claimsDropped").isNumber())
+        .andExpect(jsonPath("$.runsRequested").isNumber());
+  }
+
   /** Every admin write needs the CSRF token, even from a signed-in administrator. */
   @Test
   void adminWritesWithoutTheCsrfTokenAreRefused() throws Exception {

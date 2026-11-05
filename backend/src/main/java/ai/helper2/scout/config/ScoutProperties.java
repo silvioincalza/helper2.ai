@@ -1,5 +1,6 @@
 package ai.helper2.scout.config;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -23,6 +24,7 @@ import org.springframework.validation.annotation.Validated;
  * @param dailyEnrichmentCalls enrichment model calls per UTC day, apart from the guide's cap
  * @param gapDailyCalls gap rounds per UTC day (ADR 0043), inside dailyEnrichmentCalls; 0 = off
  * @param enrichMaxTokens output cap of one enrichment call
+ * @param evidence the product pages the evidence ladder reads (ADR 0056)
  */
 @Validated
 @ConfigurationProperties("helper2.scout")
@@ -35,7 +37,33 @@ public record ScoutProperties(
     @PositiveOrZero int maxEnrichmentsPerRun,
     @PositiveOrZero int dailyEnrichmentCalls,
     @PositiveOrZero int gapDailyCalls,
-    @Positive int enrichMaxTokens) {
+    @Positive int enrichMaxTokens,
+    @Valid @NotNull Evidence evidence) {
+
+  /**
+   * The evidence ladder's page step (ADR 0056). Its model calls count on gapDailyCalls.
+   *
+   * @param dailyExtractCredits Tavily Extract credits per UTC day (one call of up to 5 pages is one
+   *     credit); also counted on the global Tavily credit cap; 0 = page step off
+   * @param pageReadTtl how long a page a saved run read is not read again (only its URL and a hash
+   *     of its text are kept)
+   * @param pageTextTtl how long the cleaned text of a product's pages is kept in Redis for a retry;
+   *     at most one day
+   */
+  public record Evidence(
+      @PositiveOrZero int dailyExtractCredits,
+      @NotNull Duration pageReadTtl,
+      @NotNull Duration pageTextTtl) {
+
+    /** The cleaned page text is kept only to retry within the day (ADR 0056). */
+    @AssertTrue(message = "must be more than 0 and at most P1D")
+    public boolean isPageTextTtlAtMostADay() {
+      return pageTextTtl == null
+          || (!pageTextTtl.isNegative()
+              && !pageTextTtl.isZero()
+              && pageTextTtl.compareTo(Duration.ofDays(1)) <= 0);
+    }
+  }
 
   @AssertTrue(message = "must be a Spring cron expression")
   public boolean isCronReadable() {

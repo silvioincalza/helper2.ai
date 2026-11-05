@@ -1,5 +1,6 @@
 package ai.helper2.catalog.enrichment;
 
+import ai.helper2.shared.ValueOrigin;
 import ai.helper2.shared.Verification;
 import java.net.URI;
 import java.time.Instant;
@@ -41,17 +42,48 @@ public interface EnrichmentResults {
       @Nullable URI sourceUrl,
       @Nullable Instant retrievedAt) {}
 
-  record Field(String field, String value, Verification verification, List<Citation> citations) {}
+  /**
+   * [origin] is AI_EXTRACTED, SELF_DECLARED (only the product's own pages state it) or AI_ESTIMATED
+   * (a judgement the model made without a quote; ADR 0056).
+   */
+  record Field(
+      String field,
+      String value,
+      Verification verification,
+      List<Citation> citations,
+      ValueOrigin origin) {
+    public Field(String field, String value, Verification verification, List<Citation> citations) {
+      this(field, value, verification, citations, ValueOrigin.AI_EXTRACTED);
+    }
+  }
 
-  /** [targetId] is the catalog resource the target names, or null when none is known. */
+  /**
+   * [targetId] is the catalog resource the target names, or null when none is known. [origin] is
+   * AI_EXTRACTED or SELF_DECLARED.
+   */
   record Relationship(
       String kind,
       String target,
       @Nullable UUID targetId,
       Verification verification,
-      List<Citation> citations) {}
+      List<Citation> citations,
+      ValueOrigin origin) {
+    public Relationship(
+        String kind,
+        String target,
+        @Nullable UUID targetId,
+        Verification verification,
+        List<Citation> citations) {
+      this(kind, target, targetId, verification, citations, ValueOrigin.AI_EXTRACTED);
+    }
+  }
 
-  record Claim(String text, List<Citation> citations) {}
+  /** [selfDeclared]: the claim cites the product's own page (ADR 0056). */
+  record Claim(String text, List<Citation> citations, boolean selfDeclared) {
+    public Claim(String text, List<Citation> citations) {
+      this(text, citations, false);
+    }
+  }
 
   /**
    * What the validator kept of the model's answer, REJECTED facts included (they are not written).

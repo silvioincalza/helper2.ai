@@ -24,6 +24,11 @@ Items are grouped by the order in which they matter. Inside a group, the first i
   right (Swiss URG Art. 25, EU InfoSoc Art. 5(3)(d)) for 20–300-character excerpts, also of repositories with no
   licence; GitHub and Hugging Face terms for reading and keeping them (the Hub `raw` path is not its API); author names
   in excerpts under the existing purpose with a public Art. 14 notice (Art. 14(5)(b)).
+- Lawyer review of product-page reading ([ADR 0056](adr/scout/0056-evidence-ladder.md)): Tavily's written OK for
+  Extract (pending; the page step can be turned off with `H2_SCOUT_EVIDENCE_DAILY_EXTRACT_CREDITS=0`); the quotation
+  right for quotes from vendor pages; the transfer of page addresses to Tavily in the US; the Privacy wording on page
+  cleaned page text kept up to 24 hours to retry, and on AI-estimated values; the Terms line on "AI-estimated" and "Self-declared by the vendor";
+  whether an AI-estimated audience or tech level needs more than the Art. 50 label.
 - SEO ([ADR 0050](adr/frontend/0050-pages-for-crawlers.md) is built; the resource page adds about 1 ms at p95 on
   staging, budget 20 ms). Next, in this order:
   - Readable addresses `/resource/{id}/{slug}`: the id stays the key, a wrong or old slug gets a 301. Do it before
@@ -121,6 +126,17 @@ Open items:
   for the next prompt version. Decide with `helper2.scout.gap{outcome="filled"}` after two weeks.
 - Resources whose description is under 40 characters are never enriched, so they never get a gap round, even when they
   have a README. Lower the bar for them only if the gap round fills fields often.
+- Evidence ladder follow-ups ([ADR 0056](adr/scout/0056-evidence-ladder.md)):
+  - A fill-rate eval set: 50 accepted products with the fields a person read on their sites; measure verified,
+    self-declared, estimated and wrong per field from `helper2.scout.fields`, before and after a prompt change.
+  - PR E, only if the fill rate stays low: Tavily site search (`include_domains` = the product's domain) to find a
+    pricing or download page the home page does not link.
+  - Read a product's pages again after N days (now 30, by the ledger), so a price change shows; the ledger already
+    keeps a hash of the text to tell a changed page.
+  - The first code re-check (`RecheckEnrichments`) sends back to the model only resources that still miss facts:
+    watch `helper2.scout.recheck` and the backlog for the first week.
+  - The results preview has no enrichment data: it shows the card's facts only. Show the AI-estimated audience there
+    too if people miss it.
 - Similar-question reuse of guide answers ([ADR 0041](adr/guide/0041-guide-answer-cache.md)): prod runs it at 0.96;
   watch `helper2.guide.cache{result="similar"}`, and raise or lower the threshold only with a new sweep. Live, the
   planner's readings of two wordings differ more often than the evaluation set assumes.

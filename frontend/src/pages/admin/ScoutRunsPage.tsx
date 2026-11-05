@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api, ApiError } from '@/api/client';
-import type { ScoutRun } from '@/api/types';
+import type { EnrichmentRecheck, ScoutRun } from '@/api/types';
 import { Icon } from '@/components/Icon';
 import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
 import { ScrollBox } from '@/components/ui/ScrollBox';
@@ -37,6 +37,7 @@ export default function ScoutRunsPage() {
   const { t, i18n } = useTranslation();
   const [actionError, setActionError] = useState<'failed' | 'runInProgress' | null>(null);
   const [busy, setBusy] = useState(false);
+  const [recheck, setRecheck] = useState<EnrichmentRecheck | 'busy' | 'failed' | null>(null);
   const runs = useApi('admin/runs', (s) => api.listScoutRuns(s), { cache: false });
   const { retry, focusRef: heading } = useRetry(runs.reload, runs.loading);
 
@@ -68,6 +69,17 @@ export default function ScoutRunsPage() {
       setActionError(e instanceof ApiError && e.status === 409 ? 'runInProgress' : 'failed');
     } finally {
       setBusy(false);
+    }
+  };
+
+  /** Re-checks the stored enrichment answers by code (ADR 0056): no model call, counts only. */
+  const recheckAnswers = async () => {
+    if (recheck === 'busy') return;
+    setRecheck('busy');
+    try {
+      setRecheck(await api.recheckEnrichments());
+    } catch {
+      setRecheck('failed');
     }
   };
 
@@ -105,7 +117,25 @@ export default function ScoutRunsPage() {
         >
           {t('admin.runAll')}
         </button>
+        <button
+          type="button"
+          className="btn"
+          aria-disabled={recheck === 'busy' || undefined}
+          onClick={() => void recheckAnswers()}
+        >
+          {t('admin.recheck')}
+        </button>
         {running && <p className="muted small">{t('admin.runWaits')}</p>}
+        {recheck === 'failed' && (
+          <p role="alert" className="muted small">
+            {t('admin.actionFailed')}
+          </p>
+        )}
+        {recheck !== null && typeof recheck === 'object' && (
+          <p role="status" className="muted small">
+            {t('admin.recheckDone', recheck)}
+          </p>
+        )}
       </div>
       {runs.loading && loaded === undefined ? (
         <AdminLoading command={COMMAND} />

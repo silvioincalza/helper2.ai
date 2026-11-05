@@ -1,6 +1,6 @@
 # 0043 — Enrichment gap round: read the README or model card once when a run leaves fields unproven
 
-**Status.** Accepted. **Builds on:** [0018](0018-scout-runner.md), [0019](0019-evidence-gated-enrichment.md), [0020](0020-scout-collectors.md), [0034](../operations/0034-data-retention.md)
+**Status.** Accepted. **Builds on:** [0018](0018-scout-runner.md), [0019](0019-evidence-gated-enrichment.md), [0020](0020-scout-collectors.md), [0034](../operations/0034-data-retention.md) **Amended by:** [0056](0056-evidence-ladder.md) (the ladder also climbs when a target field is missing, and adds the product's own pages as a third step).
 
 ## Context
 Enrichment ([0019](0019-evidence-gated-enrichment.md)) sees only what the sources store: a title and a short

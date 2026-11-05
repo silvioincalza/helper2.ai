@@ -2,6 +2,7 @@ package ai.helper2.admin.web;
 
 import ai.helper2.admin.usecase.ResolveReview;
 import ai.helper2.api.generated.AdminApi;
+import ai.helper2.api.generated.model.EnrichmentRecheckDto;
 import ai.helper2.api.generated.model.ReviewItemDto;
 import ai.helper2.api.generated.model.ReviewItemPageDto;
 import ai.helper2.api.generated.model.ReviewKindDto;
@@ -17,6 +18,8 @@ import ai.helper2.platform.NotFoundException;
 import ai.helper2.platform.ProblemType;
 import ai.helper2.scout.RunSummary;
 import ai.helper2.scout.ScoutStore;
+import ai.helper2.scout.usecase.RecheckEnrichments;
+import ai.helper2.scout.usecase.RecheckResult;
 import ai.helper2.scout.usecase.StartScoutRun;
 import ai.helper2.shared.UtcTimes;
 import java.util.List;
@@ -36,13 +39,28 @@ class AdminController implements AdminApi {
   private final ResolveReview resolve;
   private final StartScoutRun startRun;
   private final ScoutStore store;
+  private final RecheckEnrichments recheck;
 
   AdminController(
-      ListReviewItems items, ResolveReview resolve, StartScoutRun startRun, ScoutStore store) {
+      ListReviewItems items,
+      ResolveReview resolve,
+      StartScoutRun startRun,
+      ScoutStore store,
+      RecheckEnrichments recheck) {
     this.items = items;
     this.resolve = resolve;
     this.startRun = startRun;
     this.store = store;
+    this.recheck = recheck;
+  }
+
+  /** Re-checks stored enrichment answers by code (ADR 0056); counts only. */
+  @Override
+  public ResponseEntity<EnrichmentRecheckDto> recheckEnrichments() {
+    RecheckResult r = recheck.runByAdmin(adminId());
+    return ResponseEntity.ok(
+        new EnrichmentRecheckDto(
+            r.getChecked(), r.getFieldsRejected(), r.getClaimsDropped(), r.getRunsRequested()));
   }
 
   @Override

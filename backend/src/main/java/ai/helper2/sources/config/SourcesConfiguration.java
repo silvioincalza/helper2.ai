@@ -13,7 +13,9 @@ import ai.helper2.sources.aideadlines.AiDeadlinesCollector;
 import ai.helper2.sources.arxiv.ArxivSource;
 import ai.helper2.sources.classifier.RepoClassifier;
 import ai.helper2.sources.classifier.SpringAiRepoClassifier;
+import ai.helper2.sources.evidence.PublicSuffixDomains;
 import ai.helper2.sources.evidence.ReadmeEvidence;
+import ai.helper2.sources.evidence.TavilyExtract;
 import ai.helper2.sources.github.GitHubAwesomeCollector;
 import ai.helper2.sources.github.GitHubSource;
 import ai.helper2.sources.huggingface.HuggingFaceModelsSource;
@@ -321,6 +323,23 @@ class SourcesConfiguration {
     SourceSettings s = p.get("ai-deadlines");
     return new AiDeadlinesCollector(
         s, collectorClient(s, observations), clock, resilience, new RunInterval(c.interval()));
+  }
+
+  /**
+   * A product's own pages for the Scout's evidence ladder (ADR 0056): Tavily Extract. Off (not
+   * available) without H2_TAVILY_API_KEY.
+   */
+  @Bean
+  TavilyExtract tavilyExtract(
+      SourcesProperties p, Clock clock, Resilience resilience, ObservationRegistry observations) {
+    SourceSettings s = p.get("tavily-extract");
+    return new TavilyExtract(s, collectorClient(s, observations), resilience, clock);
+  }
+
+  /** Registrable domains (Public Suffix List) for the pages the evidence ladder may read. */
+  @Bean
+  PublicSuffixDomains publicSuffixDomains() {
+    return new PublicSuffixDomains();
   }
 
   /**

@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * The enrichment backlog and a resource's source text, read from the catalog tables on real
@@ -35,6 +36,8 @@ class JdbcEnrichmentCandidatesIT {
   @Autowired JdbcEnrichmentCandidates candidates;
 
   @Autowired JdbcClient jdbc;
+
+  @Autowired TransactionTemplate tx;
 
   final List<UUID> created = new ArrayList<>();
 
@@ -307,5 +310,74 @@ class JdbcEnrichmentCandidatesIT {
 
     assertThat(found).containsExactly(Map.entry(title.toLowerCase(), earliest));
     assertThat(candidates.titled(List.of(), self)).isEmpty();
+  }
+
+  /**
+   * ADR 0056 with the backlog index of ADR 0045 (#219): an accepted product comes first even when
+   * it is older than the newest [limit] resources of its part.
+   */
+  @Test
+  void anAcceptedProductOlderThanTheBatchStillComesFirst() {
+    UUID accepted = withText("Accepted old", "INDEXED", "NOT_RUN", T0.minus(3650, ChronoUnit.DAYS));
+    withText("Newer", "INDEXED", "NOT_RUN", T0.plus(1, ChronoUnit.DAYS));
+    String url =
+        jdbc.sql("SELECT canonical_url FROM resource WHERE id = :id")
+            .param("id", accepted)
+            .query(String.class)
+            .single();
+    jdbc.sql(
+            """
+            INSERT INTO review_item (id, kind, status, candidate_url, reason, resolved_at)
+            VALUES (:id, 'RESOURCE_CANDIDATE', 'ACCEPTED', :url, 'test', now())
+            """)
+        .param("id", UUID.randomUUID())
+        .param("url", url)
+        .update();
+    try {
+      assertThat(candidates.pending(1, MIN_TEXT, MAX_FAILED)).containsExactly(accepted);
+      // Once enriched it leaves the backlog: an accepted product is not pinned at the head.
+      jdbc.sql("UPDATE resource SET enrichment_status = 'VALIDATED' WHERE id = :id")
+          .param("id", accepted)
+          .update();
+      assertThat(candidates.pending(10_000, MIN_TEXT, MAX_FAILED)).doesNotContain(accepted);
+    } finally {
+      jdbc.sql("DELETE FROM review_item WHERE candidate_url = :url").param("url", url).update();
+    }
+  }
+
+  /** ADR 0056: a re-run request makes the earlier judged runs stop counting, a later run counts. */
+  @Test
+  void aRerunRequestHidesEarlierJudgedRunsUntilTheNextRun() {
+    UUID id = withText("Rerun", "INDEXED", "VALIDATED", T0);
+    run(id, "VALIDATED", "before", T0.plus(1, ChronoUnit.HOURS));
+    assertThat(candidates.lastJudgedFingerprint(id)).isEqualTo("before");
+    jdbc.sql(
+            "UPDATE resource SET enrichment_status = 'NOT_RUN', enrichment_rerun_requested_at = :at WHERE id = :id")
+        .param("at", java.sql.Timestamp.from(T0.plus(2, ChronoUnit.HOURS)))
+        .param("id", id)
+        .update();
+    assertThat(candidates.lastJudgedFingerprint(id)).isNull();
+    run(id, "PARTIAL", "after", T0.plus(3, ChronoUnit.HOURS));
+    assertThat(candidates.lastJudgedFingerprint(id)).isEqualTo("after");
+  }
+
+  /** The two backlog parts read the partial backlog index (#219), not the whole table. */
+  @Test
+  void theNextBatchReadsTheBacklogIndex() {
+    String plan =
+        tx.execute(status -> {
+          jdbc.sql("SET LOCAL enable_seqscan = off").update();
+          return String.join(
+              "\n",
+              jdbc.sql("EXPLAIN " + JdbcEnrichmentCandidates.pendingSql())
+                  .param("maxFailed", MAX_FAILED)
+                  .param("minText", MIN_TEXT)
+                  .param("limit", 20)
+                  .query(String.class)
+                  .list());
+        });
+    assertThat(plan)
+        .contains("resource_enrichment_backlog_idx")
+        .doesNotContain("Seq Scan on resource");
   }
 }

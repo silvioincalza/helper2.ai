@@ -452,6 +452,24 @@ paths:
         '403': { $ref: '#/components/responses/Problem' }
         '409': { $ref: '#/components/responses/Problem' }
 
+  /admin/enrichment-recheck:
+    post:
+      tags: [admin]
+      operationId: recheckEnrichments
+      summary: Re-check the stored enrichment answers by code, with no model call (ADR 0056).
+      description: >-
+        Rejects a verified pricing, type or use case whose quotes do not state it, drops summary sentences that fail
+        the claim check, and puts back in the enrichment backlog the resources that still miss a fact and have more
+        to read. Idempotent: a second call changes nothing. Runs once by itself after the first start.
+      responses:
+        '200':
+          description: What the re-check did.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EnrichmentRecheck' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+
   /admin/overview:
     get:
       tags: [overview]
@@ -850,9 +868,12 @@ components:
       description: |
         SOURCE_PROVIDED = stated by the source's own metadata. AI_EXTRACTED = extracted by the
         AI Resource Scout from retrieved material and validated against evidence.
-        AI_SUMMARY = generated text built only from validated claims. CURATED = written by the
-        Helper2 editorial seed (not live). COMMUNITY = user submission. DEMO = fixture data.
-      enum: [SOURCE_PROVIDED, AI_EXTRACTED, AI_SUMMARY, CURATED, COMMUNITY, DEMO]
+        AI_SUMMARY = generated text built only from validated claims. AI_ESTIMATED = a judgement
+        (audience, tech level) an AI model made without a quote that states it: AI-generated, never
+        a verified fact (ADR 0056). SELF_DECLARED = extracted by AI from a quote of the product's
+        own web page only, so it is what the vendor says about itself (ADR 0056). CURATED = written
+        by the Helper2 editorial seed (not live). COMMUNITY = user submission. DEMO = fixture data.
+      enum: [SOURCE_PROVIDED, AI_EXTRACTED, AI_SUMMARY, AI_ESTIMATED, SELF_DECLARED, CURATED, COMMUNITY, DEMO]
     Verification:
       type: string
       enum: [VERIFIED, UNVERIFIED, CONFLICTING, REJECTED]
@@ -1147,6 +1168,9 @@ components:
         targetTitle: { type: string }
         verification: { $ref: '#/components/schemas/Verification' }
         evidence: { type: array, items: { $ref: '#/components/schemas/Evidence' } }
+        origin:
+          $ref: '#/components/schemas/ValueOrigin'
+          description: AI_EXTRACTED, or SELF_DECLARED when only the product's own page names the target (ADR 0056).
 
     SummaryClaim:
       type: object
@@ -1154,6 +1178,9 @@ components:
       properties:
         text: { type: string }
         evidence: { type: array, items: { $ref: '#/components/schemas/Evidence' } }
+        selfDeclared:
+          type: boolean
+          description: True when the claim cites the product's own web page, so it is what the vendor says (ADR 0056).
 
     AiSummary:
       type: object
@@ -1984,10 +2011,20 @@ components:
       properties:
         id: { type: string, format: uuid }
         adminId: { type: string, description: "The administrator's provider subject (GitHub: the numeric user id)." }
-        action: { type: string, enum: [RESOLVE_REVIEW_ITEM, START_SCOUT_RUN, ADD_HOME_EXAMPLE, CHANGE_HOME_EXAMPLE, REMOVE_HOME_EXAMPLE, DRAFT_HOME_EXAMPLES] }
+        action: { type: string, enum: [RESOLVE_REVIEW_ITEM, START_SCOUT_RUN, ADD_HOME_EXAMPLE, CHANGE_HOME_EXAMPLE, REMOVE_HOME_EXAMPLE, DRAFT_HOME_EXAMPLES, RECHECK_ENRICHMENT] }
         targetId: { type: [string, 'null'], description: "The review item id, the source id or the home example id; null when a run covered every source." }
         at: { type: string, format: date-time }
         outcome: { type: string, description: "ACCEPTED, REJECTED, NOT_OPEN or NOT_FOUND for a review item; STARTED or BUSY for a Scout run; ADDED, CHANGED, PAUSED, ACTIVATED, REMOVED, DUPLICATE, CONFLICT, INVALID or NOT_FOUND for a home example." }
+
+    EnrichmentRecheck:
+      type: object
+      description: Counts only (ADR 0056).
+      required: [checked, fieldsRejected, claimsDropped, runsRequested]
+      properties:
+        checked: { type: integer, minimum: 0, description: Resources whose stored answer was checked. }
+        fieldsRejected: { type: integer, minimum: 0, description: Verified pricing, type or use case values whose quotes do not state them. }
+        claimsDropped: { type: integer, minimum: 0, description: Summary sentences that failed the claim check. }
+        runsRequested: { type: integer, minimum: 0, description: Resources put back in the enrichment backlog. }
 
     ScoutRunRequest:
       type: object

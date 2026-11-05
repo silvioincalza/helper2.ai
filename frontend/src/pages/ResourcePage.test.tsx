@@ -383,6 +383,53 @@ describe('resource detail', () => {
     );
   });
 
+  it('shows every field as a value with its origin, "No", "Sources disagree" or "Not stated" (ADR 0056)', async () => {
+    const assertion = (
+      field: string,
+      value: string,
+      origin: 'AI_EXTRACTED' | 'SELF_DECLARED' | 'AI_ESTIMATED',
+      verification: 'VERIFIED' | 'UNVERIFIED' | 'CONFLICTING',
+    ) => ({ field, value, origin, verification, sourceId: null, evidence: [ev] });
+    mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({
+          card: makeCard({
+            pricing: null,
+            platforms: [],
+            useCases: [],
+            license: null,
+            openSource: false,
+            techLevel: null,
+          }),
+          assertions: [
+            assertion('pricing', 'PAID', 'SELF_DECLARED', 'VERIFIED'),
+            assertion('platforms', 'web', 'AI_EXTRACTED', 'VERIFIED'),
+            assertion('useCase', 'coding', 'AI_EXTRACTED', 'UNVERIFIED'),
+            assertion('license', 'MIT', 'AI_EXTRACTED', 'CONFLICTING'),
+            assertion('audience', 'USE_AI', 'AI_ESTIMATED', 'UNVERIFIED'),
+          ],
+        }),
+    });
+    renderApp(`/resource/${ID}`);
+    await screen.findByRole('heading', { name: 'Fields' });
+    const row = (field: string) =>
+      document.querySelector(`[data-field="${field}"] dd`) as HTMLElement;
+    expect(row('pricing')).toHaveTextContent('Paid');
+    expect(row('pricing')).toHaveTextContent('Self-declared by the vendor');
+    expect(row('platforms')).toHaveTextContent('web');
+    expect(row('platforms')).toHaveTextContent('Extracted by AI');
+    // A fact the quote does not state is not shown as a value.
+    expect(row('useCase')).toHaveTextContent('Not stated');
+    expect(row('license')).toHaveTextContent('Sources disagree');
+    expect(row('openSource')).toHaveTextContent('No');
+    expect(row('audience')).toHaveTextContent('AI-estimated');
+    expect(within(row('audience')).getByText('People who use AI')).toHaveAttribute(
+      'data-ai-generated',
+      'true',
+    );
+    expect(row('techLevel')).toHaveTextContent('Not stated');
+  });
+
   it('renders assertions with origin, verification and evidence excerpt', async () => {
     mockApi({
       [`GET /resources/${ID}`]: () =>

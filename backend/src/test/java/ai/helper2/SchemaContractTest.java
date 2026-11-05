@@ -169,7 +169,10 @@ class SchemaContractTest {
     expected.put("resource.pricing", names(Pricing.values()));
     expected.put("resource.published_precision", names(DatePrecision.values()));
     expected.put("resource.data_origin", names(ResourceStore.DataOrigin.values()));
-    expected.put("resource.description_origin", names(ValueOrigin.values()));
+    // An estimate or a vendor's own claim is a field value, never a description (ADR 0056).
+    expected.put(
+        "resource.description_origin",
+        without(without(names(ValueOrigin.values()), "AI_ESTIMATED"), "SELF_DECLARED"));
     expected.put(
         "resource.enrichment_status",
         with(
@@ -178,9 +181,12 @@ class SchemaContractTest {
     expected.put("source.last_outcome", names(SourceOutcome.values()));
     expected.put("enrichment_run.outcome", without(names(EnrichmentOutcome.values()), "UNCHANGED"));
     expected.put("field_assertion.verification", names(Verification.values()));
-    // The Scout writes AI-extracted values and relationships; the seeds write curated values.
-    expected.put("field_assertion.origin", Set.of("AI_EXTRACTED", "CURATED"));
-    expected.put("relationship.origin", Set.of("AI_EXTRACTED"));
+    // The Scout writes AI-extracted, AI-estimated and self-declared values and relationships (ADR
+    // 0056); the seeds write curated values.
+    expected.put(
+        "field_assertion.origin",
+        Set.of("AI_EXTRACTED", "AI_ESTIMATED", "SELF_DECLARED", "CURATED"));
+    expected.put("relationship.origin", Set.of("AI_EXTRACTED", "SELF_DECLARED"));
     expected.put("relationship.verification", names(Verification.values()));
     expected.put("relationship.kind", EvidenceValidator.Companion.getRELATIONSHIP_KINDS());
     expected.put("issue_report.kind", names(ReportIssue.Kind.values()));

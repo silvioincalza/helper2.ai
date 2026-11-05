@@ -95,14 +95,17 @@ class ResourcesController implements ResourcesApi {
                                 r.targetTitle(),
                                 VerificationDto.fromValue(r.verification().name()),
                                 evidence(r.evidence()))
-                            .targetId(r.targetId()))
+                            .targetId(r.targetId())
+                            .origin(ValueOriginDto.fromValue(r.origin().name())))
                     .toList())
             .summary(
                 d.summary() == null
                     ? null
                     : new AiSummaryDto(
                         d.summary().claims().stream()
-                            .map(c -> new SummaryClaimDto(c.text(), evidence(c.evidence())))
+                            .map(c ->
+                                new SummaryClaimDto(c.text(), evidence(c.evidence()))
+                                    .selfDeclared(c.selfDeclared()))
                             .toList(),
                         d.summary().model(),
                         d.summary().promptVersion(),
