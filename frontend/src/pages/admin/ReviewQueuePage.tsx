@@ -202,7 +202,7 @@ export default function ReviewQueuePage() {
                         <div className="h2-admin__actions">
                           <button
                             type="button"
-                            className="v4-btn h2-admin__primary"
+                            className="btn btn-primary"
                             aria-disabled={disabled}
                             onClick={() => void resolve(it, 'ACCEPTED')}
                           >
@@ -211,7 +211,7 @@ export default function ReviewQueuePage() {
                           </button>
                           <button
                             type="button"
-                            className="v4-btn"
+                            className="btn"
                             aria-disabled={disabled}
                             onClick={() => void resolve(it, 'REJECTED')}
                           >

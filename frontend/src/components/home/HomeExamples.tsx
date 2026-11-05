@@ -122,7 +122,7 @@ export function HomeExamples() {
         <ul className="plain-list inline-list home-examples__waiting" aria-hidden="true">
           {fallback.map((chip) => (
             <li key={key(chip)}>
-              <span className="chip chip-ghost">{text(chip).label}</span>
+              <span className="chip">{text(chip).label}</span>
             </li>
           ))}
         </ul>
@@ -130,7 +130,7 @@ export function HomeExamples() {
         <ul className="plain-list inline-list">
           {chips.map((chip) => (
             <li key={key(chip)}>
-              <button type="button" className="chip chip-ghost" onClick={() => search(chip)}>
+              <button type="button" className="chip" onClick={() => search(chip)}>
                 {chip.kind === 'served' && chip.ai ? (
                   <>
                     <span {...aiMark(chip.ai.model)}>{chip.label}</span>{' '}

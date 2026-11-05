@@ -360,6 +360,69 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
     expect(await axeViolations(audit.container)).toEqual([]);
   });
 
+  describe('list pages with the shared controls: Saved, Sources, the review queue', () => {
+    afterEach(() => {
+      delete document.documentElement.dataset.theme;
+    });
+    const api = {
+      'GET /me/bookmarks': () => [
+        {
+          resourceId: ID,
+          title: 'Postgres MCP',
+          url: 'https://github.com/a/pg',
+          type: 'MCP_SERVER',
+          savedAt: '2026-10-20T10:00:00Z',
+        },
+        {
+          resourceId: '22222222-2222-5222-8222-222222222222',
+          title: 'pgvector',
+          url: 'https://github.com/pgvector/pgvector',
+          type: 'LIBRARY',
+          savedAt: '2026-10-21T10:00:00Z',
+        },
+      ],
+      'GET /sources': () => HEALTH_SOURCES,
+      'GET /admin/review-items': () => ({
+        items: [
+          {
+            id: '66666666-6666-5666-8666-666666666666',
+            kind: 'USER_REPORT',
+            status: 'OPEN',
+            reason: 'Wrong price',
+            details: 'It is free',
+            resourceId: ID,
+            resourceTitle: 'Acme',
+            createdAt: '2026-10-21T10:00:00Z',
+          },
+        ],
+        total: 1,
+      }),
+    };
+    // The heading, then a row of the list, so axe sees the chips, the table and the row's buttons.
+    const pages: Array<{ path: string; me: () => unknown; ready: string; row: string }> = [
+      { path: '/saved', me: () => USER, ready: 'Saved resources', row: 'Postgres MCP' },
+      { path: '/sources', me: () => ANON, ready: 'Every source', row: 'All' },
+      { path: '/admin/review', me: () => ADMIN, ready: 'Review queue', row: 'Wrong price' },
+    ];
+    for (const theme of ['light', 'dark'] as const) {
+      for (const width of [1280, 390]) {
+        it(`${theme} theme, ${width} px wide`, async () => {
+          document.documentElement.dataset.theme = theme;
+          mockViewport(width);
+          for (const { path, me, ready, row } of pages) {
+            mockApi({ ...api, 'GET /me': me });
+            const view = renderApp(path);
+            await screen.findByRole('heading', { name: ready });
+            await within(await screen.findByRole('main')).findAllByText(row);
+            await settle();
+            expect(await axeViolations(view.container)).toEqual([]);
+            view.unmount();
+          }
+        });
+      }
+    }
+  });
+
   describe('text pages in design v4: Mission, Privacy, Terms, Not found, Sign in, Account', () => {
     afterEach(() => {
       delete document.documentElement.dataset.theme;
