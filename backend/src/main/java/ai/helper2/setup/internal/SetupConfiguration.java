@@ -1,6 +1,7 @@
 package ai.helper2.setup.internal;
 
 import ai.helper2.platform.cache.SharedCaches;
+import ai.helper2.platform.config.LlmProperties;
 import ai.helper2.platform.http.ObservedHttp;
 import ai.helper2.platform.llm.CallCounter;
 import ai.helper2.platform.llm.DailyBudget;
@@ -15,7 +16,7 @@ import ai.helper2.setup.ToolGuideModel;
 import ai.helper2.setup.ToolGuideTtls;
 import ai.helper2.setup.ToolGuides;
 import ai.helper2.setup.ToolMaterials;
-import ai.helper2.shared.Secrets;
+import ai.helper2.setup.config.SetupProperties;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -26,70 +27,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import tools.jackson.databind.ObjectMapper;
 
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(SetupConfiguration.SetupProperties.class)
 class SetupConfiguration {
 
   private static final Logger log = LoggerFactory.getLogger(SetupConfiguration.class);
-
-  /**
-   * The setup guide's settings ({@code helper2.setup.*}, each an {@code H2_SETUP_*} variable).
-   *
-   * @param documentTimeout per document fetch
-   * @param npmReadmeBaseUrl where npm READMEs are read (jsDelivr)
-   * @param cacheTtl how long registry entries and documents are kept in memory
-   * @param documentCacheMb the most document text kept in memory per replica
-   * @param hourlyFetches documents fetched per UTC hour across replicas
-   * @param githubToken the setup guide's own GitHub token, never the Scout's; empty reads
-   *     anonymously
-   * @param guide the step-by-step guide's model settings
-   */
-  @ConfigurationProperties("helper2.setup")
-  record SetupProperties(
-      Duration documentTimeout,
-      String npmReadmeBaseUrl,
-      Duration cacheTtl,
-      int documentCacheMb,
-      int hourlyFetches,
-      String githubToken,
-      Guide guide) {
-
-    /**
-     * [dailyModelCalls] the guide's own cap; [cacheTtl] how long answers stay in the shared cache;
-     * [unreadableTtl] how long the "unavailable" answer after two unreadable model answers stays
-     * there.
-     */
-    record Guide(
-        int dailyModelCalls, boolean reasoning, Duration cacheTtl, Duration unreadableTtl) {}
-
-    /** The default record text would print the token. */
-    @Override
-    public String toString() {
-      return "SetupProperties[documentTimeout="
-          + documentTimeout
-          + ", npmReadmeBaseUrl="
-          + npmReadmeBaseUrl
-          + ", cacheTtl="
-          + cacheTtl
-          + ", documentCacheMb="
-          + documentCacheMb
-          + ", hourlyFetches="
-          + hourlyFetches
-          + ", githubToken="
-          + Secrets.mask(githubToken)
-          + ", guide="
-          + guide
-          + "]";
-    }
-  }
 
   /**
    * Same registry and timeout as the Scout's collector; read per request, so a slow registry fails
@@ -97,15 +43,10 @@ class SetupConfiguration {
    */
   @Bean
   McpServerSpecs mcpServerSpecs(
-      @Value("${helper2.sources.mcp-registry.base-url}") String baseUrl,
-      @Value("${helper2.sources.mcp-registry.timeout:10s}") Duration timeout,
-      SetupProperties setup,
-      ObservationRegistry observations,
-      ObjectMapper json,
-      Clock clock) {
+      SetupProperties setup, ObservationRegistry observations, ObjectMapper json, Clock clock) {
     return new RegistryMcpServerSpecs(
-        ObservedHttp.restClientBuilder(timeout, observations),
-        baseUrl,
+        ObservedHttp.restClientBuilder(setup.mcpRegistry().timeout(), observations),
+        setup.mcpRegistry().baseUrl().toString(),
         json,
         clock,
         setup.cacheTtl());
@@ -118,9 +59,6 @@ class SetupConfiguration {
    */
   @Bean
   ToolMaterials toolMaterials(
-      @Value("${helper2.sources.github.base-url:https://api.github.com}") String github,
-      @Value("${helper2.sources.huggingface.base-url:https://huggingface.co}") String hf,
-      @Value("${helper2.sources.huggingface.token:}") String hfToken,
       SetupProperties setup,
       ObservationRegistry observations,
       Clock clock,
@@ -139,11 +77,14 @@ class SetupConfiguration {
     return new HttpToolMaterials(
         ObservedHttp.restClientBuilder(setup.documentTimeout(), observations),
         new HttpToolMaterials.Hosts(
-            github, setup.npmReadmeBaseUrl(), hf, setup.githubToken(), hfToken),
+            setup.hosts().github().toString(),
+            setup.npmReadmeBaseUrl().toString(),
+            setup.hosts().huggingface().toString(),
+            setup.githubToken(),
+            setup.hosts().hfToken()),
         clock,
         budget,
-        new HttpToolMaterials.CacheSettings(
-            setup.cacheTtl(), setup.documentCacheMb() * 1024L * 1024L));
+        new HttpToolMaterials.CacheSettings(setup.cacheTtl(), setup.documentCache().toBytes()));
   }
 
   @Bean
@@ -179,8 +120,9 @@ class SetupConfiguration {
       ObjectMapper json,
       Clock clock,
       Resilience resilience,
-      @Value("${helper2.llm.native-schema:true}") boolean nativeSchema,
+      LlmProperties llmProperties,
       SetupProperties setup) {
+    boolean nativeSchema = llmProperties.nativeSchema();
     ChatModel model = chatModel.getIfAvailable();
     ToolGuideModel guideModel = null;
     Duration cacheTtl = setup.guide().cacheTtl();

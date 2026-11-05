@@ -15,6 +15,7 @@ import ai.helper2.guide.DateWindow;
 import ai.helper2.guide.Drops;
 import ai.helper2.guide.GuideIntent;
 import ai.helper2.guide.GuideProgress;
+import ai.helper2.guide.config.GuideProperties;
 import ai.helper2.guide.usecase.AskGuide;
 import ai.helper2.platform.BadRequestException;
 import ai.helper2.platform.ClientKey;
@@ -38,7 +39,7 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -91,13 +92,24 @@ class GuideStreamController implements DisposableBean {
       Executors.newSingleThreadScheduledExecutor(
           Thread.ofPlatform().name("guide-heartbeat").daemon().factory());
 
+  @Autowired
   GuideStreamController(
       AskGuide guide,
       GuideDtoMapper mapper,
       GuideLimits limits,
       SignedInUser signedInUser,
       MeterRegistry meters,
-      @Value("${helper2.guide.heartbeat:PT15S}") Duration heartbeat) {
+      GuideProperties settings) {
+    this(guide, mapper, limits, signedInUser, meters, settings.heartbeat());
+  }
+
+  GuideStreamController(
+      AskGuide guide,
+      GuideDtoMapper mapper,
+      GuideLimits limits,
+      SignedInUser signedInUser,
+      MeterRegistry meters,
+      Duration heartbeat) {
     this.guide = guide;
     this.mapper = mapper;
     this.limits = limits;

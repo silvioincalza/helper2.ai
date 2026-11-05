@@ -332,6 +332,9 @@ helper2:
     # How many retrieved results Nemotron 3 Super chooses from (ADR 0015). 24 beat 12 in the 20-query
     # evaluation of 26 Oct 2026 (that run's report was not kept).
     max-candidates: ${H2_GUIDE_MAX_CANDIDATES:24}
+    # Output cap of the choose call. The reasoning model's thinking tokens count against it; 2048 truncated the
+    # choose JSON. See SpringAiGuideModel.
+    choose-max-tokens: ${H2_NEBIUS_CHOOSE_MAX_TOKENS:8192}
   catalog:
     # Search results waiting to be written to the catalog in the background; more are dropped and counted.
     observation-queue: 256
@@ -638,8 +641,6 @@ helper2:
     provider-label: nebius-token-factory
     reasoning-model: ${H2_NEBIUS_REASONING_MODEL:nvidia/nemotron-3-super-120b-a12b}
     fast-model: ${H2_NEBIUS_FAST_MODEL:nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B}
-    # Super's reasoning tokens count against max_tokens; 2048 truncated the choose JSON. See SpringAiGuideModel.
-    choose-max-tokens: ${H2_NEBIUS_CHOOSE_MAX_TOKENS:8192}
 
 ---
 spring:
@@ -714,12 +715,21 @@ helper2:
     npm-readme-base-url: ${H2_SETUP_NPM_README_BASE_URL:https://cdn.jsdelivr.net}
     # Registry entries and documents kept in memory per replica; the registry asks to be read infrequently.
     cache-ttl: ${H2_SETUP_CACHE_TTL:PT1H}
-    # The most document text kept in memory per replica.
-    document-cache-mb: ${H2_SETUP_DOCUMENT_CACHE_MB:32}
+    # The most document text kept in memory per replica (a plain number is megabytes).
+    document-cache: ${H2_SETUP_DOCUMENT_CACHE_MB:32}
     # Documents fetched per UTC hour across replicas.
     hourly-fetches: ${H2_SETUP_HOURLY_FETCHES:1000}
     # The setup guide's own GitHub token for README fetches, apart from the Scout's; empty = anonymous (60 calls an hour).
     github-token: ${H2_SETUP_GITHUB_TOKEN:}
+    # The hosts the sources read, so README fetches go where the collectors go.
+    hosts:
+      github: ${helper2.sources.github.base-url}
+      huggingface: ${helper2.sources.huggingface.base-url}
+      hf-token: ${helper2.sources.huggingface.token}
+    # Same registry and timeout as the Scout's collector; read per request, so a slow registry fails fast.
+    mcp-registry:
+      base-url: ${helper2.sources.mcp-registry.base-url}
+      timeout: ${helper2.sources.mcp-registry.timeout}
     guide:
       # The step-by-step guide's own daily model-call cap, apart from the guide's and the Scout's.
       daily-model-calls: ${H2_SETUP_GUIDE_DAILY_MODEL_CALLS:300}
