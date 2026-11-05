@@ -56,8 +56,10 @@ pages cannot. Nothing seems indexed yet, so this is the cheapest moment to decid
    test feeds hostile titles and descriptions through every slot.
 5. **Index-worthy is one rule, in one place.** `IndexPolicy.indexWorthy(resource)`, used by the robots meta and by
    the sitemap: PRODUCT, AGENT, MODEL, MCP_SERVER, LIBRARY, SKILL, DATASET, PAPER, EVENT and COURSE with a source
-   description and at least one fact or relationship. NEWS, ARTICLE, PROMPT, OTHER and thin pages get
-   `noindex, follow`. I tune the rule from Search Console numbers, not by adding cases elsewhere.
+   description and at least one fact or relationship; a PROMPT only when the page shows its full text, at least 200
+   characters, and a source description. NEWS and ARTICLE are copies of someone else's text: the original ranks, not
+   us. They, OTHER and thin pages get `noindex, follow`, so crawlers still follow their links. I tune the rule from
+   Search Console numbers, not by adding cases elsewhere.
 6. **`/sitemap.xml` and `/robots.txt` come from Spring.** The sitemap lists the indexed static pages and every
    index-worthy resource with `<lastmod>` from its last update; past 50,000 addresses it becomes a sitemap index.
    It is built at most once an hour and kept in memory. `robots.txt` blocks `/oauth2/`, `/login`, `/logout` and
