@@ -10,7 +10,6 @@ export type SortOrder = S['SortOrder'];
 export type AudiencePath = S['AudiencePath'];
 export type TriState = S['TriState'];
 export type SourceMode = S['SourceMode'];
-export type Freshness = S['Freshness'];
 export type ValueOrigin = S['ValueOrigin'];
 export type Verification = S['Verification'];
 export type DateFact = S['DateFact'];

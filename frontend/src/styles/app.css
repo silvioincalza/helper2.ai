@@ -348,8 +348,7 @@ legend {
   border-color: var(--danger);
   color: var(--danger);
 }
-.verif-conflicting,
-.freshness-stale {
+.verif-conflicting {
   border-color: var(--not-stated);
   color: var(--not-stated);
 }
