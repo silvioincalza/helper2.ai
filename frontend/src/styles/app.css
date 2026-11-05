@@ -755,6 +755,7 @@ legend {
   margin: var(--space-2) 0;
 }
 .table-wrap {
+  position: relative; /* clips positioned children too (see .v4-scroll) */
   overflow-x: auto;
   padding: 0 var(--space-4) var(--space-3);
 }
@@ -1165,6 +1166,7 @@ input[type='search']::-webkit-search-cancel-button {
   min-width: 0;
 }
 .guide-compare {
+  position: relative; /* clips positioned children too (see .v4-scroll) */
   overflow-x: auto;
 }
 .guide-compare table {
