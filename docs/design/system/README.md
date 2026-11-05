@@ -2,7 +2,7 @@
 
 The design system for every part of Helper2.ai: the search box, results, the AI guide, New this week and Coming up, resource pages, saved resources, sign-in, the sources page and admin. Version 4, from the November 2026 redesign ([ADR 0042](../../adr/frontend/0042-redesign-design-system-v4.md)): minimal and editorial, warm paper with one saffron accent, one tech font for the interface and a calm font for reading. The reference is the redesign canvas, saved in [../redesign](../redesign). Every page, its states and the dark theme are drawn there.
 
-`frontend/src/styles/tokens.css` has the version 4 colours and names. The header, the footer and Home run the version 4 layout, with its own sizes and fonts (`--v4-*`); the other pages still follow the version 3 layout, and move to it and to the two fonts page by page.
+`frontend/src/styles/tokens.css` has the version 4 colours and names. The header, the footer, Home and the text pages (Mission, Privacy, Terms, Not found, Sign in, Account) run the version 4 layout, with its own sizes and fonts (`--v4-*`); the other pages still follow the version 3 layout, and move to it and to the two fonts page by page. The text pages stay prose: Geist for headings and reading text, Geist Mono only for small interface labels, no terminal look (`pages/text.css`).
 
 ## Principles
 
@@ -168,7 +168,8 @@ The shared parts are React components in `frontend/src/components/ui/` (ADR 0040
 | Radar | `HomeRadar` (`components/home/`) |
 | PickCard | `PicksBar` and the pick rows |
 | CoverageDetails | `SourceTiles` |
-| Callout (error, empty, 404) | `StatePanel`, with `RetryButton` for Try again |
+| Callout (error, empty) | `StatePanel`, with `RetryButton` for Try again |
+| Text pages (Mission, Privacy, Terms, Not found, Sign in, Account) | `TextPage`, `SignInPage`, `AccountPage`, `NotFoundPage`, styled by `.h2-prose` in `pages/text.css` |
 
 New components are added with the page that first needs them.
 
@@ -180,7 +181,7 @@ redesign and not in the API yet. They are on the roadmap (section 6).
 | Feature | Where | API change |
 |---|---|---|
 | New this week per source | Radar dot size, Sources table | `newThisWeek` on `SourceInfo` in GET /sources |
-| Searches left today | Account, account panel | `limits` (web searches and AI answers left, reset time) on GET /me |
+| Searches left today | Account (built), account panel | `limits` (web searches and AI answers left, reset time) on GET /me |
 | Totals for Show all | Home lists | `total` on the recent and upcoming responses |
 | Sign-in with Google | Sign in | a second OAuth2 provider (phase 1) |
 | Passkey, email link, password | Sign in, sign-in states | sign-in ADR, threat model, Privacy page (phase 2) |

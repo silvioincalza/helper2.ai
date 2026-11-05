@@ -1,6 +1,7 @@
 # 0042 — Redesign: design system version 4
 
-**Status.** Accepted. Built for the header, the footer and Home; the other pages follow (decision 8).
+**Status.** Accepted. Built for the header, the footer, Home and the text pages (Mission, Privacy, Terms, Not found,
+Sign in, Account); the other pages follow (decision 10).
 **Replaces parts of:** [0040](0040-frontend-design.md): decisions 1 and 2 now; 4 and 7 when Results moves.
 **Builds on:** [0015](../guide/0015-ai-guide-evidence-gate.md), [0017](../guide/0017-guide-cost-guard.md),
 [0025](0025-frontend-one-box.md), [0038](../guide/0038-ai-content-marking.md)
@@ -59,7 +60,7 @@ they do now and how version 3 and 4 live side by side until the other pages move
    - **The legend** under the box: "3-5 of N sources at a time" (N from GET /sources), a filled swatch for answering,
      slow or limited and failed, and a link to the Sources page.
    - **When it holds still.** The clock stops while the search box has focus: the beam and the dots hold still. Under
-     reduced motion, or for a signed-in user who turned "Radar: move between sources" off on the account page
+     reduced motion, or for a signed-in user who turned "Radar: keep moving" off on the account page
      (`preferences.radarMotion` on GET /me, saved with PATCH /me/preferences, ADR
      [0023](../edge/0023-identity-and-admin.md)), there is no clock: the beam stands still and a fixed random set of 4
      shows at full opacity. Up to 900 px only the rings and the beam show.
@@ -96,10 +97,29 @@ they do now and how version 3 and 4 live side by side until the other pages move
    selected line (saffron underline in the header, an ink folder tab in the tabs). The Search button is never
    disabled: with nothing to send it puts the cursor in the box. Key hints (`/`, `↵`) show only where there is a
    keyboard. Text and controls meet AA in light and dark (muted 7.5:1 and 8:1, links 5.5:1 and 8.7:1, control borders
-   3.3:1 and 3.9:1). The axe test runs on Home in both themes, on a wide screen and on a phone with the menu open.
+   3.3:1 and 3.9:1). The axe test runs on Home in both themes, on a wide screen and on a phone with the menu open, and on
+   the text pages in both themes at 1280 and 390 px.
 10. **Version 3 and 4 side by side, page by page.** Each page moves in its own pull request. When the last page has
     moved, the version 3 components, sizes and font go, and the `--v4-` sizes and fonts lose their prefix.
     No design flag: a page is either version 3 or 4.
+11. **Text pages stay prose.** Mission, Privacy, Terms, Not found, Sign in and Account have no terminal look: Geist for
+    headings and reading text, Geist Mono only for small interface labels (On this page, the date, the 404 label,
+    buttons), a column of about 68 characters with a line height of 1.65, lined up with the header (`text.css`,
+    `.h2-prose`). They load on demand, like Sources and Account.
+    - **Mission** has its sections, then how the guide answers (three numbered steps) and the rules, as prose; "On
+      this page" links to all of them.
+    - **Not found** keeps the real 404 (the server answers 404 and writes the head): a `404` label, the title, one
+      line that points to the box in the header, and a link to the home page. No second search box.
+    - **Sign in** (`/signin`): why to sign in on the left, the ways to sign in in a card on the right, one button per
+      provider in `loginProviders` on GET /me ("Continue with GitHub"). A provider that is not configured is not
+      shown; with none, the card says sign-in is not offered here. "Sign in" in the header opens this page and
+      carries the current page, so the visitor comes back to it (ADR [0035](../edge/0035-admin-host.md)). A failed
+      sign-in lands on `?signin=failed`; the alert links back to this page. The Saved page and the admin page keep
+      their direct provider links.
+    - **Account:** who is signed in, with the AI answers and web searches left today and their reset time
+      (`limits` on GET /me; a null count is not shown), the radar setting "Radar: keep moving" (on by default; off
+      keeps the Home radar still, as reduced motion does), and Delete my account in a card, with the confirmation
+      under it (focus on Cancel).
 
 ## Alternatives
 - **Fonts: `geist` (Vercel).** The upstream package, but built for `next/font` (it imports `next/font/local`) and
@@ -111,6 +131,8 @@ they do now and how version 3 and 4 live side by side until the other pages move
 - **One font, Space Grotesk, everywhere.** No new font download. Chosen on 2 November 2026, dropped on 5 November:
   the boards and the moved parts are drawn in Geist and Geist Mono, and the two variable files cost 52 KB on an
   English page.
+- **Sign in straight from the header** (main before v4): one click less with one provider, but the visitor never
+  sees why to sign in, and a second provider needs a menu. The page is one click more and says it.
 - **The guide on every search.** Simpler, but it spends model calls and the daily AI answers on searches that are
   only a name ([0017](../guide/0017-guide-cost-guard.md)).
 - **One big pull request.** Fastest to finish, hardest to review and to roll back.
@@ -130,8 +152,9 @@ they do now and how version 3 and 4 live side by side until the other pages move
   `total` on GET /recent and GET /events/upcoming (which also takes `days`). The Unknown count per facet is still open.
 - For a while the site shows two designs and loads two font families on the pages still on version 3. The header and
   footer are already version 4 on every page.
-- The initial JavaScript is 165.9 KiB gzip, over the 165 KiB budget, with the examples from the pool on Home: the
-  radar, the phone tabs, the Sources page and the account page already load on demand. Making room is on the
+- The initial JavaScript is 165.7 KiB gzip, over the 165 KiB budget, with the examples from the pool on Home: the
+  radar, the phone tabs, the Sources page and the text pages (Mission, Privacy, Terms, Not found, Sign in,
+  Account) already load on demand. Making room is on the
   [roadmap](../../roadmap.md).
 - What is not built yet is on the [roadmap](../../roadmap.md) (section 6).
 

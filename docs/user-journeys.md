@@ -88,13 +88,13 @@ Changing the words in the box searches again and drops the old question with its
 
 Anyone can sign in, to keep saved items on the account and get a larger daily quota. Nothing needs an account: search, the guide and saving in the browser work signed out. Administrators use the same sign-in on the back office host ([ADR 0023](adr/edge/0023-identity-and-admin.md), [ADR 0035](adr/edge/0035-admin-host.md)).
 
-1. Signed out, the header shows **Sign in with GitHub** on every page (a **Sign in** menu when more than one provider is configured; nothing when none is). The Saved page offers it too.
+1. Signed out, the header shows **Sign in** on every page (nothing when no provider is configured). It opens the sign-in page (`/signin`): why to sign in (saved items and settings on every device), then **Continue with GitHub**, one button per configured provider. The Saved page offers the provider buttons directly. Opened directly, the page returns to Home after sign-in; signed in, it links to the account; on a site with no provider it says sign-in is not offered here.
 2. The page the user was on is kept in this tab. After the provider, the user comes back to that page, signed in; saved items merge (UJ-6).
 3. Signed in, the header shows the display name, which opens the account page, and **Sign out**. Sign-out returns to anonymous mode; search keeps working.
 
-**Failure case:** sign-in fails or the provider is down → the user lands back with `?signin=failed`, and the page says "Sign-in did not work. Please try again."; anonymous use is unaffected.
+**Failure case:** sign-in fails or the provider is down → the user lands back with `?signin=failed`, and the page says "Sign-in did not work. Please try again." with a link to the sign-in page; anonymous use is unaffected.
 
-**Delete the account.** The signed-in name in the header opens the account page (`/account`): who is signed in, and **Delete my account**. A dialog asks to confirm, with focus on Cancel; Escape closes it and focus goes back to the button. On confirm the account and its saved items are deleted and the page reloads, signed out. If the deletion fails, an alert says so and the account stays. While the page asks who is signed in it says "Loading…". Signed out, the page says there is no account to delete and links to Privacy; it offers no sign-in.
+**Delete the account.** The signed-in name in the header opens the account page (`/account`): who is signed in, the AI answers and web searches left today with their reset time (from GET /me; a count the server does not give is not shown), the setting **Radar: keep moving**, and **Delete my account**. A dialog asks to confirm, with focus on Cancel; Escape closes it and focus goes back to the button. On confirm the account and its saved items are deleted and the page reloads, signed out. If the deletion fails, an alert says so and the account stays. While the page asks who is signed in it says "Loading…". Signed out, the page says there is no account to delete, links to Privacy and, when the site has a provider, to the sign-in page.
 
 ## UJ-8 Understand coverage and sources
 

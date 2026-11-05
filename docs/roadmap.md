@@ -169,22 +169,29 @@ Open items:
     picks merged into the list; the partial-results banner becomes one quiet line in the count row; filters as a
     drawer on phones.
   - **The resource page in v4:** one primary button ("Set it up" is already only on types a user installs or runs).
-  - **The other pages** (Saved, Sources, Mission, Privacy, Terms, Account, sign-in, 404, admin), one by one.
+  - **The other pages** (Saved, Sources, admin), one by one. Mission, Privacy, Terms, Account, sign-in and 404 are
+    built.
+  - **Mission: section order.** The board puts how the guide answers between What we promise and How we mark AI
+    text; the page shows it after the locale sections. Needs a way to place it among them.
+  - **Sign-in diagram:** `sequence-0035-admin-host.d2` still says "Sign in with GitHub (header or Saved)"; the header
+    now opens the sign-in page. Update it and render with d2 v0.9.0.
   - **Remove version 3** once the last page has moved: the v3 components and layout sizes, the v3 font (`--font-sans`, `--font-display`), and the
     `--v4-` prefix on the v4 sizes and fonts.
   - **API fields:** `newThisWeek` on GET /sources, `limits` on GET /me and `total` on the recent and upcoming responses
-    are in the API and on Home. Still to use them: the account panel and the Account page (`limits`), the Sources
-    table (`newThisWeek`).
+    are in the API and on Home. The Account page shows `limits`. Still to use them: the account panel (`limits`), the
+    Sources table (`newThisWeek`).
   - **GET /api/v1/policy:** retention periods, daily limits and guide candidates from the typed config records, so
-    the text pages show them from data, not typed in. After config PRs 5-8.
+    the text pages show them from data, not typed in. After config PRs 5-8. Until then Mission (up to 24 candidates,
+    at most 3 picks), Privacy (the retention periods) and Terms (the daily limits) keep them in the locale text.
   - **Cost guard:** a "no pick" answer and a cached answer spend no AI answer
     ([0017](adr/guide/0017-guide-cost-guard.md)). After config PRs 5-8. Then, with a week of data, check the share of
     4+-word searches that are names and the share of "no pick" answers, and revisit the 4-word rule.
   - An `unknown` count per facet and an updated-date facet on the search response (Filters panel).
   - Sign-in with Google (phase 1). Passkey, email link and password (phase 2) need their own ADR, a threat model and
     the Privacy page first.
-  - The initial JavaScript is at 165.9 KiB gzip, over the 165 KiB budget (main alone 164.5, this Home alone 164.5;
-    together with the pool examples 165.9). The radar, the phone tabs, Sources and Account already load on demand.
+  - The initial JavaScript is at 165.7 KiB gzip, over the 165 KiB budget (165.9 before the text pages moved to
+    loading on demand). The radar, the phone tabs, Sources, Account, Sign in, Mission, Privacy, Terms and the 404
+    already load on demand.
     Make room before the next page moves, for example by loading Results on demand, or raise the budget.
   - **Radar pause for everyone (WCAG 2.2.2), open point.** The radar's beam turns without end and its sources come and
     go. Signed-in users can turn it off on the account page; guests have only reduced motion and the hold while the
