@@ -26,15 +26,25 @@ constructor(
   val candidates: List<Candidate> = emptyList(),
   /** Why the collector did not call its source ([notDue] only); null: its run interval. */
   val skipReason: String? = null,
+  /**
+   * true when the pass was due but could not run now (the daily credit cap): the Scout keeps it
+   * open, so the next run tries it again ([notDue] only).
+   */
+  val deferred: Boolean = false,
 ) {
   companion object {
     /** Nothing collected and nothing advanced: the previous checkpoint stays. */
     @JvmStatic fun notDue(): CollectedBatch = CollectedBatch(emptyList(), null, null, true)
 
-    /** As [notDue], with the reason the run record shows ("daily credit cap reached"). */
+    /** As [notDue], with the reason the run record shows ("Not due yet: next pass on ..."). */
     @JvmStatic
     fun skipped(reason: String): CollectedBatch =
       CollectedBatch(emptyList(), null, null, true, emptyList(), reason)
+
+    /** A due pass that could not run now ("daily credit cap reached"): it stays open. */
+    @JvmStatic
+    fun deferred(reason: String): CollectedBatch =
+      CollectedBatch(emptyList(), null, null, true, emptyList(), reason, true)
   }
 }
 
@@ -45,6 +55,13 @@ interface Collector : DescribedSource {
    * @param resumeCursor pagination cursor to continue an unfinished pass, or null to start one.
    */
   fun collect(checkpoint: String?, resumeCursor: String?, maxItems: Int): CollectedBatch
+
+  /**
+   * The call the Scout makes, with the whole [cursor]. A collector that must know a pass is open
+   * without a resume cursor ([ScoutCursor.passStartedAt]: it failed or was deferred) overrides it.
+   */
+  fun collect(cursor: ScoutCursor, maxItems: Int): CollectedBatch =
+    collect(cursor.checkpoint, cursor.resumeCursor, maxItems)
 }
 
 /**

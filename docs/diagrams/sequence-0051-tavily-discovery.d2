@@ -26,7 +26,7 @@ person: "Admin" {class: person}
 resolve: ResolveReview {class: app}
 accept: IndexAcceptedCandidate {class: app}
 
-runner -> col: "collect(checkpoint, null, 1000)"
+runner -> col: "collect(cursor, 1000)"
 col -> credits: "capReached? no (12 of 40 today)"
 col -> tavily: "POST /search\n(\"open-source self-hosted AI app...\",\ninclude_usage, include_published_date)"
 tavily -> col: "10 results, request_id, usage.credits 2"

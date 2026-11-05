@@ -21,7 +21,9 @@ import org.jspecify.annotations.Nullable;
  * <p>A staggered interval ({@link #staggered}) spreads collectors with the same interval over its
  * days: a collector that never ran is first due on the UTC day whose number since 1970, modulo the
  * interval's days, is its {@code firstDay}. After its first pass it is due every interval, like any
- * other. Without a first day, a collector that never ran is due at once.
+ * other. Without a first day, a collector that never ran is due at once. The stagger only delays
+ * the first try: when that try fails or meets a cap, the Scout keeps the pass open and the
+ * collector runs it on the next run, whatever the day (the open pass does not ask this interval).
  */
 public record RunInterval(Duration every, @Nullable Integer firstDay) {
 

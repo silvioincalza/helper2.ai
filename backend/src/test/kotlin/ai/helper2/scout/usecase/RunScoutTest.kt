@@ -858,6 +858,42 @@ class RunScoutTest {
   }
 
   @Test
+  fun `a pass that fails or is deferred stays open, and the next run gets it`() {
+    val failing = FakeCollector(descriptor("failing")) { throw IllegalStateException("boom") }
+    val capped = FakeCollector(descriptor("capped")) { CollectedBatch.deferred("cap reached") }
+    val idle = FakeCollector(descriptor("idle")) { CollectedBatch.notDue() }
+    val runs =
+      RunScout(listOf(failing, capped, idle), history, catalog, null, clock, NO_LOCK).runNow()!!
+
+    assertEquals(
+      listOf(RunStatus.FAILED, RunStatus.SKIPPED, RunStatus.SKIPPED),
+      runs.map { it.status },
+    )
+    assertEquals("cap reached", runs[1].message)
+    assertEquals(ScoutCursor(null, null, NOW.toString()), history.cursors["failing"])
+    assertEquals(ScoutCursor(null, null, NOW.toString()), history.cursors["capped"])
+    assertNull(history.cursors["idle"])
+
+    val seen = mutableListOf<ScoutCursor>()
+    val retry =
+      object : Collector {
+        override val descriptor = descriptor("failing")
+
+        override fun collect(checkpoint: String?, resumeCursor: String?, maxItems: Int) =
+          error("the Scout passes the whole cursor")
+
+        override fun collect(cursor: ScoutCursor, maxItems: Int): CollectedBatch {
+          seen += cursor
+          return CollectedBatch(emptyList(), null, "done")
+        }
+      }
+    RunScout(listOf(retry), history, catalog, null, clock, NO_LOCK).runNow()
+
+    assertEquals(listOf(ScoutCursor(null, null, NOW.toString())), seen)
+    assertEquals(ScoutCursor(NOW.toString(), null, null), history.cursors["failing"])
+  }
+
+  @Test
   fun `unfinished pass resumes from the saved cursor and checkpoints at the pass start`() {
     val first = java.time.Instant.parse("2026-10-26T10:00:00Z")
     val second = java.time.Instant.parse("2026-10-26T11:00:00Z")
