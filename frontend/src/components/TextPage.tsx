@@ -1,6 +1,11 @@
 import { useId, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { sectionAnchor, TextSections, useTextSections } from '@/components/TextSections';
+import {
+  sectionAnchor,
+  TextSections,
+  useTextSections,
+  type TextValues,
+} from '@/components/TextSections';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import '@/pages/text.css';
 
@@ -17,18 +22,23 @@ export interface TocEntry {
  * A text page (ADR 0040, in design v4 by ADR 0042): the head ([head]: h1, date, lede, contact), the `<i18nKey>`
  * sections in a readable column, then [after]. "On this page" links to every section and to [afterToc]: a list
  * beside the text on a wide screen, a collapsible list under the head on a phone. The text itself comes from the
- * locale file, unchanged.
+ * locale file, unchanged. A page that states numbers passes [values] from GET /policy (ADR 0042 decision 13); when
+ * they cannot be read ([numbersUnavailable]), one line under the head says the page states them without numbers.
  */
 export function TextPage({
   i18nKey,
   head,
   after,
   afterToc = [],
+  values,
+  numbersUnavailable = false,
 }: {
   i18nKey: string;
   head: ReactNode;
   after?: ReactNode;
   afterToc?: TocEntry[];
+  values?: TextValues;
+  numbersUnavailable?: boolean;
 }) {
   const { t } = useTranslation();
   const wide = useMediaQuery(WIDE);
@@ -50,13 +60,14 @@ export function TextPage({
     <div className="h2-prose h2-text-layout">
       <article className="h2-text-page">
         {head}
+        {numbersUnavailable && <p>{t('textPage.numbersUnavailable')}</p>}
         {!wide && sections.length > 0 && (
           <details className="h2-toc-m">
             <summary>{t('textPage.onThisPage')}</summary>
             {links}
           </details>
         )}
-        <TextSections i18nKey={i18nKey} />
+        <TextSections i18nKey={i18nKey} values={values} />
         {after}
       </article>
       {wide && sections.length > 0 && (

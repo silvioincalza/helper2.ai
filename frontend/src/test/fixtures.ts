@@ -2,6 +2,7 @@ import stagingSources from './staging-sources.json';
 import type {
   DateFact,
   Me,
+  Policy,
   RecentResponse,
   ResourceDetail,
   ResultCard,
@@ -291,3 +292,21 @@ export function makeRecent(over: Partial<RecentResponse> = {}): RecentResponse {
     ...over,
   };
 }
+
+/** GET /policy with the defaults of application.yaml (ADR 0051). */
+export const POLICY: Policy = {
+  guide: { maxCandidates: 24, maxPicks: 3 },
+  dailyLimits: {
+    guideQuestions: 30,
+    webSearches: { guest: { search: 3, guide: 3 }, registered: null },
+  },
+  retention: {
+    cachedSearchesSeconds: 86_400,
+    cachedGuideAnswersSeconds: 86_400,
+    translationsSeconds: 86_400,
+    queryVectorsSeconds: 7 * 86_400,
+    storedWebResultsSeconds: 7 * 86_400,
+    inactiveAccountsSeconds: 730 * 86_400,
+    handledReportsSeconds: 365 * 86_400,
+  },
+};
