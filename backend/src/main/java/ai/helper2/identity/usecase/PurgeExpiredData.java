@@ -1,5 +1,6 @@
 package ai.helper2.identity.usecase;
 
+import ai.helper2.identity.config.IdentityRetentionProperties;
 import ai.helper2.identity.internal.AuditLog;
 import ai.helper2.identity.internal.Users;
 import java.time.Clock;
@@ -7,7 +8,6 @@ import java.time.Duration;
 import java.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 /**
@@ -30,16 +30,12 @@ public class PurgeExpiredData {
   private final Duration adminAudit;
 
   public PurgeExpiredData(
-      Users users,
-      AuditLog audit,
-      Clock clock,
-      @Value("${helper2.retention.inactive-accounts}") Duration inactiveAccounts,
-      @Value("${helper2.retention.admin-audit}") Duration adminAudit) {
+      Users users, AuditLog audit, Clock clock, IdentityRetentionProperties periods) {
     this.users = users;
     this.audit = audit;
     this.clock = clock;
-    this.inactiveAccounts = inactiveAccounts;
-    this.adminAudit = adminAudit;
+    this.inactiveAccounts = periods.inactiveAccounts();
+    this.adminAudit = periods.adminAudit();
   }
 
   public Purged purge() {

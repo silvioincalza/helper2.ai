@@ -42,16 +42,9 @@ class ConfigurationAccessTest {
    */
   private static final Set<String> NOT_YET_TYPED =
       Set.of(
-          "ai.helper2.admin.web.OverviewController",
-          "ai.helper2.catalog.internal.CatalogConfiguration",
-          "ai.helper2.catalog.usecase.PurgeExpiredData",
           "ai.helper2.guide.internal.GuideConfiguration",
           "ai.helper2.guide.web.GuideLimits",
           "ai.helper2.guide.web.GuideStreamController",
-          "ai.helper2.identity.config.AdminPortConfiguration",
-          "ai.helper2.identity.config.SecurityConfiguration",
-          "ai.helper2.identity.config.SessionConfiguration",
-          "ai.helper2.identity.usecase.PurgeExpiredData",
           "ai.helper2.scout.internal.ScoutConfiguration",
           "ai.helper2.scout.internal.ScoutRetentionSchedule",
           "ai.helper2.search.config.SearchConfiguration",

@@ -1,13 +1,10 @@
 package ai.helper2.identity.config;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -73,17 +70,13 @@ class SecurityConfiguration {
   SecurityFilterChain api(
       HttpSecurity http,
       ObjectProvider<ClientRegistrationRepository> registrations,
-      @Value("${helper2.security.admins:}") String admins,
-      @Value("${helper2.security.metrics-public:false}") boolean metricsPublic,
-      @Value("${helper2.frontend-url:/}") String frontendUrl,
-      @Value("${helper2.security.noindex:false}") boolean noindex,
+      IdentityProperties identity,
       AdminPort adminPort)
       throws Exception {
-    Set<String> adminSet =
-        Arrays.stream(admins.split(","))
-            .map(String::trim)
-            .filter(s -> !s.isEmpty())
-            .collect(Collectors.toUnmodifiableSet());
+    Set<String> adminSet = Set.copyOf(identity.admins());
+    boolean metricsPublic = identity.metricsPublic();
+    String frontendUrl = identity.frontendUrl();
+    boolean noindex = identity.noindex();
     http.authorizeHttpRequests(
             a -> {
               a.requestMatchers("/actuator/health/**").permitAll();
