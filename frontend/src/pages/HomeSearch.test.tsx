@@ -13,14 +13,15 @@ const openFilters = async () =>
   userEvent.click(await screen.findByRole('button', { name: 'Filters', expanded: false }));
 
 describe('search results', () => {
-  it('/?q= links still show the results, with the same query, filters and path, and name /search as canonical', async () => {
+  it('/?q= links still show the results, with the same query, filters and path, not indexed and with no canonical link', async () => {
     const m = mockApi();
     const { router, params } = renderApp('/?q=translate&path=USE_AI&type=MODEL');
     await (await results()).findByText('Acme Translator');
     expect(router.state.location.pathname).toBe('/');
-    expect(document.querySelector('link[rel="canonical"]')).toHaveAttribute(
-      'href',
-      expect.stringMatching(/^\/search\?q=translate/),
+    expect(document.querySelector('link[rel="canonical"]')).toBeNull();
+    expect(document.head.querySelector('meta[name="robots"]')).toHaveAttribute(
+      'content',
+      'noindex, follow',
     );
     expect(params().get('q')).toBe('translate');
     expect(params().getAll('type')).toEqual(['MODEL']);

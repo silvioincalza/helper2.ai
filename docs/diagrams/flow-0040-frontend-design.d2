@@ -1,5 +1,5 @@
 # Flowchart: the design from the home page to the guide picks. An empty / is the home page (headline, box, News and Events
-# boards); a search opens /search, and /?q= names /search as canonical. The list shows at once; the guide runs only
+# boards); a search opens /search, and /?q= shows the same results. Both say noindex, follow to search engines. The list shows at once; the guide runs only
 # for a question (4+ words or Shift+Enter): its picks bar is reserved, the answer arrives over SSE (picks or no pick),
 # the picks move to the top of the list in one update and the preview opens on pick #1 unless the URL names a result;
 # with no pick the bar offers the next steps. The selected result is kept in the URL with replace. Each row title is a
@@ -27,7 +27,7 @@ home: Home {
   hero -> boards -> feeds
 }
 
-canonical: "/?q=…: the results,\ncanonical link to /search" {class: app}
+canonical: "/?q=…: the results;\nboth result pages noindex, follow" {class: app}
 start: "Search from the box or an example:\n/search?q=…" {class: app}
 results: "GET /api/v1/search" {class: ext}
 show: "Show the list at once" {class: app}

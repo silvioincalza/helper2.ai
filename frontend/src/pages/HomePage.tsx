@@ -1,11 +1,12 @@
 import { Navigate, useLocation, useSearchParams } from 'react-router';
 import Home from '@/pages/Home';
 import { Results } from '@/components/results/Results';
+import { Robots } from '@/components/Robots';
 import { askedQuestion, parseSearchParams } from '@/lib/searchState';
 
 /**
  * The page at / and /search (ADR 0040). An empty / is only the home page; results live on /search. /?q=… still shows
- * them and names /search as the canonical page; an empty /search goes home.
+ * them; an empty /search goes home. Search results are not indexed, but their links are followed (SEO review F8).
  */
 export default function HomePage() {
   const [sp] = useSearchParams();
@@ -14,7 +15,7 @@ export default function HomePage() {
   if (empty) return pathname === '/' ? <Home /> : <Navigate replace to="/" />;
   return (
     <>
-      {pathname === '/' && <link rel="canonical" href={`/search?${sp.toString()}`} />}
+      <Robots content="noindex, follow" />
       <Results />
     </>
   );

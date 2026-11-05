@@ -8,6 +8,7 @@ import { ExternalLink } from '@/components/ExternalLink';
 import { Icon } from '@/components/Icon';
 import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
 import { ReportForm } from '@/components/ReportForm';
+import { Robots } from '@/components/Robots';
 import { useApi } from '@/hooks/useApi';
 import { useTitle } from '@/hooks/useTitle';
 import { formatDate } from '@/lib/format';
@@ -52,17 +53,21 @@ function ResourceView({ id }: { id: string }) {
   if (q.error !== undefined || !d) {
     const notFound = q.error instanceof ApiError && q.error.status === 404;
     return (
-      <StatePanel
-        tone="error"
-        level={1}
-        title={notFound ? t('detail.notFound') : t('detail.errorTitle')}
-        next={
-          <>
-            {!notFound && <RetryButton onClick={q.reload} />}
-            <Link to="/">{t('detail.backToSearch')}</Link>
-          </>
-        }
-      />
+      <>
+        {/* The server answers 200 for every page: this keeps a removed resource out of the index (a soft 404). */}
+        {notFound && <Robots content="noindex" />}
+        <StatePanel
+          tone="error"
+          level={1}
+          title={notFound ? t('detail.notFound') : t('detail.errorTitle')}
+          next={
+            <>
+              {!notFound && <RetryButton onClick={q.reload} />}
+              <Link to="/">{t('detail.backToSearch')}</Link>
+            </>
+          }
+        />
+      </>
     );
   }
 

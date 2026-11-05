@@ -3,11 +3,22 @@ import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { deleteMyAccount } from '@/api/client';
 import { useMe } from '@/context/MeContext';
+import { Robots } from '@/components/Robots';
 import { useTitle } from '@/hooks/useTitle';
 import './text.css';
 
 /** The signed-in user's account: who they are signed in as, and deleting the account after a confirmation. */
 export default function AccountPage() {
+  // A personal page: nothing in it for a search engine.
+  return (
+    <>
+      <Robots content="noindex, follow" />
+      <Account />
+    </>
+  );
+}
+
+function Account() {
   const { t } = useTranslation();
   const { me, loaded } = useMe();
   const [confirming, setConfirming] = useState(false);

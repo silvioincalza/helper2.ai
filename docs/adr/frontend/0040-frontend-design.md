@@ -111,7 +111,9 @@ and chose between options for each part.
   resource page with the id encoded. `OneBox` sends results there and searches live only
   on that page.
 - `frontend/src/pages/HomePage.tsx`, `routes.tsx` — `/` empty is the home page; `/search` shows results and goes home
-  with no query; `/?q=` shows results with a canonical link to `/search`; there is no `/guide` route.
+  with no query; `/?q=` shows results too; there is no `/guide` route. Both result pages carry
+  `<meta name="robots" content="noindex, follow">`; so do `/saved` and `/account`, and the not-found pages say
+  `noindex` (`components/Robots.tsx`).
 - `frontend/src/components/results/Results.tsx` — the results page: the box, the picks bar (questions only), type
   tabs, one row with the "Filters" toggle (sort, list or timeline, the filter panel) and the detected use cases,
   search notices, the list of `SelectableRow`s with the guide's picks first (each title a link to its resource page;
