@@ -28,8 +28,10 @@ same for every visitor.
    that loses an example shows offline before it ships.
 3. **Admin writes go back to `PENDING`.** Adding an example, or changing what it searches (query, path, expected
    results), sends it to `PENDING`: hidden until checked. A label or status change keeps the check. A change names
-   the version it read; an older version is a 409 `version-conflict`. Every add, change and removal is in the audit
-   trail, in the same transaction.
+   the version it read; an older version is a 409 `version-conflict`. A new expected result must be in the catalog; one
+   already stored may have left it, so a pause or a new label still goes through. The unique indexes decide a
+   duplicate, also between two changes at the same moment: the update runs in a savepoint, so the 409 `duplicate` is
+   still audited. Every add, change and removal is in the audit trail, in the same transaction.
 4. **One public endpoint, the pick in the browser.** `GET /api/v1/home/examples` returns the examples that are
    `ACTIVE` and `PASS`, at most 50, the same for everyone (`Cache-Control: public, max-age=300`), with the English
    ones when a locale has none. The page picks two per path at random, people who use AI first. An example searches;

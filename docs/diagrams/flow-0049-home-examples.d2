@@ -15,8 +15,8 @@ rules: Rules {
   class: group
   direction: down
   text: "Texts: 2-32 / 3-200 chars,\nno < >, no web address,\nno control characters?" {class: decision}
-  known: "Every expected result\nin the catalog?" {class: decision}
-  unique: "Label and query unique\n(locale, any case)?" {class: decision}
+  known: "Every new expected result\nin the catalog? (a kept one\nmay have left it)" {class: decision}
+  unique: "Label and query unique\n(locale, any case; the index\ndecides, also between two writes)?" {class: decision}
   invalid: "400 invalid-request" {class: fail}
   dup: "409 duplicate" {class: fail}
   text -> known: yes

@@ -18,8 +18,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /** The home_example table (ADR 0049). The texts arrive normalised (ExampleInput). */
 @Repository
@@ -27,10 +31,13 @@ class JdbcHomeExamples implements HomeExamples {
 
   private final JdbcClient jdbc;
   private final Clock clock;
+  private final TransactionTemplate savepoint;
 
-  JdbcHomeExamples(JdbcClient jdbc, Clock clock) {
+  JdbcHomeExamples(JdbcClient jdbc, Clock clock, PlatformTransactionManager transactions) {
     this.jdbc = jdbc;
     this.clock = clock;
+    this.savepoint = new TransactionTemplate(transactions);
+    this.savepoint.setPropagationBehavior(TransactionDefinition.PROPAGATION_NESTED);
   }
 
   @Override
@@ -110,56 +117,48 @@ class JdbcHomeExamples implements HomeExamples {
     if (current.getVersion() != version) {
       return new Changed.Conflict(current);
     }
-    if (takenByAnother(id, current.getLocale(), input)) {
-      return Changed.Duplicate.INSTANCE;
-    }
     boolean searchChanged =
         !current.getQuery().equals(input.getQuery())
             || current.getPath() != input.getPath()
             || !current.getExpectedResourceIds().equals(input.getExpectedResourceIds());
-    int updated =
-        jdbc.sql(
-                """
-                UPDATE home_example
-                SET label = :label, query = :query, path = :path, expected_resource_ids = :expected,
-                    status = :status, version = version + 1, updated_at = :now,
-                    check_outcome = CASE WHEN :reset THEN 'PENDING' ELSE check_outcome END,
-                    check_best_rank = CASE WHEN :reset THEN NULL ELSE check_best_rank END,
-                    check_result_count = CASE WHEN :reset THEN NULL ELSE check_result_count END,
-                    checked_at = CASE WHEN :reset THEN NULL ELSE checked_at END
-                WHERE id = :id AND version = :version
-                """)
-            .param("id", id)
-            .param("version", version)
-            .param("label", input.getLabel())
-            .param("query", input.getQuery())
-            .param("path", input.getPath().name())
-            .param("expected", input.getExpectedResourceIds().toArray(UUID[]::new))
-            .param("status", status.name())
-            .param("reset", searchChanged)
-            .param("now", Timestamp.from(clock.instant()))
-            .update();
-    if (updated == 0) {
+    Integer updated;
+    try {
+      // The unique indexes decide a duplicate, also between two concurrent changes. The savepoint
+      // keeps the transaction usable after a rejected update: the attempt is still audited in it.
+      updated = savepoint.execute(tx -> update(id, input, status, version, searchChanged));
+    } catch (DuplicateKeyException e) {
+      return Changed.Duplicate.INSTANCE;
+    }
+    if (updated == null || updated == 0) {
       HomeExample now = find(id);
       return now == null ? Changed.NotFound.INSTANCE : new Changed.Conflict(now);
     }
     return new Changed.Done(Objects.requireNonNull(find(id)));
   }
 
-  /** Another example of [locale] has the same label or query, whatever the case. */
-  private boolean takenByAnother(UUID id, String locale, ExampleInput input) {
+  private int update(
+      UUID id, ExampleInput input, ExampleStatus status, int version, boolean searchChanged) {
     return jdbc.sql(
             """
-            SELECT EXISTS (SELECT 1 FROM home_example
-                           WHERE locale = :locale AND id <> :id
-                             AND (lower(label) = lower(:label) OR lower(query) = lower(:query)))
+            UPDATE home_example
+            SET label = :label, query = :query, path = :path, expected_resource_ids = :expected,
+                status = :status, version = version + 1, updated_at = :now,
+                check_outcome = CASE WHEN :reset THEN 'PENDING' ELSE check_outcome END,
+                check_best_rank = CASE WHEN :reset THEN NULL ELSE check_best_rank END,
+                check_result_count = CASE WHEN :reset THEN NULL ELSE check_result_count END,
+                checked_at = CASE WHEN :reset THEN NULL ELSE checked_at END
+            WHERE id = :id AND version = :version
             """)
-        .param("locale", locale)
         .param("id", id)
+        .param("version", version)
         .param("label", input.getLabel())
         .param("query", input.getQuery())
-        .query(Boolean.class)
-        .single();
+        .param("path", input.getPath().name())
+        .param("expected", input.getExpectedResourceIds().toArray(UUID[]::new))
+        .param("status", status.name())
+        .param("reset", searchChanged)
+        .param("now", Timestamp.from(clock.instant()))
+        .update();
   }
 
   @Override

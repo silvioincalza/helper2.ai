@@ -2,6 +2,7 @@ package ai.helper2.examples.usecase;
 
 import ai.helper2.examples.ExampleInput;
 import ai.helper2.examples.ExampleStatus;
+import ai.helper2.examples.HomeExample;
 import ai.helper2.examples.HomeExamples;
 import ai.helper2.examples.ResourceTitles;
 import ai.helper2.identity.AuditTrail;
@@ -9,6 +10,7 @@ import ai.helper2.shared.AudiencePath;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,19 +54,14 @@ public class ChangeHomeExample {
       List<UUID> expected,
       ExampleStatus status,
       int version) {
-    ExampleStatus before = currentStatus(id);
-    Outcome outcome = tryChange(id, label, query, path, expected, status, version);
+    HomeExample current = examples.find(id);
+    Outcome outcome = tryChange(id, label, query, path, expected, status, version, current);
     audit.record(
         adminId,
         AuditTrail.Action.CHANGE_HOME_EXAMPLE,
         id.toString(),
-        recorded(outcome, before, status));
+        recorded(outcome, current == null ? null : current.getStatus(), status));
     return outcome;
-  }
-
-  private ExampleStatus currentStatus(UUID id) {
-    var current = examples.find(id);
-    return current == null ? null : current.getStatus();
   }
 
   private Outcome tryChange(
@@ -74,17 +71,27 @@ public class ChangeHomeExample {
       AudiencePath path,
       List<UUID> expected,
       ExampleStatus status,
-      int version) {
+      int version,
+      @Nullable HomeExample current) {
     return switch (ExampleInput.Companion.of(label, query, path, expected)) {
       case ExampleInput.Checked.Invalid invalid -> new Outcome.Invalid(invalid.getProblems());
-      case ExampleInput.Checked.Valid valid -> store(id, valid.getInput(), status, version);
+      case ExampleInput.Checked.Valid valid ->
+          store(id, valid.getInput(), status, version, kept(current));
       default -> throw new IllegalStateException();
     };
   }
 
-  private Outcome store(UUID id, ExampleInput input, ExampleStatus status, int version) {
+  /** Expected results already stored: they may have left the catalog since, and still be kept. */
+  private static List<UUID> kept(@Nullable HomeExample current) {
+    return current == null ? List.of() : current.getExpectedResourceIds();
+  }
+
+  private Outcome store(
+      UUID id, ExampleInput input, ExampleStatus status, int version, List<UUID> kept) {
     Map<UUID, String> known = titles.of(input.getExpectedResourceIds());
-    List<String> unknown = Expected.unknown(input.getExpectedResourceIds(), known);
+    List<UUID> added =
+        input.getExpectedResourceIds().stream().filter(e -> !kept.contains(e)).toList();
+    List<String> unknown = Expected.unknown(added, known);
     if (!unknown.isEmpty()) {
       return new Outcome.Invalid(unknown);
     }

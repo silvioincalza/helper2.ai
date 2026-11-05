@@ -173,6 +173,76 @@ class HomeExamplesApiIT extends ApiTestBase {
     assertThat(audit("CHANGE_HOME_EXAMPLE")).containsExactlyInAnyOrder("CHANGED", "CONFLICT");
   }
 
+  String change(String label, String query, List<UUID> expected, String status, int version) {
+    return """
+    {"label":"%s","query":"%s","path":"USE_AI","expectedResourceIds":[%s],"status":"%s","version":%d}
+    """
+        .formatted(
+            label,
+            query,
+            String.join(",", expected.stream().map(id -> "\"" + id + "\"").toList()),
+            status,
+            version);
+  }
+
+  @Test
+  void aChangeToAnotherExamplesLabelIsADuplicateAndTheAttemptIsStillRecorded() throws Exception {
+    added("Taken " + tag, "translate a poem " + tag);
+    String id = added("Other " + tag, "translate a song " + tag).get("id").asString();
+
+    mvc.perform(
+            put("/api/v1/admin/home-examples/" + id)
+                .with(admin)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    change(
+                        "taken " + tag, "translate a song " + tag, List.of(deepl()), "ACTIVE", 0)))
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.code").value("duplicate"));
+
+    assertThat(audit("CHANGE_HOME_EXAMPLE")).containsExactly("DUPLICATE");
+  }
+
+  @Test
+  void anExpectedResultThatLeftTheCatalogDoesNotBlockAPauseButANewOneMustBeKnown()
+      throws Exception {
+    String id = added("Gone " + tag, "translate a recipe " + tag).get("id").asString();
+    UUID gone = UUID.randomUUID();
+    jdbc.sql("UPDATE home_example SET expected_resource_ids = ARRAY[:gone]::uuid[] WHERE id = :id")
+        .param("gone", gone)
+        .param("id", UUID.fromString(id))
+        .update();
+
+    mvc.perform(
+            put("/api/v1/admin/home-examples/" + id)
+                .with(admin)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    change("Gone " + tag, "translate a recipe " + tag, List.of(gone), "PAUSED", 0)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("PAUSED"))
+        .andExpect(jsonPath("$.expected[0].title").doesNotExist());
+
+    mvc.perform(
+            put("/api/v1/admin/home-examples/" + id)
+                .with(admin)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    change(
+                        "Gone " + tag,
+                        "translate a recipe " + tag,
+                        List.of(gone, UUID.randomUUID()),
+                        "PAUSED",
+                        1)))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.code").value("invalid-request"));
+
+    assertThat(audit("CHANGE_HOME_EXAMPLE")).containsExactlyInAnyOrder("PAUSED", "INVALID");
+  }
+
   @Test
   void removingIsRecordedAndRemovingAgainIsNotAnError() throws Exception {
     String id = added("Removed " + tag, "translate a sign " + tag).get("id").asString();
