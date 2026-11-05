@@ -20,14 +20,19 @@ The success criteria at the end say which tests verify each journey today. What 
    Under the box, **Try:** shows four examples, picked at random on each visit from a pool: two for people who use AI
    ("Take meeting notes"), two for people who build with it ("Vector database"). An example searches its words with
    its audience path (`path=USE_AI` or `BUILD_WITH_AI`), which changes the ranking only. It does not ask the guide, so
-   it spends no daily AI answer. New words in the box drop the path. Every example in the pool has a clearly fitting
+   it spends no daily AI answer. The results page shows that path as chosen under **Best for**. New words in the box
+   drop the path. Every example in the pool has a clearly fitting
    result in the top 3. The pool comes from the server (`GET /home/examples`); when it fails, takes more than 800 ms,
    or has fewer than two examples for a path, the page uses its built-in list. While it waits, the row keeps its
    height and shows nothing to click, so the page does not jump. An example a model drafted and a person checked has
    a small "AI" mark: "Drafted with AI, checked by a person".
 3. Types a name ("ollama"), keywords ("mcp postgres"), an intent ("I want to summarise PDFs"), or a use case ("traduzione").
 4. On the home page, Enter (or the button) opens the results on `/search`; focus moves to the results. There, results follow typing when it pauses (or on Enter). The first search shows skeleton rows and a per-source "querying…" line; a later search keeps the previous results on screen, dimmed, until the new ones arrive.
-5. Results arrive in one response, once every source has answered or hit its timeout. The list is on the left, a preview of the selected result on the right; the selected result is in the URL. Each result title is a link to its resource page: a click selects the result, a ctrl or cmd click opens the page in a new tab. On a phone nothing is selected on load, and a row opens the resource page; its back link returns to the list with that result open under its row. Under the results, a line states e.g. "4 of 5 sources answered" and a tile per source shows its outcome, response time or cache age.
+5. Next to **Filters**, **Best for** offers three chips: **All**, **Apps I can use** (`path=USE_AI`) and **Build
+   with AI** (`path=BUILD_WITH_AI`). A chip searches again with that path: it changes what ranks first and never
+   hides a result. The path is in the URL, so Back returns to the previous choice. New words in the box go back to
+   **All**: the choice was for the old words.
+6. Results arrive in one response, once every source has answered or hit its timeout. The list is on the left, a preview of the selected result on the right; the selected result is in the URL. Each result title is a link to its resource page: a click selects the result, a ctrl or cmd click opens the page in a new tab. On a phone nothing is selected on load, and a row opens the resource page; its back link returns to the list with that result open under its row. Under the results, a line states e.g. "4 of 5 sources answered" and a tile per source shows its outcome, response time or cache age.
 
 **Key decisions:** whether to refine, or to ask the guide. **Success:** relevant result in the first page; user understands where results came from.
 

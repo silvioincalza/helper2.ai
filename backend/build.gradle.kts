@@ -194,6 +194,9 @@ tasks.withType<Test>().configureEach {
   systemProperty("helper2.dotenv-import", "optional:file:build/no-dotenv[.properties]")
   // ...nor a real embedding key from the shell: vector search stays off unless a test turns it on.
   systemProperty("helper2.embedding.api-key", "")
+  // A slow CI runner can take more than production's 250 ms for one Redis round trip to the
+  // container. Set for every test, not per class, so the tests keep sharing one Spring context.
+  systemProperty("spring.data.redis.timeout", "5s")
   doFirst {
     val socket = podmanSocket.get()
     if (

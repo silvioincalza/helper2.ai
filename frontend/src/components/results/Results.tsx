@@ -61,6 +61,7 @@ import {
   type SearchState,
   resourcePath,
 } from '@/lib/searchState';
+import { AudienceChoice } from './AudienceChoice';
 import { ListedBy, ResultFacts } from './ResultFacts';
 import './results.css';
 import { OpenButton } from './OpenButton';
@@ -262,7 +263,7 @@ function ResultsBody({
         ))}
       </nav>
 
-      {/* One row: the Filters toggle, and the use cases the search detected as one-tap chips. */}
+      {/* One row: the Filters toggle, who the results are best for, and the use cases the search detected. */}
       <div className="h2-results__tools">
         <button
           type="button"
@@ -273,6 +274,7 @@ function ResultsBody({
         >
           {t('filters.title')} <Icon name="chevron" />
         </button>
+        <AudienceChoice state={state} onChange={update} />
         {useCaseHints.length > 0 && (
           <div className="hints" role="group" aria-labelledby={hintsId}>
             <span id={hintsId} className="muted small">

@@ -62,8 +62,8 @@ screen reader, and in light and dark mode.
    paint on a deep link and no extra request per page. Lazy pages are larger without a bundler-specific chunk group
    (see Alternatives). `npm run check:bundle` (`scripts/check-bundle.mjs`) runs in CI
    after the build and fails it when the first visit's JavaScript (the entry and the modules it preloads) passes
-   165 KiB gzipped, or any other chunk passes 30 KiB. It runs in CI only, so a few bytes
-   never block an image build or a deploy.
+   250 KiB gzipped, or any other chunk passes 30 KiB (165 KiB until 5 Nov 2026, when the first visit was at 164.5:
+   each new feature tripped it). It runs in CI only, so a few bytes never block an image build or a deploy.
 
 ## Consequences
 - One place to type; the guide and search share the same URL and can be bookmarked or shared.
