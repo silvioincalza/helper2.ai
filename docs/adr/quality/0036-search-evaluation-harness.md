@@ -45,7 +45,7 @@ repository. Relevance needs a human judgement per result, and judging every resu
 6. **Acceptance rule.** A ranking, merge or routing change is accepted when the 95 % interval of ΔnDCG@10 lies above 0,
    or when it holds quality (interval contains 0, unjudged share in the top 10 not higher) and lowers latency or cost.
 7. **Gate.** `./gradlew evalTest` (JUnit tag `eval`) writes `backend/eval-data/search-report.md` and fails when nDCG@10
-   falls more than 0.005 below `docs/eval/search-baseline.json`. The baseline names the snapshots and judgements it was
+   falls more than 0.005 below `docs/eval/search-baseline.json`, once a baseline is recorded. The baseline names the snapshots and judgements it was
    measured on (fingerprints); with other snapshots or labels, or with no snapshots or no labels at all, the gate is
    skipped with a message, never failed. `H2_EVAL_WRITE_BASELINE=true` stores a new baseline. The default `test` task
    excludes both tags.

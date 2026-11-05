@@ -33,7 +33,8 @@ Helper2.ai is a product, built and run by Silvio Incalza. The only instance is *
 - Every answer records the provider and model ids; the page shows them.
 - No key, provider down or credits exhausted: the guide shows the top real search results (`LLM_UNAVAILABLE`), and search keeps working.
 - Cost guard: 10 questions per minute and 30 new questions per day per client, at most 8 questions at a time, 600 model calls per day in total, AI answers cached 24 hours ([ADR 0017](docs/adr/guide/0017-guide-cost-guard.md)).
-- **Tavily** is a live source for AI news (only with `H2_TAVILY_API_KEY`), reported in the source panel like any other source.
+- **Tavily** adds web results to search and to the guide (only with `H2_TAVILY_API_KEY`). A stored answer is reused
+  first, and each visitor gets a few live web searches a day ([ADR 0037](docs/adr/search/0037-tavily-store-and-daily-quota.md)).
 
 Feedback on Token Factory and Nemotron: [docs/hackathon/feedback.md](docs/hackathon/feedback.md).
 
@@ -49,22 +50,20 @@ Latest evaluation ([docs/evaluation.md](docs/evaluation.md), 29 Oct 2026, live d
 
 ## Known limitations
 
-- **A quote proves the source said it, not that it is true.** A description written to be picked passes the evidence
-  check; only the license comes from source metadata. Kept picks are counted by search rank to watch for this.
-- **Only the quote is proven.** The reason is checked by a second model call, which is a judgment and can miss a claim ([ADR 0016](docs/adr/guide/0016-guide-reason-check.md)). Fit to the need is judged by the model.
-- **Vector search covers only what Helper2 has indexed**, and the index is still being built. Live sources are keyword-only.
-- **Everyday-tool coverage is thin.** No consumer AI-tool catalog allows reuse; developer resources are much better covered.
-- **Short descriptions** (common on npm and GitHub) give the guide little to quote, so good candidates can be rejected.
-- **A new question takes about 6 s** on the live demo (median 5.6 s, p90 7.6 s: three model calls plus a federated search). A repeated question is instant from the cache.
-- **The guide says "nothing fits" more often with thinking off** (a pick on 11–12 of 19 questions instead of 17); `H2_GUIDE_THINK_CHOOSE=true` turns thinking back on for the choice.
-- **Live sources have rate limits** (GitHub, Hugging Face, arXiv 1 request per 3 s); results can be cached or partial, and the source panel says so.
+- **A quote proves the source said it, not that it is true.** Fit to the need is judged by the model.
+- **Everyday-tool coverage is thin.** Developer resources are much better covered.
+- **A new question takes a few seconds**: three model calls plus a federated search. A repeated question is instant
+  from the cache.
+- **Results can be cached or partial** when a source hits its rate limit; the source panel says so.
 - **English UI.** Queries work in any language ([ADR 0011](docs/adr/search/0011-language-aware-search.md)).
+
+Every known limit, with its ADR: [roadmap § 9](docs/roadmap.md#9-known-limits).
 
 ## Run locally
 
 These steps are for reviewing the code. Users do not need them: the product runs at https://helper2.ai.
 
-Prerequisites: Java 25 (Gradle downloads it if missing), Node 24, Docker or Podman.
+Prerequisites: Java 25 (Gradle downloads it if missing), Node 26, Docker or Podman.
 
 From the repository root:
 

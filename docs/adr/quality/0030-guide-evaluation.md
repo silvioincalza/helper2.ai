@@ -137,8 +137,9 @@ drop in quality must be seen the next day, not at the next run by hand.
   `scripts/eval-lib.mjs` — session token, resource id, judgements, P@k and nDCG@k shared by both.
 - `docs/eval/guide-queries.json`, `guide-intents.json`, `guide-adversarial.json`, `guide-qrels.tsv`,
   `guide-similar.json`, `guide-similar-vectors.json`, `setup-resources.json` — the fixed sets and the judgements; `docs/eval/README.md` — grades and how to judge.
-- `docs/evaluation.md`, `docs/evaluation-intents.md`, `docs/evaluation-adversarial.md`, `docs/evaluation-setup.md` —
-  the latest runs; `docs/eval/run-*.md` — earlier runs.
+- `docs/evaluation.md`, `docs/evaluation-adversarial.md` — the latest runs; `docs/evaluation-intents.md` and
+  `docs/evaluation-setup.md` are written by `--intents` and `eval-setup.mjs`, and committed after a run;
+  `docs/eval/run-*.md` — earlier runs.
 
 ## Diagrams
 [flow](../../diagrams/flow-0030-guide-evaluation.svg) · [sequence](../../diagrams/sequence-0030-guide-evaluation.svg)
