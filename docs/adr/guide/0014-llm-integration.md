@@ -41,8 +41,8 @@ Without a configured model the application must still work.
    JavaScript Object Notation (JSON) (`SpringAiGuideModel`). Budgets per day in Coordinated Universal Time (UTC): guide
    `H2_GUIDE_DAILY_MODEL_CALLS` (600), translation `H2_SEARCH_DAILY_TRANSLATIONS` (300), enrichment `H2_SCOUT_DAILY_ENRICHMENT_CALLS` (500; its gap-round share `H2_SCOUT_GAP_DAILY_CALLS`, 400, [0043](../scout/0043-enrichment-gap-round.md)), classifier
    `H2_SCOUT_AWESOME_CLASSIFIER_DAILY_CALLS` (300). The counts live in Redis, with a fallback to memory
-   ([0005](../foundation/0005-redis-disposable-cache.md)): `RedisCallCounter` runs `INCR` and `PEXPIRE` in one Lua script, so a
-   counter key always has its expiry.
+   ([0005](../foundation/0005-redis-disposable-cache.md)): `RedisCallCounter` checks the limit and runs `INCR` and `PEXPIRE` in one Lua
+   script, so a counter key always has its expiry and a refused call adds nothing.
 7. **A circuit on the provider** ([0033](../foundation/0033-resilience-policies.md)). Every chat-model call (guide, translation,
    setup guide, enrichment, classifier) runs under the `llm-chat` circuit breaker; the budget unit is taken inside it. Only provider errors count (no
    connection, timeout, 429, 5xx, a rejected call); a malformed answer or a spent budget counts as neither success nor

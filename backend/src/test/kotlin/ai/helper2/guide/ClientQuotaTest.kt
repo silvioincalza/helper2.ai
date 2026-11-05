@@ -21,9 +21,11 @@ class ClientQuotaTest {
   private val clock = MovableClock(Instant.parse("2026-10-27T22:00:00Z"))
   private val keys = QuotaKeys("test-secret", clock)
 
-  /** A durable counter in memory, standing in for Redis. */
+  /** A durable counter in memory, standing in for Redis: a refused question adds nothing. */
   private val counts = mutableMapOf<String, Long>()
-  private val counter = CallCounter { name, day -> counts.merge("$name:$day", 1L, Long::plus) }
+  private val counter = CallCounter { name, day, limit ->
+    counts.incrementUpTo("$name:$day", limit)
+  }
 
   @Test
   fun `a new UTC day starts every client afresh and drops yesterday's clients`() {
@@ -56,8 +58,8 @@ class ClientQuotaTest {
     val declared = mutableListOf<String>()
     val listing =
       object : CallCounter {
-        override fun increment(name: String, day: java.time.LocalDate) =
-          counter.increment(name, day)
+        override fun increment(name: String, day: java.time.LocalDate, limit: Int) =
+          counter.increment(name, day, limit)
 
         override fun declare(name: String, dailyCalls: Int) {
           declared += name
@@ -99,7 +101,8 @@ class ClientQuotaTest {
   /** The durable counter with a read, as Redis has. */
   private val readable =
     object : CallCounter {
-      override fun increment(name: String, day: java.time.LocalDate) = counter.increment(name, day)
+      override fun increment(name: String, day: java.time.LocalDate, limit: Int) =
+        counter.increment(name, day, limit)
 
       override fun current(name: String, day: java.time.LocalDate): Long =
         counts["$name:$day"] ?: 0L
@@ -118,7 +121,7 @@ class ClientQuotaTest {
   }
 
   @Test
-  fun `left is never below zero, also when refused questions were counted`() {
+  fun `a refused question takes nothing, so left stays at zero`() {
     val quota = ClientQuota(1, clock, keys, readable)
     repeat(3) { quota.tryAcquire("a") }
 
@@ -270,6 +273,35 @@ class ClientQuotaTest {
     assertNull(quota.reserve("a"))
   }
 
+  /**
+   * The review finding on #203: a refused question must not swallow a give-back. Limit 1: A takes
+   * the last question, B is refused, A is given back, and the question is left again.
+   */
+  @Test
+  fun `a refused question does not swallow a give-back in the shared count`() {
+    val shared = SharedCounter()
+    val quota = ClientQuota(1, clock, keys, shared)
+    val a = quota.reserve("a")!!
+    assertNull(quota.reserve("a"), "B is refused")
+
+    assertEquals(GiveBack.GIVEN_BACK, quota.giveBack(a))
+
+    assertEquals(1, quota.left("a"))
+    assertTrue(quota.tryAcquire("a"), "a fresh question")
+  }
+
+  @Test
+  fun `a refused question does not swallow a give-back in memory`() {
+    val quota = ClientQuota(1, clock, keys)
+    val a = quota.reserve("a")!!
+    assertNull(quota.reserve("a"), "B is refused")
+
+    assertEquals(GiveBack.GIVEN_BACK, quota.giveBack(a))
+
+    assertEquals(1, quota.left("a"))
+    assertTrue(quota.tryAcquire("a"), "a fresh question")
+  }
+
   @Test
   fun `left follows the durable count after a give-back on another replica`() {
     val shared = SharedCounter()
@@ -289,8 +321,8 @@ class ClientQuotaTest {
     val counts = mutableMapOf<String, Long>()
     val givenBack = mutableMapOf<String, MutableSet<String>>()
 
-    override fun increment(name: String, day: java.time.LocalDate) =
-      counts.merge("$name:$day", 1L, Long::plus)
+    override fun increment(name: String, day: java.time.LocalDate, limit: Int) =
+      counts.incrementUpTo("$name:$day", limit)
 
     override fun current(name: String, day: java.time.LocalDate) = counts["$name:$day"] ?: 0L
 
@@ -313,4 +345,13 @@ class ClientQuotaTest {
       }
     }
   }
+}
+
+/**
+ * The rule of RedisCallCounter's script, in memory: at [limit], answers count + 1, adds nothing.
+ */
+internal fun MutableMap<String, Long>.incrementUpTo(key: String, limit: Int): Long {
+  val used = this[key] ?: 0L
+  if (used >= limit) return used + 1
+  return (used + 1).also { this[key] = it }
 }

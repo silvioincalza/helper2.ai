@@ -32,8 +32,8 @@ public final class BudgetLedger implements CallCounter {
   }
 
   @Override
-  public @Nullable Long increment(String name, LocalDate day) {
-    return store == null ? null : store.increment(name, day);
+  public @Nullable Long increment(String name, LocalDate day, int limit) {
+    return store == null ? null : store.increment(name, day, limit);
   }
 
   @Override
@@ -60,8 +60,8 @@ public final class BudgetLedger implements CallCounter {
   }
 
   /**
-   * Every declared budget, by name. A count above the limit (refused calls count too) shows as the
-   * limit.
+   * Every declared budget, by name. A refused call adds nothing; a count still above the limit (the
+   * limit was lowered during the day) shows as the limit.
    */
   public List<Reading> today() {
     LocalDate day = LocalDate.ofInstant(clock.instant(), ZoneOffset.UTC);

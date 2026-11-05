@@ -40,8 +40,13 @@ class DailyBudgetTest {
 
     val givenBack = mutableMapOf<String, MutableSet<String>>()
 
-    override fun increment(name: String, day: java.time.LocalDate): Long? =
-      if (down) null else counts.merge("$name:$day", 1L, Long::plus)
+    /** The rule of RedisCallCounter's script, in memory: at [limit], adds nothing. */
+    override fun increment(name: String, day: java.time.LocalDate, limit: Int): Long? {
+      if (down) return null
+      val used = counts["$name:$day"] ?: 0L
+      if (used >= limit) return used + 1
+      return (used + 1).also { counts["$name:$day"] = it }
+    }
 
     /** The rule of RedisCallCounter's script, in memory. */
     override fun giveBack(
@@ -103,7 +108,7 @@ class DailyBudgetTest {
   @Test
   fun `a counter that throws is treated as down, never as an error`() {
     val budget =
-      DailyBudget(1, Clock.fixed(NOW, ZoneOffset.UTC), "guide") { _, _ ->
+      DailyBudget(1, Clock.fixed(NOW, ZoneOffset.UTC), "guide") { _, _, _ ->
         throw IllegalStateException("redis down")
       }
     assertTrue(budget.tryAcquire())
@@ -170,6 +175,31 @@ class DailyBudgetTest {
       "another replica, the same question",
     )
     assertTrue(DailyBudget(1, clock, "guide", counter).tryAcquire())
+  }
+
+  /** A refused call adds nothing, so it cannot swallow the give-back of the call before it. */
+  @Test
+  fun `a refused call leaves the shared count, so a give-back frees the call`() {
+    val counter = SharedCounter()
+    val budget = DailyBudget(1, Clock.fixed(NOW, ZoneOffset.UTC), "guide", counter)
+    assertTrue(budget.tryAcquire())
+    assertFalse(budget.tryAcquire())
+    assertEquals(1L, counter.counts["guide:${NOW.day()}"])
+
+    budget.giveBack(NOW.day(), "q1", 5)
+
+    assertTrue(budget.tryAcquire())
+  }
+
+  @Test
+  fun `a refused call leaves the count in memory, so a give-back frees the call`() {
+    val budget = DailyBudget(1, Clock.fixed(NOW, ZoneOffset.UTC), "guide")
+    assertTrue(budget.tryAcquire())
+    assertFalse(budget.tryAcquire())
+
+    budget.giveBack(NOW.day(), "q1", 5)
+
+    assertTrue(budget.tryAcquire())
   }
 
   @Test

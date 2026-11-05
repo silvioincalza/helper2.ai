@@ -23,8 +23,8 @@ tf: "Token Factory\n(Nemotron)" {class: ai}
 model -> cb: "call(llm-chat, attempt)"
 cb -> cb: "closed: let through"
 cb -> budget: "tryAcquire()"
-budget -> counter: "increment(guide, UTC day)"
-counter -> redis: "Lua: INCR h2:v1:budget:guide:<day>,\nPEXPIRE 2 days on first"
+budget -> counter: "increment(guide, UTC day, 600)"
+counter -> redis: "Lua: below 600, INCR h2:v1:budget:guide:<day>,\nPEXPIRE 2 days on first; at 600, nothing"
 redis -> counter: count
 counter -> budget: "count (null on error:\ncount in memory)"
 budget -> cb: "true (count ≤ 600)"

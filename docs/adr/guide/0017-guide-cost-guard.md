@@ -75,8 +75,9 @@ The guards run in this order. Values are defaults; each has an `H2_` variable.
    then it runs `DECR` on the count and `SADD` of the id, and the set expires after 2 days like the count. So a
    retry, a second completion or a failure after a no-pick give-back gives nothing back twice, on any replica; the
    count never goes below 0; and no-pick answers, failures and shared answers share one cap, so a client cannot loop
-   them for free: past the cap they count like any other. Without Redis, `DailyBudget` applies the same rule in
-   memory. Metric `helper2.guide.quota.give_back` with `reason` (`no_pick`, `failed`, `shared`) and `outcome`
+   them for free: past the cap they count like any other. A refused question adds nothing to the count: the `INCR`
+   script checks the limit first, in the same step, so a search-only question past the quota never takes the
+   question a give-back frees. Without Redis, `DailyBudget` applies the same rules in memory. Metric `helper2.guide.quota.give_back` with `reason` (`no_pick`, `failed`, `shared`) and `outcome`
    (`given_back`, `already_given_back`, `cap_reached`, `nothing_counted`). The model calls of these questions stay
    counted in the
    global daily cap (point 6). In memory,

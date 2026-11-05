@@ -9,18 +9,24 @@ import org.springframework.data.redis.core.script.RedisScript;
 
 /**
  * Redis adapter for the daily budgets: one counter per budget name and UTC day, kept two days so
- * the key outlives its day in every time zone. INCR and PEXPIRE run in one script, so a key is
- * never left without an expiry (as RedisRateLimiter). The script runs under the {@code redis}
- * policy (ADR 0033): a Redis error, or the open circuit refusing the call, answers null and
- * DailyBudget counts in memory, so an outage does not add a timeout to every call.
+ * the key outlives its day in every time zone. The check against the limit, INCR and PEXPIRE run in
+ * one script, so a refused call adds nothing and a key is never left without an expiry (as
+ * RedisRateLimiter). The script runs under the {@code redis} policy (ADR 0033): a Redis error, or
+ * the open circuit refusing the call, answers null and DailyBudget counts in memory, so an outage
+ * does not add a timeout to every call.
  */
 public final class RedisCallCounter implements CallCounter {
 
   private static final Duration KEEP = Duration.ofDays(2);
 
+  /**
+   * KEYS: the count. ARGV: expiry in ms, limit. At the limit, answers count + 1 and adds nothing.
+   */
   private static final RedisScript<Long> INCREMENT =
       RedisScript.of(
           """
+          local used = tonumber(redis.call('GET', KEYS[1]) or '0')
+          if used >= tonumber(ARGV[2]) then return used + 1 end
           local count = redis.call('INCR', KEYS[1])
           if count == 1 then
             redis.call('PEXPIRE', KEYS[1], ARGV[1])
@@ -83,11 +89,16 @@ public final class RedisCallCounter implements CallCounter {
   }
 
   @Override
-  public Long increment(String name, LocalDate day) {
+  public Long increment(String name, LocalDate day, int limit) {
     try {
       return resilience.call(
           "redis",
-          () -> redis.execute(INCREMENT, List.of(key(name, day)), Long.toString(KEEP.toMillis())));
+          () ->
+              redis.execute(
+                  INCREMENT,
+                  List.of(key(name, day)),
+                  Long.toString(KEEP.toMillis()),
+                  Integer.toString(limit)));
     } catch (RuntimeException e) {
       return null;
     }

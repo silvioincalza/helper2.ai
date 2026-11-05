@@ -26,6 +26,8 @@ class RedisCallCounterIT {
 
   private static final LocalDate DAY = LocalDate.of(2026, 10, 27);
 
+  private static final int LIMIT = 10;
+
   @Autowired StringRedisTemplate redis;
 
   @Autowired Resilience resilience;
@@ -35,9 +37,9 @@ class RedisCallCounterIT {
     String name = "test-" + UUID.randomUUID();
     RedisCallCounter counter = new RedisCallCounter(redis, resilience);
 
-    assertThat(counter.increment(name, DAY)).isEqualTo(1);
-    assertThat(counter.increment(name, DAY)).isEqualTo(2);
-    assertThat(counter.increment(name, DAY.plusDays(1)))
+    assertThat(counter.increment(name, DAY, LIMIT)).isEqualTo(1);
+    assertThat(counter.increment(name, DAY, LIMIT)).isEqualTo(2);
+    assertThat(counter.increment(name, DAY.plusDays(1), LIMIT))
         .as("a new day, a new counter")
         .isEqualTo(1);
 
@@ -54,8 +56,8 @@ class RedisCallCounterIT {
     assertThat(counter.current(name, DAY))
         .as("no key yet: Redis answered, nothing used")
         .isEqualTo(0);
-    counter.increment(name, DAY);
-    counter.increment(name, DAY);
+    counter.increment(name, DAY, LIMIT);
+    counter.increment(name, DAY, LIMIT);
     assertThat(counter.current(name, DAY)).isEqualTo(2);
     assertThat(counter.current(name, DAY)).as("reading does not count").isEqualTo(2);
   }
@@ -80,12 +82,55 @@ class RedisCallCounterIT {
     assertThat(ledger.today()).containsExactly(new BudgetLedger.Reading(name, 2, 2L));
   }
 
+  /**
+   * A refused call adds nothing, so it cannot swallow a give-back: with a limit of 1, A takes the
+   * last call, B is refused, A is given back, and the call is free again.
+   */
+  @Test
+  void aRefusedCallLeavesTheCountSoAGiveBackFreesTheCall() {
+    java.time.Clock clock =
+        java.time.Clock.fixed(
+            DAY.atStartOfDay(java.time.ZoneOffset.UTC).toInstant(), java.time.ZoneOffset.UTC);
+    String name = "test-" + UUID.randomUUID();
+    RedisCallCounter counter = new RedisCallCounter(redis, resilience);
+    DailyBudget budget = new DailyBudget(1, clock, name, counter);
+
+    assertThat(budget.tryAcquire()).as("A takes the last call").isTrue();
+    assertThat(budget.tryAcquire()).as("B is refused").isFalse();
+    assertThat(counter.current(name, DAY)).as("B added nothing").isEqualTo(1);
+    assertThat(budget.giveBack(DAY, "a", 5)).isEqualTo(CallCounter.GiveBack.GIVEN_BACK);
+
+    assertThat(counter.current(name, DAY)).isEqualTo(0);
+    assertThat(budget.tryAcquire()).as("the call A gave back").isTrue();
+  }
+
+  /** Many replicas at once: exactly the limit gets through, and the count stops there. */
+  @Test
+  void concurrentCallsTakeExactlyTheLimit() {
+    String name = "test-" + UUID.randomUUID();
+    RedisCallCounter counter = new RedisCallCounter(redis, resilience);
+    List<Callable<Long>> calls =
+        IntStream.range(0, 16)
+            .<Callable<Long>>mapToObj(i -> () -> counter.increment(name, DAY, 3))
+            .toList();
+
+    List<Long> counts;
+    try (var pool = Executors.newVirtualThreadPerTaskExecutor()) {
+      counts = pool.invokeAll(calls).stream().map(RedisCallCounterIT::get).toList();
+    } catch (InterruptedException e) {
+      throw new IllegalStateException(e);
+    }
+
+    assertThat(counts.stream().filter(c -> c <= 3)).containsExactlyInAnyOrder(1L, 2L, 3L);
+    assertThat(counter.current(name, DAY)).isEqualTo(3);
+  }
+
   @Test
   void aCountIsGivenBackOnceAndItsSetExpiresWithTheCount() {
     String name = "test-" + UUID.randomUUID();
     RedisCallCounter counter = new RedisCallCounter(redis, resilience);
-    counter.increment(name, DAY);
-    counter.increment(name, DAY);
+    counter.increment(name, DAY, LIMIT);
+    counter.increment(name, DAY, LIMIT);
 
     assertThat(counter.giveBack(name, DAY, "q1", 5)).isEqualTo(CallCounter.GiveBack.GIVEN_BACK);
     assertThat(counter.giveBack(name, DAY, "q1", 5))
@@ -105,9 +150,9 @@ class RedisCallCounterIT {
     assertThat(counter.giveBack(name, DAY, "q0", 5))
         .as("nothing counted yet")
         .isEqualTo(CallCounter.GiveBack.NOTHING_COUNTED);
-    counter.increment(name, DAY);
-    counter.increment(name, DAY);
-    counter.increment(name, DAY);
+    counter.increment(name, DAY, LIMIT);
+    counter.increment(name, DAY, LIMIT);
+    counter.increment(name, DAY, LIMIT);
 
     counter.giveBack(name, DAY, "q1", 2);
     counter.giveBack(name, DAY, "q2", 2);
@@ -125,7 +170,7 @@ class RedisCallCounterIT {
     String name = "test-" + UUID.randomUUID();
     RedisCallCounter counter = new RedisCallCounter(redis, resilience);
     for (int i = 0; i < 3; i++) {
-      counter.increment(name, DAY);
+      counter.increment(name, DAY, LIMIT);
     }
     List<Callable<CallCounter.GiveBack>> twins =
         IntStream.range(0, 16)
@@ -142,7 +187,7 @@ class RedisCallCounterIT {
     assertThat(counter.current(name, DAY)).isEqualTo(2);
   }
 
-  private static CallCounter.GiveBack get(Future<CallCounter.GiveBack> f) {
+  private static <T> T get(Future<T> f) {
     try {
       return f.get();
     } catch (Exception e) {

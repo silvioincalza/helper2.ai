@@ -53,12 +53,12 @@ class RedisCallCounterTest {
     MovableClock clock = new MovableClock(Instant.parse("2026-10-26T10:00:00Z"));
     RedisCallCounter counter = new RedisCallCounter(redis, TestPolicies.redis(clock));
 
-    assertThat(counter.increment("guide", DAY)).isNull();
-    assertThat(counter.increment("guide", DAY)).isNull();
+    assertThat(counter.increment("guide", DAY, 10)).isNull();
+    assertThat(counter.increment("guide", DAY, 10)).isNull();
     assertThat(redis.calls).isEqualTo(1);
 
     clock.now = clock.now.plusSeconds(31);
-    assertThat(counter.increment("guide", DAY)).isNull();
+    assertThat(counter.increment("guide", DAY, 10)).isNull();
     assertThat(redis.calls).isEqualTo(2);
   }
 
