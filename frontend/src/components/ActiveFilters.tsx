@@ -76,7 +76,7 @@ export function ActiveFilters({
           </li>
         ))}
       </ul>
-      <button type="button" className="btn btn-link" onClick={() => onChange(clearFilters(state))}>
+      <button type="button" className="btn-text" onClick={() => onChange(clearFilters(state))}>
         {t('filters.clearAll')}
       </button>
     </div>

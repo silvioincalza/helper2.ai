@@ -71,8 +71,11 @@
   color: var(--muted);
 }
 
-/* A wide table scrolls inside its own box on a phone; the page never scrolls sideways. */
+/* A wide table scrolls inside its own box on a phone; the page never scrolls sideways. The box is the containing
+   block of what is positioned inside it (the sr-only text of the external links), so its overflow clips that too:
+   otherwise those spans are placed against the page and make it wider than the screen. */
 .v4-scroll {
+  position: relative;
   max-width: 100%;
   overflow-x: auto;
 }
@@ -182,36 +185,9 @@
   margin: 0;
 }
 
-/* Filter chips: Geist Mono pills, the picked one in ink. */
-.v4-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
+/* The filter chips of a list page (app.css) sit under the heading. */
+.v4-term .chips {
   margin: var(--space-4) 0 0;
-}
-.v4-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-height: var(--target-min);
-  padding: 0 var(--space-4);
-  font: 400 0.875rem/1 var(--font-mono);
-  color: var(--ink);
-  background: transparent;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-pill);
-  cursor: pointer;
-}
-.v4-chip:hover {
-  background: var(--surface);
-}
-.v4-chip[aria-pressed='true'] {
-  color: var(--bg);
-  background: var(--ink);
-  border-color: var(--ink);
-}
-.v4-chip__n {
-  opacity: 0.8;
 }
 
 /* A plain note on paper: who keeps the list, a quiet refresh line. */

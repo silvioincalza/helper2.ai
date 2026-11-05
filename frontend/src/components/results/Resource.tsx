@@ -15,7 +15,6 @@ import type { GuidePick } from '@/lib/selection';
 import { fromResults } from './fromResults';
 import { ResultDate } from './ResultDate';
 import { ResultFacts } from './ResultFacts';
-import './controls.css';
 import './resource.css';
 import { OpenButton } from './OpenButton';
 

@@ -1,7 +1,7 @@
 /*
- * Design v4 (ADR 0042): the header, the footer and Home, under `.v4`, and the shared v4 parts (`.v4-wrap`, `.v4-btn`,
- * `.v4-text-btn`). The tokens of tokens.css. Geist Mono for the logo, headings, controls, labels and meta lines; Geist
- * for running text.
+ * Design v4 (ADR 0042): the header, the footer and Home, under `.v4`, and the page column (`.v4-wrap`). The shared
+ * controls are in app.css. The tokens of tokens.css. Geist Mono for the logo, headings, controls, labels and meta
+ * lines; Geist for running text.
  */
 .v4 {
   font-family: var(--font-mono);
@@ -19,10 +19,10 @@
   letter-spacing: -0.02em;
   color: var(--ink);
 }
-.v4 a {
+.v4 a:where(:not(.btn, .chip, .btn-text)) {
   color: var(--accent-ink);
 }
-.v4 a:hover {
+.v4 a:where(:not(.btn, .chip, .btn-text)):hover {
   color: var(--ink);
 }
 /* The focus ring is a 3px ink outline, never the selected line (saffron underline, ink fill). */
@@ -36,56 +36,6 @@
   max-width: calc(var(--content-wide) + 2 * var(--space-4));
   margin: 0 auto;
   padding: 0 var(--space-4);
-}
-
-/* Controls: at least 44px, Geist Mono. */
-.v4-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  min-height: var(--target-min);
-  padding: 0 var(--space-4);
-  font: 500 0.9375rem/1 var(--font-mono);
-  color: var(--ink);
-  background: transparent;
-  border: 1px solid var(--ink);
-  border-radius: var(--radius-md);
-  text-decoration: none;
-  cursor: pointer;
-  transition: background var(--motion);
-}
-.v4 a.v4-btn {
-  color: var(--ink);
-}
-.v4-btn:hover {
-  background: var(--surface);
-}
-.v4-icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--target-min);
-  height: var(--target-min);
-  color: var(--ink);
-  background: transparent;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-}
-.v4-text-btn {
-  min-height: var(--target-min);
-  padding: 0;
-  font: 400 0.9375rem/1 var(--font-mono);
-  color: var(--ink-2);
-  background: none;
-  border: 0;
-  text-decoration: underline;
-  text-underline-offset: 4px;
-  cursor: pointer;
-}
-.v4-text-btn:hover {
-  color: var(--accent-ink);
 }
 
 /* ===== Logo ===== */
@@ -240,7 +190,7 @@
   align-items: flex-start;
   gap: var(--space-3);
 }
-.v4-menu__tools .v4-btn,
+.v4-menu__tools .btn,
 .v4-menu__tools .auth {
   width: 100%;
 }

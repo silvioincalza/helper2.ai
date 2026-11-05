@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import type { Freshness, SourceMode, ValueOrigin, Verification } from '@/api/types';
+import type { SourceMode, ValueOrigin, Verification } from '@/api/types';
 import { Icon, type IconName } from './Icon';
 
 export function ModeBadge({ mode }: { mode: SourceMode }) {
@@ -7,16 +7,6 @@ export function ModeBadge({ mode }: { mode: SourceMode }) {
   return (
     <span className={`badge mode mode-${mode.toLowerCase()}`} title={t(`mode.${mode}.hint`)}>
       {t(`mode.${mode}.label`)}
-    </span>
-  );
-}
-
-export function FreshnessBadge({ freshness }: { freshness: Freshness }) {
-  const { t } = useTranslation();
-  return (
-    <span className={`badge freshness freshness-${freshness.toLowerCase()}`}>
-      {freshness === 'STALE' && <Icon name="warn" />}
-      {t(`freshness.${freshness}`)}
     </span>
   );
 }

@@ -2,12 +2,12 @@
  * Shared components of the design (ADR 0040; docs/design/system/README.md, Components), prefix h2-. Imported by the components themselves, so a page that uses none of them loads none of it.
  */
 
-/* StatusPill: mono capitals in a pill; next and later are outlined. */
+/* StatusPill: Geist Mono capitals in a pill; next and later are outlined. */
 .h2-status-pill {
   display: inline-block;
   padding: 4px 8px;
   border-radius: var(--radius-pill);
-  font: 500 11px/1 var(--font-code);
+  font: 500 11px/1 var(--font-mono);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   white-space: nowrap;
@@ -168,7 +168,7 @@
   padding: var(--space-4) var(--space-5);
   margin-bottom: var(--space-4);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   background: var(--surface);
 }
 .h2-state > * {
@@ -181,7 +181,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font: 600 1rem/1.35 var(--font-body);
+  font: 600 1rem/1.35 var(--font-mono);
   letter-spacing: normal;
   color: var(--ink);
 }
@@ -198,8 +198,8 @@ h1.h2-state__title {
   align-items: center;
   gap: var(--space-2) var(--space-4);
 }
-.h2-state__next > .btn,
-.h2-state__next > a {
+/* A plain link as the next step is a 44px target too. */
+.h2-state__next > a:not(.btn) {
   min-height: var(--target-min);
   display: inline-flex;
   align-items: center;

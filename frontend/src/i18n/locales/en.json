@@ -304,14 +304,6 @@
   "servedFrom": {
     "STALE_CACHE": "Stale cache"
   },
-  "freshness": {
-    "LIVE": "Live",
-    "CACHED": "Cached",
-    "STALE": "Stale data",
-    "INDEXED": "Indexed",
-    "CURATED": "Curated",
-    "DEMO": "Demo"
-  },
   "mode": {
     "LIVE": {
       "label": "Live",

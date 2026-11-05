@@ -139,8 +139,7 @@ pages, Results and the resource page, and the text pages; this record says what 
    (`ResultDate`), one primary button (Open on host ↗), Save, and Set it up (outlined) only for what a user installs
    or runs. Then the pick, From the source, At a glance, the dates, "Where this information comes from" (folded: each
    source, its mode and when it was read) and the detail sections; its tables in Geist Mono with capital headers and
-   dashed rules. The shared buttons, chips, fields and state panels take the v4 look on Results and on this page
-   (`controls.css`).
+   dashed rules.
 9. **Text pages stay prose.** Mission, Privacy, Terms, Not found, Account and the sign-in page have no terminal look:
    Geist for headings and reading text, Geist Mono only for small interface labels (On this page, the date, the 404
    label, buttons), a column of about 68 characters with a line height of 1.65, lined up with the header (`text.css`,
@@ -189,12 +188,20 @@ pages, Results and the resource page, and the text pages; this record says what 
     on an error, the words and one line under the head that says so. Never a typed fallback number. Periods read in
     whole hours, days or months (`lib/duration.ts`), never shorter than the server keeps. What the API does not
     have stays typed: the 00:00 UTC reset, the counter lifetimes, logs, backups and usage totals.
-14. **Accessibility.** Every control is at least 44 px. The focus ring (3 px ink outline) never looks like the
+14. **Accessibility, and one set of controls.** The shared controls have one definition each, in `app.css` (badges,
+    the state panel and the status pill in `components/ui/ui.css`), and look the same on every page: Geist Mono, the
+    v4 radius and borders. Buttons: secondary (`.btn`, an outline on `surface`, like Ask the guide), primary
+    (`.btn-primary`, the saffron fill), ink (`.btn-ink`, the sign-in button), ghost (`.btn-ghost`, the outline with no
+    fill), danger (`.btn-danger`, a red outline; `.btn-danger-fill` to confirm), icon (`.btn-icon`) and text
+    (`.btn-text`, an underlined word). Chips (`.chip`) are pills, the picked one an ink fill. Fields are Geist Mono on
+    `surface` with the control border; checkboxes are ink. Hover always draws a line or a ring of 3:1 or more; a
+    disabled button is quiet, not faded. A contrast test checks every state in both themes
+    (`controlsContrast.test.ts`). Every control is at least 44 px. The focus ring (3 px ink outline) never looks like the
     selected line (saffron underline in the header, an ink folder tab in the tabs). The Search button is never
     disabled: with nothing to send it puts the cursor in the box. Key hints (`/`, `↵`) show only where there is a
     keyboard. Text and controls meet AA in light and dark (muted 7.5:1 and 8:1, links 5.5:1 and 8.7:1, control borders
     3.3:1 and 3.9:1). The axe test runs in both themes, on a wide screen and on a phone, on Home (with the menu open),
-    Results, the resource page, the list pages and the text pages.
+    Results, the resource page, the list pages (Saved, Sources, the back office) and the text pages.
 15. **One design, page by page, then version 3 removed.** Each page moved in its own pull request; no design flag.
     When the last one had moved, the version 3 font, its layout sizes (`maxw`, the 56 px box), its
     unused components and the `--v4-` prefix on the tokens went.

@@ -15,7 +15,7 @@ export default function NotFoundPage() {
       <p className="h2-label">{t('notFound.label')}</p>
       <h1>{t('notFound.title')}</h1>
       <p>{t('notFound.body')}</p>
-      <Link to="/" className="v4-btn">
+      <Link to="/" className="btn">
         {t('notFound.home')}
       </Link>
     </div>

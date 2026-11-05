@@ -141,10 +141,10 @@ export function Sources() {
               </p>
             )}
             {modes.length > 1 && (
-              <div className="v4-chips" role="group" aria-label={t('sources.filter')}>
+              <div className="chips" role="group" aria-label={t('sources.filter')}>
                 <button
                   type="button"
-                  className="v4-chip"
+                  className="chip"
                   aria-pressed={mode === null}
                   onClick={() => setMode(null)}
                 >
@@ -154,7 +154,7 @@ export function Sources() {
                   <button
                     key={m}
                     type="button"
-                    className="v4-chip"
+                    className="chip"
                     aria-pressed={mode === m}
                     onClick={() => setMode(m)}
                   >

@@ -154,7 +154,7 @@ function Account() {
         </p>
         {me.loginProviders.length > 0 && (
           <p>
-            <Link to="/signin" className="v4-btn">
+            <Link to="/signin" className="btn">
               {t('nav.signIn')}
             </Link>
           </p>
@@ -190,7 +190,7 @@ function Account() {
         <button
           ref={opener}
           type="button"
-          className="v4-btn v4-btn--danger"
+          className="btn btn-danger"
           onClick={() => setConfirming(true)}
           disabled={confirming}
         >
@@ -211,18 +211,13 @@ function Account() {
             <button
               ref={cancelButton}
               type="button"
-              className="v4-btn"
+              className="btn"
               onClick={cancel}
               disabled={busy}
             >
               {t('account.cancel')}
             </button>
-            <button
-              type="button"
-              className="v4-btn v4-btn--danger-fill"
-              onClick={confirm}
-              disabled={busy}
-            >
+            <button type="button" className="btn btn-danger-fill" onClick={confirm} disabled={busy}>
               {t('account.confirm')}
             </button>
           </div>
