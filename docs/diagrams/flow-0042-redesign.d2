@@ -2,7 +2,8 @@
 # radar and its legend, and the two lists (tables on a wide screen, tabs on a phone); the search box stays pinned; a
 # search opens the results; the guide starts on its own only for a question (4+ words), else Ask the guide.
 # Code: frontend/src/pages/Home.tsx, components/home/HomeRadar.tsx, radarLayout.ts, radarRotation.ts, radarClock.ts,
-#   useRadarMotion.ts, RadarLegend.tsx, TermList.tsx, HomeLists.tsx, HomeTabs.tsx, homeFeeds.ts, lib/v4Fields.ts, components/Layout.tsx (header, footer). Results are still v3 (one column comes next, see the roadmap).
+#   useRadarMotion.ts, RadarLegend.tsx, TermList.tsx, HomeLists.tsx, HomeTabs.tsx, homeFeeds.ts, lib/v4Fields.ts, components/Layout.tsx (header, footer),
+#   pages/HomePage.tsx, components/results/Results.tsx, ResultRow.tsx, ResultsSkeleton.tsx, Resource.tsx.
 # Source of truth: docs/adr/frontend/0042-redesign-design-system-v4.md, docs/design/system/README.md.
 # Render: cd docs/diagrams && d2 fmt flow-0042-redesign.d2 && d2 flow-0042-redesign.d2 flow-0042-redesign.svg
 
@@ -49,13 +50,16 @@ home: Home {
 phone: "Screen 720 px or less\nand scrolled 24 px?" {class: decision}
 fold: "Title folds away,\nbox stays pinned" {class: app}
 search: "Search: /search?q=…\nGET /api/v1/search" {class: ext}
-list: "One column: results,\nfilters, coverage" {class: app}
+loaded: "Results view loaded?\n(on demand)" {class: decision}
+skeleton: "Skeleton rows under\nthe h1 and the box" {class: app}
+list: "One column: All results ·\n$ helper2 search · N,\nrows, filters, coverage" {class: app}
+resource: "Resource page;\nBack keeps the place" {class: end}
 question: "A question?\n(4+ words)" {class: decision}
 ask: "Ask the guide bar\n(no model call)" {class: app}
 pressed: "Ask the guide pressed?" {class: decision}
 guide: "POST /api/v1/guide/stream (SSE)" {class: ext}
 outcome: "Outcome?" {class: decision}
-picks: "Up to 3 picks:\nAI-written reason (labelled),\nchecked quote" {class: end}
+picks: "Up to 3 picks, marked in their rows:\nAI-written reason (labelled),\nchecked quote" {class: end}
 clarify: "Needs one more detail" {class: end}
 nopick: "No pick: Ask without … / Rephrase" {class: end}
 noai: "Model not available:\ntop 3 by score, no AI label" {class: end}
@@ -67,7 +71,12 @@ home.bar -> phone
 phone -> fold: yes
 phone -> search: no, a search
 fold -> search: a search
-search -> list -> question
+search -> loaded
+loaded -> skeleton: no
+skeleton -> list: chunk arrives
+loaded -> list: yes
+list -> resource: a row
+list -> question
 question -> guide: yes {class: hot}
 question -> ask: no
 ask -> pressed

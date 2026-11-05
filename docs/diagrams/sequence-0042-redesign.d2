@@ -3,7 +3,7 @@
 # sight), and a short search that waits for Ask the guide.
 # Code: frontend/src/pages/Home.tsx, components/home/HomeRadar.tsx, radarClock.ts, useRadarMotion.ts, TermList.tsx, HomeTabs.tsx,
 #   homeFeeds.ts, components/guide/AiAnswersLeft.tsx,
-#   lib/v4Fields.ts. Results are still v3 (one column comes next, see the roadmap).
+#   lib/v4Fields.ts, pages/HomePage.tsx, components/results/Results.tsx, ResultRow.tsx, Resource.tsx.
 # Source of truth: docs/adr/frontend/0042-redesign-design-system-v4.md, docs/design/system/README.md.
 # Render: cd docs/diagrams && d2 fmt sequence-0042-redesign.d2 && d2 sequence-0042-redesign.d2 sequence-0042-redesign.svg
 
@@ -14,7 +14,8 @@ shape: sequence_diagram
 user: User {class: person}
 home: "Home\n(title, radar, pinned box,\nlists as tabs)" {class: app}
 api: "GET /api/v1/sources, /me,\n/recent, /events/upcoming" {class: ext}
-page: "Results\n(one column)" {class: app}
+page: "Results\n(one column, loaded on demand)" {class: app}
+resource: "Resource page" {class: app}
 search: "GET /api/v1/search" {class: ext}
 guide: "POST /api/v1/guide/stream\n(SSE)" {class: ext}
 
@@ -32,12 +33,16 @@ landing: Home {
 
 question: A question {
   user -> page: "/search?q=translate my newsletter\ninto Italian for free"
+  page -> user: "h1 and box at once, skeleton rows\nuntil the results view loads"
   page -> search: "search"
   search -> page: "results, facets, coverage"
   page -> user: "results at once; the guide's\nsteps where the picks sit"
   page -> guide: "4+ words: ask on its own" {class: hot}
   guide -> page: "picks: reason, quote, checks"
-  page -> user: "picks: AI-written reason labelled,\nquote checked word for word;\n2 of 3 AI answers left today"
+  page -> user: "picks marked in their rows: AI-written\nreason labelled, quote checked word for word;\n2 of 3 AI answers left today"
+  user -> resource: "a row"
+  resource -> user: "why the guide picked it; Open, Save"
+  user -> page: "Back: the same place in the list"
 }
 
 short: A few words {
