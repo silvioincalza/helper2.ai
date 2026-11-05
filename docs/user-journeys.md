@@ -182,6 +182,36 @@ Each item is a row: the kind, the resource, the reason, the date and the status 
 | Error | The same sentences in words, and one line under the head: "Some limits and periods could not be loaded, so this page states them without numbers. Reload the page to see them." |
 
 Numbers the server does not give (the 00:00 UTC reset, counter lifetimes, logs, backups, usage totals) stay typed in the text.
+## UJ-12 Support helper2, ads and the analytics question
+
+**Entry:** "Support helper2" in the footer; the analytics bar on the first visit; the "Sponsored" box on a search page
+([ADR 0057](adr/frontend/0057-monetisation.md)). Each part shows only while its setting is on.
+
+1. **Give.** The Support page says what running helper2 costs and offers the ways that are on: "Sponsor on GitHub"
+   (new tab) and "Give by card" (Stripe). The page says that both go to the provider's own page, and that giving
+   changes nothing on helper2.
+2. Stripe sends the giver back to `/support/thanks`: "Thank you", and a link back to search. No upsell.
+3. **The analytics question.** A bar at the bottom: "Can we count your visit with Google Analytics?", with "Reject" and
+   "Accept" the same size. Search works before an answer. The answer is kept; "Cookie settings" in the footer asks
+   again.
+4. **The ad.** A search page shows one "Sponsored" box above the results, with why it is there. While the search runs,
+   it shows a progress bar; the results replace the bar the moment they come. A new search shows a new ad. No ad next
+   to a guide answer.
+
+**Exit:** the provider's page, the link back to search, the box.
+
+| State | Behavior |
+|---|---|
+| Nothing configured | No Support link, no bar, no ad box: the site as before. |
+| Support page, no way on | "Giving is not open yet." |
+| Payment cancelled at Stripe | Stripe's page; back on the Support page, no message and no nagging. |
+| No ad to show | The box keeps its height and stays empty, so the results do not move. |
+| Search failed, or no source could search | No ad box: the error state is all the page shows. |
+| Ad or analytics blocked by the browser | Nothing breaks; search works the same. |
+
+**How we know it worked:** gifts and amounts from the providers' dashboards; views of `/support` and
+`/support/thanks` in Google Analytics (for visitors who accepted); p95 time to results and CLS before and after the ad
+slot. If either gets worse, the slot goes.
 
 ## Success criteria (product level)
 

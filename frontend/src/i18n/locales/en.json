@@ -54,7 +54,9 @@
     "terms": "Terms",
     "versionLabel": "Release notes for version {{version}} (opens in a new tab)",
     "place": "Switzerland · EU servers",
-    "noAds": "No ads."
+    "noTrackingAds": "No tracking ads.",
+    "support": "Support helper2",
+    "cookieSettings": "Cookie settings"
   },
   "home": {
     "name": "helper2.ai",
@@ -1227,7 +1229,7 @@
           "Honest coverage. We list every source we search and show what each one returned. We do not claim to search the whole web.",
           "No invented facts. We never fill in dates, popularity or other facts that no source stated.",
           "Open by default. The source code is public under the Apache-2.0 license.",
-          "Privacy first. No ads, no tracking, and we never sell data."
+          "Privacy first. Analytics only if you accept it, ads only without tracking, and we never sell data."
         ]
       },
       {
@@ -1253,7 +1255,7 @@
   "privacy": {
     "title": "Privacy",
     "updated": "Last updated: 5 November 2026",
-    "lede": "Helper2.ai collects as little as possible. You can search and ask the guide without an account. There are no ads, no analytics and no tracking cookies, and we never sell data.",
+    "lede": "Helper2.ai collects as little as possible. You can search and ask the guide without an account. Google Analytics runs only if you accept it. The one ad on search pages comes from EthicalAds, which uses no cookies and builds no profile. We never sell data.",
     "contactIntro": "Silvio Incalza, Switzerland, is responsible for this website. For any privacy question or request, write to",
     "sections": [
       {
@@ -1273,7 +1275,10 @@
           "Stored Tavily results, under a keyed hash of the question, not its text.",
           "Guide question fingerprints, only when similar-question reuse is on: a list of numbers (an embedding) computed from your guide question, kept with its cached answer so a later question with the same meaning can get that answer. Not linked to you or your account.",
           "Usage totals: how many searches we answer, how many had results from only some sources, and how many found nothing. They are counts only: never the text you typed, your IP address or your account.",
-          "Technical data: to limit abuse (rate limits and the number of guide questions per day), we count your requests under a keyed hash of your IP address that changes every day. The address itself is not stored with these counts, and the counts of two days cannot be linked. Only when our counter store is down, your IP address is kept in our server's memory for the length of the limit instead. Our servers and our web gateway also write technical logs, which can include your IP address and the pages you request. The address of a search page contains what you typed: your search words and, when you ask the guide, your question. So these logs can keep your search text next to your IP address. Do not type personal data into the search box. Our servers also record request traces: the timing of each step of a request, linked to its log lines by an ID, without your IP address or your search text. We keep these logs and traces for up to 3 months to keep the service running and secure, then delete them."
+          "Technical data: to limit abuse (rate limits and the number of guide questions per day), we count your requests under a keyed hash of your IP address that changes every day. The address itself is not stored with these counts, and the counts of two days cannot be linked. Only when our counter store is down, your IP address is kept in our server's memory for the length of the limit instead. Our servers and our web gateway also write technical logs, which can include your IP address and the pages you request. The address of a search page contains what you typed: your search words and, when you ask the guide, your question. So these logs can keep your search text next to your IP address. Do not type personal data into the search box. Our servers also record request traces: the timing of each step of a request, linked to its log lines by an ID, without your IP address or your search text. We keep these logs and traces for up to 3 months to keep the service running and secure, then delete them.",
+          "Google Analytics, only if you accept it: which pages you open (the page path and a fixed page name, never your search words, your guide question or the page title), your device and browser type, your approximate location, which Google derives from your IP address, and when you visit. Google signals and ad personalisation are off. You can change your answer at any time under \"Cookie settings\" in the footer.",
+          "The ad on search pages, when ads are on: your browser loads it from EthicalAds. EthicalAds receives your IP address, which it uses only to find your country and does not store, your browser type, the address of the page without your search words, and up to three topic words that its script picks from the results on the page, to choose a matching ad. It sets no cookies and builds no profile. There is no ad on pages with a guide answer.",
+          "Gifts, if you give through GitHub Sponsors or Stripe: the payment happens on their site, under their privacy policy. We receive what their dashboards show us: your name or user name, the amount, the date and, for Stripe, your e-mail address. We never see your card details."
         ]
       },
       {
@@ -1283,7 +1288,10 @@
           "Rate limits, technical logs, usage totals and the security cookie: our legitimate interest in keeping the service secure and available (Art. 6(1)(f) GDPR).",
           "Web search counters, guide question counters and stored results: legitimate interest in a free service at bounded cost (Art. 6(1)(f) GDPR).",
           "Reports you send: our legitimate interest in keeping the information on Helper2.ai correct (Art. 6(1)(f) GDPR).",
-          "Describing public AI resources with names, titles and short quotes or excerpts from their public pages and from web pages found by our searches: our legitimate interest in showing what a resource is and where each fact comes from (Art. 6(1)(f) GDPR)."
+          "Describing public AI resources with names, titles and short quotes or excerpts from their public pages and from web pages found by our searches: our legitimate interest in showing what a resource is and where each fact comes from (Art. 6(1)(f) GDPR).",
+          "Google Analytics and its cookies: your consent (Art. 6(1)(a) GDPR, and the consent rules for cookies). You can withdraw it at any time under \"Cookie settings\"; we then stop it and delete its cookies.",
+          "The ad on search pages: our legitimate interest in funding a free service (Art. 6(1)(f) GDPR).",
+          "Gifts: to handle the gift you chose to make, and our legal duty to keep accounting records (Art. 6(1)(b) and (c) GDPR)."
         ]
       },
       {
@@ -1292,7 +1300,9 @@
           "A session cookie, only when you sign in, so you stay signed in.",
           "A security cookie (XSRF-TOKEN) that protects forms against cross-site request forgery.",
           "Browser storage for your light or dark theme, the AI tool you chose in the setup guide and, if you are not signed in, your saved items. When you sign in, the page you were on is kept in this tab until you are back on it, then removed. The tab also keeps where you had scrolled on each page, so Back returns you there. When you open a result, the tab's history keeps, with that step, the address of your search and, if the guide picked the result, the pick: its rank, its AI-written reason, the quote it checked and the requirements from your question it checked, so the resource page can say why the guide picked it. All of this is gone when you close the tab. This data stays in your browser and is not sent to us, with one exception: when you sign in, the items you saved in this browser are moved to your account and removed from the browser.",
-          "All of these are strictly necessary for the site to work. We use no advertising, analytics or third-party cookies."
+          "Browser storage for your answer to the analytics question (h2.consent), so we do not ask again. It holds only yes or no and the date.",
+          "Google Analytics cookies (_ga and _ga_ followed by an ID), only if you accept: they let Google tell that two visits come from the same browser. They last up to 2 years. If you reject or withdraw your consent, we delete them.",
+          "All of these, except the Google Analytics cookies, are strictly necessary for the site to work. The ad sets no cookies, and we use no advertising cookies."
         ]
       },
       {
@@ -1306,6 +1316,10 @@
           "GitHub, when you choose to sign in with it.",
           "Network edge: every request to helper2.ai passes through Cloudflare (United States), which routes traffic to our servers. Cloudflare sees your IP address and the request.",
           "Transfers abroad: GitHub, Cloudflare and NVIDIA are certified under the Swiss-US and EU-US Data Privacy Framework and its UK Extension, so those transfers rely on that certification. Hugging Face, npm, arXiv and Tavily are not certified. We send them only your search text (and Tavily also public addresses of product pages), never your IP address or account data, and only because it is needed to give you the results you asked for (Art. 17(1)(b) FADP, Art. 49(1)(b) GDPR).",
+          "Google Analytics, only if you accept it: Google Ireland Limited and Google LLC (United States). Google keeps this data for 2 months.",
+          "EthicalAds, run by Read the Docs, Inc. (United States), when ads are on: the request for the ad on search pages.",
+          "Gifts: GitHub, Inc. (United States) for GitHub Sponsors, and Stripe Payments Europe, Limited (Ireland) for card gifts. Each one is responsible for the payment data it collects.",
+          "Transfers abroad for these: Google, GitHub and Stripe are certified under the Swiss-US and EU-US Data Privacy Framework, so those transfers rely on that certification. For EthicalAds we send only what loading the ad needs, and no account data.",
           "Hosting: our servers are in Germany (European Union)."
         ]
       },
@@ -1320,6 +1334,7 @@
           "When a product's facts (price, platforms, licence) are missing, we read up to 4 pages of the product's own website through Tavily, such as its home, pricing and download pages. We only read pages on the product's own site. Before an AI model reads the text, we remove hidden text and replace email addresses with \"[email]\" and phone numbers with \"[phone]\". We never store the raw page. We keep the cleaned text of the product's public pages (hidden text removed, email addresses and phone numbers replaced) for up to 24 hours in our cache, only so we can try again if describing the product fails, then it is deleted. We keep short quotes of up to 300 characters that prove a fact, each with a link to its page. Once a product is described, we keep for 30 days the page address with a fingerprint (a hash) of its text, so we do not read the same page twice.",
           "A fact taken from a product's own page is marked \"Self-declared by the vendor\": it is what the vendor says about itself. A fact is shown only with a quote that states it; without one it shows as \"Not stated\".",
           "Some values are not facts but estimates: who a resource is for and its technical level. An AI model estimates them from the public text, and we label them \"AI-estimated\" on the page and in our API. They can be wrong.",
+          "To search by meaning, we send each resource's title and description to the NVIDIA API catalog (United States) to compute its embedding. When NVIDIA rejects such a request, we log the error message it returns, cut to 200 characters, so we can see why; it can repeat parts of a resource's public title or description, never your search text (a failed search embedding logs only the status code). These logs are kept up to 3 months (see Retention).",
           "This data is about the resources. If a quote, title or excerpt names you, you can object or ask us to remove it: write to us at the address above."
         ]
       },
@@ -1351,7 +1366,8 @@
           "Quotes from public pages about AI resources: as long as we keep the source record they were read for, and never longer than we list the resource.",
           "Pages of a product's own website: the raw page is never stored. Their cleaned text: up to 24 hours, to try again. The page address and a fingerprint of its text: 30 days.",
           "Articles and news found by web search, LinkedIn articles and posts included, with their titles, excerpts and what the search said about them: 180 days after we last retrieved them. Product pages we accepted from a web search, with the same: as long as we list the product. LinkedIn company pages and events we accepted: as long as we list them. Pages waiting for our review: until we decide, then 180 days.",
-          "The search index of awesome lists and their section headings: as long as we list the list and the tool, and 30 days after a list was last read."
+          "Google Analytics data: 2 months at Google. Your answer to the analytics question: in your browser until you clear it.",
+          "Records of gifts: 10 years, as Swiss law requires for accounting records."
         ]
       },
       {
@@ -1405,6 +1421,14 @@
         "items": [
           "Helper2.ai links to websites, code, models and tools owned by others. We do not control them and are not responsible for their content, availability, licences or security.",
           "Your use of a linked resource is governed by its owner's terms and licence. Check the licence before you use any code or model."
+        ]
+      },
+      {
+        "title": "Ads and gifts",
+        "items": [
+          "Search pages can show one ad, marked \"Sponsored\". It sits above the results and is never part of them. Ads never change which results you see or their order, and there is never an ad next to a guide answer.",
+          "The guide's answers are written by AI and labelled as such. An ad is never written by our AI and never shown as an answer.",
+          "Gifts through GitHub Sponsors or Stripe are voluntary. They give no right to any service, feature or result, and they are not refunded except where the provider's terms or the law say so. A gift to helper2.ai is not a donation to a charity and is not tax-deductible."
         ]
       },
       {
@@ -1624,5 +1648,42 @@
     "whereFrom": "Where this information comes from",
     "readAt": "read {{date}}",
     "allSources": "All sources and their last check"
+  },
+  "consent": {
+    "title": "Can we count your visit with Google Analytics?",
+    "text": "If you accept, Google Analytics sets cookies to count which pages are visited and from which countries. It never receives your search words or guide questions. Search works the same whether you accept or not, and you can change your answer under \"Cookie settings\" in the footer.",
+    "more": "How we use it",
+    "reject": "Reject",
+    "accept": "Accept"
+  },
+  "sponsor": {
+    "label": "Sponsored",
+    "tag": "Sponsored",
+    "why": "Ads keep helper2 free. This one comes from EthicalAds: no tracking, no profile.",
+    "searching": "Searching the sources"
+  },
+  "support": {
+    "title": "Support helper2",
+    "lede": "Helper2.ai is free, with no account needed, and it stays that way. Running it costs money every day. If it saves you time, you can help pay for it.",
+    "costsTitle": "What it costs to run",
+    "costs": [
+      "The AI models that write the guide's answers and read the pages about each resource.",
+      "Web searches through Tavily, paid per search.",
+      "The servers in Germany, the database and the backups.",
+      "The time to add sources, check results and fix what breaks."
+    ],
+    "howTitle": "How to give",
+    "github": "Sponsor on GitHub",
+    "githubNote": "Monthly or one-off, through your GitHub account. GitHub takes no fee.",
+    "card": "Give by card",
+    "cardNote": "One-off, any amount, no account needed. The payment is handled by Stripe, which takes a small fee.",
+    "newTab": "(opens in a new tab)",
+    "leave": "Both buttons take you to the provider's own page. Nothing on helper2 changes when you give: no badge, no extra features, and we never ask you again.",
+    "closed": "Giving is not open yet.",
+    "privacyIntro": "What the payment providers receive is on the",
+    "privacyLink": "Privacy page.",
+    "thanksTitle": "Thank you",
+    "thanksBody": "Your support helps keep helper2 free and fast for everyone.",
+    "backHome": "Back to search"
   }
 }

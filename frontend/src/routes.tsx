@@ -63,6 +63,9 @@ export const routes: RouteObject[] = [
       { path: 'mission', lazy: textPage(() => import('@/pages/MissionPage')) },
       { path: 'privacy', lazy: textPage(() => import('@/pages/PrivacyPage')) },
       { path: 'terms', lazy: textPage(() => import('@/pages/TermsPage')) },
+      // Few visits: loaded on demand too (ADR 0057).
+      { path: 'support', lazy: page(() => import('@/pages/SupportPage')) },
+      { path: 'support/thanks', lazy: page(() => import('@/pages/SupportThanksPage')) },
       { path: '*', lazy: page(() => import('@/pages/NotFoundPage')) },
     ],
   },

@@ -30,7 +30,11 @@ class CatalogPropertiesBindingTest {
                   new CatalogProperties.Curated(true, Duration.ofMillis(1000)),
                   new CatalogProperties.Semantic(Duration.ofSeconds(3), 0.65, Duration.ofDays(7)),
                   new CatalogProperties.Indexer(
-                      Duration.ofSeconds(30), 50, Duration.ofSeconds(30), Duration.ofSeconds(15)),
+                      Duration.ofSeconds(30),
+                      50,
+                      5,
+                      Duration.ofSeconds(30),
+                      Duration.ofSeconds(15)),
                   // The test JVM turns the startup backfill off (build.gradle.kts); the yaml has
                   // true, checked below.
                   new CatalogProperties.Categories(false)));

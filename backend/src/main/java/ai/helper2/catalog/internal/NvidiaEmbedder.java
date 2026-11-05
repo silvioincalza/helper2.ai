@@ -2,7 +2,6 @@ package ai.helper2.catalog.internal;
 
 import ai.helper2.catalog.Embedder;
 import ai.helper2.platform.http.ObservedHttp;
-import ai.helper2.platform.llm.LlmPolicies;
 import ai.helper2.platform.resilience.CallRefused;
 import ai.helper2.platform.resilience.Resilience;
 import io.micrometer.observation.ObservationRegistry;
@@ -12,6 +11,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.BufferingClientHttpRequestFactory;
@@ -26,8 +26,8 @@ import org.springframework.web.client.RestClientResponseException;
  * https://docs.nvidia.com/nim/nemo-retriever/embedding/latest/use-the-api-openai.html Nemotron 3.5
  * Embed accepts any dimension from 128 to 2048 (Matryoshka: first N values, re-normalised); the
  * schema stores 1024, under the 2000 limit of a pgvector HNSW index. Every call runs under the
- * {@code llm-embed} circuit (ADR 0033): while the API is down, embeddings fail at once instead of
- * after their timeout.
+ * circuit it is given (ADR 0033: llm-embed for queries, llm-embed-index for the indexer): while the
+ * API is down, embeddings fail at once instead of after their timeout.
  */
 public class NvidiaEmbedder implements Embedder {
 
@@ -47,6 +47,7 @@ public class NvidiaEmbedder implements Embedder {
   private final String model;
   private final int dimensions;
   private final Resilience resilience;
+  private final String policy;
 
   /**
    * Observed like the source calls (ObservedHttp): {@code timeout} to connect, to wait for response
@@ -60,8 +61,9 @@ public class NvidiaEmbedder implements Embedder {
       int dimensions,
       Duration timeout,
       ObservationRegistry observations,
-      Resilience resilience) {
-    resilience.require(LlmPolicies.EMBED);
+      Resilience resilience,
+      String policy) {
+    resilience.require(policy);
     // Buffered, so the request carries a Content-Length: a streamed (chunked) body of 50 texts made
     // the API catalog hang until the read timeout, while one short query went through (27 Oct
     // 2026).
@@ -80,6 +82,7 @@ public class NvidiaEmbedder implements Embedder {
     this.model = model;
     this.dimensions = dimensions;
     this.resilience = resilience;
+    this.policy = policy;
   }
 
   @Override
@@ -101,7 +104,7 @@ public class NvidiaEmbedder implements Embedder {
     try {
       response =
           resilience.call(
-              LlmPolicies.EMBED,
+              policy,
               () ->
                   http.post()
                       .uri("/embeddings")
@@ -117,23 +120,51 @@ public class NvidiaEmbedder implements Embedder {
                       .retrieve()
                       .body(Response.class));
     } catch (CallRefused e) {
-      throw new EmbeddingFailure("embedding call refused: " + e.reason(), false);
+      throw new EmbeddingFailure("embedding call refused: " + e.reason(), FailureReason.REFUSED);
     } catch (RestClientResponseException e) {
-      boolean limited = e.getStatusCode().isSameCodeAs(HttpStatus.TOO_MANY_REQUESTS);
-      throw new EmbeddingFailure(
-          "embedding call failed: HTTP " + e.getStatusCode().value(), limited);
+      throw providerFailure(e, kind);
     } catch (RestClientException e) {
       String why =
           ObservedHttp.isDeadlineExceeded(e) ? "deadline exceeded" : e.getClass().getSimpleName();
-      throw new EmbeddingFailure("embedding call failed: " + why, false);
+      throw new EmbeddingFailure("embedding call failed: " + why, FailureReason.UNAVAILABLE);
     }
     return vectors(response, texts.size(), dimensions);
   }
 
+  /**
+   * The status, and for catalog texts the provider's reason from the body (NVIDIA's 500 says
+   * "service inference failed"; 5 Nov 2026). A body can echo the input, and a search query is the
+   * visitor's text, so a query's failure carries the status only.
+   */
+  private static EmbeddingFailure providerFailure(RestClientResponseException e, Kind kind) {
+    String message = "embedding call failed: HTTP " + e.getStatusCode().value();
+    if (kind == Kind.PASSAGE) {
+      String reason = shortened(e.getResponseBodyAsString());
+      if (!reason.isEmpty()) {
+        message += ": " + reason;
+      }
+    }
+    FailureReason reason =
+        e.getStatusCode().isSameCodeAs(HttpStatus.TOO_MANY_REQUESTS)
+            ? FailureReason.RATE_LIMITED
+            : FailureReason.PROVIDER_ERROR;
+    return new EmbeddingFailure(message, reason);
+  }
+
+  /** Untrusted text for one log line: control characters become spaces, at most 200 chars. */
+  static String shortened(String body) {
+    String oneLine = CONTROL.matcher(body == null ? "" : body).replaceAll(" ").strip();
+    return oneLine.length() <= MAX_REASON ? oneLine : oneLine.substring(0, MAX_REASON) + "…";
+  }
+
+  private static final Pattern CONTROL = Pattern.compile("[\\p{Cc}\\p{Cf}]+");
+  private static final int MAX_REASON = 200;
+
   /** Untrusted shape: every input needs exactly one vector of the expected size. */
   static List<float[]> vectors(Response response, int count, int dimensions) {
     if (response == null || response.data() == null || response.data().size() != count) {
-      throw new EmbeddingFailure("embedding response has the wrong number of vectors", false);
+      throw new EmbeddingFailure(
+          "embedding response has the wrong number of vectors", FailureReason.INVALID_RESPONSE);
     }
     Map<Integer, float[]> byIndex = new LinkedHashMap<>();
     response.data().stream()
@@ -143,7 +174,9 @@ public class NvidiaEmbedder implements Embedder {
     for (int i = 0; i < count; i++) {
       float[] v = byIndex.get(i);
       if (v == null || v.length != dimensions) {
-        throw new EmbeddingFailure("embedding response has a missing or wrong-sized vector", false);
+        throw new EmbeddingFailure(
+            "embedding response has a missing or wrong-sized vector",
+            FailureReason.INVALID_RESPONSE);
       }
       out.add(v);
     }

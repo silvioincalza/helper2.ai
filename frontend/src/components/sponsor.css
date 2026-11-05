@@ -1,0 +1,56 @@
+/* The one ad slot (ADR 0057). A fixed height: the results never move when the ad arrives or stays empty. */
+.h2-sponsor {
+  margin: 0 0 1rem;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  min-height: 9.5rem;
+  box-sizing: border-box;
+}
+.h2-sponsor__head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  align-items: baseline;
+  margin: 0 0 0.5rem;
+  font-size: 0.875rem;
+}
+.h2-sponsor__tag {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+}
+.h2-sponsor__progress {
+  height: 4px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: var(--border);
+  margin: 0 0 0.5rem;
+}
+/* Fills over the longest source deadline (6 s, ADR 0008); the results replace it as soon as they come. */
+.h2-sponsor__bar {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: var(--accent);
+  transform-origin: left;
+  animation: h2-sponsor-fill 6s linear forwards;
+}
+@keyframes h2-sponsor-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .h2-sponsor__bar {
+    animation: none;
+    opacity: 0.6;
+  }
+}
+.h2-sponsor__ad {
+  min-height: 6rem;
+}

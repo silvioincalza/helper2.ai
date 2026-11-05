@@ -78,6 +78,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0053](../adr/search/0053-category-filter.md) | [flow](flow-0053-category-filter.svg) | [sequence](sequence-0053-category-filter.svg) | how a resource gets its categories by code (finder, words, tags, type) and how a search filters and counts them, and a person filtering, opening a result and asking the guide on the filtered page. |
 | [0055](../adr/search/0055-search-inside-awesome-lists.md) | [flow](flow-0055-search-inside-awesome-lists.svg) | [sequence](sequence-0055-search-inside-awesome-lists.svg) | how an awesome list's words become tsvectors (cleaning, caps, one transaction per list) and how a search finds a tool only by them, at half weight, with "Found in". |
 | [0056](../adr/scout/0056-evidence-ladder.md) | [flow](flow-0056-evidence-ladder.svg) | [sequence](sequence-0056-evidence-ladder.svg) | the evidence ladder inside EnrichResource.attempt: when it reads the README and the product's own pages, the URL checks and budgets, and which run is saved. |
+| [0057](../adr/frontend/0057-monetisation.md) | [flow](flow-0057-monetisation.svg) | [sequence](sequence-0057-monetisation.svg) | what a public page loads for analytics and the ad slot, and a visitor who accepts and searches twice. |
 
 ## Colors
 
