@@ -9,6 +9,7 @@ import ai.helper2.catalog.internal.ResourceStore.DataOrigin;
 import ai.helper2.platform.ClusterLock;
 import ai.helper2.platform.cache.SharedCaches;
 import ai.helper2.platform.config.EmbeddingProperties;
+import ai.helper2.platform.llm.LlmPolicies;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.shared.ResourceType;
@@ -149,7 +150,8 @@ class CatalogConfiguration {
           embedding.dimensions(),
           embedding.timeout(),
           observations,
-          resilience);
+          resilience,
+          LlmPolicies.EMBED);
     }
 
     @Bean
@@ -223,9 +225,16 @@ class CatalogConfiguration {
               embedder.dimensions(),
               settings.timeout(),
               observations,
-              resilience);
+              resilience,
+              LlmPolicies.EMBED_INDEX);
       return new EmbeddingIndexer(
-          store, indexing, settings.batch(), Duration.ofMinutes(2), clock, registry);
+          store,
+          indexing,
+          settings.batch(),
+          settings.singlesAfterFailure(),
+          Duration.ofMinutes(2),
+          clock,
+          registry);
     }
 
     /**

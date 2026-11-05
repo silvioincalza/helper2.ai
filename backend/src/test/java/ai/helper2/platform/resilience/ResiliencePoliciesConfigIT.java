@@ -113,7 +113,7 @@ class ResiliencePoliciesConfigIT {
 
   @Test
   void modelCallsHaveACircuitOnlyAndGuideQuestionsABulkhead() {
-    for (String policy : List.of("llm-chat", "llm-embed")) {
+    for (String policy : List.of("llm-chat", "llm-embed", "llm-embed-index")) {
       assertThat(circuits.find(policy)).as(policy).isPresent();
       assertThat(bulkheads.find(policy))
           .as(policy + " is limited per question, not per call")
