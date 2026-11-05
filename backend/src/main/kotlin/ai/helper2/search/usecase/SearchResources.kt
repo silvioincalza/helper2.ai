@@ -467,8 +467,9 @@ constructor(
 
   /**
    * A source counts as queried when it was called, served from cache, or was left out because it is
-   * failing (paused, circuit open, busy). Left out on purpose (disabled, nothing to browse, no web
-   * credits) it does not count: its tile says why, and the results are not incomplete for that.
+   * failing (paused, circuit open, busy, quota counter down). Left out on purpose (disabled,
+   * nothing to browse, no web credits left) it does not count: its tile says why, and the results
+   * are not incomplete for that.
    */
   private fun wasExpectedToAnswer(status: SourceStatus): Boolean =
     status.outcome != SourceOutcome.SKIPPED ||
@@ -660,9 +661,16 @@ constructor(
   companion object {
     private const val MAX_TRANSLATION_CHARS = 120
 
-    /** Skip reasons that mean the source is failing, not left out on purpose. */
+    /**
+     * Skip reasons that mean the source or its quota counter is failing, not left out on purpose.
+     */
     private val UNAVAILABLE =
-      setOf(SkipReason.RATE_LIMIT_PAUSE, SkipReason.CIRCUIT_OPEN, SkipReason.BUSY)
+      setOf(
+        SkipReason.RATE_LIMIT_PAUSE,
+        SkipReason.CIRCUIT_OPEN,
+        SkipReason.BUSY,
+        SkipReason.QUOTA_UNAVAILABLE,
+      )
 
     /** The resilience policy of a search source. */
     @JvmStatic fun policy(d: SourceDescriptor) = "source-${d.id}"
