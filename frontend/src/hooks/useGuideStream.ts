@@ -3,7 +3,13 @@ import { useSearchParams } from 'react-router';
 import { api } from '@/api/client';
 import { useMe } from '@/context/MeContext';
 import type { GuideRequest, GuideResponse, GuideStep } from '@/api/types';
-import { askedQuestion, askedRefinement, refinedParams, type Refinement } from '@/lib/searchState';
+import {
+  askedQuestion,
+  askedRefinement,
+  parseSearchParams,
+  refinedParams,
+  type Refinement,
+} from '@/lib/searchState';
 
 export interface GuideStream {
   /** The question in the URL (`ask`), '' when there is none. */
@@ -31,15 +37,22 @@ interface Run {
 
 const fresh = (id: string): Run => ({ id, steps: [], answer: null, error: null, done: false });
 
-function guideRequest(question: string, { clarification, drop }: Refinement): GuideRequest {
+function guideRequest(
+  question: string,
+  { clarification, drop }: Refinement,
+  categories: string[],
+): GuideRequest {
   const body: GuideRequest = { request: question };
   if (clarification !== undefined && clarification !== null) body.clarification = clarification;
   if (drop.length) body.drop = drop;
+  // The page's category filter: the guide picks only in those categories (ADR 0053).
+  if (categories.length) body.categories = categories;
   return body;
 }
 
 /**
- * The guide's answer stream for the question and refinement in the URL (`ask`, `clar`, `drop`), so a retry and a
+ * The guide's answer stream for the question, refinement and category filter in the URL (`ask`, `clar`, `drop`,
+ * `category`), so a retry and a
  * reload ask the same thing. One request per distinct question, refinement and attempt; a change, or unmounting,
  * aborts the running one. The backend shares identical in-flight questions, so replacing one costs nothing extra.
  */
@@ -48,7 +61,11 @@ export function useGuideStream(): GuideStream {
   const question = askedQuestion(sp);
   const [attempt, setAttempt] = useState(0);
   // The request as text: the effect runs once per distinct request, not once per render.
-  const request = question ? JSON.stringify(guideRequest(question, askedRefinement(sp))) : '';
+  const request = question
+    ? JSON.stringify(
+        guideRequest(question, askedRefinement(sp), parseSearchParams(sp).filters.category),
+      )
+    : '';
   const id = `${attempt}:${request}`;
   const [run, setRun] = useState<Run>(() => fresh(id));
   const { refresh: refreshLimits } = useMe();

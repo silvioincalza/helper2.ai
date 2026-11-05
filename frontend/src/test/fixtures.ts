@@ -9,6 +9,7 @@ import type {
   ReviewEvidence,
   ReviewItem,
   SearchResponse,
+  Category,
   SourceInfo,
   SourceStatus,
 } from '@/api/types';
@@ -37,6 +38,7 @@ export function makeCard(over: Partial<ResultCard> = {}): ResultCard {
     techLevel: 'BEGINNER',
     useCases: ['translation'],
     tags: ['translation', 'docs'],
+    categories: ['translation'],
     compatibleWith: [],
     license: 'MIT',
     pricing: 'FREEMIUM',
@@ -120,6 +122,10 @@ export function makeSearch(over: Partial<SearchResponse> = {}): SearchResponse {
         { value: 'unknown', count: 1 },
       ],
       audience: [{ value: 'USE_AI', count: 1 }],
+      category: [
+        { value: 'translation', count: 1 },
+        { value: 'unknown', count: 2 },
+      ],
     },
     total: 1,
     page: 0,
@@ -295,7 +301,7 @@ export function makeRecent(over: Partial<RecentResponse> = {}): RecentResponse {
   };
 }
 
-/** GET /policy with the defaults of application.yaml (ADR 0051). */
+/** GET /policy with the defaults of application.yaml (ADR 0052). */
 export const POLICY: Policy = {
   guide: { maxCandidates: 24, maxPicks: 3 },
   dailyLimits: {
@@ -374,3 +380,10 @@ export function makeReviewEvidence(
     ...over,
   };
 }
+
+/** A few categories as GET /categories answers them (ADR 0053), in the configured order. */
+export const CATEGORIES: Category[] = [
+  { id: 'writing', name: 'Writing', shortName: 'Writing', family: 'everyday-apps' },
+  { id: 'translation', name: 'Translation', shortName: 'Translation', family: 'everyday-apps' },
+  { id: 'coding', name: 'Coding', shortName: 'Coding', family: 'developers' },
+];

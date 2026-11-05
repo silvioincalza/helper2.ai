@@ -20,7 +20,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://websummit.com?event=web-summit-lisbon-2026');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://websummit.com?event=web-summit-lisbon-2026');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://websummit.com?event=web-summit-lisbon-2026'), 'TAG', 'industry-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -50,7 +50,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://ai.engineer?event=ai-engineer-code-summit-2026');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://ai.engineer?event=ai-engineer-code-summit-2026');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://ai.engineer?event=ai-engineer-code-summit-2026'), 'TAG', 'industry-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -80,7 +80,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://aws.amazon.com/events/reinvent?event=aws-re-invent-2026');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://aws.amazon.com/events/reinvent?event=aws-re-invent-2026');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://aws.amazon.com/events/reinvent?event=aws-re-invent-2026'), 'TAG', 'industry-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -110,7 +110,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://nvidia.com/gtc/dc?event=gtc-washington-d-c-2026');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://nvidia.com/gtc/dc?event=gtc-washington-d-c-2026');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://nvidia.com/gtc/dc?event=gtc-washington-d-c-2026'), 'TAG', 'industry-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -140,7 +140,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://newyork.theaisummit.com?event=the-ai-summit-new-york-2026');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://newyork.theaisummit.com?event=the-ai-summit-new-york-2026');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://newyork.theaisummit.com?event=the-ai-summit-new-york-2026'), 'TAG', 'industry-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -170,7 +170,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://ces.tech?event=ces-2027');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://ces.tech?event=ces-2027');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://ces.tech?event=ces-2027'), 'TAG', 'industry-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -200,7 +200,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://qatar.websummit.com?event=web-summit-qatar-2027');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://qatar.websummit.com?event=web-summit-qatar-2027');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://qatar.websummit.com?event=web-summit-qatar-2027'), 'TAG', 'industry-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -230,7 +230,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://ai.engineer?event=ai-engineer-europe-2027');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://ai.engineer?event=ai-engineer-europe-2027');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://ai.engineer?event=ai-engineer-europe-2027'), 'TAG', 'industry-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -260,7 +260,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://mwcbarcelona.com?event=mwc-barcelona-2027');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://mwcbarcelona.com?event=mwc-barcelona-2027');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://mwcbarcelona.com?event=mwc-barcelona-2027'), 'TAG', 'industry-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -290,7 +290,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://humanx.co?event=humanx-las-vegas-2027');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://humanx.co?event=humanx-las-vegas-2027');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://humanx.co?event=humanx-las-vegas-2027'), 'TAG', 'industry-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -320,7 +320,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://nvidia.com/gtc?event=gtc-2027');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://nvidia.com/gtc?event=gtc-2027');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://nvidia.com/gtc?event=gtc-2027'), 'TAG', 'industry-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -350,7 +350,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://vancouver.websummit.com?event=web-summit-vancouver-2027');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://vancouver.websummit.com?event=web-summit-vancouver-2027');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://vancouver.websummit.com?event=web-summit-vancouver-2027'), 'TAG', 'industry-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -380,7 +380,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://computextaipei.com.tw/en/index.html?event=computex-2027');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://computextaipei.com.tw/en/index.html?event=computex-2027');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://computextaipei.com.tw/en/index.html?event=computex-2027'), 'TAG', 'industry-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -410,7 +410,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://snowflake.com/en/summit?event=snowflake-summit-27');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://snowflake.com/en/summit?event=snowflake-summit-27');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://snowflake.com/en/summit?event=snowflake-summit-27'), 'TAG', 'industry-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -440,7 +440,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://london.theaisummit.com?event=the-ai-summit-london-2027');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://london.theaisummit.com?event=the-ai-summit-london-2027');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://london.theaisummit.com?event=the-ai-summit-london-2027'), 'TAG', 'industry-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -470,7 +470,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://rio.websummit.com?event=web-summit-rio-2027');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://rio.websummit.com?event=web-summit-rio-2027');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://rio.websummit.com?event=web-summit-rio-2027'), 'TAG', 'industry-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -500,7 +500,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://databricks.com/dataaisummit?event=data-ai-summit-2027');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://databricks.com/dataaisummit?event=data-ai-summit-2027');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://databricks.com/dataaisummit?event=data-ai-summit-2027'), 'TAG', 'industry-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -530,7 +530,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://ai.engineer?event=ai-engineer-world-s-fair-2027');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://ai.engineer?event=ai-engineer-world-s-fair-2027');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://ai.engineer?event=ai-engineer-world-s-fair-2027'), 'TAG', 'industry-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -560,7 +560,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://raisesummit.com?event=raise-summit-2027');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://raisesummit.com?event=raise-summit-2027');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://raisesummit.com?event=raise-summit-2027'), 'TAG', 'industry-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -590,7 +590,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://ai4.com/vegas?event=ai4-2027');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://ai4.com/vegas?event=ai4-2027');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://ai4.com/vegas?event=ai4-2027'), 'TAG', 'industry-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -620,7 +620,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://humanx.co?event=humanx-amsterdam-2027');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://humanx.co?event=humanx-amsterdam-2027');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://humanx.co?event=humanx-amsterdam-2027'), 'TAG', 'industry-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)

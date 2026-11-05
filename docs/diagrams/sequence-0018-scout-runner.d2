@@ -43,7 +43,7 @@ runner -> runner: "EnrichmentBudget(20)"
 runner -> store: "save(RUNNING) per collector"
 runner -> store: "cursor(sourceId)"
 store -> runner: "checkpoint, resumeCursor,\npassStartedAt"
-runner -> col: "collect(checkpoint, resumeCursor, 1000)"
+runner -> col: "collect(cursor, 1000)"
 col -> col: "RunInterval.allowsPass?"
 col -> ext: "GET …?updated_since=checkpoint" {class: hot}
 ext -> col: "items + nextCursor"

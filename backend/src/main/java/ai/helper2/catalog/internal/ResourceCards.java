@@ -103,6 +103,8 @@ public class ResourceCards {
         Objects.requireNonNullElse(CanonicalUrl.of(row.canonicalUrl()), card.getCanonicalUrl());
     return Optional.of(
         card.withIdentity(id, canonical)
-            .withDiscovered(DateFact.observed(row.firstDiscoveredAt())));
+            .withDiscovered(DateFact.observed(row.firstDiscoveredAt()))
+            // The categories the catalog assigned (ADR 0053), the ones search filters by.
+            .withCategories(row.categories()));
   }
 }

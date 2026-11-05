@@ -33,7 +33,8 @@ data class RunSummary(
 /**
  * Collection position for one source. [checkpoint] = start of the last COMPLETE pass (next
  * `updated_since`). While a pass is unfinished, [resumeCursor] continues it and [passStartedAt]
- * becomes the checkpoint once it completes, so items updated mid-pass are not missed.
+ * becomes the checkpoint once it completes, so items updated mid-pass are not missed. A pass that
+ * failed or was deferred keeps [passStartedAt] with no [resumeCursor]: it is still open.
  */
 data class ScoutCursor(
   val checkpoint: String?,
@@ -87,6 +88,14 @@ enum class ScheduledRun {
 /** Outbound port: the catalog's indexing API. Returns resource ids whose source records changed. */
 fun interface CatalogIndex {
   fun index(results: List<MergedResult>, sourceId: String): List<UUID>
+}
+
+/**
+ * Outbound port: the catalog's search index of curated lists (ADR 0055). Replaces, for each list,
+ * what an earlier pass indexed; entries and lists not in the catalog are left out.
+ */
+fun interface ListIndex {
+  fun replace(lists: List<ListText>)
 }
 
 /**

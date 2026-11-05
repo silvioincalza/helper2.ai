@@ -35,6 +35,7 @@ export type IssueReportAccepted = S['IssueReportAccepted'];
 export type SourceInfo = S['SourceInfo'];
 export type Policy = S['Policy'];
 export type WebSearchLimits = S['WebSearchLimits'];
+export type Category = S['Category'];
 export type Me = S['Me'];
 export type Preferences = S['Preferences'];
 export type PreferencesChange = S['PreferencesChange'];

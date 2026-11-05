@@ -11,6 +11,7 @@ import { useRetry } from '@/hooks/useRetry';
 import { formatDate } from '@/lib/format';
 import { AdminEmpty, AdminHead, AdminLoading } from './AdminHead';
 import { RUN_TONE } from './adminModel';
+import { CategoryBackfill } from './CategoryBackfill';
 
 const COMMAND = 'helper2 scouts --runs';
 
@@ -136,6 +137,7 @@ export default function ScoutRunsPage() {
             {t('admin.recheckDone', recheck)}
           </p>
         )}
+        <CategoryBackfill />
       </div>
       {runs.loading && loaded === undefined ? (
         <AdminLoading command={COMMAND} />

@@ -58,7 +58,9 @@ are candidates in the admin review list.
    categories search a day, not 34 on the first one. A hash of the id spread them 2 to 9 a day, so the place in the
    list is used. Adding a category changes only the first day of categories that never ran. A run of a category that
    is not due is SKIPPED with the next day it is due ("Not due yet: next pass on 2026-11-07"); the admin's Run now
-   follows the same rule.
+   follows the same rule. The stagger only delays the first try. When a pass fails or meets the daily cap, the Scout
+   keeps it open (`ScoutCursor.passStartedAt`, no resume cursor), and an open pass runs on the next run whatever the
+   day. So a first try that fails is tried again the next day, not a week later.
 4. **How it asks.** Following Tavily's search guide:
    - one short query per search, never one long query for everything;
    - the query describes the product page in that page's own words ("serverless inference API for open-weight LLMs
@@ -144,12 +146,12 @@ are candidates in the admin review list.
     Tavily's `usage.credits`, or 2 (advanced) or 1 (basic) when the answer does not say. The metric is
     `helper2.tavily.credits{feature="scout-discovery"}`. Past `helper2.scout.daily-credits`
     (`H2_SCOUT_DAILY_CREDITS`, 40) the categories due that day are SKIPPED ("Daily Tavily credit cap of the
-    Scout reached") and try again the next day. When the counter cannot be read, the cap counts as reached.
-    LinkedIn ([0053](0053-linkedin-via-tavily.md)) counts on the same counters and cap, with the feature
-    `scout-linkedin`.
+    Scout reached") and try again the next day: the skip is `CollectedBatch.deferred`, so their pass stays open. When
+    the counter cannot be read, the cap counts as reached. LinkedIn ([0053](0053-linkedin-via-tavily.md)) counts on
+    the same counters and cap, with the feature `scout-linkedin`.
 11. **Failed searches.** A search that fails alone is logged and skipped; the others, already paid for, are kept. When
-    half or more of a category's searches fail (an outage, a circuit that opened mid-pass), its pass fails and its
-    checkpoint stays, so the next daily run searches the same pages again.
+    half or more of a category's searches fail (an outage, a circuit that opened mid-pass), its pass fails, its
+    checkpoint stays and its pass stays open, so the next daily run searches the same pages again.
 12. **Web sources are one predicate.** `WebSources.isWeb(id)` (`tavily`, `tavily-scout`, `course-scout`,
     `linkedin-scout` and every `discovery-*`) decides which titles are cleaned as page titles
     (`WebPageTitle.forSource`, `ResourceStore`) and which NEWS and ARTICLE records the web retention deletes
@@ -175,8 +177,11 @@ are candidates in the admin review list.
     per environment when any category has had no success for more than 8 days, and lists them.
 15. **Migration `V9`.** The records of the old single `tavily-discovery` collector move to `discovery-<first tag that
     is a category>` (or `discovery-ai-assistants` when none is), with their `categories`; open candidates name their
-    new collector the same way; the old source goes with its cursor and run history. No compatibility with the old id
-    is kept.
+    new collector the same way; the old source goes with its cursor and run history. A resource that still names the
+    old source after retention deleted its discovery record (another record, a review item or a report kept it)
+    moves to `discovery-ai-assistants`, so the delete of the old source does not hit `ON DELETE RESTRICT`. No
+    compatibility with the old id is kept. V9 was fixed in place before prod ran it; staging needs its new checksum
+    set by hand ([RESET-DATABASE.md](../../../deploy/k8s/RESET-DATABASE.md#a-migration-edited-after-staging-ran-it)).
 
 ## Consequences
 - The catalog grows in the areas no registry covers. No product enters it from the open web without a person; list
