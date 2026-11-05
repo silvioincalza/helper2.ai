@@ -133,7 +133,15 @@ async function send(method: string, url: string, opts: RequestOptions): Promise<
   return res;
 }
 
-async function request<T>(method: string, path: string, opts: RequestOptions = {}): Promise<T> {
+/**
+ * One JSON call to the API. Exported for reads that live in a page chunk and stay out of the first download (the text
+ * pages' GET /policy, ADR 0042 decision 13); everything else goes through [api].
+ */
+export async function request<T>(
+  method: string,
+  path: string,
+  opts: RequestOptions = {},
+): Promise<T> {
   const res = await send(method, absolute(`${API_BASE}${path}`, opts.query), opts);
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;

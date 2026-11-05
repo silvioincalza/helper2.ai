@@ -180,6 +180,15 @@ pages, Results and the resource page, and the text pages; this record says what 
     names say the response time or the age of the last check; the list counts are `total` on GET /recent and GET
     /events/upcoming (never fewer than the rows sent). One small reader (`lib/v4Fields.ts`) takes `newThisWeek` and
     `total` and says what the page does when a value is null: a dot of the default size, the rows as the count.
+    The Mission, Privacy and Terms pages take their numbers from GET /policy
+    ([0051](../operations/0051-policy-endpoint.md)): the guide's candidates and picks, the daily limits and the
+    retention periods. A locale sentence with numbers has two forms: `text` with `{{name}}` variables, and
+    `withoutNumbers`, the same sentence in words ("a daily limit", "for a limited time"). The page and the numbers
+    load side by side, read once per session (`hooks/usePolicy.ts`, its own chunk); the page waits for them at most
+    500 ms, so it usually opens with them in place and nothing moves. Late, it shows the words and then the numbers;
+    on an error, the words and one line under the head that says so. Never a typed fallback number. Periods read in
+    whole hours, days or months (`lib/duration.ts`), never shorter than the server keeps. What the API does not
+    have stays typed: the 00:00 UTC reset, the counter lifetimes, logs, backups and usage totals.
 14. **Accessibility.** Every control is at least 44 px. The focus ring (3 px ink outline) never looks like the
     selected line (saffron underline in the header, an ink folder tab in the tabs). The Search button is never
     disabled: with nothing to send it puts the cursor in the box. Key hints (`/`, `↵`) show only where there is a
@@ -225,7 +234,7 @@ pages, Results and the resource page, and the text pages; this record says what 
   on a hidden tab.
 - The API has the fields the drawings need: `newThisWeek` per source on GET /sources, `limits` on GET /me, and
   `total` on GET /recent and GET /events/upcoming (which also takes `days`). The Unknown count per facet is still open.
-- The initial JavaScript is 157.2 of 250 KiB gzip ([0025](0025-frontend-one-box.md)): Results load on demand, like
+- The initial JavaScript is 158.2 of 250 KiB gzip ([0025](0025-frontend-one-box.md)): Results load on demand, like
   the radar, the phone tabs, Sources, Saved, the back office and the text pages. A first visit to /search waits for
   that chunk behind the skeleton.
 - Results show one screen of rows and one place per result; comparing two results means opening both. A reload

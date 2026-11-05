@@ -2,11 +2,13 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { useTitle } from '@/hooks/useTitle';
 import { TextPage } from '@/components/TextPage';
+import { usePolicyText } from '@/hooks/usePolicy';
 import { PRIVACY_CONTACT } from '@/pages/PrivacyPage';
 
 export default function TermsPage() {
   const { t } = useTranslation();
   useTitle(t('nav.terms'));
+  const policy = usePolicyText();
   const contact = (
     <p>
       {t('terms.contactIntro')} <a href={`mailto:${PRIVACY_CONTACT}`}>{PRIVACY_CONTACT}</a>.
@@ -20,6 +22,8 @@ export default function TermsPage() {
   return (
     <TextPage
       i18nKey="terms.sections"
+      values={policy.values}
+      numbersUnavailable={policy.failed}
       head={
         <>
           <h1>{t('terms.title')}</h1>

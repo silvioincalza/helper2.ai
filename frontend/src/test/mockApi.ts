@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import { ANON, SOURCES, makeRecent, makeSearch } from './fixtures';
+import { ANON, POLICY, SOURCES, makeRecent, makeSearch } from './fixtures';
 
 export type Handler = (req: {
   url: URL;
@@ -29,6 +29,7 @@ export function mockApi(handlers: Record<string, Handler> = {}) {
   const all: Record<string, Handler> = {
     'GET /me': () => ANON,
     'GET /sources': () => SOURCES,
+    'GET /policy': () => POLICY,
     'GET /search': () => makeSearch(),
     'GET /recent': () => makeRecent(),
     'GET /events/upcoming': () => ({ items: [], generatedAt: '2026-10-27T09:00:00Z' }),
