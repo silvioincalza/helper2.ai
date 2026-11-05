@@ -86,7 +86,7 @@ One system for every feature. Start with [system/README.md](system/README.md) (p
 
 | Path | What |
 |---|---|
-| `tokens.json` | Colors (light and dark), type, spacing, radius, sizes, version 4. `frontend/src/styles/tokens.css` holds version 3 and, as `--v4-*`, version 4: the header, the footer and Home use version 4, the other pages version 3 until they move. |
+| `tokens.json` | Colors (light and dark), type, spacing, radius, sizes, version 4. `frontend/src/styles/tokens.css` holds the same tokens under plain names (`--font-mono`, `--font-body`, `--font-code`, `--box-height`). |
 | `components/<Name>/README.md` | Guidelines per component: Header, Omnibox, Button, Pill, Badge, ResultCard, FactList, GuidePick, Banner, SourceStatus, Footer, Cover |
 | `components/<Name>/preview.html` | Live preview markup (needs the artifact's generated `tokens.css`) |
 | `components/bundle.css` | The `h2-` component classes |

@@ -14,7 +14,7 @@
 }
 .h2-results__loading-line {
   margin: 0;
-  font: 400 0.8125rem/1.4 var(--v4-font-mono);
+  font: 400 0.8125rem/1.4 var(--font-mono);
   color: var(--muted);
 }
 .h2-skeleton {

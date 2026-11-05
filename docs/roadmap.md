@@ -172,9 +172,9 @@ Open items:
     A relative time needs the server's clock on GET /sources, or it goes wrong on a client with a wrong clock.
   - **Mission: section order.** The board puts how the guide answers between What we promise and How we mark AI
     text; the page shows it after the locale sections. Needs a way to place it among them.
-  - **Remove version 3** once the last page has moved: the v3 components and layout sizes, the v3 font (`--font-sans`,
-    `--font-display`), and the
-    `--v4-` prefix on the v4 sizes and fonts.
+  - **Shared controls in v4 everywhere.** `.btn`, `.chip`, the fields and `StatePanel` take the v4 look on Results
+    and the resource page (`controls.css`); on Saved, the back office, the sign-in parts and the guide they keep their
+    first look. Move them all at once, then drop `controls.css`.
   - **API fields:** `newThisWeek` on GET /sources, `limits` on GET /me and `total` on the recent and upcoming responses
     are in the API, on Home, in the Sources table and on the Account page. Still to use them: the account panel
     (`limits`).

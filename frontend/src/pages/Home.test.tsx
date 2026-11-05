@@ -21,7 +21,7 @@ describe('home (design v4)', () => {
     expect(screen.queryByText(/AI sources$/)).not.toBeInTheDocument();
     expect(await screen.findByText(/^3-5 of 13 sources at a time/)).toBeInTheDocument();
     expect(screen.getByText(/^One search across the world of AI/)).not.toHaveTextContent(/\d/);
-    // The 4-word rule comes from the code that applies it.
+    // The hint says what each key does: Enter searches, Shift+Enter asks the guide.
     expect(
       screen.getByText(/Enter searches\. For picks with a quote that proves them/),
     ).toBeInTheDocument();

@@ -1,11 +1,11 @@
-/* The shared version 3 controls (buttons, chips, fields, the state panels) in the v4 look on Results and the resource
-   page (ADR 0042, decision 11), until the version 3 components go (decision 10). 44px, Geist Mono, one saffron fill
-   for the primary action, the ink focus ring from v4.css. */
+/* The shared controls (buttons, chips, fields, the state panels) in the v4 look on Results and the resource page
+   (ADR 0042, decisions 7 and 8). Elsewhere they keep their first look until they move (roadmap). 44px, Geist Mono,
+   one saffron fill for the primary action, the ink focus ring from v4.css. */
 :is(.h2-results, .h2-res) .btn,
 :is(.h2-results, .h2-res) .btn-ghost {
   min-height: var(--target-min);
   padding: 0 var(--space-4);
-  font: 500 0.9375rem/1.2 var(--v4-font-mono);
+  font: 500 0.9375rem/1.2 var(--font-mono);
   color: var(--ink);
   background: transparent;
   border: 1px solid var(--border-strong);
@@ -34,7 +34,7 @@
 :is(.h2-results, .h2-res) .chip {
   min-height: var(--target-min);
   padding: 0 var(--space-3);
-  font: 400 0.875rem/1.2 var(--v4-font-mono);
+  font: 400 0.875rem/1.2 var(--font-mono);
   color: var(--ink);
   background: transparent;
   border: 1px solid var(--border-strong);
@@ -50,20 +50,20 @@
 }
 :is(.h2-results, .h2-res) :is(input:not([type='checkbox'], [type='radio']), select, textarea) {
   min-height: var(--target-min);
-  font: 400 0.9375rem/1.4 var(--v4-font-mono);
+  font: 400 0.9375rem/1.4 var(--font-mono);
   border-radius: var(--radius-md);
 }
 :is(.h2-results, .h2-res) :is(label, legend, .field) {
-  font-family: var(--v4-font-mono);
+  font-family: var(--font-mono);
 }
 :is(.h2-results, .h2-res) .h2-state {
   border-radius: var(--radius-md);
 }
 :is(.h2-results, .h2-res) .h2-state__title {
-  font-family: var(--v4-font-mono);
+  font-family: var(--font-mono);
 }
 :is(.h2-results, .h2-res) .badge {
-  font-family: var(--v4-font-mono);
+  font-family: var(--font-mono);
   border-radius: var(--radius-sm);
 }
 /* A date Helper2 saw, not one a source states (ResultDate). */

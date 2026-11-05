@@ -5,10 +5,6 @@ import { createBrowserRouter, RouterProvider } from 'react-router';
 // covers every weight; only the Latin file loads for English text, and vite.config.ts preloads it.
 import '@fontsource-variable/geist';
 import '@fontsource-variable/geist-mono';
-// Version 3 pages keep Space Grotesk until they move (ADR 0042, decision 8).
-import '@fontsource/space-grotesk/400.css';
-import '@fontsource/space-grotesk/500.css';
-import '@fontsource/space-grotesk/600.css';
 import './i18n';
 import { routes } from './routes';
 import './styles/tokens.css';

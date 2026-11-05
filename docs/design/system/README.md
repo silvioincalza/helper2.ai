@@ -2,7 +2,7 @@
 
 The design system for every part of Helper2.ai: the search box, results, the AI guide, New this week and Coming up, resource pages, saved resources, sign-in, the sources page and admin. Version 4, from the November 2026 redesign ([ADR 0042](../../adr/frontend/0042-redesign-design-system-v4.md)): minimal and editorial, warm paper with one saffron accent, one tech font for the interface and a calm font for reading. The reference is the redesign canvas, saved in [../redesign](../redesign). Every page, its states and the dark theme are drawn there.
 
-`frontend/src/styles/tokens.css` has the version 4 colours and names. The header, the footer, Home and the text pages (Mission, Privacy, Terms, Not found, Sign in, Account) run the version 4 layout, with its own sizes and fonts (`--v4-*`); the other pages still follow the version 3 layout, and move to it and to the two fonts page by page. The text pages stay prose: Geist for headings and reading text, Geist Mono only for small interface labels, no terminal look (`pages/text.css`).
+`frontend/src/styles/tokens.css` has the version 4 colours, sizes and fonts under plain names (`--font-mono` Geist Mono, `--font-body` Geist, `--font-code` the system monospace for code, `--box-height`). Every page runs the version 4 layout; version 3 is gone. The list pages (Sources, Saved, the back office, Results) use the terminal style. The text pages stay prose: Geist for headings and reading text, Geist Mono only for small interface labels, no terminal look (`pages/text.css`).
 
 ## Principles
 
@@ -130,7 +130,7 @@ Layout is flex and grid with `gap`. Side menus wrap above the content on phones 
 
 ## Components
 
-The redesign boards in [../redesign](../redesign) are the reference. The component folders below still show version 3.
+The redesign boards in [../redesign](../redesign) are the reference. The component folders below are the version 3 previews, kept as history.
 
 | Component | Used for |
 |---|---|
@@ -138,13 +138,12 @@ The redesign boards in [../redesign](../redesign) are the reference. The compone
 | **AccountPanel** | Under the account button: signed in with, searches left today, Your account, Sign out. A disclosure. |
 | **AdminHeader** | Ink band: "helper2.ai admin", VPN note, who is signed in. No public links. |
 | **Footer** | Logo, Mission, Sources, Privacy, Terms, GitHub, licence, the theme switch, the coverage line. |
-| **SearchBox** | Box and Search button. Pinned on Home; in the header elsewhere. |
+| **SearchBox** | Box, **Search** (primary, ↵) and **Ask the guide** (outline, ⇧↵; a 44px icon button on a phone). No word count decides anything. Pinned on Home; in the header elsewhere. |
 | **PinnedSearchBar** | The home box with hint, chips and legend; sticks under the header; compact once scrolled. |
 | **Radar** | See Radar. |
 | **HomeLists** | New this week, Coming up: one component, `TermList`. A `$ helper2 news · N` line (N = `total` from the API), `ls -l` columns, dashed rules, titles in Geist, the rest in Geist Mono. Wide: two tables (DATE · TYPE · TITLE · SOURCE, WHEN · TYPE · EVENT · WHERE), "on now" in `status-ok-ink`, `$ helper2 news --all · show all N` expands in place. Below 768px: a tablist `> new this week N | coming up N` (real tab buttons, 44px) with log rows. No terminal windows, no blinking cursor, no lines that print in. Rows open the resource page. Loading, empty and error (with Retry) are StatePanels. |
 | **ListPages** | Sources, Saved and the back office: the heading with `$ helper2 … · N` (N from the API), tables in Geist Mono with UPPERCASE column headers and dashed rules, names that are titles in Geist, a status as a coloured word with a glyph (✓ ! × ○) in the radar's colours. A wide table scrolls in its own box on a phone. Loading, empty and error as in HomeLists. |
 | **PickCard** | Rank, name, AI-written reason with its label and check note, the checked quote, Open ↗, Details, Save. |
-| **AskGuideBar** | On short searches: "Want a recommendation?" and **Ask the guide about "…"**. |
 | **GuideSteps** | The streamed steps while the guide works. |
 | **ResultRow** | Meta line, title, one-line description, "From source". The whole row is a link. |
 | **FiltersPanel** | Checkbox groups with counts and an Unknown bucket; Show N results; Remove all filters. |

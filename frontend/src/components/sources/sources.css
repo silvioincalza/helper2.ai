@@ -16,7 +16,7 @@
 }
 .v4 .h2-sources__step h3 {
   margin: 0;
-  font: 600 0.9375rem/1.35 var(--v4-font-mono);
+  font: 600 0.9375rem/1.35 var(--font-mono);
   letter-spacing: 0;
 }
 .h2-sources__step p {
@@ -26,7 +26,7 @@
   color: var(--ink-2);
 }
 .h2-sources__n {
-  font: 600 0.8125rem/1 var(--v4-font-mono);
+  font: 600 0.8125rem/1 var(--font-mono);
   color: var(--accent-ink);
 }
 .h2-sources__all {
@@ -38,7 +38,7 @@
   align-items: baseline;
   gap: var(--space-1) var(--space-4);
   margin: var(--space-3) 0 0;
-  font: 400 0.875rem/1.5 var(--v4-font-mono);
+  font: 400 0.875rem/1.5 var(--font-mono);
   color: var(--ink-2);
 }
 .h2-sources__radar {
@@ -58,7 +58,7 @@
 /* The pause line under a source's name (SourceNotes). */
 .h2-sources__table .h2-src-card__note {
   margin: var(--space-1) 0 0;
-  font: 400 0.75rem/1.4 var(--v4-font-mono);
+  font: 400 0.75rem/1.4 var(--font-mono);
   color: var(--status-warn-ink);
 }
 .h2-sources__table .h2-src-card__note.is-trying {

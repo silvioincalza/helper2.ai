@@ -35,7 +35,7 @@
   flex-wrap: wrap;
   gap: 0 var(--space-2);
   margin: 0;
-  font: 400 0.8125rem/1.5 var(--v4-font-mono);
+  font: 400 0.8125rem/1.5 var(--font-mono);
   color: var(--muted);
 }
 .h2-saved__meta > span + span::before {
@@ -48,7 +48,7 @@
 }
 .v4 .h2-saved__title {
   margin: 0;
-  font: 500 1.1875rem/1.3 var(--v4-font-body);
+  font: 500 1.1875rem/1.3 var(--font-body);
   letter-spacing: -0.01em;
   overflow-wrap: anywhere;
 }
@@ -71,7 +71,7 @@
   display: inline-flex;
   align-items: center;
   min-height: var(--target-min);
-  font: 400 0.875rem/1 var(--v4-font-mono);
+  font: 400 0.875rem/1 var(--font-mono);
 }
 @media (max-width: 560px) {
   .h2-saved__row {

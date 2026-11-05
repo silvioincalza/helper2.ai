@@ -16,10 +16,10 @@
 .h2-results .h2-picks__title,
 .h2-results .h2-picks__ai,
 .h2-results .h2-row__ai {
-  font-family: var(--v4-font-mono);
+  font-family: var(--font-mono);
 }
 .h2-results .h2-picks__line {
-  font-family: var(--v4-font-body);
+  font-family: var(--font-body);
 }
 /* One row of chips that scrolls sideways when it does not fit (phones), so the bar keeps its reserved height. */
 .h2-picks__chips {
@@ -45,7 +45,7 @@
   border-radius: var(--radius-md);
   background: var(--bg);
   color: var(--ink);
-  font: 500 0.875rem/1.2 var(--v4-font-mono);
+  font: 500 0.875rem/1.2 var(--font-mono);
   text-decoration: none;
   white-space: nowrap;
   max-width: min(18rem, 75vw);
@@ -60,7 +60,7 @@
   border-color: var(--accent);
 }
 .h2-pick-chip b {
-  font: 600 0.75rem/1 var(--v4-font-mono);
+  font: 600 0.75rem/1 var(--font-mono);
   color: var(--accent-ink);
 }
 /* The row "How the guide decided" comes with the answer: its height is kept from the first render (ADR 0040, 6). */
@@ -79,7 +79,7 @@
   background: none;
   cursor: pointer;
   color: var(--ink);
-  font: 500 0.9375rem/1.2 var(--v4-font-mono);
+  font: 500 0.9375rem/1.2 var(--font-mono);
   list-style: none;
 }
 .h2-fold-toggle::-webkit-details-marker {
@@ -119,14 +119,14 @@ details[open] > .h2-fold-toggle .icon {
 }
 .h2-results .h2-all__title {
   margin: 0;
-  font: 500 1.75rem/1.2 var(--v4-font-body);
+  font: 500 1.75rem/1.2 var(--font-body);
   letter-spacing: -0.03em;
 }
 .h2-all__title:focus:not(:focus-visible) {
   outline: none;
 }
 .h2-all__cmd {
-  font: 400 0.8125rem/1 var(--v4-font-mono);
+  font: 400 0.8125rem/1 var(--font-mono);
   letter-spacing: 0;
   color: var(--muted);
   white-space: nowrap;
@@ -142,20 +142,20 @@ details[open] > .h2-fold-toggle .icon {
 }
 .h2-results .h2-all__order {
   margin: 0;
-  font: 400 0.8125rem/1.4 var(--v4-font-mono);
+  font: 400 0.8125rem/1.4 var(--font-mono);
   color: var(--muted);
 }
 .h2-sort {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  font: 400 0.875rem/1 var(--v4-font-mono);
+  font: 400 0.875rem/1 var(--font-mono);
   color: var(--muted);
 }
 .h2-sort select {
   height: var(--target-min);
   padding: 0 var(--space-2);
-  font: 400 0.875rem/1 var(--v4-font-mono);
+  font: 400 0.875rem/1 var(--font-mono);
   color: var(--ink);
   background: var(--surface);
   border: 1px solid var(--border-strong);
@@ -173,7 +173,7 @@ details[open] > .h2-fold-toggle .icon {
   align-items: center;
   min-height: var(--target-min);
   padding: 0 var(--space-3);
-  font: 400 0.875rem/1 var(--v4-font-mono);
+  font: 400 0.875rem/1 var(--font-mono);
   color: var(--ink-2);
   text-decoration: none;
 }
@@ -189,7 +189,7 @@ details[open] > .h2-fold-toggle .icon {
   align-items: baseline;
   flex-basis: 100%;
   margin: 0;
-  font: 400 0.875rem/1.5 var(--v4-font-body);
+  font: 400 0.875rem/1.5 var(--font-body);
   color: var(--ink-2);
 }
 .h2-coverage .icon {
@@ -214,7 +214,7 @@ details[open] > .h2-fold-toggle .icon {
 .h2-type-tab {
   min-height: var(--target-min);
   padding: 0 var(--space-3);
-  font: 400 0.875rem/1 var(--v4-font-mono);
+  font: 400 0.875rem/1 var(--font-mono);
   color: var(--ink-2);
   background: transparent;
   border: 0;
@@ -264,7 +264,7 @@ details[open] > .h2-fold-toggle .icon {
   margin: 0;
 }
 .h2-hints__label {
-  font: 400 0.8125rem/1.4 var(--v4-font-mono);
+  font: 400 0.8125rem/1.4 var(--font-mono);
   color: var(--muted);
 }
 
@@ -279,7 +279,7 @@ details[open] > .h2-fold-toggle .icon {
   padding: 0;
   border: 0;
   background: none;
-  font-family: var(--v4-font-mono);
+  font-family: var(--font-mono);
 }
 .h2-results .filter-groups {
   display: grid;
@@ -291,7 +291,7 @@ details[open] > .h2-fold-toggle .icon {
   padding: 0;
 }
 .h2-results .filter-legend {
-  font: 600 0.75rem/1.3 var(--v4-font-mono);
+  font: 600 0.75rem/1.3 var(--font-mono);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
@@ -299,7 +299,7 @@ details[open] > .h2-fold-toggle .icon {
 .h2-results .filter-group li {
   min-height: var(--target-min);
   align-items: center;
-  font: 400 0.875rem/1.3 var(--v4-font-mono);
+  font: 400 0.875rem/1.3 var(--font-mono);
 }
 .h2-filters > .v4-btn,
 .h2-drawer__body > .v4-btn {
@@ -344,7 +344,7 @@ details[open] > .h2-fold-toggle .icon {
 }
 .h2-drawer__title {
   margin: 0;
-  font: 600 1rem/1.2 var(--v4-font-mono);
+  font: 600 1rem/1.2 var(--font-mono);
 }
 .h2-drawer__body {
   flex: 1;
@@ -357,7 +357,7 @@ details[open] > .h2-fold-toggle .icon {
   gap: var(--space-4);
 }
 .h2-drawer .filter-legend {
-  font: 600 0.75rem/1.3 var(--v4-font-mono);
+  font: 600 0.75rem/1.3 var(--font-mono);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -406,7 +406,7 @@ details[open] > .h2-fold-toggle .icon {
 .h2-results .h2-row__meta,
 .h2-results .h2-row__from,
 .h2-results .h2-row__checked {
-  font: 400 0.8125rem/1.4 var(--v4-font-mono);
+  font: 400 0.8125rem/1.4 var(--font-mono);
   color: var(--muted);
 }
 .h2-row__type {
@@ -423,7 +423,7 @@ details[open] > .h2-fold-toggle .icon {
 }
 .h2-results .h2-row__title {
   align-self: flex-start;
-  font: 500 1.3125rem/1.3 var(--v4-font-body);
+  font: 500 1.3125rem/1.3 var(--font-body);
   letter-spacing: -0.02em;
   color: var(--ink);
   text-decoration: none;
@@ -448,7 +448,7 @@ details[open] > .h2-fold-toggle .icon {
 }
 .h2-results .h2-row__text,
 .h2-results .h2-row__reason {
-  font: 400 1rem/1.6 var(--v4-font-body);
+  font: 400 1rem/1.6 var(--font-body);
   color: var(--ink-2);
 }
 .h2-row__text.is-clamped {
@@ -486,7 +486,7 @@ details[open] > .h2-fold-toggle .icon {
 }
 .h2-results .tl-month {
   margin: 0;
-  font: 600 1.0625rem/1.4 var(--v4-font-mono);
+  font: 600 1.0625rem/1.4 var(--font-mono);
   color: var(--accent-ink);
 }
 .tl-group > .tl-unknown {
@@ -532,7 +532,7 @@ details[open] > .h2-fold-toggle .icon {
 }
 .h2-results .tl-date,
 .h2-results .tl-meta {
-  font: 400 0.8125rem/1.4 var(--v4-font-mono);
+  font: 400 0.8125rem/1.4 var(--font-mono);
   color: var(--muted);
 }
 .h2-results .tl-date {
@@ -541,7 +541,7 @@ details[open] > .h2-fold-toggle .icon {
 }
 .h2-results .tl-title {
   align-self: flex-start;
-  font: 500 1.1875rem/1.3 var(--v4-font-body);
+  font: 500 1.1875rem/1.3 var(--font-body);
   color: var(--ink);
   text-decoration: none;
 }
@@ -550,7 +550,7 @@ details[open] > .h2-fold-toggle .icon {
   text-underline-offset: 3px;
 }
 .h2-results .tl-text {
-  font: 400 1rem/1.55 var(--v4-font-body);
+  font: 400 1rem/1.55 var(--font-body);
   color: var(--ink-2);
 }
 
@@ -561,7 +561,7 @@ details[open] > .h2-fold-toggle .icon {
 }
 .h2-results .h2-results__fan {
   margin: 0 0 var(--space-2);
-  font: 500 0.75rem/1.4 var(--v4-font-mono);
+  font: 500 0.75rem/1.4 var(--font-mono);
   color: var(--muted);
 }
 .h2-results .is-stale {

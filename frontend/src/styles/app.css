@@ -10,7 +10,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   font-size: 1rem;
   line-height: 1.55;
   min-height: 100vh;
@@ -32,7 +32,7 @@ h3 {
 }
 h1,
 h2 {
-  font-family: var(--font-display);
+  font-family: var(--font-body);
   font-weight: 400;
   line-height: 1.1;
 }
@@ -59,7 +59,7 @@ a:hover {
   color: var(--accent-deep);
 }
 code {
-  font-family: var(--font-mono);
+  font-family: var(--font-code);
   font-size: 0.85em;
 }
 .muted {
@@ -94,12 +94,6 @@ code {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
-}
-.container {
-  width: 100%;
-  max-width: var(--maxw);
-  margin: 0 auto;
-  padding: 0 var(--space-4);
 }
 .main {
   flex: 1;
@@ -164,9 +158,6 @@ code {
   }
 }
 /* text pages (mission, privacy) */
-.text-page {
-  max-width: 68ch;
-}
 .text-section {
   margin-top: var(--space-5);
 }
@@ -300,7 +291,6 @@ textarea {
   color: var(--danger);
 }
 .verif-conflicting,
-.served-stale_cache,
 .freshness-stale {
   border-color: var(--not-stated);
   color: var(--not-stated);
@@ -379,11 +369,6 @@ textarea {
 }
 
 /* one page, one box */
-.one-page {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5);
-}
 .one-box {
   display: flex;
   flex-direction: column;
@@ -475,7 +460,7 @@ textarea {
 }
 .setup-facts code,
 .setup-settings code {
-  font-family: var(--font-mono);
+  font-family: var(--font-code);
   overflow-wrap: anywhere;
 }
 .setup-settings {
@@ -515,7 +500,7 @@ textarea {
   color: #e6e4f2;
   border-radius: var(--radius-lg);
   padding: var(--space-4);
-  font-family: var(--font-mono);
+  font-family: var(--font-code);
   font-size: 0.875rem;
   line-height: 1.6;
   white-space: pre-wrap;
@@ -548,7 +533,7 @@ textarea {
 }
 .setup-section-h {
   margin: 0;
-  font-family: var(--font-mono);
+  font-family: var(--font-code);
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -601,21 +586,6 @@ textarea {
   .setup-step-code {
     flex-direction: column;
   }
-}
-.skeleton-row {
-  height: 3rem;
-  border-bottom: 1px solid var(--border);
-  background: linear-gradient(90deg, var(--surface), var(--surface-tint), var(--surface));
-  background-size: 200% 100%;
-  /* Three passes (4.8 s), then still: nothing moves on its own for more than 5 s (ADR 0042, decision 6). */
-  animation: shimmer 1.6s linear 3;
-}
-.btn-icon {
-  min-width: 2.75rem;
-  min-height: 2.75rem;
-  justify-content: center;
-  font-size: 1.25rem;
-  line-height: 1;
 }
 
 .searchbox {
@@ -731,16 +701,6 @@ textarea {
 .interpretation {
   margin: var(--space-2) 0;
 }
-@keyframes shimmer {
-  to {
-    background-position: -200% 0;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .skeleton-row {
-    animation: none;
-  }
-}
 .table-wrap {
   overflow-x: auto;
   padding: 0 var(--space-4) var(--space-3);
@@ -796,7 +756,7 @@ tbody th {
   padding: var(--space-2) var(--space-3);
   background: var(--quote-bg);
   border-radius: var(--radius-md);
-  font-family: var(--font-display);
+  font-family: var(--font-body);
   font-size: 1.06rem;
   color: var(--ink);
 }
@@ -853,7 +813,7 @@ tbody th {
   border-radius: var(--radius-lg);
 }
 .filter-legend {
-  font-family: var(--font-mono);
+  font-family: var(--font-code);
   font-size: 0.75rem;
   font-weight: 500;
   letter-spacing: 0.06em;
@@ -868,18 +828,7 @@ input[type='radio'] {
   border-radius: var(--radius-lg);
 }
 
-.section-head {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  max-width: 46rem;
-}
-.section-head h2,
-.section-head p {
-  margin: 0;
-}
-
-/* ===== Redesign 2026-10 (design v3): warm paper, saffron accent, Space Grotesk headings on the pages still on v3 ===== */
+/* ===== Shared controls and parts: warm paper, saffron accent ===== */
 h1,
 h2 {
   font-weight: 500;
@@ -924,7 +873,7 @@ h2 {
   padding: 0 var(--space-5);
 }
 .enter-key {
-  font-family: var(--font-mono);
+  font-family: var(--font-code);
   font-size: 0.75rem;
   border-radius: 6px;
   padding: 1px 5px;
@@ -1001,7 +950,7 @@ h2 {
   overflow-wrap: anywhere;
 }
 .proof-n {
-  font-family: var(--font-mono);
+  font-family: var(--font-code);
   font-size: 0.7rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1055,7 +1004,7 @@ h2 {
   margin: 0;
   background: transparent;
   padding: 0;
-  font-family: var(--font-mono);
+  font-family: var(--font-code);
   font-size: 0.9rem;
   line-height: 1.6;
   color: #d4d2e4;
@@ -1239,7 +1188,7 @@ input[type='search']::-webkit-search-cancel-button {
 }
 .searchbox-slash {
   flex: none;
-  font-family: var(--font-mono);
+  font-family: var(--font-code);
   font-size: 0.8rem;
   color: var(--muted);
   border: 1px solid var(--border-strong);
@@ -1260,7 +1209,7 @@ input[type='search']::-webkit-search-cancel-button {
   flex: none;
   align-self: flex-end;
   margin-bottom: var(--space-3);
-  font-family: var(--font-mono);
+  font-family: var(--font-code);
   font-size: 0.75rem;
   color: var(--muted);
   white-space: nowrap;
@@ -1300,7 +1249,7 @@ input[type='search']::-webkit-search-cancel-button {
 
 /* The text the server writes into #root for crawlers (ADR 0050). People see it only until the app starts. */
 #root > .h2-prerender {
-  max-width: var(--maxw);
+  max-width: calc(var(--content-wide) + 2 * var(--space-5));
   margin: 0 auto;
   padding: 32px 16px;
   color: var(--ink);

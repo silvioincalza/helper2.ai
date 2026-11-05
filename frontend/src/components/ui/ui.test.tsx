@@ -8,22 +8,6 @@ import { RetryButton, StatePanel } from './StatePanel';
 import { ProofQuote } from './ProofQuote';
 import { SourceTiles } from './SourceTiles';
 import { StatusPill } from './StatusPill';
-import { TypeTag } from './TypeTag';
-
-describe('TypeTag', () => {
-  it('names the type in words, with the tone of its type group', async () => {
-    const { container } = render(
-      <p>
-        <TypeTag type="MCP_SERVER" /> <TypeTag type="LIBRARY" /> <TypeTag type="DATASET" />
-      </p>,
-    );
-    expect(screen.getByText('MCP server')).toHaveClass('h2-type-tag', 'h2-type-tag--mcp');
-    // A library shares the paper colours (design system v3).
-    expect(screen.getByText('Library')).toHaveClass('h2-type-tag--paper');
-    expect(screen.getByText('Dataset')).toHaveClass('h2-type-tag--other');
-    expect(await axeViolations(container)).toEqual([]);
-  });
-});
 
 describe('StatusPill', () => {
   it('says the status in words; the tone only repeats it', async () => {

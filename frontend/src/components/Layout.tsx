@@ -335,7 +335,7 @@ export function Layout() {
   const { t } = useTranslation();
   const { pathname } = useLocation();
   const [sp] = useSearchParams();
-  // Home is design v4 and spans the full width (the radar, the pinned box); the other pages keep the v3 column.
+  // Home spans the full width (the radar, the pinned box); the other pages sit in the header's column.
   const home = showsHome(pathname, sp);
   return (
     <>
@@ -346,7 +346,7 @@ export function Layout() {
       <ScrollRestoration />
       <RouteFocus />
       <Header />
-      <main id="main" tabIndex={-1} className={home ? 'main main--v4' : 'container main'}>
+      <main id="main" tabIndex={-1} className={home ? 'main main--v4' : 'v4-wrap main'}>
         <SignInReturn />
         <Outlet />
       </main>
