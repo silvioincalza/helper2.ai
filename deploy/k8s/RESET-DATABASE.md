@@ -163,3 +163,22 @@ after startup; rerun the `resource` count after an hour to see the catalog grow.
 
 Migrations are forward-only from here: a schema change is a new `V2__…`, never an edit of `V1__schema.sql`
 ([ADR 0004](../../docs/adr/foundation/0004-persistence-and-provenance.md)).
+
+## A migration edited after staging ran it
+
+The one exception: a migration that prod has not run yet can be fixed in place. Staging ran the old text, so
+Flyway sees a different checksum, the new pod fails validation at startup and the rollout keeps the old pod. Set
+the new checksum on staging **before** the CD run of the merge deploys it, with the app left as it is. Get the
+number from Flyway (`ChecksumCalculator`), not by hand.
+
+```bash
+NS=helper2-staging
+kubectl -n $NS exec postgres-0 -- psql -U helper2 -d helper2 -v ON_ERROR_STOP=1 \
+  -c "UPDATE flyway_schema_history SET checksum = <new checksum> WHERE version = '<version>'"
+```
+
+The edited text itself does not run again on staging. If its fix matters there, run the fixed statements by hand
+too. Done so far:
+
+- `V9__discovery_categories.sql` (resources left on the old `tavily-discovery` source move to
+  `discovery-ai-assistants`): checksum `1952058211`, was `670831987`.

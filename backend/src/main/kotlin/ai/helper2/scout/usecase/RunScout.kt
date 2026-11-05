@@ -379,7 +379,14 @@ class RunScout(
   ): RunSummary {
     val d = collector.descriptor
     val cursor = store.cursor(d.id) ?: ScoutCursor(null, null, null)
-    val batch = collector.collect(cursor.checkpoint, cursor.resumeCursor, maxItemsPerRun)
+    val batch =
+      try {
+        collector.collect(cursor, maxItemsPerRun)
+      } catch (e: RuntimeException) {
+        keepPassOpen(d.id, cursor, running.startedAt)
+        throw e
+      }
+    if (batch.deferred) keepPassOpen(d.id, cursor, running.startedAt)
     if (batch.notDue) return notDueRun(running, batch.skipReason)
     val changed = index(d, batch.hits)
     indexListsQuietly(d.id, batch.lists)
@@ -416,6 +423,20 @@ class RunScout(
     if (candidates.isEmpty()) return
     checkNotNull(review) { "$sourceId proposed candidates but no review list is configured" }
       .propose(sourceId, candidates)
+  }
+
+  /**
+   * A pass that failed or was deferred stays open: its start is saved, so the next run tries it
+   * again even when its interval says otherwise (a staggered first pass, ADR 0051), and its
+   * checkpoint, once it completes, is this start. Losing this save only delays the retry.
+   */
+  private fun keepPassOpen(sourceId: String, cursor: ScoutCursor, started: Instant) {
+    if (cursor.passStartedAt != null) return
+    try {
+      store.saveCursor(sourceId, cursor.copy(passStartedAt = started.toString()))
+    } catch (e: RuntimeException) {
+      log.warn("keeping the pass of $sourceId open failed: ${e.javaClass.simpleName}")
+    }
   }
 
   /**

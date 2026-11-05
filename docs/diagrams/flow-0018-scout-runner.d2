@@ -35,9 +35,11 @@ each: For each collector (isolated) {
   direction: down
   enabled: "Collector enabled?" {class: decision}
   skipped: "SKIPPED\n\"Disabled in configuration\"" {class: end}
-  collect: "collect(checkpoint, resumeCursor,\nmax-items-per-run 1000)" {class: app}
+  collect: "collect(cursor,\nmax-items-per-run 1000)" {class: app}
   due: "Interval passed or\npass unfinished?" {class: decision}
   notdue: "SKIPPED\n\"Not due yet (run interval)\"" {class: end}
+  deferred: "SKIPPED with its reason\n(deferred: daily credit cap)" {class: end}
+  open: "Pass stays open:\nsave passStartedAt (if none),\nno resume cursor" {class: data}
   index: "Merge hits, CatalogIndex.index\n→ changed resource ids" {class: app}
   cands: "Batch has candidates?" {class: decision}
   propose: "CandidateReview.propose(sourceId,\ncandidates): one review item per\npage not proposed before" {class: data}
@@ -54,6 +56,8 @@ each: For each collector (isolated) {
   enabled -> collect: yes
   collect -> due
   due -> notdue: no
+  due -> open: "due, but deferred"
+  open -> deferred
   due -> index: yes
   index -> cands
   cands -> propose: yes
@@ -68,7 +72,8 @@ each: For each collector (isolated) {
   stop -> stopped: yes
   stopped -> ok
   enrich -> ok: "no id or\nbudget left"
-  collect -> failed: "exception" {class: config}
+  collect -> open: "exception" {class: config}
+  open -> failed: "exception" {class: config}
   index -> failed: "exception" {class: config}
   propose -> failed: "exception" {class: config}
 }

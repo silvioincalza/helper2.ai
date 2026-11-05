@@ -33,7 +33,8 @@ data class RunSummary(
 /**
  * Collection position for one source. [checkpoint] = start of the last COMPLETE pass (next
  * `updated_since`). While a pass is unfinished, [resumeCursor] continues it and [passStartedAt]
- * becomes the checkpoint once it completes, so items updated mid-pass are not missed.
+ * becomes the checkpoint once it completes, so items updated mid-pass are not missed. A pass that
+ * failed or was deferred keeps [passStartedAt] with no [resumeCursor]: it is still open.
  */
 data class ScoutCursor(
   val checkpoint: String?,
