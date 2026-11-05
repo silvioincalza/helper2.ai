@@ -113,7 +113,7 @@ and how many web credits the day has used. Two sources can describe the same res
 - `backend/src/main/kotlin/ai/helper2/search/SourceHealth.kt` — last outcome and recent response time per source.
 - `backend/src/main/kotlin/ai/helper2/search/usecase/ListSources.kt` — the Sources page list with its live numbers.
 - `backend/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java`, `ResourceStore.java` —
-  `DiscoveredResources`, `discoveredSince`; `V4__resource_first_discovered_idx.sql`.
+  `DiscoveredResources`, `discoveredSince`; `V6__resource_first_discovered_idx.sql`.
 - `backend/src/main/java/ai/helper2/search/config/SearchConfiguration.java` — executor, ordering, properties.
 - `backend/src/main/resources/application.yaml` (`resilience4j.*`) — the `source-<id>` policies.
 - `backend/src/main/java/ai/helper2/search/cache/RedisSearchCache.java` — Redis adapter on the `redis` policy.
