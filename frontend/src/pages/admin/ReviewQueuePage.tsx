@@ -63,7 +63,8 @@ function nextAfter(list: ReviewItem[], id: string): string | undefined {
  * style (ADR 0042), `$ helper2 review --open · N` with N the matching items on the server. Status, kind and page live
  * in the address, so the overview can link into a filtered queue and Back works. The selected item shows its details,
  * its evidence (ADR 0045) and the decision, with an optional note. Keys work only while focus is in the queue
- * (WCAG 2.1.4): j and k move, x picks, a accepts, r rejects, n goes to the note, ? lists them. After a decision the
+ * (WCAG 2.1.4): j and k move, x picks, a accepts, r rejects, n goes to the note, ? lists them. A focused checkbox
+ * selects its row, so a key typed on it acts on that row. After a decision the
  * next item is selected and takes focus, and a polite status says what is left. Picked open items can be decided
  * together from the bar under the list (ResolveReviewItems): the server decides each on its own and leaves open what
  * it may not accept in bulk; the items that failed stay picked.
@@ -163,7 +164,7 @@ export default function ReviewQueuePage() {
 
   /**
    * Decides the picked items together. The items that failed stay picked, so the reason is easy to check; the list
-   * reloads and the selected row takes focus.
+   * reloads and the selected row takes focus. When the request itself fails, the list reloads too and every pick stays.
    */
   const resolveMany = async (decision: Decision, text: string | undefined) => {
     if (busy || picked.size === 0) return;
@@ -181,7 +182,9 @@ export default function ReviewQueuePage() {
       focusAfterLoad.current = true;
       items.reload();
     } catch {
+      // The server decides each item on its own, so some may be decided already: reload, and keep the picks.
       setActionError({ kind: 'failed' });
+      items.reload();
     } finally {
       setBusy(false);
     }
@@ -324,6 +327,7 @@ export default function ReviewQueuePage() {
                             aria-label={t('admin.bulk.pick', { reason: it.reason })}
                             aria-keyshortcuts="x"
                             onChange={() => toggle(it)}
+                            onFocus={() => setSelectedId(it.id)}
                           />
                         )}
                       </td>

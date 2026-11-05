@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReviewBulkResult, ReviewItem } from '@/api/types';
 import { ADMIN, makeReviewEvidence } from '@/test/fixtures';
@@ -60,7 +60,7 @@ describe('Feature: deciding several review items at once (ADR 0045)', () => {
     expect(bar()).toHaveTextContent('1 selected');
     expect(box(1)).toHaveAttribute('aria-keyshortcuts', 'x');
     // x on the box itself toggles it too.
-    box(1).focus();
+    act(() => box(1).focus());
     await userEvent.keyboard('x');
     expect(box(1)).not.toBeChecked();
   });
@@ -161,6 +161,47 @@ describe('Feature: deciding several review items at once (ADR 0045)', () => {
     );
     expect(await screen.findByText('The action failed. Please try again.')).toBeInTheDocument();
     expect(box(1)).toBeChecked();
+  });
+
+  it('Scenario: a request that fails halfway reloads the list, so a decided item is not shown as open', async () => {
+    let items = [item(1), item(2)];
+    const m = mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/review-items': () => ({ items, total: items.length }),
+      'GET /admin/review-items/*': () => makeReviewEvidence(items[0] ?? item(1)),
+      'POST /admin/review-items/resolutions': () => {
+        items = [item(2)];
+        return problem(500, 'Server error');
+      },
+    });
+    renderApp('/admin/review');
+    await screen.findByRole('region', { name: 'Item 1' });
+    await userEvent.click(box(1));
+    await userEvent.click(box(2));
+    await userEvent.click(within(bar()).getByRole('button', { name: 'Reject' }));
+    await userEvent.click(
+      within(await screen.findByRole('dialog')).getByRole('button', { name: 'Reject 2' }),
+    );
+    expect(await screen.findByText('The action failed. Please try again.')).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Item 1' })).toBeNull());
+    expect(
+      m.calls.filter((c) => c.method === 'GET' && c.path === '/admin/review-items').length,
+    ).toBeGreaterThan(1);
+    expect(box(2)).toBeChecked();
+  });
+
+  it('Scenario: a key typed on the box of another row acts on that row, not on the selected one', async () => {
+    const m = queue();
+    renderApp('/admin/review');
+    await screen.findByRole('region', { name: 'Item 1' });
+    act(() => box(2).focus());
+    await userEvent.keyboard('x');
+    expect(box(2)).toBeChecked();
+    expect(box(1)).not.toBeChecked();
+    await screen.findByRole('region', { name: 'Item 2' });
+    await userEvent.keyboard('r');
+    await waitFor(() => expect(m.calls.some((c) => c.method === 'PUT')).toBe(true));
+    expect(m.calls.find((c) => c.method === 'PUT')?.path).toContain(item(2).id);
   });
 
   it('Scenario: a new filter clears the picked items; Clear does too', async () => {
