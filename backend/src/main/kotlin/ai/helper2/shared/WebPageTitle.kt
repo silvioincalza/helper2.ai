@@ -19,13 +19,6 @@ package ai.helper2.shared
 data class WebPageTitle(val title: String, val description: String?) {
 
   companion object {
-    /**
-     * The sources whose titles are HTML page titles: Tavily's live search, the Scout's Tavily
-     * queries, Tavily discovery and course discovery.
-     */
-    @JvmField
-    val SOURCES: Set<String> = setOf("tavily", "tavily-scout", "tavily-discovery", "course-scout")
-
     private val SPACES = Regex("[\\s\\u00a0\\u2007\\u202f]+")
     private val SEPARATORS = listOf(" | ", " - ", " · ", " — ", " – ")
     private val GITHUB_REPOSITORY =
@@ -56,7 +49,7 @@ data class WebPageTitle(val title: String, val description: String?) {
      */
     @JvmStatic
     fun forSource(sourceId: String?, title: String, url: CanonicalUrl?): String =
-      if (sourceId in SOURCES) of(title, url?.host).title else title
+      if (WebSources.isWeb(sourceId)) of(title, url?.host).title else title
 
     private fun repository(title: String): WebPageTitle? {
       val m = GITHUB_REPOSITORY.matchEntire(title.removeSuffix(GITHUB_SUFFIX)) ?: return null

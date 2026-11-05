@@ -64,6 +64,19 @@
 .h2-sources__table .h2-src-card__note.is-trying {
   color: var(--muted);
 }
+/* The discovery categories (ADR 0051): a group of rows per family, headed like the table's caption. */
+.v4-term .h2-sources__family th[scope='rowgroup'] {
+  padding-top: var(--space-5);
+  font: 600 0.75rem/1.3 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+/* Health and legal: not advice. In the ink colour, not muted, so it is read. */
+.v4-term .h2-src-notice {
+  margin-top: var(--space-1);
+  color: var(--ink-2);
+}
 @media (max-width: 1000px) {
   .h2-sources__steps {
     grid-template-columns: repeat(2, minmax(0, 1fr));

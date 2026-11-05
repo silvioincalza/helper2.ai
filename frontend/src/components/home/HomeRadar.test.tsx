@@ -178,15 +178,48 @@ describe('Feature: the radar works like a navigation radar (ADR 0042, decision 4
     expect(tones).toMatch(/v4-dot--answering/);
   });
 
-  it('Scenario: a dot that is off is hidden from screen readers and the keyboard', () => {
+  it('Scenario: only the dots on the radar are in the page; one fading out is hidden from screen readers', () => {
     const { container } = render(<Page />);
     advance(3 * INTRO_MS + 50);
-    const off = container.querySelectorAll('.v4-radar__dots li:not(.is-on)');
-    expect(off).toHaveLength(external.length - 3);
-    for (const li of off) {
+    expect(container.querySelectorAll('.v4-radar__dots li')).toHaveLength(3);
+    // Up to 5, then the oldest leaves and fades out.
+    advance(3 * STEP_MS);
+    const leaving = container.querySelectorAll('.v4-radar__dots li.is-leaving');
+    expect(leaving.length).toBeGreaterThan(0);
+    for (const li of leaving) {
       expect(li).toHaveAttribute('aria-hidden', 'true');
       expect(li).toHaveAttribute('inert');
     }
+  });
+
+  it('Scenario: with 47 sources the live ones, the collectors and the categories take turns', () => {
+    const categories = Array.from({ length: 34 }, (_, i) => ({
+      ...external.find((s) => s.mode !== 'LIVE')!,
+      id: `discovery-c${i}`,
+      shortName: `Category ${i}`.slice(0, 12),
+      family: 'developers' as const,
+    }));
+    const many = [...external, ...categories];
+    render(<Page sources={many} />);
+    const seen = new Set<string>();
+    const groups = { live: 0, index: 0, discovery: 0 };
+    let before: string[] = [];
+    for (let i = 0; i < 150; i++) {
+      advance(i < 3 ? INTRO_MS : STEP_MS);
+      const now = shown();
+      for (const id of now.filter((x) => !before.includes(x))) {
+        seen.add(id);
+        const s = many.find((x) => x.id === id)!;
+        groups[s.mode === 'LIVE' ? 'live' : s.family ? 'discovery' : 'index']++;
+      }
+      before = now;
+    }
+    // Categories come on as well as the others; the groups take turns, not 34 to 6.
+    expect(seen.size).toBeGreaterThan(external.length);
+    const arrivals = Object.values(groups);
+    expect(Math.max(...arrivals) - Math.min(...arrivals)).toBeLessThanOrEqual(
+      Math.max(...arrivals) / 3,
+    );
   });
 
   it('Scenario: while the search box has focus the clock stops: beam and dots hold still', () => {

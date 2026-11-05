@@ -10,7 +10,7 @@ function candidateItem(details: string) {
         id: '55555555-5555-5555-8555-555555555555',
         kind: 'RESOURCE_CANDIDATE',
         status: 'OPEN',
-        reason: 'New PRODUCT (Self-hosted) found by tavily-discovery: Open WebUI',
+        reason: 'New PRODUCT (Self-hosted) found by discovery-self-hosted: Open WebUI',
         details,
         resourceId: null,
         resourceTitle: null,
@@ -28,7 +28,7 @@ describe('admin: resource candidates in the review queue', () => {
       'GET /admin/review-items': () =>
         candidateItem(
           JSON.stringify({
-            sourceId: 'tavily-discovery',
+            sourceId: 'discovery-self-hosted',
             url: 'https://openwebui.com/',
             title: 'Open WebUI',
             type: 'PRODUCT',

@@ -86,7 +86,10 @@ the guide work long before that, and what makes the wait feel long is the first 
    - `Helper2EmbeddingIndexerStalled`: no successful indexer batch for 30 min; `Helper2EmbeddingBacklogStuck`:
      backlog above 0 for 3 h on the replica that indexes;
    - `Helper2ScoutCollectorStale`: a collector's last success older than its run interval plus a day (2 days;
-     `tavily-scout` 6, `course-scout` 8), over a 9-day lookback so a deploy does not lose the gauge;
+     `tavily-scout` 6, `course-scout` 8), over a 9-day lookback so a deploy does not lose the gauge; the discovery
+     categories are left out;
+   - `Helper2DiscoveryStale`: one alert per environment when any discovery category (`discovery-*`) has had no
+     success for more than 8 days; the description lists them ([0051](../scout/0051-tavily-discovery.md));
    - `Helper2GuidePicksFromLowRanks`: more than 20% of the day's kept picks, and at least 3, from search rank 9+
      (`helper2.guide.picks{rank="9+"}`), the first sign of content poisoning ([0015](../guide/0015-ai-guide-evidence-gate.md));
    - `Helper2GuideFirstUsefulSlow`: the p95 of `helper2.guide.first_useful` above its 8 s target for 15 min, above

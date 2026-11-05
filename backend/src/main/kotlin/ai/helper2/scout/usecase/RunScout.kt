@@ -376,7 +376,7 @@ class RunScout(
     val d = collector.descriptor
     val cursor = store.cursor(d.id) ?: ScoutCursor(null, null, null)
     val batch = collector.collect(cursor.checkpoint, cursor.resumeCursor, maxItemsPerRun)
-    if (batch.notDue) return notDueRun(running)
+    if (batch.notDue) return notDueRun(running, batch.skipReason)
     val changed = index(d, batch.hits)
     proposeCandidates(d.id, batch.candidates)
     store.saveCursor(d.id, cursorAfter(cursor, batch, running.startedAt))
@@ -444,7 +444,7 @@ class RunScout(
       emptyList()
     }
 
-  private fun notDueRun(running: RunSummary) =
+  private fun notDueRun(running: RunSummary, reason: String?) =
     RunSummary(
       running.id,
       running.sourceId,
@@ -454,7 +454,7 @@ class RunScout(
       0,
       0,
       0,
-      "Not due yet (run interval)",
+      reason ?: "Not due yet (run interval)",
     )
 
   private fun succeededRun(
