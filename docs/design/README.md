@@ -25,8 +25,6 @@ self-hosted fonts, never from the boards' hex values or Google Fonts links.
 | `States` | Loading, guide answering, empty, error, 404 |
 | `Saved`, `Sources`, `Mission`, `Privacy` | The other pages |
 
-The `canvas/` folder below holds the first sketches in violet. The code does not follow them.
-
 ## `system/` — the Helper2.ai design system
 
 One system for every feature. Start with [system/README.md](system/README.md) (principles, content rules, color roles, type tags, logo, pages, breakpoints, accessibility, components).
@@ -38,17 +36,5 @@ One system for every feature. Start with [system/README.md](system/README.md) (p
 | `components/<Name>/preview.html` | Live preview markup (needs the artifact's generated `tokens.css`) |
 | `components/bundle.css` | The `h2-` component classes |
 | `assets/Logos/radar-mark.svg` | The radar mark |
-
-## `canvas/` — design canvas boards
-
-Each `.dc.html` is one board; `canvas.json` lays them out. They render inside the Design artifact, not as standalone pages.
-
-| Board | What |
-|---|---|
-| `DS-Brand`, `DS-Colors`, `DS-Type`, `DS-Components` | Design system page: brand book, every color in light and dark, type scale with spacing and radius, all 11 components |
-| `Website` | One-page marketing website |
-| `S-Header` | Shared header used by every screen |
-| `S-Home` … `S-Admin` | Mockups of every app screen: Home, Search results, Guide answer, Resource page, Saved, Sources, Admin |
-| `S-Phone-Home` | Home at phone width (390 px) |
 
 Mock content in brackets, such as `[stated date]`, stands for data the app fills in from sources. Nothing in brackets is a real value.
