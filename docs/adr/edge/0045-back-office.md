@@ -68,7 +68,8 @@ them without each module growing an admin corner.
    single decision, with the batch at the end: `ACCEPTED bulk:<batch>`. One item that fails does not undo the others.
    The answer gives one outcome per item, in the order sent: RESOLVED, NOT_OPEN, NOT_FOUND or NOT_ALLOWED. Rejecting is
    allowed for every kind: nothing is added or shown. Accepting is allowed only for an enrichment check whose run has no
-   CONFLICTING licence, open source or pricing (`BulkDecisionRule`, a pure class): every other kind adds a resource,
+   CONFLICTING licence, open source or pricing (`BulkDecisionRule`, a pure class; the conflicts come from their own
+   query, `ReviewEvidence.conflictingFields`, not from what the evidence view shows): every other kind adds a resource,
    verifies a relationship, publishes an example or closes a user's report, and a new kind is refused until the rule
    names it. A refused item stays open and is recorded as `NOT_ALLOWED bulk:<batch>`. On the page each open row has a
    box (x picks the selected item); a bar under the list says "4 selected · Accept · Reject · Clear"; Accept and Reject
@@ -84,7 +85,14 @@ them without each module growing an admin corner.
   only for the selected item, one request per item.
 - A batch is not atomic: a server error halfway leaves the first items decided. The page reloads and shows them as
   they are; the audit trail names the batch.
-- A repeated id in a batch is decided once (the contract's ids are unique).
+- A repeated id makes the whole batch a 400. The contract does not declare the ids unique: the generated set would
+  drop the repeat before the use case could refuse it.
+- The bulk rule is checked before the item's transaction, not inside it. Between the check and the decision the item
+  can be decided by someone else (then it is NOT_OPEN), but its kind and its run cannot change, so the rule's answer
+  stays right. Low risk, and one transaction per item stays simple.
+- Bulk accept takes an enrichment check whose fields are UNVERIFIED or AI_ESTIMATED, as long as licence, open source
+  and pricing are not CONFLICTING. This is a product choice: those values are already shown with their origin and
+  verification, and accepting the check publishes nothing new. I may revisit it.
 - The queue has no total of its own: the overview's count is the total, up to a minute old. A resource that changes
   part between two pages (a run finishes) can be skipped or shown twice; the next visit shows it in its place.
 

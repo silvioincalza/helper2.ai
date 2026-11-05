@@ -88,6 +88,17 @@ class ReviewBulkApiIT extends ApiTestBase {
   }
 
   @Test
+  void aRepeatedIdIsABadRequestAndDecidesNothing() throws Exception {
+    List<UUID> twice = List.of(fixture.reportItem, fixture.reportItem);
+
+    mvc.perform(bulk("REJECTED", twice).with(ADMIN).with(csrf()))
+        .andExpect(status().isBadRequest());
+
+    assertThat(itemStatus(fixture.reportItem)).isEqualTo("OPEN");
+    assertThat(audit(fixture.reportItem)).isEmpty();
+  }
+
+  @Test
   void bulkAcceptDecidesOnlyTheSafeItemsAndRecordsEachWithTheBatch() throws Exception {
     UUID safe = fixture.enrichmentItemConflictingOn("platforms");
     UUID licence = fixture.enrichmentItemConflictingOn("license");

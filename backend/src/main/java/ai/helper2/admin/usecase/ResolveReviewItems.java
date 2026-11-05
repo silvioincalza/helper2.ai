@@ -6,7 +6,6 @@ import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.catalog.usecase.ResolveReviewItem;
 import ai.helper2.identity.AuditTrail;
 import ai.helper2.platform.BadRequestException;
-import ai.helper2.shared.Verification;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -99,15 +98,8 @@ public class ResolveReviewItems {
     List<String> conflicting =
         decision == ReviewQueue.Status.ACCEPTED
                 && item.kind() == ReviewQueue.Kind.ENRICHMENT_VALIDATION
-            ? conflictingFields(item.id())
+            ? evidence.conflictingFields(item.id())
             : List.of();
     return BulkDecisionRule.allows(decision, item.kind(), conflicting);
-  }
-
-  private List<String> conflictingFields(UUID itemId) {
-    return evidence.of(itemId).fields().stream()
-        .filter(f -> f.verification() == Verification.CONFLICTING)
-        .map(ReviewEvidence.Field::field)
-        .toList();
   }
 }

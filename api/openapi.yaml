@@ -2133,7 +2133,9 @@ components:
           type: array
           minItems: 1
           maxItems: 100
-          uniqueItems: true
+          description: >-
+            Each id once. A repeated id is refused with 400. The list is not declared uniqueItems on purpose: a set would
+            drop the repeat before the server sees it.
           items: { type: string, format: uuid }
         status: { type: string, enum: [ACCEPTED, REJECTED] }
         note: { type: [string, 'null'], maxLength: 1000 }

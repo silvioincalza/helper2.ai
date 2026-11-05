@@ -48,7 +48,7 @@ review: Review with the evidence {
 bulk: Decide several at once {
   owner -> spa: "x on 12 rows, Accept,\nconfirm (focus on Cancel)" {class: hot}
   spa -> api: "POST /api/v1/admin/review-items/resolutions\n12 ids, ACCEPTED"
-  api -> db: "per item, its own transaction:\nrule check, decision, audit bulk:<batch>"
+  api -> db: "per item: rule check (its run's conflicting fields),\nthen its own transaction: decision, audit bulk:<batch>"
   api -> spa: "one outcome per item"
   spa -> owner: "\"11 done, 1 failed (already decided)\",\nthe failed item stays picked"
 }

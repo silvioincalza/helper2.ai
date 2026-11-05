@@ -92,14 +92,14 @@ evidence: GetReviewEvidence {
 
 evidence_req -> evidence.item
 
-bulk_req: "POST /api/v1/admin/review-items/resolutions\n(1 to 100 ids, CSRF)" {class: end}
+bulk_req: "POST /api/v1/admin/review-items/resolutions\n(1 to 100 ids, each once, CSRF;\na repeated id: 400)" {class: end}
 
 bulk: "ResolveReviewItems, per item" {
   class: group
   direction: down
   open: "Item open?" {class: decision}
   reject: "Reject?" {class: decision}
-  kind: "Enrichment check with no CONFLICTING\nlicence, open source or pricing?" {class: decision}
+  kind: "Enrichment check with no CONFLICTING\nlicence, open source or pricing?\n(ReviewEvidence.conflictingFields)" {class: decision}
   refused: "NOT_ALLOWED, stays open\n(audit: NOT_ALLOWED bulk:<batch>)" {class: fail}
   one: "ResolveReview, its own transaction\n(audit: ACCEPTED bulk:<batch>)" {class: app}
   other: "ResolveReview: NOT_OPEN or NOT_FOUND" {class: end}

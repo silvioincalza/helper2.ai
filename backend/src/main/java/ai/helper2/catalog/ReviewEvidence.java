@@ -26,6 +26,13 @@ public interface ReviewEvidence {
   Evidence of(UUID itemId);
 
   /**
+   * The names of the fields that the run of review item [itemId] left CONFLICTING, sorted, with no
+   * limit; empty when the item has no run or does not exist. For a decision rule: it does not
+   * depend on what {@link #of} shows.
+   */
+  List<String> conflictingFields(UUID itemId);
+
+  /**
    * [run] is null for an item with no run. [validationErrors] and [fields] are empty for a
    * relationship candidate; [relationship] is null for every other kind.
    */
