@@ -37,6 +37,5 @@ src/test       fixtures, fetch mock, render helper, axe helper
 - Glossary terms are buttons with `aria-expanded` revealing an inline definition.
 - Unknown facet bucket: facet value `unknown` is labeled "Unknown". For enum-typed filters (`pricing`, `techLevel`, `audience`, `type`) it is sent as `UNKNOWN` (the contract's enum spelling); for `license`, `platform`, `useCase`, `source` as `unknown`.
 - Versions are pinned exactly and current as of 2026-10-24, except: TypeScript **6.0.3** not 7 (typescript-eslint needs <6.1; `overrides` lets openapi-typescript use it, `npm ci` verified) and ESLint **9.39.5** not 10 (eslint-plugin-jsx-a11y supports ≤9).
-- UI language: English only. i18n stays in place (`src/i18n`): add `<code>.json` with the same keys and register it in `LANGUAGES`; the switcher appears once there are two languages.
+- UI language: English only, with no language choice. The copy stays in `src/i18n/locales/en.json`. A second language comes with its own change: the locale file, a language choice, and its storage key on the Privacy page.
 - Tests mock `fetch` directly (`src/test/mockApi.ts`), not msw.
-- Adding a language: add `src/i18n/locales/<code>.json`, register it in `src/i18n/index.ts` (`resources` + `LANGUAGES`). A test enforces that `en` and `it` have the same keys.

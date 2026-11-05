@@ -1,16 +1,15 @@
 import { screen } from '@testing-library/react';
-import { LANGUAGES } from '.';
 import { makeCard, makeSearch } from '@/test/fixtures';
 import { mockApi } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
 
 describe('i18n', () => {
-  it('ships English only and hides the language switcher while there is one language', async () => {
+  it('ships English only, with no language choice', async () => {
     mockApi();
     renderApp('/');
     await settle();
-    expect(LANGUAGES.map((l) => l.code)).toEqual(['en']);
     expect(screen.queryByLabelText('Language')).not.toBeInTheDocument();
+    expect(localStorage.getItem('h2.lang')).toBeNull();
     expect(document.documentElement.lang).toBe('en');
     expect(screen.getByRole('heading', { name: /Find the right AI tool/ })).toBeInTheDocument();
   });
