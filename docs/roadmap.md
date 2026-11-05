@@ -182,15 +182,21 @@ Open items:
     text; the page shows it after the locale sections. Needs a way to place it among them.
   - **API fields:** `newThisWeek` on GET /sources, `limits` on GET /me and `total` on the recent and upcoming responses
     are in the API, on Home, in the Sources table and on the Account page. `skipReason` on every source status is
-    used by the coverage line on Results. GET /api/v1/policy is in
-    the API. Still to use: `limits` in the account panel, and `/policy` for the numbers of the Mission, Privacy and
-    Terms pages.
+    used by the coverage line on Results. The Mission, Privacy and Terms pages take their numbers from GET
+    /api/v1/policy. Still to use: `limits` in the account panel.
+  - **Text pages: numbers still typed.** The API does not have them, so the pages type them: the 00:00 UTC reset, the
+    web search counters (24 hours), the rate-limit counters (1 minute or 1 hour), the guide question counters
+    (2 days), logs and request traces (3 months), usage totals (90 days), backups (7 days), articles and news from
+    web search (180 days), quotes up to 300 and excerpts up to 400 characters. Each one moves to GET /policy when
+    the code reads it from configuration.
+  - **Terms with the registered tier on:** the guide question limit is stated per IP address only. When signed-in
+    users get their own guide limit, it needs a field on GET /policy and a sentence on Terms.
   - **Cost guard data:** with a week of data, check the share of "no pick" and failed questions that are given back
     (`helper2.guide.quota.give_back`, by `reason`) and how often a client reaches the free-answer cap
     ([0017](adr/guide/0017-guide-cost-guard.md)).
   - **Free answers on /policy:** GET /api/v1/policy has the daily guide questions but not
-    `H2_GUIDE_CLIENT_DAILY_FREE_ANSWERS`, so the Terms type "up to 30 a day" by hand. Add it when the text pages read
-    `/policy`.
+    `H2_GUIDE_CLIENT_DAILY_FREE_ANSWERS`, so the Terms page types "up to 30 a day" by hand. Add it to GET /policy
+    and read it there.
   - An `unknown` count per facet and an updated-date facet on the search response (Filters panel).
   - Sign-in with Google (phase 1). Passkey, email link and password (phase 2) need their own ADR, a threat model and
     the Privacy page first.

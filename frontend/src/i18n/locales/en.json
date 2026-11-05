@@ -1008,7 +1008,24 @@
     }
   },
   "textPage": {
-    "onThisPage": "On this page"
+    "onThisPage": "On this page",
+    "numbersUnavailable": "Some limits and periods could not be loaded, so this page states them without numbers. Reload the page to see them."
+  },
+  "policy": {
+    "webSearches": "{{search}} a day for search and {{guide}} for the guide",
+    "webSearchesByTier": "{{guest}} without an account, and {{registered}} when signed in",
+    "duration": {
+      "seconds_one": "{{count}} second",
+      "seconds_other": "{{count}} seconds",
+      "minutes_one": "{{count}} minute",
+      "minutes_other": "{{count}} minutes",
+      "hours_one": "{{count}} hour",
+      "hours_other": "{{count}} hours",
+      "days_one": "{{count}} day",
+      "days_other": "{{count}} days",
+      "months_one": "{{count}} month",
+      "months_other": "{{count}} months"
+    }
   },
   "signInPage": {
     "title": "Sign in to keep what you find.",
@@ -1077,7 +1094,10 @@
       {
         "title": "What we process and why",
         "items": [
-          "Your searches and guide questions: the text you type, used only to answer you. It is not linked to your account. Search results are cached for up to 30 minutes and guide answers for up to 24 hours, under a hash of the question, not its text. A cached guide answer, with the search queries the guide wrote for it, can be shown to anyone who asks the same or a very similar question. Please do not type personal or secret information.",
+          {
+            "text": "Your searches and guide questions: the text you type, used only to answer you. It is not linked to your account. A source's search results count as fresh for a short time, set per source; we keep the stored copy for up to {{cachedSearches}}, so results can still be shown when a source fails. Guide answers are kept for up to {{cachedGuideAnswers}}. Both are stored under a hash of the question, not its text. A cached guide answer, with the search queries the guide wrote for it, can be shown to anyone who asks the same or a very similar question. Please do not type personal or secret information.",
+            "withoutNumbers": "Your searches and guide questions: the text you type, used only to answer you. It is not linked to your account. A source's search results count as fresh for a short time, set per source; we keep the stored copy for a limited time, so results can still be shown when a source fails. Guide answers are kept for a limited time too. Both are stored under a hash of the question, not its text. A cached guide answer, with the search queries the guide wrote for it, can be shown to anyone who asks the same or a very similar question. Please do not type personal or secret information."
+          },
           "Your account, if you sign in with GitHub: your GitHub user ID (a number), your display name and when you last signed in. We ask GitHub only for basic profile access. We never see your GitHub password or your e-mail address.",
           "Your display settings, if you are signed in: whether the radar on Home moves between its sources. Kept with your account until you delete it.",
           "Saved items: if you are signed in, each saved resource (its link, title and type) and when you saved it, stored on our server with your account. If you are not signed in, they stay only in your browser; when you sign in, they move to your account.",
@@ -1136,12 +1156,27 @@
       {
         "title": "How long we keep data",
         "items": [
-          "Cached searches: up to 30 minutes. Cached guide answers and their question fingerprints: up to 24 hours, deleted by the next daily clean-up.",
+          {
+            "text": "Cached searches: a source's results count as fresh for a short time, set per source, and the stored copy is kept up to {{cachedSearches}}. Cached guide answers and their question fingerprints: up to {{cachedGuideAnswers}}, deleted by the next daily clean-up.",
+            "withoutNumbers": "Cached searches: a source's results count as fresh for a short time, set per source, and the stored copy is kept for a limited time. Cached guide answers and their question fingerprints: for a limited time, deleted by the next daily clean-up."
+          },
           "Technical logs and request traces: up to 3 months. Usage totals: 90 days.",
-          "Web search counters: 24 hours. Rate-limit counters: 1 minute or 1 hour (the length of the limit). Guide questions per day: 2 days. Stored results: 7 days.",
-          "English translations of searches typed in another language: 24 hours. Search vectors (the numbers we use to search by meaning): 7 days. Both are stored under a hash of the search, not its text, and deleted from the database within a day after they expire.",
-          "Your account, its display settings and your saved items: until you delete them, or 24 months after you last signed in. Then we delete the account, its settings and its saved items.",
-          "Reports: 12 months after they were handled. If your account is deleted, your reports stay without your name until then.",
+          {
+            "text": "Web search counters: 24 hours. Rate-limit counters: 1 minute or 1 hour (the length of the limit). Guide questions per day: 2 days. Stored results: {{storedWebResults}}.",
+            "withoutNumbers": "Web search counters: 24 hours. Rate-limit counters: 1 minute or 1 hour (the length of the limit). Guide questions per day: 2 days. Stored results: for a limited time."
+          },
+          {
+            "text": "English translations of searches typed in another language: {{translations}}. Search vectors (the numbers we use to search by meaning): {{queryVectors}}. Both are stored under a hash of the search, not its text, and deleted from the database within a day after they expire.",
+            "withoutNumbers": "English translations of searches typed in another language, and search vectors (the numbers we use to search by meaning): for a limited time. Both are stored under a hash of the search, not its text, and deleted from the database within a day after they expire."
+          },
+          {
+            "text": "Your account, its display settings and your saved items: until you delete them, or {{inactiveAccounts}} after you last signed in. Then we delete the account, its settings and its saved items.",
+            "withoutNumbers": "Your account, its display settings and your saved items: until you delete them, or a set time after you last signed in. Then we delete the account, its settings and its saved items."
+          },
+          {
+            "text": "Reports: {{handledReports}} after they were handled. If your account is deleted, your reports stay without your name until then.",
+            "withoutNumbers": "Reports: a set time after they were handled. If your account is deleted, your reports stay without your name until then."
+          },
           "Database backups: 7 days. Anything deleted above is gone from the backups within 7 days.",
           "Quotes from public pages about AI resources: as long as we keep the source record they were read for, and never longer than we list the resource.",
           "Articles and news found by web search, with their titles and excerpts: 180 days after we last retrieved them. Product pages we accepted from a web search: as long as we list the product. Pages waiting for our review: until we decide, then 180 days."
@@ -1177,7 +1212,10 @@
         "items": [
           "Helper2.ai is a free search over public sources about the AI ecosystem, with an AI guide that answers questions from those results.",
           "We may change, limit or stop the service, or parts of it, at any time and without notice.",
-          "Tavily web searches: 3 a day each for search and the guide; stored results are free. The AI guide: 30 new questions a day per IP address; a question whose answer is still stored does not count, and an answer with no pick, or a question that fails, does not count either (up to 30 a day). After that, the guide shows the top search results without AI picks. Limits reset at 00:00 UTC.",
+          {
+            "text": "Tavily web searches: {{webSearches}}; stored results are free. The AI guide: {{guideQuestions}} new questions a day per IP address; a question whose answer is still stored does not count, and an answer with no pick, or a question that fails, does not count either (up to 30 a day). After that, the guide shows the top search results without AI picks. Limits reset at 00:00 UTC.",
+            "withoutNumbers": "Tavily web searches: a daily limit each for search and the guide; stored results are free. The AI guide: a daily limit of new questions per IP address; a question whose answer is still stored does not count, and an answer with no pick, or a question that fails, does not count either (within a daily limit). After that, the guide shows the top search results without AI picks. Limits reset at 00:00 UTC."
+          },
           "You can use Helper2.ai without an account. If you sign in, you can delete your account at any time: select your name at the top of the page, then \"Delete my account\". You can also write to us."
         ]
       },
@@ -1239,11 +1277,17 @@
     "steps": {
       "search": {
         "title": "Search real sources",
-        "body": "A fast Nemotron model turns your words, in any language, into search terms. A normal search across every source then finds up to 24 real candidates."
+        "body": {
+          "text": "A fast Nemotron model turns your words, in any language, into search terms. A normal search across every source then finds up to {{maxCandidates}} real candidates.",
+          "withoutNumbers": "A fast Nemotron model turns your words, in any language, into search terms. A normal search across every source then finds the real candidates."
+        }
       },
       "choose": {
         "title": "Nemotron chooses",
-        "body": "A reasoning model picks at most 3 of those candidates, explains why with a quote, and can adapt a ready-to-use prompt from catalog prompts."
+        "body": {
+          "text": "A reasoning model picks at most {{maxPicks}} of those candidates, explains why with a quote, and can adapt a ready-to-use prompt from catalog prompts.",
+          "withoutNumbers": "A reasoning model picks a few of those candidates, explains why with a quote, and can adapt a ready-to-use prompt from catalog prompts."
+        }
       },
       "check": {
         "title": "A validator checks",

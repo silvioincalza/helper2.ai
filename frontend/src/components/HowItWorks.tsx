@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import type { TocEntry } from '@/components/TextPage';
+import { textOf, type TextEntry, type TextValues } from '@/components/TextSections';
 
 const HOW_STEPS = ['search', 'choose', 'check'] as const;
 const RULES = ['notStated', 'dates', 'unchecked', 'fallback'] as const;
@@ -17,8 +18,11 @@ export function useHowItWorksToc(): TocEntry[] {
   ];
 }
 
-/** How the guide answers, and the honesty rules. Shown on the mission page, as prose like the sections above. */
-export function HowItWorks() {
+/**
+ * How the guide answers, and the honesty rules. Shown on the mission page, as prose like the sections above. The
+ * number of candidates and picks come from GET /policy ([values]); without them the steps say it in words.
+ */
+export function HowItWorks({ values }: { values?: TextValues }) {
   const { t } = useTranslation();
   return (
     <>
@@ -30,7 +34,12 @@ export function HowItWorks() {
           {HOW_STEPS.map((k) => (
             <li key={k}>
               <h3>{t(`how.steps.${k}.title`)}</h3>
-              <p>{t(`how.steps.${k}.body`)}</p>
+              <p>
+                {textOf(
+                  t(`how.steps.${k}.body`, { returnObjects: true, ...values }) as TextEntry,
+                  values,
+                )}
+              </p>
             </li>
           ))}
         </ol>

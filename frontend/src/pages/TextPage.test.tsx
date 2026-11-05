@@ -1,7 +1,10 @@
 import { screen, within } from '@testing-library/react';
 import en from '@/i18n/locales/en.json';
-import type { TextSection } from '@/components/TextSections';
+import type { TextEntry, TextSection } from '@/components/TextSections';
 import { sectionAnchor } from '@/components/TextSections';
+import { policyValues } from '@/hooks/usePolicy';
+import i18n from '@/i18n';
+import { POLICY } from '@/test/fixtures';
 import { axeViolations } from '@/test/a11y';
 import { mockApi } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
@@ -25,6 +28,13 @@ const PAGES: Array<{
   { path: '/privacy', title: en.privacy.title, sections: en.privacy.sections as TextSection[] },
   { path: '/terms', title: en.terms.title, sections: en.terms.sections as TextSection[] },
 ];
+
+/** A line as the page shows it with the mocked GET /policy: its `{{name}}` variables filled in. */
+function shown(entry: TextEntry): string {
+  if (typeof entry === 'string') return entry;
+  const values: Record<string, string> = policyValues(POLICY, i18n.t, 'en');
+  return entry.text.replace(/\{\{(\w+)\}\}/g, (_, name: string) => values[name] ?? `{{${name}}}`);
+}
 
 function narrowScreen(matches: boolean) {
   vi.stubGlobal(
@@ -76,7 +86,7 @@ describe('Feature: text pages', () => {
       for (const s of sections) {
         const region = screen.getByRole('region', { name: s.title });
         for (const line of [...(s.paragraphs ?? []), ...(s.items ?? [])]) {
-          expect(within(region).getByText(line, { exact: true })).toBeInTheDocument();
+          expect(within(region).getByText(shown(line), { exact: true })).toBeInTheDocument();
         }
       }
     },
