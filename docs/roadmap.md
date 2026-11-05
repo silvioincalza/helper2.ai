@@ -170,12 +170,8 @@ Open items:
     drawer on phones.
   - **The resource page in v4:** one primary button ("Set it up" is already only on types a user installs or runs).
   - **The other pages** (Saved, Sources, Mission, Privacy, Terms, Account, sign-in, 404, admin), one by one.
-  - **Remove version 3** once the last page has moved: the v3 components and layout sizes, Space Grotesk, and the
+  - **Remove version 3** once the last page has moved: the v3 components and layout sizes, the v3 font (`--font-sans`, `--font-display`), and the
     `--v4-` prefix on the v4 sizes and fonts.
-  - **Font, open point.** The decision of 2 November 2026 (#173) keeps Space Grotesk for every page, with no new
-    download. The header, the footer and Home are built in Geist Mono and Geist, as the boards draw them. Decide
-    one: Geist for every page as they move, or Space Grotesk on the v4 parts too (two tokens in `tokens.css` and the
-    two `@fontsource-variable` packages).
   - **API fields:** `newThisWeek` on GET /sources, `limits` on GET /me and `total` on the recent and upcoming responses
     are in the API and on Home. Still to use them: the account panel and the Account page (`limits`), the Sources
     table (`newThisWeek`).
