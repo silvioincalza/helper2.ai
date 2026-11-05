@@ -9,9 +9,12 @@ import {
   type MultiKey,
   type SearchState,
 } from '@/lib/searchState';
+import type { Categories } from '@/hooks/useCategories';
+import { CategoryFacet } from './CategoryFacet';
 import { Term, type GlossaryKey } from './Term';
 
-type FacetKey = MultiKey | 'openSource';
+/** The Category facet has its own component (grouped by family, ADR 0053). */
+type FacetKey = Exclude<MultiKey, 'category'> | 'openSource';
 
 /** One order for everyone: what kind of resource first, then what it costs and how it may be used. */
 const ORDER: FacetKey[] = [
@@ -36,10 +39,11 @@ interface Props {
   facets: Facets | undefined;
   state: SearchState;
   sources: SourceStatus[];
+  categories: Categories;
   onChange: (s: SearchState) => void;
 }
 
-export function FilterPanel({ facets, state, sources, onChange }: Props) {
+export function FilterPanel({ facets, state, sources, categories, onChange }: Props) {
   const { t } = useTranslation();
   // Checkbox ids come from the facet and the value's position: values are raw source text (spaces, slashes, quotes).
   const idBase = useId();
@@ -108,6 +112,14 @@ export function FilterPanel({ facets, state, sources, onChange }: Props) {
           />
           <p className="muted small">{t('filters.updatedAfterHint')}</p>
         </div>
+        {facets && (
+          <CategoryFacet
+            counts={facets.category}
+            selected={state.filters.category}
+            categories={categories}
+            onToggle={(id) => onChange(toggleFilter(state, 'category', id))}
+          />
+        )}
         {ORDER.map((key) => {
           const list = values(key);
           if (list.length === 0) return null;

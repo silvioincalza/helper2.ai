@@ -2,8 +2,11 @@ package ai.helper2.search
 
 import ai.helper2.shared.Audience
 import ai.helper2.shared.CanonicalUrl
+import ai.helper2.shared.CategoryInput
+import ai.helper2.shared.CategoryMatcher
 import ai.helper2.shared.DateFact
 import ai.helper2.shared.ResourceId
+import ai.helper2.shared.ResourceType
 import ai.helper2.shared.SourceMode
 import ai.helper2.shared.SourcedValue
 
@@ -22,7 +25,16 @@ data class SourceContext(val descriptor: SourceDescriptor, val servedFrom: Serve
  * [MergedResult.conflicts]. Dates keep the earliest (or latest) value and are marked CONFLICTING
  * when two sources state different days (DateFact).
  */
-class ResultMerger(private val analyzer: QueryAnalyzer = QueryAnalyzer()) {
+class ResultMerger
+@JvmOverloads
+constructor(
+  private val analyzer: QueryAnalyzer = QueryAnalyzer(),
+  /**
+   * Assigns the categories of a merged result (ADR 0053), so live web results can be filtered by
+   * them too; [CategoryMatcher.NONE] keeps only the categories the hits carry.
+   */
+  private val categories: CategoryMatcher = CategoryMatcher.NONE,
+) {
 
   fun merge(hits: List<SourceHit>, contexts: Map<String, SourceContext>): List<MergedResult> {
     val joining = joiningRepositories(hits)
@@ -104,6 +116,8 @@ class ResultMerger(private val analyzer: QueryAnalyzer = QueryAnalyzer()) {
     val license = categorical("license", group, conflicts) { it.license?.let(::normalizeLicense) }
     val pricing = categorical("pricing", group, conflicts) { it.pricing?.name }
     val openSource = categorical("openSource", group, conflicts) { it.openSource?.toString() }
+    val type = group.minBy { it.type.specificity }.type
+    val tags = group.flatMapTo(sortedSetOf()) { it.tags }
 
     return MergedResult(
       id = ResourceId.of(identity),
@@ -114,7 +128,7 @@ class ResultMerger(private val analyzer: QueryAnalyzer = QueryAnalyzer()) {
       descriptionOrigin =
         ordered.firstOrNull { it.description != null }?.descriptionOrigin
           ?: primary.descriptionOrigin,
-      type = group.minBy { it.type.specificity }.type,
+      type = type,
       audience = group.map { it.audience }.fold(Audience.UNKNOWN) { acc, a -> acc.combine(a) },
       techLevel = ordered.firstNotNullOfOrNull { it.techLevel },
       // Stated use cases win; otherwise derive them by the fixed EN/IT lexicon (rule, not LLM).
@@ -126,7 +140,7 @@ class ResultMerger(private val analyzer: QueryAnalyzer = QueryAnalyzer()) {
               analyzer.useCasesOf(h.title, h.description, h.tags.joinToString(" "))
             }
           },
-      tags = group.flatMapTo(sortedSetOf()) { it.tags },
+      tags = tags,
       license = license,
       pricing = pricing?.let { ai.helper2.shared.Pricing.valueOf(it) },
       platforms = group.flatMapTo(sortedSetOf()) { it.platforms },
@@ -157,6 +171,32 @@ class ResultMerger(private val analyzer: QueryAnalyzer = QueryAnalyzer()) {
       location = ordered.firstNotNullOfOrNull { it.location },
       eventKind = ordered.firstNotNullOfOrNull { it.eventKind },
       eventFormat = ordered.firstNotNullOfOrNull { it.eventFormat },
+      categories = categoriesOf(primary.title, group, tags, type),
+    )
+  }
+
+  /**
+   * What the catalog stored for the hits, plus what the matcher reads in the merged result: its
+   * title, what its sources wrote (never an AI-written description), its tags, type and finders.
+   */
+  private fun categoriesOf(
+    title: String,
+    group: List<SourceHit>,
+    tags: Set<String>,
+    type: ResourceType,
+  ): Set<String> {
+    val stored = group.flatMap { it.categories }
+    val description =
+      group
+        .filterNot { it.descriptionOrigin.name.startsWith("AI_") }
+        .mapNotNull { it.description }
+        .distinct()
+        .joinToString("\n")
+    val finders = group.map { it.sourceId }.distinct()
+    val matched = categories.match(CategoryInput(title, description, tags, type, finders))
+    val all = (matched + stored).distinct()
+    return LinkedHashSet(
+      if (categories === CategoryMatcher.NONE) all else categories.catalog.ordered(all)
     )
   }
 

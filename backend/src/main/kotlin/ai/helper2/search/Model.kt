@@ -155,6 +155,11 @@ constructor(
    * `source_record.extra`. Not part of the record's fingerprint.
    */
   val facts: Map<String, Any> = emptyMap(),
+  /**
+   * The categories the catalog assigned to this resource (ADR 0053); empty for every live source,
+   * whose hits get theirs when they are merged.
+   */
+  val categories: Set<String> = emptySet(),
 ) {
   /** The same hit at [rank] in its source's ranking. */
   fun withRank(rank: Int): SourceHit = copy(rank = rank)
@@ -309,6 +314,12 @@ data class MergedResult(
   val location: String? = null,
   val eventKind: EventKind? = null,
   val eventFormat: EventFormat? = null,
+  /**
+   * The categories of the AI world it belongs to (ADR 0053), in the configured order: assigned by
+   * code from its title, description, tags, type and finders, never by a model. Empty: no category
+   * yet.
+   */
+  val categories: Set<String> = emptySet(),
 ) {
   /**
    * Every license value any source asserted; used so a conflicting resource still matches a filter.
@@ -317,6 +328,10 @@ data class MergedResult(
     get() = hits.mapNotNull { it.license }.toSet()
 
   fun withDiscovered(discovered: DateFact): MergedResult = copy(discovered = discovered)
+
+  /** The same result with the categories the catalog stored for it. */
+  fun withCategories(categories: Collection<String>): MergedResult =
+    copy(categories = LinkedHashSet(categories))
 
   /**
    * The same result under the identity the catalog stores it as (its records may merge to another

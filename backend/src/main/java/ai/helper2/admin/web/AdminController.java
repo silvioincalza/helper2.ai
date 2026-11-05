@@ -11,6 +11,7 @@ import ai.helper2.api.generated.model.ReviewStatusDto;
 import ai.helper2.api.generated.model.ScoutRunDto;
 import ai.helper2.api.generated.model.ScoutRunRequestDto;
 import ai.helper2.catalog.ReviewQueue;
+import ai.helper2.catalog.usecase.BackfillCategories;
 import ai.helper2.catalog.usecase.ListReviewItems;
 import ai.helper2.catalog.usecase.ResolveReviewItem;
 import ai.helper2.platform.ApiProblem;
@@ -40,18 +41,21 @@ class AdminController implements AdminApi {
   private final StartScoutRun startRun;
   private final ScoutStore store;
   private final RecheckEnrichments recheck;
+  private final BackfillCategories backfill;
 
   AdminController(
       ListReviewItems items,
       ResolveReview resolve,
       StartScoutRun startRun,
       ScoutStore store,
-      RecheckEnrichments recheck) {
+      RecheckEnrichments recheck,
+      BackfillCategories backfill) {
     this.items = items;
     this.resolve = resolve;
     this.startRun = startRun;
     this.store = store;
     this.recheck = recheck;
+    this.backfill = backfill;
   }
 
   /** Re-checks stored enrichment answers by code (ADR 0056); counts only. */
@@ -112,6 +116,12 @@ class AdminController implements AdminApi {
     }
     return ResponseEntity.status(HttpStatus.ACCEPTED)
         .body(runs.stream().map(AdminController::dto).toList());
+  }
+
+  @Override
+  public ResponseEntity<Void> backfillCategories() {
+    backfill.start(adminId());
+    return ResponseEntity.status(HttpStatus.ACCEPTED).build();
   }
 
   /** The signed-in administrator's provider subject (GitHub: the numeric user id). */

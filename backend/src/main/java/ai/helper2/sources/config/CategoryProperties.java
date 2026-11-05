@@ -1,5 +1,6 @@
 package ai.helper2.sources.config;
 
+import ai.helper2.shared.CategoryWords;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.sources.tavily.DiscoveryCategory;
 import ai.helper2.sources.tavily.DiscoveryFamily;
@@ -110,7 +111,7 @@ record CategoryProperties(@Nullable List<Category> categories) {
           name,
           d.type(),
           d.queries(),
-          DiscoveryCategory.Keywords.of(words),
+          CategoryWords.of(words),
           d.interval() == null ? defaults.interval() : d.interval(),
           d.enabled() == null || d.enabled(),
           d.minScore() == null ? defaults.minScore() : d.minScore(),

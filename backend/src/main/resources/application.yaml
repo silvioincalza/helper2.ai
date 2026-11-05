@@ -371,6 +371,10 @@ helper2:
       batch: 50
       initial-delay: PT30S
       every: PT15S
+    # The categories of every resource (ADR 0053): assigned again at startup when the category words or rules in
+    # helper2.categories changed since the last time (one replica, in the background).
+    categories:
+      backfill-at-startup: ${H2_CATEGORIES_BACKFILL_AT_STARTUP:true}
   search:
     # A source's answer is cached this long and, while it lasts, served when the source fails.
     stale-for: ${H2_SEARCH_STALE_FOR:24h}

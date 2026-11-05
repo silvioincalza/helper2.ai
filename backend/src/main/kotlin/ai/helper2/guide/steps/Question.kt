@@ -40,6 +40,11 @@ internal class Question(
   val clarification: String?,
   val drops: Drops,
   val asker: Asker?,
+  /**
+   * The category filter of the page the question was asked from (ADR 0053): the picks come only
+   * from results in one of them. Empty: any.
+   */
+  val categories: Set<String> = emptySet(),
 ) {
   /**
    * The text the search and the no-model backup see: the question plus the user's answer to our

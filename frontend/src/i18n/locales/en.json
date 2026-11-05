@@ -257,7 +257,22 @@
     "license": "License",
     "pricing": "Pricing",
     "platform": "Platform",
-    "openSource": "Open source"
+    "openSource": "Open source",
+    "category": "Category"
+  },
+  "categories": {
+    "title": "Categories",
+    "loading": "Loading categories…",
+    "error": "Could not load the categories.",
+    "retry": "Try again",
+    "empty": "None of these results has a category yet.",
+    "none": "No category yet",
+    "searchIn": "Search in {{name}}",
+    "byCode": "Categories are set by fixed rules from what the sources say, not by AI.",
+    "backfill": "Assign categories again",
+    "backfillHint": "Runs in the background over the whole catalog. Counts go to the log and the metrics.",
+    "backfillStarted": "Started. It runs in the background.",
+    "backfillFailed": "Could not start it. Try again."
   },
   "sources": {
     "latencyMs": "{{ms}} ms",
@@ -712,7 +727,8 @@
         "ADD_HOME_EXAMPLE": "Example added",
         "CHANGE_HOME_EXAMPLE": "Example changed",
         "REMOVE_HOME_EXAMPLE": "Example removed",
-        "DRAFT_HOME_EXAMPLES": "Examples drafted with AI"
+        "DRAFT_HOME_EXAMPLES": "Examples drafted with AI",
+        "BACKFILL_CATEGORIES": "Categories assigned again"
       }
     },
     "budget": {

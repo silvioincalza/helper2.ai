@@ -54,8 +54,9 @@ ON CONFLICT (canonical_url) DO UPDATE SET
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     tech_level = EXCLUDED.tech_level, data_origin = EXCLUDED.data_origin, modified_at = now();
 
+-- Our own labels only: CATEGORY labels are assigned by code (ADR 0053), by the backfill after this seed runs.
 DELETE FROM resource_label
-WHERE resource_id IN (SELECT uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, canonical_url) FROM seed);
+WHERE kind <> 'CATEGORY' AND resource_id IN (SELECT uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, canonical_url) FROM seed);
 
 INSERT INTO resource_label (resource_id, kind, value)
 SELECT uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, s.canonical_url), 'USE_CASE', u

@@ -316,7 +316,8 @@ internal class PickAnswer(
       SearchRequest(
         text = retrieval.text,
         path = q.path,
-        filters = retrieval.filters,
+        // The page's category filter, when the question came with one (ADR 0053).
+        filters = retrieval.filters.copy(categories = retrieval.filters.categories + q.categories),
         sort = retrieval.sort,
         size = maxCandidates,
         webQuery = r.webQuery,

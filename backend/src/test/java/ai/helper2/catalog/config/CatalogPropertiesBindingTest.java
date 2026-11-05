@@ -30,7 +30,10 @@ class CatalogPropertiesBindingTest {
                   new CatalogProperties.Curated(true, Duration.ofMillis(1000)),
                   new CatalogProperties.Semantic(Duration.ofSeconds(3), 0.65, Duration.ofDays(7)),
                   new CatalogProperties.Indexer(
-                      Duration.ofSeconds(30), 50, Duration.ofSeconds(30), Duration.ofSeconds(15))));
+                      Duration.ofSeconds(30), 50, Duration.ofSeconds(30), Duration.ofSeconds(15)),
+                  // The test JVM turns the startup backfill off (build.gradle.kts); the yaml has
+                  // true, checked below.
+                  new CatalogProperties.Categories(false)));
       assertThat(c.getBean(CatalogRetentionProperties.class))
           .isEqualTo(
               new CatalogRetentionProperties(
@@ -61,6 +64,15 @@ class CatalogPropertiesBindingTest {
           assertThat(c.getBean(CatalogRetentionProperties.class).webNews())
               .isEqualTo(Duration.ofDays(30));
         });
+  }
+
+  @Test
+  void theCategoryBackfillRunsAtStartupByDefault() throws java.io.IOException {
+    String yaml =
+        new String(
+            getClass().getResourceAsStream("/application.yaml").readAllBytes(),
+            java.nio.charset.StandardCharsets.UTF_8);
+    assertThat(yaml).contains("backfill-at-startup: ${H2_CATEGORIES_BACKFILL_AT_STARTUP:true}");
   }
 
   @Test
