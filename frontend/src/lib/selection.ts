@@ -65,12 +65,3 @@ export function picksFirst<T extends { id: string }>(
   const taken = new Set(picked.map((r) => r.id));
   return { picked, rest: results.filter((r) => !taken.has(r.id)) };
 }
-
-/** The host of [url] without "www.", for "Open on …" and the row's source line; the url itself when it does not parse. */
-export function displayHost(url: string): string {
-  try {
-    return new URL(url).hostname.replace(/^www\./, '');
-  } catch {
-    return url;
-  }
-}

@@ -6,7 +6,6 @@ import { axeViolations } from '@/test/a11y';
 import { HEALTH_SOURCES, SOURCES, USER } from '@/test/fixtures';
 import { mockApi, problem } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
-import { CACHE_TTL_MS } from '@/hooks/useApi';
 
 const saved: Bookmark[] = [
   {
@@ -286,13 +285,14 @@ describe('Feature: the source list cannot load', () => {
     );
   });
 
-  it('the Sources page asks again when the copy loaded with the app is older than the cache limit', async () => {
+  it('the Sources page asks again when the copy Home loaded is older than the cache limit', async () => {
     const now = vi.spyOn(Date, 'now').mockReturnValue(1_000);
     const m = mockApi();
     const { router } = renderApp('/');
     await waitFor(() => expect(m.callsTo('GET', '/sources')).toHaveLength(1));
     await settle();
-    now.mockReturnValue(1_000 + CACHE_TTL_MS + 1);
+    // Past the recent-answers cache's 5 minutes.
+    now.mockReturnValue(1_000 + 5 * 60_000 + 1);
     await act(() => router.navigate('/sources'));
     await waitFor(() => expect(m.callsTo('GET', '/sources')).toHaveLength(2));
     await settle();

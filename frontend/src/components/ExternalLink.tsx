@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { hostname, safeHref } from '@/lib/format';
+import { displayHost, safeHref } from '@/lib/format';
 import { Icon } from './Icon';
 
 export function ExternalLink({
@@ -17,7 +17,7 @@ export function ExternalLink({
   return (
     <a href={href} target="_blank" rel="noopener noreferrer nofollow" className="ext-link">
       {children ?? t('card.openOriginal')}
-      {showHost && <span className="host"> {hostname(url)}</span>}
+      {showHost && <span className="host"> {displayHost(url)}</span>}
       <Icon name="link" />
       <span className="sr-only"> {t('common.opensNewTab')}</span>
     </a>

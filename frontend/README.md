@@ -1,10 +1,10 @@
 # Helper2.ai frontend
 
-Vite + React 19 + TypeScript 6 (strict) + React Router 8 (data mode, `createBrowserRouter`), SPA. Node 26.
-Hand-written CSS with design tokens (`src/styles/tokens.css`). i18n: i18next (English, Italian).
+Vite + React 19 + TypeScript 6 (strict) + React Router 8 (data mode, `createBrowserRouter`), SPA.
+Hand-written CSS with design tokens (`src/styles/tokens.css`). i18n: i18next (English).
 
 ## Requirements
-Node 24 (`.nvmrc`). On this machine: prefix commands with `PATH=/opt/homebrew/opt/node@24/bin:$PATH`.
+Node 26 (`.nvmrc`).
 
 ## Scripts
 | script | what |
@@ -17,14 +17,15 @@ Node 24 (`.nvmrc`). On this machine: prefix commands with `PATH=/opt/homebrew/op
 ## Structure
 ```
 src/api        schema.ts (generated), types.ts (aliases), client.ts (typed fetch, CSRF, problem+json, guide stream)
-src/lib        searchState.ts (URL <-> state, guide refinement, RESULTS_PATH, resourcePath: every resource link encodes the id), motion.ts (prefersReducedMotion), selection.ts (selected result, picks), countdown.ts, locateQuote.ts, format.ts, bookmarks.ts (localStorage, try/catch)
+src/lib        searchState.ts (URL <-> state, guide refinement, RESULTS_PATH, resourcePath: every resource link encodes the id), selection.ts (selected result, picks), countdown.ts, locateQuote.ts, format.ts, bookmarks.ts (localStorage, try/catch)
 src/context    MeContext (GET /me), BookmarksContext (local, merged once to server on sign-in)
 src/hooks      useApi (keyed fetch with AbortController, recent-answers cache, ADR 0039), useGuideStream (guide SSE for the URL's question), useRetry (Try again keeps focus on a heading), useTitle
 src/components layout, one box, guide answer, badges, filter panel, glossary Term, ...
   ui/          shared parts of the design (ADR 0040): TypeTag, StatusPill, ProofQuote, SourceTiles, SelectableRow, PicksBar, StatePanel (every error, empty and 404 state), CopyButton; own ui.css
   home/        News and Events boards; results/ results page, preview, resource page; saved/, sources/
-src/pages      Home, Resource, Saved, Sources, Account, Admin, Mission, Privacy, Terms, NotFound (one entry chunk)
-src/i18n       index.ts + locales/{en,it}.json
+src/pages      Home, Resource, Saved, Sources, Account, Mission, Privacy, Terms, NotFound (one entry chunk)
+  admin/       the back office: overview, review queue, Scout runs, audit trail; own admin.css
+src/i18n       index.ts + locales/en.json
 src/test       fixtures, fetch mock, render helper, axe helper
 ```
 

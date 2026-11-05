@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { sourceModeValues } from '@/api/schema';
 import type { SourceInfo, SourceMode } from '@/api/types';
 import { ExternalLink } from '@/components/ExternalLink';
 import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
@@ -14,13 +15,12 @@ import { ResponseTimeValue, SourceNotes, WebCreditsValue } from './SourceHealth'
 import '@/components/saved/saved.css';
 import './sources.css';
 
-const MODES: SourceMode[] = ['LIVE', 'INDEXED', 'CURATED', 'DEMO'];
 const STEPS = ['ask', 'merge', 'prove', 'dates'] as const;
 
 /** ok: the last check succeeded. warn: rate limited or skipped. failed: failed or timed out. */
-export type SourceState = 'ok' | 'warn' | 'failed' | 'never' | 'off';
+type SourceState = 'ok' | 'warn' | 'failed' | 'never' | 'off';
 
-export function sourceState(s: SourceInfo): SourceState {
+function sourceState(s: SourceInfo): SourceState {
   if (!s.enabled) return 'off';
   if (!s.lastOutcome) return 'never';
   if (s.lastOutcome === 'SUCCEEDED') return 'ok';
@@ -29,14 +29,13 @@ export function sourceState(s: SourceInfo): SourceState {
 }
 
 /**
- * Sources page (ADR 0040, 10): how a search works, the source modes in use, the last check of every
+ * Sources page (ADR 0040): how a search works, the source modes in use, the last check of every
  * source in words, and one card per source with what it covers, its terms and attribution, its response time, a pause
  * line while its circuit is open, and today's web credits on the metered source. The summary counts the last outcome
  * only: a paused source is not counted as limited.
  */
 export function Sources() {
   const { t, i18n } = useTranslation();
-  // Its own request, not the copy the app loaded at start: the last checks shown here are at most CACHE_TTL_MS old.
   // When the list on screen arrived, for the line after a failed refresh. A list from the recent-answers cache counts
   // from when the page opened.
   const [listedAt, setListedAt] = useState(() => new Date().toISOString());
@@ -52,7 +51,7 @@ export function Sources() {
   const list = q.data ?? q.previous;
   const [mode, setMode] = useState<SourceMode | null>(null);
   const all = list ?? [];
-  const modes = MODES.filter((m) => all.some((s) => s.mode === m));
+  const modes = sourceModeValues.filter((m) => all.some((s) => s.mode === m));
   const shown = mode ? all.filter((s) => s.mode === mode) : all;
   const count = (st: SourceState) => all.filter((s) => sourceState(s) === st).length;
   const status = (s: SourceInfo) => {

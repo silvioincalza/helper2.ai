@@ -1,6 +1,6 @@
 /*
  * Helper2.ai design system: warm paper, deep indigo ink, one saffron accent (spiritual editorial colour);
- * Space Grotesk for headings, Inter for reading, JetBrains Mono for names that came from a source (tech type).
+ * Space Grotesk for text and titles; the system monospace for code.
  * Light on :root, dark under [data-theme="dark"] (public/theme.js sets it from the saved choice; light is the default). Saffron is a fill, never small text on paper (2.9:1):
  * text on it is indigo, and saffron-coloured text uses --accent-ink.
  */
@@ -57,7 +57,6 @@
   --source-tile-bg: var(--surface);
   --source-tile-line: var(--border);
   --row-selected-line: var(--accent);
-  /* Sizes and motion (tokens.json v3) used by Home. */
 
   /* Older names used across app.css, mapped onto the design system. */
   --text: var(--ink);
@@ -75,7 +74,7 @@
   --font-display: var(--font-sans);
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  /* The app's own spacing steps (kept), plus the design system's sizes. */
+  /* The app's own spacing steps, plus the design system's sizes. */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;

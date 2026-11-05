@@ -99,7 +99,7 @@ traceable to that administrator.
   `backend/src/main/kotlin/ai/helper2/scout/usecase/StartScoutRun.kt` — admin use cases that write the trail.
 - `backend/src/test/java/ai/helper2/api/AccountApiIT.java`, `AdminAuditApiIT.java` — bookmarks, account deletion, audit.
 - `frontend/src/context/MeContext.tsx`, `BookmarksContext.tsx`, `frontend/src/components/SignIn.tsx`,
-  `frontend/src/pages/AccountPage.tsx`, `frontend/src/pages/AdminPage.tsx`.
+  `frontend/src/pages/AccountPage.tsx`, `frontend/src/pages/admin/`.
 - `backend/src/main/resources/application.yaml` — profile `oauth-github`, `helper2.security.admins`.
 
 ## Diagrams

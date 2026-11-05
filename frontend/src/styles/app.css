@@ -550,13 +550,6 @@ textarea {
   background: var(--selected);
   color: var(--on-selected);
 }
-.tag {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 0 0.4rem;
-}
 .origin {
   font-style: italic;
 }
@@ -989,18 +982,10 @@ tbody th {
 .timeline-compact {
   grid-template-columns: 1fr;
 }
-.facts {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
-  gap: var(--space-2) var(--space-4);
-  margin: var(--space-3) 0;
-}
-.facts dt,
 .timeline dt {
   color: var(--text-muted);
   font-size: 0.8rem;
 }
-.facts dd,
 .timeline dd {
   margin: 0;
 }
@@ -1101,13 +1086,6 @@ input[type='radio'] {
 }
 .panel {
   border-radius: var(--radius-lg);
-}
-.tag {
-  border-radius: var(--radius-pill);
-  padding: 0 0.5rem;
-  background: var(--surface-tint);
-  border-color: transparent;
-  color: var(--ink-2);
 }
 
 .section-head {
@@ -1250,22 +1228,6 @@ h2 {
   border-radius: var(--radius-md);
   font-size: 1rem;
 }
-@keyframes pin-in {
-  from {
-    transform: translateY(-12px);
-    opacity: 0.4;
-  }
-}
-
-@keyframes slide {
-  from {
-    background-position: -40% 0;
-  }
-  to {
-    background-position: 140% 0;
-  }
-}
-
 /* guide answer: proof first */
 .proof-strip {
   display: grid;

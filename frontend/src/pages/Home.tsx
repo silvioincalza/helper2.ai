@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { EventsBoard } from '@/components/home/EventsBoard';
 import { NewsBoard } from '@/components/home/NewsBoard';
 import { OneBox } from '@/components/OneBox';
-import { useSources } from '@/context/SourcesContext';
+import { api } from '@/api/client';
+import { useApi } from '@/hooks/useApi';
 import { useTitle } from '@/hooks/useTitle';
 import { pickExamples, type Example } from '@/lib/examples';
 import {
@@ -28,7 +29,7 @@ export default function Home() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { hash, key } = useLocation();
-  const sources = useSources();
+  const sources = useApi('sources', (signal) => api.listSources(signal));
   useTitle('');
   // A new pick per page view, the same one while the page stays.
   const [examples] = useState(() => pickExamples());

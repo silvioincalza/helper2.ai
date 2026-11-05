@@ -1,7 +1,7 @@
 import type { ResultCard } from '@/api/types';
 
 /** One month of the timeline; `month` is `YYYY-MM` (UTC), or null for items whose creation date no source states. */
-export interface TimelineGroup {
+interface TimelineGroup {
   month: string | null;
   cards: ResultCard[];
 }

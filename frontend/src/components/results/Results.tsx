@@ -10,6 +10,7 @@ import {
 import { Link, useLocation, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { api, ApiError } from '@/api/client';
+import { sortOrderValues } from '@/api/schema';
 import type { ResultCard, SearchResponse } from '@/api/types';
 import { ActiveFilters } from '@/components/ActiveFilters';
 import { FreshnessBadge, OriginLabel } from '@/components/Badges';
@@ -41,20 +42,15 @@ import { useGuideStream } from '@/hooks/useGuideStream';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useTitle } from '@/hooks/useTitle';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
-import {
-  displayHost,
-  guidePicks,
-  picksById,
-  picksFirst,
-  selectedResult,
-  type GuidePick,
-} from '@/lib/selection';
+import { displayHost } from '@/lib/format';
+import { guidePicks, picksById, picksFirst, selectedResult, type GuidePick } from '@/lib/selection';
 import {
   activeFilterCount,
   askedQuestion,
   clampQuestion,
   clearFilters,
   homeParams,
+  isQuestion,
   isSelected,
   parseSearchParams,
   patchState,
@@ -91,7 +87,6 @@ export function Results() {
     const q = clampQuestion(question);
     if (q) go(patchState(state, { q }), q);
   };
-  const words = state.q.split(/\s+/).filter(Boolean).length;
   // One guide stream for the page: the bar shows it, the rows read their badges from it.
   const stream = useGuideStream();
   const picks = useMemo(() => guidePicks(stream.answer), [stream.answer]);
@@ -116,7 +111,7 @@ export function Results() {
           webLine={webLineExpected(shown?.webSearches)}
         />
       ) : (
-        words >= 4 && (
+        isQuestion(state.q) && (
           <button type="button" className="btn suggest-guide" onClick={() => ask(state.q)}>
             {t('home.suggestGuide', { q: state.q })}
           </button>
@@ -315,9 +310,11 @@ function ResultsBody({
                   update(patchState(state, { sort: e.target.value as SearchState['sort'] }))
                 }
               >
-                <option value="RELEVANCE">{t('sort.RELEVANCE')}</option>
-                <option value="NEWEST">{t('sort.NEWEST')}</option>
-                <option value="RECENTLY_UPDATED">{t('sort.RECENTLY_UPDATED')}</option>
+                {sortOrderValues.map((s) => (
+                  <option key={s} value={s}>
+                    {t(`sort.${s}`)}
+                  </option>
+                ))}
               </select>
             </label>
           )}
@@ -580,7 +577,6 @@ function Preview({
   const host = displayHost(card.url);
   const guide = useGuideToggle(card.id);
   const bodyId = `guide-${useId()}`;
-  const button = useRef<HTMLButtonElement>(null);
   const location = useLocation();
   // The resource page links back to this search and shows the same checked sentence.
   const detail = { pathname: resourcePath(card.id) };
@@ -615,7 +611,6 @@ function Preview({
             open={guide.open}
             onToggle={guide.toggle}
             bodyId={bodyId}
-            buttonRef={button}
           />
         )}
         {inline && (

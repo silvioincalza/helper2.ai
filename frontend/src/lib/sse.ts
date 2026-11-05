@@ -1,5 +1,5 @@
 /** One server-sent event: its name (default "message") and its data lines joined with "\n". */
-export interface SseEvent {
+interface SseEvent {
   event: string;
   data: string;
 }

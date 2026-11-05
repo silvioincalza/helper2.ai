@@ -6,7 +6,7 @@ interface Settled<T> {
   error?: unknown;
 }
 
-export interface ApiState<T> {
+interface ApiState<T> {
   data: T | undefined;
   /** Last successful data while a newer request is loading (for stable UI such as facets). */
   previous: T | undefined;
@@ -15,14 +15,14 @@ export interface ApiState<T> {
   reload: () => void;
 }
 
-export interface ApiOptions {
+interface ApiOptions {
   /** Keep the answer in the shared recent-answers cache (default true). Off for data that changes under the user. */
   cache?: boolean;
 }
 
 /** How many recent answers are kept, and for how long, so back and forward show a page without asking again. */
-export const CACHE_MAX = 50;
-export const CACHE_TTL_MS = 5 * 60_000;
+const CACHE_MAX = 50;
+const CACHE_TTL_MS = 5 * 60_000;
 
 /** Recent successful answers by key, least recently used first (a Map keeps insertion order). */
 const recent = new Map<string, { data: unknown; at: number }>();
