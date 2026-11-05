@@ -31,7 +31,8 @@ describe('admin: sign-in and role', () => {
   it('offers GitHub sign-in to anonymous visitors without calling admin endpoints', async () => {
     const m = mockApi({ 'GET /me': () => ANON });
     renderApp('/admin/review');
-    const main = screen.getByRole('main');
+    // The back office loads on demand: wait for its page.
+    const main = await screen.findByRole('main');
     expect(await within(main).findByRole('link', { name: 'Sign in with GitHub' })).toHaveAttribute(
       'href',
       '/oauth2/authorization/github',

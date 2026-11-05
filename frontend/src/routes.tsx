@@ -1,12 +1,8 @@
+import type { ComponentType } from 'react';
 import type { RouteObject } from 'react-router';
 import { Layout } from '@/components/Layout';
 import { AppProviders } from '@/AppProviders';
 import AccountPage from '@/pages/AccountPage';
-import AdminLayout from '@/pages/admin/AdminLayout';
-import AdminOverview from '@/pages/admin/AdminOverview';
-import AuditPage from '@/pages/admin/AuditPage';
-import ReviewQueuePage from '@/pages/admin/ReviewQueuePage';
-import ScoutRunsPage from '@/pages/admin/ScoutRunsPage';
 import HomePage from '@/pages/HomePage';
 import MissionPage from '@/pages/MissionPage';
 import NotFoundPage from '@/pages/NotFoundPage';
@@ -15,6 +11,13 @@ import ResourcePage from '@/pages/ResourcePage';
 import SavedPage from '@/pages/SavedPage';
 import SourcesPage from '@/pages/SourcesPage';
 import TermsPage from '@/pages/TermsPage';
+
+/** A route whose page module is loaded the first time the route matches. */
+const page =
+  (load: () => Promise<{ default: ComponentType }>) =>
+  async (): Promise<{ Component: ComponentType }> => ({
+    Component: (await load()).default,
+  });
 
 /** Kept separate from the router so tests can mount it in createMemoryRouter. */
 export const routes: RouteObject[] = [
@@ -33,14 +36,16 @@ export const routes: RouteObject[] = [
       { path: 'sources', element: <SourcesPage /> },
       { path: 'account', element: <AccountPage /> },
       {
-        // The back office (ADR 0023, ADR 0035): one guard, a part per route.
+        // The back office (ADR 0023, ADR 0035): one guard, a part per route. Loaded on demand, so a visitor's
+        // bundle never carries it.
         path: 'admin',
-        element: <AdminLayout />,
+        lazy: page(() => import('@/pages/admin/AdminLayout')),
         children: [
-          { index: true, element: <AdminOverview /> },
-          { path: 'review', element: <ReviewQueuePage /> },
-          { path: 'runs', element: <ScoutRunsPage /> },
-          { path: 'audit', element: <AuditPage /> },
+          { index: true, lazy: page(() => import('@/pages/admin/AdminOverview')) },
+          { path: 'review', lazy: page(() => import('@/pages/admin/ReviewQueuePage')) },
+          { path: 'runs', lazy: page(() => import('@/pages/admin/ScoutRunsPage')) },
+          { path: 'examples', lazy: page(() => import('@/pages/admin/ExamplesPage')) },
+          { path: 'audit', lazy: page(() => import('@/pages/admin/AuditPage')) },
         ],
       },
       { path: 'mission', element: <MissionPage /> },

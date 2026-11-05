@@ -11,6 +11,7 @@ const PARTS = [
   { to: '/admin', key: 'overview', end: true },
   { to: '/admin/review', key: 'review', end: false },
   { to: '/admin/runs', key: 'runs', end: false },
+  { to: '/admin/examples', key: 'examples', end: false },
   { to: '/admin/audit', key: 'audit', end: false },
 ] as const;
 

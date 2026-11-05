@@ -565,6 +565,7 @@
       "overview": "Overview",
       "review": "Review",
       "runs": "Scout runs",
+      "examples": "Examples",
       "audit": "Audit"
     },
     "overview": {
@@ -604,7 +605,10 @@
       "admin": "Administrator",
       "actions": {
         "RESOLVE_REVIEW_ITEM": "Review decision",
-        "START_SCOUT_RUN": "Scout run started"
+        "START_SCOUT_RUN": "Scout run started",
+        "ADD_HOME_EXAMPLE": "Example added",
+        "CHANGE_HOME_EXAMPLE": "Example changed",
+        "REMOVE_HOME_EXAMPLE": "Example removed"
       }
     },
     "budget": {
@@ -614,6 +618,74 @@
       "enrichment-gap": "Enrichment gap round",
       "classifier": "Awesome-list classifier",
       "tool-guide": "Setup guide"
+    },
+    "examples": {
+      "title": "Home examples",
+      "lede": "The home page picks 2 for people who use AI and 2 for builders from the examples that pass the check. Shown now: {{use}} for people who use AI, {{build}} for builders.",
+      "few": "Fewer than 2 shown for {{path}}. Add one, or fix a hidden one.",
+      "checkFilter": "Check",
+      "allChecks": "All",
+      "empty": "No examples here.",
+      "loadError": "Could not load the examples.",
+      "path": {
+        "USE_AI": "People who use AI",
+        "BUILD_WITH_AI": "Builders"
+      },
+      "status": {
+        "ACTIVE": "Active",
+        "PAUSED": "Paused"
+      },
+      "origin": {
+        "BUILT_IN": "Built in",
+        "CURATED": "Written by an admin",
+        "AI_DRAFTED": "Drafted with AI"
+      },
+      "check": {
+        "PASS": "Shown · expected result at #{{rank}}",
+        "WEAK": "Hidden · best expected result at #{{rank}}",
+        "FAIL": "Hidden · no expected result in the top 10",
+        "PENDING": "Waiting for the check"
+      },
+      "checkName": {
+        "PASS": "Shown",
+        "WEAK": "Almost (top 10)",
+        "FAIL": "Hidden",
+        "PENDING": "Waiting"
+      },
+      "checkedAt": "Checked {{at}}",
+      "expected": "Expected results",
+      "missing": "no longer in the catalog",
+      "pause": "Pause",
+      "activate": "Activate",
+      "edit": "Edit",
+      "remove": "Remove",
+      "confirmRemove": "Remove “{{label}}”?",
+      "confirm": "Yes, remove",
+      "cancel": "Cancel",
+      "form": {
+        "add": "Add an example",
+        "change": "Change “{{label}}”",
+        "label": "Label on the chip",
+        "labelHint": "2 to 32 characters.",
+        "query": "What it searches",
+        "queryHint": "3 to 200 characters. Write it as a visitor would type it.",
+        "path": "For",
+        "expected": "Expected results (1 to 3)",
+        "expectedHint": "A right answer the check looks for in the top 3. Search the catalog and add it.",
+        "find": "Search the catalog",
+        "findButton": "Find",
+        "use": "Add",
+        "drop": "Remove {{title}}",
+        "none": "No result. Try other words.",
+        "save": "Add example",
+        "saveChange": "Save change",
+        "cancel": "Cancel",
+        "pendingNote": "A new or changed search waits for the check (up to 5 minutes) before the home page can show it."
+      },
+      "duplicate": "Another example already has this label or this query.",
+      "conflict": "Someone changed this example first. The list is reloaded: make your change again.",
+      "invalid": "Not saved: {{detail}}",
+      "failed": "The action failed. Please try again."
     }
   },
   "notFound": {
