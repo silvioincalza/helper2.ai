@@ -151,6 +151,7 @@ class SearchEvaluation(
     recorded
       .groupBy { it.group }
       .forEach { (g, qs) -> appendLine(row(g, base.filter { s -> qs.any { it.id == s.queryId } })) }
+    append(homeExamples())
     appendLine("\n## Ablation: each source left out\n")
     appendLine(
       "Marginal Recall@20 = Recall@20 with every source minus Recall@20 without this one. " +
@@ -188,12 +189,37 @@ class SearchEvaluation(
     }
   }
 
+  /**
+   * One row per home example (docs/eval/README.md): its best grade in the top 3. An example keeps
+   * its promise only with a result graded 2 or 3 there; nDCG of the group can hide one that lost
+   * it.
+   */
+  fun homeExamples(): String = buildString {
+    val examples = recorded.filter { it.group == HOME_EXAMPLE }
+    if (examples.isEmpty()) return@buildString
+    appendLine("\n## Home examples: best grade in the top 3\n")
+    appendLine("| query | words | path | best grade in top 3 | keeps its promise |")
+    appendLine("|---|---|---|---|---|")
+    for (q in examples) {
+      val best = bestGradeInTop3(q.id)
+      val keeps = best != null && best >= RelevanceMetrics.RELEVANT
+      appendLine(
+        "| ${q.id} | ${q.text} | ${q.path ?: "–"} | ${best ?: "–"} | ${if (keeps) "yes" else "**no**"} |"
+      )
+    }
+  }
+
+  fun bestGradeInTop3(queryId: String): Int? =
+    ranked(queryId).take(3).mapNotNull { grade(queryId, it) }.maxOrNull()
+
   private fun row(name: String, s: List<QueryScore>) =
     "| $name | ${s.size} | ${fmt(meanOrNull(s.mapNotNull { it.ndcg10 }))} | ${fmt(meanOrNull(s.mapNotNull { it.mrr }))} | " +
       "${fmt(meanOrNull(s.mapNotNull { it.recall20 }))} | ${fmt(meanOrNull(s.map { it.duplicates10.toDouble() }))} | " +
       "${fmt(meanOrNull(s.map { it.unjudged10 }))} |"
 
   companion object {
+    const val HOME_EXAMPLE = "home-example"
+
     fun urlsOf(r: MergedResult): Set<String> =
       (listOf(r.canonicalUrl.value) +
           r.hits.flatMap { listOfNotNull(it.canonicalUrl.value, it.repositoryUrl?.value) })

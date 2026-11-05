@@ -3,6 +3,7 @@ package ai.helper2.eval
 import ai.helper2.search.PopularityKind
 import ai.helper2.search.SourceOutcome
 import ai.helper2.shared.Audience
+import ai.helper2.shared.AudiencePath
 import ai.helper2.shared.ResourceType
 import ai.helper2.shared.SourceMode
 import java.time.Instant
@@ -185,5 +186,40 @@ class SearchEvaluationTest {
     }
     assertFailsWith<IllegalArgumentException> { Qrels.parse(listOf("q1\thttps://x.org/a\t1")) }
     assertTrue(Qrels.parse(listOf("# comment", "query_id\turl\tgrade")).isEmpty)
+  }
+
+  @Test
+  fun `the report lists each home example and whether a relevant result is in its top 3`() {
+    val e =
+      SearchEvaluation(
+        listOf(
+          EvalQuery(
+            "q1",
+            SearchEvaluation.HOME_EXAMPLE,
+            "vector store",
+            path = AudiencePath.BUILD_WITH_AI,
+          )
+        ),
+        mapOf("q1" to snapshot),
+        Qrels.parse(
+          """
+          query_id	url	grade
+          q1	https://github.com/o/a	1
+          q1	https://github.com/o/b	1
+          """
+            .trimIndent()
+            .lines()
+        ),
+      )
+    assertEquals(1, e.bestGradeInTop3("q1"))
+    assertTrue(
+      e.report().contains("| q1 | vector store | BUILD_WITH_AI | 1 | **no** |"),
+      e.report(),
+    )
+  }
+
+  @Test
+  fun `a report without home examples has no home example section`() {
+    assertTrue("Home examples" !in evaluation("query_id\turl\tgrade").report())
   }
 }

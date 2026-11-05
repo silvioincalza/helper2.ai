@@ -60,19 +60,16 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
   /**
    * The errors Spring answers on its own (unreadable body, method not allowed, ...): the same
-   * problem, typed by its status.
+   * problem, typed by its status. Here, not in handleExceptionInternal: Spring builds the body of a
+   * 404, 405 or 415 only after that method, so this is the first place every body exists.
    */
   @Override
-  protected ResponseEntity<Object> handleExceptionInternal(
-      Exception ex,
-      @Nullable Object body,
-      HttpHeaders headers,
-      HttpStatusCode status,
-      WebRequest request) {
+  protected ResponseEntity<Object> createResponseEntity(
+      @Nullable Object body, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
     if (body instanceof ProblemDetail problem) {
       ProblemType type = ProblemType.forStatus(status.value());
       Problems.typed(problem, type, type == ProblemType.INVALID_REQUEST ? INVALID : null);
     }
-    return super.handleExceptionInternal(ex, body, headers, status, request);
+    return super.createResponseEntity(body, headers, status, request);
   }
 }

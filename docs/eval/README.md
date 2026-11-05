@@ -63,8 +63,8 @@ relevant result: a 0 for each pooled result is the label.
 The examples under the home search box are the first search many visitors make, so each one is in the set with the
 words and the `path` it sends (`frontend/src/lib/examples.ts`). A change to the pool changes this group in the same
 pull request. Judge them like any query. The bar for an example is higher than nDCG: a result graded 3 or 2 in its
-top 3. The report lists each `hex` query; one that loses its top-3 answer after a ranking change is a reason to stop
-that change, or to take the example out of the pool.
+top 3. The report lists each `hex` query with its best grade in the top 3 (section "Home examples"); one that loses
+its top-3 answer after a ranking change is a reason to stop that change, or to take the example out of the pool.
 
 ## Guide relevance (P@3, nDCG@3)
 
