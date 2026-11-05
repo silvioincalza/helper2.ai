@@ -1,5 +1,7 @@
 package ai.helper2.identity.config;
 
+import ai.helper2.platform.ProblemType;
+import ai.helper2.platform.Problems;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -96,8 +98,7 @@ class AdminPortConfiguration {
      * The same problem body as any unknown path, without the path: it runs before the security
      * filters.
      */
-    static final String NOT_FOUND =
-        "{\"type\":\"about:blank\",\"title\":\"Not Found\",\"status\":404}";
+    static final String NOT_FOUND = Problems.json(ProblemType.NOT_FOUND, null);
 
     private final AdminPort adminPort;
 

@@ -1,5 +1,7 @@
 package ai.helper2.identity.config;
 
+import ai.helper2.platform.ProblemType;
+import ai.helper2.platform.Problems;
 import ai.helper2.platform.resilience.Resilience;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -143,8 +145,9 @@ class SessionConfiguration {
           res.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
           res.getWriter()
               .write(
-                  "{\"type\":\"about:blank\",\"title\":\"Service Unavailable\",\"status\":503,"
-                      + "\"detail\":\"Sign-in is unavailable right now. Try again in a moment.\"}");
+                  Problems.json(
+                      ProblemType.UNAVAILABLE,
+                      "Sign-in is unavailable right now. Try again in a moment."));
         }
       }
     }

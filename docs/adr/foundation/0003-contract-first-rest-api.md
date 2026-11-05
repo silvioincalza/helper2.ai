@@ -20,9 +20,15 @@ every source has a status), and these rules must be visible in one place that bo
    it first.
 4. **Responses checked against the contract.** API integration tests validate real response bodies against
    the component schemas with a JavaScript Object Notation (JSON) Schema 2020-12 validator (`ContractValidator`).
-5. **Errors as problem+json.** `platform.ApiExceptionHandler` answers with Request for Comments (RFC) 9457 problem details
-   (`application/problem+json`). Client mistakes are 400 and an unknown resource is 404 (`NotFoundException`); anything else is 500 with a fixed text,
-   and the cause is logged, never echoed.
+5. **Errors as problem+json, with Spring's own `ProblemDetail`.** `platform.ApiExceptionHandler` answers with Request for
+   Comments (RFC) 9457 problem details (`application/problem+json`, `spring.mvc.problemdetails.enabled`). Every problem
+   has a type from `platform.ProblemType`: the `type` URI `https://helper2.ai/problems/<code>` and the same stable
+   `code` as an extension member, so a client reacts to the code, never to the title text. A use case throws
+   `ApiProblem` with its type (`NotFoundException` and `BadRequestException` are two of them); the errors Spring answers
+   on its own get a type by their status. Client mistakes are 400 with a fixed text and an unknown resource is 404;
+   anything else is 500 with a fixed text, and the cause is logged, never echoed. The few places that answer before
+   Spring MVC (servlet filters, the rate-limit interceptor, the guide stream's error event) write the same problem
+   through `platform.Problems`. The codes are listed in the `Problem` schema of the contract.
 6. **Enums by wire value.** `ContractEnumConverters` binds query parameters to generated enums by their
    value (for example `unknown`), using the generated `fromValue`.
 7. **One exception: the event stream.** `POST /guide/stream` is in the contract (tag `guide-stream`,
@@ -40,13 +46,16 @@ every source has a status), and these rules must be visible in one place that bo
 - Code-first (springdoc generates the spec) — the spec then follows the Java types, and the frontend
   depends on a running backend to get its types.
 - GraphQL — one more runtime and query language for a small, fixed set of screens.
+- Zalando Problem (`problem-spring-web`) for the errors — Spring has RFC 9457 support built in (`ProblemDetail`), and
+  the library's Jackson module is for Jackson 2, while helper2 runs Jackson 3. One more dependency for what the
+  framework does.
 - Hand-written TypeScript types — they drift; nothing fails when they do.
 
 ## Code
 - `api/openapi.yaml` — the contract.
 - `backend/build.gradle.kts` (task `openApiGenerate`) — server generation settings.
 - `backend/src/main/java/ai/helper2/api/package-info.java` — open module for generated types.
-- `backend/src/main/java/ai/helper2/platform/ApiExceptionHandler.java` — problem details.
+- `backend/src/main/java/ai/helper2/platform/ApiExceptionHandler.java`, `ProblemType.java`, `ApiProblem.java`, `Problems.java` — problem details.
 - `backend/src/main/java/ai/helper2/platform/ContractEnumConverters.java` — enum binding.
 - `backend/src/test/java/ai/helper2/api/ContractValidator.java` — response validation in tests.
 - `backend/src/main/java/ai/helper2/guide/web/GuideStreamController.java` — the stream, events named by `GuideStreamEventDto`.

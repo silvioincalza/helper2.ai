@@ -1,7 +1,7 @@
 # Sequence: one REST request through the generated contract: enum binding by wire value, the generated interface,
 # the controller, and the problem+json answer for a client mistake, a missing resource or a bug.
 # Source of truth: backend/src/main/java/ai/helper2/platform/ContractEnumConverters.java,
-#   backend/src/main/java/ai/helper2/platform/ApiExceptionHandler.java, .../search/web/SearchController.java,
+#   backend/src/main/java/ai/helper2/platform/ApiExceptionHandler.java, ProblemType.java, Problems.java, .../search/web/SearchController.java,
 #   .../catalog/web/ResourcesController.java, build/generated/openapi (SearchApi, ResourcesApi, *Dto).
 # Render: cd docs/diagrams && d2 fmt sequence-0003-contract-first-rest-api.d2 && d2 sequence-0003-contract-first-rest-api.d2 sequence-0003-contract-first-rest-api.svg
 
@@ -30,18 +30,18 @@ bad: Client mistake {
   mvc -> conv: "bind \"maybe\""
   conv -> mvc: "no such wire value"
   mvc -> handler: "MethodArgumentTypeMismatchException"
-  handler -> client: "400 application/problem+json\n\"Invalid request parameters.\""
+  handler -> client: "400 application/problem+json\ncode invalid-request\n\"Invalid request parameters.\""
 }
 
 missing: Not found {
   client -> mvc: "GET /api/v1/resources/{id}"
   mvc -> ctrl: "getResource(id)"
   ctrl -> handler: "NotFoundException"
-  handler -> client: "404 problem+json\n\"Resource not found in the Helper2 index.\""
+  handler -> client: "404 problem+json, code not-found\n\"Resource not found in the Helper2 index.\""
 }
 
 bug: Anything else {
   ctrl -> handler: "RuntimeException"
   handler -> handler: "log.error with the cause"
-  handler -> client: "500 problem+json, fixed text\n\"Something went wrong on our side.\"\n(cause never echoed)"
+  handler -> client: "500 problem+json, code internal\n\"Something went wrong on our side.\"\n(cause never echoed)"
 }

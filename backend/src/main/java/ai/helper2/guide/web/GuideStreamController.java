@@ -18,6 +18,7 @@ import ai.helper2.guide.GuideProgress;
 import ai.helper2.guide.usecase.AskGuide;
 import ai.helper2.platform.BadRequestException;
 import ai.helper2.platform.ClientKey;
+import ai.helper2.platform.ProblemType;
 import ai.helper2.platform.SignedInUser;
 import ai.helper2.search.SearchOutcome;
 import ai.helper2.shared.AudiencePath;
@@ -131,11 +132,11 @@ class GuideStreamController implements DisposableBean {
     boolean started =
         limits.tryStart(
             () -> run(events, request, path, client, userId, clarification, drops),
-            () -> events.fail(504, "Guide timed out", GuideLimits.TIMED_OUT));
+            () -> events.fail(ProblemType.TIMED_OUT, GuideLimits.TIMED_OUT));
     if (started) {
       events.keepAlive();
     } else {
-      events.fail(503, "Guide busy", GuideLimits.BUSY);
+      events.fail(ProblemType.UNAVAILABLE, GuideLimits.BUSY);
     }
     return ResponseEntity.ok()
         .cacheControl(CacheControl.noStore())
@@ -184,7 +185,7 @@ class GuideStreamController implements DisposableBean {
       // Throwable, not only RuntimeException: the emitter must complete whatever happened (an
       // interrupt, an Error).
       log.warn("guide stream failed: {}", e.getClass().getSimpleName());
-      events.fail(500, "Guide failed", "The guide could not answer. Try again in a moment.");
+      events.fail(ProblemType.INTERNAL, "The guide could not answer. Try again in a moment.");
       if (e instanceof InterruptedException) {
         Thread.currentThread().interrupt();
       }
@@ -295,10 +296,15 @@ class GuideStreamController implements DisposableBean {
       }
     }
 
-    void fail(int status, String title, String detail) {
+    void fail(ProblemType type, String detail) {
       finish(
           GuideStreamEventDto.ERROR,
-          new ProblemDto().type("about:blank").title(title).status(status).detail(detail));
+          new ProblemDto()
+              .type(type.uri())
+              .title(type.title())
+              .status(type.status().value())
+              .detail(detail)
+              .code(type.code()));
     }
 
     synchronized void finish(GuideStreamEventDto name, Object data) {

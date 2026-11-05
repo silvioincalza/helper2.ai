@@ -102,10 +102,9 @@ class RateLimitInterceptor implements HandlerInterceptor, WebMvcConfigurer {
     res.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
     res.getWriter()
         .write(
-            "{\"type\":\"about:blank\",\"title\":\"Too Many Requests\",\"status\":429,"
-                + "\"detail\":\"Rate limit reached. Try again in "
-                + wait
-                + " seconds.\"}");
+            Problems.json(
+                ProblemType.RATE_LIMITED,
+                "Rate limit reached. Try again in " + wait + " seconds."));
     return false;
   }
 }
