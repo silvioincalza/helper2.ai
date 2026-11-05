@@ -28,6 +28,7 @@ class SearchSettingsConfiguration {
         queryTranslator.getIfAvailable(() -> QueryTranslator.NONE) != QueryTranslator.NONE;
     return searchSettingsGroup(
         search,
+        translating,
         translating ? llm.fast() : null,
         translating ? ModelCallMetrics.promptVersion(SpringAiQueryTranslator.systemPrompt()) : null,
         sources.stream()
@@ -37,8 +38,13 @@ class SearchSettingsConfiguration {
             .toList());
   }
 
+  /**
+   * [translating]: a translator runs. The flag shows that, not the property alone: the property can
+   * be on while no model is set, and then nothing is translated.
+   */
   static SettingsGroup searchSettingsGroup(
       SearchProperties search,
+      boolean translating,
       @Nullable String translationModel,
       @Nullable String translationPrompt,
       List<String> enabledSources) {
@@ -50,11 +56,7 @@ class SearchSettingsConfiguration {
         List.of(
             Setting.names(
                 "search.sourcesOn", "Sources on", enabledSources, "H2_SOURCE_<ID>_ENABLED"),
-            Setting.flag(
-                "search.translationOn",
-                "Query translation on",
-                search.translation().enabled(),
-                null),
+            Setting.flag("search.translationOn", "Query translation on", translating, null),
             Setting.count(
                 "search.dailyTranslations",
                 "Translations a day",
