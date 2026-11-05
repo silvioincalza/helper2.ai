@@ -1,6 +1,6 @@
 /*
- * Helper2.ai design system: warm paper, deep indigo ink, one saffron accent (spiritual editorial colour);
- * Space Grotesk for text and titles; the system monospace for code.
+ * Helper2.ai design system v4 (docs/design/system/tokens.json, ADR 0042): warm paper, deep indigo ink, one saffron
+ * accent; Space Grotesk for text and titles (decision of 2 Nov 2026); the system monospace for code.
  * Light on :root, dark under [data-theme="dark"] (public/theme.js sets it from the saved choice; light is the default). Saffron is a fill, never small text on paper (2.9:1):
  * text on it is indigo, and saffron-coloured text uses --accent-ink.
  */
@@ -15,13 +15,14 @@
   --ink-2: #35344f;
   --muted: #4f4b63; /* 7.5:1 on --bg */
   --border: #e7dfd0;
-  --border-strong: #d3c7b2;
+  --border-strong: #8f8470; /* control borders: 3.3:1 on --bg, 3.6:1 on --surface */
   --divider: #efe9dd;
+  --ring: #d3c7b2; /* decorative lines only, never a control border */
   --accent: #e06a1d; /* saffron */
   --on-accent: #1b1c3f; /* 4.9:1 on saffron */
   --accent-ink: #a8420a; /* saffron as text, 5.2:1 on --bg */
   --accent-deep: #2d2e60; /* indigo */
-  --focus: #2d2e60; /* indigo ring, drawn 2px off the control: ≥ 10.4:1 on every paper surface */
+  --focus: #1b1c3f; /* 3px ring, 2px off the control: ≥ 13.5:1 on every paper surface */
   --selected: #1b1c3f;
   --on-selected: #ffffff;
   --checked-bg: #e3f3ee;
@@ -35,12 +36,24 @@
   --tag-news-ink: #173f70;
   --tag-paper-bg: #e6e7f5;
   --tag-mcp-bg: #e3f3ee;
-  --console: #1b1c3f;
   --status-ok: #2f8f5b;
   --status-warn: #c98a0b;
+  --status-ok-ink: #2f6b3a;
+  --status-warn-ink: #8a5a00;
+  --term-bg: #1b1c3f;
+  --term-bar: #2d2e60;
+  --term-text: #f7f2e9;
+  --term-muted: #b9b4cc;
+  --term-tag: #f0a868;
+  --term-tag-2: #e06a1d;
+  --term-line: #1b1c3f;
+  --term-control: #8587bd;
   --header-bg: rgba(255, 253, 248, 0.94);
+  --shadow-raised: 0 10px 30px rgba(27, 28, 63, 0.18);
+  --shadow-pinned: 0 8px 20px rgba(27, 28, 63, 0.12);
+  --shadow-overlay: 0 16px 48px rgba(27, 28, 63, 0.18);
 
-  /* Semantic tokens of design system v3 (tokens.json, `alias`): each follows its base token, in both themes. */
+  /* Semantic tokens (tokens.json, `alias`): each follows its base token, in both themes. */
   --proof-bg: var(--quote-bg);
   --proof-mark: var(--mark);
   --pill-ok-bg: var(--checked-bg);
@@ -57,16 +70,6 @@
   --source-tile-bg: var(--surface);
   --source-tile-line: var(--border);
   --row-selected-line: var(--accent);
-
-  /* Older names used across app.css, mapped onto the design system. */
-  --text: var(--ink);
-  --text-muted: var(--muted);
-  --surface-1: var(--surface);
-  --surface-2: var(--surface-tint);
-  --cyan: var(--accent-ink);
-  --violet: var(--accent-deep);
-  --ok: var(--checked-ink);
-  --warn: var(--not-stated);
 
   /* One font for text and titles; code and commands in the system's monospace font (nothing to download). */
   --font-sans:
@@ -91,6 +94,9 @@
   --target-min: 44px;
   --box-height: 56px;
   --maxw: 1120px;
+  --content-wide: 1040px;
+  --reading-max: 808px;
+  --list-max: 460px;
   /* The sticky header row, so a jump to an anchor (#news) lands below it, not under it. */
   --header-height: 64px;
   --motion: 160ms;
@@ -106,13 +112,14 @@
   --ink-2: #d4d2e4;
   --muted: #aeacc6;
   --border: #2f3058;
-  --border-strong: #45477a;
+  --border-strong: #6f71a8; /* 3.9:1 on --bg, 3.5:1 on --surface */
   --divider: #26274f;
+  --ring: #2f3058;
   --accent: #f08a42;
   --on-accent: #15162f;
   --accent-ink: #f4a46a;
   --accent-deep: #c9cae3;
-  --focus: #c9cae3; /* light indigo ring: ≥ 8.8:1 on every dark surface */
+  --focus: #f3f1ea; /* ≥ 12.5:1 on every dark surface */
   --selected: #f3f1ea;
   --on-selected: #15162f;
   --checked-bg: #123528;
@@ -126,9 +133,18 @@
   --tag-news-ink: #93c5fd;
   --tag-paper-bg: #26274f;
   --tag-mcp-bg: #123528;
-  --console: #0f1024;
   --status-ok: #86efac;
   --status-warn: #fcd34d;
+  --status-ok-ink: #86efac;
+  --status-warn-ink: #fcd34d;
+  --term-bg: #0e0f26;
+  --term-bar: #24255a;
+  --term-text: #f3f1ea;
+  --term-muted: #b9b4cc;
+  --term-tag: #f0a868;
+  --term-tag-2: #f08a42;
+  --term-line: #45477a;
+  --term-control: #8c8ec4;
   --header-bg: rgba(29, 30, 61, 0.94);
 }
 

@@ -43,7 +43,7 @@
   gap: var(--space-3);
 }
 .h2-sources__modes > div {
-  border-top: 1px solid var(--border-strong);
+  border-top: 1px solid var(--ring);
   padding-top: var(--space-2);
 }
 .h2-sources__modes dd {
