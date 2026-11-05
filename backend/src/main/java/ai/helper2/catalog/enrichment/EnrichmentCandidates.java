@@ -29,6 +29,43 @@ public interface EnrichmentCandidates {
   long pendingCount(int minText, int maxFailed);
 
   /**
+   * One page of the backlog in the order [pending] takes it, after [after] (null: from the start),
+   * at most [size] entries, with why each waits and its runs so far (back office queue).
+   */
+  List<BacklogEntry> backlog(@Nullable BacklogCursor after, int size, int minText, int maxFailed);
+
+  /** Why a resource waits for enrichment. */
+  enum Waiting {
+    /** Never enriched: taken first. */
+    NEW,
+    /** The last run found no model to call. */
+    MODEL_UNAVAILABLE,
+    /** The last run FAILED (timeout, provider error) and retries are left. */
+    RETRY
+  }
+
+  /** One resource in the backlog, with its runs so far. */
+  record BacklogEntry(
+      UUID id,
+      String title,
+      Waiting waiting,
+      Instant firstDiscoveredAt,
+      int failedRuns,
+      @Nullable String lastOutcome,
+      @Nullable Instant lastRunAt) {
+
+    /** Where the next page starts. */
+    public BacklogCursor cursor() {
+      return new BacklogCursor(waiting == Waiting.NEW, firstDiscoveredAt, id);
+    }
+  }
+
+  /**
+   * A place in the backlog: the never-run part or the rest, then newest first by discovery and id.
+   */
+  record BacklogCursor(boolean neverRun, Instant firstDiscoveredAt, UUID id) {}
+
+  /**
    * The subset of [ids] with a source description of at least [minText] characters, in the given
    * order.
    */
