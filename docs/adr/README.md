@@ -33,6 +33,8 @@ All diagrams: [docs/diagrams](../diagrams/README.md).
 | [0013](search/0013-works-with-flags.md) | "Works with" flags derived from current source tags | 0004, 0008 | [flow](../diagrams/flow-0013-works-with-flags.svg) · [sequence](../diagrams/sequence-0013-works-with-flags.svg) |
 | [0037](search/0037-tavily-store-and-daily-quota.md) | Tavily: store first, per-feature daily quota | 0005, 0008, 0017, 0023, 0033, 0034 | [flow](../diagrams/flow-0037-tavily-store-and-quota.svg) · [sequence](../diagrams/sequence-0037-tavily-store-and-quota.svg) |
 | [0049](search/0049-home-examples.md) | Home examples: a pool in the database, a quality check (an expected result in the top 3 of the example's own search), a random pick in the browser | 0008, 0009, 0023, 0036, 0040, 0045 | [flow](../diagrams/flow-0049-home-examples.svg) · [sequence](../diagrams/sequence-0049-home-examples.svg) |
+| [0053](search/0053-category-filter.md) | Categories as a search filter: CATEGORY labels assigned by code (finder, words, tags, type; no model) at index time and by a backfill, live results at merge time, facet counts in memory, GET /categories, the guide honours the filter | 0004, 0008, 0010, 0015, 0036, 0038, 0041, 0042, 0051 | [flow](../diagrams/flow-0053-category-filter.svg) · [sequence](../diagrams/sequence-0053-category-filter.svg) |
+| [0055](search/0055-search-inside-awesome-lists.md) | Search inside awesome lists: a tsvector per entry line and per list, never the README text; list-only matches count half and say where they were found | 0004, 0009, 0011, 0018, 0020, 0034, 0042 | [flow](../diagrams/flow-0055-search-inside-awesome-lists.svg) · [sequence](../diagrams/sequence-0055-search-inside-awesome-lists.svg) |
 
 ## AI guide — [`guide/`](guide/)
 

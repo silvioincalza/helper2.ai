@@ -23,6 +23,7 @@ import ai.helper2.platform.ProblemType;
 import ai.helper2.platform.SignedInUser;
 import ai.helper2.search.SearchOutcome;
 import ai.helper2.shared.AudiencePath;
+import ai.helper2.shared.CategoryCatalog;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,6 +32,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -88,6 +90,7 @@ class GuideStreamController implements DisposableBean {
   private final Duration heartbeat;
   private final SignedInUser signedInUser;
   private final MeterRegistry meters;
+  private final CategoryCatalog categories;
   private final ScheduledExecutorService heartbeats =
       Executors.newSingleThreadScheduledExecutor(
           Thread.ofPlatform().name("guide-heartbeat").daemon().factory());
@@ -99,8 +102,9 @@ class GuideStreamController implements DisposableBean {
       GuideLimits limits,
       SignedInUser signedInUser,
       MeterRegistry meters,
-      GuideProperties settings) {
-    this(guide, mapper, limits, signedInUser, meters, settings.heartbeat());
+      GuideProperties settings,
+      CategoryCatalog categories) {
+    this(guide, mapper, limits, signedInUser, meters, settings.heartbeat(), categories);
   }
 
   GuideStreamController(
@@ -110,6 +114,18 @@ class GuideStreamController implements DisposableBean {
       SignedInUser signedInUser,
       MeterRegistry meters,
       Duration heartbeat) {
+    this(guide, mapper, limits, signedInUser, meters, heartbeat, CategoryCatalog.EMPTY);
+  }
+
+  GuideStreamController(
+      AskGuide guide,
+      GuideDtoMapper mapper,
+      GuideLimits limits,
+      SignedInUser signedInUser,
+      MeterRegistry meters,
+      Duration heartbeat,
+      CategoryCatalog categories) {
+    this.categories = categories;
     this.guide = guide;
     this.mapper = mapper;
     this.limits = limits;
@@ -141,9 +157,10 @@ class GuideStreamController implements DisposableBean {
     Events events = new Events(new SseEmitter(limits.deadline().plus(EMITTER_GRACE).toMillis()));
     String clarification = clarification(body);
     Drops drops = drops(body);
+    Set<String> categories = categories(body);
     boolean started =
         limits.tryStart(
-            () -> run(events, request, path, client, userId, clarification, drops),
+            () -> run(events, request, path, client, userId, clarification, drops, categories),
             () -> events.fail(ProblemType.TIMED_OUT, GuideLimits.TIMED_OUT));
     if (started) {
       events.keepAlive();
@@ -178,6 +195,20 @@ class GuideStreamController implements DisposableBean {
     return Drops.of(body.getDrop());
   }
 
+  /**
+   * The category filter of the results page the question is asked from (ADR 0053), each id checked
+   * against the configured categories.
+   */
+  Set<String> categories(GuideRequestDto body) {
+    Set<String> selected =
+        body.getCategories() == null ? Set.of() : Set.copyOf(body.getCategories());
+    List<String> unknown = categories.notFilterValues(selected);
+    if (!unknown.isEmpty()) {
+      throw new BadRequestException("Unknown category: " + String.join(", ", unknown));
+    }
+    return selected;
+  }
+
   static AudiencePath path(GuideRequestDto body) {
     return body.getPath() == null ? null : AudiencePath.valueOf(body.getPath().getValue());
   }
@@ -189,9 +220,11 @@ class GuideStreamController implements DisposableBean {
       String client,
       UUID userId,
       String clarification,
-      Drops drops) {
+      Drops drops,
+      Set<String> categories) {
     try {
-      var answer = guide.ask(request, path, events, client, clarification, drops, userId);
+      var answer =
+          guide.ask(request, path, events, client, clarification, drops, userId, categories);
       events.finish(GuideStreamEventDto.ANSWER, mapper.toDto(answer));
     } catch (Throwable e) {
       // Throwable, not only RuntimeException: the emitter must complete whatever happened (an

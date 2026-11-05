@@ -20,7 +20,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/san-francisco-ai-meetup-group/events/316518717?event=sf-physical-ai-workshop-and-meetup-2026-10-28');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/san-francisco-ai-meetup-group/events/316518717?event=sf-physical-ai-workshop-and-meetup-2026-10-28');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/san-francisco-ai-meetup-group/events/316518717?event=sf-physical-ai-workshop-and-meetup-2026-10-28'), 'TAG', 'community-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -50,7 +50,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://kcl.ac.uk/events/future-skills-hackathon-thriving-in-the-age-of-genai?event=future-skills-hackathon-london-2026');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://kcl.ac.uk/events/future-skills-hackathon-thriving-in-the-age-of-genai?event=future-skills-hackathon-london-2026');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://kcl.ac.uk/events/future-skills-hackathon-thriving-in-the-age-of-genai?event=future-skills-hackathon-london-2026'), 'TAG', 'community-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -80,7 +80,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/0205nd03?event=global-ai-krako-w-chapter-3-2026');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/0205nd03?event=global-ai-krako-w-chapter-3-2026');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/0205nd03?event=global-ai-krako-w-chapter-3-2026'), 'TAG', 'community-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -116,7 +116,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://lablab.ai/ai-hackathons/vultr-hackathon?event=vultr-agent-rush-hackathon-2026');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://lablab.ai/ai-hackathons/vultr-hackathon?event=vultr-agent-rush-hackathon-2026');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://lablab.ai/ai-hackathons/vultr-hackathon?event=vultr-agent-rush-hackathon-2026'), 'TAG', 'community-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -152,7 +152,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://joinai.la/events/ai-policy-november-meetup-tefx2q?event=ai-la-ai-policy-meetup-november-2026');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://joinai.la/events/ai-policy-november-meetup-tefx2q?event=ai-la-ai-policy-meetup-november-2026');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://joinai.la/events/ai-policy-november-meetup-tefx2q?event=ai-la-ai-policy-meetup-november-2026'), 'TAG', 'community-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -182,7 +182,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/gy2e4drg?event=smart-orchestration-multi-agent-systems-and-workflows-2026-11-04');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/gy2e4drg?event=smart-orchestration-multi-agent-systems-and-workflows-2026-11-04');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/gy2e4drg?event=smart-orchestration-multi-agent-systems-and-workflows-2026-11-04'), 'TAG', 'community-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -218,7 +218,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/san-francisco-ai-meetup-group/events/316768298?event=visual-ai-agriculture-meetup-2026-11-05');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/san-francisco-ai-meetup-group/events/316768298?event=visual-ai-agriculture-meetup-2026-11-05');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/san-francisco-ai-meetup-group/events/316768298?event=visual-ai-agriculture-meetup-2026-11-05'), 'TAG', 'community-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -254,7 +254,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://gdg.community.dev/events/details/google-gdg-accra-presents-devfest-accra-2026-workshops-day-1?event=devfest-accra-2026-workshops');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://gdg.community.dev/events/details/google-gdg-accra-presents-devfest-accra-2026-workshops-day-1?event=devfest-accra-2026-workshops');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://gdg.community.dev/events/details/google-gdg-accra-presents-devfest-accra-2026-workshops-day-1?event=devfest-accra-2026-workshops'), 'TAG', 'community-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -284,7 +284,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://luma.com/b01ucdc9?event=since-ai-hackathon-2026');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://luma.com/b01ucdc9?event=since-ai-hackathon-2026');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://luma.com/b01ucdc9?event=since-ai-hackathon-2026'), 'TAG', 'community-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -320,7 +320,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/t4g1zv77?event=ai-in-the-real-world-dublin-2026');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/t4g1zv77?event=ai-in-the-real-world-dublin-2026');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/t4g1zv77?event=ai-in-the-real-world-dublin-2026'), 'TAG', 'community-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -356,7 +356,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/nyc-llm-ai/events/317122744?event=google-ai-deep-dive-ep-5-2026');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/nyc-llm-ai/events/317122744?event=google-ai-deep-dive-ep-5-2026');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/nyc-llm-ai/events/317122744?event=google-ai-deep-dive-ep-5-2026'), 'TAG', 'community-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -392,7 +392,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://science.ai.cam.ac.uk/events/training-workshop-hands-on-agentic-ai-for-science?event=hands-on-agentic-ai-for-science-cambridge-2026');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://science.ai.cam.ac.uk/events/training-workshop-hands-on-agentic-ai-for-science?event=hands-on-agentic-ai-for-science-cambridge-2026');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://science.ai.cam.ac.uk/events/training-workshop-hands-on-agentic-ai-for-science?event=hands-on-agentic-ai-for-science-cambridge-2026'), 'TAG', 'community-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -422,7 +422,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://aiforgood.itu.int/event/introducing-the-ai-agents-for-ran-challenge-from-diagnosis-to-optimization?event=ai-agents-for-ran-challenge-webinar-2026');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://aiforgood.itu.int/event/introducing-the-ai-agents-for-ran-challenge-from-diagnosis-to-optimization?event=ai-agents-for-ran-challenge-webinar-2026');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://aiforgood.itu.int/event/introducing-the-ai-agents-for-ran-challenge-from-diagnosis-to-optimization?event=ai-agents-for-ran-challenge-webinar-2026'), 'TAG', 'community-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -458,7 +458,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://info.jove.com/information-literacy-in-the-age-of-ai?event=information-literacy-in-the-age-of-ai-2026');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://info.jove.com/information-literacy-in-the-age-of-ai?event=information-literacy-in-the-age-of-ai-2026');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://info.jove.com/information-literacy-in-the-age-of-ai?event=information-literacy-in-the-age-of-ai-2026'), 'TAG', 'community-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -488,7 +488,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/phxmobi/events/315041455?event=ai-engineering-getting-things-to-market-scottsdale-2026');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/phxmobi/events/315041455?event=ai-engineering-getting-things-to-market-scottsdale-2026');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/phxmobi/events/315041455?event=ai-engineering-getting-things-to-market-scottsdale-2026'), 'TAG', 'community-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -518,7 +518,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://pirateskills.com/events/vibe-hackathon-cologne?event=vibe-hackathon-cologne-2026');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://pirateskills.com/events/vibe-hackathon-cologne?event=vibe-hackathon-cologne-2026');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://pirateskills.com/events/vibe-hackathon-cologne?event=vibe-hackathon-cologne-2026'), 'TAG', 'community-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -548,7 +548,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/atl-ai/events/314482336?event=dirty-south-atlanta-ai-meetup-november-2026');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/atl-ai/events/314482336?event=dirty-south-atlanta-ai-meetup-november-2026');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/atl-ai/events/314482336?event=dirty-south-atlanta-ai-meetup-november-2026'), 'TAG', 'community-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -578,7 +578,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://hackathon.homingo.co.in?event=homingo-hackathon-2026');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://hackathon.homingo.co.in?event=homingo-hackathon-2026');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://hackathon.homingo.co.in?event=homingo-hackathon-2026'), 'TAG', 'community-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -614,7 +614,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/xirlve2e?event=sg-agentic-nights-november-2026');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/xirlve2e?event=sg-agentic-nights-november-2026');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/xirlve2e?event=sg-agentic-nights-november-2026'), 'TAG', 'community-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -650,7 +650,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://luma.com/nov-vanai?event=vancouver-ai-meetup-november-2026');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://luma.com/nov-vanai?event=vancouver-ai-meetup-november-2026');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://luma.com/nov-vanai?event=vancouver-ai-meetup-november-2026'), 'TAG', 'community-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -680,7 +680,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://members.brandonchamber.ca/events/details/ai-workshop-series-agentic-ai-building-and-deploying-ai-agents-3267?event=agentic-ai-workshop-brandon-2026');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://members.brandonchamber.ca/events/details/ai-workshop-series-agentic-ai-building-and-deploying-ai-agents-3267?event=agentic-ai-workshop-brandon-2026');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://members.brandonchamber.ca/events/details/ai-workshop-series-agentic-ai-building-and-deploying-ai-agents-3267?event=agentic-ai-workshop-brandon-2026'), 'TAG', 'community-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -710,7 +710,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://aiforgood.itu.int/event/ai-for-good-sandbox-hackathon-united-arab-emirates?event=ai-for-good-lab-hackathon-uae-2026');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://aiforgood.itu.int/event/ai-for-good-sandbox-hackathon-united-arab-emirates?event=ai-for-good-lab-hackathon-uae-2026');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://aiforgood.itu.int/event/ai-for-good-sandbox-hackathon-united-arab-emirates?event=ai-for-good-lab-hackathon-uae-2026'), 'TAG', 'community-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -746,7 +746,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://webdirections.org/ai-engineer/workshops?event=ai-engineer-sydney-2026-workshop-day');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://webdirections.org/ai-engineer/workshops?event=ai-engineer-sydney-2026-workshop-day');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://webdirections.org/ai-engineer/workshops?event=ai-engineer-sydney-2026-workshop-day'), 'TAG', 'community-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -776,7 +776,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/3bpbrt9d?event=global-ai-nights-sofia-2026');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/3bpbrt9d?event=global-ai-nights-sofia-2026');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/3bpbrt9d?event=global-ai-nights-sofia-2026'), 'TAG', 'community-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -812,7 +812,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();
-DELETE FROM resource_label WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://eventbrite.de/e/ai-agents-hackathon-2027-tickets-1987490057263?event=ai-agents-hackathon-hamburg-2027');
+DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://eventbrite.de/e/ai-agents-hackathon-2027-tickets-1987490057263?event=ai-agents-hackathon-hamburg-2027');
 INSERT INTO resource_label (resource_id, kind, value) VALUES (uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://eventbrite.de/e/ai-agents-hackathon-2027-tickets-1987490057263?event=ai-agents-hackathon-hamburg-2027'), 'TAG', 'community-event') ON CONFLICT DO NOTHING;
 INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)

@@ -13,6 +13,7 @@ import { NoticeList } from '@/components/ui/NoticeList';
 import { SourceTiles } from '@/components/ui/SourceTiles';
 import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
 import { useApi } from '@/hooks/useApi';
+import { useCategories, type Categories } from '@/hooks/useCategories';
 import { useGuideStream } from '@/hooks/useGuideStream';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { aiMark } from '@/lib/aiMark';
@@ -150,6 +151,7 @@ function ResultsBody({
   ask?: (() => void) | undefined;
 }) {
   const { t } = useTranslation();
+  const categories = useCategories();
   const byId = useMemo(() => picksById(picks), [picks]);
   const activeType = state.filters.type.length === 1 ? state.filters.type[0]! : null;
   const setType = (type: string | null) =>
@@ -194,6 +196,7 @@ function ResultsBody({
         retry={retry}
         heading={heading}
         coverage={!nothingSearched}
+        categories={categories}
       />
       {(res.facets.type?.length ?? 0) > 0 && (
         <TypeTabs
@@ -224,7 +227,12 @@ function ResultsBody({
           </div>
         )}
       </div>
-      <ActiveFilters state={state} sources={res.sources} onChange={update} />
+      <ActiveFilters
+        state={state}
+        sources={res.sources}
+        categories={categories.byId}
+        onChange={update}
+      />
 
       {/* QUERY_EXPANDED is shown by the interpretation line below; other notices are localized by code. */}
       <NoticeList notices={res.notices} exclude={['QUERY_EXPANDED']} />
@@ -335,6 +343,7 @@ function ListHead({
   retry,
   heading,
   coverage,
+  categories,
 }: {
   res: SearchResponse;
   state: SearchState;
@@ -342,6 +351,7 @@ function ListHead({
   retry: () => void;
   heading: RefObject<HTMLHeadingElement | null>;
   coverage: boolean;
+  categories: Categories;
 }) {
   const { t } = useTranslation();
   const [sp] = useSearchParams();
@@ -424,7 +434,13 @@ function ListHead({
         toggle={toggle}
         onClose={() => setOpen(false)}
       >
-        <FilterPanel facets={res.facets} state={state} sources={res.sources} onChange={update} />
+        <FilterPanel
+          facets={res.facets}
+          state={state}
+          sources={res.sources}
+          categories={categories}
+          onChange={update}
+        />
         {on > 0 && (
           <button type="button" className="btn" onClick={() => update(clearFilters(state))}>
             {t('results.emptyRemoveFilters')}

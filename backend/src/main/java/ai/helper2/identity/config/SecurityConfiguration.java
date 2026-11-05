@@ -100,6 +100,7 @@ class SecurityConfiguration {
                       "/api/v1/events/upcoming",
                       "/api/v1/resources/**",
                       "/api/v1/sources",
+                      "/api/v1/categories",
                       "/api/v1/home/examples",
                       "/api/v1/policy",
                       "/api/v1/me")

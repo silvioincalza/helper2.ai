@@ -1,6 +1,7 @@
 package ai.helper2.search.cache;
 
 import ai.helper2.search.CachedHits;
+import ai.helper2.search.ListMatch;
 import ai.helper2.search.PopularityKind;
 import ai.helper2.search.PopularityMetric;
 import ai.helper2.search.SourceHit;
@@ -79,6 +80,11 @@ final class SourceHitCodec {
       n.put("location", h.getLocation());
       if (h.getEventKind() != null) n.put("eventKind", h.getEventKind().name());
       if (h.getEventFormat() != null) n.put("eventFormat", h.getEventFormat().name());
+      if (h.getFoundIn() != null) {
+        n.putObject("foundIn")
+            .put("listTitle", h.getFoundIn().getListTitle())
+            .put("headingPath", h.getFoundIn().getHeadingPath());
+      }
     }
     return json.writeValueAsString(root);
   }
@@ -130,9 +136,10 @@ final class SourceHitCodec {
                 readDate(n.path("eventEnd")),
                 text(n, "location"),
                 text(n, "eventKind") == null ? null : EventKind.valueOf(text(n, "eventKind")),
-                text(n, "eventFormat") == null
-                    ? null
-                    : EventFormat.valueOf(text(n, "eventFormat"))));
+                text(n, "eventFormat") == null ? null : EventFormat.valueOf(text(n, "eventFormat")),
+                java.util.Map.of(),
+                java.util.Set.of(),
+                foundIn(n.path("foundIn"))));
       }
       return new CachedHits(hits, Instant.parse(root.path("fetchedAt").asString()));
     } catch (RuntimeException e) {
@@ -159,6 +166,13 @@ final class SourceHitCodec {
         n.path("sourceId").asString(),
         List.of(),
         false);
+  }
+
+  private static ListMatch foundIn(JsonNode n) {
+    if (n.isMissingNode() || n.isNull()) {
+      return null;
+    }
+    return new ListMatch(n.path("listTitle").asString(), n.path("headingPath").asString(""));
   }
 
   private static String text(JsonNode n, String field) {

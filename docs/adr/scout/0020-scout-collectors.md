@@ -38,6 +38,8 @@ A collector returns hits, which the runner indexes, and candidates, which the ru
      `helper2.scout.classifier.budget.remaining`; calls are timed and their tokens counted with step `classify`. Ids the model did not answer
      (error, spent budget, missing id) and runs without a model use keyword rules (`RepoClassifier.Heuristic`).
    - A failing list search or README is skipped; a GraphQL rate limit stops the pass (run `FAILED`, cursor kept).
+   - Each list read is also a resource (ARTICLE, tag `awesome-list`), and its entry lines and headings become a search
+     index ([0055](../search/0055-search-inside-awesome-lists.md)).
 6. **Courses** (`course-scout`, every `H2_SCOUT_COURSES_INTERVAL`, 7 days; [0032](../guide/0032-guide-intents.md) §8). One Tavily
    search per learning platform (`helper2.scout.courses.platforms`, 10 platforms), restricted to its domain with
    `include_domains`, `search_depth basic`, published since the last complete pass (first run: the last month). One
@@ -95,6 +97,7 @@ A collector returns hits, which the runner indexes, and candidates, which the ru
 
 ## Amended by
 - [0043](0043-enrichment-gap-round.md): a run that leaves fields unproven reads the resource's README or model card once.
+- [0055](../search/0055-search-inside-awesome-lists.md): each list is a resource, and its entry lines and headings are indexed for search.
 
 ## Roadmap
 - [More registries, if their terms allow it](../../roadmap.md#5-search-and-catalog)

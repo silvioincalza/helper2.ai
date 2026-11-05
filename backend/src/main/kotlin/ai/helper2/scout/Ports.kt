@@ -27,6 +27,11 @@ constructor(
   /** Why the collector did not call its source ([notDue] only); null: its run interval. */
   val skipReason: String? = null,
   /**
+   * Search text of the curated lists this pass read (ADR 0055): turned into a search index of their
+   * entries, never stored as text.
+   */
+  val lists: List<ListText> = emptyList(),
+  /**
    * true when the pass was due but could not run now (the daily credit cap): the Scout keeps it
    * open, so the next run tries it again ([notDue] only).
    */
@@ -44,7 +49,7 @@ constructor(
     /** A due pass that could not run now ("daily credit cap reached"): it stays open. */
     @JvmStatic
     fun deferred(reason: String): CollectedBatch =
-      CollectedBatch(emptyList(), null, null, true, emptyList(), reason, true)
+      CollectedBatch(emptyList(), null, null, true, emptyList(), reason, deferred = true)
   }
 }
 
@@ -114,3 +119,19 @@ fun interface CandidateReview {
    */
   fun propose(sourceId: String, candidates: List<Candidate>): Int
 }
+
+/**
+ * What one curated list (an awesome list) says around its entries, for search inside the list (ADR
+ * 0055). Plain words, already cleaned and capped by the collector. The catalog keeps only a
+ * tsvector of them and the heading paths; the text itself is never stored.
+ *
+ * @property url the list's own page, a resource of the same pass
+ * @property headings the list's headings, one per line
+ */
+data class ListText(val url: CanonicalUrl, val headings: String, val entries: List<ListEntryText>)
+
+/**
+ * One entry of a curated list: the linked resource, its line as plain words and its heading path
+ * ("Tools > Vector databases").
+ */
+data class ListEntryText(val url: CanonicalUrl, val text: String, val headingPath: String)

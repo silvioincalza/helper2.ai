@@ -7,6 +7,7 @@ import ai.helper2.api.generated.model.EventFormatDto;
 import ai.helper2.api.generated.model.EventKindDto;
 import ai.helper2.api.generated.model.FieldConflictDto;
 import ai.helper2.api.generated.model.FreshnessDto;
+import ai.helper2.api.generated.model.ListMatchDto;
 import ai.helper2.api.generated.model.PopularityMetricDto;
 import ai.helper2.api.generated.model.PricingDto;
 import ai.helper2.api.generated.model.ResourceTypeDto;
@@ -51,6 +52,7 @@ public final class CardMapper {
                 r.getTechLevel() == null ? null : TechLevelDto.fromValue(r.getTechLevel().name()))
             .useCases(new ArrayList<>(r.getUseCases()))
             .tags(new ArrayList<>(r.getTags()))
+            .categories(new ArrayList<>(r.getCategories()))
             .license(r.getLicense())
             .pricing(r.getPricing() == null ? null : PricingDto.fromValue(r.getPricing().name()))
             .platforms(new ArrayList<>(r.getPlatforms()))
@@ -105,6 +107,9 @@ public final class CardMapper {
                         .map(v -> new SourcedValueDto(v.getValue(), v.getSourceId()))
                         .toList())));
     dto.compatibleWith(compatibility(r));
+    if (r.getFoundIn() != null) {
+      dto.foundIn(new ListMatchDto(r.getFoundIn().getListTitle(), r.getFoundIn().getHeadingPath()));
+    }
     return dto;
   }
 

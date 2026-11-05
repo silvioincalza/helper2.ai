@@ -5,7 +5,9 @@
 #   backend/src/main/java/ai/helper2/platform/http/ObservedHttp.java,
 #   backend/src/main/java/ai/helper2/search/internal/JdbcWebResultStore.java, platform/quota/RedisQuotaCounter.java,
 #   backend/src/main/java/ai/helper2/search/internal/SpringAiQueryTranslator.java, TranslationConfiguration.java
-#   (prompt: backend/src/main/resources/prompts/search/translate-query.txt).
+#   (prompt: backend/src/main/resources/prompts/search/translate-query.txt),
+#   backend/src/main/java/ai/helper2/search/web/CategoriesController.java,
+#   backend/src/main/java/ai/helper2/platform/CategoryConfiguration.java (CategoryCatalog, CategoryMatcher; ADR 0053).
 # Render: cd docs/diagrams && d2 fmt architecture-search.d2 && d2 architecture-search.d2 architecture-search.svg
 
 ...@style
@@ -23,6 +25,7 @@ browser: "Browser" {class: person}
 search: "search (Kotlin domain)" {
   class: group
   ctl: "SearchController\nGET /search, /sources" {class: app}
+  cats: "CategoriesController\nGET /categories (ETag)" {class: app}
   core: "SearchResources · WebSearchQuota\nQueryAnalyzer · ResultMerger\nRanking · Filtering · Facets" {class: app}
   p_source: SearchSource {class: port}
   p_cache: SearchCache {class: port}
@@ -60,6 +63,7 @@ platform: "platform" {
   class: group
   http: "ObservedHttp\npooled, observed RestClient" {class: app}
   quota: "QuotaCounter (Redis Lua)\nQuotaKeys (HMAC)" {class: app}
+  categories: "CategoryCatalog · CategoryMatcher\n(shared kernel, from helper2.categories)" {class: app}
 }
 
 pg: "PostgreSQL\nfull-text + pgvector" {shape: cylinder; class: data}
@@ -69,6 +73,10 @@ nvapi: "NVIDIA embeddings" {class: ai}
 hosts: "api.github.com · huggingface.co\nregistry.npmjs.org · export.arxiv.org\napi.tavily.com" {class: ext}
 
 browser -> search.ctl: "GET /search" {class: hot}
+browser -> search.cats: "GET /categories"
+search.cats -> platform.categories
+search.ctl -> platform.categories: "check ?category="
+search.core -> platform.categories: "categories at merge"
 sources.live -> search.p_source: implements {class: config}
 catalog.index -> search.p_source: implements {class: config}
 catalog.semantic -> search.p_source: implements {class: config}

@@ -24,7 +24,8 @@ public class PurgeExpiredData {
       int enrichmentRuns,
       int webNewsRecords,
       int pastEvents,
-      int observedResources) {}
+      int observedResources,
+      int listIndexRows) {}
 
   private final CatalogRetention retention;
   private final Clock clock;
@@ -46,7 +47,8 @@ public class PurgeExpiredData {
             retention.deleteEnrichmentRunsStartedBefore(now.minus(periods.enrichmentRuns())),
             retention.deleteWebNewsRetrievedBefore(now.minus(periods.webNews())),
             retention.deleteEventsEndedBefore(now.minus(periods.pastEvents())),
-            retention.deleteObservedUnseenSince(now.minus(periods.observedUnseen())));
+            retention.deleteObservedUnseenSince(now.minus(periods.observedUnseen())),
+            retention.deleteListIndexUpdatedBefore(now.minus(periods.listIndex())));
     log.info("catalog retention: {}", purged);
     return purged;
   }

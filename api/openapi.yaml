@@ -24,6 +24,7 @@ tags:
   - name: guide-stream
   - name: setup
   - name: sources
+  - name: categories
   - name: me
   - name: admin
   - name: audit
@@ -59,6 +60,14 @@ paths:
         - { name: techLevel, in: query, schema: { type: array, maxItems: 20, items: { $ref: '#/components/schemas/TechLevelFilter' } }, style: form, explode: true }
         - { name: audience, in: query, schema: { type: array, maxItems: 20, items: { $ref: '#/components/schemas/Audience' } }, style: form, explode: true }
         - { name: updatedAfter, in: query, description: "Only results whose last-updated date is known and on/after this day.", schema: { type: string, format: date } }
+        - name: category
+          in: query
+          description: >-
+            Category ids from GET /categories (ADR 0053), or `unknown` for results with no category yet. A result in any
+            of them is kept (OR); with the other filters it is AND. An id that is not a category is a 400.
+          schema: { type: array, maxItems: 40, items: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$', maxLength: 30 } }
+          style: form
+          explode: true
         - { name: sort, in: query, schema: { $ref: '#/components/schemas/SortOrder' } }
         - { name: page, in: query, schema: { type: integer, minimum: 0, maximum: 50, default: 0 } }
         - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
@@ -258,6 +267,28 @@ paths:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/SourceInfo' }
+
+  /categories:
+    get:
+      tags: [categories]
+      operationId: listCategories
+      summary: The categories of the AI world search can filter by, in the order people see them.
+      description: >-
+        Read from the running configuration (`helper2.categories`, ADR 0051, 0053). The same answer for everyone, no
+        personal data; cached for an hour and validated by its ETag. Rate-limited like the other public reads.
+      responses:
+        '200':
+          description: Every category, in the configured order.
+          headers:
+            Cache-Control: { schema: { type: string }, description: 'public, max-age=3600' }
+            ETag: { schema: { type: string }, description: 'Changes when a category is added, removed or renamed.' }
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Category' }
+        '304': { description: Not modified (If-None-Match matched the ETag). }
+        '429': { $ref: '#/components/responses/Problem' }
 
   /me:
     get:
@@ -467,6 +498,16 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/EnrichmentRecheck' }
+  /admin/category-backfill:
+    post:
+      tags: [admin]
+      operationId: backfillCategories
+      summary: Assign the categories of every resource again.
+      description: >-
+        Answers at once; the backfill then runs in the background on one replica, in batches (ADR 0053). It is
+        idempotent. Counts go to the metric `helper2.categories.backfill.resources` and the log.
+      responses:
+        '202': { description: Started (skipped when another replica is already running it). }
         '401': { $ref: '#/components/responses/Problem' }
         '403': { $ref: '#/components/responses/Problem' }
 
@@ -963,7 +1004,7 @@ components:
 
     ResultCard:
       type: object
-      required: [id, title, type, audience, url, sources, timeline, freshness, tags, useCases, platforms, popularity, conflicts, descriptionOrigin, compatibleWith]
+      required: [id, title, type, audience, url, sources, timeline, freshness, tags, useCases, platforms, popularity, conflicts, descriptionOrigin, compatibleWith, categories]
       properties:
         id: { type: string, format: uuid, description: "Stable: UUIDv5 of the canonical URL." }
         title: { type: string }
@@ -989,9 +1030,29 @@ components:
           type: array
           description: AI tools this resource works with, derived by disclosed rules from source tags, type and file formats. Never model-generated.
           items: { $ref: '#/components/schemas/CompatibilityFlag' }
+        categories:
+          type: array
+          description: >-
+            Ids of the categories it belongs to (GET /categories), in their order; empty when it has none yet. Assigned
+            by code from its title, what its sources wrote, its tags, type and the collectors that found it (ADR 0053).
+            Never model-generated.
+          items: { type: string }
         location: { type: [string, 'null'], description: "EVENT only: city and country as the source states it." }
         eventKind: { oneOf: [{ $ref: '#/components/schemas/EventKind' }, { type: 'null' }], description: "EVENT only: what kind of event the source calls it; null when it does not say." }
         eventFormat: { oneOf: [{ $ref: '#/components/schemas/EventFormat' }, { type: 'null' }], description: "EVENT only: online, in person or both, as the source states it; null when it does not say." }
+        foundIn:
+          description: >-
+            Set when the result was found only by the words an awesome list uses around it (its entry line and its
+            section heading), not by its own text (ADR 0055). The list's own words, not AI-written. Null when any source
+            matched the result directly.
+          oneOf: [{ $ref: '#/components/schemas/ListMatch' }, { type: 'null' }]
+
+    ListMatch:
+      type: object
+      required: [listTitle, headingPath]
+      properties:
+        listTitle: { type: string, description: "The list's title in the catalog, e.g. owner/awesome-llm." }
+        headingPath: { type: string, maxLength: 200, description: "The headings above the entry, e.g. \"Tools > Vector databases\"; empty when the entry has none." }
 
     CompatibilityFlag:
       type: object
@@ -1057,7 +1118,7 @@ components:
 
     Facets:
       type: object
-      required: [type, source, license, openSource, pricing, platform, useCase, techLevel, audience]
+      required: [type, source, license, openSource, pricing, platform, useCase, techLevel, audience, category]
       properties:
         type: { type: array, items: { $ref: '#/components/schemas/FacetValue' } }
         source: { type: array, items: { $ref: '#/components/schemas/FacetValue' } }
@@ -1068,6 +1129,12 @@ components:
         useCase: { type: array, items: { $ref: '#/components/schemas/FacetValue' } }
         techLevel: { type: array, items: { $ref: '#/components/schemas/FacetValue' } }
         audience: { type: array, items: { $ref: '#/components/schemas/FacetValue' } }
+        category:
+          type: array
+          description: >-
+            Category ids (ADR 0053) with their counts over the whole merged result set, every filter applied but the
+            category's own; `unknown` counts the results with no category yet.
+          items: { $ref: '#/components/schemas/FacetValue' }
 
     Notice:
       type: object
@@ -1401,6 +1468,13 @@ components:
             Parts of the reading the user removed from "Understood as": "intent" (answer as a plain suggestion),
             "window" (ignore the period) or "constraint:<text>". Applied by code; never sent to a model.
           items: { type: string, maxLength: 80 }
+        categories:
+          type: array
+          maxItems: 40
+          description: >-
+            The category filter active on the results page (ids from GET /categories, or `unknown`). The guide picks
+            only among results in one of them (ADR 0053). Applied by code; never sent to a model. Unknown ids are a 400.
+          items: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$', maxLength: 30 }
 
     GuideRecommendation:
       type: object
@@ -1737,6 +1811,16 @@ components:
             and observed). Null for `helper2-semantic` (the same index searched by meaning, no count of its own) and
             when the catalog cannot answer.
 
+    Category:
+      type: object
+      description: One category of the AI world (ADR 0051, 0053). Our own fixed words, from the configuration.
+      required: [id, name, shortName, family]
+      properties:
+        id: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$', description: The value of the search's `category` filter. }
+        name: { type: string }
+        shortName: { type: string, maxLength: 12 }
+        family: { $ref: '#/components/schemas/SourceFamily' }
+
     SourceFamily:
       type: string
       description: The seven families of the discovery categories.
@@ -2011,10 +2095,10 @@ components:
       properties:
         id: { type: string, format: uuid }
         adminId: { type: string, description: "The administrator's provider subject (GitHub: the numeric user id)." }
-        action: { type: string, enum: [RESOLVE_REVIEW_ITEM, START_SCOUT_RUN, ADD_HOME_EXAMPLE, CHANGE_HOME_EXAMPLE, REMOVE_HOME_EXAMPLE, DRAFT_HOME_EXAMPLES, RECHECK_ENRICHMENT] }
+        action: { type: string, enum: [RESOLVE_REVIEW_ITEM, START_SCOUT_RUN, ADD_HOME_EXAMPLE, CHANGE_HOME_EXAMPLE, REMOVE_HOME_EXAMPLE, DRAFT_HOME_EXAMPLES, RECHECK_ENRICHMENT, BACKFILL_CATEGORIES] }
         targetId: { type: [string, 'null'], description: "The review item id, the source id or the home example id; null when a run covered every source." }
         at: { type: string, format: date-time }
-        outcome: { type: string, description: "ACCEPTED, REJECTED, NOT_OPEN or NOT_FOUND for a review item; STARTED or BUSY for a Scout run; ADDED, CHANGED, PAUSED, ACTIVATED, REMOVED, DUPLICATE, CONFLICT, INVALID or NOT_FOUND for a home example." }
+        outcome: { type: string, description: "ACCEPTED, REJECTED, NOT_OPEN or NOT_FOUND for a review item; STARTED or BUSY for a Scout run; STARTED for a category backfill; ADDED, CHANGED, PAUSED, ACTIVATED, REMOVED, DUPLICATE, CONFLICT, INVALID or NOT_FOUND for a home example." }
 
     EnrichmentRecheck:
       type: object

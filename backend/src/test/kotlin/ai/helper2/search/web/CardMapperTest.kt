@@ -1,6 +1,8 @@
 package ai.helper2.search.web
 
 import ai.helper2.api.generated.model.CompatibilityFlagDto
+import ai.helper2.api.generated.model.ListMatchDto
+import ai.helper2.search.ListMatch
 import ai.helper2.search.ResultMerger
 import ai.helper2.search.contexts
 import ai.helper2.search.hit
@@ -44,6 +46,23 @@ class CardMapperTest {
   @Test
   fun `the card carries the same flags`() {
     assertEquals(CardMapper.compatibility(merged), CardMapper.card(merged).compatibleWith)
+  }
+
+  @Test
+  fun `found in a list shows only when no source matched the result directly`() {
+    val inList = ListMatch("acme/awesome-llm", "Tools > Vector databases")
+    val listOnly = hit("helper2-index", "https://github.com/a/store").copy(foundIn = inList)
+    val direct = hit("github", "https://github.com/a/store")
+
+    val onlyInList = ResultMerger().merge(listOf(listOnly), contexts("helper2-index")).single()
+    val alsoDirect =
+      ResultMerger().merge(listOf(listOnly, direct), contexts("helper2-index", "github")).single()
+
+    assertEquals(
+      ListMatchDto("acme/awesome-llm", "Tools > Vector databases"),
+      CardMapper.card(onlyInList).foundIn,
+    )
+    assertEquals(null, CardMapper.card(alsoDirect).foundIn)
   }
 
   @Test

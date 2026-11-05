@@ -1,7 +1,9 @@
 # Data model: every PostgreSQL table, its columns, keys and foreign keys, and what a delete of the target does.
 # Source of truth: backend/src/main/resources/db/migration/V1__schema.sql (the whole schema, ADR 0004 §5),
 #   V2__enrichment_extra_evidence.sql (ADR 0043), V3__review_item_drop_source_conflict.sql (review kinds),
-#   V4__home_example.sql (ADR 0049), V10__resource_enrichment_backlog_idx.sql (ADR 0045), V11__evidence_ladder_origins.sql (ADR 0056: origins, maintenance_task).
+#   V4__home_example.sql (ADR 0049), V10__resource_enrichment_backlog_idx.sql (ADR 0045), V11__evidence_ladder_origins.sql (ADR 0056: origins, maintenance_task),
+#   V12__resource_categories.sql (CATEGORY labels, catalog_marker; ADR 0053),
+#   V13__awesome_list_search.sql (ADR 0055).
 #   Delete rules on the lines: ADR 0034. Seeds (R__ migrations) add rows, no tables.
 # Lines: solid = foreign key, labelled with its ON DELETE rule; dashed = a link the code keeps, with no foreign key.
 # Render: cd docs/diagrams && d2 fmt data-model.d2 && d2 data-model.d2 data-model.svg
@@ -86,10 +88,17 @@ catalog: "catalog: what sources said, merged into one resource" {
     modified_at: timestamptz
   }
 
+  catalog_marker: {
+    class: table
+    name: text {constraint: primary_key}
+    value: text
+    updated_at: timestamptz
+  }
+
   resource_label: {
     class: table
     resource_id: uuid {constraint: [primary_key; foreign_key]}
-    kind: "text (TAG|USE_CASE|PLATFORM)" {constraint: primary_key}
+    kind: "text (TAG|USE_CASE|PLATFORM|CATEGORY)" {constraint: primary_key}
     value: text {constraint: primary_key}
   }
 
@@ -123,6 +132,22 @@ catalog: "catalog: what sources said, merged into one resource" {
     text_hash: text
     embedding: "vector(1024) HNSW"
     embedded_at: timestamptz
+  }
+
+  awesome_list_entry: {
+    class: table
+    list_id: uuid {constraint: [primary_key; foreign_key]}
+    resource_id: uuid {constraint: [primary_key; foreign_key]}
+    heading_path: "text (≤ 200)"
+    search_vector: "tsvector GIN"
+    updated_at: timestamptz
+  }
+
+  awesome_list: {
+    class: table
+    list_id: uuid {constraint: [primary_key; foreign_key]}
+    search_vector: "tsvector GIN"
+    updated_at: timestamptz
   }
 }
 
@@ -377,6 +402,9 @@ catalog.resource_label.resource_id -> catalog.resource.id: CASCADE
 catalog.source_record.source_id -> catalog.source.id: RESTRICT
 catalog.source_record.resource_id -> catalog.resource.id: CASCADE
 catalog.resource_embedding.resource_id -> catalog.resource.id: CASCADE
+catalog.awesome_list_entry.list_id -> catalog.resource.id: CASCADE
+catalog.awesome_list_entry.resource_id -> catalog.resource.id: CASCADE
+catalog.awesome_list.list_id -> catalog.resource.id: CASCADE
 
 enrichment.enrichment_run.resource_id -> catalog.resource.id: CASCADE
 enrichment.evidence.source_record_id -> catalog.source_record.id: CASCADE

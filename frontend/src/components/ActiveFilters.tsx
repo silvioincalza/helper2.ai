@@ -9,21 +9,26 @@ import {
   type SearchState,
 } from '@/lib/searchState';
 import { formatDate } from '@/lib/format';
-import type { SourceStatus } from '@/api/types';
+import type { Category, SourceStatus } from '@/api/types';
 
 export function ActiveFilters({
   state,
   sources,
+  categories,
   onChange,
 }: {
   state: SearchState;
   sources: SourceStatus[];
+  /** Category names by id (GET /categories), for the chips of the Category filter. */
+  categories?: ReadonlyMap<string, Category>;
   onChange: (s: SearchState) => void;
 }) {
   const { t, i18n } = useTranslation();
   if (activeFilterCount(state) === 0) return null;
 
   const valueLabel = (key: MultiKey, v: string) => {
+    if (key === 'category')
+      return v === 'unknown' ? t('categories.none') : (categories?.get(v)?.name ?? v);
     if (v.toLowerCase() === 'unknown') return t('common.unknown');
     if (key === 'source') return sources.find((s) => s.sourceId === v)?.name ?? v;
     return t(`${key === 'useCase' ? 'useCase' : key}.${v}`, { defaultValue: v });
