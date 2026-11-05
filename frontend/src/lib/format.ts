@@ -19,12 +19,23 @@ export function formatDate(
   return new Intl.DateTimeFormat(lang, { dateStyle: 'medium', timeZone: 'UTC' }).format(d);
 }
 
-/** Day and month, read as a UTC calendar day: "26 Oct". Empty for a date it cannot read. */
-export function shortDay(iso: string, lang: string): string {
+/**
+ * Day and month, read as a UTC calendar day: "26 Oct". With [now] (the server's clock), a date in another year also
+ * shows its year: "12 Jan 2027". Empty for a date it cannot read.
+ */
+export function shortDay(iso: string, lang: string, now?: number): string {
   const d = new Date(iso);
-  return Number.isNaN(d.getTime())
-    ? ''
-    : new Intl.DateTimeFormat(lang, { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(d);
+  if (Number.isNaN(d.getTime())) return '';
+  const otherYear =
+    now !== undefined &&
+    !Number.isNaN(now) &&
+    new Date(now).getUTCFullYear() !== d.getUTCFullYear();
+  return new Intl.DateTimeFormat(lang, {
+    day: 'numeric',
+    month: 'short',
+    ...(otherYear ? { year: 'numeric' as const } : {}),
+    timeZone: 'UTC',
+  }).format(d);
 }
 
 /** The host of [url] without "www.", for "Open on …" and the row's source line; the url itself when it does not parse. */

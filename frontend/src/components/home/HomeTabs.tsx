@@ -119,7 +119,7 @@ function TabPanel<Row extends { id: string }>({
   selected: ListId;
   feed: Feed<Row>;
   command: string;
-  cells: (row: Row) => TermCells;
+  cells: (row: Row, now: number) => TermCells;
 }) {
   const { t } = useTranslation();
   const texts =

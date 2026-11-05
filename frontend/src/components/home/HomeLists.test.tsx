@@ -101,12 +101,50 @@ describe('New this week and Coming up on a wide screen: two tables like ls -l', 
     );
   });
 
-  it('takes the total from the API', async () => {
+  it('takes the total from the API; the button counts only the rows it opens', async () => {
     mockApi({ 'GET /recent': () => makeRecent({ items: news(7), total: 38 }) });
     renderApp('/');
     const { section } = await table('New this week');
-    expect(await within(section).findByRole('button', { name: 'show all 38' })).toBeInTheDocument();
+    const more = await within(section).findByRole('button', { name: 'show all 7' });
     expect(within(section).getByText('38')).toBeInTheDocument();
+    expect(within(section).queryByText(/more: search for them/)).not.toBeInTheDocument();
+    await userEvent.click(more);
+    expect(within(section).getByText('31 more: search for them')).toBeInTheDocument();
+  });
+
+  it('asks the API for up to 60 rows', async () => {
+    const m = mockApi({ 'GET /recent': () => makeRecent({ items: news(2) }) });
+    renderApp('/');
+    await table('New this week');
+    expect(m.callsTo('GET', '/recent')[0]?.search).toContain('size=60');
+  });
+
+  it('a list of all its rows says nothing more', async () => {
+    mockApi({ 'GET /recent': () => makeRecent({ items: news(8), total: 8 }) });
+    renderApp('/');
+    const { section } = await table('New this week');
+    await userEvent.click(await within(section).findByRole('button', { name: 'show all 8' }));
+    expect(within(section).queryByText(/more: search for them/)).not.toBeInTheDocument();
+  });
+
+  it("a date in another year than the server's shows the year", async () => {
+    const base = makeCard();
+    mockApi({
+      'GET /recent': () =>
+        makeRecent({
+          generatedAt: '2027-01-03T09:00:00Z',
+          items: [
+            makeCard({
+              title: 'Last year',
+              timeline: { ...base.timeline, published: day('2026-12-30T00:00:00Z') },
+            }),
+          ],
+        }),
+    });
+    renderApp('/');
+    const { table: t } = await table('New this week');
+    await within(t).findByRole('link', { name: 'Last year' });
+    expect(bodyRows(t)[0]).toHaveTextContent('Dec 30, 2026');
   });
 
   it('a list that fits shows no button', async () => {
@@ -174,6 +212,9 @@ describe('New this week and Coming up on a wide screen: two tables like ls -l', 
     expect(running).toHaveTextContent('Hackathon');
     expect(running).toHaveTextContent('Online');
     expect(meetup).toHaveTextContent('Nov 20');
+    // How soon, under the date, as on a phone; a running event says until when.
+    expect(meetup).toHaveTextContent('In 2 weeks');
+    expect(running).toHaveTextContent('until Nov 8');
     expect(meetup).toHaveTextContent('Zurich, Switzerland');
     expect(unlabelled).not.toHaveTextContent(/Hackathon|Meetup|Conference|Talk|Workshop/);
     // The next three months is the API's window, so its total counts the same events.

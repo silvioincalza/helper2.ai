@@ -31,7 +31,7 @@ const NEWS_TYPES: ResourceType[] = [
  * GET /recent: Helper2's own index, newest by the date the SOURCE states, so the home page makes no live source calls
  * (GitHub and arXiv are rate-limited) and "new" means newly published. The last week, as many as the API gives.
  */
-const NEWS_SIZE = 24;
+const NEWS_SIZE = 60;
 const NEWS_DAYS = 7;
 /** The next three months (the API's `days` window, so `total` counts the same events); as many as it gives (60). */
 const EVENTS_SIZE = 60;
@@ -70,6 +70,8 @@ export interface EventRow {
 export interface Feed<Row> {
   rows: Row[];
   total: number;
+  /** The server's clock (generatedAt), NaN until it answers: it decides the year a date shows. */
+  now: number;
   loading: boolean;
   error: boolean;
   reload: () => void;
@@ -131,6 +133,7 @@ export function useNewsFeed(): Feed<NewsRow> {
   return {
     rows,
     total: listTotal(feed.data, rows.length),
+    now: Date.parse(feed.data?.generatedAt ?? ''),
     loading: feed.loading,
     error: feed.error !== undefined,
     reload: feed.reload,
@@ -151,6 +154,7 @@ export function useEventsFeed(): Feed<EventRow> {
   return {
     rows,
     total: listTotal(feed.data, rows.length),
+    now,
     loading: feed.loading,
     error: feed.error !== undefined,
     reload: feed.reload,

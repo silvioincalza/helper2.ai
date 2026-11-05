@@ -81,10 +81,10 @@ export function ListState({
   );
 }
 
-export function NewsDate({ row }: { row: NewsRow }) {
+export function NewsDate({ row, now }: { row: NewsRow; now: number }) {
   const { t, i18n } = useTranslation();
   if (!row.date) return <span className="v4-not-stated">{t('lists.noDate')}</span>;
-  const day = shortDay(row.date, i18n.language);
+  const day = shortDay(row.date, i18n.language, now);
   return (
     <time
       dateTime={row.date}
@@ -95,10 +95,12 @@ export function NewsDate({ row }: { row: NewsRow }) {
   );
 }
 
-export function EventWhen({ row }: { row: EventRow }) {
+export function EventWhen({ row, now }: { row: EventRow; now: number }) {
   const { t, i18n } = useTranslation();
   if (row.left?.key === 'onNow') return <span className="v4-on-now">{t('lists.onNow')}</span>;
-  return row.start ? <time dateTime={row.start}>{shortDay(row.start, i18n.language)}</time> : null;
+  return row.start ? (
+    <time dateTime={row.start}>{shortDay(row.start, i18n.language, now)}</time>
+  ) : null;
 }
 
 export function useEventText() {
@@ -107,21 +109,21 @@ export function useEventText() {
     kind: (row: EventRow) => (row.kind ? t(`events.kind.${row.kind}`) : ''),
     where: (row: EventRow) => row.location ?? (row.format ? t(`events.format.${row.format}`) : ''),
     /** In 2 days, tomorrow; for a running event, until when. */
-    left: (row: EventRow) => {
+    left: (row: EventRow, now: number) => {
       const left = row.left;
       if (!left) return '';
       if (left.key === 'onNow')
-        return row.end ? t('lists.until', { date: shortDay(row.end, i18n.language) }) : '';
+        return row.end ? t('lists.until', { date: shortDay(row.end, i18n.language, now) }) : '';
       return t(`board.countdown.${left.key}`, 'count' in left ? { count: left.count } : {});
     },
   };
 }
 
-/** A news row in TermList's cells: date, type, title, host. */
-export function useNewsCells(): (row: NewsRow) => TermCells {
+/** A news row in TermList's cells: date, type, title, host. [now] is the server's clock (Feed.now). */
+export function useNewsCells(): (row: NewsRow, now: number) => TermCells {
   const { t } = useTranslation();
-  return (row) => ({
-    when: <NewsDate row={row} />,
+  return (row, now) => ({
+    when: <NewsDate row={row} now={now} />,
     type: t(`type.${row.type}`),
     title: row.title,
     href: row.href,
@@ -129,15 +131,15 @@ export function useNewsCells(): (row: NewsRow) => TermCells {
   });
 }
 
-/** An event row in TermList's cells: when, kind, title, where; a log row also says how far away. */
-export function useEventCells(): (row: EventRow) => TermCells {
+/** An event row in TermList's cells: when, kind, title, where, and how far away (both layouts). */
+export function useEventCells(): (row: EventRow, now: number) => TermCells {
   const text = useEventText();
-  return (row) => ({
-    when: <EventWhen row={row} />,
+  return (row, now) => ({
+    when: <EventWhen row={row} now={now} />,
     type: text.kind(row),
     title: row.title,
     href: row.href,
     where: text.where(row),
-    note: text.left(row),
+    note: text.left(row, now),
   });
 }

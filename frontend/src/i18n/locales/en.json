@@ -1284,6 +1284,7 @@
     },
     "showAll": "show all {{count}}",
     "showFewer": "show fewer",
+    "more": "{{count}} more: search for them",
     "onNow": "on now",
     "until": "until {{date}}",
     "firstSeen": "seen {{date}}",

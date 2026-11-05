@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import type { Feed } from './homeFeeds';
 import { FIRST_ROWS, ListState, ShowAll, useFirstRows, type ListId } from './listParts';
@@ -10,7 +11,7 @@ export interface TermCells {
   title: string;
   href: string;
   where: string;
-  /** Only in a log row, before `where`: e.g. "in 2 days". */
+  /** How soon, e.g. "In 2 days": under the date in a table, before `where` in a log row. */
   note?: string;
 }
 
@@ -39,9 +40,13 @@ export function TermList<Row extends { id: string }>({
   errorText: string;
   emptyText: string;
   columns: string[];
-  cells: (row: Row) => TermCells;
+  cells: (row: Row, now: number) => TermCells;
 }) {
+  const { t } = useTranslation();
   const { all, toggle, shown } = useFirstRows(feed.rows);
+  // The API counts more than it sends (its size cap, or records that no longer merge): say so once all are open.
+  const notSent = feed.total - feed.rows.length;
+  const showsAll = all || feed.rows.length <= FIRST_ROWS;
   const listId = `${id}-${layout}`;
   const labelledBy = layout === 'table' ? `${id}-h` : id;
   const body =
@@ -58,14 +63,14 @@ export function TermList<Row extends { id: string }>({
         </thead>
         <tbody>
           {shown.map((row) => (
-            <TableRow key={row.id} cells={cells(row)} />
+            <TableRow key={row.id} cells={cells(row, feed.now)} />
           ))}
         </tbody>
       </table>
     ) : (
       <ul id={listId} className="plain-list v4-log" aria-labelledby={labelledBy}>
         {shown.map((row) => (
-          <LogRow key={row.id} cells={cells(row)} />
+          <LogRow key={row.id} cells={cells(row, feed.now)} />
         ))}
       </ul>
     );
@@ -75,14 +80,17 @@ export function TermList<Row extends { id: string }>({
       {feed.rows.length > 0 && (
         <>
           {body}
-          {feed.total > FIRST_ROWS && (
+          {feed.rows.length > FIRST_ROWS && (
             <ShowAll
               command={command}
-              count={feed.total}
+              count={feed.rows.length}
               all={all}
               controls={listId}
               onToggle={toggle}
             />
+          )}
+          {showsAll && notSent > 0 && (
+            <p className="v4-list__more">{t('lists.more', { count: notSent })}</p>
           )}
         </>
       )}
@@ -142,7 +150,10 @@ function TermCommand({ command, total }: { command: string; total: number | null
 function TableRow({ cells }: { cells: TermCells }) {
   return (
     <tr className="v4-row">
-      <td className="v4-cell-date">{cells.when}</td>
+      <td className="v4-cell-date">
+        {cells.when}
+        {cells.note && <span className="v4-cell-note">{cells.note}</span>}
+      </td>
       <td className="v4-cell-type">{cells.type}</td>
       <td className="v4-cell-title">
         <Link to={cells.href}>{cells.title}</Link>
