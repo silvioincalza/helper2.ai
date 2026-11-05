@@ -193,6 +193,7 @@ class GapRoundTest {
         "A <div hidden><div title='x</div>'>secret</div>secret</div> End",
         "A <b x\"><i hidden>secret</i><b y\"> End",
         "A <div hidden>secret</div x\"> End \">",
+        "A <div hidden><div>in</div x=\"></div>\">secret</div> End",
         "A <div class=\"${"c ".repeat(700)}\" hidden>secret</div> End",
       )) {
       val text = UntrustedPageText.clean(raw)

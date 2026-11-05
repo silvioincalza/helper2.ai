@@ -352,8 +352,8 @@ object UntrustedPageText {
     }
     val name = text.substring(nameStart, i).lowercase()
     val limit = minOf(text.length, lt + MAX_TAG_CHARS)
-    // As a browser: a quote opens a value only right after "=" (spaces allowed), and a closing
-    // tag ends at its first ">".
+    // As a browser: a quote opens a value only right after "=" (spaces allowed), in an end tag
+    // too.
     var quote = ' '
     var afterEquals = false
     var j = i
@@ -362,7 +362,7 @@ object UntrustedPageText {
       when {
         quote != ' ' -> if (c == quote) quote = ' '
         c == '>' -> return Tag(name, closing, i, j, j + 1)
-        !closing && afterEquals && (c == '"' || c == '\'') -> quote = c
+        afterEquals && (c == '"' || c == '\'') -> quote = c
       }
       if (quote == ' ') afterEquals = c == '=' || (afterEquals && c.isWhitespace())
       j++
