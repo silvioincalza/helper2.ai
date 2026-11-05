@@ -14,7 +14,7 @@ import {
   makeStatus,
 } from '@/test/fixtures';
 import { mockViewport } from '@/test/viewport';
-import { mockApi } from '@/test/mockApi';
+import { mockApi, sse } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
 import { clearApiCache } from '@/hooks/useApi';
 
@@ -116,6 +116,77 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
     await screen.findByRole('list', { name: 'Sources searched' });
     await userEvent.click(screen.getByRole('button', { name: 'Which?' }));
     expect(await axeViolations(container)).toEqual([]);
+  });
+
+  describe('results and the resource page in design v4', () => {
+    const picked = makeCard({ id: '33333333-3333-5333-8333-333333333333', title: 'Picked One' });
+    const answers = {
+      'GET /search': () => makeSearch({ results: [makeCard(), picked], total: 2 }),
+      'POST /guide/stream': () =>
+        sse({
+          status: 'OK',
+          searchQuery: 'translate',
+          candidatesConsidered: 2,
+          rejected: 0,
+          sources: [],
+          notices: [],
+          generatedAt: '2026-11-05T10:00:00Z',
+          prompt: null,
+          model: { provider: 'nebius-token-factory', fastModel: 'f', reasoningModel: 'r' },
+          recommendations: [
+            {
+              resourceId: picked.id,
+              title: picked.title,
+              url: picked.url,
+              type: picked.type,
+              reason: 'It translates.',
+              quote: 'Translates documents',
+              sourceIds: ['github'],
+              aiReasoned: true,
+              reasonCheck: 'NOT_CHECKED',
+            },
+          ],
+        }),
+      [`GET /resources/${ID}`]: () => makeDetail(),
+    };
+    afterEach(() => {
+      delete document.documentElement.dataset.theme;
+    });
+
+    for (const theme of ['light', 'dark'] as const) {
+      it(`wide screen, ${theme} theme: the picks, the list and the filters`, async () => {
+        document.documentElement.dataset.theme = theme;
+        mockApi(answers);
+        const { container } = renderApp(
+          '/search?q=translate+my+docs+free&ask=translate+my+docs+free',
+        );
+        await screen.findByRole('link', { name: '#1 Picked One' });
+        await userEvent.click(screen.getByRole('button', { name: 'Filters' }));
+        await settle();
+        expect(await axeViolations(container)).toEqual([]);
+      });
+
+      it(`phone, ${theme} theme: the list and the filters drawer`, async () => {
+        document.documentElement.dataset.theme = theme;
+        mockViewport(390);
+        mockApi(answers);
+        const { container } = renderApp('/search?q=translate');
+        await screen.findByRole('link', { name: 'Picked One' });
+        await userEvent.click(screen.getByRole('button', { name: 'Filters' }));
+        await screen.findByRole('dialog', { name: 'Filters' });
+        await settle();
+        expect(await axeViolations(container)).toEqual([]);
+      });
+
+      it(`${theme} theme: the resource page`, async () => {
+        document.documentElement.dataset.theme = theme;
+        mockApi(answers);
+        const { container } = renderApp(`/resource/${ID}`);
+        await screen.findByRole('heading', { level: 1 });
+        await settle();
+        expect(await axeViolations(container)).toEqual([]);
+      });
+    }
   });
 
   it('search empty and error states', async () => {

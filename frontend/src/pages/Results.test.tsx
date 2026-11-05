@@ -5,6 +5,7 @@ import { axeViolations } from '@/test/a11y';
 import { makeCard, makeDetail, makeSearch, makeStatus } from '@/test/fixtures';
 import { mockApi, problem, sse } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
+import { mockViewport } from '@/test/viewport';
 
 const A = makeCard({
   id: 'aaaaaaaa-aaaa-5aaa-8aaa-aaaaaaaaaaaa',
@@ -74,14 +75,14 @@ const C = makeCard({
 });
 const three = () => makeSearch({ results: [A, C, B], total: 3, sources: [makeStatus()] });
 
+/** The link of a result row (its title). */
 const row = (name: string) =>
   screen
     .getAllByRole('link', { name: new RegExp(name) })
-    .find((b) => b.classList.contains('h2-select-row__link'))!;
-const titlesIn = (list: HTMLElement) =>
-  [...list.querySelectorAll('.h2-select-row__link')].map((e) => e.textContent);
-const previewTitle = () =>
-  within(screen.getByRole('article')).getByRole('heading', { level: 2 }).textContent;
+    .find((b) => b.classList.contains('h2-row__title'))!;
+/** The whole row (the list item) of a result. */
+const rowOf = (name: string) => row(name).closest('li')!;
+const rowTitles = () => [...document.querySelectorAll('.h2-row__title')].map((e) => e.textContent);
 /** Holds the guide's answer until the test sends it, as the real answer comes about 15 seconds after the results. */
 function heldGuide() {
   let send: (r: Response) => void = () => undefined;
@@ -96,127 +97,110 @@ function heldGuide() {
       }),
   };
 }
-const rowTitles = () =>
-  [...document.querySelectorAll('.h2-select-row__link')].map((e) => e.textContent);
 
-describe('results: list and preview', () => {
-  it('selects the first result and shows its preview; a click selects another and writes its id to the URL', async () => {
+describe('results: one column, a row opens the resource page', () => {
+  it('shows rows with type, host, date, description and source; nothing is selected and there is no preview', async () => {
     mockApi({ 'GET /search': () => search() });
-    const { params } = renderApp('/search?q=postgres');
-    const preview = await screen.findByRole('article');
-    expect(
-      within(preview).getByRole('heading', { level: 2, name: 'Alpha Search' }),
-    ).toBeInTheDocument();
-    expect(within(preview).getByText('Not stated')).toBeInTheDocument();
+    renderApp('/search?q=postgres');
+    await screen.findByText('Postgres MCP');
+    expect(screen.queryByRole('article')).not.toBeInTheDocument();
+    expect(document.querySelector('.h2-list [aria-current]')).toBeNull();
+    const r = within(rowOf('Postgres MCP'));
+    expect(r.getByText('MCP server')).toBeInTheDocument();
+    expect(r.getByText('github.com')).toBeInTheDocument();
+    expect(r.getByText(/^updated /)).toBeInTheDocument();
+    expect(r.getByText(/An MCP server that gives agents read-only access/)).toBeInTheDocument();
+    expect(r.getByText(/^From /)).toBeInTheDocument();
+    expect(screen.queryByText(/PUBLISHED/i)).not.toBeInTheDocument();
+  });
+
+  it('the heading says "All results" over the command line with the total from the API', async () => {
+    mockApi({ 'GET /search': () => ({ ...search(), total: 104 }) });
+    renderApp('/search?q=postgres');
+    const h = await screen.findByRole('heading', { level: 2, name: /All results/ });
+    expect(h).toHaveTextContent('All results $ helper2 search · 104');
+    // The command is decoration: the heading is read as "All results 104".
+    expect(h.querySelector('[aria-hidden="true"]')).toHaveTextContent('$ helper2 search ·');
+  });
+
+  it('the timeline heading names its own command', async () => {
+    mockApi({ 'GET /search': () => search() });
+    renderApp('/search?q=postgres&view=timeline');
+    expect(await screen.findByRole('heading', { level: 2, name: /All results/ })).toHaveTextContent(
+      '$ helper2 search --timeline · 2',
+    );
+  });
+
+  it('a row title is a real link to the resource page, named by the title only; a click opens it, Back comes back', async () => {
+    mockApi({
+      'GET /search': () => search(),
+      [`GET /resources/${B.id}`]: () => makeDetail({ card: B }),
+    });
+    const { router } = renderApp('/search?q=postgres');
+    await screen.findByText('Postgres MCP');
+    expect(row('Alpha Search')).toHaveAttribute('href', `/resource/${A.id}`);
+    expect(row('Postgres MCP')).toHaveAccessibleName('Postgres MCP');
     await userEvent.click(row('Postgres MCP'));
-    await waitFor(() => expect(params().get('id')).toBe(B.id));
-    expect(
-      within(screen.getByRole('article')).getByRole('heading', { level: 2, name: 'Postgres MCP' }),
-    ).toBeInTheDocument();
-    expect(row('Postgres MCP')).toHaveAttribute('aria-current', 'true');
+    await screen.findByRole('heading', { level: 1, name: 'Postgres MCP' });
+    expect(router.state.location.state).toMatchObject({ from: '/search?q=postgres' });
+    await userEvent.click(screen.getByRole('link', { name: /Back to results/ }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/search'));
+    expect(router.state.historyAction).toBe('POP');
+    expect(await screen.findByText('Alpha Search')).toBeInTheDocument();
   });
 
-  it('opens with the result named by id in the URL, and an unknown id selects the first', async () => {
-    mockApi({ 'GET /search': () => search() });
-    renderApp(`/search?q=postgres&id=${B.id}`);
-    expect(
-      within(await screen.findByRole('article')).getByRole('heading', { level: 2 }),
-    ).toHaveTextContent('Postgres MCP');
-  });
-
-  it('an unknown id selects the first result', async () => {
-    mockApi({ 'GET /search': () => search() });
-    renderApp('/search?q=postgres&id=not-here');
-    expect(
-      within(await screen.findByRole('article')).getByRole('heading', { level: 2 }),
-    ).toHaveTextContent('Alpha Search');
-  });
-
-  it('the guide answer arrives later: the list above stays put, the picks move to the top in one update and the preview opens on pick #1', async () => {
+  it('the guide answer comes later: the rows keep the search order, and the pick is marked where it stands', async () => {
     const g = heldGuide();
-    mockApi({ 'GET /search': () => search(), 'POST /guide/stream': g.handler });
+    mockApi({ 'GET /search': () => three(), 'POST /guide/stream': g.handler });
     renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
     expect(
       await screen.findByText('Guide is reading the results… picks will appear here'),
     ).toBeInTheDocument();
-    await screen.findByRole('article');
-    expect(rowTitles()).toEqual(['Alpha Search', 'Postgres MCP']);
-    expect(previewTitle()).toBe('Alpha Search');
-    // jsdom cannot measure: the slot that keeps the row of "How the guide decided" stands in for it while the guide
-    // reads, so what is above the list keeps its height when the answer comes.
+    await screen.findByText('Postgres MCP');
+    expect(rowTitles()).toEqual(['Alpha Search', 'Gamma Tool', 'Postgres MCP']);
+    // jsdom cannot measure: the slot that keeps the row of "How the guide decided" stands in for it.
     expect(document.querySelector('.h2-results__full-slot')).toBeInTheDocument();
-    expect(screen.queryByText('How the guide decided')).not.toBeInTheDocument();
-    // A keyboard user is on the first row when the answer comes.
     row('Alpha Search').focus();
     await g.answer(guide());
-    await screen.findByRole('button', { name: '#1 Postgres MCP' });
+    await screen.findByRole('link', { name: '#1 Postgres MCP' });
     expect(screen.getByText('How the guide decided')).toBeInTheDocument();
-    expect(document.querySelector('.h2-results__full-slot')).not.toBeInTheDocument();
-    expect(rowTitles()).toEqual(['Postgres MCP', 'Alpha Search']);
-    expect(titlesIn(screen.getByRole('list', { name: 'Guide picks' }))).toEqual(['Postgres MCP']);
-    expect(titlesIn(screen.getByRole('list', { name: 'More results' }))).toEqual(['Alpha Search']);
-    expect(screen.getByText('Pick #1')).toBeInTheDocument();
-    expect(previewTitle()).toBe('Postgres MCP');
-    expect(row('Postgres MCP')).toHaveAttribute('aria-current', 'true');
-    // Focus stays on the row it was on, wherever the row went.
+    expect(rowTitles()).toEqual(['Alpha Search', 'Gamma Tool', 'Postgres MCP']);
+    expect(within(rowOf('Postgres MCP')).getByText('Guide pick #1')).toBeInTheDocument();
+    expect(within(rowOf('Alpha Search')).queryByText(/Guide pick/)).not.toBeInTheDocument();
     expect(row('Alpha Search')).toHaveFocus();
+    // No announcement that anything moved: nothing did.
+    expect(document.querySelector('.h2-list [role="status"], .h2-list [aria-live]')).toBeNull();
   });
 
-  it('says once, politely, that the picks moved to the top', async () => {
-    const g = heldGuide();
-    mockApi({ 'GET /search': () => three(), 'POST /guide/stream': g.handler });
+  it("a picked row shows the guide's reason, AI-written, and its quote highlighted in the source's words", async () => {
+    mockApi({ 'GET /search': () => search(), 'POST /guide/stream': () => sse(guide()) });
     renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
-    await screen.findByRole('article');
-    const list = document.querySelector('.h2-list') as HTMLElement;
-    const status = within(list).getByRole('status');
-    expect(status).toBeEmptyDOMElement();
-    const second = { ...guide().recommendations[0]!, resourceId: C.id, title: C.title };
-    await g.answer({ ...guide(), recommendations: [...guide().recommendations, second] });
-    await screen.findByRole('button', { name: '#2 Gamma Tool' });
-    expect(within(list).getAllByRole('status')).toHaveLength(1);
-    expect(status).toHaveTextContent('The guide’s 2 picks are now at the top of the list.');
-    expect(list.querySelectorAll('[aria-live], [role="status"]')).toHaveLength(2);
+    await screen.findByRole('link', { name: '#1 Postgres MCP' });
+    const r = within(rowOf('Postgres MCP'));
+    const reason = r.getByText('Read-only access fits an agent that only reads.');
+    expect(reason).toHaveAttribute('data-ai-generated', 'true');
+    expect(reason.previousElementSibling).toHaveTextContent('AI-written');
+    const quote = r.getByText('gives agents read-only access to a PostgreSQL database');
+    expect(quote.tagName).toBe('MARK');
+    expect(quote.closest('[data-ai-generated]')).toBeNull();
+    expect(r.getByText('Checked word for word in the source')).toBeInTheDocument();
   });
 
-  it("shows the picks in the guide's order, then the other results in search order, each result once", async () => {
-    const second = { ...guide().recommendations[0]!, resourceId: A.id, title: A.title };
+  it('a pick chip on this page jumps to its row; it keeps its full title, however long', async () => {
+    const long = 'davidmoserai/AzureDocumentIntelligenceChunkerForVeryLongPdfDocuments';
     mockApi({
-      'GET /search': () => three(),
+      'GET /search': () => search(),
       'POST /guide/stream': () =>
-        sse({ ...guide(), recommendations: [...guide().recommendations, second] }),
+        sse({ ...guide(), recommendations: [{ ...guide().recommendations[0]!, title: long }] }),
     });
     renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
-    await screen.findByRole('button', { name: '#2 Alpha Search' });
-    expect(titlesIn(screen.getByRole('list', { name: 'Guide picks' }))).toEqual([
-      'Postgres MCP',
-      'Alpha Search',
-    ]);
-    expect(titlesIn(screen.getByRole('list', { name: 'More results' }))).toEqual(['Gamma Tool']);
-    expect(rowTitles()).toEqual(['Postgres MCP', 'Alpha Search', 'Gamma Tool']);
+    const chip = await screen.findByRole('link', { name: `#1 ${long}` });
+    expect(chip).toHaveAttribute('title', long);
+    expect(chip).toHaveAttribute('href', `#result-${B.id}`);
+    expect(document.getElementById(`result-${B.id}`)).toBe(rowOf('Postgres MCP'));
   });
 
-  it('an id in the URL wins over pick #1: a shared link or a reload opens the result it names', async () => {
-    mockApi({ 'GET /search': () => search(), 'POST /guide/stream': () => sse(guide()) });
-    renderApp(`/search?q=postgres+mcp&ask=postgres+mcp&id=${A.id}`);
-    await screen.findByRole('button', { name: '#1 Postgres MCP' });
-    expect(previewTitle()).toBe('Alpha Search');
-    expect(row('Alpha Search')).toHaveAttribute('aria-current', 'true');
-  });
-
-  it('a row the user clicked before the answer stays selected when the answer comes', async () => {
-    const g = heldGuide();
-    mockApi({ 'GET /search': () => three(), 'POST /guide/stream': g.handler });
-    const { params } = renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
-    await screen.findByRole('article');
-    await userEvent.click(row('Gamma Tool'));
-    await waitFor(() => expect(params().get('id')).toBe(C.id));
-    await g.answer(guide());
-    await screen.findByRole('button', { name: '#1 Postgres MCP' });
-    expect(previewTitle()).toBe('Gamma Tool');
-    expect(row('Gamma Tool')).toHaveAttribute('aria-current', 'true');
-  });
-
-  it("the preview of a pick says why the guide picked it, AI-written, with the source's words as proof", async () => {
+  it('a pick passes its reason and checks on to the resource page, which says why the guide picked it', async () => {
     mockApi({
       'GET /search': () => search(),
       'POST /guide/stream': () =>
@@ -224,39 +208,23 @@ describe('results: list and preview', () => {
           ...guide(),
           recommendations: [{ ...guide().recommendations[0]!, reasonCheck: 'SUPPORTED' }],
         }),
+      [`GET /resources/${B.id}`]: () => makeDetail({ card: B }),
     });
     renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
-    await screen.findByRole('button', { name: '#1 Postgres MCP' });
-    const pv = within(screen.getByRole('article'));
-    expect(pv.getByRole('heading', { name: 'Why the guide picked it' })).toBeInTheDocument();
-    expect(pv.queryByRole('heading', { name: 'About' })).not.toBeInTheDocument();
-    const reason = pv.getByText('Read-only access fits an agent that only reads.');
+    await screen.findByRole('link', { name: '#1 Postgres MCP' });
+    await userEvent.click(row('Postgres MCP'));
+    const why = await screen.findByRole('region', { name: /Why the guide picked it/ });
+    const reason = within(why).getByText('Read-only access fits an agent that only reads.');
     expect(reason).toHaveAttribute('data-ai-generated', 'true');
-    expect(reason.previousElementSibling).toHaveTextContent('AI-written');
     expect(
-      pv.getByText('A second model call checked this reason against the quote.'),
+      within(why).getByText('A second model call checked this reason against the quote.'),
     ).toBeInTheDocument();
-    const quote = pv.getByText('gives agents read-only access to a PostgreSQL database');
-    expect(quote.tagName).toBe('MARK');
-    expect(quote.closest('[data-ai-generated]')).toBeNull();
-    // The reason comes first, the proof under it.
-    expect(reason.compareDocumentPosition(quote) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  });
-
-  it('the preview of a result the guide did not pick is "About" it, with its own description, not a judgement', async () => {
-    mockApi({ 'GET /search': () => search(), 'POST /guide/stream': () => sse(guide()) });
-    renderApp(`/search?q=postgres+mcp&ask=postgres+mcp&id=${A.id}`);
-    await screen.findByRole('button', { name: '#1 Postgres MCP' });
-    const pv = within(screen.getByRole('article'));
-    expect(pv.getByRole('heading', { name: 'About' })).toBeInTheDocument();
-    expect(pv.queryByRole('heading', { name: 'Why the guide picked it' })).not.toBeInTheDocument();
-    expect(pv.getByText('Translates documents between languages.')).not.toHaveAttribute(
-      'data-ai-generated',
+    expect(screen.getByText('gives agents read-only access to a PostgreSQL database').tagName).toBe(
+      'MARK',
     );
-    expect(pv.queryByText('AI-written')).not.toBeInTheDocument();
   });
 
-  it('a pick whose reason the check removed shows no lone "AI-written" label, in the row or the preview', async () => {
+  it('a pick whose reason the check removed shows no lone "AI-written" label in its row', async () => {
     mockApi({
       'GET /search': () => search(),
       'POST /guide/stream': () =>
@@ -266,14 +234,42 @@ describe('results: list and preview', () => {
         }),
     });
     renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
-    await screen.findByRole('button', { name: '#1 Postgres MCP' });
-    expect(within(row('Postgres MCP')).queryByText('AI-written')).not.toBeInTheDocument();
-    const pv = within(screen.getByRole('article'));
-    expect(pv.queryByText('AI-written')).not.toBeInTheDocument();
-    expect(pv.getByText(/claimed more than the quote shows/)).toBeInTheDocument();
-    expect(
-      document.querySelectorAll('.h2-list [data-ai-generated], article [data-ai-generated]'),
-    ).toHaveLength(0);
+    await screen.findByRole('link', { name: '#1 Postgres MCP' });
+    expect(within(rowOf('Postgres MCP')).queryByText('AI-written')).not.toBeInTheDocument();
+    expect(document.querySelectorAll('.h2-list [data-ai-generated]')).toHaveLength(0);
+  });
+
+  it('an AI-written description in a row is labelled and marked machine-readable', async () => {
+    const ai = makeCard({
+      id: 'dddddddd-dddd-5ddd-8ddd-dddddddddddd',
+      title: 'Summed Up',
+      description: 'A short summary.',
+      descriptionOrigin: 'AI_SUMMARY',
+    });
+    mockApi({
+      'GET /search': () => makeSearch({ results: [A, ai], total: 2, sources: [makeStatus()] }),
+    });
+    renderApp('/search?q=postgres+mcp');
+    await screen.findByText('Summed Up');
+    const r = within(rowOf('Summed Up'));
+    const text = r.getByText('A short summary.');
+    expect(text).toHaveAttribute('data-ai-generated', 'true');
+    expect(text.previousElementSibling).toHaveTextContent('AI summary');
+  });
+
+  it('a pick on an AI-written description shows it labelled and marked, never as the checked quote', async () => {
+    const aiB = { ...B, descriptionOrigin: 'AI_EXTRACTED' as const };
+    mockApi({
+      'GET /search': () => makeSearch({ results: [A, aiB], total: 2, sources: [makeStatus()] }),
+      'POST /guide/stream': () => sse(guide()),
+    });
+    renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
+    await screen.findByRole('link', { name: '#1 Postgres MCP' });
+    const r = rowOf('Postgres MCP');
+    expect(r.querySelector('mark')).toBeNull();
+    expect(within(r).getByText(/Easy to set up\./)).toHaveAttribute('data-ai-generated', 'true');
+    expect(within(r).getByText('Extracted by AI')).toBeInTheDocument();
+    expect(within(r).queryByText('Checked word for word in the source')).not.toBeInTheDocument();
   });
 
   it('keeps a line for "web searches left" while the guide reads, and the count takes its place', async () => {
@@ -286,7 +282,7 @@ describe('results: list and preview', () => {
         }),
     });
     renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
-    await screen.findByRole('article');
+    await screen.findByText('Postgres MCP');
     const blank = document.querySelector('.h2-results__guide .h2-web-left');
     expect(blank).toHaveAttribute('aria-hidden', 'true');
     expect(blank?.textContent?.trim()).toBe('');
@@ -309,113 +305,16 @@ describe('results: list and preview', () => {
         }),
     });
     renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
-    await screen.findByRole('article');
+    await screen.findByText('Postgres MCP');
     expect(document.querySelector('.h2-web-left')).toBeNull();
     await act(async () => {
       answer(sse({ ...guide(), webSearches: { limit: 1000, remaining: 998 } }));
     });
-    await screen.findByRole('button', { name: '#1 Postgres MCP' });
+    await screen.findByRole('link', { name: '#1 Postgres MCP' });
     expect(document.querySelector('.h2-web-left')).toBeNull();
   });
 
-  it('a pick chip keeps its full title for screen readers and on hover, however long', async () => {
-    const long = 'davidmoserai/AzureDocumentIntelligenceChunkerForVeryLongPdfDocuments';
-    mockApi({
-      'GET /search': () => search(),
-      'POST /guide/stream': () =>
-        sse({ ...guide(), recommendations: [{ ...guide().recommendations[0]!, title: long }] }),
-    });
-    renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
-    const chip = await screen.findByRole('button', { name: `#1 ${long}` });
-    expect(chip).toHaveAttribute('title', long);
-  });
-
-  it('an AI-written description in a row is labelled and marked machine-readable', async () => {
-    const ai = makeCard({
-      id: 'dddddddd-dddd-5ddd-8ddd-dddddddddddd',
-      title: 'Summed Up',
-      description: 'A short summary.',
-      descriptionOrigin: 'AI_SUMMARY',
-    });
-    mockApi({
-      'GET /search': () => makeSearch({ results: [A, ai], total: 2, sources: [makeStatus()] }),
-    });
-    renderApp('/search?q=postgres+mcp');
-    await screen.findByText('Summed Up');
-    const r = row('Summed Up').closest<HTMLElement>('.h2-select-row')!;
-    expect(within(r).getByText('AI summary')).toBeInTheDocument();
-    expect(within(r).getByText('A short summary.')).toHaveAttribute('data-ai-generated', 'true');
-  });
-
-  it('an AI-written description in the preview is labelled and marked, and never the proof of a pick', async () => {
-    const ai = makeCard({
-      id: 'dddddddd-dddd-5ddd-8ddd-dddddddddddd',
-      title: 'Summed Up',
-      description: 'A short summary.',
-      descriptionOrigin: 'AI_SUMMARY',
-    });
-    mockApi({
-      'GET /search': () => makeSearch({ results: [A, ai], total: 2, sources: [makeStatus()] }),
-    });
-    renderApp(`/search?q=postgres+mcp&id=${ai.id}`);
-    const pv = within(await screen.findByRole('article'));
-    const text = await pv.findByText('A short summary.');
-    expect(text).toHaveAttribute('data-ai-generated', 'true');
-    expect(text.previousElementSibling).toHaveTextContent('AI summary');
-  });
-
-  it('a pick on an AI-written description shows it labelled and marked, not as the proof', async () => {
-    const aiB = { ...B, descriptionOrigin: 'AI_EXTRACTED' as const };
-    mockApi({
-      'GET /search': () => makeSearch({ results: [A, aiB], total: 2, sources: [makeStatus()] }),
-      'POST /guide/stream': () => sse(guide()),
-    });
-    renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
-    await screen.findByRole('button', { name: '#1 Postgres MCP' });
-    const pv = within(screen.getByRole('article'));
-    expect(document.querySelector('article .h2-proof')).toBeNull();
-    expect(pv.getByText(/Easy to set up\./)).toHaveAttribute('data-ai-generated', 'true');
-    expect(pv.getByText('Extracted by AI')).toBeInTheDocument();
-  });
-
-  it('a fact the sources disagree on says so, with each value and its source, not "Not stated"', async () => {
-    const split = makeCard({
-      id: 'eeeeeeee-eeee-5eee-8eee-eeeeeeeeeeee',
-      title: 'Split License',
-      license: null,
-      conflicts: [
-        {
-          field: 'license',
-          values: [
-            { value: 'MIT', sourceId: 'github' },
-            { value: 'Apache-2.0', sourceId: 'npm' },
-          ],
-        },
-      ],
-    });
-    mockApi({
-      'GET /search': () => makeSearch({ results: [split], total: 1, sources: [makeStatus()] }),
-    });
-    renderApp('/search?q=postgres+mcp');
-    const preview = await screen.findByRole('article');
-    expect(preview.querySelector('dd.is-conflict')).toHaveTextContent(
-      'Sources disagree: MIT (github) · Apache-2.0 (npm)',
-    );
-    expect(preview.querySelector('dd.is-conflict')).not.toHaveTextContent('Not stated');
-  });
-
-  it('with no pick and no model the bar says so in one line', async () => {
-    mockApi({
-      'GET /search': () => search(),
-      'POST /guide/stream': () => sse({ ...guide(), model: null, recommendations: [] }),
-    });
-    renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
-    expect(
-      await screen.findByText('No pick: no result had a sentence that proves it'),
-    ).toBeInTheDocument();
-  });
-
-  it('an answer with no AI pick says so once, in the bar, with the next steps there; the list keeps the search order', async () => {
+  it('an answer with no AI pick says so once, in the bar, with the next steps there; no row is a pick', async () => {
     const plain = { ...guide().recommendations[0]!, aiReasoned: false };
     mockApi({
       'GET /search': () => search(),
@@ -435,7 +334,106 @@ describe('results: list and preview', () => {
       'open',
     );
     expect(rowTitles()).toEqual(['Alpha Search', 'Postgres MCP']);
-    expect(screen.queryByRole('list', { name: 'Guide picks' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Guide pick #/)).not.toBeInTheDocument();
+  });
+
+  it('type tabs: All, the four types with most results, and More with the rest', async () => {
+    const type = [
+      { value: 'LIBRARY', count: 40 },
+      { value: 'PRODUCT', count: 31 },
+      { value: 'MODEL', count: 22 },
+      { value: 'MCP_SERVER', count: 6 },
+      { value: 'PAPER', count: 5 },
+      { value: 'DATASET', count: 2 },
+    ];
+    mockApi({ 'GET /search': () => ({ ...search(), facets: { ...search().facets, type } }) });
+    const { params } = renderApp('/search?q=postgres');
+    const tabs = within(await screen.findByRole('group', { name: 'Result types' }));
+    expect(tabs.getByRole('button', { name: 'All 2' })).toHaveAttribute('aria-pressed', 'true');
+    expect(tabs.getByRole('button', { name: 'Library 40' })).toBeVisible();
+    expect(tabs.getByRole('button', { name: 'MCP server 6' })).toBeVisible();
+    const more = tabs.getByRole('button', { name: /More/ });
+    expect(more).toHaveAttribute('aria-expanded', 'false');
+    expect(tabs.queryByRole('button', { name: 'Paper 5' })).not.toBeInTheDocument();
+    await userEvent.click(more);
+    await userEvent.click(tabs.getByRole('button', { name: 'Paper 5' }));
+    await waitFor(() => expect(params().getAll('type')).toEqual(['PAPER']));
+    // The type chosen under More shows as a tab, pressed.
+    expect(
+      await within(screen.getByRole('group', { name: 'Result types' })).findByRole('button', {
+        name: 'Paper 5',
+        pressed: true,
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('shows the filters in place under the heading on a wide screen', async () => {
+    mockApi({ 'GET /search': () => search() });
+    renderApp('/search?q=postgres');
+    const toggle = await screen.findByRole('button', { name: 'Filters' });
+    await userEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('complementary', { name: 'Filters' })).toBeVisible();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  describe('on a phone', () => {
+    beforeEach(() => mockViewport(390));
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('nothing is selected on load, and the filters open as a drawer that gives focus back when it closes', async () => {
+      mockApi({ 'GET /search': () => search() });
+      renderApp('/search?q=postgres');
+      await screen.findByText('Postgres MCP');
+      expect(document.querySelector('.h2-list [aria-current]')).toBeNull();
+      const toggle = screen.getByRole('button', { name: 'Filters' });
+      await userEvent.click(toggle);
+      const drawer = await screen.findByRole('dialog', { name: 'Filters' });
+      expect(within(drawer).getByRole('button', { name: 'Close' })).toHaveFocus();
+      expect(within(drawer).getByRole('button', { name: 'Show 2 results' })).toBeInTheDocument();
+      await userEvent.keyboard('{Escape}');
+      expect(toggle).toHaveFocus();
+      expect(toggle).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+  });
+
+  it('Try again on a failed guide keeps the reader there: focus moves to the picks heading, not the page body', async () => {
+    let n = 0;
+    mockApi({
+      'GET /search': () => search(),
+      'POST /guide/stream': () =>
+        n++ === 0 ? problem(502, 'Bad gateway', 'The model timed out.') : sse(guide()),
+    });
+    renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
+    expect(await screen.findByRole('alert')).toHaveTextContent('The model timed out.');
+    screen.getByRole('button', { name: /Try again/ }).focus();
+    await userEvent.keyboard('{Enter}');
+    expect(await screen.findByRole('link', { name: '#1 Postgres MCP' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Guide picks' })).toHaveFocus();
+  });
+
+  it('has one h1 and no axe violations', async () => {
+    mockApi({ 'GET /search': () => search(), 'POST /guide/stream': () => sse(guide()) });
+    const { container } = renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
+    await screen.findByRole('link', { name: '#1 Postgres MCP' });
+    await userEvent.click(screen.getByText('How the guide decided'));
+    await userEvent.click(screen.getByRole('button', { name: 'Filters' }));
+    await settle();
+    expect(screen.getAllByRole('button', { name: 'Filters' })).toHaveLength(1);
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+    expect(await axeViolations(container)).toEqual([]);
+  });
+
+  it('with no pick and no model the bar says so in one line', async () => {
+    mockApi({
+      'GET /search': () => search(),
+      'POST /guide/stream': () => sse({ ...guide(), model: null, recommendations: [] }),
+    });
+    renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
+    expect(
+      await screen.findByText('No pick: no result had a sentence that proves it'),
+    ).toBeInTheDocument();
   });
 
   it('"Ask without" asks the guide again without that requirement, the same way as ✕ in "Understood as"', async () => {
@@ -534,66 +532,6 @@ describe('results: list and preview', () => {
     expect(await screen.findByRole('button', { name: /Next/ })).toBeInTheDocument();
   });
 
-  it('each row title is a link to its resource page; a plain click selects it here, a ctrl click is left to the browser', async () => {
-    mockApi({ 'GET /search': () => search() });
-    const { router, params } = renderApp('/search?q=postgres');
-    await screen.findByRole('article');
-    expect(row('Alpha Search')).toHaveAttribute('href', `/resource/${A.id}`);
-    expect(row('Postgres MCP')).toHaveAttribute('href', `/resource/${B.id}`);
-    // The link's name is the title only, not the whole row.
-    expect(row('Postgres MCP')).toHaveAccessibleName('Postgres MCP');
-
-    const ctrl = new MouseEvent('click', { bubbles: true, cancelable: true, ctrlKey: true });
-    row('Postgres MCP').dispatchEvent(ctrl);
-    expect(ctrl.defaultPrevented).toBe(false);
-    expect(params().get('id')).toBeNull();
-
-    await userEvent.click(row('Postgres MCP'));
-    await waitFor(() => expect(params().get('id')).toBe(B.id));
-    expect(router.state.location.pathname).toBe('/search');
-  });
-
-  describe('up to 860 px (phone)', () => {
-    beforeEach(() =>
-      vi.stubGlobal(
-        'matchMedia',
-        vi.fn(() => ({
-          matches: false,
-          addEventListener: () => undefined,
-          removeEventListener: () => undefined,
-        })),
-      ),
-    );
-    afterEach(() => vi.unstubAllGlobals());
-
-    it('selects nothing on load, and a row opens the resource page, which links back to the search with that result open', async () => {
-      mockApi({
-        'GET /search': () => search(),
-        [`GET /resources/${B.id}`]: () => makeDetail({ card: B }),
-      });
-      const { router } = renderApp('/search?q=postgres');
-      await screen.findByText('Postgres MCP');
-      expect(screen.queryByRole('article')).not.toBeInTheDocument();
-      expect(screen.queryByRole('link', { name: 'Full details' })).not.toBeInTheDocument();
-      expect(row('Alpha Search')).not.toHaveAttribute('aria-current');
-
-      await userEvent.click(row('Postgres MCP'));
-      await waitFor(() => expect(router.state.location.pathname).toBe(`/resource/${B.id}`));
-      expect(router.state.location.state).toMatchObject({
-        from: `/search?q=postgres&id=${B.id}`,
-      });
-    });
-
-    it('a result chosen by id opens inside the list, under its row, with a link to the full page', async () => {
-      mockApi({ 'GET /search': () => search() });
-      renderApp(`/search?q=postgres&id=${A.id}`);
-      const full = await screen.findByRole('link', { name: 'Full details' });
-      expect(full).toHaveAttribute('href', `/resource/${A.id}`);
-      expect(screen.queryByRole('article')).not.toBeInTheDocument();
-      expect(full.closest('li')).toContainElement(row('Alpha Search'));
-    });
-  });
-
   it('shows the sources that answered at the bottom', async () => {
     mockApi({ 'GET /search': () => search() });
     renderApp('/search?q=postgres');
@@ -601,34 +539,6 @@ describe('results: list and preview', () => {
       await screen.findByRole('heading', { name: /2 of 2 sources answered/ }),
     ).toBeInTheDocument();
     expect(screen.getByRole('list', { name: 'Sources searched' })).toBeInTheDocument();
-  });
-
-  it('Try again on a failed guide keeps the reader there: focus moves to the picks heading, not the page body', async () => {
-    let n = 0;
-    mockApi({
-      'GET /search': () => search(),
-      'POST /guide/stream': () =>
-        n++ === 0 ? problem(502, 'Bad gateway', 'The model timed out.') : sse(guide()),
-    });
-    renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
-    expect(await screen.findByRole('alert')).toHaveTextContent('The model timed out.');
-    screen.getByRole('button', { name: /Try again/ }).focus();
-    await userEvent.keyboard('{Enter}');
-    expect(await screen.findByRole('button', { name: '#1 Postgres MCP' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Guide picks' })).toHaveFocus();
-  });
-
-  it('has one h1 and no axe violations', async () => {
-    mockApi({ 'GET /search': () => search(), 'POST /guide/stream': () => sse(guide()) });
-    const { container } = renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
-    await screen.findByRole('button', { name: '#1 Postgres MCP' });
-    await userEvent.click(screen.getByText('How the guide decided'));
-    await userEvent.click(screen.getByRole('button', { name: 'Filters' }));
-    await settle();
-    // One Filters button: the panel has no second toggle inside it.
-    expect(screen.getAllByRole('button', { name: 'Filters' })).toHaveLength(1);
-    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
-    expect(await axeViolations(container)).toEqual([]);
   });
 });
 

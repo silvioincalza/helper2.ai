@@ -107,8 +107,8 @@ describe('states: every state says what happened and offers a next step', () => 
     expect((await screen.findAllByText('Acme Translator')).length).toBeGreaterThan(0);
     const row = screen
       .getByText(/1 of 2 sources did not answer/)
-      .closest('.h2-list__count') as HTMLElement;
-    expect(row).toHaveTextContent('1 result · 1 of 2 sources did not answer');
+      .closest('.h2-partial') as HTMLElement;
+    expect(row).toHaveTextContent('1 of 2 sources did not answer');
     // No banner, no box.
     expect(document.querySelector('.banner')).toBeNull();
     // The sources and why, only on demand.
@@ -178,7 +178,7 @@ describe('states: every state says what happened and offers a next step', () => 
     });
     renderApp(url);
     const row = (await screen.findByText(/3 of 4 sources did not answer/)).closest(
-      '.h2-list__count',
+      '.h2-partial',
     ) as HTMLElement;
     expect(within(row).queryByRole('button', { name: /Try again/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Try again/ })).not.toBeInTheDocument();
@@ -193,7 +193,7 @@ describe('states: every state says what happened and offers a next step', () => 
     ]);
   });
 
-  it('a partial answer is not a live announcement: only the count is a live region', async () => {
+  it('a partial answer is not a live announcement: it is read with the heading', async () => {
     mockApi({
       'GET /search': () =>
         makeSearch({
@@ -214,8 +214,6 @@ describe('states: every state says what happened and offers a next step', () => 
       document.querySelectorAll('[aria-live], [role="status"], [role="alert"]'),
     );
     expect(live.some((el) => /did not answer/.test(el.textContent ?? ''))).toBe(false);
-    // The count is the one polite live region of the list.
-    expect(screen.getByText('1 result')).toHaveAttribute('aria-live', 'polite');
   });
 
   it('all sources failed: an alert, not an empty result, with retry and the sources page', async () => {

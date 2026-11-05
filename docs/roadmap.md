@@ -163,14 +163,13 @@ Open items:
 
 - **Redesign, version 4 of the design system** ([0042](adr/frontend/0042-redesign-design-system-v4.md),
   [design/system](design/system/README.md), boards in [design/redesign](design/redesign)). The fonts, the v4 tokens,
-  the header, the footer and Home are built. Still to do, one pull request each:
-  - **Results in v4:** one column, no preview panel. A row opens the resource page, and Back keeps the scroll
-    position (#151). Rows carry what the preview showed: type, host, date, guide pick, description, source. Guide
-    picks merged into the list; the partial-results banner becomes one quiet line in the count row; filters as a
-    drawer on phones.
-  - **The resource page in v4:** one primary button ("Set it up" is already only on types a user installs or runs).
-  - **The other pages:** Sources, Saved, the back office and the text pages (Mission, Privacy, Terms, Account, sign-in,
-    404) are built (decisions 11 and 12).
+  the header, the footer, Home, Results (list and timeline), the resource page, Sources, Saved, the back office and
+  the text pages (Mission, Privacy, Terms, Account, sign-in, 404) are built. Open points:
+  - **Results, open points.** The boards draw "Show more" under the list and "Show them" for the timeline's
+    unknown dates; the list still pages, and the unknown dates show as their own group. The `$ helper2 search · N`
+    total is `total` after filters. The pagination buttons are still the version 3 buttons.
+  - **The resource page, open points.** The boards draw a date line under the title and "Where this information
+    comes from" folded; the page keeps the dates list and the provenance table.
   - **Saved, drawn but not built:** Undo for a few seconds after Remove, "4 of 500" on the account list, and "We moved
     3 saved items to your account" right after sign-in. Each needs a decision first: Undo changes how Remove works,
     the cap and the moved count need fields on the bookmarks API.
@@ -197,9 +196,6 @@ Open items:
     go. Signed-in users can turn it off on the account page; guests have only reduced motion and the hold while the
     search box has focus, and no switch. Find a pause for them that needs no new browser storage key, or decide the
     storage key with the Privacy page.
-  - **The terminal style on the list pages:** Results and Timeline get the look of `TermList` on Home (a
-    `$ helper2 …` line with the count from the API, `ls -l` columns, dashed rules, titles in Geist, the rest in Geist
-    Mono). Sources, Saved and Admin have it.
 - **Frontend design** ([0040](adr/frontend/0040-frontend-design.md)) is done and on staging. Prod gets it with the next release:
   cut one once staging looks right.
 - Tracking cookies are planned. Before the first one: consent banner, cookie notice, Privacy page and record of

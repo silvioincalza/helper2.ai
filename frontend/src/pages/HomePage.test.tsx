@@ -139,7 +139,7 @@ describe('one box', () => {
     renderApp('/?q=summarise+my+meeting+notes+quickly');
     expect(
       await screen.findByRole('button', {
-        name: /ask the guide: “summarise my meeting notes quickly”/,
+        name: 'Ask the guide about “summarise my meeting notes quickly”',
       }),
     ).toBeInTheDocument();
   });

@@ -85,8 +85,11 @@ describe('home (design v4)', () => {
     );
     await waitFor(() => expect(router.state.location.pathname).toBe('/search'));
     expect(params().get('q')).toBe('mcp github');
-    // The row's title and the preview's title: both link to the resource page.
-    expect(await screen.findAllByRole('link', { name: 'Acme Translator' })).toHaveLength(2);
+    // The row's title links to the resource page; there is no preview.
+    expect(await screen.findByRole('link', { name: 'Acme Translator' })).toHaveAttribute(
+      'href',
+      expect.stringMatching(/^\/resource\//),
+    );
     expect(m.callsTo('GET', '/search')).toHaveLength(1);
   });
 
@@ -137,8 +140,11 @@ describe('home (design v4)', () => {
   it('/?q=… still shows results, marked noindex, follow like /search, with no canonical link', async () => {
     mockApi();
     renderApp('/?q=mcp');
-    // The row's title and the preview's title: both link to the resource page.
-    expect(await screen.findAllByRole('link', { name: 'Acme Translator' })).toHaveLength(2);
+    // The row's title links to the resource page; there is no preview.
+    expect(await screen.findByRole('link', { name: 'Acme Translator' })).toHaveAttribute(
+      'href',
+      expect.stringMatching(/^\/resource\//),
+    );
     expect(document.querySelector('link[rel="canonical"]')).toBeNull();
     expect(document.head.querySelector('meta[name="robots"]')).toHaveAttribute(
       'content',
