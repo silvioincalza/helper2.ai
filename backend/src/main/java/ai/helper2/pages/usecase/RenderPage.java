@@ -44,14 +44,24 @@ public class RenderPage {
 
   private final GetResourceDetail details;
   private final Pages pages;
+  private final boolean noindex;
 
   public RenderPage(GetResourceDetail details, PagesProperties properties) {
     this.details = details;
     this.pages = new Pages(properties.publicBaseUrl());
+    this.noindex = properties.noindex();
   }
 
   /** [hasQuery]: the home page with a search in its address is a search page. */
   public Page render(String path, boolean hasQuery) {
+    Page page = page(path, hasQuery);
+    // On staging the X-Robots-Tag header says noindex; the robots meta says the same, not "index".
+    return noindex && page.head() != null
+        ? new Page(page.status(), page.head().unlisted(), null)
+        : page;
+  }
+
+  private Page page(String path, boolean hasQuery) {
     return switch (PageAddress.Companion.of(path)) {
       case PageAddress.Resource r -> resource(r.getId());
       case PageAddress.Page p when p.getKind() == PageKind.HOME && hasQuery ->

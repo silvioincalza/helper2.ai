@@ -2,6 +2,7 @@ package ai.helper2.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -73,6 +74,12 @@ class PagesIT extends ApiTestBase {
       assertThat(page(path, 200)).as(path).contains("content=\"noindex, follow\"");
     }
     assertThat(page("/", 200)).contains("content=\"index, follow\"").contains("\"WebSite\"");
+  }
+
+  @Test
+  void aHeadRequestGetsThePageStatusToo() throws Exception {
+    mvc.perform(head("/no-such-page")).andExpect(status().isNotFound());
+    mvc.perform(head("/sources")).andExpect(status().isOk());
   }
 
   @Test
