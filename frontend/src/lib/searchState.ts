@@ -27,7 +27,7 @@ export interface SearchState {
   updatedAfter: string;
   openSource: TriState | '';
   filters: Record<MultiKey, string[]>;
-  /** Ranking emphasis set by a home example (never a choice in the UI); new words drop it. */
+  /** Ranking emphasis, set by a home example or the "Best for" chips on the results page; new words drop it. */
   path: AudiencePath | '';
 }
 
@@ -124,7 +124,7 @@ export function toApiParams(s: SearchState): URLSearchParams {
 export function patchState(s: SearchState, patch: Partial<SearchState>): SearchState {
   const next = { ...s, ...patch };
   if (!('page' in patch)) next.page = 0;
-  // The path belongs to the example that set it, not to words the user types next.
+  // The path belongs to the search it was chosen for (an example, a chip), not to words the user types next.
   if (patch.q !== undefined && patch.q !== s.q && !('path' in patch)) next.path = '';
   return next;
 }

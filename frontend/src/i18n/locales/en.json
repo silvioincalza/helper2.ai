@@ -153,6 +153,12 @@
     "translatedNote": "Translated by AI",
     "lexiconNote": "added from a fixed word list, not AI",
     "suggestUseCase": "Narrow by use case:",
+    "path": {
+      "label": "Best for:",
+      "ALL": "All",
+      "USE_AI": "Apps I can use",
+      "BUILD_WITH_AI": "Build with AI"
+    },
     "emptyTitle": "No results from the sources searched",
     "emptyRemoveFilters": "Remove all filters",
     "emptyTryOther": "Try different or fewer words.",

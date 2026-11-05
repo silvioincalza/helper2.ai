@@ -631,3 +631,42 @@ describe('results: list and preview', () => {
     expect(await axeViolations(container)).toEqual([]);
   });
 });
+
+describe('results: who the results are best for', () => {
+  const bestFor = () => screen.getByRole('group', { name: 'Best for:' });
+  const choice = (name: string) => within(bestFor()).getByRole('button', { name });
+  const lastSearch = (m: ReturnType<typeof mockApi>) =>
+    new URLSearchParams(m.callsTo('GET', '/search').at(-1)?.search);
+
+  it('"Apps I can use" puts the path in the URL and in the search call; Back brings "All" back', async () => {
+    const m = mockApi({ 'GET /search': () => search() });
+    const { router, params } = renderApp('/search?q=translate+newsletter');
+    await screen.findByText('Postgres MCP');
+    expect(choice('All')).toHaveAttribute('aria-pressed', 'true');
+    expect(lastSearch(m).get('path')).toBeNull();
+
+    await userEvent.click(choice('Apps I can use'));
+    await waitFor(() => expect(params().get('path')).toBe('USE_AI'));
+    expect(params().get('q')).toBe('translate newsletter');
+    await waitFor(() => expect(lastSearch(m).get('path')).toBe('USE_AI'));
+    expect(choice('Apps I can use')).toHaveAttribute('aria-pressed', 'true');
+    expect(choice('All')).toHaveAttribute('aria-pressed', 'false');
+
+    await act(async () => router.navigate(-1));
+    await waitFor(() => expect(params().get('path')).toBeNull());
+    expect(choice('All')).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('"All" removes the path from the URL and the search call', async () => {
+    const m = mockApi({ 'GET /search': () => search() });
+    const { params } = renderApp('/search?q=postgres&path=BUILD_WITH_AI');
+    await screen.findByText('Postgres MCP');
+    expect(lastSearch(m).get('path')).toBe('BUILD_WITH_AI');
+
+    choice('All').focus();
+    await userEvent.keyboard('{Enter}');
+    await waitFor(() => expect(params().get('path')).toBeNull());
+    await waitFor(() => expect(lastSearch(m).get('path')).toBeNull());
+    expect(choice('All')).toHaveAttribute('aria-pressed', 'true');
+  });
+});
