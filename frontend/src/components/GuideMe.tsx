@@ -10,9 +10,18 @@ const GUIDED: ReadonlySet<ResultCard['type']> = new Set([
   'LIBRARY',
   'AGENT',
   'SKILL',
-  'PRODUCT',
 ]);
 
+/** A product gets it only when you run it yourself: self-hosted, a desktop app, or a mobile app. */
+const INSTALLED_PLATFORMS: ReadonlySet<string> = new Set(['local', 'desktop', 'ios', 'android']);
+
+function isInstalledProduct(card: ResultCard): boolean {
+  return (
+    card.pricing === 'OPEN_SOURCE_SELF_HOSTED' ||
+    card.platforms.some((p) => INSTALLED_PLATFORMS.has(p.toLowerCase()))
+  );
+}
+
 export function canGuide(card: ResultCard): boolean {
-  return GUIDED.has(card.type);
+  return GUIDED.has(card.type) || (card.type === 'PRODUCT' && isInstalledProduct(card));
 }

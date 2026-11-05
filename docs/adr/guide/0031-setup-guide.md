@@ -111,9 +111,10 @@ and a snippet copied into an AI client's config file runs on the user's machine.
    `GITHUB_TOKEN` (empty), `GUIDE_DAILY_MODEL_CALLS`, `GUIDE_REASONING` (false), `GUIDE_CACHE_TTL` (7 days),
    `UNREADABLE_TTL` (10 minutes).
 13. **Offered only on things you install or run.** The button says "Set it up" (it said "Guide me", easy to mix up
-   with the AI guide). It shows on an MCP server, model, library, agent, skill or product, in the results preview and
-   on the resource page (`canGuide`, `frontend/src/components/GuideMe.tsx`). Papers, datasets, prompts, articles,
-   courses, events, news and other types get none.
+   with the AI guide). It shows on an MCP server, model, library, agent or skill, in the results preview and on the
+   resource page (`canGuide`, `frontend/src/components/GuideMe.tsx`). A product gets it only when you run it yourself:
+   pricing `OPEN_SOURCE_SELF_HOSTED`, or a platform `local`, `desktop`, `ios` or `android`. A web-only service has
+   nothing to set up. Papers, datasets, prompts, articles, courses, events, news and other types get none.
 
 ## Consequences
 - Every MCP server with a registry entry or a README config example gets copy-paste setup for 8 clients without a

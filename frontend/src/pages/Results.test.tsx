@@ -566,7 +566,7 @@ describe('results: list and preview', () => {
     );
     afterEach(() => vi.unstubAllGlobals());
 
-    it('selects nothing on load, and a row opens the resource page, which links back to the search', async () => {
+    it('selects nothing on load, and a row opens the resource page, which links back to the search with that result open', async () => {
       mockApi({
         'GET /search': () => search(),
         [`GET /resources/${B.id}`]: () => makeDetail({ card: B }),
@@ -579,7 +579,9 @@ describe('results: list and preview', () => {
 
       await userEvent.click(row('Postgres MCP'));
       await waitFor(() => expect(router.state.location.pathname).toBe(`/resource/${B.id}`));
-      expect(router.state.location.state).toMatchObject({ from: '/search?q=postgres' });
+      expect(router.state.location.state).toMatchObject({
+        from: `/search?q=postgres&id=${B.id}`,
+      });
     });
 
     it('a result chosen by id opens inside the list, under its row, with a link to the full page', async () => {

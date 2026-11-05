@@ -520,9 +520,12 @@ function ResultRow({
   stale: ReadonlySet<string>;
 }) {
   const location = useLocation();
-  // The resource page links back to this search and shows the same checked sentence.
+  // The resource page links back to this search with this result open (on a phone, its preview in the list), and
+  // shows the same checked sentence.
+  const back = new URLSearchParams(location.search);
+  back.set('id', card.id);
   const detailState = {
-    from: `${location.pathname}${location.search}`,
+    from: `${location.pathname}?${back.toString()}`,
     quote: pick?.quote ?? null,
   };
   return (
