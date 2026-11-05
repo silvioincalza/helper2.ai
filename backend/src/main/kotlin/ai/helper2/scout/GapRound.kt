@@ -296,7 +296,7 @@ object UntrustedPageText {
     val out = StringBuilder(text.length)
     var from = 0
     var at = 0
-    var foreignDepth = 0
+    val foreign = ForeignContext()
     while (true) {
       val lt = text.indexOf('<', at)
       if (lt < 0) break
@@ -310,15 +310,15 @@ object UntrustedPageText {
             at = lt + 1
           }
         tag.closing || !hides(tag) -> {
-          foreignDepth = foreignDepthAfter(tag, foreignDepth)
+          foreign.after(tag)
           at = tag.end
         }
         else -> {
           out.append(text, from, lt)
-          val foreign = foreignDepth > 0 || tag.name in FOREIGN_ROOTS
+          val selfClosingHere = foreign.honoursSelfClosing(tag.name)
           from =
-            if (tag.name in VOID_ELEMENTS || (foreign && tag.selfClosing)) tag.end
-            else closeOf(text, tag.name, tag.end, foreign) ?: return out.toString()
+            if (tag.name in VOID_ELEMENTS || (selfClosingHere && tag.selfClosing)) tag.end
+            else closeOf(text, tag.name, tag.end, selfClosingHere) ?: return out.toString()
           at = from
         }
       }
@@ -340,17 +340,131 @@ object UntrustedPageText {
     val selfClosing: Boolean = false,
   )
 
-  /** Elements whose content a browser reads as foreign: "/>" closes any element inside them. */
+  /**
+   * Where the scan is: inside SVG or MathML (foreign content) or in HTML. A browser honours "/>"
+   * only on an SVG or MathML element in foreign content. When unsure this says HTML, so "/>" means
+   * nothing and a hidden element keeps its text hidden: an HTML breakout tag leaves foreign
+   * content, and the content of an integration point (foreignObject, desc, mi...) is HTML.
+   */
+  private class ForeignContext {
+    private var roots = 0
+    private var integrations = 0
+
+    fun honoursSelfClosing(name: String): Boolean =
+      name in FOREIGN_ELEMENTS && (name in FOREIGN_ROOTS || (roots > 0 && integrations == 0))
+
+    fun after(tag: Tag) {
+      val name = tag.name
+      when {
+        name in FOREIGN_ROOTS ->
+          if (tag.closing) roots = maxOf(0, roots - 1) else if (!tag.selfClosing) roots++
+        roots == 0 -> Unit
+        name in INTEGRATION_POINTS ->
+          if (tag.closing) integrations = maxOf(0, integrations - 1)
+          else if (!(tag.selfClosing && honoursSelfClosing(name))) integrations++
+        !tag.closing && integrations == 0 && name in HTML_BREAKOUT -> roots = 0
+      }
+    }
+  }
+
   private val FOREIGN_ROOTS = setOf("svg", "math")
 
-  /** How deep in SVG or MathML the scan is after [tag]. */
-  private fun foreignDepthAfter(tag: Tag, depth: Int): Int =
-    when {
-      tag.name !in FOREIGN_ROOTS -> depth
-      tag.closing -> maxOf(0, depth - 1)
-      tag.selfClosing -> depth
-      else -> depth + 1
-    }
+  /** Element names that exist only in SVG or MathML (none HTML shares, like "a" or "title"). */
+  private val FOREIGN_ELEMENTS =
+    setOf(
+      "svg",
+      "g",
+      "path",
+      "circle",
+      "rect",
+      "line",
+      "polyline",
+      "polygon",
+      "ellipse",
+      "use",
+      "symbol",
+      "defs",
+      "stop",
+      "lineargradient",
+      "radialgradient",
+      "clippath",
+      "mask",
+      "pattern",
+      "filter",
+      "marker",
+      "text",
+      "tspan",
+      "textpath",
+      "animate",
+      "animatetransform",
+      "set",
+      "math",
+      "mi",
+      "mo",
+      "mn",
+      "ms",
+      "mtext",
+      "mspace",
+      "mrow",
+      "mfrac",
+      "msqrt",
+      "msup",
+      "msub",
+    )
+
+  /** Inside these, in foreign content, the content is HTML again. */
+  private val INTEGRATION_POINTS =
+    setOf("foreignobject", "desc", "title", "annotation-xml", "mi", "mo", "mn", "ms", "mtext")
+
+  /** HTML start tags that make a browser leave foreign content. */
+  private val HTML_BREAKOUT =
+    setOf(
+      "b",
+      "big",
+      "blockquote",
+      "body",
+      "br",
+      "center",
+      "code",
+      "dd",
+      "div",
+      "dl",
+      "dt",
+      "em",
+      "embed",
+      "h1",
+      "h2",
+      "h3",
+      "h4",
+      "h5",
+      "h6",
+      "head",
+      "hr",
+      "i",
+      "img",
+      "li",
+      "listing",
+      "menu",
+      "meta",
+      "nobr",
+      "ol",
+      "p",
+      "pre",
+      "ruby",
+      "s",
+      "small",
+      "span",
+      "strong",
+      "strike",
+      "sub",
+      "sup",
+      "table",
+      "tt",
+      "u",
+      "ul",
+      "var",
+      "font",
+    )
 
   /** A start in these sorted positions falls in [from, to). */
   private fun IntArray.any(from: Int, to: Int): Boolean {
@@ -373,17 +487,22 @@ object UntrustedPageText {
     val limit = minOf(text.length, lt + MAX_TAG_CHARS)
     // As a browser: a quote opens a value only right after "=" (spaces allowed), in an end tag
     // too.
+    // A "/" that ends an unquoted value ("x=a/>") is part of the value, not a self-closing slash.
     var quote = ' '
     var afterEquals = false
+    var unquoted = false
     var j = i
     while (j < limit) {
       val c = text[j]
       when {
         quote != ' ' -> if (c == quote) quote = ' '
-        c == '>' -> return Tag(name, closing, i, j, j + 1, selfClosing = text[j - 1] == '/')
+        c == '>' ->
+          return Tag(name, closing, i, j, j + 1, selfClosing = text[j - 1] == '/' && !unquoted)
         afterEquals && (c == '"' || c == '\'') -> quote = c
+        afterEquals && !c.isWhitespace() -> unquoted = true
+        unquoted && c.isWhitespace() -> unquoted = false
       }
-      if (quote == ' ') afterEquals = c == '=' || (afterEquals && c.isWhitespace())
+      if (quote == ' ') afterEquals = !unquoted && (c == '=' || (afterEquals && c.isWhitespace()))
       j++
     }
     return Tag(name, closing, i, limit, -1)

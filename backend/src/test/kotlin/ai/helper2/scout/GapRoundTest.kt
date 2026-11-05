@@ -221,6 +221,24 @@ class GapRoundTest {
     assertFalse(nested.contains("secret"), nested)
     assertTrue(nested.contains("End"), nested)
     assertEquals("A", UntrustedPageText.clean("A <div hidden/>secret <p>more</p>"))
+    // An HTML element leaves SVG in a browser, where "/>" means nothing: its text stays hidden.
+    assertFalse(
+      UntrustedPageText.clean("A <svg><div hidden/>secret</div></svg>").contains("secret")
+    )
+    assertFalse(
+      UntrustedPageText.clean("A <svg><p style=\"display:none\"/>secret").contains("secret")
+    )
+    // A "/" at the end of an unquoted value is part of the value, not a self-closing slash.
+    assertFalse(
+      UntrustedPageText.clean("A <svg><g x=a hidden y=b/>secret</g></svg>").contains("secret")
+    )
+    // Inside foreignObject the content is HTML again: "/>" means nothing there.
+    assertFalse(
+      UntrustedPageText.clean("A <svg><foreignObject><g hidden/>secret</g></foreignObject></svg>")
+        .contains("secret")
+    )
+    // An HTML breakout tag leaves SVG: a later "/>" means nothing.
+    assertFalse(UntrustedPageText.clean("A <svg><p>x</p><g hidden/>secret</g>").contains("secret"))
   }
 
   @Test
