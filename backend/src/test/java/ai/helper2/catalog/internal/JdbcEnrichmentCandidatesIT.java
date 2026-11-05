@@ -44,6 +44,9 @@ class JdbcEnrichmentCandidatesIT {
   @AfterEach
   void clean() {
     created.forEach(id -> jdbc.sql("DELETE FROM resource WHERE id = :id").param("id", id).update());
+    jdbc.sql("DELETE FROM resource WHERE canonical_url LIKE :prefix")
+        .param("prefix", BULK_URL_PREFIX + "%")
+        .update();
     jdbc.sql("DELETE FROM source WHERE id = 'aa-candidates'").update();
   }
 
@@ -361,9 +364,30 @@ class JdbcEnrichmentCandidatesIT {
     assertThat(candidates.lastJudgedFingerprint(id)).isEqualTo("after");
   }
 
-  /** The two backlog parts read the partial backlog index (#219), not the whole table. */
+  static final String BULK_URL_PREFIX = "https://enrichment-candidates.example/bulk/";
+
+  /**
+   * The two backlog parts read the partial backlog index (#219), not the whole table. The planner
+   * picks the index by cost, so the test states prod's condition: a large table (thousands of rows
+   * outside the partial index's predicate) with a small backlog, and fresh statistics. With only
+   * the rows other tests leave behind, the full index with a filter sometimes cost less and the
+   * test failed in the full run while it passed alone (5 Nov 2026); enable_seqscan does not rule
+   * that choice out, since both are index scans.
+   */
   @Test
   void theNextBatchReadsTheBacklogIndex() {
+    jdbc.sql(
+            """
+            INSERT INTO resource (id, canonical_url, url, title, description_origin, type, audience, data_origin,
+                                  enrichment_status, first_discovered_at, open_source)
+            SELECT gen_random_uuid(), :prefix || n, :prefix || n, 'Enriched ' || n, 'SOURCE_PROVIDED', 'OTHER',
+                   'BUILD_WITH_AI', 'INDEXED', 'VALIDATED', :at, NULL
+            FROM generate_series(1, 3000) AS n
+            """)
+        .param("prefix", BULK_URL_PREFIX)
+        .param("at", java.sql.Timestamp.from(T0))
+        .update();
+    jdbc.sql("ANALYZE resource, source_record").update();
     String plan =
         tx.execute(status -> {
           jdbc.sql("SET LOCAL enable_seqscan = off").update();
