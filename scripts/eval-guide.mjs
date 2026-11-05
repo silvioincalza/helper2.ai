@@ -616,7 +616,7 @@ ${problems.length ? problems.join('\n') : 'None: every source of every answer su
 \`node scripts/eval-guide.mjs <baseUrl>\` against a backend started with \`H2_GUIDE_CACHE_TTL=PT1S\` (staging), so every answer is a real model call and the questions are sent exactly as written.
 \`--core\` runs the 20 core questions only (the nightly run); \`--repeat <n>\` runs the set n times to count flips.
 Each question counts against the per-address daily quota (\`H2_GUIDE_CLIENT_DAILY_QUESTIONS\`) and spends about 3 of the guide's daily model calls (\`H2_GUIDE_DAILY_MODEL_CALLS\`); the backend under test sets both to cover the run (see "Clean baseline" below).
-\`--intents\` runs the intent cases ([evaluation-intents.md](evaluation-intents.md)), \`--adversarial\` the hostile questions ([evaluation-adversarial.md](evaluation-adversarial.md)).
+\`--intents\` runs the intent cases (it writes \`docs/evaluation-intents.md\`), \`--adversarial\` the hostile questions ([evaluation-adversarial.md](evaluation-adversarial.md)).
 When an answer carries the \`GUIDE_DAILY_QUOTA\` notice, or 3 answers in a row come without a model, the script stops and leaves this file unchanged.
 The section under "Notes on this run" is hand-written and kept by the script; the rest is regenerated.
 

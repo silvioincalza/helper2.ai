@@ -2,7 +2,7 @@
 # Source of truth: backend/src/main/java/ai/helper2/identity/config/AdminPort.java, AdminPortConfiguration.java,
 #   SecurityConfiguration.java (roles, afterSignIn), SessionConfiguration.java,
 #   deploy/helm/helper2/templates/app.yaml (Service helper2-admin), networkpolicy.yaml,
-#   incalza-me-infra terraform/k8s/helper2.tf (Ingresses, allow-list).
+#   the platform repo (Ingresses, allow-list), outside this repo.
 # Render: cd docs/diagrams && d2 fmt flow-0035-admin-host.d2 && d2 flow-0035-admin-host.d2 flow-0035-admin-host.svg
 
 ...@style
@@ -27,7 +27,7 @@ edge: Network edge {
   class: group
   direction: down
   host: "Which host?" {class: decision}
-  allow: "Client in the vSwitch\nor mesh range?" {class: decision}
+  allow: "Client in a\nprivate range?" {class: decision}
   e403: "403 from ingress-nginx" {class: fail}
   host -> allow: "admin host"
 }

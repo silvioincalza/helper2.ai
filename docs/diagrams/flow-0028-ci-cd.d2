@@ -14,8 +14,8 @@ pr: "Pull request" {class: end}
 checks: ci.yml (GitHub-hosted, on every PR) {
   class: group
   grid-columns: 3
-  frontend: "frontend:\nlint, typecheck,\nVitest, build" {class: app}
-  backend: "backend:\ngradlew test\n(Testcontainers)" {class: app}
+  frontend: "frontend:\nformat, lint, typecheck,\nVitest, build, bundle size" {class: app}
+  backend: "backend:\nspotlessCheck, gradlew test\n(Testcontainers)" {class: app}
   chart: "chart:\nhelm lint + template\n| kubeconform" {class: app}
   pg: "PR only: deploy/postgres changed\n→ tag bumped? (git, no build)" {class: app}
   monitoring: "monitoring:\npromtool check\n+ test rules" {class: app}

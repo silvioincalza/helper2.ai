@@ -10,7 +10,7 @@ its relevance part with a message.
 | `semantic-gold.json` | 20 paraphrase queries for vector search and its cutoff (ADR 0012, 0036) | same |
 | `search-qrels.tsv` | graded judgements for both sets: `query_id`, `url`, `grade` 0–3 | `evalTest` |
 | `search-qrels-second.tsv` | the second judge's grades of a 20 % sample (same format, optional) | `evalTest` (Cohen's kappa) |
-| `search-baseline.json` | nDCG@10 the gate compares with, and the snapshots and labels it was measured on | `evalTest` |
+| `search-baseline.json` | nDCG@10 the gate compares with, and the snapshots and labels it was measured on (not recorded yet: step 5) | `evalTest` |
 | `guide-queries.json` | 50 guide questions: 20 core ones (the nightly run) and 30 marked `extended`; 6 must stay empty (`expectNoPick`, with a `why`) ([ADR 0030](../adr/quality/0030-guide-evaluation.md)) | `scripts/eval-guide.mjs` (`--core`: the 20) |
 | `guide-intents.json` | 16 intent cases and 6 ask-back cases with pass rules ([ADR 0032](../adr/guide/0032-guide-intents.md) §10) | `scripts/eval-guide.mjs --intents` |
 | `guide-adversarial.json` | 8 hostile questions | `scripts/eval-guide.mjs --adversarial` |

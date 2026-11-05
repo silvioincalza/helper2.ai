@@ -36,8 +36,6 @@ them without each module growing an admin corner.
 - The overview shows only what to act on now. Trends stay in Grafana; the overview does not rebuild them.
 - The numbers can be up to a minute old; the page says when they were counted.
 - A budget that is never built (no model configured), or one that counts only in memory, is not listed.
-- The backlog count costs a full pass over the catalog's backlog rule (about 90 ms at today's size, growing with it);
-  the enrichment queue work rewrites that query (roadmap).
 
 ## Alternatives considered
 - Each module keeps its own admin controller — the overview would still need one place to compose them, and the
@@ -62,3 +60,6 @@ them without each module growing an admin corner.
 
 ## Diagrams
 [flow](../../diagrams/flow-0045-back-office.svg) · [sequence](../../diagrams/sequence-0045-back-office.svg)
+
+## Roadmap
+- Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

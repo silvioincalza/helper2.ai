@@ -3,7 +3,7 @@
 # what the per-workload network policies let each workload reach and accept, Redis auth and its AOF volume,
 # OpenBao and Harbor for delivery, Alloy -> Prometheus / Tempo for observability, and the prod backup
 # with its optional off-site copy to Cloudflare R2 (off today).
-# Source of truth: deploy/helm/helper2 (values*.yaml, templates/*.yaml), incalza-me-infra (DNS, tunnel,
+# Source of truth: deploy/helm/helper2 (values*.yaml, templates/*.yaml), the platform repo outside this repo (DNS, tunnel,
 #   ingress-nginx, Ingresses helper2-public and helper2-admin, namespaces, deployer RBAC),
 #   deploy/k8s/Makefile, deploy/k8s/CI.md, .github/workflows/deploy.yml,
 #   backend/src/main/resources/application.yaml (management, tracing).
@@ -23,8 +23,8 @@ visitor: Visitor {class: person}
 
 cloudflare: CLOUDFLARE EDGE {
   class: group
-  dns: "Proxied DNS + TLS\nhelper2.ai · www.helper2.ai\nhelper2.incalza.me" {class: ext}
-  tunnel: "Platform tunnel\n(incalza-me-infra)" {class: ext}
+  dns: "Proxied DNS + TLS\nhelper2.ai · www.helper2.ai\n<staging host>" {class: ext}
+  tunnel: "Platform tunnel\n(the platform repo)" {class: ext}
   dns -> tunnel: {class: hot}
 }
 
@@ -33,7 +33,7 @@ cluster: KUBERNETES {
 
   ingress: "ns ingress-nginx" {
     class: group
-    nginx: "ingress-nginx\nIngress helper2-public → Service helper2\nIngress helper2-admin → Service helper2-admin\n(admin: vSwitch and mesh ranges only)" {class: app}
+    nginx: "ingress-nginx\nIngress helper2-public → Service helper2\nIngress helper2-admin → Service helper2-admin\n(admin: private ranges only)" {class: app}
   }
 
   prod: "ns helper2-prod · ingress + egress default-deny\none policy per workload · ServiceAccount helper2: no RBAC, no token" {
@@ -106,7 +106,7 @@ egress: "INTERNET · app egress TCP 443 only (private ranges excluded)" {
 
 r2: "Cloudflare R2 bucket\n(backup.offsite, off today;\nrclone copy, never deletes)" {class: ext}
 
-delivery: "DELIVERY (WireGuard mesh)" {
+delivery: "DELIVERY (private network)" {
   class: group
   runner: "Self-hosted GitHub runner\n(one JIT job, no credentials)" {class: app}
   workstation: "Owner workstation\nmake, helm, bao" {class: person}
@@ -127,7 +127,7 @@ github: "GitHub Actions\n(cd.yml, deploy.yml)" {class: ext}
 
 visitor -> cloudflare.dns: HTTPS {class: hot}
 cloudflare.tunnel -> cluster.ingress.nginx: "public hosts" {class: hot}
-delivery.workstation -> cluster.ingress.nginx: "admin hosts, DNS-only\n(LAN, WireGuard)"
+delivery.workstation -> cluster.ingress.nginx: "admin hosts, DNS-only\n(VPN only)"
 cluster.observability.alloy -> monitoring.prometheus: "remote write"
 cluster.observability.alloy -> monitoring.tempo: "traces"
 cluster.prod.app -> egress.nebius: "chat completions" {class: ai-call}

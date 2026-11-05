@@ -38,7 +38,7 @@ not instants. Helper2 never invents a date ([0004](../foundation/0004-persistenc
 6. **Other events have no dates.** Tavily stores some news items as EVENT, but never with stated days, so they are never listed.
 7. **Application programming interface (API).** `GET /api/v1/events/upcoming?size=` (1–60, default 6): resources of type EVENT with a stated start whose
    end (or start) is on or after today 00:00 UTC, soonest first, then by title. `Cache-Control: public, max-age=300`.
-   The home page component `NextEvents` asks for 60 (about 45 curated events, plus conferences) and lists those that start within 90 days of the response's
+   The home page component `EventsBoard` asks for 60 (about 45 curated events, plus conferences) and lists those that start within 90 days of the response's
    `generatedAt`.
 
 ## Consequences
@@ -62,7 +62,7 @@ not instants. Helper2 never invents a date ([0004](../foundation/0004-persistenc
   `docs/research/community-events-2026-10-27.json`, `backend/src/main/resources/db/migration/R__industry_events.sql`,
   `R__community_events.sql`.
 - `backend/src/main/kotlin/ai/helper2/shared/Vocabulary.kt` — `EventKind`, `EventFormat`.
-- `frontend/src/components/NextEvents.tsx`.
+- `frontend/src/components/home/EventsBoard.tsx`.
 
 ## Diagrams
 [flow](../../diagrams/flow-0022-next-events.svg) · [sequence](../../diagrams/sequence-0022-next-events.svg)

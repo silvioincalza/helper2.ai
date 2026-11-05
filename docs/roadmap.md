@@ -29,7 +29,6 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 
 ### Domain and identity
 - DNS: `CAA` record for the edge's certificate authority; `v=spf1 -all` and DMARC `p=reject` if no mail is sent.
-- ADMIN is decided at sign-in, so a change to `H2_ADMINS` needs a new sign-in.
 - Optional `H2_HF_TOKEN` on prod.
 - `H2_SETUP_GITHUB_TOKEN` (read-only, public repositories) in `app_env` on staging and prod; without it Guide me reads
   GitHub anonymously, 60 calls an hour ([ADR 0031](adr/guide/0031-setup-guide.md)).
@@ -61,7 +60,7 @@ Items are grouped by the order in which they matter. Inside a group, the first i
   - turn on the off-site copy to R2 (`backup.offsite`) with a bucket-scoped token;
   - encrypt dumps on the client side before upload ([ADR 0027](adr/operations/0027-runtime-topology.md)).
 - **Short-lived deployer token.** Mint it with the OpenBao Kubernetes secrets engine. The deployer token
-  (incalza-me-infra) does not expire ([ADR 0028](adr/operations/0028-ci-cd.md)).
+  (the platform repo) does not expire ([ADR 0028](adr/operations/0028-ci-cd.md)).
 - **Supply chain:**
   - set `postgres.image.digest` to the digest of `18.6-pgvector0.8.6-2` once CD has pushed that tag (with the
     Postgres exporter: one restart);
@@ -107,8 +106,6 @@ Open items:
   AI-written in the API and the page ([ADR 0038](adr/guide/0038-ai-content-marking.md)), and keep the word-list note for
   lexicon terms. LAWYER: does a model translation of the user's own query fall under the Art. 50(2) exemption for
   assistive or standard-editing functions? Even if it does, a "not AI" label on model text must go.
-- The guide reason check is a model judgment and can miss a claim. Only the quote is proven
-  ([ADR 0016](adr/guide/0016-guide-reason-check.md)).
 - Watch whether the source `type`, now a source fact in enrichment, sends many proposals to CONFLICTING review
   (for example GitHub LIBRARY versus MCP_SERVER) ([ADR 0019](adr/scout/0019-evidence-gated-enrichment.md)).
 - Cross-language retrieval in vector search.
@@ -173,7 +170,6 @@ Open items:
   - An `unknown` count per facet and an updated-date facet on the search response (Filters panel).
   - Sign-in with Google (phase 1). Passkey, email link and password (phase 2) need their own ADR, a threat model and
     the Privacy page first.
-  - The guide starts on its own only for questions of 4 words or more; shorter searches show Ask the guide.
 - **Frontend design** ([0040](adr/frontend/0040-frontend-design.md)) is done and on staging. Prod gets it with the next release:
   cut one once staging looks right.
 - Tracking cookies are planned. Before the first one: consent banner, cookie notice, Privacy page and record of
@@ -188,9 +184,14 @@ Open items:
   checks them for framework types. Put the stores behind ports, then add the packages to the
   `DOMAIN` rule of `ModularityTest`. Only the JDBC adapters are guarded today
   (`useCasesDoNotNameJdbcAdapters`).
+- The model helpers live in the open `platform` module (`platform.llm`), so every module can use all of them. A
+  closed `llm` module with a small public API would make each use explicit
+  ([ADR 0014](adr/guide/0014-llm-integration.md)).
 
 ## 8. Documentation
 
+- After the hackathon judging ends (15 Dec 2026), move `docs/hackathon` and the README's hackathon section out of
+  the repo.
 
 ## 9. Known limits
 
@@ -228,7 +229,7 @@ Fix an item or accept it; when it no longer holds, remove it.
 
 - A scheduled run can start up to one `H2_SCOUT_TICK` (1 h) late; a short `H2_SCOUT_EVERY` needs a shorter tick. A renewal-thread pause longer than one lease lets another replica start a second run. ([ADR 0018](adr/scout/0018-scout-runner.md))
 - Strict enrichment rules reject some correct values; the review queue grows with every partial run and needs a person. ([ADR 0019](adr/scout/0019-evidence-gated-enrichment.md))
-- The gap round reads a README once per fingerprint: a README that changes while the source records do not is not read again. README text never supports a summary claim. ([ADR 0043](adr/scout/0043-enrichment-gap-round.md))
+- The gap round reads a README once per fingerprint: a README that changes while the source records do not is not read again, and one that fails to load (timeout, 5xx) is not tried again until they change. A gap slot is spent when the second model call fails. README text never supports a summary claim. ([ADR 0043](adr/scout/0043-enrichment-gap-round.md))
 - Hugging Face provider models get no enrichment (the list API has no description). Consumer AI tools are thinly covered. Tavily finds news about tools, not the tools. Course pages wait for an admin each week. ([ADR 0020](adr/scout/0020-scout-collectors.md))
 - An event whose source gives no day is not listed; event days can be a few hours off far from UTC; conference dates are as correct as ai-deadlines; curated events need a research pass to stay current. ([ADR 0022](adr/scout/0022-next-events.md))
 
@@ -253,6 +254,7 @@ Fix an item or accept it; when it no longer holds, remove it.
 ### Edge and identity
 
 - Roles live in the session: removing an admin takes effect at the next sign-in; a Redis outage signs the admin out. ([ADR 0023](adr/edge/0023-identity-and-admin.md))
+- A GitHub OAuth App allows only one callback URL, and each environment needs two (public host and admin host): use a GitHub App, or one OAuth App per host. A manual step, outside the repo. ([ADR 0035](adr/edge/0035-admin-host.md))
 - The overview's enrichment backlog count is a full pass over the backlog rule (about 90 ms today, growing with the catalog); the enrichment queue rewrites that query with an index. A budget that is never built (no model configured) is not listed. ([ADR 0045](adr/edge/0045-back-office.md))
 - The admin pages ship in the public bundle (the server still refuses every admin call without ADMIN). Load them lazily so the back office's shape stays out of the public JavaScript.
 - Privacy check: the review decision note is free text kept with the review item. Write no personal data in it; confirm with privacy-legal whether the Privacy page must list it.
@@ -272,6 +274,7 @@ Fix an item or accept it; when it no longer holds, remove it.
 - Staging (1 replica) has no failover; a prod deploy starts pods one after another (up to 300 s each). Plain HTTP inside the cluster; sign-in for everyone changes that. Never run `helm uninstall`: it deletes the Postgres and Redis StatefulSets. ([ADR 0027](adr/operations/0027-runtime-topology.md))
 - The scanner versions (Syft, Grype in `.github/actions/install-scanners`) are pinned by hand: Dependabot does not see them. Grype is built from source in each scan job (about 2 minutes); the weekly scan reads only the latest release, not an older one still on prod after a rollback. ([ADR 0046](adr/operations/0046-supply-chain.md))
 - Deleting an old image needs the Harbor immutability rule disabled first, and enabled again after. ([ADR 0029](adr/operations/0029-release-versioning.md))
+- A release that has no version tag in Harbor (one made before release tags) is deployed by its commit, not by its version. ([ADR 0048](adr/operations/0048-release-branches-and-version-tags.md))
 - A deleted row stays in the backups for up to 7 days; purges run daily, so a row can outlive its period by a day; a purged observed resource seen again comes back with a new `first_discovered_at`. ([ADR 0034](adr/operations/0034-data-retention.md))
 
 ### Quality

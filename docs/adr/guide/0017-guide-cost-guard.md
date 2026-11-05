@@ -15,7 +15,7 @@ The guards run in this order. Values are defaults; each has an `H2_` variable.
    is `platform.ClientKey`: the remote address, Internet Protocol version 4 (IPv4) as is, Internet Protocol version 6
    (IPv6) by its /64 (zone id dropped, IPv4-mapped becomes IPv4). The rate limiters and the daily quota use the same
    key. Counted in Redis, so the limit holds across all replicas. Over the limit: 429 with `Retry-After`.
-2. **Concurrency limit and deadline** (`GuideLimits`, used by both endpoints): a question runs only with a slot in the
+2. **Concurrency limit and deadline** (`GuideLimits`, used by the guide stream): a question runs only with a slot in the
    `guide` bulkhead ([0033](../foundation/0033-resilience-policies.md), `Resilience.trySlot`), at most `H2_GUIDE_MAX_CONCURRENT` (8)
    questions at once per replica (24 on prod with 3 replicas), on virtual threads. One more question gets 503 "Guide busy" at once (an `error` event on the stream).
    After `H2_GUIDE_QUESTION_DEADLINE` (90 s) the client gets 504 "Guide timed out" and the worker is interrupted; the

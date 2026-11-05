@@ -6,7 +6,7 @@
 ## Context
 The box, the URL state and the guide stream are in [0025](0025-frontend-one-box.md). This record decides the pages
 around them. Three things matter for a user:
-- The guide answer arrives after about 15 seconds. Results are ready much sooner, and the user starts reading them.
+- The guide answer arrives after several seconds. Results are ready much sooner, and the user starts reading them.
   Anything that moves the list at that moment makes them lose their place.
 - Checking a result must not cost a page load and a Back. Comparing three results must stay on one page.
 - On a phone, the home feeds and the results must not compete for the same narrow column.
@@ -85,7 +85,7 @@ and chose between options for each part.
   was fast but plain, editorial needs fresh content every day, the console was too dense for beginners. Home and
   Results take parts of all three.
 - **Results: answer first** (the guide's answer as a block above the list) — good when the guide is sure, but the
-  page waits 15 seconds for its most important part.
+  page waits several seconds for its most important part.
 - **Results: grouped by type** (MCP servers, libraries, models, papers) — good for broad searches, empty groups for
   narrow ones.
 - **Guide answer: badges only** (the list keeps the search order) — nothing moves, but pick #1 can sit at row 5,
@@ -111,7 +111,7 @@ and chose between options for each part.
   resource page with the id encoded. `OneBox` sends results there and searches live only
   on that page.
 - `frontend/src/pages/HomePage.tsx`, `routes.tsx` — `/` empty is the home page; `/search` shows results and goes home
-  with no query; `/?q=` shows results with a canonical link to `/search`; there is no `/guide` route (the site was never public, so no old links exist).
+  with no query; `/?q=` shows results with a canonical link to `/search`; there is no `/guide` route.
 - `frontend/src/components/results/Results.tsx` — the results page: the box, the picks bar (questions only), type
   tabs, one row with the "Filters" toggle (sort, list or timeline, the filter panel) and the detected use cases,
   search notices, the list of `SelectableRow`s with the guide's picks first, the preview beside the list from 861 px
@@ -131,9 +131,10 @@ and chose between options for each part.
 - `frontend/src/pages/AdminPage.tsx`, `pages/admin.css` — the admin back office ([0023](../edge/0023-identity-and-admin.md))
   in the design: the review queue as rows like the saved rows, each status as a `StatusPill`, the Scout runs as a
   table.
-- `frontend/src/components/Layout.tsx` — Sources and Mission in the menu, "No ads." in the footer. Up to 720 px the
-  menu folds behind a menu button (☰, `aria-expanded`): the logo, the theme and the button share one row, and the
-  pages and sign-in open in a panel below; Escape or a new page closes it. From 721 px the menu is the header row
+- `frontend/src/components/Layout.tsx` — News, Events and Saved in the menu; Sources, Mission, the theme and "No ads."
+  in the footer. Up to 720 px the menu folds behind a menu button (☰, `aria-expanded`): the logo and the button share
+  one row, and the pages and sign-in open in a panel below; Escape or a new page closes it. From 721 px the menu is
+  the header row
   (`styles/app.css`: tighter gaps up to 1024 px, the tagline hides up to 900 px).
 
 ## Diagrams

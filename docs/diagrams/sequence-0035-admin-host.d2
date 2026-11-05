@@ -3,14 +3,14 @@
 # Source of truth: backend/src/main/java/ai/helper2/identity/config/AdminPortConfiguration.java (BackOfficeOffPublicPort),
 #   AdminPort.java, SecurityConfiguration.java (oauthUsers, roles, afterSignIn),
 #   frontend/src/components/SignIn.tsx, Layout.tsx (SignInReturn), frontend/src/lib/signInReturn.ts,
-#   incalza-me-infra terraform/k8s/helper2.tf (helper2-admin Ingress, whitelist-source-range).
+#   the platform repo (helper2-admin Ingress, whitelist-source-range), outside this repo.
 # Render: cd docs/diagrams && d2 fmt sequence-0035-admin-host.d2 && d2 sequence-0035-admin-host.d2 sequence-0035-admin-host.svg
 
 ...@style
 
 shape: sequence_diagram
 
-owner: "Owner\n(on WireGuard)" {class: person}
+owner: "Owner\n(on the VPN)" {class: person}
 nginx: "ingress-nginx\n(allow-list)" {class: app}
 apub: "App public port\n8080" {class: app}
 aadm: "App admin port\n8082" {class: app}
@@ -18,7 +18,7 @@ gh: GitHub {class: ext}
 
 adminhost: Admin host {
   owner -> nginx: "GET admin.helper2.ai/admin" {class: hot}
-  nginx -> aadm: "vSwitch address: allowed" {class: hot}
+  nginx -> aadm: "private address: allowed" {class: hot}
   aadm -> owner: "admin page, not signed in"
   owner -> aadm: "/oauth2/authorization/github"
   aadm -> owner: "302 to GitHub, callback\nadmin.helper2.ai/login/oauth2/code/github"

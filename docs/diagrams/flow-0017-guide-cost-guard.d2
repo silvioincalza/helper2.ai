@@ -15,8 +15,8 @@
 
 direction: down
 
-ask: "POST /api/v1/guide\nor /api/v1/guide/stream" {class: person}
-rate: "Rate limit: 10 per minute\nper client (IPv6 by /64),\nshared by both endpoints" {class: decision}
+ask: "POST /api/v1/guide/stream" {class: person}
+rate: "Rate limit: 10 per minute\nper client (IPv6 by /64),\nshared with the tool guide" {class: decision}
 r429: "429 Too Many Requests\n+ Retry-After" {class: fail}
 slot: "GuideLimits: free slot in\nthe guide bulkhead?\n(H2_GUIDE_MAX_CONCURRENT 8)" {class: decision}
 busy: "503 Guide busy\n(error event on the stream)" {class: fail}

@@ -119,7 +119,6 @@ used up. The counts must hold across 3 replicas, store no address and no query t
 [flow](../../diagrams/flow-0037-tavily-store-and-quota.svg) · [sequence](../../diagrams/sequence-0037-tavily-store-and-quota.svg)
 
 ## Roadmap
-- The page shows the web searches left and the daily limit state (FE-2): [roadmap](../../roadmap.md#4-ai-quality-and-cost).
 - Turn on the registered tier once end-user sign-in is live: [roadmap](../../roadmap.md#domain-and-identity).
 - Scout news and events written to the same store, with their own share of credits: [roadmap](../../roadmap.md#4-ai-quality-and-cost).
 - Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

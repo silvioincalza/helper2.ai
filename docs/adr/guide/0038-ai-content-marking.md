@@ -1,6 +1,6 @@
 # 0038 — Marking AI-written text: labels on screen, metadata in the API and the page
 
-**Status.** Accepted. Amended by [0044](0044-research-trail.md) (the research trail). **Builds on:** [0003](../foundation/0003-contract-first-rest-api.md), [0014](0014-llm-integration.md), [0015](0015-ai-guide-evidence-gate.md), [0019](../scout/0019-evidence-gated-enrichment.md)
+**Status.** Accepted. **Builds on:** [0003](../foundation/0003-contract-first-rest-api.md), [0014](0014-llm-integration.md), [0015](0015-ai-guide-evidence-gate.md), [0019](../scout/0019-evidence-gated-enrichment.md)
 
 ## Context
 The EU AI Act applies to Helper2.ai because people in the EU use it. Helper2.ai builds the guide on top of NVIDIA

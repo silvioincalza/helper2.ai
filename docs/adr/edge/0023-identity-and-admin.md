@@ -56,7 +56,7 @@ traceable to that administrator.
    like the review items, newest first, at most 100 per page) reads it for the back office (`/admin/audit`).
    A decision on an item that is no longer open changes nothing: the entry says `NOT_OPEN` and the API answers 409, so
    the back office knows its decision was not applied. Not an exception inside the transaction, so the entry is kept.
-8. **Admin host.** The back office is on its own port and host, reachable only from the LAN and WireGuard:
+8. **Admin host.** The back office is on its own port and host, reachable only from a private network:
    [0035](0035-admin-host.md). Each environment turns sign-in on with the `oauth-github` profile.
 9. **Sessions in Redis** (Spring Session Data Redis, namespace `helper2:session`), so every replica knows a signed-in
    admin. Timeout and cookie stay under `server.servlet.session`. Only sign-in creates a session: the saved-request
@@ -106,8 +106,5 @@ traceable to that administrator.
 [flow](../../diagrams/flow-0023-identity-and-admin.svg) · [sequence](../../diagrams/sequence-0023-identity-and-admin.svg)
 
 ## Roadmap
-- [Serve the back office on admin.helper2.ai, reachable only through WireGuard via ingress-nginx](../../roadmap.md#domain-and-identity).
-- [Register a production GitHub OAuth App, enable `oauth-github`, set `H2_ADMINS`](../../roadmap.md#domain-and-identity).
-- [Sign-in for everyone: a public sign-in entry point for bookmarks and account deletion](../../roadmap.md#domain-and-identity).
 - [Redis memory shared by sessions, rate limits and cache; alert on evictions](../../roadmap.md#3-more-than-one-replica).
 - Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).
