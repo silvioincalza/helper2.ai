@@ -44,7 +44,7 @@ The design system for every part of Helper2.ai: the search box, results, the AI 
 - **Controls:** at least `target-min` (44px) tall, also chips, toggles and the `$ … --all` buttons. The home search box is `box-height` (60px).
 - **Focus:** a 3px `focus` outline with 2px offset on every control. `scroll-padding-top` keeps a focused item below the sticky header and the pinned search box.
 - **Elevation:** three shadows only: `shadow-raised` (not used on Home any more), `shadow-pinned` (the pinned search box), `shadow-overlay` (dialogs, the account panel, the phone menu). Everything else is set apart by `border`.
-- **Width:** the page column stops at `content-wide` (1040px); one-column pages at `reading-max` (808px). Gutters 24px, 16px on phones.
+- **Width:** the page column is 1120px wide with its gutters: `content-wide` (1088px) plus 16px on each side, on every page, the header and the footer included. One-column pages stop at `reading-max` (808px).
 - **Themes:** light and dark; every token has both values. The footer button switches light ↔ dark; light is the default.
 
 ## Type tags
@@ -130,7 +130,7 @@ Layout is flex and grid with `gap`. Side menus wrap above the content on phones 
 
 ## Components
 
-The redesign boards in [../redesign](../redesign) are the reference. The component folders below are the version 3 previews, kept as history.
+The redesign boards in [../redesign](../redesign) and the design canvas "helper2.ai: ui v4" are the reference. The code is in `frontend/src/components/`.
 
 | Component | Used for |
 |---|---|

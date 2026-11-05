@@ -65,21 +65,6 @@ them they show the system fonts.
 - Saved keeps its rows and chips. Loading, sync error and empty are the states of the Home lists.
 - The review queue, the Scout runs, the budgets and the audit trail are tables. Only the look changed.
 
-## `boards/` — the agreed design (ADR 0040)
-
-The boards the frontend follows, saved from the design canvas, agreed on 30 October 2026. Each `.dc.html` is one board; `canvas.json`
-lays them out. Their colours and fonts are the design system's; the code takes them from `tokens.css` and the
-self-hosted fonts, never from the boards' hex values or Google Fonts links.
-
-| Board | What |
-|---|---|
-| `Mix` | Home as agreed in October: radar hero, the box, examples, moving News and Events boards. Replaced by the redesign below |
-| `ResultsPreview` | Results: type tabs, list, guide picks bar, preview panel, sources grid. Replaced by the redesign: no preview panel |
-| `GuideArrival` | When the guide answers: option C (badges in place, reserved picks bar) was chosen |
-| `Resource` | Resource detail |
-| `States` | Loading, guide answering, empty, error, 404 |
-| `Saved`, `Sources`, `Mission`, `Privacy` | The other pages |
-
 ## `system/` — the Helper2.ai design system
 
 One system for every feature. Start with [system/README.md](system/README.md) (principles, content rules, color roles, type tags, logo, pages, breakpoints, accessibility, components).
@@ -87,9 +72,6 @@ One system for every feature. Start with [system/README.md](system/README.md) (p
 | Path | What |
 |---|---|
 | `tokens.json` | Colors (light and dark), type, spacing, radius, sizes, version 4. `frontend/src/styles/tokens.css` holds the same tokens under plain names (`--font-mono`, `--font-body`, `--font-code`, `--box-height`). |
-| `components/<Name>/README.md` | Guidelines per component: Header, Omnibox, Button, Pill, Badge, ResultCard, FactList, GuidePick, Banner, SourceStatus, Footer, Cover |
-| `components/<Name>/preview.html` | Live preview markup (needs the artifact's generated `tokens.css`) |
-| `components/bundle.css` | The `h2-` component classes |
 | `assets/Logos/radar-mark.svg` | The radar mark |
 
 Mock content in brackets, such as `[stated date]`, stands for data the app fills in from sources. Nothing in brackets is a real value.
