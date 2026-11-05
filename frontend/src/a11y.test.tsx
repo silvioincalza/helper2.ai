@@ -141,6 +141,18 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
           },
         ],
         failedRunsLast24h: 1,
+        homeExamples: {
+          shown: [
+            { path: 'USE_AI', count: 1 },
+            { path: 'BUILD_WITH_AI', count: 2 },
+          ],
+          hidden: [
+            { outcome: 'PENDING', count: 1 },
+            { outcome: 'WEAK', count: 0 },
+            { outcome: 'FAIL', count: 1 },
+          ],
+          paused: 0,
+        },
         grafanaUrl: null,
       }),
       'GET /admin/home-examples': () => [

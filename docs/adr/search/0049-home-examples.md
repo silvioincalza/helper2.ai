@@ -42,7 +42,11 @@ same for every visitor.
 5. **The back office.** `/api/v1/admin/home-examples` lists, adds, changes and removes examples (ADMIN, admin host),
    in the admin module like every back-office endpoint (ADR 0045). The page `/admin/examples` shows each check in
    words, finds expected results with the visitors' own search, and reacts to the problem codes (`duplicate`,
-   `version-conflict`, `invalid-request` with the broken rule).
+   `version-conflict`, `invalid-request` with the broken rule). The overview (ADR 0045) counts the examples of every
+   locale in `homeExamples`: shown per path (`ACTIVE` and `PASS`), hidden per check (`ACTIVE` and `WEAK`, `FAIL` or
+   `PENDING`) and paused (whatever the check). Each count links to `/admin/examples?outcome=...` (paused: the whole
+   list). A path with fewer than 2 shown gets the same warning as the Examples page: the home page then shows the
+   built-in list (point 4).
 
 6. **AI drafts, a person decides.** **Draft examples with AI** makes one model call (the fast Nemotron model, the
    drafts' own daily budget `H2_EXAMPLES_DRAFT_CALLS`, 0 = off, inside the `llm-chat` circuit). The model gets public
@@ -101,26 +105,27 @@ same for every visitor.
 
 ## Code
 - `backend/src/main/kotlin/ai/helper2/examples/` — `HomeExample.kt` (example, input rules), `ExampleCheck.kt` (the
-  check, `ExampleSearch`), `ExampleDrafts.kt` (drafts, `DraftRules`), `ExamplePorts.kt`.
+  check, `ExampleSearch`), `ExampleDrafts.kt` (drafts, `DraftRules`), `PoolCounts.kt` (shown and hidden),
+  `ExamplePorts.kt`.
 - `backend/src/main/java/ai/helper2/examples/` — `usecase/` (`ListHomeExamples`, `ListAdminHomeExamples`,
-  `AddHomeExample`, `ChangeHomeExample`, `RemoveHomeExample`, `CheckHomeExamples`, `DraftHomeExamples`), `config/ExamplesProperties`,
+  `CountHomeExamples`, `AddHomeExample`, `ChangeHomeExample`, `RemoveHomeExample`, `CheckHomeExamples`, `DraftHomeExamples`), `config/ExamplesProperties`,
   `internal/` (`JdbcHomeExamples`,
   `SearchExampleSearch`, `CatalogResourceTitles`, `HomeExampleCheckSchedule`, `SpringAiExampleDrafter`,
   `CatalogDraftSources`, `ExamplesConfiguration`), `web/HomeExamplesController.java`; the prompt
   `backend/src/main/resources/prompts/examples/draft.txt`.
 - `backend/src/main/java/ai/helper2/admin/web/HomeExamplesAdminController.java`, `admin/usecase/ResolveReview.java`
-  (accept adds the drafted example), `catalog/usecase/ListWellKnownResources.java`.
+  (accept adds the drafted example), `admin/usecase/GetOverview.java` and `admin/web/OverviewController.java` (the
+  counts on the overview), `catalog/usecase/ListWellKnownResources.java`.
 - `backend/src/main/kotlin/ai/helper2/search/Search.kt` (`SearchRequest.web`), `Model.kt` (`SkipReason.WEB_NOT_ASKED`).
 - `backend/src/main/resources/db/migration/V4__home_example.sql`, `V5__example_drafts.sql`.
 - `frontend/src/lib/examples.ts` — the built-in pool, the pick and the bucket rule;
   `frontend/src/components/home/HomeExamples.tsx` — the fetch with its timeout, the fallback and the AI mark;
-  `frontend/src/pages/admin/ExamplesPage.tsx`.
-- Tests: `examples/ExampleInputTest.kt`, `ExampleCheckTest.kt`, `examples/DraftRulesTest.kt`,
+  `frontend/src/pages/admin/ExamplesPage.tsx`; `frontend/src/pages/admin/AdminOverview.tsx` (the counts and the
+  warning), `adminModel.ts` (`SHOWN_PER_PATH`, shared by both pages).
+- Tests: `examples/ExampleInputTest.kt`, `ExampleCheckTest.kt`, `examples/DraftRulesTest.kt`, `PoolCountsTest.kt`,
+  `api/AdminOverviewApiIT.java`, `frontend/src/pages/admin/Admin.test.tsx`,
   `search/usecase/MeteredSourceTest.kt`, `api/HomeExamplesApiIT.java`, `frontend/src/lib/examples.test.ts`,
   `frontend/src/pages/HomeExamples.test.tsx`, `frontend/src/pages/admin/ExamplesPage.test.tsx`.
 
 ## Diagrams
 [flow](../../diagrams/flow-0049-home-examples.svg) · [sequence](../../diagrams/sequence-0049-home-examples.svg)
-
-## Roadmap
-- The count of hidden examples on the overview.

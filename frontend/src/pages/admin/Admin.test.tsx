@@ -92,6 +92,18 @@ const overview = (over: Partial<AdminOverview> = {}): AdminOverview => ({
   webCredits: { usedToday: 7 },
   recentRuns: [{ ...run, status: 'FAILED' }],
   failedRunsLast24h: 2,
+  homeExamples: {
+    shown: [
+      { path: 'USE_AI', count: 3 },
+      { path: 'BUILD_WITH_AI', count: 2 },
+    ],
+    hidden: [
+      { outcome: 'PENDING', count: 0 },
+      { outcome: 'WEAK', count: 0 },
+      { outcome: 'FAIL', count: 0 },
+    ],
+    paused: 0,
+  },
   grafanaUrl: 'https://grafana.example/d/helper2',
   ...over,
 });
@@ -144,6 +156,65 @@ describe('Feature: the overview says what needs a person now', () => {
       'noopener noreferrer',
     );
     expect(screen.getByText('Failed')).toHaveClass('h2-status-pill--warn');
+  });
+
+  it('Scenario: hidden home examples are counted per check and paused, each a link to the examples; a path with fewer than 2 shown warns', async () => {
+    mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/overview': () =>
+        overview({
+          homeExamples: {
+            shown: [
+              { path: 'USE_AI', count: 2 },
+              { path: 'BUILD_WITH_AI', count: 1 },
+            ],
+            hidden: [
+              { outcome: 'PENDING', count: 1 },
+              { outcome: 'WEAK', count: 2 },
+              { outcome: 'FAIL', count: 3 },
+            ],
+            paused: 4,
+          },
+        }),
+      'GET /admin/home-examples': () => [],
+    });
+    renderApp('/admin');
+    expect(
+      await screen.findByRole('heading', { name: '10 home examples hidden' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Shown now: 2 for people who use AI, 1 for builders.'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: '2 hidden, expected result only in the top 10' }),
+    ).toHaveAttribute('href', '/admin/examples?outcome=WEAK');
+    expect(
+      screen.getByRole('link', { name: '3 hidden, no expected result in the top 10' }),
+    ).toHaveAttribute('href', '/admin/examples?outcome=FAIL');
+    expect(screen.getByRole('link', { name: '1 waiting for the check' })).toHaveAttribute(
+      'href',
+      '/admin/examples?outcome=PENDING',
+    );
+    expect(screen.getByRole('link', { name: '4 paused' })).toHaveAttribute(
+      'href',
+      '/admin/examples',
+    );
+    expect(screen.getByText(/Fewer than 2 shown for Builders/)).toBeInTheDocument();
+    expect(screen.queryByText(/Fewer than 2 shown for People who use AI/)).not.toBeInTheDocument();
+
+    await userEvent.click(
+      screen.getByRole('link', { name: '3 hidden, no expected result in the top 10' }),
+    );
+    expect(await screen.findByRole('heading', { name: 'Home examples' })).toBeInTheDocument();
+  });
+
+  it('Scenario: with every path well served the overview gives no example warning', async () => {
+    mockApi({ 'GET /me': () => ADMIN, 'GET /admin/overview': () => overview() });
+    renderApp('/admin');
+    expect(
+      await screen.findByRole('heading', { name: '0 home examples hidden' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Fewer than 2 shown/)).not.toBeInTheDocument();
   });
 
   it('Scenario: without a Grafana link and web credits the overview says so', async () => {

@@ -3,10 +3,16 @@ package ai.helper2.admin.web;
 import ai.helper2.admin.usecase.GetOverview;
 import ai.helper2.api.generated.OverviewApi;
 import ai.helper2.api.generated.model.AdminOverviewDto;
+import ai.helper2.api.generated.model.AudiencePathDto;
 import ai.helper2.api.generated.model.BudgetTodayDto;
+import ai.helper2.api.generated.model.ExampleCheckOutcomeDto;
+import ai.helper2.api.generated.model.ExampleOutcomeCountDto;
+import ai.helper2.api.generated.model.ExamplePathCountDto;
+import ai.helper2.api.generated.model.HomeExampleCountsDto;
 import ai.helper2.api.generated.model.ReviewKindCountDto;
 import ai.helper2.api.generated.model.ReviewKindDto;
 import ai.helper2.api.generated.model.WebCreditsDto;
+import ai.helper2.examples.PoolCounts;
 import ai.helper2.shared.UtcTimes;
 import java.net.URI;
 import org.springframework.beans.factory.annotation.Value;
@@ -66,12 +72,27 @@ class OverviewController implements OverviewApi {
                                 b.usedToday() == null ? null : Math.toIntExact(b.usedToday())))
                     .toList(),
                 o.recentRuns().stream().map(AdminController::dto).toList(),
-                o.failedRunsLast24h())
+                o.failedRunsLast24h(),
+                dto(o.homeExamples()))
             .grafanaUrl(grafanaUrl);
     if (o.webCredits() != null) {
       dto.webCredits(
           new WebCreditsDto(o.webCredits().getUsedToday()).dailyCap(o.webCredits().getDailyCap()));
     }
     return ResponseEntity.ok(dto);
+  }
+
+  static HomeExampleCountsDto dto(PoolCounts counts) {
+    return new HomeExampleCountsDto(
+        counts.getShown().entrySet().stream()
+            .map(e ->
+                new ExamplePathCountDto(AudiencePathDto.fromValue(e.getKey().name()), e.getValue()))
+            .toList(),
+        counts.getHidden().entrySet().stream()
+            .map(e ->
+                new ExampleOutcomeCountDto(
+                    ExampleCheckOutcomeDto.fromValue(e.getKey().name()), e.getValue()))
+            .toList(),
+        counts.getPaused());
   }
 }
