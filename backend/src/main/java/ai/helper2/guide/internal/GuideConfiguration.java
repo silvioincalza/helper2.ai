@@ -107,6 +107,15 @@ class GuideConfiguration {
         clock);
   }
 
+  /** Fresh guide questions per client and day (ADR 0017); also read by GET /me. */
+  @Bean
+  ClientQuota guideClientQuota(
+      Clock clock,
+      CallCounter budgetCounter,
+      @Value("${helper2.guide.client-daily-questions:30}") int clientDailyQuestions) {
+    return new ClientQuota(clientDailyQuestions, clock, budgetCounter);
+  }
+
   @Bean
   AskGuide guideService(
       SearchResources search,
@@ -114,7 +123,6 @@ class GuideConfiguration {
       LlmSettings llm,
       Clock clock,
       DailyBudget guideBudget,
-      CallCounter budgetCounter,
       GuideAnswerStore answerStore,
       ObjectProvider<Embedder> embedder,
       JdbcSimilarQuestionIndex similarQuestionIndex,
@@ -131,7 +139,7 @@ class GuideConfiguration {
       @Value("${helper2.guide.cache-ttl:PT24H}") Duration cacheTtl,
       @Value("${helper2.guide.similar-threshold:}") String similarThreshold,
       @Value("${helper2.guide.max-candidates:24}") int maxCandidates,
-      @Value("${helper2.guide.client-daily-questions:30}") int clientDailyQuestions,
+      ClientQuota clientQuota,
       @Value("${helper2.guide.thinking.plan:false}") boolean thinkPlan,
       @Value("${helper2.guide.thinking.choose:false}") boolean thinkChoose,
       @Value("${helper2.guide.thinking.verify:false}") boolean thinkVerify) {
@@ -167,7 +175,7 @@ class GuideConfiguration {
     log.info(
         "AI guide: Nemotron chooses among up to {} candidates; {} fresh questions per client per day",
         maxCandidates,
-        clientDailyQuestions);
+        clientQuota.getLimit());
     return new AskGuide(
         search,
         guideModel,
@@ -177,7 +185,7 @@ class GuideConfiguration {
         new GuideAnswerCache(cacheTtl, clock, answerStore),
         observations,
         meters,
-        new ClientQuota(clientDailyQuestions, clock, budgetCounter),
+        clientQuota,
         AskGuide.SUBJECT_SEARCH_DEADLINE,
         AnswerLimits.DEFAULT,
         similarQuestions(similarThreshold, embedder.getIfAvailable(), similarQuestionIndex, clock));

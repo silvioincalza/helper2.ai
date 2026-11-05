@@ -20,7 +20,8 @@ two live side by side.
    monospace font reads slowly. Both are self-hosted (SIL Open Font License). Space Grotesk goes.
 2. **Home: the title, the radar, a pinned search box, two terminals.** The title says what the site is: "The metasearch
    for the AI ecosystem." Behind it a radar draws one dot per enabled source from GET /sources: ring = mode, colour =
-   last check, distance = speed or freshness, size = new this week. The search box stays pinned under the header while
+   last check, distance = speed or freshness, size = new this week (`newThisWeek`; the Helper2 index counts the whole
+   index, and the index by meaning has none, so its dot keeps the default size). The search box stays pinned under the header while
    the page scrolls; on phones the title folds away so New this week and Coming up take the screen. The two lists are
    terminal windows: a command, one line per item, Show all expands in place.
 3. **Results: one column.** Picks first, then all results. No preview panel: a row opens the resource page. Filters
@@ -54,8 +55,8 @@ two live side by side.
 ## Consequences
 - Users see what the site does in one line, and the box never leaves the screen.
 - The radar and the Sources page show the same data, so they cannot disagree.
-- Some API work comes before some pages: the radar dot size, the account limits and Show all totals wait for their
-  fields.
+- The API has the fields the drawings need: `newThisWeek` per source on GET /sources, `limits` on GET /me, and
+  `total` on GET /recent and GET /events/upcoming (which also takes `days`). The Unknown count per facet is still open.
 - For a while the site shows two designs. Each page is consistent within itself; the header and footer move first,
   with Home.
 - The design system's component folders still show version 3 until each component is rebuilt.

@@ -1,6 +1,7 @@
 package ai.helper2.platform.llm;
 
 import java.time.LocalDate;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Today's count of a named budget, kept outside the process so a restart or deploy does not hand
@@ -14,6 +15,14 @@ public interface CallCounter {
 
   Long increment(String name, LocalDate day);
 
+  /**
+   * Today's count of [name] without adding one: 0 when nothing was counted yet, null when there is
+   * no durable store or it cannot answer.
+   */
+  default @Nullable Long current(String name, LocalDate day) {
+    return null;
+  }
+
   /** A budget declares its name and daily limit once, so the back office can list every budget. */
   default void declare(String name, int dailyCalls) {}
 
@@ -23,6 +32,17 @@ public interface CallCounter {
    * is one per visitor.
    */
   default CallCounter unlisted() {
-    return this::increment;
+    CallCounter counts = this;
+    return new CallCounter() {
+      @Override
+      public Long increment(String name, LocalDate day) {
+        return counts.increment(name, day);
+      }
+
+      @Override
+      public @Nullable Long current(String name, LocalDate day) {
+        return counts.current(name, day);
+      }
+    };
   }
 }

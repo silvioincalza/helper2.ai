@@ -163,10 +163,8 @@ Open items:
   ignore rules once both plugins support the new majors.
 
 - **Redesign, version 4 of the design system** ([design/system](design/system/README.md), boards in
-  [design/redesign](design/redesign)): build it page by page. The design needs these API features first:
-  - `newThisWeek` per source on GET /sources (radar dot size, Sources table).
-  - `limits` on GET /me: web searches and AI answers left today, and the reset time (account panel, Account page).
-  - `total` on the recent and upcoming responses (Show all on the home terminals).
+  [design/redesign](design/redesign)): build it page by page. `newThisWeek` on GET /sources, `limits` on GET /me and
+  `total` on the recent and upcoming responses are in the API. The design still needs these API features:
   - An `unknown` count per facet and an updated-date facet on the search response (Filters panel).
   - Sign-in with Google (phase 1). Passkey, email link and password (phase 2) need their own ADR, a threat model and
     the Privacy page first.

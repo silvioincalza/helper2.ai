@@ -3,9 +3,14 @@ package ai.helper2.identity.web;
 import ai.helper2.api.generated.MeApi;
 import ai.helper2.api.generated.model.BookmarkDto;
 import ai.helper2.api.generated.model.BookmarkRequestDto;
+import ai.helper2.api.generated.model.DailyAllowanceDto;
+import ai.helper2.api.generated.model.LimitsDto;
+import ai.helper2.api.generated.model.LimitsWebSearchesDto;
 import ai.helper2.api.generated.model.MeDto;
 import ai.helper2.api.generated.model.MeLoginProvidersInnerDto;
 import ai.helper2.api.generated.model.ResourceTypeDto;
+import ai.helper2.api.generated.model.WebSearchesDto;
+import ai.helper2.identity.VisitorLimits;
 import ai.helper2.identity.internal.Bookmarks.Bookmark;
 import ai.helper2.identity.internal.CurrentUser;
 import ai.helper2.identity.usecase.AddBookmark;
@@ -15,13 +20,18 @@ import ai.helper2.identity.usecase.MergeLocalBookmarks;
 import ai.helper2.identity.usecase.RemoveBookmark;
 import ai.helper2.platform.ApiProblem;
 import ai.helper2.platform.BadRequestException;
+import ai.helper2.platform.ClientKey;
 import ai.helper2.platform.ProblemType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -45,6 +55,8 @@ class MeController implements MeApi {
   private final MergeLocalBookmarks mergeLocalBookmarks;
   private final DeleteMyAccount deleteMyAccount;
   private final ObjectProvider<ClientRegistrationRepository> registrations;
+  private final VisitorLimits limits;
+  private final Clock clock;
   private final HttpServletRequest request;
   private final HttpServletResponse response;
 
@@ -56,6 +68,8 @@ class MeController implements MeApi {
       MergeLocalBookmarks mergeLocalBookmarks,
       DeleteMyAccount deleteMyAccount,
       ObjectProvider<ClientRegistrationRepository> registrations,
+      VisitorLimits limits,
+      Clock clock,
       HttpServletRequest request,
       HttpServletResponse response) {
     this.currentUser = currentUser;
@@ -65,6 +79,8 @@ class MeController implements MeApi {
     this.mergeLocalBookmarks = mergeLocalBookmarks;
     this.deleteMyAccount = deleteMyAccount;
     this.registrations = registrations;
+    this.limits = limits;
+    this.clock = clock;
     this.request = request;
     this.response = response;
   }
@@ -86,7 +102,27 @@ class MeController implements MeApi {
             }
           });
     }
-    return ResponseEntity.ok(me);
+    return ResponseEntity.ok(me.limits(limitsToday()));
+  }
+
+  /** Counted per client address or user, so read after the user is known (CurrentUser.id). */
+  private LimitsDto limitsToday() {
+    VisitorLimits.Today today =
+        limits.of(ClientKey.of(request.getRemoteAddr()), currentUser.id().orElse(null));
+    Instant nextUtcMidnight = clock.instant().truncatedTo(ChronoUnit.DAYS).plus(1, ChronoUnit.DAYS);
+    return new LimitsDto(
+        allowance(today.guideQuestions()),
+        new LimitsWebSearchesDto(
+            webSearches(today.searchWebSearches()), webSearches(today.guideWebSearches())),
+        nextUtcMidnight.atOffset(ZoneOffset.UTC));
+  }
+
+  private static @Nullable DailyAllowanceDto allowance(VisitorLimits.@Nullable Allowance a) {
+    return a == null ? null : new DailyAllowanceDto(a.limit(), a.remaining());
+  }
+
+  private static @Nullable WebSearchesDto webSearches(VisitorLimits.@Nullable Allowance a) {
+    return a == null ? null : new WebSearchesDto(a.limit(), a.remaining());
   }
 
   @Override

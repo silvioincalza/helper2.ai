@@ -7,7 +7,8 @@
 #   backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt, ResultMerger.kt, Ranking.kt, Filtering.kt,
 #   backend/src/main/java/ai/helper2/search/cache/RedisSearchCache.java,
 #   backend/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java,
-#   backend/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java, catalog/internal/ObservationQueue.java.
+#   backend/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java, catalog/internal/ObservationQueue.java,
+#   catalog/internal/ResourceStore.java (discoveredSince, discoveredInIndexSince).
 # Render: cd docs/diagrams && d2 fmt sequence-0008-federated-search.d2 && d2 sequence-0008-federated-search.d2 sequence-0008-federated-search.svg
 
 ...@style
@@ -71,6 +72,8 @@ page: Sources page {
   ctl -> list: "list()"
   list -> catalog: "lastOutcomes() (Scout runs)"
   catalog -> list: "outcome per collector"
+  list -> catalog: "countsSince(now - 7 days)"
+  catalog -> list: "github 12, helper2-index 40,\nhelper2-semantic null\n(index on first_discovered_at)"
   list -> health: "lastFor(id), responseTime(id)"
   health -> list: "newer outcome, median of\nthe last 20 calls"
   list -> policies: "circuit(source-<id>)\n(enabled sources)"
@@ -78,5 +81,5 @@ page: Sources page {
   list -> quota: "creditsToday()"
   quota -> list: "HGET h2:v1:quota:global:<date>:\nusedToday 41, dailyCap null"
   list -> ctl: "SourceOverview[]"
-  ctl -> browser: "200 SourceInfo[]: responseTimeMs,\ncircuit, circuitOpenedAt, webCredits"
+  ctl -> browser: "200 SourceInfo[]: responseTimeMs,\ncircuit, circuitOpenedAt, webCredits,\nnewThisWeek"
 }

@@ -17,7 +17,10 @@ class SecurityIT extends ApiTestBase {
   void anonymousSessionInfo() throws Exception {
     mvc.perform(get("/api/v1/me"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.authenticated").value(false));
+        .andExpect(jsonPath("$.authenticated").value(false))
+        .andExpect(jsonPath("$.limits.guideQuestions").doesNotExist())
+        .andExpect(jsonPath("$.limits.webSearches.search").doesNotExist())
+        .andExpect(jsonPath("$.limits.resetsAt").isString());
   }
 
   @Test

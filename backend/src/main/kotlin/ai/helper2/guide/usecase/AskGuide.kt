@@ -79,6 +79,10 @@ class AskGuide(
    */
   private val similar: SimilarQuestions? = null,
 ) {
+  /** False without a model: every answer comes from search only and spends no model call. */
+  val answersWithModel: Boolean
+    get() = model != null
+
   private val log = LoggerFactory.getLogger(AskGuide::class.java)
 
   /** Everything that changes an answer besides the question: a change gives new cache keys. */

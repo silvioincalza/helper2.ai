@@ -82,6 +82,8 @@ class RecentApiIT extends ApiTestBase {
 
       List<String> titles = titles(body);
       assertThat(titles).containsSubsequence("newest-model", "recent-mcp");
+      assertThat(com.jayway.jsonpath.JsonPath.<Integer>read(body, "$.total"))
+          .isGreaterThanOrEqualTo(titles.size());
       assertThat(titles).doesNotContain("old-lib", "no-date", "future");
     });
   }

@@ -3,6 +3,7 @@ package ai.helper2.api;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
@@ -15,6 +16,7 @@ import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.DateFact;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.ValueOrigin;
+import com.jayway.jsonpath.JsonPath;
 import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -249,6 +251,31 @@ class GuideApiIT extends ApiTestBase {
     assertThat(MODELS_CALLED).hasSize(callsBefore);
     GuideAnswers.ask(mvc, body("one quota question too many"), csrf(), from("2001:db8:0:8::1"))
         .value("$.recommendations[0].aiReasoned", true);
+  }
+
+  @Test
+  void theAccountShowsTheGuideQuestionsLeftAndReadingDoesNotCountOne() throws Exception {
+    String ip = "2001:db8:0:9::1";
+    String before = me(ip);
+    assertThat(JsonPath.<Integer>read(before, "$.limits.guideQuestions.limit")).isEqualTo(2);
+    assertThat(JsonPath.<Integer>read(before, "$.limits.guideQuestions.remaining")).isEqualTo(2);
+    assertThat(JsonPath.<Integer>read(me(ip), "$.limits.guideQuestions.remaining")).isEqualTo(2);
+
+    GuideAnswers.ask(mvc, body("questions left for " + ip), csrf(), from(ip))
+        .value("$.recommendations[0].aiReasoned", true);
+
+    assertThat(JsonPath.<Integer>read(me(ip), "$.limits.guideQuestions.remaining")).isEqualTo(1);
+  }
+
+  private String me(String ip) throws Exception {
+    String body =
+        mvc.perform(get("/api/v1/me").with(from(ip)))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    ContractValidator.assertMatches("Me", body);
+    return body;
   }
 
   @Test

@@ -70,7 +70,15 @@ and how many web credits the day has used. Two sources can describe the same res
       only Tavily). The page reads this flag, not a source id.
     - `webCredits {usedToday, dailyCap}` on an enabled metered source: the credits of the day for the whole cluster
       and the global cap, from Redis ([0037](0037-tavily-store-and-daily-quota.md)); null on every other source and
-      when Redis cannot answer. A visitor's own web searches left stay in the search and guide responses.
+      when Redis cannot answer. A visitor's own web searches left stay in the search and guide responses, and in
+      `GET /api/v1/me` ([0023](../edge/0023-identity-and-admin.md)).
+    - `newThisWeek`: the catalog resources this source brought that Helper2 first discovered in the last 7 days (a
+      rolling window, `ListSources.NEW_WINDOW`), for the home radar
+      ([0042](../frontend/0042-redesign-design-system-v4.md)). For a source with records: the resources with a record
+      from it. `helper2-index` is the whole index, so it counts every indexed and observed resource.
+      `helper2-semantic` is the same index searched by meaning: null, no count of its own. Read through the
+      catalog's `DiscoveredResources` port, on the index `resource_first_discovered_idx` (60,000 resources: 34 ms
+      without it, 19 ms with it, median). Null when the database cannot answer.
 
     Response time and circuit are per replica, like the circuits themselves; the field descriptions say so.
 
@@ -104,6 +112,8 @@ and how many web credits the day has used. Two sources can describe the same res
 - `backend/src/main/kotlin/ai/helper2/search/Ports.kt`, `Model.kt` — ports, descriptors, statuses.
 - `backend/src/main/kotlin/ai/helper2/search/SourceHealth.kt` — last outcome and recent response time per source.
 - `backend/src/main/kotlin/ai/helper2/search/usecase/ListSources.kt` — the Sources page list with its live numbers.
+- `backend/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java`, `ResourceStore.java` —
+  `DiscoveredResources`, `discoveredSince`; `V4__resource_first_discovered_idx.sql`.
 - `backend/src/main/java/ai/helper2/search/config/SearchConfiguration.java` — executor, ordering, properties.
 - `backend/src/main/resources/application.yaml` (`resilience4j.*`) — the `source-<id>` policies.
 - `backend/src/main/java/ai/helper2/search/cache/RedisSearchCache.java` — Redis adapter on the `redis` policy.
