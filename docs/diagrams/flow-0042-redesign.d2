@@ -31,6 +31,8 @@ home: Home {
   tables: "TermList as two tables, ls -l\n(helper2 news · N line, Show all in place)" {class: app}
   tabs: "TermList in tabs:\n> new this week N | coming up N\n(log rows)" {class: app}
   feeds: "GET /api/v1/recent\nGET /api/v1/events/upcoming?days=90\n(total for Show all N)" {class: ext}
+  measure: "ResizeObserver measures\nthe pinned box (--pinned-h)" {class: app}
+  stick: "While a list scrolls by: its head\n(and column names or tabs) stays under\nthe pinned box until the list ends" {class: app}
   hero -> sources -> fields
   fields -> sized: yes
   fields -> plain: no
@@ -46,6 +48,9 @@ home: Home {
   wide -> tabs: no
   tables -> feeds
   tabs -> feeds
+  bar -> measure -> stick
+  tables -> stick
+  tabs -> stick
 }
 phone: "Screen 720 px or less\nand scrolled 24 px?" {class: decision}
 fold: "Title folds away,\nbox stays pinned" {class: app}

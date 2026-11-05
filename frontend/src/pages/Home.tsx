@@ -1,4 +1,12 @@
-import { lazy, Suspense, useEffect, useRef, useState, type RefObject } from 'react';
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type RefObject,
+} from 'react';
 import { useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { HomeExamples } from '@/components/home/HomeExamples';
@@ -72,6 +80,7 @@ export default function Home() {
   const bar = useRef<HTMLDivElement>(null);
   const titleBlock = useRef<HTMLDivElement>(null);
   const { folded, stuck } = useScrollState(bar);
+  const barHeight = useHeight(bar);
 
   // A header link to #news or #events: the lists sit below the fold, and the router does not scroll to a hash. On the
   // key too, so a second click on the same link scrolls again. scroll-margin keeps the list below the pinned box.
@@ -81,7 +90,7 @@ export default function Home() {
   }, [hash, key]);
 
   return (
-    <div className="v4 v4-home">
+    <div className="v4 v4-home" style={{ '--pinned-h': `${barHeight}px` } as CSSProperties}>
       <section className={`v4-hero${folded ? ' is-folded' : ''}`} aria-labelledby="home-h">
         <Suspense fallback={null}>
           <HomeRadar sources={external} box={bar} title={titleBlock} />
@@ -129,4 +138,22 @@ export default function Home() {
       </div>
     </div>
   );
+}
+
+/**
+ * The pinned box's height, so the heads of New this week and Coming up stick just under it while their table
+ * scrolls. 0 where ResizeObserver is missing (tests): the heads then stick under the header.
+ */
+function useHeight(ref: RefObject<HTMLElement | null>): number {
+  const [height, setHeight] = useState(0);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() =>
+      setHeight(Math.round(el.getBoundingClientRect().height)),
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [ref]);
+  return height;
 }
