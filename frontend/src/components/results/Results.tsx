@@ -24,7 +24,6 @@ import {
   clampQuestion,
   clearFilters,
   homeParams,
-  isQuestion,
   isSelected,
   parseSearchParams,
   patchState,
@@ -80,7 +79,9 @@ export function Results() {
           webLine={webLineExpected(shown?.webSearches)}
         />
       ) : (
-        isQuestion(state.q) && (
+        // Any length of words can ask the guide (ADR 0042, decision 11); the empty state has its own button.
+        clampQuestion(state.q) &&
+        shown?.results.length !== 0 && (
           <section className="h2-suggest" aria-label={t('results.suggestLabel')}>
             <p>{t('results.suggestText')}</p>
             <button type="button" className="v4-btn" onClick={() => ask(state.q)}>

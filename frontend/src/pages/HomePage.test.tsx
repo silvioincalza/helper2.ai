@@ -137,14 +137,18 @@ describe('one box', () => {
     ).toBeInTheDocument();
   });
 
-  it('a long query suggests asking the guide', async () => {
-    mockApi();
-    renderApp('/?q=summarise+my+meeting+notes+quickly');
+  it('a search of any length offers to ask the guide, which asks once when chosen', async () => {
+    const m = mockApi();
+    const { params } = renderApp('/search?q=translate');
+    const ask = await screen.findByRole('button', { name: 'Ask the guide about “translate”' });
     expect(
-      await screen.findByRole('button', {
-        name: 'Ask the guide about “summarise my meeting notes quickly”',
-      }),
+      screen.getByText('Want picks with a quote that proves them? Ask the guide.'),
     ).toBeInTheDocument();
+    expect(m.callsTo('POST', '/guide/stream')).toHaveLength(0);
+    await userEvent.click(ask);
+    await waitFor(() => expect(params().get('ask')).toBe('translate'));
+    await waitFor(() => expect(m.callsTo('POST', '/guide/stream')).toHaveLength(1));
+    expect(screen.queryByRole('button', { name: /Ask the guide about/ })).not.toBeInTheDocument();
   });
 
   it('typing then asking at once keeps the question: a pending live search must not drop `ask`', async () => {
