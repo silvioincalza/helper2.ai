@@ -658,7 +658,8 @@
       "review": "Review",
       "runs": "Scout runs",
       "examples": "Examples",
-      "audit": "Audit"
+      "audit": "Audit",
+      "enrichment": "Enrichment"
     },
     "overview": {
       "title": "What needs you now",
@@ -814,6 +815,28 @@
         "foundBy": "Found by",
         "note": "Found by a web search. Accept adds it to the catalog; the next Scout run describes it."
       }
+    },
+    "enrichment": {
+      "title": "Enrichment queue",
+      "lede": "What the Scout enriches next, in its order: never-run resources first, then the ones to try again, newest first.",
+      "empty": "Nothing waits for enrichment.",
+      "loadError": "Could not load the enrichment queue.",
+      "col": {
+        "resource": "Resource",
+        "waiting": "Why it waits",
+        "discovered": "Discovered",
+        "failed": "Failed runs",
+        "lastRun": "Last run"
+      },
+      "waiting": {
+        "NEW": "Not run yet",
+        "MODEL_UNAVAILABLE": "Model was unavailable",
+        "RETRY": "Retry after a failure"
+      },
+      "noRun": "None",
+      "lastRun": "{{outcome}}, {{at}}",
+      "next": "Next page",
+      "first": "First page"
     }
   },
   "notFound": {

@@ -110,10 +110,10 @@ function OverviewParts({
       <h3 className="h2-admin__h3">{t('admin.overview.scout')}</h3>
       <ul className="h2-admin__counts">
         <li>
-          <span>
+          <Link to="/admin/enrichment">
             <span className="h2-admin__count">{data.enrichmentBacklog}</span>{' '}
             {t('admin.overview.backlog')}
-          </span>
+          </Link>
         </li>
         <li>
           <Link to="/admin/runs">

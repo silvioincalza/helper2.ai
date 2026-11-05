@@ -3,6 +3,7 @@ package ai.helper2.catalog.internal;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.TestcontainersConfiguration;
+import ai.helper2.catalog.enrichment.EnrichmentCandidates;
 import ai.helper2.catalog.enrichment.EnrichmentCandidates.Candidate;
 import ai.helper2.catalog.enrichment.EnrichmentCandidates.SourceText;
 import java.time.Instant;
@@ -139,6 +140,67 @@ class JdbcEnrichmentCandidatesIT {
 
     assertThat(candidates.pendingCount(MIN_TEXT, MAX_FAILED))
         .isEqualTo(candidates.pending(Integer.MAX_VALUE, MIN_TEXT, MAX_FAILED).size());
+  }
+
+  /** The queue pages the backlog in the Scout's order, each resource once, with no OFFSET. */
+  @Test
+  void theQueuePagesTheBacklogInTheScoutsOrderEachResourceOnce() {
+    UUID retry = withText("Retry", "INDEXED", "REJECTED", T0.plus(5, ChronoUnit.DAYS));
+    run(retry, "FAILED", "f1", T0.plus(6, ChronoUnit.DAYS));
+    UUID unavailable =
+        withText("Unavailable", "INDEXED", "LLM_UNAVAILABLE", T0.plus(4, ChronoUnit.DAYS));
+    run(unavailable, "LLM_UNAVAILABLE", "u1", T0.plus(4, ChronoUnit.DAYS));
+    UUID newest = withText("Newest", "INDEXED", "NOT_RUN", T0.plus(3, ChronoUnit.DAYS));
+    UUID older = withText("Older", "INDEXED", "NOT_RUN", T0.plus(2, ChronoUnit.DAYS));
+    UUID oldest = withText("Oldest", "INDEXED", "NOT_RUN", T0.plus(1, ChronoUnit.DAYS));
+
+    List<UUID> paged = new ArrayList<>();
+    EnrichmentCandidates.BacklogCursor after = null;
+    while (true) {
+      List<EnrichmentCandidates.BacklogEntry> page =
+          candidates.backlog(after, 2, MIN_TEXT, MAX_FAILED);
+      if (page.isEmpty()) {
+        break;
+      }
+      page.stream().map(EnrichmentCandidates.BacklogEntry::id).forEach(paged::add);
+      after = page.getLast().cursor();
+    }
+
+    assertThat(paged.stream().filter(created::contains).toList())
+        .containsExactly(newest, older, oldest, retry, unavailable)
+        .containsExactlyElementsOf(pendingOfThisTest());
+  }
+
+  @Test
+  void aQueueEntrySaysWhyItWaitsAndShowsItsRunsSoFar() {
+    UUID retry = withText("Retry", "INDEXED", "REJECTED", T0.plus(9, ChronoUnit.DAYS));
+    run(retry, "FAILED", "f1", T0.plus(10, ChronoUnit.DAYS));
+    run(retry, "FAILED", "f2", T0.plus(11, ChronoUnit.DAYS));
+    UUID fresh = withText("Fresh", "INDEXED", "NOT_RUN", T0.plus(8, ChronoUnit.DAYS));
+
+    var entries =
+        candidates.backlog(null, 10_000, MIN_TEXT, MAX_FAILED).stream()
+            .filter(e -> created.contains(e.id()))
+            .toList();
+
+    assertThat(entries)
+        .containsExactly(
+            new EnrichmentCandidates.BacklogEntry(
+                fresh,
+                "Fresh",
+                EnrichmentCandidates.Waiting.NEW,
+                T0.plus(8, ChronoUnit.DAYS),
+                0,
+                null,
+                null),
+            new EnrichmentCandidates.BacklogEntry(
+                retry,
+                "Retry",
+                EnrichmentCandidates.Waiting.RETRY,
+                T0.plus(9, ChronoUnit.DAYS),
+                2,
+                "FAILED",
+                T0.plus(11, ChronoUnit.DAYS)));
   }
 
   @Test

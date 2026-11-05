@@ -27,40 +27,55 @@ class JdbcEnrichmentCandidates implements EnrichmentCandidates {
 
   /**
    * Products a person accepted from the review queue first (ADR 0056): someone chose them, so they
-   * should not wait behind the daily collector intake. Then never-run resources, newest first.
+   * should not wait behind the daily collector intake. Then never-run resources first, then the
+   * rest, each part newest first, and the next batch never sorts the whole table.
    */
   @Override
   public List<UUID> pending(int limit, int minText, int maxFailed) {
     return jdbc.sql(
-            "SELECT r.id FROM resource r WHERE "
-                + PENDING
-                + """
-                ORDER BY EXISTS (SELECT 1 FROM review_item i
-                                 WHERE i.kind = 'RESOURCE_CANDIDATE' AND i.candidate_url = r.canonical_url
-                                   AND i.status = 'ACCEPTED') DESC,
-                         (r.enrichment_status = 'NOT_RUN') DESC, r.first_discovered_at DESC
-                LIMIT :limit
-                """)
+            "SELECT id FROM ("
+                + "(SELECT r.id, r.first_discovered_at, r.enrichment_status, "
+                + "EXISTS (SELECT 1 FROM review_item i "
+                + "WHERE i.kind = 'RESOURCE_CANDIDATE' AND i.candidate_url = r.canonical_url "
+                + "AND i.status = 'ACCEPTED') AS accepted FROM resource r WHERE "
+                + NEVER_RUN
+                + " ORDER BY r.first_discovered_at DESC, r.id DESC LIMIT :limit) UNION ALL "
+                + "(SELECT r.id, r.first_discovered_at, r.enrichment_status, "
+                + "EXISTS (SELECT 1 FROM review_item i "
+                + "WHERE i.kind = 'RESOURCE_CANDIDATE' AND i.candidate_url = r.canonical_url "
+                + "AND i.status = 'ACCEPTED') AS accepted FROM resource r WHERE "
+                + TO_RETRY
+                + " ORDER BY r.first_discovered_at DESC, r.id DESC LIMIT :limit)) q "
+                + "ORDER BY q.accepted DESC, (q.enrichment_status = 'NOT_RUN') DESC, "
+                + "q.first_discovered_at DESC, q.id DESC LIMIT :limit")
         .param("maxFailed", maxFailed)
         .param("minText", minText)
         .param("limit", limit)
+        .withQueryTimeout(COUNT_TIMEOUT_SECONDS)
         .query(UUID.class)
         .list();
   }
 
   /**
-   * Longest the backlog count may run: the overview waits for it, and one slow plan must not hold
-   * the page.
+   * Longest a backlog read (next batch, a queue page, the count) may run: one slow plan must not
+   * hold the Scout or a page. The worst page, no row of the second part due for a retry, walks
+   * every REJECTED resource: 0.4 s at 250 000 synthetic resources.
    */
   static final int COUNT_TIMEOUT_SECONDS = 5;
 
   /**
-   * The same rule as {@link #pending}, counted. A full pass over the backlog: the overview caches
-   * it, and the query gives up after {@link #COUNT_TIMEOUT_SECONDS}.
+   * The same rule as {@link #pending}, counted. It reads every resource that may wait (the backlog
+   * index), not the whole table; the overview caches it, and the query gives up after {@link
+   * #COUNT_TIMEOUT_SECONDS}.
    */
   @Override
   public long pendingCount(int minText, int maxFailed) {
-    return jdbc.sql("SELECT count(*) FROM resource r WHERE " + PENDING)
+    return jdbc.sql(
+            "SELECT (SELECT count(*) FROM resource r WHERE "
+                + NEVER_RUN
+                + ") + (SELECT count(*) FROM resource r WHERE "
+                + TO_RETRY
+                + ")")
         .param("maxFailed", maxFailed)
         .param("minText", minText)
         .withQueryTimeout(COUNT_TIMEOUT_SECONDS)
@@ -68,19 +83,94 @@ class JdbcEnrichmentCandidates implements EnrichmentCandidates {
         .single();
   }
 
-  /** Which resources wait for enrichment; one rule for the backlog and its count. */
-  private static final String PENDING =
+  /**
+   * A page of the backlog in {@link #pending} order, keyset by (part, first discovered, id): no
+   * OFFSET, so a deep page costs what the first one does. Runs so far are read for the page only.
+   */
+  @Override
+  public List<BacklogEntry> backlog(
+      @Nullable BacklogCursor after, int size, int minText, int maxFailed) {
+    boolean fromNeverRun = after == null || after.neverRun();
+    String afterCursor = " AND (r.first_discovered_at, r.id) < (:at, :id)";
+    String neverRun =
+        "(SELECT r.id, r.title, r.enrichment_status, r.first_discovered_at FROM resource r WHERE "
+            + NEVER_RUN
+            + (after != null && after.neverRun() ? afterCursor : "")
+            + " ORDER BY r.first_discovered_at DESC, r.id DESC LIMIT :size)";
+    String toRetry =
+        "(SELECT r.id, r.title, r.enrichment_status, r.first_discovered_at FROM resource r WHERE "
+            + TO_RETRY
+            + (after != null && !after.neverRun() ? afterCursor : "")
+            + " ORDER BY r.first_discovered_at DESC, r.id DESC LIMIT :size)";
+    String page =
+        fromNeverRun ? neverRun + " UNION ALL " + toRetry : "SELECT * FROM " + toRetry + " t";
+    var query =
+        jdbc.sql(
+                "SELECT p.id, p.title, p.enrichment_status, p.first_discovered_at,"
+                    + " (SELECT count(*) FROM enrichment_run e WHERE e.resource_id = p.id"
+                    + "   AND e.outcome = 'FAILED') AS failed_runs,"
+                    + " last.outcome AS last_outcome, last.started_at AS last_run_at"
+                    + " FROM ("
+                    + page
+                    + " LIMIT :size) p"
+                    + " LEFT JOIN LATERAL (SELECT e.outcome, e.started_at FROM enrichment_run e"
+                    + "   WHERE e.resource_id = p.id ORDER BY e.started_at DESC LIMIT 1) last ON true"
+                    + " ORDER BY (p.enrichment_status = 'NOT_RUN') DESC, p.first_discovered_at DESC,"
+                    + " p.id DESC")
+            .param("maxFailed", maxFailed)
+            .param("minText", minText)
+            .param("size", size)
+            .withQueryTimeout(COUNT_TIMEOUT_SECONDS);
+    if (after != null) {
+      query =
+          query
+              .param("at", java.sql.Timestamp.from(after.firstDiscoveredAt()))
+              .param("id", after.id());
+    }
+    return query
+        .query((rs, i) ->
+            new BacklogEntry(
+                rs.getObject("id", UUID.class),
+                rs.getString("title"),
+                switch (rs.getString("enrichment_status")) {
+                  case "NOT_RUN" -> Waiting.NEW;
+                  case "LLM_UNAVAILABLE" -> Waiting.MODEL_UNAVAILABLE;
+                  default -> Waiting.RETRY;
+                },
+                rs.getTimestamp("first_discovered_at").toInstant(),
+                rs.getInt("failed_runs"),
+                rs.getString("last_outcome"),
+                rs.getTimestamp("last_run_at") == null
+                    ? null
+                    : rs.getTimestamp("last_run_at").toInstant()))
+        .list();
+  }
+
+  /** Resources the Scout may enrich: indexed, observed or curated, with enough source text. */
+  private static final String ELIGIBLE =
       """
       r.data_origin IN ('INDEXED', 'OBSERVED', 'CURATED')
         AND EXISTS (SELECT 1 FROM source_record s
                     WHERE s.resource_id = r.id AND length(coalesce(s.description, '')) >= :minText)
-        AND (r.enrichment_status IN ('NOT_RUN', 'LLM_UNAVAILABLE')
-             OR (r.enrichment_status = 'REJECTED'
-                 AND (SELECT e.outcome FROM enrichment_run e WHERE e.resource_id = r.id
-                      ORDER BY e.started_at DESC LIMIT 1) = 'FAILED'
-                 AND (SELECT count(*) FROM enrichment_run e
-                      WHERE e.resource_id = r.id AND e.outcome = 'FAILED') < :maxFailed))
       """;
+
+  /** Never enriched: the first part of the backlog. */
+  private static final String NEVER_RUN = "r.enrichment_status = 'NOT_RUN' AND " + ELIGIBLE;
+
+  /**
+   * Enriched while no model was available, or whose last run FAILED (stored as REJECTED) with fewer
+   * than [maxFailed] FAILED runs: the second part.
+   */
+  private static final String TO_RETRY =
+      "r.enrichment_status IN ('LLM_UNAVAILABLE', 'REJECTED') AND "
+          + ELIGIBLE
+          + """
+            AND (r.enrichment_status = 'LLM_UNAVAILABLE'
+                 OR ((SELECT e.outcome FROM enrichment_run e WHERE e.resource_id = r.id
+                      ORDER BY e.started_at DESC LIMIT 1) = 'FAILED'
+                     AND (SELECT count(*) FROM enrichment_run e
+                          WHERE e.resource_id = r.id AND e.outcome = 'FAILED') < :maxFailed))
+          """;
 
   @Override
   public List<UUID> withEnoughText(List<UUID> ids, int minText) {

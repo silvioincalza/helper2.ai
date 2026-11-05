@@ -25,6 +25,7 @@ import type {
   EnrichmentRecheck,
   AuditEntryPage,
   AdminOverview,
+  EnrichmentQueuePage,
   AdminHomeExample,
   ExampleCheckOutcome,
   ExampleDrafts,
@@ -323,6 +324,12 @@ export const api = {
   draftHomeExamples: () => request<ExampleDrafts>('POST', '/admin/home-examples/drafts'),
   removeHomeExample: (id: string) =>
     request<void>('DELETE', `/admin/home-examples/${encodeURIComponent(id)}`),
+  /** The enrichment backlog in the Scout's order; pass the previous page's next as after. 400 for a foreign cursor. */
+  listEnrichmentQueue: (after: string | undefined, size: number, signal?: AbortSignal) =>
+    request<EnrichmentQueuePage>('GET', '/admin/enrichment-queue', {
+      query: new URLSearchParams({ ...(after ? { after } : {}), size: String(size) }),
+      signal,
+    }),
   listAuditEntries: (page: number, size: number, signal?: AbortSignal) =>
     request<AuditEntryPage>('GET', '/admin/audit', {
       query: new URLSearchParams({ page: String(page), size: String(size) }),

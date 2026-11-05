@@ -1,5 +1,6 @@
 # Flowchart: how the back office overview is answered (ADR 0045).
-# Source of truth: backend/src/main/java/ai/helper2/admin/usecase/GetOverview.java, admin/web/OverviewController.java,
+# Source of truth: backend/src/main/java/ai/helper2/admin/usecase/GetOverview.java, ListEnrichmentQueue.java,
+#   catalog/internal/JdbcEnrichmentCandidates.java (backlog), admin/web/OverviewController.java,
 #   platform/llm/BudgetLedger.java, RedisCallCounter.java, examples/usecase/CountHomeExamples.java,
 #   backend/src/main/kotlin/ai/helper2/examples/PoolCounts.kt, frontend/src/pages/admin/AdminOverview.tsx.
 # Render: cd docs/diagrams && d2 fmt flow-0045-back-office.d2 && d2 flow-0045-back-office.d2 flow-0045-back-office.svg
@@ -42,3 +43,24 @@ uc.compute -> parts.runs
 uc.compute -> parts.budget
 uc.compute -> parts.credits
 uc.compute -> parts.examples
+
+queue_req: "GET /api/v1/admin/enrichment-queue\n(after = cursor)" {class: end}
+
+queue: ListEnrichmentQueue {
+  class: group
+  direction: down
+  part: "Cursor in the\nnever-run part?" {class: decision}
+  both: "Never-run rows after it,\nthen the rows to retry" {class: data}
+  retry: "Rows to retry\nafter it" {class: data}
+  more: "One row more than asked?" {class: decision}
+  next: "next = cursor of the last row" {class: end}
+  last: "next = null" {class: end}
+  part -> both: "yes, or no cursor"
+  part -> retry: no
+  both -> more
+  retry -> more
+  more -> next: yes
+  more -> last: no
+}
+
+queue_req -> queue.part
