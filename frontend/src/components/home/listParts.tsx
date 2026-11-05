@@ -86,7 +86,7 @@ export function ListState({
   );
 }
 
-export function NewsDate({ row, now }: { row: NewsRow; now: number }) {
+function NewsDate({ row, now }: { row: NewsRow; now: number }) {
   const { t, i18n } = useTranslation();
   if (!row.date) return <span className="v4-not-stated">{t('lists.noDate')}</span>;
   const day = shortDay(row.date, i18n.language, now);
@@ -100,7 +100,7 @@ export function NewsDate({ row, now }: { row: NewsRow; now: number }) {
   );
 }
 
-export function EventWhen({ row, now }: { row: EventRow; now: number }) {
+function EventWhen({ row, now }: { row: EventRow; now: number }) {
   const { t, i18n } = useTranslation();
   if (row.left?.key === 'onNow') return <span className="v4-on-now">{t('lists.onNow')}</span>;
   return row.start ? (
@@ -108,7 +108,7 @@ export function EventWhen({ row, now }: { row: EventRow; now: number }) {
   ) : null;
 }
 
-export function useEventText() {
+function useEventText() {
   const { t, i18n } = useTranslation();
   return {
     kind: (row: EventRow) => (row.kind ? t(`events.kind.${row.kind}`) : ''),

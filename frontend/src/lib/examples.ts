@@ -25,7 +25,7 @@ export const EXAMPLE_POOL: readonly Example[] = [
 ];
 
 /** How many examples the home page shows from each bucket. */
-export const PER_BUCKET = 2;
+const PER_BUCKET = 2;
 
 /** [count] different items of [items], in random order (a partial Fisher–Yates shuffle). */
 function sample<T>(items: readonly T[], count: number, random: () => number): T[] {

@@ -5,8 +5,8 @@ const HOW_STEPS = ['search', 'choose', 'check'] as const;
 const RULES = ['notStated', 'dates', 'unchecked', 'fallback'] as const;
 
 /** The ids of the two sections below, for "On this page". */
-export const HOW_ID = 'how-the-guide-answers';
-export const RULES_ID = 'never-guessed';
+const HOW_ID = 'how-the-guide-answers';
+const RULES_ID = 'never-guessed';
 
 /** The two sections of [HowItWorks] for "On this page", in their order on the page. */
 export function useHowItWorksToc(): TocEntry[] {
