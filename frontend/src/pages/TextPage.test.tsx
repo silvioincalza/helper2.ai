@@ -82,14 +82,14 @@ describe('Feature: text pages', () => {
     },
   );
 
-  it('Scenario: the Terms say an answer with no pick does not count against the daily guide questions', async () => {
+  it('Scenario: the Terms say an answer with no pick, or a question that fails, does not count against the daily guide questions', async () => {
     narrowScreen(true);
     mockApi();
     renderApp('/terms');
     await settle();
     expect(
       screen.getByText(
-        /an answer with no pick does not count either \(up to 30 such answers a day\)/,
+        /an answer with no pick, or a question that fails, does not count either \(up to 30 a day\)/,
       ),
     ).toBeInTheDocument();
   });

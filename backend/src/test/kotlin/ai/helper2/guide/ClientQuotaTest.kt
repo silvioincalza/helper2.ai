@@ -221,6 +221,23 @@ class ClientQuotaTest {
   }
 
   @Test
+  fun `a failure after a no-pick give-back gives nothing back again, also in the shared count`() {
+    val shared = SharedCounter()
+    val quota = ClientQuota(3, clock, keys, shared)
+    quota.reserve("a")
+    val reservation = quota.reserve("a")!!
+    quota.giveBack(reservation)
+
+    assertEquals(GiveBack.ALREADY_GIVEN_BACK, quota.giveBack(reservation))
+    assertEquals(
+      GiveBack.ALREADY_GIVEN_BACK,
+      reservation.budget.giveBack(reservation.day, reservation.id, 3),
+      "the same id again in the durable counter",
+    )
+    assertEquals(2, quota.left("a"))
+  }
+
+  @Test
   fun `at most the free answers of a day are given back, then a question counts`() {
     val quota = ClientQuota(3, clock, keys, freeAnswersPerDay = 2)
     repeat(2) { quota.giveBack(quota.reserve("a")!!) }

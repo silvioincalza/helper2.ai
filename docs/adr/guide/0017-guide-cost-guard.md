@@ -55,18 +55,30 @@ The guards run in this order. Values are defaults; each has an `H2_` variable.
    address without `H2_QUOTA_KEY_SECRET`. The pseudonym changes at midnight UTC, when the quota starts afresh anyway. Past the quota the client gets a search-only
    answer with the notice `GUIDE_DAILY_QUOTA`, not an error. Cached and shared answers do not count; a question answered with a similar question's answer
    counts, because its plan ran ([0041](0041-guide-answer-cache.md)).
-   **An answer with no pick does not count.** `ClientQuota.reserve` takes the question before the model runs, so
-   abuse stays bounded. When the answer has nothing from the AI (`ClientQuota.spendsAQuestion`: no AI pick, no
-   comparison, no explanation sentence), `AskGuide` gives the question back. That covers "Nothing clearly fits
-   your need", no candidates, subject not found, model down or budget spent, and a question back
-   (`NEEDS_CLARIFICATION`). A reservation has a random id. One Lua script in Redis (`RedisCallCounter`, `GIVE_BACK`)
-   gives it back atomically: only when the id is not yet in `h2:v1:budget:guide-client:<pseudonym>:<day>:given-back`,
-   the set holds fewer ids than `H2_GUIDE_CLIENT_DAILY_FREE_ANSWERS` (default: the daily questions, 30) and the count
-   is above 0; then it runs `DECR` on the count and `SADD` of the id, and the set expires after 2 days like the
-   count. So a retry or a second completion gives nothing back twice, on any replica, the count never goes below 0,
-   and a client cannot loop no-pick questions for free: past the cap they count like any other. Without Redis,
-   `DailyBudget` applies the same rule in memory. Metric `helper2.guide.quota.give_back` with outcome `given_back`,
-   `already_given_back`, `cap_reached`, `nothing_counted`. The model calls of such an answer stay counted in the
+   **An answer with no pick, or a question that fails, does not count.** `ClientQuota.reserve` takes the question
+   before the model runs, so abuse stays bounded. `AskGuide.ask` settles the reservation in one `finally`, so every
+   exit is covered exactly once, and gives the question back in three cases:
+   - **no pick:** the answer has nothing from the AI (`ClientQuota.spendsAQuestion`: no AI pick, no comparison, no
+     explanation sentence). That covers "Nothing clearly fits your need", no candidates, subject not found, a model
+     call that throws or a spent budget (both give a degraded answer), and a question back (`NEEDS_CLARIFICATION`);
+   - **failed:** no answer at all: an error escapes `ask` (the stream ends with an `error` event) or the deadline
+     interrupts the question (504). The interrupt flag is cleared for the give-back and set again after it;
+   - **shared:** an identical question started a moment earlier and its answer is shared, as from the cache.
+
+   A closed connection is not a failure: the question runs on and its answer is cached, so it settles like any
+   answer (a pick counts, no pick is given back), and asking again is a free cache hit. A disconnect after the model
+   answered is therefore never given back.
+
+   A reservation has a random id. One Lua script in Redis (`RedisCallCounter`, `GIVE_BACK`) gives it back
+   atomically: only when the id is not yet in `h2:v1:budget:guide-client:<pseudonym>:<day>:given-back`, the set holds
+   fewer ids than `H2_GUIDE_CLIENT_DAILY_FREE_ANSWERS` (default: the daily questions, 30) and the count is above 0;
+   then it runs `DECR` on the count and `SADD` of the id, and the set expires after 2 days like the count. So a
+   retry, a second completion or a failure after a no-pick give-back gives nothing back twice, on any replica; the
+   count never goes below 0; and no-pick answers, failures and shared answers share one cap, so a client cannot loop
+   them for free: past the cap they count like any other. Without Redis, `DailyBudget` applies the same rule in
+   memory. Metric `helper2.guide.quota.give_back` with `reason` (`no_pick`, `failed`, `shared`) and `outcome`
+   (`given_back`, `already_given_back`, `cap_reached`, `nothing_counted`). The model calls of these questions stay
+   counted in the
    global daily cap (point 6). In memory,
    `ClientQuota` keeps only today's clients, at most 10,000 (`MAX_CLIENTS`; the least recently seen leaves first),
    and drops them all when the day changes. `ClientQuota.left` reads what a client has left without counting (the
@@ -83,10 +95,11 @@ The guards run in this order. Values are defaults; each has an `H2_` variable.
 
 ## Consequences
 - The worst case per day is bounded: 600 model calls, whatever the traffic.
-- One client can use at most 30 fresh questions with an AI answer a day, plus at most 30 with no pick
+- One client can use at most 30 fresh questions with an AI answer a day, plus at most 30 with no pick or that failed
   (60 questions, about 180 calls), so a single client cannot spend the global cap alone.
-- A visitor pays only for an answer that helps: a no-pick answer and a cached answer leave the daily count as it was.
-- A question that fails or times out still counts: only a finished answer with no pick is given back.
+- A visitor pays only for an answer that helps: a no-pick answer, a failed question and a cached answer leave the
+  daily count as it was.
+- A question that fails or times out does not count either; its model calls still count in the global cap.
 - Repeated example questions are free and instant; a cached answer is honest about its age.
 - The rate limit and the daily counts (quota, global cap) are in Redis and hold across replicas
   ([0027](../operations/0027-runtime-topology.md): 3 on prod).

@@ -53,10 +53,10 @@ import org.slf4j.LoggerFactory
  *
  * Fresh questions cost model calls, so three things stand before them: the answer [cache]; one
  * shared computation for identical questions asked at the same time; and the per-client [quota],
- * past which a client gets the degraded answer (top search results) instead of an error. A fresh
- * answer with no AI pick gives its question back to the quota. With [similar], a question that
- * misses the cache is planned and then answered with the cached answer of a near twin read the same
- * way.
+ * past which a client gets the degraded answer (top search results) instead of an error. A reserved
+ * question is given back when its answer has no AI pick, when it fails or times out, and when an
+ * identical question's answer is shared. With [similar], a question that misses the cache is
+ * planned and then answered with the cached answer of a near twin read the same way.
  */
 class AskGuide(
   private val search: SearchResources,
@@ -179,30 +179,37 @@ class AskGuide(
           val searchOnly = answer(question, progress, asked, model = null)
           return searchOnly.copy(notices = searchOnly.notices + DAILY_QUOTA_NOTICE).forAsker(asker)
         }
-        val mine = CompletableFuture<GuideAnswer>()
-        inFlight.putIfAbsent(key, mine)?.let {
-          outcome = "shared"
-          return await(it).forAsker(asker)
-        }
+        // Why the reserved question is given back when ask exits; null: the answer spent it.
+        var free: FreeBecause? = FreeBecause.FAILED
         try {
-          // Stored in the database and shared with other askers: it must not carry this asker's
-          // address or user id.
-          val answer = answer(question, progress, asked, model).withoutAsker()
-          reservation?.let { giveBackIfFree(it, answer) }
-          val expiresAt = cache?.put(key, answer)
-          // A reused answer is not indexed again: a chain of near twins would drift from the
-          // question answered.
-          if (expiresAt != null && !asked.reused)
-            asked.probe?.let { similar?.remember(it, key, expiresAt) }
-          mine.complete(answer)
-          if (asked.reused) cacheResult = "similar"
-          outcome = if (asked.reused) "cached" else outcomeOf(answer, asked)
-          return answer.forAsker(asker)
-        } catch (e: Throwable) {
-          mine.completeExceptionally(e)
-          throw e
+          val mine = CompletableFuture<GuideAnswer>()
+          inFlight.putIfAbsent(key, mine)?.let {
+            outcome = "shared"
+            free = FreeBecause.SHARED
+            return await(it).forAsker(asker)
+          }
+          try {
+            // Stored in the database and shared with other askers: it must not carry this asker's
+            // address or user id.
+            val answer = answer(question, progress, asked, model).withoutAsker()
+            val expiresAt = cache?.put(key, answer)
+            // A reused answer is not indexed again: a chain of near twins would drift from the
+            // question answered.
+            if (expiresAt != null && !asked.reused)
+              asked.probe?.let { similar?.remember(it, key, expiresAt) }
+            mine.complete(answer)
+            if (asked.reused) cacheResult = "similar"
+            outcome = if (asked.reused) "cached" else outcomeOf(answer, asked)
+            free = if (ClientQuota.spendsAQuestion(answer)) null else FreeBecause.NO_PICK
+            return answer.forAsker(asker)
+          } catch (e: Throwable) {
+            mine.completeExceptionally(e)
+            throw e
+          } finally {
+            inFlight.remove(key, mine)
+          }
         } finally {
-          inFlight.remove(key, mine)
+          reservation?.let { settle(it, free) }
         }
       }
     } catch (e: Throwable) {
@@ -216,13 +223,39 @@ class AskGuide(
   }
 
   /**
-   * An answer with nothing from the AI gives the asker's question back (ADR 0017), within the
-   * quota's daily cap. The model calls it made stay counted in the global daily cap.
+   * Why a reserved question is given back (ADR 0017); the tag of `helper2.guide.quota.give_back`.
    */
-  private fun giveBackIfFree(reservation: ClientQuota.Reservation, answer: GuideAnswer) {
-    if (ClientQuota.spendsAQuestion(answer)) return
-    val outcome = quota?.giveBack(reservation) ?: return
-    meters.counter("helper2.guide.quota.give_back", "outcome", outcome.name.lowercase()).increment()
+  private enum class FreeBecause {
+    /** The answer has no AI pick, comparison or explanation. */
+    NO_PICK,
+    /** No answer: an error, or the deadline interrupted the question. */
+    FAILED,
+    /** An identical question started first; its answer is shared, as from the cache. */
+    SHARED,
+  }
+
+  /**
+   * Gives [reservation] back when [free] says why, within the quota's daily cap and once per
+   * reservation. The model calls the question made stay counted in the global daily cap. A thread
+   * interrupted by the deadline is cleared for the Redis call and interrupted again after it.
+   */
+  private fun settle(reservation: ClientQuota.Reservation, free: FreeBecause?) {
+    if (free == null) return
+    val interrupted = Thread.interrupted()
+    try {
+      val outcome = quota?.giveBack(reservation) ?: return
+      meters
+        .counter(
+          "helper2.guide.quota.give_back",
+          "reason",
+          free.name.lowercase(),
+          "outcome",
+          outcome.name.lowercase(),
+        )
+        .increment()
+    } finally {
+      if (interrupted) Thread.currentThread().interrupt()
+    }
   }
 
   /** Ends the question's span and counts it; a thread still interrupted ran out of time. */

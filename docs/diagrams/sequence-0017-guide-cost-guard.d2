@@ -1,5 +1,5 @@
 # Sequence: the cost guard around one guide question that misses the cache and is answered fresh,
-# and the give-back when its answer has no AI pick.
+# and the give-back when its answer has no AI pick or the question fails (AskGuide.settle, in one finally).
 # Source of truth: backend/src/main/java/ai/helper2/platform/RateLimitInterceptor.java, RedisRateLimiter.java,
 #   backend/src/main/java/ai/helper2/platform/ClientKey.java (shared by the rate limiters and the quota),
 #   backend/src/main/java/ai/helper2/platform/quota/QuotaKeys.java (client pseudonym of the UTC day),
@@ -47,7 +47,7 @@ quota -> svc: "Reservation (random id, day)"
 svc -> svc: "inFlight.putIfAbsent(key)"
 svc -> model: "plan, choose, verifyReasons\n(each attempt: llm-chat circuit,\nthen a guide budget unit)" {class: ai-call}
 model -> svc: "results"
-svc -> quota: "no AI pick, comparison or explanation:\ngiveBack(reservation)"
+svc -> quota: "finally, settle: no AI pick, comparison or\nexplanation (no_pick), an error or the\ndeadline (failed), or a shared answer (shared):\ngiveBack(reservation)"
 quota -> redis: "Lua GIVE_BACK: id not in …:<day>:given-back,\nset size < free answers, count > 0\n→ DECR count, SADD id, PEXPIRE 2 days"
 redis -> quota: "GIVEN_BACK | ALREADY_GIVEN_BACK |\nCAP_REACHED | NOTHING_COUNTED"
 svc -> cache: "put(key, answer)\nif cacheable"

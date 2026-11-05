@@ -495,7 +495,7 @@ class AskGuideTest {
     assertEquals(3, quota.left("10.0.0.1"))
     assertEquals(
       1.0,
-      meters.counter("helper2.guide.quota.give_back", "outcome", "given_back").count(),
+      giveBacks("no_pick", "given_back"),
     )
   }
 
@@ -523,8 +523,71 @@ class AskGuideTest {
     assertEquals(2, quota.left("10.0.0.1"))
     assertEquals(
       1.0,
-      meters.counter("helper2.guide.quota.give_back", "outcome", "cap_reached").count(),
+      giveBacks("no_pick", "cap_reached"),
     )
+  }
+
+  private fun giveBacks(reason: String, outcome: String) =
+    meters.counter("helper2.guide.quota.give_back", "reason", reason, "outcome", outcome).count()
+
+  private val throwingProgress =
+    object : GuideProgress {
+      override fun retrieved(candidates: Int, search: ai.helper2.search.SearchOutcome) =
+        throw IllegalStateException("boom")
+    }
+
+  @Test
+  fun `a question that fails gives its question back`() {
+    val quota = ClientQuota(3, clock, QuotaKeys("test-secret", clock))
+
+    runCatching { quotaGuide(whisperPick(), quota).ask(need, null, throwingProgress, "10.0.0.1") }
+
+    assertEquals(3, quota.left("10.0.0.1"))
+    assertEquals(1.0, giveBacks("failed", "given_back"))
+  }
+
+  @Test
+  fun `a question interrupted by its deadline gives its question back and stays interrupted`() {
+    val quota = ClientQuota(3, clock, QuotaKeys("test-secret", clock))
+    val interrupted =
+      object : GuideModel by whisperPick() {
+        override fun plan(request: String, path: AudiencePath?): GuideSearchPlan {
+          Thread.currentThread().interrupt()
+          throw InterruptedException()
+        }
+      }
+
+    runCatching { quotaGuide(interrupted, quota).ask(need, null, client = "10.0.0.1") }
+
+    assertTrue(Thread.interrupted(), "the interrupt is kept for the caller")
+    assertEquals(3, quota.left("10.0.0.1"))
+    assertEquals(1.0, questions("timeout"))
+  }
+
+  @Test
+  fun `a model that fails gives an answer with no pick, which is given back`() {
+    val quota = ClientQuota(3, clock, QuotaKeys("test-secret", clock))
+    val down =
+      object : GuideModel by whisperPick() {
+        override fun plan(request: String, path: AudiencePath?): GuideSearchPlan =
+          throw GuideUnavailable("unavailable")
+      }
+
+    val answer = quotaGuide(down, quota).ask(need, null, client = "10.0.0.1")
+
+    assertEquals(GuideStatus.LLM_UNAVAILABLE, answer.status)
+    assertEquals(3, quota.left("10.0.0.1"))
+  }
+
+  @Test
+  fun `failures and answers with no pick share the free answers of the day`() {
+    val quota = ClientQuota(3, clock, QuotaKeys("test-secret", clock), freeAnswersPerDay = 1)
+
+    runCatching { quotaGuide(whisperPick(), quota).ask(need, null, throwingProgress, "10.0.0.1") }
+    quotaGuide(noPick(), quota).ask("another question about speech", null, client = "10.0.0.1")
+
+    assertEquals(2, quota.left("10.0.0.1"))
+    assertEquals(1.0, giveBacks("no_pick", "cap_reached"))
   }
 
   @Test

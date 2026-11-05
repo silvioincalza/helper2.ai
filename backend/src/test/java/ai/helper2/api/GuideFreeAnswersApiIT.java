@@ -42,6 +42,7 @@ class GuideFreeAnswersApiIT extends ApiTestBase {
   static final String TITLE = "Polyglot Translate";
   static final String QUOTE = "converts whole documents between thirty languages in one click";
   static final AtomicBoolean PICKS = new AtomicBoolean();
+  static final AtomicBoolean MODEL_DOWN = new AtomicBoolean();
   private static final Pattern CANDIDATE =
       Pattern.compile("<candidate key=\"(c\\d+)\"[^>]*>\\n([^\\n]*)");
   private static final Pattern PICK = Pattern.compile("<pick key=\"(c\\d+)\">");
@@ -60,6 +61,9 @@ class GuideFreeAnswersApiIT extends ApiTestBase {
   }
 
   private static String reply(Prompt prompt) {
+    if (MODEL_DOWN.get()) {
+      throw new IllegalStateException("provider down");
+    }
     String text = prompt.getContents();
     if ("fake-nano".equals(prompt.getOptions().getModel())) {
       return "{\"searchQuery\":\"document translation\",\"constraints\":[],\"wantsReading\":false}";
@@ -90,6 +94,7 @@ class GuideFreeAnswersApiIT extends ApiTestBase {
   @BeforeEach
   void scriptTheSource() {
     PICKS.set(false);
+    MODEL_DOWN.set(false);
     FAKE.set(q ->
         List.of(
             fakeHit(
@@ -123,6 +128,17 @@ class GuideFreeAnswersApiIT extends ApiTestBase {
 
     askWithPick(ip, "translate my lease to German");
     assertThat(left(ip)).as("a cached answer").isEqualTo(2);
+  }
+
+  @Test
+  void aQuestionTheModelFailsLeavesEveryAnswerOfTheDay() throws Exception {
+    String ip = "10.9.0.4";
+    MODEL_DOWN.set(true);
+
+    GuideAnswers.ask(mvc, body("translate a menu into Japanese"), csrf(), from(ip))
+        .value("$.status", "LLM_UNAVAILABLE");
+
+    assertThat(left(ip)).isEqualTo(3);
   }
 
   @Test
