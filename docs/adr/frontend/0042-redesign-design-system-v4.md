@@ -15,9 +15,10 @@ The code still runs version 3. A move of this size cannot land in one pull reque
 two live side by side.
 
 ## Decision
-1. **Two fonts with clear jobs.** Geist Mono for the logo, headings, controls, labels, meta lines and the News and
-   Events terminals: the tech look. Geist for running text (paragraphs, list items, quotes), because long text in a
-   monospace font reads slowly. Both are self-hosted (SIL Open Font License). Space Grotesk goes.
+1. **One font.** Space Grotesk (400, 500, 600, self-hosted, SIL Open Font License) for the logo, headings, controls,
+   labels, meta lines, the News and Events terminals and running text, as in [0040](0040-frontend-design.md). Code
+   and commands use the system's monospace font, so nothing else downloads. The boards were drawn in Geist Mono and
+   Geist; on 2 November 2026 Space Grotesk was kept. The boards are not the font reference.
 2. **Home: the title, the radar, a pinned search box, two terminals.** The title says what the site is: "The metasearch
    for the AI ecosystem." Behind it a radar draws one dot per enabled source from GET /sources: ring = mode, colour =
    last check, distance = speed or freshness, size = new this week (`newThisWeek`; the Helper2 index counts the whole
@@ -40,14 +41,17 @@ two live side by side.
    a feature, not a cut in the design: `newThisWeek` per source, `limits` on GET /me, `total` on the recent and
    upcoming responses, an Unknown count per facet. Sign-in comes in two phases: GitHub and Google first; passkey,
    email link and password after their own ADR, a threat model and the Privacy page.
-8. **Version 3 and 4 side by side, page by page.** `tokens.css` gains the version 4 tokens next to the old ones. Each
-   page moves in its own pull request, Home first. When the last page has moved, the version 3 tokens and components
-   go. No design flag: a page is either version 3 or version 4.
+8. **Version 4 tokens now, pages one by one.** `tokens.css` has the version 4 colours and names; the version 3 names
+   are gone. The layout sizes (`maxw`, `box-height`, `header-height`) keep their version 3 values until the pages
+   that use them move. Each page moves in its own pull request, Home first. When the last page has moved, the
+   version 3 components go. No design flag: a page is either version 3 or version 4.
 
 ## Alternatives
 - **Keep version 3 and polish it.** Cheaper, but it kept the problems the review found: a preview panel that is
   hard on phones, moving boards without a pause, counts typed into the page.
 - **Monospace everywhere.** The strongest tech look, but slow to read on Privacy, Terms and the guide's reasons.
+- **Geist Mono for the interface, Geist for reading.** Drawn on the boards. Not kept on 2 November 2026: Space
+  Grotesk stays, and no new font downloads.
 - **The guide on every search.** Simpler, but it spends model calls and the daily AI answers on searches that are
   only a name ([0017](../guide/0017-guide-cost-guard.md)).
 - **One big pull request.** Fastest to finish, hardest to review and to roll back.
