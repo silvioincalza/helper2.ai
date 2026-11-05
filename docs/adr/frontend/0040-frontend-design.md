@@ -115,7 +115,8 @@ and chose between options for each part.
   `<meta name="robots" content="noindex, follow">`; so do `/saved` and `/account`, and the not-found pages say
   `noindex` (`components/Robots.tsx`).
 - `frontend/src/components/results/Results.tsx` — the results page: the box, the picks bar (questions only), type
-  tabs, one row with the "Filters" toggle (sort, list or timeline, the filter panel) and the detected use cases,
+  tabs, one row with the "Filters" toggle (sort, list or timeline, the filter panel), **Best for** (All, Apps I can
+  use, Build with AI: the audience `path`, ranking only, `results/AudienceChoice.tsx`) and the detected use cases,
   search notices, the list of `SelectableRow`s with the guide's picks first (each title a link to its resource page;
   from 861 px a plain click selects it), the preview beside the list from 861 px, on a phone a row opens the resource
   page, the pager, and the sources at the bottom. Every state says what happened and offers a next

@@ -2,6 +2,7 @@ import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { AudiencePath } from '@/api/types';
 import { axeViolations } from '@/test/a11y';
+import { makeSearch } from '@/test/fixtures';
 import { mockApi, problem } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
 
@@ -60,6 +61,21 @@ describe('home examples: from the served pool, the built-in list as fallback', (
     expect(params().get('ask')).toBeNull();
     await settle();
     expect(m.callsTo('POST', '/guide/stream')).toHaveLength(0);
+  });
+
+  it('the results page shows the example\'s path as chosen under "Best for"', async () => {
+    mockApi({ 'GET /home/examples': () => POOL, 'GET /search': () => makeSearch() });
+    renderApp('/');
+    await userEvent.click(await screen.findByRole('button', { name: 'Served 1' }));
+    const bestFor = await screen.findByRole('group', { name: 'Best for:' });
+    expect(within(bestFor).getByRole('button', { name: 'Apps I can use' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(within(bestFor).getByRole('button', { name: 'All' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
   });
 
   it('uses the built-in list when the pool fails', async () => {
