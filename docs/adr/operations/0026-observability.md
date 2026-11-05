@@ -31,10 +31,12 @@ the guide work long before that, and what makes the wait feel long is the first 
 4. **Meters** (Prometheus, pulled from `/actuator/prometheus` on the management port, [0024](../edge/0024-http-edge-protection.md);
    OTLP metric push is off). Common tags `application=helper2`, `environment`. Histogram buckets for
    `http.server.requests`, `http.client.requests`, `helper2.scout.run`, `helper2.llm.call`,
-   `helper2.search.latency`, `helper2.source.latency` (`application.yaml`), and `helper2.guide.first_useful` (set on
-   the timer, with exact buckets at its 3 s and 8 s targets). Our meters:
+   `helper2.search.latency` (`application.yaml`), `helper2.source.latency` (set on the timer), and
+   `helper2.guide.first_useful` (set on the timer, with exact buckets at its 3 s and 8 s targets). Our meters:
    - search: `helper2.search.requests{partial}`, `helper2.search.latency`, `helper2.source.requests{source,outcome,served_from}`,
-     `helper2.source.latency{source}`, `helper2.cache.events{event}`,
+     `helper2.source.latency{source,outcome}` (one live call to a source: its time, failed and timed-out calls
+     included; a skipped source or a fresh cache hit is not a call and records nothing; the recording rule
+     `environment_source:helper2_source_latency_seconds:p95_5m` gives its p95 per source), `helper2.cache.events{event}`,
      `helper2.shared.cache{cache,result}` (`translation`, `query-vector`, `tool-guide`, `guide-answer`; a miss includes a database error
      or timeout);
    - catalog: `helper2.catalog.observations{outcome}`, `helper2.catalog.observations.queued`,
