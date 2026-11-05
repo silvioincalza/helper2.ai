@@ -280,6 +280,27 @@ paths:
         '401': { $ref: '#/components/responses/Problem' }
         '403': { $ref: '#/components/responses/Problem' }
 
+  /me/preferences:
+    patch:
+      tags: [me]
+      operationId: changePreferences
+      summary: Change the signed-in user's display settings. Fields left out stay as they are.
+      description: Needs the X-XSRF-TOKEN header. The settings live with the account and go when it is deleted.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PreferencesChange' }
+      responses:
+        '200':
+          description: The settings after the change.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Preferences' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+
   /me/bookmarks:
     get:
       tags: [me]
@@ -1598,6 +1619,24 @@ components:
               id: { type: string }
               name: { type: string }
         limits: { $ref: '#/components/schemas/Limits' }
+        preferences:
+          oneOf: [{ $ref: '#/components/schemas/Preferences' }, { type: 'null' }]
+          description: The signed-in user's display settings; null for a guest.
+
+    Preferences:
+      type: object
+      required: [radarMotion]
+      properties:
+        radarMotion:
+          type: boolean
+          description: >-
+            True (the default): the Home radar moves between its sources. False: it shows one set and stays still.
+            Reduced motion in the browser stops it either way.
+
+    PreferencesChange:
+      type: object
+      properties:
+        radarMotion: { type: boolean }
 
     Limits:
       type: object
