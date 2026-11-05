@@ -11,11 +11,8 @@ import { useApi } from '@/hooks/useApi';
 import { useRetry } from '@/hooks/useRetry';
 import { formatDate } from '@/lib/format';
 import { resourcePath } from '@/lib/searchState';
-import { CHECK_OUTCOMES, CHECK_TONE, oneOf } from './adminModel';
+import { CHECK_OUTCOMES, CHECK_TONE, oneOf, PATHS, SHOWN_PER_PATH } from './adminModel';
 
-const PATHS: readonly AudiencePath[] = ['USE_AI', 'BUILD_WITH_AI'];
-/** The home page shows this many per path (frontend/src/lib/examples.ts). */
-const SHOWN_PER_PATH = 2;
 const EXPECTED_MAX = 3;
 
 interface Expected {

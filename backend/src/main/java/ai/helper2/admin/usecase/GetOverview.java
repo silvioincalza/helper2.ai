@@ -1,6 +1,8 @@
 package ai.helper2.admin.usecase;
 
 import ai.helper2.catalog.ReviewQueue;
+import ai.helper2.examples.PoolCounts;
+import ai.helper2.examples.usecase.CountHomeExamples;
 import ai.helper2.platform.llm.BudgetLedger;
 import ai.helper2.scout.EnrichmentBacklog;
 import ai.helper2.scout.RunStatus;
@@ -19,9 +21,9 @@ import org.springframework.stereotype.Service;
 
 /**
  * What needs a person now (ADR 0045): open review items per kind, the enrichment backlog, today's
- * model budgets and web credits, the last Scout runs and how many failed in the last day. Counts
- * only. Computed at most once per {@link #FRESH}: the backlog count is a full pass, and one admin
- * pressing Refresh must not repeat it.
+ * model budgets and web credits, the last Scout runs and how many failed in the last day, and how
+ * many home examples are shown and hidden (ADR 0049). Counts only. Computed at most once per {@link
+ * #FRESH}: the backlog count is a full pass, and one admin pressing Refresh must not repeat it.
  */
 @Service
 public class GetOverview {
@@ -44,13 +46,15 @@ public class GetOverview {
       List<BudgetLedger.Reading> budgets,
       @Nullable WebCredits webCredits,
       List<RunSummary> recentRuns,
-      int failedRunsLast24h) {}
+      int failedRunsLast24h,
+      PoolCounts homeExamples) {}
 
   private final ReviewQueue reviewQueue;
   private final EnrichmentBacklog backlog;
   private final ScoutStore runs;
   private final BudgetLedger budgets;
   private final ObjectProvider<WebSearchQuota> webSearchQuota;
+  private final CountHomeExamples homeExamples;
   private final Clock clock;
   private @Nullable Overview last;
 
@@ -60,12 +64,14 @@ public class GetOverview {
       ScoutStore runs,
       BudgetLedger budgets,
       ObjectProvider<WebSearchQuota> webSearchQuota,
+      CountHomeExamples homeExamples,
       Clock clock) {
     this.reviewQueue = reviewQueue;
     this.backlog = backlog;
     this.runs = runs;
     this.budgets = budgets;
     this.webSearchQuota = webSearchQuota;
+    this.homeExamples = homeExamples;
     this.clock = clock;
   }
 
@@ -91,7 +97,8 @@ public class GetOverview {
         budgets.today(),
         quota == null ? null : quota.creditsToday(),
         recent.stream().limit(RECENT_RUNS).toList(),
-        failedSince(recent, now.minus(Duration.ofDays(1))));
+        failedSince(recent, now.minus(Duration.ofDays(1))),
+        homeExamples.count());
   }
 
   /** Runs that FAILED and started at or after [since]. */
