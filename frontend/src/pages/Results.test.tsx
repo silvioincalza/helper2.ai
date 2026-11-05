@@ -224,6 +224,37 @@ describe('results: one column, a row opens the resource page', () => {
     );
   });
 
+  it('a pick puts only what the resource page shows into the history entry: no title, no id, nothing else', async () => {
+    mockApi({
+      'GET /search': () => search(),
+      'POST /guide/stream': () =>
+        sse({
+          ...guide(),
+          recommendations: [
+            {
+              ...guide().recommendations[0]!,
+              checks: [{ constraint: 'read-only', status: 'CONFIRMED', quote: 'read-only access' }],
+            },
+          ],
+        }),
+      [`GET /resources/${B.id}`]: () => makeDetail({ card: B }),
+    });
+    const { router } = renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
+    await screen.findByRole('link', { name: '#1 Postgres MCP' });
+    await userEvent.click(row('Postgres MCP'));
+    await screen.findByRole('region', { name: /Why the guide picked it/ });
+    expect(router.state.location.state).toStrictEqual({
+      from: '/search?q=postgres+mcp&ask=postgres+mcp',
+      pick: {
+        rank: 1,
+        reason: 'Read-only access fits an agent that only reads.',
+        quote: 'gives agents read-only access to a PostgreSQL database',
+        reasonCheck: 'NOT_CHECKED',
+        checks: [{ constraint: 'read-only', status: 'CONFIRMED', quote: 'read-only access' }],
+      },
+    });
+  });
+
   it('a pick whose reason the check removed shows no lone "AI-written" label in its row', async () => {
     mockApi({
       'GET /search': () => search(),
@@ -522,6 +553,25 @@ describe('results: one column, a row opens the resource page', () => {
     renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
     const chip = await screen.findByRole('link', { name: /#1\s*Elsewhere MCP/ });
     expect(chip).toHaveAttribute('href', '/resource/cccccccc-cccc-5ccc-8ccc-cccccccccccc');
+  });
+
+  it('on the timeline a pick chip opens its resource page, which says why the guide picked it', async () => {
+    mockApi({
+      'GET /search': () => search(),
+      'POST /guide/stream': () => sse(guide()),
+      [`GET /resources/${B.id}`]: () => makeDetail({ card: B }),
+    });
+    const { router } = renderApp('/search?q=postgres+mcp&ask=postgres+mcp&view=timeline');
+    const chip = await screen.findByRole('link', { name: '#1 Postgres MCP' });
+    // The timeline has no row to jump to (and a result with no date is folded away): the chip is a page link.
+    expect(chip).toHaveAttribute('href', `/resource/${B.id}`);
+    await userEvent.click(chip);
+    expect(
+      await screen.findByRole('region', { name: /Why the guide picked it/ }),
+    ).toBeInTheDocument();
+    expect(router.state.location.state).toMatchObject({
+      from: '/search?q=postgres+mcp&ask=postgres+mcp&view=timeline',
+    });
   });
 
   it('the timeline view shows more too', async () => {

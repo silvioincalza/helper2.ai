@@ -1126,7 +1126,7 @@
         "items": [
           "A session cookie, only when you sign in, so you stay signed in.",
           "A security cookie (XSRF-TOKEN) that protects forms against cross-site request forgery.",
-          "Browser storage for your light or dark theme, the AI tool you chose in the setup guide and, if you are not signed in, your saved items. When you sign in, the page you were on is kept in this tab until you are back on it, then removed. The tab also keeps where you had scrolled on each page, so Back returns you there; it is gone when you close the tab. This data stays in your browser and is not sent to us, with one exception: when you sign in, the items you saved in this browser are moved to your account and removed from the browser.",
+          "Browser storage for your light or dark theme, the AI tool you chose in the setup guide and, if you are not signed in, your saved items. When you sign in, the page you were on is kept in this tab until you are back on it, then removed. The tab also keeps where you had scrolled on each page, so Back returns you there. When you open a result, the tab's history keeps, with that step, the address of your search and, if the guide picked the result, the pick: its rank, its AI-written reason, the quote it checked and the requirements from your question it checked, so the resource page can say why the guide picked it. All of this is gone when you close the tab. This data stays in your browser and is not sent to us, with one exception: when you sign in, the items you saved in this browser are moved to your account and removed from the browser.",
           "All of these are strictly necessary for the site to work. We use no advertising, analytics or third-party cookies."
         ]
       },

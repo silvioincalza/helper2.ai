@@ -11,8 +11,7 @@ import { Timeline } from '@/components/Timeline';
 import { ProofQuote } from '@/components/ui/ProofQuote';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
 import { displayHost, formatDate } from '@/lib/format';
-import type { GuidePick } from '@/lib/selection';
-import { fromResults } from './fromResults';
+import { fromResults, type PickForPage } from './fromResults';
 import { ResultDate } from './ResultDate';
 import { ResultFacts } from './ResultFacts';
 import './resource.css';
@@ -148,7 +147,7 @@ function BackLink({ from }: { from: string | undefined }) {
  * marked, ADR 0038) with what the second model call made of it, and the requirements checked against the source.
  * A reason that call removed is not shown; the line says why.
  */
-function WhyPicked({ pick }: { pick: GuidePick }) {
+function WhyPicked({ pick }: { pick: PickForPage }) {
   const { t } = useTranslation();
   const removed = pick.reasonCheck === 'REMOVED' || !pick.reason;
   return (
