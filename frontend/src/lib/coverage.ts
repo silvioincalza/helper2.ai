@@ -12,7 +12,7 @@ const FAILING_SKIPS: ReadonlySet<SkipReason> = new Set([
 ]);
 
 /** Why a source did not answer, as one key: its outcome, or its skip reason when it was skipped and one is given. */
-export type MissReason = Exclude<SourceStatus['outcome'], 'SUCCEEDED'> | SkipReason;
+type MissReason = Exclude<SourceStatus['outcome'], 'SUCCEEDED'> | SkipReason;
 
 export interface MissedSource {
   sourceId: string;

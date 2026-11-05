@@ -7,7 +7,7 @@ export type Handler = (req: {
   body: unknown;
   headers: Headers;
 }) => Response | Promise<Response> | unknown;
-export interface Call {
+interface Call {
   method: string;
   path: string;
   search: string;
