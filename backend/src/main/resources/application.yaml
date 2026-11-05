@@ -208,6 +208,7 @@ resilience4j:
       collector-hf-trending: {base-config: collector}
       collector-tavily-scout: {base-config: collector}
       collector-course-scout: {base-config: collector}
+      collector-tavily-discovery: {base-config: collector}
       collector-github-awesome: {base-config: collector}
       collector-hf-provider-orgs: {base-config: collector}
       collector-ai-deadlines: {base-config: collector}
@@ -274,6 +275,7 @@ resilience4j:
       collector-hf-trending: {base-config: collector}
       collector-tavily-scout: {base-config: collector}
       collector-course-scout: {base-config: collector}
+      collector-tavily-discovery: {base-config: collector}
       collector-github-awesome: {base-config: collector}
       collector-hf-provider-orgs: {base-config: collector}
       collector-ai-deadlines: {base-config: collector}
@@ -403,20 +405,25 @@ helper2:
     grafana-url: ${H2_ADMIN_GRAFANA_URL:}
   scout:
     enabled: ${H2_SCOUT_ENABLED:false}
-    # Each replica checks shortly after startup, then every tick; the Scout runs when the last scheduled run
-    # ended at least "every" ago (or never ran), once across replicas (ScoutConfiguration). A tick at most this
-    # far apart is how late a run can start. Per-collector intervals below.
+    # One run a day at a fixed time (cron, UTC; ADR 0018). Each replica checks shortly after startup, then every
+    # tick; the Scout runs when the cron time after the last scheduled run has passed (or it never ran), once
+    # across replicas (ScoutConfiguration). A run starts at most one tick late; one missed while no replica was
+    # up starts at the next check. Per-collector intervals below only make a collector run less often.
     initial-delay: ${H2_SCOUT_INITIAL_DELAY:PT20S}
-    tick: ${H2_SCOUT_TICK:PT1H}
-    every: ${H2_SCOUT_EVERY:PT15M}
+    tick: ${H2_SCOUT_TICK:PT10M}
+    cron: ${H2_SCOUT_CRON:0 7 3 * * *}
     ai-deadlines:
       # Conference files change a few times a month; one contents call + ~70 raw files per pass.
       interval: ${H2_SCOUT_AI_DEADLINES_INTERVAL:P1D}
     mcp-registry:
-      # The registry asks aggregators to poll about hourly.
+      # The registry asks aggregators to poll about hourly. The Scout itself runs once a day (cron above), so the
+      # registry is read daily; this interval only matters with a more frequent cron.
       interval: ${H2_SCOUT_MCP_INTERVAL:PT1H}
-    max-items-per-run: 500
-    # Shared by all collectors AND the backlog of not-yet-enriched resources, per scheduled run.
+    # Per collector and run. 1000 lets GitHub awesome finish its daily pass (max-entries-per-pass) in one run.
+    max-items-per-run: 1000
+    # Shared by all collectors AND the backlog of not-yet-enriched resources, per scheduled run. Counts resources,
+    # not model calls: a gap round (ADR 0043) adds a second call for the same resource, so a run can make up to
+    # twice this many calls. daily-enrichment-calls is the hard cap on calls.
     max-enrichments-per-run: ${H2_SCOUT_MAX_ENRICHMENTS:20}
     # Enrichment model calls per UTC day, apart from the guide's cap; past it resources wait in the backlog.
     daily-enrichment-calls: ${H2_SCOUT_DAILY_ENRICHMENT_CALLS:500}
@@ -458,6 +465,62 @@ helper2:
         aws.amazon.com/certification=AWS,
         learn.microsoft.com/en-us/credentials=Microsoft Learn,
         nvidia.com=NVIDIA
+    discovery:
+      # Tavily discovery (ADR 0051): one search per category of the AI world, weekly. Lists and comparisons are
+      # indexed as ARTICLE; a product's own site or GitHub repository goes to the admin review list, never straight
+      # to the catalog. search_depth advanced costs 2 credits: 33 searches every 7 days ~ 285 credits/month.
+      interval: ${H2_SCOUT_DISCOVERY_INTERVAL:P7D}
+      search-depth: ${H2_SCOUT_DISCOVERY_DEPTH:advanced}
+      max-results: 10
+      # Tavily's relevance score, 0-1. Below it a result is dropped.
+      min-score: 0.4
+      # Social and video sites: no product pages, no lists worth indexing. AI directories and review sites: their
+      # terms forbid copying their listings, and their excerpts carry reviewers' names (ADR 0051).
+      exclude-domains: >-
+        youtube.com, reddit.com, x.com, twitter.com, facebook.com, instagram.com, tiktok.com, linkedin.com,
+        pinterest.com, quora.com, producthunt.com, theresanaiforthat.com, futurepedia.io, futuretools.io, toolify.ai,
+        topai.tools, aitools.fyi, g2.com, capterra.com, getapp.com, softwareadvice.com, trustradius.com,
+        trustpilot.com, alternativeto.net, saasworthy.com
+      # One search per entry: TYPE|tag|query|word;word. TYPE is what a product found by this search becomes; the tag
+      # goes on every result the category fits: the ones its search found, and any result whose title or excerpt has
+      # one of its words (at the start of a word; hyphens count as spaces, so "fine tun" fits "fine-tuning"). Two
+      # entries may share a tag: one category, two searches. Queries describe the product page in its own words,
+      # without "best" or "launched" (they pull SEO pages and news). No commas anywhere: the list is comma-separated.
+      # Models, datasets, MCP servers and awesome lists come from their own collectors.
+      categories: >-
+        PROMPT|prompt-libraries|free prompt library with ready-to-use prompts for ChatGPT Claude and Gemini|prompt library;prompt libraries;prompt marketplace;prompt collection;ready to use prompts;prompt pack,
+        SKILL|skills-and-gpts|open-source collection of Claude Code and agent skills with SKILL.md files|agent skill;claude skill;skill.md;custom gpt;gpt store,
+        PRODUCT|ai-assistants|AI chat assistant app for web and mobile that answers questions and remembers context|personal assistant;ai companion;ai chat app;chatgpt alternative,
+        PRODUCT|writing|AI writing assistant for emails documents and marketing copy|writing assistant;ai writer;ai writing;copywriting;paraphras;grammar checker,
+        PRODUCT|translation|AI translator for documents websites and conversations|ai translat;machine translation;document translat;translation app;real time translat,
+        PRODUCT|image-generation|AI image generator that creates and edits images from text prompts|image generat;text to image;ai art;photo editor;image editing;background remov;upscal,
+        PRODUCT|video-generation|AI video generator that turns text or images into video|video generat;text to video;image to video;ai video;video editor;avatar video;lip sync,
+        PRODUCT|voice-and-audio|realistic AI text to speech and voice cloning|text to speech;voice clon;voice generat;ai voice;speech synthesis;tts,
+        PRODUCT|voice-and-audio|AI music generator that creates songs from a text prompt|music generat;ai music;song generat,
+        AGENT|voice-agents|platform to build AI voice agents that answer phone calls|voice agent;phone agent;ai receptionist;conversational voice ai,
+        PRODUCT|meetings-and-transcription|AI notetaker that joins meetings and writes notes and action items|meeting assistant;meeting notes;meeting summar;notetaker;note taker;transcription;transcribe;speech to text,
+        PRODUCT|customer-support|AI customer support agent that answers tickets and live chat|customer support;customer service;helpdesk;help desk;support ticket,
+        PRODUCT|documents-and-pdf|AI that summarises and answers questions about PDFs and documents|chat with pdf;chat with your documents;pdf summar;document summar;ai pdf,
+        PRODUCT|research-and-papers|AI research assistant that finds and summarises scientific papers|research assistant;literature review;research papers;scientific papers;paper summar;deep research,
+        PRODUCT|coding|AI coding agent and code editor for software developers|coding assistant;coding agent;code assistant;ai coding;code review;code generat;ai ide;ai code editor,
+        PRODUCT|self-hosted|open-source self-hosted AI app you run on your own server with Docker|self hosted;selfhosted;on prem;docker compose;homelab,
+        PRODUCT|local-ai|desktop app to run LLMs locally and offline on your own computer|run locally;runs locally;run llms locally;local llm;local ai;offline ai;works offline;on device,
+        PRODUCT|model-hosting|serverless inference API for open-weight LLMs and image models|inference api;serverless inference;model hosting;deploy models;inference platform,
+        PRODUCT|ai-cloud-and-paas|GPU cloud platform to deploy and scale AI apps and models|serverless gpu;gpu cloud;gpu instances;rent gpus;deploy ai apps;ai cloud,
+        PRODUCT|ai-gateways|LLM gateway or router that gives one API for many model providers|llm gateway;ai gateway;llm router;model router;llm proxy,
+        AGENT|agent-platforms|platform to build deploy and run AI agents for business workflows|agent platform;agent builder;build ai agents;autonomous agent;multi agent,
+        LIBRARY|llm-frameworks|open-source framework or library to build LLM apps and agents|llm framework;agent framework;orchestration framework;llm library,
+        PRODUCT|rag-and-vector-databases|vector database or RAG platform for retrieval augmented generation|vector database;vector db;vector search;retrieval augmented;rag pipeline;rag platform,
+        PRODUCT|rag-and-vector-databases|API to parse PDFs and documents into clean text for LLMs|document parsing;pdf parsing;pdf to markdown;ocr;document extraction,
+        PRODUCT|llmops-and-evaluation|LLM observability evaluation and monitoring tool|llm observability;llmops;llm evaluation;llm evals;evals;llm tracing;llm monitoring;prompt management;prompt versioning,
+        PRODUCT|fine-tuning|platform to fine-tune and train open-source LLMs|fine tun;finetun;lora;qlora;model training,
+        PRODUCT|ai-security|AI guardrails and LLM security tool against prompt injection|guardrail;prompt injection;llm security;ai security;ai red team;jailbreak,
+        PRODUCT|no-code|no-code builder for AI apps and workflow automations|no code;nocode;low code;workflow automation;automation builder,
+        PRODUCT|browser-extensions|AI browser extension for Chrome or Firefox|browser extension;chrome extension;firefox add on;firefox extension;extension for chrome,
+        PRODUCT|ai-search|AI search engine that answers questions with cited sources|ai search;ai search engine;answer engine;ai powered search,
+        PRODUCT|data-and-analytics|AI data analyst that answers questions about spreadsheets and databases|data analysis;ai data analyst;ai analyst;text to sql;business intelligence;spreadsheet ai;chat with your data,
+        PRODUCT|design-and-presentations|AI presentation maker that creates slides from a prompt|ai presentation;presentation maker;slide deck;pitch deck;slides generat,
+        PRODUCT|design-and-presentations|AI website builder and UI design generator|ui design;ai website builder;website generat;logo generat;graphic design
     hf-provider-orgs:
       # Newest models of providers' official Hub organisations (one Hub call per org).
       interval: ${H2_SCOUT_HF_ORGS_INTERVAL:P1D}
@@ -475,9 +538,10 @@ helper2:
         topic:awesome topic:generative-ai
       max-lists: 10
       min-list-stars: 1000
-      # Per pass (once a day) and per Scout run (every 15 min); a pass resumes from an entry offset.
+      # Per pass (once a day) and per Scout run (once a day): equal, so a pass ends in one run. A pass cut short by
+      # max-items-per-run resumes from an entry offset in the next run.
       max-entries-per-pass: 1000
-      max-entries-per-run: ${H2_SCOUT_AWESOME_PER_RUN:200}
+      max-entries-per-run: ${H2_SCOUT_AWESOME_PER_RUN:1000}
       min-repo-stars: 50
       # Fast model (helper2.llm.fast-model) batch size: 25 entries took 12-14 s on Nemotron 3 Nano (2026-10-26).
       classify-batch: 25
@@ -540,6 +604,15 @@ helper2:
       timeout: 10s
       cache-ttl: 30m
       deadline: ${H2_SOURCE_COURSE_SCOUT_DEADLINE:}
+    tavily-discovery:
+      # Disabled (reported as SKIPPED) until H2_TAVILY_API_KEY is set.
+      enabled: ${H2_SOURCE_TAVILY_DISCOVERY_ENABLED:true}
+      base-url: https://api.tavily.com
+      token: ${H2_TAVILY_API_KEY:}
+      # search_depth advanced is slower than basic.
+      timeout: 20s
+      cache-ttl: 30m
+      deadline: ${H2_SOURCE_TAVILY_DISCOVERY_DEADLINE:}
     github-awesome:
       # Disabled (reported as SKIPPED) until H2_GITHUB_TOKEN is set: GraphQL rejects anonymous calls.
       enabled: ${H2_SOURCE_GITHUB_AWESOME_ENABLED:true}

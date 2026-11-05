@@ -6,6 +6,7 @@ import ai.helper2.platform.ClusterLocks
 import ai.helper2.scout.CatalogIndex
 import ai.helper2.scout.CollectedBatch
 import ai.helper2.scout.Collector
+import ai.helper2.scout.RunCalendar
 import ai.helper2.scout.RunSummary
 import ai.helper2.scout.ScheduledRun
 import ai.helper2.scout.ScheduledRunStore
@@ -59,6 +60,9 @@ class ScoutRunLockIT {
   @Autowired lateinit var lockProvider: LockProvider
   @Autowired lateinit var scoutRunner: RunScout
   @Autowired lateinit var context: ConfigurableApplicationContext
+
+  /** A run a day after the last one ended: the period these tests move the clock by. */
+  private val daily = RunCalendar { it.plus(Duration.ofDays(1)) }
 
   private fun replica(pod: String) =
     DefaultLockingTaskExecutor(
@@ -174,7 +178,7 @@ class ScoutRunLockIT {
     noScheduledRunYet()
     val lockName = "scout-run-it-" + UUID.randomUUID()
     val clock = MovableClock(Instant.parse("2026-10-27T03:00:00Z"))
-    val day = Duration.ofDays(1)
+    val day = daily
     val release = CountDownLatch(1)
     val collector = CountingCollector(release)
     val replicas =
@@ -236,7 +240,7 @@ class ScoutRunLockIT {
       val adminRun = CompletableFuture.supplyAsync({ admin.tryStart() }, threads)
       while (adminCollector.collections.get() == 0) Thread.sleep(10)
 
-      assertEquals(ScheduledRun.BUSY, scheduled.tryRunScheduled(Duration.ofDays(1), schedule))
+      assertEquals(ScheduledRun.BUSY, scheduled.tryRunScheduled(daily, schedule))
 
       release.countDown()
       assertNotNull(adminRun.get(10, TimeUnit.SECONDS))
@@ -245,7 +249,7 @@ class ScoutRunLockIT {
     assertEquals(0, scheduledCollector.collections.get())
 
     clock.now = clock.now.plus(Duration.ofHours(1))
-    assertEquals(ScheduledRun.RAN, scheduled.tryRunScheduled(Duration.ofDays(1), schedule))
+    assertEquals(ScheduledRun.RAN, scheduled.tryRunScheduled(daily, schedule))
     assertEquals(1, scheduledCollector.collections.get())
   }
 

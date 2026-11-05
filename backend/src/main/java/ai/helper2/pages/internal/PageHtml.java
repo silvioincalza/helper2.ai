@@ -131,7 +131,15 @@ public class PageHtml {
   private static String sourceLink(Link l) {
     String scheme = l.getUrl().getScheme();
     boolean web = "https".equalsIgnoreCase(scheme) || "http".equalsIgnoreCase(scheme);
-    return web ? link(l.getUrl().toString(), l.getName()) : esc(l.getName());
+    return web ? outboundLink(l.getUrl().toString(), l.getName()) : esc(l.getName());
+  }
+
+  /**
+   * A link to another site: nofollow ugc, because some sources (web search, ADR 0051) are not
+   * reviewed by a person, and a link from here must not pass them ranking.
+   */
+  private static String outboundLink(String href, String text) {
+    return "<a href=\"" + esc(href) + "\" rel=\"nofollow ugc\">" + esc(text) + "</a>";
   }
 
   private static String link(String href, String text) {

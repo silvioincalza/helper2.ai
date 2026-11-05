@@ -21,9 +21,10 @@ data class WebPageTitle(val title: String, val description: String?) {
   companion object {
     /**
      * The sources whose titles are HTML page titles: Tavily's live search, the Scout's Tavily
-     * queries and course discovery.
+     * queries, Tavily discovery and course discovery.
      */
-    @JvmField val SOURCES: Set<String> = setOf("tavily", "tavily-scout", "course-scout")
+    @JvmField
+    val SOURCES: Set<String> = setOf("tavily", "tavily-scout", "tavily-discovery", "course-scout")
 
     private val SPACES = Regex("[\\s\\u00a0\\u2007\\u202f]+")
     private val SEPARATORS = listOf(" | ", " - ", " · ", " — ", " – ")

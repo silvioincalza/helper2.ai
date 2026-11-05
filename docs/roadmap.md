@@ -147,8 +147,8 @@ Open items:
   ([ADR 0004](adr/foundation/0004-persistence-and-provenance.md)).
 - "Works with" flags on index hits name `helper2-index` as their source, not the source that set the tag, and only
   the first 20 tags (alphabetical) are kept, which can drop a flag ([ADR 0013](adr/search/0013-works-with-flags.md)).
-- The MCP Registry asks for hourly polling, but the Scout runs once a day in the cluster, so the registry is
-  read daily ([ADR 0018](adr/scout/0018-scout-runner.md)).
+- The MCP Registry asks for hourly polling, but the Scout runs once a day (03:07 UTC) in the cluster, so the
+  registry is read daily ([ADR 0018](adr/scout/0018-scout-runner.md)).
 - More registries, if their terms allow it. Consumer AI-tool coverage is thin.
 - Live event collectors for hackathons, meetups, talks and workshops, so the curated community-events list
   ([ADR 0022](adr/scout/0022-next-events.md)) does not need a research pass to stay current. Candidates: Devpost and
@@ -264,10 +264,13 @@ Fix an item or accept it; when it no longer holds, remove it.
 
 ### Scout
 
-- A scheduled run can start up to one `H2_SCOUT_TICK` (1 h) late; a short `H2_SCOUT_EVERY` needs a shorter tick. A renewal-thread pause longer than one lease lets another replica start a second run. ([ADR 0018](adr/scout/0018-scout-runner.md))
+- A scheduled run can start up to one `H2_SCOUT_TICK` (10 min) after its cron time. A renewal-thread pause longer than one lease lets another replica start a second run. ([ADR 0018](adr/scout/0018-scout-runner.md))
 - Strict enrichment rules reject some correct values; the review queue grows with every partial run and needs a person. ([ADR 0019](adr/scout/0019-evidence-gated-enrichment.md))
 - The gap round reads a README once per fingerprint: a README that changes while the source records do not is not read again, and one that fails to load (timeout, 5xx) is not tried again until they change. A gap slot is spent when the second model call fails. README text never supports a summary claim. ([ADR 0043](adr/scout/0043-enrichment-gap-round.md))
-- Hugging Face provider models get no enrichment (the list API has no description). Consumer AI tools are thinly covered. Tavily finds news about tools, not the tools. Course pages wait for an admin each week. ([ADR 0020](adr/scout/0020-scout-collectors.md))
+- Hugging Face provider models get no enrichment (the list API has no description). Tavily discovery finds consumer tools, hosting and prompt libraries, but each product waits for an admin ([ADR 0051](adr/scout/0051-tavily-discovery.md)); measure the weekly review load and the share accepted, then tune `min-score` and the categories. Course pages wait for an admin each week, and an accepted course is still added to the curated list by hand: index it on accept, like resource candidates. ([ADR 0020](adr/scout/0020-scout-collectors.md))
+- Tavily discovery follow-ups ([ADR 0051](adr/scout/0051-tavily-discovery.md)): count the Scout's Tavily credits in `helper2_tavily_credits_total` with a weekly alert; a host deny list and at most 2 list pages per host per pass; record score, rank, finding search, rule and tag reasons per candidate, then a replay evaluation on a recorded snapshot to tune `min-score`, the list-title rule and the keywords; drop vendor compare and alternatives pages; take the type from the best-ranked finding search; recognise Chrome Web Store, Firefox add-on and GPT links; shorter excerpts for press pages and no email addresses in excerpts; a removal line on the Terms page; expire open candidates; allow only collectors that propose candidates as their source. A rejected candidate can come back once its review item is purged (180 days after the decision).
+- Scout settings are read with `@Value` in `ScoutConfiguration`; move them to a `@ConfigurationProperties` record (ADR 0007).
+- A catch-up run that ends just before the cron time is followed by the cron's run a few minutes later ([ADR 0018](adr/scout/0018-scout-runner.md)).
 - An event whose source gives no day is not listed; event days can be a few hours off far from UTC; conference dates are as correct as ai-deadlines; curated events need a research pass to stay current. ([ADR 0022](adr/scout/0022-next-events.md))
 
 ### AI guide

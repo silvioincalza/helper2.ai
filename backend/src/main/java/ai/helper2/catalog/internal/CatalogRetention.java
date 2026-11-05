@@ -20,10 +20,12 @@ import org.springframework.stereotype.Repository;
 public class CatalogRetention {
 
   /**
-   * Sources whose web results (news, articles) age fastest: Tavily's live search and the Scout's
-   * Tavily queries.
+   * Sources whose web results (news, articles) age fastest: Tavily's live search, the Scout's
+   * Tavily queries and Tavily discovery's list pages (ADR 0051). Only their NEWS and ARTICLE
+   * records go: a product accepted from discovery stays while it is listed.
    */
-  static final List<String> WEB_NEWS_SOURCES = List.of("tavily", "tavily-scout");
+  static final List<String> WEB_NEWS_SOURCES =
+      List.of("tavily", "tavily-scout", "tavily-discovery");
 
   private static final String UNREFERENCED =
       """

@@ -44,17 +44,20 @@ app:
   shutdown:
     preStopSeconds: 10
     drainSeconds: 30
-  # Scout = scheduled collection + LLM enrichment. Each replica checks shortly after startup
-  # (scoutInitialDelay), then hourly (H2_SCOUT_TICK, default PT1H); the Scout runs when the last scheduled
-  # run ended at least scoutEvery ago (or never ran): one run per scoutEvery in total, whatever the number
-  # of replicas, and a deploy does not add one. Each collector also keeps its own interval, so with P1D
-  # every collector runs at most once a day.
+  # Scout = scheduled collection + LLM enrichment, once a day at a fixed time (scoutCron, UTC, ADR 0018).
+  # Each replica checks shortly after startup (scoutInitialDelay), then every 10 minutes (H2_SCOUT_TICK);
+  # the Scout runs when the cron time after the last scheduled run has passed (or it never ran): one run per
+  # cron time in total, whatever the number of replicas, and a deploy does not add one. Each collector also
+  # keeps its own interval, so every collector runs at most once a day.
   scoutEnabled: true
   scoutInitialDelay: PT20S
-  scoutEvery: P1D
-  # At most this many enrichments (Nemotron calls) per run. The app also caps calls per UTC day
-  # (H2_SCOUT_DAILY_ENRICHMENT_CALLS, default 500, of which up to 400 gap rounds, ADR 0043), so a large backlog after a fresh database is spread
-  # over several days.
+  # 03:07 UTC: a quiet hour, after the nightly home-examples check (02:41). Off the full hour, when the
+  # providers are busiest. The retention purge (03:17) may run at the same time; it touches other rows.
+  scoutCron: "0 7 3 * * *"
+  # At most this many resources enriched per run (shared with the backlog). A gap round (ADR 0043) can add a
+  # second Nemotron call for the same resource, so a run makes at most twice this many calls. The hard cap is
+  # per UTC day (H2_SCOUT_DAILY_ENRICHMENT_CALLS, default 500, of which up to 400 gap rounds), so a large
+  # backlog after a fresh database is spread over several days.
   scoutMaxEnrichments: 200
   # Longest allowed startup (Flyway migrations, Lingua models) before the startup probe restarts the
   # container. A multiple of 5 (the probe period). A deploy starts the replicas one after another, and

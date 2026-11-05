@@ -57,6 +57,7 @@ All diagrams: [docs/diagrams](../diagrams/README.md).
 | [0020](scout/0020-scout-collectors.md) | Scout collectors: MCP Registry, HF trending, HF provider orgs, Tavily discovery, courses, awesome lists with classifier, ai-deadlines | 0006, 0014, 0018 | [flow](../diagrams/flow-0020-scout-collectors.svg) · [sequence](../diagrams/sequence-0020-scout-collectors.svg) |
 | [0022](scout/0022-next-events.md) | Next events: stated event days, ai-deadlines and curated industry and community events | 0004, 0010, 0018, 0020 | [flow](../diagrams/flow-0022-next-events.svg) · [sequence](../diagrams/sequence-0022-next-events.svg) |
 | [0043](scout/0043-enrichment-gap-round.md) | Enrichment gap round: read the README or model card once when a run leaves fields unproven | 0018, 0019, 0020, 0034 | [flow](../diagrams/flow-0043-enrichment-gap-round.svg) · [sequence](../diagrams/sequence-0043-enrichment-gap-round.svg) |
+| [0051](scout/0051-tavily-discovery.md) | Tavily discovery: one web search per category of the AI world, lists indexed, products reviewed | 0018, 0019, 0020, 0033, 0037 | [flow](../diagrams/flow-0051-tavily-discovery.svg) · [sequence](../diagrams/sequence-0051-tavily-discovery.svg) |
 
 ## Edge and identity — [`edge/`](edge/)
 
