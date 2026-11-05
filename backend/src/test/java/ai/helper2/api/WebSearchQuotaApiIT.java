@@ -207,6 +207,8 @@ class WebSearchQuotaApiIT extends ApiTestBase {
           new SourceDescriptor(
               "fake-web",
               "Fake web search",
+              "Fake web",
+              true,
               SourceMode.LIVE,
               URI.create("https://web.example"),
               null,

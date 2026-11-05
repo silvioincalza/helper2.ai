@@ -59,6 +59,8 @@ public class ArxivSource implements SearchSource {
         new SourceDescriptor(
             "arxiv",
             "arXiv",
+            "arXiv",
+            true,
             SourceMode.LIVE,
             URI.create("https://arxiv.org"),
             URI.create("https://info.arxiv.org/help/api/tou.html"),

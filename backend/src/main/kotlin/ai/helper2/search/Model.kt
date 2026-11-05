@@ -24,6 +24,13 @@ data class SourceDescriptor
 constructor(
   val id: String,
   val name: String,
+  /** A name of at most [SHORT_NAME_MAX] characters, for the Home radar (ADR 0008). */
+  val shortName: String,
+  /**
+   * False for helper2's own sources (its index, its search by meaning, its curated list); true for
+   * every source run by someone else. The Home radar shows only external sources.
+   */
+  val external: Boolean,
   val mode: SourceMode,
   val homepage: URI,
   val termsUrl: URI?,
@@ -63,9 +70,19 @@ constructor(
    */
   val metered: Boolean = false,
 ) {
+  init {
+    require(shortName.isNotBlank() && shortName.length <= SHORT_NAME_MAX) {
+      "Source $id needs a short name of 1 to $SHORT_NAME_MAX characters, got '$shortName'"
+    }
+  }
+
   /** The same source served in another mode; every other field is kept. */
   fun withMode(mode: SourceMode): SourceDescriptor =
     if (this.mode == mode) this else copy(mode = mode)
+
+  companion object {
+    const val SHORT_NAME_MAX = 12
+  }
 }
 
 enum class PopularityKind {

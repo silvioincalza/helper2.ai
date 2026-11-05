@@ -20,6 +20,8 @@ fun descriptor(
   SourceDescriptor(
     id = id,
     name = id.replaceFirstChar { it.uppercase() },
+    shortName = id.take(12),
+    external = true,
     mode = mode,
     homepage = URI("https://$id.example"),
     termsUrl = null,

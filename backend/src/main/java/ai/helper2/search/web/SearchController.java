@@ -142,6 +142,8 @@ class SearchController implements SearchApi, SourcesApi {
         new SourceInfoDto(
                 d.getId(),
                 d.getName(),
+                d.getShortName(),
+                d.getExternal(),
                 SourceModeDto.fromValue(d.getMode().name()),
                 d.getEnabled(),
                 d.getMetered(),

@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import ai.helper2.search.SourceFailure;
 import ai.helper2.shared.ResourceType;
+import com.jayway.jsonpath.JsonPath;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -295,6 +296,23 @@ class SearchApiIT extends ApiTestBase {
         .contains("\"mcp-registry\"")
         .contains("\"curated\"")
         .contains("\"helper2-index\"");
+  }
+
+  @Test
+  void everySourceHasAShortNameAndOnlyHelper2sOwnSourcesAreNotExternal() throws Exception {
+    String body =
+        mvc.perform(get("/api/v1/sources"))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    List<String> shortNames = JsonPath.read(body, "$[*].shortName");
+    List<String> ids = JsonPath.read(body, "$[*].id");
+    List<String> own = JsonPath.read(body, "$[?(@.external == false)].id");
+    assertThat(shortNames).hasSameSizeAs(ids).allMatch(n -> !n.isBlank() && n.length() <= 12);
+    assertThat(own)
+        .contains("curated", "helper2-index")
+        .allMatch(List.of("curated", "helper2-index", "helper2-semantic")::contains);
   }
 
   @Test

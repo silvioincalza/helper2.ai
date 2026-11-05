@@ -1507,10 +1507,20 @@ components:
 
     SourceInfo:
       type: object
-      required: [id, name, mode, enabled, metered, homepage, resourceTypes]
+      required: [id, name, shortName, external, mode, enabled, metered, homepage, resourceTypes]
       properties:
         id: { type: string }
         name: { type: string }
+        shortName:
+          type: string
+          minLength: 1
+          maxLength: 12
+          description: The name under the source's dot on the Home radar, at most 12 characters.
+        external:
+          type: boolean
+          description: >-
+            False for helper2's own sources (helper2-index, helper2-semantic, curated); true for every source run by
+            someone else. The Home radar and its source count show only external sources.
         mode: { $ref: '#/components/schemas/SourceMode' }
         enabled: { type: boolean }
         metered:

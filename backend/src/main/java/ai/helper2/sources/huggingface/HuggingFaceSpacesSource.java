@@ -38,6 +38,8 @@ public class HuggingFaceSpacesSource implements SearchSource {
         new SourceDescriptor(
             "hf-spaces",
             "Hugging Face Spaces",
+            "Spaces",
+            true,
             SourceMode.LIVE,
             URI.create("https://huggingface.co/spaces"),
             URI.create("https://huggingface.co/terms-of-service"),

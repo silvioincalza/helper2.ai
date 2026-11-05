@@ -41,6 +41,8 @@ public class HuggingFaceModelsSource implements SearchSource {
         new SourceDescriptor(
             "hf-models",
             "Hugging Face models",
+            "HF models",
+            true,
             SourceMode.LIVE,
             URI.create("https://huggingface.co/models"),
             URI.create("https://huggingface.co/terms-of-service"),

@@ -183,6 +183,8 @@ class SearchReplay(
           SourceDescriptor(
             s.id,
             s.name,
+            s.id.take(12),
+            true,
             s.mode,
             PLACEHOLDER,
             null,

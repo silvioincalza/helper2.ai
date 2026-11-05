@@ -10,6 +10,8 @@ import {
 const source = (over: Partial<SourceInfo> = {}): SourceInfo => ({
   id: 'github',
   name: 'GitHub',
+  shortName: 'GitHub',
+  external: true,
   mode: 'LIVE',
   enabled: true,
   metered: false,

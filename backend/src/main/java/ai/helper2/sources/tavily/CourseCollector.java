@@ -110,6 +110,8 @@ public class CourseCollector implements Collector {
         new SourceDescriptor(
             ID,
             "Tavily course discovery (sent to review)",
+            "Courses",
+            true,
             SourceMode.INDEXED,
             URI.create("https://tavily.com"),
             URI.create("https://tavily.com/terms"),

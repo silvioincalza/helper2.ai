@@ -77,6 +77,8 @@ const sources: SourceInfo[] = [
   {
     id: 'arxiv',
     name: 'arXiv',
+    shortName: 'arXiv',
+    external: true,
     mode: 'INDEXED',
     enabled: true,
     metered: false,
@@ -90,6 +92,8 @@ const sources: SourceInfo[] = [
   {
     id: 'npm',
     name: 'npm',
+    shortName: 'npm',
+    external: true,
     mode: 'LIVE',
     enabled: true,
     metered: false,

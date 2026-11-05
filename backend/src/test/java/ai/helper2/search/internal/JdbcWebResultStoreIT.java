@@ -97,6 +97,8 @@ class JdbcWebResultStoreIT {
         new SourceDescriptor(
             "tavily",
             "Tavily",
+            "Web",
+            true,
             SourceMode.LIVE,
             URI.create("https://tavily.com"),
             null,

@@ -75,6 +75,8 @@ public class McpRegistryCollector implements Collector {
         new SourceDescriptor(
             "mcp-registry",
             "Official MCP Registry",
+            "MCP",
+            true,
             SourceMode.INDEXED,
             URI.create("https://registry.modelcontextprotocol.io"),
             URI.create("https://github.com/modelcontextprotocol/registry"),
