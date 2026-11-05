@@ -49,7 +49,7 @@ Without a configured model the application must still work.
    failure (`ModelErrors.NotFromProvider`). When at least half of the last 10 counted calls failed (5 calls at least), the circuit opens for 30 s
    (`H2_RESILIENCE_LLM_OPEN_FOR`): each call fails at once with category `circuit_open`, without reaching the provider
    or taking a unit, and the caller's degraded mode starts without waiting for a timeout. Embedding calls have their
-   own `llm-embed` circuit.
+   own `llm-embed` circuit, and the background indexer another (`llm-embed-index`, [0033](../foundation/0033-resilience-policies.md)).
 8. **Untrusted input and output.** `UntrustedText` turns `<` `>` in third-party text into `‹` `›` and cuts it, so
    the text cannot close our tags. `ModelAnswers` removes `<think>` blocks (closed or cut off) and takes the outermost
    JSON object. A deterministic validator then decides what is shown (ADR [0015](0015-ai-guide-evidence-gate.md),

@@ -24,17 +24,34 @@ public interface Embedder {
 
   List<float[]> embed(List<String> texts, Kind kind);
 
-  /** [rateLimited] lets callers pause instead of retrying at once. */
-  final class EmbeddingFailure extends RuntimeException {
-    private final boolean rateLimited;
+  /** Why an embedding call failed: callers pause, give up or try again smaller. */
+  enum FailureReason {
+    /** The API said 429: pause instead of retrying at once. */
+    RATE_LIMITED,
+    /** The circuit refused the call: the API was not reached. */
+    REFUSED,
+    /** The API answered with an error (5xx or another non-429 status). */
+    PROVIDER_ERROR,
+    /** No answer: network error or the call's deadline. */
+    UNAVAILABLE,
+    /** An answer we cannot use: wrong number or size of vectors. */
+    INVALID_RESPONSE
+  }
 
-    public EmbeddingFailure(String message, boolean rateLimited) {
+  final class EmbeddingFailure extends RuntimeException {
+    private final FailureReason reason;
+
+    public EmbeddingFailure(String message, FailureReason reason) {
       super(message);
-      this.rateLimited = rateLimited;
+      this.reason = reason;
+    }
+
+    public FailureReason reason() {
+      return reason;
     }
 
     public boolean rateLimited() {
-      return rateLimited;
+      return reason == FailureReason.RATE_LIMITED;
     }
   }
 }

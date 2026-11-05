@@ -12,8 +12,14 @@ public final class LlmPolicies {
    */
   public static final String CHAT = "llm-chat";
 
-  /** Every embedding call: search queries and the background indexer. */
+  /** Embedding calls of search queries and guide questions. */
   public static final String EMBED = "llm-embed";
+
+  /**
+   * Embedding calls of the background indexer: its own circuit, so failed batches never refuse a
+   * visitor's search query.
+   */
+  public static final String EMBED_INDEX = "llm-embed-index";
 
   private LlmPolicies() {}
 }
