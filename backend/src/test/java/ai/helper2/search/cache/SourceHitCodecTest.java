@@ -3,6 +3,7 @@ package ai.helper2.search.cache;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.search.CachedHits;
+import ai.helper2.search.ListMatch;
 import ai.helper2.search.PopularityKind;
 import ai.helper2.search.PopularityMetric;
 import ai.helper2.search.SourceHit;
@@ -62,6 +63,46 @@ class SourceHitCodecTest {
 
     assertThat(back).isNotNull();
     assertThat(back.getHits()).containsExactly(event);
+  }
+
+  @Test
+  void whereAListFoundTheHitSurvivesTheCache() {
+    SourceHit hit =
+        new SourceHit(
+            "helper2-index",
+            "y",
+            URI.create("https://github.com/a/store"),
+            CanonicalUrl.of("https://github.com/a/store"),
+            null,
+            "a/store",
+            null,
+            ValueOrigin.SOURCE_PROVIDED,
+            ResourceType.LIBRARY,
+            Audience.BUILD_WITH_AI,
+            null,
+            Set.of(),
+            Set.of(),
+            null,
+            null,
+            Set.of(),
+            null,
+            DateFact.unknown(),
+            DateFact.unknown(),
+            List.of(),
+            now,
+            0,
+            DateFact.unknown(),
+            DateFact.unknown(),
+            null,
+            null,
+            null,
+            java.util.Map.of(),
+            new ListMatch("acme/awesome-llm", "Tools > Vector databases"));
+
+    CachedHits back = codec.decode(codec.encode(new CachedHits(List.of(hit), now)));
+
+    assertThat(back).isNotNull();
+    assertThat(back.getHits()).containsExactly(hit);
   }
 
   @Test

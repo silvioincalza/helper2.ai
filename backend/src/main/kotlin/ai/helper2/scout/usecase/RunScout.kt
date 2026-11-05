@@ -7,6 +7,8 @@ import ai.helper2.scout.CollectedBatch
 import ai.helper2.scout.Collector
 import ai.helper2.scout.EnrichmentBacklog
 import ai.helper2.scout.EnrichmentOutcome
+import ai.helper2.scout.ListIndex
+import ai.helper2.scout.ListText
 import ai.helper2.scout.RunCalendar
 import ai.helper2.scout.RunLock
 import ai.helper2.scout.RunStatus
@@ -106,6 +108,8 @@ class RunScout(
    * The admin review list for the candidates a collector proposes; required as soon as one does.
    */
   private val review: CandidateReview? = null,
+  /** The search index of curated lists (ADR 0055); required as soon as a collector reads one. */
+  private val lists: ListIndex? = null,
 ) {
   private val log = LoggerFactory.getLogger(RunScout::class.java)
   // Strong references: a gauge only holds its source object weakly.
@@ -378,6 +382,7 @@ class RunScout(
     val batch = collector.collect(cursor.checkpoint, cursor.resumeCursor, maxItemsPerRun)
     if (batch.notDue) return notDueRun(running, batch.skipReason)
     val changed = index(d, batch.hits)
+    indexListsQuietly(d.id, batch.lists)
     proposeCandidates(d.id, batch.candidates)
     store.saveCursor(d.id, cursorAfter(cursor, batch, running.startedAt))
     // From here the pass is indexed and its cursor saved: nothing below may turn the run into
@@ -390,6 +395,21 @@ class RunScout(
   private fun index(d: SourceDescriptor, hits: List<SourceHit>): List<UUID> {
     val merged = merger.merge(hits, mapOf(d.id to SourceContext(d, ServedFrom.LIVE)))
     return catalog.index(merged, d.id).distinct()
+  }
+
+  /**
+   * After the hits, so the lists and their entries are in the catalog. Search inside lists only
+   * helps recall: a failure is logged and the next pass rebuilds the index, the pass goes on.
+   */
+  private fun indexListsQuietly(sourceId: String, texts: List<ListText>) {
+    if (texts.isEmpty()) return
+    val index =
+      checkNotNull(lists) { "$sourceId read curated lists but no list index is configured" }
+    try {
+      index.replace(texts)
+    } catch (e: RuntimeException) {
+      log.warn("list index for $sourceId failed: ${e.javaClass.simpleName}")
+    }
   }
 
   private fun proposeCandidates(sourceId: String, candidates: List<Candidate>) {

@@ -1,7 +1,9 @@
 package ai.helper2.catalog.internal;
 
 import ai.helper2.catalog.internal.ResourceStore.DataOrigin;
+import ai.helper2.catalog.internal.ResourceStore.Found;
 import ai.helper2.catalog.internal.ResourceStore.ResourceRow;
+import ai.helper2.search.ListMatch;
 import ai.helper2.search.SearchSource;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.SourceFailure;
@@ -15,6 +17,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -47,35 +50,93 @@ public class CatalogSearchSource implements SearchSource {
 
   @Override
   public List<SourceHit> search(SourceQuery query) {
-    List<ResourceRow> rows;
     Instant after =
         query.getPublishedAfter() == null
             ? null
             : query.getPublishedAfter().atStartOfDay(ZoneOffset.UTC).toInstant();
     try {
-      rows =
-          query.getBrowse() && after != null
-              ? store.browse(
-                  after,
-                  clock.instant(),
-                  query.getTypes().stream().map(Enum::name).collect(Collectors.toSet()),
-                  origins,
-                  query.getLimit())
-              : query.getBrowse()
-                  ? List.of()
-                  : store.search(
-                      query.getText(),
-                      query.getRequiredVariants(),
-                      query.getExpandedTerms(),
-                      query.getSynonyms(),
-                      query.getLanguage(),
-                      origins,
-                      query.getLimit(),
-                      after);
+      if (query.getBrowse()) {
+        return after == null ? List.of() : hits(descriptor, browse(query, after), clock.instant());
+      }
+      return foundHits(textSearch(query, after));
     } catch (DataAccessException e) {
       throw new SourceFailure.Unavailable("catalog unavailable");
     }
-    return hits(descriptor, rows, clock.instant());
+  }
+
+  private List<ResourceRow> browse(SourceQuery query, Instant after) {
+    return store.browse(
+        after,
+        clock.instant(),
+        query.getTypes().stream().map(Enum::name).collect(Collectors.toSet()),
+        origins,
+        query.getLimit());
+  }
+
+  private List<Found> textSearch(SourceQuery query, Instant after) {
+    return store.searchFound(
+        query.getText(),
+        query.getRequiredVariants(),
+        query.getExpandedTerms(),
+        query.getSynonyms(),
+        query.getLanguage(),
+        origins,
+        query.getLimit(),
+        after);
+  }
+
+  /** Text search hits, each with where it was found when only an awesome list matched it. */
+  private List<SourceHit> foundHits(List<Found> found) {
+    List<SourceHit> hits =
+        hits(descriptor, found.stream().map(Found::row).toList(), clock.instant());
+    Map<String, ListMatch> foundIn = new HashMap<>();
+    found.forEach(f -> {
+      if (f.foundIn() != null) {
+        foundIn.put(f.row().id().toString(), f.foundIn());
+      }
+    });
+    if (foundIn.isEmpty()) {
+      return hits;
+    }
+    return hits.stream()
+        .map(h ->
+            foundIn.containsKey(h.getExternalId())
+                ? withFoundIn(h, foundIn.get(h.getExternalId()))
+                : h)
+        .toList();
+  }
+
+  private static SourceHit withFoundIn(SourceHit h, ListMatch match) {
+    return new SourceHit(
+        h.getSourceId(),
+        h.getExternalId(),
+        h.getUrl(),
+        h.getCanonicalUrl(),
+        h.getRepositoryUrl(),
+        h.getTitle(),
+        h.getDescription(),
+        h.getDescriptionOrigin(),
+        h.getType(),
+        h.getAudience(),
+        h.getTechLevel(),
+        h.getUseCases(),
+        h.getTags(),
+        h.getLicense(),
+        h.getPricing(),
+        h.getPlatforms(),
+        h.getOpenSource(),
+        h.getPublished(),
+        h.getUpdated(),
+        h.getPopularity(),
+        h.getRetrievedAt(),
+        h.getRank(),
+        h.getEventStart(),
+        h.getEventEnd(),
+        h.getLocation(),
+        h.getEventKind(),
+        h.getEventFormat(),
+        h.getFacts(),
+        match);
   }
 
   /**

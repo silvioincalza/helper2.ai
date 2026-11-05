@@ -42,7 +42,8 @@ class CatalogPropertiesBindingTest {
                   Duration.ofDays(90),
                   Duration.ofDays(180),
                   Duration.ofDays(365),
-                  Duration.ofDays(180)));
+                  Duration.ofDays(180),
+                  Duration.ofDays(30)));
     });
   }
 

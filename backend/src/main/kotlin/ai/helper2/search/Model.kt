@@ -105,6 +105,12 @@ data class PopularityMetric(
   val asOf: Instant,
 )
 
+/**
+ * Where a resource was found inside an awesome list (ADR 0055): the list's title and the heading
+ * path of the entry ("Tools > Vector databases"). Both are the list's own words, not AI-written.
+ */
+data class ListMatch(val listTitle: String, val headingPath: String)
+
 /** One normalized result from one source. Everything a card shows must be traceable to hits. */
 data class SourceHit
 @JvmOverloads
@@ -160,6 +166,11 @@ constructor(
    * whose hits get theirs when they are merged.
    */
   val categories: Set<String> = emptySet(),
+  /**
+   * Set when the Helper2 index found this resource only by the words of an awesome list around it
+   * (ADR 0055), not by its own text.
+   */
+  val foundIn: ListMatch? = null,
 ) {
   /** The same hit at [rank] in its source's ranking. */
   fun withRank(rank: Int): SourceHit = copy(rank = rank)
@@ -326,6 +337,16 @@ data class MergedResult(
    */
   val assertedLicenses: Set<String>
     get() = hits.mapNotNull { it.license }.toSet()
+
+  /**
+   * Where the result was found when every source found it only inside an awesome list (ADR 0055);
+   * null as soon as one source matched it directly.
+   */
+  val foundIn: ListMatch?
+    get() {
+      val found = hits.map { it.foundIn }
+      return if (found.isNotEmpty() && found.all { it != null }) found.first() else null
+    }
 
   fun withDiscovered(discovered: DateFact): MergedResult = copy(discovered = discovered)
 

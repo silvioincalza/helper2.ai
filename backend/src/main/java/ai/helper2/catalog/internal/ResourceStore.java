@@ -1,6 +1,7 @@
 package ai.helper2.catalog.internal;
 
 import ai.helper2.platform.PgVectors;
+import ai.helper2.search.ListMatch;
 import ai.helper2.search.MergedResult;
 import ai.helper2.search.PopularityKind;
 import ai.helper2.search.PopularityMetric;
@@ -893,25 +894,65 @@ public class ResourceStore {
     // 2026-10-26). The WHERE spells out any_terms instead of reading it from q: q is a CTE used
     // twice, so it is materialized, and a condition on a CTE column is a join filter that no index
     // can serve.
+    //
+    // Search inside awesome lists (ADR 0055): a row the resource's own text does not match can
+    // still match by the words a list uses around it (awesome_list_entry) or, for a list, by its
+    // headings (awesome_list), both on their own GIN index. Such a list-only row counts half: half
+    // of every-word (+1) and half its popularity, no text score. So a direct every-word match
+    // always
+    // outranks it, and a direct match beats a list-only match of the same strength. In stage 1 the
+    // every-word bonus is 3 (more than popularity + similarity, at most 2), which keeps the old
+    // order for direct rows and puts list-only every-word rows (at most 2) below direct ones.
     return """
     WITH q AS (
       SELECT (%1$s) AS all_terms, %2$s AS any_terms
-    ), matched AS (
+    ), direct AS (
       SELECT r.id, (r.search_vector @@ q.all_terms) AS all_match,
-             similarity(lower(r.title), lower(:raw)) AS sim
+             similarity(lower(r.title), lower(:raw)) AS sim, r.popularity AS pop, false AS via_list
       FROM resource r, q
       WHERE r.data_origin = ANY(:origins)
         AND %3$s
         AND (CAST(:after AS timestamptz) IS NULL OR r.published_at >= CAST(:after AS timestamptz))
+    ), listed AS (
+      SELECT x.id, bool_or(x.all_match) AS all_match
+      FROM (
+        SELECT e.resource_id AS id, (e.search_vector @@ q.all_terms) AS all_match
+        FROM awesome_list_entry e, q
+        WHERE e.search_vector @@ (%2$s)
+        UNION ALL
+        SELECT l.list_id, (l.search_vector @@ q.all_terms)
+        FROM awesome_list l, q
+        WHERE l.search_vector @@ (%2$s)
+      ) x
+      WHERE NOT EXISTS (SELECT 1 FROM direct d WHERE d.id = x.id)
+      GROUP BY x.id
+    ), matched AS (
+      SELECT * FROM direct
+      UNION ALL
+      SELECT l.id, l.all_match, 0, r.popularity, true
+      FROM listed l JOIN resource r ON r.id = l.id
+      WHERE r.data_origin = ANY(:origins)
+        AND (CAST(:after AS timestamptz) IS NULL OR r.published_at >= CAST(:after AS timestamptz))
     ), pre AS (
-      SELECT m.*, r.popularity AS pop
-      FROM matched m JOIN resource r ON r.id = m.id
-      ORDER BY m.all_match DESC, r.popularity + m.sim DESC
+      SELECT * FROM matched m
+      ORDER BY (CASE WHEN m.via_list THEN 0.5 ELSE 1 END)
+               * ((CASE WHEN m.all_match THEN 3 ELSE 0 END) + m.pop + m.sim) DESC
       LIMIT :preselect
     )
-    SELECT r.*, (CASE WHEN pre.all_match THEN 2 ELSE 0 END + pre.pop
-                 + 0.5 * least((ts_rank_cd(r.search_vector, q.any_terms) * 3 + pre.sim) / 10, 1)) AS score
-    FROM pre JOIN resource r ON r.id = pre.id, q
+    SELECT r.*, f.list_title AS found_list, f.heading_path AS found_heading,
+           (CASE WHEN pre.via_list
+                 THEN 0.5 * (CASE WHEN pre.all_match THEN 2 ELSE 0 END + pre.pop)
+                 ELSE CASE WHEN pre.all_match THEN 2 ELSE 0 END + pre.pop
+                      + 0.5 * least((ts_rank_cd(r.search_vector, q.any_terms) * 3 + pre.sim) / 10, 1)
+            END) AS score
+    FROM pre JOIN resource r ON r.id = pre.id CROSS JOIN q
+    LEFT JOIN LATERAL (
+      SELECT lr.title AS list_title, e.heading_path
+      FROM awesome_list_entry e JOIN resource lr ON lr.id = e.list_id
+      WHERE pre.via_list AND e.resource_id = pre.id AND e.search_vector @@ q.any_terms
+      ORDER BY (e.search_vector @@ q.all_terms) DESC, lr.popularity DESC, lr.title
+      LIMIT 1
+    ) f ON true
     ORDER BY score DESC, r.title
     LIMIT :limit
     """
@@ -929,6 +970,30 @@ public class ResourceStore {
    * rows created on or after it (by the source's date); null = any.
    */
   public List<ResourceRow> search(
+      String query,
+      List<String> requiredVariants,
+      List<String> extraTerms,
+      List<String> synonyms,
+      String language,
+      Set<DataOrigin> origins,
+      int limit,
+      Instant publishedAfter) {
+    return searchFound(
+            query, requiredVariants, extraTerms, synonyms, language, origins, limit, publishedAfter)
+        .stream()
+        .map(Found::row)
+        .toList();
+  }
+
+  /**
+   * A row of {@link #searchFound}: [foundIn] says where the row was found when only an awesome
+   * list's words matched it (ADR 0055); null for a direct match, or for a list found by its
+   * headings.
+   */
+  public record Found(ResourceRow row, @Nullable ListMatch foundIn) {}
+
+  /** {@link #search}, with where each row matched. */
+  public List<Found> searchFound(
       String query,
       List<String> requiredVariants,
       List<String> extraTerms,
@@ -966,7 +1031,21 @@ public class ResourceStore {
     for (int i = 0; i < variants.size(); i++) {
       spec = spec.param("v" + i, plainWords(variants.get(i) + " " + expansions));
     }
-    return withFacts(spec.query(this::mapResource).list());
+    List<Found> found = spec.query(this::mapFound).list();
+    List<ResourceRow> rows = withFacts(found.stream().map(Found::row).toList());
+    List<Found> out = new ArrayList<>(found.size());
+    for (int i = 0; i < found.size(); i++) {
+      out.add(new Found(rows.get(i), found.get(i).foundIn()));
+    }
+    return out;
+  }
+
+  private Found mapFound(ResultSet rs, int i) throws SQLException {
+    String list = rs.getString("found_list");
+    String heading = rs.getString("found_heading");
+    return new Found(
+        mapResource(rs, i),
+        list == null ? null : new ListMatch(list, heading == null ? "" : heading));
   }
 
   /**

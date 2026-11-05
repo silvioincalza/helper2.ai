@@ -67,7 +67,8 @@ class UpcomingEventsApiIT extends ApiTestBase {
         EventKind.HACKATHON,
         EventFormat.ONLINE,
         h.getFacts(),
-        h.getCategories());
+        h.getCategories(),
+        null);
   }
 
   @Test
