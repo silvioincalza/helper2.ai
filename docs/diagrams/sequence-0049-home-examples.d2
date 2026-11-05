@@ -3,7 +3,7 @@
 #   examples/usecase/AddHomeExample.java, CheckHomeExamples.java, ListHomeExamples.java,
 #   examples/internal/HomeExampleCheckSchedule.java, SearchExampleSearch.java, examples/web/HomeExamplesController.java,
 #   examples/usecase/DraftHomeExamples.java, internal/SpringAiExampleDrafter.java, admin/usecase/ResolveReview.java,
-#   frontend/src/lib/examples.ts, frontend/src/pages/Home.tsx, frontend/src/pages/admin/ExamplesPage.tsx.
+#   frontend/src/lib/examples.ts, frontend/src/components/home/HomeExamples.tsx, frontend/src/pages/admin/ExamplesPage.tsx.
 # Render: cd docs/diagrams && d2 fmt sequence-0049-home-examples.d2 && d2 sequence-0049-home-examples.d2 sequence-0049-home-examples.svg
 
 ...@style
@@ -46,5 +46,5 @@ show: Show {
   visitor -> api: "GET /api/v1/home/examples"
   api -> db: "ACTIVE and PASS, at most 50"
   api -> visitor: "pool (public, max-age=300)"
-  visitor -> visitor: "pick 2 everyday + 2 builder"
+  visitor -> visitor: "pick 2 everyday + 2 builder;\nthe built-in list when the pool is late (800 ms),\nfails, or has fewer than 2 for a path;\nan AI mark on chips with aiDrafted"
 }

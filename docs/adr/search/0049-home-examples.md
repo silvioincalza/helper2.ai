@@ -35,7 +35,10 @@ same for every visitor.
 4. **One public endpoint, the pick in the browser.** `GET /api/v1/home/examples` returns the examples that are
    `ACTIVE` and `PASS`, at most 50, the same for everyone (`Cache-Control: public, max-age=300`), with the English
    ones when a locale has none. The page picks two per path at random, people who use AI first. An example searches;
-   it does not ask the guide, so it spends no daily AI answer.
+   it does not ask the guide, so it spends no daily AI answer. The page asks for the pool when it opens and waits at
+   most 800 ms. When the pool fails, is late, or has fewer than two examples for a path, the page shows two per path
+   from the built-in list instead. While it waits, the row holds the built-in pick, unseen, so nothing moves when the
+   chips appear; there is no spinner.
 5. **The back office.** `/api/v1/admin/home-examples` lists, adds, changes and removes examples (ADMIN, admin host),
    in the admin module like every back-office endpoint (ADR 0045). The page `/admin/examples` shows each check in
    words, finds expected results with the visitors' own search, and reacts to the problem codes (`duplicate`,
@@ -53,8 +56,8 @@ same for every visitor.
    before a person accepts it and the check passes it.
 7. **AI-drafted examples are marked.** An accepted draft is human-reviewed text, but until a lawyer confirms how
    Art. 50 treats it, the house rule applies: the public pool carries `aiDrafted` per example and an
-   `AiContentMarker` (ADR 0038) when one is in it, the page labels the chip, and the review queue marks the draft
-   (`data-ai-generated`). The origin and model stay on the row for good, even after an edit.
+   `AiContentMarker` (ADR 0038) when one is in it. The page reads the pool and gives an AI-drafted chip a small "AI"
+   mark ("Drafted with AI, checked by a person"); the chip and the draft in the review queue carry `data-ai-generated`. The origin and model stay on the row for good, even after an edit.
 
 ## Consequences
 - I change the examples without a release, and a bad example hides itself instead of greeting a new visitor.
@@ -109,13 +112,15 @@ same for every visitor.
   (accept adds the drafted example), `catalog/usecase/ListWellKnownResources.java`.
 - `backend/src/main/kotlin/ai/helper2/search/Search.kt` (`SearchRequest.web`), `Model.kt` (`SkipReason.WEB_NOT_ASKED`).
 - `backend/src/main/resources/db/migration/V4__home_example.sql`, `V5__example_drafts.sql`.
-- `frontend/src/lib/examples.ts` — the built-in pool and the pick; `frontend/src/pages/admin/ExamplesPage.tsx`.
-- Tests: `examples/ExampleInputTest.kt`, `ExampleCheckTest.kt`, `search/usecase/MeteredSourceTest.kt`,
-  `api/HomeExamplesApiIT.java`, `frontend/src/lib/examples.test.ts`, `frontend/src/pages/admin/ExamplesPage.test.tsx`, `examples/DraftRulesTest.kt`.
+- `frontend/src/lib/examples.ts` — the built-in pool, the pick and the bucket rule;
+  `frontend/src/components/home/HomeExamples.tsx` — the fetch with its timeout, the fallback and the AI mark;
+  `frontend/src/pages/admin/ExamplesPage.tsx`.
+- Tests: `examples/ExampleInputTest.kt`, `ExampleCheckTest.kt`, `examples/DraftRulesTest.kt`,
+  `search/usecase/MeteredSourceTest.kt`, `api/HomeExamplesApiIT.java`, `frontend/src/lib/examples.test.ts`,
+  `frontend/src/pages/HomeExamples.test.tsx`, `frontend/src/pages/admin/ExamplesPage.test.tsx`.
 
 ## Diagrams
 [flow](../../diagrams/flow-0049-home-examples.svg) · [sequence](../../diagrams/sequence-0049-home-examples.svg)
 
 ## Roadmap
-- The page reads the pool from the endpoint, with the built-in list when it does not answer in time.
 - The count of hidden examples on the overview.

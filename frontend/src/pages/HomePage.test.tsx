@@ -80,7 +80,7 @@ describe('one box', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0);
     const m = mockApi();
     const { params } = renderApp('/');
-    await userEvent.click(screen.getByRole('button', { name: 'Summarise research papers' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Summarise research papers' }));
     await waitFor(() => expect(params().get('q')).toBe('summarise research papers'));
     expect(params().get('path')).toBe('USE_AI');
     expect(params().get('ask')).toBeNull();
@@ -94,9 +94,9 @@ describe('one box', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0);
     mockApi();
     renderApp('/');
-    const list = within(
+    const list = await within(
       (await screen.findByRole('heading', { name: 'Try:' })).closest('section') as HTMLElement,
-    ).getAllByRole('button');
+    ).findAllByRole('button');
     expect(list.map((b) => b.textContent)).toEqual([
       'Summarise research papers',
       'Take meeting notes',

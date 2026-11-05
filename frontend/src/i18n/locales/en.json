@@ -61,6 +61,8 @@
     "ledeNoCount": "Search models, apps, MCP servers and papers from many sources at once. Ask in plain words and get a recommendation, with a quote that proves it.",
     "suggestGuide": "Sounds like a question — ask the guide: “{{q}}” →",
     "examples": "Try:",
+    "exampleAi": "Drafted with AI, checked by a person",
+    "exampleAiMark": "AI",
     "example": {
       "papers": {
         "label": "Summarise research papers",
@@ -956,6 +958,7 @@
         "title": "How we mark AI text",
         "items": [
           "On the screen, every text written by an AI model has a label next to it: “AI-written” in the guide’s picks bar, on its search terms, on its question back to you, on a name it did not find in our sources, on its reasons in the result list and the preview, and on its comparison, explanation and prompt; “Read by AI” on the requirements it read from your question; “AI summary” and “Extracted by AI” on a description or a value in the result list, the preview and on the resource page; “Translated by AI” on the English translation of a query in another language; and “Steps written by AI” in the setup guide.",
+          "On the home page, an example a model drafted and a person checked has a small “AI” mark: “Drafted with AI, checked by a person”.",
           "In the page, the same text carries the HTML attribute data-ai-generated=\"true\", and data-ai-model with the model name when we know it.",
           "In our API, a guide answer has an aiContent object that names the provider, the models and the fields they wrote. Catalog values carry an origin such as AI_SUMMARY or AI_EXTRACTED. A search gives the translation of a query in its own field, translatedQuery.",
           "Quotes, titles and links are never written by AI. They come from the sources."

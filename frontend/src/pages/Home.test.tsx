@@ -98,7 +98,7 @@ describe('home: only the home page', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0);
     mockApi();
     const { router, params } = renderApp('/');
-    await userEvent.click(screen.getByRole('button', { name: 'Postgres MCP server' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Postgres MCP server' }));
     await waitFor(() => expect(router.state.location.pathname).toBe('/search'));
     expect(params().get('q')).toBe('postgres mcp server');
     expect(params().get('path')).toBe('BUILD_WITH_AI');

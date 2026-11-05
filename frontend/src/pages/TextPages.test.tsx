@@ -42,6 +42,7 @@ describe('mission, privacy and terms pages', () => {
       '“Read by AI” on the requirements it read from your question',
     );
     expect(marking).toHaveTextContent('“Steps written by AI” in the setup guide');
+    expect(marking).toHaveTextContent('a small “AI” mark: “Drafted with AI, checked by a person”');
     const issues = screen.getByRole('link', {
       name: 'Open an issue on GitHub (opens in a new tab)',
     });
