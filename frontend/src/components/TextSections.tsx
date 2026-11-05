@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
  * [withoutNumbers], the same sentence in words that need no number, shown while the numbers load or when they cannot.
  * A page never types a number the server may not apply.
  */
-export interface NumberedText {
+interface NumberedText {
   text: string;
   withoutNumbers: string;
 }

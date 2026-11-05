@@ -14,7 +14,7 @@ type PolicyState =
   { status: 'loading' } | { status: 'ready'; policy: Policy } | { status: 'failed' };
 
 /** How long opening a text page waits for the numbers, so it usually opens with them in place. */
-export const POLICY_WAIT_MS = 500;
+const POLICY_WAIT_MS = 500;
 
 let state: PolicyState = { status: 'loading' };
 let inFlight: Promise<void> | undefined;
