@@ -33,8 +33,8 @@ so the cache must be optional: when Redis is down, the app still works, only slo
    A search cache error or refusal adds the notice `CACHE_UNAVAILABLE`, and the sources are called live. A session
    read that fails or is refused finds no session ([0023](../edge/0023-identity-and-admin.md)).
 5. **Daily counters.** `RedisCallCounter` counts model calls per budget and day in Coordinated Universal Time (UTC):
-   `h2:v1:budget:{name}:{day}`, kept 2 days. One Lua script runs `INCR` and, on the first count, `PEXPIRE`, so a
-   counter key is never left without an expiry. Names: `guide`, `translation`, `enrichment`, `classifier`,
+   `h2:v1:budget:{name}:{day}`, kept 2 days. One Lua script runs `INCR` only below the budget's limit and, on the first count,
+   `PEXPIRE`, so a counter key is never left without an expiry and a refused call adds nothing. Names: `guide`, `translation`, `enrichment`, `classifier`,
    and `guide-client:{pseudonym}` for the per-client guide quota (a keyed hash of the client and the day, [0017](../guide/0017-guide-cost-guard.md)).
    A count given back for an answer with no pick also writes `h2:v1:budget:{name}:{day}:given-back`, a set of random
    question ids that expires with the count, in the same script. On an error, or while the `redis` circuit is open,

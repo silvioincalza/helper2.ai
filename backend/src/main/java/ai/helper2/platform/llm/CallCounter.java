@@ -5,15 +5,21 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Today's count of a named budget, kept outside the process so a restart or deploy does not hand
- * out a fresh day. Returns the count after adding one, or null when the store is unavailable.
+ * out a fresh day.
  */
 @FunctionalInterface
 public interface CallCounter {
 
   /** No durable store (no Redis): every budget counts in memory. */
-  CallCounter NONE = (name, day) -> null;
+  CallCounter NONE = (name, day, limit) -> null;
 
-  Long increment(String name, LocalDate day);
+  /**
+   * Adds one to [name] on [day] unless the count already reached [limit], in one atomic step.
+   * Returns the count with this call: above [limit] means refused, and nothing was added, so a
+   * refused call never takes a count that a {@link #giveBack} should free. Null when the store is
+   * unavailable.
+   */
+  @Nullable Long increment(String name, LocalDate day, int limit);
 
   /**
    * Today's count of [name] without adding one: 0 when nothing was counted yet, null when there is
@@ -56,8 +62,8 @@ public interface CallCounter {
     CallCounter counts = this;
     return new CallCounter() {
       @Override
-      public Long increment(String name, LocalDate day) {
-        return counts.increment(name, day);
+      public @Nullable Long increment(String name, LocalDate day, int limit) {
+        return counts.increment(name, day, limit);
       }
 
       @Override

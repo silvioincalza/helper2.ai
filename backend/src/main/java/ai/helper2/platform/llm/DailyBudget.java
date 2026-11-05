@@ -133,7 +133,7 @@ public final class DailyBudget {
 
   private Long durableCount(LocalDate now) {
     try {
-      return counter.increment(name, now);
+      return counter.increment(name, now, dailyCalls);
     } catch (RuntimeException e) {
       return null;
     }
