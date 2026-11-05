@@ -72,6 +72,15 @@ export default function ScoutRunsPage() {
   };
 
   const withRunNow = firstRunPerSource(runList);
+  // Collectors (external sources the Scout indexes) with no run in the listing get their Run now too.
+  const sources = useApi('sources', (s) => api.listSources(s));
+  const ran = new Set(runList.map((r) => r.sourceId));
+  const neverRan =
+    loaded === undefined
+      ? []
+      : (sources.data ?? sources.previous ?? []).filter(
+          (s) => s.external && s.mode === 'INDEXED' && s.enabled && !ran.has(s.id),
+        );
   return (
     <section aria-labelledby="sr-h" className="h2-admin__part">
       <AdminHead
@@ -117,7 +126,7 @@ export default function ScoutRunsPage() {
               <RetryButton onClick={retry} />
             </div>
           )}
-          {runList.length === 0 ? (
+          {runList.length === 0 && neverRan.length === 0 ? (
             <AdminEmpty command={COMMAND} text={t('admin.noRuns')} />
           ) : (
             <ScrollBox label={t('admin.scoutRuns')}>
@@ -164,6 +173,34 @@ export default function ScoutRunsPage() {
                     </tr>
                   ))}
                 </tbody>
+                {neverRan.length > 0 && (
+                  // Collectors with no run in the listing (a new discovery category): Run now all the same.
+                  <tbody>
+                    {neverRan.map((s) => (
+                      <tr key={s.id} className="v4-row">
+                        <th scope="row">{s.id}</th>
+                        <td>
+                          <StatusPill tone="later">{t('admin.neverRan')}</StatusPill>
+                        </td>
+                        <td>—</td>
+                        <td className="is-num">—</td>
+                        <td className="is-num">—</td>
+                        <td>—</td>
+                        <td>
+                          <button
+                            type="button"
+                            className="btn"
+                            aria-label={t('admin.runSource', { source: s.id })}
+                            aria-disabled={waiting || undefined}
+                            onClick={() => void start(s.id)}
+                          >
+                            {t('admin.runNow')}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                )}
               </table>
             </ScrollBox>
           )}

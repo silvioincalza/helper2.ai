@@ -60,7 +60,7 @@ them without each module growing an admin corner.
 ## Code
 - `backend/src/main/java/ai/helper2/admin/` — `package-info.java`, `web/AdminController.java`, `web/OverviewController.java`,
   `web/EnrichmentQueueController.java`, `usecase/GetOverview.java`, `usecase/ListEnrichmentQueue.java`.
-- `backend/src/main/resources/db/migration/V9__resource_enrichment_backlog_idx.sql`; `catalog/enrichment/EnrichmentCandidates.java`
+- `backend/src/main/resources/db/migration/V10__resource_enrichment_backlog_idx.sql`; `catalog/enrichment/EnrichmentCandidates.java`
   and `catalog/internal/JdbcEnrichmentCandidates.java` (`pending`, `pendingCount`, `backlog`).
 - `backend/src/main/java/ai/helper2/platform/llm/BudgetLedger.java`, `CallCounter.java`, `DailyBudget.java`,
   `RedisCallCounter.java` (`current`), `LlmConfiguration.java`.

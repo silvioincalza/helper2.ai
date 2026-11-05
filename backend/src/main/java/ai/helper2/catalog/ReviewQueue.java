@@ -54,7 +54,8 @@ public class ReviewQueue {
       String details,
       Instant createdAt,
       Instant resolvedAt,
-      String resolvedBy) {}
+      String resolvedBy,
+      List<String> categories) {}
 
   public record Links(UUID enrichmentRunId, UUID relationshipId, UUID reportId) {
     public static final Links NONE = new Links(null, null, null);
@@ -123,6 +124,33 @@ public class ReviewQueue {
         == 1;
   }
 
+  /** The OPEN candidate item of [kind] for [canonicalUrl], if one waits. */
+  public Optional<Item> openCandidate(Kind kind, String canonicalUrl) {
+    return jdbc.sql(
+            SELECT_ITEMS + " WHERE i.kind = :kind AND i.candidate_url = :url AND i.status = 'OPEN'")
+        .param("kind", kind.name())
+        .param("url", canonicalUrl)
+        .query(ReviewQueue::item)
+        .optional();
+  }
+
+  /**
+   * Replaces the reason and details of an OPEN candidate item (another collector found the same
+   * page, ADR 0051). Returns false when it is no longer OPEN.
+   */
+  public boolean updateCandidate(UUID id, String reason, String details) {
+    return jdbc.sql(
+                """
+                UPDATE review_item SET reason = :reason, details = :details
+                WHERE id = :id AND status = 'OPEN' AND candidate_url IS NOT NULL
+                """)
+            .param("id", id)
+            .param("reason", reason)
+            .param("details", details)
+            .update()
+        == 1;
+  }
+
   /** True when the catalog has a resource at [canonicalUrl]. */
   public boolean inCatalog(String canonicalUrl) {
     return jdbc.sql("SELECT EXISTS (SELECT 1 FROM resource WHERE canonical_url = :url)")
@@ -131,8 +159,20 @@ public class ReviewQueue {
         .single();
   }
 
+  /**
+   * Every item with its resource's title, and the categories of a resource candidate: the tags of
+   * its details (JSON; read as JSON only for that kind).
+   */
   private static final String SELECT_ITEMS =
-      "SELECT i.*, r.title AS resource_title FROM review_item i LEFT JOIN resource r ON r.id = i.resource_id";
+      """
+      SELECT i.*, r.title AS resource_title,
+             ARRAY(SELECT jsonb_array_elements_text(CASE
+                     WHEN i.kind = 'RESOURCE_CANDIDATE' AND i.details LIKE '{%' THEN CASE
+                       WHEN jsonb_typeof(CAST(i.details AS jsonb) -> 'tags') = 'array'
+                       THEN CAST(i.details AS jsonb) -> 'tags' ELSE '[]'::jsonb END
+                     ELSE '[]'::jsonb END)) AS categories
+      FROM review_item i LEFT JOIN resource r ON r.id = i.resource_id
+      """;
 
   /**
    * Every open item of [kind], oldest first. For kinds with few open items (drafts, candidates).
@@ -151,35 +191,55 @@ public class ReviewQueue {
 
   /** Newest first; all statuses when [status] is null, all kinds when [kind] is null. */
   public Page list(Status status, Kind kind, int page, int size) {
+    return list(status, kind, null, page, size);
+  }
+
+  /**
+   * As above; with [category], only resource candidates with that category among their tags (ADR
+   * 0051).
+   */
+  public Page list(Status status, Kind kind, String category, int page, int size) {
     String wantedStatus = status == null ? null : status.name();
     String wantedKind = kind == null ? null : kind.name();
     List<Item> items =
         jdbc.sql(
                 SELECT_ITEMS
+                    + " WHERE "
+                    + FILTER
                     + """
-                     WHERE (CAST(:status AS text) IS NULL OR i.status = :status)
-                       AND (CAST(:kind AS text) IS NULL OR i.kind = :kind)
-                    ORDER BY i.created_at DESC, i.id
+                     ORDER BY i.created_at DESC, i.id
                     LIMIT :size OFFSET :offset
                     """)
             .param("status", wantedStatus)
             .param("kind", wantedKind)
+            .param("category", category)
             .param("size", size)
             .param("offset", (long) page * size)
             .query(ReviewQueue::item)
             .list();
     long total =
-        jdbc.sql(
-                """
-                SELECT count(*) FROM review_item
-                WHERE (CAST(:status AS text) IS NULL OR status = :status) AND (CAST(:kind AS text) IS NULL OR kind = :kind)
-                """)
+        jdbc.sql("SELECT count(*) FROM review_item i WHERE " + FILTER)
             .param("status", wantedStatus)
             .param("kind", wantedKind)
+            .param("category", category)
             .query(Long.class)
             .single();
     return new Page(items, total);
   }
+
+  /**
+   * Status, kind and category filters of [list]. A category matches a RESOURCE_CANDIDATE whose
+   * details (JSON) list it in their tags; the CASE reads details as JSON only for that kind.
+   */
+  private static final String FILTER =
+      """
+      (CAST(:status AS text) IS NULL OR i.status = :status)
+        AND (CAST(:kind AS text) IS NULL OR i.kind = :kind)
+        AND (CAST(:category AS text) IS NULL OR CASE
+              WHEN i.kind = 'RESOURCE_CANDIDATE' AND i.details LIKE '{%'
+              THEN coalesce(CAST(i.details AS jsonb) -> 'tags' @> jsonb_build_array(CAST(:category AS text)), false)
+              ELSE false END)
+      """;
 
   /** Open items per kind, every kind listed (0 when none waits); for the back office overview. */
   public java.util.Map<Kind, Long> openCountsByKind() {
@@ -218,6 +278,7 @@ public class ReviewQueue {
         rs.getString("details"),
         rs.getTimestamp("created_at").toInstant(),
         rs.getTimestamp("resolved_at") == null ? null : rs.getTimestamp("resolved_at").toInstant(),
-        rs.getString("resolved_by"));
+        rs.getString("resolved_by"),
+        List.of((String[]) rs.getArray("categories").getArray()));
   }
 }

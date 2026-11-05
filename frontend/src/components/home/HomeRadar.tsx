@@ -7,7 +7,9 @@ import { newThisWeek } from '@/lib/v4Fields';
 import { beamAngle, contactAt, LEAVE_MS } from './radarClock';
 import {
   angleOf,
+  placeDot,
   placeDots,
+  radarGroup,
   radarFrame,
   type DotTone,
   type RadarDot,
@@ -135,7 +137,7 @@ function RadarArt({ f, beam }: { f: RadarFrame; beam: RefObject<SVGGElement | nu
 
 /**
  * The radar on Home (ADR 0042, decision 4), like a navigation radar: full rings around the title and a beam that turns
- * once every 5 s. Only external sources, each in its own fixed spot, 3 to 5 at a time. A dot is painted when the beam
+ * once every 5 s. Only external sources, 3 to 5 at a time, each placed where there is room when it comes on. A dot is painted when the beam
  * passes it (radarClock.ts); one source comes or goes every 1.6 s (radarRotation.ts). The beam and the dots run on
  * one clock, which stops while the search box has focus. Under reduced motion, or when a signed-in user turned the
  * motion off, the beam stands still and a fixed set of 4 shows at full opacity. Each dot links to the Sources page
@@ -156,16 +158,21 @@ export function HomeRadar({
   const beam = useRef<SVGGElement>(null);
   const size = useSize(root, title);
   const frame = radarFrame(size.width, size.height, size.title);
-  const dots = placeDots(sources, frame);
   const still = useRadarStill();
   const paused = useBoxFocused(box);
   const state = still ? ' is-still' : paused ? ' is-paused' : '';
+  // A new set of sources, a new size or standing still starts the radar again: the spots depend on all three.
+  const key = [
+    sources.map((s) => s.id).join(' '),
+    still ? 'still' : '',
+    JSON.stringify([frame.width, frame.height, frame.exclusions]),
+  ].join('|');
   return (
     <div ref={setRoot} className={`v4-radar${state}`}>
       <RadarArt f={frame} beam={beam} />
       <RadarDots
-        key={`${dots.map((d) => d.source.id).join(' ')}${still ? ' still' : ''}`}
-        dots={dots}
+        key={key}
+        sources={sources}
         frame={frame}
         beam={beam}
         running={!still && !paused}
@@ -211,22 +218,27 @@ interface View {
   shown: string[];
   /** Fading out, hidden from screen readers. */
   leaving: string[];
+  /** Where each of them is. */
+  spots: Map<string, RadarDot>;
 }
 
 /**
- * Every dot is in the page in its own spot. On each frame the clock turns the beam and sets each dot's `--o`, `--pop`
- * and `--glow` (home.css); the React state changes only when a source comes or goes. Standing still: a fixed random set
- * of 4 at full opacity, no clock. Mounted again (a React key) when the sources or `still` change.
+ * The dots on the radar now, each in the spot it got when it came on: a source is placed on arrival (`placeDot`),
+ * clear of the dots shown and still fading out, so none is ever left out for lack of room. New sources are picked in
+ * turn from the live sources, the collectors and the discovery categories (`radarGroup`). On each frame the clock
+ * turns the beam and sets each dot's `--o`, `--pop` and `--glow` (home.css); the React state changes only when a
+ * source comes or goes. Standing still: a fixed random set of 4 at full opacity, no clock. Mounted again (a React key)
+ * when the sources, the size or `still` change.
  */
 function RadarDots({
-  dots,
+  sources,
   frame,
   beam,
   running,
   still,
   random,
 }: {
-  dots: RadarDot[];
+  sources: SourceInfo[];
   frame: RadarFrame;
   beam: RefObject<SVGGElement | null>;
   running: boolean;
@@ -236,24 +248,40 @@ function RadarDots({
   const { t } = useTranslation();
   const name = useDotName();
   const [now] = useState(Date.now);
-  const [ids] = useState(() => dots.map((d) => d.source.id));
-  const [view, setView] = useState<View>(() => ({
-    shown: still ? stillSet(ids, random) : [],
-    leaving: [],
-  }));
+  const [byId] = useState(() => new Map(sources.map((s) => [s.id, s])));
+  const [ids] = useState(() => sources.map((s) => s.id));
+  const groupOf = (id: string) => radarGroup(byId.get(id)!);
+  const [first] = useState<View>(() => {
+    const shown = still ? stillSet(ids, random) : [];
+    const placed = placeDots(
+      shown.map((id) => byId.get(id)!),
+      frame,
+    );
+    return { shown, leaving: [], spots: new Map(placed.map((d) => [d.source.id, d])) };
+  });
+  const [view, setView] = useState<View>(first);
+  const spots = useRef(new Map(first.spots));
   const els = useRef(new Map<string, HTMLElement>());
   const cycle = useRef(EMPTY);
   const nextStep = useRef(delayAfter(EMPTY, ids.length));
   const lives = useRef(new Map<string, Life>());
-  const angles = new Map(dots.map((d) => [d.source.id, angleOf(d, frame)]));
+
+  /** A source comes on: its spot, clear of every dot still on the radar. */
+  const arrive = (id: string) => {
+    const onRadar = [...spots.current.values()];
+    spots.current.set(id, placeDot(byId.get(id)!, frame, onRadar));
+  };
 
   useClock(running, (time) => {
     let changed = false;
     while (time >= nextStep.current) {
-      const next = step(cycle.current, ids, random);
+      const next = step(cycle.current, ids, random, groupOf);
       for (const id of next.shown)
-        if (!cycle.current.shown.includes(id))
+        if (!cycle.current.shown.includes(id)) {
+          if (lives.current.has(id)) spots.current.delete(id);
+          arrive(id);
           lives.current.set(id, { addedAt: time, leftAt: null });
+        }
       for (const id of cycle.current.shown)
         if (!next.shown.includes(id)) lives.current.get(id)!.leftAt = time;
       changed ||= next !== cycle.current;
@@ -263,6 +291,7 @@ function RadarDots({
     for (const [id, life] of lives.current)
       if (life.leftAt !== null && time - life.leftAt >= LEAVE_MS) {
         lives.current.delete(id);
+        spots.current.delete(id);
         els.current.get(id)?.style.setProperty('--o', '0');
         changed = true;
       }
@@ -270,10 +299,12 @@ function RadarDots({
       setView({
         shown: [...cycle.current.shown],
         leaving: [...lives.current].filter(([, l]) => l.leftAt !== null).map(([id]) => id),
+        spots: new Map(spots.current),
       });
     beam.current?.style.setProperty('transform', `rotate(${beamAngle(time).toFixed(2)}deg)`);
     for (const [id, life] of lives.current) {
-      const c = contactAt(angles.get(id) ?? 0, time, life.addedAt, life.leftAt);
+      const spot = spots.current.get(id);
+      const c = contactAt(spot ? angleOf(spot, frame) : 0, time, life.addedAt, life.leftAt);
       const el = els.current.get(id);
       el?.style.setProperty('--o', c.opacity.toFixed(3));
       el?.style.setProperty('--pop', c.pop.toFixed(3));
@@ -281,17 +312,18 @@ function RadarDots({
     }
   });
 
+  const onRadar = [...view.shown, ...view.leaving.filter((id) => !view.shown.includes(id))];
   return (
     <ul className="v4-radar__dots" aria-label={t('radar.label')}>
-      {dots.map((d) => {
-        const id = d.source.id;
+      {onRadar.map((id) => {
+        const d = view.spots.get(id);
+        if (!d) return null;
         const on = view.shown.includes(id);
-        const leaving = view.leaving.includes(id);
         const label = name(d.source, d.tone, now);
         return (
           <li
             key={id}
-            className={on ? 'is-on' : leaving ? 'is-leaving' : undefined}
+            className={on ? 'is-on' : 'is-leaving'}
             style={{ left: d.x, top: d.y - d.r }}
             aria-hidden={on ? undefined : true}
             inert={!on}

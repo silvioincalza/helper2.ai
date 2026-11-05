@@ -22,6 +22,8 @@ data class AcceptedCandidate(
   val type: ResourceType,
   /** The categories it belongs to, as catalog tags. */
   val tags: Set<String> = emptySet(),
+  /** What the collectors that found it said (ADR 0051): kept in the record's extra, never shown. */
+  val facts: Map<String, Any> = emptyMap(),
 )
 
 /** Why an accepted candidate cannot be indexed; the review item stays open. */
@@ -44,7 +46,9 @@ fun interface CatalogLookup {
  * An admin accepted a resource candidate (ADR 0051): it is indexed as a record of the collector
  * that found it, with the collector's own title and excerpt, so it is catalogued like everything
  * the Scout collects. It has no enrichment yet: the next Scout run takes it from the backlog. The
- * values are checked again here, because the review item is stored text.
+ * values are checked again here, because the review item is stored text. When several categories
+ * found it, it is one record, of the first collector that found it, with every category as a tag
+ * and every finder in its extra (foundBy): the same page and excerpt once, not once per category.
  */
 class IndexAcceptedCandidate(
   collectors: List<Collector>,
@@ -58,7 +62,8 @@ class IndexAcceptedCandidate(
 
   private companion object {
     const val MAX_TITLE = 300
-    const val MAX_SNIPPET = 1000
+    /** Tavily's excerpt as evidence for the enrichment (ADR 0051). */
+    const val MAX_SNIPPET = 2400
     val TAG = Regex("[a-z0-9]+(-[a-z0-9]+)*")
     val TYPES =
       setOf(
@@ -120,6 +125,7 @@ class IndexAcceptedCandidate(
       type = c.type,
       tags = c.tags,
       retrievedAt = clock.instant(),
+      facts = c.facts,
     )
   }
 }

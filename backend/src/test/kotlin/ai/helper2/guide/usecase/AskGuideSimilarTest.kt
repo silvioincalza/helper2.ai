@@ -84,6 +84,8 @@ class AskGuideSimilarTest {
         return Result(Verdict.TAKEN, used + 1)
       }
 
+      override fun add(counter: Counter, amount: Long) {}
+
       override fun giveBack(counter: Counter) {}
 
       override fun used(counter: Counter) = counts[counter] ?: 0

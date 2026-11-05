@@ -169,17 +169,18 @@ groups:
 
       - alert: Helper2TavilyCreditsHigh
         # ADR 0037: live Tavily calls of searches and the guide (one credit each), every feature and tier. The plan has
-        # 14,000 credits a month; the Scout uses about 370, prod may spend 250 a day (app.dailyLimits.webSearchCredits)
+        # 14,000 credits a month; the Scout uses about 420, prod may spend 250 a day (app.dailyLimits.webSearchCredits)
         # and staging 150. The alert fires at 80% of prod's cap, before searches lose Tavily; change it with the cap.
-        # The Scout's calls are not in this counter.
+        # The Scout's discovery searches count here too (feature scout-discovery, at most 40 a day, ADR 0051), as they
+        # count on the daily cap; its other Tavily queries do not.
         expr: sum by (environment) (increase(helper2_tavily_credits_total{application="helper2"}[1d])) > 200
         for: 0m
         labels:
           severity: warning
         annotations:
           summary: "Tavily used more than 200 credits in the last 24 hours ({{ $labels.environment }})."
-          description: "{{ $value | humanize }} live Tavily calls in the last 24 hours. At this pace the monthly credits run out before the plan resets; then Tavily fails for everyone and searches answer from stored results and the other sources."
-          runbook: "Dashboard: helper2_tavily_credits_total by feature and tier. Many guest addresses at the limit = rotating IPs: set H2_TAVILY_GLOBAL_DAILY_CREDITS to cap all live calls a day (no release). Few stored-set hits (helper2_cache_events_total, event=store_hit): check the freshness settings."
+          description: "{{ $value | humanize }} Tavily credits (live calls and the Scout's discovery searches) in the last 24 hours. At this pace the monthly credits run out before the plan resets; then Tavily fails for everyone and searches answer from stored results and the other sources."
+          runbook: "Dashboard: helper2_tavily_credits_total by feature and tier (scout-discovery is the Scout). Many guest addresses at the limit = rotating IPs: set H2_TAVILY_GLOBAL_DAILY_CREDITS to cap all live calls a day (no release). Few stored-set hits (helper2_cache_events_total, event=store_hit): check the freshness settings."
 
   - name: helper2-catalog
     rules:
@@ -229,13 +230,14 @@ groups:
       - alert: Helper2ScoutCollectorStale
         # The gauge lives in the memory of the replica that ran the collector; max_over_time over 9 days finds it
         # across deploys. Prometheus must keep metrics at least 9 days. Thresholds: run interval (daily cron on the
-        # chart, tavily-scout P5D, course-scout and tavily-discovery P7D) plus a day.
+        # chart, tavily-scout P5D, course-scout P7D) plus a day. The 34 discovery categories have their own rule
+        # (Helper2DiscoveryStale), so a Tavily outage is one alert, not 34.
         expr: |
-          (time() - max by (environment, source) (max_over_time(helper2_scout_last_success{application="helper2", source!~"tavily-scout|course-scout|tavily-discovery"}[9d]))) > 2 * 86400
+          (time() - max by (environment, source) (max_over_time(helper2_scout_last_success{application="helper2", source!~"tavily-scout|course-scout|discovery-.*"}[9d]))) > 2 * 86400
           or
           (time() - max by (environment, source) (max_over_time(helper2_scout_last_success{application="helper2", source="tavily-scout"}[9d]))) > 6 * 86400
           or
-          (time() - max by (environment, source) (max_over_time(helper2_scout_last_success{application="helper2", source=~"course-scout|tavily-discovery"}[9d]))) > 8 * 86400
+          (time() - max by (environment, source) (max_over_time(helper2_scout_last_success{application="helper2", source="course-scout"}[9d]))) > 8 * 86400
         for: 0m
         labels:
           severity: warning
@@ -243,6 +245,21 @@ groups:
           summary: "Scout collector {{ $labels.source }}: no successful run for {{ $value | humanizeDuration }} ({{ $labels.environment }})."
           description: "The catalog misses new resources from {{ $labels.source }} since its last successful run."
           runbook: "Dashboard row Scout, 'Run failures by error'; the admin back office lists the runs. A collector disabled on purpose keeps firing until its last value is 9 days old."
+
+      - alert: Helper2DiscoveryStale
+        # ADR 0051: one alert for every discovery category (discovery-<category>, weekly) with no success for more
+        # than 8 days (the 7-day interval plus a day). One alert per environment; the description lists them.
+        expr: |
+          count by (environment) (
+            (time() - max by (environment, source) (max_over_time(helper2_scout_last_success{application="helper2", source=~"discovery-.*"}[9d]))) > 8 * 86400
+          ) > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $value }} discovery categories: no successful run for more than 8 days ({{ $labels.environment }})."
+          description: "No new products or list articles from: {{ range query (printf \"(time() - max by (source) (max_over_time(helper2_scout_last_success{application='helper2', environment='%s', source=~'discovery-.*'}[9d]))) > 8 * 86400\" $labels.environment) }}{{ .Labels.source }} {{ end }}"
+          runbook: "Admin back office, Scout runs: the message of each category's last run (a Tavily error, the daily credit cap of the Scout, or not due). Run now on one category to check. A category disabled on purpose keeps firing until its last value is 9 days old."
 
   - name: helper2-guide
     rules:

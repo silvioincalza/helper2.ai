@@ -4,8 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.platform.http.ObservedHttp;
 import ai.helper2.search.SourceQuery;
+import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.WebPageTitle;
+import ai.helper2.shared.WebSources;
 import ai.helper2.sources.SourceFixtures;
 import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.testing.FixtureServer;
@@ -101,12 +103,19 @@ class TavilySourceTest {
 
   @Test
   void theTavilySourcesAreTheOnesWhoseTitlesAreCleanedOnRead() {
-    assertThat(WebPageTitle.SOURCES)
+    assertThat(WebSources.FIXED)
         .containsExactlyInAnyOrder(
-            source().getDescriptor().getId(),
-            TavilyCollector.ID,
-            TavilyDiscoveryCollector.ID,
-            CourseCollector.ID);
+            source().getDescriptor().getId(), TavilyCollector.ID, CourseCollector.ID);
+    assertThat(WebSources.isWeb("discovery-coding")).isTrue();
+    assertThat(WebSources.isWeb("discovery-")).isFalse();
+    assertThat(WebSources.isWeb("github")).isFalse();
+    assertThat(WebSources.isWeb(null)).isFalse();
+    assertThat(
+            WebPageTitle.forSource(
+                "discovery-coding",
+                "Cursor | The AI Code Editor",
+                CanonicalUrl.of("https://cursor.com")))
+        .isEqualTo(WebPageTitle.of("Cursor | The AI Code Editor", "cursor.com").getTitle());
   }
 
   @Test
@@ -139,7 +148,7 @@ class TavilySourceTest {
     var hit =
         TavilySource.toHit(
             result,
-            TavilyDiscoveryCollector.ID,
+            "discovery-coding",
             SourceFixtures.CLOCK.instant(),
             0,
             ResourceType.ARTICLE,
