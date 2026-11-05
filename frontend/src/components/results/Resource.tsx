@@ -20,7 +20,7 @@ import './resource.css';
 import { OpenButton } from './OpenButton';
 
 /**
- * Resource page (ADR 0042, v4-2): one column. The back link, the title, the date line (type · host · the same date as
+ * Resource page (ADR 0042, decision 8): one column. The back link, the title, the date line (type · host · the same date as
  * the result row), one primary button (Open) with Save and, for what you install or run, Set it up. Then why the guide
  * picked it (when it came from a pick), the source's own text with the checked sentence, the facts, its dates, where
  * the information comes from (folded) and the detail sections ([children]).

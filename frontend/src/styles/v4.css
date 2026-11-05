@@ -411,7 +411,7 @@
   }
 }
 
-/* Nothing moves under reduced motion (ADR 0042, decision 6). */
+/* Nothing moves under reduced motion (ADR 0042, decision 12). */
 @media (prefers-reduced-motion: reduce) {
   .v4 *,
   .v4 *::before,

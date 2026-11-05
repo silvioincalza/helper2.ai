@@ -879,7 +879,7 @@ h2 {
   padding: 1px 5px;
   border: 1px solid currentColor;
 }
-/* Ask the guide: the quieter second button of the box (ADR 0042, decision 8). On a narrow box only its icon shows. */
+/* Ask the guide: the quieter second button of the box (ADR 0042, decision 11). On a narrow box only its icon shows. */
 .one-box-ask {
   justify-content: center;
   min-width: var(--target-min);

@@ -6,7 +6,7 @@ import type { FacetValue } from '@/api/types';
 const SHOWN = 4;
 
 /**
- * The type tabs over the list (ADR 0042, v4-2): All, the four types with the most results, then More with the rest.
+ * The type tabs over the list (ADR 0042, decision 7): All, the four types with the most results, then More with the rest.
  * A type chosen under More shows as a tab too, so the pressed tab is always in sight. Counts are the facet counts
  * from the API. Escape closes More and gives focus back to it.
  */

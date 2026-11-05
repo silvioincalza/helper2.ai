@@ -46,7 +46,7 @@ import './results.css';
 const PHONE = '(max-width: 720px)';
 
 /**
- * Results view (ADR 0042, v4-2), loaded on demand under the page's h1 and box (HomePage): the guide's picks bar when a
+ * Results view (ADR 0042, decision 7), loaded on demand under the page's h1 and box (HomePage): the guide's picks bar when a
  * question is asked, then one column of results. A row opens the resource page; Back comes back to the same place.
  * The guide's picks stay where the search put them, each marked with its rank, its reason and its quote, so nothing
  * moves when the answer comes. The sources that answered are at the bottom.

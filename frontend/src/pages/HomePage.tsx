@@ -9,7 +9,7 @@ import { useTitle } from '@/hooks/useTitle';
 import { askedQuestion, parseSearchParams, showsHome } from '@/lib/searchState';
 
 /**
- * The results view loads on demand, outside the first download (ADR 0042, v4-2): most visits start on Home. The page's
+ * The results view loads on demand, outside the first download (ADR 0042, decision 7): most visits start on Home. The page's
  * h1 and the search box are not part of it, so they are there at once and never mount twice; the skeleton holds the
  * list's place while the chunk loads.
  */

@@ -1,4 +1,4 @@
-/* Results (ADR 0042, v4-2): one column in the terminal style. Loaded with the results view, on demand. The page frame,
+/* Results (ADR 0042, decision 7): one column in the terminal style. Loaded with the results view, on demand. The page frame,
    the box and the skeleton are in the first download (HomePage, skeleton.css). Only semantic tokens. */
 .h2-prompt {
   color: var(--accent-ink);

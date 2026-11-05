@@ -55,8 +55,6 @@ skeleton: "Skeleton rows under\nthe h1 and the box" {class: app}
 list: "One column: All results ·\n\$ helper2 search · N,\nrows, filters, coverage" {class: app}
 resource: "Resource page;\nBack keeps the place" {class: end}
 question: "Asked the guide?\n(button or Shift+Enter)" {class: decision}
-ask: "Ask the guide bar\n(no model call)" {class: app}
-pressed: "Ask the guide pressed?" {class: decision}
 guide: "POST /api/v1/guide/stream (SSE)" {class: ext}
 outcome: "Outcome?" {class: decision}
 picks: "Up to 3 picks, marked in their rows:\nAI-written reason (labelled),\nchecked quote" {class: end}
@@ -78,10 +76,7 @@ loaded -> list: yes
 list -> resource: a row
 list -> question
 question -> guide: yes {class: hot}
-question -> ask: no
-ask -> pressed
-pressed -> guide: yes
-pressed -> done: no
+question -> done: no
 guide -> outcome
 outcome -> picks: picks
 outcome -> clarify: clarify

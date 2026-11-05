@@ -14,7 +14,7 @@ import { ResultDate } from './ResultDate';
 export const rowAnchor = (id: string) => `result-${id}`;
 
 /**
- * One result in the list (ADR 0042, v4-2): type, host and date, the guide's pick, the title, the description and the
+ * One result in the list (ADR 0042, decision 7): type, host and date, the guide's pick, the title, the description and the
  * sources that list it. The title is a link that covers the whole row and opens the resource page; it passes on where
  * to come back to and, for a pick, the guide's reason and checked quote. A pick shows its reason (AI-written: labelled
  * and marked) and its quote, highlighted in the source's own words. Nothing in the row is selected or opens in place.
