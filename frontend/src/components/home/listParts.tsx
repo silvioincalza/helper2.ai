@@ -45,15 +45,20 @@ export function ShowAll({
   );
 }
 
-/** Loading, error and empty, announced politely; the rows themselves are not read aloud on load. */
+/**
+ * Loading, error and empty, announced politely; the rows themselves are not read aloud on load. [level] is the
+ * heading level of the error and empty panels: 3 under a list heading, 2 right under a page title.
+ */
 export function ListState({
   feed,
   errorText,
   emptyText,
+  level = 3,
 }: {
   feed: Feed<unknown>;
   errorText: string;
   emptyText: string;
+  level?: number;
 }) {
   const { t } = useTranslation();
   return (
@@ -69,13 +74,13 @@ export function ListState({
       {!feed.loading && feed.error && (
         <StatePanel
           tone="error"
-          level={3}
+          level={level}
           title={errorText}
           next={<RetryButton onClick={feed.reload} />}
         />
       )}
       {!feed.loading && !feed.error && feed.rows.length === 0 && (
-        <StatePanel tone="notice" level={3} title={emptyText} />
+        <StatePanel tone="notice" level={level} title={emptyText} />
       )}
     </div>
   );
