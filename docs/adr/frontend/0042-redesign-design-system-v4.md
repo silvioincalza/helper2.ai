@@ -130,9 +130,8 @@ they do now and how version 3 and 4 live side by side until the other pages move
   `total` on GET /recent and GET /events/upcoming (which also takes `days`). The Unknown count per facet is still open.
 - For a while the site shows two designs and loads two font families on the pages still on version 3. The header and
   footer are already version 4 on every page.
-- The initial JavaScript is 165.9 KiB gzip, over the 165 KiB budget, with the examples from the pool on Home: the
-  radar, the phone tabs, the Sources page and the account page already load on demand. Making room is on the
-  [roadmap](../../roadmap.md).
+- The initial JavaScript is 166 of 250 KiB gzip ([0025](0025-frontend-one-box.md)), with the examples from the pool
+  on Home: the radar, the phone tabs, the Sources page and the account page load on demand.
 - What is not built yet is on the [roadmap](../../roadmap.md) (section 6).
 
 Flowchart: [flow-0042-redesign](../../diagrams/flow-0042-redesign.svg). Sequence:

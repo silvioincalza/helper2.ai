@@ -187,9 +187,6 @@ Open items:
   - An `unknown` count per facet and an updated-date facet on the search response (Filters panel).
   - Sign-in with Google (phase 1). Passkey, email link and password (phase 2) need their own ADR, a threat model and
     the Privacy page first.
-  - The initial JavaScript is at 165.9 KiB gzip, over the 165 KiB budget (main alone 164.5, this Home alone 164.5;
-    together with the pool examples 165.9). The radar, the phone tabs, Sources and Account already load on demand.
-    Make room before the next page moves, for example by loading Results on demand, or raise the budget.
   - **Radar pause for everyone (WCAG 2.2.2), open point.** The radar's beam turns without end and its sources come and
     go. Signed-in users can turn it off on the account page; guests have only reduced motion and the hold while the
     search box has focus, and no switch. Find a pause for them that needs no new browser storage key, or decide the
