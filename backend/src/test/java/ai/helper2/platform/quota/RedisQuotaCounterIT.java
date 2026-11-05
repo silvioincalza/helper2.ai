@@ -8,8 +8,10 @@ import ai.helper2.platform.quota.QuotaCounter.Counter;
 import ai.helper2.platform.quota.QuotaCounter.Verdict;
 import ai.helper2.platform.resilience.Resilience;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -26,6 +28,11 @@ import org.springframework.data.redis.core.script.RedisScript;
 /**
  * The daily quota counters on the real Redis: check and count in one step, per field, with a 24 h
  * expiry.
+ *
+ * <p>The command timeout is 5 s in every test (build.gradle.kts), not the 250 ms of production:
+ * these tests prove what the counter counts, not how fast Redis answers. A busy CI runner can stall
+ * one round trip to the container for more than 250 ms, and the concurrent test then failed with a
+ * command timeout.
  */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
@@ -123,23 +130,30 @@ class RedisQuotaCounterIT {
     }
   }
 
+  /** More callers than either limit, all let go at once, so the limits are really contended. */
+  private static final int CALLERS = 20;
+
   @Test
   void concurrentTakesNeverPassTheLimit() throws Exception {
     Counter own = new Counter(key(), "search");
     Counter global = new Counter(key(), "tavily");
     AtomicInteger taken = new AtomicInteger();
+    CountDownLatch start = new CountDownLatch(1);
     try (ExecutorService pool = Executors.newVirtualThreadPerTaskExecutor()) {
-      List<Future<?>> calls = new java.util.ArrayList<>();
-      for (int i = 0; i < 50; i++) {
+      List<Future<?>> calls = new ArrayList<>();
+      for (int i = 0; i < CALLERS; i++) {
         calls.add(
             pool.submit(() -> {
+              start.await();
               if (counter().take(own, 10, global, 7).verdict() == Verdict.TAKEN) {
                 taken.incrementAndGet();
               }
+              return null;
             }));
       }
-      for (Future<?> f : calls) {
-        f.get();
+      start.countDown();
+      for (Future<?> call : calls) {
+        call.get(30, TimeUnit.SECONDS);
       }
     }
 
