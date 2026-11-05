@@ -3,7 +3,7 @@
 # the CSRF cookie and header, the limiter counting in Redis (shared by all replicas), and the 429.
 # Source of truth: deploy/helm/helper2/templates/app.yaml, networkpolicy.yaml,
 #   backend/src/main/java/ai/helper2/platform/SinglePageApp.java, RateLimitInterceptor.java, RateLimiter.java,
-#   RedisRateLimiter.java, ClientKey.java,
+#   RedisRateLimiter.java, ClientKey.java, platform/quota/QuotaKeys.java,
 #   backend/src/main/java/ai/helper2/identity/config/SecurityConfiguration.java, frontend/src/api/client.ts.
 # Render: cd docs/diagrams && d2 fmt sequence-0024-http-edge-protection.d2 && d2 sequence-0024-http-edge-protection.d2 sequence-0024-http-edge-protection.svg
 
@@ -35,7 +35,7 @@ visit: Direct visit to /sources {
 search: Search {
   browser -> sec: "GET /api/v1/search?q=…" {class: hot}
   sec -> rl: "preHandle (handler: search)"
-  rl -> redis: "EVAL INCR, PEXPIRE 60000 ms:\nh2:v1:rate:search:20010db800010002::/64\n(client 2001:db8:1:2::5 → its /64)"
+  rl -> redis: "EVAL INCR, PEXPIRE 60000 ms:\nh2:v1:rate:search:<pseudonym>\n(client 2001:db8:1:2::5 → its /64\n→ HMAC with the day key)"
   redis -> rl: "[1, ms left] → allowed"
   rl -> ctl: "search(…)"
   ctl -> browser: "200, no-store" {class: hot}

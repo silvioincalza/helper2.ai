@@ -6,7 +6,7 @@
 #   backend/src/main/resources/application.yaml (server.*, management.*),
 #   backend/src/main/java/ai/helper2/identity/config/SecurityConfiguration.java,
 #   backend/src/main/java/ai/helper2/platform/RateLimitInterceptor.java, RateLimiter.java, ClientKey.java,
-#   RedisRateLimiter.java,
+#   RedisRateLimiter.java, platform/quota/QuotaKeys.java (client pseudonym),
 #   InMemoryRateLimiter.java, SinglePageApp.java, platform/resilience/Resilience4jPolicies.java (policy redis).
 # Render: cd docs/diagrams && d2 fmt flow-0024-http-edge-protection.d2 && d2 flow-0024-http-edge-protection.d2 flow-0024-http-edge-protection.svg
 
@@ -32,9 +32,9 @@ limit: RateLimitInterceptor {
   class: group
   direction: down
   limited: "Handler is search, reportResource,\naskGuideStream, askResourceGuide\nor listRecent?\n(async re-dispatch not charged)" {class: decision}
-  key: "ClientKey: IPv4, or IPv6 /64\n(zone id dropped,\nIPv4-mapped → IPv4)" {class: app}
+  key: "ClientKey: IPv4, or IPv6 /64\n(zone id dropped,\nIPv4-mapped → IPv4)\n→ QuotaKeys.client: HMAC of the\nUTC day, no address in Redis" {class: app}
   breaker: "redis circuit lets it through?\n(open 30 s after half of\nthe last calls failed)" {class: decision}
-  redis: "Redis Lua: INCR h2:v1:rate:<limiter>:<key>,\nPEXPIRE window on count 1; PTTL" {class: data}
+  redis: "Redis Lua: INCR h2:v1:rate:<limiter>:<pseudonym>,\nPEXPIRE window on count 1; PTTL" {class: data}
   memory: "InMemoryRateLimiter (this replica,\n≤ 50,000 clients kept);\nhelper2.rate-limit.fallback + 1" {class: app}
   window: "Count in fixed window\n≤ limit?" {class: decision}
   e429: "429 problem+json,\nRetry-After = window time left" {class: fail}

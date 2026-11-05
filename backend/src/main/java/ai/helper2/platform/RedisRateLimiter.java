@@ -1,5 +1,6 @@
 package ai.helper2.platform;
 
+import ai.helper2.platform.quota.QuotaKeys;
 import ai.helper2.platform.resilience.Resilience;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -14,6 +15,10 @@ import org.springframework.data.redis.core.script.RedisScript;
  * so the window ends on Redis' clock and what is left of it is the Retry-After. INCR and PEXPIRE
  * run in one script: a key is never left without an expiry (which would block that client for
  * good).
+ *
+ * <p>The key names the client by its pseudonym of the UTC day ({@link QuotaKeys#client}), never by
+ * its address. At midnight UTC the pseudonym changes, so a window open at midnight is followed by a
+ * fresh one: at most one extra window's worth of requests, the same as at any fixed-window edge.
  *
  * <p>Fails open: the script runs under the {@code redis} policy (ADR 0033); on a Redis error, or
  * while the circuit is open, each replica counts in its own memory with the same limit, and every
@@ -38,6 +43,7 @@ public final class RedisRateLimiter implements RateLimiter {
   private final String name;
   private final int limit;
   private final Duration window;
+  private final QuotaKeys keys;
   private final StringRedisTemplate redis;
   private final Resilience resilience;
   private final RateLimiter fallback;
@@ -51,6 +57,7 @@ public final class RedisRateLimiter implements RateLimiter {
       String name,
       int limit,
       Duration window,
+      QuotaKeys keys,
       StringRedisTemplate redis,
       Resilience resilience,
       RateLimiter fallback,
@@ -58,6 +65,7 @@ public final class RedisRateLimiter implements RateLimiter {
     this.name = name;
     this.limit = limit;
     this.window = window;
+    this.keys = keys;
     this.redis = redis;
     this.resilience = resilience;
     this.fallback = fallback;
@@ -69,8 +77,8 @@ public final class RedisRateLimiter implements RateLimiter {
             .register(meters);
   }
 
-  static String key(String name, String clientAddress) {
-    return KEY_PREFIX + name + ":" + ClientKey.of(clientAddress);
+  String key(String clientAddress) {
+    return KEY_PREFIX + name + ":" + keys.client(ClientKey.of(clientAddress));
   }
 
   @Override
@@ -85,7 +93,7 @@ public final class RedisRateLimiter implements RateLimiter {
 
   private long fromRedis(String clientAddress) {
     List<?> result =
-        redis.execute(COUNT, List.of(key(name, clientAddress)), Long.toString(window.toMillis()));
+        redis.execute(COUNT, List.of(key(clientAddress)), Long.toString(window.toMillis()));
     if (result == null || result.size() != 2) {
       throw new IllegalStateException("unexpected rate-limit script result: " + result);
     }

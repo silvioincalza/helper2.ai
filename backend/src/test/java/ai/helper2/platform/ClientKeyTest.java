@@ -2,6 +2,8 @@ package ai.helper2.platform;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.helper2.platform.quota.QuotaKeys;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 
 class ClientKeyTest {
@@ -40,8 +42,20 @@ class ClientKeyTest {
         new InMemoryRateLimiter(1, java.time.Duration.ofMinutes(1), java.time.Clock.systemUTC());
     assertThat(limiter.acquire("2001:db8:0:7::1%eth0")).isZero();
     assertThat(limiter.acquire("2001:db8:0:7::2")).as("same /64").isPositive();
-    assertThat(RedisRateLimiter.key("guide", "[2001:db8:0:7::1%eth0]"))
-        .isEqualTo("h2:v1:rate:guide:20010db800000007::/64");
+    QuotaKeys keys = new QuotaKeys("test-secret", java.time.Clock.systemUTC());
+    RedisRateLimiter redis =
+        new RedisRateLimiter(
+            "guide",
+            1,
+            java.time.Duration.ofMinutes(1),
+            keys,
+            null,
+            null,
+            limiter,
+            new SimpleMeterRegistry());
+    assertThat(redis.key("[2001:db8:0:7::1%eth0]"))
+        .isEqualTo("h2:v1:rate:guide:" + keys.client("20010db800000007::/64"))
+        .isEqualTo(redis.key("2001:db8:0:7::9"));
     assertThat(limiter.acquire(null)).isZero();
   }
 
