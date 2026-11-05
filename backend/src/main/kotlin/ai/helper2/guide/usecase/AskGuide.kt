@@ -153,15 +153,20 @@ class AskGuide(
     clarification: String? = null,
     drops: Drops = Drops.NONE,
     userId: UUID? = null,
+    categories: Set<String> = emptySet(),
   ): GuideAnswer {
     val observation = Observation.createNotStarted("helper2.guide.ask", observations).start()
     var outcome = "error"
     var cacheResult = "miss"
     val asker = client?.let { Asker(Feature.GUIDE, it, userId) }
-    val question = Question(request.trim(), path, clarification?.trim(), drops, asker)
+    val question = Question(request.trim(), path, clarification?.trim(), drops, asker, categories)
     try {
       observation.openScope().use {
-        val key = GuideAnswerCache.key(request, path, configHash, question.clarification, drops)
+        // A category filter changes the candidates, so it is part of the key (ADR 0053).
+        val config =
+          if (categories.isEmpty()) configHash
+          else configHash + "|categories=" + categories.sorted().joinToString(",")
+        val key = GuideAnswerCache.key(request, path, config, question.clarification, drops)
         cache?.get(key)?.let {
           cacheResult = "exact"
           outcome = "cached"
@@ -337,6 +342,7 @@ class AskGuide(
         cache == null ||
         q.clarification != null ||
         !q.drops.isEmpty ||
+        q.categories.isNotEmpty() ||
         r.plan == null ||
         r.modelFailed
     )

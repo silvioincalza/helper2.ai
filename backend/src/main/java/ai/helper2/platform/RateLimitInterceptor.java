@@ -78,7 +78,10 @@ class RateLimitInterceptor implements HandlerInterceptor, WebMvcConfigurer {
             home,
             // The numbers of the text pages: one read per page view, as cheap as the home reads.
             "getPolicy",
-            limiter("policy", limits.recentPerMinute(), Duration.ofMinutes(1)));
+            limiter("policy", limits.recentPerMinute(), Duration.ofMinutes(1)),
+            // The category list (ADR 0053): one read per results page, then cached by the browser.
+            "listCategories",
+            limiter("categories", limits.recentPerMinute(), Duration.ofMinutes(1)));
   }
 
   private RateLimiter limiter(String name, int limit, Duration window) {

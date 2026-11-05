@@ -1,15 +1,14 @@
 package ai.helper2.sources.tavily;
 
+import ai.helper2.shared.CategoryWords;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.WebSources;
 import java.time.Duration;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.stream.IntStream;
 
 /**
  * One category of the AI world (ADR 0051): its own discovery collector, its own dot on the Home
@@ -17,7 +16,7 @@ import java.util.stream.IntStream;
  * id is the catalog tag of every result it fits (the ones its searches found, and any result whose
  * title or excerpt has one of its words). The options are already resolved: the interval and the
  * score floor fall back to the global discovery settings, and the excluded domains include the
- * global list.
+ * global list. The words are {@link CategoryWords}, shared with search (ADR 0053).
  *
  * @param requireKeyword keep a result only when its own title or excerpt has one of this category's
  *     words (health, legal: their searches pull general advice pages)
@@ -30,7 +29,7 @@ public record DiscoveryCategory(
     String name,
     ResourceType type,
     List<String> queries,
-    Keywords words,
+    CategoryWords words,
     Duration interval,
     boolean enabled,
     double minScore,
@@ -97,60 +96,5 @@ public record DiscoveryCategory(
             .map(String::strip)
             .filter(v -> !v.isEmpty())
             .toList();
-  }
-
-  /**
-   * A category's words, each matched at the start of a word in lower case, with hyphens and
-   * underscores read as spaces ("fine tuning platform" fits "Fine-Tuning platform"). The patterns
-   * are compiled once.
-   */
-  public static final class Keywords {
-
-    private final List<String> words;
-    private final List<Pattern> patterns;
-
-    private Keywords(List<String> words) {
-      this.words = words;
-      this.patterns =
-          words.stream().map(w -> Pattern.compile("\\b" + Pattern.quote(normal(w)))).toList();
-    }
-
-    public static Keywords of(List<String> words) {
-      return new Keywords(
-          clean(words).stream().map(w -> w.toLowerCase(Locale.ROOT)).distinct().toList());
-    }
-
-    public List<String> words() {
-      return words;
-    }
-
-    /** The words found in [text], in the category's order. */
-    public List<String> matchedIn(String text) {
-      String normal = normal(text);
-      return IntStream.range(0, words.size())
-          .filter(i -> patterns.get(i).matcher(normal).find())
-          .mapToObj(words::get)
-          .toList();
-    }
-
-    /** Lower case, hyphens and underscores as spaces: "Text-to-Speech" reads "text to speech". */
-    static String normal(String text) {
-      return text.toLowerCase(Locale.ROOT).replaceAll("[-_]+", " ");
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      return o instanceof Keywords k && k.words.equals(words);
-    }
-
-    @Override
-    public int hashCode() {
-      return words.hashCode();
-    }
-
-    @Override
-    public String toString() {
-      return words.toString();
-    }
   }
 }

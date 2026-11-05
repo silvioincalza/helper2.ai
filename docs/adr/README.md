@@ -33,6 +33,8 @@ All diagrams: [docs/diagrams](../diagrams/README.md).
 | [0013](search/0013-works-with-flags.md) | "Works with" flags derived from current source tags | 0004, 0008 | [flow](../diagrams/flow-0013-works-with-flags.svg) · [sequence](../diagrams/sequence-0013-works-with-flags.svg) |
 | [0037](search/0037-tavily-store-and-daily-quota.md) | Tavily: store first, per-feature daily quota | 0005, 0008, 0017, 0023, 0033, 0034 | [flow](../diagrams/flow-0037-tavily-store-and-quota.svg) · [sequence](../diagrams/sequence-0037-tavily-store-and-quota.svg) |
 | [0049](search/0049-home-examples.md) | Home examples: a pool in the database, a quality check (an expected result in the top 3 of the example's own search), a random pick in the browser | 0008, 0009, 0023, 0036, 0040, 0045 | [flow](../diagrams/flow-0049-home-examples.svg) · [sequence](../diagrams/sequence-0049-home-examples.svg) |
+| [0053](search/0053-category-filter.md) | Categories as a search filter: CATEGORY labels assigned by code (finder, words, tags, type; no model) at index time and by a backfill, live results at merge time, facet counts in memory, GET /categories, the guide honours the filter | 0004, 0008, 0010, 0015, 0036, 0038, 0041, 0042, 0051 | [flow](../diagrams/flow-0053-category-filter.svg) · [sequence](../diagrams/sequence-0053-category-filter.svg) |
+| [0055](search/0055-search-inside-awesome-lists.md) | Search inside awesome lists: a tsvector per entry line and per list, never the README text; list-only matches count half and say where they were found | 0004, 0009, 0011, 0018, 0020, 0034, 0042 | [flow](../diagrams/flow-0055-search-inside-awesome-lists.svg) · [sequence](../diagrams/sequence-0055-search-inside-awesome-lists.svg) |
 
 ## AI guide — [`guide/`](guide/)
 
@@ -92,7 +94,7 @@ All diagrams: [docs/diagrams](../diagrams/README.md).
 | [0034](operations/0034-data-retention.md) | Data retention: a period and a mechanism for every store; daily purges per module | 0004, 0005, 0023, 0026 | [flow](../diagrams/flow-0034-data-retention.svg) · [sequence](../diagrams/sequence-0034-data-retention.svg) |
 | [0046](operations/0046-supply-chain.md) | Supply chain: base images pinned by digest, an SBOM per image, a Grype scan, report-only first | 0027, 0028, 0029 | [flow](../diagrams/flow-0046-supply-chain.svg) |
 | [0048](operations/0048-release-branches-and-version-tags.md) | Release branches and version tags on images: patch-only fixes from release/*, prod runs X.Y.Z, no rebuild | 0028, 0029, 0046 | [flow](../diagrams/flow-0048-release-branches-and-version-tags.svg) · [sequence](../diagrams/sequence-0048-release-branches-and-version-tags.svg) |
-| [0051](operations/0051-policy-endpoint.md) | Policy endpoint: GET /api/v1/policy gives the limits and retention periods the text pages state, from the configuration; one policy value per owning module, a thin policy module | 0003, 0007, 0017, 0024, 0034, 0037 | [flow](../diagrams/flow-0051-policy-endpoint.svg) · [sequence](../diagrams/sequence-0051-policy-endpoint.svg) |
+| [0052](operations/0052-policy-endpoint.md) | Policy endpoint: GET /api/v1/policy gives the limits and retention periods the text pages state, from the configuration; one policy value per owning module, a thin policy module | 0003, 0007, 0017, 0024, 0034, 0037 | [flow](../diagrams/flow-0052-policy-endpoint.svg) · [sequence](../diagrams/sequence-0052-policy-endpoint.svg) |
 
 ## Quality — [`quality/`](quality/)
 

@@ -10,7 +10,8 @@ results by time, not only by relevance.
 
 ## Decision
 1. **Filters** (`SearchFilters`, query parameters of `GET /api/v1/search`): type, source, license, openSource,
-   pricing, platform, useCase, techLevel, audience, updatedAfter. They apply after merge and ranking (`Filtering.apply`).
+   pricing, platform, useCase, techLevel, audience, updatedAfter, and category
+   ([0053](0053-category-filter.md)). They apply after merge and ranking (`Filtering.apply`).
 2. **Unknown is a value.** When no source states a value, the facet value is `unknown`, and it can be selected like
    any other. The license facet matches every license any source asserted (case-insensitive), so a resource whose
    sources disagree still matches. An audience of `BOTH` counts for both paths. `updatedAfter` drops results whose

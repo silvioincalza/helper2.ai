@@ -1,6 +1,7 @@
 package ai.helper2.catalog.internal;
 
 import ai.helper2.platform.PgVectors;
+import ai.helper2.search.ListMatch;
 import ai.helper2.search.MergedResult;
 import ai.helper2.search.PopularityKind;
 import ai.helper2.search.PopularityMetric;
@@ -8,6 +9,8 @@ import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.SourceHit;
 import ai.helper2.shared.Audience;
 import ai.helper2.shared.CanonicalUrl;
+import ai.helper2.shared.CategoryInput;
+import ai.helper2.shared.CategoryMatcher;
 import ai.helper2.shared.DateFact;
 import ai.helper2.shared.DatePrecision;
 import ai.helper2.shared.EventFormat;
@@ -96,6 +99,7 @@ public class ResourceStore {
       Set<String> tags,
       Set<String> useCases,
       Set<String> platforms,
+      Set<String> categories,
       List<PopularityMetric> popularity) {
 
     ResourceRow withFacts(Map<String, Set<String>> labels, List<PopularityMetric> metrics) {
@@ -123,6 +127,7 @@ public class ResourceStore {
           labels.getOrDefault("TAG", Set.of()),
           labels.getOrDefault("USE_CASE", Set.of()),
           labels.getOrDefault("PLATFORM", Set.of()),
+          labels.getOrDefault("CATEGORY", Set.of()),
           metrics);
     }
 
@@ -159,6 +164,7 @@ public class ResourceStore {
               tags,
               useCases,
               platforms,
+              categories,
               popularity);
     }
   }
@@ -183,13 +189,19 @@ public class ResourceStore {
   private final JdbcTemplate template;
   private final ObjectMapper json;
   private final LanguageDetector languages;
+  private final CategoryMatcher categories;
 
   public ResourceStore(
-      JdbcClient jdbc, JdbcTemplate template, ObjectMapper json, LanguageDetector languages) {
+      JdbcClient jdbc,
+      JdbcTemplate template,
+      ObjectMapper json,
+      LanguageDetector languages,
+      CategoryMatcher categories) {
     this.jdbc = jdbc;
     this.template = template;
     this.json = json;
     this.languages = languages;
+    this.categories = categories;
   }
 
   @Transactional
@@ -292,6 +304,7 @@ public class ResourceStore {
     Set<UUID> touched = new HashSet<>(owners);
     touched.addAll(movedFrom);
     replaceLabels(touched);
+    assignCategories(touched);
     refreshEventDates(touched);
     return changed;
   }
@@ -550,7 +563,9 @@ public class ResourceStore {
       return;
     }
     UUID[] ids = resourceIds.toArray(UUID[]::new);
-    jdbc.sql("DELETE FROM resource_label WHERE resource_id = ANY(:ids)").param("ids", ids).update();
+    jdbc.sql("DELETE FROM resource_label WHERE resource_id = ANY(:ids) AND kind <> 'CATEGORY'")
+        .param("ids", ids)
+        .update();
     jdbc.sql(
             """
             WITH labels AS (
@@ -569,6 +584,128 @@ public class ResourceStore {
             """)
         .param("ids", ids)
         .param("maxTags", MAX_TAGS)
+        .update();
+  }
+
+  /**
+   * Assigns the categories of [resourceIds] again (ADR 0053), in one transaction; returns how many
+   * of them have at least one. Idempotent: the same records give the same categories.
+   */
+  @Transactional
+  public int refreshCategories(Collection<UUID> resourceIds) {
+    return assignCategories(resourceIds);
+  }
+
+  /**
+   * CATEGORY labels are what the matcher reads in the resource's records now: its title, what its
+   * sources wrote (never an AI-written description), every tag of every record (not only the 20
+   * kept as TAG labels), its type, and the collectors that found it (each record's source and the
+   * finders an accepted candidate keeps in foundBy).
+   */
+  private int assignCategories(Collection<UUID> resourceIds) {
+    if (resourceIds.isEmpty()) {
+      return 0;
+    }
+    UUID[] ids = resourceIds.toArray(UUID[]::new);
+    List<Object[]> labels = new ArrayList<>();
+    Set<UUID> categorized = new HashSet<>();
+    jdbc.sql(
+            """
+            SELECT r.id, r.title, r.type,
+                   (SELECT string_agg(DISTINCT sr.description, E'\\n') FROM source_record sr
+                    WHERE sr.resource_id = r.id AND sr.description IS NOT NULL
+                      AND coalesce(sr.extra ->> 'descriptionOrigin', 'SOURCE_PROVIDED') NOT LIKE 'AI\\_%') AS description,
+                   ARRAY(SELECT DISTINCT t.value FROM source_record sr
+                         CROSS JOIN LATERAL jsonb_array_elements_text(
+                             CASE WHEN jsonb_typeof(sr.extra -> 'tags') = 'array' THEN sr.extra -> 'tags'
+                                  ELSE '[]'::jsonb END) AS t(value)
+                         WHERE sr.resource_id = r.id) AS tags,
+                   ARRAY(SELECT sr.source_id FROM source_record sr WHERE sr.resource_id = r.id
+                         UNION
+                         SELECT f ->> 'sourceId' FROM source_record sr
+                         CROSS JOIN LATERAL jsonb_array_elements(
+                             CASE WHEN jsonb_typeof(sr.extra -> 'foundBy') = 'array' THEN sr.extra -> 'foundBy'
+                                  ELSE '[]'::jsonb END) AS f
+                         WHERE sr.resource_id = r.id AND f ->> 'sourceId' IS NOT NULL) AS finders
+            FROM resource r WHERE r.id = ANY(:ids)
+            """)
+        .param("ids", ids)
+        .query((rs, i) -> {
+          UUID id = rs.getObject("id", UUID.class);
+          List<String> found =
+              categories.match(
+                  new CategoryInput(
+                      rs.getString("title"),
+                      rs.getString("description"),
+                      textArray(rs, "tags"),
+                      enumOrNull(ResourceType.class, rs.getString("type")),
+                      textArray(rs, "finders")));
+          found.forEach(c -> labels.add(new Object[] {id, c}));
+          if (!found.isEmpty()) {
+            categorized.add(id);
+          }
+          return id;
+        })
+        .list();
+    jdbc.sql("DELETE FROM resource_label WHERE resource_id = ANY(:ids) AND kind = 'CATEGORY'")
+        .param("ids", ids)
+        .update();
+    template.batchUpdate(
+        "INSERT INTO resource_label (resource_id, kind, value) VALUES (?, 'CATEGORY', ?)"
+            + " ON CONFLICT DO NOTHING",
+        labels);
+    return categorized.size();
+  }
+
+  private static List<String> textArray(ResultSet rs, String column) throws SQLException {
+    java.sql.Array array = rs.getArray(column);
+    if (array == null) {
+      return List.of();
+    }
+    return Arrays.stream((Object[]) array.getArray())
+        .filter(Objects::nonNull)
+        .map(Object::toString)
+        .toList();
+  }
+
+  /** Up to [limit] resource ids after [after] (null: from the first), in id order: one batch. */
+  public List<UUID> resourceIdsAfter(@Nullable UUID after, int limit) {
+    return jdbc.sql("SELECT id FROM resource WHERE id > :after ORDER BY id LIMIT :limit")
+        .param("after", after == null ? new UUID(0, 0) : after)
+        .param("limit", limit)
+        .query(UUID.class)
+        .list();
+  }
+
+  /**
+   * How far the database migrations went: the number of the last one that ran. A seed (R__) that
+   * changed runs again with a new number, and writes rows the code did not see.
+   */
+  public String lastMigration() {
+    return jdbc.sql(
+            "SELECT coalesce(max(installed_rank), 0) FROM flyway_schema_history WHERE success")
+        .query(Long.class)
+        .single()
+        .toString();
+  }
+
+  /** The value a one-off catalog job left under [name], if it ran. */
+  public Optional<String> marker(String name) {
+    return jdbc.sql("SELECT value FROM catalog_marker WHERE name = :name")
+        .param("name", name)
+        .query(String.class)
+        .optional();
+  }
+
+  /** Records that the job [name] ran with [value]. */
+  public void mark(String name, String value) {
+    jdbc.sql(
+            """
+            INSERT INTO catalog_marker (name, value) VALUES (:name, :value)
+            ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value, updated_at = now()
+            """)
+        .param("name", name)
+        .param("value", value)
         .update();
   }
 
@@ -757,25 +894,65 @@ public class ResourceStore {
     // 2026-10-26). The WHERE spells out any_terms instead of reading it from q: q is a CTE used
     // twice, so it is materialized, and a condition on a CTE column is a join filter that no index
     // can serve.
+    //
+    // Search inside awesome lists (ADR 0055): a row the resource's own text does not match can
+    // still match by the words a list uses around it (awesome_list_entry) or, for a list, by its
+    // headings (awesome_list), both on their own GIN index. Such a list-only row counts half: half
+    // of every-word (+1) and half its popularity, no text score. So a direct every-word match
+    // always
+    // outranks it, and a direct match beats a list-only match of the same strength. In stage 1 the
+    // every-word bonus is 3 (more than popularity + similarity, at most 2), which keeps the old
+    // order for direct rows and puts list-only every-word rows (at most 2) below direct ones.
     return """
     WITH q AS (
       SELECT (%1$s) AS all_terms, %2$s AS any_terms
-    ), matched AS (
+    ), direct AS (
       SELECT r.id, (r.search_vector @@ q.all_terms) AS all_match,
-             similarity(lower(r.title), lower(:raw)) AS sim
+             similarity(lower(r.title), lower(:raw)) AS sim, r.popularity AS pop, false AS via_list
       FROM resource r, q
       WHERE r.data_origin = ANY(:origins)
         AND %3$s
         AND (CAST(:after AS timestamptz) IS NULL OR r.published_at >= CAST(:after AS timestamptz))
+    ), listed AS (
+      SELECT x.id, bool_or(x.all_match) AS all_match
+      FROM (
+        SELECT e.resource_id AS id, (e.search_vector @@ q.all_terms) AS all_match
+        FROM awesome_list_entry e, q
+        WHERE e.search_vector @@ (%2$s)
+        UNION ALL
+        SELECT l.list_id, (l.search_vector @@ q.all_terms)
+        FROM awesome_list l, q
+        WHERE l.search_vector @@ (%2$s)
+      ) x
+      WHERE NOT EXISTS (SELECT 1 FROM direct d WHERE d.id = x.id)
+      GROUP BY x.id
+    ), matched AS (
+      SELECT * FROM direct
+      UNION ALL
+      SELECT l.id, l.all_match, 0, r.popularity, true
+      FROM listed l JOIN resource r ON r.id = l.id
+      WHERE r.data_origin = ANY(:origins)
+        AND (CAST(:after AS timestamptz) IS NULL OR r.published_at >= CAST(:after AS timestamptz))
     ), pre AS (
-      SELECT m.*, r.popularity AS pop
-      FROM matched m JOIN resource r ON r.id = m.id
-      ORDER BY m.all_match DESC, r.popularity + m.sim DESC
+      SELECT * FROM matched m
+      ORDER BY (CASE WHEN m.via_list THEN 0.5 ELSE 1 END)
+               * ((CASE WHEN m.all_match THEN 3 ELSE 0 END) + m.pop + m.sim) DESC
       LIMIT :preselect
     )
-    SELECT r.*, (CASE WHEN pre.all_match THEN 2 ELSE 0 END + pre.pop
-                 + 0.5 * least((ts_rank_cd(r.search_vector, q.any_terms) * 3 + pre.sim) / 10, 1)) AS score
-    FROM pre JOIN resource r ON r.id = pre.id, q
+    SELECT r.*, f.list_title AS found_list, f.heading_path AS found_heading,
+           (CASE WHEN pre.via_list
+                 THEN 0.5 * (CASE WHEN pre.all_match THEN 2 ELSE 0 END + pre.pop)
+                 ELSE CASE WHEN pre.all_match THEN 2 ELSE 0 END + pre.pop
+                      + 0.5 * least((ts_rank_cd(r.search_vector, q.any_terms) * 3 + pre.sim) / 10, 1)
+            END) AS score
+    FROM pre JOIN resource r ON r.id = pre.id CROSS JOIN q
+    LEFT JOIN LATERAL (
+      SELECT lr.title AS list_title, e.heading_path
+      FROM awesome_list_entry e JOIN resource lr ON lr.id = e.list_id
+      WHERE pre.via_list AND e.resource_id = pre.id AND e.search_vector @@ q.any_terms
+      ORDER BY (e.search_vector @@ q.all_terms) DESC, lr.popularity DESC, lr.title
+      LIMIT 1
+    ) f ON true
     ORDER BY score DESC, r.title
     LIMIT :limit
     """
@@ -793,6 +970,30 @@ public class ResourceStore {
    * rows created on or after it (by the source's date); null = any.
    */
   public List<ResourceRow> search(
+      String query,
+      List<String> requiredVariants,
+      List<String> extraTerms,
+      List<String> synonyms,
+      String language,
+      Set<DataOrigin> origins,
+      int limit,
+      Instant publishedAfter) {
+    return searchFound(
+            query, requiredVariants, extraTerms, synonyms, language, origins, limit, publishedAfter)
+        .stream()
+        .map(Found::row)
+        .toList();
+  }
+
+  /**
+   * A row of {@link #searchFound}: [foundIn] says where the row was found when only an awesome
+   * list's words matched it (ADR 0055); null for a direct match, or for a list found by its
+   * headings.
+   */
+  public record Found(ResourceRow row, @Nullable ListMatch foundIn) {}
+
+  /** {@link #search}, with where each row matched. */
+  public List<Found> searchFound(
       String query,
       List<String> requiredVariants,
       List<String> extraTerms,
@@ -830,7 +1031,21 @@ public class ResourceStore {
     for (int i = 0; i < variants.size(); i++) {
       spec = spec.param("v" + i, plainWords(variants.get(i) + " " + expansions));
     }
-    return withFacts(spec.query(this::mapResource).list());
+    List<Found> found = spec.query(this::mapFound).list();
+    List<ResourceRow> rows = withFacts(found.stream().map(Found::row).toList());
+    List<Found> out = new ArrayList<>(found.size());
+    for (int i = 0; i < found.size(); i++) {
+      out.add(new Found(rows.get(i), found.get(i).foundIn()));
+    }
+    return out;
+  }
+
+  private Found mapFound(ResultSet rs, int i) throws SQLException {
+    String list = rs.getString("found_list");
+    String heading = rs.getString("found_heading");
+    return new Found(
+        mapResource(rs, i),
+        list == null ? null : new ListMatch(list, heading == null ? "" : heading));
   }
 
   /**
@@ -1191,6 +1406,7 @@ public class ResourceStore {
         Set.of(),
         Set.of(),
         Set.of(),
+        Set.of(),
         List.of());
   }
 
@@ -1215,6 +1431,12 @@ public class ResourceStore {
                 .computeIfAbsent(rs.getString(2), k -> new LinkedHashSet<>())
                 .add(rs.getString(3)))
         .list();
+    // Categories in the configured order, the order people see them in.
+    labels
+        .values()
+        .forEach(l ->
+            l.computeIfPresent(
+                "CATEGORY", (k, v) -> new LinkedHashSet<>(categories.getCatalog().ordered(v))));
     Map<UUID, List<PopularityMetric>> popularity = popularity(ids);
     Set<UUID> pageTitled = pageTitled(ids);
     return rows.stream()

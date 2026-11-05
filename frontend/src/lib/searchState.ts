@@ -9,6 +9,7 @@ export const MULTI_KEYS = [
   'platform',
   'useCase',
   'techLevel',
+  'category',
 ] as const satisfies readonly (keyof SearchQuery)[];
 export type MultiKey = (typeof MULTI_KEYS)[number];
 
@@ -56,6 +57,7 @@ function emptyFilters(): Record<MultiKey, string[]> {
     platform: [],
     useCase: [],
     techLevel: [],
+    category: [],
   };
 }
 

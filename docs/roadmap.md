@@ -20,19 +20,9 @@ Items are grouped by the order in which they matter. Inside a group, the first i
   question is personal data, the basis for keeping it up to a day, and the transfer of search and guide text to the
   NVIDIA API catalog in the US (not yet listed under transfers abroad). 
 - Review each source's terms again for commercial use.
-- Monetisation ([ADR 0057](adr/frontend/0057-monetisation.md)), before a setting is filled on prod:
-  - Manual: create the GA4 property (EU data), retention 2 months; in enhanced measurement turn off "Page changes based
-    on browser history events", site search and form interactions; Google signals off; a separate stream for staging.
-    Check once in DebugView that no hit carries `q=` or `ask=`.
-  - Manual: apply to EthicalAds; set up GitHub Sponsors and a Stripe Payment Link whose confirmation page is
-    `https://helper2.ai/support/thanks`; then fill `app.monetisation.*` per environment.
-  - Check on staging that the browser console shows no CSP errors with each part on (the CSP lists `media.` and
-    `server.ethicalads.io`; the client loads ads as JSONP from `server.`).
-  - Lawyer: check the GA4 bar wording, the Swiss rules on ad labelling (UWG), whether EthicalAds (Read the Docs, Inc.,
-    US) needs consent or a transfer basis (it receives the IP address and topic words from the page), and that the
-    DSA ad duties do not apply.
-  - Tax advisor: gifts and ad income as a private person in Switzerland, and whether a sole proprietorship must be
-    registered. The Terms say a gift is not tax-deductible.
+- Lawyer review of the awesome-list search index ([ADR 0055](adr/search/0055-search-inside-awesome-lists.md)): whether a
+  tsvector of a list's words is a reproduction or a database extraction, keeping and showing section headings, and
+  GitHub's terms for reading README files to build it.
 - Lawyer review of README and model-card quotes ([ADR 0043](adr/scout/0043-enrichment-gap-round.md)): the quotation
   right (Swiss URG Art. 25, EU InfoSoc Art. 5(3)(d)) for 20–300-character excerpts, also of repositories with no
   licence; GitHub and Hugging Face terms for reading and keeping them (the Hub `raw` path is not its API); author names
@@ -150,6 +140,9 @@ Open items:
     watch `helper2.scout.recheck` and the backlog for the first week.
   - The results preview has no enrichment data: it shows the card's facts only. Show the AI-estimated audience there
     too if people miss it.
+  - The page cleaner reads HTML tags by hand, not with an HTML parser: a tag longer than 2000 characters stays as text,
+    so a hidden element with such a tag keeps its text. Pages come from Tavily as text, so this is rare; move to a
+    parser (jsoup or similar, compared first) if a page shows it.
 - Similar-question reuse of guide answers ([ADR 0041](adr/guide/0041-guide-answer-cache.md)): prod runs it at 0.96;
   watch `helper2.guide.cache{result="similar"}`, and raise or lower the threshold only with a new sweep. Live, the
   planner's readings of two wordings differ more often than the evaluation set assumes.
@@ -184,7 +177,15 @@ Open items:
   MLH (hackathons), Luma and Meetup (meetups, talks, workshops), Eventbrite. Each needs a terms review for public
   redisplay first, must state the days and the format (online, in person) in a form code can read, and Meetup's
   API needs a paid plan.
+- Categories ([ADR 0053](adr/search/0053-category-filter.md)): label 150 resources in
+  `backend/src/test/resources/eval/categories-labelled.csv` and run `./gradlew evalTest --tests
+  ai.helper2.eval.CategoryEvalTest`; tune the words of the categories with low precision or recall; consider a model
+  only for the categories where code stays below the bar. Then fold use case into category (one facet, not two).
+  Show the health and legal notices on the resource page of a resource in those categories.
 - An admin UI for the curated list.
+- Search inside awesome lists ([ADR 0055](adr/search/0055-search-inside-awesome-lists.md)): once the search set has
+  grades, compare recall and nDCG@10 with and without list words, and tune the half weight from that, not before.
+  Then decide on embeddings of entry lines.
 - Source requests: anyone can ask for a new source of information (a registry, an e-learning platform, a vendor's
   catalog, a newsletter) from the Sources page. A request names the site and what it lists; it goes to the admin
   review list, and an accepted request becomes a collector or a curated entry after a terms review for public
@@ -295,6 +296,8 @@ Fix an item or accept it; when it no longer holds, remove it.
 - A new or changed resource has no current vector until the indexer reaches it. The 0.65 cutoff comes from one set of measurements. ([ADR 0012](adr/search/0012-vector-search-pgvector.md))
 - “Works with” tag lists are kept by hand; no tag means no flag (not “does not work”); index hits name `helper2-index`; the 20-tag limit can drop a tag. ([ADR 0013](adr/search/0013-works-with-flags.md))
 - Accepted risk (owner, 30 Oct 2026): rotating addresses can drain the monthly Tavily credits while no cap is set; searches then answer from stored sets and other sources. Failing closed loses fresh web results for a Redis outage. ([ADR 0037](adr/search/0037-tavily-store-and-daily-quota.md))
+- Categories ([ADR 0053](adr/search/0053-category-filter.md)) are as good as their words: a tool that uses none of a category's words has no category. Facet counts see only the hits of this query. A changed category filter on a page where the guide was asked asks the guide again (one more AI answer, unless cached). The guide's comparison and explanation subject searches ignore the filter on purpose.
+- Awesome-list words are English-stemmed: a list in another language matches only exact word forms. An entry whose repository was renamed since the list was written links the old URL and is left out of the index. ([ADR 0055](adr/search/0055-search-inside-awesome-lists.md))
 - The web-search quota is taken before the call, so a call the circuit refuses still counts. A stored hit is read back with two short queries; a set not yet stored is a miss. ([ADR 0037](adr/search/0037-tavily-store-and-daily-quota.md))
 
 ### Scout

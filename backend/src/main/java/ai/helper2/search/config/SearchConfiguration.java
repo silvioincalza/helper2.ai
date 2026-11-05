@@ -19,6 +19,7 @@ import ai.helper2.search.cache.RedisSearchCache;
 import ai.helper2.search.internal.JdbcWebResultStore;
 import ai.helper2.search.usecase.ListSources;
 import ai.helper2.search.usecase.SearchResources;
+import ai.helper2.shared.CategoryMatcher;
 import ai.helper2.shared.LanguageDetector;
 import io.micrometer.context.ContextExecutorService;
 import io.micrometer.context.ContextSnapshotFactory;
@@ -84,7 +85,7 @@ class SearchConfiguration {
         quota.globalDailyCredits());
   }
 
-  /** Search's numbers for GET /api/v1/policy (ADR 0051). */
+  /** Search's numbers for GET /api/v1/policy (ADR 0052). */
   @Bean
   SearchPolicy searchPolicy(SearchProperties search, SearchRetentionProperties retention) {
     SearchProperties.Quota quota = search.web().quota();
@@ -132,7 +133,8 @@ class SearchConfiguration {
       WebSearchQuota quota,
       QuotaKeys keys,
       SearchProperties search,
-      SearchRetentionProperties retention) {
+      SearchRetentionProperties retention,
+      CategoryMatcher categories) {
     List<SearchSource> ordered =
         sources.stream()
             .sorted(
@@ -155,7 +157,7 @@ class SearchConfiguration {
         search.perSourceLimit(),
         new MicrometerSearchMetrics(registry, List.of(health)),
         new ai.helper2.search.QueryAnalyzer(),
-        new ai.helper2.search.ResultMerger(),
+        new ai.helper2.search.ResultMerger(new ai.helper2.search.QueryAnalyzer(), categories),
         new ai.helper2.search.Ranking(60),
         languages,
         translator.getIfAvailable(() -> QueryTranslator.NONE),

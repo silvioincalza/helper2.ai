@@ -371,6 +371,10 @@ helper2:
       batch: 50
       initial-delay: PT30S
       every: PT15S
+    # The categories of every resource (ADR 0053): assigned again at startup when the category words or rules in
+    # helper2.categories changed since the last time (one replica, in the background).
+    categories:
+      backfill-at-startup: ${H2_CATEGORIES_BACKFILL_AT_STARTUP:true}
   search:
     # A source's answer is cached this long and, while it lasts, served when the source fails.
     stale-for: ${H2_SEARCH_STALE_FOR:24h}
@@ -802,6 +806,8 @@ helper2:
     cron: ${H2_RETENTION_CRON:0 17 3 * * *}
     # OBSERVED resources (seen only in searches) no search has seen for this long.
     observed-unseen: ${H2_RETENTION_OBSERVED_UNSEEN:P180D}
+    # Awesome-list search index rows (ADR 0055) no pass refreshed for this long: the list left the top lists.
+    list-index: ${H2_RETENTION_LIST_INDEX:P30D}
     # Enrichment runs; each resource's latest run and any run current rows cite stay.
     enrichment-runs: ${H2_RETENTION_ENRICHMENT_RUNS:P90D}
     # Review items after they were decided or superseded.

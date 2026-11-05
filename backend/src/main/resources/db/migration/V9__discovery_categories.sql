@@ -63,4 +63,18 @@ SET details = CAST(jsonb_set(CAST(i.details AS jsonb), '{sourceId}', to_jsonb(c.
 FROM discovery_candidate c
 WHERE i.id = c.id;
 
+-- Retention can delete a resource's discovery record and keep the resource (another record, a review item or a
+-- report still needs it). Such a resource still names the old source, and the delete below would fail (ON DELETE
+-- RESTRICT), so it moves to discovery-ai-assistants too. Every record of the old source moved above.
+INSERT INTO source (id, name, mode, homepage, terms_url, attribution)
+SELECT 'discovery-ai-assistants', 'Tavily discovery', 'INDEXED', 'https://tavily.com', 'https://tavily.com/terms',
+       'Web results via the Tavily Search API; each links to the original publisher.'
+WHERE EXISTS (SELECT 1 FROM resource
+              WHERE published_source_id = 'tavily-discovery' OR updated_source_id = 'tavily-discovery')
+ON CONFLICT (id) DO NOTHING;
+
+UPDATE resource SET published_source_id = 'discovery-ai-assistants' WHERE published_source_id = 'tavily-discovery';
+
+UPDATE resource SET updated_source_id = 'discovery-ai-assistants' WHERE updated_source_id = 'tavily-discovery';
+
 DELETE FROM source WHERE id = 'tavily-discovery';

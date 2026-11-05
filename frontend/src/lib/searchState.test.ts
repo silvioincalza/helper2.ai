@@ -1,4 +1,5 @@
 import {
+  activeFilterCount,
   askedQuestion,
   askedRefinement,
   askParams,
@@ -27,6 +28,13 @@ describe('searchState', () => {
     expect(toSearchParams(s).toString()).toBe(
       'q=agents&sort=NEWEST&type=MCP_SERVER&type=MODEL&license=unknown&openSource=true&updatedAfter=2026-01-01&page=2',
     );
+  });
+  it('keeps the category filter in the URL, several values OR-ed by the API, and clears it with the others', () => {
+    const s = parseSearchParams(new URLSearchParams('q=x&category=coding&category=unknown'));
+    expect(s.filters.category).toEqual(['coding', 'unknown']);
+    expect(toSearchParams(s).getAll('category')).toEqual(['coding', 'unknown']);
+    expect(activeFilterCount(s)).toBe(2);
+    expect(clearFilters(s).filters.category).toEqual([]);
   });
   it('changing the sort keeps query and filters and resets the page', () => {
     const next = patchState(parseSearchParams(sp), { sort: 'RELEVANCE' });
