@@ -1,7 +1,7 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axeViolations } from '@/test/a11y';
-import { SOURCES, makeRecent } from '@/test/fixtures';
+import { SOURCES, STAGING_SOURCES, makeRecent } from '@/test/fixtures';
 import { mockApi } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
 
@@ -10,13 +10,13 @@ const list = async (name: string) =>
 
 describe('home (design v4)', () => {
   it('says what the site is, with the box, the two lists and what it does, and no results', async () => {
-    mockApi();
+    mockApi({ 'GET /sources': () => STAGING_SOURCES });
     renderApp('/');
     expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent(
       'The metasearch for the AI ecosystem.',
     );
-    // The number of sources is the enabled sources of GET /sources, never a number in the copy.
-    expect(await screen.findByText('One search · 2 AI sources')).toBeInTheDocument();
+    // The number of sources is the enabled external sources of GET /sources, never a number in the copy.
+    expect(await screen.findByText('One search · 13 AI sources')).toBeInTheDocument();
     expect(screen.getByText(/^Models, apps, agents/)).not.toHaveTextContent(/\d/);
     // The 4-word rule comes from the code that applies it.
     expect(screen.getByText(/A question of 4 words or more/)).toBeInTheDocument();
@@ -37,7 +37,7 @@ describe('home (design v4)', () => {
     expect(screen.getByRole('contentinfo')).toHaveTextContent('Switzerland · EU servers');
   });
 
-  it('counts only enabled sources, and says no count while GET /sources has not answered', async () => {
+  it('counts only enabled external sources, and says no count while GET /sources has not answered', async () => {
     mockApi({
       'GET /sources': () => [
         ...SOURCES,
@@ -45,19 +45,32 @@ describe('home (design v4)', () => {
       ],
     });
     renderApp('/');
-    expect(screen.queryByText(/AI sources/)).not.toBeInTheDocument();
-    expect(await screen.findByText('One search · 2 AI sources')).toBeInTheDocument();
+    expect(screen.queryByText(/AI source/)).not.toBeInTheDocument();
+    // GitHub counts; Helper2's own seed and the disabled source do not.
+    expect(await screen.findByText('One search · 1 AI source')).toBeInTheDocument();
   });
 
-  it('draws one radar dot per enabled source, hidden from screen readers', async () => {
-    mockApi();
-    const { container } = renderApp('/');
-    await screen.findByText('One search · 2 AI sources');
-    const radar = container.querySelector('svg.v4-radar') as SVGElement;
-    expect(radar).toHaveAttribute('aria-hidden', 'true');
-    expect(radar.querySelectorAll('.v4-dot')).toHaveLength(2);
-    expect(radar.querySelector('.v4-dot--live')).toHaveTextContent('GitHub');
-    expect(radar.querySelector('.v4-dot--idle')).toHaveTextContent('Helper2 seed');
+  it('the radar shows 3 to 5 of the 13 external sources, the same ones the title counts, with a legend', async () => {
+    mockApi({ 'GET /sources': () => STAGING_SOURCES });
+    renderApp('/');
+    await screen.findByText('One search · 13 AI sources');
+    const radar = await screen.findByRole('list', { name: 'Some of the sources we search' });
+    // The first 3 come in one after another, 0.6 s apart.
+    await waitFor(() => expect(within(radar).getAllByRole('link')).toHaveLength(3), {
+      timeout: 4000,
+    });
+    const external = STAGING_SOURCES.filter((s) => s.external).map((s) => s.id);
+    for (const dot of within(radar).getAllByRole('link'))
+      expect(external).toContain(dot.dataset.source);
+    // The legend: how many of how many, the three colours, and the Sources page.
+    const legend = screen.getByText(/sources at a time/);
+    expect(legend).toHaveTextContent(
+      '3-5 of 13 sources at a time · ● answering ● slow or limited ● failed · Sources page',
+    );
+    expect(within(legend).getByRole('link', { name: 'Sources page' })).toHaveAttribute(
+      'href',
+      '/sources',
+    );
   });
 
   it('Enter in the box opens the results on /search', async () => {

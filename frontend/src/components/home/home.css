@@ -1,5 +1,6 @@
 /* Home in design v4 (ADR 0042): title and radar, the pinned search box, New this week and Coming up, what helper2
-   does. Only `--v4-` tokens. Every animation runs a fixed number of times and ends within 5 s. */
+   does. Only `--v4-` tokens. Every CSS animation runs a fixed number of times and ends within 5 s; the radar moves by
+   a JavaScript clock. */
 
 /* Home spans the window (the radar, the pinned box); the main column of the other pages does not apply. */
 .main.main--v4 {
@@ -61,73 +62,118 @@
   color: var(--v4-ink-2);
 }
 
-/* The radar: decoration behind the title. The sweep goes round once. */
+/* The radar (ADR 0042, decision 4), like a navigation radar: full rings around the title, a beam that turns once
+   every 5 s, and dots painted as the beam passes them. One JavaScript clock (requestAnimationFrame, HomeRadar.tsx) turns
+   the beam and sets each dot's --o (opacity), --pop (scale) and --glow; no CSS animation repeats. */
 .v4-radar {
   position: absolute;
-  top: 0;
-  left: 50%;
-  width: 1280px;
-  height: 100%;
-  min-height: 100%;
-  transform: translateX(-50%);
+  inset: 0;
   pointer-events: none;
+}
+.v4-radar__art {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
 }
 .v4-radar__rings circle {
   fill: none;
   stroke: var(--v4-ring);
   stroke-width: 1;
 }
-.v4-radar__sweep path {
+.v4-radar__beam path {
   fill: color-mix(in srgb, var(--v4-accent) 10%, transparent);
 }
-.v4-radar__sweep {
-  animation: v4-sweep 4.5s linear 1;
+.v4-radar__dots {
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
-@keyframes v4-sweep {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.v4-radar__dots li {
+  position: absolute;
+  transform: translateX(-50%);
+  visibility: hidden;
 }
-.v4-dot circle {
-  stroke-width: 2;
-  fill: var(--v4-bg);
+.v4-radar__dots li.is-on,
+.v4-radar__dots li.is-leaving {
+  visibility: visible;
 }
-.v4-dot--live circle {
-  fill: var(--v4-accent);
-  stroke: var(--v4-accent);
+.v4-radar__dots .v4-dot {
+  opacity: var(--o, 0);
+  transform: scale(var(--pop, 1));
 }
-.v4-dot--index circle {
-  stroke: var(--v4-accent);
+.v4-radar__dots .v4-dot__mark {
+  box-shadow: 0 0 calc(var(--glow, 0) * 14px) calc(var(--glow, 0) * 3px) var(--tone);
 }
-.v4-dot--warn circle {
-  stroke: var(--v4-status-warn-ink);
+/* Reduced motion or the account setting off: the beam stands still, a fixed set at full opacity. */
+.v4-radar.is-still .v4-dot {
+  opacity: 1;
+  transform: none;
 }
-.v4-dot--failed circle {
-  stroke: var(--v4-danger);
+.v4-radar.is-still .v4-dot__mark {
+  box-shadow: none;
 }
-.v4-dot--idle circle {
-  stroke: var(--v4-muted);
+.v4-dot {
+  opacity: 0;
+  transform: scale(0.4);
+  visibility: hidden;
+  transition:
+    opacity 1.1s ease-in-out,
+    transform 1.1s ease-in-out,
+    visibility 0s linear 1.1s;
 }
-.v4-dot text {
-  font: 400 11px var(--v4-font-mono);
+.v4-radar__dots li.is-on .v4-dot {
+  opacity: 1;
+  transform: none;
+  visibility: visible;
+  transition:
+    opacity 1.1s ease-in-out,
+    transform 1.1s ease-in-out,
+    visibility 0s;
+}
+.v4-radar.is-still .v4-dot {
+  transition: none;
+}
+.v4-dot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 24px;
+  min-height: 24px;
+  color: var(--v4-ink);
+  text-decoration: none;
+  pointer-events: auto;
+  border-radius: 4px;
+}
+.v4-dot:focus-visible {
+  outline: 2px solid var(--v4-focus, var(--v4-accent-deep));
+  outline-offset: 2px;
+}
+.v4-dot:hover .v4-dot__name {
+  text-decoration: underline;
+}
+.v4-dot__mark {
+  display: block;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: var(--tone);
 }
 .v4-dot__name {
-  fill: var(--v4-ink-2);
+  font: 400 11px/1.3 var(--v4-font-mono);
+  color: var(--v4-ink-2);
+  white-space: nowrap;
 }
-.v4-dot__detail {
-  fill: var(--v4-accent-ink);
+.v4-dot--answering {
+  --tone: var(--v4-accent);
 }
-.v4-dot--warn .v4-dot__detail {
-  fill: var(--v4-status-warn-ink);
+.v4-dot--warn {
+  --tone: var(--v4-status-warn-ink);
 }
-.v4-dot--failed .v4-dot__detail {
-  fill: var(--v4-danger);
+.v4-dot--failed {
+  --tone: var(--v4-danger);
 }
-.v4-dot--idle .v4-dot__detail {
-  fill: var(--v4-muted);
+.v4-dot--idle {
+  --tone: var(--v4-muted);
 }
 
 /* ===== The pinned search box ===== */
@@ -215,9 +261,12 @@
 .v4-legend__key {
   font-weight: 600;
 }
-.v4-legend__key.v4-dot--live,
-.v4-legend__key.v4-dot--index {
+.v4-home .v4-legend__link {
   color: var(--v4-accent-ink);
+  text-underline-offset: 3px;
+}
+.v4-legend__key.v4-dot--answering {
+  color: var(--v4-accent);
 }
 .v4-legend__key.v4-dot--warn {
   color: var(--v4-status-warn-ink);
@@ -256,25 +305,15 @@
 .v4-prompt {
   color: var(--v4-accent-ink);
 }
+.v4-home .v4-list__cmd {
+  margin: 0;
+  font: 400 0.8125rem/1.4 var(--v4-font-mono);
+  color: var(--v4-muted);
+}
 .v4-list__total {
   font: 400 0.75rem/1 var(--v4-font-mono);
   color: var(--v4-muted);
 }
-.v4-cursor {
-  display: inline-block;
-  width: 0.55em;
-  height: 1em;
-  margin-left: 0.3em;
-  vertical-align: -0.12em;
-  background: var(--v4-ink);
-  animation: v4-blink 1.6s steps(1, end) 3;
-}
-@keyframes v4-blink {
-  50% {
-    opacity: 0;
-  }
-}
-
 .v4-table {
   width: 100%;
   border-collapse: collapse;
@@ -350,22 +389,6 @@
   text-underline-offset: 3px;
 }
 
-/* Rows print in once, 120 ms apart; the first six only (about 1 s). */
-.v4-row[style] {
-  animation: v4-line-in 250ms ease-out both;
-  animation-delay: calc(var(--i) * 120ms);
-}
-@keyframes v4-line-in {
-  from {
-    opacity: 0;
-    transform: translateX(-6px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
 /* Loading: three lines that pulse three times (4.8 s), then stay. */
 .v4-skeleton {
   display: flex;
@@ -414,6 +437,15 @@
   color: var(--v4-ink);
   background: var(--v4-bg);
   border-color: var(--v4-ink);
+}
+.v4-tabs__sep {
+  align-self: center;
+  color: var(--v4-muted);
+  font: 400 0.875rem/1 var(--v4-font-mono);
+}
+.v4-tabs__panel .v4-list__cmd {
+  padding: var(--space-2) 0;
+  border-bottom: 1px dashed var(--v4-border-strong);
 }
 .v4-tab__total {
   color: var(--v4-muted);
@@ -523,10 +555,5 @@
   }
   .v4-home .home-examples .inline-list {
     justify-content: flex-start;
-  }
-  .v4-radar {
-    left: auto;
-    right: -560px;
-    transform: none;
   }
 }

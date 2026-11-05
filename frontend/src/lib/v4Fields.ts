@@ -22,6 +22,14 @@ export function newThisWeek(source: SourceInfo): number | null {
   return source.newThisWeek ?? null;
 }
 
+/**
+ * The sources on the Home radar and in its count: enabled and run by someone else (`external`). Helper2's own index,
+ * its search by meaning and its curated list are left out.
+ */
+export function radarSources(sources: SourceInfo[]): SourceInfo[] {
+  return sources.filter((s) => s.enabled && s.external);
+}
+
 /** How many items the whole list holds: `total` from the API, never fewer than the rows it sent. */
 export function listTotal(response: { total: number } | undefined, itemsShown: number): number {
   return Math.max(response?.total ?? 0, itemsShown);

@@ -2,8 +2,10 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 /**
- * Nothing moves on its own for more than 5 seconds (ADR 0042, decision 6; WCAG 2.2.2): no animation in the code may
- * loop. Every stylesheet, and every inline style in a component, is read as text.
+ * No CSS animation repeats for ever (ADR 0042, decision 6; WCAG 2.2.2): each one ends within 5 seconds. The Home
+ * radar is the one thing that keeps moving, and it moves by a JavaScript clock that stops on focus, under reduced
+ * motion and with the account setting off (HomeRadar.test.tsx). Every stylesheet, and every inline style in a
+ * component, is read as text.
  */
 /** Vitest runs from frontend/. */
 const SRC = join(process.cwd(), 'src');
@@ -23,7 +25,7 @@ function loopingAnimations(text: string): string[] {
   return [...declarations, ...inlineStyles].filter((d) => /\binfinite\b/i.test(d));
 }
 
-describe('motion: no animation loops', () => {
+describe('motion: no CSS animation loops', () => {
   it('the check finds a loop in each way it can be written', () => {
     expect(loopingAnimations('.a { animation: spin 1s linear infinite; }')).not.toEqual([]);
     expect(loopingAnimations('.a { animation-iteration-count: infinite }')).not.toEqual([]);
@@ -37,7 +39,7 @@ describe('motion: no animation loops', () => {
   it('no stylesheet or component in src has an animation that repeats for ever', () => {
     const found = files(SRC).flatMap((file) =>
       loopingAnimations(readFileSync(file, 'utf8')).map(
-        (d) => `${relative(SRC, file)}: ${d.trim()}`,
+        (d) => `${relative(SRC, file).split('\\').join('/')}: ${d.trim()}`,
       ),
     );
     expect(found).toEqual([]);

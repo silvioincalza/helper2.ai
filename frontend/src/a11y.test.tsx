@@ -4,6 +4,7 @@ import { axeViolations } from '@/test/a11y';
 import {
   ADMIN,
   HEALTH_SOURCES,
+  STAGING_SOURCES,
   USER,
   makeCard,
   makeDetail,
@@ -31,12 +32,15 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
     mockApi();
     const { container } = renderApp('/');
     await screen.findByRole('banner');
+    // The radar loads on demand: wait for it, so axe sees its dots.
+    await screen.findByRole('list', { name: 'Some of the sources we search' });
     await settle();
     expect(await axeViolations(container)).toEqual([]);
   });
 
   describe('home in design v4, with the lists loaded', () => {
     const lists = {
+      'GET /sources': () => STAGING_SOURCES,
       'GET /recent': () => makeRecent(),
       'GET /events/upcoming': () => ({
         generatedAt: '2026-11-05T09:00:00Z',
@@ -71,6 +75,7 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
         mockApi(lists);
         const { container } = renderApp('/');
         await screen.findByRole('link', { name: 'AI Meetup' });
+        await screen.findByRole('list', { name: 'Some of the sources we search' });
         await settle();
         expect(await axeViolations(container)).toEqual([]);
       });
@@ -81,6 +86,7 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
         mockApi(lists);
         const { container } = renderApp('/');
         await screen.findByRole('link', { name: 'Fresh MCP server' });
+        await screen.findByRole('list', { name: 'Some of the sources we search' });
         await userEvent.click(screen.getByRole('button', { name: 'Menu' }));
         await settle();
         expect(await axeViolations(container)).toEqual([]);

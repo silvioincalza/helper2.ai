@@ -57,7 +57,8 @@
     "noAds": "No ads."
   },
   "home": {
-    "eyebrow": "One search · {{count}} AI sources",
+    "eyebrow_one": "One search · {{count}} AI source",
+    "eyebrow_other": "One search · {{count}} AI sources",
     "title": "The metasearch for the AI ecosystem.",
     "lede": "Models, apps, agents, MCP servers and papers from Hugging Face, GitHub, arXiv and more, in one search. Ask in plain words and get a recommendation with a quote that proves it.",
     "hint": "A few words search. A question of {{count}} words or more also gets the guide's picks.",
@@ -478,6 +479,10 @@
     "title": "Your account",
     "signedInAs": "Signed in with GitHub as {{name}}.",
     "signedOut": "You are not signed in, so there is no account to delete.",
+    "displayTitle": "Display",
+    "radarMotion": "Radar: move between sources",
+    "radarMotionText": "On Home the radar beam turns and the sources come and go, 3 to 5 at a time. Off: the beam stands still and 4 sources stay.",
+    "saveFailed": "Not saved. Please try again later.",
     "deleteTitle": "Delete your account",
     "deleteText": "This deletes your account and everything saved on it. Reports you sent stay, without your name.",
     "privacyLink": "What we keep and for how long",
@@ -916,19 +921,27 @@
   "radar": {
     "empty": "Nothing with a stated publication date in the last 7 days.",
     "error": "Could not load what’s new right now.",
+    "label": "Some of the sources we search",
     "dot": {
-      "failed": "failed",
+      "live": "live",
+      "index": "from our index",
+      "answeredIn": "answered in {{time}}",
+      "checked": "checked {{when}}",
+      "notChecked": "not checked yet",
+      "failed": "last check failed",
       "timedOut": "timed out",
-      "rateLimited": "rate limited"
+      "rateLimited": "rate limited",
+      "skipped": "skipped",
+      "newThisWeek_one": "{{count}} new this week",
+      "newThisWeek_other": "{{count}} new this week"
     },
     "legend": {
-      "each": "Each dot is a source.",
-      "live": "live, answered",
-      "index": "from our index",
+      "atATime_one": "{{shown}} of {{count}} source at a time",
+      "atATime_other": "{{shown}} of {{count}} sources at a time",
+      "answering": "answering",
       "warn": "slow or limited",
       "failed": "failed",
-      "size": "bigger = more new this week",
-      "distance": "closer = faster (live) or fresher (index)"
+      "all": "Sources page"
     }
   },
   "textPage": {

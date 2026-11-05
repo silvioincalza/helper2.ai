@@ -122,3 +122,19 @@
     grid-column: 1;
   }
 }
+
+/* A setting on the account page: the box and its label, one target (the label clicks the box). */
+.h2-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+}
+.h2-check input {
+  width: 24px;
+  height: 24px;
+  margin: 0;
+}
+.h2-check label {
+  cursor: pointer;
+}

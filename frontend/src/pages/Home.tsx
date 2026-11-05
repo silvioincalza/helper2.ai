@@ -8,6 +8,7 @@ import { api } from '@/api/client';
 import { useApi } from '@/hooks/useApi';
 import { useTitle } from '@/hooks/useTitle';
 import { pickExamples, type Example } from '@/lib/examples';
+import { radarSources } from '@/lib/v4Fields';
 import {
   clampQuery,
   parseSearchParams,
@@ -64,7 +65,7 @@ function useScrollState(bar: RefObject<HTMLDivElement | null>) {
 }
 
 /**
- * Home page (ADR 0042, design v4): what the site is, the radar of its sources behind the title, the search box pinned
+ * Home page (ADR 0042, design v4): what the site is, the radar of its sources around the title, the search box pinned
  * under the header, then New this week and Coming up. What helper2 does follows as a quiet strip. The box and the
  * examples open the results on /search. The header's links land on the lists (#news, #events).
  */
@@ -83,8 +84,10 @@ export default function Home() {
     const state = patchState(parseSearchParams(new URLSearchParams()), { q, path: example.path });
     if (q) void navigate({ pathname: RESULTS_PATH, search: toSearchParams(state).toString() });
   };
-  const enabled = (sources.data ?? []).filter((s) => s.enabled);
+  // The radar and the count in the title show the same sources: the enabled ones run by someone else.
+  const external = radarSources(sources.data ?? []);
   const bar = useRef<HTMLDivElement>(null);
+  const titleBlock = useRef<HTMLDivElement>(null);
   const { folded, stuck } = useScrollState(bar);
 
   // A header link to #news or #events: the lists sit below the fold, and the router does not scroll to a hash. On the
@@ -98,11 +101,11 @@ export default function Home() {
     <div className="v4 v4-home">
       <section className={`v4-hero${folded ? ' is-folded' : ''}`} aria-labelledby="home-h">
         <Suspense fallback={null}>
-          <HomeRadar sources={enabled} />
+          <HomeRadar sources={external} box={bar} title={titleBlock} />
         </Suspense>
-        <div className="v4-wrap v4-hero__text">
-          {enabled.length > 0 && (
-            <p className="v4-eyebrow">{t('home.eyebrow', { count: enabled.length })}</p>
+        <div ref={titleBlock} className="v4-wrap v4-hero__text">
+          {external.length > 0 && (
+            <p className="v4-eyebrow">{t('home.eyebrow', { count: external.length })}</p>
           )}
           <h1 id="home-h" className="v4-hero__title">
             {t('home.title')}
@@ -134,7 +137,7 @@ export default function Home() {
                 ))}
               </ul>
             </section>
-            {enabled.length > 0 && <RadarLegend sources={enabled} />}
+            {external.length > 0 && <RadarLegend sources={external} />}
           </div>
         </div>
       </div>
