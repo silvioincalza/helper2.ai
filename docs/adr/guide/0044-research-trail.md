@@ -1,6 +1,6 @@
 # 0044 — Research trail: the queries the guide ran and the suggestions its checks removed
 
-**Status.** Accepted. **Amends:** [0038](0038-ai-content-marking.md). **Builds on:** [0015](0015-ai-guide-evidence-gate.md), [0016](0016-guide-reason-check.md), [0041](0041-guide-answer-cache.md)
+**Status.** Accepted. **Builds on:** [0038](0038-ai-content-marking.md), [0015](0015-ai-guide-evidence-gate.md), [0016](0016-guide-reason-check.md), [0041](0041-guide-answer-cache.md)
 
 ## Context
 The folded "How the guide decided" shows counts: candidates found, picks proposed, picks kept, suggestions removed.
@@ -72,7 +72,7 @@ it is part of how both questions were read. The copy stored under the new questi
 exact hit shows none. The removed titles stay: they come from the sources. An exact-key hit keeps its queries: its question has the
 same normalised text.
 
-### 5. Marking (amends 0038)
+### 5. Marking
 - `trail.queries[]` is in `AI_WRITTEN_FIELDS`. On the page each query has `data-ai-generated` and `data-ai-model`
   (the fast model) and the row has the "AI-written" label.
 - `trail.removed[]` is not marked: the title comes from the source and the check is our own text.
@@ -87,7 +87,7 @@ Inside the folded "How the guide decided" (`GuidePicks.FullAnswer` → `GuideAns
 - All text is rendered as text by React. A title or query with HTML in it shows the HTML as characters.
 
 ### 7. Cache and privacy
-- The cache `SHAPE` is `v3`: an answer cached in the old shape has no trail and is not served after the deploy.
+- The cache `SHAPE` is `v3` and is part of the cache key, so every answer served from the cache has a trail.
 - Privacy page: a cached guide answer, with the search queries the guide wrote for it, can be shown to anyone who
   asks the same or a very similar question.
 

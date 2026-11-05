@@ -44,13 +44,10 @@ rebuilds one.
 - A release from a release branch reaches prod without running on staging: the one exception to "prod never gets
   an untested image" ([0028](0028-ci-cd.md)). The `staged` job then logs a warning, not "staging passed". The
   image went through CI, the Grype scan and the prod approval.
-- A release branch made before this decision carries the old `release.yml`, which refuses its tags: cut release
-  branches from a commit that has this change.
-- A manual run (staging or prod, a rollback) deploys a version only once its release has tagged it in Harbor; a
-  release from before this decision is deployed by its commit.
+- A manual run (staging or prod, a rollback) deploys a version only once its release has tagged it in Harbor.
 - The guide-answer cache is kept per build (`H2_BUILD_VERSION`, the image tag): the first prod deploy by version
   of a commit starts with an empty cache, once.
-- The prod deployer can now read the Harbor robot: it can push images, after the approval only.
+- The prod deployer can read the Harbor robot: it can push images, after the approval only.
 
 ## Alternatives considered
 - Rebuild the image on the release tag — prod would run a fresh build, not the image CI and staging had.
@@ -74,3 +71,4 @@ rebuilds one.
 
 ## Roadmap
 - A release branch that also deploys staging before prod, if hotfixes become frequent: [roadmap](../../roadmap.md#2-operations).
+- Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

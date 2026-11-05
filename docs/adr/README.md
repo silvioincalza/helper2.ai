@@ -1,7 +1,7 @@
 # Architecture Decision Records
 
 One ADR per feature. Each category has its own folder, and the tables follow the order a reader should learn the
-system: reading them top to bottom builds the whole system up step by step. The numbers 0021 and 0035 are not used.
+system: reading them top to bottom builds the whole system up step by step. The number 0021 is not used.
 Every record is Accepted and describes the code as it is today, as if it was built that way from the start.
 Open items and known limits are not kept in the records: each one links to [the roadmap](../roadmap.md).
 
@@ -102,3 +102,4 @@ All diagrams: [docs/diagrams](../diagrams/README.md).
 - Write in the present tense, as if the code was built this way from the start: no history, no before and after.
 - Consequences say what the decision gives. Known limits and open work go to [the roadmap](../roadmap.md), not into the record.
 - A decision that changes an older one rewrites the older record in the same pull request, so every record matches the code.
+- A record that a newer one replaces as a whole gets one line under its title, "Superseded by NNNN", and stays.

@@ -124,9 +124,8 @@ Flow:
 1. `AskGuide` returns status `NEEDS_CLARIFICATION` with the question and options: no choose, compare, explain or
    reason check. A vague question runs no search; an ambiguous subject runs only the intent's own search. One model
    call (plan).
-2. The stream sends `planned`, `understood`, `clarify`, then `answer` with that status; the JSON endpoint returns the
-   same answer. The question and options are AI-written and marked as such
-   ([0038](0038-ai-content-marking.md)): the plan call ran.
+2. The stream sends `planned`, `understood`, `clarify`, then `answer` with that status. The question and options
+   are AI-written and marked as such ([0038](0038-ai-content-marking.md)): the plan call ran.
 3. The page shows the question, the options as chips and "Search anyway". A chip sends the original text plus
    `clarification` with the option; a free-text reply works the same way; "Search anyway" sends `clarification = ""`.
    `clarification` is user text like `request`: at most 300 characters, wrapped by `UntrustedText` in the plan prompt,

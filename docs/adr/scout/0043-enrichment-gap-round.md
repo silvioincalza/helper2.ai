@@ -57,11 +57,7 @@ decides where the extra text comes from, and the same evidence gate judges it.
 - Fewer unproven fields and fewer review items, at most 400 extra model calls a day, inside the 500.
 - A resource is read again only when its source records change, or the prompt or model changes.
 - The demo profile has no adapter, so it has no gap round.
-- A README that fails to load (timeout, 5xx) is not tried again until the source records change: the run is saved
-  under the same fingerprint. A redirect to another host is refused and counts as a failure.
-- A gap slot is spent when the second model call fails.
-- Resources enriched before this change get a gap round only when their fingerprint changes (a new prompt version
-  re-enriches the catalog). See the roadmap.
+- A README redirect to another host is refused and counts as a failure.
 
 ## Alternatives considered
 - Let the model write new search queries for the collectors — the collectors read feeds and cursors, they take no

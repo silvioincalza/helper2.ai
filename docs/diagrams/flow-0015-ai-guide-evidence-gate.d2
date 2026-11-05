@@ -10,7 +10,7 @@
 
 direction: down
 
-ask: "POST /api/v1/guide/stream\n(or POST /api/v1/guide)\nrequest 3–500 chars" {class: person}
+ask: "POST /api/v1/guide/stream\nrequest 3–500 chars" {class: person}
 guard: "Cost guard (ADR 0017):\ncache, single-flight, quota" {class: app}
 hasModel: "Model configured\nand quota left?" {class: decision}
 plan: "plan(): fast model →\nsearchQuery, constraints,\nwantsReading, webQuery" {class: ai}

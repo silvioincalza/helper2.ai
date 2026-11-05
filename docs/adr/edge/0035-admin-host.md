@@ -4,8 +4,7 @@
 
 ## Context
 The back office (review queue, Scout runs, audit trail) and the end users' features (bookmarks, the registered tier of
-web searches) both need GitHub sign-in. Until now sign-in lived only on `/admin`, on the public host, and was off in
-every hosted environment, so nobody could review anything.
+web searches) both need GitHub sign-in, in every hosted environment.
 The back office must not be reachable from the internet: one leaked session or one bug in a rule would open it to
 everyone. End users must still sign in on the public site.
 The platform already runs ingress-nginx, cert-manager with DNS-01 and a WireGuard network. A WireGuard client reaches
@@ -50,9 +49,8 @@ the cluster with an address from the vSwitch range (the Proxmox node masquerades
 ## Consequences
 - The back office is closed at three layers: the network edge, the port filter and the role. Each one alone keeps
   it closed.
-- End users can sign in on the public site, so bookmarks on the server and the registered tier can go live.
-- The GitHub app needs two callback URLs per environment. A GitHub OAuth App allows only one: use a GitHub App, or
-  one OAuth App per host. Manual step, outside the repo.
+- End users can sign in on the public site, so bookmarks are kept on the server and the registered tier is possible.
+- The GitHub app needs two callback URLs per environment.
 - Local development keeps one port (`H2_ADMIN_PORT` unset).
 
 ## Alternatives considered
@@ -74,3 +72,6 @@ the cluster with an address from the vSwitch range (the Proxmox node masquerades
 
 ## Diagrams
 [flow](../../diagrams/flow-0035-admin-host.svg) · [sequence](../../diagrams/sequence-0035-admin-host.svg)
+
+## Roadmap
+- Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

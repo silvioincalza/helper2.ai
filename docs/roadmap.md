@@ -228,7 +228,7 @@ Fix an item or accept it; when it no longer holds, remove it.
 
 - A scheduled run can start up to one `H2_SCOUT_TICK` (1 h) late; a short `H2_SCOUT_EVERY` needs a shorter tick. A renewal-thread pause longer than one lease lets another replica start a second run. ([ADR 0018](adr/scout/0018-scout-runner.md))
 - Strict enrichment rules reject some correct values; the review queue grows with every partial run and needs a person. ([ADR 0019](adr/scout/0019-evidence-gated-enrichment.md))
-- The gap round reads a README once per fingerprint: a README that changes while the source records do not is not read again. README text never supports a summary claim. ([ADR 0043](adr/scout/0043-enrichment-gap-round.md))
+- The gap round reads a README once per fingerprint: a README that changes while the source records do not is not read again, and one that fails to load (timeout, 5xx) is not tried again until they change. A gap slot is spent when the second model call fails. README text never supports a summary claim. ([ADR 0043](adr/scout/0043-enrichment-gap-round.md))
 - Hugging Face provider models get no enrichment (the list API has no description). Consumer AI tools are thinly covered. Tavily finds news about tools, not the tools. Course pages wait for an admin each week. ([ADR 0020](adr/scout/0020-scout-collectors.md))
 - An event whose source gives no day is not listed; event days can be a few hours off far from UTC; conference dates are as correct as ai-deadlines; curated events need a research pass to stay current. ([ADR 0022](adr/scout/0022-next-events.md))
 
@@ -253,6 +253,7 @@ Fix an item or accept it; when it no longer holds, remove it.
 ### Edge and identity
 
 - Roles live in the session: removing an admin takes effect at the next sign-in; a Redis outage signs the admin out. ([ADR 0023](adr/edge/0023-identity-and-admin.md))
+- A GitHub OAuth App allows only one callback URL, and each environment needs two (public host and admin host): use a GitHub App, or one OAuth App per host. A manual step, outside the repo. ([ADR 0035](adr/edge/0035-admin-host.md))
 - The overview's enrichment backlog count is a full pass over the backlog rule (about 90 ms today, growing with the catalog); the enrichment queue rewrites that query with an index. A budget that is never built (no model configured) is not listed. ([ADR 0045](adr/edge/0045-back-office.md))
 - The admin pages ship in the public bundle (the server still refuses every admin call without ADMIN). Load them lazily so the back office's shape stays out of the public JavaScript.
 - Privacy check: the review decision note is free text kept with the review item. Write no personal data in it; confirm with privacy-legal whether the Privacy page must list it.
@@ -272,6 +273,7 @@ Fix an item or accept it; when it no longer holds, remove it.
 - Staging (1 replica) has no failover; a prod deploy starts pods one after another (up to 300 s each). Plain HTTP inside the cluster; sign-in for everyone changes that. Never run `helm uninstall`: it deletes the Postgres and Redis StatefulSets. ([ADR 0027](adr/operations/0027-runtime-topology.md))
 - The scanner versions (Syft, Grype in `.github/actions/install-scanners`) are pinned by hand: Dependabot does not see them. Grype is built from source in each scan job (about 2 minutes); the weekly scan reads only the latest release, not an older one still on prod after a rollback. ([ADR 0046](adr/operations/0046-supply-chain.md))
 - Deleting an old image needs the Harbor immutability rule disabled first, and enabled again after. ([ADR 0029](adr/operations/0029-release-versioning.md))
+- A release that has no version tag in Harbor (one made before release tags) is deployed by its commit, not by its version. ([ADR 0048](adr/operations/0048-release-branches-and-version-tags.md))
 - A deleted row stays in the backups for up to 7 days; purges run daily, so a row can outlive its period by a day; a purged observed resource seen again comes back with a new `first_discovered_at`. ([ADR 0034](adr/operations/0034-data-retention.md))
 
 ### Quality
