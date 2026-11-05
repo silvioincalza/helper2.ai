@@ -45,11 +45,6 @@ class ConfigurationAccessTest {
           "ai.helper2.guide.internal.GuideConfiguration",
           "ai.helper2.guide.web.GuideLimits",
           "ai.helper2.guide.web.GuideStreamController",
-          "ai.helper2.scout.internal.ScoutConfiguration",
-          "ai.helper2.scout.internal.ScoutRetentionSchedule",
-          "ai.helper2.search.config.SearchConfiguration",
-          "ai.helper2.search.config.SearchRetentionSchedule",
-          "ai.helper2.search.internal.TranslationConfiguration",
           "ai.helper2.setup.internal.SetupConfiguration");
 
   @Test

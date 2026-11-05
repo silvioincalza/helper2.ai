@@ -16,7 +16,7 @@ Exchange rates and taxes are not applied. "UNKNOWN" means no official figure was
   (`app.scoutMaxEnrichments`). Staging has no Scout.
 - Enrichment prompt ≈ 1,500 input tokens per resource (estimate, not measured). Output is the open
   variable: Nemotron 3 Super can reason before it answers, so one call returns between ≈ 400 tokens
-  (answer only) and 8,192 (`helper2.llm.enrich-max-tokens`, the cap).
+  (answer only) and 8,192 (`helper2.scout.enrich-max-tokens`, the cap).
 
 ## 1. Infrastructure (monthly)
 

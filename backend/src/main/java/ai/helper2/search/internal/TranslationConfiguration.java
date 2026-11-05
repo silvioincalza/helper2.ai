@@ -7,15 +7,14 @@ import ai.helper2.platform.llm.LlmSettings;
 import ai.helper2.platform.llm.ModelCallMetrics;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.search.QueryTranslator;
+import ai.helper2.search.config.SearchProperties;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Clock;
-import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -44,11 +43,11 @@ class TranslationConfiguration {
       MeterRegistry meters,
       Resilience resilience,
       SharedCaches caches,
-      @Value("${helper2.search.daily-translations:300}") int dailyTranslations,
-      @Value("${helper2.search.translation-ttl:24h}") Duration translationTtl,
-      @Value("${helper2.search.translate-queries:true}") boolean enabled) {
+      SearchProperties search) {
+    SearchProperties.Translation settings = search.translation();
+    int dailyTranslations = settings.dailyCalls();
     ChatModel model = chatModel.getIfAvailable();
-    if (!enabled || !llm.usable(model) || !llm.hasReasoningModel()) {
+    if (!settings.enabled() || !llm.usable(model) || !llm.hasReasoningModel()) {
       log.info("Search query translation off");
       return QueryTranslator.NONE;
     }
@@ -65,7 +64,7 @@ class TranslationConfiguration {
         llm.fast(),
         budget,
         caches.named("translation"),
-        translationTtl,
+        settings.ttl(),
         metrics,
         resilience);
   }

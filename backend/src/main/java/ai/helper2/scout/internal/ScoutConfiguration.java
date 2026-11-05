@@ -25,6 +25,7 @@ import ai.helper2.scout.RunLock;
 import ai.helper2.scout.ScheduledRun;
 import ai.helper2.scout.ScheduledRunStore;
 import ai.helper2.scout.ScoutStore;
+import ai.helper2.scout.config.ScoutProperties;
 import ai.helper2.scout.usecase.EnrichResource;
 import ai.helper2.scout.usecase.RunScout;
 import ai.helper2.scout.usecase.StartScoutRun;
@@ -43,7 +44,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
@@ -71,9 +71,9 @@ class ScoutConfiguration {
       ModelCallMetrics metrics,
       MeterRegistry meters,
       Resilience resilience,
-      @Value("${helper2.llm.enrich-max-tokens:" + SpringAiEnrichmentModel.DEFAULT_MAX_TOKENS + "}")
-          int maxTokens,
-      @Value("${helper2.scout.daily-enrichment-calls:500}") int dailyCalls) {
+      ScoutProperties scout) {
+    int maxTokens = scout.enrichMaxTokens();
+    int dailyCalls = scout.dailyEnrichmentCalls();
     ChatModel model = chatModel.getIfAvailable();
     if (!llm.usable(model) || !llm.hasReasoningModel()) {
       log.info("No LLM configured: enrichment disabled, deterministic source metadata only");
@@ -132,9 +132,10 @@ class ScoutConfiguration {
       ObservationRegistry observations,
       ObjectProvider<ExtraEvidence> extraEvidence,
       CallCounter budgetCounter,
-      @Value("${helper2.scout.max-items-per-run:500}") int maxItemsPerRun,
-      @Value("${helper2.scout.max-enrichments-per-run:20}") int maxEnrichmentsPerRun,
-      @Value("${helper2.scout.gap-daily-calls:400}") int gapDailyCalls) {
+      ScoutProperties scout) {
+    int maxItemsPerRun = scout.maxItemsPerRun();
+    int maxEnrichmentsPerRun = scout.maxEnrichmentsPerRun();
+    int gapDailyCalls = scout.gapDailyCalls();
     return new RunScout(
         collectors,
         store,
@@ -284,15 +285,12 @@ class ScoutConfiguration {
     private final Duration every;
 
     ScoutSchedule(
-        RunScout runner,
-        ScheduledRunStore schedule,
-        EnrichmentModel model,
-        @Value("${helper2.scout.initial-delay}") Duration initialDelay,
-        @Value("${helper2.scout.tick}") Duration tick,
-        @Value("${helper2.scout.every}") Duration every) {
+        RunScout runner, ScheduledRunStore schedule, EnrichmentModel model, ScoutProperties scout) {
       this.runner = runner;
       this.schedule = schedule;
-      this.every = every;
+      this.every = scout.every();
+      Duration initialDelay = scout.initialDelay();
+      Duration tick = scout.tick();
       String when =
           "checked "
               + initialDelay
