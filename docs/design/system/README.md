@@ -110,8 +110,8 @@ page, which shows every source as a table. Up to 900px only the rings and the be
 | Width | What changes |
 |---|---|
 | 920px | The two tables stack. |
-| 768px | The two tables become one panel with two tabs and log rows. |
 | 900px | Four-column steps become two; two-column grids become one. |
+| 768px | The two tables become one panel with two tabs and log rows. |
 | 720px | Gutter 16px. The header sticks with logo, Saved and Sign in only; News and Events move to the menu. The header search takes its own row. The home title folds on scroll. |
 | 560px | Steps and tables become cards. The timeline puts the month above its items. |
 | 420px | The tagline hides; the wordmark is 20px; the account button shows only its avatar. |
