@@ -1,6 +1,7 @@
 /*
  * Helper2.ai design system v4 (docs/design/system/tokens.json, ADR 0042): warm paper, deep indigo ink, one saffron
- * accent; Space Grotesk for text and titles (decision of 2 Nov 2026); the system monospace for code.
+ * accent. Geist Mono and Geist on the parts that have moved (the header, the footer and Home; `--v4-font-*` below);
+ * Space Grotesk for text and titles on the pages still on version 3; the system monospace for code.
  * Light on :root, dark under [data-theme="dark"] (public/theme.js sets it from the saved choice; light is the default). Saffron is a fill, never small text on paper (2.9:1):
  * text on it is indigo, and saffron-coloured text uses --accent-ink.
  */
@@ -48,7 +49,7 @@
   --term-tag-2: #e06a1d;
   --term-line: #1b1c3f;
   --term-control: #8587bd;
-  --header-bg: rgba(255, 253, 248, 0.94);
+  --header-bg: rgba(247, 242, 233, 0.94);
   --shadow-raised: 0 10px 30px rgba(27, 28, 63, 0.18);
   --shadow-pinned: 0 8px 20px rgba(27, 28, 63, 0.12);
   --shadow-overlay: 0 16px 48px rgba(27, 28, 63, 0.18);
@@ -97,9 +98,10 @@
   --content-wide: 1040px;
   --reading-max: 808px;
   --list-max: 460px;
-  /* The sticky header row, so a jump to an anchor (#news) lands below it, not under it. */
-  --header-height: 64px;
+  /* The sticky header row (version 4 on every page), so a jump to an anchor (#news) lands below it, not under it. */
+  --header-height: 74px;
   --motion: 160ms;
+  --fold: 450ms; /* the phone hero folding away, the pinned box getting compact */
 }
 
 :root[data-theme='dark'] {
@@ -145,11 +147,33 @@
   --term-tag-2: #f08a42;
   --term-line: #45477a;
   --term-control: #8c8ec4;
-  --header-bg: rgba(29, 30, 61, 0.94);
+  --header-bg: rgba(21, 22, 47, 0.94);
 }
 
 @media (prefers-reduced-motion: reduce) {
   :root {
     --motion: 0ms;
+    --fold: 0ms;
+  }
+}
+
+/*
+ * The sizes and fonts of the version 4 layout. Only the parts that have moved use them: the header, the footer and Home.
+ * The v3 pages keep --box-height, --maxw and Space Grotesk until they move (ADR 0042, decision 8).
+ */
+:root {
+  /* Geist Mono for the logo, headings, controls, labels, meta lines and the lists; Geist for running text. */
+  --v4-font-mono:
+    'Geist Mono Variable', 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --v4-font-body:
+    'Geist Variable', 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --v4-box-height: 60px;
+}
+
+@media (max-width: 720px) {
+  :root {
+    --v4-box-height: 50px;
+    --header-height: 65px;
   }
 }

@@ -47,9 +47,11 @@ export function clampQuestion(text: string): string {
   return q.length >= MIN_QUESTION ? q : '';
 }
 
-/** A need of four words or more is a question for the guide; fewer words are a search (ADR 0025). */
+/** A need of this many words or more is a question for the guide; fewer words are a search (ADR 0025). */
+export const QUESTION_WORDS = 4;
+
 export function isQuestion(text: string): boolean {
-  return text.trim().split(/\s+/).filter(Boolean).length >= 4;
+  return text.trim().split(/\s+/).filter(Boolean).length >= QUESTION_WORDS;
 }
 
 function emptyFilters(): Record<MultiKey, string[]> {
@@ -211,6 +213,11 @@ export const RESULTS_PATH = '/search';
 /** / and /search draw their own search box; every other page has it in the header. */
 export function hasOwnSearchBox(pathname: string): boolean {
   return pathname === '/' || pathname === RESULTS_PATH;
+}
+
+/** Whether this URL shows the home page itself: an empty /, with no search and no question (ADR 0040, 3). */
+export function showsHome(pathname: string, sp: URLSearchParams): boolean {
+  return pathname === '/' && !parseSearchParams(sp).q && !askedQuestion(sp);
 }
 
 /** The path of a resource page (ADR 0040, 4), the id encoded so it stays one path segment. */

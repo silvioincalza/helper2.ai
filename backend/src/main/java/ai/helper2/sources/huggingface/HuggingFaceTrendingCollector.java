@@ -62,6 +62,8 @@ public class HuggingFaceTrendingCollector implements Collector {
         new SourceDescriptor(
             ID,
             "Hugging Face trending models",
+            "HF trend",
+            true,
             SourceMode.INDEXED,
             URI.create("https://huggingface.co/models?sort=trending"),
             URI.create("https://huggingface.co/terms-of-service"),

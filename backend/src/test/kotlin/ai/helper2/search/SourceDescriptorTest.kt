@@ -6,6 +6,7 @@ import java.net.URI
 import java.time.Duration
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertSame
 
 class SourceDescriptorTest {
@@ -14,6 +15,8 @@ class SourceDescriptorTest {
     SourceDescriptor(
       id = "helper2-index",
       name = "Helper2 index",
+      shortName = "Index",
+      external = false,
       mode = SourceMode.LIVE,
       homepage = URI.create("https://helper2.ai/sources"),
       termsUrl = null,
@@ -38,5 +41,12 @@ class SourceDescriptorTest {
   @Test
   fun `the same mode returns the same descriptor`() {
     assertSame(index, index.withMode(SourceMode.LIVE))
+  }
+
+  @Test
+  fun `a short name has 1 to 12 characters`() {
+    assertEquals("Twelve chars", index.copy(shortName = "Twelve chars").shortName)
+    assertFailsWith<IllegalArgumentException> { index.copy(shortName = "Thirteen char") }
+    assertFailsWith<IllegalArgumentException> { index.copy(shortName = " ") }
   }
 }

@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockApi } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
@@ -68,7 +68,8 @@ describe('Feature: a better search box', () => {
     expect(await axeViolations(document.body)).toEqual([]);
 
     // A second press keeps the hint and the cursor; typing takes the hint away.
-    (document.activeElement as HTMLElement | null)?.blur();
+    // Inside act: the radar on Home holds still while the box has focus and listens for it to leave.
+    act(() => (document.activeElement as HTMLElement | null)?.blur());
     await userEvent.click(button);
     expect(box()).toHaveFocus();
     await userEvent.type(box(), 'rag');

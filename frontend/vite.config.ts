@@ -1,13 +1,46 @@
 /// <reference types="vitest/config" />
 import { fileURLToPath } from 'node:url';
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import pkg from './package.json' with { type: 'json' };
 
 const target = 'http://localhost:8080';
 
+/** The Latin files of the two variable fonts (ADR 0042): the only font files an English page needs. */
+const PRELOADED_FONTS = /^assets\/geist(-mono)?-latin-wght-normal-[\w-]+\.woff2$/;
+
+/**
+ * Preloads the Latin Geist and Geist Mono files, so the text does not wait for the CSS to name them. Vite emits the
+ * fonts with a hashed name, so the links are added after the build, from the bundle. Same origin: nothing for the
+ * CSP to allow (font-src 'self').
+ */
+function preloadFonts(): Plugin {
+  return {
+    name: 'helper2-preload-fonts',
+    apply: 'build',
+    transformIndexHtml: {
+      order: 'post',
+      handler: (_html, ctx) =>
+        Object.keys(ctx.bundle ?? {})
+          .filter((file) => PRELOADED_FONTS.test(file))
+          .sort()
+          .map((file) => ({
+            tag: 'link',
+            attrs: {
+              rel: 'preload',
+              href: `/${file}`,
+              as: 'font',
+              type: 'font/woff2',
+              crossorigin: '',
+            },
+            injectTo: 'head' as const,
+          })),
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), preloadFonts()],
   // One version for the whole release (ADR 0029): package.json is the frontend's copy of it.
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },

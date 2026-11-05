@@ -11,11 +11,16 @@ so the list of sources must be disclosed, with how each one is doing: how fast i
 and how many web credits the day has used. Two sources can describe the same resource and can disagree on a fact.
 
 ## Decision
-1. **One port.** Every source implements `SearchSource` with a `SourceDescriptor`: id, name, mode
+1. **One port.** Every source implements `SearchSource` with a `SourceDescriptor`: id, name, short name, external, mode
    (`LIVE`, `INDEXED`, `CURATED`, `DEMO`), timeout, cache time to live (TTL), `enabled`, `priority`, `usesWebQuery`,
    `usesTranslation`, `metered`. Search sources and their priority (lower wins on display text): `curated` 10, `github` 20,
    `hf-models` 30, `hf-spaces` 35, `npm` 40, `arxiv` 45, `tavily` 48, `helper2-index` 50, `helper2-semantic` 55
    (only with an embedding key, [0012](0012-vector-search-pgvector.md)). `GET /api/v1/sources` lists them.
+   The short name (`shortName`, 1 to 12 characters, e.g. `HF models`, `Web scout`) is the name under the source's dot
+   on the home radar ([0042](../frontend/0042-redesign-design-system-v4.md)); the descriptor refuses a missing or
+   longer one, so a new source cannot start without it. `external` is false for Helper2's own sources
+   (`helper2-index`, `helper2-semantic`, `curated`) and true for every source run by someone else. The radar and its
+   source count show only external sources, and read this flag, not a list of ids.
 2. **Parallel fan-out.** `SearchResources.search` starts each source on the `searchExecutor`
    (one virtual thread per task). A disabled source is reported as `SKIPPED` with `SkipReason.DISABLED`
    ("Disabled in configuration"); it leaves no outcome on the Sources page.

@@ -150,9 +150,10 @@ Each item is a row: the kind, the date and the resource in the meta line, the re
 **Entry:** the home page, right under the box and the examples; or **News** or **Events** in the header (`/#news`, `/#events`).
 
 1. **New this week**: what came into the Helper2 index in the last 7 days, by the date each source states (Published, Updated), or First seen when no source states one. Tools and research only.
-2. **Coming up**: AI events in the next three months, soonest first, only those whose source states the dates. The status says how soon ("Today", "In 13 days"), or "On now · until Nov 8" for an event that started before today ("On now" when the source states no last day); the next one stands out.
-3. Each row: the date, the type tag, the source or the place, the status pill, and the name; a News row also has the source's own line (an AI-written summary is left out). The name opens the resource page (UJ-4).
-4. A list shows its first six rows. **Show all** opens the rest in place; **Show fewer** closes them. Nothing moves on its own.
+2. **Coming up**: AI events in the next three months, soonest first, only those whose source states the dates. Under the date it says how soon ("Today", "In 2 weeks"); an event that started before today says "on now" and "until Nov 8" (only "on now" when the source states no last day).
+3. On a wide screen the two lists are two tables side by side, like `ls -l`: Date · Type · Title · Source and When · Type · Event · Where. Below 920px they stack; below 768px they become one panel with two tabs, `> new this week 38` and `coming up 12`, with one log row per item. The header links (`/#news`, `/#events`) open their tab.
+4. A row is its title, never a description (no AI-written text). The title opens the resource page (UJ-4). A date shows its year only when it is not the current year.
+5. A list shows its first six rows. `$ helper2 news --all · show all 24` opens the rest in place; **show fewer** closes them. The heading shows the API's total. When the API counts more than it sends (it sends at most 60), the heading still shows the total and **show all** counts only the rows it opens. Nothing moves on its own.
 
 **Exit:** a row's name to its resource page, the box, the examples.
 

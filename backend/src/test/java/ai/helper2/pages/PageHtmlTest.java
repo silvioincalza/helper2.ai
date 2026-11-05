@@ -102,7 +102,7 @@ class PageHtmlTest {
   void theAppsOwnShellHasTheMarkers() throws IOException {
     String shell = Files.readString(Path.of("../frontend/index.html"));
     assertThat(html(shell).render(new Pages("https://helper2.ai").home()))
-        .contains("<title data-h2-head>Helper2.ai: search AI tools")
+        .contains("<title data-h2-head>Helper2.ai: the metasearch for the AI universe")
         .contains("<div id=\"root\"></div>");
   }
 

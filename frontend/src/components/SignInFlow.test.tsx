@@ -13,6 +13,8 @@ describe('Feature: end users sign in on the public site (ADR 0035)', () => {
   it('Scenario: a visitor sees "Sign in with GitHub" in the header when the site offers it', async () => {
     mockApi({ 'GET /me': () => ANON });
     renderApp('/sources');
+    // The sources page loads on demand: the header comes with it.
+    await waitFor(() => expect(header()).not.toBeNull());
     const link = await within(header()).findByRole('link', { name: 'Sign in with GitHub' });
     expect(link).toHaveAttribute('href', '/oauth2/authorization/github');
   });
@@ -20,6 +22,7 @@ describe('Feature: end users sign in on the public site (ADR 0035)', () => {
   it('Scenario: no sign-in is offered where the site has no provider', async () => {
     mockApi({ 'GET /me': () => ({ ...ANON, loginProviders: [] }) });
     renderApp('/sources');
+    await waitFor(() => expect(header()).not.toBeNull());
     await settle();
     expect(within(header()).queryByRole('link', { name: /Sign in/ })).toBeNull();
   });

@@ -127,6 +127,13 @@ class RecentApiIT extends ApiTestBase {
   void rejectsOutOfRangeParameters() throws Exception {
     mvc.perform(get("/api/v1/recent").param("days", "31")).andExpect(status().isBadRequest());
     mvc.perform(get("/api/v1/recent").param("size", "0")).andExpect(status().isBadRequest());
+    mvc.perform(get("/api/v1/recent").param("size", "61")).andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void acceptsTheHomePageSize() throws Exception {
+    // The home page asks for 60, like /events/upcoming, so "show all" opens every row of the week.
+    mvc.perform(get("/api/v1/recent").param("size", "60")).andExpect(status().isOk());
   }
 
   private static List<String> titles(String body) {

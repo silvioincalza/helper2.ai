@@ -31,7 +31,7 @@ The periods are a product decision the owner may change; changing one must not n
    | Postgres `ai_cache`, cache `guide-answer` | guide answers, keyed by a hash of the question and the build ([0041](../guide/0041-guide-answer-cache.md)) | 24 h after the answer (`H2_GUIDE_CACHE_TTL`), 6 h for a dated question, never past its web results | read ignores it after `expires_at`; shared cache purge |
    | Postgres `guide_similar_question` | the query embedding of a cached answer's question, and its reading group (a hash), only with `H2_GUIDE_SIMILAR_THRESHOLD` set ([0041](../guide/0041-guide-answer-cache.md)) | as long as its answer (`expires_at`) | read ignores it after `expires_at`; guide purge |
    | Postgres `source_cursor`, `scout_schedule`, `source`, `shedlock` | one row per source, schedule or lock | overwritten in place | — |
-   | Postgres `app_user` | GitHub numeric id, display name, last sign-in | until the user deletes it; 24 months after `last_signed_in_at` | `DeleteMyAccount`, identity purge |
+   | Postgres `app_user` | GitHub numeric id, display name, last sign-in, the radar motion setting | until the user deletes it; 24 months after `last_signed_in_at` | `DeleteMyAccount`, identity purge |
    | Postgres `bookmark` | resource id, title, link, type, saved at | until the user removes it or the account goes | `RemoveBookmark`, `ON DELETE CASCADE` |
    | Postgres `issue_report.reporter_user_id` | link to the reporter | until the account goes | `ON DELETE SET NULL` |
    | Postgres `admin_audit` | admin id, action, target, time, outcome | 24 months after `at` | identity purge |

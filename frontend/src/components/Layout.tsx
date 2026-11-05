@@ -12,70 +12,36 @@ import { useDropServerHead } from '@/lib/head';
 import { useTranslation } from 'react-i18next';
 import { signOut } from '@/api/client';
 import { useMe } from '@/context/MeContext';
-import { chooseTheme, currentTheme, otherTheme, subscribeTheme, type Theme } from '@/lib/theme';
-import { hasOwnSearchBox } from '@/lib/searchState';
+import { chooseTheme, currentTheme, otherTheme, subscribeTheme } from '@/lib/theme';
+import { hasOwnSearchBox, showsHome } from '@/lib/searchState';
 import { takeSignInReturn } from '@/lib/signInReturn';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { Logo } from './Logo';
 import { OneBox } from './OneBox';
+import '@/styles/v4.css';
 import { SignIn } from './SignIn';
 
-/** Each theme's 18px stroke icon: the sun or the moon. */
-const THEME_ICON: Record<Theme, ReactNode> = {
-  light: (
-    <>
-      <circle cx="12" cy="12" r="4" />
-      <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
-    </>
-  ),
-  dark: <path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z" />,
-};
-
-/** One button that shows the current theme and switches to the other: light ↔ dark. Light is the default. */
+/** The theme switch: a text button that names the theme it switches to ("Dark theme"). Light is the default. */
 function ThemeToggle() {
   const { t } = useTranslation();
   const theme = useSyncExternalStore(subscribeTheme, currentTheme);
   const next = otherTheme(theme);
-  const label = t('nav.theme.label', {
-    current: t(`nav.theme.${theme}`),
-    next: t(`nav.theme.${next}`),
-  });
   return (
-    <button
-      type="button"
-      className="btn btn-icon theme-toggle"
-      aria-label={label}
-      title={label}
-      onClick={() => chooseTheme(next)}
-    >
-      <svg
-        viewBox="0 0 24 24"
-        width="18"
-        height="18"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-        focusable="false"
-      >
-        {THEME_ICON[theme]}
-      </svg>
+    <button type="button" className="v4-text-btn theme-toggle" onClick={() => chooseTheme(next)}>
+      {t('nav.theme.switchTo', { theme: t(`nav.theme.${next}`) })}
     </button>
   );
 }
 
-/**
- * On a small screen (up to 720 px) the menu folds behind one button: the logo, the theme and the menu button share
- * one row, and the pages and sign-in open in a panel below. Escape closes it and returns focus to the button; moving
- * to another page closes it. From 721 px the button is hidden and the panel is the normal header row (CSS only).
- */
+/** Up to this width the header is the logo and a menu button; the pages, sign-in and the theme open in a panel. */
+export const PHONE_HEADER = '(max-width: 720px)';
+
 function MenuButton({ open, onToggle }: { open: boolean; onToggle: () => void }) {
   const { t } = useTranslation();
   return (
     <button
       type="button"
-      className="btn btn-icon menu-toggle"
+      className="v4-icon-btn menu-toggle"
       aria-expanded={open}
       aria-controls="site-menu"
       aria-label={t('nav.menu')}
@@ -83,8 +49,8 @@ function MenuButton({ open, onToggle }: { open: boolean; onToggle: () => void })
     >
       <svg
         viewBox="0 0 24 24"
-        width="18"
-        height="18"
+        width="20"
+        height="20"
         fill="none"
         stroke="currentColor"
         strokeWidth="2"
@@ -98,14 +64,40 @@ function MenuButton({ open, onToggle }: { open: boolean; onToggle: () => void })
   );
 }
 
+/** Sign in, or the account link and Sign out. The admin page has its own sign-in. */
+function Account() {
+  const { t } = useTranslation();
+  const { me } = useMe();
+  const { pathname } = useLocation();
+  if (!me.authenticated)
+    return pathname.startsWith('/admin') ? null : <SignIn className="v4-btn" />;
+  return (
+    <span className="auth">
+      <Link to="/account" className="v4-nav-link" title={t('nav.account')}>
+        {me.displayName ?? t('nav.signedIn')}
+      </Link>
+      <button type="button" className="v4-btn" onClick={() => void signOut()}>
+        {t('nav.signOut')}
+      </button>
+    </span>
+  );
+}
+
+/**
+ * The header in design v4 (ADR 0042): logo with tagline, then News, Events, Saved and Sign in. On a phone (up to
+ * 720 px) the logo and a menu button; the menu holds New this week, Coming up, Saved, Sources, Mission, Sign in and the
+ * theme. Escape closes it and gives focus back to the button; moving to another page closes it. Search is the home
+ * page; on the other pages (not Results, which has its own) the box sits in the header.
+ */
 function Header() {
   const { t } = useTranslation();
-  const { me, isAdmin } = useMe();
+  const { isAdmin } = useMe();
   const { pathname } = useLocation();
+  const phone = useMediaQuery(PHONE_HEADER, false);
   const onHome = hasOwnSearchBox(pathname);
   // Open on the page it was opened on: moving to another page closes it without an effect.
   const [openOn, setOpenOn] = useState<string | null>(null);
-  const open = openOn === pathname;
+  const open = phone && openOn === pathname;
   const toggle = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
@@ -117,59 +109,83 @@ function Header() {
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [open]);
+  // A hash link keeps the pathname, so it closes the menu itself.
+  const close = () => setOpenOn(null);
+  const lists = phone
+    ? { news: t('board.news.title'), events: t('board.events.title') }
+    : { news: t('nav.news'), events: t('nav.events') };
+  const nav = (
+    <nav aria-label={t('nav.main')} className="v4-nav">
+      <ul className="plain-list">
+        <li>
+          <Link className="v4-nav-link" to={{ pathname: '/', hash: 'news' }} onClick={close}>
+            {lists.news}
+          </Link>
+        </li>
+        <li>
+          <Link className="v4-nav-link" to={{ pathname: '/', hash: 'events' }} onClick={close}>
+            {lists.events}
+          </Link>
+        </li>
+        <li>
+          <NavLink className="v4-nav-link" to="/saved">
+            {t('nav.saved')}
+          </NavLink>
+        </li>
+        {phone && (
+          <>
+            <li>
+              <NavLink className="v4-nav-link" to="/sources">
+                {t('nav.sources')}
+              </NavLink>
+            </li>
+            <li>
+              <NavLink className="v4-nav-link" to="/mission">
+                {t('nav.mission')}
+              </NavLink>
+            </li>
+          </>
+        )}
+        {isAdmin && (
+          <li>
+            <NavLink className="v4-nav-link" to="/admin">
+              {t('nav.admin')}
+            </NavLink>
+          </li>
+        )}
+      </ul>
+    </nav>
+  );
   return (
-    <header className="site-header">
-      <div className="container header-row">
+    <header className="v4 site-header">
+      <div className="v4-wrap v4-header__row">
         <Link to="/" className="logo-link" aria-label={t('nav.home')}>
           <Logo />
         </Link>
-        <div className="header-quick" ref={toggle}>
-          <MenuButton open={open} onToggle={() => setOpenOn(open ? null : pathname)} />
-        </div>
-        <div id="site-menu" className={open ? 'header-menu is-open' : 'header-menu'}>
-          {/* Search is the home page (the logo goes there). News and Events are lists on it; Sources, Mission and the
-            theme are in the footer. */}
-          <nav aria-label={t('nav.main')} className="main-nav">
-            <ul className="plain-list">
-              {/* A hash link keeps the pathname, so it closes the menu itself. */}
-              <li>
-                <Link to={{ pathname: '/', hash: 'news' }} onClick={() => setOpenOn(null)}>
-                  {t('nav.news')}
-                </Link>
-              </li>
-              <li>
-                <Link to={{ pathname: '/', hash: 'events' }} onClick={() => setOpenOn(null)}>
-                  {t('nav.events')}
-                </Link>
-              </li>
-              <li>
-                <NavLink to="/saved">{t('nav.saved')}</NavLink>
-              </li>
-              {isAdmin && (
-                <li>
-                  <NavLink to="/admin">{t('nav.admin')}</NavLink>
-                </li>
-              )}
-            </ul>
-          </nav>
-          <div className="header-tools">
-            {/* The admin page has its own sign-in. */}
-            {!me.authenticated && !pathname.startsWith('/admin') && <SignIn className="btn" />}
-            {me.authenticated && (
-              <span className="auth">
-                <Link to="/account" className="small" title={t('nav.account')}>
-                  {me.displayName ?? t('nav.signedIn')}
-                </Link>
-                <button type="button" className="btn" onClick={() => void signOut()}>
-                  {t('nav.signOut')}
-                </button>
-              </span>
-            )}
-          </div>
-        </div>
+        {phone ? (
+          <>
+            <div className="v4-header__quick" ref={toggle}>
+              <MenuButton open={open} onToggle={() => setOpenOn(open ? null : pathname)} />
+            </div>
+            <div id="site-menu" className={open ? 'v4-menu is-open' : 'v4-menu'}>
+              {nav}
+              <div className="v4-menu__tools">
+                <Account />
+                <ThemeToggle />
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            {nav}
+            <div className="v4-header__tools">
+              <Account />
+            </div>
+          </>
+        )}
       </div>
       {!onHome && (
-        <div className="container header-box">
+        <div className="v4-wrap v4-header__box">
           <OneBox />
         </div>
       )}
@@ -196,82 +212,72 @@ function GitHubMark() {
   );
 }
 
+/** An external link: opens in a new tab, says so to screen readers, and ends with ↗. */
+function OutLink({ href, label, children }: { href: string; label: string; children: ReactNode }) {
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer" aria-label={label}>
+      {children}
+      <span aria-hidden="true"> ↗</span>
+    </a>
+  );
+}
+
+/**
+ * The footer in design v4 (Main board): the logo, one row of links (the pages, the code, the release, the theme),
+ * then one line: what is searched, no ads, who and where.
+ */
 function Footer() {
   const { t } = useTranslation();
   return (
-    <footer className="site-footer">
-      {/* Columns: what Helper2.ai is (and where its results come from), its pages, its code; then the fine print. */}
-      <div className="container footer-grid">
-        <div className="footer-brand">
-          <Link to="/" className="logo-link" aria-label={t('nav.home')}>
-            <Logo />
-          </Link>
-          <p className="footer-coverage small">
-            {t('footer.coverage')} <Link to="/sources">{t('nav.sources')}</Link>
-          </p>
-        </div>
-        <div className="footer-col">
-          <h2 className="footer-h">{t('footer.colSite')}</h2>
-          <ul className="plain-list">
-            <li>
-              <Link to="/sources">{t('nav.sources')}</Link>
-            </li>
-            <li>
-              <Link to="/mission">{t('footer.mission')}</Link>
-            </li>
-            <li>
-              <Link to="/privacy">{t('footer.privacy')}</Link>
-            </li>
-            <li>
-              <Link to="/terms">{t('footer.terms')}</Link>
-            </li>
-          </ul>
-        </div>
-        <div className="footer-col">
-          <h2 className="footer-h">{t('footer.colCode')}</h2>
-          <ul className="plain-list">
-            <li>
-              <a
-                href={REPO_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={t('footer.githubLabel')}
-              >
-                <GitHubMark />
-                {t('footer.github')}
-              </a>
-            </li>
-            <li>
-              <a
-                href={`${REPO_URL}/blob/main/LICENSE`}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={t('footer.licenseLabel')}
-              >
-                {t('footer.license')}
-              </a>
-            </li>
-            <li>
-              <a
-                href={`${REPO_URL}/releases/tag/v${__APP_VERSION__}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={t('footer.versionLabel', { version: __APP_VERSION__ })}
-              >
-                v{__APP_VERSION__}
-              </a>
-            </li>
-          </ul>
-        </div>
+    <footer className="v4 site-footer">
+      <div className="v4-wrap v4-footer__row">
+        <Link to="/" className="logo-link" aria-label={t('nav.home')}>
+          <Logo />
+        </Link>
+        <ul className="plain-list v4-footer__links">
+          <li>
+            <Link to="/mission">{t('footer.mission')}</Link>
+          </li>
+          <li>
+            <Link to="/sources">{t('nav.sources')}</Link>
+          </li>
+          <li>
+            <Link to="/privacy">{t('footer.privacy')}</Link>
+          </li>
+          <li>
+            <Link to="/terms">{t('footer.terms')}</Link>
+          </li>
+          <li>
+            <OutLink href={REPO_URL} label={t('footer.githubLabel')}>
+              <GitHubMark />
+              {t('footer.github')}
+            </OutLink>
+          </li>
+          <li>
+            <OutLink href={`${REPO_URL}/blob/main/LICENSE`} label={t('footer.licenseLabel')}>
+              {t('footer.license')}
+            </OutLink>
+          </li>
+          <li>
+            <OutLink
+              href={`${REPO_URL}/releases/tag/v${__APP_VERSION__}`}
+              label={t('footer.versionLabel', { version: __APP_VERSION__ })}
+            >
+              v{__APP_VERSION__}
+            </OutLink>
+          </li>
+          <li>
+            <ThemeToggle />
+          </li>
+        </ul>
       </div>
-      <div className="container footer-bottom small">
+      {/* No claim about tracking, so the footer stays true when tracking cookies come (ADR 0040, 9). Where it is run
+          and hosted, as the Privacy page states it (Hosting: Germany). */}
+      <p className="v4-wrap v4-footer__line">
+        {t('footer.coverage')} <span className="footer-no-ads">{t('footer.noAds')}</span>{' '}
         {t('footer.copyright', { year: new Date().getFullYear() })}
-        {/* No claim about tracking, so the footer stays true when tracking cookies come (ADR 0040, 9). */}
-        {/* Where it is run and hosted, as the Privacy page states it (Hosting: Germany). */}
         <span className="footer-place"> · {t('footer.place')}</span>
-        <span className="footer-no-ads"> · {t('footer.noAds')}</span>
-        <ThemeToggle />
-      </div>
+      </p>
     </footer>
   );
 }
@@ -326,6 +332,10 @@ function SignInReturn() {
 
 export function Layout() {
   const { t } = useTranslation();
+  const { pathname } = useLocation();
+  const [sp] = useSearchParams();
+  // Home is design v4 and spans the full width (the radar, the pinned box); the other pages keep the v3 column.
+  const home = showsHome(pathname, sp);
   return (
     <>
       <a className="skip-link" href="#main">
@@ -335,7 +345,7 @@ export function Layout() {
       <ScrollRestoration />
       <RouteFocus />
       <Header />
-      <main id="main" tabIndex={-1} className="container main">
+      <main id="main" tabIndex={-1} className={home ? 'main main--v4' : 'container main'}>
         <SignInReturn />
         <Outlet />
       </main>

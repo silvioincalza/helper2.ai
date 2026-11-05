@@ -31,13 +31,14 @@
     "mission": "Mission",
     "privacy": "Privacy",
     "theme": {
-      "label": "Theme: {{current}}. Change to {{next}}",
-      "light": "light",
-      "dark": "dark"
+      "switchTo": "{{theme}} theme",
+      "light": "Light",
+      "dark": "Dark"
     },
     "terms": "Terms",
     "account": "Your account",
-    "signInFailed": "Sign-in did not work. Please try again."
+    "signInFailed": "Sign-in did not work. Please try again.",
+    "tagline": "AI on your radar"
   },
   "footer": {
     "coverage": "Helper2.ai searches the sources listed on the Sources page, not the whole web.",
@@ -56,9 +57,10 @@
     "noAds": "No ads."
   },
   "home": {
-    "title": "Find the right AI tool for your task.",
-    "lede": "Search models, apps, MCP servers and papers from {{count}} sources at once. Ask in plain words and get a recommendation, with a quote that proves it.",
-    "ledeNoCount": "Search models, apps, MCP servers and papers from many sources at once. Ask in plain words and get a recommendation, with a quote that proves it.",
+    "name": "helper2.ai",
+    "title": "The metasearch for the AI universe.",
+    "lede": "One search across the world of AI for models, apps, MCP servers and papers. A pick with proof, plus the latest AI news and events.",
+    "hint": "A few words search. A question of {{count}} words or more can also ask the guide for picks.",
     "suggestGuide": "Sounds like a question — ask the guide: “{{q}}” →",
     "examples": "Try:",
     "exampleAi": "Drafted with AI, checked by a person",
@@ -491,6 +493,10 @@
     "title": "Your account",
     "signedInAs": "Signed in with GitHub as {{name}}.",
     "signedOut": "You are not signed in, so there is no account to delete.",
+    "displayTitle": "Display",
+    "radarMotion": "Radar: move between sources",
+    "radarMotionText": "On Home the radar beam turns and the sources come and go, 3 to 5 at a time. Off: the beam stands still and 4 sources stay.",
+    "saveFailed": "Not saved. Please try again later.",
     "deleteTitle": "Delete your account",
     "deleteText": "This deletes your account and everything saved on it. Reports you sent stay, without your name.",
     "privacyLink": "What we keep and for how long",
@@ -947,14 +953,30 @@
     }
   },
   "radar": {
-    "title": "What’s new",
-    "lede": "The newest resources in the Helper2 index from the last 7 days, by the date each source states. Nothing is called live.",
-    "published": "Published",
-    "updated": "Updated",
-    "firstSeen": "First seen",
-    "noDate": "Date unknown",
     "empty": "Nothing with a stated publication date in the last 7 days.",
-    "error": "Could not load what’s new right now."
+    "error": "Could not load what’s new right now.",
+    "label": "Some of the sources we search",
+    "dot": {
+      "live": "live",
+      "index": "from our index",
+      "answeredIn": "answered in {{time}}",
+      "checked": "checked {{when}}",
+      "notChecked": "not checked yet",
+      "failed": "last check failed",
+      "timedOut": "timed out",
+      "rateLimited": "rate limited",
+      "skipped": "skipped",
+      "newThisWeek_one": "{{count}} new this week",
+      "newThisWeek_other": "{{count}} new this week"
+    },
+    "legend": {
+      "atATime_one": "{{shown}} of {{count}} source at a time",
+      "atATime_other": "{{shown}} of {{count}} sources at a time",
+      "answering": "answering",
+      "warn": "slow or limited",
+      "failed": "failed",
+      "all": "Sources page"
+    }
   },
   "textPage": {
     "onThisPage": "On this page"
@@ -1011,6 +1033,7 @@
         "items": [
           "Your searches and guide questions: the text you type, used only to answer you. It is not linked to your account. Search results are cached for up to 30 minutes and guide answers for up to 24 hours, under a hash of the question, not its text. A cached guide answer, with the search queries the guide wrote for it, can be shown to anyone who asks the same or a very similar question. Please do not type personal or secret information.",
           "Your account, if you sign in with GitHub: your GitHub user ID (a number), your display name and when you last signed in. We ask GitHub only for basic profile access. We never see your GitHub password or your e-mail address.",
+          "Your display settings, if you are signed in: whether the radar on Home moves between its sources. Kept with your account until you delete it.",
           "Saved items: if you are signed in, each saved resource (its link, title and type) and when you saved it, stored on our server with your account. If you are not signed in, they stay only in your browser; when you sign in, they move to your account.",
           "Reports you send about a resource: the text you write, linked to your account if you are signed in.",
           "Web search counters: Tavily searches per day and feature, under a keyed hash of your IP address and the date (no address stored; days cannot be linked), or your account ID once account limits are on.",
@@ -1070,7 +1093,7 @@
           "Technical logs and request traces: up to 3 months. Usage totals: 90 days.",
           "Web search counters: 24 hours. Rate-limit counters: 1 minute or 1 hour (the length of the limit). Guide questions per day: 2 days. Stored results: 7 days.",
           "English translations of searches typed in another language: 24 hours. Search vectors (the numbers we use to search by meaning): 7 days. Both are stored under a hash of the search, not its text, and deleted from the database within a day after they expire.",
-          "Your account and saved items: until you delete them, or 24 months after you last signed in. Then we delete the account and its saved items.",
+          "Your account, its display settings and your saved items: until you delete them, or 24 months after you last signed in. Then we delete the account, its settings and its saved items.",
           "Reports: 12 months after they were handled. If your account is deleted, your reports stay without your name until then.",
           "Database backups: 7 days. Anything deleted above is gone from the backups within 7 days.",
           "Quotes from public pages about AI resources: as long as we keep the source record they were read for, and never longer than we list the resource."
@@ -1079,7 +1102,7 @@
       {
         "title": "Deleting your account",
         "paragraphs": [
-          "When you are signed in, select your name at the top of the page, then \"Delete my account\". We delete your account and your saved items at once and sign you out. Reports you sent stay, without your name. Signing in again later creates a new, empty account.",
+          "When you are signed in, select your name at the top of the page, then \"Delete my account\". We delete your account, its display settings and your saved items at once and sign you out. Reports you sent stay, without your name. Signing in again later creates a new, empty account.",
           "You can also write to the address above and we will delete it for you."
         ]
       },
@@ -1268,18 +1291,13 @@
   },
   "board": {
     "news": {
-      "title": "New this week",
-      "sub": "Newest first",
-      "list": "New resources"
+      "title": "New this week"
     },
     "events": {
-      "title": "Coming up",
-      "sub": "Next 3 months",
-      "list": "Next events"
+      "title": "Coming up"
     },
     "countdown": {
       "onNow": "On now",
-      "onNowUntil": "On now · until {{date}}",
       "today": "Today",
       "tomorrow": "Tomorrow",
       "days_one": "In {{count}} day",
@@ -1288,9 +1306,25 @@
       "weeks_other": "In {{count}} weeks",
       "months_one": "In {{count}} month",
       "months_other": "In {{count}} months"
+    }
+  },
+  "lists": {
+    "tabs": "New this week and Coming up",
+    "col": {
+      "date": "Date",
+      "type": "Type",
+      "title": "Title",
+      "source": "Source",
+      "when": "When",
+      "event": "Event",
+      "where": "Where"
     },
-    "showAll": "Show all {{count}}",
-    "showFewer": "Show fewer"
+    "showAll": "show all {{count}}",
+    "showFewer": "show fewer",
+    "onNow": "on now",
+    "until": "until {{date}}",
+    "firstSeen": "seen {{date}}",
+    "noDate": "date unknown"
   },
   "webSearches": {
     "feature": {

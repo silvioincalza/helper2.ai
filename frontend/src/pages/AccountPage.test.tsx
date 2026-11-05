@@ -11,7 +11,8 @@ describe('Feature: delete my account', () => {
     await userEvent.click(
       await within(screen.getByRole('banner')).findByRole('link', { name: 'Ada' }),
     );
-    expect(router.state.location.pathname).toBe('/account');
+    // The account page loads on demand: the router moves once it has arrived.
+    await waitFor(() => expect(router.state.location.pathname).toBe('/account'));
     expect(await screen.findByRole('heading', { name: 'Your account' })).toBeInTheDocument();
   });
 
@@ -83,7 +84,10 @@ describe('Feature: delete my account', () => {
         }),
     });
     renderApp('/account');
-    expect(within(screen.getByRole('main')).getByRole('status')).toHaveTextContent('Loading…');
+    // The page loads on demand, then waits for GET /me.
+    expect(await within(await screen.findByRole('main')).findByRole('status')).toHaveTextContent(
+      'Loading…',
+    );
     answer(USER);
     expect(await screen.findByRole('button', { name: 'Delete my account' })).toBeInTheDocument();
   });
@@ -96,5 +100,48 @@ describe('Feature: delete my account', () => {
     expect(
       screen.getByText('You are not signed in, so there is no account to delete.'),
     ).toBeInTheDocument();
+  });
+});
+
+describe('Feature: the radar motion setting', () => {
+  it('Scenario: on by default; turning it off saves it with the account and reads GET /me again', async () => {
+    // Given a signed-in user whose radar moves
+    let me = USER;
+    const m = mockApi({
+      'GET /me': () => me,
+      'PATCH /me/preferences': ({ body }) => {
+        me = { ...USER, preferences: body as { radarMotion: boolean } };
+        return me.preferences;
+      },
+    });
+    renderApp('/account');
+    const box = await screen.findByRole('checkbox', { name: 'Radar: move between sources' });
+    expect(box).toBeChecked();
+    // When they turn it off
+    await userEvent.click(box);
+    // Then it is saved on the server and the page shows the new value from GET /me
+    await waitFor(() => expect(m.callsTo('PATCH', '/me/preferences')).toHaveLength(1));
+    expect(m.callsTo('PATCH', '/me/preferences')[0]!.body).toEqual({ radarMotion: false });
+    await waitFor(() => expect(box).not.toBeChecked());
+    expect(m.callsTo('GET', '/me').length).toBeGreaterThan(1);
+  });
+
+  it('Scenario: the setting cannot be saved, the page says so and keeps the old value', async () => {
+    mockApi({
+      'GET /me': () => USER,
+      'PATCH /me/preferences': () => problem(503, 'Unavailable'),
+    });
+    renderApp('/account');
+    const box = await screen.findByRole('checkbox', { name: 'Radar: move between sources' });
+    await userEvent.click(box);
+    expect(await screen.findByRole('alert')).toHaveTextContent('Not saved');
+    expect(box).toBeChecked();
+  });
+
+  it('Scenario: a visitor who is not signed in has no setting', async () => {
+    mockApi({ 'GET /me': () => ANON });
+    renderApp('/account');
+    await settle();
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
   });
 });

@@ -43,6 +43,8 @@ public class GitHubSource implements SearchSource {
         new SourceDescriptor(
             "github",
             "GitHub",
+            "GitHub",
+            true,
             SourceMode.LIVE,
             URI.create("https://github.com"),
             URI.create(

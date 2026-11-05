@@ -56,6 +56,8 @@ public class TavilySource implements SearchSource {
         new SourceDescriptor(
             "tavily",
             "Tavily web search (AI news)",
+            "Web",
+            true,
             SourceMode.LIVE,
             URI.create("https://tavily.com"),
             URI.create("https://tavily.com/terms"),

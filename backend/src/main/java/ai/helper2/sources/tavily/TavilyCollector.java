@@ -64,6 +64,8 @@ public class TavilyCollector implements Collector {
         new SourceDescriptor(
             ID,
             "Tavily discovery queries (AI news)",
+            "Web scout",
+            true,
             SourceMode.INDEXED,
             URI.create("https://tavily.com"),
             URI.create("https://tavily.com/terms"),

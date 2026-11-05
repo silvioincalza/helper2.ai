@@ -110,6 +110,8 @@ class HomeListsIT {
         new SourceDescriptor(
             id,
             id,
+            id,
+            true,
             SourceMode.LIVE,
             URI.create("https://" + id + ".example"),
             null,

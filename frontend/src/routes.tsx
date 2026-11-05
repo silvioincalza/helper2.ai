@@ -2,14 +2,12 @@ import type { ComponentType } from 'react';
 import type { RouteObject } from 'react-router';
 import { Layout } from '@/components/Layout';
 import { AppProviders } from '@/AppProviders';
-import AccountPage from '@/pages/AccountPage';
 import HomePage from '@/pages/HomePage';
 import MissionPage from '@/pages/MissionPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 import PrivacyPage from '@/pages/PrivacyPage';
 import ResourcePage from '@/pages/ResourcePage';
 import SavedPage from '@/pages/SavedPage';
-import SourcesPage from '@/pages/SourcesPage';
 import TermsPage from '@/pages/TermsPage';
 
 /** A route whose page module is loaded the first time the route matches. */
@@ -33,8 +31,9 @@ export const routes: RouteObject[] = [
       { path: 'search', element: <HomePage /> },
       { path: 'resource/:id', element: <ResourcePage /> },
       { path: 'saved', element: <SavedPage /> },
-      { path: 'sources', element: <SourcesPage /> },
-      { path: 'account', element: <AccountPage /> },
+      // Few visits start on the sources or the account page: they load on demand, outside the first download.
+      { path: 'sources', lazy: page(() => import('@/pages/SourcesPage')) },
+      { path: 'account', lazy: page(() => import('@/pages/AccountPage')) },
       {
         // The back office (ADR 0023, ADR 0035): one guard, a part per route. Loaded on demand, so a visitor's
         // bundle never carries it.

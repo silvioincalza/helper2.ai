@@ -2,7 +2,7 @@ import { Navigate, useLocation, useSearchParams } from 'react-router';
 import Home from '@/pages/Home';
 import { Results } from '@/components/results/Results';
 import { Robots } from '@/components/Robots';
-import { askedQuestion, parseSearchParams } from '@/lib/searchState';
+import { askedQuestion, parseSearchParams, showsHome } from '@/lib/searchState';
 
 /**
  * The page at / and /search (ADR 0040). An empty / is only the home page; results live on /search. /?q=… still shows
@@ -11,8 +11,8 @@ import { askedQuestion, parseSearchParams } from '@/lib/searchState';
 export default function HomePage() {
   const [sp] = useSearchParams();
   const { pathname } = useLocation();
-  const empty = !parseSearchParams(sp).q && !askedQuestion(sp);
-  if (empty) return pathname === '/' ? <Home /> : <Navigate replace to="/" />;
+  if (showsHome(pathname, sp)) return <Home />;
+  if (!parseSearchParams(sp).q && !askedQuestion(sp)) return <Navigate replace to="/" />;
   return (
     <>
       <Robots content="noindex, follow" />

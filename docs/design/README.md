@@ -4,11 +4,37 @@ Snapshot of the design work, saved next to the code. The live, editable version 
 
 ## The redesign (November 2026)
 
-Minimal and editorial: one font, Space Grotesk (the boards show Geist; the font was decided on 2 November 2026),
-the radar behind the home title, New this week and Coming up as terminals. Every page, its states and the dark theme are drawn, on a private canvas.
+Minimal and editorial: Geist Mono for the interface, Geist for reading, the radar around the home title, New this
+week and Coming up as two `ls -l` tables (tabs on phones). Every page, its states and the dark theme are drawn, on a
+private canvas.
 Snapshot: [`redesign/`](redesign) (one `.dc.html` per board,
 `canvas.json` lays them out). The rules are in the design system, version 4: [system/README.md](system/README.md).
-The code moves to it page by page; until then the pages follow the boards below.
+The code moves to it page by page ([ADR 0042](../adr/frontend/0042-redesign-design-system-v4.md)): the header, the
+footer and Home are built; the other pages still follow the boards below.
+
+| Mockup | What |
+|---|---|
+| `TechLists.html`, `.png` | New this week and Coming up in three styles: log, tabs, `ls -l` table. Option 3 (tables) was chosen for wide screens, option 2 (tabs) for phones |
+| `MobileLists.html`, `.png` | The two lists on a phone in four styles: plain list, swipe cards, tabs, date rail. Tabs were chosen |
+
+The mockups load `Geist.woff2` and `GeistMono.woff2` from their own folder, which the repo does not hold; without
+them they show the system fonts.
+
+### Radar (5 Nov 2026)
+
+- No line above the title. The title is one `h1` on two lines: "helper2.ai" in accent ink, then "The metasearch for the AI universe."
+- Like a navigation radar: full rings around the title, and a beam that turns once every 5 s.
+- Only external sources. Our own index, the search by meaning and the curated list are not on it. The legend
+  counts the same sources.
+- 3 to 5 sources at a time, each in its own spot. It starts with 3, one after another. Then every 1.6 s one step: a
+  new random source comes while it grows, up to 5; the oldest leaves while it shrinks, down to 3.
+- A dot shows only when the beam passes it: full opacity, a short pop and a glow in its colour, then it fades to
+  about a fifth until the next pass. A source that leaves is not painted again and fades out within 3 s.
+- Every dot is filled with its colour: orange answering, amber slow or limited, red failed.
+- Only the short name under a dot. The timing and the state are in its accessible name and tooltip.
+- The beam and the dots hold still while the search box has focus. Under reduced motion, or with the account setting
+  off, the beam stands still and a fixed set of 4 shows at full opacity.
+- Under the box: "3-5 of N sources at a time", the three colours, and a link to the Sources page.
 
 ## `boards/` — the agreed design (ADR 0040)
 
@@ -31,7 +57,7 @@ One system for every feature. Start with [system/README.md](system/README.md) (p
 
 | Path | What |
 |---|---|
-| `tokens.json` | Colors (light and dark), type, spacing, radius, sizes, version 4. The frontend's `frontend/src/styles/tokens.css` is still version 3, the boards' design, until the pages move to version 4. |
+| `tokens.json` | Colors (light and dark), type, spacing, radius, sizes, version 4. `frontend/src/styles/tokens.css` holds version 3 and, as `--v4-*`, version 4: the header, the footer and Home use version 4, the other pages version 3 until they move. |
 | `components/<Name>/README.md` | Guidelines per component: Header, Omnibox, Button, Pill, Badge, ResultCard, FactList, GuidePick, Banner, SourceStatus, Footer, Cover |
 | `components/<Name>/preview.html` | Live preview markup (needs the artifact's generated `tokens.css`) |
 | `components/bundle.css` | The `h2-` component classes |

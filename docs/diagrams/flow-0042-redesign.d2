@@ -1,8 +1,9 @@
-# Flowchart: the redesign (design system v4) from the home page to the guide. Home loads the sources for the radar
-# and the two terminals; the search box stays pinned; a search opens one-column results; the guide starts on its own
-# only for a question (4+ words), else Ask the guide; every guide outcome has its own state.
-# Source of truth: docs/adr/frontend/0042-redesign-design-system-v4.md, docs/design/system/README.md,
-#   docs/design/redesign/*.dc.html. The code follows page by page (decision 8).
+# Flowchart: the redesign (design system v4) from the home page to the guide. Home loads the sources once for the
+# radar and its legend, and the two lists (tables on a wide screen, tabs on a phone); the search box stays pinned; a
+# search opens the results; the guide starts on its own only for a question (4+ words), else Ask the guide.
+# Code: frontend/src/pages/Home.tsx, components/home/HomeRadar.tsx, radarLayout.ts, radarRotation.ts, radarClock.ts,
+#   useRadarMotion.ts, RadarLegend.tsx, TermList.tsx, HomeLists.tsx, HomeTabs.tsx, homeFeeds.ts, lib/v4Fields.ts, components/Layout.tsx (header, footer). Results are still v3 (one column comes next, see the roadmap).
+# Source of truth: docs/adr/frontend/0042-redesign-design-system-v4.md, docs/design/system/README.md.
 # Render: cd docs/diagrams && d2 fmt flow-0042-redesign.d2 && d2 flow-0042-redesign.d2 flow-0042-redesign.svg
 
 ...@style
@@ -13,13 +14,37 @@ open: "Open /" {class: app}
 home: Home {
   class: group
   direction: down
-  hero: "Title, radar behind it" {class: app}
-  sources: "GET /api/v1/sources\n(one dot per source,\nsize = newThisWeek)" {class: ext}
+  hero: "Title inside full rings,\na beam that turns every 5 s" {class: app}
+  sources: "GET /api/v1/sources\n(N enabled external = the legend count,\na fixed spot per source)" {class: ext}
+  fields: "newThisWeek a number?\n(lib/v4Fields.ts)" {class: decision}
+  sized: "Dot size = new this week" {class: app}
+  plain: "Default dot size" {class: app}
+  still: "Reduced motion, or\nsigned in with motion off?" {class: decision}
+  one: "Beam still, a fixed\nrandom set of 4 at full opacity" {class: app}
+  held: "Search box has focus?" {class: decision}
+  wait: "Clock stops:\nbeam and dots hold still" {class: app}
+  next: "Clock runs: every 1.6 s one source\ncomes (up to 5) or the oldest\nleaves (down to 3)" {class: app}
+  paint: "Beam passes a dot:\npop, glow, fade to 0.22" {class: app}
   bar: "Search box, pinned\nunder the header" {class: app}
-  terms: "New this week and Coming up\n(terminals, Show all in place)" {class: app}
+  wide: "Wider than 767 px?" {class: decision}
+  tables: "TermList as two tables, ls -l\n(helper2 news · N line, Show all in place)" {class: app}
+  tabs: "TermList in tabs:\n> new this week N | coming up N\n(log rows)" {class: app}
   feeds: "GET /api/v1/recent\nGET /api/v1/events/upcoming?days=90\n(total for Show all N)" {class: ext}
-  hero -> sources
-  hero -> bar -> terms -> feeds
+  hero -> sources -> fields
+  fields -> sized: yes
+  fields -> plain: no
+  sources -> still
+  still -> one: yes
+  still -> held: no
+  held -> wait: yes
+  held -> next: no
+  next -> paint
+  wait -> held: focus leaves
+  hero -> bar -> wide
+  wide -> tables: yes
+  wide -> tabs: no
+  tables -> feeds
+  tabs -> feeds
 }
 phone: "Screen 720 px or less\nand scrolled 24 px?" {class: decision}
 fold: "Title folds away,\nbox stays pinned" {class: app}

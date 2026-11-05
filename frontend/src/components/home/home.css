@@ -1,43 +1,228 @@
-/* Home (ADR 0040, 2): headline, box, examples, the New this week and Coming up lists, then what helper2 does. Only semantic tokens. */
+/* Home in design v4 (ADR 0042): title and radar, the pinned search box, New this week and Coming up, what helper2
+   does. The v4 tokens of tokens.css. Every CSS animation runs a fixed number of times and ends within 5 s; the radar moves by
+   a JavaScript clock. */
 
-/* Hero: compact and left-aligned with the lists under it, so the search and what is new both show at first sight. */
-/* The box spans the page, as wide as the lists under it; the headline and the line under it keep a reading width. */
-.home-hero {
-  padding: var(--space-6) 0 var(--space-5);
+/* Home spans the window (the radar, the pinned box); the main column of the other pages does not apply. */
+.main.main--v4 {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.v4-home {
+  /* Room for the lists before they load, so the footer does not jump (CLS). */
+  min-height: 100vh;
+  /* When the phone title folds, the page must not scroll back to keep it in view (scroll anchoring): that would undo
+     the fold and open it again. */
+  overflow-anchor: none;
+}
+
+/* ===== Hero ===== */
+.v4-hero {
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+}
+@media (min-width: 721px) {
+  .v4-hero {
+    min-height: 340px;
+  }
+}
+.v4-hero__text {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding-top: var(--space-7);
+  padding-bottom: var(--space-5);
+  max-height: 34rem;
+  transition:
+    max-height var(--fold) ease,
+    opacity var(--fold) ease,
+    padding var(--fold) ease;
+}
+.v4-home .v4-hero__title {
+  margin: 0;
+  max-width: 44rem;
+  font: 500 clamp(30px, 3.6vw + 14px, 52px) / 1.08 var(--v4-font-mono);
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+.v4-hero__name,
+.v4-hero__what {
+  display: block;
+}
+.v4-home .v4-hero__name {
+  color: var(--accent-ink);
+}
+.v4-home .v4-hero__lede {
+  margin: 0;
+  max-width: 38rem;
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  color: var(--ink-2);
+}
+
+/* The radar (ADR 0042, decision 4), like a navigation radar: full rings around the title, a beam that turns once
+   every 5 s, and dots painted as the beam passes them. One JavaScript clock (requestAnimationFrame, HomeRadar.tsx) turns
+   the beam and sets each dot's --o (opacity), --pop (scale) and --glow; no CSS animation repeats. */
+.v4-radar {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.v4-radar__art {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+}
+.v4-radar__rings circle {
+  fill: none;
+  stroke: var(--ring);
+  stroke-width: 1;
+}
+.v4-radar__beam path {
+  fill: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.v4-radar__dots {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.v4-radar__dots li {
+  position: absolute;
+  transform: translateX(-50%);
+  visibility: hidden;
+}
+.v4-radar__dots li.is-on,
+.v4-radar__dots li.is-leaving {
+  visibility: visible;
+}
+/* The clock paints each dot through --o and --pop (HomeRadar): no other rule sets a moving dot's opacity or size. */
+.v4-radar__dots .v4-dot {
+  opacity: var(--o, 0);
+  transform: scale(var(--pop, 1));
+  visibility: hidden;
+}
+.v4-radar__dots li.is-on .v4-dot,
+.v4-radar__dots li.is-leaving .v4-dot {
+  visibility: visible;
+}
+.v4-radar__dots .v4-dot__mark {
+  box-shadow: 0 0 calc(var(--glow, 0) * 14px) calc(var(--glow, 0) * 3px) var(--tone);
+}
+/* Reduced motion or the account setting off: the beam stands still, a fixed set at full opacity. */
+.v4-radar.is-still .v4-dot {
+  opacity: 1;
+  transform: none;
+}
+.v4-radar.is-still .v4-dot__mark {
+  box-shadow: none;
+}
+.v4-dot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 24px;
+  min-height: 24px;
+  color: var(--ink);
+  text-decoration: none;
+  pointer-events: auto;
+  border-radius: 4px;
+}
+.v4-dot:focus-visible {
+  outline: 2px solid var(--focus, var(--accent-deep));
+  outline-offset: 2px;
+}
+.v4-dot:hover .v4-dot__name {
+  text-decoration: underline;
+}
+.v4-dot__mark {
+  display: block;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: var(--tone);
+}
+.v4-dot__name {
+  font: 400 11px/1.3 var(--v4-font-mono);
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.v4-dot--answering {
+  --tone: var(--accent);
+}
+.v4-dot--warn {
+  --tone: var(--status-warn-ink);
+}
+.v4-dot--failed {
+  --tone: var(--danger);
+}
+.v4-dot--idle {
+  --tone: var(--muted);
+}
+
+/* ===== The pinned search box ===== */
+.v4-pinned {
+  position: sticky;
+  top: var(--header-height);
+  z-index: 10;
+  background: var(--bg);
+  border-bottom: 1px solid transparent;
+  transition: box-shadow var(--motion);
+}
+.v4-pinned.is-stuck {
+  border-bottom-color: var(--border);
+  box-shadow: var(--shadow-pinned);
+}
+.v4-pinned__inner {
+  max-width: calc(820px + 2 * var(--space-5));
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  padding-top: var(--space-2);
+  padding-bottom: var(--space-5);
+  transition: padding var(--fold) ease;
 }
-.home-title {
+.v4-pinned.is-stuck .v4-pinned__inner {
+  padding-top: var(--space-3);
+  padding-bottom: var(--space-3);
+}
+.v4-pinned__more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  max-height: 20rem;
+  overflow: hidden;
+  transition:
+    max-height var(--fold) ease,
+    opacity var(--fold) ease;
+}
+.v4-pinned.is-stuck .v4-pinned__more {
+  max-height: 0;
+  opacity: 0;
+  visibility: hidden;
+}
+.v4-home .v4-hint {
   margin: 0;
-  max-width: 46rem;
-  font: 500 clamp(2rem, 2.4vw + 1rem, 3rem)/1.08 var(--font-display);
-  letter-spacing: -0.03em;
-  color: var(--ink);
+  font: 400 0.8125rem/1.5 var(--v4-font-mono);
+  color: var(--muted);
+  text-align: center;
 }
-.home-lede {
-  margin: 0 0 var(--space-2);
-  max-width: 38rem;
-  font-size: 1.0625rem;
-  line-height: 1.55;
-  color: var(--ink-2);
-}
-.home-hero .one-box {
-  width: 100%;
-}
-.home-examples {
+.v4-home .home-examples {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   align-items: center;
   gap: var(--space-2) var(--space-3);
 }
-.home-examples__label {
+.v4-home .home-examples__label {
   margin: 0;
-  font: 400 0.875rem/1.4 var(--font-sans);
+  font: 400 0.875rem/1.4 var(--v4-font-mono);
   color: var(--muted);
 }
-.home-examples .inline-list {
-  justify-content: flex-start;
+.v4-home .home-examples .inline-list {
+  justify-content: center;
 }
 /* While the pool loads, the row holds the built-in pick, unseen, so the chips appear without moving the page. */
 .home-examples .chip {
@@ -47,153 +232,335 @@
   visibility: hidden;
 }
 /* The mark on an example a model drafted (EU AI Act Art. 50); the full words are its title and screen-reader text. */
-.home-examples__ai {
+.v4-home .home-examples__ai {
   padding: 0 6px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-pill);
-  font: 500 11px/16px var(--font-sans);
+  font: 500 11px/16px var(--v4-font-mono);
   color: var(--ink-2);
   white-space: nowrap;
 }
-.chip-ghost {
+.v4-home .chip-ghost {
+  min-height: var(--target-min);
+  padding: 0 var(--space-4);
+  font: 400 0.9375rem/1 var(--v4-font-mono);
+  color: var(--ink);
   background: transparent;
   border: 1px solid var(--border-strong);
-  color: var(--ink);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
 }
-.chip-ghost:hover {
+.v4-home .chip-ghost:hover {
   background: var(--surface);
 }
+.v4-home .v4-legend {
+  margin: 0;
+  font: 400 0.75rem/1.7 var(--v4-font-mono);
+  color: var(--muted);
+  text-align: center;
+}
+.v4-legend__key {
+  font-weight: 600;
+}
+.v4-home .v4-legend__link {
+  color: var(--accent-ink);
+  text-underline-offset: 3px;
+}
+.v4-legend__key.v4-dot--answering {
+  color: var(--accent);
+}
+.v4-legend__key.v4-dot--warn {
+  color: var(--status-warn-ink);
+}
+.v4-legend__key.v4-dot--failed {
+  color: var(--danger);
+}
 
-/* What helper2 does: a quiet strip under the lists; the lists are what the page is about. */
-.home-does {
+/* ===== New this week, Coming up ===== */
+.v4-lists {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-6) var(--space-6);
+  padding: var(--space-5) 0 var(--space-6);
+}
+.v4-list,
+.v4-tabs {
+  min-width: 0;
+  /* The pinned box sits under the header: a jump to #news lands below both. */
+  scroll-margin-top: calc(var(--header-height) + var(--v4-box-height) + var(--space-6));
+}
+.v4-list__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px dashed var(--border-strong);
+}
+.v4-home .v4-list__title {
+  margin: 0;
+  font: 600 0.9375rem/1.4 var(--v4-font-mono);
+  letter-spacing: 0;
+  text-transform: lowercase;
+}
+.v4-prompt {
+  color: var(--accent-ink);
+}
+.v4-home .v4-list__cmd {
+  margin: 0;
+  font: 400 0.8125rem/1.4 var(--v4-font-mono);
+  color: var(--muted);
+}
+.v4-list__total {
+  font: 400 0.75rem/1 var(--v4-font-mono);
+  color: var(--muted);
+}
+.v4-table {
+  width: 100%;
+  border-collapse: collapse;
+  font: 400 0.8125rem/1.45 var(--v4-font-mono);
+}
+.v4-table th {
+  padding: var(--space-2) var(--space-2) var(--space-2) 0;
+  font: 600 0.6875rem/1.2 var(--v4-font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--muted);
+  border-bottom: 1px solid var(--ink);
+}
+.v4-table td {
+  padding: 6px var(--space-2) 6px 0;
+  vertical-align: top;
+  border-bottom: 1px dashed var(--border-strong);
+}
+.v4-table th:last-child,
+.v4-table td:last-child {
+  padding-right: 0;
+  text-align: right;
+}
+.v4-cell-date {
+  white-space: nowrap;
+  color: var(--muted);
+}
+.v4-cell-type {
+  color: var(--accent-ink);
+  text-transform: lowercase;
+  white-space: nowrap;
+}
+.v4-cell-meta {
+  color: var(--muted);
+  white-space: nowrap;
+}
+.v4-home .v4-cell-title a,
+.v4-home .v4-log__title {
+  display: inline-block;
+  min-height: 24px;
+  padding: 4px 0;
+  font: 400 0.9375rem/1.35 var(--v4-font-body);
+  color: var(--ink);
+  text-decoration: none;
+}
+.v4-home .v4-cell-title a:hover,
+.v4-home .v4-log__title:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.v4-on-now {
+  font-weight: 600;
+  color: var(--status-ok-ink);
+}
+.v4-not-stated {
+  color: var(--status-warn-ink);
+}
+.v4-cmd {
+  display: inline-block;
+  min-height: var(--target-min);
+  margin-top: var(--space-1);
+  padding: 0;
+  font: 400 0.8125rem / var(--target-min) var(--v4-font-mono);
+  text-align: left;
+  color: var(--accent-ink);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.v4-cmd:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Loading: three lines that pulse three times (4.8 s), then stay. */
+.v4-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+}
+.v4-skeleton__line {
+  display: block;
+  height: 14px;
+  border-radius: 4px;
+  background: var(--surface-tint);
+  animation: v4-pulse 1.6s ease-in-out 3;
+}
+@keyframes v4-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* Phone: one panel, two tabs, log rows. */
+.v4-tabs {
+  padding: var(--space-4) 0 var(--space-5);
+}
+.v4-tabs__list {
+  display: flex;
+  gap: var(--space-1);
+  border-bottom: 1px solid var(--ink);
+}
+.v4-tab {
+  min-height: var(--target-min);
+  padding: 0 var(--space-3);
+  font: 400 0.875rem/1 var(--v4-font-mono);
+  text-transform: lowercase;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  cursor: pointer;
+  margin-bottom: -1px;
+}
+/* The selected tab: an open folder tab in ink, distinct from the focus outline. */
+.v4-tab[aria-selected='true'] {
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--bg);
+  border-color: var(--ink);
+}
+.v4-tabs__sep {
+  align-self: center;
+  color: var(--muted);
+  font: 400 0.875rem/1 var(--v4-font-mono);
+}
+.v4-tabs__panel .v4-list__cmd {
+  padding: var(--space-2) 0;
+  border-bottom: 1px dashed var(--border-strong);
+}
+.v4-tab__total {
+  color: var(--muted);
+  font-weight: 400;
+}
+.v4-tabs__panel {
+  padding: var(--space-1) var(--space-3) var(--space-2);
+  border: 1px solid var(--ink);
+  border-top: 0;
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+}
+.v4-log__row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-3) 0;
+  border-bottom: 1px dashed var(--border-strong);
+}
+.v4-log__meta,
+.v4-cell-note {
+  display: block;
+  font: 400 0.8125rem/1.4 var(--v4-font-mono);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.v4-log__where {
+  font: 400 0.8125rem/1.4 var(--v4-font-mono);
+  color: var(--muted);
+}
+.v4-home .v4-log__title {
+  padding: 2px 0;
+}
+
+/* ===== What helper2 does ===== */
+.v4-home .home-does {
   padding: var(--space-5) 0 var(--space-6);
   border-top: 1px solid var(--border);
 }
-.home-does .home-does__title {
-  margin: 0 0 var(--space-3);
-  font: 600 0.75rem/1.3 var(--font-sans);
+.v4-home .home-does__title {
+  margin: 0 0 var(--space-4);
+  font: 600 0.75rem/1.3 var(--v4-font-mono);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--ink-2);
 }
-.home-does .home-does__list {
+.v4-home .home-does__list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-4) var(--space-6);
 }
-.home-does__item {
+.v4-home .home-does__item {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   column-gap: var(--space-2);
   align-content: start;
 }
-.home-does__step {
+.v4-home .home-does__step {
   grid-row: span 2;
-  font: 500 1rem/1.4 var(--font-display);
+  font: 600 0.9375rem/1.5 var(--v4-font-mono);
   color: var(--accent-ink);
 }
-.home-does__item h3 {
+.v4-home .home-does__item h3 {
   margin: 0;
-  font: 600 0.9375rem/1.4 var(--font-sans);
-  color: var(--ink);
+  font: 600 0.9375rem/1.5 var(--v4-font-body);
+  letter-spacing: 0;
 }
-.home-does__item p {
-  margin: 0;
-  font-size: 0.875rem;
-  line-height: 1.5;
-  color: var(--muted);
-}
-
-/* News and Events: still lists, newest or soonest first; "Show all" opens the rest in place. */
-.h2-boards {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-6) var(--space-7);
-  padding: var(--space-3) 0 var(--space-6);
-}
-.h2-board {
-  min-width: 0;
-  border-top: 3px solid var(--ink);
-  padding-top: var(--space-3);
-  scroll-margin-top: calc(var(--header-height) + var(--space-4));
-}
-.h2-board__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--space-1) var(--space-3);
-  margin-bottom: var(--space-2);
-}
-.h2-board__title {
-  margin: 0;
-  font: 500 2.25rem/1.1 var(--font-display);
-  letter-spacing: -0.02em;
-}
-.h2-board__sub {
-  font-size: 0.8125rem;
-  color: var(--muted);
-}
-.h2-board__row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  column-gap: var(--space-3);
-  row-gap: 6px;
-  padding: 14px 0;
-  border-bottom: 1px solid var(--border);
-}
-.h2-board__meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 10px;
-  min-width: 0;
-  font-size: 0.84rem;
-  color: var(--muted);
-}
-.h2-board__date {
-  font: 600 0.84rem/1 var(--font-sans);
-  color: var(--accent-ink);
-  white-space: nowrap;
-}
-.h2-board__row .h2-status-pill {
-  justify-self: end;
-}
-.h2-board__name {
-  grid-column: 1 / -1;
-  font: 500 1.15rem/1.3 var(--font-display);
-  letter-spacing: -0.01em;
-  color: var(--ink);
-  text-decoration: none;
-  overflow-wrap: anywhere;
-}
-.h2-board__name:hover {
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-.h2-board__text {
-  grid-column: 1 / -1;
+.v4-home .home-does__item p {
   margin: 0;
   font-size: 0.9375rem;
   line-height: 1.55;
   color: var(--ink-2);
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  overflow: hidden;
 }
-.h2-board__more {
-  margin-top: var(--space-3);
-}
-@media (max-width: 1000px) {
-  .h2-boards {
+
+/* ===== Breakpoints ===== */
+@media (max-width: 920px) {
+  .v4-lists {
     grid-template-columns: minmax(0, 1fr);
-    gap: var(--space-6);
   }
 }
-@media (max-width: 560px) {
-  .home-hero {
-    padding-top: var(--space-6);
+@media (max-width: 900px) {
+  .v4-radar__dots,
+  .v4-home .v4-legend {
+    display: none;
+  }
+  .v4-home .home-does__list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 720px) {
+  .v4-hero {
+    text-align: left;
+  }
+  .v4-hero__text {
+    align-items: flex-start;
+    padding-top: var(--space-5);
+    padding-bottom: var(--space-3);
+  }
+  /* After 24 px of scroll the title and text fold away; the box stays pinned. Back at the top they open again. */
+  .v4-hero.is-folded .v4-hero__text {
+    max-height: 0;
+    opacity: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    overflow: hidden;
+  }
+  .v4-home .v4-hint,
+  .v4-home .home-examples {
+    text-align: left;
+    justify-content: flex-start;
+  }
+  .v4-pinned__more {
+    align-items: flex-start;
+  }
+  .v4-home .home-examples .inline-list {
+    justify-content: flex-start;
   }
 }

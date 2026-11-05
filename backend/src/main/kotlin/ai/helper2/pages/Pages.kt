@@ -10,10 +10,12 @@ class Pages(private val base: String) {
 
   fun home(): PageHead =
     PageHead(
-      title = "Helper2.ai: search AI tools, models and MCP servers in one place",
+      // The Home's own title and lede (ADR 0042, decision 4), so the search result and the page say
+      // the same.
+      title = "Helper2.ai: the metasearch for the AI universe",
       description =
-        "Search AI apps, models, MCP servers, libraries and papers from many sources at once. " +
-          "Ask in plain words and get a recommendation, with a quote that proves it.",
+        "One search across the world of AI for models, apps, MCP servers and papers. " +
+          "A pick with proof, plus the latest AI news and events.",
       canonicalPath = "/",
       robots = Robots.INDEX,
       jsonLd = listOf(website(), organization()),

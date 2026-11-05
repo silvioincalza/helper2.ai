@@ -4,6 +4,7 @@ import { ADMIN, ANON, USER } from '@/test/fixtures';
 import { mockApi } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
 import { THEME_KEY } from '@/lib/theme';
+import { mockViewport } from '@/test/viewport';
 import pkg from '../../package.json';
 
 describe('layout', () => {
@@ -24,7 +25,17 @@ describe('layout', () => {
     expect(screen.queryByRole('link', { name: 'Admin' })).not.toBeInTheDocument();
   });
 
-  it('on a small screen the menu button opens and closes the pages and sign-in; Escape and a new page close it', async () => {
+  it('on a wide screen there is no menu button; the header links to the lists and Saved', async () => {
+    mockApi({ 'GET /me': () => ANON });
+    renderApp('/');
+    const header = document.querySelector<HTMLElement>('header.site-header')!;
+    expect(within(header).queryByRole('button', { name: 'Menu' })).not.toBeInTheDocument();
+    expect(within(header).getByText('AI on your radar')).toBeInTheDocument();
+    await settle();
+  });
+
+  it('on a phone the menu button opens and closes the pages, sign-in and the theme; Escape and a new page close it', async () => {
+    mockViewport(390);
     mockApi({ 'GET /me': () => ANON });
     const user = userEvent.setup();
     renderApp('/');
@@ -34,22 +45,28 @@ describe('layout', () => {
     expect(button).toHaveAttribute('aria-expanded', 'false');
     expect(button).toHaveAttribute('aria-controls', 'site-menu');
     expect(panel).not.toHaveClass('is-open');
-    // The panel holds the pages and the sign-in.
-    expect(within(panel).getByRole('navigation', { name: 'Main' })).toBeInTheDocument();
-    expect(
-      await within(panel).findByRole('link', { name: 'Sign in with GitHub' }),
-    ).toBeInTheDocument();
 
     await user.click(button);
     expect(button).toHaveAttribute('aria-expanded', 'true');
     expect(panel).toHaveClass('is-open');
+    // The menu holds New this week, Coming up, Saved, Sources, Mission, Sign in and the theme.
+    const nav = within(panel).getByRole('navigation', { name: 'Main' });
+    expect(
+      within(nav)
+        .getAllByRole('link')
+        .map((a) => a.textContent),
+    ).toEqual(['New this week', 'Coming up', 'Saved', 'Sources', 'Mission']);
+    expect(
+      await within(panel).findByRole('link', { name: 'Sign in with GitHub' }),
+    ).toBeInTheDocument();
+    expect(within(panel).getByRole('button', { name: 'Dark theme' })).toBeInTheDocument();
     await user.keyboard('{Escape}');
     expect(button).toHaveAttribute('aria-expanded', 'false');
     expect(button).toHaveFocus();
 
     // A link to a list on the home page keeps the pathname; it closes the menu anyway.
     await user.click(button);
-    await user.click(within(panel).getByRole('link', { name: 'News' }));
+    await user.click(within(panel).getByRole('link', { name: 'Coming up' }));
     expect(button).toHaveAttribute('aria-expanded', 'false');
     expect(panel).not.toHaveClass('is-open');
 
@@ -132,10 +149,10 @@ describe('layout', () => {
     mockApi();
     document.documentElement.dataset.theme = 'light';
     renderApp('/');
-    await userEvent.click(screen.getByRole('button', { name: 'Theme: light. Change to dark' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Dark theme' }));
     expect(document.documentElement.dataset.theme).toBe('dark');
     expect(window.localStorage.getItem(THEME_KEY)).toBe('dark');
-    await userEvent.click(screen.getByRole('button', { name: 'Theme: dark. Change to light' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Light theme' }));
     expect(document.documentElement.dataset.theme).toBe('light');
     expect(window.localStorage.getItem(THEME_KEY)).toBe('light');
     delete document.documentElement.dataset.theme;
@@ -147,9 +164,7 @@ describe('layout', () => {
     document.documentElement.dataset.theme = 'dark';
     renderApp('/');
     await settle();
-    expect(
-      screen.getByRole('button', { name: 'Theme: dark. Change to light' }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Light theme' })).toBeInTheDocument();
     delete document.documentElement.dataset.theme;
   });
 
@@ -166,16 +181,12 @@ describe('layout', () => {
         throw new DOMException('full', 'QuotaExceededError');
       });
       renderApp('/');
-      await userEvent.click(screen.getByRole('button', { name: 'Theme: light. Change to dark' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Dark theme' }));
       expect(document.documentElement.dataset.theme).toBe('dark');
-      expect(
-        screen.getByRole('button', { name: 'Theme: dark. Change to light' }),
-      ).toBeInTheDocument();
-      await userEvent.click(screen.getByRole('button', { name: 'Theme: dark. Change to light' }));
+      expect(screen.getByRole('button', { name: 'Light theme' })).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'Light theme' }));
       expect(document.documentElement.dataset.theme).toBe('light');
-      expect(
-        screen.getByRole('button', { name: 'Theme: light. Change to dark' }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Dark theme' })).toBeInTheDocument();
     });
 
     it('storage can be neither read nor written: the page starts light and switching works', async () => {
@@ -187,9 +198,9 @@ describe('layout', () => {
       vi.spyOn(Storage.prototype, 'getItem').mockImplementation(blocked);
       vi.spyOn(Storage.prototype, 'setItem').mockImplementation(blocked);
       renderApp('/');
-      await userEvent.click(screen.getByRole('button', { name: 'Theme: light. Change to dark' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Dark theme' }));
       expect(document.documentElement.dataset.theme).toBe('dark');
-      await userEvent.click(screen.getByRole('button', { name: 'Theme: dark. Change to light' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Light theme' }));
       expect(document.documentElement.dataset.theme).toBe('light');
     });
   });

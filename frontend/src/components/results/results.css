@@ -393,7 +393,13 @@ details[open] > .h2-fold-toggle .icon {
   width: 90%;
   border-radius: 6px;
   background: var(--surface-tint);
-  animation: pulse 1.4s ease-in-out infinite;
+  /* Three pulses (4.2 s), then still (ADR 0042, decision 6). */
+  animation: h2-pulse 1.4s ease-in-out 3;
+}
+@keyframes h2-pulse {
+  50% {
+    opacity: 0.5;
+  }
 }
 .h2-skeleton__line.is-short {
   width: 30%;

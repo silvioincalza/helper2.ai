@@ -8,7 +8,8 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 /**
- * The app_user table: the provider's subject, a display name and the last sign-in, nothing else.
+ * The app_user table: the provider's subject, a display name, the last sign-in and the display
+ * settings, nothing else.
  */
 @Repository
 public class Users {
@@ -42,6 +43,26 @@ public class Users {
         .param("n", displayName)
         .query(UUID.class)
         .single();
+  }
+
+  /** A signed-in user's display settings. */
+  public record Preferences(boolean radarMotion) {}
+
+  /** The settings of the account, while it exists. */
+  public Optional<Preferences> preferences(UUID userId) {
+    return jdbc.sql("SELECT radar_motion FROM app_user WHERE id = :id")
+        .param("id", userId)
+        .query((rs, n) -> new Preferences(rs.getBoolean("radar_motion")))
+        .optional();
+  }
+
+  /** Sets whether the Home radar moves; returns the settings after the change. */
+  public Optional<Preferences> changeRadarMotion(UUID userId, boolean radarMotion) {
+    return jdbc.sql("UPDATE app_user SET radar_motion = :m WHERE id = :id RETURNING radar_motion")
+        .param("m", radarMotion)
+        .param("id", userId)
+        .query((rs, n) -> new Preferences(rs.getBoolean("radar_motion")))
+        .optional();
   }
 
   /**

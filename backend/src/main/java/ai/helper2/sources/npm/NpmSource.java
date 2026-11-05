@@ -43,6 +43,8 @@ public class NpmSource implements SearchSource {
         new SourceDescriptor(
             "npm",
             "npm registry",
+            "npm",
+            true,
             SourceMode.LIVE,
             URI.create("https://www.npmjs.com"),
             URI.create("https://docs.npmjs.com/policies/open-source-terms"),

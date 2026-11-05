@@ -1,3 +1,4 @@
+import stagingSources from './staging-sources.json';
 import type {
   DateFact,
   Me,
@@ -146,10 +147,18 @@ export function makeDetail(over: Partial<ResourceDetail> = {}): ResourceDetail {
   };
 }
 
+/**
+ * The 16 sources of staging on 5 Nov 2026, with a mix of last checks (answered, slow, limited, failed):
+ * 13 external, and helper2's own index, search by meaning and curated list.
+ */
+export const STAGING_SOURCES = stagingSources as SourceInfo[];
+
 export const SOURCES: SourceInfo[] = [
   {
     id: 'github',
     name: 'GitHub',
+    shortName: 'GitHub',
+    external: true,
     mode: 'LIVE',
     enabled: true,
     metered: false,
@@ -163,6 +172,8 @@ export const SOURCES: SourceInfo[] = [
   {
     id: 'seed',
     name: 'Helper2 seed',
+    shortName: 'Curated',
+    external: false,
     mode: 'CURATED',
     enabled: true,
     metered: false,
@@ -181,6 +192,8 @@ export const HEALTH_SOURCES: SourceInfo[] = [
   {
     id: 'npm',
     name: 'npm',
+    shortName: 'npm',
+    external: true,
     mode: 'LIVE',
     enabled: true,
     metered: false,
@@ -197,6 +210,8 @@ export const HEALTH_SOURCES: SourceInfo[] = [
   {
     id: 'hf',
     name: 'Hugging Face',
+    shortName: 'HF models',
+    external: true,
     mode: 'LIVE',
     enabled: true,
     metered: false,
@@ -213,6 +228,8 @@ export const HEALTH_SOURCES: SourceInfo[] = [
   {
     id: 'tavily',
     name: 'Tavily web search (AI news)',
+    shortName: 'Web',
+    external: true,
     mode: 'LIVE',
     enabled: true,
     metered: true,
@@ -248,6 +265,7 @@ export const USER: Me = {
   roles: ['USER'],
   loginProviders: [],
   limits: LIMITS,
+  preferences: { radarMotion: true },
 };
 export const ADMIN: Me = {
   authenticated: true,
@@ -255,6 +273,7 @@ export const ADMIN: Me = {
   roles: ['USER', 'ADMIN'],
   loginProviders: [],
   limits: LIMITS,
+  preferences: { radarMotion: true },
 };
 
 export function makeRecent(over: Partial<RecentResponse> = {}): RecentResponse {

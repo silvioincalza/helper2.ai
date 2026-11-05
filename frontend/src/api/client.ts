@@ -9,6 +9,8 @@ import type {
   IssueReportAccepted,
   IssueReportRequest,
   Me,
+  Preferences,
+  PreferencesChange,
   Problem,
   RecentResponse,
   ResourceDetail,
@@ -251,6 +253,9 @@ export const api = {
   askGuideStream,
   listSources: (signal?: AbortSignal) => request<SourceInfo[]>('GET', '/sources', { signal }),
   getMe: (signal?: AbortSignal) => request<Me>('GET', '/me', { signal }),
+  /** A signed-in user's display settings; fields left out stay as they are. */
+  changePreferences: (body: PreferencesChange) =>
+    request<Preferences>('PATCH', '/me/preferences', { body }),
   listBookmarks: (signal?: AbortSignal) => request<Bookmark[]>('GET', '/me/bookmarks', { signal }),
   /** Right after sign-in: the browser's bookmarks join the account's; answers with the full list. */
   mergeLocalBookmarks: (body: BookmarkRequest[]) =>

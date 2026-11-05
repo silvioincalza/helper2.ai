@@ -38,7 +38,8 @@ class DemoSourcesConfiguration {
   @Bean
   SearchSource demoCatalog(Clock clock) {
     SourceDescriptor d =
-        descriptor("demo-catalog", "Demo catalog (fixture data)", Duration.ofSeconds(2), 15);
+        descriptor(
+            "demo-catalog", "Demo catalog (fixture data)", "Demo", Duration.ofSeconds(2), 15);
     return new SearchSource() {
       @Override
       public SourceDescriptor getDescriptor() {
@@ -72,7 +73,8 @@ class DemoSourcesConfiguration {
     // A second demo source that reports a different license for one resource: exercises conflict
     // display.
     SourceDescriptor d =
-        descriptor("demo-mirror", "Demo mirror (fixture data)", Duration.ofSeconds(2), 16);
+        descriptor(
+            "demo-mirror", "Demo mirror (fixture data)", "Mirror", Duration.ofSeconds(2), 16);
     return new SearchSource() {
       @Override
       public SourceDescriptor getDescriptor() {
@@ -108,7 +110,8 @@ class DemoSourcesConfiguration {
   @Bean
   SearchSource demoSlow() {
     SourceDescriptor d =
-        descriptor("demo-slow", "Demo slow source (always times out)", Duration.ofMillis(300), 90);
+        descriptor(
+            "demo-slow", "Demo slow source (always times out)", "Slow", Duration.ofMillis(300), 90);
     return new SearchSource() {
       @Override
       public SourceDescriptor getDescriptor() {
@@ -131,7 +134,11 @@ class DemoSourcesConfiguration {
   SearchSource demoDown() {
     SourceDescriptor d =
         descriptor(
-            "demo-down", "Demo unavailable source (always fails)", Duration.ofSeconds(1), 95);
+            "demo-down",
+            "Demo unavailable source (always fails)",
+            "Down",
+            Duration.ofSeconds(1),
+            95);
     return new SearchSource() {
       @Override
       public SourceDescriptor getDescriptor() {
@@ -146,10 +153,12 @@ class DemoSourcesConfiguration {
   }
 
   private static SourceDescriptor descriptor(
-      String id, String name, Duration timeout, int priority) {
+      String id, String name, String shortName, Duration timeout, int priority) {
     return new SourceDescriptor(
         id,
         name,
+        shortName,
+        true,
         SourceMode.DEMO,
         DEMO_HOME,
         null,

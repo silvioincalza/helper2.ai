@@ -1,6 +1,6 @@
 # 0040 — Frontend design: home page, results with preview, guide picks bar, design system
 
-**Status.** Accepted. Decisions 1, 2, 4 and 7 are replaced by [0042](0042-redesign-design-system-v4.md) as each page moves to it. **Builds on:** [0025](0025-frontend-one-box.md),
+**Status.** Accepted. Superseded in part by [0042](0042-redesign-design-system-v4.md) for Home, header and footer (decisions 1 and 2); decisions 4 and 7 follow when Results moves. **Builds on:** [0025](0025-frontend-one-box.md),
 [0015](../guide/0015-ai-guide-evidence-gate.md), [0038](../guide/0038-ai-content-marking.md), [0039](0039-frontend-recent-answers-cache.md)
 
 ## Context
@@ -16,7 +16,8 @@ and chose between options for each part.
 
 ## Decision
 1. **Same palette, one font, one design system.** Paper, indigo ink, one saffron accent. One font, Space Grotesk
-   (400, 500, 600), for text and titles; code and commands in the system's monospace font, so nothing else downloads.
+   (400, 500, 600), for text and titles on the pages still on version 3 (Home, the header and the footer use Geist and
+   Geist Mono, [0042](0042-redesign-design-system-v4.md)); code and commands in the system's monospace font.
    `docs/design/system/tokens.json` holds the base tokens, the semantic tokens (type tags, status
    pills, proof quote, sources tile, selected row) and the breakpoints 560, 640, 860 and 1000 px.
 2. **Home is only the home page, and says what the site is for.** One headline ("Find the right AI tool for your
