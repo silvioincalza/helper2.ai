@@ -149,7 +149,7 @@ them assigned by code first, and measured on labelled items before a model is ev
 - `backend/src/main/java/ai/helper2/search/web/SearchController.java` (`categoryFilter`), `CategoriesController.java`,
   `CardMapper.java`; `admin/web/AdminController.java`; `guide/web/GuideStreamController.java`;
   `backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt`, `guide/steps/PickAnswer.kt`, `guide/steps/Question.kt`.
-- `backend/src/main/resources/db/migration/V11__resource_categories.sql`; the `R__` seeds keep `CATEGORY` labels.
+- `backend/src/main/resources/db/migration/V12__resource_categories.sql`; the `R__` seeds keep `CATEGORY` labels.
 - `frontend/src/components/CategoryFacet.tsx`, `FilterPanel.tsx`, `ActiveFilters.tsx`,
   `components/results/CategoryLinks.tsx`, `Resource.tsx`, `Results.tsx`, `hooks/useCategories.ts`,
   `hooks/useGuideStream.ts`, `lib/searchState.ts`, `pages/admin/CategoryBackfill.tsx`.
