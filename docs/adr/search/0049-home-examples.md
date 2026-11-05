@@ -37,7 +37,9 @@ same for every visitor.
    ones when a locale has none. The page picks two per path at random, people who use AI first. An example searches;
    it does not ask the guide, so it spends no daily AI answer.
 5. **The back office.** `/api/v1/admin/home-examples` lists, adds, changes and removes examples (ADMIN, admin host),
-   in the admin module like every back-office endpoint (ADR 0045).
+   in the admin module like every back-office endpoint (ADR 0045). The page `/admin/examples` shows each check in
+   words, finds expected results with the visitors' own search, and reacts to the problem codes (`duplicate`,
+   `version-conflict`, `invalid-request` with the broken rule).
 
 ## Consequences
 - I change the examples without a release, and a bad example hides itself instead of greeting a new visitor.
@@ -65,14 +67,14 @@ same for every visitor.
 - `backend/src/main/java/ai/helper2/admin/web/HomeExamplesAdminController.java`.
 - `backend/src/main/kotlin/ai/helper2/search/Search.kt` (`SearchRequest.web`), `Model.kt` (`SkipReason.WEB_NOT_ASKED`).
 - `backend/src/main/resources/db/migration/V4__home_example.sql`.
-- `frontend/src/lib/examples.ts` — the built-in pool and the pick.
+- `frontend/src/lib/examples.ts` — the built-in pool and the pick; `frontend/src/pages/admin/ExamplesPage.tsx`.
 - Tests: `examples/ExampleInputTest.kt`, `ExampleCheckTest.kt`, `search/usecase/MeteredSourceTest.kt`,
-  `api/HomeExamplesApiIT.java`, `frontend/src/lib/examples.test.ts`.
+  `api/HomeExamplesApiIT.java`, `frontend/src/lib/examples.test.ts`, `frontend/src/pages/admin/ExamplesPage.test.tsx`.
 
 ## Diagrams
 [flow](../../diagrams/flow-0049-home-examples.svg) · [sequence](../../diagrams/sequence-0049-home-examples.svg)
 
 ## Roadmap
 - The page reads the pool from the endpoint, with the built-in list when it does not answer in time.
-- The back office Examples page, and the count of hidden examples on the overview.
+- The count of hidden examples on the overview.
 - AI-drafted examples that wait in the Review queue.

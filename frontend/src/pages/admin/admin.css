@@ -140,3 +140,35 @@
   flex-direction: column;
   gap: var(--space-2);
 }
+.h2-admin__form,
+.h2-admin__expected {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-width: 40rem;
+  margin: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.h2-admin__expected {
+  padding: var(--space-3);
+}
+.h2-admin__form label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: 0.9rem;
+  color: var(--ink-2);
+}
+.h2-admin__form input,
+.h2-admin__form select {
+  min-height: var(--target-min);
+}
+.h2-admin__found {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-1) 0;
+}

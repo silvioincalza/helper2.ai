@@ -22,6 +22,10 @@ import type {
   ScoutRun,
   AuditEntryPage,
   AdminOverview,
+  AdminHomeExample,
+  ExampleCheckOutcome,
+  HomeExampleChange,
+  HomeExampleInput,
   SearchResponse,
   SourceInfo,
 } from './types';
@@ -275,6 +279,19 @@ export const api = {
   /** Counts for the back office landing page; the server computes them at most once a minute. */
   getAdminOverview: (signal?: AbortSignal) =>
     request<AdminOverview>('GET', '/admin/overview', { signal }),
+  listAdminHomeExamples: (outcome: ExampleCheckOutcome | undefined, signal?: AbortSignal) =>
+    request<AdminHomeExample[]>('GET', '/admin/home-examples', {
+      query: new URLSearchParams(outcome ? { outcome } : {}),
+      signal,
+    }),
+  /** 400 invalid-request with the broken rules in its detail; 409 duplicate. */
+  addHomeExample: (body: HomeExampleInput) =>
+    request<AdminHomeExample>('POST', '/admin/home-examples', { body }),
+  /** 409 version-conflict when someone changed it first, 409 duplicate. */
+  changeHomeExample: (id: string, body: HomeExampleChange) =>
+    request<AdminHomeExample>('PUT', `/admin/home-examples/${encodeURIComponent(id)}`, { body }),
+  removeHomeExample: (id: string) =>
+    request<void>('DELETE', `/admin/home-examples/${encodeURIComponent(id)}`),
   listAuditEntries: (page: number, size: number, signal?: AbortSignal) =>
     request<AuditEntryPage>('GET', '/admin/audit', {
       query: new URLSearchParams({ page: String(page), size: String(size) }),
