@@ -62,7 +62,7 @@ export function useGuideToggle(id: string) {
   return { open, toggle };
 }
 
-/** The "Guide me" button; [bodyId] is the panel it opens. */
+/** The "Set it up" button; [bodyId] is the panel it opens. */
 export function GuideMeButton({
   title,
   open,
@@ -94,7 +94,7 @@ export function GuideMeButton({
 }
 
 /**
- * "Guide me" on a tool: how to install, configure, use and connect it, from its own sources only. Two parts,
+ * "Set it up" on a tool: how to install, configure, use and connect it, from its own sources only. Two parts,
  * loaded when opened: snippets per AI tool from its registry entry or README config example (GET /setup, no AI),
  * steps from its README or model card (POST /resources/{id}/guide, AI-picked, every quote and command checked against the
  * document). Focus moves to its heading when it opens.
@@ -114,7 +114,7 @@ export function GuideBody({ id, title, level }: { id: string; title: string; lev
   );
 }
 
-/** The detail page's Guide me: a primary button, the panel under it. */
+/** The detail page's "Set it up": a primary button, the panel under it. */
 export function SetupGuidePanel({ id, title }: { id: string; title: string }) {
   const { t } = useTranslation();
   const { open, toggle } = useGuideToggle(id);

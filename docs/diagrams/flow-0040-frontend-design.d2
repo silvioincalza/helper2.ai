@@ -1,11 +1,15 @@
 # Flowchart: the design from the home page to the guide picks. An empty / is the home page (headline, box, News and Events
-# boards); a search opens /search, and /?q= names /search as canonical. The list shows at once; the guide runs only
-# for a question (4+ words or Shift+Enter): its picks bar is reserved, the answer arrives over SSE (picks or no pick),
+# boards); a search opens /search, and /?q= shows the same results. Both say noindex, follow to search engines. The
+# list shows at once; the guide runs only from the "Ask the guide" button (Enter always searches): its picks bar is
+# reserved, the answer arrives over SSE (picks or no pick),
 # the picks move to the top of the list in one update and the preview opens on pick #1 unless the URL names a result;
-# with no pick the bar offers the next steps. The selected result is kept in the URL with replace.
+# with no pick the bar offers the next steps. The selected result is kept in the URL with replace. Each row title is a
+# link to /resource/:id: on a wide screen a plain click selects, a click with a modifier key opens the link; on a phone
+# nothing is selected on load and a row opens the resource page.
 # Source of truth: docs/adr/frontend/0040-frontend-design.md; frontend/src/pages/HomePage.tsx, pages/Home.tsx,
 #   components/home/HomeBoard.tsx, NewsBoard.tsx, EventsBoard.tsx, routes.tsx, components/OneBox.tsx,
-#   components/results/Results.tsx, lib/selection.ts, components/ui/PicksBar.tsx, hooks/useGuideStream.ts.
+#   components/results/Results.tsx, lib/selection.ts, components/ui/PicksBar.tsx, components/ui/SelectableRow.tsx,
+#   hooks/useGuideStream.ts.
 # Render: cd docs/diagrams && d2 fmt flow-0040-frontend-design.d2 && d2 flow-0040-frontend-design.d2 flow-0040-frontend-design.svg
 
 ...@style
@@ -24,16 +28,16 @@ home: Home {
   hero -> boards -> feeds
 }
 
-canonical: "/?q=…: the results,\ncanonical link to /search" {class: app}
+canonical: "/?q=…: the results;\nboth result pages noindex, follow" {class: app}
 start: "Search from the box or an example:\n/search?q=…" {class: app}
 results: "GET /api/v1/search" {class: ext}
 show: "Show the list at once" {class: app}
-question: "A question?\n(4+ words or Shift+Enter)" {class: decision}
+question: "Asked the guide?\n(only its button; Enter searches)" {class: decision}
 nobar: "No picks bar,\nno model call" {class: end}
 reserve: "Reserve the picks bar:\n\"Guide is reading…\"" {class: app}
 wide: "Screen wider than 860 px?" {class: decision}
 preview: "Preview on the right" {class: app}
-inline: "Preview inside the list,\nlink to /resource/:id" {class: app}
+inline: "Nothing selected on load;\na row opens /resource/:id" {class: app}
 guide: "POST /api/v1/guide/stream (SSE)" {class: ext}
 picks: "Guide found picks?" {class: decision}
 
@@ -51,12 +55,14 @@ none: "Bar: one line that says why,\n\"Ask without …\" per requirement,\n\"Rep
 select: Selecting a result {
   class: group
   direction: down
-  tap: "Click a row or a pick chip" {class: app}
+  tap: "Click a row title (wide screen)\nor a pick chip" {class: app}
+  newtab: "Ctrl, cmd, shift or middle click:\n/resource/:id opens as a link" {class: end}
   url: "replace ?q=…&id=…\n(no new Back step)" {class: app}
   known: "id in the results?" {class: decision}
   sel: "Select that row" {class: end}
   first: "Select pick #1,\nelse the first row" {class: end}
   tap -> url -> known
+  tap -> newtab: "modifier key"
   known -> sel: yes
   known -> first: no
 }

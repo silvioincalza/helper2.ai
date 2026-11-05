@@ -2,7 +2,7 @@ import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { GuideResponse, ResultCard } from '@/api/types';
 import { axeViolations } from '@/test/a11y';
-import { makeCard, makeSearch, makeStatus } from '@/test/fixtures';
+import { makeCard, makeDetail, makeSearch, makeStatus } from '@/test/fixtures';
 import { mockApi, problem, sse } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
 
@@ -76,10 +76,10 @@ const three = () => makeSearch({ results: [A, C, B], total: 3, sources: [makeSta
 
 const row = (name: string) =>
   screen
-    .getAllByRole('button', { name: new RegExp(name) })
-    .find((b) => b.classList.contains('h2-select-row'))!;
+    .getAllByRole('link', { name: new RegExp(name) })
+    .find((b) => b.classList.contains('h2-select-row__link'))!;
 const titlesIn = (list: HTMLElement) =>
-  [...list.querySelectorAll('.h2-select-row .h2-row__title')].map((e) => e.textContent);
+  [...list.querySelectorAll('.h2-select-row__link')].map((e) => e.textContent);
 const previewTitle = () =>
   within(screen.getByRole('article')).getByRole('heading', { level: 2 }).textContent;
 /** Holds the guide's answer until the test sends it, as the real answer comes about 15 seconds after the results. */
@@ -97,7 +97,7 @@ function heldGuide() {
   };
 }
 const rowTitles = () =>
-  [...document.querySelectorAll('.h2-select-row .h2-row__title')].map((e) => e.textContent);
+  [...document.querySelectorAll('.h2-select-row__link')].map((e) => e.textContent);
 
 describe('results: list and preview', () => {
   it('selects the first result and shows its preview; a click selects another and writes its id to the URL', async () => {
@@ -342,7 +342,7 @@ describe('results: list and preview', () => {
     });
     renderApp('/search?q=postgres+mcp');
     await screen.findByText('Summed Up');
-    const r = row('Summed Up');
+    const r = row('Summed Up').closest<HTMLElement>('.h2-select-row')!;
     expect(within(r).getByText('AI summary')).toBeInTheDocument();
     expect(within(r).getByText('A short summary.')).toHaveAttribute('data-ai-generated', 'true');
   });
@@ -534,22 +534,64 @@ describe('results: list and preview', () => {
     expect(await screen.findByRole('button', { name: /Next/ })).toBeInTheDocument();
   });
 
-  it('up to 860 px the preview opens inside the list, under the selected row, with a link to the full page', async () => {
-    vi.stubGlobal(
-      'matchMedia',
-      vi.fn(() => ({
-        matches: false,
-        addEventListener: () => undefined,
-        removeEventListener: () => undefined,
-      })),
-    );
+  it('each row title is a link to its resource page; a plain click selects it here, a ctrl click is left to the browser', async () => {
     mockApi({ 'GET /search': () => search() });
-    renderApp('/search?q=postgres');
-    const full = await screen.findByRole('link', { name: 'Full details' });
-    expect(full).toHaveAttribute('href', `/resource/${A.id}`);
-    expect(screen.queryByRole('article')).not.toBeInTheDocument();
-    expect(full.closest('li')).toContainElement(row('Alpha Search'));
-    vi.unstubAllGlobals();
+    const { router, params } = renderApp('/search?q=postgres');
+    await screen.findByRole('article');
+    expect(row('Alpha Search')).toHaveAttribute('href', `/resource/${A.id}`);
+    expect(row('Postgres MCP')).toHaveAttribute('href', `/resource/${B.id}`);
+    // The link's name is the title only, not the whole row.
+    expect(row('Postgres MCP')).toHaveAccessibleName('Postgres MCP');
+
+    const ctrl = new MouseEvent('click', { bubbles: true, cancelable: true, ctrlKey: true });
+    row('Postgres MCP').dispatchEvent(ctrl);
+    expect(ctrl.defaultPrevented).toBe(false);
+    expect(params().get('id')).toBeNull();
+
+    await userEvent.click(row('Postgres MCP'));
+    await waitFor(() => expect(params().get('id')).toBe(B.id));
+    expect(router.state.location.pathname).toBe('/search');
+  });
+
+  describe('up to 860 px (phone)', () => {
+    beforeEach(() =>
+      vi.stubGlobal(
+        'matchMedia',
+        vi.fn(() => ({
+          matches: false,
+          addEventListener: () => undefined,
+          removeEventListener: () => undefined,
+        })),
+      ),
+    );
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('selects nothing on load, and a row opens the resource page, which links back to the search with that result open', async () => {
+      mockApi({
+        'GET /search': () => search(),
+        [`GET /resources/${B.id}`]: () => makeDetail({ card: B }),
+      });
+      const { router } = renderApp('/search?q=postgres');
+      await screen.findByText('Postgres MCP');
+      expect(screen.queryByRole('article')).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'Full details' })).not.toBeInTheDocument();
+      expect(row('Alpha Search')).not.toHaveAttribute('aria-current');
+
+      await userEvent.click(row('Postgres MCP'));
+      await waitFor(() => expect(router.state.location.pathname).toBe(`/resource/${B.id}`));
+      expect(router.state.location.state).toMatchObject({
+        from: `/search?q=postgres&id=${B.id}`,
+      });
+    });
+
+    it('a result chosen by id opens inside the list, under its row, with a link to the full page', async () => {
+      mockApi({ 'GET /search': () => search() });
+      renderApp(`/search?q=postgres&id=${A.id}`);
+      const full = await screen.findByRole('link', { name: 'Full details' });
+      expect(full).toHaveAttribute('href', `/resource/${A.id}`);
+      expect(screen.queryByRole('article')).not.toBeInTheDocument();
+      expect(full.closest('li')).toContainElement(row('Alpha Search'));
+    });
   });
 
   it('shows the sources that answered at the bottom', async () => {

@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
   type FocusEvent,
+  type ReactNode,
   type RefObject,
 } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router';
@@ -32,7 +33,7 @@ import {
 import { Timeline } from '@/components/Timeline';
 import { NoticeList } from '@/components/ui/NoticeList';
 import { ProofQuote } from '@/components/ui/ProofQuote';
-import { SelectableRow } from '@/components/ui/SelectableRow';
+import { RowLink, SelectableRow } from '@/components/ui/SelectableRow';
 import { SourceTiles } from '@/components/ui/SourceTiles';
 import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
 import { StatusPill } from '@/components/ui/StatusPill';
@@ -64,7 +65,10 @@ import { ListedBy, ResultFacts } from './ResultFacts';
 import './results.css';
 import { OpenButton } from './OpenButton';
 
-/** From this width the preview sits next to the list; below it opens inside the list (design system breakpoints). */
+/**
+ * From this width the preview sits next to the list and a click on a row selects it. Below it (phone) nothing is
+ * selected on load and a row opens the resource page (design system breakpoints, design v4).
+ */
 const WIDE = '(min-width: 861px)';
 
 /**
@@ -189,7 +193,10 @@ function ResultsBody({
   const byId = useMemo(() => picksById(picks), [picks]);
   const { picked, rest } = useMemo(() => picksFirst(res.results, picks), [res.results, picks]);
   // An id the user chose (a click, a shared link, a reload) wins; otherwise the guide's pick #1 opens in the preview.
-  const selected = selectedResult(res.results, sp.get('id'), picked[0]?.id);
+  // On a phone only a chosen id opens: there a row is a link to the resource page.
+  const selected = wide
+    ? selectedResult(res.results, sp.get('id'), picked[0]?.id)
+    : res.results.find((r) => r.id === sp.get('id'));
   const select = (id: string) =>
     setSp(
       (prev) => {
@@ -409,7 +416,7 @@ function ResultsBody({
                       card={c}
                       pick={byId.get(c.id)}
                       selected={c.id === selected?.id}
-                      onSelect={select}
+                      onSelect={wide ? select : undefined}
                       inline={!wide}
                       stale={stale}
                     />
@@ -432,7 +439,7 @@ function ResultsBody({
                   card={c}
                   pick={undefined}
                   selected={c.id === selected?.id}
-                  onSelect={select}
+                  onSelect={wide ? select : undefined}
                   inline={!wide}
                   stale={stale}
                 />
@@ -487,13 +494,16 @@ function useKeepRowFocus(list: RefObject<HTMLDivElement | null>, order: string) 
     const active = document.activeElement;
     if (!id || (active && active !== document.body)) return;
     list.current
-      ?.querySelector<HTMLElement>(`li[data-id="${CSS.escape(id)}"] .h2-select-row`)
+      ?.querySelector<HTMLElement>(`li[data-id="${CSS.escape(id)}"] .h2-select-row__link`)
       ?.focus({ preventScroll: true });
   }, [list, order]);
   return { onFocus, onBlur };
 }
 
-/** A result in the list: its row, and under it the preview when the preview opens inside the list (narrow screens). */
+/**
+ * A result in the list: its row, whose title links to the resource page, and under it the preview when the preview
+ * opens inside the list (narrow screens). With [onSelect] (wide screens) a plain click selects the row instead.
+ */
 function ResultRow({
   card,
   pick,
@@ -505,14 +515,37 @@ function ResultRow({
   card: ResultCard;
   pick: GuidePick | undefined;
   selected: boolean;
-  onSelect: (id: string) => void;
+  onSelect: ((id: string) => void) | undefined;
   inline: boolean;
   stale: ReadonlySet<string>;
 }) {
+  const location = useLocation();
+  // The resource page links back to this search with this result open (on a phone, its preview in the list), and
+  // shows the same checked sentence.
+  const back = new URLSearchParams(location.search);
+  back.set('id', card.id);
+  const detailState = {
+    from: `${location.pathname}?${back.toString()}`,
+    quote: pick?.quote ?? null,
+  };
   return (
     <li data-id={card.id}>
-      <SelectableRow selected={selected} onSelect={() => onSelect(card.id)}>
-        <RowContent card={card} pick={pick} />
+      <SelectableRow selected={selected}>
+        <RowContent
+          card={card}
+          pick={pick}
+          title={
+            <RowLink
+              to={resourcePath(card.id)}
+              state={detailState}
+              selected={selected}
+              onSelect={onSelect && (() => onSelect(card.id))}
+              className="h2-row__title"
+            >
+              {card.title}
+            </RowLink>
+          }
+        />
       </SelectableRow>
       {selected && inline && (
         <div className="h2-inline-preview">
@@ -561,7 +594,15 @@ function AiDescription({ card }: { card: ResultCard }) {
 }
 
 /** One row: type, host, the pick badge, the title and two lines of the source's own text; a pick adds its reason. */
-function RowContent({ card, pick }: { card: ResultCard; pick: GuidePick | undefined }) {
+function RowContent({
+  card,
+  pick,
+  title,
+}: {
+  card: ResultCard;
+  pick: GuidePick | undefined;
+  title: ReactNode;
+}) {
   const { t } = useTranslation();
   return (
     <span className="h2-row">
@@ -570,7 +611,7 @@ function RowContent({ card, pick }: { card: ResultCard; pick: GuidePick | undefi
         <span className="h2-row__host">{displayHost(card.url)}</span>
         {pick && <StatusPill tone="next">{t('results.pick', { rank: pick.rank })}</StatusPill>}
       </span>
-      <span className="h2-row__title">{card.title}</span>
+      {title}
       {card.description &&
         (isAiOrigin(card.descriptionOrigin) ? (
           <span className="h2-row__text">

@@ -32,7 +32,7 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 ### Domain and identity
 - DNS: `CAA` record for the edge's certificate authority; `v=spf1 -all` and DMARC `p=reject` if no mail is sent.
 - Optional `H2_HF_TOKEN` on prod.
-- `H2_SETUP_GITHUB_TOKEN` (read-only, public repositories) in `app_env` on staging and prod; without it Guide me reads
+- `H2_SETUP_GITHUB_TOKEN` (read-only, public repositories) in `app_env` on staging and prod; without it "Set it up" reads
   GitHub anonymously, 60 calls an hour ([ADR 0031](adr/guide/0031-setup-guide.md)).
 - Turn on the registered Tavily tier (more web searches per day for signed-in users) once that sign-in is live
   ([ADR 0037](adr/search/0037-tavily-store-and-daily-quota.md)).
@@ -265,7 +265,7 @@ Fix an item or accept it; when it no longer holds, remove it.
 
 ### Frontend
 
-- The four-word rule sends a short question to search and a long keyword list to the guide; Shift+Enter always asks. ([ADR 0025](adr/frontend/0025-frontend-one-box.md))
+- The four-word rule labels the button "Ask the guide" for a long keyword list and "Search" for a short question; Enter always searches. ([ADR 0025](adr/frontend/0025-frontend-one-box.md))
 - No browser end-to-end tests: frontend tests run in jsdom only, also in CI. ([ADR 0025](adr/frontend/0025-frontend-one-box.md), [ADR 0028](adr/operations/0028-ci-cd.md))
 - A recent answer can be up to 5 minutes old (50 entries, 5 minutes, fixed). A new page that shows data the user changes must pass `cache: false`. ([ADR 0039](adr/frontend/0039-frontend-recent-answers-cache.md))
 - The picks bar takes about 110 px also when the guide has nothing to say, and shows no step-by-step progress; there is no button to close the guide's answer. Two result layouts to build and test. ([ADR 0040](adr/frontend/0040-frontend-design.md))

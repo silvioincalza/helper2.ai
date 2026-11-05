@@ -27,7 +27,7 @@ The success criteria at the end say which tests verify each journey today. What 
    a small "AI" mark: "Drafted with AI, checked by a person".
 3. Types a name ("ollama"), keywords ("mcp postgres"), an intent ("I want to summarise PDFs"), or a use case ("traduzione").
 4. On the home page, Enter (or the button) opens the results on `/search`; focus moves to the results. There, results follow typing when it pauses (or on Enter). The first search shows skeleton rows and a per-source "querying…" line; a later search keeps the previous results on screen, dimmed, until the new ones arrive.
-5. Results arrive in one response, once every source has answered or hit its timeout. The list is on the left, a preview of the selected result on the right (inside the list on a phone); the selected result is in the URL. Under the results, a line states e.g. "4 of 5 sources answered" and a tile per source shows its outcome, response time or cache age.
+5. Results arrive in one response, once every source has answered or hit its timeout. The list is on the left, a preview of the selected result on the right; the selected result is in the URL. Each result title is a link to its resource page: a click selects the result, a ctrl or cmd click opens the page in a new tab. On a phone nothing is selected on load, and a row opens the resource page; its back link returns to the list with that result open under its row. Under the results, a line states e.g. "4 of 5 sources answered" and a tile per source shows its outcome, response time or cache age.
 
 **Key decisions:** whether to refine, or to ask the guide. **Success:** relevant result in the first page; user understands where results came from.
 
@@ -43,14 +43,14 @@ The success criteria at the end say which tests verify each journey today. What 
 
 ## UJ-2 Ask the guide without losing the search
 
-1. With a query and filters on the page, the user clicks **Ask the guide** (or presses Shift+Enter, or follows the "Sounds like a question" hint after 4+ words).
+1. With a query and filters on the page, the user clicks **Ask the guide** (the box's button says so from 4 words), or follows the "Sounds like a question" hint after 4+ words. Enter always searches, also with 4+ words: the guide runs only from its button, because each answer costs model calls.
 2. The results show at once; the picks bar above them says the guide is reading. Query, filters, sort and page persist (they live in the URL: `q`, `ask`, filters).
 3. The answer arrives: the picks show as chips in the bar and move to a **Guide picks** group at the top of the list, and the preview opens on pick #1. It says **Why the guide picked it** (AI-written) with the source's own sentence as proof. A result the user already opened stays open. Other results keep the search order under **More results**; their preview says **About**.
 4. Nothing fits: the bar says why in one line and offers **Ask without “…”** for each requirement the guide read (when it is short enough to keep in the URL), and **Rephrase**. **How the guide decided** stays folded under the bar: the steps, and how the guide read the question.
 5. Back/forward and shared links reproduce the same state. A shared link that asks the guide works on the first visit too: when the browser has no CSRF cookie yet, the page gets it and sends the question once more.
 
 **Success:** zero re-typing; URL fully describes the state. A new question while one is being answered replaces it.
-Changing the words in the box searches again and drops the old question with its picks: the picks answered that question, not the new words. Enter or **Ask the guide** asks again.
+Changing the words in the box searches again and drops the old question with its picks: the picks answered that question, not the new words. **Ask the guide** asks again.
 **Failure case:** the guide fails or is unavailable, or its stream stalls for 45 s or ends without an answer → the search results stay, the answer area says what went wrong and offers **Try again**.
 
 ## UJ-3 Refine: filter and sort

@@ -1,6 +1,6 @@
 # Flowchart: the one box. What typed text does: live search, or "Ask the guide".
-# Shows the 3-character minimum and the 700 ms pause for live search, the four-word rule of the one button,
-# Shift+Enter, Enter in an empty box, and what each choice writes to the URL. The box itself: line breaks become
+# Shows the 3-character minimum and the 700 ms pause for live search, the four-word rule of the one button, Enter
+# (always a search; only the button asks the guide), Enter in an empty box, and what each choice writes to the URL. The box itself: line breaks become
 # spaces, it grows up to six lines, Enter during IME composition is left alone, × or Esc empties it (results stay),
 # "/" from anywhere puts the cursor in it.
 # Every writer goes through the URL: HomePage (frontend/src/pages/HomePage.tsx) renders from it
@@ -34,12 +34,12 @@ live: Live search (onType) {
   home -> nothing: no
 }
 
-key: "Enter or the one button" {class: app}
+key: "Enter (Shift+Enter too)" {class: app}
+button: "The one button" {class: app}
 ime: "Composing (IME)?" {class: decision}
 imeend: "Ignored: the input method\nkeeps the key" {class: end}
 empty: "Enter in an empty box?" {class: decision}
 clear: "Back to the empty home page" {class: end}
-shift: "Shift+Enter?" {class: decision}
 words: "4 words or more?\n(the button label follows)" {class: decision}
 search: "Search: ?q=… (cancel live timer)" {class: app}
 ask: "Ask the guide: ?q=…&ask=…\n(question ≤ 500 chars;\na new question drops clar and drop)" {class: app}
@@ -60,17 +60,17 @@ slash -> type: "cursor in the box"
 type -> norm: "each key or paste"
 norm -> live.min
 type -> emptybox: "× / Esc"
-type -> key: "Enter / button"
+type -> key: "Enter"
+type -> button: "click"
 live.replace -> url: {class: hot}
 key -> ime
 ime -> imeend: yes
 ime -> empty: no
 empty -> clear: yes
-empty -> shift: no
-shift -> ask: yes
-shift -> words: no
+empty -> search: no {class: hot}
+button -> words
 words -> ask: yes
-words -> search: no {class: hot}
+words -> search: no
 search -> url: {class: hot}
 ask -> url: "&ask=…"
 search -> other: "not on /search"

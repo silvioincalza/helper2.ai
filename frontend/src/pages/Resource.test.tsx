@@ -230,7 +230,7 @@ describe('the resource page', () => {
       [`POST /resources/${PG.id}/guide`]: () => STEPS,
     });
     renderApp(`/resource/${PG.id}`);
-    await userEvent.click(await screen.findByRole('button', { name: 'Guide me' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Set it up' }));
     const step = await screen.findByText('Install it with npm.');
     expect(step).toHaveAttribute('data-ai-generated', 'true');
     expect(step).toHaveAttribute('data-ai-model', 'nemotron-nano');
