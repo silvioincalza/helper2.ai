@@ -17,6 +17,11 @@ The success criteria at the end say which tests verify each journey today. What 
 
 1. User lands on the home page: one headline says what the site is for, the search box sits under it, and the New this week and Coming up lists show at first sight; what helper2 does follows below them.
 2. There is one box and no scope to choose: the same search covers tools, models, MCP servers, libraries, papers and news.
+   Under the box, **Try:** shows four examples, picked at random on each visit from a pool: two for people who use AI
+   ("Take meeting notes"), two for people who build with it ("Vector database"). An example searches its words with
+   its audience path (`path=USE_AI` or `BUILD_WITH_AI`), which changes the ranking only. It does not ask the guide, so
+   it spends no daily AI answer. New words in the box drop the path. Every example in the pool has a clearly fitting
+   result in the top 3.
 3. Types a name ("ollama"), keywords ("mcp postgres"), an intent ("I want to summarise PDFs"), or a use case ("traduzione").
 4. On the home page, Enter (or the button) opens the results on `/search`; focus moves to the results. There, results follow typing when it pauses (or on Enter). The first search shows skeleton rows and a per-source "querying…" line; a later search keeps the previous results on screen, dimmed, until the new ones arrive.
 5. Results arrive in one response, once every source has answered or hit its timeout. The list is on the left, a preview of the selected result on the right (inside the list on a phone); the selected result is in the URL. Under the results, a line states e.g. "4 of 5 sources answered" and a tile per source shows its outcome, response time or cache age.

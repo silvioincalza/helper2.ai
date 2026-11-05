@@ -94,14 +94,17 @@ describe('home: only the home page', () => {
     expect(router.state.location.pathname).toBe('/');
   });
 
-  it('an example opens /search, searching and asking the guide', async () => {
+  it('an example opens /search with its words and its audience path', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
     mockApi();
     const { router, params } = renderApp('/');
     await userEvent.click(screen.getByRole('button', { name: 'Postgres MCP server' }));
     await waitFor(() => expect(router.state.location.pathname).toBe('/search'));
-    expect(params().get('q')).toContain('Postgres');
-    expect(params().get('ask')).toContain('Postgres');
+    expect(params().get('q')).toBe('postgres mcp server');
+    expect(params().get('path')).toBe('BUILD_WITH_AI');
+    expect(params().get('ask')).toBeNull();
     await settle();
+    vi.restoreAllMocks();
   });
 
   it('a list shows its first six rows and opens the rest in place', async () => {

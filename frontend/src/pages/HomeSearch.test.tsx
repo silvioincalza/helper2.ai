@@ -13,7 +13,7 @@ const openFilters = async () =>
   userEvent.click(await screen.findByRole('button', { name: 'Filters', expanded: false }));
 
 describe('search results', () => {
-  it('/?q= links still show the results, with the same query and filters, without the old path, and name /search as canonical', async () => {
+  it('/?q= links still show the results, with the same query, filters and path, and name /search as canonical', async () => {
     const m = mockApi();
     const { router, params } = renderApp('/?q=translate&path=USE_AI&type=MODEL');
     await (await results()).findByText('Acme Translator');
@@ -24,7 +24,7 @@ describe('search results', () => {
     );
     expect(params().get('q')).toBe('translate');
     expect(params().getAll('type')).toEqual(['MODEL']);
-    expect(new URLSearchParams(m.callsTo('GET', '/search')[0]?.search).get('path')).toBeNull();
+    expect(new URLSearchParams(m.callsTo('GET', '/search')[0]?.search).get('path')).toBe('USE_AI');
   });
 
   it('sends the url params to the API', async () => {
