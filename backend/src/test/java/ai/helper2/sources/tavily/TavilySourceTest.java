@@ -105,7 +105,10 @@ class TavilySourceTest {
   void theTavilySourcesAreTheOnesWhoseTitlesAreCleanedOnRead() {
     assertThat(WebSources.FIXED)
         .containsExactlyInAnyOrder(
-            source().getDescriptor().getId(), TavilyCollector.ID, CourseCollector.ID);
+            source().getDescriptor().getId(),
+            TavilyCollector.ID,
+            CourseCollector.ID,
+            LinkedInCollector.ID);
     assertThat(WebSources.isWeb("discovery-coding")).isTrue();
     assertThat(WebSources.isWeb("discovery-")).isFalse();
     assertThat(WebSources.isWeb("github")).isFalse();

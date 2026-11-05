@@ -45,6 +45,7 @@ class SourcesPropertiesBindingTest {
             "hf-trending",
             "tavily-scout",
             "course-scout",
+            "linkedin-scout",
             "discovery",
             "github-awesome",
             "hf-provider-orgs",

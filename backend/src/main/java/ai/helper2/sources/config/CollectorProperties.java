@@ -61,10 +61,27 @@ final class CollectorProperties {
     }
   }
 
+  /** LinkedIn via Tavily (ADR 0053): one search per query on linkedin.com, all sent to review. */
+  @Validated
+  @ConfigurationProperties("helper2.scout.linkedin")
+  record LinkedIn(@NotNull Duration interval, @NotNull List<String> queries) implements Scheduled {
+
+    LinkedIn {
+      queries = clean(queries);
+    }
+  }
+
+  /**
+   * The Tavily credits the Scout's searches (every discovery category and LinkedIn, ADR 0051 and
+   * 0053) may spend per UTC day, shared by all of them.
+   */
+  @Validated
+  @ConfigurationProperties("helper2.scout")
+  record ScoutCredits(@PositiveOrZero long dailyCredits) {}
+
   /**
    * Tavily discovery (ADR 0051): what every category's collector shares. A category's own options
    * (helper2.categories) override the interval and the score floor and add to the excluded domains.
-   * {@code dailyCredits} caps the Tavily credits all discovery searches spend per UTC day.
    */
   @Validated
   @ConfigurationProperties("helper2.scout.discovery")
@@ -73,7 +90,6 @@ final class CollectorProperties {
       @NotNull @Pattern(regexp = "basic|advanced") String searchDepth,
       @Positive @Max(20) int maxResults,
       @DecimalMin("0") @DecimalMax("1") double minScore,
-      @PositiveOrZero long dailyCredits,
       @NotNull List<String> excludeDomains)
       implements Scheduled {
 

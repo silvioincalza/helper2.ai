@@ -275,6 +275,24 @@ class CatalogPurgeExpiredDataIT {
   }
 
   @Test
+  void linkedInPostsAndArticlesGoAfterHalfAYearButAcceptedCompanyPagesStay() {
+    UUID post = resource("INDEXED", "NEWS", NOW);
+    UUID oldPost = record(post, "linkedin-scout", "NEWS", daysAgo(181));
+    UUID article = resource("INDEXED", "ARTICLE", NOW);
+    UUID oldArticle = record(article, "linkedin-scout", "ARTICLE", daysAgo(181));
+    UUID company = resource("INDEXED", "PRODUCT", NOW);
+    UUID accepted = record(company, "linkedin-scout", "PRODUCT", daysAgo(400));
+
+    purge().purge();
+
+    assertThat(exists("source_record", oldPost)).isFalse();
+    assertThat(exists("resource", post)).isFalse();
+    assertThat(exists("source_record", oldArticle)).isFalse();
+    assertThat(exists("source_record", accepted)).isTrue();
+    assertThat(exists("resource", company)).isTrue();
+  }
+
+  @Test
   void everyDiscoveryCategoryIsAWebSourceButNoOtherSourceIs() {
     UUID legal = resource("INDEXED", "ARTICLE", NOW);
     UUID legalList = record(legal, "discovery-legal", "ARTICLE", daysAgo(181));

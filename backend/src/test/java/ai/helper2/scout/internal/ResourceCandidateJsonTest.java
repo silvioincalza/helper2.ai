@@ -65,7 +65,8 @@ class ResourceCandidateJsonTest {
                             "sourceId",
                             "discovery-self-hosted",
                             "discovery",
-                            Map.of("category", "self-hosted", "rank", 1))))));
+                            Map.of("category", "self-hosted", "rank", 1)))),
+                List.of("discovery-self-hosted")));
   }
 
   @Test
@@ -90,6 +91,8 @@ class ResourceCandidateJsonTest {
     assertThat(read.getType()).isEqualTo(ResourceType.AGENT);
     assertThat(read.getTags()).containsExactly("agent-platforms", "local-ai", "self-hosted");
     assertThat(read.getSnippet()).isEqualTo("Self-hosted AI platform.");
+    assertThat(read.getFinders())
+        .containsExactly("discovery-self-hosted", "discovery-agent-platforms");
     assertThat(json.finders(merged))
         .containsExactly("discovery-self-hosted", "discovery-agent-platforms");
     // The same collector again changes nothing; a less specific type does not replace a more

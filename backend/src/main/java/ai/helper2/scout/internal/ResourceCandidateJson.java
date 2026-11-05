@@ -123,13 +123,7 @@ class ResourceCandidateJson implements CandidateDetails {
   /** The collectors that found the candidate in [details], first finder first. */
   List<String> finders(@Nullable String details) {
     try {
-      JsonNode d = json.readTree(details == null ? "" : details);
-      List<String> ids = new ArrayList<>();
-      foundByOf(d).forEach(f -> ids.add(f.path("sourceId").asString("")));
-      if (ids.isEmpty() && d.path("sourceId").isString()) {
-        ids.add(d.path("sourceId").asString());
-      }
-      return ids;
+      return finders(json.readTree(details == null ? "" : details));
     } catch (JacksonException e) {
       return List.of();
     }
@@ -148,10 +142,20 @@ class ResourceCandidateJson implements CandidateDetails {
           snippet != null && snippet.isString() ? snippet.asString() : null,
           type(text(d, "type")),
           tags,
-          facts(d, tags));
+          facts(d, tags),
+          finders(d));
     } catch (JacksonException e) {
       throw new InvalidCandidate("the candidate is not JSON");
     }
+  }
+
+  private static List<String> finders(JsonNode d) {
+    List<String> ids = new ArrayList<>();
+    foundByOf(d).forEach(f -> ids.add(f.path("sourceId").asString("")));
+    if (ids.isEmpty() && d.path("sourceId").isString()) {
+      ids.add(d.path("sourceId").asString());
+    }
+    return ids;
   }
 
   /** One foundBy entry: the collector and what its search said. */

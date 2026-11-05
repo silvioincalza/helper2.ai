@@ -24,6 +24,8 @@ data class AcceptedCandidate(
   val tags: Set<String> = emptySet(),
   /** What the collectors that found it said (ADR 0051): kept in the record's extra, never shown. */
   val facts: Map<String, Any> = emptyMap(),
+  /** Every collector that found it, first finder first; empty for a candidate of one finder. */
+  val finders: List<String> = emptyList(),
 )
 
 /** Why an accepted candidate cannot be indexed; the review item stays open. */
@@ -49,6 +51,8 @@ fun interface CatalogLookup {
  * values are checked again here, because the review item is stored text. When several categories
  * found it, it is one record, of the first collector that found it, with every category as a tag
  * and every finder in its extra (foundBy): the same page and excerpt once, not once per category.
+ * Its type must be one a collector that found it declares (ADR 0053): LinkedIn may propose
+ * articles, posts and events, a discovery category only its products.
  */
 class IndexAcceptedCandidate(
   collectors: List<Collector>,
@@ -65,6 +69,7 @@ class IndexAcceptedCandidate(
     /** Tavily's excerpt as evidence for the enrichment (ADR 0051). */
     const val MAX_SNIPPET = 2400
     val TAG = Regex("[a-z0-9]+(-[a-z0-9]+)*")
+    /** Every type a candidate may have; a collector narrows it to the types it declares. */
     val TYPES =
       setOf(
         ResourceType.PRODUCT,
@@ -75,6 +80,9 @@ class IndexAcceptedCandidate(
         ResourceType.LIBRARY,
         ResourceType.MODEL,
         ResourceType.DATASET,
+        ResourceType.ARTICLE,
+        ResourceType.NEWS,
+        ResourceType.EVENT,
       )
   }
 
@@ -85,15 +93,14 @@ class IndexAcceptedCandidate(
    */
   fun accept(details: String?): UUID? {
     val candidate = this.details.read(details)
-    collectorOf(candidate)
-    val url = hitOf(candidate).canonicalUrl
+    val url = hitOf(candidate, collectorOf(candidate)).canonicalUrl
     return if (lookup.listed(url)) null else index(candidate)
   }
 
   /** The id of the resource the candidate became. */
   fun index(candidate: AcceptedCandidate): UUID {
     val collector = collectorOf(candidate)
-    val hit = hitOf(candidate)
+    val hit = hitOf(candidate, collector)
     val merged =
       merger.merge(
         listOf(hit),
@@ -106,12 +113,23 @@ class IndexAcceptedCandidate(
   private fun collectorOf(c: AcceptedCandidate): Collector =
     sources[c.sourceId] ?: throw InvalidCandidate("unknown source ${c.sourceId}")
 
-  private fun hitOf(c: AcceptedCandidate): SourceHit {
+  /**
+   * The types the collectors that found [c] declare: a merged candidate keeps the most specific
+   * type any of its finders gave, which need not be one its first finder declares.
+   */
+  private fun declaredTypes(c: AcceptedCandidate, collector: Collector): Set<ResourceType> =
+    collector.descriptor.resourceTypes +
+      c.finders.mapNotNull { sources[it] }.flatMap { it.descriptor.resourceTypes }
+
+  private fun hitOf(c: AcceptedCandidate, collector: Collector): SourceHit {
     val url = CanonicalUrl.of(c.url) ?: throw InvalidCandidate("unreadable URL")
     val title = c.title.trim()
     if (title.isEmpty() || title.length > MAX_TITLE)
       throw InvalidCandidate("title missing or too long")
     if (c.type !in TYPES) throw InvalidCandidate("type ${c.type} cannot be a candidate")
+    if (c.type !in declaredTypes(c, collector)) {
+      throw InvalidCandidate("no collector that found it proposes ${c.type}")
+    }
     if (c.tags.size > Candidate.MAX_TAGS || c.tags.any { it.length > 40 || !TAG.matches(it) }) {
       throw InvalidCandidate("unreadable tags")
     }

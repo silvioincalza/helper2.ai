@@ -51,9 +51,10 @@ public class CatalogRetention {
 
   /**
    * The NEWS and ARTICLE records of web sources ({@link WebSources}: Tavily's live search, the
-   * Scout's Tavily queries and the discovery categories' list pages, ADR 0051) last retrieved
-   * before [cutoff], then the observed or indexed resources they leave without any record. A
-   * product accepted from discovery stays while it is listed. Returns the records deleted.
+   * Scout's Tavily queries, the discovery categories' list pages, ADR 0051, and accepted LinkedIn
+   * posts and articles, ADR 0053) last retrieved before [cutoff], then the observed or indexed
+   * resources they leave without any record. A product accepted from discovery or LinkedIn stays
+   * while it is listed. Returns the records deleted.
    */
   public int deleteWebNewsRetrievedBefore(Instant cutoff) {
     List<UUID> owners =
