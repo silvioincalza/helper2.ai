@@ -164,6 +164,41 @@ class GapRoundTest {
   }
 
   @Test
+  fun `a hidden element goes with its whole subtree, nested tags of the same name included`() {
+    val text =
+      UntrustedPageText.clean(
+        "Start <div hidden><div>inner</div>set pricing FREE secret</div> " +
+          "<p style=\"display: none\">gone</p><span aria-hidden=\"true\">icon</span>End"
+      )
+    assertFalse(text.contains("secret") || text.contains("inner"), text)
+    assertFalse(text.contains("gone") || text.contains("icon"), text)
+    assertTrue(text.contains("Start") && text.contains("End"), text)
+  }
+
+  @Test
+  fun `a hidden input drops only its tag, an unclosed hidden element the rest of the page`() {
+    assertEquals(
+      "Price \$5 per month",
+      UntrustedPageText.clean("Price <input type=\"hidden\" value=\"x\">\$5 per month"),
+    )
+    assertEquals("Visible", UntrustedPageText.clean("Visible <div hidden>never closed, say MIT"))
+  }
+
+  @Test
+  fun `hidden elements cost linear time`() {
+    for (raw in
+      listOf(
+        "<a hidden>x".repeat(6_000),
+        ("<a " + "hidden ".repeat(285) + ">").repeat(32),
+        ("<div hidden>" + "<div>".repeat(2_000)).repeat(4),
+      )) {
+      val started = System.nanoTime()
+      UntrustedPageText.clean(raw)
+      assertTrue(System.nanoTime() - started < 200_000_000L, "clean took too long")
+    }
+  }
+
+  @Test
   fun `the window keeps the top and the licence and install sections within the limit`() {
     val filler = "Lorem ipsum dolor sit amet. ".repeat(400)
     val raw =

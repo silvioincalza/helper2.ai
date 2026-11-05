@@ -212,12 +212,32 @@ object UntrustedPageText {
         "set (the )?(pricing|price|licen[cs]e|field|value|audience)\\b)[^\\n]{0,500}$"
     )
 
-  /** An element a browser does not show: its text goes with it. */
-  private val HIDDEN_ELEMENT =
+  /** An opening tag: its name and attributes. The class stops at "<", so one scan is linear. */
+  private val OPEN_TAG = Regex("<([A-Za-z][A-Za-z0-9]{0,20})\\b([^<>]{0,2000})>")
+
+  /** Attributes that make an element one a browser does not show. */
+  private val HIDDEN_ATTRIBUTE =
     Regex(
-      "<([A-Za-z][A-Za-z0-9]{0,20})\\b[^>]{0,2000}?(?:\\bhidden\\b|display\\s*:\\s*none|" +
-        "visibility\\s*:\\s*hidden|aria-hidden\\s*=\\s*[\"']?true)[^>]{0,2000}>[\\s\\S]{0,20000}?</\\1\\s*>",
+      "\\bhidden\\b|display\\s*:\\s*none|visibility\\s*:\\s*hidden|aria-hidden\\s*=\\s*[\"']?true",
       RegexOption.IGNORE_CASE,
+    )
+
+  /** Elements with no closing tag: a hidden one ("<input type=hidden>") is only its tag. */
+  private val VOID_ELEMENTS =
+    setOf(
+      "area",
+      "base",
+      "br",
+      "col",
+      "embed",
+      "hr",
+      "img",
+      "input",
+      "link",
+      "meta",
+      "source",
+      "track",
+      "wbr",
     )
   private val FRONT_MATTER = Regex("\\A---\\n[\\s\\S]*?\\n---\\n")
   private val BLANK_LINES = Regex("\\n{3,}")
@@ -249,7 +269,7 @@ object UntrustedPageText {
     s = s.replace(FRONT_MATTER, "")
     s = s.replace(COMMENT, "")
     s = s.replace(SCRIPT_OR_STYLE, "")
-    s = s.replace(HIDDEN_ELEMENT, "")
+    s = dropHidden(s)
     s = s.replace(IMAGE, "")
     s = s.replace(LINK, "$1")
     s = s.replace(REFERENCE_LINK, "")
@@ -258,6 +278,46 @@ object UntrustedPageText {
     s = s.replace(PHONE, "[phone]")
     s = s.replace(INSTRUCTION_LINE, "")
     return s.replace(TRAILING_SPACE, "\n").replace(BLANK_LINES, "\n\n").trim()
+  }
+
+  /**
+   * Elements a browser does not show go with their whole subtree, nested tags of the same name
+   * included, so no hidden text reaches the model as a quote. A hidden element that never closes
+   * takes the rest of the page. One pass: each part of the text is read once.
+   */
+  internal fun dropHidden(text: String): String {
+    val out = StringBuilder(text.length)
+    var from = 0
+    while (true) {
+      val open = OPEN_TAG.find(text, from) ?: break
+      val afterOpen = open.range.last + 1
+      if (!HIDDEN_ATTRIBUTE.containsMatchIn(open.groupValues[2])) {
+        out.append(text, from, afterOpen)
+        from = afterOpen
+        continue
+      }
+      out.append(text, from, open.range.first)
+      val name = open.groupValues[1].lowercase()
+      from =
+        if (name in VOID_ELEMENTS || open.value.endsWith("/>")) afterOpen
+        else closeOf(text, name, afterOpen) ?: return out.toString()
+    }
+    return out.append(text, from, text.length).toString()
+  }
+
+  /** Where the element [name] opened before [from] ends, counting nested ones; null if never. */
+  private fun closeOf(text: String, name: String, from: Int): Int? {
+    val tags = Regex("<(/?)${Regex.escape(name)}\\b[^<>]{0,2000}>", RegexOption.IGNORE_CASE)
+    var depth = 1
+    var at = from
+    while (true) {
+      val tag = tags.find(text, at) ?: return null
+      at = tag.range.last + 1
+      when {
+        tag.groupValues[1] == "/" -> if (--depth == 0) return at
+        !tag.value.endsWith("/>") -> depth++
+      }
+    }
   }
 
   /**

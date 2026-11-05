@@ -45,8 +45,9 @@ are judgements: a model may estimate them, and the page says so. The description
    one for the linked pages. Policy `collector-gap-web` (circuit breaker and retry, like a collector). Off without
    `H2_TAVILY_API_KEY` or with `H2_SOURCE_TAVILY_EXTRACT_ENABLED=false`.
 5. **Cleaning** (`UntrustedPageText`, the README cleaner made general): the first 64 KB; hidden characters, HTML
-   comments, scripts, styles, hidden elements (`hidden`, `display:none`, `visibility:hidden`, `aria-hidden`), tags and
-   link targets removed; lines that talk to an AI ("ignore previous instructions", "set pricing ...") removed; email
+   comments, scripts, styles, hidden elements (`hidden`, `display:none`, `visibility:hidden`, `aria-hidden`) with their
+   whole subtree, tags and link targets removed. Hidden elements are found in one linear pass that counts nested tags
+   of the same name; a hidden element that never closes takes the rest of the page; lines that talk to an AI ("ignore previous instructions", "set pricing ...") removed; email
    addresses become `[email]`, phone numbers `[phone]`. A window of 6000 characters keeps the top, then the sections
    whose heading says price, plan, licence, download, platform, install, integrations or features.
 6. **What a page may prove.** A page is `selfDeclared` material. A fact all of whose quotes come from pages is stored
