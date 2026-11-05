@@ -428,9 +428,18 @@ code {
   border-color: var(--accent);
   font-weight: 600;
 }
+/* Hover lightens the saffron, so the ink text gets more contrast, not less (6.2:1 light, 8.5:1 dark). */
 .btn-primary:hover:not(:disabled, [aria-disabled='true']) {
-  background: var(--accent-ink);
-  border-color: var(--accent-ink);
+  background: color-mix(in srgb, var(--accent) 80%, #fff);
+  border-color: var(--on-accent);
+}
+/* A primary action that cannot run yet looks quiet, not broken: readable text, a control border, no fade. */
+.btn-primary:disabled,
+.btn-primary[aria-disabled='true'] {
+  opacity: 1;
+  background: var(--surface-tint);
+  color: var(--muted);
+  border-color: var(--border-strong);
 }
 .btn-ghost {
   background: transparent;
