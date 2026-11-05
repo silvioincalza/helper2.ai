@@ -185,10 +185,10 @@ Open items:
     one: Geist for every page as they move, or Space Grotesk on the v4 parts too (two tokens in `tokens.css` and the
     two `@fontsource-variable` packages).
   - **API fields:** `newThisWeek` on GET /sources, `limits` on GET /me and `total` on the recent and upcoming responses
-    are in the API and on Home. Still to use them: the account panel and the Account page (`limits`), the Sources
-    table (`newThisWeek`).
-  - **GET /api/v1/policy:** retention periods, daily limits and guide candidates from the typed config records, so
-    the text pages show them from data, not typed in. After config PRs 5-8.
+    are in the API and on Home. `skipReason` on every source status and GET /api/v1/policy
+    ([0051](adr/operations/0051-policy-endpoint.md)) are in the API. Still to use them: the account panel and the
+    Account page (`limits`), the Sources table (`newThisWeek`), "Try again" on Results only when it helps
+    (`skipReason`), and the numbers of the Mission, Privacy and Terms pages (`/policy`).
   - **Cost guard:** a "no pick" answer and a cached answer spend no AI answer
     ([0017](adr/guide/0017-guide-cost-guard.md)). After config PRs 5-8. Then, with a week of data, check the share of
     4+-word searches that are names and the share of "no pick" answers, and revisit the 4-word rule.
