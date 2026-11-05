@@ -67,8 +67,7 @@ and chose between options for each part.
    failed, all sources failed, 404. Each has a next step. One component draws them all (`StatePanel`): a heading
    that says what happened, why under it, the next step last. An error is an alert. Try again keeps focus on a
    heading that stays on the page, never on the page body.
-9. **Footer says only "No ads."** The footer makes no claim about tracking, so it stays true whatever the cookie
-   policy becomes.
+9. **Footer says only "No ads."** Replaced by [0057](0057-monetisation.md): the footer says "No tracking ads."
 10. **One design, released by tag.** The code holds one design and no design flag. Prod deploys only a release tag
     ([0028](../operations/0028-ci-cd.md)), so `main` and staging run a change before a release takes it to users.
 

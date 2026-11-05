@@ -1,5 +1,6 @@
 package ai.helper2.identity.config;
 
+import ai.helper2.monetisation.Monetisation;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
@@ -47,6 +48,8 @@ class SecurityConfiguration {
 
   /**
    * Strict CSP that still lets the same-origin SPA run (no inline scripts, no third-party origins).
+   * The admin port always sends it; the public site adds the origins of the monetisation parts that
+   * are on ({@link ContentSecurityPolicy}, ADR 0057).
    */
   static final String CSP =
       "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; "
@@ -71,8 +74,10 @@ class SecurityConfiguration {
       HttpSecurity http,
       ObjectProvider<ClientRegistrationRepository> registrations,
       IdentityProperties identity,
-      AdminPort adminPort)
+      AdminPort adminPort,
+      Monetisation monetisation)
       throws Exception {
+    String csp = ContentSecurityPolicy.forPublicSite(monetisation);
     Set<String> adminSet = Set.copyOf(identity.admins());
     boolean metricsPublic = identity.metricsPublic();
     String frontendUrl = identity.frontendUrl();
@@ -136,7 +141,7 @@ class SecurityConfiguration {
                 .logoutSuccessHandler(
                     new HttpStatusReturningLogoutSuccessHandler(HttpStatus.NO_CONTENT)))
         .headers(h -> {
-          h.contentSecurityPolicy(csp -> csp.policyDirectives(CSP))
+          h.addHeaderWriter(new CspHeaderWriter(adminPort, csp))
               .permissionsPolicyHeader(p -> p.policy(PERMISSIONS_POLICY))
               .referrerPolicy(r ->
                   r.policy(

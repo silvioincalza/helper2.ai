@@ -49,6 +49,13 @@ class Pages(private val base: String) {
           "The terms that apply when you use the Helper2.ai website.",
           "/terms",
         )
+      PageKind.SUPPORT ->
+        listed(
+          "Support helper2",
+          "What running Helper2.ai costs, and how to help pay for it.",
+          "/support",
+        )
+      PageKind.SUPPORT_THANKS -> unlisted("Thank you")
       PageKind.SEARCH -> unlisted("Search")
       PageKind.SAVED -> unlisted("Saved")
       PageKind.ACCOUNT -> unlisted("Account")

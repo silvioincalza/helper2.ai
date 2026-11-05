@@ -20,7 +20,7 @@ public class ListSitemap {
 
   static final Duration KEEP = Duration.ofHours(1);
   private static final List<String> STATIC_PAGES =
-      List.of("/", "/sources", "/mission", "/privacy", "/terms");
+      List.of("/", "/sources", "/mission", "/privacy", "/terms", "/support");
 
   private final ListIndexableResources resources;
   private final Clock clock;

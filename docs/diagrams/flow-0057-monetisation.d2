@@ -1,0 +1,61 @@
+# Flowchart: what a public page loads for monetisation (ADR 0057).
+# Source of truth: backend/src/main/java/ai/helper2/monetisation/config/MonetisationConfiguration.java,
+#   identity/web/MeController.java,
+#   identity/config/ContentSecurityPolicy.java, frontend/src/components/AnalyticsConsent.tsx,
+#   components/SponsorSlot.tsx, components/results/Results.tsx, lib/analytics.ts.
+# Render: cd docs/diagrams && d2 fmt flow-0057-monetisation.d2 && d2 flow-0057-monetisation.d2 flow-0057-monetisation.svg
+
+...@style
+
+direction: down
+
+page: "A page opens\n(GET /api/v1/me: monetisation)" {class: end}
+
+admin: "Back office\n(admin port or /admin)?" {class: decision}
+strict: "Strict CSP, nothing loads" {class: end}
+
+ga: {
+  class: group
+  direction: down
+  on: "GA4 ID set?" {class: decision}
+  answered: "Answer in h2.consent?" {class: decision}
+  ask: "Bar: Reject | Accept\n(search works meanwhile)" {class: app}
+  yes: "Accepted?" {class: decision}
+  load: "Load gtag: no auto page view,\nsignals and ad personalisation off" {class: hot}
+  view: "page_view per route:\norigin + path, fixed page name" {class: hot}
+  none: "Nothing sent;\n_ga cookies deleted" {class: data}
+  on -> answered: yes
+  answered -> yes: yes
+  answered -> ask: no
+  ask -> yes
+  yes -> load: yes
+  yes -> none: no
+  load -> view
+}
+nothing: "No analytics" {class: data}
+
+ads: {
+  class: group
+  direction: down
+  set: "EthicalAds ID set?" {class: decision}
+  search: "Search page with a query,\nno guide question?" {class: decision}
+  slot: "One slot above the results:\nSponsored + why" {class: app}
+  loading: "Search running?" {class: decision}
+  bar: "Progress bar (6 s);\nresults replace it at once" {class: app}
+  ad: "Empty the box,\nethicalads.load() for this query" {class: hot}
+  set -> search: yes
+  search -> slot: yes
+  slot -> loading
+  loading -> bar: yes
+  loading -> ad: no
+  bar -> ad
+}
+noad: "No ad" {class: data}
+
+page -> admin
+admin -> strict: yes
+admin -> ga.on: no
+admin -> ads.set: no
+ga.on -> nothing: no
+ads.set -> noad: no
+ads.search -> noad: no

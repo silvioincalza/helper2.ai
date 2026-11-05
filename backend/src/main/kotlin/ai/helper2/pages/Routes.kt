@@ -13,6 +13,8 @@ enum class PageKind(val pattern: String) {
   MISSION("mission"),
   PRIVACY("privacy"),
   TERMS("terms"),
+  SUPPORT("support"),
+  SUPPORT_THANKS("support/thanks"),
   ADMIN("admin"),
   ADMIN_PAGE("admin/:page"),
 }

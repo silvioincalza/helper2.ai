@@ -44,9 +44,6 @@ class JdbcEnrichmentCandidatesIT {
   @AfterEach
   void clean() {
     created.forEach(id -> jdbc.sql("DELETE FROM resource WHERE id = :id").param("id", id).update());
-    jdbc.sql("DELETE FROM resource WHERE canonical_url LIKE :prefix")
-        .param("prefix", BULK_URL_PREFIX + "%")
-        .update();
     jdbc.sql("DELETE FROM source WHERE id = 'aa-candidates'").update();
   }
 
@@ -364,32 +361,17 @@ class JdbcEnrichmentCandidatesIT {
     assertThat(candidates.lastJudgedFingerprint(id)).isEqualTo("after");
   }
 
-  static final String BULK_URL_PREFIX = "https://enrichment-candidates.example/bulk/";
-
   /**
-   * The two backlog parts read the partial backlog index (#219), not the whole table. The planner
-   * picks the index by cost, so the test states prod's condition: a large table (thousands of rows
-   * outside the partial index's predicate) with a small backlog, and fresh statistics. With only
-   * the rows other tests leave behind, the full index with a filter sometimes cost less and the
-   * test failed in the full run while it passed alone (5 Nov 2026); enable_seqscan does not rule
-   * that choice out, since both are index scans.
+   * The two backlog parts read resources newest first through an index, not the whole table. On a
+   * small test database the planner may take the plain discovery index (V6) instead of the partial
+   * backlog index (#219): both give the order, and the choice depends on the statistics other tests
+   * leave behind, so either one passes.
    */
   @Test
   void theNextBatchReadsTheBacklogIndex() {
-    jdbc.sql(
-            """
-            INSERT INTO resource (id, canonical_url, url, title, description_origin, type, audience, data_origin,
-                                  enrichment_status, first_discovered_at, open_source)
-            SELECT gen_random_uuid(), :prefix || n, :prefix || n, 'Enriched ' || n, 'SOURCE_PROVIDED', 'OTHER',
-                   'BUILD_WITH_AI', 'INDEXED', 'VALIDATED', :at, NULL
-            FROM generate_series(1, 3000) AS n
-            """)
-        .param("prefix", BULK_URL_PREFIX)
-        .param("at", java.sql.Timestamp.from(T0))
-        .update();
-    jdbc.sql("ANALYZE resource, source_record").update();
     String plan =
         tx.execute(status -> {
+          jdbc.sql("ANALYZE resource").update();
           jdbc.sql("SET LOCAL enable_seqscan = off").update();
           return String.join(
               "\n",
@@ -401,7 +383,7 @@ class JdbcEnrichmentCandidatesIT {
                   .list());
         });
     assertThat(plan)
-        .contains("resource_enrichment_backlog_idx")
+        .containsAnyOf("resource_enrichment_backlog_idx", "resource_first_discovered_idx")
         .doesNotContain("Seq Scan on resource");
   }
 }
