@@ -39,6 +39,22 @@
 .home-examples .inline-list {
   justify-content: flex-start;
 }
+/* While the pool loads, the row holds the built-in pick, unseen, so the chips appear without moving the page. */
+.home-examples .chip {
+  position: relative;
+}
+.home-examples__waiting {
+  visibility: hidden;
+}
+/* The mark on an example a model drafted (EU AI Act Art. 50); the full words are its title and screen-reader text. */
+.home-examples__ai {
+  padding: 0 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  font: 500 11px/16px var(--font-sans);
+  color: var(--ink-2);
+  white-space: nowrap;
+}
 .chip-ghost {
   background: transparent;
   border: 1px solid var(--border-strong);
