@@ -13,9 +13,10 @@ describe('layout', () => {
     renderApp('/');
     await waitFor(() => expect(m.callsTo('GET', '/me')).toHaveLength(1));
     const header = document.querySelector<HTMLElement>('header.site-header')!;
-    expect(
-      await within(header).findByRole('link', { name: 'Sign in with GitHub' }),
-    ).toBeInTheDocument();
+    expect(await within(header).findByRole('link', { name: 'Sign in' })).toHaveAttribute(
+      'href',
+      '/signin',
+    );
     const nav = screen.getByRole('navigation', { name: 'Main' });
     expect(
       within(nav)
@@ -56,9 +57,7 @@ describe('layout', () => {
         .getAllByRole('link')
         .map((a) => a.textContent),
     ).toEqual(['New this week', 'Coming up', 'Saved', 'Sources', 'Mission']);
-    expect(
-      await within(panel).findByRole('link', { name: 'Sign in with GitHub' }),
-    ).toBeInTheDocument();
+    expect(await within(panel).findByRole('link', { name: 'Sign in' })).toBeInTheDocument();
     expect(within(panel).getByRole('button', { name: 'Dark theme' })).toBeInTheDocument();
     await user.keyboard('{Escape}');
     expect(button).toHaveAttribute('aria-expanded', 'false');

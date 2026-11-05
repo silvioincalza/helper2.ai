@@ -19,7 +19,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { Logo } from './Logo';
 import { OneBox } from './OneBox';
 import '@/styles/v4.css';
-import { SignIn } from './SignIn';
+import { SignInLink } from './SignIn';
 
 /** The theme switch: a text button that names the theme it switches to ("Dark theme"). Light is the default. */
 function ThemeToggle() {
@@ -70,7 +70,7 @@ function Account() {
   const { me } = useMe();
   const { pathname } = useLocation();
   if (!me.authenticated)
-    return pathname.startsWith('/admin') ? null : <SignIn className="v4-btn" />;
+    return pathname.startsWith('/admin') ? null : <SignInLink className="v4-btn" />;
   return (
     <span className="auth">
       <Link to="/account" className="v4-nav-link" title={t('nav.account')}>
@@ -308,7 +308,7 @@ function RouteFocus() {
 
 /**
  * After GitHub sends a signed-in visitor back, goes to the page where they clicked "Sign in" (ADR 0035). A failed
- * sign-in (?signin=failed) drops the stored page and says so.
+ * sign-in (?signin=failed) drops the stored page, says so and links to the sign-in page.
  */
 function SignInReturn() {
   const { t } = useTranslation();
@@ -325,7 +325,8 @@ function SignInReturn() {
   // The admin page says it in its own words.
   return failed && !pathname.startsWith('/admin') ? (
     <p role="alert" className="banner banner-warn">
-      {t('nav.signInFailed')}
+      {t('nav.signInFailed')}{' '}
+      {me.loginProviders.length > 0 && <Link to="/signin">{t('nav.signInAgain')}</Link>}
     </p>
   ) : null;
 }

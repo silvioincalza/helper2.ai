@@ -121,7 +121,7 @@ describe('one box', () => {
     mockApi();
     const { router, params } = renderApp('/mission');
     await userEvent.type(
-      screen.getByRole('textbox', { name: 'Search AI resources' }),
+      await screen.findByRole('textbox', { name: 'Search AI resources' }),
       'vector database{Enter}',
     );
     await waitFor(() => expect(router.state.location.pathname).toBe('/search'));

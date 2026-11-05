@@ -1,38 +1,46 @@
 import { useTranslation } from 'react-i18next';
+import type { TocEntry } from '@/components/TextPage';
 
 const HOW_STEPS = ['search', 'choose', 'check'] as const;
 const RULES = ['notStated', 'dates', 'unchecked', 'fallback'] as const;
 
-/** How the guide answers, and the honesty rules. Shown on the mission page. */
+/** The ids of the two sections below, for "On this page". */
+export const HOW_ID = 'how-the-guide-answers';
+export const RULES_ID = 'never-guessed';
+
+/** The two sections of [HowItWorks] for "On this page", in their order on the page. */
+export function useHowItWorksToc(): TocEntry[] {
+  const { t } = useTranslation();
+  return [
+    { id: HOW_ID, title: t('how.title') },
+    { id: RULES_ID, title: t('how.rulesTitle') },
+  ];
+}
+
+/** How the guide answers, and the honesty rules. Shown on the mission page, as prose like the sections above. */
 export function HowItWorks() {
   const { t } = useTranslation();
   return (
     <>
-      <section aria-labelledby="how-h" className="how">
-        <div className="section-head">
-          <h2 id="how-h">{t('how.title')}</h2>
-          <p className="muted">{t('how.lede')}</p>
-        </div>
+      <section id={HOW_ID} aria-labelledby={`${HOW_ID}-h`}>
+        <h2 id={`${HOW_ID}-h`}>{t('how.title')}</h2>
+        <p>{t('how.lede')}</p>
         {/* A real sequence: retrieval, then the model, then the validator. */}
-        <ol className="plain-list how-steps">
-          {HOW_STEPS.map((k, i) => (
-            <li key={k} className="how-step">
-              <span className="how-n" aria-hidden="true">
-                {i + 1}
-              </span>
+        <ol className="h2-steps">
+          {HOW_STEPS.map((k) => (
+            <li key={k}>
               <h3>{t(`how.steps.${k}.title`)}</h3>
               <p>{t(`how.steps.${k}.body`)}</p>
             </li>
           ))}
         </ol>
       </section>
-      <section aria-labelledby="rules-h" className="rules">
-        <h2 id="rules-h">{t('how.rulesTitle')}</h2>
-        <ul className="plain-list rules-grid">
+      <section id={RULES_ID} aria-labelledby={`${RULES_ID}-h`}>
+        <h2 id={`${RULES_ID}-h`}>{t('how.rulesTitle')}</h2>
+        <ul>
           {RULES.map((k) => (
-            <li key={k} className="rule">
-              <h3>{t(`how.rules.${k}.title`)}</h3>
-              <p>{t(`how.rules.${k}.body`)}</p>
+            <li key={k}>
+              <strong>{t(`how.rules.${k}.title`)}.</strong> {t(`how.rules.${k}.body`)}
             </li>
           ))}
         </ul>

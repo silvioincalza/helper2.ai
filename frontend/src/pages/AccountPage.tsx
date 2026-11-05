@@ -2,9 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { api, deleteMyAccount } from '@/api/client';
-import { useMe } from '@/context/MeContext';
+import { useMe, type Session } from '@/context/MeContext';
 import { Robots } from '@/components/Robots';
 import { useTitle } from '@/hooks/useTitle';
+import { clockTime } from '@/lib/sourceHealth';
+import { aiAnswers } from '@/lib/v4Fields';
 import './text.css';
 
 /**
@@ -37,9 +39,11 @@ function RadarMotionSetting({ on, onSaved }: { on: boolean; onSaved: () => void 
         />
         <label htmlFor="account-radar-motion">{t('account.radarMotion')}</label>
       </p>
-      <p id="account-radar-motion-text">{t('account.radarMotionText')}</p>
+      <p id="account-radar-motion-text" className="h2-help">
+        {t('account.radarMotionText')}
+      </p>
       {failed && (
-        <p role="alert" className="banner banner-warn">
+        <p role="alert" className="h2-note">
           {t('account.saveFailed')}
         </p>
       )}
@@ -47,9 +51,61 @@ function RadarMotionSetting({ on, onSaved }: { on: boolean; onSaved: () => void 
   );
 }
 
+/** One line of "what is left today": "8 of 10 · resets 00:00 UTC". */
+interface Allowance {
+  remaining: number;
+  limit: number;
+}
+
 /**
- * The signed-in user's account: who they are signed in as, the display setting, and deleting the account after a
- * confirmation.
+ * Who is signed in and what they have left today, from GET /me: the name, AI answers (`limits.guideQuestions`) and
+ * web searches for search (`limits.webSearches.search`). A count that is null is not shown.
+ */
+function SignedIn({ me }: { me: Session }) {
+  const { t, i18n } = useTranslation();
+  const resets = me.limits ? clockTime(me.limits.resetsAt, i18n.language, false) : '';
+  const left = (a: Allowance) =>
+    t('account.leftOf', {
+      remaining: Math.min(a.remaining, a.limit),
+      limit: a.limit,
+      time: resets,
+    });
+  const answers = aiAnswers(me);
+  const searches = me.limits?.webSearches.search;
+  return (
+    <section aria-labelledby="account-who-h">
+      <h2 id="account-who-h">{t('account.signedInTitle')}</h2>
+      <p>{t('account.signedInAs', { name: me.displayName ?? t('nav.signedIn') })}</p>
+      <dl className="h2-facts">
+        {me.displayName && (
+          <div>
+            <dt>{t('account.name')}</dt>
+            <dd>{me.displayName}</dd>
+          </div>
+        )}
+        {answers && (
+          <div>
+            <dt>{t('account.aiAnswersLeft')}</dt>
+            <dd>{left(answers)}</dd>
+          </div>
+        )}
+        {searches && (
+          <div>
+            <dt>{t('account.webSearchesLeft')}</dt>
+            <dd>{left(searches)}</dd>
+          </div>
+        )}
+      </dl>
+      <p>
+        <Link to="/privacy">{t('account.privacyLink')}</Link>
+      </p>
+    </section>
+  );
+}
+
+/**
+ * The signed-in user's account: who they are signed in as and what is left today, the display setting, and deleting
+ * the account after a confirmation.
  */
 export default function AccountPage() {
   // A personal page: nothing in it for a search engine.
@@ -90,11 +146,18 @@ function Account() {
   if (!loaded) return <p role="status">{t('common.loading')}</p>;
   if (!me.authenticated) {
     return (
-      <div className="h2-text-page">
+      <div className="h2-prose h2-text-page h2-account">
         <h1>{t('account.title')}</h1>
         <p>
           {t('account.signedOut')} <Link to="/privacy">{t('nav.privacy')}</Link>
         </p>
+        {me.loginProviders.length > 0 && (
+          <p>
+            <Link to="/signin" className="v4-btn">
+              {t('nav.signIn')}
+            </Link>
+          </p>
+        )}
       </div>
     );
   }
@@ -111,28 +174,28 @@ function Account() {
   };
 
   return (
-    <article className="text-page h2-text-page">
+    <article className="h2-prose h2-text-page h2-account">
       <h1>{t('account.title')}</h1>
-      <p>{t('account.signedInAs', { name: me.displayName ?? t('nav.signedIn') })}</p>
+      <SignedIn me={me} />
       <RadarMotionSetting on={me.preferences?.radarMotion ?? true} onSaved={refresh} />
-      <h2>{t('account.deleteTitle')}</h2>
-      <p>
-        {t('account.deleteText')} <Link to="/privacy">{t('account.privacyLink')}</Link>
-      </p>
-      {failed && (
-        <p role="alert" className="banner banner-warn">
-          {t('account.failed')}
-        </p>
-      )}
-      <button
-        ref={opener}
-        type="button"
-        className="btn"
-        onClick={() => setConfirming(true)}
-        disabled={confirming}
-      >
-        {t('account.delete')}
-      </button>
+      <section className="h2-card" aria-labelledby="account-delete-h">
+        <h2 id="account-delete-h">{t('account.deleteTitle')}</h2>
+        <p>{t('account.deleteText')}</p>
+        {failed && (
+          <p role="alert" className="h2-note">
+            {t('account.failed')}
+          </p>
+        )}
+        <button
+          ref={opener}
+          type="button"
+          className="v4-btn v4-btn--danger"
+          onClick={() => setConfirming(true)}
+          disabled={confirming}
+        >
+          {t('account.delete')}
+        </button>
+      </section>
       {confirming && (
         <div
           role="alertdialog"
@@ -147,13 +210,18 @@ function Account() {
             <button
               ref={cancelButton}
               type="button"
-              className="btn"
+              className="v4-btn"
               onClick={cancel}
               disabled={busy}
             >
               {t('account.cancel')}
             </button>
-            <button type="button" className="btn btn-primary" onClick={confirm} disabled={busy}>
+            <button
+              type="button"
+              className="v4-btn v4-btn--danger-fill"
+              onClick={confirm}
+              disabled={busy}
+            >
               {t('account.confirm')}
             </button>
           </div>

@@ -38,6 +38,7 @@
     "terms": "Terms",
     "account": "Your account",
     "signInFailed": "Sign-in did not work. Please try again.",
+    "signInAgain": "Choose how to sign in",
     "tagline": "AI on your radar"
   },
   "footer": {
@@ -481,9 +482,14 @@
     "title": "Your account",
     "signedInAs": "Signed in with GitHub as {{name}}.",
     "signedOut": "You are not signed in, so there is no account to delete.",
+    "signedInTitle": "Signed in",
+    "name": "Name",
+    "aiAnswersLeft": "AI answers left today",
+    "webSearchesLeft": "Web searches left today",
+    "leftOf": "{{remaining}} of {{limit}} · resets {{time}}",
     "displayTitle": "Display",
-    "radarMotion": "Radar: move between sources",
-    "radarMotionText": "On Home the radar beam turns and the sources come and go, 3 to 5 at a time. Off: the beam stands still and 4 sources stay.",
+    "radarMotion": "Radar: keep moving",
+    "radarMotionText": "Turn off to keep the Home radar still. It is also still when your system asks for reduced motion.",
     "saveFailed": "Not saved. Please try again later.",
     "deleteTitle": "Delete your account",
     "deleteText": "This deletes your account and everything saved on it. Reports you sent stay, without your name.",
@@ -723,6 +729,7 @@
     }
   },
   "notFound": {
+    "label": "404",
     "title": "Page not found",
     "body": "This page does not exist, or it moved. Search for what you need in the box above, or go to the home page.",
     "home": "Go to the home page"
@@ -954,6 +961,23 @@
   },
   "textPage": {
     "onThisPage": "On this page"
+  },
+  "signInPage": {
+    "title": "Sign in to keep what you find.",
+    "lede": "You can search without an account. Sign in when you want more.",
+    "savedTitle": "Saved on every device.",
+    "savedText": "What you save follows you to every browser where you sign in.",
+    "settingsTitle": "Your settings.",
+    "settingsText": "Set the Home radar once; it stays that way on every device.",
+    "how": "Choose how to sign in",
+    "continueWith": "Continue with {{provider}}",
+    "termsIntro": "By signing in you accept the",
+    "privacyIntro": "See what we keep on the",
+    "privacyOutro": "page.",
+    "signedInTitle": "You are signed in",
+    "signedInText": "Signed in as {{name}}.",
+    "noneTitle": "Sign-in is not offered here",
+    "noneText": "This site has no sign-in set up. You can still search, ask the guide and save in this browser."
   },
   "mission": {
     "title": "Our mission",
