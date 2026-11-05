@@ -36,6 +36,7 @@ import { useMorePages } from './morePages';
 import { ResultRow } from './ResultRow';
 import { ResultsSkeleton } from './ResultsSkeleton';
 import { TypeTabs } from './TypeTabs';
+import './controls.css';
 import './results.css';
 
 /** Up to this width the filters open as a drawer over the page (design v4 breakpoints). */

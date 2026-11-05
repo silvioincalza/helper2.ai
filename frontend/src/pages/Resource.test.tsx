@@ -175,9 +175,17 @@ describe('the resource page', () => {
     expect(document.querySelector('mark')).toBeNull();
     const facts = screen.getByRole('region', { name: 'At a glance' });
     expect(within(facts).getAllByText('Not stated').length).toBeGreaterThan(0);
+    // Under the title: type · host · the date a row shows.
+    expect(screen.getByRole('heading', { level: 1 }).nextElementSibling).toHaveTextContent(
+      /^MCP server · github\.com · updated /,
+    );
+    // Where the information comes from, folded: each source, its mode and when it was read.
+    const where = screen.getByText('Where this information comes from').closest('details')!;
+    expect(where).not.toHaveAttribute('open');
+    expect(within(where).getByText('GitHub').closest('li')).toHaveTextContent(/Live · read /);
     expect(
-      within(screen.getByRole('region', { name: 'Listed by' })).getByText('GitHub'),
-    ).toBeInTheDocument();
+      within(where).getByRole('link', { name: 'All sources and their last check' }),
+    ).toHaveAttribute('href', '/sources');
     // One primary button at the top: Open. Set it up is there for an MCP server, outlined.
     expect(document.querySelectorAll('.h2-res__head .btn-primary')).toHaveLength(1);
     expect(screen.getByRole('button', { name: 'Set it up' })).not.toHaveClass('btn-primary');

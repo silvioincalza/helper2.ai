@@ -420,9 +420,6 @@ details[open] > .h2-fold-toggle .icon {
 .h2-row__host {
   overflow-wrap: anywhere;
 }
-.h2-row__date.is-ours {
-  color: var(--status-warn-ink);
-}
 .h2-row__pick {
   margin-left: var(--space-2);
   font-weight: 600;

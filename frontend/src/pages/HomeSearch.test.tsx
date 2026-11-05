@@ -360,11 +360,7 @@ describe('search results', () => {
     const months = within(timeline)
       .getAllByRole('heading', { level: 3 })
       .filter((h) => h.classList.contains('tl-month'));
-    expect(months.map((h) => h.textContent)).toEqual([
-      'October 2026',
-      'July 2023',
-      'Date unknown',
-    ]);
+    expect(months.map((h) => h.textContent)).toEqual(['October 2026', 'July 2023', 'Date unknown']);
     expect(within(timeline).getByText('Oct 17, 2026')).toBeInTheDocument();
     // The undated results are one folded group at the end.
     const showThem = within(timeline).getByRole('button', { name: 'Show them' });
