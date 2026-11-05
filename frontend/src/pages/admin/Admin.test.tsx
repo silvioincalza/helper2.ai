@@ -1,6 +1,6 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ADMIN, ANON, USER } from '@/test/fixtures';
+import { ADMIN, ANON, USER, makeReviewEvidence } from '@/test/fixtures';
 import { mockApi, problem } from '@/test/mockApi';
 import { renderApp } from '@/test/render';
 import type { AdminOverview, ReviewItem, ScoutRun } from '@/api/types';
@@ -17,6 +17,9 @@ const item: ReviewItem = {
   createdAt: '2026-10-21T10:00:00Z',
 };
 const page = (items: ReviewItem[], total = items.length) => ({ items, total });
+/** A user report links to no run: its evidence is the item only. */
+const noEvidence = (i: ReviewItem) =>
+  makeReviewEvidence(i, { run: null, fields: [], validationErrors: [], aiContent: null });
 const run: ScoutRun = {
   id: '77777777-7777-5777-8777-777777777777',
   sourceId: 'github',
@@ -319,6 +322,7 @@ describe('Feature: deciding review items', () => {
     const m = mockApi({
       'GET /me': () => ADMIN,
       'GET /admin/review-items': () => page([item]),
+      'GET /admin/review-items/*': () => noEvidence(item),
       'PUT /admin/review-items/*': () =>
         new Response(
           JSON.stringify({
@@ -389,10 +393,10 @@ describe('Feature: deciding review items', () => {
         page([{ ...item, reason: `Item on page ${url.searchParams.get('page')}` }], 45),
     });
     renderApp('/admin/review');
-    expect(await screen.findByText('Item on page 0', { selector: 'p' })).toBeInTheDocument();
+    expect(await screen.findByText('Item on page 0', { selector: 'button' })).toBeInTheDocument();
     expect(screen.getByText('Page 1 of 3')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Next' }));
-    expect(await screen.findByText('Item on page 1', { selector: 'p' })).toBeInTheDocument();
+    expect(await screen.findByText('Item on page 1', { selector: 'button' })).toBeInTheDocument();
     await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Status' }), 'Superseded');
     await waitFor(() =>
       expect(m.callsTo('GET', '/admin/review-items').at(-1)?.search).toBe(

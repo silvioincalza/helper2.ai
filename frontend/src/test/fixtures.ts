@@ -6,6 +6,8 @@ import type {
   RecentResponse,
   ResourceDetail,
   ResultCard,
+  ReviewEvidence,
+  ReviewItem,
   SearchResponse,
   SourceInfo,
   SourceStatus,
@@ -310,3 +312,65 @@ export const POLICY: Policy = {
     handledReportsSeconds: 365 * 86_400,
   },
 };
+
+/**
+ * GET /admin/review-items/{id}/evidence for [item] (ADR 0045): a run with a conflicting pricing quoted twice and a
+ * verified licence; no relationship.
+ */
+export function makeReviewEvidence(
+  item: ReviewItem,
+  over: Partial<ReviewEvidence> = {},
+): ReviewEvidence {
+  return {
+    item,
+    run: {
+      id: '88888888-8888-5888-8888-888888888888',
+      provider: 'nebius',
+      model: 'nvidia/nemotron-test',
+      promptVersion: 'enrich-v9',
+      outcome: 'PARTIAL',
+      startedAt: '2026-11-01T10:00:00Z',
+      finishedAt: '2026-11-01T10:00:05Z',
+      extraEvidence: 'github-readme:acme/tool',
+    },
+    validationErrors: ['pricing: the quotes disagree'],
+    fields: [
+      {
+        field: 'pricing',
+        value: 'FREE',
+        origin: 'AI_EXTRACTED',
+        verification: 'CONFLICTING',
+        quotes: [
+          {
+            excerpt: 'Free for everyone.',
+            sourceUrl: 'https://acme.example/pricing',
+            sourceId: 'github',
+            retrievedAt: '2026-11-01T09:00:00Z',
+          },
+          {
+            excerpt: 'Pro plan: 20 USD a month.',
+            sourceUrl: 'javascript:alert(1)',
+            sourceId: null,
+            retrievedAt: '2026-11-01T09:00:00Z',
+          },
+        ],
+      },
+      {
+        field: 'license',
+        value: 'MIT',
+        origin: 'AI_EXTRACTED',
+        verification: 'VERIFIED',
+        quotes: [],
+      },
+    ],
+    relationship: null,
+    aiContent: {
+      aiGenerated: true,
+      provider: 'nebius',
+      models: ['nvidia/nemotron-test'],
+      fields: ['fields[].value'],
+      policy: '/mission',
+    },
+    ...over,
+  };
+}

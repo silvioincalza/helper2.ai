@@ -119,7 +119,8 @@ class AdminController implements AdminApi {
     return SecurityContextHolder.getContext().getAuthentication().getName();
   }
 
-  private static ReviewItemDto dto(ReviewQueue.Item i) {
+  /** One review item as the contract shows it; the evidence view shows the item the same way. */
+  static ReviewItemDto dto(ReviewQueue.Item i) {
     return new ReviewItemDto(
             i.id(),
             ReviewKindDto.fromValue(i.kind().name()),

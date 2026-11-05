@@ -10,6 +10,7 @@ import {
   makeCard,
   makeDetail,
   makeRecent,
+  makeReviewEvidence,
   makeSearch,
   makeStatus,
 } from '@/test/fixtures';
@@ -252,6 +253,14 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
         ],
         total: 1,
       }),
+      'GET /admin/review-items/*': () =>
+        makeReviewEvidence({
+          id: '66666666-6666-5666-8666-666666666666',
+          kind: 'ENRICHMENT_VALIDATION',
+          status: 'OPEN',
+          reason: 'Wrong price',
+          createdAt: '2026-10-21T10:00:00Z',
+        }),
       'GET /admin/scout-runs': () => [
         {
           id: '77777777-7777-5777-8777-777777777777',
@@ -358,7 +367,11 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
     expect(await axeViolations(ov.container)).toEqual([]);
     ov.unmount();
     const review = renderApp('/admin/review');
-    await within(await screen.findByRole('main')).findByText('Wrong price', { selector: 'p' });
+    await within(await screen.findByRole('main')).findByText('Wrong price', { selector: 'button' });
+    // The evidence of the selected item, then the keys help dialog over it.
+    await screen.findByText('Free for everyone.');
+    expect(await axeViolations(review.container)).toEqual([]);
+    await userEvent.click(screen.getByRole('button', { name: 'Keys (?)' }));
     expect(await axeViolations(review.container)).toEqual([]);
     review.unmount();
     const runs = renderApp('/admin/runs');
@@ -400,6 +413,14 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
         },
       ],
       'GET /sources': () => HEALTH_SOURCES,
+      'GET /admin/review-items/*': () =>
+        makeReviewEvidence({
+          id: '66666666-6666-5666-8666-666666666666',
+          kind: 'ENRICHMENT_VALIDATION',
+          status: 'OPEN',
+          reason: 'Wrong price',
+          createdAt: '2026-10-21T10:00:00Z',
+        }),
       'GET /admin/review-items': () => ({
         items: [
           {
