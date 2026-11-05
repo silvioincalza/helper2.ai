@@ -289,6 +289,18 @@ helper2:
   build:
     # The running build (the chart passes the image tag). Cached guide answers are kept per build.
     version: ${H2_BUILD_VERSION:local}
+  # The chat model (platform LlmProperties). No model here; the profile llm-nebius sets the provider and the models.
+  llm:
+    chat-provider: ${spring.ai.model.chat}
+    chat-model: ${spring.ai.openai.chat.model:}
+    provider-label: ""
+    reasoning-model: ""
+    fast-model: ""
+    # Send the choose call's JSON schema as response_format (guided decoding). See SpringAiGuideModel.call.
+    native-schema: ${H2_NEBIUS_NATIVE_SCHEMA:true}
+  # The built SPA (frontend/dist, copied to static/ in the image).
+  spa:
+    location: classpath:/static/
   # Where sign-in returns to (the SPA). "/" when the SPA is served by the backend itself.
   frontend-url: ${H2_FRONTEND_URL:/}
   # Vector search (ADR 0012): NVIDIA embeddings stored in Postgres (pgvector). Empty key = keyword search only.
@@ -297,6 +309,8 @@ helper2:
     base-url: ${H2_NVIDIA_EMBEDDING_BASE_URL:https://integrate.api.nvidia.com/v1}
     model: ${H2_NVIDIA_EMBEDDING_MODEL:nvidia/nemotron-3.5-embed-1b}
     dimensions: 1024
+    # One embedding call of a search query.
+    timeout: 3s
     # 50 texts every 15 s = 4 requests/min, far below the API catalog's rate limit; ~25k rows in about 2 h.
     batch: 50
     every: PT15S
@@ -435,6 +449,8 @@ helper2:
       min-repo-stars: 50
       # Fast model (helper2.llm.fast-model) batch size: 25 entries took 12-14 s on Nemotron 3 Nano (2026-10-26).
       classify-batch: 25
+      # Output cap of one classifier call, in tokens.
+      classify-max-tokens: 8192
       # Classifier model calls per UTC day (about 8 batches per daily pass); the cap only bites when something loops.
       classifier-daily-calls: ${H2_SCOUT_AWESOME_CLASSIFIER_DAILY_CALLS:300}
   sources:
@@ -467,11 +483,13 @@ helper2:
       token: ${H2_TAVILY_API_KEY:}
       # Measured 2.0-4.2 s per call (26 Oct 2026); 3 s cut off real answers on prod.
       timeout: ${H2_SOURCE_TAVILY_TIMEOUT:6s}
+      cache-ttl: 30m
     hf-trending:
       enabled: ${H2_SOURCE_HF_TRENDING_ENABLED:true}
       base-url: https://huggingface.co
       token: ${H2_HF_TOKEN:}
       timeout: 10s
+      cache-ttl: 30m
       # Total time per call, body included (ADR 0006 §2); empty = twice the timeout.
       deadline: ${H2_SOURCE_HF_TRENDING_DEADLINE:}
     tavily-scout:
@@ -480,6 +498,7 @@ helper2:
       base-url: https://api.tavily.com
       token: ${H2_TAVILY_API_KEY:}
       timeout: 10s
+      cache-ttl: 30m
       deadline: ${H2_SOURCE_TAVILY_SCOUT_DEADLINE:}
     course-scout:
       # Disabled (reported as SKIPPED) until H2_TAVILY_API_KEY is set.
@@ -487,6 +506,7 @@ helper2:
       base-url: https://api.tavily.com
       token: ${H2_TAVILY_API_KEY:}
       timeout: 10s
+      cache-ttl: 30m
       deadline: ${H2_SOURCE_COURSE_SCOUT_DEADLINE:}
     github-awesome:
       # Disabled (reported as SKIPPED) until H2_GITHUB_TOKEN is set: GraphQL rejects anonymous calls.
@@ -494,12 +514,14 @@ helper2:
       base-url: https://api.github.com
       token: ${H2_GITHUB_TOKEN:}
       timeout: 15s
+      cache-ttl: 30m
       deadline: ${H2_SOURCE_GITHUB_AWESOME_DEADLINE:}
     hf-provider-orgs:
       enabled: ${H2_SOURCE_HF_ORGS_ENABLED:true}
       base-url: https://huggingface.co
       token: ${H2_HF_TOKEN:}
       timeout: 10s
+      cache-ttl: 30m
       deadline: ${H2_SOURCE_HF_ORGS_DEADLINE:}
     ai-deadlines:
       enabled: ${H2_SOURCE_AI_DEADLINES_ENABLED:true}
@@ -507,11 +529,13 @@ helper2:
       # Optional: raises the contents API limit from 60 to 5,000 calls per hour.
       token: ${H2_GITHUB_TOKEN:}
       timeout: 15s
+      cache-ttl: 30m
       deadline: ${H2_SOURCE_AI_DEADLINES_DEADLINE:}
     mcp-registry:
       enabled: ${H2_SOURCE_MCP_ENABLED:true}
       base-url: https://registry.modelcontextprotocol.io
       timeout: 10s
+      cache-ttl: 30m
       deadline: ${H2_SOURCE_MCP_DEADLINE:}
     semantic:
       # Embedding call (~0.3 s) plus the HNSW query; parallel with live sources, like the index.
@@ -598,8 +622,6 @@ helper2:
     provider-label: nebius-token-factory
     reasoning-model: ${H2_NEBIUS_REASONING_MODEL:nvidia/nemotron-3-super-120b-a12b}
     fast-model: ${H2_NEBIUS_FAST_MODEL:nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B}
-    # Send the choose call's JSON schema as response_format (guided decoding). See SpringAiGuideModel.call.
-    native-schema: ${H2_NEBIUS_NATIVE_SCHEMA:true}
     # Super's reasoning tokens count against max_tokens; 2048 truncated the choose JSON. See SpringAiGuideModel.
     choose-max-tokens: ${H2_NEBIUS_CHOOSE_MAX_TOKENS:8192}
     # Same reason for the Scout's enrichment call (18/120 runs failed at 2048). See SpringAiEnrichmentModel.
@@ -698,15 +720,16 @@ helper2:
 ---
 # Tavily (ADR 0037): store first, then a live call inside the visitor's daily web searches, per feature.
 helper2:
+  quota:
+    # HMAC key of the client pseudonyms (rate limits, guide quota, guest counters) and of the stored query keys
+    # (OpenBao). Required while Tavily is enabled; without it the pseudonyms use a random key per process.
+    key-secret: ${H2_QUOTA_KEY_SECRET:}
   tavily:
     # Stored result sets answer without a live call while fresh: news, courses, hackathons, conferences and events
     # for 24 h, anything else for 48 h.
     fresh-time-bound: ${H2_TAVILY_FRESH_TIMEBOUND:PT24H}
     fresh-general: ${H2_TAVILY_FRESH_GENERAL:PT48H}
     quota:
-      # HMAC key of the client pseudonyms (rate limits, guide quota, guest counters) and of the stored query keys
-      # (OpenBao). Required while Tavily is enabled; without it the pseudonyms use a random key per process.
-      key-secret: ${H2_QUOTA_KEY_SECRET:}
       # Per visitor and feature, per UTC day. Staging raises them for testing (chart app.dailyLimits).
       guest:
         search: ${H2_TAVILY_GUEST_SEARCH:3}

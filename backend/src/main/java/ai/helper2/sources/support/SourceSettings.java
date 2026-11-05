@@ -1,5 +1,6 @@
 package ai.helper2.sources.support;
 
+import jakarta.validation.constraints.NotNull;
 import java.time.Duration;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
 
@@ -12,7 +13,7 @@ public record SourceSettings(
     boolean enabled,
     String baseUrl,
     String token,
-    Duration timeout,
+    @NotNull Duration timeout,
     Duration cacheTtl,
     Duration deadline) {
 

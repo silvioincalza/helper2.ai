@@ -28,8 +28,9 @@ import ai.helper2.sources.tavily.TavilySource;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import java.time.Clock;
-import java.time.Duration;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +41,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.client.RestClient;
 
 @Configuration(proxyBeanMethods = false)
@@ -58,21 +60,28 @@ class SourcesConfiguration {
 
   private static final Logger log = LoggerFactory.getLogger(SourcesConfiguration.class);
 
+  /**
+   * Every source and collector under {@code helper2.sources.<id>}. The defaults are in
+   * application.yaml; only the deadline is derived here (twice the timeout when empty).
+   */
+  @Validated
   @ConfigurationProperties("helper2")
-  record SourcesProperties(Map<String, SourceSettings> sources) {
+  record SourcesProperties(@NotNull Map<String, @Valid SourceSettings> sources) {
     SourceSettings get(String key) {
-      SourceSettings s = sources == null ? null : sources.get(key);
+      SourceSettings s = sources.get(key);
       if (s == null) {
         throw new IllegalStateException("missing helper2.sources." + key);
       }
-      Duration timeout = s.timeout() == null ? Duration.ofSeconds(2) : s.timeout();
+      if (s.cacheTtl() == null) {
+        throw new IllegalStateException("missing helper2.sources." + key + ".cache-ttl");
+      }
       return new SourceSettings(
           s.enabled(),
           s.baseUrl(),
           s.token(),
-          timeout,
-          s.cacheTtl() == null ? Duration.ofMinutes(30) : s.cacheTtl(),
-          s.deadline() == null ? timeout.multipliedBy(2) : s.deadline());
+          s.timeout(),
+          s.cacheTtl(),
+          s.deadline() == null ? s.timeout().multipliedBy(2) : s.deadline());
     }
   }
 
