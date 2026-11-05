@@ -5,7 +5,7 @@ const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 /** An average month (365.25 / 12 days), so 730 days read as 24 months and 365 days as 12 months. */
 const MONTH = 30.4375 * DAY;
-/** How far from a whole number of months a period may be, in months, and still read in months (about a day and a half). */
+/** How far below a whole number of months a period may be, in months, and still read in months (about a day and a half). */
 const MONTH_SLACK = 0.05;
 
 export type DurationUnit = 'seconds' | 'minutes' | 'hours' | 'days' | 'months';
@@ -16,14 +16,20 @@ export type DurationUnit = 'seconds' | 'minutes' | 'hours' | 'days' | 'months';
  * less than the server keeps: 36 hours stay "36 hours", not "2 days".
  */
 export function durationParts(seconds: number): { unit: DurationUnit; count: number } {
-  const months = seconds / MONTH;
-  if (seconds >= 365 * DAY && Math.abs(months - Math.round(months)) <= MONTH_SLACK)
-    return { unit: 'months', count: Math.round(months) };
+  const months = Math.round(seconds / MONTH);
+  if (seconds >= 365 * DAY && coversInMonths(seconds, months))
+    return { unit: 'months', count: months };
   if (seconds >= 2 * DAY && seconds % DAY === 0) return { unit: 'days', count: seconds / DAY };
   if (seconds >= HOUR && seconds % HOUR === 0) return { unit: 'hours', count: seconds / HOUR };
   if (seconds >= MINUTE && seconds % MINUTE === 0)
     return { unit: 'minutes', count: seconds / MINUTE };
   return { unit: 'seconds', count: seconds };
+}
+
+/** Whether `months` average months cover the whole period and are no more than the slack above it. */
+function coversInMonths(seconds: number, months: number): boolean {
+  const over = months * MONTH - seconds;
+  return over >= 0 && over <= MONTH_SLACK * MONTH;
 }
 
 /** A period in seconds in words: "24 hours", "7 days", "24 months". */

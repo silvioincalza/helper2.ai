@@ -29,7 +29,13 @@ describe('formatDuration', () => {
   });
 
   it('a period of a year or more reads in months only near a whole month', () => {
-    expect(durationParts(548 * DAY)).toEqual({ unit: 'months', count: 18 });
+    expect(durationParts(547 * DAY)).toEqual({ unit: 'months', count: 18 });
     expect(durationParts(380 * DAY)).toEqual({ unit: 'days', count: 380 });
+  });
+
+  it('never reads in months when the months would be shorter than the period', () => {
+    expect(durationParts(732 * DAY)).toEqual({ unit: 'days', count: 732 });
+    expect(durationParts(731 * DAY)).toEqual({ unit: 'days', count: 731 });
+    expect(durationParts(548 * DAY)).toEqual({ unit: 'days', count: 548 });
   });
 });

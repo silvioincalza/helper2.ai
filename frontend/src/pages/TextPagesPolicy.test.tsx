@@ -20,7 +20,7 @@ const CHANGED = {
     translationsSeconds: 3 * DAY,
     queryVectorsSeconds: 14 * DAY,
     storedWebResultsSeconds: 10 * DAY,
-    inactiveAccountsSeconds: 548 * DAY,
+    inactiveAccountsSeconds: 547 * DAY,
     handledReportsSeconds: 6 * 30 * DAY,
   },
 };
