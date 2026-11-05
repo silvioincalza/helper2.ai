@@ -3,7 +3,7 @@ import type { TFunction } from 'i18next';
 import type { GuideResponse, GuideStep } from '@/api/types';
 
 /** How the guide read the question: from the `understood` event while it works, or from the final answer. */
-export interface Reading {
+interface Reading {
   intent?: GuideResponse['intent'];
   subjects?: string[] | undefined;
   window?: GuideResponse['window'];
@@ -11,7 +11,7 @@ export interface Reading {
   constraints?: string[] | undefined;
 }
 
-export interface ReadingPart {
+interface ReadingPart {
   key: string;
   label: string;
   /** What ✕ removes when asking again; absent when the part cannot be removed. */
@@ -58,7 +58,7 @@ export function readingParts(reading: Reading, today: string, t: TFunction): Rea
 }
 
 /** What the steps so far tell while the guide works: how it read the question, and how many results it reads. */
-export interface Progress {
+interface Progress {
   reading: Reading | null;
   candidates: number | undefined;
 }

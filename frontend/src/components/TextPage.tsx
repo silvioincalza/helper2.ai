@@ -44,7 +44,7 @@ export function TextPage({
             {links}
           </details>
         )}
-        <TextSections i18nKey={i18nKey} anchored />
+        <TextSections i18nKey={i18nKey} />
         {after}
       </article>
       {wide && sections.length > 0 && (

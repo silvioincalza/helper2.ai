@@ -2,7 +2,8 @@
 # Source of truth: backend/src/main/java/ai/helper2/admin/web/HomeExamplesAdminController.java,
 #   examples/usecase/AddHomeExample.java, CheckHomeExamples.java, ListHomeExamples.java,
 #   examples/internal/HomeExampleCheckSchedule.java, SearchExampleSearch.java, examples/web/HomeExamplesController.java,
-#   frontend/src/lib/examples.ts, frontend/src/pages/Home.tsx.
+#   examples/usecase/DraftHomeExamples.java, internal/SpringAiExampleDrafter.java, admin/usecase/ResolveReview.java,
+#   frontend/src/lib/examples.ts, frontend/src/pages/Home.tsx, frontend/src/pages/admin/ExamplesPage.tsx.
 # Render: cd docs/diagrams && d2 fmt sequence-0049-home-examples.d2 && d2 sequence-0049-home-examples.d2 sequence-0049-home-examples.svg
 
 ...@style
@@ -14,6 +15,18 @@ api: "helper2\n(examples, admin)" {class: app}
 db: PostgreSQL {class: data}
 search: "Search\n(no web)" {class: app}
 visitor: "Visitor\n(home page)" {class: person}
+
+model: "Nemotron\n(fast)" {class: ai}
+
+draft: "Draft with AI (optional)" {
+  owner -> api: "POST /api/v1/admin/home-examples/drafts"
+  api -> db: "well-known resources no example expects\nand no waiting draft is about"
+  api -> model: "titles, types, descriptions\n(untrusted, one call, own budget)" {class: ai-call}
+  model -> api: "JSON drafts"
+  api -> db: "kept drafts: review items EXAMPLE_CANDIDATE"
+  owner -> api: "accept a draft"
+  api -> db: "decision + INSERT home_example AI_DRAFTED\n(one transaction)"
+}
 
 add: Add {
   owner -> api: "POST /api/v1/admin/home-examples"

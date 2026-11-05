@@ -1,5 +1,6 @@
 package ai.helper2.admin.web;
 
+import ai.helper2.admin.usecase.ResolveReview;
 import ai.helper2.api.generated.AdminApi;
 import ai.helper2.api.generated.model.ReviewItemDto;
 import ai.helper2.api.generated.model.ReviewItemPageDto;
@@ -32,12 +33,12 @@ import org.springframework.web.bind.annotation.RestController;
 class AdminController implements AdminApi {
 
   private final ListReviewItems items;
-  private final ResolveReviewItem resolve;
+  private final ResolveReview resolve;
   private final StartScoutRun startRun;
   private final ScoutStore store;
 
   AdminController(
-      ListReviewItems items, ResolveReviewItem resolve, StartScoutRun startRun, ScoutStore store) {
+      ListReviewItems items, ResolveReview resolve, StartScoutRun startRun, ScoutStore store) {
     this.items = items;
     this.resolve = resolve;
     this.startRun = startRun;

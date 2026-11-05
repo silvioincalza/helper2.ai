@@ -120,7 +120,7 @@ at the same time. Prod runs 3 replicas ([0027](../operations/0027-runtime-topolo
   `RUNNING` are closed at startup.
 - `backend/src/test/java/ai/helper2/scout/ScoutPipelineIT.java` — 202 with the `RUNNING` row, polled to its end; 409
   while another replica holds the lock.
-- `frontend/src/pages/AdminPage.tsx` — "Run now", polling of the run listing.
+- `frontend/src/pages/admin/ScoutRunsPage.tsx` — "Run now", polling of the run listing.
 - `backend/src/main/java/ai/helper2/scout/internal/JdbcScoutStore.java` — `source_cursor`, `scout_run`, `scout_schedule`.
 - `backend/src/main/java/ai/helper2/admin/web/AdminController.java` — `startScoutRun`, `listScoutRuns`.
 - `backend/src/main/java/ai/helper2/sources/support/RunInterval.java`.

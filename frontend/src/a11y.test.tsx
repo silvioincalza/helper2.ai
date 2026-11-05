@@ -142,6 +142,26 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
         failedRunsLast24h: 1,
         grafanaUrl: null,
       }),
+      'GET /admin/home-examples': () => [
+        {
+          id: '22222222-2222-5222-8222-222222222222',
+          label: 'Translate documents',
+          query: 'translate documents',
+          path: 'USE_AI',
+          status: 'ACTIVE',
+          origin: 'BUILT_IN',
+          model: null,
+          expected: [{ id: '11111111-1111-5111-8111-111111111111', title: 'DeepL Translator' }],
+          check: {
+            outcome: 'PASS',
+            bestRank: 2,
+            resultCount: 40,
+            checkedAt: '2026-11-05T02:41:00Z',
+          },
+          version: 0,
+          updatedAt: '2026-11-04T10:00:00Z',
+        },
+      ],
       'GET /admin/audit': () => ({
         items: [
           {
@@ -176,6 +196,10 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
     await within(await screen.findByRole('main')).findByText('Failed');
     expect(await axeViolations(runs.container)).toEqual([]);
     runs.unmount();
+    const examples = renderApp('/admin/examples');
+    await within(await screen.findByRole('main')).findByText('Shown · expected result at #2');
+    expect(await axeViolations(examples.container)).toEqual([]);
+    examples.unmount();
     const audit = renderApp('/admin/audit');
     await within(await screen.findByRole('main')).findByText('Review decision');
     expect(await axeViolations(audit.container)).toEqual([]);

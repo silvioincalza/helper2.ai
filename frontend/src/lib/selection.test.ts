@@ -1,5 +1,5 @@
 import type { GuideResponse } from '@/api/types';
-import { displayHost, guidePicks, picksById, picksFirst, selectedResult } from './selection';
+import { guidePicks, picksById, picksFirst, selectedResult } from './selection';
 
 const rows = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
 
@@ -75,9 +75,4 @@ describe('picksFirst', () => {
   it('keeps the search order without picks', () => {
     expect(picksFirst(rows, [])).toEqual({ picked: [], rest: rows });
   });
-});
-
-describe('displayHost', () => {
-  it('drops www.', () => expect(displayHost('https://www.acme.example/x')).toBe('acme.example'));
-  it('keeps text that is not a URL', () => expect(displayHost('not a url')).toBe('not a url'));
 });

@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { api } from '@/api/client';
-import type { RecentResponse, ResultCard } from '@/api/types';
+import type { DateFact, RecentResponse, ResultCard } from '@/api/types';
 import { TypeTag } from '@/components/ui/TypeTag';
 import { useApi } from '@/hooks/useApi';
 import { shortDay } from '@/lib/format';
@@ -36,7 +36,7 @@ const DAYS = 7;
 function cardDate(card: ResultCard): {
   key: 'published' | 'updated' | 'firstSeen';
   value: string;
-  precision: 'INSTANT' | 'DAY' | 'UNKNOWN';
+  precision: DateFact['precision'];
 } | null {
   const { published, updated, discovered } = card.timeline;
   if (published.status !== 'UNKNOWN' && published.value)

@@ -178,11 +178,9 @@ Open items:
 - **Home examples** ([0049](adr/search/0049-home-examples.md)), next steps in this order:
   - The page reads the pool from `GET /home/examples` at start, with the built-in list when it fails or does not
     answer in 800 ms; the row keeps its height while it waits.
-  - The back office Examples page (`/admin/examples`): list, add, change, pause, remove, filter by check result; the
-    overview counts the examples the check hides.
-  - AI-drafted examples: a model drafts a label and query for well-known catalog items; each draft waits in the Review
-    queue (`EXAMPLE_CANDIDATE`) and is added only when an admin accepts it, then checked like any example. Needs the
-    Art. 50 points confirmed by a lawyer first (is an accepted, maybe edited draft still AI-written text?).
+  - The overview counts the examples the check hides, with a link to `/admin/examples?outcome=FAIL`.
+  - A lawyer confirms the Art. 50 points of [0049](adr/search/0049-home-examples.md) for accepted AI drafts; until then
+    they are labelled and marked like any AI-written text.
   - Check now on one example, and an Italian example once one passes the check.
 
 ## 7. Architecture

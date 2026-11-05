@@ -11,9 +11,8 @@ import {
 import { useTranslation } from 'react-i18next';
 import { signOut } from '@/api/client';
 import { useMe } from '@/context/MeContext';
-import { LANGUAGES, setLanguage } from '@/i18n';
 import { chooseTheme, currentTheme, otherTheme, subscribeTheme, type Theme } from '@/lib/theme';
-import { RESULTS_PATH } from '@/lib/searchState';
+import { hasOwnSearchBox } from '@/lib/searchState';
 import { takeSignInReturn } from '@/lib/signInReturn';
 import { Logo } from './Logo';
 import { OneBox } from './OneBox';
@@ -98,12 +97,11 @@ function MenuButton({ open, onToggle }: { open: boolean; onToggle: () => void })
   );
 }
 
-export function Header() {
-  const { t, i18n } = useTranslation();
+function Header() {
+  const { t } = useTranslation();
   const { me, isAdmin } = useMe();
-  // The home page has the box as its hero; every other page keeps it in the header.
   const { pathname } = useLocation();
-  const onHome = pathname === '/' || pathname === RESULTS_PATH;
+  const onHome = hasOwnSearchBox(pathname);
   // Open on the page it was opened on: moving to another page closes it without an effect.
   const [openOn, setOpenOn] = useState<string | null>(null);
   const open = openOn === pathname;
@@ -154,21 +152,6 @@ export function Header() {
             </ul>
           </nav>
           <div className="header-tools">
-            {LANGUAGES.length > 1 && (
-              <label className="lang">
-                <span className="sr-only">{t('nav.language')}</span>
-                <select
-                  value={i18n.resolvedLanguage ?? 'en'}
-                  onChange={(e) => setLanguage(e.target.value)}
-                >
-                  {LANGUAGES.map((l) => (
-                    <option key={l.code} value={l.code} lang={l.code}>
-                      {l.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
             {/* The admin page has its own sign-in. */}
             {!me.authenticated && !pathname.startsWith('/admin') && <SignIn className="btn" />}
             {me.authenticated && (
@@ -212,7 +195,7 @@ function GitHubMark() {
   );
 }
 
-export function Footer() {
+function Footer() {
   const { t } = useTranslation();
   return (
     <footer className="site-footer">

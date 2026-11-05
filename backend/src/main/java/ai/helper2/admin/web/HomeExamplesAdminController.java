@@ -5,16 +5,19 @@ import ai.helper2.api.generated.model.AdminHomeExampleDto;
 import ai.helper2.api.generated.model.AudiencePathDto;
 import ai.helper2.api.generated.model.ExampleCheckDto;
 import ai.helper2.api.generated.model.ExampleCheckOutcomeDto;
+import ai.helper2.api.generated.model.ExampleDraftsDto;
 import ai.helper2.api.generated.model.ExampleStatusDto;
 import ai.helper2.api.generated.model.ExpectedResourceDto;
 import ai.helper2.api.generated.model.HomeExampleChangeDto;
 import ai.helper2.api.generated.model.HomeExampleInputDto;
 import ai.helper2.examples.CheckOutcome;
 import ai.helper2.examples.CheckResult;
+import ai.helper2.examples.DraftsUnavailable;
 import ai.helper2.examples.ExampleStatus;
 import ai.helper2.examples.HomeExample;
 import ai.helper2.examples.usecase.AddHomeExample;
 import ai.helper2.examples.usecase.ChangeHomeExample;
+import ai.helper2.examples.usecase.DraftHomeExamples;
 import ai.helper2.examples.usecase.ExampleView;
 import ai.helper2.examples.usecase.ListAdminHomeExamples;
 import ai.helper2.examples.usecase.RemoveHomeExample;
@@ -41,16 +44,19 @@ class HomeExamplesAdminController implements ExamplesAdminApi {
   private final AddHomeExample add;
   private final ChangeHomeExample change;
   private final RemoveHomeExample remove;
+  private final DraftHomeExamples drafts;
 
   HomeExamplesAdminController(
       ListAdminHomeExamples list,
       AddHomeExample add,
       ChangeHomeExample change,
-      RemoveHomeExample remove) {
+      RemoveHomeExample remove,
+      DraftHomeExamples drafts) {
     this.list = list;
     this.add = add;
     this.change = change;
     this.remove = remove;
+    this.drafts = drafts;
   }
 
   @Override
@@ -103,6 +109,26 @@ class HomeExamplesAdminController implements ExamplesAdminApi {
   public ResponseEntity<Void> removeHomeExample(UUID id) {
     remove.remove(adminId(), id);
     return ResponseEntity.noContent().build();
+  }
+
+  @Override
+  public ResponseEntity<ExampleDraftsDto> draftHomeExamples() {
+    try {
+      DraftHomeExamples.Drafted drafted = drafts.draft(adminId());
+      return ResponseEntity.status(HttpStatus.ACCEPTED)
+          .body(new ExampleDraftsDto(drafted.count(), drafted.model()));
+    } catch (DraftsUnavailable e) {
+      throw new ApiProblem(ProblemType.UNAVAILABLE, draftsUnavailable(e.getReason()));
+    }
+  }
+
+  private static String draftsUnavailable(DraftsUnavailable.Reason reason) {
+    return switch (reason) {
+      case NO_MODEL -> "Drafts are off: no model is configured, or H2_EXAMPLES_DRAFT_CALLS is 0.";
+      case BUDGET -> "Today's draft runs are used up. Try again tomorrow (UTC).";
+      case PROVIDER -> "The model cannot answer now. Try again later.";
+      case UNREADABLE -> "The model's answer could not be read. Try again.";
+    };
   }
 
   /** The rules the input breaks: our own words, never the input itself. */

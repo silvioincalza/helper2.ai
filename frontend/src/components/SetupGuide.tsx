@@ -69,20 +69,17 @@ export function GuideMeButton({
   onToggle,
   bodyId,
   primary = false,
-  buttonRef,
 }: {
   title: string;
   open: boolean;
   onToggle: () => void;
   bodyId: string;
   primary?: boolean;
-  buttonRef?: Ref<HTMLButtonElement>;
 }) {
   const { t } = useTranslation();
   const name = { title, interpolation: { escapeValue: false } };
   return (
     <button
-      ref={buttonRef}
       type="button"
       className={`btn ${primary ? 'btn-primary' : 'btn-ghost'} guide-me`}
       aria-expanded={open}

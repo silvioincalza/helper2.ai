@@ -23,7 +23,6 @@
     "saved": "Saved",
     "sources": "Sources",
     "admin": "Admin",
-    "language": "Language",
     "signIn": "Sign in",
     "signInWith": "Sign in with {{provider}}",
     "signOut": "Sign out",
@@ -541,7 +540,8 @@
       "ENRICHMENT_VALIDATION": "Enrichment validation",
       "RELATIONSHIP_CANDIDATE": "Relationship candidate",
       "USER_REPORT": "User report",
-      "COURSE_CANDIDATE": "Course candidate"
+      "COURSE_CANDIDATE": "Course candidate",
+      "EXAMPLE_CANDIDATE": "Drafted example"
     },
     "runStatus": {
       "RUNNING": "Running",
@@ -560,11 +560,13 @@
     "allKinds": "All kinds",
     "note": "Note (optional)",
     "alreadyDecided": "This item was already decided. The list now shows its current status.",
+    "refused": "Not accepted, the item stays open: {{detail}}",
     "nav": {
       "label": "Back office",
       "overview": "Overview",
       "review": "Review",
       "runs": "Scout runs",
+      "examples": "Examples",
       "audit": "Audit"
     },
     "overview": {
@@ -604,7 +606,11 @@
       "admin": "Administrator",
       "actions": {
         "RESOLVE_REVIEW_ITEM": "Review decision",
-        "START_SCOUT_RUN": "Scout run started"
+        "START_SCOUT_RUN": "Scout run started",
+        "ADD_HOME_EXAMPLE": "Example added",
+        "CHANGE_HOME_EXAMPLE": "Example changed",
+        "REMOVE_HOME_EXAMPLE": "Example removed",
+        "DRAFT_HOME_EXAMPLES": "Examples drafted with AI"
       }
     },
     "budget": {
@@ -614,6 +620,91 @@
       "enrichment-gap": "Enrichment gap round",
       "classifier": "Awesome-list classifier",
       "tool-guide": "Setup guide"
+    },
+    "examples": {
+      "title": "Home examples",
+      "lede": "The home page picks 2 for people who use AI and 2 for builders from the examples that pass the check. Shown now: {{use}} for people who use AI, {{build}} for builders.",
+      "few": "Fewer than 2 shown for {{path}}. Add one, or fix a hidden one.",
+      "checkFilter": "Check",
+      "allChecks": "All",
+      "empty": "No examples here.",
+      "loadError": "Could not load the examples.",
+      "path": {
+        "USE_AI": "People who use AI",
+        "BUILD_WITH_AI": "Builders"
+      },
+      "status": {
+        "ACTIVE": "Active",
+        "PAUSED": "Paused"
+      },
+      "origin": {
+        "BUILT_IN": "Built in",
+        "CURATED": "Written by an admin",
+        "AI_DRAFTED": "Drafted with AI"
+      },
+      "check": {
+        "PASS": "Shown · expected result at #{{rank}}",
+        "WEAK": "Hidden · best expected result at #{{rank}}",
+        "FAIL": "Hidden · no expected result in the top 10",
+        "PENDING": "Waiting for the check"
+      },
+      "checkName": {
+        "PASS": "Shown",
+        "WEAK": "Almost (top 10)",
+        "FAIL": "Hidden",
+        "PENDING": "Waiting"
+      },
+      "checkedAt": "Checked {{at}}",
+      "expected": "Expected results",
+      "missing": "no longer in the catalog",
+      "pause": "Pause",
+      "activate": "Activate",
+      "edit": "Edit",
+      "remove": "Remove",
+      "confirmRemove": "Remove “{{label}}”?",
+      "confirm": "Yes, remove",
+      "cancel": "Cancel",
+      "form": {
+        "add": "Add an example",
+        "change": "Change “{{label}}”",
+        "label": "Label on the chip",
+        "labelHint": "2 to 32 characters.",
+        "query": "What it searches",
+        "queryHint": "3 to 200 characters. Write it as a visitor would type it.",
+        "path": "For",
+        "expected": "Expected results (1 to 3)",
+        "expectedHint": "A right answer the check looks for in the top 3. Search the catalog and add it.",
+        "find": "Search the catalog",
+        "findButton": "Find",
+        "use": "Add",
+        "drop": "Remove {{title}}",
+        "none": "No result. Try other words.",
+        "save": "Add example",
+        "saveChange": "Save change",
+        "cancel": "Cancel",
+        "pendingNote": "A new or changed search waits for the check (up to 5 minutes) before the home page can show it."
+      },
+      "duplicate": "Another example already has this label or this query.",
+      "conflict": "Someone changed this example first. The list is reloaded: make your change again.",
+      "invalid": "Not saved: {{detail}}",
+      "failed": "The action failed. Please try again.",
+      "draft": {
+        "button": "Draft examples with AI",
+        "hint": "A model writes examples for well-known resources that no example expects yet. Each draft waits in the Review queue; nothing is shown before you accept it and the check passes it.",
+        "done_one": "{{count}} draft waits in the Review queue.",
+        "done_other": "{{count}} drafts wait in the Review queue.",
+        "none": "The model wrote no draft that follows the rules. Try again later.",
+        "open": "Open the drafts",
+        "unavailable": "No drafts now: {{detail}}"
+      }
+    },
+    "review": {
+      "drafted": {
+        "label": "Label",
+        "query": "Searches",
+        "path": "For",
+        "model": "Drafted with AI ({{model}}). The resource above is its expected result. Accept adds it; the check decides when it is shown."
+      }
     }
   },
   "notFound": {
@@ -887,6 +978,7 @@
           "Saved items: if you are signed in, each saved resource (its link, title and type) and when you saved it, stored on our server with your account. If you are not signed in, they stay only in your browser; when you sign in, they move to your account.",
           "Reports you send about a resource: the text you write, linked to your account if you are signed in.",
           "Web search counters: Tavily searches per day and feature, under a keyed hash of your IP address and the date (no address stored; days cannot be linked), or your account ID once account limits are on.",
+          "Guide question counters: how many new questions the guide answered for your IP address today (for IPv6, its /64 network), under a hash of the address, so we can apply the daily limit in the Terms.",
           "Stored Tavily results, under a keyed hash of the question, not its text.",
           "Guide question fingerprints, only when similar-question reuse is on: a list of numbers (an embedding) computed from your guide question, kept with its cached answer so a later question with the same meaning can get that answer. Not linked to you or your account.",
           "Usage totals: how many searches we answer, how many had results from only some sources, and how many found nothing. They are counts only: never the text you typed, your IP address or your account.",
@@ -898,7 +990,7 @@
         "items": [
           "Answering your searches and guide questions, your account and your saved items: to provide the service you ask for (Art. 6(1)(b) GDPR).",
           "Rate limits, technical logs, usage totals and the security cookie: our legitimate interest in keeping the service secure and available (Art. 6(1)(f) GDPR).",
-          "Web search counters and stored results: legitimate interest in a free service at bounded cost (Art. 6(1)(f) GDPR).",
+          "Web search counters, guide question counters and stored results: legitimate interest in a free service at bounded cost (Art. 6(1)(f) GDPR).",
           "Reports you send: our legitimate interest in keeping the information on Helper2.ai correct (Art. 6(1)(f) GDPR).",
           "Describing public AI resources with names and short quotes from their public pages: our legitimate interest in showing what a resource is and where each fact comes from (Art. 6(1)(f) GDPR)."
         ]
@@ -908,7 +1000,7 @@
         "items": [
           "A session cookie, only when you sign in, so you stay signed in.",
           "A security cookie (XSRF-TOKEN) that protects forms against cross-site request forgery.",
-          "Browser storage for your language, your light or dark theme, the AI tool you chose in the setup guide and, if you are not signed in, your saved items. When you sign in, the page you were on is kept in this tab until you are back on it, then removed. The tab also keeps where you had scrolled on each page, so Back returns you there; it is gone when you close the tab. This data stays in your browser and is not sent to us, with one exception: when you sign in, the items you saved in this browser are moved to your account and removed from the browser.",
+          "Browser storage for your light or dark theme, the AI tool you chose in the setup guide and, if you are not signed in, your saved items. When you sign in, the page you were on is kept in this tab until you are back on it, then removed. The tab also keeps where you had scrolled on each page, so Back returns you there; it is gone when you close the tab. This data stays in your browser and is not sent to us, with one exception: when you sign in, the items you saved in this browser are moved to your account and removed from the browser.",
           "All of these are strictly necessary for the site to work. We use no advertising, analytics or third-party cookies."
         ]
       },
@@ -918,7 +1010,7 @@
           "Search sources: to find results, your search text is sent to the sources that answer live, such as GitHub, Hugging Face, npm, arXiv and Tavily. The Sources page lists them all. Each provider handles the request under its own privacy policy, and some of them are in the United States.",
           "Tavily (United States): your search text or the guide's web query, unless a stored result answers.",
           "AI models: guide questions, and searches written in a language other than English, are sent to NVIDIA Nemotron models on Nebius Token Factory, processed in the European Union. We send only the text, never your account data.",
-          "AI models also read public text about AI resources (source descriptions, README files and model cards) to describe them, on NVIDIA Nemotron models on Nebius Token Factory in the European Union. It is public text about the resources, not about our visitors.",
+          "AI models also read public text about AI resources (source descriptions, README files and model cards) to describe them, and to draft example searches for the home page, on NVIDIA Nemotron models on Nebius Token Factory in the European Union. It is public text about the resources, not about our visitors.",
           "Embeddings: your search text, and your guide question when similar-question reuse is on, is sent to the NVIDIA API catalog (United States) to compute its embedding. We send only the text, never your IP address or account data. NVIDIA is certified under the Data Privacy Framework (see Transfers abroad).",
           "GitHub, when you choose to sign in with it.",
           "Network edge: every request to helper2.ai passes through Cloudflare (United States), which routes traffic to our servers. Cloudflare sees your IP address and the request.",
@@ -968,7 +1060,7 @@
   },
   "terms": {
     "title": "Terms of use",
-    "updated": "Last updated: 4 November 2026",
+    "updated": "Last updated: 5 November 2026",
     "lede": "These terms apply when you use the Helper2.ai website. By using it, you accept them. If you do not accept them, please do not use the site.",
     "contactIntro": "Helper2.ai is run by Silvio Incalza, Switzerland. For any question about these terms, write to",
     "sections": [
@@ -977,7 +1069,7 @@
         "items": [
           "Helper2.ai is a free search over public sources about the AI ecosystem, with an AI guide that answers questions from those results.",
           "We may change, limit or stop the service, or parts of it, at any time and without notice.",
-          "Tavily web searches: 3 a day each for search and the guide; stored results are free. Limits reset at 00:00 UTC.",
+          "Tavily web searches: 3 a day each for search and the guide; stored results are free. The AI guide: 30 new questions a day per IP address; a question whose answer is still stored does not count. After that, the guide shows the top search results without AI picks. Limits reset at 00:00 UTC.",
           "You can use Helper2.ai without an account. If you sign in, you can delete your account at any time: select your name at the top of the page, then \"Delete my account\". You can also write to us."
         ]
       },
@@ -1039,7 +1131,7 @@
     "steps": {
       "search": {
         "title": "Search real sources",
-        "body": "A fast Nemotron model turns your words, in any language, into search terms. A normal search across every source then finds up to 12 real candidates."
+        "body": "A fast Nemotron model turns your words, in any language, into search terms. A normal search across every source then finds up to 24 real candidates."
       },
       "choose": {
         "title": "Nemotron chooses",

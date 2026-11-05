@@ -1,4 +1,4 @@
-import type { ReviewKind, ReviewStatus, ScoutRun } from '@/api/types';
+import type { ExampleCheckOutcome, ReviewKind, ReviewStatus, ScoutRun } from '@/api/types';
 import type { StatusTone } from '@/components/ui/StatusPill';
 
 export const REVIEW_KINDS: readonly ReviewKind[] = [
@@ -6,6 +6,7 @@ export const REVIEW_KINDS: readonly ReviewKind[] = [
   'RELATIONSHIP_CANDIDATE',
   'USER_REPORT',
   'COURSE_CANDIDATE',
+  'EXAMPLE_CANDIDATE',
 ];
 export const REVIEW_STATUSES: readonly ReviewStatus[] = [
   'OPEN',
@@ -25,6 +26,15 @@ export const RUN_TONE: Record<ScoutRun['status'], StatusTone> = {
   SUCCEEDED: 'ok',
   FAILED: 'warn',
   SKIPPED: 'later',
+};
+
+export const CHECK_OUTCOMES: readonly ExampleCheckOutcome[] = ['PASS', 'WEAK', 'FAIL', 'PENDING'];
+/** Shown in words first; the tone only repeats it. */
+export const CHECK_TONE: Record<ExampleCheckOutcome, StatusTone> = {
+  PASS: 'ok',
+  WEAK: 'later',
+  FAIL: 'warn',
+  PENDING: 'next',
 };
 
 /** A value from the address bar, or undefined when it is not one of [allowed]. */

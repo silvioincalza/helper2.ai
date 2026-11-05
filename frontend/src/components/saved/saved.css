@@ -1,4 +1,4 @@
-/* Page head and saved page (ADR 0040, 10). Only semantic tokens. */
+/* Page head and saved page (ADR 0040). Only semantic tokens. */
 .h2-page-head {
   border-bottom: 2px solid var(--ink);
   padding-bottom: var(--space-3);

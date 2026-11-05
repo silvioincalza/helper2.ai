@@ -12,7 +12,7 @@ import type { Refine } from './types';
 import { Understood } from './Understood';
 
 /** Why an answer has no AI pick, as one code. Order: quota, then no source answered, then model down, then empty catalog. */
-export type NoPickCode =
+type NoPickCode =
   | 'GUIDE_DAILY_QUOTA'
   | 'ALL_SOURCES_FAILED'
   | 'LLM_UNAVAILABLE'
@@ -21,7 +21,7 @@ export type NoPickCode =
   | 'NO_FIT';
 
 export function noPickCode(answer: GuideResponse): NoPickCode | undefined {
-  const has = (code: string) => answer.notices.some((n) => n.code === code);
+  const has = (code: Notice['code']) => answer.notices.some((n) => n.code === code);
   if (has('GUIDE_DAILY_QUOTA') && answer.status === 'LLM_UNAVAILABLE') return 'GUIDE_DAILY_QUOTA';
   if (has('ALL_SOURCES_FAILED')) return 'ALL_SOURCES_FAILED';
   if (answer.status === 'LLM_UNAVAILABLE') return 'LLM_UNAVAILABLE';
@@ -80,10 +80,9 @@ function fill(t: TFunction, key: string, parts: Record<string, ReactNode>): Reac
 /**
  * "X was not found in our sources; showing tools for: Y". The sentence is ours; the name and the search are the
  * planner's words, so each is marked AI-written and the line carries the label (ADR 0038). The server's message is
- * never shown: an older answer (browser cache, ADR 0039) put the planner's words in it, so without the fields the
- * line says it without them.
+ * never shown. No subject: a date that was not found, and the line says it without the names.
  */
-export function SubjectNotFound({ notice, model }: { notice: Notice; model?: string | undefined }) {
+function SubjectNotFound({ notice, model }: { notice: Notice; model?: string | undefined }) {
   const { t } = useTranslation();
   const { subject, query } = notice;
   if (!subject) return <>{t('guide.notice.GUIDE_SUBJECT_NOT_FOUND')}</>;

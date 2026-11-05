@@ -1,5 +1,9 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { CACHE_MAX, CACHE_TTL_MS, useApi } from './useApi';
+import { useApi } from './useApi';
+
+/** The cache's limits in useApi: 50 answers, 5 minutes. */
+const CACHE_MAX = 50;
+const CACHE_TTL_MS = 5 * 60_000;
 
 function fetcher(value: string) {
   return vi.fn((_signal: AbortSignal) => Promise.resolve(value));

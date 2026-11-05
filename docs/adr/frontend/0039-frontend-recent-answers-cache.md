@@ -42,7 +42,7 @@ guide may call the model again. Both cost time and quota for nothing.
 
 ## Code
 - `frontend/src/hooks/useApi.ts` — `CACHE_MAX`, `CACHE_TTL_MS`, the cache, `cache: false`, `clearApiCache` for tests.
-- `frontend/src/pages/AdminPage.tsx` — the opt-out.
+- `frontend/src/pages/admin/` — the opt-out (every admin page).
 - `frontend/src/components/Layout.tsx` — `ScrollRestoration`, `RouteFocus`.
 
 ## Diagrams

@@ -6,7 +6,7 @@
 #   backend/src/main/java/ai/helper2/identity/internal/Users.java, Bookmarks.java, AuditLog.java,
 #   backend/src/main/java/ai/helper2/catalog/usecase/ResolveReviewItem.java,
 #   backend/src/main/java/ai/helper2/platform/quota/QuotaKeys.java, RedisQuotaCounter.java,
-#   frontend/src/pages/AdminPage.tsx, frontend/src/pages/AccountPage.tsx, frontend/src/components/SignIn.tsx,
+#   frontend/src/pages/admin/, frontend/src/pages/AccountPage.tsx, frontend/src/components/SignIn.tsx,
 #   frontend/src/context/MeContext.tsx, BookmarksContext.tsx, frontend/src/api/client.ts.
 # Render: cd docs/diagrams && d2 fmt sequence-0023-identity-and-admin.d2 && d2 sequence-0023-identity-and-admin.d2 sequence-0023-identity-and-admin.svg
 
@@ -15,7 +15,7 @@
 shape: sequence_diagram
 
 owner: Owner {class: person}
-spa: "AdminPage /\nMeContext" {class: app}
+spa: "admin pages /\nMeContext" {class: app}
 sec: "Spring Security\n(SecurityConfiguration)" {class: app}
 gh: GitHub {class: ext}
 cu: CurrentUser {class: app}

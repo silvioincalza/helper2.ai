@@ -5,7 +5,7 @@ import { Icon } from '@/components/Icon';
 type WebSearches = SearchResponse['webSearches'];
 
 /** Visitors get 3 or 10 a day (ADR 0037); a limit this high is a test environment's ceiling (staging). */
-export const TEST_CEILING = 100;
+const TEST_CEILING = 100;
 
 /** True when the count will be said once the feature has used a web search: the limit is known and a real one. */
 export function webLineExpected(value: WebSearches | undefined): boolean {

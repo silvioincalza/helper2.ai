@@ -11,7 +11,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ai.helper2.catalog.ReviewQueue;
+import ai.helper2.examples.DraftSource;
+import ai.helper2.examples.DraftSources;
+import ai.helper2.examples.ExampleDrafter;
+import ai.helper2.examples.HomeExamples;
+import ai.helper2.examples.ProposedDraft;
+import ai.helper2.examples.config.ExamplesProperties;
+import ai.helper2.examples.usecase.DraftHomeExamples;
+import ai.helper2.identity.AuditTrail;
+import ai.helper2.shared.AudiencePath;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,13 +32,17 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.OAuth2LoginRequestPostProcessor;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
 /** The home examples (ADR 0049): the public pool, and the back office's add, change and remove. */
 class HomeExamplesApiIT extends ApiTestBase {
 
   @Autowired JdbcClient jdbc;
+
+  @Autowired ReviewQueue queue;
 
   final JsonMapper json = JsonMapper.builder().build();
   final String adminId = "examples-" + UUID.randomUUID();
@@ -261,5 +277,152 @@ class HomeExamplesApiIT extends ApiTestBase {
                 .with(oauth2Login().attributes(a -> a.put("sub", "visitor-" + tag))))
         .andExpect(status().isForbidden());
     mvc.perform(get("/api/v1/admin/home-examples").with(admin)).andExpect(status().isOk());
+  }
+
+  @Test
+  void withoutAModelADraftRunIsUnavailableAndAudited() throws Exception {
+    mvc.perform(post("/api/v1/admin/home-examples/drafts").with(admin).with(csrf()))
+        .andExpect(status().isServiceUnavailable())
+        .andExpect(jsonPath("$.code").value("unavailable"));
+    assertThat(audit("DRAFT_HOME_EXAMPLES")).containsExactly("NO_MODEL");
+  }
+
+  @Test
+  void acceptingADraftAddsItAiDraftedAndThePoolMarksIt() throws Exception {
+    UUID item =
+        queue.open(
+            ReviewQueue.Kind.EXAMPLE_CANDIDATE,
+            deepl(),
+            "Drafted example: Drafted " + tag,
+            """
+            {"label":"Drafted %s","query":"translate a contract %s","path":"USE_AI","model":"nemotron-test"}
+            """
+                .formatted(tag, tag),
+            ReviewQueue.Links.NONE);
+    mvc.perform(
+            put("/api/v1/admin/review-items/" + item + "/resolution")
+                .with(admin)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\":\"ACCEPTED\"}"))
+        .andExpect(status().isOk());
+    String id =
+        jdbc.sql("SELECT id FROM home_example WHERE label = :l AND origin = 'AI_DRAFTED'")
+            .param("l", "Drafted " + tag)
+            .query(UUID.class)
+            .single()
+            .toString();
+    pass(id);
+
+    MvcResult r = mvc.perform(get("/api/v1/home/examples")).andExpect(status().isOk()).andReturn();
+    String body = r.getResponse().getContentAsString();
+    ContractValidator.assertMatches("HomeExamplePool", body);
+    JsonNode pool = json.readTree(body);
+    assertThat(pool.get("ai").get("models").toString()).contains("nemotron-test");
+    for (JsonNode e : pool.get("examples")) {
+      assertThat(e.get("aiDrafted").asBoolean()).isEqualTo(e.get("id").asString().equals(id));
+    }
+  }
+
+  @Autowired HomeExamples examples;
+  @Autowired AuditTrail auditTrail;
+  @Autowired ObjectMapper objectMapper;
+  @Autowired TransactionTemplate transaction;
+  @Autowired ExamplesProperties examplesProperties;
+
+  @Test
+  void aSecondDraftRunSkipsTheResourcesAndTextsOfDraftsStillWaiting() {
+    UUID other =
+        jdbc.sql("SELECT id FROM resource WHERE id <> :d ORDER BY id LIMIT 1")
+            .param("d", deepl())
+            .query(UUID.class)
+            .single();
+    queue.open(
+        ReviewQueue.Kind.EXAMPLE_CANDIDATE,
+        deepl(),
+        "Drafted example: Waiting " + tag,
+        """
+        {"label":"Waiting %s","query":"translate a lease %s","path":"USE_AI","model":"nemotron-test"}
+        """
+            .formatted(tag, tag),
+        ReviewQueue.Links.NONE);
+    Set<UUID> excluded = new HashSet<>();
+    DraftSources sources =
+        (limit, excluding) -> {
+          excluded.addAll(excluding);
+          return List.of(new DraftSource(other, "Other", "PRODUCT", "USE_AI", null));
+        };
+    ExampleDrafter drafter =
+        new ExampleDrafter() {
+          @Override
+          public String getModel() {
+            return "nemotron-test";
+          }
+
+          @Override
+          public List<ProposedDraft> draft(List<DraftSource> given) {
+            return List.of(
+                new ProposedDraft(
+                    other, "waiting " + tag, "a new query " + tag, AudiencePath.USE_AI));
+          }
+        };
+    var run =
+        new DraftHomeExamples(
+            examples,
+            sources,
+            drafter,
+            queue,
+            auditTrail,
+            objectMapper,
+            transaction,
+            examplesProperties);
+
+    assertThat(run.draft(adminId).count()).as("the label is a waiting draft's").isZero();
+    assertThat(excluded).as("the waiting draft's resource is not given again").contains(deepl());
+  }
+
+  @Test
+  void aDraftThatRepeatsAnExampleStaysOpen() throws Exception {
+    added("Repeated " + tag, "translate a poem " + tag);
+    UUID item =
+        queue.open(
+            ReviewQueue.Kind.EXAMPLE_CANDIDATE,
+            deepl(),
+            "Drafted example: repeated " + tag,
+            """
+            {"label":"repeated %s","query":"another poem %s","path":"USE_AI","model":"nemotron-test"}
+            """
+                .formatted(tag, tag),
+            ReviewQueue.Links.NONE);
+    mvc.perform(
+            put("/api/v1/admin/review-items/" + item + "/resolution")
+                .with(admin)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\":\"ACCEPTED\"}"))
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.code").value("duplicate"));
+    assertThat(queue.find(item).orElseThrow().status()).isEqualTo(ReviewQueue.Status.OPEN);
+    assertThat(audit("ADD_HOME_EXAMPLE")).contains("DUPLICATE");
+  }
+
+  @Test
+  void aDraftThatCannotBeReadIsRefusedNotAServerError() throws Exception {
+    UUID item =
+        queue.open(
+            ReviewQueue.Kind.EXAMPLE_CANDIDATE,
+            deepl(),
+            "Drafted example: broken " + tag,
+            "{\"label\":\"Broken\"}",
+            ReviewQueue.Links.NONE);
+    mvc.perform(
+            put("/api/v1/admin/review-items/" + item + "/resolution")
+                .with(admin)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\":\"ACCEPTED\"}"))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.detail").value("The draft cannot be read."));
+    assertThat(queue.find(item).orElseThrow().status()).isEqualTo(ReviewQueue.Status.OPEN);
   }
 }
