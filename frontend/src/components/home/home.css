@@ -276,6 +276,27 @@
   /* The pinned box sits under the header: a jump to #news lands below both. */
   scroll-margin-top: calc(var(--header-height) + var(--box-height) + var(--space-6));
 }
+/*
+ * While a list scrolls by, its head (and on wide screens its column names) stay under the pinned box, until the list
+ * ends. --pinned-h is the pinned box's height, measured in Home.tsx.
+ */
+.v4-home {
+  --list-stick-top: calc(var(--header-height) + var(--pinned-h, 0px));
+  --list-head-h: calc(0.9375rem * 1.4 + var(--space-2) + 1px);
+}
+.v4-home .v4-list__head,
+.v4-home .v4-tabs__list {
+  position: sticky;
+  top: var(--list-stick-top);
+  z-index: 2;
+  background: var(--bg);
+}
+.v4-home .v4-list .v4-table thead th {
+  position: sticky;
+  top: calc(var(--list-stick-top) + var(--list-head-h));
+  z-index: 1;
+  background: var(--bg);
+}
 .v4-list__head {
   display: flex;
   align-items: baseline;

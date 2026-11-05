@@ -73,7 +73,9 @@ pages, Results and the resource page, and the text pages; this record says what 
    titles in Geist and the rest in Geist Mono. On a wide screen two tables side by side: DATE · TYPE · TITLE · SOURCE
    and WHEN · TYPE · EVENT · WHERE, a running event "on now" in green. Below 768 px one panel with two tabs, `> new
    this week N | coming up N`, and log rows (date and `[type]`, the title, the host or how far away and where). Coming
-   up asks GET /events/upcoming for `days=90`, so the window and its `total` are the server's. Six rows show; `$
+   up asks GET /events/upcoming for `days=90`, so the window and its `total` are the server's. While a list scrolls by,
+   its head (and on a wide screen its column names, on a phone the tabs) stays under the pinned search box until the
+   list ends; Home measures the box's height for that. Six rows show; `$
    helper2 news --all · show all N` opens the rest in place. Loading, empty and error (with Retry) are the same in
    both. The tabs are real buttons in a tablist (`role="tab"`, `aria-selected`, arrow keys, Home, End), 44 px tall;
    the tables have column headers. No blinking cursor, no lines that print in.
