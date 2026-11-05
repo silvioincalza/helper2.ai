@@ -979,6 +979,7 @@
           "Reports you send about a resource: the text you write, linked to your account if you are signed in.",
           "Web search counters: Tavily searches per day and feature, under a keyed hash of your IP address and the date (no address stored; days cannot be linked), or your account ID once account limits are on.",
           "Guide question counters: how many new questions the guide answered for your IP address today (for IPv6, its /64 network), under a hash of the address, so we can apply the daily limit in the Terms.",
+          "Your limits for today: when you open the site, we read these two counters for your IP address, or your account once account limits are on, and send only what is left today (guide questions, and web searches for search and the guide) back to your browser, with the time they reset. Reading them does not count as a use, stores nothing new and does not send your address.",
           "Stored Tavily results, under a keyed hash of the question, not its text.",
           "Guide question fingerprints, only when similar-question reuse is on: a list of numbers (an embedding) computed from your guide question, kept with its cached answer so a later question with the same meaning can get that answer. Not linked to you or your account.",
           "Usage totals: how many searches we answer, how many had results from only some sources, and how many found nothing. They are counts only: never the text you typed, your IP address or your account.",
