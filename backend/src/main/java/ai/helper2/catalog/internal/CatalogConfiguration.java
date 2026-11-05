@@ -1,8 +1,10 @@
 package ai.helper2.catalog.internal;
 
+import ai.helper2.catalog.CatalogPolicy;
 import ai.helper2.catalog.Embedder;
 import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.catalog.config.CatalogProperties;
+import ai.helper2.catalog.config.CatalogRetentionProperties;
 import ai.helper2.catalog.internal.ResourceStore.DataOrigin;
 import ai.helper2.platform.ClusterLock;
 import ai.helper2.platform.cache.SharedCaches;
@@ -38,6 +40,12 @@ class CatalogConfiguration {
 
   /** The same index searched by meaning. */
   static final String SEMANTIC_SOURCE = "helper2-semantic";
+
+  /** The catalog's numbers for GET /api/v1/policy (ADR 0051). */
+  @Bean
+  CatalogPolicy catalogPolicy(CatalogProperties catalog, CatalogRetentionProperties retention) {
+    return new CatalogPolicy(retention.resolvedIssueReports(), catalog.semantic().queryVectorTtl());
+  }
 
   /** Background writer for what searches observed; see CatalogResultObserver. */
   @Bean(destroyMethod = "close")

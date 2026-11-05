@@ -59,16 +59,26 @@ class RateLimitInterceptor implements HandlerInterceptor, WebMvcConfigurer {
     RateLimiter home = limiter("recent", limits.recentPerMinute(), Duration.ofMinutes(1));
     this.limiters =
         Map.of(
-            "search", limiter("search", limits.searchPerMinute(), Duration.ofMinutes(1)),
-            "reportResource", limiter("report", limits.reportPerHour(), Duration.ofHours(1)),
-            "askGuideStream", guide,
+            "search",
+            limiter("search", limits.searchPerMinute(), Duration.ofMinutes(1)),
+            "reportResource",
+            limiter("report", limits.reportPerHour(), Duration.ofHours(1)),
+            "askGuideStream",
+            guide,
             // The tool guide can call a model too.
-            "askResourceGuide", guide,
+            "askResourceGuide",
+            guide,
             // Can fetch a README from GitHub (on the sources' token) when the server has no
             // registry entry.
-            "getResourceSetup", limiter("setup", limits.searchPerMinute(), Duration.ofMinutes(1)),
-            "listRecent", home,
-            "listHomeExamples", home);
+            "getResourceSetup",
+            limiter("setup", limits.searchPerMinute(), Duration.ofMinutes(1)),
+            "listRecent",
+            home,
+            "listHomeExamples",
+            home,
+            // The numbers of the text pages: one read per page view, as cheap as the home reads.
+            "getPolicy",
+            limiter("policy", limits.recentPerMinute(), Duration.ofMinutes(1)));
   }
 
   private RateLimiter limiter(String name, int limit, Duration window) {

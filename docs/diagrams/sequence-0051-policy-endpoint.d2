@@ -1,0 +1,30 @@
+# Sequence: a visitor opens the Privacy page, the page reads the numbers from the API (ADR 0051).
+# Source of truth: backend/src/main/java/ai/helper2/policy/web/PolicyController.java,
+#   platform/RateLimitInterceptor.java, identity/config/SecurityConfiguration.java,
+#   search/config/SearchConfiguration.java, guide/internal/GuideConfiguration.java,
+#   identity/config/IdentityPolicyConfiguration.java, catalog/internal/CatalogConfiguration.java.
+# Render: cd docs/diagrams && d2 fmt sequence-0051-policy-endpoint.d2 && d2 sequence-0051-policy-endpoint.d2 sequence-0051-policy-endpoint.svg
+
+...@style
+
+shape: sequence_diagram
+
+visitor: "Visitor\n(Mission, Privacy, Terms)" {class: person}
+edge: "Cloudflare,\ningress-nginx" {class: ext}
+api: "helper2\n(policy)" {class: app}
+redis: Redis {class: data}
+modules: "search, guide,\nidentity, catalog\n(config at startup)" {class: config}
+
+boot: "Startup" {
+  modules -> api: "SearchPolicy, GuidePolicy,\nAccountPolicy, CatalogPolicy"
+}
+
+read: "Read" {
+  visitor -> edge: "GET /api/v1/policy"
+  edge -> api: "GET /api/v1/policy"
+  api -> redis: "rate window of the client\n(keyed hash of the address and the day)"
+  redis -> api: "under the limit"
+  api -> api: "map the four values\nto the Policy DTO"
+  api -> visitor: "200 Policy\n(public, max-age=300)" {class: hot}
+  visitor -> visitor: "show the numbers in the text;\nthe typed text while the answer is late or fails"
+}

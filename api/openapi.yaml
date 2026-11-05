@@ -30,6 +30,7 @@ tags:
   - name: overview
   - name: examples
   - name: examples-admin
+  - name: policy
 
 paths:
   /search:
@@ -501,6 +502,24 @@ paths:
               schema: { $ref: '#/components/schemas/HomeExamplePool' }
         '400': { $ref: '#/components/responses/Problem' }
 
+  /policy:
+    get:
+      tags: [policy]
+      operationId: getPolicy
+      summary: The limits and retention periods the Mission, Privacy and Terms pages state.
+      description: >-
+        Read from the running configuration (ADR 0051), so the text pages show the numbers the code applies. The same
+        answer for everyone, no personal data; cached for 5 minutes. Rate-limited like the other public reads.
+      responses:
+        '200':
+          description: The current limits and retention periods.
+          headers:
+            Cache-Control: { schema: { type: string }, description: 'public, max-age=300' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Policy' }
+        '429': { $ref: '#/components/responses/Problem' }
+
   /admin/home-examples:
     get:
       tags: [examples-admin]
@@ -599,6 +618,58 @@ components:
           schema: { $ref: '#/components/schemas/Problem' }
 
   schemas:
+    Policy:
+      type: object
+      description: >-
+        What Helper2.ai allows and keeps, as configured. Periods are in seconds; the pages round them to hours, days or
+        months. Daily limits reset at 00:00 UTC.
+      required: [guide, dailyLimits, retention]
+      properties:
+        guide:
+          type: object
+          required: [maxCandidates, maxPicks]
+          properties:
+            maxCandidates: { type: integer, minimum: 1, description: "Search results the guide's model chooses from (`H2_GUIDE_MAX_CANDIDATES`, ADR 0015)." }
+            maxPicks: { type: integer, minimum: 1, description: Most picks in one guide answer (ADR 0015). }
+        dailyLimits:
+          type: object
+          required: [guideQuestions, webSearches]
+          properties:
+            guideQuestions:
+              type: integer
+              minimum: 0
+              description: >-
+                Fresh guide questions per client address and UTC day (`H2_GUIDE_CLIENT_DAILY_QUESTIONS`, ADR 0017). An
+                answer from the cache costs none.
+            webSearches:
+              type: object
+              description: Live web searches per visitor, feature and UTC day (ADR 0037).
+              required: [guest, registered]
+              properties:
+                guest: { $ref: '#/components/schemas/WebSearchLimits' }
+                registered:
+                  oneOf: [{ $ref: '#/components/schemas/WebSearchLimits' }, { type: 'null' }]
+                  description: The limits of a signed-in user; null while the registered tier is off (everyone gets the guest limits).
+        retention:
+          type: object
+          description: How long each store keeps what it keeps (ADR 0034), in seconds.
+          required: [cachedSearchesSeconds, cachedGuideAnswersSeconds, translationsSeconds, queryVectorsSeconds, storedWebResultsSeconds, inactiveAccountsSeconds, handledReportsSeconds]
+          properties:
+            cachedSearchesSeconds: { type: integer, format: int64, minimum: 0, description: "Source answers in the search cache, served while a source fails (`H2_SEARCH_STALE_FOR`)." }
+            cachedGuideAnswersSeconds: { type: integer, format: int64, minimum: 0, description: "Guide answers in the shared cache (`H2_GUIDE_CACHE_TTL`)." }
+            translationsSeconds: { type: integer, format: int64, minimum: 0, description: "English translations of searches typed in another language (`H2_SEARCH_TRANSLATION_TTL`)." }
+            queryVectorsSeconds: { type: integer, format: int64, minimum: 0, description: "Search vectors used to search by meaning (`H2_SEARCH_QUERY_VECTOR_TTL`)." }
+            storedWebResultsSeconds: { type: integer, format: int64, minimum: 0, description: "Stored web search results (`H2_RETENTION_TAVILY_RESULTS`)." }
+            inactiveAccountsSeconds: { type: integer, format: int64, minimum: 0, description: "An account, its settings and its saved items, after the last sign-in (`H2_RETENTION_INACTIVE_ACCOUNTS`)." }
+            handledReportsSeconds: { type: integer, format: int64, minimum: 0, description: "Reports, after their review was resolved (`H2_RETENTION_RESOLVED_ISSUE_REPORTS`)." }
+
+    WebSearchLimits:
+      type: object
+      required: [search, guide]
+      properties:
+        search: { type: integer, minimum: 0 }
+        guide: { type: integer, minimum: 0 }
+
     HomeExamplePool:
       type: object
       required: [examples]
@@ -899,8 +970,16 @@ components:
         cachedAt: { type: [string, 'null'], format: date-time, description: When the served cache entry was fetched from the source. }
         message: { type: [string, 'null'], description: Safe, user-facing explanation. }
         skipReason:
-          description: Why a SKIPPED source was left out; null for the other outcomes.
+          description: >-
+            Why a SKIPPED source was left out; null for the other outcomes. Results offers "Try again" only when a new
+            try can help: not while a source is paused (CIRCUIT_OPEN, RATE_LIMIT_PAUSE) or past a daily limit.
           oneOf: [{ $ref: '#/components/schemas/SkipReason' }, { type: 'null' }]
+      # Only a SKIPPED source has a reason.
+      if:
+        required: [outcome]
+        properties: { outcome: { not: { const: SKIPPED } } }
+      then:
+        properties: { skipReason: { type: 'null' } }
 
     SkipReason:
       type: string
