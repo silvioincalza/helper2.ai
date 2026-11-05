@@ -47,6 +47,7 @@ export type AdminHomeExample = S['AdminHomeExample'];
 export type HomeExampleInput = S['HomeExampleInput'];
 export type HomeExampleChange = S['HomeExampleChange'];
 export type ExampleCheckOutcome = S['ExampleCheckOutcome'];
+export type ExampleDrafts = S['ExampleDrafts'];
 export type AuditEntry = S['AuditEntry'];
 export type AuditEntryPage = S['AuditEntryPage'];
 export type AdminOverview = S['AdminOverview'];

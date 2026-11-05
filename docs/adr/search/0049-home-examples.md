@@ -41,12 +41,50 @@ same for every visitor.
    words, finds expected results with the visitors' own search, and reacts to the problem codes (`duplicate`,
    `version-conflict`, `invalid-request` with the broken rule).
 
+6. **AI drafts, a person decides.** **Draft examples with AI** makes one model call (the fast Nemotron model, the
+   drafts' own daily budget `H2_EXAMPLES_DRAFT_CALLS`, 0 = off, inside the `llm-chat` circuit). The model gets public
+   facts about well-known catalog resources that no example expects yet (`H2_EXAMPLES_DRAFT_SOURCES`, curated first),
+   each fenced as untrusted text, and answers JSON. Code keeps a draft only when it names a resource it was given
+   (that resource becomes its expected result), follows the example rules, and repeats no example or other draft. A
+   kept draft is a review item `EXAMPLE_CANDIDATE` (the draft as JSON in its details). Accepting it adds the example,
+   `AI_DRAFTED` with its model, in the same transaction as the decision; a refused example (a duplicate) keeps the item
+   open. It is then checked like any example. The model never writes to the pool, and nothing it writes is shown
+   before a person accepts it and the check passes it.
+7. **AI-drafted examples are marked.** An accepted draft is human-reviewed text, but until a lawyer confirms how
+   Art. 50 treats it, the house rule applies: the public pool carries `aiDrafted` per example and an
+   `AiContentMarker` (ADR 0038) when one is in it, the page labels the chip, and the review queue marks the draft
+   (`data-ai-generated`). The origin and model stay on the row for good, even after an edit.
+
 ## Consequences
 - I change the examples without a release, and a bad example hides itself instead of greeting a new visitor.
 - What the page shows is what was checked: the same query and path, against the same ranking.
 - A new or changed example shows up to 5 minutes later; the page may serve the old pool for 5 more minutes (cache).
 - The check is one search per example: about a dozen searches a night, no model call, no web credit.
 - An example whose expected result leaves the catalog fails the check; it is hidden, not deleted.
+- A draft run costs one model call and sends no visitor data: only titles, types and descriptions of public
+  resources.
+
+## AI architecture check (the drafts)
+| Layer | Status |
+|---|---|
+| Model | Covered: the fast Nemotron model (NVIDIA only); no model or provider down: no drafts, nothing else changes. |
+| Agent framework, Tool & API, Memory, Browser | Deferred, safe: one structured call, no tools, no loop, no state between runs. |
+| Orchestration | Covered: admin-started, one call, one retry for an unreadable answer, the `llm-chat` circuit. |
+| Knowledge & RAG | Covered: grounded on catalog resources; a draft for a resource it was not given is dropped. |
+| Data | Covered: origin `AI_DRAFTED` and model on the row; the draft in the review item. |
+| Guardrails | Covered: untrusted fencing of descriptions (OWASP LLM01), JSON answer, the example rules, duplicates, the human accept, the quality check; output is never rendered as HTML (LLM05). |
+| Observability | Covered: model call metrics (`example-drafts`), budget gauge, audit entry per run. |
+| Evaluation | Deferred, safe: every draft is judged twice (a person, then the check); the accept rate shows prompt quality. |
+| Deployment | Covered: two settings, no chart change. |
+| Security & Identity | Covered: ADMIN only, admin host, CSRF, audit. |
+| Human-in-the-loop | Covered: nothing reaches the pool without an accept. |
+| Cost & Reliability | Covered: own daily budget (5 calls by default), circuit breaker. |
+
+## Points for a lawyer
+1. Does Art. 50(2) marking still apply to AI-drafted text once a person reviewed, maybe edited, and accepted it?
+2. Does an unedited accepted draft differ from an edited one?
+3. Can the human-review logic of Art. 50(4) apply by analogy to short UI text that is not public-interest
+   information? Until these are answered, the house rule (label and mark) stays.
 
 ## Alternatives considered
 - Keep the pool in the bundle (built-in list only) — no check at runtime, a release for every change. The built-in
@@ -59,17 +97,20 @@ same for every visitor.
 
 ## Code
 - `backend/src/main/kotlin/ai/helper2/examples/` — `HomeExample.kt` (example, input rules), `ExampleCheck.kt` (the
-  check, `ExampleSearch`), `ExamplePorts.kt`.
+  check, `ExampleSearch`), `ExampleDrafts.kt` (drafts, `DraftRules`), `ExamplePorts.kt`.
 - `backend/src/main/java/ai/helper2/examples/` — `usecase/` (`ListHomeExamples`, `ListAdminHomeExamples`,
-  `AddHomeExample`, `ChangeHomeExample`, `RemoveHomeExample`, `CheckHomeExamples`), `config/ExamplesProperties`,
+  `AddHomeExample`, `ChangeHomeExample`, `RemoveHomeExample`, `CheckHomeExamples`, `DraftHomeExamples`), `config/ExamplesProperties`,
   `internal/` (`JdbcHomeExamples`,
-  `SearchExampleSearch`, `CatalogResourceTitles`, `HomeExampleCheckSchedule`), `web/HomeExamplesController.java`.
-- `backend/src/main/java/ai/helper2/admin/web/HomeExamplesAdminController.java`.
+  `SearchExampleSearch`, `CatalogResourceTitles`, `HomeExampleCheckSchedule`, `SpringAiExampleDrafter`,
+  `CatalogDraftSources`, `ExamplesConfiguration`), `web/HomeExamplesController.java`; the prompt
+  `backend/src/main/resources/prompts/examples/draft.txt`.
+- `backend/src/main/java/ai/helper2/admin/web/HomeExamplesAdminController.java`, `admin/usecase/ResolveReview.java`
+  (accept adds the drafted example), `catalog/usecase/ListWellKnownResources.java`.
 - `backend/src/main/kotlin/ai/helper2/search/Search.kt` (`SearchRequest.web`), `Model.kt` (`SkipReason.WEB_NOT_ASKED`).
-- `backend/src/main/resources/db/migration/V4__home_example.sql`.
+- `backend/src/main/resources/db/migration/V4__home_example.sql`, `V5__example_drafts.sql`.
 - `frontend/src/lib/examples.ts` — the built-in pool and the pick; `frontend/src/pages/admin/ExamplesPage.tsx`.
 - Tests: `examples/ExampleInputTest.kt`, `ExampleCheckTest.kt`, `search/usecase/MeteredSourceTest.kt`,
-  `api/HomeExamplesApiIT.java`, `frontend/src/lib/examples.test.ts`, `frontend/src/pages/admin/ExamplesPage.test.tsx`.
+  `api/HomeExamplesApiIT.java`, `frontend/src/lib/examples.test.ts`, `frontend/src/pages/admin/ExamplesPage.test.tsx`, `examples/DraftRulesTest.kt`.
 
 ## Diagrams
 [flow](../../diagrams/flow-0049-home-examples.svg) · [sequence](../../diagrams/sequence-0049-home-examples.svg)
@@ -77,4 +118,3 @@ same for every visitor.
 ## Roadmap
 - The page reads the pool from the endpoint, with the built-in list when it does not answer in time.
 - The count of hidden examples on the overview.
-- AI-drafted examples that wait in the Review queue.

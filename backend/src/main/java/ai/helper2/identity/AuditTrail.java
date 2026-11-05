@@ -14,7 +14,8 @@ public interface AuditTrail {
     START_SCOUT_RUN,
     ADD_HOME_EXAMPLE,
     CHANGE_HOME_EXAMPLE,
-    REMOVE_HOME_EXAMPLE
+    REMOVE_HOME_EXAMPLE,
+    DRAFT_HOME_EXAMPLES
   }
 
   /**

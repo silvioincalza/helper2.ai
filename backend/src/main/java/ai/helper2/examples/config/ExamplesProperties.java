@@ -1,7 +1,10 @@
 package ai.helper2.examples.config;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
 import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
@@ -14,8 +17,14 @@ import org.springframework.validation.annotation.Validated;
  * @param pendingDelay after startup, before the first look at PENDING examples
  * @param pendingEvery between two looks at PENDING examples
  * @param cron when every example is checked again (UTC)
+ * @param draftCalls model calls a day for drafting examples (one per draft run); 0 turns drafts off
+ * @param draftSources catalog resources given to the model in one draft run
  */
 @Validated
 @ConfigurationProperties("helper2.examples")
 public record ExamplesProperties(
-    @NotNull Duration pendingDelay, @NotNull Duration pendingEvery, @NotBlank String cron) {}
+    @NotNull Duration pendingDelay,
+    @NotNull Duration pendingEvery,
+    @NotBlank String cron,
+    @PositiveOrZero int draftCalls,
+    @Min(1) @Max(30) int draftSources) {}

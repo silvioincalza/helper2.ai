@@ -65,6 +65,8 @@ export default function ExamplesPage() {
   const [removing, setRemoving] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [busy, setBusy] = useState(false);
+  const [drafted, setDrafted] = useState<number | null>(null);
+  const [draftError, setDraftError] = useState<string | null>(null);
   // Stable, so the confirm's Cancel takes focus once when it appears, not on every render.
   const focusOnMount = useCallback((el: HTMLButtonElement | null) => el?.focus(), []);
 
@@ -129,6 +131,22 @@ export default function ExamplesPage() {
   const remove = (id: string) =>
     void act(() => api.removeHomeExample(id)).then(() => setRemoving(null));
 
+  /** One model call: the drafts wait in the review queue, nothing changes here until one is accepted. */
+  const draft = async () => {
+    if (busy) return;
+    setBusy(true);
+    setDrafted(null);
+    setDraftError(null);
+    try {
+      setDrafted((await api.draftHomeExamples()).drafted);
+    } catch (e) {
+      setDraftError(
+        e instanceof ApiError && e.problem?.detail ? e.problem.detail : t('admin.examples.failed'),
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
   const shown = (path: AudiencePath) =>
     (all.data ?? []).filter(
       (e) => e.path === path && e.status === 'ACTIVE' && e.check.outcome === 'PASS',
@@ -164,6 +182,28 @@ export default function ExamplesPage() {
           {notice.kind === 'invalid'
             ? t('admin.examples.invalid', { detail: notice.detail })
             : t(`admin.examples.${notice.kind}`)}
+        </p>
+      )}
+
+      <div className="h2-admin__tools">
+        <button type="button" className="btn" aria-disabled={disabled} onClick={() => void draft()}>
+          {t('admin.examples.draft.button')}
+        </button>
+        <span className="muted small">{t('admin.examples.draft.hint')}</span>
+      </div>
+      {drafted !== null && (
+        <p role="status">
+          {drafted === 0
+            ? t('admin.examples.draft.none')
+            : t('admin.examples.draft.done', { count: drafted })}{' '}
+          {drafted > 0 && (
+            <Link to="/admin/review?kind=EXAMPLE_CANDIDATE">{t('admin.examples.draft.open')}</Link>
+          )}
+        </p>
+      )}
+      {draftError && (
+        <p role="alert" className="banner banner-warn">
+          <Icon name="warn" /> {t('admin.examples.draft.unavailable', { detail: draftError })}
         </p>
       )}
 

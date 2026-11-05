@@ -135,7 +135,11 @@ export default function ReviewQueuePage() {
                 )}
               </p>
               <p className="h2-admin__reason">{it.reason}</p>
-              {it.details && <p className="h2-admin__details">{it.details}</p>}
+              {it.kind === 'EXAMPLE_CANDIDATE' ? (
+                <DraftedExample details={it.details} />
+              ) : (
+                it.details && <p className="h2-admin__details">{it.details}</p>
+              )}
               {it.status === 'OPEN' ? (
                 <div className="h2-admin__decide">
                   <label className="h2-admin__note">
@@ -189,4 +193,46 @@ export default function ReviewQueuePage() {
       )}
     </section>
   );
+}
+
+/** A drafted example's details are JSON (label, query, path, model): shown as words, marked as AI-drafted. */
+function DraftedExample({ details }: { details: string | null | undefined }) {
+  const { t } = useTranslation();
+  const draft = parseDraft(details);
+  if (!draft) return details ? <p className="h2-admin__details">{details}</p> : null;
+  return (
+    <dl className="h2-admin__details h2-admin__draft" data-ai-generated="true">
+      <dt>{t('admin.review.drafted.label')}</dt>
+      <dd>{draft.label}</dd>
+      <dt>{t('admin.review.drafted.query')}</dt>
+      <dd>{draft.query}</dd>
+      <dt>{t('admin.review.drafted.path')}</dt>
+      <dd>{t(`admin.examples.path.${draft.path}`)}</dd>
+      <dd className="h2-admin__draft-note">
+        {t('admin.review.drafted.model', { model: draft.model })}
+      </dd>
+    </dl>
+  );
+}
+
+interface Draft {
+  label: string;
+  query: string;
+  path: 'USE_AI' | 'BUILD_WITH_AI';
+  model: string;
+}
+
+function parseDraft(details: string | null | undefined): Draft | null {
+  if (!details) return null;
+  try {
+    const d = JSON.parse(details) as Partial<Draft>;
+    return typeof d.label === 'string' &&
+      typeof d.query === 'string' &&
+      (d.path === 'USE_AI' || d.path === 'BUILD_WITH_AI') &&
+      typeof d.model === 'string'
+      ? (d as Draft)
+      : null;
+  } catch {
+    return null;
+  }
 }

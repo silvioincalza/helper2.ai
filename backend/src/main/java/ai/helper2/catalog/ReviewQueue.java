@@ -21,7 +21,12 @@ public class ReviewQueue {
     RELATIONSHIP_CANDIDATE,
     USER_REPORT,
     /** A page a collector proposes for the catalog (ADR 0032 §8): no resource yet, only its URL. */
-    COURSE_CANDIDATE
+    COURSE_CANDIDATE,
+    /**
+     * A home example a model drafted for a catalog resource (ADR 0049 §6): the resource is its
+     * expected result, the draft is in details. Accepting it adds the example.
+     */
+    EXAMPLE_CANDIDATE
   }
 
   /**

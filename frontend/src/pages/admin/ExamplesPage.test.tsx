@@ -204,4 +204,74 @@ describe('admin: home examples', () => {
     ).toBeInTheDocument();
     expect(m.callsTo('GET', '/admin/home-examples')).toHaveLength(0);
   });
+  it('drafts examples with AI and links to the drafts in the review queue', async () => {
+    const m = mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/home-examples': () => [example()],
+      'POST /admin/home-examples/drafts': () => json({ drafted: 3, model: 'nemotron' }, 202),
+    });
+    renderApp('/admin/examples');
+    await list();
+    await userEvent.click(screen.getByRole('button', { name: 'Draft examples with AI' }));
+    expect(await screen.findByText(/3 drafts wait in the Review queue/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Open the drafts' })).toHaveAttribute(
+      'href',
+      '/admin/review?kind=EXAMPLE_CANDIDATE',
+    );
+    expect(m.callsTo('POST', '/admin/home-examples/drafts')).toHaveLength(1);
+  });
+
+  it('says why there is no draft', async () => {
+    mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/home-examples': () => [example()],
+      'POST /admin/home-examples/drafts': () =>
+        new Response(
+          JSON.stringify({
+            status: 503,
+            code: 'unavailable',
+            detail: "Today's draft runs are used up. Try again tomorrow (UTC).",
+          }),
+          { status: 503, headers: { 'content-type': 'application/problem+json' } },
+        ),
+    });
+    renderApp('/admin/examples');
+    await list();
+    await userEvent.click(screen.getByRole('button', { name: 'Draft examples with AI' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      "No drafts now: Today's draft runs are used up.",
+    );
+  });
+
+  it('shows a drafted example in the review queue as words, marked as AI-drafted', async () => {
+    mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/review-items': () => ({
+        items: [
+          {
+            id: '44444444-4444-5444-8444-444444444444',
+            kind: 'EXAMPLE_CANDIDATE',
+            status: 'OPEN',
+            reason: 'Drafted example: Translate documents',
+            details: JSON.stringify({
+              label: 'Translate documents',
+              query: 'translate documents',
+              path: 'USE_AI',
+              model: 'nemotron',
+            }),
+            resourceId: DEEPL,
+            resourceTitle: 'DeepL Translator',
+            createdAt: '2026-11-05T01:00:00Z',
+          },
+        ],
+        total: 1,
+      }),
+    });
+    renderApp('/admin/review?kind=EXAMPLE_CANDIDATE');
+    const draft = (await screen.findByText('Searches')).closest('dl') as HTMLElement;
+    expect(draft).toHaveAttribute('data-ai-generated', 'true');
+    expect(draft).toHaveTextContent('translate documents');
+    expect(draft).toHaveTextContent('People who use AI');
+    expect(draft).toHaveTextContent('Drafted with AI (nemotron)');
+  });
 });

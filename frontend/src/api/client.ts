@@ -24,6 +24,7 @@ import type {
   AdminOverview,
   AdminHomeExample,
   ExampleCheckOutcome,
+  ExampleDrafts,
   HomeExampleChange,
   HomeExampleInput,
   SearchResponse,
@@ -290,6 +291,8 @@ export const api = {
   /** 409 version-conflict when someone changed it first, 409 duplicate. */
   changeHomeExample: (id: string, body: HomeExampleChange) =>
     request<AdminHomeExample>('PUT', `/admin/home-examples/${encodeURIComponent(id)}`, { body }),
+  /** One model call; the drafts wait in the review queue. 503 unavailable with the reason in its detail. */
+  draftHomeExamples: () => request<ExampleDrafts>('POST', '/admin/home-examples/drafts'),
   removeHomeExample: (id: string) =>
     request<void>('DELETE', `/admin/home-examples/${encodeURIComponent(id)}`),
   listAuditEntries: (page: number, size: number, signal?: AbortSignal) =>
