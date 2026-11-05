@@ -36,6 +36,8 @@ Docker works the same way. Tags are never rebuilt or moved: one commit, one imag
 
 **`app.env`** (never commit it): copy [`app.env.example`](app.env.example) and fill in the values. It must
 contain `H2_DATABASE_PASSWORD` and `H2_REDIS_PASSWORD` (`openssl rand -hex 32`; letters and digits only).
+With `redis.auth.existingSecret` (or `redis.auth.enabled=false`), Redis does not read app.env: check it with
+`--no-redis-password`. `make env-secret` picks the flag from the rendered chart.
 It goes into a Secret that the chart does not create, so no value is kept in Helm's release history.
 Check it, then create or update the Secret:
 

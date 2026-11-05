@@ -278,9 +278,14 @@ deploy: check-env release-ready env-secret ## env-secret, then helm upgrade ENV 
 
 # Server-side apply under its own field manager: a key removed from app.env is removed from the Secret too.
 # The pods read it at start only; deploy passes its hash to Helm, so a change restarts them.
+# H2_REDIS_PASSWORD is required only when the rendered chart reads it from this Secret: not with
+# redis.auth.existingSecret, and not with redis.auth.enabled=false.
 env-secret: check-env ## write ENV's app.env into the Secret helper2-app-env (checked first by check-app-env.sh)
 	@set -euo pipefail; \
-	./check-app-env.sh $(ENV)/app.env; \
+	rendered=$$(helm template $(HELM_ARGS)); \
+	redis_flag=--no-redis-password; \
+	if grep -qF 'secretKeyRef: { name: $(ENV_SECRET), key: H2_REDIS_PASSWORD }' <<< "$$rendered"; then redis_flag=; fi; \
+	./check-app-env.sh $(ENV)/app.env $$redis_flag; \
 	kubectl -n $(NS) create secret generic $(ENV_SECRET) --from-env-file=$(ENV)/app.env --dry-run=client -o yaml \
 		| kubectl -n $(NS) apply --server-side --field-manager=helper2-env-secret -f - >/dev/null; \
 	echo "wrote $(NS)/$(ENV_SECRET) from $(ENV)/app.env (revision $(ENV_REV))"
