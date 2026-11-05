@@ -45,6 +45,7 @@ class ModularityTest {
     "ai.helper2.guide",
     "ai.helper2.setup",
     "ai.helper2.examples",
+    "ai.helper2.pages",
     "ai.helper2.search.usecase",
     "ai.helper2.scout.usecase",
     "ai.helper2.guide.usecase",

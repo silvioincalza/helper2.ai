@@ -75,6 +75,7 @@ All diagrams: [docs/diagrams](../diagrams/README.md).
 | [0039](frontend/0039-frontend-recent-answers-cache.md) | Frontend recent-answers cache: back and forward without a new request | 0025 | [flow](../diagrams/flow-0039-frontend-recent-answers-cache.svg) · [sequence](../diagrams/sequence-0039-frontend-recent-answers-cache.svg) |
 | [0040](frontend/0040-frontend-design.md) | Frontend design: home page, results with preview, guide picks bar, design system | 0015, 0025, 0038, 0039 | [flow](../diagrams/flow-0040-frontend-design.svg) · [sequence](../diagrams/sequence-0040-frontend-design.svg) |
 | [0042](frontend/0042-redesign-design-system-v4.md) | Redesign: design system version 4 (fonts, home radar and terminals, one-column results, guide states, page-by-page move) | 0015, 0017, 0025, 0038, 0040 | [flow](../diagrams/flow-0042-redesign.svg) · [sequence](../diagrams/sequence-0042-redesign.svg) |
+| [0050](frontend/0050-pages-for-crawlers.md) | Pages for crawlers: Spring writes the head and a short body for client routes, real 404s and 301s, one index-worthy rule, sitemap.xml and robots.txt | 0001, 0024, 0025, 0038, 0040 | [flow](../diagrams/flow-0050-pages-for-crawlers.svg) · [sequence](../diagrams/sequence-0050-pages-for-crawlers.svg) |
 
 ## Operations — [`operations/`](operations/)
 

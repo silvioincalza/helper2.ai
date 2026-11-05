@@ -1652,3 +1652,11 @@ input[type='search']::-webkit-search-cancel-button {
 .searchbox-field:focus::-webkit-scrollbar-thumb {
   background: color-mix(in srgb, var(--accent) 45%, transparent);
 }
+
+/* The text the server writes into #root for crawlers (ADR 0050). People see it only until the app starts. */
+#root > .h2-prerender {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 32px 16px;
+  color: var(--ink);
+}

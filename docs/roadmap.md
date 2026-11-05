@@ -24,8 +24,10 @@ Items are grouped by the order in which they matter. Inside a group, the first i
   right (Swiss URG Art. 25, EU InfoSoc Art. 5(3)(d)) for 20–300-character excerpts, also of repositories with no
   licence; GitHub and Hugging Face terms for reading and keeping them (the Hub `raw` path is not its API); author names
   in excerpts under the existing purpose with a public Art. 14 notice (Art. 14(5)(b)).
-- SEO: `robots.txt`, `sitemap.xml`, metadata and JSON-LD for detail pages. Detail pages are not crawlable
-  today, because the frontend is a single-page app ([ADR 0025](adr/frontend/0025-frontend-one-box.md)).
+- SEO ([ADR 0050](adr/frontend/0050-pages-for-crawlers.md) is built): measure the resource page load before and after
+  on staging (+20 ms p95 budget). Later: 410 for removed resources, a sitemap index past 50,000 pages, an Open Graph
+  image, slugs, hub pages per type, `llms.txt`, IndexNow. Manual: Google Search Console and Bing Webmaster Tools
+  (domain property, DNS TXT), and a deliberate choice of the Cloudflare bot settings.
 
 ### Domain and identity
 - DNS: `CAA` record for the edge's certificate authority; `v=spf1 -all` and DMARC `p=reject` if no mail is sent.

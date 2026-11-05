@@ -86,6 +86,9 @@ app:
   # Ask search engines not to index this deployment: X-Robots-Tag: noindex on every response (H2_NOINDEX).
   # true for staging, so it never competes with the live site.
   noindex: false
+  # The public host every canonical link and sitemap address names, without a trailing slash (H2_PUBLIC_BASE_URL;
+  # ADR 0050). Empty = the app's default, https://helper2.ai. Keep it on the live host for staging too.
+  publicBaseUrl: ""
   # OTLP traces. Off by default; set export: true and your collector's endpoint, and
   # networkPolicy.egress.otlp.namespace so the app may reach it.
   tracing:
