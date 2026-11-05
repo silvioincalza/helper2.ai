@@ -7,11 +7,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ai.helper2.platform.config.SpaProperties;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,7 +19,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.env.MapPropertySource;
 import org.springframework.mock.web.MockServletContext;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -76,10 +75,8 @@ class SinglePageAppTest {
   private MockMvc mvcServing(String location) {
     context = new AnnotationConfigWebApplicationContext();
     context.setServletContext(new MockServletContext());
-    context
-        .getEnvironment()
-        .getPropertySources()
-        .addFirst(new MapPropertySource("test", Map.of("helper2.spa.location", location)));
+    context.addBeanFactoryPostProcessor(
+        beans -> beans.registerSingleton("spaProperties", new SpaProperties(location)));
     context.register(Mvc.class, SinglePageApp.class);
     context.refresh();
     return MockMvcBuilders.webAppContextSetup(context).build();

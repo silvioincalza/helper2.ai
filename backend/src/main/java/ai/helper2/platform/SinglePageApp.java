@@ -1,8 +1,8 @@
 package ai.helper2.platform;
 
+import ai.helper2.platform.config.SpaProperties;
 import java.io.IOException;
 import java.time.Duration;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 import org.springframework.http.CacheControl;
@@ -33,7 +33,8 @@ class SinglePageApp implements WebMvcConfigurer {
 
   private final String location;
 
-  SinglePageApp(@Value("${helper2.spa.location:classpath:/static/}") String location) {
+  SinglePageApp(SpaProperties spa) {
+    String location = spa.location();
     this.location = location.endsWith("/") ? location : location + "/";
   }
 
