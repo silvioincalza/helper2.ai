@@ -333,5 +333,26 @@ class HomeExamplesApiIT extends ApiTestBase {
         .andExpect(status().isConflict())
         .andExpect(jsonPath("$.code").value("duplicate"));
     assertThat(queue.find(item).orElseThrow().status()).isEqualTo(ReviewQueue.Status.OPEN);
+    assertThat(audit("ADD_HOME_EXAMPLE")).contains("DUPLICATE");
+  }
+
+  @Test
+  void aDraftThatCannotBeReadIsRefusedNotAServerError() throws Exception {
+    UUID item =
+        queue.open(
+            ReviewQueue.Kind.EXAMPLE_CANDIDATE,
+            deepl(),
+            "Drafted example: broken " + tag,
+            "{\"label\":\"Broken\"}",
+            ReviewQueue.Links.NONE);
+    mvc.perform(
+            put("/api/v1/admin/review-items/" + item + "/resolution")
+                .with(admin)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\":\"ACCEPTED\"}"))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.detail").value("The draft cannot be read."));
+    assertThat(queue.find(item).orElseThrow().status()).isEqualTo(ReviewQueue.Status.OPEN);
   }
 }

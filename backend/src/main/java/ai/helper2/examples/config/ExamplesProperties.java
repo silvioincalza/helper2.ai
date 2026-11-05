@@ -17,7 +17,8 @@ import org.springframework.validation.annotation.Validated;
  * @param pendingDelay after startup, before the first look at PENDING examples
  * @param pendingEvery between two looks at PENDING examples
  * @param cron when every example is checked again (UTC)
- * @param draftCalls model calls a day for drafting examples (one per draft run); 0 turns drafts off
+ * @param draftCalls model calls a day for drafting examples (one per draft run, a second when its
+ *     answer cannot be read); 0 turns drafts off
  * @param draftSources catalog resources given to the model in one draft run
  */
 @Validated

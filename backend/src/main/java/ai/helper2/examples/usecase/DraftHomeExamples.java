@@ -17,7 +17,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.ObjectMapper;
 
 /**
@@ -35,6 +35,7 @@ public class DraftHomeExamples {
   private final ReviewQueue queue;
   private final AuditTrail audit;
   private final ObjectMapper json;
+  private final TransactionTemplate transaction;
   private final int sourcesPerRun;
 
   public DraftHomeExamples(
@@ -44,6 +45,7 @@ public class DraftHomeExamples {
       ReviewQueue queue,
       AuditTrail audit,
       ObjectMapper json,
+      TransactionTemplate transaction,
       ExamplesProperties properties) {
     this.examples = examples;
     this.sources = sources;
@@ -51,14 +53,18 @@ public class DraftHomeExamples {
     this.queue = queue;
     this.audit = audit;
     this.json = json;
+    this.transaction = transaction;
     this.sourcesPerRun = properties.draftSources();
   }
 
   /** What a draft run gave: how many drafts wait in the review queue, and the model. */
   public record Drafted(int count, String model) {}
 
-  /** Throws {@link DraftsUnavailable} (audited) when there is no model, budget or answer. */
-  @Transactional(noRollbackFor = DraftsUnavailable.class)
+  /**
+   * Throws {@link DraftsUnavailable} (audited) when there is no model, budget or answer. The model
+   * call runs outside any transaction: no database connection waits for it. The drafts and the
+   * audit entry are written together afterwards.
+   */
   public Drafted draft(String adminId) {
     List<HomeExample> pool = examples.all(null);
     Set<UUID> expected =
@@ -71,8 +77,11 @@ public class DraftHomeExamples {
       audit.record(adminId, AuditTrail.Action.DRAFT_HOME_EXAMPLES, null, e.getReason().name());
       throw e;
     }
-    drafts.forEach(this::open);
-    audit.record(adminId, AuditTrail.Action.DRAFT_HOME_EXAMPLES, null, "DRAFTED " + drafts.size());
+    transaction.executeWithoutResult(tx -> {
+      drafts.forEach(this::open);
+      audit.record(
+          adminId, AuditTrail.Action.DRAFT_HOME_EXAMPLES, null, "DRAFTED " + drafts.size());
+    });
     return new Drafted(drafts.size(), drafter.getModel());
   }
 
