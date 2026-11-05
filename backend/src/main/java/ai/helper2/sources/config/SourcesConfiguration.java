@@ -55,6 +55,7 @@ import org.springframework.web.client.RestClient;
   CollectorProperties.HfTrending.class,
   CollectorProperties.TavilyScout.class,
   CollectorProperties.Courses.class,
+  CollectorProperties.ScoutCredits.class,
   CollectorProperties.Discovery.class,
   CollectorProperties.LinkedIn.class,
   CollectorProperties.GitHubAwesome.class,
@@ -210,7 +211,10 @@ class SourcesConfiguration {
    */
   @Bean
   ScoutTavilyCredits scoutTavilyCredits(
-      CollectorProperties.Discovery c, QuotaCounter counter, QuotaKeys keys, MeterRegistry meters) {
+      CollectorProperties.ScoutCredits c,
+      QuotaCounter counter,
+      QuotaKeys keys,
+      MeterRegistry meters) {
     return new ScoutTavilyCredits(counter, keys, c.dailyCredits(), meters);
   }
 

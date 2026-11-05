@@ -142,8 +142,8 @@ are candidates in the admin review list.
     the one the live search counts on and the Sources page shows ([0037](../search/0037-tavily-store-and-daily-quota.md)),
     and to the Scout's own counter (`ScoutTavilyCredits`; Redis, same key, field `scout-credits`). A search costs
     Tavily's `usage.credits`, or 2 (advanced) or 1 (basic) when the answer does not say. The metric is
-    `helper2.tavily.credits{feature="scout-discovery"}`. Past `helper2.scout.discovery.daily-credits`
-    (`H2_SCOUT_DISCOVERY_DAILY_CREDITS`, 40) the categories due that day are SKIPPED ("Daily Tavily credit cap of the
+    `helper2.tavily.credits{feature="scout-discovery"}`. Past `helper2.scout.daily-credits`
+    (`H2_SCOUT_DAILY_CREDITS`, 40) the categories due that day are SKIPPED ("Daily Tavily credit cap of the
     Scout reached") and try again the next day. When the counter cannot be read, the cap counts as reached.
     LinkedIn ([0053](0053-linkedin-via-tavily.md)) counts on the same counters and cap, with the feature
     `scout-linkedin`.

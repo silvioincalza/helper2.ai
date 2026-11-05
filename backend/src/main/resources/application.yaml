@@ -418,6 +418,10 @@ helper2:
     initial-delay: ${H2_SCOUT_INITIAL_DELAY:PT20S}
     tick: ${H2_SCOUT_TICK:PT10M}
     cron: ${H2_SCOUT_CRON:0 7 3 * * *}
+    # Tavily credits the Scout's searches (every discovery category and LinkedIn, ADR 0051 and 0053) may spend per
+    # UTC day; past it the collectors due that day are SKIPPED and try again the next day. Counted on the global
+    # credit counter too (the Sources page's web credits).
+    daily-credits: ${H2_SCOUT_DAILY_CREDITS:40}
     ai-deadlines:
       # Conference files change a few times a month; one contents call + ~70 raw files per pass.
       interval: ${H2_SCOUT_AI_DEADLINES_INTERVAL:P1D}
@@ -476,7 +480,7 @@ helper2:
       # path decides the type (article, post, company or showcase page, event); profiles, jobs and learning pages are
       # dropped. Every kept page goes to the admin review list, never straight to the catalog. One credit per query
       # and pass (search_depth basic): 20 queries every 7 days = 20 credits a week, ~ 86 a month, all on one day.
-      # They count on the Scout's daily cap (helper2.scout.discovery.daily-credits) with discovery's; past it the
+      # They count on the Scout's daily cap (helper2.scout.daily-credits) with discovery's; past it the
       # pass is SKIPPED and tried again the next day. No commas inside a query.
       interval: ${H2_SCOUT_LINKEDIN_INTERVAL:P7D}
       queries: >-
@@ -511,10 +515,6 @@ helper2:
       max-results: 10
       # Tavily's relevance score, 0-1. Below it a result is dropped; a category can raise it (min-score).
       min-score: 0.4
-      # Tavily credits the Scout's searches (every discovery category and LinkedIn, ADR 0053) may spend per UTC day;
-      # past it the collectors due that day are SKIPPED and try again the next day. Counted on the global credit
-      # counter too (the Sources page's web credits).
-      daily-credits: ${H2_SCOUT_DISCOVERY_DAILY_CREDITS:40}
       # Social and video sites: no product pages, no lists worth indexing. AI directories and review sites: their
       # terms forbid copying their listings, and their excerpts carry reviewers' names (ADR 0051). A category adds its
       # own (exclude-domains).

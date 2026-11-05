@@ -62,7 +62,7 @@ page title and in the URL.
 9. **Credits are counted and capped with discovery's.** Every search adds its credits (Tavily's `usage.credits`, or 1)
    to the day's global credit counter and to the Scout's own counter (`ScoutTavilyCredits`,
    [0051](0051-tavily-discovery.md) §10), with the metric `helper2.tavily.credits{feature="scout-linkedin"}`. Past the
-   Scout's daily cap (`H2_SCOUT_DISCOVERY_DAILY_CREDITS`, 40, shared with the discovery categories) the pass is
+   Scout's daily cap (`H2_SCOUT_DAILY_CREDITS`, 40, shared with the discovery categories) the pass is
    SKIPPED ("Daily Tavily credit cap of the Scout reached") and tried again the next day.
 10. **Retention and titles.** `linkedin-scout` is a web source (`WebSources`, [0051](0051-tavily-discovery.md)
     §12): its titles are cleaned as page titles, and its NEWS and ARTICLE records go with the web retention.

@@ -22,6 +22,7 @@ class CollectorPropertiesTest {
     CollectorProperties.HfTrending.class,
     CollectorProperties.TavilyScout.class,
     CollectorProperties.Courses.class,
+    CollectorProperties.ScoutCredits.class,
     CollectorProperties.Discovery.class,
     CollectorProperties.GitHubAwesome.class,
     CollectorProperties.HfProviderOrgs.class,
@@ -40,7 +41,7 @@ class CollectorPropertiesTest {
       assertThat(discovery.interval()).isEqualTo(Duration.ofDays(7));
       assertThat(discovery.searchDepth()).isEqualTo("advanced");
       assertThat(discovery.maxResults()).isEqualTo(10);
-      assertThat(discovery.dailyCredits()).isEqualTo(40);
+      assertThat(c.getBean(CollectorProperties.ScoutCredits.class).dailyCredits()).isEqualTo(40);
       assertThat(discovery.excludeDomains()).contains("producthunt.com", "alternativeto.net");
       assertThat(c.getBean(CollectorProperties.HfTrending.class))
           .isEqualTo(new CollectorProperties.HfTrending(Duration.ofDays(1), 20));
