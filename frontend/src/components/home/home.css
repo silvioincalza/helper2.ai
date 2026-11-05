@@ -97,9 +97,15 @@
 .v4-radar__dots li.is-leaving {
   visibility: visible;
 }
+/* The clock paints each dot through --o and --pop (HomeRadar): no other rule sets a moving dot's opacity or size. */
 .v4-radar__dots .v4-dot {
   opacity: var(--o, 0);
   transform: scale(var(--pop, 1));
+  visibility: hidden;
+}
+.v4-radar__dots li.is-on .v4-dot,
+.v4-radar__dots li.is-leaving .v4-dot {
+  visibility: visible;
 }
 .v4-radar__dots .v4-dot__mark {
   box-shadow: 0 0 calc(var(--glow, 0) * 14px) calc(var(--glow, 0) * 3px) var(--tone);
@@ -111,27 +117,6 @@
 }
 .v4-radar.is-still .v4-dot__mark {
   box-shadow: none;
-}
-.v4-dot {
-  opacity: 0;
-  transform: scale(0.4);
-  visibility: hidden;
-  transition:
-    opacity 1.1s ease-in-out,
-    transform 1.1s ease-in-out,
-    visibility 0s linear 1.1s;
-}
-.v4-radar__dots li.is-on .v4-dot {
-  opacity: 1;
-  transform: none;
-  visibility: visible;
-  transition:
-    opacity 1.1s ease-in-out,
-    transform 1.1s ease-in-out,
-    visibility 0s;
-}
-.v4-radar.is-still .v4-dot {
-  transition: none;
 }
 .v4-dot {
   display: flex;

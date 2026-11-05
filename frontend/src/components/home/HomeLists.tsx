@@ -2,7 +2,7 @@ import { lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useEventsFeed, useNewsFeed, type EventRow, type Feed, type NewsRow } from './homeFeeds';
-import { useEventCells, useNewsCells, type ListId } from './listParts';
+import { useEventCells, useNewsCells } from './listParts';
 import { TermList } from './TermList';
 
 /** Below this width the two tables become tabs (ADR 0042): a table with four columns does not fit a phone. */
@@ -16,13 +16,13 @@ const ListTabs = lazy(() => import('./HomeTabs'));
  * log rows. The
  * ids `news` and `events` are the targets of the header links (/#news, /#events).
  */
-export function HomeLists({ initial }: { initial: ListId }) {
+export function HomeLists() {
   const phone = useMediaQuery(PHONE_LISTS, false);
   const news = useNewsFeed();
   const events = useEventsFeed();
   return phone ? (
     <Suspense fallback={null}>
-      <ListTabs news={news} events={events} initial={initial} />
+      <ListTabs news={news} events={events} />
     </Suspense>
   ) : (
     <div className="v4-lists">

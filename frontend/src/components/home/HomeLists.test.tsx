@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ResultCard } from '@/api/types';
 import { makeCard, makeRecent } from '@/test/fixtures';
@@ -297,5 +297,27 @@ describe('New this week and Coming up on a phone: tabs with log rows', () => {
     const tab = await screen.findByRole('tab', { name: /Coming up/ });
     expect(tab).toHaveAttribute('aria-selected', 'true');
     await settle();
+  });
+
+  it('/#events scrolls to the tabs once they have loaded', async () => {
+    mockApi();
+    renderApp('/#events');
+    const tab = await screen.findByRole('tab', { name: /Coming up/ });
+    await waitFor(() =>
+      expect(vi.mocked(Element.prototype.scrollIntoView).mock.contexts).toContain(tab),
+    );
+  });
+
+  it("the header's New this week link selects its tab, also when the page opened on it", async () => {
+    mockApi();
+    const user = userEvent.setup();
+    renderApp('/');
+    await user.click(await screen.findByRole('tab', { name: /Coming up/ }));
+    await user.click(screen.getByRole('button', { name: /menu/i }));
+    await user.click(screen.getByRole('link', { name: 'New this week' }));
+    expect(await screen.findByRole('tab', { name: /New this week/ })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
   });
 });

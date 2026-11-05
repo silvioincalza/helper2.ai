@@ -109,7 +109,7 @@ export default function Home() {
       </div>
 
       <div className="v4-wrap">
-        <HomeLists initial={hash === '#events' ? 'events' : 'news'} />
+        <HomeLists />
 
         <section className="home-does" aria-labelledby="does-h">
           <h2 id="does-h" className="home-does__title">

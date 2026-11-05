@@ -1,5 +1,6 @@
-import { Fragment, useRef, useState, type KeyboardEvent } from 'react';
+import { Fragment, useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router';
 import type { EventRow, Feed, NewsRow } from './homeFeeds';
 import { useEventCells, useNewsCells, type ListId } from './listParts';
 import { TermList, type TermCells } from './TermList';
@@ -8,6 +9,12 @@ import { TermList, type TermCells } from './TermList';
  * Loaded only on a phone. */
 
 const LISTS: readonly ListId[] = ['news', 'events'];
+
+/** The list a header link names (/#news, /#events), or null for any other hash. */
+function listOf(hash: string): ListId | null {
+  const id = hash.slice(1);
+  return LISTS.find((l) => l === id) ?? null;
+}
 
 /** Arrow keys, Home and End move between the tabs and select them (WAI-ARIA tabs, automatic activation). */
 function nextTab(key: string, current: ListId): ListId | null {
@@ -22,20 +29,26 @@ function nextTab(key: string, current: ListId): ListId | null {
 export default function ListTabs({
   news,
   events,
-  initial,
 }: {
   news: Feed<NewsRow>;
   events: Feed<EventRow>;
-  initial: ListId;
 }) {
   const { t } = useTranslation();
-  const [selected, setSelected] = useState<ListId>(initial);
-  const [followed, setFollowed] = useState(initial);
-  if (initial !== followed) {
-    // A header link to the other list (/#events) selects its tab.
-    setFollowed(initial);
-    setSelected(initial);
+  const { hash, key } = useLocation();
+  const linked = listOf(hash);
+  const [selected, setSelected] = useState<ListId>(linked ?? 'news');
+  const [followed, setFollowed] = useState(key);
+  if (key !== followed) {
+    // Every header link to a list (/#news, /#events) selects its tab, also the one the page opened on.
+    setFollowed(key);
+    if (linked) setSelected(linked);
   }
+  // Home scrolls to #news or #events, but on a first visit these tabs may still be loading then: scroll once they are
+  // in the page.
+  const opened = useRef(linked);
+  useEffect(() => {
+    if (opened.current) document.getElementById(opened.current)?.scrollIntoView({ block: 'start' });
+  }, []);
   const tabs = useRef<Partial<Record<ListId, HTMLButtonElement | null>>>({});
   const onKey = (e: KeyboardEvent<HTMLButtonElement>) => {
     const next = nextTab(e.key, selected);
