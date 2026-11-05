@@ -238,7 +238,6 @@ class JdbcEnrichmentCandidates implements EnrichmentCandidates {
             """
             SELECT e.input_fingerprint FROM enrichment_run e
             WHERE e.resource_id = :id AND e.outcome NOT IN ('LLM_UNAVAILABLE', 'FAILED')
-              AND NOT EXISTS (SELECT 1 FROM resource r WHERE r.id = :id AND r.enrichment_status = 'NOT_RUN')
             ORDER BY e.started_at DESC LIMIT 1
             """)
         .param("id", id)
