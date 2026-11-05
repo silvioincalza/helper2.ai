@@ -128,16 +128,20 @@ public class TavilySource implements SearchSource {
   }
 
   /**
-   * Maps one Tavily result; shared with the Scout's Tavily collector. null when unusable or not
-   * about AI.
+   * Maps one Tavily news result; shared with the Scout's Tavily collector. An EVENT when its title
+   * names one, NEWS otherwise. null when unusable or not about AI.
    */
   static SourceHit toHit(JsonNode r, String sourceId, Instant now, int position) {
-    return toHit(r, sourceId, now, position, ResourceType.NEWS, Set.of());
+    String title = HttpClients.text(r, "title");
+    ResourceType type =
+        title != null && EVENT.matcher(title).find() ? ResourceType.EVENT : ResourceType.NEWS;
+    return toHit(r, sourceId, now, position, type, Set.of());
   }
 
   /**
-   * As above, with [type] for a result that is not an event (an ARTICLE for a list page) and the
-   * catalog [tags] it gets.
+   * As above, with the [type] the caller gives, whatever the title says (an ARTICLE for a list
+   * page, so it is deleted with the news after its retention period), and the catalog [tags] it
+   * gets.
    */
   static SourceHit toHit(
       JsonNode r, String sourceId, Instant now, int position, ResourceType type, Set<String> tags) {
@@ -151,7 +155,6 @@ public class TavilySource implements SearchSource {
     if (!Classification.isAiRelated(title, content, Set.of())) {
       return null;
     }
-    ResourceType kind = EVENT.matcher(title).find() ? ResourceType.EVENT : type;
     WebPageTitle page = WebPageTitle.of(title, canonical.getHost());
     String snippet = snippet(content != null ? content : page.getDescription());
     return new SourceHit(
@@ -163,7 +166,7 @@ public class TavilySource implements SearchSource {
         page.getTitle(),
         snippet,
         ValueOrigin.SOURCE_PROVIDED,
-        kind,
+        type,
         Audience.BOTH,
         null,
         Set.of(),

@@ -124,6 +124,27 @@ class TavilyDiscoveryCollectorTest {
   }
 
   @Test
+  void aListPageStaysAnArticleWhenItsTitleNamesAnEvent() {
+    // An EVENT without event dates escapes both retention rules (news after 180 days, events
+    // after they end), so a list page must keep the ARTICLE type it is indexed with.
+    server.route(
+        "/search",
+        FixtureServer.Reply.ok(
+            """
+            {"results":[
+              {"url":"https://www.example-lists.com/blog/best-ai-tools-for-event-planning",
+               "title":"10 Best AI Tools for Event Planning",
+               "content":"We compare self-hosted AI assistants for planning a conference.","score":0.9}
+            ]}\
+            """));
+    CollectedBatch batch = collector("tvly-test", List.of(SELF_HOSTED)).collect(null, null, 1000);
+
+    assertThat(batch.getHits())
+        .extracting(SourceHit::getType)
+        .containsExactly(ResourceType.ARTICLE);
+  }
+
+  @Test
   void aResultGetsEveryCategoryItBelongsTo() {
     server.route("/search", FixtureServer.Reply.ok(RESULTS));
     CollectedBatch batch =
