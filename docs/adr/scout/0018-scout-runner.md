@@ -11,9 +11,11 @@ at the same time. Prod runs 3 replicas ([0027](../operations/0027-runtime-topolo
 
 ## Decision
 1. **Schedule.** `ScoutSchedule` exists only when `H2_SCOUT_ENABLED=true` (default false; the `demo` profile forces
-   false). Each replica checks the schedule (a tick): first `H2_SCOUT_INITIAL_DELAY` (20 s) after startup, then every `H2_SCOUT_TICK`
-   (1 h; fixed delay). A tick calls `RunScout.tryRunScheduled`. The Scout runs when the last scheduled run ended at
-   least `H2_SCOUT_EVERY` (15 min; Helm chart `P1D`) ago, or when no scheduled run ever ended. The end time is one row
+   false). The Scout runs once a day at a fixed time: `H2_SCOUT_CRON` (Spring cron, UTC; default and Helm chart
+   `0 7 3 * * *`, 03:07). Each replica checks the schedule (a tick): first `H2_SCOUT_INITIAL_DELAY` (20 s) after
+   startup, then every `H2_SCOUT_TICK` (10 min; fixed delay). A tick calls `RunScout.tryRunScheduled` with a
+   `RunCalendar` (`CronRunCalendar`). The Scout runs when the cron time after the end of the last scheduled run has
+   passed, or when no scheduled run ever ended. The end time is one row
    in the PostgreSQL table `scout_schedule` (port `ScheduledRunStore`, adapter `JdbcScoutStore`), so every replica
    sees it. An admin can start a run with `POST /api/v1/admin/scout-runs` (optionally one `sourceId`, use case
    `RunScout.tryStart`). The run starts on its own virtual thread; as soon as it holds the run lock and has saved one
@@ -56,12 +58,19 @@ at the same time. Prod runs 3 replicas ([0027](../operations/0027-runtime-topolo
 5. **Intervals per collector** (`RunInterval`): Model Context Protocol (MCP) Registry `H2_SCOUT_MCP_INTERVAL` (1 h), Hugging Face trending
    `H2_SCOUT_HF_INTERVAL` (1 day), Hugging Face provider orgs `H2_SCOUT_HF_ORGS_INTERVAL` (1 day), awesome lists
    `H2_SCOUT_AWESOME_INTERVAL` (1 day), ai-deadlines `H2_SCOUT_AI_DEADLINES_INTERVAL` (1 day), Tavily
-   `H2_SCOUT_TAVILY_INTERVAL` (5 days), courses `H2_SCOUT_COURSES_INTERVAL` (7 days). Details in
+   `H2_SCOUT_TAVILY_INTERVAL` (5 days), Tavily discovery `H2_SCOUT_DISCOVERY_INTERVAL` (7 days), courses
+   `H2_SCOUT_COURSES_INTERVAL` (7 days). An interval only makes a collector run less often than the cron: with a
+   daily cron, the MCP Registry is read once a day. An interval of whole days counts calendar days in UTC
+   (`RunInterval`): a 1-day collector is due on any day after its last pass, whatever the time. The run starts at
+   the first check after the cron time, so one day's start can be a few minutes earlier than the day before, and a
+   catch-up run can start late in the day; counting hours would make a daily collector skip the next day. Details in
    [0020](0020-scout-collectors.md).
-6. **Enrichment budget per run.** One `EnrichmentBudget` of `H2_SCOUT_MAX_ENRICHMENTS` (20) is shared by all
-   collectors and the backlog. Changed resources with a source description of at least 40 characters are enriched
-   while the budget lasts ([0019](0019-evidence-gated-enrichment.md)). The budget counts model calls: an `UNCHANGED`
-   outcome gives its slot back, and the resource is not tried again in the same run. An `LLM_UNAVAILABLE` outcome
+6. **Enrichment budget per run.** One `EnrichmentBudget` of `H2_SCOUT_MAX_ENRICHMENTS` (20; Helm chart 200) is
+   shared by all collectors and the backlog. It counts resources: a gap round
+   ([0043](0043-enrichment-gap-round.md)) makes a second call for the same resource without a second slot, so a run
+   makes at most twice as many calls. The hard cap on calls is per UTC day. Changed resources with a source description of at least 40 characters are enriched
+   while the budget lasts ([0019](0019-evidence-gated-enrichment.md)). An `UNCHANGED` outcome made no model call, so
+   it gives its slot back, and the resource is not tried again in the same run. An `LLM_UNAVAILABLE` outcome
    (provider down or daily cap spent) sets the budget to 0 for the rest of the run. An enrichment error is counted in the run message;
    it never turns a collected run into `FAILED`.
 7. **Backlog.** After the collectors, the rest of the budget goes to `EnrichmentBacklog.pending`: resources never
@@ -75,8 +84,13 @@ at the same time. Prod runs 3 replicas ([0027](../operations/0027-runtime-topolo
 ## Consequences
 - One broken source shows as `FAILED` in its own row; the others keep the index fresh.
 - A crash mid-pass loses nothing: the next run resumes from the saved cursor or repeats the pass.
-- Credit-priced sources (Tavily) run rarely. The 1-hour MCP Registry interval follows the registry's polling advice.
-- Enrichment cost per run is bounded (20 calls by default, 200 in the Helm chart, and 500 per day), and the backlog catches up after an outage or a day with a spent budget.
+- Credit-priced sources (Tavily) run rarely. The MCP Registry is read once a day, like the rest.
+- The run starts at the same time every day, at most one tick (10 min) after the cron time. A long run, a late tick
+  or a run missed while no replica was up does not move the next start.
+- A catch-up run that ends just before the cron time is followed by the cron's run a few minutes later. Most
+  collectors are not due again then; the second run mostly spends another enrichment budget on the backlog.
+- Enrichment cost per run is bounded (20 resources by default, 200 in the Helm chart, at most twice as many calls
+  with gap rounds, and 500 calls per day), and the backlog catches up after an outage or a day with a spent budget.
 - The admin call answers in milliseconds; the run's progress is the run listing, so no request is held for the
   length of a run and no extra status endpoint exists.
 - 3 replicas, no double work: one run at a time, one scheduled run per period. The lock and the end time are a few
@@ -92,7 +106,11 @@ at the same time. Prod runs 3 replicas ([0027](../operations/0027-runtime-topolo
 - Spring Batch or a job framework — far more setup than a loop over a few collectors.
 - Separate worker service — a second deployable and image for a small load.
 - Cron per collector — more schedules to run; the per-collector interval gives the same effect in one loop.
-- Fixed delay of `H2_SCOUT_EVERY` per replica, with a second lock held for most of a period — each replica has its
+- "At least a period after the last end" (the first version of this ADR) — simple, but the start drifts later
+  every day by the run length plus up to one tick, so the run time cannot be planned against other jobs.
+- Spring `@Scheduled(cron)` on every replica with a ShedLock lock — a replica that is down at the cron time loses
+  the run until the next day, and the lock length must be guessed. The cron in the database check keeps catch-up.
+- Fixed delay of a period per replica, with a second lock held for most of a period — each replica has its
   own phase, a tick that meets an admin run loses its period, and the lock length must be guessed. The end time in
   the database gives one schedule for all replicas.
 - Checkpoint = time of the last item seen — misses items updated during a long pass; the pass start does not.
@@ -108,16 +126,17 @@ at the same time. Prod runs 3 replicas ([0027](../operations/0027-runtime-topolo
 ## Code
 - `backend/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt` — `RunScout` (`tryStart`, `tryRunScheduled`,
   `closeInterruptedRuns`), `EnrichmentBudget`,
-  `ScoutCursor`, `ScheduledRun`, ports (`ScheduledRunStore`).
+  `ScoutCursor`, `ScheduledRun`, ports (`ScheduledRunStore`, `RunCalendar` in `Scout.kt`).
 - `backend/src/main/kotlin/ai/helper2/scout/Ports.kt` — `Collector`, `CollectedBatch` (hits and candidates), `CandidateReview`.
 - `backend/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java` — candidates as review items.
-- `backend/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java` — `ScoutSchedule`, `scoutRunLock`, `ClusterRunLock`,
+- `backend/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java` — `ScoutSchedule`, `CronRunCalendar`, `scoutRunLock`, `ClusterRunLock`,
   `RUN_THREADS`, `closeInterruptedScoutRuns`.
 - `backend/src/main/java/ai/helper2/platform/ClusterLock.java`, `ClusterLocks.java`, `ClusterLockConfiguration.java`; tables `shedlock` and
   `scout_schedule` in `V1__schema.sql`.
 - `backend/src/test/kotlin/ai/helper2/scout/internal/ScoutRunLockIT.kt` — two replicas, one run; one scheduled run per
   period; a tick that meets an admin run runs at the next tick; the lease is renewed while a run lives; runs left
   `RUNNING` are closed at startup.
+- `backend/src/test/java/ai/helper2/scout/internal/CronRunCalendarTest.java` — fixed start time, UTC, no drift.
 - `backend/src/test/java/ai/helper2/scout/ScoutPipelineIT.java` — 202 with the `RUNNING` row, polled to its end; 409
   while another replica holds the lock.
 - `frontend/src/pages/admin/ScoutRunsPage.tsx` — "Run now", polling of the run listing.

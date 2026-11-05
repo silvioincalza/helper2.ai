@@ -29,8 +29,13 @@ app:
     endpoint: http://alloy.observability.svc:4318/v1/traces
   environment: prod
   replicas: 3
-  # Scout: one run per day (the first start runs at once), up to 200 enrichments per run.
-  scoutEvery: P1D
+  # Scout: one run a day at 03:07 UTC (the first start runs at once), up to 200 resources enriched per run.
+  scoutCron: "0 7 3 * * *"
+  # Tavily plan: 14,000 credits a month, shared by prod, staging and the Scout. In a 31-day month: prod live calls
+  # 250 a day (7,750) + staging at most 150 a day (4,650) + the Scout (~420 with 5 discovery passes) + the weekly
+  # live check (~13) ≈ 12,830, about 1,150 under 14,000. Past the cap Tavily is SKIPPED and searches answer from stored results and the other sources.
+  dailyLimits:
+    webSearchCredits: "250"
 backup:
   # User data (bookmarks, reports, reviews) is not rebuildable by the Scout.
   enabled: true

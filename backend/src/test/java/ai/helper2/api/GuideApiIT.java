@@ -389,6 +389,24 @@ class GuideApiIT extends ApiTestBase {
     assertThat(data(stream, "answer")).contains(QUOTE).doesNotContain("10,000");
   }
 
+  /** Results reads why a source was skipped from the stream too, to offer "Try again" or not. */
+  @Test
+  void streamSaysWhyASourceWasSkipped() throws Exception {
+    String retrieved =
+        data(stream("10.0.1.9", "translate a short leaflet to Italian"), "retrieved");
+
+    assertThat(
+            JsonPath.<List<String>>read(retrieved, "$.sources[?(@.sourceId=='github')].skipReason"))
+        .containsExactly("DISABLED");
+    assertThat(
+            JsonPath.<List<Object>>read(retrieved, "$.sources[?(@.sourceId=='fake-live')].outcome"))
+        .containsExactly("SUCCEEDED");
+    assertThat(
+            JsonPath.<List<Object>>read(
+                retrieved, "$.sources[?(@.sourceId=='fake-live')].skipReason"))
+        .containsOnlyNulls();
+  }
+
   private static List<String> events(String stream) {
     return Pattern.compile("event:(\\w+)").matcher(stream).results().map(r -> r.group(1)).toList();
   }

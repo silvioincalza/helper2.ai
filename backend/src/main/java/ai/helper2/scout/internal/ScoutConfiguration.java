@@ -1,5 +1,6 @@
 package ai.helper2.scout.internal;
 
+import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.catalog.usecase.IndexResources;
 import ai.helper2.identity.AuditTrail;
 import ai.helper2.platform.ClusterLock;
@@ -21,12 +22,15 @@ import ai.helper2.scout.EvidenceValidator;
 import ai.helper2.scout.ExtraEvidence;
 import ai.helper2.scout.GapBudget;
 import ai.helper2.scout.LlmUnavailable;
+import ai.helper2.scout.RunCalendar;
 import ai.helper2.scout.RunLock;
 import ai.helper2.scout.ScheduledRun;
 import ai.helper2.scout.ScheduledRunStore;
 import ai.helper2.scout.ScoutStore;
 import ai.helper2.scout.config.ScoutProperties;
+import ai.helper2.scout.usecase.CatalogLookup;
 import ai.helper2.scout.usecase.EnrichResource;
+import ai.helper2.scout.usecase.IndexAcceptedCandidate;
 import ai.helper2.scout.usecase.RunScout;
 import ai.helper2.scout.usecase.StartScoutRun;
 import io.micrometer.context.ContextSnapshotFactory;
@@ -36,6 +40,9 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
@@ -50,6 +57,7 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.scheduling.support.CronExpression;
 import org.springframework.stereotype.Component;
 
 @Configuration(proxyBeanMethods = false)
@@ -197,6 +205,17 @@ class ScoutConfiguration {
   }
 
   @Bean
+  IndexAcceptedCandidate indexAcceptedCandidate(
+      List<Collector> collectors,
+      CatalogIndex index,
+      ReviewQueue queue,
+      ResourceCandidateJson details,
+      Clock clock) {
+    CatalogLookup lookup = url -> queue.inCatalog(url.getValue());
+    return new IndexAcceptedCandidate(collectors, index, lookup, details, clock);
+  }
+
+  @Bean
   StartScoutRun startScoutRun(RunScout scoutRunner, AuditTrail audit) {
     return new StartScoutRun(scoutRunner, audit);
   }
@@ -277,29 +296,50 @@ class ScoutConfiguration {
     }
   }
 
+  /**
+   * A fixed time of day (helper2.scout.cron, UTC): the run after one that ended at a given time is
+   * the cron's next time after it. A long run or a late tick does not move the next start.
+   */
+  static final class CronRunCalendar implements RunCalendar {
+    private final CronExpression cron;
+
+    CronRunCalendar(String cron) {
+      this.cron = CronExpression.parse(cron);
+    }
+
+    @Override
+    public Instant nextRunAfter(Instant lastEnd) {
+      ZonedDateTime next = cron.next(lastEnd.atZone(ZoneOffset.UTC));
+      if (next == null) {
+        throw new IllegalStateException("helper2.scout.cron never fires again");
+      }
+      return next.toInstant();
+    }
+  }
+
   @Component
   @ConditionalOnProperty(name = "helper2.scout.enabled", havingValue = "true")
   static class ScoutSchedule {
     private final RunScout runner;
     private final ScheduledRunStore schedule;
-    private final Duration every;
+    private final RunCalendar calendar;
 
     ScoutSchedule(
         RunScout runner, ScheduledRunStore schedule, EnrichmentModel model, ScoutProperties scout) {
       this.runner = runner;
       this.schedule = schedule;
-      this.every = scout.every();
+      String cron = scout.cron();
+      this.calendar = new CronRunCalendar(cron);
       Duration initialDelay = scout.initialDelay();
       Duration tick = scout.tick();
       String when =
-          "checked "
+          "cron '"
+              + cron
+              + "' UTC; checked "
               + initialDelay
               + " after startup, then every "
               + tick
-              + "; runs when the last "
-              + "scheduled run ended "
-              + every
-              + " ago";
+              + "; a run missed while no replica was up starts at the next check";
       if (model.getAvailable()) {
         log.info(
             "Scout scheduled ({}), enrichment with {}/{}",
@@ -318,17 +358,18 @@ class ScoutConfiguration {
 
     /**
      * Every replica ticks (first shortly after startup, on the scheduler thread, so startup and
-     * readiness are not delayed); the tick runs the Scout only when it is due, which is decided in
-     * the database, so the replicas together run it once per period whatever their start times. A
-     * tick that meets another run (an admin's, or a replica's) is not lost: the next tick runs it.
-     * Collectors that should run less often have their own interval (MCP Registry 1 h, HF trending
-     * 1 d, Tavily 5 d).
+     * readiness are not delayed); the tick runs the Scout only when the cron time after the last
+     * scheduled run has passed, which is decided in the database, so the replicas together run it
+     * once per cron time whatever their start times. A tick that meets another run (an admin's, or
+     * a replica's) is not lost: the next tick runs it. A run starts at most one tick after its cron
+     * time. Collectors that should run less often have their own interval (HF trending 1 d, Tavily
+     * 5 d, Tavily discovery and courses 7 d).
      */
     @Scheduled(
         initialDelayString = "${helper2.scout.initial-delay}",
         fixedDelayString = "${helper2.scout.tick}")
     void tick() {
-      if (runner.tryRunScheduled(every, schedule) == ScheduledRun.BUSY) {
+      if (runner.tryRunScheduled(calendar, schedule) == ScheduledRun.BUSY) {
         log.info(
             "scheduled scout run deferred: another run is in progress; the next tick tries again");
       }

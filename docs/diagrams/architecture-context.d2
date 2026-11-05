@@ -29,6 +29,7 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
   pages: "pages\npages for crawlers, sitemap" {class: app}
   identity: "identity\nsign-in, bookmarks" {class: app}
   backoffice: "admin\nback office: review, runs, overview" {class: app}
+  policy: "policy\nlimits and retention\nfor the text pages" {class: app}
   platform: "platform\nLLM layer, HTTP, edge" {class: app}
 
   guide -> search: "retrieve candidates" {class: hot}
@@ -47,6 +48,10 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
   examples -> search: "check: the example's search" {class: config}
   examples -> catalog: "expected results' titles"
   pages -> catalog: "resource detail, indexable pages"
+  policy -> search: "SearchPolicy"
+  policy -> guide: "GuidePolicy"
+  policy -> identity: "AccountPolicy"
+  policy -> catalog: "CatalogPolicy"
 }
 
 pg: "PostgreSQL 18 + pgvector\nsystem of record" {shape: cylinder; class: data}
@@ -61,6 +66,7 @@ browser -> app.guide: "ask (SSE)" {class: hot}
 browser -> app.catalog: "resource, events"
 browser -> app.setup: "Set it up"
 browser -> app.examples: "home examples"
+browser -> app.policy: "policy numbers"
 crawler: "Crawler,\nlink preview" {class: person}
 crawler -> app.pages: "page head, sitemap.xml,\nrobots.txt"
 admin -> app.identity: "sign-in on the admin host"

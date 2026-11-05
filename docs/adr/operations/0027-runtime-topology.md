@@ -68,8 +68,8 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
 8. **Backups (prod).** `pg-backup` runs at 02:30 Europe/Zurich: `pg_dump --no-owner | gzip` to the Network File System (NFS)
    volume `pg-backup` (kept on `helm uninstall`), 7 days kept. With `backup.offsite.enabled`, rclone then
    copies new dumps to Cloudflare R2 (it never deletes there; the bucket's lifecycle rule sets retention).
-9. **Per environment.** The chart runs the Scout once a day (`app.scoutEvery: P1D`, so each collector runs at
-   most once a day; each replica checks every hour, `H2_SCOUT_TICK` default, and a restart does not add a run) with at most 200 enrichments per run (`app.scoutMaxEnrichments`); the daily enrichment cap
+9. **Per environment.** The chart runs the Scout once a day at 03:07 UTC (`app.scoutCron`, so each collector runs at
+   most once a day; each replica checks every 10 minutes, `H2_SCOUT_TICK` default, and a restart does not add a run) with at most 200 enrichments per run (`app.scoutMaxEnrichments`); the daily enrichment cap
    (500) still applies. Staging has the Scout off and no backup.
 
 ## Consequences
