@@ -129,27 +129,18 @@ public final class RuntimeSettings {
   }
 
   /**
-   * Reads the settings again when the store's version is not the one applied (after a change). The
-   * refresh thread and a request that made a change can read at the same time: an older snapshot
-   * never replaces a newer one.
+   * Reads the settings again when the store's version is not the one applied (after a change, or a
+   * store restored from a backup: what it holds now wins). The refresh thread and a request that
+   * made a change can both call it, so reloads run one at a time; a read never replaces a snapshot
+   * that a later read applied while it ran (only the thread that holds the lock can, re-entrant).
    */
-  public boolean reloadIfChanged() {
-    long stored = store.version();
-    long applied = snapshot.get().version();
-    if (stored == applied) {
+  public synchronized boolean reloadIfChanged() {
+    Snapshot applied = snapshot.get();
+    if (store.version() == applied.version()) {
       return false;
     }
     Snapshot next = read();
-    if (stored < applied) {
-      // The store went back (restored from a backup): what it holds now wins.
-      snapshot.set(next);
-      return true;
-    }
-    return snapshot.accumulateAndGet(next, RuntimeSettings::newer) == next;
-  }
-
-  private static Snapshot newer(Snapshot applied, Snapshot next) {
-    return next.version() >= applied.version() ? next : applied;
+    return snapshot.compareAndSet(applied, next);
   }
 
   /**

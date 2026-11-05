@@ -14,6 +14,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.function.IntSupplier;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
@@ -205,6 +208,44 @@ class RuntimeSettingsTest {
 
     assertThat(guide.getAsInt()).isEqualTo(30);
     assertThat(runtime.version()).isEqualTo(2);
+  }
+
+  /**
+   * The refresh thread and a change's own reload never read at the same time: a slow read that
+   * started first cannot apply its older snapshot over the newer one.
+   */
+  @Test
+  void reloadsRunOneAtATime() throws Exception {
+    IntSupplier guide = runtime.declare(RuntimeSetting.GUIDE_DAILY_MODEL_CALLS, 600);
+    store.set(RuntimeSetting.GUIDE_DAILY_MODEL_CALLS, 50L);
+    CountDownLatch reading = new CountDownLatch(1);
+    CountDownLatch release = new CountDownLatch(1);
+    store.afterRead =
+        () -> {
+          reading.countDown();
+          await(release);
+        };
+    CompletableFuture<Boolean> slow = CompletableFuture.supplyAsync(runtime::reloadIfChanged);
+    assertThat(reading.await(5, TimeUnit.SECONDS)).isTrue();
+
+    CompletableFuture<Boolean> second = CompletableFuture.supplyAsync(runtime::reloadIfChanged);
+    Thread.sleep(100);
+    assertThat(second).as("waits for the slow read").isNotDone();
+    store.set(RuntimeSetting.GUIDE_DAILY_MODEL_CALLS, 30L);
+    release.countDown();
+
+    assertThat(slow.get(5, TimeUnit.SECONDS)).isTrue();
+    assertThat(second.get(5, TimeUnit.SECONDS)).as("reads version 2 after it").isTrue();
+    assertThat(guide.getAsInt()).isEqualTo(30);
+    assertThat(runtime.version()).isEqualTo(2);
+  }
+
+  private static void await(CountDownLatch latch) {
+    try {
+      latch.await(5, TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
   }
 
   @Test

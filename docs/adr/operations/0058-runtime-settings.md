@@ -61,9 +61,9 @@ spend, and the right number changes with the day.
 - Raising a maximum is a code change, reviewed like any other.
 - Emergency stop: a 0 reaches every replica within about 20 seconds (the replica that made the change at once). A pod
   whose first read of the store fails (database down) runs on the `H2_` defaults until the store answers. To stop a use for sure through an outage, also set the `H2_` value to 0 and deploy.
-- An older snapshot never replaces a newer one: the refresh thread and the replica's own reload after a change can read
-  at the same time, and the snapshot with the higher version wins. Only a store whose version went back (restored from
-  a backup) replaces a newer snapshot with an older one.
+- Reloads run one at a time on a replica (the refresh thread and the replica's own reload after a change), and a read
+  never replaces a snapshot that another read applied while it ran. So an older snapshot never replaces a newer one,
+  and a store whose version went back (restored from a backup) wins: what it holds now applies.
 - The env value is still read at startup. A new `H2_` value with an override in place changes the default only.
 
 ## Alternatives considered

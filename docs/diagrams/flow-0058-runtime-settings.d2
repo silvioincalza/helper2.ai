@@ -44,7 +44,7 @@ refresh: "Each replica, every second" {
   wait: "Keep the snapshot" {class: end}
   version: "Store version changed?" {class: decision}
   read: "Read newest row per setting;\nclamp to code max" {class: data}
-  newer: "Snapshot read is newer than the one\napplied, or the store went back?" {class: decision}
+  newer: "Snapshot applied unchanged while\nreading? (reloads run one at a time)" {class: decision}
   apply: "New snapshot" {class: data}
   due -> wait: no
   due -> version: yes
@@ -52,7 +52,7 @@ refresh: "Each replica, every second" {
   version -> read: yes
   read -> newer
   newer -> apply: yes
-  newer -> wait: "no (another reader applied a newer one)"
+  newer -> wait: "no (a later read applied a newer one)"
 }
 
 use: "Hot path (guide, translation, Tavily, enrichment)" {
