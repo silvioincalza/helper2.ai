@@ -39,6 +39,7 @@ class ResiliencePoliciesConfigIT {
           "hf-trending",
           "tavily-scout",
           "course-scout",
+          "linkedin-scout",
           "github-awesome",
           "hf-provider-orgs",
           "ai-deadlines",

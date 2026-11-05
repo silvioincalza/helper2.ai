@@ -33,13 +33,30 @@ class IndexAcceptedCandidateTest {
     }
   }
 
+  /**
+   * As the real collectors declare them: a discovery category proposes its product type, LinkedIn
+   * reading too.
+   */
+  private val selfHosted =
+    descriptor("discovery-self-hosted")
+      .copy(resourceTypes = setOf(ResourceType.PRODUCT, ResourceType.ARTICLE))
+  private val agentPlatforms =
+    descriptor("discovery-agent-platforms")
+      .copy(resourceTypes = setOf(ResourceType.AGENT, ResourceType.ARTICLE))
+  private val linkedIn =
+    descriptor("linkedin-scout")
+      .copy(
+        resourceTypes =
+          setOf(ResourceType.ARTICLE, ResourceType.NEWS, ResourceType.PRODUCT, ResourceType.EVENT)
+      )
+
   private val resource = UUID.randomUUID()
   private val catalog = RecordingIndex(listOf(resource))
   private val listed = mutableSetOf<String>()
   private var stored: AcceptedCandidate? = null
   private val accept =
     IndexAcceptedCandidate(
-      listOf(Found(descriptor("discovery-self-hosted"))),
+      listOf(Found(selfHosted), Found(agentPlatforms), Found(linkedIn)),
       catalog,
       { url -> url.value in listed },
       { details -> stored ?: throw InvalidCandidate("unreadable: $details") },
@@ -54,7 +71,8 @@ class IndexAcceptedCandidateTest {
     type: ResourceType = ResourceType.PRODUCT,
     tags: Set<String> = setOf("self-hosted", "local-ai"),
     facts: Map<String, Any> = emptyMap(),
-  ) = AcceptedCandidate(sourceId, url, title, snippet, type, tags, facts)
+    finders: List<String> = emptyList(),
+  ) = AcceptedCandidate(sourceId, url, title, snippet, type, tags, facts, finders)
 
   @Test
   fun `indexes the candidate as a record of the collector that found it`() {
@@ -100,6 +118,56 @@ class IndexAcceptedCandidateTest {
     assertThrows<InvalidCandidate> { accept.index(candidate(type = ResourceType.COURSE)) }
     assertThrows<InvalidCandidate> { accept.index(candidate(tags = setOf("Not A Tag"))) }
     assertEquals(0, catalog.indexed.size)
+  }
+
+  @Test
+  fun `a type the collector does not declare is refused`() {
+    assertThrows<InvalidCandidate> { accept.index(candidate(type = ResourceType.EVENT)) }
+    assertThrows<InvalidCandidate> {
+      accept.index(candidate(sourceId = "linkedin-scout", type = ResourceType.AGENT))
+    }
+    assertEquals(0, catalog.indexed.size)
+  }
+
+  @Test
+  fun `a merged candidate may have the type of any collector that found it`() {
+    val merged =
+      candidate(
+        type = ResourceType.AGENT,
+        finders = listOf("discovery-self-hosted", "discovery-agent-platforms"),
+      )
+    accept.index(merged)
+    val (results, sourceId) = catalog.indexed.single()
+    assertEquals("discovery-self-hosted", sourceId)
+    assertEquals(ResourceType.AGENT, results.single().hits.single().type)
+    assertThrows<InvalidCandidate> {
+      accept.index(merged.copy(type = ResourceType.EVENT))
+    }
+  }
+
+  @Test
+  fun `a LinkedIn post, article or event is indexed with its reading type`() {
+    for (type in listOf(ResourceType.NEWS, ResourceType.ARTICLE, ResourceType.EVENT)) {
+      accept.index(
+        candidate(
+          sourceId = "linkedin-scout",
+          url = "https://www.linkedin.com/pulse/agents-in-production-${type.name.lowercase()}",
+          title = "Agents in production",
+          type = type,
+          tags = setOf("linkedin"),
+        )
+      )
+    }
+    val records =
+      catalog.indexed.map { (results, sourceId) ->
+        assertEquals("linkedin-scout", sourceId)
+        results.single().hits.single()
+      }
+    assertEquals(
+      listOf(ResourceType.NEWS, ResourceType.ARTICLE, ResourceType.EVENT),
+      records.map { it.type },
+    )
+    assertEquals(setOf("linkedin"), records.first().tags)
   }
 
   @Test
