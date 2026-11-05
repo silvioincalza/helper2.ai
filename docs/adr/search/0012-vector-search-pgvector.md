@@ -35,7 +35,8 @@ never break keyword search.
    the status only, since a body can echo the visitor's text.
    Every replica runs the thread, but a tick runs only while it holds the cluster lock `embedding-indexer`
    (`platform.ClusterLock`, ShedLock row in PostgreSQL, see [0018](../scout/0018-scout-runner.md)): held at least 90 % of
-   the period (13.5 s) and at most 3 × the timeout + 1 min (2 min 30 s). So the cluster embeds one batch per
+   the period (13.5 s) and at most 3 × the timeout × (1 + the single texts after a failure) + 1 min (10 min with
+   30 s and 5 singles; the lock is not renewed). So the cluster embeds one batch per
    period, as with one replica; a replica whose tick finds the lock taken skips that period.
    Meters: `helper2.embedding.backlog`, `helper2.embedding.failures{reason}`, `helper2.embedding.last.success`.
    The backlog counts what the indexer still has to do: rows with no vector for the model and rows whose text changed
