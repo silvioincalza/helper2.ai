@@ -351,6 +351,18 @@ code {
   flex-direction: column;
   gap: var(--space-2);
 }
+/* On touch screens every button and footer link is at least target-min tall (v4: 44px). */
+@media (pointer: coarse) {
+  .btn {
+    min-height: var(--target-min);
+  }
+  .footer-col ul {
+    gap: 0;
+  }
+  .footer-col a {
+    min-height: var(--target-min);
+  }
+}
 .site-footer a:not(.logo-link) {
   color: var(--muted);
   display: inline-flex;
@@ -1558,8 +1570,8 @@ input[type='search']::-webkit-search-cancel-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: var(--target-min);
+  height: var(--target-min);
   border: 0;
   border-radius: 50%;
   background: transparent;
