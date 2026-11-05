@@ -14,11 +14,11 @@
   font-weight: 500;
   color: var(--ink);
 }
-.h2-prose a {
+.h2-prose a:where(:not(.btn, .chip, .btn-text)) {
   color: var(--accent-ink);
   text-underline-offset: 3px;
 }
-.h2-prose a:hover {
+.h2-prose a:where(:not(.btn, .chip, .btn-text)):hover {
   color: var(--ink);
 }
 .h2-prose :focus-visible {
@@ -33,39 +33,6 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
-}
-
-/* Buttons on the text pages: the v4 button (v4.css), a filled ink one for the main action, a danger one. */
-.h2-prose a.v4-btn {
-  color: var(--ink);
-}
-.h2-prose .v4-btn--ink,
-.h2-prose a.v4-btn--ink {
-  color: var(--bg);
-  background: var(--ink);
-  border-color: var(--ink);
-}
-.h2-prose .v4-btn--ink:hover {
-  background: var(--accent-deep);
-}
-.h2-prose .v4-btn--danger {
-  color: var(--danger);
-  border-color: var(--danger);
-  font-weight: 600;
-}
-.h2-prose .v4-btn--danger-fill {
-  color: var(--bg);
-  background: var(--danger);
-  border-color: var(--danger);
-  font-weight: 600;
-}
-.h2-prose .v4-btn--danger-fill:hover {
-  background: var(--danger);
-  box-shadow: inset 0 0 0 2px var(--bg);
-}
-.h2-prose .v4-btn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
 }
 
 /* The text pages line up with the header and the footer (their content is --content-wide). */
@@ -433,7 +400,6 @@
   width: 24px;
   height: 24px;
   margin: 0;
-  accent-color: var(--ink);
 }
 .h2-check label {
   cursor: pointer;

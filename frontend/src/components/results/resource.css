@@ -48,16 +48,8 @@
   gap: var(--space-2);
 }
 /* One primary button: Open. Save and Set it up are outlined. */
-.h2-res__actions > *,
-.h2-res .guide-me {
-  min-height: var(--target-min);
+.h2-res__actions > * {
   white-space: nowrap;
-  font-family: var(--font-mono);
-}
-.h2-res .btn-primary {
-  color: var(--on-accent);
-  background: var(--accent);
-  border-color: var(--accent);
 }
 .h2-res__sec {
   display: flex;

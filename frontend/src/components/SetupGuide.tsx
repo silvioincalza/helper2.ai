@@ -52,7 +52,7 @@ function GuideMeButton({
   return (
     <button
       type="button"
-      className="v4-btn guide-me"
+      className="btn guide-me"
       aria-expanded={open}
       aria-controls={bodyId}
       onClick={onToggle}

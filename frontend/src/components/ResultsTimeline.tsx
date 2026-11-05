@@ -39,7 +39,7 @@ export function ResultsTimeline({ cards }: { cards: ResultCard[] }) {
                 {t('timeline.unknownHint')}{' '}
                 <button
                   type="button"
-                  className="v4-text-btn"
+                  className="btn-text"
                   aria-expanded={unknownOpen}
                   aria-controls={unknownList}
                   onClick={() => setUnknownOpen((o) => !o)}

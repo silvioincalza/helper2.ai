@@ -90,7 +90,7 @@ export default function ScoutRunsPage() {
       <div className="h2-admin__tools">
         <button
           type="button"
-          className="v4-btn h2-admin__primary"
+          className="btn btn-primary"
           aria-disabled={waiting || undefined}
           onClick={() => void start()}
         >
@@ -152,7 +152,7 @@ export default function ScoutRunsPage() {
                         {withRunNow.has(r.id) && (
                           <button
                             type="button"
-                            className="v4-btn"
+                            className="btn"
                             aria-label={t('admin.runSource', { source: r.sourceId })}
                             aria-disabled={waiting || undefined}
                             onClick={() => void start(r.sourceId)}

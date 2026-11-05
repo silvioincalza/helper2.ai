@@ -188,12 +188,7 @@ export default function ExamplesPage() {
       )}
 
       <div className="h2-admin__tools">
-        <button
-          type="button"
-          className="v4-btn"
-          aria-disabled={disabled}
-          onClick={() => void draft()}
-        >
+        <button type="button" className="btn" aria-disabled={disabled} onClick={() => void draft()}>
           {t('admin.examples.draft.button')}
         </button>
         <span className="muted small">{t('admin.examples.draft.hint')}</span>
@@ -291,7 +286,7 @@ export default function ExamplesPage() {
                   <span>{t('admin.examples.confirmRemove', { label: e.label })}</span>
                   <button
                     type="button"
-                    className="v4-btn"
+                    className="btn"
                     ref={focusOnMount}
                     onClick={() => setRemoving(null)}
                   >
@@ -299,7 +294,7 @@ export default function ExamplesPage() {
                   </button>
                   <button
                     type="button"
-                    className="v4-btn h2-admin__primary"
+                    className="btn btn-primary"
                     aria-disabled={disabled}
                     onClick={() => remove(e.id)}
                   >
@@ -310,7 +305,7 @@ export default function ExamplesPage() {
                 <div className="h2-admin__actions">
                   <button
                     type="button"
-                    className="v4-btn"
+                    className="btn"
                     aria-disabled={disabled}
                     onClick={() => setEditing(e)}
                   >
@@ -318,7 +313,7 @@ export default function ExamplesPage() {
                   </button>
                   <button
                     type="button"
-                    className="v4-btn"
+                    className="btn"
                     aria-disabled={disabled}
                     onClick={() => setStatus(e, e.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE')}
                   >
@@ -327,7 +322,7 @@ export default function ExamplesPage() {
                   </button>
                   <button
                     type="button"
-                    className="v4-btn"
+                    className="btn"
                     aria-disabled={disabled}
                     onClick={() => setRemoving(e.id)}
                   >
@@ -425,13 +420,13 @@ function ExampleForm({
       <div className="h2-admin__actions">
         <button
           type="submit"
-          className="v4-btn h2-admin__primary"
+          className="btn btn-primary"
           aria-disabled={busy || draft.expected.length === 0 || undefined}
         >
           {t(editing ? 'admin.examples.form.saveChange' : 'admin.examples.form.save')}
         </button>
         {editing && (
-          <button type="button" className="v4-btn" onClick={onCancel}>
+          <button type="button" className="btn" onClick={onCancel}>
             {t('admin.examples.form.cancel')}
           </button>
         )}
@@ -473,7 +468,7 @@ function ExpectedPicker({
             <li key={x.id}>
               <button
                 type="button"
-                className="v4-chip"
+                className="chip"
                 aria-label={t('admin.examples.form.drop', { title: x.title })}
                 onClick={() => onChange(expected.filter((y) => y.id !== x.id))}
               >
@@ -498,7 +493,7 @@ function ExpectedPicker({
             }}
           />
         </label>
-        <button type="button" className="v4-btn" onClick={() => void find()}>
+        <button type="button" className="btn" onClick={() => void find()}>
           {t('admin.examples.form.findButton')}
         </button>
       </div>
@@ -510,7 +505,7 @@ function ExpectedPicker({
               <span>{r.title}</span>
               <button
                 type="button"
-                className="v4-btn"
+                className="btn"
                 aria-disabled={full || expected.some((x) => x.id === r.id) || undefined}
                 onClick={() => {
                   if (full || expected.some((x) => x.id === r.id)) return;
