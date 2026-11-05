@@ -1,6 +1,7 @@
 # Flowchart: how the back office overview is answered (ADR 0045).
 # Source of truth: backend/src/main/java/ai/helper2/admin/usecase/GetOverview.java, admin/web/OverviewController.java,
-#   platform/llm/BudgetLedger.java, RedisCallCounter.java, frontend/src/pages/admin/AdminOverview.tsx.
+#   platform/llm/BudgetLedger.java, RedisCallCounter.java, examples/usecase/CountHomeExamples.java,
+#   backend/src/main/kotlin/ai/helper2/examples/PoolCounts.kt, frontend/src/pages/admin/AdminOverview.tsx.
 # Render: cd docs/diagrams && d2 fmt flow-0045-back-office.d2 && d2 flow-0045-back-office.d2 flow-0045-back-office.svg
 
 ...@style
@@ -29,6 +30,7 @@ parts: Counts {
   used: "used of limit" {class: end}
   unknown: "unknown" {class: fail}
   credits: "Web credits today\n(null when off or unreadable)" {class: data}
+  examples: "Home examples shown per path;\nhidden by check, paused" {class: data}
   budget -> used: yes
   budget -> unknown: "no Redis, or it cannot answer"
 }
@@ -39,3 +41,4 @@ uc.compute -> parts.backlog
 uc.compute -> parts.runs
 uc.compute -> parts.budget
 uc.compute -> parts.credits
+uc.compute -> parts.examples
