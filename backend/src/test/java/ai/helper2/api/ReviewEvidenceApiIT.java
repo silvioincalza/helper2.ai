@@ -74,7 +74,8 @@ class ReviewEvidenceApiIT extends ApiTestBase {
             .andExpect(jsonPath("$.relationship").value(Matchers.nullValue()))
             .andExpect(jsonPath("$.aiContent.aiGenerated").value(true))
             .andExpect(jsonPath("$.aiContent.models[0]").value("nvidia/nemotron-test"))
-            .andExpect(jsonPath("$.aiContent.fields[0]").value("fields[].value"))
+            .andExpect(jsonPath("$.aiContent.fields[0]").value("validationErrors[]"))
+            .andExpect(jsonPath("$.aiContent.fields[1]").value("fields[].value"))
             .andReturn()
             .getResponse()
             .getContentAsString();

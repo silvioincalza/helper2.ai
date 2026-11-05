@@ -10,6 +10,7 @@ import ai.helper2.catalog.ReviewEvidence.Quote;
 import ai.helper2.catalog.ReviewEvidenceFixture;
 import ai.helper2.shared.ValueOrigin;
 import ai.helper2.shared.Verification;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -108,5 +109,11 @@ class JdbcReviewEvidenceIT {
     assertThat(evidence.of(fixture.reportItem)).isEqualTo(Evidence.NONE);
     assertThat(evidence.of(UUID.randomUUID())).isEqualTo(Evidence.NONE);
     assertThat(Evidence.NONE.aiWritten()).isFalse();
+  }
+
+  @Test
+  void aValidationErrorAloneIsAiWrittenBecauseItQuotesTheRefusedOutput() {
+    assertThat(new Evidence(null, List.of("pricing: no quote"), List.of(), null).aiWritten())
+        .isTrue();
   }
 }

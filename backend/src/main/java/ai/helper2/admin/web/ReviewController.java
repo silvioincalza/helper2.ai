@@ -51,14 +51,18 @@ class ReviewController implements ReviewApi {
   }
 
   /**
-   * EU AI Act Art. 50(2) (ADR 0038): the field values and the relationship are model output, so the
-   * response says which paths a model wrote, and with which model. Null when none.
+   * EU AI Act Art. 50(2) (ADR 0038): the field values, the relationship and the validation errors
+   * (they quote the refused output) are model output, so the response says which paths a model
+   * wrote, and with which model. Null when none.
    */
   private static @Nullable AiContentMarkerDto marker(ReviewEvidence.Evidence e) {
     if (e.run() == null || !e.aiWritten()) {
       return null;
     }
     List<String> paths = new ArrayList<>();
+    if (!e.validationErrors().isEmpty()) {
+      paths.add("validationErrors[]");
+    }
     if (!e.fields().isEmpty()) {
       paths.add("fields[].value");
     }
