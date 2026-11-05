@@ -13,6 +13,7 @@ import { useApi } from '@/hooks/useApi';
 import { useTitle } from '@/hooks/useTitle';
 import { formatDate } from '@/lib/format';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
+import { FieldStates } from '@/components/results/FieldStates';
 import { Resource } from '@/components/results/Resource';
 import { resourcePath } from '@/lib/searchState';
 
@@ -25,6 +26,12 @@ function RelList({ items }: { items: Relationship[] }) {
           <strong>{t(`relationship.${r.kind}`)}</strong>{' '}
           {r.targetId ? <Link to={resourcePath(r.targetId)}>{r.targetTitle}</Link> : r.targetTitle}{' '}
           <VerificationBadge verification={r.verification} />
+          {r.origin === 'SELF_DECLARED' && (
+            <>
+              {' '}
+              <OriginLabel origin={r.origin} />
+            </>
+          )}
           <EvidenceList evidence={r.evidence} />
         </li>
       ))}
@@ -87,6 +94,11 @@ function DetailSections({ detail: d }: { detail: ResourceDetail }) {
   );
   return (
     <>
+      <section aria-labelledby="fields-h" className="panel">
+        <h2 id="fields-h">{t('detail.fields')}</h2>
+        <FieldStates detail={d} />
+      </section>
+
       <section aria-labelledby="sum-h" className="panel">
         <h2 id="sum-h">{t('detail.summary')}</h2>
         <p className="muted small">{t(`enrichment.${d.enrichmentStatus}`)}</p>
@@ -96,6 +108,7 @@ function DetailSections({ detail: d }: { detail: ResourceDetail }) {
               {d.summary.claims.map((c, i) => (
                 <li key={i}>
                   <p {...aiMark(d.summary?.model)}>{c.text}</p>
+                  {c.selfDeclared && <p className="muted small">{t('detail.selfDeclaredClaim')}</p>}
                   <details>
                     <summary>{t('detail.citations', { count: c.evidence.length })}</summary>
                     <EvidenceList evidence={c.evidence} />

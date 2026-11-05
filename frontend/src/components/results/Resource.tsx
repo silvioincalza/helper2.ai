@@ -51,7 +51,7 @@ export function Resource({ detail: d, children }: { detail: ResourceDetail; chil
 
       <section className="h2-res__sec" aria-labelledby="h2-res-text">
         <h2 id="h2-res-text" className="h2-res__h">
-          {t(aiDescription ? 'results.about' : 'resource.sourceText')}
+          {t(aiDescription ? 'results.aboutAi' : 'resource.sourceText')}
         </h2>
         {/* A checked quote can come from the title alone, so it shows even without a description. */}
         {aiDescription ? (

@@ -14,7 +14,9 @@ import ai.helper2.scout.GapSourceRecord;
 import ai.helper2.scout.GapTarget;
 import ai.helper2.scout.GapTargets;
 import ai.helper2.scout.Material;
+import ai.helper2.scout.PageTargets;
 import ai.helper2.scout.ValidationResult;
+import ai.helper2.shared.ResourceType;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -110,15 +112,28 @@ class CatalogEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
     String allText =
         String.join(
             "\n", candidate.sources().stream().map(EnrichmentCandidates.SourceText::text).toList());
-    GapTarget gap =
-        GapTargets.select(
-            candidate.sources().stream()
-                .map(s ->
-                    new GapSourceRecord(
-                        s.recordId(), s.sourceId(), s.externalId(), s.url(), s.repositoryUrl()))
-                .toList());
+    List<GapSourceRecord> records =
+        candidate.sources().stream()
+            .map(s ->
+                new GapSourceRecord(
+                    s.recordId(), s.sourceId(), s.externalId(), s.url(), s.repositoryUrl()))
+            .toList();
+    GapTarget gap = GapTargets.select(records);
     return new EnrichmentMaterial(
-        new EnrichmentInput(candidate.title(), materials, facts, Map.of()), sha(allText), gap);
+        new EnrichmentInput(candidate.title(), materials, facts, Map.of()),
+        sha(allText),
+        gap,
+        typeOf(candidate.type()),
+        PageTargets.select(records));
+  }
+
+  /** The catalog's type; one this code does not know counts as OTHER (no target fields). */
+  private static ResourceType typeOf(String type) {
+    try {
+      return ResourceType.valueOf(type);
+    } catch (IllegalArgumentException | NullPointerException e) {
+      return ResourceType.OTHER;
+    }
   }
 
   /**
@@ -180,7 +195,11 @@ class CatalogEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
         result.getFields().stream()
             .map(f ->
                 new EnrichmentResults.Field(
-                    f.getField(), f.getValue(), f.getVerification(), citations(f.getCitations())))
+                    f.getField(),
+                    f.getValue(),
+                    f.getVerification(),
+                    citations(f.getCitations()),
+                    f.getOrigin()))
             .toList(),
         result.getRelationships().stream()
             .map(r ->
@@ -189,10 +208,13 @@ class CatalogEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
                     r.getTarget(),
                     r.getTargetId(),
                     r.getVerification(),
-                    citations(r.getCitations())))
+                    citations(r.getCitations()),
+                    r.getOrigin()))
             .toList(),
         result.getSummary().stream()
-            .map(c -> new EnrichmentResults.Claim(c.getText(), citations(c.getCitations())))
+            .map(c ->
+                new EnrichmentResults.Claim(
+                    c.getText(), citations(c.getCitations()), c.getSelfDeclared()))
             .toList());
   }
 

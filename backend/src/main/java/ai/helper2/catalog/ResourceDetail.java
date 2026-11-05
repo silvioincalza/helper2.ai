@@ -27,14 +27,30 @@ public record ResourceDetail(
       String sourceId,
       List<Evidence> evidence) {}
 
+  /** [origin] is AI_EXTRACTED, or SELF_DECLARED when only the product's own pages name it. */
   public record Relationship(
       String kind,
       UUID targetId,
       String targetTitle,
       Verification verification,
-      List<Evidence> evidence) {}
+      List<Evidence> evidence,
+      ValueOrigin origin) {
+    public Relationship(
+        String kind,
+        UUID targetId,
+        String targetTitle,
+        Verification verification,
+        List<Evidence> evidence) {
+      this(kind, targetId, targetTitle, verification, evidence, ValueOrigin.AI_EXTRACTED);
+    }
+  }
 
-  public record SummaryClaim(String text, List<Evidence> evidence) {}
+  /** [selfDeclared]: the claim cites the product's own page (ADR 0056). */
+  public record SummaryClaim(String text, List<Evidence> evidence, boolean selfDeclared) {
+    public SummaryClaim(String text, List<Evidence> evidence) {
+      this(text, evidence, false);
+    }
+  }
 
   public record Summary(
       List<SummaryClaim> claims, String model, String promptVersion, Instant generatedAt) {}

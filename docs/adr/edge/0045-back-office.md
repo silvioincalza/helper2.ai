@@ -36,7 +36,8 @@ them without each module growing an admin corner.
    how many runs FAILED, and the last run. The page is a keyset (part, first discovered, id) behind an opaque cursor, not
    an OFFSET: a deep page costs what the first one does. The overview's backlog count links here.
    The Scout's next batch, the queue and the count share one rule, read in two parts from one partial index
-   (`resource_enrichment_backlog_idx`): the second part runs only when the first has too few rows. Measured on synthetic
+   (`resource_enrichment_backlog_idx`): the second part runs only when the first has too few rows. The Scout's batch
+   reads one more part first, the products a person accepted, from their few review items ([0056](../scout/0056-evidence-ladder.md)). Measured on synthetic
    data, 250 000 resources: the next 20 from 1.4 s to under 1 ms, the count from 1.3 s to 0.65 s. Every backlog read
    gives up after 5 seconds. The queue is read-only and admin-only and shows catalog data, no personal data; a cursor
    that is not one of ours (wrong shape, a time outside what the database holds) is a 400.

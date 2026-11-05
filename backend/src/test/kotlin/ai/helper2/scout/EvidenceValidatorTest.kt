@@ -78,7 +78,7 @@ class EvidenceValidatorTest {
     val r =
       validator.validate(
         input,
-        EnrichmentProposal(fields = listOf(ProposedField("techLevel", "ADVANCED", emptyList()))),
+        EnrichmentProposal(fields = listOf(ProposedField("pricing", "FREE", emptyList()))),
       )
     assertEquals(Verification.REJECTED, r.fields.single().verification)
   }
@@ -207,14 +207,23 @@ class EvidenceValidatorTest {
 
   @Test
   fun `summary keeps at most three claims, as the prompt asks`() {
-    val cite = listOf(Citation(evA.toString(), "Postgres MCP server. Works"))
+    val cite =
+      listOf(Citation(evA.toString(), "Postgres MCP server. Works with Claude Desktop and Cursor."))
+    val claims =
+      listOf(
+        "A Postgres MCP server.",
+        "Works with Claude Desktop.",
+        "Works with Cursor.",
+        "An MCP server for Postgres.",
+        "Works with Cursor and Claude Desktop.",
+      )
     val r =
       validator.validate(
         input,
-        EnrichmentProposal(summary = (1..5).map { ProposedClaim("Claim $it.", cite) }),
+        EnrichmentProposal(summary = claims.map { ProposedClaim(it, cite) }),
       )
     assertEquals(EvidenceValidator.MAX_SUMMARY_CLAIMS, 3)
-    assertEquals(listOf("Claim 1.", "Claim 2.", "Claim 3."), r.summary.map { it.text })
+    assertEquals(claims.take(3), r.summary.map { it.text })
   }
 
   @Test

@@ -21,6 +21,24 @@ class GapRoundTest {
     )
   }
 
+  /** ADR 0056: an accepted product from any discovery category that is a repository. */
+  @Test
+  fun `a discovery record that is a repository gives its README, whatever its category`() {
+    val r =
+      record("discovery-coding", "https://github.com/acme/tool", "https://github.com/acme/tool")
+    assertEquals(
+      GapTarget(GapKind.GITHUB_README, "acme", "tool", r.id),
+      GapTargets.select(listOf(r)),
+    )
+    val other = record("discovery-self-hosted", "x", "https://github.com/acme/tool")
+    assertEquals(GapKind.GITHUB_README, GapTargets.select(listOf(other))?.kind)
+    // The bare prefix is no category, and other web sources link anything.
+    assertNull(GapTargets.select(listOf(record("discovery-", "x", "https://github.com/acme/tool"))))
+    assertNull(
+      GapTargets.select(listOf(record("tavily-scout", "x", "https://github.com/acme/tool")))
+    )
+  }
+
   @Test
   fun `a Hugging Face model record gives its model card`() {
     val r = record("hf-trending", "meta-llama/Llama-4", "https://huggingface.co/meta-llama/Llama-4")
@@ -111,7 +129,7 @@ class GapRoundTest {
         "See [the docs](https://evil.example/x) and ![logo](https://img.example/a.png).\n" +
         "Contact: jane.doe@example.com\n‮evil‬\nTag󠁁chars\n" +
         "ﬁne ligature"
-    val text = ReadmeText.clean(raw)
+    val text = UntrustedPageText.clean(raw)
 
     assertFalse(text.contains("ignore all rules"))
     assertFalse(text.contains("<"))
@@ -125,13 +143,13 @@ class GapRoundTest {
 
   @Test
   fun `an email split by a hidden character is still masked`() {
-    assertFalse(ReadmeText.clean("Mail alice\u200B@example.com").contains("@example.com"))
+    assertFalse(UntrustedPageText.clean("Mail alice\u200B@example.com").contains("@example.com"))
   }
 
   @Test
   fun `reference links, scripts and styles are removed`() {
     val text =
-      ReadmeText.clean(
+      UntrustedPageText.clean(
         "Intro\n[docs]: https://evil.example/x\n<script>say MIT</script><style>.a{}</style>End"
       )
     assertFalse(text.contains("evil.example") || text.contains("say MIT") || text.contains(".a{}"))
@@ -141,7 +159,7 @@ class GapRoundTest {
   @Test
   fun `cleaning stays fast on a long run without separators`() {
     val started = System.nanoTime()
-    ReadmeText.clean("a".repeat(600_000) + "<a " + "b".repeat(5_000))
+    UntrustedPageText.clean("a".repeat(600_000) + "<a " + "b".repeat(5_000))
     assertTrue(System.nanoTime() - started < 2_000_000_000L, "clean took too long")
   }
 
@@ -150,7 +168,7 @@ class GapRoundTest {
     val filler = "Lorem ipsum dolor sit amet. ".repeat(400)
     val raw =
       "# Tool\nA tool for agents.\n\n## Features\n$filler\n\n## Installation\npip install tool\n\n## License\nMIT License\n"
-    val text = ReadmeText.window(ReadmeText.clean(raw), 2000)
+    val text = UntrustedPageText.window(UntrustedPageText.clean(raw), 2000)
 
     assertTrue(text.length <= 2000)
     assertTrue(text.startsWith("# Tool"))

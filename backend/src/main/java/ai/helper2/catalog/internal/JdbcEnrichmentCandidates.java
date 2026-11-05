@@ -26,25 +26,48 @@ class JdbcEnrichmentCandidates implements EnrichmentCandidates {
   }
 
   /**
-   * Never-run resources first, then the rest, each part newest first. Two parts, each read in index
-   * order (resource_enrichment_backlog_idx): the second part runs only when the first has fewer
-   * than [limit] rows, so the next batch never sorts the whole table.
+   * Products a person accepted from the review queue first (ADR 0056): someone chose them, so they
+   * should not wait behind the daily collector intake. Then never-run resources, then the rest,
+   * each part newest first. Three parts, each with its own LIMIT: the accepted ones are read from
+   * the few ACCEPTED review items, the other two in index order (resource_enrichment_backlog_idx,
+   * ADR 0045), so the next batch never sorts the whole table. A resource in two parts counts once.
    */
   @Override
   public List<UUID> pending(int limit, int minText, int maxFailed) {
-    return jdbc.sql(
-            "(SELECT r.id FROM resource r WHERE "
-                + NEVER_RUN
-                + " ORDER BY r.first_discovered_at DESC, r.id DESC LIMIT :limit) UNION ALL"
-                + " (SELECT r.id FROM resource r WHERE "
-                + TO_RETRY
-                + " ORDER BY r.first_discovered_at DESC, r.id DESC LIMIT :limit) LIMIT :limit")
+    return jdbc.sql(pendingSql())
         .param("maxFailed", maxFailed)
         .param("minText", minText)
         .param("limit", limit)
         .withQueryTimeout(COUNT_TIMEOUT_SECONDS)
         .query(UUID.class)
         .list();
+  }
+
+  /** One index-ordered part of the backlog, newest first. */
+  private static String part(String condition) {
+    return "(SELECT r.id, r.first_discovered_at, r.enrichment_status, false AS accepted"
+        + " FROM resource r WHERE "
+        + condition
+        + " ORDER BY r.first_discovered_at DESC, r.id DESC LIMIT :limit)";
+  }
+
+  /** The next batch of the Scout, see {@link #pending}; package-visible for the plan check. */
+  static String pendingSql() {
+    return "SELECT q.id FROM ("
+        + "(SELECT r.id, r.first_discovered_at, r.enrichment_status, true AS accepted"
+        + " FROM review_item i JOIN resource r ON r.canonical_url = i.candidate_url"
+        + " WHERE i.kind = 'RESOURCE_CANDIDATE' AND i.status = 'ACCEPTED' AND (("
+        + NEVER_RUN
+        + ") OR ("
+        + TO_RETRY
+        + ")) ORDER BY r.first_discovered_at DESC, r.id DESC LIMIT :limit)"
+        + " UNION ALL "
+        + part(NEVER_RUN)
+        + " UNION ALL "
+        + part(TO_RETRY)
+        + ") q GROUP BY q.id, q.first_discovered_at, q.enrichment_status"
+        + " ORDER BY bool_or(q.accepted) DESC, (q.enrichment_status = 'NOT_RUN') DESC,"
+        + " q.first_discovered_at DESC, q.id DESC LIMIT :limit";
   }
 
   /**
@@ -227,9 +250,10 @@ class JdbcEnrichmentCandidates implements EnrichmentCandidates {
   public @Nullable String lastJudgedFingerprint(UUID id) {
     return jdbc.sql(
             """
-            SELECT input_fingerprint FROM enrichment_run
-            WHERE resource_id = :id AND outcome NOT IN ('LLM_UNAVAILABLE', 'FAILED')
-            ORDER BY started_at DESC LIMIT 1
+            SELECT e.input_fingerprint FROM enrichment_run e JOIN resource r ON r.id = e.resource_id
+            WHERE e.resource_id = :id AND e.outcome NOT IN ('LLM_UNAVAILABLE', 'FAILED')
+              AND (r.enrichment_rerun_requested_at IS NULL OR e.started_at > r.enrichment_rerun_requested_at)
+            ORDER BY e.started_at DESC LIMIT 1
             """)
         .param("id", id)
         .query(String.class)

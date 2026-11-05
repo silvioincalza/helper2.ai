@@ -128,7 +128,7 @@ describe('the resource page', () => {
     mockApi({ [`GET /resources/${PG.id}`]: () => makeDetail({ card: ai }) });
     renderApp(`/resource/${PG.id}`);
     await screen.findByRole('heading', { level: 1, name: 'Postgres MCP' });
-    expect(screen.getByRole('heading', { name: 'About' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'About (AI-written)' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'From the source' })).not.toBeInTheDocument();
     const text = screen.getByText('A short summary.');
     expect(text).toHaveAttribute('data-ai-generated', 'true');

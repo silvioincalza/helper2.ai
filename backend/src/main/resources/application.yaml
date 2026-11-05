@@ -215,6 +215,7 @@ resilience4j:
       collector-ai-deadlines: {base-config: collector}
       collector-mcp-registry: {base-config: collector}
       collector-gap-evidence: {base-config: collector}
+      collector-gap-web: {base-config: collector}
       redis: {base-config: store}
       llm-chat:
         base-config: model
@@ -282,6 +283,7 @@ resilience4j:
       collector-ai-deadlines: {base-config: collector}
       collector-mcp-registry: {base-config: collector}
       collector-gap-evidence: {base-config: collector}
+      collector-gap-web: {base-config: collector}
 
 logging:
   structured:
@@ -435,6 +437,16 @@ helper2:
     # daily-enrichment-calls, not on top, so a value above it has no effect until that cap is raised. 0 turns the
     # gap round off.
     gap-daily-calls: ${H2_SCOUT_GAP_DAILY_CALLS:400}
+    # Evidence ladder (ADR 0056): a product's own pages, read with Tavily Extract when a run leaves a target field
+    # unproven. One Extract call (up to 5 pages, basic depth) is one credit; a product takes at most 2. Credits also
+    # count on the global Tavily cap (H2_TAVILY_GLOBAL_DAILY_CREDITS). 0 turns the page step off. A page a saved run
+    # read is not read again for page-read-ttl: for that, only its URL and a hash of its text are kept.
+    evidence:
+      daily-extract-credits: ${H2_SCOUT_EVIDENCE_DAILY_EXTRACT_CREDITS:20}
+      page-read-ttl: ${H2_SCOUT_EVIDENCE_PAGE_READ_TTL:P30D}
+      # The cleaned text of the pages (no hidden text, emails and phone numbers masked, cut to the window), in Redis
+      # only, so a retry within the day costs no credit. At most P1D, checked at startup.
+      page-text-ttl: ${H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL:PT24H}
     # Output cap of one enrichment call. The reasoning model's thinking tokens count against it; 2048 failed
     # 18 of 120 runs. See SpringAiEnrichmentModel.
     enrich-max-tokens: ${H2_NEBIUS_ENRICH_MAX_TOKENS:8192}
@@ -584,6 +596,15 @@ helper2:
       timeout: 20s
       cache-ttl: 30m
       deadline: ${H2_SOURCE_DISCOVERY_DEADLINE:}
+    tavily-extract:
+      # Product pages for the evidence ladder (ADR 0056). Off without H2_TAVILY_API_KEY.
+      enabled: ${H2_SOURCE_TAVILY_EXTRACT_ENABLED:true}
+      base-url: https://api.tavily.com
+      token: ${H2_TAVILY_API_KEY:}
+      # Basic extraction waits up to 10 s on Tavily's side; a call reads up to 4 pages.
+      timeout: 20s
+      cache-ttl: 30m
+      deadline: ${H2_SOURCE_TAVILY_EXTRACT_DEADLINE:}
     github-awesome:
       # Disabled (reported as SKIPPED) until H2_GITHUB_TOKEN is set: GraphQL rejects anonymous calls.
       enabled: ${H2_SOURCE_GITHUB_AWESOME_ENABLED:true}

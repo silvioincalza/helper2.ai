@@ -22,6 +22,7 @@ import type {
   ReviewStatus,
   ReviewKind,
   ScoutRun,
+  EnrichmentRecheck,
   AuditEntryPage,
   AdminOverview,
   EnrichmentQueuePage,
@@ -303,6 +304,8 @@ export const api = {
   /** Answers at once with the started run's records (RUNNING); follow them with listScoutRuns. 409 while a run holds the lock. */
   startScoutRun: (sourceId?: string) =>
     request<ScoutRun[]>('POST', '/admin/scout-runs', { body: sourceId ? { sourceId } : {} }),
+  /** Re-checks the stored enrichment answers by code (ADR 0056). */
+  recheckEnrichments: () => request<EnrichmentRecheck>('POST', '/admin/enrichment-recheck'),
   /** Counts for the back office landing page; the server computes them at most once a minute. */
   getAdminOverview: (signal?: AbortSignal) =>
     request<AdminOverview>('GET', '/admin/overview', { signal }),

@@ -209,7 +209,9 @@ class SpringAiEnrichmentModelTest {
   void promptAsksForAsManySummaryClaimsAsTheValidatorKeeps() {
     assertThat(SpringAiEnrichmentModel.systemPrompt())
         .contains(
-            "Summary: at most " + EvidenceValidator.MAX_SUMMARY_CLAIMS + " short factual claims.");
+            "Summary: at most "
+                + EvidenceValidator.MAX_SUMMARY_CLAIMS
+                + " short factual sentences");
   }
 
   @Test
@@ -314,7 +316,7 @@ class SpringAiEnrichmentModelTest {
         .contains("MCP_SERVER")
         .contains("- relationship kind: INTEGRATES_WITH")
         .contains("Do not output dates");
-    assertThat(SpringAiEnrichmentModel.PROMPT_VERSION).isEqualTo("enrich-v3");
+    assertThat(SpringAiEnrichmentModel.PROMPT_VERSION).isEqualTo("enrich-v4");
     assertThat(prompt)
         .contains(
             "("
@@ -322,5 +324,22 @@ class SpringAiEnrichmentModelTest {
                 + "-"
                 + EvidenceValidator.MAX_EXCERPT_CHARS
                 + " characters)");
+  }
+
+  /** The model is told which material is the vendor's own page (ADR 0056). */
+  @Test
+  void eachMaterialSaysWhatItIs() {
+    java.util.UUID id = java.util.UUID.randomUUID();
+    java.net.URI url = java.net.URI.create("https://acme.example/pricing");
+    java.time.Instant now = java.time.Instant.parse("2026-11-05T10:00:00Z");
+    assertThat(SpringAiEnrichmentModel.kind(new Material(id, url, now, "x"))).isEqualTo("record");
+    assertThat(
+            SpringAiEnrichmentModel.kind(
+                new Material(java.util.UUID.randomUUID(), url, now, "x", id, false, false)))
+        .isEqualTo("readme");
+    assertThat(
+            SpringAiEnrichmentModel.kind(
+                new Material(java.util.UUID.randomUUID(), url, now, "x", id, true, true)))
+        .isEqualTo("vendor-page");
   }
 }

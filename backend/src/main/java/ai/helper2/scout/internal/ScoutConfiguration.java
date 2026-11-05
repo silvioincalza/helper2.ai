@@ -5,6 +5,7 @@ import ai.helper2.catalog.usecase.IndexResources;
 import ai.helper2.identity.AuditTrail;
 import ai.helper2.platform.ClusterLock;
 import ai.helper2.platform.ClusterLocks;
+import ai.helper2.platform.cache.SharedCaches;
 import ai.helper2.platform.llm.CallCounter;
 import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.LlmSettings;
@@ -13,6 +14,7 @@ import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CandidateReview;
 import ai.helper2.scout.CatalogIndex;
 import ai.helper2.scout.Collector;
+import ai.helper2.scout.DomainRoots;
 import ai.helper2.scout.EnrichmentBacklog;
 import ai.helper2.scout.EnrichmentInput;
 import ai.helper2.scout.EnrichmentModel;
@@ -22,6 +24,10 @@ import ai.helper2.scout.EvidenceValidator;
 import ai.helper2.scout.ExtraEvidence;
 import ai.helper2.scout.GapBudget;
 import ai.helper2.scout.LlmUnavailable;
+import ai.helper2.scout.OfficialPages;
+import ai.helper2.scout.PageLedger;
+import ai.helper2.scout.PageReader;
+import ai.helper2.scout.PageTextCache;
 import ai.helper2.scout.RunCalendar;
 import ai.helper2.scout.RunLock;
 import ai.helper2.scout.ScheduledRun;
@@ -31,8 +37,11 @@ import ai.helper2.scout.config.ScoutProperties;
 import ai.helper2.scout.usecase.CatalogLookup;
 import ai.helper2.scout.usecase.EnrichResource;
 import ai.helper2.scout.usecase.IndexAcceptedCandidate;
+import ai.helper2.scout.usecase.RecheckEnrichments;
 import ai.helper2.scout.usecase.RunScout;
 import ai.helper2.scout.usecase.StartScoutRun;
+import ai.helper2.scout.usecase.StoredAnswers;
+import ai.helper2.search.WebSearchQuota;
 import io.micrometer.context.ContextSnapshotFactory;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -56,9 +65,11 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.support.CronExpression;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.ObjectMapper;
 
 @Configuration(proxyBeanMethods = false)
 class ScoutConfiguration {
@@ -139,11 +150,29 @@ class ScoutConfiguration {
       MeterRegistry meters,
       ObservationRegistry observations,
       ObjectProvider<ExtraEvidence> extraEvidence,
+      ObjectProvider<PageReader> pageReader,
+      ObjectProvider<DomainRoots> domainRoots,
+      ObjectProvider<WebSearchQuota> webSearchQuota,
+      ObjectProvider<SharedCaches> sharedCaches,
+      ObjectProvider<StringRedisTemplate> redis,
+      ObjectMapper json,
+      Resilience resilience,
       CallCounter budgetCounter,
       ScoutProperties scout) {
     int maxItemsPerRun = scout.maxItemsPerRun();
     int maxEnrichmentsPerRun = scout.maxEnrichmentsPerRun();
     int gapDailyCalls = scout.gapDailyCalls();
+    OfficialPages pages =
+        officialPages(
+            pageReader.getIfAvailable(),
+            domainRoots.getIfAvailable(),
+            webSearchQuota.getIfAvailable(),
+            sharedCaches.getIfAvailable(),
+            pageTextCache(redis.getIfAvailable(), json, resilience, scout.evidence()),
+            scout.evidence(),
+            clock,
+            budgetCounter,
+            meters);
     return new RunScout(
         collectors,
         store,
@@ -155,7 +184,8 @@ class ScoutConfiguration {
             new EvidenceValidator(),
             meters,
             extraEvidence.getIfAvailable(),
-            gapBudget(gapDailyCalls, clock, budgetCounter, meters)),
+            gapBudget(gapDailyCalls, clock, budgetCounter, meters),
+            pages),
         clock,
         new ClusterRunLock(scoutRunLock),
         maxItemsPerRun,
@@ -165,6 +195,59 @@ class ScoutConfiguration {
         RUN_THREADS,
         observations,
         review);
+  }
+
+  /**
+   * The evidence ladder's page step (ADR 0056), or null when it is off: no reader (demo profile),
+   * no Tavily key, or no credits a day. Its credits have their own daily cap and count on the
+   * global Tavily cap; the pages read lately are kept by URL and hash in the shared cache.
+   */
+  static @Nullable OfficialPages officialPages(
+      @Nullable PageReader reader,
+      @Nullable DomainRoots roots,
+      @Nullable WebSearchQuota quota,
+      @Nullable SharedCaches caches,
+      PageTextCache textCache,
+      ScoutProperties.Evidence evidence,
+      Clock clock,
+      CallCounter counter,
+      MeterRegistry meters) {
+    if (reader == null
+        || !reader.getAvailable()
+        || roots == null
+        || evidence.dailyExtractCredits() <= 0) {
+      log.info("Evidence ladder: product pages off (no reader, no key or no credits)");
+      return null;
+    }
+    DailyBudget credits =
+        new DailyBudget(evidence.dailyExtractCredits(), clock, "scout-evidence-extract", counter);
+    Gauge.builder("helper2.scout.evidence.credits.remaining", credits, DailyBudget::remaining)
+        .description("Tavily Extract credits left for product pages under today's cap (UTC day)")
+        .register(meters);
+    PageLedger ledger =
+        caches == null
+            ? PageLedger.NONE
+            : new SharedCachePageLedger(
+                caches.named(SharedCachePageLedger.CACHE), evidence.pageReadTtl());
+    log.info(
+        "Evidence ladder: product pages on, {} Extract credits a day",
+        evidence.dailyExtractCredits());
+    return new OfficialPages(
+        reader, new TavilyCreditBudget(credits, quota, meters), roots, clock, ledger, textCache);
+  }
+
+  /**
+   * The cleaned text of product pages for a retry within the day (ADR 0056): Redis only, for
+   * page-text-ttl (at most a day). Without Redis, nothing is kept and a retry reads again.
+   */
+  static PageTextCache pageTextCache(
+      @Nullable StringRedisTemplate redis,
+      ObjectMapper json,
+      Resilience resilience,
+      ScoutProperties.Evidence evidence) {
+    return redis == null
+        ? PageTextCache.NONE
+        : new RedisPageTextCache(redis, json, resilience, evidence.pageTextTtl());
   }
 
   /**
@@ -218,6 +301,41 @@ class ScoutConfiguration {
   @Bean
   StartScoutRun startScoutRun(RunScout scoutRunner, AuditTrail audit) {
     return new StartScoutRun(scoutRunner, audit);
+  }
+
+  /**
+   * Re-checks stored enrichment answers by code (ADR 0056): once after the first start with it,
+   * then whenever an admin asks. Resources go back to the backlog only when a model is configured.
+   */
+  @Bean
+  RecheckEnrichments recheckEnrichments(
+      StoredAnswers answers,
+      EnrichmentStore enrichmentStore,
+      EnrichmentModel model,
+      AuditTrail audit,
+      MeterRegistry meters) {
+    return new RecheckEnrichments(
+        answers, enrichmentStore, model.getPromptVersion(), model.getAvailable(), audit, meters);
+  }
+
+  /**
+   * The first re-check runs on its own virtual thread after startup, claimed once across the
+   * cluster; a failure is logged and an admin can run it again. Only where the Scout is scheduled
+   * (prod): that is where the backlog it fills is worked off.
+   */
+  @Bean
+  @ConditionalOnProperty(name = "helper2.scout.enabled", havingValue = "true")
+  ApplicationListener<ApplicationReadyEvent> recheckEnrichmentsOnce(RecheckEnrichments recheck) {
+    return event ->
+        Thread.ofVirtual()
+            .name("enrichment-recheck")
+            .start(() -> {
+              try {
+                recheck.runOnce();
+              } catch (RuntimeException e) {
+                log.warn("enrichment re-check failed: {}", e.getClass().getSimpleName());
+              }
+            });
   }
 
   /**

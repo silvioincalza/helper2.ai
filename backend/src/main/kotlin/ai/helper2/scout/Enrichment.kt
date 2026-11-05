@@ -1,9 +1,7 @@
 package ai.helper2.scout
 
-import ai.helper2.shared.Audience
-import ai.helper2.shared.Pricing
 import ai.helper2.shared.ResourceType
-import ai.helper2.shared.TechLevel
+import ai.helper2.shared.ValueOrigin
 import ai.helper2.shared.Verification
 import java.net.URI
 import java.nio.charset.StandardCharsets
@@ -16,7 +14,9 @@ import java.util.UUID
  * One piece of retrieved source material the model may cite. A source record is its own anchor.
  * Extra text read in the gap round (ADR 0043) has its own evidence id, belongs to the record it was
  * read for ([anchorRecordId]), and may support fields and relationships but not summary claims
- * ([supportsClaims]): a claim is the model's own sentence, and a README is written by anyone.
+ * ([supportsClaims]): a claim is the model's own sentence, and a README is written by anyone. A
+ * page of the product's own site (ADR 0056) is [selfDeclared]: what it proves is what the vendor
+ * says about itself.
  */
 data class Material
 @JvmOverloads
@@ -27,8 +27,9 @@ constructor(
   val text: String,
   val anchorRecordId: UUID = evidenceId,
   val supportsClaims: Boolean = true,
+  val selfDeclared: Boolean = false,
 ) {
-  /** True for text that is not a stored source record (a README or model card). */
+  /** True for text that is not a stored source record (a README, a model card or a page). */
   val extra: Boolean
     get() = anchorRecordId != evidenceId
 }
@@ -48,21 +49,40 @@ data class EnrichmentInput(
 /**
  * What the store loaded for one resource: the model's input, a hash of its source text and, when
  * one of its records names its own repository or model, where the gap round may read more
- * ([gapTarget]).
+ * ([gapTarget]). [type] is the catalog's type: it sets the fields the evidence ladder tries to fill
+ * (ADR 0056). [pageTarget] is the product's own web page, when one of its records is one.
  */
 data class EnrichmentMaterial
 @JvmOverloads
-constructor(val input: EnrichmentInput, val textHash: String, val gapTarget: GapTarget? = null) {
+constructor(
+  val input: EnrichmentInput,
+  val textHash: String,
+  val gapTarget: GapTarget? = null,
+  val type: ResourceType = ResourceType.OTHER,
+  val pageTarget: PageTarget? = null,
+) {
   /**
-   * The enrichment fingerprint: what a run of [model] would see. The same source text under another
-   * prompt version or another model is a different input, so it is enriched again.
+   * The enrichment fingerprint: the source text, the [FINGERPRINT_EPOCH] and the model. The same
+   * source text under another model is a different input, so it is enriched again. A new prompt
+   * version alone is not (ADR 0056): re-enriching the whole catalog for a wording change costs days
+   * of the daily cap. The stored answers are checked again by code instead (RecheckEnrichments),
+   * and only resources that still miss facts are sent again.
    */
   fun fingerprintFor(model: EnrichmentModel): String =
-    sha256Prefix(listOf(textHash, model.promptVersion, model.model).joinToString("\u001f"))
+    sha256Prefix(listOf(textHash, FINGERPRINT_EPOCH, model.model).joinToString("\u001f"))
+
+  companion object {
+    /**
+     * Part of every fingerprint. It is the prompt version the fingerprints had when the prompt
+     * version left them (enrich-v3), so stored fingerprints stay valid. Change it only to enrich
+     * every resource again on purpose.
+     */
+    const val FINGERPRINT_EPOCH = "enrich-v3"
+  }
 }
 
 /** First 16 bytes of the SHA-256 of [text], hex encoded. */
-private fun sha256Prefix(text: String): String =
+internal fun sha256Prefix(text: String): String =
   HexFormat.of()
     .formatHex(
       MessageDigest.getInstance("SHA-256").digest(text.toByteArray(StandardCharsets.UTF_8)),
@@ -142,22 +162,41 @@ constructor(
   val retrievedAt: Instant? = null,
 )
 
-data class CheckedField(
+/**
+ * A field the validator judged. [origin] is AI_EXTRACTED for a fact a quote states, SELF_DECLARED
+ * when only the product's own pages state it, and AI_ESTIMATED for a judgement field (audience,
+ * tech level) the model may estimate without a quote (ADR 0056). A fact is never AI_ESTIMATED.
+ */
+data class CheckedField
+@JvmOverloads
+constructor(
   val field: String,
   val value: String,
   val verification: Verification,
   val citations: List<CheckedCitation>,
+  val origin: ValueOrigin = ValueOrigin.AI_EXTRACTED,
 )
 
-data class CheckedRelationship(
+/** [origin] is SELF_DECLARED when only the product's own pages name the target. */
+data class CheckedRelationship
+@JvmOverloads
+constructor(
   val kind: String,
   val target: String,
   val targetId: UUID?,
   val verification: Verification,
   val citations: List<CheckedCitation>,
+  val origin: ValueOrigin = ValueOrigin.AI_EXTRACTED,
 )
 
-data class CheckedClaim(val text: String, val citations: List<CheckedCitation>)
+/** [selfDeclared]: the claim cites the product's own page. */
+data class CheckedClaim
+@JvmOverloads
+constructor(
+  val text: String,
+  val citations: List<CheckedCitation>,
+  val selfDeclared: Boolean = false,
+)
 
 data class ValidationResult(
   val outcome: EnrichmentOutcome,
@@ -169,311 +208,11 @@ data class ValidationResult(
 ) {
   /**
    * What the run keeps: verified fields, relationships not rejected, and claims. The gap round
-   * keeps the run with more.
+   * keeps the run with more. An AI-estimated value proves nothing, so it does not count.
    */
   val accepted: Int
     get() =
       fields.count { it.verification == Verification.VERIFIED } +
         relationships.count { it.verification != Verification.REJECTED } +
         summary.size
-}
-
-/**
- * Deterministic validation of model output. The guarantee: nothing the model says is published as
- * VERIFIED unless (1) it is in the allowed schema, (2) it cites evidence that was actually
- * retrieved, (3) every cited excerpt appears in that evidence and, for license, openSource and
- * platforms, (4) the excerpt states the value itself (or a known synonym). Model confidence is
- * ignored.
- */
-class EvidenceValidator(
-  private val minExcerpt: Int = MIN_EXCERPT_CHARS,
-  private val maxExcerpt: Int = MAX_EXCERPT_CHARS,
-) {
-
-  companion object {
-    /**
-     * 20 characters is about three words: enough to state a fact ("Works with Claude Desktop"), too
-     * long for a bare token ("MCP", "free") that appears in almost any material and so proves
-     * nothing.
-     */
-    const val MIN_EXCERPT_CHARS = 20
-    const val MAX_EXCERPT_CHARS = 300
-
-    /** Summary claims kept per run; the prompt asks for the same number. */
-    const val MAX_SUMMARY_CLAIMS = 3
-
-    val RELATIONSHIP_KINDS = setOf("INTEGRATES_WITH", "USES", "SUPPORTS", "COMPATIBLE_WITH")
-    val USE_CASES =
-      setOf(
-        "writing",
-        "translation",
-        "summarization",
-        "image-generation",
-        "coding",
-        "research",
-        "transcription",
-        "automation",
-        "design",
-        "learning",
-        "data-analysis",
-        "chat",
-        "video",
-        "audio",
-      )
-    val PLATFORMS =
-      setOf(
-        "web",
-        "desktop",
-        "ios",
-        "android",
-        "cli",
-        "api",
-        "browser-extension",
-        "vscode",
-        "node",
-        "python",
-        "local",
-        "remote",
-      )
-
-    /**
-     * The allowed values, one line per field, for the model's instructions. Built from the same
-     * sets the validator checks, so the prompt and the validation cannot drift apart.
-     */
-    @JvmStatic
-    fun allowedValues(): String =
-      listOf(
-          "type" to ResourceType.entries.map { it.name },
-          "audience" to Audience.entries.filter { it != Audience.UNKNOWN }.map { it.name },
-          "techLevel" to TechLevel.entries.map { it.name },
-          "pricing" to Pricing.entries.map { it.name },
-          "openSource" to listOf("true", "false"),
-          "license" to listOf("an SPDX licence id, e.g. MIT, Apache-2.0"),
-          "useCase" to USE_CASES.toList(),
-          "platforms" to PLATFORMS.toList(),
-          "relationship kind" to RELATIONSHIP_KINDS.toList(),
-        )
-        .joinToString("\n") { (field, values) -> "- $field: ${values.joinToString(" | ")}" }
-
-    private val OSI_LICENCE_WORDS =
-      listOf("mit", "apache", "bsd", "gpl", "lgpl", "agpl", "mpl", "isc", "unlicense")
-
-    /** Words that state a value of a field whose value must appear in its excerpt. */
-    private val SYNONYMS: Map<String, Map<String, List<String>>> =
-      mapOf(
-        "openSource" to
-          mapOf(
-            "true" to listOf("open source", "open-source", "opensource") + OSI_LICENCE_WORDS,
-            "false" to
-              listOf(
-                "proprietary",
-                "closed source",
-                "closed-source",
-                "source-available",
-                "source available",
-              ),
-          ),
-        "platforms" to
-          mapOf(
-            "web" to listOf("web", "browser", "online"),
-            "desktop" to listOf("desktop", "windows", "macos", "linux"),
-            "ios" to listOf("ios", "iphone", "ipad"),
-            "android" to listOf("android"),
-            "cli" to listOf("cli", "command line", "command-line", "terminal"),
-            "api" to listOf("api", "rest", "sdk"),
-            "browser-extension" to
-              listOf(
-                "browser extension",
-                "chrome extension",
-                "firefox extension",
-                "extension",
-                "add-on",
-              ),
-            "vscode" to listOf("vscode", "vs code", "visual studio code"),
-            "node" to listOf("node", "node.js", "nodejs", "npm"),
-            "python" to listOf("python", "pip", "pypi"),
-            "local" to
-              listOf("local", "locally", "offline", "self-hosted", "on-device", "on device"),
-            "remote" to listOf("remote", "hosted", "cloud"),
-          ),
-      )
-
-    private val MUST_STATE_VALUE = setOf("license", "openSource", "platforms")
-
-    /**
-     * Words that state [value] of [field]: the value itself and its synonyms. A licence is stated
-     * by its family name ("Apache-2.0" by "apache", "GPL-3.0" also by "general public license").
-     */
-    internal fun statingWords(field: String, value: String): List<String> {
-      val v = value.lowercase()
-      if (field == "license") {
-        val family =
-          v.substringBefore('-').substringBefore('.').trimEnd { it.isDigit() }.ifEmpty { v }
-        return listOf(v, family) +
-          when (family) {
-            "gpl" -> listOf("general public license")
-            "lgpl" -> listOf("lesser general public license")
-            "agpl" -> listOf("affero general public license")
-            "mpl" -> listOf("mozilla public license")
-            else -> emptyList()
-          }
-      }
-      return listOf(v) + SYNONYMS[field]?.get(v).orEmpty()
-    }
-  }
-
-  private val relationshipKinds = RELATIONSHIP_KINDS
-  private val useCases = USE_CASES
-  private val platforms = PLATFORMS
-  private val spdx = Regex("^[A-Za-z0-9.+-]{2,40}$")
-
-  private val allowed: Map<String, (String) -> Boolean> =
-    mapOf(
-      "type" to { v -> ResourceType.entries.any { it.name == v } },
-      "audience" to { v -> Audience.entries.any { it.name == v && it != Audience.UNKNOWN } },
-      "techLevel" to { v -> TechLevel.entries.any { it.name == v } },
-      "pricing" to { v -> Pricing.entries.any { it.name == v } },
-      "openSource" to { v -> v == "true" || v == "false" },
-      "license" to { v -> spdx.matches(v) },
-      "useCase" to { v -> v in useCases },
-      "platforms" to { v -> v in platforms },
-    )
-
-  fun validate(input: EnrichmentInput, proposal: EnrichmentProposal): ValidationResult {
-    val errors = mutableListOf<String>()
-    val byId = input.materials.associateBy { it.evidenceId.toString() }
-
-    fun check(citations: List<Citation>, what: String): List<CheckedCitation>? {
-      if (citations.isEmpty()) {
-        errors += "$what: no evidence cited"
-        return null
-      }
-      val out = mutableListOf<CheckedCitation>()
-      for (c in citations) {
-        val m = byId[c.evidenceId]
-        if (m == null) {
-          errors += "$what: unknown evidence id ${c.evidenceId.take(40)}"
-          return null
-        }
-        val excerpt = c.excerpt.trim()
-        if (excerpt.length !in minExcerpt..maxExcerpt) {
-          errors += "$what: excerpt length ${excerpt.length} outside $minExcerpt..$maxExcerpt"
-          return null
-        }
-        if (!normalize(m.text).contains(normalize(excerpt))) {
-          errors += "$what: excerpt not found in cited evidence"
-          return null
-        }
-        out +=
-          if (m.extra)
-            CheckedCitation(m.evidenceId, excerpt, m.anchorRecordId, m.sourceUrl, m.retrievedAt)
-          else CheckedCitation(m.evidenceId, excerpt)
-      }
-      return out
-    }
-
-    val fields =
-      proposal.fields.map { f ->
-        val label = "field ${f.field.take(40)}"
-        val rule = allowed[f.field]
-        when {
-          rule == null -> {
-            errors += "$label: field not allowed"
-            CheckedField(f.field, f.value, Verification.REJECTED, emptyList())
-          }
-          !rule(f.value) -> {
-            errors += "$label: value not allowed"
-            CheckedField(f.field, f.value, Verification.REJECTED, emptyList())
-          }
-          else -> {
-            val cited = check(f.citations, label)
-            val sourceValue = input.sourceFacts[f.field]
-            when {
-              cited == null -> CheckedField(f.field, f.value, Verification.REJECTED, emptyList())
-              sourceValue != null && !sourceValue.equals(f.value, ignoreCase = true) -> {
-                errors += "$label: conflicts with source-provided value"
-                CheckedField(f.field, f.value, Verification.CONFLICTING, cited)
-              }
-              f.field in MUST_STATE_VALUE &&
-                cited.none { statesValue(it.excerpt, f.field, f.value) } -> {
-                errors += "$label: the cited excerpt does not state the value"
-                CheckedField(f.field, f.value, Verification.UNVERIFIED, cited)
-              }
-              else -> CheckedField(f.field, f.value, Verification.VERIFIED, cited)
-            }
-          }
-        }
-      }
-
-    val relationships =
-      proposal.relationships.map { r ->
-        val label = "relationship ${r.kind.take(20)} ${r.target.take(40)}"
-        if (r.kind !in relationshipKinds || r.target.isBlank() || r.target.length > 120) {
-          errors += "$label: invalid kind or target"
-          return@map CheckedRelationship(r.kind, r.target, null, Verification.REJECTED, emptyList())
-        }
-        val cited = check(r.citations, label)
-        if (cited == null) {
-          return@map CheckedRelationship(r.kind, r.target, null, Verification.REJECTED, emptyList())
-        }
-        if (cited.none { normalize(it.excerpt).contains(normalize(r.target)) }) {
-          errors += "$label: excerpt does not mention the target"
-          return@map CheckedRelationship(r.kind, r.target, null, Verification.REJECTED, emptyList())
-        }
-        val targetId = input.knownResources[r.target.trim().lowercase()]
-        CheckedRelationship(
-          r.kind,
-          r.target,
-          targetId,
-          if (targetId != null) Verification.VERIFIED else Verification.UNVERIFIED,
-          cited,
-        )
-      }
-
-    val claims =
-      proposal.summary.take(MAX_SUMMARY_CLAIMS).mapNotNull { c ->
-        if (c.text.isBlank() || c.text.length > 300) {
-          errors += "summary claim: empty or too long"
-          return@mapNotNull null
-        }
-        if (c.citations.any { byId[it.evidenceId]?.supportsClaims == false }) {
-          errors += "summary claim: cites text that may not support a claim"
-          return@mapNotNull null
-        }
-        check(c.citations, "summary claim")?.let { CheckedClaim(c.text.trim(), it) }
-      }
-
-    val proposed = proposal.fields.size + proposal.relationships.size + proposal.summary.size
-    val accepted =
-      fields.count { it.verification == Verification.VERIFIED } +
-        relationships.count { it.verification != Verification.REJECTED } +
-        claims.size
-    val outcome =
-      when {
-        proposed == 0 -> EnrichmentOutcome.REJECTED.also { errors += "empty proposal" }
-        accepted == 0 -> EnrichmentOutcome.REJECTED
-        errors.isEmpty() && relationships.none { it.verification == Verification.UNVERIFIED } ->
-          EnrichmentOutcome.VALIDATED
-        else -> EnrichmentOutcome.PARTIAL
-      }
-    return ValidationResult(outcome, fields, relationships, claims, errors)
-  }
-
-  /**
-   * True when [excerpt] contains one of the words stating [value], as whole words ("api" not in
-   * "rapid").
-   */
-  private fun statesValue(excerpt: String, field: String, value: String): Boolean {
-    val text = normalize(excerpt)
-    return statingWords(field, value).any {
-      Regex("(?<![a-z0-9])${Regex.escape(it)}(?![a-z0-9])").containsMatchIn(text)
-    }
-  }
-
-  /**
-   * The adapter shows the model "‹ ›" instead of "< >" (UntrustedText); map them back before
-   * matching.
-   */
-  private fun normalize(s: String) =
-    s.replace('‹', '<').replace('›', '>').lowercase().replace(Regex("\\s+"), " ").trim()
 }
