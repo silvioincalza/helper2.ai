@@ -15,9 +15,9 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 - Lawyer review of the web-search quota ([ADR 0037](adr/search/0037-tavily-store-and-daily-quota.md)): whether an HMAC of
   the address or of the query is personal data, legitimate interest as the basis, and the wording on the transfer of
   queries to Tavily in the US.
-- Lawyer review of back-office records ([ADR 0058](adr/operations/0058-runtime-settings.md)): `admin_audit` and
-  `runtime_setting` keep an administrator's GitHub id and a free-text reason for 24 months. Is the line on the Privacy
-  page enough for the people who run the site, and is 24 months right?
+- Lawyer review of back-office records ([ADR 0045](adr/edge/0045-back-office.md)): `admin_audit` keeps an
+  administrator's GitHub id for 24 months, and a review item keeps who decided it and their note. Is the line on the
+  Privacy page enough for the people who run the site, and is 24 months right?
 - Check each US source and GitHub for Data Privacy Framework certification, as the Privacy page states.
 - Lawyer review of guide question embeddings ([ADR 0041](adr/guide/0041-guide-answer-cache.md)): whether an embedding of a
   question is personal data, the basis for keeping it up to a day, and the transfer of search and guide text to the
@@ -367,6 +367,8 @@ Fix an item or accept it; when it no longer holds, remove it.
 
 ### Frontend
 
+- With ads on, public pages allow inline styles (`style-src 'unsafe-inline'`) for the EthicalAds client. The ad slot's height is fixed by hand; check it against real ads on staging. ([ADR 0057](adr/frontend/0057-monetisation.md))
+- Google Analytics hosts are listed by hand in the CSP; if Google changes them, hits are blocked until the list is updated. ([ADR 0057](adr/frontend/0057-monetisation.md))
 - A user who never presses Ask the guide (or Shift+Enter) never sees the guide's picks: Enter only searches. ([ADR 0025](adr/frontend/0025-frontend-one-box.md))
 - knip does not read locale files or CSS: a text key or a style that only dead code used stays until it is removed by hand (today the `freshness.*` texts and `.badge.freshness`). Moderate `npm audit` advisories in build and test tools are only reported. ([ADR 0054](adr/quality/0054-dead-code-and-dependency-audit.md))
 - No browser end-to-end tests: frontend tests run in jsdom only, also in CI. ([ADR 0025](adr/frontend/0025-frontend-one-box.md), [ADR 0028](adr/operations/0028-ci-cd.md))
@@ -382,7 +384,6 @@ Fix an item or accept it; when it no longer holds, remove it.
 - Deleting an old image needs the Harbor immutability rule disabled first, and enabled again after. ([ADR 0029](adr/operations/0029-release-versioning.md))
 - A release that has no version tag in Harbor (one made before release tags) is deployed by its commit, not by its version. ([ADR 0048](adr/operations/0048-release-branches-and-version-tags.md))
 - A deleted row stays in the backups for up to 7 days; purges run daily, so a row can outlive its period by a day; a purged observed resource seen again comes back with a new `first_discovered_at`. ([ADR 0034](adr/operations/0034-data-retention.md))
-- Runtime settings ([ADR 0058](adr/operations/0058-runtime-settings.md)): a change reaches the other replicas within about 20 s, so for those seconds two replicas can cut off at two limits. The Settings page's read-only groups show the startup value for every other setting. A change has no Grafana annotation yet, so a dashboard does not show when a limit moved. A limit raised for one day stays until someone resets it: an expiry ("until midnight UTC") would need one more column. The six maximums are first guesses (2.5 to 5 times today's prod values); revisit them after a month of use. A new `H2_` default with an override in place changes nothing until the override is reset.
 
 ### Quality
 
