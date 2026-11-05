@@ -470,6 +470,63 @@ class AskGuideTest {
     assertEquals(4, model.calls)
   }
 
+  private fun noPick() =
+    ScriptedModel(GuideSearchPlan("speech recognition")) { _, _ ->
+      GuideProposal(emptyList(), null, emptyList())
+    }
+
+  private fun quotaGuide(model: GuideModel, quota: ClientQuota) =
+    AskGuide(
+      search,
+      model,
+      clock,
+      cache = GuideAnswerCache(Duration.ofHours(24), clock, MemoryAnswerStore()),
+      meters = meters,
+      quota = quota,
+    )
+
+  @Test
+  fun `an answer with no pick spends none of the asker's questions`() {
+    val quota = ClientQuota(3, clock, QuotaKeys("test-secret", clock))
+
+    val answer = quotaGuide(noPick(), quota).ask(need, null, client = "10.0.0.1")
+
+    assertTrue(answer.recommendations.none { it.aiReasoned })
+    assertEquals(3, quota.left("10.0.0.1"))
+    assertEquals(
+      1.0,
+      meters.counter("helper2.guide.quota.give_back", "outcome", "given_back").count(),
+    )
+  }
+
+  @Test
+  fun `an answer with a pick spends one question, and asking it again from the cache spends none`() {
+    val quota = ClientQuota(3, clock, QuotaKeys("test-secret", clock))
+    val guide = quotaGuide(whisperPick(), quota)
+
+    assertTrue(guide.ask(need, null, client = "10.0.0.1").recommendations.any { it.aiReasoned })
+    assertEquals(2, quota.left("10.0.0.1"))
+
+    guide.ask(need, null, client = "10.0.0.1")
+    assertEquals(2, quota.left("10.0.0.1"), "a cached answer")
+    assertEquals(1.0, questions("cached"))
+  }
+
+  @Test
+  fun `past the free answers of the day a question with no pick counts`() {
+    val quota = ClientQuota(3, clock, QuotaKeys("test-secret", clock), freeAnswersPerDay = 1)
+    val guide = quotaGuide(noPick(), quota)
+
+    guide.ask("first question about speech", null, client = "10.0.0.1")
+    guide.ask("second question about speech", null, client = "10.0.0.1")
+
+    assertEquals(2, quota.left("10.0.0.1"))
+    assertEquals(
+      1.0,
+      meters.counter("helper2.guide.quota.give_back", "outcome", "cap_reached").count(),
+    )
+  }
+
   @Test
   fun `identical questions asked at the same time share one computation`() {
     val entered = CountDownLatch(1)

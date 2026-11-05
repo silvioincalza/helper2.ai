@@ -16,6 +16,8 @@ import org.springframework.validation.annotation.Validated;
  *
  * @param dailyModelCalls global model-call cap per UTC day (ADR 0017); 0 disables the model
  * @param clientDailyQuestions fresh questions per client per UTC day
+ * @param clientDailyFreeAnswers answers with no AI pick given back to a client's daily questions
+ *     per UTC day; past it such an answer counts like any other
  * @param questionDeadline a question is cancelled after this long
  * @param heartbeat how often the streamed guide sends a keep-alive comment
  * @param cacheTtl how long answers stay in the shared cache
@@ -30,6 +32,7 @@ import org.springframework.validation.annotation.Validated;
 public record GuideProperties(
     @PositiveOrZero int dailyModelCalls,
     @PositiveOrZero int clientDailyQuestions,
+    @PositiveOrZero int clientDailyFreeAnswers,
     @NotNull Duration questionDeadline,
     @NotNull Duration heartbeat,
     @NotNull Duration cacheTtl,

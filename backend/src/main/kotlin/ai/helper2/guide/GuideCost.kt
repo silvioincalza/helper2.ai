@@ -13,6 +13,8 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.HexFormat
 import java.util.Locale
+import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Fresh (not cached) guide questions per client per UTC day. The per-minute rate limit alone lets
@@ -21,6 +23,10 @@ import java.util.Locale
  * of the UTC day ([QuotaKeys.client], a keyed hash), so no address is stored; when the counter
  * fails, counting goes on in memory. The pseudonym changes at midnight UTC, when the quota starts
  * afresh anyway. These budgets are never listed in the back office.
+ *
+ * A question is taken before the model runs ([reserve]), so abuse stays bounded, and given back
+ * when its answer has nothing from the AI ([giveBack], [spendsAQuestion]): at most
+ * [freeAnswersPerDay] times a day, so a client cannot loop such questions for free.
  *
  * In memory, only today's clients are kept, at most [maxClients], the least recently seen leaving
  * first. A client that left keeps its count in [counter]; only the in-memory fallback count is
@@ -34,6 +40,7 @@ constructor(
   private val keys: QuotaKeys,
   counter: CallCounter = CallCounter.NONE,
   private val maxClients: Int = MAX_CLIENTS,
+  private val freeAnswersPerDay: Int = questionsPerDay,
 ) {
   /**
    * Counted like any budget, never listed: a name per client must not reach the back office (ADR
@@ -53,8 +60,18 @@ constructor(
     get() = maxOf(0, questionsPerDay)
 
   /**
+   * One question taken from a client's quota. [id] is random: it names the question for [giveBack]
+   * and says nothing about the client.
+   */
+  class Reservation
+  internal constructor(internal val budget: DailyBudget, internal val day: LocalDate) {
+    val id: String = UUID.randomUUID().toString()
+    internal val givenBack = AtomicBoolean()
+  }
+
+  /**
    * Questions [client] has left today, without taking one: the durable count when it answers, else
-   * this replica's count in memory (as [tryAcquire] counts).
+   * this replica's count in memory (as [reserve] counts).
    */
   fun left(client: String): Int {
     val name = nameOf(client)
@@ -64,17 +81,19 @@ constructor(
       } catch (_: RuntimeException) {
         null
       }
-    val inMemory = synchronized(this) { if (day == today()) budgets[name]?.usedToday() ?: 0 else 0 }
-    val used = maxOf(durable ?: 0L, inMemory.toLong())
+    val used =
+      durable
+        ?: synchronized(this) { if (day == today()) budgets[name]?.usedToday() ?: 0 else 0 }
+          .toLong()
     return maxOf(0L, limit - used).toInt()
   }
 
-  /** Takes one question from [client]'s quota for today; false when it is used up. */
-  fun tryAcquire(client: String): Boolean {
+  /** Takes one question from [client]'s quota for today; null when it is used up. */
+  fun reserve(client: String): Reservation? {
     val name = nameOf(client)
+    val now = today()
     val budget =
       synchronized(this) {
-        val now = today()
         if (now != day) {
           day = now
           budgets.clear()
@@ -82,7 +101,25 @@ constructor(
         budgets.getOrPut(name) { DailyBudget(questionsPerDay, clock, name, counter) }
       }
     // Outside the lock: the counter is a Redis call.
-    return budget.tryAcquire()
+    return if (budget.tryAcquire()) Reservation(budget, now) else null
+  }
+
+  /** [reserve] without the reservation: false when the quota is used up. */
+  fun tryAcquire(client: String): Boolean = reserve(client) != null
+
+  /**
+   * Gives [reservation]'s question back: its answer turned out free. Once per reservation, also
+   * across replicas and retries; at most [freeAnswersPerDay] a day per client; never below 0.
+   */
+  fun giveBack(reservation: Reservation): CallCounter.GiveBack {
+    if (!reservation.givenBack.compareAndSet(false, true)) {
+      return CallCounter.GiveBack.ALREADY_GIVEN_BACK
+    }
+    return reservation.budget.giveBack(
+      reservation.day,
+      reservation.id,
+      maxOf(0, freeAnswersPerDay),
+    )
   }
 
   /** Clients held in memory right now. */
@@ -99,8 +136,21 @@ constructor(
      * can serve.
      */
     const val MAX_CLIENTS = 10_000
+
+    /**
+     * Whether [answer] spends one of the asker's daily questions (ADR 0017): only when the AI
+     * answered, with at least one AI pick, a comparison or an explanation. An answer with no pick
+     * ("Nothing clearly fits your need", no candidates, model down, a question back) is free.
+     */
+    @JvmStatic fun spendsAQuestion(answer: GuideAnswer): Boolean = answer.hasAiAnswer()
   }
 }
+
+/** The AI answered: at least one AI pick, a comparison or an explanation with sentences. */
+internal fun GuideAnswer.hasAiAnswer(): Boolean =
+  recommendations.any { it.aiReasoned } ||
+    comparison != null ||
+    explanation?.sentences?.isNotEmpty() == true
 
 internal fun sha256Hex(text: String): String =
   HexFormat.of()
@@ -180,11 +230,7 @@ class GuideAnswerCache(
           .none { it.text != null && it.reasonCheck == ReasonCheck.NOT_CHECKED }
       val explanationChecked =
         a.explanation?.sentences.orEmpty().none { it.reasonCheck == ReasonCheck.NOT_CHECKED }
-      val answered =
-        a.recommendations.any { it.aiReasoned } ||
-          a.comparison != null ||
-          a.explanation?.sentences?.isNotEmpty() == true
-      return answered && picksChecked && comparisonChecked && explanationChecked
+      return a.hasAiAnswer() && picksChecked && comparisonChecked && explanationChecked
     }
 
     /** Longest life of an answer with a window ("last month"): see [ttlOf]. */

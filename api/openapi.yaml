@@ -1747,7 +1747,8 @@ components:
           oneOf: [{ $ref: '#/components/schemas/DailyAllowance' }, { type: 'null' }]
           description: >-
             Fresh guide questions per client address (`H2_GUIDE_CLIENT_DAILY_QUESTIONS`, ADR 0017). An answer from the
-            cache costs none; past the limit the guide answers from search only. Null when the guide has no model: it
+            cache costs none, and an answer with no AI pick gives its question back (at most
+            `H2_GUIDE_CLIENT_DAILY_FREE_ANSWERS` a day); past the limit the guide answers from search only. Null when the guide has no model: it
             then always answers from search only and spends nothing.
         webSearches:
           type: object

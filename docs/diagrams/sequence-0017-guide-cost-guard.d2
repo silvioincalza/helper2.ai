@@ -1,10 +1,12 @@
-# Sequence: the cost guard around one guide question that misses the cache and is answered fresh.
+# Sequence: the cost guard around one guide question that misses the cache and is answered fresh,
+# and the give-back when its answer has no AI pick.
 # Source of truth: backend/src/main/java/ai/helper2/platform/RateLimitInterceptor.java, RedisRateLimiter.java,
 #   backend/src/main/java/ai/helper2/platform/ClientKey.java (shared by the rate limiters and the quota),
 #   backend/src/main/java/ai/helper2/platform/quota/QuotaKeys.java (client pseudonym of the UTC day),
 #   backend/src/main/java/ai/helper2/guide/web/GuideLimits.java,
 #   backend/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java (trySlot on the guide bulkhead),
-#   backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (AskGuide.ask), GuideCost.kt (ClientQuota, GuideAnswerCache),
+#   backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (AskGuide.ask, giveBackIfFree), GuideCost.kt (ClientQuota, GuideAnswerCache),
+#   backend/src/main/java/ai/helper2/platform/llm/DailyBudget.java, RedisCallCounter.java (INCR and GIVE_BACK scripts),
 #   backend/src/main/java/ai/helper2/guide/internal/SharedGuideAnswerStore.java, backend/src/main/java/ai/helper2/platform/cache/JdbcSharedCache.java.
 # Render: cd docs/diagrams && d2 fmt sequence-0017-guide-cost-guard.d2 && d2 sequence-0017-guide-cost-guard.d2 sequence-0017-guide-cost-guard.svg
 
@@ -38,13 +40,16 @@ svc -> cache: "get(key)"
 cache -> db: "SELECT value FROM ai_cache WHERE cache_name =\n'guide-answer' AND key_hash = <sha256 of build, key>"
 db -> cache: "no row"
 cache -> svc: "miss"
-svc -> svc: "inFlight.putIfAbsent(key)"
-svc -> quota: "tryAcquire(client)"
+svc -> quota: "reserve(client)"
 quota -> redis: "Lua: INCR + PEXPIRE\nh2:v1:budget:guide-client:<pseudonym>:<day>"
 redis -> quota: "count ≤ 30"
-quota -> svc: "true"
+quota -> svc: "Reservation (random id, day)"
+svc -> svc: "inFlight.putIfAbsent(key)"
 svc -> model: "plan, choose, verifyReasons\n(each attempt: llm-chat circuit,\nthen a guide budget unit)" {class: ai-call}
 model -> svc: "results"
+svc -> quota: "no AI pick, comparison or explanation:\ngiveBack(reservation)"
+quota -> redis: "Lua GIVE_BACK: id not in …:<day>:given-back,\nset size < free answers, count > 0\n→ DECR count, SADD id, PEXPIRE 2 days"
+redis -> quota: "GIVEN_BACK | ALREADY_GIVEN_BACK |\nCAP_REACHED | NOTHING_COUNTED"
 svc -> cache: "put(key, answer)\nif cacheable"
 cache -> db: "INSERT INTO ai_cache … ON CONFLICT\nDO UPDATE, expires_at ≤ 24 h"
 svc -> svc: "inFlight.remove(key);\nwaiting askers get the answer"

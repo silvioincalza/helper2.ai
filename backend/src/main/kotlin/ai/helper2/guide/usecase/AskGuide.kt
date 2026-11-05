@@ -53,9 +53,10 @@ import org.slf4j.LoggerFactory
  *
  * Fresh questions cost model calls, so three things stand before them: the answer [cache]; one
  * shared computation for identical questions asked at the same time; and the per-client [quota],
- * past which a client gets the degraded answer (top search results) instead of an error. With
- * [similar], a question that misses the cache is planned and then answered with the cached answer
- * of a near twin read the same way.
+ * past which a client gets the degraded answer (top search results) instead of an error. A fresh
+ * answer with no AI pick gives its question back to the quota. With [similar], a question that
+ * misses the cache is planned and then answered with the cached answer of a near twin read the same
+ * way.
  */
 class AskGuide(
   private val search: SearchResources,
@@ -171,7 +172,8 @@ class AskGuide(
           return await(it).forAsker(asker)
         }
         val asked = Asked()
-        if (client != null && quota?.tryAcquire(client) == false) {
+        val reservation = client?.let { quota?.reserve(it) }
+        if (client != null && quota != null && reservation == null) {
           log.info("guide client quota reached: answering from search only")
           outcome = "client_quota"
           val searchOnly = answer(question, progress, asked, model = null)
@@ -186,6 +188,7 @@ class AskGuide(
           // Stored in the database and shared with other askers: it must not carry this asker's
           // address or user id.
           val answer = answer(question, progress, asked, model).withoutAsker()
+          reservation?.let { giveBackIfFree(it, answer) }
           val expiresAt = cache?.put(key, answer)
           // A reused answer is not indexed again: a chain of near twins would drift from the
           // question answered.
@@ -210,6 +213,16 @@ class AskGuide(
     } finally {
       recordOutcome(observation, outcome, cacheResult, question)
     }
+  }
+
+  /**
+   * An answer with nothing from the AI gives the asker's question back (ADR 0017), within the
+   * quota's daily cap. The model calls it made stay counted in the global daily cap.
+   */
+  private fun giveBackIfFree(reservation: ClientQuota.Reservation, answer: GuideAnswer) {
+    if (ClientQuota.spendsAQuestion(answer)) return
+    val outcome = quota?.giveBack(reservation) ?: return
+    meters.counter("helper2.guide.quota.give_back", "outcome", outcome.name.lowercase()).increment()
   }
 
   /** Ends the question's span and counts it; a thread still interrupted ran out of time. */

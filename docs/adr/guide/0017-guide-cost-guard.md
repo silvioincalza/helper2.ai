@@ -54,10 +54,23 @@ The guards run in this order. Values are defaults; each has an `H2_` variable.
    ([0024](../edge/0024-http-edge-protection.md)), so no address is stored and the name cannot be turned back into an
    address without `H2_QUOTA_KEY_SECRET`. The pseudonym changes at midnight UTC, when the quota starts afresh anyway. Past the quota the client gets a search-only
    answer with the notice `GUIDE_DAILY_QUOTA`, not an error. Cached and shared answers do not count; a question answered with a similar question's answer
-   counts, because its plan ran ([0041](0041-guide-answer-cache.md)). In memory,
+   counts, because its plan ran ([0041](0041-guide-answer-cache.md)).
+   **An answer with no pick does not count.** `ClientQuota.reserve` takes the question before the model runs, so
+   abuse stays bounded. When the answer has nothing from the AI (`ClientQuota.spendsAQuestion`: no AI pick, no
+   comparison, no explanation sentence), `AskGuide` gives the question back. That covers "Nothing clearly fits
+   your need", no candidates, subject not found, model down or budget spent, and a question back
+   (`NEEDS_CLARIFICATION`). A reservation has a random id. One Lua script in Redis (`RedisCallCounter`, `GIVE_BACK`)
+   gives it back atomically: only when the id is not yet in `h2:v1:budget:guide-client:<pseudonym>:<day>:given-back`,
+   the set holds fewer ids than `H2_GUIDE_CLIENT_DAILY_FREE_ANSWERS` (default: the daily questions, 30) and the count
+   is above 0; then it runs `DECR` on the count and `SADD` of the id, and the set expires after 2 days like the
+   count. So a retry or a second completion gives nothing back twice, on any replica, the count never goes below 0,
+   and a client cannot loop no-pick questions for free: past the cap they count like any other. Without Redis,
+   `DailyBudget` applies the same rule in memory. Metric `helper2.guide.quota.give_back` with outcome `given_back`,
+   `already_given_back`, `cap_reached`, `nothing_counted`. The model calls of such an answer stay counted in the
+   global daily cap (point 6). In memory,
    `ClientQuota` keeps only today's clients, at most 10,000 (`MAX_CLIENTS`; the least recently seen leaves first),
    and drops them all when the day changes. `ClientQuota.left` reads what a client has left without counting (the
-   Redis count, else this replica's count in memory); `GET /api/v1/me` shows it ([0023](../edge/0023-identity-and-admin.md)).
+   Redis count, else this replica's count in memory), so a give-back on any replica shows at once; `GET /api/v1/me` shows it ([0023](../edge/0023-identity-and-admin.md)).
 6. **Global daily cap** (`H2_GUIDE_DAILY_MODEL_CALLS`, 600): one unit before each model attempt
    ([0014](0014-llm-integration.md)), taken inside the `llm-chat` circuit, so a call the open circuit refuses costs no
    unit. When spent, plan or choose fails with `GuideBudgetExhausted` and the answer is the degraded one; the reason
@@ -70,7 +83,10 @@ The guards run in this order. Values are defaults; each has an `H2_` variable.
 
 ## Consequences
 - The worst case per day is bounded: 600 model calls, whatever the traffic.
-- One client can use at most 30 fresh questions a day (90 calls), so a single client cannot spend the global cap alone.
+- One client can use at most 30 fresh questions with an AI answer a day, plus at most 30 with no pick
+  (60 questions, about 180 calls), so a single client cannot spend the global cap alone.
+- A visitor pays only for an answer that helps: a no-pick answer and a cached answer leave the daily count as it was.
+- A question that fails or times out still counts: only a finished answer with no pick is given back.
 - Repeated example questions are free and instant; a cached answer is honest about its age.
 - The rate limit and the daily counts (quota, global cap) are in Redis and hold across replicas
   ([0027](../operations/0027-runtime-topology.md): 3 on prod).
@@ -82,6 +98,9 @@ The guards run in this order. Values are defaults; each has an `H2_` variable.
 - Cache in memory only — a restart throws away answers that cost 3 calls each, and each replica pays for its own.
 - Cache without a config hash — a changed prompt or model would serve answers of the old one for 24 hours.
 - Error (429) past the quota — the search-only answer is still useful and explains itself.
+- Count only after the answer, when it has a pick — the model would run before the quota check, so a client past
+  its quota could still spend model calls. Taking first and giving back keeps the check in front of the model.
+- Give back without a cap — a client could loop questions that find nothing and spend the global cap for free.
 - Queue extra questions instead of 503 — a queue hides overload and makes every user wait longer.
 
 ## Code
@@ -92,6 +111,7 @@ The guards run in this order. Values are defaults; each has an `H2_` variable.
 - `backend/src/main/kotlin/ai/helper2/guide/AnswerLimits.kt` — comparison and explanation limits in the config hash.
 - `backend/src/main/java/ai/helper2/guide/web/GuideStreamController.java` — keep-alive comments.
 - `backend/src/main/java/ai/helper2/platform/ClientKey.java` — the client key for the rate limits and the quota.
+- `backend/src/main/java/ai/helper2/platform/llm/DailyBudget.java`, `RedisCallCounter.java` — the count and its give-back.
 - `backend/src/main/java/ai/helper2/guide/internal/SharedGuideAnswerStore.java`, `GuideConfiguration.java`.
 - `backend/src/main/java/ai/helper2/platform/RateLimitInterceptor.java`, `RateLimiter.java`.
 

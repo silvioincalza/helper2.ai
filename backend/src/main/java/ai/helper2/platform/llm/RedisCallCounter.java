@@ -29,6 +29,28 @@ public final class RedisCallCounter implements CallCounter {
           """,
           Long.class);
 
+  /**
+   * KEYS: the count, the set of what was given back. ARGV: once, daily cap, expiry in ms. Returns
+   * the index of the {@link GiveBack} outcome. The set holds the {@code once} ids, so its size is
+   * the day's count given back.
+   */
+  private static final RedisScript<Long> GIVE_BACK =
+      RedisScript.of(
+          """
+          if redis.call('SISMEMBER', KEYS[2], ARGV[1]) == 1 then return 1 end
+          if redis.call('SCARD', KEYS[2]) >= tonumber(ARGV[2]) then return 2 end
+          if tonumber(redis.call('GET', KEYS[1]) or '0') <= 0 then return 3 end
+          redis.call('DECR', KEYS[1])
+          redis.call('SADD', KEYS[2], ARGV[1])
+          if redis.call('PTTL', KEYS[2]) < 0 then redis.call('PEXPIRE', KEYS[2], ARGV[3]) end
+          return 0
+          """,
+          Long.class);
+
+  private static final GiveBack[] GIVE_BACKS = {
+    GiveBack.GIVEN_BACK, GiveBack.ALREADY_GIVEN_BACK, GiveBack.CAP_REACHED, GiveBack.NOTHING_COUNTED
+  };
+
   private final StringRedisTemplate redis;
   private final Resilience resilience;
 
@@ -39,6 +61,11 @@ public final class RedisCallCounter implements CallCounter {
 
   static String key(String name, LocalDate day) {
     return "h2:v1:budget:" + name + ":" + day;
+  }
+
+  /** The {@code once} ids given back on [day]; expires with the count. */
+  static String givenBackKey(String name, LocalDate day) {
+    return key(name, day) + ":given-back";
   }
 
   /**
@@ -61,6 +88,26 @@ public final class RedisCallCounter implements CallCounter {
       return resilience.call(
           "redis",
           () -> redis.execute(INCREMENT, List.of(key(name, day)), Long.toString(KEEP.toMillis())));
+    } catch (RuntimeException e) {
+      return null;
+    }
+  }
+
+  /** Null when Redis cannot answer or the circuit is open, as for {@link #increment}. */
+  @Override
+  public GiveBack giveBack(String name, LocalDate day, String once, int dailyCap) {
+    try {
+      Long outcome =
+          resilience.call(
+              "redis",
+              () ->
+                  redis.execute(
+                      GIVE_BACK,
+                      List.of(key(name, day), givenBackKey(name, day)),
+                      once,
+                      Integer.toString(dailyCap),
+                      Long.toString(KEEP.toMillis())));
+      return outcome == null ? null : GIVE_BACKS[outcome.intValue()];
     } catch (RuntimeException e) {
       return null;
     }
