@@ -59,7 +59,7 @@ class HttpEdgeIT {
 
   @DynamicPropertySource
   static void adminPort(DynamicPropertyRegistry r) {
-    r.add("helper2.admin.port", () -> ADMIN_PORT);
+    r.add("helper2.identity.admin-port", () -> ADMIN_PORT);
   }
 
   @LocalServerPort int port;

@@ -57,7 +57,7 @@ import org.springframework.test.web.servlet.MockMvc;
       "resilience4j.bulkhead.instances.source-fake-live.base-config=source",
       "helper2.rate-limit.search-per-minute=10000",
       "helper2.rate-limit.report-per-hour=10000",
-      "helper2.security.admins=test:admin-subject",
+      "helper2.identity.admins=test:admin-subject",
       "logging.structured.format.console=",
       // A built app shell for the pages module (ADR 0050); here so PagesIT shares this context.
       "helper2.pages.template=classpath:/pages/index.html",

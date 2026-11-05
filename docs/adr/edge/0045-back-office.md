@@ -19,8 +19,8 @@ them without each module growing an admin corner.
    (`/admin/review?kind=USER_REPORT`).
 3. **The overview: what needs a person now.** `GET /api/v1/admin/overview` returns counts only: open review items per
    kind (every kind, 0 included), the enrichment backlog (the same rule the Scout takes it by), every model budget with
-   today's count and limit, web credits today, the last 10 Scout runs and the failed ones of the last 24 hours, and a
-   link to Grafana (`H2_ADMIN_GRAFANA_URL`) for trends. It is computed at most once a minute, one computation at a time:
+   today's count and limit, web credits today, the last 10 Scout runs and the failed ones of the last 24 hours, the
+   home examples shown and hidden ([0049](../search/0049-home-examples.md)), and a link to Grafana (`H2_ADMIN_GRAFANA_URL`) for trends. It is computed at most once a minute, one computation at a time:
    the backlog count is a full pass, and Refresh must not repeat it. That count gives up after 5 seconds. The Grafana
    link must be an absolute http(s) URL with a host, or the app does not start: the page puts it in an href.
 4. **Budgets read from the shared counter.** Every `DailyBudget` declares its name and limit in the `BudgetLedger`, the

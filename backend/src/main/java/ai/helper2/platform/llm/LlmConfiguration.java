@@ -1,11 +1,12 @@
 package ai.helper2.platform.llm;
 
+import ai.helper2.platform.config.EmbeddingProperties;
+import ai.helper2.platform.config.LlmProperties;
 import ai.helper2.platform.resilience.Resilience;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
 import java.time.Clock;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -18,17 +19,16 @@ class LlmConfiguration {
    * (NvidiaOnly).
    */
   @Bean
-  LlmSettings llmSettings(
-      @Value("${spring.ai.model.chat:none}") String chatProvider,
-      @Value("${helper2.llm.provider-label:}") String providerLabel,
-      @Value("${helper2.llm.fast-model:}") String fastModel,
-      @Value("${helper2.llm.reasoning-model:}") String reasoningModel,
-      @Value("${spring.ai.openai.chat.model:}") String chatModel,
-      @Value("${helper2.embedding.api-key:}") String embeddingKey,
-      @Value("${helper2.embedding.model:}") String embeddingModel) {
+  LlmSettings llmSettings(LlmProperties llm, EmbeddingProperties embedding) {
     NvidiaOnly.require(
-        chatProvider, chatModel, fastModel, reasoningModel, embeddingKey, embeddingModel);
-    return new LlmSettings(chatProvider, providerLabel, fastModel, reasoningModel);
+        llm.chatProvider(),
+        llm.chatModel(),
+        llm.fastModel(),
+        llm.reasoningModel(),
+        embedding.apiKey(),
+        embedding.model());
+    return new LlmSettings(
+        llm.chatProvider(), llm.providerLabel(), llm.fastModel(), llm.reasoningModel());
   }
 
   /**

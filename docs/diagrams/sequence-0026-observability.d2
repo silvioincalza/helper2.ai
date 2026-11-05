@@ -29,7 +29,7 @@ vt -> gh: "GET /search/repositories\ntraceparent: T, client span" {class: hot}
 gh -> vt: "200"
 vt -> reg: "http.client.requests{client_name, status}"
 vt -> app: "hits"
-app -> reg: "helper2.source.requests{source,outcome,served_from},\nhelper2.source.latency{source}"
+app -> reg: "helper2.source.requests{source,outcome,served_from},\nhelper2.source.latency{source,outcome}"
 app -> reg: "helper2.cache.events{event},\nhelper2.search.requests{partial}, helper2.search.latency"
 app -> stdout: "warn line if a source fails\n(traceId T, no query text)"
 app -> browser: "200"

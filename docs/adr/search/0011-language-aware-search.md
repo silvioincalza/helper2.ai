@@ -27,7 +27,7 @@ A translation costs a model call and time, and it must not slow down sources tha
    every replica in the shared cache `translation` ([0004](../foundation/0004-persistence-and-provenance.md), table `ai_cache`):
    key a SHA-256 of the model, the prompt version, the language and the normalised query (trimmed, spaces collapsed,
    lower case), value the English words, kept `H2_SEARCH_TRANSLATION_TTL` (24 h). A failed, empty or refused translation
-   is not cached, and a database error or a lookup over its time limit is a miss, so a query any replica translated costs no model call on the others. Off when no model is configured or `helper2.search.translate-queries=false`.
+   is not cached, and a database error or a lookup over its time limit is a miss, so a query any replica translated costs no model call on the others. Off when no model is configured or `helper2.search.translation.enabled=false`.
    The call runs under the `llm-chat` circuit ([0033](../foundation/0033-resilience-policies.md)); the budget is taken inside it, so
    a call the open circuit refuses costs no translation.
 5. **Untrusted answer.** The answer is dropped if it looks like a link. Only letters, digits, spaces and hyphens stay;

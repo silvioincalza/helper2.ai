@@ -3,6 +3,8 @@ package ai.helper2.search.config;
 import ai.helper2.search.Asker;
 import ai.helper2.search.QuotaTier;
 import ai.helper2.search.SearchMetrics;
+import ai.helper2.search.ServedFrom;
+import ai.helper2.search.SourceOutcome;
 import ai.helper2.search.SourceStatus;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -11,7 +13,8 @@ import java.util.List;
 
 /**
  * Metrics: per-source outcome/latency, cache events, partial-result and zero-result frequency. No
- * query text.
+ * query text. {@code helper2.source.latency{source,outcome}} has histogram buckets, so p50/p95/p99
+ * per source can be taken over all pods.
  */
 class MicrometerSearchMetrics implements SearchMetrics {
 
@@ -35,14 +38,25 @@ class MicrometerSearchMetrics implements SearchMetrics {
             "served_from",
             status.getServedFrom().name())
         .increment();
-    if (status.getLatency() != null) {
+    if (reachedTheSource(status)) {
       Timer.builder("helper2.source.latency")
           .tag("source", status.getSource().getId())
-          .publishPercentiles(0.5, 0.95)
+          .tag("outcome", status.getOutcome().name())
+          .publishPercentileHistogram()
           .register(registry)
           .record(status.getLatency());
     }
     delegates.forEach(d -> d.sourceCompleted(status));
+  }
+
+  /**
+   * A live call was made: a skipped source and a fresh cache hit have no latency of their own, so
+   * they stay out of {@code helper2.source.latency}.
+   */
+  private static boolean reachedTheSource(SourceStatus status) {
+    return status.getLatency() != null
+        && status.getOutcome() != SourceOutcome.SKIPPED
+        && status.getServedFrom() != ServedFrom.CACHE;
   }
 
   @Override

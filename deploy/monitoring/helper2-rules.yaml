@@ -1,4 +1,4 @@
-# Prometheus alert rules for helper2 (ADR 0026). The single source: load this file as a Prometheus rule file
+# Prometheus alert and recording rules for helper2 (ADR 0026). The single source: load this file as a Prometheus rule file
 # (rule_files), or turn on monitoring.prometheusRule.enabled in the Helm chart, which embeds it in a
 # PrometheusRule for the Prometheus Operator.
 #
@@ -35,6 +35,13 @@ groups:
 
   - name: helper2-search
     rules:
+      # p95 per source over all pods and outcomes, for the dashboard and before any source timeout change. Skipped
+      # sources and fresh cache hits record no latency; failed and timed-out calls do.
+      - record: environment_source:helper2_source_latency_seconds:p95_5m
+        expr: |
+          histogram_quantile(0.95,
+            sum by (environment, source, le) (rate(helper2_source_latency_seconds_bucket{application="helper2"}[5m]))
+          )
       - alert: Helper2SourceFailing
         # SKIPPED (disabled, cooling down, daily limit) is a decision, not a failure, so it is left out of both sides.
         expr: |
@@ -201,7 +208,7 @@ groups:
         annotations:
           summary: "Resources have waited for an embedding for 3 hours ({{ $labels.environment }})."
           description: "The embedding backlog has stayed above 0 for 3 hours ({{ $value }} resources now); a full reindex of the catalog takes about 2 hours."
-          runbook: "If Helper2EmbeddingIndexerStalled fires too, fix that first. Otherwise resources arrive faster than the indexer embeds them (helper2.embedding.batch 50 every 15 s = 200 a minute)."
+          runbook: "If Helper2EmbeddingIndexerStalled fires too, fix that first. Otherwise resources arrive faster than the indexer embeds them (helper2.catalog.indexer.batch 50 every 15 s = 200 a minute)."
 
       - alert: Helper2ReviewBacklog
         # Every replica reports the same count from Postgres; max picks one.

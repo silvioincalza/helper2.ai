@@ -109,7 +109,6 @@ management:
         helper2.scout.run: true
         helper2.llm.call: true
         helper2.search.latency: true
-        helper2.source.latency: true
     tags:
       application: helper2
       environment: ${H2_ENVIRONMENT:local}
@@ -290,17 +289,26 @@ helper2:
   build:
     # The running build (the chart passes the image tag). Cached guide answers are kept per build.
     version: ${H2_BUILD_VERSION:local}
-  # Where sign-in returns to (the SPA). "/" when the SPA is served by the backend itself.
-  frontend-url: ${H2_FRONTEND_URL:/}
+  # The chat model (platform LlmProperties). No model here; the profile llm-nebius sets the provider and the models.
+  llm:
+    chat-provider: ${spring.ai.model.chat}
+    chat-model: ${spring.ai.openai.chat.model:}
+    provider-label: ""
+    reasoning-model: ""
+    fast-model: ""
+    # Send the choose call's JSON schema as response_format (guided decoding). See SpringAiGuideModel.call.
+    native-schema: ${H2_NEBIUS_NATIVE_SCHEMA:true}
+  # The built SPA (frontend/dist, copied to static/ in the image).
+  spa:
+    location: classpath:/static/
   # Vector search (ADR 0012): NVIDIA embeddings stored in Postgres (pgvector). Empty key = keyword search only.
   embedding:
     api-key: ${H2_NVIDIA_API_KEY:}
     base-url: ${H2_NVIDIA_EMBEDDING_BASE_URL:https://integrate.api.nvidia.com/v1}
     model: ${H2_NVIDIA_EMBEDDING_MODEL:nvidia/nemotron-3.5-embed-1b}
     dimensions: 1024
-    # 50 texts every 15 s = 4 requests/min, far below the API catalog's rate limit; ~25k rows in about 2 h.
-    batch: 50
-    every: PT15S
+    # One embedding call of a search query.
+    timeout: 3s
   guide:
     # Nemotron thinking per call (chat_template_kwargs.enable_thinking). Off: measured 27 Oct 2026, see ADR 0014.
     thinking:
@@ -323,28 +331,65 @@ helper2:
     # How many retrieved results Nemotron 3 Super chooses from (ADR 0015). 24 beat 12 in the 20-query
     # evaluation of 26 Oct 2026 (that run's report was not kept).
     max-candidates: ${H2_GUIDE_MAX_CANDIDATES:24}
+    # Output cap of the choose call. The reasoning model's thinking tokens count against it; 2048 truncated the
+    # choose JSON. See SpringAiGuideModel.
+    choose-max-tokens: ${H2_NEBIUS_CHOOSE_MAX_TOKENS:8192}
   catalog:
     # Search results waiting to be written to the catalog in the background; more are dropped and counted.
     observation-queue: 256
+    index:
+      # Runs in parallel with live sources that wait 2.5-6 s, so 3 s adds no wait in the worst case.
+      # 1.5 s was too tight: the index query took 0.8-1.1 s on prod (5.5k resources, 2026-10-26) and
+      # timed out, which drops the catalog from every search.
+      timeout: ${H2_SOURCE_INDEX_TIMEOUT:3s}
+    curated:
+      enabled: ${H2_SOURCE_CURATED_ENABLED:true}
+      timeout: 1000ms
+    semantic:
+      # Embedding call (~0.3 s) plus the HNSW query; parallel with live sources, like the index.
+      timeout: ${H2_SOURCE_SEMANTIC_TIMEOUT:3s}
+      # Cosine distance cut-off (0 = same, 2 = opposite). Measured 27 Oct 2026 (ADR 0012): keyword hits for
+      # the same need 0.28-0.55, other topics 0.72-0.95, nonsense queries 0.81 at best.
+      max-distance: ${H2_SOURCE_SEMANTIC_MAX_DISTANCE:0.65}
+      # Query vectors are shared by the replicas in Postgres this long (ADR 0012).
+      query-vector-ttl: ${H2_SEARCH_QUERY_VECTOR_TTL:7d}
+    # The background embedding indexer (helper2.embedding has the model and the key).
+    indexer:
+      # One batch call; a batch of 50 texts can take seconds, so longer than the query's timeout.
+      timeout: 30s
+      # 50 texts every 15 s = 4 requests/min, far below the API catalog's rate limit; ~25k rows in about 2 h.
+      batch: 50
+      initial-delay: PT30S
+      every: PT15S
   search:
     # A source's answer is cached this long and, while it lasts, served when the source fails.
     stale-for: ${H2_SEARCH_STALE_FOR:24h}
     # Most results asked of each source per search.
     per-source-limit: ${H2_SEARCH_PER_SOURCE_LIMIT:30}
-    # How long search waits for the English translation of a non-English query before running it untranslated.
-    translate-timeout-ms: ${H2_SEARCH_TRANSLATE_TIMEOUT_MS:2500}
-    # Non-English queries translated by the fast model per UTC day (ADR 0011); separate from the guide's cap.
-    daily-translations: ${H2_SEARCH_DAILY_TRANSLATIONS:300}
-    # Translations and query vectors are shared by the replicas in Postgres this long (ADR 0011, ADR 0012).
-    translation-ttl: ${H2_SEARCH_TRANSLATION_TTL:24h}
-    query-vector-ttl: ${H2_SEARCH_QUERY_VECTOR_TTL:7d}
+    # How long search waits for the English translation of a non-English query before running it untranslated
+    # (a plain number is milliseconds).
+    translate-timeout: ${H2_SEARCH_TRANSLATE_TIMEOUT_MS:2500}
+    # Non-English queries in English words, by the fast model (ADR 0011).
+    translation:
+      # Off: queries run as typed.
+      enabled: true
+      # Translations per UTC day; separate from the guide's cap.
+      daily-calls: ${H2_SEARCH_DAILY_TRANSLATIONS:300}
+      # Translations are shared by the replicas in Postgres this long.
+      ttl: ${H2_SEARCH_TRANSLATION_TTL:24h}
   # Requests per client address; past them the answer is 429.
   rate-limit:
     search-per-minute: ${H2_RATE_LIMIT_SEARCH_PER_MINUTE:60}
     report-per-hour: ${H2_RATE_LIMIT_REPORT_PER_HOUR:20}
     guide-per-minute: ${H2_RATE_LIMIT_GUIDE_PER_MINUTE:10}
     recent-per-minute: ${H2_RATE_LIMIT_RECENT_PER_MINUTE:60}
-  security:
+  # Sign-in, ADMIN and the security headers (identity IdentityProperties).
+  identity:
+    # Where sign-in returns to (the SPA). "/" when the SPA is served by the backend itself.
+    frontend-url: ${H2_FRONTEND_URL:/}
+    # Second port for the back office (ADR 0035). Set: /admin and /api/v1/admin/** answer only there, and only a
+    # sign-in made there carries ADMIN; the public port keeps end-user sign-in. 0 = one port for everything.
+    admin-port: ${H2_ADMIN_PORT:0}
     # /actuator/prometheus without sign-in (health is always open; nothing else is served).
     # Only where the management port is not public.
     metrics-public: ${H2_METRICS_PUBLIC:false}
@@ -354,9 +399,6 @@ helper2:
     # X-Robots-Tag: noindex on every response. On for staging, so it never competes with the live site in search engines.
     noindex: ${H2_NOINDEX:false}
   admin:
-    # Second port for the back office (ADR 0035). Set: /admin and /api/v1/admin/** answer only there, and only a
-    # sign-in made there carries ADMIN; the public port keeps end-user sign-in. 0 = one port for everything.
-    port: ${H2_ADMIN_PORT:0}
     # The metrics dashboard (Grafana) the back office overview links to for trends. Empty: no link.
     grafana-url: ${H2_ADMIN_GRAFANA_URL:}
   scout:
@@ -382,6 +424,9 @@ helper2:
     # daily-enrichment-calls, not on top, so a value above it has no effect until that cap is raised. 0 turns the
     # gap round off.
     gap-daily-calls: ${H2_SCOUT_GAP_DAILY_CALLS:400}
+    # Output cap of one enrichment call. The reasoning model's thinking tokens count against it; 2048 failed
+    # 18 of 120 runs. See SpringAiEnrichmentModel.
+    enrich-max-tokens: ${H2_NEBIUS_ENRICH_MAX_TOKENS:8192}
     hf-trending:
       interval: ${H2_SCOUT_HF_INTERVAL:P1D}
       min-likes: 20
@@ -436,6 +481,8 @@ helper2:
       min-repo-stars: 50
       # Fast model (helper2.llm.fast-model) batch size: 25 entries took 12-14 s on Nemotron 3 Nano (2026-10-26).
       classify-batch: 25
+      # Output cap of one classifier call, in tokens.
+      classify-max-tokens: 8192
       # Classifier model calls per UTC day (about 8 batches per daily pass); the cap only bites when something loops.
       classifier-daily-calls: ${H2_SCOUT_AWESOME_CLASSIFIER_DAILY_CALLS:300}
   sources:
@@ -468,11 +515,13 @@ helper2:
       token: ${H2_TAVILY_API_KEY:}
       # Measured 2.0-4.2 s per call (26 Oct 2026); 3 s cut off real answers on prod.
       timeout: ${H2_SOURCE_TAVILY_TIMEOUT:6s}
+      cache-ttl: 30m
     hf-trending:
       enabled: ${H2_SOURCE_HF_TRENDING_ENABLED:true}
       base-url: https://huggingface.co
       token: ${H2_HF_TOKEN:}
       timeout: 10s
+      cache-ttl: 30m
       # Total time per call, body included (ADR 0006 §2); empty = twice the timeout.
       deadline: ${H2_SOURCE_HF_TRENDING_DEADLINE:}
     tavily-scout:
@@ -481,6 +530,7 @@ helper2:
       base-url: https://api.tavily.com
       token: ${H2_TAVILY_API_KEY:}
       timeout: 10s
+      cache-ttl: 30m
       deadline: ${H2_SOURCE_TAVILY_SCOUT_DEADLINE:}
     course-scout:
       # Disabled (reported as SKIPPED) until H2_TAVILY_API_KEY is set.
@@ -488,6 +538,7 @@ helper2:
       base-url: https://api.tavily.com
       token: ${H2_TAVILY_API_KEY:}
       timeout: 10s
+      cache-ttl: 30m
       deadline: ${H2_SOURCE_COURSE_SCOUT_DEADLINE:}
     github-awesome:
       # Disabled (reported as SKIPPED) until H2_GITHUB_TOKEN is set: GraphQL rejects anonymous calls.
@@ -495,12 +546,14 @@ helper2:
       base-url: https://api.github.com
       token: ${H2_GITHUB_TOKEN:}
       timeout: 15s
+      cache-ttl: 30m
       deadline: ${H2_SOURCE_GITHUB_AWESOME_DEADLINE:}
     hf-provider-orgs:
       enabled: ${H2_SOURCE_HF_ORGS_ENABLED:true}
       base-url: https://huggingface.co
       token: ${H2_HF_TOKEN:}
       timeout: 10s
+      cache-ttl: 30m
       deadline: ${H2_SOURCE_HF_ORGS_DEADLINE:}
     ai-deadlines:
       enabled: ${H2_SOURCE_AI_DEADLINES_ENABLED:true}
@@ -508,26 +561,14 @@ helper2:
       # Optional: raises the contents API limit from 60 to 5,000 calls per hour.
       token: ${H2_GITHUB_TOKEN:}
       timeout: 15s
+      cache-ttl: 30m
       deadline: ${H2_SOURCE_AI_DEADLINES_DEADLINE:}
     mcp-registry:
       enabled: ${H2_SOURCE_MCP_ENABLED:true}
       base-url: https://registry.modelcontextprotocol.io
       timeout: 10s
+      cache-ttl: 30m
       deadline: ${H2_SOURCE_MCP_DEADLINE:}
-    semantic:
-      # Embedding call (~0.3 s) plus the HNSW query; parallel with live sources, like the index.
-      timeout: ${H2_SOURCE_SEMANTIC_TIMEOUT:3s}
-      # Cosine distance cut-off (0 = same, 2 = opposite). Measured 27 Oct 2026 (ADR 0012): keyword hits for
-      # the same need 0.28-0.55, other topics 0.72-0.95, nonsense queries 0.81 at best.
-      max-distance: ${H2_SOURCE_SEMANTIC_MAX_DISTANCE:0.65}
-    index:
-      # Runs in parallel with live sources that wait 2.5-6 s, so 3 s adds no wait in the worst case.
-      # 1.5 s was too tight: the index query took 0.8-1.1 s on prod (5.5k resources, 2026-10-26) and
-      # timed out, which drops the catalog from every search.
-      timeout: ${H2_SOURCE_INDEX_TIMEOUT:3s}
-    curated:
-      enabled: ${H2_SOURCE_CURATED_ENABLED:true}
-      timeout: 1000ms
 
 ---
 spring:
@@ -552,8 +593,8 @@ server:
       cookie:
         secure: ${H2_COOKIE_SECURE:false}
 helper2:
-  frontend-url: http://localhost:5173/
-  security:
+  identity:
+    frontend-url: http://localhost:5173/
     metrics-public: true
 
 ---
@@ -599,12 +640,6 @@ helper2:
     provider-label: nebius-token-factory
     reasoning-model: ${H2_NEBIUS_REASONING_MODEL:nvidia/nemotron-3-super-120b-a12b}
     fast-model: ${H2_NEBIUS_FAST_MODEL:nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B}
-    # Send the choose call's JSON schema as response_format (guided decoding). See SpringAiGuideModel.call.
-    native-schema: ${H2_NEBIUS_NATIVE_SCHEMA:true}
-    # Super's reasoning tokens count against max_tokens; 2048 truncated the choose JSON. See SpringAiGuideModel.
-    choose-max-tokens: ${H2_NEBIUS_CHOOSE_MAX_TOKENS:8192}
-    # Same reason for the Scout's enrichment call (18/120 runs failed at 2048). See SpringAiEnrichmentModel.
-    enrich-max-tokens: ${H2_NEBIUS_ENRICH_MAX_TOKENS:8192}
 
 ---
 spring:
@@ -679,12 +714,21 @@ helper2:
     npm-readme-base-url: ${H2_SETUP_NPM_README_BASE_URL:https://cdn.jsdelivr.net}
     # Registry entries and documents kept in memory per replica; the registry asks to be read infrequently.
     cache-ttl: ${H2_SETUP_CACHE_TTL:PT1H}
-    # The most document text kept in memory per replica.
-    document-cache-mb: ${H2_SETUP_DOCUMENT_CACHE_MB:32}
+    # The most document text kept in memory per replica (a plain number is megabytes).
+    document-cache: ${H2_SETUP_DOCUMENT_CACHE_MB:32}
     # Documents fetched per UTC hour across replicas.
     hourly-fetches: ${H2_SETUP_HOURLY_FETCHES:1000}
     # The setup guide's own GitHub token for README fetches, apart from the Scout's; empty = anonymous (60 calls an hour).
     github-token: ${H2_SETUP_GITHUB_TOKEN:}
+    # The hosts the sources read, so README fetches go where the collectors go.
+    hosts:
+      github: ${helper2.sources.github.base-url}
+      huggingface: ${helper2.sources.huggingface.base-url}
+      hf-token: ${helper2.sources.huggingface.token}
+    # Same registry and timeout as the Scout's collector; read per request, so a slow registry fails fast.
+    mcp-registry:
+      base-url: ${helper2.sources.mcp-registry.base-url}
+      timeout: ${helper2.sources.mcp-registry.timeout}
     guide:
       # The step-by-step guide's own daily model-call cap, apart from the guide's and the Scout's.
       daily-model-calls: ${H2_SETUP_GUIDE_DAILY_MODEL_CALLS:300}
@@ -699,26 +743,28 @@ helper2:
 ---
 # Tavily (ADR 0037): store first, then a live call inside the visitor's daily web searches, per feature.
 helper2:
-  tavily:
-    # Stored result sets answer without a live call while fresh: news, courses, hackathons, conferences and events
-    # for 24 h, anything else for 48 h.
-    fresh-time-bound: ${H2_TAVILY_FRESH_TIMEBOUND:PT24H}
-    fresh-general: ${H2_TAVILY_FRESH_GENERAL:PT48H}
-    quota:
-      # HMAC key of the client pseudonyms (rate limits, guide quota, guest counters) and of the stored query keys
-      # (OpenBao). Required while Tavily is enabled; without it the pseudonyms use a random key per process.
-      key-secret: ${H2_QUOTA_KEY_SECRET:}
-      # Per visitor and feature, per UTC day. Staging raises them for testing (chart app.dailyLimits).
-      guest:
-        search: ${H2_TAVILY_GUEST_SEARCH:3}
-        guide: ${H2_TAVILY_GUEST_GUIDE:3}
-      registered:
-        search: 10
-        guide: 10
-      # Signed-in users get the registered limits only with this on (after end-user sign-in goes live).
-      registered-tier-enabled: ${H2_TAVILY_REGISTERED_TIER_ENABLED:false}
-      # Live calls a day for all of Helper2; empty = no cap.
-      global-daily-credits: ${H2_TAVILY_GLOBAL_DAILY_CREDITS:}
+  quota:
+    # HMAC key of the client pseudonyms (rate limits, guide quota, guest counters) and of the stored query keys
+    # (OpenBao). Required while Tavily is enabled; without it the pseudonyms use a random key per process.
+    key-secret: ${H2_QUOTA_KEY_SECRET:}
+  search:
+    web:
+      # Stored result sets answer without a live call while fresh: news, courses, hackathons, conferences and
+      # events for 24 h, anything else for 48 h.
+      fresh-time-bound: ${H2_TAVILY_FRESH_TIMEBOUND:PT24H}
+      fresh-general: ${H2_TAVILY_FRESH_GENERAL:PT48H}
+      quota:
+        # Per visitor and feature, per UTC day. Staging raises them for testing (chart app.dailyLimits).
+        guest:
+          search: ${H2_TAVILY_GUEST_SEARCH:3}
+          guide: ${H2_TAVILY_GUEST_GUIDE:3}
+        registered:
+          search: 10
+          guide: 10
+        # Signed-in users get the registered limits only with this on (after end-user sign-in goes live).
+        registered-tier-enabled: ${H2_TAVILY_REGISTERED_TIER_ENABLED:false}
+        # Live calls a day for all of Helper2; empty = no cap.
+        global-daily-credits: ${H2_TAVILY_GLOBAL_DAILY_CREDITS:}
   retention:
     # Stored Tavily result sets after they were fetched.
     tavily-results: ${H2_RETENTION_TAVILY_RESULTS:P7D}

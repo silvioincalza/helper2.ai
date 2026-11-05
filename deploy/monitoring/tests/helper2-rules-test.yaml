@@ -290,7 +290,7 @@ tests:
             exp_annotations:
               summary: "Resources have waited for an embedding for 3 hours (prod)."
               description: "The embedding backlog has stayed above 0 for 3 hours (120 resources now); a full reindex of the catalog takes about 2 hours."
-              runbook: "If Helper2EmbeddingIndexerStalled fires too, fix that first. Otherwise resources arrive faster than the indexer embeds them (helper2.embedding.batch 50 every 15 s = 200 a minute)."
+              runbook: "If Helper2EmbeddingIndexerStalled fires too, fix that first. Otherwise resources arrive faster than the indexer embeds them (helper2.catalog.indexer.batch 50 every 15 s = 200 a minute)."
 
   # Review backlog: 60 OPEN items for a day fire; 40 stay quiet. Two replicas report the same count.
   - interval: 1m
@@ -364,6 +364,29 @@ tests:
               summary: "Container app of pod helper2-abc restarted more than twice in an hour (helper2-prod)."
               description: "3 restarts in the last hour. A crash loop or an out-of-memory kill."
               runbook: "kubectl -n helper2-prod describe pod helper2-abc (Last State: OOMKilled or Error), then kubectl logs --previous. Dashboard row 'Pod (infra)', 'Container memory vs limit'."
+
+  # Source latency p95: 18 of 20 arxiv calls answer under 0.5 s, 2 time out above the last bucket. The outcomes are
+  # summed, so the timeouts set the p95 (the upper bound of the last finite bucket).
+  - interval: 1m
+    input_series:
+      - series: 'helper2_source_latency_seconds_bucket{application="helper2", environment="prod", source="arxiv", outcome="SUCCEEDED", le="0.5"}'
+        values: '0+18x10'
+      - series: 'helper2_source_latency_seconds_bucket{application="helper2", environment="prod", source="arxiv", outcome="SUCCEEDED", le="2.5"}'
+        values: '0+18x10'
+      - series: 'helper2_source_latency_seconds_bucket{application="helper2", environment="prod", source="arxiv", outcome="SUCCEEDED", le="+Inf"}'
+        values: '0+18x10'
+      - series: 'helper2_source_latency_seconds_bucket{application="helper2", environment="prod", source="arxiv", outcome="TIMED_OUT", le="0.5"}'
+        values: '0+0x10'
+      - series: 'helper2_source_latency_seconds_bucket{application="helper2", environment="prod", source="arxiv", outcome="TIMED_OUT", le="2.5"}'
+        values: '0+0x10'
+      - series: 'helper2_source_latency_seconds_bucket{application="helper2", environment="prod", source="arxiv", outcome="TIMED_OUT", le="+Inf"}'
+        values: '0+2x10'
+    promql_expr_test:
+      - expr: environment_source:helper2_source_latency_seconds:p95_5m
+        eval_time: 10m
+        exp_samples:
+          - labels: 'environment_source:helper2_source_latency_seconds:p95_5m{environment="prod", source="arxiv"}'
+            value: 2.5
 
   # Sources: 1 of 3 arxiv calls times out (33%) and fires; github's SKIPPED calls do not count as failures.
   # Partial searches at exactly half stay quiet.

@@ -991,7 +991,7 @@
       "type": "timeseries",
       "id": 18,
       "title": "Source latency p95",
-      "description": "helper2.source.latency per source over all pods, from histogram buckets.",
+      "description": "helper2.source.latency per source over all pods and outcomes, from histogram buckets. Skipped sources and fresh cache hits record no latency.",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"

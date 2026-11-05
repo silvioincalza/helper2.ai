@@ -2,9 +2,11 @@ package ai.helper2.catalog.internal;
 
 import ai.helper2.catalog.Embedder;
 import ai.helper2.catalog.ReviewQueue;
+import ai.helper2.catalog.config.CatalogProperties;
 import ai.helper2.catalog.internal.ResourceStore.DataOrigin;
 import ai.helper2.platform.ClusterLock;
 import ai.helper2.platform.cache.SharedCaches;
+import ai.helper2.platform.config.EmbeddingProperties;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.shared.ResourceType;
@@ -24,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import net.javacrumbs.shedlock.core.LockingTaskExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -40,9 +41,8 @@ class CatalogConfiguration {
 
   /** Background writer for what searches observed; see CatalogResultObserver. */
   @Bean(destroyMethod = "close")
-  ObservationQueue observationQueue(
-      MeterRegistry registry, @Value("${helper2.catalog.observation-queue:256}") int capacity) {
-    return new ObservationQueue(capacity, registry);
+  ObservationQueue observationQueue(MeterRegistry registry, CatalogProperties catalog) {
+    return new ObservationQueue(catalog.observationQueue(), registry);
   }
 
   /** The review backlog: items waiting for a person (one count query per scrape). */
@@ -56,9 +56,8 @@ class CatalogConfiguration {
 
   @Bean
   CatalogSearchSource indexSearchSource(
-      ResourceStore store,
-      Clock clock,
-      @Value("${helper2.sources.index.timeout:3s}") Duration timeout) {
+      ResourceStore store, Clock clock, CatalogProperties catalog) {
+    Duration timeout = catalog.index().timeout();
     boolean enabled = true;
     int priority = 50;
     boolean usesWebQuery = false;
@@ -90,10 +89,9 @@ class CatalogConfiguration {
 
   @Bean
   CatalogSearchSource curatedSearchSource(
-      ResourceStore store,
-      Clock clock,
-      @Value("${helper2.sources.curated.enabled:true}") boolean enabled,
-      @Value("${helper2.sources.curated.timeout:1000ms}") Duration timeout) {
+      ResourceStore store, Clock clock, CatalogProperties catalog) {
+    boolean enabled = catalog.curated().enabled();
+    Duration timeout = catalog.curated().timeout();
     int priority = 10;
     boolean usesWebQuery = false;
     boolean usesTranslation = true;
@@ -133,16 +131,17 @@ class CatalogConfiguration {
 
     @Bean
     Embedder embedder(
-        @Value("${helper2.embedding.base-url}") String baseUrl,
-        @Value("${helper2.embedding.api-key}") String apiKey,
-        @Value("${helper2.embedding.model}") String model,
-        @Value("${helper2.embedding.dimensions:1024}") int dimensions,
-        @Value("${helper2.embedding.timeout:3s}") Duration timeout,
-        ObservationRegistry observations,
-        Resilience resilience) {
-      log.info("Vector search on: model={}, dimensions={}", model, dimensions);
+        EmbeddingProperties embedding, ObservationRegistry observations, Resilience resilience) {
+      log.info(
+          "Vector search on: model={}, dimensions={}", embedding.model(), embedding.dimensions());
       return new NvidiaEmbedder(
-          baseUrl, apiKey, model, dimensions, timeout, observations, resilience);
+          embedding.baseUrl().toString(),
+          embedding.apiKey(),
+          embedding.model(),
+          embedding.dimensions(),
+          embedding.timeout(),
+          observations,
+          resilience);
     }
 
     @Bean
@@ -151,9 +150,9 @@ class CatalogConfiguration {
         Embedder embedder,
         Clock clock,
         SharedCaches caches,
-        @Value("${helper2.sources.semantic.timeout:3s}") Duration timeout,
-        @Value("${helper2.sources.semantic.max-distance:0.65}") double maxDistance,
-        @Value("${helper2.search.query-vector-ttl:7d}") Duration queryVectorTtl) {
+        CatalogProperties catalog) {
+      CatalogProperties.Semantic semantic = catalog.semantic();
+      Duration timeout = semantic.timeout();
       boolean enabled = true;
       int priority = 55;
       boolean usesWebQuery = false;
@@ -181,14 +180,14 @@ class CatalogConfiguration {
               caches.named("query-vector"),
               embedder.model(),
               embedder.dimensions(),
-              queryVectorTtl);
+              semantic.queryVectorTtl());
       return new SemanticSearchSource(
           d,
           store,
           embedder,
           queryVectors,
           Set.of(DataOrigin.INDEXED, DataOrigin.OBSERVED, DataOrigin.CURATED),
-          maxDistance,
+          semantic.maxDistance(),
           clock);
     }
 
@@ -205,20 +204,20 @@ class CatalogConfiguration {
         MeterRegistry registry,
         ObservationRegistry observations,
         Resilience resilience,
-        @Value("${helper2.embedding.base-url}") String baseUrl,
-        @Value("${helper2.embedding.api-key}") String apiKey,
-        @Value("${helper2.embedding.index-timeout:30s}") Duration indexTimeout,
-        @Value("${helper2.embedding.batch:50}") int batch) {
+        EmbeddingProperties embedding,
+        CatalogProperties catalog) {
+      CatalogProperties.Indexer settings = catalog.indexer();
       Embedder indexing =
           new NvidiaEmbedder(
-              baseUrl,
-              apiKey,
+              embedding.baseUrl().toString(),
+              embedding.apiKey(),
               embedder.model(),
               embedder.dimensions(),
-              indexTimeout,
+              settings.timeout(),
               observations,
               resilience);
-      return new EmbeddingIndexer(store, indexing, batch, Duration.ofMinutes(2), clock, registry);
+      return new EmbeddingIndexer(
+          store, indexing, settings.batch(), Duration.ofMinutes(2), clock, registry);
     }
 
     /**
@@ -231,11 +230,10 @@ class CatalogConfiguration {
      */
     @Bean(initMethod = "start", destroyMethod = "stop")
     IndexerSchedule embeddingIndexerSchedule(
-        EmbeddingIndexer indexer,
-        LockingTaskExecutor locks,
-        @Value("${helper2.embedding.index-timeout:30s}") Duration indexTimeout,
-        @Value("${helper2.embedding.initial-delay:PT30S}") Duration initialDelay,
-        @Value("${helper2.embedding.every:PT15S}") Duration every) {
+        EmbeddingIndexer indexer, LockingTaskExecutor locks, CatalogProperties catalog) {
+      Duration indexTimeout = catalog.indexer().timeout();
+      Duration initialDelay = catalog.indexer().initialDelay();
+      Duration every = catalog.indexer().every();
       Duration atLeastFor = every.multipliedBy(9).dividedBy(10);
       Duration batchWorstCase = indexTimeout.multipliedBy(3).plusMinutes(1);
       ClusterLock lock =

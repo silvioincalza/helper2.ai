@@ -22,9 +22,9 @@ never break keyword search.
 3. **Off without a key.** All beans live in `CatalogConfiguration.VectorSearch`, active only when
    `helper2.embedding.api-key` is set. Without it, search is keyword-only.
 4. **Indexer** (`EmbeddingIndexer.tick`) on its own thread `embedding-indexer`, fixed delay: first after 30 s, then
-   every 15 s (`helper2.embedding.every`). Each tick embeds up to 50 resources (`helper2.embedding.batch`) that have no
+   every 15 s (`helper2.catalog.indexer.every`). Each tick embeds up to 50 resources (`helper2.catalog.indexer.batch`) that have no
    vector for the model or whose `md5(title + "\n" + description)` changed, most popular first; demo rows are skipped.
-   It uses its own client with a 30 s timeout (`helper2.embedding.index-timeout`). After a rate limit it pauses for 2 min.
+   It uses its own client with a 30 s timeout (`helper2.catalog.indexer.timeout`). After a rate limit it pauses for 2 min.
    Every replica runs the thread, but a tick runs only while it holds the cluster lock `embedding-indexer`
    (`platform.ClusterLock`, ShedLock row in PostgreSQL, see [0018](../scout/0018-scout-runner.md)): held at least 90 % of
    the period (13.5 s) and at most 3 × the timeout + 1 min (2 min 30 s). So the cluster embeds one batch per

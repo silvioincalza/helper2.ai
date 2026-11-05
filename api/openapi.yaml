@@ -452,7 +452,7 @@ paths:
       summary: What needs a person now, for the back office landing page.
       description: >-
         Open review items per kind, the enrichment backlog, today's model budgets and web credits, the recent Scout
-        runs and the failed ones of the last 24 hours. Counts only, no personal data. Computed at most once a minute
+        runs and the failed ones of the last 24 hours, and the home examples shown and hidden. Counts only, no personal data. Computed at most once a minute
         (generatedAt says when).
       responses:
         '200':
@@ -1720,7 +1720,7 @@ components:
 
     AdminOverview:
       type: object
-      required: [generatedAt, openReviewItems, enrichmentBacklog, budgets, recentRuns, failedRunsLast24h]
+      required: [generatedAt, openReviewItems, enrichmentBacklog, budgets, recentRuns, failedRunsLast24h, homeExamples]
       properties:
         generatedAt: { type: string, format: date-time }
         openReviewItems:
@@ -1740,7 +1740,39 @@ components:
           description: The last Scout runs, newest first (at most 10).
           items: { $ref: '#/components/schemas/ScoutRun' }
         failedRunsLast24h: { type: integer, minimum: 0 }
+        homeExamples: { $ref: '#/components/schemas/HomeExampleCounts' }
         grafanaUrl: { type: [string, 'null'], format: uri, description: "The metrics dashboard for trends (H2_ADMIN_GRAFANA_URL); null when not set." }
+
+    HomeExampleCounts:
+      type: object
+      description: >-
+        The home examples of every locale (ADR 0049). Shown: ACTIVE and the check is PASS. Hidden: ACTIVE and the
+        check is WEAK, FAIL or PENDING. Paused: PAUSED, whatever the check.
+      required: [shown, hidden, paused]
+      properties:
+        shown:
+          type: array
+          description: Every path, 0 when none is shown.
+          items: { $ref: '#/components/schemas/ExamplePathCount' }
+        hidden:
+          type: array
+          description: WEAK, FAIL and PENDING, 0 when none; never PASS.
+          items: { $ref: '#/components/schemas/ExampleOutcomeCount' }
+        paused: { type: integer, minimum: 0 }
+
+    ExamplePathCount:
+      type: object
+      required: [path, count]
+      properties:
+        path: { $ref: '#/components/schemas/AudiencePath' }
+        count: { type: integer, minimum: 0 }
+
+    ExampleOutcomeCount:
+      type: object
+      required: [outcome, count]
+      properties:
+        outcome: { $ref: '#/components/schemas/ExampleCheckOutcome' }
+        count: { type: integer, minimum: 0 }
 
     ReviewKindCount:
       type: object

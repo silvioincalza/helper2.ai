@@ -27,7 +27,7 @@ import org.springframework.context.annotation.Import;
       "helper2.sources.arxiv.enabled=false",
       "helper2.sources.tavily.enabled=false",
       "management.server.port=0",
-      "helper2.security.metrics-public=true",
+      "helper2.identity.metrics-public=true",
       "logging.structured.format.console=",
     })
 @Import(TestcontainersConfiguration.class)

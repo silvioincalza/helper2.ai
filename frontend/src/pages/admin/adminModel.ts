@@ -1,4 +1,10 @@
-import type { ExampleCheckOutcome, ReviewKind, ReviewStatus, ScoutRun } from '@/api/types';
+import type {
+  AudiencePath,
+  ExampleCheckOutcome,
+  ReviewKind,
+  ReviewStatus,
+  ScoutRun,
+} from '@/api/types';
 import type { StatusTone } from '@/components/ui/StatusPill';
 
 export const REVIEW_KINDS: readonly ReviewKind[] = [
@@ -36,6 +42,10 @@ export const CHECK_TONE: Record<ExampleCheckOutcome, StatusTone> = {
   FAIL: 'warn',
   PENDING: 'next',
 };
+
+export const PATHS: readonly AudiencePath[] = ['USE_AI', 'BUILD_WITH_AI'];
+/** The home page shows this many per path (frontend/src/lib/examples.ts); fewer shown is a warning. */
+export const SHOWN_PER_PATH = 2;
 
 /** A value from the address bar, or undefined when it is not one of [allowed]. */
 export function oneOf<T extends string>(

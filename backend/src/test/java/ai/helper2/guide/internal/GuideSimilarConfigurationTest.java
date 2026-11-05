@@ -39,27 +39,24 @@ class GuideSimilarConfigurationTest {
 
   @Test
   void anUnsetThresholdIsOff() {
-    assertThat(GuideConfiguration.similarQuestions("", embedder, index, clock)).isNull();
     assertThat(GuideConfiguration.similarQuestions(null, embedder, index, clock)).isNull();
   }
 
   @Test
   void withoutTheEmbedderOrWithVectorsTheIndexCannotHoldItIsOff() {
-    assertThat(GuideConfiguration.similarQuestions("0.96", null, index, clock)).isNull();
-    assertThat(GuideConfiguration.similarQuestions("0.96", embedder(2048), index, clock)).isNull();
+    assertThat(GuideConfiguration.similarQuestions(0.96, null, index, clock)).isNull();
+    assertThat(GuideConfiguration.similarQuestions(0.96, embedder(2048), index, clock)).isNull();
   }
 
   @Test
   void aThresholdTurnsItOn() {
-    assertThat(GuideConfiguration.similarQuestions(" 0.96 ", embedder, index, clock).getThreshold())
+    assertThat(GuideConfiguration.similarQuestions(0.96, embedder, index, clock).getThreshold())
         .isEqualTo(0.96);
   }
 
   @Test
   void aThresholdThatIsNotACosineStopsTheStart() {
-    assertThatThrownBy(() -> GuideConfiguration.similarQuestions("high", embedder, index, clock))
-        .isInstanceOf(NumberFormatException.class);
-    assertThatThrownBy(() -> GuideConfiguration.similarQuestions("1.5", embedder, index, clock))
+    assertThatThrownBy(() -> GuideConfiguration.similarQuestions(1.5, embedder, index, clock))
         .isInstanceOf(IllegalArgumentException.class);
   }
 }

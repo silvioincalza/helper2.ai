@@ -36,7 +36,7 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
  */
 @TestPropertySource(
     properties = {
-      "helper2.tavily.quota.key-secret=test-secret",
+      "helper2.quota.key-secret=test-secret",
       "resilience4j.bulkhead.instances.source-fake-web.base-config=source",
       // Its own context stays cached with the others until the JVM ends: a small pool keeps
       // PostgreSQL under its connection limit. Closing the context instead would stop the shared

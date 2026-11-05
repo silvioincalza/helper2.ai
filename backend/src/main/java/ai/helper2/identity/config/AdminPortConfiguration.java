@@ -9,7 +9,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Map;
 import org.apache.catalina.connector.Connector;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.tomcat.servlet.TomcatServletWebServerFactory;
@@ -29,8 +28,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 class AdminPortConfiguration {
 
   @Bean
-  AdminPort adminPort(@Value("${helper2.admin.port:0}") int port, Environment environment) {
-    AdminPort adminPort = new AdminPort(port);
+  AdminPort adminPort(IdentityProperties identity, Environment environment) {
+    AdminPort adminPort = new AdminPort(identity.adminPort());
     requireAdminPortWithRealSignIn(adminPort, environment);
     return adminPort;
   }

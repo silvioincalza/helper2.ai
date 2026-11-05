@@ -7,13 +7,13 @@ import jakarta.validation.constraints.PositiveOrZero;
 import java.time.Duration;
 import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
 
 /**
- * The settings of each Scout collector, bound from {@code helper2.scout.<collector>} (environment
- * variables in application.yaml). Invalid values stop startup with the name of the property. Lists
- * are trimmed and blank entries dropped, so folded YAML lists can span lines.
+ * The settings of each Scout collector, bound from {@code helper2.scout.<collector>}. The defaults
+ * and the environment variables are in application.yaml only (ADR 0007 point 8). A missing or
+ * invalid value stops startup with the name of the property. Lists are trimmed and blank entries
+ * dropped, so folded YAML lists can span lines.
  */
 final class CollectorProperties {
 
@@ -34,15 +34,12 @@ final class CollectorProperties {
 
   @Validated
   @ConfigurationProperties("helper2.scout.hf-trending")
-  record HfTrending(
-      @DefaultValue("P1D") @NotNull Duration interval,
-      @DefaultValue("20") @PositiveOrZero int minLikes)
+  record HfTrending(@NotNull Duration interval, @PositiveOrZero int minLikes)
       implements Scheduled {}
 
   @Validated
   @ConfigurationProperties("helper2.scout.tavily")
-  record TavilyScout(
-      @DefaultValue("P5D") @NotNull Duration interval, @DefaultValue List<String> queries)
+  record TavilyScout(@NotNull Duration interval, @NotNull List<String> queries)
       implements Scheduled {
 
     TavilyScout {
@@ -52,10 +49,7 @@ final class CollectorProperties {
 
   @Validated
   @ConfigurationProperties("helper2.scout.courses")
-  record Courses(
-      @DefaultValue("P7D") @NotNull Duration interval,
-      @DefaultValue("new artificial intelligence course or certification") @NotNull String query,
-      @DefaultValue List<String> platforms)
+  record Courses(@NotNull Duration interval, @NotNull String query, @NotNull List<String> platforms)
       implements Scheduled {
 
     Courses {
@@ -66,16 +60,16 @@ final class CollectorProperties {
   @Validated
   @ConfigurationProperties("helper2.scout.github-awesome")
   record GitHubAwesome(
-      @DefaultValue("P1D") @NotNull Duration interval,
-      @DefaultValue("topic:awesome-list topic:llm") List<String> topicQueries,
-      @DefaultValue("10") @Positive int maxLists,
-      @DefaultValue("1000") @PositiveOrZero int minListStars,
-      @DefaultValue("1000") @Positive int maxEntriesPerPass,
-      @DefaultValue("200") @Positive int maxEntriesPerRun,
-      @DefaultValue("50") @PositiveOrZero int minRepoStars,
-      @DefaultValue("25") @Positive int classifyBatch,
-      @DefaultValue("8192") @Positive int classifyMaxTokens,
-      @DefaultValue("300") @PositiveOrZero int classifierDailyCalls)
+      @NotNull Duration interval,
+      @NotNull List<String> topicQueries,
+      @Positive int maxLists,
+      @PositiveOrZero int minListStars,
+      @Positive int maxEntriesPerPass,
+      @Positive int maxEntriesPerRun,
+      @PositiveOrZero int minRepoStars,
+      @Positive int classifyBatch,
+      @Positive int classifyMaxTokens,
+      @PositiveOrZero int classifierDailyCalls)
       implements Scheduled {
 
     GitHubAwesome {
@@ -86,19 +80,7 @@ final class CollectorProperties {
   @Validated
   @ConfigurationProperties("helper2.scout.hf-provider-orgs")
   record HfProviderOrgs(
-      @DefaultValue("P1D") @NotNull Duration interval,
-      @DefaultValue({
-            "meta-llama",
-            "nvidia",
-            "mistralai",
-            "deepseek-ai",
-            "Qwen",
-            "google",
-            "openai",
-            "xai-org"
-          })
-          List<String> orgs,
-      @DefaultValue("20") @Positive int perOrg)
+      @NotNull Duration interval, @NotNull List<String> orgs, @Positive int perOrg)
       implements Scheduled {
 
     HfProviderOrgs {
@@ -108,15 +90,15 @@ final class CollectorProperties {
 
   @Validated
   @ConfigurationProperties("helper2.scout.ai-deadlines")
-  record AiDeadlines(@DefaultValue("P1D") @NotNull Duration interval) implements Scheduled {}
+  record AiDeadlines(@NotNull Duration interval) implements Scheduled {}
 
   @Validated
   @ConfigurationProperties("helper2.scout.mcp-registry")
-  record McpRegistry(@DefaultValue("PT1H") @NotNull Duration interval) implements Scheduled {}
+  record McpRegistry(@NotNull Duration interval) implements Scheduled {}
 
   private static List<String> clean(List<String> values) {
     return values == null
-        ? List.of()
+        ? null
         : values.stream().map(String::strip).filter(v -> !v.isEmpty()).toList();
   }
 }

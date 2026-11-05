@@ -627,7 +627,17 @@
       "noCap": "{{used}}, no daily cap",
       "usedOf": "{{used}} of {{limit}}",
       "lastRuns": "Last Scout runs",
-      "allRuns": "All runs"
+      "allRuns": "All runs",
+      "examples": {
+        "hidden_one": "{{count}} home example hidden",
+        "hidden_other": "{{count}} home examples hidden",
+        "shown": "Shown now: {{use}} for people who use AI, {{build}} for builders.",
+        "open": "Open the examples",
+        "WEAK": "hidden, expected result only in the top 10",
+        "FAIL": "hidden, no expected result in the top 10",
+        "PENDING": "waiting for the check",
+        "paused": "paused"
+      }
     },
     "audit": {
       "title": "Audit trail",

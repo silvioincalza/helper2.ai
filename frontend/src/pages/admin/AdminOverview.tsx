@@ -1,16 +1,18 @@
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { api } from '@/api/client';
-import type { AdminOverview as Overview } from '@/api/types';
+import type { AdminOverview as Overview, AudiencePath, ExampleCheckOutcome } from '@/api/types';
 import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { Icon } from '@/components/Icon';
 import { useApi } from '@/hooks/useApi';
 import { useRetry } from '@/hooks/useRetry';
 import { formatDate, safeHref } from '@/lib/format';
-import { RUN_TONE } from './adminModel';
+import { PATHS, RUN_TONE, SHOWN_PER_PATH } from './adminModel';
 
 const SHOWN_RUNS = 5;
+/** The checks that hide an active example, in the order the page lists them. */
+const HIDING: readonly ExampleCheckOutcome[] = ['WEAK', 'FAIL', 'PENDING'];
 
 /**
  * The landing page (UJ-9, ADR 0045): what needs a person now. Every number links to the view that acts on it. Counts
@@ -117,6 +119,8 @@ function OverviewParts({
         </li>
       </ul>
 
+      <HomeExampleCounts counts={data.homeExamples} />
+
       <div className="table-wrap">
         <table aria-labelledby="ov-budgets">
           <caption id="ov-budgets" className="h2-admin__caption">
@@ -170,6 +174,51 @@ function OverviewParts({
       <p>
         <Link to="/admin/runs">{t('admin.overview.allRuns')}</Link>
       </p>
+    </>
+  );
+}
+
+/**
+ * How many home examples are hidden now, per check and paused (ADR 0049), each a link to the Examples page filtered by
+ * that check. A path with fewer shown than the home page picks gets the same warning as the Examples page.
+ */
+function HomeExampleCounts({ counts }: { counts: Overview['homeExamples'] }) {
+  const { t } = useTranslation();
+  const hidden = (outcome: ExampleCheckOutcome) =>
+    counts.hidden.find((h) => h.outcome === outcome)?.count ?? 0;
+  const shown = (path: AudiencePath) => counts.shown.find((s) => s.path === path)?.count ?? 0;
+  const total = HIDING.reduce((sum, o) => sum + hidden(o), counts.paused);
+  return (
+    <>
+      <h3 className="h2-admin__h3">{t('admin.overview.examples.hidden', { count: total })}</h3>
+      <p className="muted">
+        {t('admin.overview.examples.shown', {
+          use: shown('USE_AI'),
+          build: shown('BUILD_WITH_AI'),
+        })}
+      </p>
+      {PATHS.filter((p) => shown(p) < SHOWN_PER_PATH).map((p) => (
+        <p key={p} className="banner banner-warn">
+          <Icon name="warn" /> {t('admin.examples.few', { path: t(`admin.examples.path.${p}`) })}{' '}
+          <Link to="/admin/examples">{t('admin.overview.examples.open')}</Link>
+        </p>
+      ))}
+      <ul className="h2-admin__counts">
+        {HIDING.map((outcome) => (
+          <li key={outcome}>
+            <Link to={`/admin/examples?outcome=${outcome}`}>
+              <span className="h2-admin__count">{hidden(outcome)}</span>{' '}
+              {t(`admin.overview.examples.${outcome}`)}
+            </Link>
+          </li>
+        ))}
+        <li>
+          <Link to="/admin/examples">
+            <span className="h2-admin__count">{counts.paused}</span>{' '}
+            {t('admin.overview.examples.paused')}
+          </Link>
+        </li>
+      </ul>
     </>
   );
 }

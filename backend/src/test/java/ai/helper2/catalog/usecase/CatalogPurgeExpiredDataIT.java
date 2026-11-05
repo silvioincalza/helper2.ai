@@ -3,6 +3,7 @@ package ai.helper2.catalog.usecase;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.TestcontainersConfiguration;
+import ai.helper2.catalog.config.CatalogRetentionProperties;
 import ai.helper2.catalog.internal.CatalogRetention;
 import java.sql.Timestamp;
 import java.time.Clock;
@@ -36,12 +37,13 @@ class CatalogPurgeExpiredDataIT {
     return new PurgeExpiredData(
         retention,
         Clock.fixed(NOW, ZoneOffset.UTC),
-        Duration.ofDays(180),
-        Duration.ofDays(365),
-        Duration.ofDays(90),
-        Duration.ofDays(180),
-        Duration.ofDays(365),
-        Duration.ofDays(180));
+        new CatalogRetentionProperties(
+            Duration.ofDays(180),
+            Duration.ofDays(365),
+            Duration.ofDays(90),
+            Duration.ofDays(180),
+            Duration.ofDays(365),
+            Duration.ofDays(180)));
   }
 
   static Instant daysAgo(int days) {
