@@ -192,6 +192,10 @@ Open items:
   - An `unknown` count per facet and an updated-date facet on the search response (Filters panel).
   - Sign-in with Google (phase 1). Passkey, email link and password (phase 2) need their own ADR, a threat model and
     the Privacy page first.
+  - **Account, from the boards:** "higher daily limits when signed in" only once the API says the signed-in limits
+    (from `limits` on GET /me, never typed), and "Saved items 4 of 500" once GET /bookmarks returns the account cap.
+  - **Sign-in page, phase 2:** passkey, email link and password buttons, shown only when a provider is configured, after
+    the phase 2 ADR above.
   - **Radar pause for everyone (WCAG 2.2.2), open point.** The radar's beam turns without end and its sources come and
     go. Signed-in users can turn it off on the account page; guests have only reduced motion and the hold while the
     search box has focus, and no switch. Find a pause for them that needs no new browser storage key, or decide the
