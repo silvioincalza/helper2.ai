@@ -44,9 +44,12 @@ public interface ReviewEvidence {
 
     public static final Evidence NONE = new Evidence(null, List.of(), List.of(), null);
 
-    /** True when a model wrote any of it: a field value or a relationship. */
+    /**
+     * True when a model wrote any of it: a field value, a relationship, or a validation error (it
+     * quotes the refused model output).
+     */
     public boolean aiWritten() {
-      return !fields.isEmpty() || relationship != null;
+      return !fields.isEmpty() || relationship != null || !validationErrors.isEmpty();
     }
   }
 

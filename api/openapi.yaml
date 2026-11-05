@@ -2188,7 +2188,7 @@ components:
           type: array
           maxItems: 50
           items: { type: string }
-          description: What the code check refused in the run, in its words (not AI-written). Empty for a relationship candidate.
+          description: What the code check refused in the run, in its words. Each error can quote the refused model output, so aiContent lists it as AI-written. Empty for a relationship candidate.
         fields:
           type: array
           maxItems: 50
