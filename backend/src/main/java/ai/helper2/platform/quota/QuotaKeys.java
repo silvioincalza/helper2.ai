@@ -31,6 +31,12 @@ import javax.crypto.spec.SecretKeySpec;
  */
 public final class QuotaKeys {
 
+  /** The field of {@link #global} that counts the Tavily credits of the day, live and Scout. */
+  public static final String CREDITS = "credits";
+
+  /** The field of {@link #global} that counts the Scout's own Tavily credits (ADR 0051). */
+  public static final String SCOUT_CREDITS = "scout-credits";
+
   private static final String PREFIX = "h2:v1:quota:";
 
   private final byte[] secret;

@@ -5,6 +5,8 @@ import ai.helper2.platform.llm.CallCounter;
 import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.LlmSettings;
 import ai.helper2.platform.llm.ModelCallMetrics;
+import ai.helper2.platform.quota.QuotaCounter;
+import ai.helper2.platform.quota.QuotaKeys;
 import ai.helper2.platform.resilience.OutboundThrottle;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.sources.aideadlines.AiDeadlinesCollector;
@@ -24,8 +26,8 @@ import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.sources.tavily.CourseCollector;
 import ai.helper2.sources.tavily.LinkedInCollector;
+import ai.helper2.sources.tavily.ScoutTavilyCredits;
 import ai.helper2.sources.tavily.TavilyCollector;
-import ai.helper2.sources.tavily.TavilyDiscoveryCollector;
 import ai.helper2.sources.tavily.TavilySource;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -42,6 +44,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Profile;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.client.RestClient;
@@ -60,6 +63,7 @@ import org.springframework.web.client.RestClient;
   CollectorProperties.McpRegistry.class
 })
 @Profile("!demo")
+@Import(DiscoveryCollectorRegistrar.class)
 class SourcesConfiguration {
 
   private static final Logger log = LoggerFactory.getLogger(SourcesConfiguration.class);
@@ -94,8 +98,7 @@ class SourcesConfiguration {
    * (H2_SOURCE_<ID>_DEADLINE, default twice the timeout). Search sources keep their timeout as the
    * deadline.
    */
-  private static RestClient.Builder collectorClient(
-      SourceSettings s, ObservationRegistry observations) {
+  static RestClient.Builder collectorClient(SourceSettings s, ObservationRegistry observations) {
     return ObservedHttp.restClientBuilder(s.timeout(), s.deadline(), observations);
   }
 
@@ -201,8 +204,19 @@ class SourcesConfiguration {
   }
 
   /**
+   * The Tavily credits the Scout's searches spend (discovery and LinkedIn), counted with the live
+   * search's and capped per UTC day (ADR 0051). The discovery collectors themselves are registered
+   * per category by {@link DiscoveryCollectorRegistrar}.
+   */
+  @Bean
+  ScoutTavilyCredits scoutTavilyCredits(
+      CollectorProperties.Discovery c, QuotaCounter counter, QuotaKeys keys, MeterRegistry meters) {
+    return new ScoutTavilyCredits(counter, keys, c.dailyCredits(), meters);
+  }
+
+  /**
    * Weekly Tavily searches restricted to linkedin.com; every page it keeps goes to the admin review
-   * list (ADR 0053).
+   * list (ADR 0053). Its credits count on the Scout's daily cap, as discovery's.
    */
   @Bean
   LinkedInCollector linkedInCollector(
@@ -210,7 +224,8 @@ class SourcesConfiguration {
       CollectorProperties.LinkedIn c,
       Clock clock,
       Resilience resilience,
-      ObservationRegistry observations) {
+      ObservationRegistry observations,
+      ScoutTavilyCredits credits) {
     SourceSettings s = p.get("linkedin-scout");
     return new LinkedInCollector(
         s,
@@ -218,30 +233,8 @@ class SourcesConfiguration {
         clock,
         resilience,
         new RunInterval(c.interval()),
-        c.queries());
-  }
-
-  /**
-   * Weekly Tavily searches per category of the AI world: list pages are indexed, product pages go
-   * to the admin review list (ADR 0051).
-   */
-  @Bean
-  TavilyDiscoveryCollector tavilyDiscoveryCollector(
-      SourcesProperties p,
-      CollectorProperties.Discovery c,
-      Clock clock,
-      Resilience resilience,
-      ObservationRegistry observations) {
-    SourceSettings s = p.get("tavily-discovery");
-    return new TavilyDiscoveryCollector(
-        s,
-        collectorClient(s, observations),
-        clock,
-        resilience,
-        new RunInterval(c.interval()),
-        new TavilyDiscoveryCollector.Search(
-            c.searchDepth(), c.maxResults(), c.minScore(), c.excludeDomains()),
-        c.categories());
+        c.queries(),
+        credits);
   }
 
   /**

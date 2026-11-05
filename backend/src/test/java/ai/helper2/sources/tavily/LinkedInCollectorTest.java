@@ -1,8 +1,11 @@
 package ai.helper2.sources.tavily;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.helper2.platform.http.ObservedHttp;
+import ai.helper2.platform.quota.QuotaCounter;
+import ai.helper2.platform.quota.QuotaKeys;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.Candidate;
 import ai.helper2.scout.CollectedBatch;
@@ -12,8 +15,10 @@ import ai.helper2.sources.SourceFixtures;
 import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.testing.FixtureServer;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -44,6 +49,10 @@ class LinkedInCollectorTest {
       """;
 
   final FixtureServer server = new FixtureServer();
+  final TavilyDiscoveryCollectorTest.MapCounter counter =
+      new TavilyDiscoveryCollectorTest.MapCounter();
+  final QuotaKeys keys = new QuotaKeys("", SourceFixtures.CLOCK);
+  final SimpleMeterRegistry meters = new SimpleMeterRegistry();
 
   @AfterEach
   void stop() {
@@ -58,7 +67,8 @@ class LinkedInCollectorTest {
         SourceFixtures.CLOCK,
         Resilience.NONE,
         new RunInterval(Duration.ofDays(7)),
-        queries);
+        queries,
+        new ScoutTavilyCredits(counter, keys, 40, meters));
   }
 
   @Test
@@ -75,6 +85,9 @@ class LinkedInCollectorTest {
         .contains("\"topic\":\"general\"")
         .contains("\"search_depth\":\"basic\"")
         .contains("\"max_results\":10")
+        .contains("\"include_usage\":true")
+        .contains("\"include_raw_content\":false")
+        .contains("\"include_answer\":false")
         .contains("\"time_range\":\"month\"")
         .doesNotContain("start_date");
     // Nothing goes to the catalog: the batch has no hits and the pass is complete.
@@ -177,11 +190,46 @@ class LinkedInCollectorTest {
   }
 
   @Test
-  void spendsNoCreditsBeforeTheWeeklyIntervalHasPassed() {
+  void spendsNoCreditsBeforeTheWeeklyIntervalHasPassedAndSaysWhenItWill() {
     CollectedBatch batch =
         collector("tvly-test", List.of("AI hackathon")).collect("2026-10-20T09:00:00Z", null, 500);
     assertThat(batch.getNotDue()).isTrue();
+    assertThat(batch.getSkipReason()).isEqualTo("Not due yet: next pass on 2026-10-27");
     assertThat(server.requests).isEmpty();
+  }
+
+  @Test
+  void eachSearchCountsItsCreditsOnTheScoutCapUnderItsOwnFeature() {
+    server.route("/search", FixtureServer.Reply.ok("{\"usage\":{\"credits\":1},\"results\":[]}"));
+    collector("tvly-test", List.of("AI conference", "AI hackathon")).collect(null, null, 500);
+
+    assertThat(counter.counts)
+        .containsEntry(new QuotaCounter.Counter(keys.global(), QuotaKeys.CREDITS), 2L)
+        .containsEntry(new QuotaCounter.Counter(keys.global(), QuotaKeys.SCOUT_CREDITS), 2L);
+    assertThat(
+            meters.get("helper2.tavily.credits").tag("feature", "scout-linkedin").counter().count())
+        .isEqualTo(2.0);
+  }
+
+  @Test
+  void pastTheScoutsDailyCapItSkipsWithoutSearching() {
+    counter.counts.put(new QuotaCounter.Counter(keys.global(), QuotaKeys.SCOUT_CREDITS), 40L);
+    CollectedBatch batch =
+        collector("tvly-test", List.of("AI conference")).collect(null, null, 500);
+
+    assertThat(batch.getNotDue()).isTrue();
+    assertThat(batch.getSkipReason()).contains("credit cap");
+    assertThat(server.requests).isEmpty();
+  }
+
+  @Test
+  void thePassFailsWhenHalfOrMoreOfItsSearchesFail() {
+    server.route("/search", new FixtureServer.Reply(500, "{}", Map.of(), 0));
+    assertThatThrownBy(() ->
+            collector("tvly-test", List.of("AI conference", "AI hackathon"))
+                .collect(null, null, 500))
+        .isInstanceOf(RuntimeException.class);
+    assertThat(server.requestBodies).hasSize(2);
   }
 
   @Test

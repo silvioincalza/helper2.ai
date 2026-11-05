@@ -14,6 +14,7 @@ import ai.helper2.sources.support.SourceSettings;
 import java.net.URI;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -21,6 +22,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
 
@@ -32,10 +36,17 @@ import tools.jackson.databind.JsonNode;
  * profiles, jobs and learning pages are dropped. Every kept page is a candidate for the admin
  * review list, never a hit, so nothing reaches the catalog without a person accepting it. Titles
  * carry no author name, and excerpts are short. A pass asks only for pages published since the
- * previous complete pass (start_date), or the last month on the first. Docs:
+ * previous complete pass (start_date), or the last month on the first.
+ *
+ * <p>Built as the discovery collectors are (ADR 0051): every search counts its credits on the
+ * global counter and the Scout's daily cap ({@link ScoutTavilyCredits}, feature {@value #FEATURE});
+ * past the cap the collector skips. A search that fails alone is logged and skipped; when half or
+ * more fail, the pass fails and its checkpoint stays. Docs:
  * https://docs.tavily.com/documentation/api-reference/endpoint/search
  */
 public class LinkedInCollector implements Collector {
+
+  private static final Logger log = LoggerFactory.getLogger(LinkedInCollector.class);
 
   static final String ID = "linkedin-scout";
 
@@ -45,7 +56,13 @@ public class LinkedInCollector implements Collector {
   /** The tag every accepted page gets, so search can filter LinkedIn pages. */
   static final String TAG = "linkedin";
 
+  /** The feature tag of its Tavily credits, beside discovery's "scout-discovery". */
+  static final String FEATURE = "scout-linkedin";
+
   static final int MAX_RESULTS_PER_QUERY = 10;
+
+  /** One credit per search; the excerpt is all a candidate needs. */
+  static final String SEARCH_DEPTH = "basic";
 
   /** Shorter than other web excerpts: a post's text often names people. */
   static final int MAX_SNIPPET = 300;
@@ -91,6 +108,7 @@ public class LinkedInCollector implements Collector {
   private final Resilience resilience;
   private final RunInterval interval;
   private final List<String> queries;
+  private final ScoutTavilyCredits credits;
   private final SourceDescriptor descriptor;
 
   public LinkedInCollector(
@@ -99,8 +117,10 @@ public class LinkedInCollector implements Collector {
       Clock clock,
       Resilience resilience,
       RunInterval interval,
-      List<String> queries) {
+      List<String> queries,
+      ScoutTavilyCredits credits) {
     this.clock = clock;
+    this.credits = credits.forFeature(FEATURE);
     this.resilience = resilience;
     if (settings.enabled()) {
       resilience.require(POLICY);
@@ -133,43 +153,89 @@ public class LinkedInCollector implements Collector {
   }
 
   @Override
-  public CollectedBatch collect(String checkpoint, String resumeCursor, int maxItems) {
+  public CollectedBatch collect(
+      @Nullable String checkpoint, @Nullable String resumeCursor, int maxItems) {
     Instant startedAt = clock.instant();
     if (!interval.allowsPass(checkpoint, resumeCursor, startedAt)) {
-      return CollectedBatch.notDue();
+      return CollectedBatch.skipped(notDueReason(checkpoint, startedAt));
     }
-    Map<String, Candidate> byUrl = new LinkedHashMap<>();
+    if (credits.capReached()) {
+      return CollectedBatch.skipped(
+          "Daily Tavily credit cap of the Scout reached ("
+              + credits.dailyCap()
+              + " credits); next try tomorrow");
+    }
     int perQuery =
         Math.max(1, Math.min(MAX_RESULTS_PER_QUERY, maxItems / Math.max(1, queries.size())));
-    String since = TavilyCollector.startDate(checkpoint);
+    Map<String, Candidate> found = searchAll(TavilyCollector.startDate(checkpoint), perQuery);
+    return new CollectedBatch(
+        List.of(), null, startedAt.toString(), false, List.copyOf(found.values()));
+  }
+
+  private String notDueReason(@Nullable String checkpoint, Instant now) {
+    LocalDate next = interval.nextDueDay(checkpoint, now);
+    return next == null ? "Not due yet (run interval)" : "Not due yet: next pass on " + next;
+  }
+
+  /**
+   * Every query, merged by URL. A search that fails alone is skipped, so the paid ones are kept;
+   * when half or more fail, the pass fails and its checkpoint stays (as discovery, ADR 0051).
+   */
+  private Map<String, Candidate> searchAll(@Nullable String since, int perQuery) {
+    Map<String, Candidate> byUrl = new LinkedHashMap<>();
+    RuntimeException lastFailure = null;
+    int failed = 0;
     for (String query : queries) {
-      Map<String, Object> body = new LinkedHashMap<>();
-      body.put("query", query);
-      body.put("topic", "general");
-      body.put("search_depth", "basic");
-      body.put("max_results", perQuery);
-      body.put("include_domains", List.of("linkedin.com"));
-      if (since != null) {
-        body.put("start_date", since);
-      } else {
-        body.put("time_range", "month");
-      }
-      JsonNode root =
-          resilience.call(
-              POLICY,
-              () ->
-                  HttpClients.getJson(
-                      () -> http.post().uri("/search").body(body).retrieve().body(String.class),
-                      clock));
-      for (JsonNode r : root.path("results")) {
-        Candidate c = candidate(r);
-        if (c != null) {
-          byUrl.putIfAbsent(c.getUrl().getValue(), c);
+      try {
+        JsonNode root = searchFor(requestBody(query, since, perQuery));
+        credits.spent(root, SEARCH_DEPTH);
+        for (JsonNode r : root.path("results")) {
+          Candidate c = candidate(r);
+          if (c != null) {
+            byUrl.putIfAbsent(c.getUrl().getValue(), c);
+          }
         }
+      } catch (RuntimeException e) {
+        log.warn("{}: a search failed: {}", ID, e.getClass().getSimpleName());
+        lastFailure = e;
+        failed++;
       }
     }
-    return new CollectedBatch(
-        List.of(), null, startedAt.toString(), false, List.copyOf(byUrl.values()));
+    if (lastFailure != null && failed * 2 >= queries.size()) {
+      throw lastFailure;
+    }
+    return byUrl;
+  }
+
+  private JsonNode searchFor(Map<String, Object> body) {
+    return resilience.call(
+        POLICY,
+        () ->
+            HttpClients.getJson(
+                () -> http.post().uri("/search").body(body).retrieve().body(String.class), clock));
+  }
+
+  /**
+   * The search request: linkedin.com only, the query, only pages new since [since]. Asks for the
+   * credits used; never for page text, images or an answer.
+   */
+  static Map<String, Object> requestBody(String query, @Nullable String since, int maxResults) {
+    Map<String, Object> body = new LinkedHashMap<>();
+    body.put("query", query);
+    body.put("topic", "general");
+    body.put("search_depth", SEARCH_DEPTH);
+    body.put("max_results", maxResults);
+    body.put("include_domains", List.of("linkedin.com"));
+    body.put("include_answer", false);
+    body.put("include_raw_content", false);
+    body.put("include_images", false);
+    body.put("include_usage", true);
+    if (since != null) {
+      body.put("start_date", since);
+    } else {
+      body.put("time_range", "month");
+    }
+    return body;
   }
 
   /**

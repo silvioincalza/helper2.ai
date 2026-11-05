@@ -71,7 +71,7 @@ class ReportAndReviewIT extends ApiTestBase {
     // Collectors propose canonical URLs.
     String url = CanonicalUrl.of("https://candidate-it.example/").getValue();
     String details =
-        "{\"sourceId\":\"tavily-discovery\",\"url\":\""
+        "{\"sourceId\":\"discovery-self-hosted\",\"url\":\""
             + url
             + "\",\"title\":\"Candidate IT\",\"type\":\"PRODUCT\",\"tags\":[\"self-hosted\"],"
             + "\"snippet\":\"A self-hosted AI app for LLM chats.\"}";
@@ -103,11 +103,11 @@ class ReportAndReviewIT extends ApiTestBase {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.card.title").value("Candidate IT"))
         .andExpect(jsonPath("$.card.type").value("PRODUCT"))
-        .andExpect(jsonPath("$.sourceRecords[0].sourceId").value("tavily-discovery"))
+        .andExpect(jsonPath("$.sourceRecords[0].sourceId").value("discovery-self-hosted"))
         .andExpect(jsonPath("$.card.tags[0]").value("self-hosted"));
     org.assertj.core.api.Assertions.assertThat(
             jdbc.sql(
-                    "SELECT count(*) FROM source_record WHERE source_id = 'tavily-discovery'"
+                    "SELECT count(*) FROM source_record WHERE source_id = 'discovery-self-hosted'"
                         + " AND canonical_url = :u")
                 .param("u", url)
                 .query(Long.class)
@@ -138,6 +138,93 @@ class ReportAndReviewIT extends ApiTestBase {
   }
 
   @Test
+  void twoCategoriesFindingOnePageMakeOneItemThatKeepsWhatBothSearchesSaid() throws Exception {
+    var review = context.getBean(ai.helper2.scout.CandidateReview.class);
+    var jdbc = context.getBean(org.springframework.jdbc.core.simple.JdbcClient.class);
+    CanonicalUrl url = CanonicalUrl.of("https://candidate-it-merged.example/");
+    review.propose(
+        "discovery-self-hosted",
+        List.of(
+            new ai.helper2.scout.Candidate(
+                url,
+                "Merged IT",
+                "A self-hosted AI app that runs offline.",
+                "self-hosted",
+                ai.helper2.shared.ResourceType.PRODUCT,
+                java.util.Set.of("self-hosted"),
+                java.util.Map.of(
+                    "discovery",
+                    java.util.Map.of("category", "self-hosted", "query", "q1", "rank", 2)))));
+    review.propose(
+        "discovery-agent-platforms",
+        List.of(
+            new ai.helper2.scout.Candidate(
+                url,
+                "Merged IT",
+                "An agent platform.",
+                "agent-platforms",
+                ai.helper2.shared.ResourceType.AGENT,
+                java.util.Set.of("agent-platforms"),
+                java.util.Map.of(
+                    "discovery",
+                    java.util.Map.of("category", "agent-platforms", "query", "q2", "rank", 0)))));
+    var admin = oauth2Login().authorities(new SimpleGrantedAuthority("ROLE_ADMIN"));
+
+    String listed =
+        mvc.perform(get("/api/v1/admin/review-items?category=agent-platforms").with(admin))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    List<String> reasons = JsonPath.read(listed, "$.items[*].reason");
+    org.assertj.core.api.Assertions.assertThat(reasons)
+        .containsExactly(
+            "New AGENT (agent-platforms, self-hosted) found by discovery-self-hosted,"
+                + " discovery-agent-platforms: Merged IT");
+    List<List<String>> categories = JsonPath.read(listed, "$.items[*].categories");
+    org.assertj.core.api.Assertions.assertThat(categories.getFirst())
+        .containsExactly("agent-platforms", "self-hosted");
+    mvc.perform(get("/api/v1/admin/review-items?category=legal").with(admin))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.total").value(0));
+    mvc.perform(get("/api/v1/admin/review-items?category=Not%20a%20tag").with(admin))
+        .andExpect(status().isBadRequest());
+
+    UUID item =
+        jdbc.sql("SELECT id FROM review_item WHERE candidate_url = :u")
+            .param("u", url.getValue())
+            .query(UUID.class)
+            .single();
+    mvc.perform(
+            put("/api/v1/admin/review-items/" + item + "/resolution")
+                .with(admin)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\":\"ACCEPTED\"}"))
+        .andExpect(status().isOk());
+    var record =
+        jdbc.sql(
+                """
+                SELECT source_id, type, extra -> 'discovery' ->> 'query' AS query,
+                       jsonb_array_length(extra -> 'foundBy') AS finders,
+                       extra -> 'categories' AS categories
+                FROM source_record WHERE canonical_url = :u
+                """)
+            .param("u", url.getValue())
+            .query((rs, n) ->
+                List.of(
+                    rs.getString("source_id"),
+                    rs.getString("type"),
+                    rs.getString("query"),
+                    rs.getString("finders"),
+                    rs.getString("categories")))
+            .single();
+    org.assertj.core.api.Assertions.assertThat(record)
+        .containsExactly(
+            "discovery-self-hosted", "AGENT", "q1", "2", "[\"agent-platforms\", \"self-hosted\"]");
+  }
+
+  @Test
   void acceptingACandidateAnotherSourceIndexedMeanwhileKeepsThatEntry() throws Exception {
     var queue = context.getBean(ai.helper2.catalog.ReviewQueue.class);
     var jdbc = context.getBean(org.springframework.jdbc.core.simple.JdbcClient.class);
@@ -146,7 +233,7 @@ class ReportAndReviewIT extends ApiTestBase {
         ai.helper2.catalog.ReviewQueue.Kind.RESOURCE_CANDIDATE,
         url,
         "New PRODUCT",
-        "{\"sourceId\":\"tavily-discovery\",\"url\":\""
+        "{\"sourceId\":\"discovery-self-hosted\",\"url\":\""
             + url
             + "\",\"title\":\"From the web\",\"type\":\"PRODUCT\",\"tags\":[]}");
     UUID item =

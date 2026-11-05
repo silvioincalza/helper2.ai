@@ -374,6 +374,11 @@ paths:
       parameters:
         - { name: status, in: query, description: Omit for every status., schema: { $ref: '#/components/schemas/ReviewStatus' } }
         - { name: kind, in: query, description: Omit for every kind., schema: { $ref: '#/components/schemas/ReviewKind' } }
+        - name: category
+          in: query
+          description: >-
+            Only resource candidates in this discovery category (its id, e.g. `coding`); omit for every item.
+          schema: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$', maxLength: 40 }
         - { name: page, in: query, schema: { type: integer, minimum: 0, default: 0 } }
         - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
       responses:
@@ -1650,6 +1655,11 @@ components:
         termsUrl: { type: [string, 'null'], format: uri }
         attribution: { type: [string, 'null'] }
         resourceTypes: { type: array, items: { $ref: '#/components/schemas/ResourceType' } }
+        family:
+          oneOf: [{ $ref: '#/components/schemas/SourceFamily' }, { type: 'null' }]
+          description: >-
+            The family of a discovery category (`discovery-<category>`, one per category of the AI world); null for
+            every other source. The Sources page groups the categories by it.
         lastOutcome: { oneOf: [{ $ref: '#/components/schemas/SourceOutcome' }, { type: 'null' }] }
         lastCheckedAt: { type: [string, 'null'], format: date-time }
         responseTimeMs:
@@ -1678,6 +1688,11 @@ components:
             and observed). Null for `helper2-semantic` (the same index searched by meaning, no count of its own) and
             when the catalog cannot answer.
 
+    SourceFamily:
+      type: string
+      description: The seven families of the discovery categories.
+      enum: [prompts-and-skills, everyday-apps, creative-and-media, business, developers, hosting-and-infra, run-it-yourself]
+
     CircuitState:
       type: string
       description: |
@@ -1693,7 +1708,9 @@ components:
         usedToday:
           type: integer
           format: int64
-          description: Credits taken today by live calls from search and the guide, counted in Redis by every replica (Scout runs are not included).
+          description: >-
+            Credits taken today by live calls from search and the guide and by the Scout's discovery searches, counted
+            in Redis by every replica (the Scout's other Tavily queries are not included).
         dailyCap:
           type: [integer, 'null']
           format: int64
@@ -1891,6 +1908,12 @@ components:
         resourceTitle: { type: [string, 'null'] }
         reason: { type: string }
         details: { type: [string, 'null'] }
+        categories:
+          type: array
+          items: { type: string }
+          description: >-
+            The discovery categories of a resource candidate (its tags, e.g. `coding`, `self-hosted`); empty for every
+            other kind.
         createdAt: { type: string, format: date-time }
         resolvedAt: { type: [string, 'null'], format: date-time }
         resolvedBy: { type: [string, 'null'] }

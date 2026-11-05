@@ -58,7 +58,8 @@ at the same time. Prod runs 3 replicas ([0027](../operations/0027-runtime-topolo
 5. **Intervals per collector** (`RunInterval`): Model Context Protocol (MCP) Registry `H2_SCOUT_MCP_INTERVAL` (1 h), Hugging Face trending
    `H2_SCOUT_HF_INTERVAL` (1 day), Hugging Face provider orgs `H2_SCOUT_HF_ORGS_INTERVAL` (1 day), awesome lists
    `H2_SCOUT_AWESOME_INTERVAL` (1 day), ai-deadlines `H2_SCOUT_AI_DEADLINES_INTERVAL` (1 day), Tavily
-   `H2_SCOUT_TAVILY_INTERVAL` (5 days), Tavily discovery `H2_SCOUT_DISCOVERY_INTERVAL` (7 days), courses
+   `H2_SCOUT_TAVILY_INTERVAL` (5 days), each Tavily discovery category `H2_SCOUT_DISCOVERY_INTERVAL` (7 days,
+   staggered over the week, [0051](0051-tavily-discovery.md)), courses
    `H2_SCOUT_COURSES_INTERVAL` (7 days). An interval only makes a collector run less often than the cron: with a
    daily cron, the MCP Registry is read once a day. An interval of whole days counts calendar days in UTC
    (`RunInterval`): a 1-day collector is due on any day after its last pass, whatever the time. The run starts at

@@ -69,7 +69,10 @@ used up. The counts must hold across 3 replicas, store no address and no query t
 8. **Credits are measured.** `helper2.tavily.credits{feature,tier}` counts every live call (`none` for internal
    callers). Alert `Helper2TavilyCreditsHigh` when more than 200 credits were spent in 24 h: 80% of prod's
    daily cap (250, `app.dailyLimits.webSearchCredits`). The plan has 14,000 credits a month for prod, staging (cap
-   150 a day) and the Scout (~456 a month); a 31-day month at both caps stays about 1,070 under it.
+   150 a day) and the Scout (~506 a month); a 31-day month at both caps stays about 1,010 under it. The Scout's
+   discovery and LinkedIn searches count on the global daily counter and in the alert too (features `scout-discovery`
+   and `scout-linkedin`, at most 40 a day together, [0051](../scout/0051-tavily-discovery.md),
+   [0053](../scout/0053-linkedin-via-tavily.md)).
 9. **Retention** ([0034](../operations/0034-data-retention.md)): stored sets are deleted 7 days after `fetched_at`
    (`H2_RETENTION_TAVILY_RESULTS`) by the search module's daily purge; counters by their 24 h TTL. `DeleteMyAccount`
    deletes the user's counters with the account.

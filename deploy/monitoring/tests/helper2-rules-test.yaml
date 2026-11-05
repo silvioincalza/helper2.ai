@@ -105,8 +105,8 @@ tests:
               environment: prod
             exp_annotations:
               summary: "Tavily used more than 200 credits in the last 24 hours (prod)."
-              description: "240 live Tavily calls in the last 24 hours. At this pace the monthly credits run out before the plan resets; then Tavily fails for everyone and searches answer from stored results and the other sources."
-              runbook: "Dashboard: helper2_tavily_credits_total by feature and tier. Many guest addresses at the limit = rotating IPs: set H2_TAVILY_GLOBAL_DAILY_CREDITS to cap all live calls a day (no release). Few stored-set hits (helper2_cache_events_total, event=store_hit): check the freshness settings."
+              description: "240 Tavily credits (live calls and the Scout's discovery and LinkedIn searches) in the last 24 hours. At this pace the monthly credits run out before the plan resets; then Tavily fails for everyone and searches answer from stored results and the other sources."
+              runbook: "Dashboard: helper2_tavily_credits_total by feature and tier (scout-discovery and scout-linkedin are the Scout). Many guest addresses at the limit = rotating IPs: set H2_TAVILY_GLOBAL_DAILY_CREDITS to cap all live calls a day (no release). Few stored-set hits (helper2_cache_events_total, event=store_hit): check the freshness settings."
 
   # Scout age (the gauge holds epoch seconds; test time starts at epoch 0). hf-trending (daily) last succeeded at
   # 1h: quiet at 49h (48 h old), fires at 73h. tavily-scout (every 5 days) is as old and stays quiet; mcp-registry
@@ -133,6 +133,58 @@ tests:
             exp_annotations:
               summary: "Scout collector hf-trending: no successful run for 3d 0h 0m 0s (prod)."
               description: "The catalog misses new resources from hf-trending since its last successful run."
+              runbook: "Dashboard row Scout, 'Run failures by error'; the admin back office lists the runs. A collector disabled on purpose keeps firing until its last value is 9 days old."
+
+  # Discovery categories (ADR 0051): weekly, so 8 days is the limit. Two categories stop at 1h, one keeps succeeding.
+  # The per-source rule never fires for them; one alert lists both.
+  - interval: 1h
+    input_series:
+      - series: 'helper2_scout_last_success{application="helper2", environment="prod", source="discovery-coding"}'
+        values: '3600x220'
+      - series: 'helper2_scout_last_success{application="helper2", environment="prod", source="discovery-legal"}'
+        values: '3600x220'
+      - series: 'helper2_scout_last_success{application="helper2", environment="prod", source="discovery-writing"}'
+        values: '0+3600x220'
+    alert_rule_test:
+      - eval_time: 193h
+        alertname: Helper2DiscoveryStale
+        exp_alerts: []
+      - eval_time: 200h
+        alertname: Helper2ScoutCollectorStale
+        exp_alerts: []
+      - eval_time: 200h
+        alertname: Helper2DiscoveryStale
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              environment: prod
+            exp_annotations:
+              summary: "2 discovery categories: no successful run for more than 8 days (prod)."
+              description: "No new products or list articles from: discovery-coding discovery-legal "
+              runbook: "Admin back office, Scout runs: the message of each category's last run (a Tavily error, the daily credit cap of the Scout, or not due). Run now on one category to check. A category disabled on purpose keeps firing until its last value is 9 days old."
+
+  # LinkedIn (ADR 0053): weekly, so 8 days is the limit, as course-scout. Quiet at 3 days, fires past 8.
+  - interval: 1h
+    input_series:
+      - series: 'helper2_scout_last_success{application="helper2", environment="prod", source="linkedin-scout"}'
+        values: '3600x220'
+    alert_rule_test:
+      - eval_time: 73h
+        alertname: Helper2ScoutCollectorStale
+        exp_alerts: []
+      - eval_time: 200h
+        alertname: Helper2DiscoveryStale
+        exp_alerts: []
+      - eval_time: 200h
+        alertname: Helper2ScoutCollectorStale
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              environment: prod
+              source: linkedin-scout
+            exp_annotations:
+              summary: "Scout collector linkedin-scout: no successful run for 8d 7h 0m 0s (prod)."
+              description: "The catalog misses new resources from linkedin-scout since its last successful run."
               runbook: "Dashboard row Scout, 'Run failures by error'; the admin back office lists the runs. A collector disabled on purpose keeps firing until its last value is 9 days old."
 
   # Scout age: the gauge vanishes after a deploy (new pods have not run the collector yet); the age still counts.

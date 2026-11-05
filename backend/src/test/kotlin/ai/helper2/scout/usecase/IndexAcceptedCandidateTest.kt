@@ -33,10 +33,16 @@ class IndexAcceptedCandidateTest {
     }
   }
 
-  /** As the real collectors declare them: discovery proposes products, LinkedIn reading too. */
-  private val discovery =
-    descriptor("tavily-discovery")
-      .copy(resourceTypes = setOf(ResourceType.PRODUCT, ResourceType.AGENT, ResourceType.ARTICLE))
+  /**
+   * As the real collectors declare them: a discovery category proposes its product type, LinkedIn
+   * reading too.
+   */
+  private val selfHosted =
+    descriptor("discovery-self-hosted")
+      .copy(resourceTypes = setOf(ResourceType.PRODUCT, ResourceType.ARTICLE))
+  private val agentPlatforms =
+    descriptor("discovery-agent-platforms")
+      .copy(resourceTypes = setOf(ResourceType.AGENT, ResourceType.ARTICLE))
   private val linkedIn =
     descriptor("linkedin-scout")
       .copy(
@@ -50,7 +56,7 @@ class IndexAcceptedCandidateTest {
   private var stored: AcceptedCandidate? = null
   private val accept =
     IndexAcceptedCandidate(
-      listOf(Found(discovery), Found(linkedIn)),
+      listOf(Found(selfHosted), Found(agentPlatforms), Found(linkedIn)),
       catalog,
       { url -> url.value in listed },
       { details -> stored ?: throw InvalidCandidate("unreadable: $details") },
@@ -58,20 +64,22 @@ class IndexAcceptedCandidateTest {
     )
 
   private fun candidate(
-    sourceId: String = "tavily-discovery",
+    sourceId: String = "discovery-self-hosted",
     url: String = "https://www.openwebui.com/?utm_source=x",
     title: String = " Open WebUI ",
     snippet: String? = "Self-hosted AI platform.",
     type: ResourceType = ResourceType.PRODUCT,
     tags: Set<String> = setOf("self-hosted", "local-ai"),
-  ) = AcceptedCandidate(sourceId, url, title, snippet, type, tags)
+    facts: Map<String, Any> = emptyMap(),
+    finders: List<String> = emptyList(),
+  ) = AcceptedCandidate(sourceId, url, title, snippet, type, tags, facts, finders)
 
   @Test
   fun `indexes the candidate as a record of the collector that found it`() {
     assertEquals(resource, accept.index(candidate()))
 
     val (results, sourceId) = catalog.indexed.single()
-    assertEquals("tavily-discovery", sourceId)
+    assertEquals("discovery-self-hosted", sourceId)
     val record = results.single().hits.single()
     assertEquals("https://openwebui.com", record.canonicalUrl.value)
     assertEquals("Open WebUI", record.title)
@@ -79,6 +87,20 @@ class IndexAcceptedCandidateTest {
     assertEquals(ResourceType.PRODUCT, record.type)
     assertEquals(NOW, record.retrievedAt)
     assertEquals(setOf("self-hosted", "local-ai"), record.tags)
+  }
+
+  @Test
+  fun `keeps what the searches said and the whole excerpt as evidence`() {
+    val facts =
+      mapOf(
+        "discovery" to mapOf("category" to "self-hosted"),
+        "categories" to listOf("self-hosted"),
+      )
+    accept.index(candidate(snippet = "x".repeat(3000), facts = facts))
+
+    val record = catalog.indexed.single().first.single().hits.single()
+    assertEquals(facts, record.facts)
+    assertEquals(2400, record.description?.length)
   }
 
   @Test
@@ -105,6 +127,22 @@ class IndexAcceptedCandidateTest {
       accept.index(candidate(sourceId = "linkedin-scout", type = ResourceType.AGENT))
     }
     assertEquals(0, catalog.indexed.size)
+  }
+
+  @Test
+  fun `a merged candidate may have the type of any collector that found it`() {
+    val merged =
+      candidate(
+        type = ResourceType.AGENT,
+        finders = listOf("discovery-self-hosted", "discovery-agent-platforms"),
+      )
+    accept.index(merged)
+    val (results, sourceId) = catalog.indexed.single()
+    assertEquals("discovery-self-hosted", sourceId)
+    assertEquals(ResourceType.AGENT, results.single().hits.single().type)
+    assertThrows<InvalidCandidate> {
+      accept.index(merged.copy(type = ResourceType.EVENT))
+    }
   }
 
   @Test
@@ -144,7 +182,7 @@ class IndexAcceptedCandidateTest {
   fun `a candidate the catalog did not change is refused, so the item stays open`() {
     val unchanged =
       IndexAcceptedCandidate(
-        listOf(Found(descriptor("tavily-discovery"))),
+        listOf(Found(descriptor("discovery-self-hosted"))),
         RecordingIndex(emptyList()),
         { false },
         { candidate() },

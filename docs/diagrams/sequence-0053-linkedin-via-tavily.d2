@@ -1,6 +1,7 @@
 # Sequence: a LinkedIn pass that finds a post about a model release, and an admin who accepts it.
 # Source of truth: backend/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt (collect, proposeCandidates),
 #   backend/src/main/java/ai/helper2/sources/tavily/LinkedInCollector.java,
+#   backend/src/main/java/ai/helper2/sources/tavily/ScoutTavilyCredits.java,
 #   backend/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java,
 #   backend/src/main/java/ai/helper2/admin/usecase/ResolveReview.java,
 #   backend/src/main/kotlin/ai/helper2/scout/usecase/IndexAcceptedCandidate.kt.
@@ -12,6 +13,7 @@ shape: sequence_diagram
 
 runner: RunScout {class: app}
 col: LinkedInCollector {class: app}
+credits: "ScoutTavilyCredits\n(Redis)" {class: data}
 tavily: "Tavily API" {class: ext}
 review: ReviewQueueCandidateReview {class: app}
 queue: "ReviewQueue\n(review_item)" {class: data}
@@ -21,15 +23,17 @@ accept: IndexAcceptedCandidate {class: app}
 catalog: "CatalogIndex\n(catalog)" {class: app}
 
 runner -> col: "collect(checkpoint, null, 1000)"
-col -> tavily: "POST /search, 20 searches\n(include_domains linkedin.com)"
-tavily -> col: "10 results each: title, URL, excerpt"
+col -> credits: "capReached? no (8 of 40 today)"
+col -> tavily: "POST /search, 20 searches\n(include_domains linkedin.com, include_usage)"
+tavily -> col: "10 results each: title, URL, excerpt;\nusage.credits 1"
+col -> credits: "add 1 per search to the global\nand the Scout's credits (scout-linkedin)"
 col -> col: "path → kind; drop profiles and jobs;\ntitle without author; excerpt ≤ 300"
 col -> runner: "hits: none;\ncandidates: linkedin.com/posts/...\n(NEWS, LinkedIn post; tag linkedin)"
 runner -> review: "propose(linkedin-scout, candidates)"
 review -> queue: "proposeCandidate(RESOURCE_CANDIDATE,\nurl, reason, JSON)"
 person -> resolve: "PUT /admin/review-items/{id}/resolution\nACCEPTED"
 resolve -> accept: "accept(details)"
-accept -> accept: "type NEWS declared by linkedin-scout?\nURL, title, tag"
+accept -> accept: "type NEWS declared by a finder\n(linkedin-scout)? URL, title, tag"
 accept -> catalog: "index(record of linkedin-scout)"
 catalog -> accept: "resource id"
 resolve -> queue: "decide ACCEPTED (same transaction)"

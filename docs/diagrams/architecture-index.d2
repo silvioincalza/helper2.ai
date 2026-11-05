@@ -50,7 +50,7 @@ scout: "scout (Kotlin domain)" {
 
 sources: "sources (collectors, gap evidence)" {
   class: group
-  collectors: "McpRegistryCollector · TavilyCollector\nTavilyDiscoveryCollector · LinkedInCollector\nCourseCollector · HuggingFaceTrendingCollector\nHuggingFaceProviderOrgsCollector\nGitHubAwesomeCollector · AiDeadlinesCollector" {class: app}
+  collectors: "McpRegistryCollector · TavilyCollector\nTavilyDiscoveryCollector × 34 categories\n(DiscoveryCollectorRegistrar) · LinkedInCollector\nCourseCollector · HuggingFaceTrendingCollector\nHuggingFaceProviderOrgsCollector\nGitHubAwesomeCollector · AiDeadlinesCollector" {class: app}
   classifier: "SpringAiRepoClassifier\n(or Heuristic)" {class: app}
   evidence: "ReadmeEvidence\n(README, model card)" {class: app}
   collectors -> classifier: "awesome-list entries" {class: ai-call}

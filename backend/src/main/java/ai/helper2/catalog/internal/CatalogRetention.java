@@ -1,5 +1,6 @@
 package ai.helper2.catalog.internal;
 
+import ai.helper2.shared.WebSources;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
@@ -18,15 +19,6 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public class CatalogRetention {
-
-  /**
-   * Sources whose web results (news, articles) age fastest: Tavily's live search, the Scout's
-   * Tavily queries, Tavily discovery's list pages (ADR 0051) and accepted LinkedIn articles and
-   * posts (ADR 0053). Only their NEWS and ARTICLE records go: a product accepted from discovery or
-   * LinkedIn stays while it is listed.
-   */
-  static final List<String> WEB_NEWS_SOURCES =
-      List.of("tavily", "tavily-scout", "tavily-discovery", "linkedin-scout");
 
   private static final String UNREFERENCED =
       """
@@ -58,18 +50,23 @@ public class CatalogRetention {
   }
 
   /**
-   * Tavily's NEWS and ARTICLE records last retrieved before [cutoff], then the observed or indexed
-   * resources they leave without any record. Returns the records deleted.
+   * The NEWS and ARTICLE records of web sources ({@link WebSources}: Tavily's live search, the
+   * Scout's Tavily queries, the discovery categories' list pages, ADR 0051, and accepted LinkedIn
+   * posts and articles, ADR 0053) last retrieved before [cutoff], then the observed or indexed
+   * resources they leave without any record. A product accepted from discovery or LinkedIn stays
+   * while it is listed. Returns the records deleted.
    */
   public int deleteWebNewsRetrievedBefore(Instant cutoff) {
     List<UUID> owners =
         jdbc.sql(
                 """
                 DELETE FROM source_record
-                WHERE source_id IN (:sources) AND type IN ('NEWS', 'ARTICLE') AND retrieved_at < :cutoff
+                WHERE (source_id IN (:sources) OR source_id LIKE :discovery)
+                  AND type IN ('NEWS', 'ARTICLE') AND retrieved_at < :cutoff
                 RETURNING resource_id
                 """)
-            .param("sources", WEB_NEWS_SOURCES)
+            .param("sources", WebSources.FIXED)
+            .param("discovery", WebSources.DISCOVERY_LIKE)
             .param("cutoff", Timestamp.from(cutoff))
             .query(UUID.class)
             .list();

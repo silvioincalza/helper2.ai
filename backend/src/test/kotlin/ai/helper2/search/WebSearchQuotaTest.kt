@@ -32,6 +32,10 @@ class WebSearchQuotaTest {
       return Result(Verdict.TAKEN, own?.let { counts[it] } ?: 0)
     }
 
+    override fun add(counter: Counter, amount: Long) {
+      counts[counter] = (counts[counter] ?: 0) + amount
+    }
+
     override fun giveBack(counter: Counter) {
       counts[counter] = maxOf(0, (counts[counter] ?: 0) - 1)
     }
