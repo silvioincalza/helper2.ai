@@ -58,7 +58,7 @@ class SearchSnapshotRecorder {
     println("recording ${queries.size} queries into ${EvalFiles.snapshots}")
     queries.forEachIndexed { i, q ->
       if (i > 0) Thread.sleep(pause)
-      val (snapshot, outcome) = taker.take(q.id, q.text)
+      val (snapshot, outcome) = taker.take(q.id, q.text, q.path)
       EvalFiles.writeSnapshot(snapshot.copy(semantic = nearest(q.text)))
       println(
         "${q.id} " +
