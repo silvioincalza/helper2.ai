@@ -158,4 +158,11 @@ class PagesTest {
     assertEquals(PageAddress.Unknown, PageAddress.of("/resource/$id/extra"))
     assertEquals(PageAddress.Unknown, PageAddress.of("/nope"))
   }
+
+  @Test
+  fun `an unlisted page says noindex whatever it was`() {
+    assertEquals(Robots.NOINDEX, pages.of(PageKind.SOURCES).unlisted().robots)
+    assertEquals(Robots.NOINDEX, pages.resource(resource()).unlisted().robots)
+    assertEquals("/sources", pages.of(PageKind.SOURCES).unlisted().canonicalPath)
+  }
 }

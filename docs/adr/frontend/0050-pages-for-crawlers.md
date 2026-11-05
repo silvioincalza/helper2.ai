@@ -15,7 +15,7 @@ The pages that can rank are the resource pages: one per tool, model, MCP server 
 pages cannot. Nothing seems indexed yet, so this is the cheapest moment to decide.
 
 ## Decision
-1. **Spring fills the shell; React stays as it is.** A small `pages` module answers every GET of an address the
+1. **Spring fills the shell; React stays as it is.** A small `pages` module answers every GET and HEAD of an address the
    client router owns (`ClientRoutes`: no file extension, not a server path) with a router function, which Spring asks
    before the static files. It reads the built `index.html` once at start-up and, per request, writes into it:
    the title, meta description, canonical link, robots meta, Open Graph and Twitter tags, JSON-LD, and for a
@@ -67,8 +67,8 @@ pages cannot. Nothing seems indexed yet, so this is the cheapest moment to decid
    limit). The catalog query applies the same rule as `IndexPolicy`; an integration test opens every listed page and
    checks it says `index`. It is built at most once an hour and kept in memory. `robots.txt` blocks `/oauth2/`, `/login`, `/logout` and
    `/admin`, never `/api/` (Google needs the API to render a page), and names the sitemap. When
-   `H2_NOINDEX` is on (staging), the `X-Robots-Tag: noindex, nofollow` header of #151 stays, `robots.txt` allows all
-   (a blocked page never shows its noindex) and there is no sitemap.
+   `H2_NOINDEX` is on (staging), the `X-Robots-Tag: noindex, nofollow` header of #151 stays, every robots meta says
+   `noindex` too, `robots.txt` allows all (a blocked page never shows its noindex) and there is no sitemap.
 7. **Client navigation drops the server's tags.** The tags Spring writes carry `data-h2-head`. At the first move to
    another page the app removes them (`useDropServerHead`); from then on it keeps the title itself, as before. Crawlers
    and link previews read the first load.

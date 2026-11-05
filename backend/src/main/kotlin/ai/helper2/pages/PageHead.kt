@@ -25,7 +25,10 @@ data class PageHead(
   val robots: Robots,
   val jsonLd: List<Map<String, Any?>> = emptyList(),
   val body: PageBody? = null,
-)
+) {
+  /** The same page that no search engine may list (staging, H2_NOINDEX): meta and header agree. */
+  fun unlisted(): PageHead = if (robots == Robots.NOINDEX) this else copy(robots = Robots.NOINDEX)
+}
 
 /** The short text a crawler reads in #root; React replaces it. */
 data class PageBody(

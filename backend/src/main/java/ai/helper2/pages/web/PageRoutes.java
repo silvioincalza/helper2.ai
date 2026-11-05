@@ -15,10 +15,11 @@ import org.springframework.web.servlet.function.ServerRequest;
 import org.springframework.web.servlet.function.ServerResponse;
 
 /**
- * Every GET of an address the client router owns (ADR 0050 §1-2): the shell with the page's head,
- * its status, or a 301. Router functions are asked before the static files, and an address with a
- * file extension or a server prefix is never claimed, so assets, robots.txt and the API are as
- * before. Without a built app nothing is claimed: SinglePageApp answers as it always did.
+ * Every GET (and HEAD) of an address the client router owns (ADR 0050 §1-2): the shell with the
+ * page's head, its status, or a 301. Router functions are asked before the static files, and an
+ * address with a file extension or a server prefix is never claimed, so assets, robots.txt and the
+ * API are as before. Without a built app nothing is claimed: SinglePageApp answers as it always
+ * did.
  */
 @Configuration(proxyBeanMethods = false)
 class PageRoutes {
@@ -28,7 +29,7 @@ class PageRoutes {
     return RouterFunctions.route()
         .route(
             request ->
-                request.method() == HttpMethod.GET
+                (request.method() == HttpMethod.GET || request.method() == HttpMethod.HEAD)
                     && html.available()
                     && ClientRoutes.owns(request.path()),
             request -> answer(render, html, request))
