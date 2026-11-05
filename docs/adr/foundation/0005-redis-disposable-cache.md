@@ -35,7 +35,9 @@ so the cache must be optional: when Redis is down, the app still works, only slo
 5. **Daily counters.** `RedisCallCounter` counts model calls per budget and day in Coordinated Universal Time (UTC):
    `h2:v1:budget:{name}:{day}`, kept 2 days. One Lua script runs `INCR` and, on the first count, `PEXPIRE`, so a
    counter key is never left without an expiry. Names: `guide`, `translation`, `enrichment`, `classifier`,
-   and `guide-client:{pseudonym}` for the per-client guide quota (a keyed hash of the client and the day, [0017](../guide/0017-guide-cost-guard.md)). On an error, or while the `redis` circuit is open,
+   and `guide-client:{pseudonym}` for the per-client guide quota (a keyed hash of the client and the day, [0017](../guide/0017-guide-cost-guard.md)).
+   A count given back for an answer with no pick also writes `h2:v1:budget:{name}:{day}:given-back`, a set of random
+   question ids that expires with the count, in the same script. On an error, or while the `redis` circuit is open,
    `DailyBudget` counts in memory.
 6. **Model answers are not in Redis.** Query translations, query vectors, setup guide answers and guide answers
    ([0041](../guide/0041-guide-answer-cache.md)) are kept on disk in the PostgreSQL table `ai_cache`
