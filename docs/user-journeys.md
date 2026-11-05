@@ -40,11 +40,11 @@ The success criteria at the end say which tests verify each journey today. What 
 |---|---|
 | Success | Aggregated, deduplicated results; every configured source listed with outcome. |
 | Empty | "No results from the N sources searched" + the list of sources + suggestions: remove filters, ask the guide, try English keywords. Never "nothing exists". |
-| Partial | Banner: "Only 7 of 8 queried sources responded". Results from other sources still shown. Coverage marked `partial`. A source that is paused or failing counts as queried; a source left out on purpose (disabled, no web credits left) does not, and its tile says why. The banner and the line under the results use the same two numbers. |
+| Partial | One quiet line next to the result count, no banner: "40 results · 2 of 5 sources did not answer · Which?". **Which?** lists those sources and why, in words: took too long, returned an error, paused after a rate limit, paused after repeated errors, busy. **Try again** shows only when a retry can help (an error, a timeout, a busy source); never while a source is paused or its circuit is open. The line is not announced to screen readers: the count next to it already is, once per search. Coverage marked `partial`. A source that is paused or failing counts as queried; a source left out on purpose (disabled, no web credits left) does not, and its tile says why. This line and the one under the results use the same two numbers. |
 | Stale cache | Source failed live but a recent cached response exists: results shown, badge "cached 14 min ago — live check failed". |
-| All failed / API down | Error state with retry; no fake results. |
+| All failed / API down | A prominent error state: "No source responded", not an empty result; no fake results. It offers Try again, except when every source is paused (a retry cannot help then), and a link to the Sources page. |
 | Rate-limited | Source marked RATE_LIMITED (not hidden), others continue. |
-| Invalid input | A query longer than 200 characters is cut to 200 in the URL and the request (the guide takes 3–500); an empty box plus Enter returns to the empty home page. The API answers an invalid `q` with 400 problem+json. |
+| Invalid input | A query longer than 200 characters is cut to 200 in the URL and the request (the guide takes 3–500); an empty box plus Enter returns to the empty home page. The **Search** button is never disabled: pressed with an empty box, it puts the cursor in the box and says "Type what you need first." under it (read as the box's description and as a polite status), and searches nothing. The API answers an invalid `q` with 400 problem+json. |
 
 ## UJ-2 Ask the guide without losing the search
 
@@ -53,6 +53,8 @@ The success criteria at the end say which tests verify each journey today. What 
 3. The answer arrives: the picks show as chips in the bar and move to a **Guide picks** group at the top of the list, and the preview opens on pick #1. It says **Why the guide picked it** (AI-written) with the source's own sentence as proof. A result the user already opened stays open. Other results keep the search order under **More results**; their preview says **About**.
 4. Nothing fits: the bar says why in one line and offers **Ask without “…”** for each requirement the guide read (when it is short enough to keep in the URL), and **Rephrase**. **How the guide decided** stays folded under the bar: the steps, and how the guide read the question.
 5. Back/forward and shared links reproduce the same state. A shared link that asks the guide works on the first visit too: when the browser has no CSRF cookie yet, the page gets it and sends the question once more.
+
+**AI answers left:** while the button says **Ask the guide**, a quiet line under the box says how many AI answers are left today, e.g. "2 of 3 AI answers left today". The numbers come from `limits.guideQuestions` on `/me`; the page reads `/me` again after each answer. The limit is per address, so a signed-in user sees it too. With none left the line says so in words, and when the guide shows search results without AI picks again (the next 00:00 UTC, in the user's own clock). The button still works and Enter still searches. No line when the guide has no model, or for a test environment's high ceiling while answers are left.
 
 **Success:** zero re-typing; URL fully describes the state. A new question while one is being answered replaces it.
 Changing the words in the box searches again and drops the old question with its picks: the picks answered that question, not the new words. **Ask the guide** asks again.
@@ -165,7 +167,7 @@ Each item is a row: the kind, the date and the resource in the meta line, the re
 
 | ID | Criterion | Verified by |
 |---|---|---|
-| SC-1 | One query returns aggregated results from every enabled source that responded within its timeout | Today: API integration tests; UI component tests (Vitest + Testing Library, API mocked) for results, partial banner and empty/all-failed states. [Roadmap](roadmap.md): E2E journey (not yet automated) |
+| SC-1 | One query returns aggregated results from every enabled source that responded within its timeout | Today: API integration tests; UI component tests (Vitest + Testing Library, API mocked) for results, the partial line and empty/all-failed states. [Roadmap](roadmap.md): E2E journey (not yet automated) |
 | SC-2 | Every configured source appears in the status list with a truthful outcome | Today: orchestrator unit tests; UI component tests for the source status panel (every outcome in words). [Roadmap](roadmap.md): E2E journey (not yet automated) |
 | SC-3 | Asking the guide never loses query/filters | Today: UI component tests: the URL keeps `q`, `ask` and filters; closing the answer keeps the search; back/forward restore the box; retry and replacing a running question. [Roadmap](roadmap.md): E2E journey (not yet automated) |
 | SC-4 | No invented dates/popularity; unknowns labeled | domain tests + UI tests |

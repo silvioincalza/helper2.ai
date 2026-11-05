@@ -86,7 +86,7 @@ describe('states: every state says what happened and offers a next step', () => 
     ).toBeInTheDocument();
   });
 
-  it('some sources failed: results stay, the line says so, links to the tiles and retries', async () => {
+  it('some sources failed: results stay, one quiet line says so, Which? names them, a retry can help', async () => {
     let n = 0;
     mockApi({
       'GET /search': () =>
@@ -105,18 +105,117 @@ describe('states: every state says what happened and offers a next step', () => 
     });
     renderApp(url);
     expect((await screen.findAllByText('Acme Translator')).length).toBeGreaterThan(0);
-    const line = screen
-      .getByText(/Only 1 of 2 queried sources responded/)
-      .closest('[role="status"]') as HTMLElement;
-    expect(within(line).getByRole('link', { name: 'See which sources failed' })).toHaveAttribute(
-      'href',
-      '#h2-sources-h',
-    );
+    const row = screen
+      .getByText(/1 of 2 sources did not answer/)
+      .closest('.h2-list__count') as HTMLElement;
+    expect(row).toHaveTextContent('1 result · 1 of 2 sources did not answer');
+    // No banner, no box.
+    expect(document.querySelector('.banner')).toBeNull();
+    // The sources and why, only on demand.
+    const which = within(row).getByRole('button', { name: 'Which?' });
+    expect(which).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByText('returned an error.')).not.toBeVisible();
+    await userEvent.click(which);
+    expect(which).toHaveAttribute('aria-expanded', 'true');
+    const list = document.getElementById(which.getAttribute('aria-controls') ?? '') as HTMLElement;
+    expect(list).toBeVisible();
+    expect(list).toHaveTextContent('Beta returned an error.');
     expect(document.querySelector('.h2-source-tile.is-failed')).toHaveTextContent('Beta');
-    await userEvent.click(within(line).getByRole('button', { name: /Try again/ }));
+    // An error can pass: Try again is offered, and a full answer removes the line.
+    await userEvent.click(within(row).getByRole('button', { name: 'Try again' }));
     await waitFor(() =>
-      expect(screen.queryByText(/Only 1 of 2 queried sources responded/)).not.toBeInTheDocument(),
+      expect(screen.queryByText(/sources did not answer/)).not.toBeInTheDocument(),
     );
+  });
+
+  it('a paused source or an open circuit: the line says why, and offers no Try again', async () => {
+    mockApi({
+      'GET /search': () =>
+        makeSearch({
+          sources: [
+            makeStatus(),
+            makeStatus({
+              sourceId: 'arxiv',
+              name: 'arXiv',
+              outcome: 'SKIPPED',
+              servedFrom: 'NONE',
+              skipReason: 'RATE_LIMIT_PAUSE',
+              latencyMs: null,
+            }),
+            makeStatus({
+              sourceId: 'hf',
+              name: 'Hugging Face',
+              outcome: 'SKIPPED',
+              servedFrom: 'STALE_CACHE',
+              skipReason: 'CIRCUIT_OPEN',
+              latencyMs: null,
+            }),
+            makeStatus({
+              sourceId: 'npm',
+              name: 'npm',
+              outcome: 'RATE_LIMITED',
+              servedFrom: 'NONE',
+              latencyMs: null,
+            }),
+            // Left out on purpose: not counted, not listed.
+            makeStatus({
+              sourceId: 'off',
+              name: 'Off',
+              outcome: 'SKIPPED',
+              servedFrom: 'NONE',
+              skipReason: 'DISABLED',
+              latencyMs: null,
+            }),
+          ],
+          coverage: {
+            partial: true,
+            sourcesConfigured: 5,
+            sourcesQueried: 4,
+            sourcesSucceeded: 1,
+            note: 'n',
+          },
+        }),
+    });
+    renderApp(url);
+    const row = (await screen.findByText(/3 of 4 sources did not answer/)).closest(
+      '.h2-list__count',
+    ) as HTMLElement;
+    expect(within(row).queryByRole('button', { name: /Try again/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Try again/ })).not.toBeInTheDocument();
+    await userEvent.click(within(row).getByRole('button', { name: 'Which?' }));
+    const items = within(row)
+      .getAllByRole('listitem')
+      .map((li) => li.textContent);
+    expect(items).toEqual([
+      'arXiv is paused for a while after a rate limit.',
+      'Hugging Face is paused after repeated errors. Saved results from it are shown.',
+      'npm hit its rate limit and is paused for a while.',
+    ]);
+  });
+
+  it('a partial answer is not a live announcement: only the count is a live region', async () => {
+    mockApi({
+      'GET /search': () =>
+        makeSearch({
+          sources: [makeStatus(), failed],
+          coverage: {
+            partial: true,
+            sourcesConfigured: 2,
+            sourcesQueried: 2,
+            sourcesSucceeded: 1,
+            note: 'n',
+          },
+        }),
+    });
+    renderApp(url);
+    const line = await screen.findByText(/1 of 2 sources did not answer/);
+    expect(line.closest('[aria-live], [role="status"], [role="alert"]')).toBeNull();
+    const live = Array.from(
+      document.querySelectorAll('[aria-live], [role="status"], [role="alert"]'),
+    );
+    expect(live.some((el) => /did not answer/.test(el.textContent ?? ''))).toBe(false);
+    // The count is the one polite live region of the list.
+    expect(screen.getByText('1 result')).toHaveAttribute('aria-live', 'polite');
   });
 
   it('all sources failed: an alert, not an empty result, with retry and the sources page', async () => {
@@ -149,6 +248,62 @@ describe('states: every state says what happened and offers a next step', () => 
     );
     await userEvent.click(within(alert).getByRole('button', { name: /Try again/ }));
     expect((await screen.findAllByText('Acme Translator')).length).toBeGreaterThan(0);
+  });
+
+  it('all sources paused: still a prominent alert, but no Try again that cannot help', async () => {
+    mockApi({
+      'GET /search': () =>
+        makeSearch({
+          results: [],
+          total: 0,
+          sources: [
+            makeStatus({
+              sourceId: 'arxiv',
+              name: 'arXiv',
+              outcome: 'SKIPPED',
+              servedFrom: 'NONE',
+              skipReason: 'CIRCUIT_OPEN',
+              latencyMs: null,
+            }),
+          ],
+          coverage: {
+            partial: true,
+            sourcesConfigured: 1,
+            sourcesQueried: 1,
+            sourcesSucceeded: 0,
+            note: 'n',
+          },
+          notices: [{ code: 'ALL_SOURCES_FAILED', message: 'All sources failed.' }],
+        }),
+    });
+    renderApp(url);
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('No source responded');
+    expect(within(alert).queryByRole('button', { name: /Try again/ })).not.toBeInTheDocument();
+    expect(
+      within(alert).getByRole('link', { name: 'See the sources we search' }),
+    ).toBeInTheDocument();
+  });
+
+  it('partial and empty: the quiet line sits above the empty state', async () => {
+    mockApi({
+      'GET /search': () =>
+        makeSearch({
+          results: [],
+          total: 0,
+          sources: [makeStatus({ resultCount: 0 }), failed],
+          coverage: {
+            partial: true,
+            sourcesConfigured: 2,
+            sourcesQueried: 2,
+            sourcesSucceeded: 1,
+            note: 'n',
+          },
+        }),
+    });
+    renderApp(url);
+    expect(await screen.findByText('No results from the sources searched')).toBeInTheDocument();
+    expect(screen.getByText(/1 of 2 sources did not answer/)).toBeInTheDocument();
   });
 
   it('search unavailable: an alert with retry that recovers', async () => {

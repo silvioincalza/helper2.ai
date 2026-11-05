@@ -12,10 +12,7 @@ describe('one box', () => {
     renderApp('/');
     expect(screen.getAllByRole('search')).toHaveLength(1);
     expect(screen.queryByRole('radio')).not.toBeInTheDocument();
-    // Never disabled: with nothing to send, Search puts the cursor in the box.
-    const box = screen.getByRole('textbox', { name: 'Search AI resources' });
-    await userEvent.click(screen.getByRole('button', { name: 'Search' }));
-    expect(box).toHaveFocus();
+    // Never disabled: with an empty box it asks for words instead (see OneBoxBetter.test).
     expect(screen.getByRole('button', { name: 'Search' })).toBeEnabled();
     await userEvent.type(screen.getByRole('textbox', { name: 'Search AI resources' }), 'rag');
     expect(screen.getByRole('button', { name: 'Search' })).toBeEnabled();

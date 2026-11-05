@@ -14,6 +14,7 @@ import ai.helper2.api.generated.model.QueryInterpretationDto;
 import ai.helper2.api.generated.model.ResourceTypeDto;
 import ai.helper2.api.generated.model.SearchResponseDto;
 import ai.helper2.api.generated.model.ServedFromDto;
+import ai.helper2.api.generated.model.SkipReasonDto;
 import ai.helper2.api.generated.model.SortOrderDto;
 import ai.helper2.api.generated.model.SourceInfoDto;
 import ai.helper2.api.generated.model.SourceModeDto;
@@ -221,7 +222,9 @@ class SearchController implements SearchApi, SourcesApi {
             UtcTimes.odt(s.getCheckedAt()))
         .latencyMs(s.getLatency() == null ? null : s.getLatency().toMillis())
         .cachedAt(UtcTimes.odt(s.getCachedAt()))
-        .message(s.getMessage());
+        .message(s.getMessage())
+        .skipReason(
+            s.getSkipReason() == null ? null : SkipReasonDto.fromValue(s.getSkipReason().name()));
   }
 
   private static FacetsDto facets(Map<String, List<FacetCount>> f) {

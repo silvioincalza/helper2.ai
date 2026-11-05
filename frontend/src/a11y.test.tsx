@@ -94,7 +94,7 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
     }
   });
 
-  it('search results with the sources grid and the partial banner', async () => {
+  it('search results with the sources grid and the partial line, opened', async () => {
     mockApi({
       'GET /search': () =>
         makeSearch({
@@ -113,6 +113,7 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
     });
     const { container } = renderApp('/search?q=translate&type=MODEL');
     await screen.findByRole('list', { name: 'Sources searched' });
+    await userEvent.click(screen.getByRole('button', { name: 'Which?' }));
     expect(await axeViolations(container)).toEqual([]);
   });
 

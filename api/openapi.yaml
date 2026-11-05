@@ -898,6 +898,18 @@ components:
         checkedAt: { type: string, format: date-time }
         cachedAt: { type: [string, 'null'], format: date-time, description: When the served cache entry was fetched from the source. }
         message: { type: [string, 'null'], description: Safe, user-facing explanation. }
+        skipReason:
+          description: Why a SKIPPED source was left out; null for the other outcomes.
+          oneOf: [{ $ref: '#/components/schemas/SkipReason' }, { type: 'null' }]
+
+    SkipReason:
+      type: string
+      description: |
+        Why a source was SKIPPED. RATE_LIMIT_PAUSE (paused after a rate limit), CIRCUIT_OPEN (paused after repeated
+        failures), BUSY (too many calls at once) and QUOTA_UNAVAILABLE (the daily web limit cannot be checked) mean the
+        source is failing: it counts in coverage as queried and did not answer. DISABLED, NOT_BROWSABLE, DAILY_LIMIT and
+        WEB_NOT_ASKED mean it was left out on purpose and does not count.
+      enum: [DISABLED, NOT_BROWSABLE, RATE_LIMIT_PAUSE, CIRCUIT_OPEN, BUSY, DAILY_LIMIT, QUOTA_UNAVAILABLE, WEB_NOT_ASKED]
 
     Coverage:
       type: object

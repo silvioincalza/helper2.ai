@@ -85,13 +85,13 @@ they do now and how version 3 and 4 live side by side until the other pages move
    sources of GET /sources, the same sources the radar shows (13 on staging; not shown before the answer); the dot names say the response time
    or the age of the last check; the list counts
    are `total` on GET /recent and GET /events/upcoming (never fewer than the rows sent); the hint's "4 words" is the
-   constant the box uses to tell a question from a search. One small reader (`lib/v4Fields.ts`) takes `newThisWeek`,
-   `total` and `limits` and says what the page does when a value is null: a dot of the default size, the rows as the
-   count, no quota line.
+   constant the box uses to tell a question from a search. One small reader (`lib/v4Fields.ts`) takes `newThisWeek` and
+   `total` and says what the page does when a value is null: a dot of the default size, the rows as the count.
 8. **The guide starts on its own only for a question, and the quota is in sight.** Four words or more start it, as in
-   [0017](../guide/0017-guide-cost-guard.md). Where the guide answers, the visitor sees today's AI answers ("2 of 3 AI
-   answers left today"; at none, when they come back and that search still works), from `limits.guideQuestions` on
-   GET /me. When the guide has no model the field is null, nothing is spent, and the line is not shown.
+   [0017](../guide/0017-guide-cost-guard.md). While the button says **Ask the guide**, one quiet line under the box
+   says today's AI answers ("2 of 3 AI answers left today"; at none, when they come back and that search still works),
+   from `limits.guideQuestions` on GET /me, read again after each answer (`GuideAnswersLeft`, UJ-2). When the guide
+   has no model the field is null, nothing is spent, and the line is not shown.
 9. **Accessibility.** Every control is at least 44 px. The focus ring (3 px ink outline) never looks like the
    selected line (saffron underline in the header, an ink folder tab in the tabs). The Search button is never
    disabled: with nothing to send it puts the cursor in the box. Key hints (`/`, `↵`) show only where there is a

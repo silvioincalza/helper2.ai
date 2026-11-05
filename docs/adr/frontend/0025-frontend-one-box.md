@@ -13,7 +13,8 @@ screen reader, and in light and dark mode.
    On the results page, typing searches live: from 3 characters, 700 ms after the last key. One button follows the text: fewer than 4 words
    search, 4 or more ask the guide. Enter always searches (Shift+Enter too): the guide runs only from its button, so a
    question that costs model calls is always a choice. The ↵ hint shows on the button only when it searches. Enter
-   in an empty box goes back to the empty home page.
+   in an empty box goes back to the empty home page. The button is never disabled: with an empty box it puts the
+   cursor in the box and says "Type what you need first.", and searches nothing.
    The box is a one-row text area that grows with the text, up to six lines, then scrolls; the height animates
    (160 ms, none under reduced motion). Enter never adds a line, and a pasted line break becomes a space.
    × (or Esc) empties the box and keeps the results; "/" from anywhere on the page puts the cursor in the box (not

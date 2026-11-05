@@ -46,6 +46,7 @@ class SearchApiIT extends ApiTestBase {
                 jsonPath("$.coverage.note")
                     .value(org.hamcrest.Matchers.containsString("not search the whole web")))
             .andExpect(jsonPath("$.sources[?(@.sourceId=='github')].outcome").value("SKIPPED"))
+            .andExpect(jsonPath("$.sources[?(@.sourceId=='github')].skipReason").value("DISABLED"))
             .andExpect(jsonPath("$.sources[?(@.sourceId=='fake-live')].outcome").value("SUCCEEDED"))
             .andExpect(jsonPath("$.sources[?(@.sourceId=='curated')].mode").value("CURATED"))
             .andReturn();

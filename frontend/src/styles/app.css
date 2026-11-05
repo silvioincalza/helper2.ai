@@ -395,6 +395,15 @@ textarea {
 .one-box > .muted {
   margin: 0;
 }
+/* Quiet lines under the box (the empty-box hint, AI answers left today): muted text, kept on phones too. */
+.one-box-note {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+.one-box-note.is-none {
+  color: var(--ink);
+}
 .searchbox.large .searchbox-field {
   min-height: var(--box-height);
   background: var(--bg);

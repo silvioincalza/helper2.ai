@@ -2,7 +2,7 @@
 # folds the title while the box stays pinned, a question that starts the guide on its own (with today's AI answers in
 # sight), and a short search that waits for Ask the guide.
 # Code: frontend/src/pages/Home.tsx, components/home/HomeRadar.tsx, radarClock.ts, useRadarMotion.ts, TermList.tsx, HomeTabs.tsx,
-#   homeFeeds.ts, components/guide/AiAnswersLeft.tsx,
+#   homeFeeds.ts, components/guide/GuideAnswersLeft.tsx,
 #   lib/v4Fields.ts. Results are still v3 (one column comes next, see the roadmap).
 # Source of truth: docs/adr/frontend/0042-redesign-design-system-v4.md, docs/design/system/README.md.
 # Render: cd docs/diagrams && d2 fmt sequence-0042-redesign.d2 && d2 sequence-0042-redesign.d2 sequence-0042-redesign.svg
@@ -37,7 +37,7 @@ question: A question {
   page -> user: "results at once; the guide's\nsteps where the picks sit"
   page -> guide: "4+ words: ask on its own" {class: hot}
   guide -> page: "picks: reason, quote, checks"
-  page -> user: "picks: AI-written reason labelled,\nquote checked word for word;\n2 of 3 AI answers left today"
+  page -> user: "picks: AI-written reason labelled,\nquote checked word for word;\nunder the box: 2 of 3 AI answers left today"
 }
 
 short: A few words {
