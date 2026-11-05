@@ -1089,9 +1089,10 @@
       {
         "title": "Public data about AI resources",
         "items": [
-          "To describe the AI resources we list, we read public pages about them, such as GitHub repositories, their README files and Hugging Face model cards. Once a week we also run fixed web searches through Tavily to find new AI products and articles that compare them. These searches contain no data about you.",
+          "To describe the AI resources we list, we read public pages about them, such as GitHub repositories, their README files and Hugging Face model cards. Once a week we also run fixed web searches through Tavily to find new AI products, articles that compare them, and public LinkedIn pages about AI: articles, posts, company pages and events. We never visit LinkedIn ourselves: Tavily finds the pages. These searches contain no data about you.",
           "From README files and model cards we keep names of projects, organisations and authors, and short quotes of up to 300 characters, each with its source named and a link to it. We do not keep the rest of their text, and we replace email addresses with \"[email]\" before anything is quoted.",
           "From web pages found by these searches we keep the page title, its link and a short excerpt of up to 400 characters that Tavily takes from the page. Articles that compare AI tools are shown in search with their excerpt. A product page is shown only after we have checked it by hand. A title or excerpt can name people, for example an article's author or a product's founder.",
+          "From LinkedIn pages we keep the link, a title without the author's name and an excerpt of up to 300 characters. A LinkedIn page is shown only after we have checked it by hand. The link and the text of a post can still name its author.",
           "This data is about the resources. If a quote, title or excerpt names you, you can object or ask us to remove it: write to us at the address above."
         ]
       },
@@ -1106,7 +1107,7 @@
           "Reports: 12 months after they were handled. If your account is deleted, your reports stay without your name until then.",
           "Database backups: 7 days. Anything deleted above is gone from the backups within 7 days.",
           "Quotes from public pages about AI resources: as long as we keep the source record they were read for, and never longer than we list the resource.",
-          "Articles and news found by web search, with their titles and excerpts: 180 days after we last retrieved them. Product pages we accepted from a web search: as long as we list the product. Pages waiting for our review: until we decide, then 180 days."
+          "Articles and news found by web search, LinkedIn articles and posts included, with their titles and excerpts: 180 days after we last retrieved them. Product pages, LinkedIn company pages and LinkedIn events we accepted from a web search: as long as we list them. Pages waiting for our review: until we decide, then 180 days."
         ]
       },
       {

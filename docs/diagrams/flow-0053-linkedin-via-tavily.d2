@@ -1,0 +1,45 @@
+# Flowchart: one result of a LinkedIn search through Tavily, from the search to the review list, and an admin's
+# decision on it.
+# Source of truth: backend/src/main/java/ai/helper2/sources/tavily/LinkedInCollector.java (collect, candidate, kind,
+#   title, snippet), backend/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java,
+#   backend/src/main/kotlin/ai/helper2/scout/usecase/IndexAcceptedCandidate.kt.
+# Render: cd docs/diagrams && d2 fmt flow-0053-linkedin-via-tavily.d2 && d2 flow-0053-linkedin-via-tavily.d2 flow-0053-linkedin-via-tavily.svg
+
+...@style
+
+direction: down
+
+due: "Scout run: linkedin-scout due?\n(7 days since the last pass)" {class: decision}
+notdue: "SKIPPED\n\"Not due yet\"" {class: end}
+search: "20 Tavily searches\n(include_domains linkedin.com,\ngeneral, basic, 10 results,\nonly pages since the last pass)" {class: ext}
+failed: "A search failed?\nPass FAILED, checkpoint stays" {class: fail}
+path: "Path, query string dropped" {class: decision}
+drop: "Dropped: /in/ profiles, jobs,\nlearning, schools, other hosts" {class: end}
+kinds: "/pulse/ → ARTICLE\n/posts/, /feed/update/ → NEWS\n/company/, /showcase/ → PRODUCT\n/events/ → EVENT" {class: app}
+title: "Title without author or site;\npost named only by its author:\nstart of its text; excerpt ≤ 300" {class: app}
+notitle: "Nothing left: dropped" {class: end}
+known: "URL in the catalog or\nproposed before?" {class: decision}
+skip: "Not proposed again" {class: end}
+item: "RESOURCE_CANDIDATE review item\n(tag linkedin)" {class: data}
+admin: "Admin decides\n(back office, VPN)" {class: person}
+reject: "REJECTED: decision only" {class: end}
+valid: "Type declared by linkedin-scout\n(ARTICLE, NEWS, PRODUCT, EVENT),\nURL, title, tag?" {class: decision}
+refused: "400: item stays open" {class: fail}
+indexed: "Indexed as a linkedin-scout record;\nan EVENT has no days, so it is\nnot in Next events" {class: end}
+
+due -> notdue: no
+due -> search: yes {class: hot}
+search -> failed: error
+search -> path: results {class: hot}
+path -> drop: other
+path -> kinds: article, post,\ncompany, event {class: hot}
+kinds -> title: {class: hot}
+title -> notitle: empty
+title -> known: title {class: hot}
+known -> skip: yes
+known -> item: no {class: hot}
+item -> admin
+admin -> reject: reject
+admin -> valid: accept {class: hot}
+valid -> refused: no
+valid -> indexed: yes {class: hot}

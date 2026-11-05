@@ -229,13 +229,13 @@ groups:
       - alert: Helper2ScoutCollectorStale
         # The gauge lives in the memory of the replica that ran the collector; max_over_time over 9 days finds it
         # across deploys. Prometheus must keep metrics at least 9 days. Thresholds: run interval (daily cron on the
-        # chart, tavily-scout P5D, course-scout and tavily-discovery P7D) plus a day.
+        # chart, tavily-scout P5D, course-scout, tavily-discovery and linkedin-scout P7D) plus a day.
         expr: |
-          (time() - max by (environment, source) (max_over_time(helper2_scout_last_success{application="helper2", source!~"tavily-scout|course-scout|tavily-discovery"}[9d]))) > 2 * 86400
+          (time() - max by (environment, source) (max_over_time(helper2_scout_last_success{application="helper2", source!~"tavily-scout|course-scout|tavily-discovery|linkedin-scout"}[9d]))) > 2 * 86400
           or
           (time() - max by (environment, source) (max_over_time(helper2_scout_last_success{application="helper2", source="tavily-scout"}[9d]))) > 6 * 86400
           or
-          (time() - max by (environment, source) (max_over_time(helper2_scout_last_success{application="helper2", source=~"course-scout|tavily-discovery"}[9d]))) > 8 * 86400
+          (time() - max by (environment, source) (max_over_time(helper2_scout_last_success{application="helper2", source=~"course-scout|tavily-discovery|linkedin-scout"}[9d]))) > 8 * 86400
         for: 0m
         labels:
           severity: warning

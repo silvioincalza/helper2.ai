@@ -23,6 +23,7 @@ import ai.helper2.sources.npm.NpmSource;
 import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.sources.tavily.CourseCollector;
+import ai.helper2.sources.tavily.LinkedInCollector;
 import ai.helper2.sources.tavily.TavilyCollector;
 import ai.helper2.sources.tavily.TavilyDiscoveryCollector;
 import ai.helper2.sources.tavily.TavilySource;
@@ -52,6 +53,7 @@ import org.springframework.web.client.RestClient;
   CollectorProperties.TavilyScout.class,
   CollectorProperties.Courses.class,
   CollectorProperties.Discovery.class,
+  CollectorProperties.LinkedIn.class,
   CollectorProperties.GitHubAwesome.class,
   CollectorProperties.HfProviderOrgs.class,
   CollectorProperties.AiDeadlines.class,
@@ -196,6 +198,27 @@ class SourcesConfiguration {
         new RunInterval(c.interval()),
         c.query(),
         c.platforms());
+  }
+
+  /**
+   * Weekly Tavily searches restricted to linkedin.com; every page it keeps goes to the admin review
+   * list (ADR 0053).
+   */
+  @Bean
+  LinkedInCollector linkedInCollector(
+      SourcesProperties p,
+      CollectorProperties.LinkedIn c,
+      Clock clock,
+      Resilience resilience,
+      ObservationRegistry observations) {
+    SourceSettings s = p.get("linkedin-scout");
+    return new LinkedInCollector(
+        s,
+        collectorClient(s, observations),
+        clock,
+        resilience,
+        new RunInterval(c.interval()),
+        c.queries());
   }
 
   /**

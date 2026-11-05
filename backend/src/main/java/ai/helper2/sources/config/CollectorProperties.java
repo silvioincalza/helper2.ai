@@ -62,6 +62,16 @@ final class CollectorProperties {
     }
   }
 
+  /** LinkedIn via Tavily (ADR 0053): one search per query on linkedin.com, all sent to review. */
+  @Validated
+  @ConfigurationProperties("helper2.scout.linkedin")
+  record LinkedIn(@NotNull Duration interval, @NotNull List<String> queries) implements Scheduled {
+
+    LinkedIn {
+      queries = clean(queries);
+    }
+  }
+
   /**
    * Tavily discovery (ADR 0051): one search per entry, results sorted into lists and candidates.
    */

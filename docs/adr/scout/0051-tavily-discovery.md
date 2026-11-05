@@ -64,7 +64,7 @@ are candidates in the admin review list.
    when the catalog already has it (the same rules as course candidates).
 7. **Accepting indexes it.** `ResolveReview` passes the item's details to `IndexAcceptedCandidate` (scout use case).
    `ResourceCandidateJson` writes the details when the page is proposed and reads them back here: one codec, in one
-   module. The use case checks the candidate first (known source, URL, title, product type, tags), then:
+   module. The use case checks the candidate first (known source, URL, title, a type its collector declares, tags), then:
    - a page another source indexed after it was proposed is left as that source wrote it: only the decision is
      recorded (port `CatalogLookup`);
    - otherwise it is indexed as a `tavily-discovery` record with its tags, in the same transaction as the decision.
@@ -72,6 +72,8 @@ are candidates in the admin review list.
      the evidence gate checks what the model says about it.
 
    A candidate that fails the checks is refused (400) and the item stays open. Rejecting records the decision only.
+   Discovery declares its product types and ARTICLE; LinkedIn ([0053](0053-linkedin-via-tavily.md)) declares ARTICLE,
+   NEWS, PRODUCT and EVENT.
 8. **Failed searches.** A search that fails alone is logged and skipped; the others, already paid for, are kept. When
    half or more fail (an outage, a circuit that opened mid-pass), the pass fails and its checkpoint stays, so the next
    daily run searches the same pages again instead of losing a week.

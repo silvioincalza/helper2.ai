@@ -209,6 +209,7 @@ resilience4j:
       collector-tavily-scout: {base-config: collector}
       collector-course-scout: {base-config: collector}
       collector-tavily-discovery: {base-config: collector}
+      collector-linkedin-scout: {base-config: collector}
       collector-github-awesome: {base-config: collector}
       collector-hf-provider-orgs: {base-config: collector}
       collector-ai-deadlines: {base-config: collector}
@@ -276,6 +277,7 @@ resilience4j:
       collector-tavily-scout: {base-config: collector}
       collector-course-scout: {base-config: collector}
       collector-tavily-discovery: {base-config: collector}
+      collector-linkedin-scout: {base-config: collector}
       collector-github-awesome: {base-config: collector}
       collector-hf-provider-orgs: {base-config: collector}
       collector-ai-deadlines: {base-config: collector}
@@ -465,6 +467,33 @@ helper2:
         aws.amazon.com/certification=AWS,
         learn.microsoft.com/en-us/credentials=Microsoft Learn,
         nvidia.com=NVIDIA
+    linkedin:
+      # Public LinkedIn pages about AI (ADR 0053): one Tavily search per query, restricted to linkedin.com. The URL
+      # path decides the type (article, post, company or showcase page, event); profiles, jobs and learning pages are
+      # dropped. Every kept page goes to the admin review list, never straight to the catalog. One credit per query
+      # and pass (search_depth basic): 20 queries every 7 days ~ 86 credits/month. No commas inside a query.
+      interval: ${H2_SCOUT_LINKEDIN_INTERVAL:P7D}
+      queries: >-
+        new AI tool launched,
+        new open-source LLM released,
+        new MCP server released,
+        new AI agent framework released,
+        new model released OpenAI Anthropic Google Gemini,
+        new model released xAI Grok Meta Llama Mistral,
+        new model released NVIDIA Nemotron DeepSeek Qwen,
+        launches new AI product,
+        AI startup announces launch,
+        introducing our new AI agent,
+        now available generative AI platform,
+        open-source AI model release announcement,
+        MCP server launch announcement,
+        AI conference,
+        AI hackathon,
+        generative AI meetup,
+        AI summit Europe,
+        LLM workshop webinar,
+        AI event Switzerland,
+        NVIDIA GTC
     discovery:
       # Tavily discovery (ADR 0051): one search per category of the AI world, weekly. Lists and comparisons are
       # indexed as ARTICLE; a product's own site or GitHub repository goes to the admin review list, never straight
@@ -604,6 +633,14 @@ helper2:
       timeout: 10s
       cache-ttl: 30m
       deadline: ${H2_SOURCE_COURSE_SCOUT_DEADLINE:}
+    linkedin-scout:
+      # Disabled (reported as SKIPPED) until H2_TAVILY_API_KEY is set. Calls Tavily, never LinkedIn (ADR 0053).
+      enabled: ${H2_SOURCE_LINKEDIN_SCOUT_ENABLED:true}
+      base-url: https://api.tavily.com
+      token: ${H2_TAVILY_API_KEY:}
+      timeout: 10s
+      cache-ttl: 30m
+      deadline: ${H2_SOURCE_LINKEDIN_SCOUT_DEADLINE:}
     tavily-discovery:
       # Disabled (reported as SKIPPED) until H2_TAVILY_API_KEY is set.
       enabled: ${H2_SOURCE_TAVILY_DISCOVERY_ENABLED:true}

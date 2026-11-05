@@ -17,7 +17,7 @@ The periods are a product decision the owner may change; changing one must not n
    |---|---|---|---|
    | Postgres `resource` (`OBSERVED`) | resources only searches saw | 180 days after `last_seen_at` | catalog purge |
    | Postgres `resource` (`INDEXED`, `CURATED`, `DEMO`) | Scout and seed resources | while a source lists them; curated and demo rows as long as their seed | Scout upserts, seeds ([0004](../foundation/0004-persistence-and-provenance.md)) |
-   | Postgres `source_record` from `tavily`, `tavily-scout` and `tavily-discovery` ([0051](../scout/0051-tavily-discovery.md)), type `NEWS` or `ARTICLE` | web news and list pages | 180 days after `retrieved_at`; a resource left without records goes too | catalog purge |
+   | Postgres `source_record` from `tavily`, `tavily-scout`, `tavily-discovery` ([0051](../scout/0051-tavily-discovery.md)) and `linkedin-scout` ([0053](../scout/0053-linkedin-via-tavily.md)), type `NEWS` or `ARTICLE` | web news and list pages | 180 days after `retrieved_at`; a resource left without records goes too | catalog purge |
    | Postgres `resource` of type `EVENT` (`OBSERVED`, `INDEXED`) | events | 1 year after `event_ends_at` (or `event_starts_at` without an end) | catalog purge |
    | Postgres `source_record`, `resource_label`, `resource_embedding`, `evidence` and its join tables, `field_assertion`, `relationship`, `summary_claim` | facts of a resource | as long as their resource | `ON DELETE CASCADE` |
    | Postgres `enrichment_run` | model runs | 90 days after `started_at`; the latest run of each resource, and any run a current assertion, relationship, summary claim or review item cites, stay | catalog purge |

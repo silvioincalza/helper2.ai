@@ -73,6 +73,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0050](../adr/frontend/0050-pages-for-crawlers.md) | [flow](flow-0050-pages-for-crawlers.svg) | [sequence](sequence-0050-pages-for-crawlers.svg) | what Spring answers for each client route (status, robots, head), and a crawler and a person opening a resource page. |
 | [0051](../adr/operations/0051-policy-endpoint.md) | [flow](flow-0051-policy-endpoint.svg) | [sequence](sequence-0051-policy-endpoint.svg) | where each number of GET /api/v1/policy comes from, and a text page reading them. |
 | [0051](../adr/scout/0051-tavily-discovery.md) | [flow](flow-0051-tavily-discovery.svg) | [sequence](sequence-0051-tavily-discovery.svg) | how one discovery result becomes an ARTICLE, a review candidate or nothing, and an admin accepting a candidate. |
+| [0053](../adr/scout/0053-linkedin-via-tavily.md) | [flow](flow-0053-linkedin-via-tavily.svg) | [sequence](sequence-0053-linkedin-via-tavily.svg) | how one LinkedIn result found through Tavily becomes a review candidate or nothing, and an admin accepting it. |
 
 ## Colors
 

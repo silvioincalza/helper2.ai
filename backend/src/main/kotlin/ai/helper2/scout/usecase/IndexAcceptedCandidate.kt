@@ -43,7 +43,9 @@ fun interface CatalogLookup {
  * An admin accepted a resource candidate (ADR 0051): it is indexed as a record of the collector
  * that found it, with the collector's own title and excerpt, so it is catalogued like everything
  * the Scout collects. It has no enrichment yet: the next Scout run takes it from the backlog. The
- * values are checked again here, because the review item is stored text.
+ * values are checked again here, because the review item is stored text. A candidate's type must
+ * be one its collector declares (ADR 0053): LinkedIn may propose articles, posts and events,
+ * discovery only products.
  */
 class IndexAcceptedCandidate(
   collectors: List<Collector>,
@@ -60,6 +62,7 @@ class IndexAcceptedCandidate(
     const val MAX_SNIPPET = 1000
     const val MAX_TAGS = 12
     val TAG = Regex("[a-z0-9]+(-[a-z0-9]+)*")
+    /** Every type a candidate may have; a collector narrows it to the types it declares. */
     val TYPES =
       setOf(
         ResourceType.PRODUCT,
@@ -70,6 +73,9 @@ class IndexAcceptedCandidate(
         ResourceType.LIBRARY,
         ResourceType.MODEL,
         ResourceType.DATASET,
+        ResourceType.ARTICLE,
+        ResourceType.NEWS,
+        ResourceType.EVENT,
       )
   }
 
@@ -80,15 +86,14 @@ class IndexAcceptedCandidate(
    */
   fun accept(details: String?): UUID? {
     val candidate = this.details.read(details)
-    collectorOf(candidate)
-    val url = hitOf(candidate).canonicalUrl
+    val url = hitOf(candidate, collectorOf(candidate)).canonicalUrl
     return if (lookup.listed(url)) null else index(candidate)
   }
 
   /** The id of the resource the candidate became. */
   fun index(candidate: AcceptedCandidate): UUID {
     val collector = collectorOf(candidate)
-    val hit = hitOf(candidate)
+    val hit = hitOf(candidate, collector)
     val merged =
       merger.merge(
         listOf(hit),
@@ -101,12 +106,15 @@ class IndexAcceptedCandidate(
   private fun collectorOf(c: AcceptedCandidate): Collector =
     sources[c.sourceId] ?: throw InvalidCandidate("unknown source ${c.sourceId}")
 
-  private fun hitOf(c: AcceptedCandidate): SourceHit {
+  private fun hitOf(c: AcceptedCandidate, collector: Collector): SourceHit {
     val url = CanonicalUrl.of(c.url) ?: throw InvalidCandidate("unreadable URL")
     val title = c.title.trim()
     if (title.isEmpty() || title.length > MAX_TITLE)
       throw InvalidCandidate("title missing or too long")
     if (c.type !in TYPES) throw InvalidCandidate("type ${c.type} cannot be a candidate")
+    if (c.type !in collector.descriptor.resourceTypes) {
+      throw InvalidCandidate("${c.sourceId} does not propose ${c.type}")
+    }
     if (c.tags.size > MAX_TAGS || c.tags.any { it.length > 40 || !TAG.matches(it) }) {
       throw InvalidCandidate("unreadable tags")
     }

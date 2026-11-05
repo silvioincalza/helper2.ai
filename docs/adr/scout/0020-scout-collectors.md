@@ -58,6 +58,11 @@ A collector returns hits, which the runner indexes, and candidates, which the ru
    apps, model hosting, ... 33 searches in 30 categories). List pages are indexed as ARTICLE; a product's own site or repository
    becomes a `RESOURCE_CANDIDATE` review item, and accepting it indexes it. Each result gets the tag of every
    category it belongs to. About 285 credits a month. Off without `H2_TAVILY_API_KEY`.
+
+9. **LinkedIn via Tavily** (`linkedin-scout`, every `H2_SCOUT_LINKEDIN_INTERVAL`, 7 days;
+   [0053](0053-linkedin-via-tavily.md)). 20 Tavily searches restricted to `linkedin.com`; we never call LinkedIn.
+   The URL path makes a page an article, a post, a company page or an event; every one becomes a `RESOURCE_CANDIDATE`
+   review item, and accepting it indexes it. About 86 credits a month. Off without `H2_TAVILY_API_KEY`.
 ## Consequences
 - The index grows from registries, the Hub, news and curated lists, with each record's source disclosed.
 - Intervals keep cost and load low: Tavily credits (about 370 a month: news ~42, courses ~43, discovery ~285), GitHub limits and
