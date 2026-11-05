@@ -21,6 +21,7 @@ import ai.helper2.api.generated.model.GuideWindowDto;
 import ai.helper2.api.generated.model.NoticeDto;
 import ai.helper2.api.generated.model.ResourceTypeDto;
 import ai.helper2.api.generated.model.ServedFromDto;
+import ai.helper2.api.generated.model.SkipReasonDto;
 import ai.helper2.api.generated.model.SourceModeDto;
 import ai.helper2.api.generated.model.SourceOutcomeDto;
 import ai.helper2.api.generated.model.SourceStatusDto;
@@ -237,7 +238,11 @@ class GuideDtoMapper {
                     UtcTimes.odt(s.getCheckedAt()))
                 .latencyMs(s.getLatency() == null ? null : s.getLatency().toMillis())
                 .cachedAt(UtcTimes.odt(s.getCachedAt()))
-                .message(s.getMessage()))
+                .message(s.getMessage())
+                .skipReason(
+                    s.getSkipReason() == null
+                        ? null
+                        : SkipReasonDto.fromValue(s.getSkipReason().name())))
         .toList();
   }
 
