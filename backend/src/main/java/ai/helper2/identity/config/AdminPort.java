@@ -22,6 +22,17 @@ record AdminPort(int port) {
     return !enabled() || request.getLocalPort() == port;
   }
 
+  /** True only on the separate admin port: false on every request when there is none. */
+  boolean onAdminHost(HttpServletRequest request) {
+    return enabled() && request.getLocalPort() == port;
+  }
+
+  /** The request being served on this thread is on the separate admin port (ADR 0057). */
+  boolean currentRequestOnAdminHost() {
+    RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
+    return attributes instanceof ServletRequestAttributes s && onAdminHost(s.getRequest());
+  }
+
   /**
    * The request being served on this thread is on the admin port (true without one, false without a
    * request).

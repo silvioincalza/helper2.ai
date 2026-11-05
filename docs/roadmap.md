@@ -20,6 +20,19 @@ Items are grouped by the order in which they matter. Inside a group, the first i
   question is personal data, the basis for keeping it up to a day, and the transfer of search and guide text to the
   NVIDIA API catalog in the US (not yet listed under transfers abroad). 
 - Review each source's terms again for commercial use.
+- Monetisation ([ADR 0057](adr/frontend/0057-monetisation.md)), before a setting is filled on prod:
+  - Manual: create the GA4 property (EU data), retention 2 months; in enhanced measurement turn off "Page changes based
+    on browser history events", site search and form interactions; Google signals off; a separate stream for staging.
+    Check once in DebugView that no hit carries `q=` or `ask=`.
+  - Manual: apply to EthicalAds; set up GitHub Sponsors and a Stripe Payment Link whose confirmation page is
+    `https://helper2.ai/support/thanks`; then fill `app.monetisation.*` per environment.
+  - Check on staging that the browser console shows no CSP errors with each part on (the CSP lists `media.` and
+    `server.ethicalads.io`; the client loads ads as JSONP from `server.`).
+  - Lawyer: check the GA4 bar wording, the Swiss rules on ad labelling (UWG), whether EthicalAds (Read the Docs, Inc.,
+    US) needs consent or a transfer basis (it receives the IP address and topic words from the page), and that the
+    DSA ad duties do not apply.
+  - Tax advisor: gifts and ad income as a private person in Switzerland, and whether a sole proprietorship must be
+    registered. The Terms say a gift is not tax-deductible.
 - Lawyer review of README and model-card quotes ([ADR 0043](adr/scout/0043-enrichment-gap-round.md)): the quotation
   right (Swiss URG Art. 25, EU InfoSoc Art. 5(3)(d)) for 20–300-character excerpts, also of repositories with no
   licence; GitHub and Hugging Face terms for reading and keeping them (the Hub `raw` path is not its API); author names
@@ -324,6 +337,8 @@ Fix an item or accept it; when it no longer holds, remove it.
 
 ### Frontend
 
+- With ads on, public pages allow inline styles (`style-src 'unsafe-inline'`) for the EthicalAds client. The ad slot's height is fixed by hand; check it against real ads on staging. ([ADR 0057](adr/frontend/0057-monetisation.md))
+- Google Analytics hosts are listed by hand in the CSP; if Google changes them, hits are blocked until the list is updated. ([ADR 0057](adr/frontend/0057-monetisation.md))
 - A user who never presses Ask the guide (or Shift+Enter) never sees the guide's picks: Enter only searches. ([ADR 0025](adr/frontend/0025-frontend-one-box.md))
 - knip does not read locale files or CSS: a text key or a style that only dead code used stays until it is removed by hand (today the `freshness.*` texts and `.badge.freshness`). Moderate `npm audit` advisories in build and test tools are only reported. ([ADR 0054](adr/quality/0054-dead-code-and-dependency-audit.md))
 - No browser end-to-end tests: frontend tests run in jsdom only, also in CI. ([ADR 0025](adr/frontend/0025-frontend-one-box.md), [ADR 0028](adr/operations/0028-ci-cd.md))

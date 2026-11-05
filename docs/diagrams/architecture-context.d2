@@ -30,6 +30,7 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
   identity: "identity\nsign-in, bookmarks" {class: app}
   backoffice: "admin\nback office: review, runs, overview" {class: app}
   policy: "policy\nlimits and retention\nfor the text pages" {class: app}
+  monetisation: "monetisation\ngifts, analytics, ad slot\n(settings only)" {class: app}
   platform: "platform\nLLM layer, HTTP, edge" {class: app}
 
   guide -> search: "retrieve candidates" {class: hot}
@@ -52,6 +53,7 @@ app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
   policy -> guide: "GuidePolicy"
   policy -> identity: "AccountPolicy"
   policy -> catalog: "CatalogPolicy"
+  identity -> monetisation: "GET /me, CSP origins"
 }
 
 pg: "PostgreSQL 18 + pgvector\nsystem of record" {shape: cylinder; class: data}
@@ -60,6 +62,7 @@ nebius: "Nebius Token Factory\nNemotron 3 Super · Nano" {class: ai}
 nvapi: "NVIDIA API catalog\nnemotron-3.5-embed-1b" {class: ai}
 hosts: "Public sources\nGitHub · Hugging Face · npm · arXiv\nMCP Registry · Tavily" {class: ext}
 oauth: "github.com OAuth" {class: ext}
+thirdparty: "In the browser only:\nGoogle Analytics (after consent)\nEthicalAds · GitHub Sponsors · Stripe" {class: ext}
 
 browser -> app.search: "search" {class: hot}
 browser -> app.guide: "ask (SSE)" {class: hot}
@@ -67,6 +70,7 @@ browser -> app.catalog: "resource, events"
 browser -> app.setup: "Set it up"
 browser -> app.examples: "home examples"
 browser -> app.policy: "policy numbers"
+browser -> thirdparty: "page path, ad request,\ngift (ADR 0057)"
 crawler: "Crawler,\nlink preview" {class: person}
 crawler -> app.pages: "page head, sitemap.xml,\nrobots.txt"
 admin -> app.identity: "sign-in on the admin host"

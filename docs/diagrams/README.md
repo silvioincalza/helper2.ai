@@ -75,6 +75,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0051](../adr/operations/0051-policy-endpoint.md) | [flow](flow-0051-policy-endpoint.svg) | [sequence](sequence-0051-policy-endpoint.svg) | where each number of GET /api/v1/policy comes from, and a text page reading them. |
 | [0051](../adr/scout/0051-tavily-discovery.md) | [flow](flow-0051-tavily-discovery.svg) | [sequence](sequence-0051-tavily-discovery.svg) | how one category's discovery result becomes an ARTICLE, a review candidate (new or merged) or nothing, and an admin accepting a candidate. |
 | [0056](../adr/scout/0056-evidence-ladder.md) | [flow](flow-0056-evidence-ladder.svg) | [sequence](sequence-0056-evidence-ladder.svg) | the evidence ladder inside EnrichResource.attempt: when it reads the README and the product's own pages, the URL checks and budgets, and which run is saved. |
+| [0057](../adr/frontend/0057-monetisation.md) | [flow](flow-0057-monetisation.svg) | [sequence](sequence-0057-monetisation.svg) | what a public page loads for analytics and the ad slot, and a visitor who accepts and searches twice. |
 
 ## Colors
 

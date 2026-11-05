@@ -254,11 +254,20 @@ const LIMITS: Me['limits'] = {
   resetsAt: '2026-10-23T00:00:00Z',
 };
 
+/** Every monetisation part off (ADR 0057), as with empty settings. */
+const MONETISATION_OFF: Me['monetisation'] = {
+  githubSponsorsUrl: null,
+  stripePaymentUrl: null,
+  ga4MeasurementId: null,
+  ethicalAdsPublisher: null,
+};
+
 export const ANON: Me = {
   authenticated: false,
   roles: [],
   loginProviders: [{ id: 'github', name: 'GitHub' }],
   limits: LIMITS,
+  monetisation: MONETISATION_OFF,
 };
 export const USER: Me = {
   authenticated: true,
@@ -267,6 +276,7 @@ export const USER: Me = {
   loginProviders: [],
   limits: LIMITS,
   preferences: { radarMotion: true },
+  monetisation: MONETISATION_OFF,
 };
 export const ADMIN: Me = {
   authenticated: true,
@@ -275,6 +285,7 @@ export const ADMIN: Me = {
   loginProviders: [],
   limits: LIMITS,
   preferences: { radarMotion: true },
+  monetisation: MONETISATION_OFF,
 };
 
 export function makeRecent(over: Partial<RecentResponse> = {}): RecentResponse {

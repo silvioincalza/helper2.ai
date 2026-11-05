@@ -1,0 +1,30 @@
+/* The analytics question (ADR 0057): a bar at the bottom that never covers the search box; equal buttons. */
+.h2-consent {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 50;
+  padding: 1rem;
+  background: var(--surface);
+  color: var(--ink);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+  display: grid;
+  gap: 0.5rem;
+  max-width: 100%;
+}
+.h2-consent__title {
+  font-size: 1rem;
+  margin: 0;
+}
+.h2-consent__text {
+  margin: 0;
+  max-width: 60rem;
+}
+.h2-consent__actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.h2-consent__btn {
+  min-width: 9rem;
+}

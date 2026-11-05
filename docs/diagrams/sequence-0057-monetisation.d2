@@ -1,0 +1,40 @@
+# Sequence: a visitor searches with analytics and the ad slot on (ADR 0057).
+# Source of truth: backend/src/main/java/ai/helper2/identity/web/MeController.java,
+#   identity/config/ContentSecurityPolicy.java, frontend/src/context/MonetisationContext.tsx,
+#   components/AnalyticsConsent.tsx, components/SponsorSlot.tsx, lib/analytics.ts.
+# Render: cd docs/diagrams && d2 fmt sequence-0057-monetisation.d2 && d2 sequence-0057-monetisation.d2 sequence-0057-monetisation.svg
+
+...@style
+
+shape: sequence_diagram
+
+person: "Visitor\n(browser)" {class: person}
+api: "helper2\n(identity)" {class: app}
+google: "Google Analytics" {class: data}
+ea: "EthicalAds" {class: data}
+
+open: "First visit" {
+  person -> api: "GET /search?q=agents"
+  api -> person: "index.html, CSP with the hosts\nof the parts that are on"
+  person -> api: "GET /api/v1/me (every page reads it)"
+  api -> person: "session, limits, monetisation:\nga4MeasurementId, ethicalAdsPublisher,\nsupport links (all null on the admin host)"
+  person -> person: "Bar asks: Reject | Accept"
+}
+
+consent: "Accept" {
+  person -> person: "h2.consent = yes, date"
+  person -> google: "gtag.js, then page_view:\nhttps://helper2.ai/search, \"Search\"" {class: hot}
+}
+
+search: "Search" {
+  person -> api: "GET /api/v1/search?q=agents"
+  person -> person: "slot: Sponsored, why, progress bar"
+  person -> ea: "ethicalads.js, ad request\n(page address, no cookies)"
+  ea -> person: "one ad"
+  api -> person: "results (the bar goes away)"
+}
+
+next: "Next search" {
+  person -> api: "GET /api/v1/search?q=mcp"
+  person -> ea: "empty the box, ethicalads.load()"
+}
