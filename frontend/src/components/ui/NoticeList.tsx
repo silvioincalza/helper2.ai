@@ -5,10 +5,7 @@ import { Icon } from '@/components/Icon';
 type NoticeCode = Notice['code'];
 
 /** The notices to show: every notice whose code is not excluded. */
-export function visibleNotices(
-  notices: readonly Notice[],
-  exclude: readonly NoticeCode[] = [],
-): Notice[] {
+function visibleNotices(notices: readonly Notice[], exclude: readonly NoticeCode[] = []): Notice[] {
   return notices.filter((n) => !exclude.includes(n.code));
 }
 

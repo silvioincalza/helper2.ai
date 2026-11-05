@@ -7,12 +7,12 @@ import { TypeTag } from '@/components/ui/TypeTag';
 import { useBookmarks } from '@/context/BookmarksContext';
 import { useMe } from '@/context/MeContext';
 import { SignIn } from '@/components/SignIn';
-import { formatDate, hostname } from '@/lib/format';
+import { displayHost, formatDate } from '@/lib/format';
 import './saved.css';
 import { resourcePath } from '@/lib/searchState';
 
 /**
- * Saved page (ADR 0040, 10): type tabs when there is more than one type, one row per saved resource
+ * Saved page (ADR 0040): type tabs when there is more than one type, one row per saved resource
  * (type, host, saved date, title, the original link, Remove). A saved item keeps no quote, so the row shows none.
  */
 export function Saved() {
@@ -94,7 +94,7 @@ export function Saved() {
               <li key={b.resourceId} className="h2-saved__row">
                 <div className="h2-saved__meta">
                   {b.type && <TypeTag type={b.type} />}
-                  <span className="h2-saved__host">{hostname(b.url)}</span>
+                  <span className="h2-saved__host">{displayHost(b.url)}</span>
                   <span>{t('saved.savedAt', { date: formatDate(b.savedAt, i18n.language) })}</span>
                 </div>
                 <h2 className="h2-saved__title">

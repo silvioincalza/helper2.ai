@@ -1,4 +1,4 @@
-/* Sources page (ADR 0040, 10). Only semantic tokens. */
+/* Sources page (ADR 0040). Only semantic tokens. */
 .h2-sources {
   padding: var(--space-5) 0 var(--space-7);
 }

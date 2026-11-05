@@ -53,7 +53,8 @@ screen reader, and in light and dark mode.
 6. **Theme: light and dark, light by default.** One button switches light ↔ dark; the choice is saved as `h2.theme`.
    `public/theme.js` sets `data-theme` before the first paint: dark only when it was chosen, else light. The device
    setting is not followed: the site looks the same for everyone until a visitor picks dark.
-7. **Shared data.** `SourcesContext` fetches `GET /api/v1/sources` once per page load for all pages. `PrivacyPage` names
+7. **Shared data.** Only the pages that show the sources ask for `GET /api/v1/sources` (Home for its count, Sources);
+   the recent-answers cache ([0039](0039-frontend-recent-answers-cache.md)) serves the second one. `PrivacyPage` names
    the contact `helper2ai@incalza.me`.
 8. **Bundle.** `routes.tsx` imports every page eagerly: the first visit loads one entry chunk, with no blank first
    paint on a deep link and no extra request per page. Lazy pages are larger without a bundler-specific chunk group
@@ -85,7 +86,7 @@ screen reader, and in light and dark mode.
 - `frontend/src/components/results/Results.tsx`, `frontend/src/hooks/useApi.ts` — previous results while loading.
 - `frontend/src/api/client.ts`, `frontend/src/lib/sse.ts` — guide stream, idle timeout, error codes.
 - `frontend/src/components/Layout.tsx`, `frontend/src/lib/theme.ts`, `frontend/public/theme.js` — `RouteFocus`, theme.
-- `frontend/src/context/SourcesContext.tsx`, `frontend/src/pages/PrivacyPage.tsx`.
+- `frontend/src/pages/Home.tsx`, `frontend/src/components/sources/Sources.tsx`, `frontend/src/pages/PrivacyPage.tsx`.
 - `frontend/src/routes.tsx`, `frontend/scripts/check-bundle.mjs` — eager pages, bundle budget.
 - `docs/design/system/` — design tokens and components.
 

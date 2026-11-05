@@ -21,7 +21,7 @@ export interface BoardRow {
 }
 
 /** Rows shown before "Show all": a short list reads at a glance. */
-export const BOARD_FIRST = 6;
+const BOARD_FIRST = 6;
 
 interface Props {
   id: string;

@@ -27,11 +27,8 @@ export function shortDay(iso: string, lang: string): string {
     : new Intl.DateTimeFormat(lang, { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(d);
 }
 
-export function formatCompact(n: number, lang: string): string {
-  return new Intl.NumberFormat(lang, { notation: 'compact', maximumFractionDigits: 1 }).format(n);
-}
-
-export function hostname(url: string): string {
+/** The host of [url] without "www.", for "Open on …" and the row's source line; the url itself when it does not parse. */
+export function displayHost(url: string): string {
   try {
     return new URL(url).hostname.replace(/^www\./, '');
   } catch {

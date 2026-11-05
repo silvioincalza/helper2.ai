@@ -128,7 +128,7 @@ and chose between options for each part.
   `pages/AccountPage.tsx` — Saved, Sources and your account.
 - `frontend/src/components/TextPage.tsx`, `pages/MissionPage.tsx`, `PrivacyPage.tsx`, `TermsPage.tsx` — the text
   pages with "On this page".
-- `frontend/src/pages/AdminPage.tsx`, `pages/admin.css` — the admin back office ([0023](../edge/0023-identity-and-admin.md))
+- `frontend/src/pages/admin/`, `pages/admin/admin.css` — the admin back office ([0023](../edge/0023-identity-and-admin.md))
   in the design: the review queue as rows like the saved rows, each status as a `StatusPill`, the Scout runs as a
   table.
 - `frontend/src/components/Layout.tsx` — News, Events and Saved in the menu; Sources, Mission, the theme and "No ads."

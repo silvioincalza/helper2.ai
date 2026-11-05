@@ -4,9 +4,8 @@ import type { ResultCard } from '@/api/types';
 import { OriginLabel } from '@/components/Badges';
 import { TypeTag } from '@/components/ui/TypeTag';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
-import { formatDate } from '@/lib/format';
+import { displayHost, formatDate } from '@/lib/format';
 import { resourcePath } from '@/lib/searchState';
-import { displayHost } from '@/lib/selection';
 import { creationDate, formatMonth, groupByCreationMonth } from '@/lib/timeline';
 
 /**

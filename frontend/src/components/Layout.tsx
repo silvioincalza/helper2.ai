@@ -13,7 +13,7 @@ import { signOut } from '@/api/client';
 import { useMe } from '@/context/MeContext';
 import { LANGUAGES, setLanguage } from '@/i18n';
 import { chooseTheme, currentTheme, otherTheme, subscribeTheme, type Theme } from '@/lib/theme';
-import { RESULTS_PATH } from '@/lib/searchState';
+import { hasOwnSearchBox } from '@/lib/searchState';
 import { takeSignInReturn } from '@/lib/signInReturn';
 import { Logo } from './Logo';
 import { OneBox } from './OneBox';
@@ -98,12 +98,11 @@ function MenuButton({ open, onToggle }: { open: boolean; onToggle: () => void })
   );
 }
 
-export function Header() {
+function Header() {
   const { t, i18n } = useTranslation();
   const { me, isAdmin } = useMe();
-  // The home page has the box as its hero; every other page keeps it in the header.
   const { pathname } = useLocation();
-  const onHome = pathname === '/' || pathname === RESULTS_PATH;
+  const onHome = hasOwnSearchBox(pathname);
   // Open on the page it was opened on: moving to another page closes it without an effect.
   const [openOn, setOpenOn] = useState<string | null>(null);
   const open = openOn === pathname;
@@ -212,7 +211,7 @@ function GitHubMark() {
   );
 }
 
-export function Footer() {
+function Footer() {
   const { t } = useTranslation();
   return (
     <footer className="site-footer">

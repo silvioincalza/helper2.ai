@@ -1,3 +1,4 @@
+import { audiencePathValues, sortOrderValues, triStateValues } from '@/api/schema';
 import type { AudiencePath, GuideRequest, SearchQuery, SortOrder, TriState } from '@/api/types';
 
 export const MULTI_KEYS = [
@@ -33,7 +34,7 @@ export interface SearchState {
 /** Longest search GET /search accepts. */
 export const MAX_QUERY = 200;
 /** A question for the guide: 3 to 500 characters (GuideRequest.request). */
-export const MIN_QUESTION = 3;
+const MIN_QUESTION = 3;
 export const MAX_QUESTION = 500;
 
 /** The search as the URL and the API carry it: trimmed, at most MAX_QUERY characters. The one place `q` is clamped. */
@@ -47,17 +48,12 @@ export function clampQuestion(text: string): string {
   return q.length >= MIN_QUESTION ? q : '';
 }
 
-// Records keyed by the contract's enums: a value added to or removed from the API breaks the build here.
-const SORT_VALUES = { RELEVANCE: true, NEWEST: true, RECENTLY_UPDATED: true } satisfies Record<
-  SortOrder,
-  true
->;
-const TRI_VALUES = { true: true, false: true, unknown: true } satisfies Record<TriState, true>;
-const SORTS = Object.keys(SORT_VALUES) as SortOrder[];
-const TRI = Object.keys(TRI_VALUES) as TriState[];
-const PATHS: readonly AudiencePath[] = ['USE_AI', 'BUILD_WITH_AI'];
+/** A need of four words or more is a question for the guide; fewer words are a search (ADR 0025). */
+export function isQuestion(text: string): boolean {
+  return text.trim().split(/\s+/).filter(Boolean).length >= 4;
+}
 
-export function emptyFilters(): Record<MultiKey, string[]> {
+function emptyFilters(): Record<MultiKey, string[]> {
   return {
     type: [],
     source: [],
@@ -81,12 +77,14 @@ export function parseSearchParams(sp: URLSearchParams): SearchState {
   return {
     q: clampQuery(sp.get('q') ?? ''),
     view,
-    sort: SORTS.includes(sort as SortOrder) ? (sort as SortOrder) : 'RELEVANCE',
+    sort: sortOrderValues.includes(sort as SortOrder) ? (sort as SortOrder) : 'RELEVANCE',
     page: Number.isFinite(page) && page > 0 ? Math.min(page, 50) : 0,
     updatedAfter: /^\d{4}-\d{2}-\d{2}$/.test(updatedAfter) ? updatedAfter : '',
-    openSource: TRI.includes(os as TriState) ? (os as TriState) : '',
+    openSource: triStateValues.includes(os as TriState) ? (os as TriState) : '',
     filters,
-    path: PATHS.includes(sp.get('path') as AudiencePath) ? (sp.get('path') as AudiencePath) : '',
+    path: audiencePathValues.includes(sp.get('path') as AudiencePath)
+      ? (sp.get('path') as AudiencePath)
+      : '',
   };
 }
 
@@ -106,7 +104,7 @@ export function toSearchParams(s: SearchState): URLSearchParams {
 }
 
 /** Results per page in the timeline: the API maximum, so a month is rarely split across pages. */
-export const TIMELINE_PAGE_SIZE = 50;
+const TIMELINE_PAGE_SIZE = 50;
 
 /**
  * Params for GET /search. The view is UI-only; the timeline asks for NEWEST, the order by the date the source
@@ -211,6 +209,11 @@ export function refinedParams(sp: URLSearchParams, r: Partial<Refinement>): URLS
 
 /** Where results live (ADR 0040, 3): / is only the home page; /?q=… keeps working and names /search as canonical. */
 export const RESULTS_PATH = '/search';
+
+/** / and /search draw their own search box; every other page has it in the header. */
+export function hasOwnSearchBox(pathname: string): boolean {
+  return pathname === '/' || pathname === RESULTS_PATH;
+}
 
 /** The path of a resource page (ADR 0040, 4), the id encoded so it stays one path segment. */
 export function resourcePath(id: string): string {
