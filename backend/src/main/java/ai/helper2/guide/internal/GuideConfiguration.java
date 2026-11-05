@@ -15,6 +15,7 @@ import ai.helper2.platform.llm.CallCounter;
 import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.LlmSettings;
 import ai.helper2.platform.llm.ModelCallMetrics;
+import ai.helper2.platform.quota.QuotaKeys;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.search.usecase.SearchResources;
 import io.micrometer.core.instrument.Gauge;
@@ -115,6 +116,7 @@ class GuideConfiguration {
       Clock clock,
       DailyBudget guideBudget,
       CallCounter budgetCounter,
+      QuotaKeys quotaKeys,
       GuideAnswerStore answerStore,
       ObjectProvider<Embedder> embedder,
       JdbcSimilarQuestionIndex similarQuestionIndex,
@@ -177,7 +179,7 @@ class GuideConfiguration {
         new GuideAnswerCache(cacheTtl, clock, answerStore),
         observations,
         meters,
-        new ClientQuota(clientDailyQuestions, clock, budgetCounter),
+        new ClientQuota(clientDailyQuestions, clock, quotaKeys, budgetCounter),
         AskGuide.SUBJECT_SEARCH_DEADLINE,
         AnswerLimits.DEFAULT,
         similarQuestions(similarThreshold, embedder.getIfAvailable(), similarQuestionIndex, clock));

@@ -16,11 +16,19 @@ must load the app on a direct visit, and a new release must reach browsers at on
    `listRecent` 60/min (`H2_RATE_LIMIT_RECENT_PER_MINUTE`). Over the limit: 429, `Retry-After`, problem+json. The second (async)
    dispatch of the streamed guide is not charged again.
 2. **Limiter in Redis, shared by all replicas** (port `RateLimiter`, adapter `RedisRateLimiter`). Fixed window: one
-   key per limiter and client, `h2:v1:rate:<limiter>:<client>`. One Lua script runs `INCR` and, on the first request,
+   key per limiter and client, `h2:v1:rate:<limiter>:<client pseudonym>`. One Lua script runs `INCR` and, on the first request,
    `PEXPIRE` with the window, so a key never lives without an expiry. The key's remaining time is the `Retry-After`.
    The client is `platform.ClientKey.of(remote address)`: Internet Protocol version 4 (IPv4) as is, Internet Protocol
    version 6 (IPv6) by its /64 prefix, a zone id (`%eth0`) dropped, IPv4-mapped addresses as IPv4, a missing address
    as `unknown`. Both limiters and the guide's daily quota ([0017](../guide/0017-guide-cost-guard.md)) use this one key.
+   Redis never holds the address: the key holds `QuotaKeys.client(client)`, HMAC-SHA256(day key, client), where the
+   day key is HMAC-SHA256(`H2_QUOTA_KEY_SECRET`, UTC date), the same pseudonym as the daily web searches
+   ([0037](../search/0037-tavily-store-and-daily-quota.md)). Without the secret, an IPv4 address cannot be found again by
+   hashing all 2^32 of them, and the keys of two days cannot be linked. At midnight UTC the pseudonym changes, so a
+   window open at midnight is followed by a fresh one: at most one more window's worth of requests (two windows' worth
+   in one window), the same as at any fixed-window edge. Without `H2_QUOTA_KEY_SECRET` the app starts, logs a warning
+   and uses a random key of the process: still no address in Redis, but the counts restart with the process and each
+   replica counts on its own. The in-memory fallback holds the `ClientKey` only in the replica's memory.
 3. **In-memory fallback.** The script runs under the `redis` policy ([0033](../foundation/0033-resilience-policies.md)). On a Redis
    error, or while that circuit is open (30 s after repeated errors), each replica counts in its own
    `InMemoryRateLimiter` with the same limits (windows in start order, at most 50,000 clients, oldest

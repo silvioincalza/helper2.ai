@@ -42,7 +42,9 @@ The guards run in this order. Values are defaults; each has an `H2_` variable.
    keep-alive comments, so its connection does not look dead.
 5. **Per-client daily quota** (`ClientQuota`): `H2_GUIDE_CLIENT_DAILY_QUESTIONS` (30) fresh questions per client per day
    (Coordinated Universal Time, UTC), per `ClientKey`. Counted with a `DailyBudget` named
-   `guide-client:<16 hex of SHA-256(client)>`, so no address is stored. Past the quota the client gets a search-only
+   `guide-client:<QuotaKeys.client(client)>`: the client's keyed pseudonym of the UTC day, as for the rate limits
+   ([0024](../edge/0024-http-edge-protection.md)), so no address is stored and the name cannot be turned back into an
+   address without `H2_QUOTA_KEY_SECRET`. The pseudonym changes at midnight UTC, when the quota starts afresh anyway. Past the quota the client gets a search-only
    answer with the notice `GUIDE_DAILY_QUOTA`, not an error. Cached and shared answers do not count; a question answered with a similar question's answer
    counts, because its plan ran ([0041](0041-guide-answer-cache.md)). In memory,
    `ClientQuota` keeps only today's clients, at most 10,000 (`MAX_CLIENTS`; the least recently seen leaves first),

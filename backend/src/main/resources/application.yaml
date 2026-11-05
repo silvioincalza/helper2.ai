@@ -694,7 +694,8 @@ helper2:
     fresh-time-bound: ${H2_TAVILY_FRESH_TIMEBOUND:PT24H}
     fresh-general: ${H2_TAVILY_FRESH_GENERAL:PT48H}
     quota:
-      # HMAC key of the guest counters and of the stored query keys (OpenBao). Required while Tavily is enabled.
+      # HMAC key of the client pseudonyms (rate limits, guide quota, guest counters) and of the stored query keys
+      # (OpenBao). Required while Tavily is enabled; without it the pseudonyms use a random key per process.
       key-secret: ${H2_QUOTA_KEY_SECRET:}
       # Per visitor and feature, per UTC day. Staging raises them for testing (chart app.dailyLimits).
       guest:

@@ -36,8 +36,8 @@ The periods are a product decision the owner may change; changing one must not n
    | Postgres `issue_report.reporter_user_id` | link to the reporter | until the account goes | `ON DELETE SET NULL` |
    | Postgres `admin_audit` | admin id, action, target, time, outcome | 24 months after `at` | identity purge |
    | Redis `h2:v1:src:*` | source responses, keyed by a hash of the query | 24 h (`H2_SEARCH_STALE_FOR`) | Redis TTL |
-   | Redis `h2:v1:budget:*` | daily model-call counts, per-client counts under a hash of the address | 2 days | Redis TTL |
-   | Redis `h2:v1:rate:*` | rate-limit windows, keyed by the client address | 1 minute or 1 hour (the window) | Redis TTL |
+   | Redis `h2:v1:budget:*` | daily model-call counts, per-client counts under a keyed hash of the address and the day ([0017](../guide/0017-guide-cost-guard.md)) | 2 days | Redis TTL |
+   | Redis `h2:v1:rate:*` | rate-limit windows, keyed by a keyed hash of the client address and the day ([0024](../edge/0024-http-edge-protection.md)) | 1 minute or 1 hour (the window) | Redis TTL |
    | Redis `h2:v1:quota:*` | daily web searches per feature: guests under an HMAC of the address and the day, signed-in users under their id; the global count ([0037](../search/0037-tavily-store-and-daily-quota.md)) | 24 h after the first count | Redis TTL, `DeleteMyAccount` |
    | Redis `helper2:session:*` | sign-in sessions | 30 minutes idle | Spring Session expiry |
    | In-memory caches (setup materials and registry specs) | copies of the above | 1 h; bounded entries; lost on restart | TTL and size bound |

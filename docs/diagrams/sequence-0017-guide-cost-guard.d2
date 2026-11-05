@@ -1,6 +1,7 @@
 # Sequence: the cost guard around one guide question that misses the cache and is answered fresh.
 # Source of truth: backend/src/main/java/ai/helper2/platform/RateLimitInterceptor.java, RedisRateLimiter.java,
 #   backend/src/main/java/ai/helper2/platform/ClientKey.java (shared by the rate limiters and the quota),
+#   backend/src/main/java/ai/helper2/platform/quota/QuotaKeys.java (client pseudonym of the UTC day),
 #   backend/src/main/java/ai/helper2/guide/web/GuideLimits.java,
 #   backend/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java (trySlot on the guide bulkhead),
 #   backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (AskGuide.ask), GuideCost.kt (ClientQuota, GuideAnswerCache),
@@ -24,7 +25,7 @@ db: PostgreSQL {class: data}
 model: SpringAiGuideModel {class: app}
 
 browser -> rl: "POST /api/v1/guide/stream"
-rl -> redis: "limiter.acquire(remote address): Lua\nINCR + PEXPIRE h2:v1:rate:guide:<ClientKey>"
+rl -> redis: "limiter.acquire(remote address): Lua\nINCR + PEXPIRE h2:v1:rate:guide:<pseudonym>"
 redis -> rl: "count ≤ 10 per minute"
 rl -> ctrl: "allowed"
 ctrl -> ctrl: "ClientKey.of(remote address)\n(IPv6 → /64, zone id dropped)"
@@ -39,7 +40,7 @@ db -> cache: "no row"
 cache -> svc: "miss"
 svc -> svc: "inFlight.putIfAbsent(key)"
 svc -> quota: "tryAcquire(client)"
-quota -> redis: "Lua: INCR + PEXPIRE\nh2:v1:budget:guide-client:<hash>:<day>"
+quota -> redis: "Lua: INCR + PEXPIRE\nh2:v1:budget:guide-client:<pseudonym>:<day>"
 redis -> quota: "count ≤ 30"
 quota -> svc: "true"
 svc -> model: "plan, choose, verifyReasons\n(each attempt: llm-chat circuit,\nthen a guide budget unit)" {class: ai-call}
