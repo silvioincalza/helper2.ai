@@ -47,7 +47,8 @@ class NvidiaEmbedderTest {
               4,
               Duration.ofSeconds(5),
               ObservationRegistry.NOOP,
-              Resilience.NONE);
+              Resilience.NONE,
+              LlmPolicies.EMBED);
       List<String> texts =
           IntStream.range(0, n).mapToObj(i -> "text number " + i + " ".repeat(300)).toList();
 
@@ -82,13 +83,56 @@ class NvidiaEmbedderTest {
               2,
               Duration.ofSeconds(5),
               observations,
-              Resilience.NONE)
+              Resilience.NONE,
+              LlmPolicies.EMBED)
           .embed(List.of("query"), Embedder.Kind.QUERY);
 
       var timer = meters.get("http.client.requests").timer();
       assertThat(timer.count()).isEqualTo(1);
       assertThat(timer.getId().getTag("status")).isEqualTo("200");
       assertThat(timer.getId().getTag("uri")).endsWith("/embeddings").doesNotContain("?");
+    }
+  }
+
+  /**
+   * The indexer has its own circuit: while its llm-embed-index circuit is open, search queries
+   * (llm-embed) still reach the API.
+   */
+  @Test
+  void theIndexersOpenCircuitLeavesSearchQueriesAlone() {
+    CircuitBreakerRegistry circuits = CircuitBreakerRegistry.ofDefaults();
+    circuits.circuitBreaker(LlmPolicies.EMBED);
+    circuits.circuitBreaker(LlmPolicies.EMBED_INDEX).transitionToForcedOpenState();
+    Resilience resilience =
+        new Resilience4jPolicies(
+            circuits, BulkheadRegistry.ofDefaults(), RetryRegistry.ofDefaults());
+    try (FixtureServer server =
+        new FixtureServer()
+            .route(
+                "/v1/embeddings",
+                FixtureServer.Reply.ok("{\"data\":[{\"index\":0,\"embedding\":[0.5,0.5]}]}"))) {
+      String url = server.baseUrl() + "/v1";
+      Duration timeout = Duration.ofSeconds(5);
+      var indexing =
+          new NvidiaEmbedder(
+              url,
+              "key",
+              "m",
+              2,
+              timeout,
+              ObservationRegistry.NOOP,
+              resilience,
+              LlmPolicies.EMBED_INDEX);
+      var search =
+          new NvidiaEmbedder(
+              url, "key", "m", 2, timeout, ObservationRegistry.NOOP, resilience, LlmPolicies.EMBED);
+
+      assertThatThrownBy(() -> indexing.embed(List.of("text"), Embedder.Kind.PASSAGE))
+          .isInstanceOfSatisfying(
+              Embedder.EmbeddingFailure.class,
+              e -> assertThat(e.reason()).isEqualTo(Embedder.FailureReason.REFUSED));
+      assertThat(search.embed(List.of("query"), Embedder.Kind.QUERY)).hasSize(1);
+      assertThat(server.requestBodies).hasSize(1);
     }
   }
 
@@ -113,7 +157,8 @@ class NvidiaEmbedderTest {
               2,
               Duration.ofSeconds(5),
               ObservationRegistry.NOOP,
-              resilience);
+              resilience,
+              LlmPolicies.EMBED);
 
       assertThatThrownBy(() -> embedder.embed(List.of("query"), Embedder.Kind.QUERY))
           .isInstanceOf(Embedder.EmbeddingFailure.class);
@@ -141,13 +186,81 @@ class NvidiaEmbedderTest {
               2,
               Duration.ofMillis(500),
               ObservationRegistry.NOOP,
-              Resilience.NONE);
+              Resilience.NONE,
+              LlmPolicies.EMBED);
       long start = System.nanoTime();
 
       assertThatThrownBy(() -> embedder.embed(List.of("query"), Embedder.Kind.QUERY))
           .isInstanceOf(Embedder.EmbeddingFailure.class)
           .hasMessageContaining("deadline exceeded");
       assertThat((System.nanoTime() - start) / 1_000_000).isLessThan(1_500);
+    }
+  }
+
+  private static NvidiaEmbedder embedderAt(FixtureServer server) {
+    return new NvidiaEmbedder(
+        server.baseUrl() + "/v1",
+        "key",
+        "m",
+        2,
+        Duration.ofSeconds(5),
+        ObservationRegistry.NOOP,
+        Resilience.NONE,
+        LlmPolicies.EMBED_INDEX);
+  }
+
+  /**
+   * NVIDIA's reason for a 500 ("service inference failed") is in the body; the log showed only the
+   * status (5 Nov 2026). For catalog texts the message carries the body, cut short and without
+   * control characters, so a log line stays one line.
+   */
+  @Test
+  void aProviderErrorOnCatalogTextsCarriesTheShortenedBody() {
+    String body =
+        "{\"object\":\"error\",\"message\":\"service inference failed\"}\r\nlog: forged"
+            + "x".repeat(1_000);
+    try (FixtureServer server =
+        new FixtureServer()
+            .route("/v1/embeddings", new FixtureServer.Reply(500, body, Map.of(), 0))) {
+      assertThatThrownBy(() -> embedderAt(server).embed(List.of("a", "b"), Embedder.Kind.PASSAGE))
+          .isInstanceOfSatisfying(
+              Embedder.EmbeddingFailure.class,
+              e -> {
+                assertThat(e.reason()).isEqualTo(Embedder.FailureReason.PROVIDER_ERROR);
+                assertThat(e.getMessage())
+                    .startsWith("embedding call failed: HTTP 500")
+                    .contains("service inference failed")
+                    .doesNotContain("\r", "\n");
+                assertThat(e.getMessage().length()).isLessThan(300);
+              });
+    }
+  }
+
+  /** A provider's error body can echo the input; a search query is the visitor's text. */
+  @Test
+  void aProviderErrorOnASearchQueryLeavesTheBodyOut() {
+    try (FixtureServer server =
+        new FixtureServer()
+            .route(
+                "/v1/embeddings",
+                new FixtureServer.Reply(
+                    500, "{\"message\":\"bad input: my query\"}", Map.of(), 0))) {
+      assertThatThrownBy(() -> embedderAt(server).embed(List.of("my query"), Embedder.Kind.QUERY))
+          .isInstanceOfSatisfying(
+              Embedder.EmbeddingFailure.class,
+              e -> assertThat(e.getMessage()).isEqualTo("embedding call failed: HTTP 500"));
+    }
+  }
+
+  /** A 429 is a rate limit, so the caller pauses. */
+  @Test
+  void tooManyRequestsIsARateLimit() {
+    try (FixtureServer server =
+        new FixtureServer()
+            .route("/v1/embeddings", new FixtureServer.Reply(429, "{}", Map.of(), 0))) {
+      assertThatThrownBy(() -> embedderAt(server).embed(List.of("a"), Embedder.Kind.PASSAGE))
+          .isInstanceOfSatisfying(
+              Embedder.EmbeddingFailure.class, e -> assertThat(e.rateLimited()).isTrue());
     }
   }
 }

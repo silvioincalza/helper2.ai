@@ -38,7 +38,7 @@ describe('home (design v4)', () => {
     await list('Coming up');
     expect(news.compareDocumentPosition(does) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.queryByText('Acme Translator')).not.toBeInTheDocument();
-    expect(screen.getByText(/No ads\./)).toBeInTheDocument();
+    expect(screen.getByText(/No tracking ads\./)).toBeInTheDocument();
     expect(screen.getByRole('contentinfo')).toHaveTextContent('Switzerland · EU servers');
   });
 

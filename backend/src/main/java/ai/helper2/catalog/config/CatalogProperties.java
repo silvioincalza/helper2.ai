@@ -5,6 +5,7 @@ import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
@@ -52,10 +53,13 @@ public record CatalogProperties(
 
   /**
    * The background indexer: [batch] texts per call every [every], each call bounded by [timeout].
+   * When the API rejects a batch, up to [singlesAfterFailure] of its texts go one per call in the
+   * same tick (0: none).
    */
   public record Indexer(
       @NotNull Duration timeout,
       @Positive int batch,
+      @PositiveOrZero int singlesAfterFailure,
       @NotNull Duration initialDelay,
       @NotNull Duration every) {}
 }

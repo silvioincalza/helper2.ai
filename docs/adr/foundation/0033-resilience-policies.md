@@ -37,7 +37,8 @@ The domain (Kotlin) must not depend on the library that implements them ([0002](
    | `redis` (search cache, budget counters, rate limits, outbound throttle, session reads) | count window 10, at least 3 calls, 50%, open 30 s, 2 trial calls | none | none |
    | `db-cache` (shared caches of model answers in `ai_cache`: translations, query vectors, setup guide answers, guide answers, [0004](0004-persistence-and-provenance.md)) | count window 10, at least 3 calls, 50% failed or slow (over 250 ms), open 30 s, 2 trial calls; each statement also stops after 1 s | 2 calls per replica, no wait: with the catalog sources' 6, below the database pool of 10 | none: a miss costs one model call |
    | `llm-chat` (every chat-model call: guide, query translation, setup guide, Scout enrichment, awesome-list classifier) | count window 10, at least 5 calls, 50%, open 30 s, 2 trial calls; only provider errors count (`ModelErrors.NotFromProvider` ignores a malformed answer and a spent budget) | none | none: every attempt is charged to a daily budget ([0014](../guide/0014-llm-integration.md)) |
-   | `llm-embed` (every embedding call: search queries and the indexer) | as `llm-chat`, every failure counts | none | none |
+   | `llm-embed` (embedding calls of search queries and guide questions) | as `llm-chat`, every failure counts | none | none |
+   | `llm-embed-index` (the embedding indexer's calls) | as `llm-embed`; its own circuit, so the indexer's failed batches never refuse a visitor's query ([0012](../search/0012-vector-search-pgvector.md)) | none | none: the indexer sends a rejected batch one text at a time instead |
    | `guide` (guide questions) | none | 8 questions per replica, no wait, held per question with `trySlot` by `GuideLimits` from start to end or deadline ([0017](../guide/0017-guide-cost-guard.md)) | none |
 
    The guide's bulkhead is its own policy, not part of `llm-chat`: `call` applies every instance of a name, so a
@@ -54,7 +55,7 @@ The domain (Kotlin) must not depend on the library that implements them ([0002](
    `H2_RESILIENCE_DB_CACHE_MAX_CONCURRENT` (2), `H2_RESILIENCE_LLM_OPEN_FOR` (30s),
    `H2_GUIDE_MAX_CONCURRENT` (8).
 5. **No policy, no start.** `SearchResources` requires `source-<id>` for every enabled source and each collector
-   requires `collector-<id>` when it is enabled, the model adapters require `llm-chat` or `llm-embed`, `GuideLimits`
+   requires `collector-<id>` when it is enabled, the model adapters require `llm-chat`, `llm-embed` or `llm-embed-index`, `GuideLimits`
    requires `guide` and `SharedCaches` requires `db-cache`, so a call site added without its policy stops startup instead of running unguarded. The `demo` profile adds the policies of its fixture sources.
 6. **Each outbound request is sent once.** The Apache client's own retries are off (`ObservedHttp`), so every attempt
    is one the circuit counts and the retry bounds.
@@ -125,7 +126,7 @@ The domain (Kotlin) must not depend on the library that implements them ([0002](
 - `backend/src/main/java/ai/helper2/platform/http/ObservedHttp.java` — one request per attempt.
 - `backend/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java`, `search/internal/SpringAiQueryTranslator.java`,
   `setup/internal/SpringAiToolGuideModel.java`, `scout/internal/SpringAiEnrichmentModel.java`,
-  `sources/classifier/SpringAiRepoClassifier.java` — `llm-chat`; `platform/llm/ModelErrors.java` — what counts for it; `catalog/internal/NvidiaEmbedder.java` — `llm-embed`.
+  `sources/classifier/SpringAiRepoClassifier.java` — `llm-chat`; `platform/llm/ModelErrors.java` — what counts for it; `catalog/internal/NvidiaEmbedder.java` — `llm-embed` or `llm-embed-index`, given by `CatalogConfiguration`.
 - `backend/src/main/java/ai/helper2/guide/web/GuideLimits.java` — `guide`, held with `trySlot`.
 - `deploy/monitoring/helper2-rules.yaml` — `Helper2CircuitOpen`, `Helper2CallsNotPermitted`.
 

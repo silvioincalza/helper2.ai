@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.TestcontainersConfiguration;
 import ai.helper2.catalog.Embedder.EmbeddingFailure;
+import ai.helper2.catalog.Embedder.FailureReason;
 import ai.helper2.catalog.internal.EmbeddingIndexer;
 import ai.helper2.catalog.internal.ResourceStore;
 import ai.helper2.catalog.internal.ResourceStore.DataOrigin;
@@ -96,6 +97,10 @@ class ResourceEmbeddingTest {
     @Override
     public List<float[]> embed(List<String> texts, Kind kind) {
       batches.add(texts);
+      return vectorsOf(texts);
+    }
+
+    static List<float[]> vectorsOf(List<String> texts) {
       return texts.stream()
           .map(t -> t.startsWith("a") ? axis(0, 0) : t.startsWith("b") ? axis(2, 0) : axis(4, 0))
           .toList();
@@ -116,7 +121,7 @@ class ResourceEmbeddingTest {
     SimpleMeterRegistry registry = new SimpleMeterRegistry();
     EmbeddingIndexer indexer =
         new EmbeddingIndexer(
-            store, embedder, 100_000, Duration.ofMinutes(1), Clock.systemUTC(), registry);
+            store, embedder, 100_000, 0, Duration.ofMinutes(1), Clock.systemUTC(), registry);
 
     assertThat(pendingOfThisRun())
         .extracting(EmbeddingTask::resourceId)
@@ -144,7 +149,13 @@ class ResourceEmbeddingTest {
     UUID beta = insert("beta", "second");
     SimpleMeterRegistry registry = new SimpleMeterRegistry();
     new EmbeddingIndexer(
-            store, new FakeEmbedder(), 100_000, Duration.ofMinutes(1), Clock.systemUTC(), registry)
+            store,
+            new FakeEmbedder(),
+            100_000,
+            0,
+            Duration.ofMinutes(1),
+            Clock.systemUTC(),
+            registry)
         .tick();
     assertThat(registry.get("helper2.embedding.backlog").gauge().value()).isZero();
     assertThat(store.pendingEmbeddings(model, 1).backlog()).isZero();
@@ -160,7 +171,7 @@ class ResourceEmbeddingTest {
         .update();
     SimpleMeterRegistry oneAtATime = new SimpleMeterRegistry();
     new EmbeddingIndexer(
-            store, new FakeEmbedder(), 1, Duration.ofMinutes(1), Clock.systemUTC(), oneAtATime)
+            store, new FakeEmbedder(), 1, 0, Duration.ofMinutes(1), Clock.systemUTC(), oneAtATime)
         .tick();
 
     assertThat(oneAtATime.get("helper2.embedding.backlog").gauge().value())
@@ -175,13 +186,13 @@ class ResourceEmbeddingTest {
         new FakeEmbedder() {
           @Override
           public List<float[]> embed(List<String> texts, Kind kind) {
-            throw new EmbeddingFailure("rate limited", true);
+            throw new EmbeddingFailure("rate limited", FailureReason.RATE_LIMITED);
           }
         };
     insert("pending", "x");
     EmbeddingIndexer indexer =
         new EmbeddingIndexer(
-            store, failing, 10, Duration.ofMinutes(1), Clock.systemUTC(), registry);
+            store, failing, 10, 0, Duration.ofMinutes(1), Clock.systemUTC(), registry);
 
     indexer.tick();
 
@@ -193,6 +204,169 @@ class ResourceEmbeddingTest {
                 .count())
         .isEqualTo(1);
     assertThat(registry.get("helper2.embedding.last.success").gauge().value()).isZero();
+  }
+
+  /**
+   * Fails every call of more than one text with [manyTexts]; one text at a time works, except the
+   * texts in [failingSingles], which fail with [singleFailure].
+   */
+  class FailsOnBatches extends FakeEmbedder {
+    final FailureReason manyTexts;
+    final Set<String> failingSingles;
+    final FailureReason singleFailure;
+
+    FailsOnBatches(FailureReason manyTexts) {
+      this(manyTexts, Set.of(), FailureReason.PROVIDER_ERROR);
+    }
+
+    FailsOnBatches(
+        FailureReason manyTexts, Set<String> failingSingles, FailureReason singleFailure) {
+      this.manyTexts = manyTexts;
+      this.failingSingles = failingSingles;
+      this.singleFailure = singleFailure;
+    }
+
+    @Override
+    public List<float[]> embed(List<String> texts, Kind kind) {
+      batches.add(texts);
+      if (texts.size() > 1) {
+        throw new EmbeddingFailure("embedding call failed: HTTP 500", manyTexts);
+      }
+      if (failingSingles.contains(texts.getFirst())) {
+        throw new EmbeddingFailure("single failed", singleFailure);
+      }
+      return vectorsOf(texts);
+    }
+  }
+
+  /** Embeds every row in the database under this run's model, so only rows added after count. */
+  private void embedEverythingSoFar() {
+    new EmbeddingIndexer(
+            store,
+            new FakeEmbedder(),
+            100_000,
+            0,
+            Duration.ofMinutes(1),
+            Clock.systemUTC(),
+            new SimpleMeterRegistry())
+        .tick();
+  }
+
+  private double failures(SimpleMeterRegistry registry, String reason) {
+    return registry.get("helper2.embedding.failures").tag("reason", reason).counter().count();
+  }
+
+  /**
+   * NVIDIA's API failed most calls of two or more texts with 500 while every single text went
+   * through (staging, 5 Nov 2026). A batch the provider rejects is embedded one text at a time, so
+   * the backlog moves instead of failing the same batch every tick.
+   */
+  @Test
+  void aBatchTheProviderRejectsIsEmbeddedOneTextAtATime() {
+    embedEverythingSoFar();
+    UUID alpha = insert("alpha", "x");
+    UUID beta = insert("beta", "y");
+    UUID other = insert("other", "z");
+    FailsOnBatches embedder = new FailsOnBatches(FailureReason.PROVIDER_ERROR);
+    SimpleMeterRegistry registry = new SimpleMeterRegistry();
+    EmbeddingIndexer indexer =
+        new EmbeddingIndexer(
+            store, embedder, 10, 5, Duration.ofMinutes(1), Clock.systemUTC(), registry);
+
+    int embedded = indexer.tick();
+
+    assertThat(embedded).isEqualTo(3);
+    assertThat(pendingOfThisRun()).isEmpty();
+    assertThat(embedder.batches).extracting(List::size).containsExactly(3, 1, 1, 1);
+    assertThat(failures(registry, "embedding")).isEqualTo(1);
+    assertThat(registry.get("helper2.embedding.backlog").gauge().value()).isZero();
+    assertThat(registry.get("helper2.embedding.last.success").gauge().value()).isPositive();
+    assertThat(store.pendingEmbeddings(model, 10).backlog()).isZero();
+    assertThat(List.of(alpha, beta, other)).hasSize(3);
+  }
+
+  /** At most [singlesAfterFailure] texts one at a time per tick: the rest waits for later ticks. */
+  @Test
+  void theFallbackEmbedsAtMostTheConfiguredNumberOfSingleTexts() {
+    embedEverythingSoFar();
+    insert("alpha", "x");
+    insert("beta", "y");
+    insert("other", "z");
+    FailsOnBatches embedder = new FailsOnBatches(FailureReason.PROVIDER_ERROR);
+    SimpleMeterRegistry registry = new SimpleMeterRegistry();
+
+    new EmbeddingIndexer(store, embedder, 10, 2, Duration.ofMinutes(1), Clock.systemUTC(), registry)
+        .tick();
+
+    assertThat(embedder.batches).extracting(List::size).containsExactly(3, 1, 1);
+    assertThat(pendingOfThisRun()).hasSize(1);
+    assertThat(registry.get("helper2.embedding.backlog").gauge().value()).isEqualTo(1);
+  }
+
+  /** A text that fails on its own is skipped for this tick; the texts after it still go through. */
+  @Test
+  void aSingleTextThatFailsDoesNotBlockTheOthers() {
+    embedEverythingSoFar();
+    UUID alpha = insert("alpha", "x");
+    UUID beta = insert("beta", "y");
+    FailsOnBatches embedder =
+        new FailsOnBatches(
+            FailureReason.PROVIDER_ERROR, Set.of("alpha\nx"), FailureReason.PROVIDER_ERROR);
+    SimpleMeterRegistry registry = new SimpleMeterRegistry();
+
+    new EmbeddingIndexer(store, embedder, 10, 5, Duration.ofMinutes(1), Clock.systemUTC(), registry)
+        .tick();
+
+    assertThat(pendingIds()).contains(alpha).doesNotContain(beta);
+    assertThat(failures(registry, "embedding")).isEqualTo(2);
+  }
+
+  /** A refused call never reached the API: trying again smaller would only be refused again. */
+  @Test
+  void aRefusedBatchIsNotSplit() {
+    embedEverythingSoFar();
+    insert("alpha", "x");
+    insert("beta", "y");
+    FailsOnBatches embedder = new FailsOnBatches(FailureReason.REFUSED);
+    SimpleMeterRegistry registry = new SimpleMeterRegistry();
+
+    new EmbeddingIndexer(store, embedder, 10, 5, Duration.ofMinutes(1), Clock.systemUTC(), registry)
+        .tick();
+
+    assertThat(embedder.batches).hasSize(1);
+    assertThat(pendingOfThisRun()).hasSize(2);
+  }
+
+  /** A rate limit during the fallback keeps what was embedded and pauses the indexer. */
+  @Test
+  void aRateLimitDuringTheFallbackKeepsTheVectorsAndPauses() {
+    embedEverythingSoFar();
+    UUID alpha = insert("alpha", "x");
+    UUID beta = insert("beta", "y");
+    UUID other = insert("other", "z");
+    FailsOnBatches embedder =
+        new FailsOnBatches(
+            FailureReason.PROVIDER_ERROR, Set.of("beta\ny"), FailureReason.RATE_LIMITED);
+    SimpleMeterRegistry registry = new SimpleMeterRegistry();
+    EmbeddingIndexer indexer =
+        new EmbeddingIndexer(
+            store, embedder, 10, 5, Duration.ofMinutes(1), Clock.systemUTC(), registry);
+    List<UUID> order = pendingOfThisRun().stream().map(EmbeddingTask::resourceId).toList();
+
+    indexer.tick();
+
+    assertThat(order).containsExactlyInAnyOrder(alpha, beta, other);
+    assertThat(pendingIds())
+        .as("the texts before beta are embedded; beta and the rest wait")
+        .containsExactlyInAnyOrderElementsOf(order.subList(order.indexOf(beta), order.size()));
+    assertThat(failures(registry, "rate_limited")).isEqualTo(1);
+    int callsSoFar = embedder.batches.size();
+    assertThat(indexer.tick()).as("paused").isZero();
+    assertThat(embedder.batches).hasSize(callsSoFar);
+  }
+
+  private List<UUID> pendingIds() {
+    return pendingOfThisRun().stream().map(EmbeddingTask::resourceId).toList();
   }
 
   @Test

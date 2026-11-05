@@ -7,7 +7,7 @@
 #   backend/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java, search/internal/SpringAiQueryTranslator.java,
 #   setup/internal/SpringAiToolGuideModel.java, scout/internal/SpringAiEnrichmentModel.java,
 #   sources/classifier/SpringAiRepoClassifier.java (llm-chat),
-#   backend/src/main/java/ai/helper2/catalog/internal/NvidiaEmbedder.java (llm-embed), guide/web/GuideLimits.java (trySlot),
+#   backend/src/main/java/ai/helper2/catalog/internal/NvidiaEmbedder.java (llm-embed, llm-embed-index), guide/web/GuideLimits.java (trySlot),
 #   backend/src/main/java/ai/helper2/platform/llm/ModelErrors.java (NotFromProvider),
 #   backend/src/main/java/ai/helper2/platform/cache/JdbcSharedCache.java (db-cache).
 # Render: cd docs/diagrams && d2 fmt flow-0033-resilience-policies.d2 && d2 flow-0033-resilience-policies.d2 flow-0033-resilience-policies.svg
@@ -16,7 +16,7 @@
 
 direction: down
 
-call: "Resilience.call(policy, work)\nsource-<id>, collector-<id>, redis,\ndb-cache, llm-chat or llm-embed" {class: end}
+call: "Resilience.call(policy, work)\nsource-<id>, collector-<id>, redis,\ndb-cache, llm-chat, llm-embed\nor llm-embed-index" {class: end}
 named: "An instance with\nthis name exists?" {class: decision}
 unknown: "IllegalStateException\n(require at startup: no start)" {class: fail}
 
