@@ -318,6 +318,8 @@ class JdbcEnrichmentCandidates implements EnrichmentCandidates {
                     """
                     SELECT DISTINCT s.resource_id FROM source_record s
                     WHERE s.resource_id = ANY(:ids) AND length(coalesce(s.description, '')) >= :minText
+                      AND NOT EXISTS (SELECT 1 FROM enrichment_queue_control c
+                                      WHERE c.resource_id = s.resource_id AND c.skipped_at IS NOT NULL)
                     """)
                 .param("ids", ids.toArray(UUID[]::new))
                 .param("minText", minText)

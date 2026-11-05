@@ -135,7 +135,8 @@ interface EnrichmentBacklog {
   fun prioritisedCount(): Int
 
   /**
-   * The subset of [resourceIds] with enough source text for the model to cite, in the given order.
+   * The subset of [resourceIds] with enough source text for the model to cite and not skipped by an
+   * admin, in the given order.
    */
   fun eligible(resourceIds: List<UUID>): List<UUID>
 }

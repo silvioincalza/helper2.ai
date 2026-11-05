@@ -48,7 +48,9 @@ them without each module growing an admin corner.
      the resource's next run starts. At most 50 wait at the top: with no limit, the order would be whatever I clicked
      last.
    - **Skip** takes a waiting resource out of the backlog until I requeue it, with an optional reason (200 characters,
-     control characters dropped; the form says "No personal data"). It drops a move to the top.
+     control characters dropped; the form says "No personal data"). It drops a move to the top. A skip holds
+     everywhere the Scout enriches: a collector that sees new text for a skipped resource does not send it to the
+     model either (`EnrichmentCandidates.withEnoughText`).
    - **Requeue** undoes a skip. For a resource out of retries (its last run FAILED, and 3 FAILED runs), only the FAILED
      runs from now on count against the cap, so it gets 3 more tries.
    - The page has three views, in the address: waiting (the Scout's order), skipped (the latest skip first), out of

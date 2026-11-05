@@ -135,8 +135,9 @@ public interface EnrichmentCandidates {
   record Standing(boolean due, boolean outOfRetries, boolean skipped, boolean prioritised) {}
 
   /**
-   * The subset of [ids] with a source description of at least [minText] characters, in the given
-   * order.
+   * The subset of [ids] with a source description of at least [minText] characters and not skipped
+   * by an admin (ADR 0045 §7), in the given order. A collector's changed resources go through it,
+   * so a skip holds there too.
    */
   List<UUID> withEnoughText(List<UUID> ids, int minText);
 

@@ -375,6 +375,16 @@ class JdbcEnrichmentCandidatesIT {
     assertThat(candidates.withEnoughText(List.of(), MIN_TEXT)).isEmpty();
   }
 
+  /** ADR 0045 §7: a skip holds when a collector sees new text, not only in the backlog. */
+  @Test
+  void aSkippedResourceIsNotEnrichedWhenItsTextChanges() {
+    UUID kept = withText("Kept", "INDEXED", "NOT_RUN", T0);
+    UUID skipped = withText("Skipped", "INDEXED", "NOT_RUN", T0);
+    control("skipped_at = :at", skipped, T0);
+
+    assertThat(candidates.withEnoughText(List.of(skipped, kept), MIN_TEXT)).containsExactly(kept);
+  }
+
   @Test
   void aCandidateHasItsSourcesInSourceIdOrderAndTheLicenceOfTheFirstSourceThatStatesOne() {
     jdbc.sql(
