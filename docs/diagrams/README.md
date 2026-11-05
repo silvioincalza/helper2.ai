@@ -70,6 +70,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0043](../adr/scout/0043-enrichment-gap-round.md) | [flow](flow-0043-enrichment-gap-round.svg) | [sequence](sequence-0043-enrichment-gap-round.svg) | the gap round inside EnrichResource.attempt: when it reads a README or model card, and which run is saved. |
 | [0044](../adr/guide/0044-research-trail.md) | [flow](flow-0044-research-trail.svg) | [sequence](sequence-0044-research-trail.svg) | which queries and removed suggestions a guide answer lists in its research trail, and what a reused answer keeps. |
 | [0045](../adr/edge/0045-back-office.md) | [flow](flow-0045-back-office.svg) | [sequence](sequence-0045-back-office.svg) | the back office overview: one computation a minute, counts from PostgreSQL and Redis, and a count followed into the filtered queue. |
+| [0050](../adr/frontend/0050-pages-for-crawlers.md) | [flow](flow-0050-pages-for-crawlers.svg) | [sequence](sequence-0050-pages-for-crawlers.svg) | what Spring answers for each client route (status, robots, head), and a crawler and a person opening a resource page. |
 
 ## Colors
 

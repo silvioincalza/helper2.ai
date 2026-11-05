@@ -1,0 +1,37 @@
+# Sequence: a crawler, then a person, open a resource page (ADR 0050).
+# Source of truth (to be written with the record): backend/src/main/java/ai/helper2/pages/web/PageController.java,
+#   pages/usecase/RenderPage.java, catalog/usecase/GetResourceDetail.java, pages/web/SitemapController.java,
+#   frontend/src/lib/head.ts.
+# Render: cd docs/diagrams && d2 fmt sequence-0050-pages-for-crawlers.d2 && d2 sequence-0050-pages-for-crawlers.d2 sequence-0050-pages-for-crawlers.svg
+
+...@style
+
+shape: sequence_diagram
+
+bot: "Crawler or\nlink preview" {class: person}
+edge: "Cloudflare,\ningress" {class: app}
+api: "helper2\n(pages, catalog)" {class: app}
+db: PostgreSQL {class: data}
+person: "Person\n(browser)" {class: person}
+
+crawl: "Crawl" {
+  bot -> edge: "GET /sitemap.xml"
+  edge -> api: "GET /sitemap.xml"
+  api -> db: "index-worthy resources, last update\n(at most once an hour, kept in memory)"
+  api -> bot: "200 sitemap"
+  bot -> edge: "GET /resource/{id}"
+  edge -> api: "GET /resource/{id}"
+  api -> db: "GetResourceDetail.find(id)"
+  db -> api: "resource, facts, relationships"
+  api -> bot: "200 index.html with head, JSON-LD and a short body\n(404 unknown, 301 merged)" {class: hot}
+}
+
+visit: "Visit" {
+  person -> edge: "GET /resource/{id}"
+  edge -> api: "GET /resource/{id}"
+  api -> person: "200 filled index.html"
+  person -> api: "GET /api/v1/resources/{id} (the app starts)"
+  api -> db: "GetResourceDetail.find(id)"
+  api -> person: "200 detail"
+  person -> person: "createRoot replaces the body;\non the first route change the app\nremoves data-h2-head tags and sets its own"
+}
