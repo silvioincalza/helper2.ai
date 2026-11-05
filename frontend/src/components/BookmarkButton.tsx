@@ -14,7 +14,7 @@ export function BookmarkButton({
   return (
     <button
       type="button"
-      className={`btn btn-ghost bookmark${saved ? ' is-saved' : ''}`}
+      className="btn btn-ghost"
       aria-pressed={saved}
       aria-label={t('bookmark.label', { title: card.title })}
       onClick={() =>

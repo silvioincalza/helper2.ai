@@ -81,7 +81,7 @@ function OverviewParts({
         </p>
         <button
           type="button"
-          className="v4-btn"
+          className="btn"
           aria-disabled={refreshing || undefined}
           onClick={() => {
             if (!refreshing) onRefresh();

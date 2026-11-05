@@ -48,7 +48,7 @@ export default function AdminLayout() {
           </p>
         )}
         <div className="h2-admin__tools">
-          <SignIn className="v4-btn" />
+          <SignIn className="btn" />
         </div>
       </div>
     );
@@ -64,7 +64,7 @@ export default function AdminLayout() {
           level={2}
           title={t('admin.forbidden')}
           next={
-            <Link to="/" className="v4-btn">
+            <Link to="/" className="btn">
               {t('notFound.home')}
             </Link>
           }

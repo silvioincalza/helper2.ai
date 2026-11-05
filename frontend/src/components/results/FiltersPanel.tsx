@@ -93,13 +93,13 @@ function FiltersDrawer({
         <h2 id={titleId} className="h2-drawer__title">
           {t('filters.title')}
         </h2>
-        <button type="button" className="v4-btn h2-drawer__close" onClick={close}>
+        <button type="button" className="btn h2-drawer__close" onClick={close}>
           {t('filters.close')}
         </button>
       </div>
       <div className="h2-drawer__body">{children}</div>
       <div className="h2-drawer__foot">
-        <button type="button" className="v4-btn h2-btn-primary" onClick={close}>
+        <button type="button" className="btn btn-primary" onClick={close}>
           {t('filters.showResults', { count: total })}
         </button>
       </div>

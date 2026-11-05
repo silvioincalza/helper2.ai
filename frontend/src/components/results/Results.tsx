@@ -39,7 +39,6 @@ import { useMorePages } from './morePages';
 import { ResultRow } from './ResultRow';
 import { ResultsSkeleton } from './ResultsSkeleton';
 import { TypeTabs } from './TypeTabs';
-import './controls.css';
 import './results.css';
 
 /** Up to this width the filters open as a drawer over the page (design v4 breakpoints). */
@@ -293,7 +292,7 @@ function ResultsBody({
             (more.more || more.loadingMore) && (
               <button
                 type="button"
-                className="v4-btn h2-more"
+                className="btn h2-more"
                 aria-busy={more.loadingMore}
                 aria-disabled={more.loadingMore}
                 onClick={more.loadingMore ? undefined : showMore}
@@ -367,7 +366,7 @@ function ListHead({
           <button
             ref={toggle}
             type="button"
-            className="v4-btn"
+            className="btn"
             aria-expanded={open}
             aria-controls={filtersId}
             onClick={() => setOpen((o) => !o)}
@@ -425,7 +424,7 @@ function ListHead({
       >
         <FilterPanel facets={res.facets} state={state} sources={res.sources} onChange={update} />
         {on > 0 && (
-          <button type="button" className="v4-btn" onClick={() => update(clearFilters(state))}>
+          <button type="button" className="btn" onClick={() => update(clearFilters(state))}>
             {t('results.emptyRemoveFilters')}
           </button>
         )}

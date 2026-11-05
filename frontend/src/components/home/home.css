@@ -240,19 +240,6 @@
   color: var(--ink-2);
   white-space: nowrap;
 }
-.v4-home .chip-ghost {
-  min-height: var(--target-min);
-  padding: 0 var(--space-4);
-  font: 400 0.9375rem/1 var(--font-mono);
-  color: var(--ink);
-  background: transparent;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-pill);
-  cursor: pointer;
-}
-.v4-home .chip-ghost:hover {
-  background: var(--surface);
-}
 .v4-home .v4-legend {
   margin: 0;
   font: 400 0.75rem/1.7 var(--font-mono);

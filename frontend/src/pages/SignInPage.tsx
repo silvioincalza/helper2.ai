@@ -63,7 +63,7 @@ function Ways() {
       <section className="h2-card" aria-labelledby="signin-how-h">
         <h2 id="signin-how-h">{t('signInPage.signedInTitle')}</h2>
         <p>{t('signInPage.signedInText', { name: me.displayName ?? t('nav.signedIn') })}</p>
-        <Link to="/account" className="v4-btn">
+        <Link to="/account" className="btn">
           {t('nav.account')}
         </Link>
       </section>
@@ -73,7 +73,7 @@ function Ways() {
       <section className="h2-card" aria-labelledby="signin-how-h">
         <h2 id="signin-how-h">{t('signInPage.noneTitle')}</h2>
         <p>{t('signInPage.noneText')}</p>
-        <Link to="/" className="v4-btn">
+        <Link to="/" className="btn">
           {t('notFound.home')}
         </Link>
       </section>
@@ -84,9 +84,7 @@ function Ways() {
       {me.loginProviders.map((p, i) => (
         <a
           key={p.id}
-          className={
-            i === 0 ? 'v4-btn v4-btn--ink h2-signin__provider' : 'v4-btn h2-signin__provider'
-          }
+          className={i === 0 ? 'btn btn-ink h2-signin__provider' : 'btn h2-signin__provider'}
           href={loginUrl(p.id)}
           onClick={() => rememberSignInReturn(back)}
         >
