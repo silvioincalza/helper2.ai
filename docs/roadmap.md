@@ -49,7 +49,8 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 - Run `./gradlew liveTest` against production egress.
 - Ranking measured on a labeled query set ([ADR 0009](adr/search/0009-ranking.md)). The harness and the queries exist
   ([ADR 0036](adr/quality/0036-search-evaluation-harness.md)); the grades do not. Label them as
-  [docs/eval](eval/README.md) describes, then record the baseline.
+  [docs/eval](eval/README.md) describes, then record the baseline. The set was developer-heavy: the 20 `everyday`
+  queries (plain words, path `USE_AI`) now exist and wait for labels like the rest.
 - Guide relevance judged by a second person, not only by the owner ([ADR 0030](adr/quality/0030-guide-evaluation.md)).
 
 ## 2. Operations

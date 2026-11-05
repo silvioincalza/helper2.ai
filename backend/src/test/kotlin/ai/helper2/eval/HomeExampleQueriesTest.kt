@@ -19,7 +19,10 @@ class HomeExampleQueriesTest {
       setOf(AudiencePath.USE_AI, AudiencePath.BUILD_WITH_AI),
       examples.mapNotNull { it.path }.toSet(),
     )
-    assertTrue(queries.filter { it.group != "home-example" }.all { it.path == null })
+    assertTrue(
+      queries.filter { it.group !in setOf("home-example", "everyday") }.all { it.path == null },
+      "a query typed in the box carries no path",
+    )
     assertEquals(queries.size, queries.map { it.id }.toSet().size, "ids are unique")
   }
 }
