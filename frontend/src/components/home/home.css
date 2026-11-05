@@ -484,7 +484,7 @@
 .v4-cell-note {
   display: block;
   font: 400 0.8125rem/1.4 var(--v4-font-mono);
-  color: var(--v4-muted);
+  color: var(--muted);
   white-space: nowrap;
 }
 .v4-log__where {
