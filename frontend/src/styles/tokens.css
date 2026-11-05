@@ -95,7 +95,7 @@
   --radius: var(--radius-md);
   --target-min: 44px;
   --box-height: 60px;
-  --content-wide: 1040px;
+  --content-wide: 1088px;
   --reading-max: 808px;
   --list-max: 460px;
   /* The sticky header row (version 4 on every page), so a jump to an anchor (#news) lands below it, not under it. */

@@ -33,9 +33,9 @@
 }
 .v4-wrap {
   width: 100%;
-  max-width: calc(var(--content-wide) + 2 * var(--space-5));
+  max-width: calc(var(--content-wide) + 2 * var(--space-4));
   margin: 0 auto;
-  padding: 0 var(--space-5);
+  padding: 0 var(--space-4);
 }
 
 /* Controls: at least 44px, Geist Mono. */
@@ -249,9 +249,6 @@
   align-items: stretch;
 }
 @media (max-width: 720px) {
-  .v4-wrap {
-    padding: 0 var(--space-4);
-  }
   .v4-header__row {
     gap: var(--space-3);
   }

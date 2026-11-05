@@ -1249,7 +1249,7 @@ input[type='search']::-webkit-search-cancel-button {
 
 /* The text the server writes into #root for crawlers (ADR 0050). People see it only until the app starts. */
 #root > .h2-prerender {
-  max-width: calc(var(--content-wide) + 2 * var(--space-5));
+  max-width: calc(var(--content-wide) + 2 * var(--space-4));
   margin: 0 auto;
   padding: 32px 16px;
   color: var(--ink);
