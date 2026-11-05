@@ -6,7 +6,7 @@ import { useEventCells, useNewsCells } from './listParts';
 import { TermList } from './TermList';
 
 /** Below this width the two tables become tabs (ADR 0042): a table with four columns does not fit a phone. */
-export const PHONE_LISTS = '(max-width: 767px)';
+const PHONE_LISTS = '(max-width: 767px)';
 /** The tabs load only on a phone; the data is already on its way meanwhile. */
 const ListTabs = lazy(() => import('./HomeTabs'));
 

@@ -46,8 +46,6 @@ export interface RadarDot {
   box: Rect;
 }
 
-/** Up to this width only the rings show (no dots, no legend), as in home.css. */
-export const RINGS_ONLY_MAX = 900;
 /** Up to this width the rings move to the right edge, behind the left-aligned title. */
 const PHONE_MAX = 720;
 const DRAWING = 1280;

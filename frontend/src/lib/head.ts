@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router';
 
 /** Marks every tag the server writes into the shell for crawlers (ADR 0050). */
-export const SERVER_HEAD = '[data-h2-head]';
+const SERVER_HEAD = '[data-h2-head]';
 
 /**
  * Drops the server's head tags at the first move to another page: they describe the page the visitor landed on

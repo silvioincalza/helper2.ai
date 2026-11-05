@@ -37,7 +37,7 @@ import type {
 import { guideStreamEventValues } from './schema';
 import { SseParser } from '@/lib/sse';
 
-export const API_BASE = '/api/v1';
+const API_BASE = '/api/v1';
 
 /** Why an answer stream failed on the client side; the UI words each one. */
 export type StreamFailure = 'IDLE_TIMEOUT' | 'MALFORMED' | 'ENDED_EARLY';
@@ -56,7 +56,7 @@ export class ApiError extends Error {
   }
 }
 
-export function readCsrfToken(): string | undefined {
+function readCsrfToken(): string | undefined {
   try {
     const m = /(?:^|;\s*)XSRF-TOKEN=([^;]*)/.exec(document.cookie);
     return m?.[1] ? decodeURIComponent(m[1]) : undefined;
@@ -156,7 +156,7 @@ const STEP_EVENTS: ReadonlySet<string> = new Set(
  * The server sends a ":keep-alive" comment every 15 s while a question runs (a model step can be silent for
  * longer), so this long without a byte, comments included, means the stream is stuck.
  */
-export const GUIDE_IDLE_TIMEOUT_MS = 45_000;
+const GUIDE_IDLE_TIMEOUT_MS = 45_000;
 
 /**
  * POST /guide/stream: reports each real step through [onStep], resolves with the final answer. No automatic
