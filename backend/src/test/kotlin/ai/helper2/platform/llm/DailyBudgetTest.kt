@@ -38,8 +38,31 @@ class DailyBudgetTest {
     val counts = mutableMapOf<String, Long>()
     var down = false
 
+    val givenBack = mutableMapOf<String, MutableSet<String>>()
+
     override fun increment(name: String, day: java.time.LocalDate): Long? =
       if (down) null else counts.merge("$name:$day", 1L, Long::plus)
+
+    /** The rule of RedisCallCounter's script, in memory. */
+    override fun giveBack(
+      name: String,
+      day: java.time.LocalDate,
+      once: String,
+      dailyCap: Int,
+    ): CallCounter.GiveBack? {
+      if (down) return null
+      val ids = givenBack.getOrPut("$name:$day") { mutableSetOf() }
+      return when {
+        once in ids -> CallCounter.GiveBack.ALREADY_GIVEN_BACK
+        ids.size >= dailyCap -> CallCounter.GiveBack.CAP_REACHED
+        (counts["$name:$day"] ?: 0L) <= 0L -> CallCounter.GiveBack.NOTHING_COUNTED
+        else -> {
+          counts.merge("$name:$day", -1L, Long::plus)
+          ids += once
+          CallCounter.GiveBack.GIVEN_BACK
+        }
+      }
+    }
   }
 
   @Test
@@ -95,4 +118,84 @@ class DailyBudgetTest {
     assertEquals(2, budget.remaining())
     assertEquals(0, DailyBudget(0, Clock.fixed(NOW, ZoneOffset.UTC), "guide").remaining())
   }
+
+  @Test
+  fun `a call given back can be taken again`() {
+    val budget = DailyBudget(1, Clock.fixed(NOW, ZoneOffset.UTC), "guide")
+    assertTrue(budget.tryAcquire())
+
+    assertEquals(CallCounter.GiveBack.GIVEN_BACK, budget.giveBack(NOW.day(), "q1", 5))
+
+    assertEquals(0, budget.usedToday())
+    assertTrue(budget.tryAcquire())
+  }
+
+  @Test
+  fun `a call is given back once, and never below zero`() {
+    val budget = DailyBudget(3, Clock.fixed(NOW, ZoneOffset.UTC), "guide")
+    budget.tryAcquire()
+
+    budget.giveBack(NOW.day(), "q1", 5)
+
+    assertEquals(CallCounter.GiveBack.ALREADY_GIVEN_BACK, budget.giveBack(NOW.day(), "q1", 5))
+    assertEquals(CallCounter.GiveBack.NOTHING_COUNTED, budget.giveBack(NOW.day(), "q2", 5))
+    assertEquals(0, budget.usedToday())
+  }
+
+  @Test
+  fun `at most the daily cap of calls is given back`() {
+    val budget = DailyBudget(5, Clock.fixed(NOW, ZoneOffset.UTC), "guide")
+    repeat(3) { budget.tryAcquire() }
+
+    budget.giveBack(NOW.day(), "q1", 2)
+    budget.giveBack(NOW.day(), "q2", 2)
+
+    assertEquals(CallCounter.GiveBack.CAP_REACHED, budget.giveBack(NOW.day(), "q3", 2))
+    assertEquals(1, budget.usedToday())
+  }
+
+  @Test
+  fun `the shared count is given back, so every replica sees it`() {
+    val counter = SharedCounter()
+    val clock = Clock.fixed(NOW, ZoneOffset.UTC)
+    val budget = DailyBudget(1, clock, "guide", counter)
+    budget.tryAcquire()
+
+    assertEquals(CallCounter.GiveBack.GIVEN_BACK, budget.giveBack(NOW.day(), "q1", 5))
+
+    assertEquals(0L, counter.counts["guide:${NOW.day()}"])
+    assertEquals(
+      CallCounter.GiveBack.ALREADY_GIVEN_BACK,
+      DailyBudget(1, clock, "guide", counter).giveBack(NOW.day(), "q1", 5),
+      "another replica, the same question",
+    )
+    assertTrue(DailyBudget(1, clock, "guide", counter).tryAcquire())
+  }
+
+  @Test
+  fun `when the counter is down the call is given back in memory`() {
+    val counter = SharedCounter()
+    val budget = DailyBudget(1, Clock.fixed(NOW, ZoneOffset.UTC), "guide", counter)
+    budget.tryAcquire()
+    counter.down = true
+
+    assertEquals(CallCounter.GiveBack.GIVEN_BACK, budget.giveBack(NOW.day(), "q1", 5))
+    assertTrue(budget.tryAcquire())
+  }
+
+  @Test
+  fun `a call of a day that is over is not given back in memory`() {
+    val clock = MovableClock(Instant.parse("2026-10-26T23:59:00Z"))
+    val budget = DailyBudget(1, clock, "guide")
+    budget.tryAcquire()
+    val yesterday = java.time.LocalDate.of(2026, 10, 26)
+
+    clock.now = Instant.parse("2026-10-27T00:00:01Z")
+    budget.tryAcquire()
+
+    assertEquals(CallCounter.GiveBack.NOTHING_COUNTED, budget.giveBack(yesterday, "q1", 5))
+    assertEquals(1, budget.usedToday())
+  }
+
+  private fun Instant.day() = java.time.LocalDate.ofInstant(this, ZoneOffset.UTC)
 }

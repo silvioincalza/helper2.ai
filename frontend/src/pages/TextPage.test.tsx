@@ -82,6 +82,18 @@ describe('Feature: text pages', () => {
     },
   );
 
+  it('Scenario: the Terms say an answer with no pick, or a question that fails, does not count against the daily guide questions', async () => {
+    narrowScreen(true);
+    mockApi();
+    renderApp('/terms');
+    await settle();
+    expect(
+      screen.getByText(
+        /an answer with no pick, or a question that fails, does not count either \(up to 30 a day\)/,
+      ),
+    ).toBeInTheDocument();
+  });
+
   it('Scenario: on a phone, "On this page" is a collapsible list under the head', async () => {
     narrowScreen(false);
     mockApi();

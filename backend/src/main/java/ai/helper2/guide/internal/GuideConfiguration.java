@@ -112,11 +112,20 @@ class GuideConfiguration {
         settings.clientDailyQuestions(), settings.maxCandidates(), settings.cacheTtl());
   }
 
-  /** Fresh guide questions per client and day (ADR 0017); also read by GET /me. */
+  /**
+   * Fresh guide questions per client and day, and how many answers with no pick a day give theirs
+   * back (ADR 0017); also read by GET /me.
+   */
   @Bean
   ClientQuota guideClientQuota(
       Clock clock, CallCounter budgetCounter, QuotaKeys quotaKeys, GuideProperties settings) {
-    return new ClientQuota(settings.clientDailyQuestions(), clock, quotaKeys, budgetCounter);
+    return new ClientQuota(
+        settings.clientDailyQuestions(),
+        clock,
+        quotaKeys,
+        budgetCounter,
+        ClientQuota.MAX_CLIENTS,
+        settings.clientDailyFreeAnswers());
   }
 
   @Bean

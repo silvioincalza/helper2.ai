@@ -1,13 +1,19 @@
 package ai.helper2.guide
 
 import ai.helper2.platform.llm.CallCounter
+import ai.helper2.platform.llm.CallCounter.GiveBack
 import ai.helper2.platform.quota.QuotaKeys
+import ai.helper2.search.ResultMerger
+import ai.helper2.search.SearchOutcome
+import ai.helper2.search.contexts
+import ai.helper2.search.hit
 import ai.helper2.testing.MovableClock
 import java.time.Duration
 import java.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class ClientQuotaTest {
@@ -135,5 +141,176 @@ class ClientQuotaTest {
     clock.now = clock.now.plus(Duration.ofHours(3))
 
     assertEquals(2, quota.left("a"))
+  }
+
+  // An answer with no pick gives its question back (ADR 0017).
+
+  private val result =
+    ResultMerger()
+      .merge(listOf(hit("github", "https://github.com/acme/whisper")), contexts("github"))
+      .single()
+
+  private val noPick =
+    GuideAnswer(
+      status = GuideStatus.OK,
+      searchQuery = "speech recognition",
+      recommendations = emptyList(),
+      prompt = null,
+      modelUsed = true,
+      candidatesConsidered = 3,
+      rejected = 0,
+      search = SearchOutcome.empty(clock.now),
+      generatedAt = clock.now,
+    )
+
+  @Test
+  fun `an answer with an AI pick, a comparison or an explanation spends a question`() {
+    val pick = Recommendation(result, "Self-hostable.", "Speech recognition", aiReasoned = true)
+    val sentence = ExplainedSentence("Whisper transcribes speech.", "Speech recognition", result)
+
+    assertTrue(ClientQuota.spendsAQuestion(noPick.copy(recommendations = listOf(pick))))
+    assertTrue(
+      ClientQuota.spendsAQuestion(noPick.copy(comparison = Comparison(emptyList(), emptyList())))
+    )
+    assertTrue(
+      ClientQuota.spendsAQuestion(noPick.copy(explanation = Explanation(listOf(sentence))))
+    )
+  }
+
+  @Test
+  fun `an answer with nothing from the AI is free`() {
+    val searchResult = Recommendation(result, "", "", aiReasoned = false)
+
+    assertFalse(ClientQuota.spendsAQuestion(noPick), "nothing clearly fits")
+    assertFalse(
+      ClientQuota.spendsAQuestion(
+        noPick.copy(status = GuideStatus.LLM_UNAVAILABLE, recommendations = listOf(searchResult))
+      ),
+      "the model is down: top search results only",
+    )
+    assertFalse(
+      ClientQuota.spendsAQuestion(noPick.copy(status = GuideStatus.NEEDS_CLARIFICATION)),
+      "a question back",
+    )
+    assertFalse(
+      ClientQuota.spendsAQuestion(noPick.copy(explanation = Explanation(emptyList()))),
+      "an explanation with no sentence left",
+    )
+  }
+
+  @Test
+  fun `a question given back is left again`() {
+    val quota = ClientQuota(3, clock, keys)
+    val reservation = quota.reserve("a")!!
+
+    assertEquals(GiveBack.GIVEN_BACK, quota.giveBack(reservation))
+
+    assertEquals(3, quota.left("a"))
+  }
+
+  @Test
+  fun `a reservation is given back once, whoever calls it twice`() {
+    val quota = ClientQuota(3, clock, keys)
+    quota.reserve("a")
+    val reservation = quota.reserve("a")!!
+
+    quota.giveBack(reservation)
+
+    assertEquals(GiveBack.ALREADY_GIVEN_BACK, quota.giveBack(reservation))
+    assertEquals(2, quota.left("a"))
+  }
+
+  @Test
+  fun `a failure after a no-pick give-back gives nothing back again, also in the shared count`() {
+    val shared = SharedCounter()
+    val quota = ClientQuota(3, clock, keys, shared)
+    quota.reserve("a")
+    val reservation = quota.reserve("a")!!
+    quota.giveBack(reservation)
+
+    assertEquals(GiveBack.ALREADY_GIVEN_BACK, quota.giveBack(reservation))
+    assertEquals(
+      GiveBack.ALREADY_GIVEN_BACK,
+      reservation.budget.giveBack(reservation.day, reservation.id, 3),
+      "the same id again in the durable counter",
+    )
+    assertEquals(2, quota.left("a"))
+  }
+
+  @Test
+  fun `at most the free answers of a day are given back, then a question counts`() {
+    val quota = ClientQuota(3, clock, keys, freeAnswersPerDay = 2)
+    repeat(2) { quota.giveBack(quota.reserve("a")!!) }
+
+    assertEquals(GiveBack.CAP_REACHED, quota.giveBack(quota.reserve("a")!!))
+    assertEquals(2, quota.left("a"))
+  }
+
+  @Test
+  fun `free answers are capped per client`() {
+    val quota = ClientQuota(3, clock, keys, freeAnswersPerDay = 1)
+    quota.giveBack(quota.reserve("a")!!)
+
+    assertEquals(GiveBack.GIVEN_BACK, quota.giveBack(quota.reserve("b")!!))
+  }
+
+  @Test
+  fun `no free answer is given back with a cap of zero`() {
+    val quota = ClientQuota(3, clock, keys, freeAnswersPerDay = 0)
+
+    assertEquals(GiveBack.CAP_REACHED, quota.giveBack(quota.reserve("a")!!))
+    assertEquals(2, quota.left("a"))
+  }
+
+  @Test
+  fun `a used-up quota reserves nothing`() {
+    val quota = ClientQuota(1, clock, keys)
+    quota.reserve("a")
+
+    assertNull(quota.reserve("a"))
+  }
+
+  @Test
+  fun `left follows the durable count after a give-back on another replica`() {
+    val shared = SharedCounter()
+    val here = ClientQuota(3, clock, keys, shared)
+    val there = ClientQuota(3, clock, keys, shared)
+    here.reserve("a")
+    val elsewhere = there.reserve("a")!!
+    here.reserve("a")
+
+    there.giveBack(elsewhere)
+
+    assertEquals(1, here.left("a"), "the shared count, not this replica's higher one")
+  }
+
+  /** The durable counter with a read and the give-back rule of RedisCallCounter's script. */
+  private class SharedCounter : CallCounter {
+    val counts = mutableMapOf<String, Long>()
+    val givenBack = mutableMapOf<String, MutableSet<String>>()
+
+    override fun increment(name: String, day: java.time.LocalDate) =
+      counts.merge("$name:$day", 1L, Long::plus)
+
+    override fun current(name: String, day: java.time.LocalDate) = counts["$name:$day"] ?: 0L
+
+    override fun giveBack(
+      name: String,
+      day: java.time.LocalDate,
+      once: String,
+      dailyCap: Int,
+    ): GiveBack {
+      val ids = givenBack.getOrPut("$name:$day") { mutableSetOf() }
+      return when {
+        once in ids -> GiveBack.ALREADY_GIVEN_BACK
+        ids.size >= dailyCap -> GiveBack.CAP_REACHED
+        (counts["$name:$day"] ?: 0L) <= 0L -> GiveBack.NOTHING_COUNTED
+        else -> {
+          counts.merge("$name:$day", -1L, Long::plus)
+          ids += once
+          GiveBack.GIVEN_BACK
+        }
+      }
+    }
   }
 }
