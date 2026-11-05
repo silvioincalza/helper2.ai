@@ -51,7 +51,6 @@ import {
   clampQuestion,
   clearFilters,
   homeParams,
-  isQuestion,
   isSelected,
   parseSearchParams,
   patchState,
@@ -108,18 +107,12 @@ export function Results() {
       <div className="h2-results__box">
         <OneBox />
       </div>
-      {asked ? (
+      {asked && (
         <GuidePicks
           stream={stream}
           loaded={new Set((shown?.results ?? []).map((c) => c.id))}
           webLine={webLineExpected(shown?.webSearches)}
         />
-      ) : (
-        isQuestion(state.q) && (
-          <button type="button" className="btn suggest-guide" onClick={() => ask(state.q)}>
-            {t('home.suggestGuide', { q: state.q })}
-          </button>
-        )
       )}
       {/* Each new search says so; the skeleton only on the first load, later the last results stay, dimmed. */}
       {search.loading && (

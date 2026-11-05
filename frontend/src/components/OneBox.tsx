@@ -15,7 +15,6 @@ import {
   clampQuestion,
   hasOwnSearchBox,
   homeParams,
-  isQuestion,
   MAX_QUESTION,
   parseSearchParams,
   patchState,
@@ -36,8 +35,8 @@ function typingIn(target: EventTarget | null): boolean {
 }
 /**
  * The one search box: the hero on /, above the results on /search, in the header on every other page. On /search
- * typing searches live; elsewhere Enter opens /search. Enter always searches; the AI guide runs only when the user
- * chooses it: Shift+Enter (any length) or the "Ask the guide" button (its label from four words). Everything lives in the URL: `q` =
+ * typing searches live; elsewhere Enter opens /search. Two buttons, for any length: Search (also Enter) and Ask the
+ * guide (also Shift+Enter). The AI guide runs only when the user chooses it. Everything lives in the URL: `q` =
  * search, `ask` = the question the guide answered, plus the search filters. `hero`: the large box of the home page.
  */
 export function OneBox({ hero = false }: { hero?: boolean }) {
@@ -105,26 +104,20 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
     cancelLive();
     if (onHome && (state.q || asked)) go(parseSearchParams(new URLSearchParams()), '', sp);
   };
+  /** With nothing to ask (an empty box, or under 3 characters) it only puts the cursor in the box. */
   const ask = () => {
     const q = clampQuestion(text);
-    if (!q) return;
+    if (!q) return field.current?.focus();
     cancelLive();
     go(patchState(state, { q }), q, sp);
   };
-  const action = isQuestion(text) ? 'ask' : 'search';
+  // Neither button is ever disabled (a disabled button cannot be found or explained by keyboard and screen-reader
+  // users): with nothing to send it puts the cursor in the box.
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    // The button is never disabled (a disabled button cannot be found or explained by keyboard and screen-reader
-    // users): with nothing to send it puts the cursor in the box.
-    if (cannotSubmit) {
-      field.current?.focus();
-      return;
-    }
-    if (action === 'ask') ask();
+    if (!text.trim()) field.current?.focus();
     else runSearch();
   };
-  const asking = action === 'ask';
-  const cannotSubmit = asking ? !clampQuestion(text) : !text.trim();
   /** × and Esc: empty the box and keep the results on the page; the cursor stays in the box. */
   const emptyBox = () => {
     cancelLive();
@@ -253,13 +246,32 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
             /
           </kbd>
         )}
-        {/* One button whose job follows the text: a few words search, a sentence asks. A new question replaces one
-            still being answered. The key hint says which key does what the button does: ↵ on Search, ⇧↵ on Ask the guide
-            (CSS hides key hints on touch devices). */}
+        {/* Two buttons for any length of text. A new question replaces one still being answered. Each shows its key:
+            ↵ on Search, ⇧↵ on Ask the guide (CSS hides key hints on touch devices and on a narrow box, where Ask the
+            guide is an icon button). */}
         <button type="submit" className="btn btn-primary">
-          {asking ? t('guide.ask') : t('search.submit')}
+          {t('search.submit')}
           <kbd className="enter-key" aria-hidden="true">
-            {asking ? '⇧↵' : '↵'}
+            ↵
+          </kbd>
+        </button>
+        <button type="button" className="btn one-box-ask" title={t('guide.ask')} onClick={ask}>
+          <svg
+            className="one-box-ask__icon"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z" />
+          </svg>
+          <span className="one-box-ask__label">{t('guide.ask')}</span>
+          <kbd className="enter-key" aria-hidden="true">
+            ⇧↵
           </kbd>
         </button>
       </form>

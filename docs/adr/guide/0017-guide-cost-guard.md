@@ -10,8 +10,8 @@ break the page.
 
 ## Decision
 **When the guide runs: the user chooses.** Enter always searches, whatever the length of the text. The guide runs only
-when the user asks for it: Shift+Enter (also for two words) or the "Ask the guide" button, which says so from four
-words; "Ask the guide instead" on an empty result and the "Sounds like a question" hint ask too. No word count starts
+when the user asks for it: the "Ask the guide" button next to Search, for any length, or Shift+Enter; "Ask the guide
+instead" on an empty result asks too. No word count starts
 the guide, so a name search ("pgvector", or a long product name) spends no model call. The choice lives in the one box
 ([0025](../frontend/0025-frontend-one-box.md), its flow diagram); the server answers every question it gets, behind
 the guards below. Where the guide answers, the page shows what is left today ("2 of 3 AI answers left today",

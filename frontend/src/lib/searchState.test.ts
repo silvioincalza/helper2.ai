@@ -6,7 +6,6 @@ import {
   filterValue,
   hasOwnSearchBox,
   homeParams,
-  isQuestion,
   MAX_QUERY,
   parseSearchParams,
   patchState,
@@ -194,14 +193,6 @@ describe('the resource page path', () => {
       '/resource/11111111-1111-5111-8111-111111111111',
     );
     expect(resourcePath('../admin?x=1#y')).toBe('/resource/..%2Fadmin%3Fx%3D1%23y');
-  });
-});
-
-describe('isQuestion', () => {
-  it('four words or more is a question, fewer is a search', () => {
-    expect(isQuestion('mcp server for postgres')).toBe(true);
-    expect(isQuestion('  mcp   server postgres ')).toBe(false);
-    expect(isQuestion('')).toBe(false);
   });
 });
 

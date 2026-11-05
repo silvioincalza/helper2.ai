@@ -608,10 +608,6 @@ textarea {
   font-size: 1.25rem;
   line-height: 1;
 }
-.suggest-guide {
-  align-self: flex-start;
-  border-style: dashed;
-}
 
 .searchbox {
   display: flex;
@@ -994,6 +990,34 @@ h2 {
   border-radius: 6px;
   padding: 1px 5px;
   border: 1px solid currentColor;
+}
+/* Ask the guide: the quieter second button of the box (ADR 0042, decision 8). On a narrow box only its icon shows. */
+.one-box-ask {
+  justify-content: center;
+  min-width: var(--target-min);
+  min-height: var(--target-min);
+  background: var(--surface);
+}
+.one-box-ask__icon {
+  flex: none;
+}
+@media (max-width: 520px) {
+  .searchbox.large .one-box-ask {
+    flex: 0 0 auto;
+    padding: 0;
+  }
+  .searchbox.large .enter-key {
+    display: none;
+  }
+  /* The label stays the button's accessible name; only its look goes. */
+  .one-box-ask__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
 }
 .one-box.is-hero .searchbox.large {
   padding: 8px 8px 8px var(--space-5);

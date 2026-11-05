@@ -43,7 +43,7 @@ The success criteria at the end say which tests verify each journey today. What 
 
 ## UJ-2 Ask the guide without losing the search
 
-1. With a query and filters on the page, the user presses Shift+Enter (any length) or clicks **Ask the guide** (the box's button says so from 4 words, with a ⇧↵ hint on a keyboard device), or follows the "Sounds like a question" hint after 4+ words. Enter always searches, also with 4+ words: the guide runs only when the user chooses it, because each answer costs model calls.
+1. With a query and filters on the page, the user clicks **Ask the guide** next to **Search** (any length; an icon button on a phone) or presses Shift+Enter. Enter and **Search** only search, also for a long question: the guide runs only when the user chooses it, because each answer costs model calls.
 2. The results show at once; the picks bar above them says the guide is reading. Query, filters, sort and page persist (they live in the URL: `q`, `ask`, filters).
 3. The answer arrives: the picks show as chips in the bar and move to a **Guide picks** group at the top of the list, and the preview opens on pick #1. It says **Why the guide picked it** (AI-written) with the source's own sentence as proof. A result the user already opened stays open. Other results keep the search order under **More results**; their preview says **About**.
 4. Nothing fits: the bar says why in one line and offers **Ask without “…”** for each requirement the guide read (when it is short enough to keep in the URL), and **Rephrase**. **How the guide decided** stays folded under the bar: the steps, and how the guide read the question.

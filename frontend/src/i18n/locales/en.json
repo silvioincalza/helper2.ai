@@ -61,7 +61,6 @@
     "title": "The metasearch for the AI universe.",
     "lede": "One search across the world of AI for models, apps, MCP servers and papers. A pick with proof, plus the latest AI news and events.",
     "hint": "Enter searches. For picks with a quote that proves them, ask the guide (⇧↵).",
-    "suggestGuide": "Sounds like a question — ask the guide: “{{q}}” →",
     "examples": "Try:",
     "exampleAi": "Drafted with AI, checked by a person",
     "exampleAiMark": "AI",

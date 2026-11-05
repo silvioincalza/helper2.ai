@@ -10,11 +10,11 @@ screen reader, and in light and dark mode.
 
 ## Decision
 1. **One box** (`OneBox`, `HomePage`). The box is the hero on `/` and sits at the top of the results on `/search`.
-   On the results page, typing searches live: from 3 characters, 700 ms after the last key. One button follows the text: fewer than 4 words
-   it says Search, 4 or more "Ask the guide". Enter always searches, whatever the length; Shift+Enter always asks the
-   guide, also for two words. So a question that costs model calls is always a choice. The button shows the key that
-   does the same: ↵ on Search, ⇧↵ on Ask the guide (not on touch devices). Enter in an empty box goes back to the
-   empty home page.
+   On the results page, typing searches live: from 3 characters, 700 ms after the last key. Two buttons, for any length of
+   text: **Search** (primary, also Enter) and **Ask the guide** (outline, also Shift+Enter). So a question that costs
+   model calls is always a choice. Each button shows its key, ↵ and ⇧↵, where there is a keyboard and room. On a
+   narrow box Ask the guide is a 44 px icon button with its name and a tooltip. Neither is ever disabled: with nothing
+   to send it puts the cursor in the box. Enter in an empty box goes back to the empty home page.
    The box is a one-row text area that grows with the text, up to six lines, then scrolls; the height animates
    (160 ms, none under reduced motion). Enter never adds a line, and a pasted line break becomes a space.
    × (or Esc) empties the box and keeps the results; "/" from anywhere on the page puts the cursor in the box (not

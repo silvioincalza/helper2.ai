@@ -48,16 +48,6 @@ export function clampQuestion(text: string): string {
   return q.length >= MIN_QUESTION ? q : '';
 }
 
-/**
- * From this many words the box's button says "Ask the guide" and the results offer the "Sounds like a question" hint.
- * It does not decide what Enter does: Enter always searches (ADR 0025).
- */
-export const QUESTION_WORDS = 4;
-
-export function isQuestion(text: string): boolean {
-  return text.trim().split(/\s+/).filter(Boolean).length >= QUESTION_WORDS;
-}
-
 function emptyFilters(): Record<MultiKey, string[]> {
   return {
     type: [],

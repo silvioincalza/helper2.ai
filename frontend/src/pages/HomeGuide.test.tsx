@@ -618,6 +618,36 @@ describe('the guide runs when the user asks for it', () => {
     expect(m.callsTo('POST', '/guide/stream')).toHaveLength(0);
   });
 
+  it('given 8 words, when the user clicks Search, then it only searches: no question, no model call', async () => {
+    const m = mockApi({ 'POST /guide/stream': () => sse(makeGuide()) });
+    const { params } = renderApp('/');
+    await userEvent.type(
+      await screen.findByLabelText(BOX),
+      'an MCP server for my Postgres database please',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Search' }));
+    await (await results()).findByText('Postgres MCP');
+    expect(params().get('ask')).toBeNull();
+    expect(m.callsTo('POST', '/guide/stream')).toHaveLength(0);
+  });
+
+  it('given 1 word, when the user clicks Ask the guide, then it searches and the guide answers with its picks', async () => {
+    const m = mockApi({ 'POST /guide/stream': () => sse(makeGuide()) });
+    const { params } = renderApp('/');
+    await ask('pgvector');
+    expect(await answered()).toBeInTheDocument();
+    expect(params().get('q')).toBe('pgvector');
+    expect(params().get('ask')).toBe('pgvector');
+    expect(m.callsTo('POST', '/guide/stream')).toHaveLength(1);
+  });
+
+  it('given text in the box, then the page with both buttons has no axe violations', async () => {
+    mockApi();
+    const { container } = renderApp('/');
+    await userEvent.type(await screen.findByLabelText(BOX), 'an MCP server for Postgres');
+    expect(await axeViolations(container)).toEqual([]);
+  });
+
   it('given 2 words, when the user presses Shift+Enter, then it searches and the guide answers with its picks', async () => {
     const m = mockApi({ 'POST /guide/stream': () => sse(makeGuide()) });
     const { params } = renderApp('/');

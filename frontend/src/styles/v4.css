@@ -363,11 +363,25 @@
   border-color: var(--accent);
   box-shadow: inset 0 0 0 2px var(--on-accent);
 }
-.v4 .searchbox.large .enter-key,
+/* Key hints show where there is room and a keyboard: ↵ on Search, ⇧↵ on Ask the guide (hidden on touch, below). */
 .v4 .searchbox.large .searchbox-slash {
   display: none;
 }
+/* Ask the guide: an outline button, quieter than Search. */
+.v4 .searchbox.large .one-box-ask {
+  min-height: 46px;
+  padding: 0 var(--space-4);
+  font: 600 1rem/1 var(--v4-font-mono);
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+}
+.v4 .searchbox.large .one-box-ask:hover {
+  border-color: var(--ink);
+}
 .v4 .one-box.is-hero .searchbox.large .searchbox-field,
+.v4 .one-box.is-hero .searchbox.large .one-box-ask,
 .v4 .one-box.is-hero .searchbox.large .btn-primary {
   min-height: var(--v4-box-height);
   font-size: 1.0625rem;
@@ -383,6 +397,10 @@
   .v4 .searchbox.large .btn-primary {
     flex: 0 0 auto;
     padding: 0 var(--space-4);
+  }
+  .v4 .searchbox.large .one-box-ask {
+    flex: 0 0 auto;
+    padding: 0;
   }
 }
 /* Key hints only where there is a keyboard. */

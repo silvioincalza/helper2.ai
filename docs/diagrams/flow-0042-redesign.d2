@@ -1,6 +1,6 @@
 # Flowchart: the redesign (design system v4) from the home page to the guide. Home loads the sources once for the
 # radar and its legend, and the two lists (tables on a wide screen, tabs on a phone); the search box stays pinned; a
-# search opens the results; the guide starts on its own only for a question (4+ words), else Ask the guide.
+# search opens the results; the guide runs only when asked (Ask the guide, or Shift+Enter).
 # Code: frontend/src/pages/Home.tsx, components/home/HomeRadar.tsx, radarLayout.ts, radarRotation.ts, radarClock.ts,
 #   useRadarMotion.ts, RadarLegend.tsx, TermList.tsx, HomeLists.tsx, HomeTabs.tsx, homeFeeds.ts, lib/v4Fields.ts, components/Layout.tsx (header, footer). Results are still v3 (one column comes next, see the roadmap).
 # Source of truth: docs/adr/frontend/0042-redesign-design-system-v4.md, docs/design/system/README.md.
@@ -50,7 +50,7 @@ phone: "Screen 720 px or less\nand scrolled 24 px?" {class: decision}
 fold: "Title folds away,\nbox stays pinned" {class: app}
 search: "Search: /search?q=…\nGET /api/v1/search" {class: ext}
 list: "One column: results,\nfilters, coverage" {class: app}
-question: "A question?\n(4+ words)" {class: decision}
+question: "Asked the guide?\n(button or Shift+Enter)" {class: decision}
 ask: "Ask the guide bar\n(no model call)" {class: app}
 pressed: "Ask the guide pressed?" {class: decision}
 guide: "POST /api/v1/guide/stream (SSE)" {class: ext}

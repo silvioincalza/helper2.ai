@@ -88,10 +88,13 @@ they do now and how version 3 and 4 live side by side until the other pages move
    constant the box uses to tell a question from a search. One small reader (`lib/v4Fields.ts`) takes `newThisWeek`,
    `total` and `limits` and says what the page does when a value is null: a dot of the default size, the rows as the
    count, no quota line.
-8. **The guide runs when the user asks for it, and the quota is in sight.** Enter searches; Shift+Enter or the "Ask
-   the guide" button asks ([0017](../guide/0017-guide-cost-guard.md)). The hint under the box says so: "Enter searches.
-   For picks with a quote that proves them, ask the guide (⇧↵)." The button shows ↵ on Search and ⇧↵ on Ask the
-   guide, only where there is a keyboard. Where the guide answers, the visitor sees today's AI answers ("2 of 3 AI
+8. **Two buttons: Search and Ask the guide, and the quota is in sight.** The box has both buttons, always, for any
+   length of text: Search (primary, saffron) and Ask the guide (outline, quieter). Enter searches; Shift+Enter or Ask
+   the guide searches and asks ([0017](../guide/0017-guide-cost-guard.md)). No word count decides anything. The hint
+   under the box says so: "Enter searches. For picks with a quote that proves them, ask the guide (⇧↵)." Each button
+   shows its key, ↵ and ⇧↵, on Home and in the header on a desktop; key hints stay hidden on touch devices and on a
+   narrow box. Up to 520 px Ask the guide is a 44 px icon button (an inline stroke icon) with its name and a tooltip.
+   Neither button is ever disabled: with nothing to send, either puts the cursor in the box. Where the guide answers, the visitor sees today's AI answers ("2 of 3 AI
    answers left today"; at none, when they come back and that search still works), from `limits.guideQuestions` on
    GET /me. When the guide has no model the field is null, nothing is spent, and the line is not shown.
 9. **Accessibility.** Every control is at least 44 px. The focus ring (3 px ink outline) never looks like the
