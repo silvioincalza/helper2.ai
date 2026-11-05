@@ -44,7 +44,7 @@ The success criteria at the end say which tests verify each journey today. What 
 | Stale cache | Source failed live but a recent cached response exists: results shown, badge "cached 14 min ago — live check failed". |
 | All failed / API down | Error state with retry; no fake results. |
 | Rate-limited | Source marked RATE_LIMITED (not hidden), others continue. |
-| Invalid input | A query longer than 200 characters is cut to 200 in the URL and the request (the guide takes 3–500); an empty box plus Enter returns to the empty home page. The API answers an invalid `q` with 400 problem+json. |
+| Invalid input | A query longer than 200 characters is cut to 200 in the URL and the request (the guide takes 3–500); an empty box plus Enter returns to the empty home page. The **Search** button is never disabled: pressed with an empty box, it puts the cursor in the box and says "Type what you need first." under it (read as the box's description and as a polite status), and searches nothing. The API answers an invalid `q` with 400 problem+json. |
 
 ## UJ-2 Ask the guide without losing the search
 

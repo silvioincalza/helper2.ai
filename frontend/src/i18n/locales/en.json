@@ -130,6 +130,7 @@
     "placeholder": "e.g. summarise research papers",
     "submit": "Search",
     "clear": "Clear the box",
+    "typeFirst": "Type what you need first.",
     "slashHint": "Press / to search",
     "charsLeft_one": "{{count}} character left",
     "charsLeft_other": "{{count}} characters left",

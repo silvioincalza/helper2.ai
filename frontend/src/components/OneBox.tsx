@@ -83,6 +83,7 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
     // Enter searches, so the box holds one line of text: a pasted line break becomes a space.
     const value = typed.replace(/[\r\n]+/g, ' ');
     setText(value);
+    setTypeFirst(false);
     cancelLive();
     const q = clampQuery(value);
     if (q.length < MIN_LIVE_CHARS) return;
@@ -113,20 +114,29 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
     go(patchState(state, { q }), q, sp);
   };
   const action = isQuestion(text) ? 'ask' : 'search';
+  /** The button with an empty box: nothing to search yet, so the cursor goes to the box with a short hint. */
+  const [typeFirst, setTypeFirst] = useState(false);
+  const askToType = () => {
+    if (typeFirst) field.current?.focus();
+    else setTypeFirst(true);
+  };
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (action === 'ask') ask();
+    if (!text.trim()) askToType();
+    else if (action === 'ask') ask();
     else runSearch();
   };
   const asking = action === 'ask';
+  // Words from elsewhere (an example, Back) answer the hint too.
+  const hint = typeFirst && !text.trim();
   // Said while the button asks: the visitor sees what an answer costs before spending one.
   const answersLeft = useGuideAnswersLeft();
   const quota = asking ? answersLeft : null;
-  const cannotSubmit = asking ? !clampQuestion(text) : !text.trim();
   /** × and Esc: empty the box and keep the results on the page; the cursor stays in the box. */
   const emptyBox = () => {
     cancelLive();
     setText('');
+    setTypeFirst(false);
     field.current?.focus();
   };
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -178,9 +188,15 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
     document.addEventListener('keydown', onSlash);
     return () => document.removeEventListener('keydown', onSlash);
   }, []);
+  // Focus after the hint is on the page, so a screen reader reads it as the box's description.
+  useEffect(() => {
+    if (typeFirst) field.current?.focus();
+  }, [typeFirst]);
   const left = MAX_QUESTION - text.length;
   const describedBy =
-    [left <= SHOW_LEFT_FROM && 'q-left', quota && 'q-quota'].filter(Boolean).join(' ') || undefined;
+    [left <= SHOW_LEFT_FROM && 'q-left', hint && 'q-hint', quota && 'q-quota']
+      .filter(Boolean)
+      .join(' ') || undefined;
 
   return (
     <div className={`one-box${hero ? ' is-hero' : ''}`}>
@@ -254,7 +270,8 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
         )}
         {/* One button whose job follows the text: a few words search, a sentence asks. A new question replaces one
             still being answered. The ↵ hint shows only when Enter does what the button does. */}
-        <button type="submit" className="btn btn-primary" disabled={cannotSubmit}>
+        {/* Never disabled: a greyed primary button reads as broken. With an empty box it asks for words instead. */}
+        <button type="submit" className="btn btn-primary">
           {asking ? t('guide.ask') : t('search.submit')}
           {!asking && (
             <kbd className="enter-key" aria-hidden="true">
@@ -263,6 +280,11 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
           )}
         </button>
       </form>
+      {hint && (
+        <p id="q-hint" className="one-box-note" role="status">
+          {t('search.typeFirst')}
+        </p>
+      )}
       {quota && <GuideAnswersLeft id="q-quota" value={quota} />}
     </div>
   );
