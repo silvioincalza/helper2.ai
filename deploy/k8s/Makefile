@@ -204,12 +204,12 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 			|| { echo "Redis must run with AOF and no RDB snapshots (--save \"\" --appendonly yes --appendfsync everysec)"; exit 1; }; \
 		grep -q '^  volumeClaimTemplates:' <<<"$$redis" || { echo "Redis must keep /data on a PersistentVolumeClaim"; exit 1; }; \
 	done; \
-	echo "== daily limits and the guide cache TTL are rendered only where set: prod none, staging all six"; \
+	echo "== daily limits and the guide cache TTL are rendered only where set: prod the credit cap, staging all six"; \
 	limits='name: H2_(TAVILY_GUEST_SEARCH|TAVILY_GUEST_GUIDE|GUIDE_CLIENT_DAILY_QUESTIONS|TAVILY_GLOBAL_DAILY_CREDITS|GUIDE_DAILY_MODEL_CALLS|GUIDE_CACHE_TTL),'; \
 	for e in prod staging; do \
 		n=$$(helm template helper2 $(CHART) -f $(CHART)/values-$$e.yaml --set image.tag=000000000000 \
 			--show-only templates/app.yaml | grep -cE "$$limits" || true); \
-		want=0; [ $$e = staging ] && want=6; \
+		want=1; [ $$e = staging ] && want=6; \
 		[ "$$n" -eq "$$want" ] || { echo "$$e renders $$n daily limits and cache TTL, want $$want"; exit 1; }; \
 	done; \
 	echo "== prod signs in with GitHub and reuses similar guide answers at 0.96"; \
