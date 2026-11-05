@@ -257,12 +257,12 @@
     "covers": "Covers",
     "lastCheck": "Last check",
     "summary": "{{ok}} of {{total}} sources answered at their last check",
-    "warn_one": "{{count}} rate limited or skipped",
-    "warn_other": "{{count}} rate limited or skipped",
+    "warn_one": "{{count}} slow or limited",
+    "warn_other": "{{count}} slow or limited",
     "failed_one": "{{count}} failed",
     "failed_other": "{{count}} failed",
-    "never_one": "{{count}} not checked yet",
-    "never_other": "{{count}} not checked yet",
+    "idle_one": "{{count}} skipped or not checked",
+    "idle_other": "{{count}} skipped or not checked",
     "steps": {
       "ask": {
         "title": "One search, every source",
@@ -494,7 +494,8 @@
     "storageFailed": "Your browser blocked storage, so saved items will be lost when you leave this page.",
     "serverError": "Could not sync with your account.",
     "types": "Saved by type",
-    "localNoteSignIn": "Saved in this browser only. Sign in to keep them on every device."
+    "localNoteSignIn": "Saved in this browser only. Sign in to keep them on every device.",
+    "emptyHint": "Press Save on any result to keep it here."
   },
   "account": {
     "title": "Your account",
@@ -517,15 +518,19 @@
   "sourcesPage": {
     "title": "Sources",
     "lede": "These are all the sources Helper2.ai can search. Anything not listed here is not covered.",
-    "modes": "How sources work",
     "error": "Could not load the source list.",
     "disabled": "Disabled",
     "terms": "Terms",
     "neverChecked": "Never checked",
     "col": {
       "terms": "Terms",
-      "attribution": "Attribution"
+      "mode": "Mode",
+      "when": "When",
+      "newThisWeek": "New this week"
     },
+    "radar_one": "The Home radar shows {{shown}} of these {{count}} external source at a time.",
+    "radar_other": "The Home radar shows {{shown}} of these {{count}} external sources at a time.",
+    "internal": "ours, not on the radar",
     "responseTime": "Response time",
     "noCalls": "No calls yet",
     "pause": {
@@ -588,7 +593,12 @@
       "seen": "Items seen",
       "changed": "Items changed",
       "message": "Message",
-      "run": "Run"
+      "run": "Run",
+      "kind": "Kind",
+      "resource": "Resource",
+      "check": "What to check",
+      "opened": "Opened",
+      "decision": "Decision"
     },
     "kindFilter": "Kind",
     "allKinds": "All kinds",
@@ -1331,7 +1341,8 @@
     "onNow": "on now",
     "until": "until {{date}}",
     "firstSeen": "seen {{date}}",
-    "noDate": "date unknown"
+    "noDate": "date unknown",
+    "scrollBox": "{{name}}, the whole table"
   },
   "webSearches": {
     "feature": {

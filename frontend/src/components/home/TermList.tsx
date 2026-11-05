@@ -127,7 +127,7 @@ function TermHead({
 }
 
 /** `$ helper2 news · 38`, with 38 the list's `total` from the API (none while it loads or when it is empty). */
-function TermCommand({ command, total }: { command: string; total: number | null }) {
+export function TermCommand({ command, total }: { command: string; total: number | null }) {
   return (
     <p className="v4-list__cmd">
       <span aria-hidden="true">

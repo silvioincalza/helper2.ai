@@ -1,6 +1,7 @@
 # 0042 — Redesign: design system version 4
 
-**Status.** Accepted. Built for the header, the footer and Home; the other pages follow (decision 8).
+**Status.** Accepted. Built for the header, the footer, Home, Sources, Saved and the back office; the other pages
+follow (decision 10).
 **Replaces parts of:** [0040](0040-frontend-design.md): decisions 1 and 2 now; 4 and 7 when Results moves.
 **Builds on:** [0015](../guide/0015-ai-guide-evidence-gate.md), [0017](../guide/0017-guide-cost-guard.md),
 [0025](0025-frontend-one-box.md), [0038](../guide/0038-ai-content-marking.md)
@@ -100,6 +101,32 @@ they do now and how version 3 and 4 live side by side until the other pages move
 10. **Version 3 and 4 side by side, page by page.** Each page moves in its own pull request. When the last page has
     moved, the version 3 components, sizes and Space Grotesk go, and the `--v4-` sizes and fonts lose their prefix.
     No design flag: a page is either version 3 or 4.
+11. **Sources, Saved and the back office in the terminal style.** Each list page has a `$ helper2 … · N` line next to
+    its heading, with N from the API (`TermCommand` from `TermList`): `$ helper2 sources --all · N` (every source on
+    GET /sources), `$ helper2 saved · N` (the saved list), `$ helper2 review --open · N` (`total` of the queue; the
+    flag follows the status filter), `$ helper2 scouts --runs · N`, `$ helper2 examples · N`, `$ helper2 audit · N`;
+    the overview has `$ helper2 status`, without a count. Tables use the `v4-table` of `TermList`: Geist Mono,
+    UPPERCASE column headers, dashed rules, names that are titles in Geist. A wide table scrolls inside its own box
+    (`ScrollBox`, a named region a keyboard can reach); the page never scrolls sideways.
+    - **Sources** is one table: SOURCE · LAST CHECK · MODE · COVERS · WHEN · NEW THIS WEEK · TERMS. It uses the radar's
+      short names (the full name under it when it differs) and the radar's colours and grouping (`toneOf`): answering
+      orange, slow or limited amber (timed out, rate limited), failed red, skipped, not checked or disabled grey. Each
+      state is a word with a glyph (✓ ! × ○); the colour only repeats it. The table lists every source, ours included:
+      the mode column says "ours, not on the radar" when `external` is false. One line says how many the radar shows:
+      "The Home radar shows 3-5 of these N external sources at a time". The pause line and the metered source's web
+      credits sit under the name, the response time under the check time, the attribution under Terms. The mode chips
+      and the refresh on return stay as they were.
+    - **Saved** keeps its rows (type, host, saved date in Geist Mono, the title in Geist, the original link, Remove) and
+      its type chips. Loading, the sync error (with Try again) and the empty list are `ListState`, the states of
+      `TermList`; the empty list also links back to search. Signed in, the page shows the loading lines until the
+      account list arrives (`loading` on the bookmarks context), so it never says "Nothing saved yet" too early.
+    - **Back office:** the review queue is a table (KIND · RESOURCE · WHAT TO CHECK · OPENED · DECISION; the note and
+      Accept, Reject in the last column), Scout runs, the budgets and the audit trail are tables, the examples stay
+      dashed rows. A status is a coloured word with a glyph, not a pill. Every action stays as it was: Run now per
+      source, Run all now, the review decisions with their note, the examples and their drafts. The back office is
+      still loaded on demand and only over the VPN.
+    - Saved now loads on demand too, like Sources and Account: few visits start there. The initial JavaScript is
+      165.5 KiB gzip with this change (165.9 before).
 
 ## Alternatives
 - **Fonts: `geist` (Vercel).** The upstream package, but built for `next/font` (it imports `next/font/local`) and

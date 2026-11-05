@@ -7,7 +7,6 @@ import MissionPage from '@/pages/MissionPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 import PrivacyPage from '@/pages/PrivacyPage';
 import ResourcePage from '@/pages/ResourcePage';
-import SavedPage from '@/pages/SavedPage';
 import TermsPage from '@/pages/TermsPage';
 
 /** A route whose page module is loaded the first time the route matches. */
@@ -30,8 +29,8 @@ export const routes: RouteObject[] = [
       // Results live on /search (ADR 0040, 3).
       { path: 'search', element: <HomePage /> },
       { path: 'resource/:id', element: <ResourcePage /> },
-      { path: 'saved', element: <SavedPage /> },
-      // Few visits start on the sources or the account page: they load on demand, outside the first download.
+      // Few visits start on the saved, sources or account page: they load on demand, outside the first download.
+      { path: 'saved', lazy: page(() => import('@/pages/SavedPage')) },
       { path: 'sources', lazy: page(() => import('@/pages/SourcesPage')) },
       { path: 'account', lazy: page(() => import('@/pages/AccountPage')) },
       {

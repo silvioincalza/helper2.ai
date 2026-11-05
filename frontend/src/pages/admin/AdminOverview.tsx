@@ -8,9 +8,12 @@ import { Icon } from '@/components/Icon';
 import { useApi } from '@/hooks/useApi';
 import { useRetry } from '@/hooks/useRetry';
 import { formatDate, safeHref } from '@/lib/format';
+import { ScrollBox } from '@/components/ui/ScrollBox';
+import { AdminEmpty, AdminHead, AdminLoading } from './AdminHead';
 import { PATHS, RUN_TONE, SHOWN_PER_PATH } from './adminModel';
 
 const SHOWN_RUNS = 5;
+const COMMAND = 'helper2 status';
 /** The checks that hide an active example, in the order the page lists them. */
 const HIDING: readonly ExampleCheckOutcome[] = ['WEAK', 'FAIL', 'PENDING'];
 
@@ -26,13 +29,14 @@ export default function AdminOverview() {
 
   return (
     <section aria-labelledby="ov-h" className="h2-admin__part">
-      <h2 id="ov-h" ref={heading} tabIndex={-1} className="h2-admin__h">
-        {t('admin.overview.title')}
-      </h2>
+      <AdminHead
+        id="ov-h"
+        title={t('admin.overview.title')}
+        command={COMMAND}
+        headingRef={heading}
+      />
       {overview.loading && !data ? (
-        <p role="status" className="muted">
-          {t('common.loading')}
-        </p>
+        <AdminLoading command={COMMAND} />
       ) : overview.error !== undefined && !data ? (
         <StatePanel
           tone="error"
@@ -77,7 +81,7 @@ function OverviewParts({
         </p>
         <button
           type="button"
-          className="btn"
+          className="v4-btn"
           aria-disabled={refreshing || undefined}
           onClick={() => {
             if (!refreshing) onRefresh();
@@ -121,8 +125,8 @@ function OverviewParts({
 
       <HomeExampleCounts counts={data.homeExamples} />
 
-      <div className="table-wrap">
-        <table aria-labelledby="ov-budgets">
+      <ScrollBox label={t('admin.overview.budgets')}>
+        <table className="v4-table h2-admin__table" aria-labelledby="ov-budgets">
           <caption id="ov-budgets" className="h2-admin__caption">
             {t('admin.overview.budgets')}
           </caption>
@@ -156,11 +160,11 @@ function OverviewParts({
             </tr>
           </tbody>
         </table>
-      </div>
+      </ScrollBox>
 
       <h3 className="h2-admin__h3">{t('admin.overview.lastRuns')}</h3>
       {data.recentRuns.length === 0 ? (
-        <p className="muted">{t('admin.noRuns')}</p>
+        <AdminEmpty command="helper2 scouts --runs" text={t('admin.noRuns')} />
       ) : (
         <ul className="h2-admin__runs">
           {data.recentRuns.slice(0, SHOWN_RUNS).map((r) => (
