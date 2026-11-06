@@ -232,6 +232,7 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
     });
     const { container } = renderApp(`/resource/${ID}`);
     await screen.findByRole('heading', { name: 'Report wrong or outdated info' });
+    await settle();
     expect(await axeViolations(container)).toEqual([]);
   });
 
