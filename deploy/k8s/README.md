@@ -145,7 +145,10 @@ To go back, use `helm -n helper2 rollback helper2`.
 
 With `backup.enabled: true`, the CronJob `pg-backup` (02:30 in `backup.timeZone`) writes
 `pg_dump --no-owner | gzip` to `/backup/helper2-<date>.sql.gz` on the PVC `pg-backup` (7 days, kept on
-`helm uninstall`). Use a storage class that outlives a node (`backup.storageClassName`).
+`helm uninstall`). Use a storage class that outlives a node (`backup.storageClassName`). A failed `pg_dump`
+fails the Job; the dump replaces the old one only after `gzip -t` and a size check, and old dumps are deleted
+after that. `Helper2BackupFailed` fires on a failed Job, `Helper2BackupStale` when no run has succeeded for
+36 hours (the stale alert needs one successful run first: check the first night by hand).
 
 **Off-site copy** (`backup.offsite`, off by default): after the dump, rclone copies every dump the bucket
 lacks to S3-compatible storage (for example Cloudflare R2). It never deletes there; retention is the

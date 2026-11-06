@@ -171,7 +171,7 @@ HELM_ARGS = helper2 $(CHART) -n $(NS) -f $(CHART)/values-$(ENV).yaml \
 # PrometheusRule is checked against its CRD schema from the CRDs-catalog, pinned to a commit, and must hold the
 # alerts of deploy/monitoring/helper2-rules.yaml (read through the chart's files/ symlink).
 CRD_SCHEMAS := https://raw.githubusercontent.com/datreeio/CRDs-catalog/3eb90d47aba8d61919d4419dd38301536e32a94b/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json
-chart-check: ## helm lint + helm template | kubeconform, for staging and prod; Redis AOF + PVC; preStop, drain and grace period; images pinned by digest; redis.auth.revision restarts; daily limits only where set; admin Service, ingress-nginx on 8080 and the admin port; PrometheusRule = rule file; the chart renders no Secret; app.env checks
+chart-check: ## helm lint + helm template | kubeconform, for staging and prod; Redis AOF + PVC; preStop, drain and grace period; images pinned by digest; redis.auth.revision restarts; daily limits only where set; admin Service, ingress-nginx on 8080 and the admin port; PrometheusRule = rule file; the backup verifies its dump; the chart renders no Secret; app.env checks
 	@set -euo pipefail; \
 	env=$$(mktemp); bad=$$(mktemp); trap 'rm -f "$$env" "$$bad"' EXIT; \
 	printf 'H2_DATABASE_PASSWORD=ci\nH2_REDIS_PASSWORD=00000000000000000000000000000000\n' > "$$env"; \
@@ -250,7 +250,13 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 	rule=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 \
 		--set monitoring.prometheusRule.enabled=true --show-only templates/prometheusrule.yaml); \
 	diff <(grep -oE 'alert: [A-Za-z0-9]+' <<<"$$rule") <(grep -oE 'alert: [A-Za-z0-9]+' $(ROOT)/deploy/monitoring/helper2-rules.yaml) \
-		|| { echo "the PrometheusRule must hold the alerts of deploy/monitoring/helper2-rules.yaml"; exit 1; }
+		|| { echo "the PrometheusRule must hold the alerts of deploy/monitoring/helper2-rules.yaml"; exit 1; }; \
+	echo "== backup (ADR 0027): a failed pg_dump fails the Job, the dump is verified before it replaces the old one, old dumps go last"; \
+	bk=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --show-only templates/backup.yaml); \
+	grep -q 'set -o pipefail' <<< "$$bk" || { echo "backup: no pipefail"; exit 1; }; \
+	grep -q 'startingDeadlineSeconds: 3600' <<< "$$bk" || { echo "backup: no startingDeadlineSeconds"; exit 1; }; \
+	awk '/gzip -t "\$$f.tmp"/ {t=NR} /mv "\$$f.tmp" "\$$f"/ {m=NR} /find \/backup .* -delete/ {d=NR} END { exit !(t && m && d && t < m && m < d) }' <<< "$$bk" \
+		|| { echo "backup: gzip -t must come before mv, and find -delete after both"; exit 1; }
 
 check-env:
 	@test -f $(ENV)/app.env || { echo "$(ENV)/app.env missing: copy app.env.example and fill it"; exit 1; }
