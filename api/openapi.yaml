@@ -2084,12 +2084,18 @@ components:
       description: >-
         How the site funds itself (ADR 0057), as configured. Each value is null while that part is off (no link, no
         script), and all are null on the admin host. Read with GET /me, which every page already calls.
-      required: [githubSponsorsUrl, stripePaymentUrl, ga4MeasurementId, ethicalAdsPublisher]
+      required: [githubSponsorsUrl, stripePaymentUrl, ga4MeasurementId, ethicalAdsPublisher, adsenseClient, adsenseSlot]
       properties:
         githubSponsorsUrl: { type: [string, 'null'], format: uri, description: "GitHub Sponsors page (`H2_SUPPORT_GITHUB_SPONSORS_URL`)." }
         stripePaymentUrl: { type: [string, 'null'], format: uri, description: "Stripe Payment Link (`H2_SUPPORT_STRIPE_PAYMENT_URL`)." }
         ga4MeasurementId: { type: [string, 'null'], description: "Google Analytics 4 stream, loaded only after consent (`H2_ANALYTICS_GA4_MEASUREMENT_ID`)." }
         ethicalAdsPublisher: { type: [string, 'null'], description: "EthicalAds publisher of the one ad slot (`H2_ADS_ETHICALADS_PUBLISHER`)." }
+        adsenseClient:
+          type: [string, 'null']
+          description: >-
+            Google AdSense publisher, ca-pub-... (`H2_ADS_ADSENSE_CLIENT`, ADR 0059). Null unless the ad unit is set too:
+            then the page loads Google's consent tool and shows the slot on resource pages.
+        adsenseSlot: { type: [string, 'null'], description: "AdSense ad unit of the slot on resource pages (`H2_ADS_ADSENSE_SLOT`, ADR 0059)." }
 
     Preferences:
       type: object
