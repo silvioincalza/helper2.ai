@@ -449,7 +449,7 @@ helper2:
     initial-delay: ${H2_SCOUT_INITIAL_DELAY:PT20S}
     tick: ${H2_SCOUT_TICK:PT10M}
     cron: ${H2_SCOUT_CRON:0 7 3 * * *}
-    # Tavily credits the Scout's searches (every discovery category and LinkedIn, ADR 0051 and 0053) may spend per
+    # Tavily credits the Scout's searches (every discovery category and LinkedIn, ADR 0051 and 0061) may spend per
     # UTC day; past it the collectors due that day are SKIPPED and try again the next day. Counted on the global
     # credit counter too (the Sources page's web credits).
     daily-credits: ${H2_SCOUT_DAILY_CREDITS:40}
@@ -517,7 +517,7 @@ helper2:
         learn.microsoft.com/en-us/credentials=Microsoft Learn,
         nvidia.com=NVIDIA
     linkedin:
-      # Public LinkedIn pages about AI (ADR 0053): one Tavily search per query, restricted to linkedin.com. The URL
+      # Public LinkedIn pages about AI (ADR 0061): one Tavily search per query, restricted to linkedin.com. The URL
       # path decides the type (article, post, company or showcase page, event); profiles, jobs and learning pages are
       # dropped. Every kept page goes to the admin review list, never straight to the catalog. One credit per query
       # and pass (search_depth basic): 20 queries every 7 days = 20 credits a week, ~ 86 a month, all on one day.
@@ -670,7 +670,7 @@ helper2:
       cache-ttl: 30m
       deadline: ${H2_SOURCE_COURSE_SCOUT_DEADLINE:}
     linkedin-scout:
-      # Disabled (reported as SKIPPED) until H2_TAVILY_API_KEY is set. Calls Tavily, never LinkedIn (ADR 0053).
+      # Disabled (reported as SKIPPED) until H2_TAVILY_API_KEY is set. Calls Tavily, never LinkedIn (ADR 0061).
       enabled: ${H2_SOURCE_LINKEDIN_SCOUT_ENABLED:true}
       base-url: https://api.tavily.com
       token: ${H2_TAVILY_API_KEY:}

@@ -262,7 +262,8 @@ Open items:
   - **API fields:** `newThisWeek` on GET /sources, `limits` on GET /me and `total` on the recent and upcoming responses
     are in the API, on Home, in the Sources table and on the Account page. `skipReason` on every source status is
     used by the coverage line on Results. The Mission, Privacy and Terms pages take their numbers from GET
-    /api/v1/policy. Still to use: `limits` in the account panel.
+    /api/v1/policy. The account panel shows `limits` (guide questions, web searches for search, the reset time); still
+    to use: `limits.webSearches.guide`.
   - **Text pages: numbers still typed.** The API does not have them, so the pages type them: the 00:00 UTC reset, the
     web search counters (24 hours), the rate-limit counters (1 minute or 1 hour), the guide question counters
     (2 days), logs and request traces (3 months), usage totals (90 days), backups (7 days), articles and news from
@@ -287,11 +288,6 @@ Open items:
     go. Signed-in users can turn it off on the account page; guests have only reduced motion and the hold while the
     search box has focus, and no switch. Find a pause for them that needs no new browser storage key, or decide the
     storage key with the Privacy page.
-- **Frontend design** ([0040](adr/frontend/0040-frontend-design.md)) is done and on staging. Prod gets it with the next release:
-  cut one once staging looks right.
-- Tracking cookies are planned. Before the first one: consent banner, cookie notice, Privacy page and record of
-  processing, all in the same pull request, wording checked by a lawyer.
-
 - **Home examples** ([0049](adr/search/0049-home-examples.md)), next steps in this order:
   - A lawyer confirms the Art. 50 points of [0049](adr/search/0049-home-examples.md) for accepted AI drafts; until then
     they are labelled and marked like any AI-written text.
@@ -356,7 +352,7 @@ Fix an item or accept it; when it no longer holds, remove it.
 - Hugging Face provider models get no enrichment (the list API has no description). Tavily discovery finds consumer tools, hosting and prompt libraries, but each product waits for an admin ([ADR 0051](adr/scout/0051-tavily-discovery.md)); measure the weekly review load and the share accepted, then tune `min-score` and the categories. Course pages wait for an admin each week, and an accepted course is still added to the curated list by hand: index it on accept, like resource candidates. ([ADR 0020](adr/scout/0020-scout-collectors.md))
 - Tavily discovery follow-ups ([ADR 0051](adr/scout/0051-tavily-discovery.md)): a weekly alert on the Scout's credits (`helper2_tavily_credits_total{feature=~"scout-discovery|scout-linkedin"}`); a host deny list and at most 2 list pages per host per pass; a replay evaluation on a recorded snapshot (the search facts are now kept per record and candidate) to tune each category's `min-score`, the list-title rule and the words; drop vendor compare and alternatives pages; recognise Chrome Web Store, Firefox add-on and GPT links; shorter excerpts for press pages and no email addresses in excerpts; expire open candidates; allow only collectors that propose candidates as their source. A rejected candidate can come back once its review item is purged (180 days after the decision).
 - Discovery categories ([ADR 0051](adr/scout/0051-tavily-discovery.md)): an accepted candidate keeps only its first finder's search facts in full in `discovery` (the others are in `foundBy`). A category's first day is its place in the list, so moving a category that never ran moves its first day. The Scout checks only its own daily credit cap, not the live search's global one. The Terms describe the labels the UI shows today ("AI-written", "AI summary", "Extracted by AI"); add "AI-estimated" when a value is shown with it. The health and legal notices are on the Sources rows and the admin candidate cards, not yet on the resource page of an accepted tool.
-- LinkedIn via Tavily ([ADR 0053](adr/scout/0053-linkedin-via-tavily.md)): an accepted company page links to LinkedIn, not to the product's own site, until enrichment or an admin adds it; an accepted LinkedIn event has no days and is not in Next events until it is added to the curated list by hand; measure in the first weeks how many candidates a pass sends and how many are accepted, and drop a query or a page kind that brings only noise; its 20 searches fall on one day, so on that day the Scout's daily cap of 40 leaves discovery about 20 credits (stagger it or split the queries over the week if a category is skipped for the cap).
+- LinkedIn via Tavily ([ADR 0061](adr/scout/0061-linkedin-via-tavily.md)): an accepted company page links to LinkedIn, not to the product's own site, until enrichment or an admin adds it; an accepted LinkedIn event has no days and is not in Next events until it is added to the curated list by hand; measure in the first weeks how many candidates a pass sends and how many are accepted, and drop a query or a page kind that brings only noise; its 20 searches fall on one day, so on that day the Scout's daily cap of 40 leaves discovery about 20 credits (stagger it or split the queries over the week if a category is skipped for the cap).
 - A catch-up run that ends just before the cron time is followed by the cron's run a few minutes later ([ADR 0018](adr/scout/0018-scout-runner.md)).
 - An event whose source gives no day is not listed; event days can be a few hours off far from UTC; conference dates are as correct as ai-deadlines; curated events need a research pass to stay current. ([ADR 0022](adr/scout/0022-next-events.md))
 

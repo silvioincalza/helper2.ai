@@ -29,7 +29,7 @@ import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
 
 /**
- * Public LinkedIn pages about AI (ADR 0053): articles, posts, company and showcase pages, events.
+ * Public LinkedIn pages about AI (ADR 0061): articles, posts, company and showcase pages, events.
  * LinkedIn has no search API and forbids scraping, so we never call LinkedIn: one Tavily search per
  * fixed query, restricted to linkedin.com with include_domains, on a weekly interval (one credit
  * per query and pass, search_depth basic). The URL path alone decides what a page is; personal

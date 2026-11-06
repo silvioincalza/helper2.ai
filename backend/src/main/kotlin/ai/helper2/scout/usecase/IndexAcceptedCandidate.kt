@@ -51,7 +51,7 @@ fun interface CatalogLookup {
  * values are checked again here, because the review item is stored text. When several categories
  * found it, it is one record, of the first collector that found it, with every category as a tag
  * and every finder in its extra (foundBy): the same page and excerpt once, not once per category.
- * Its type must be one a collector that found it declares (ADR 0053): LinkedIn may propose
+ * Its type must be one a collector that found it declares (ADR 0061): LinkedIn may propose
  * articles, posts and events, a discovery category only its products.
  */
 class IndexAcceptedCandidate(

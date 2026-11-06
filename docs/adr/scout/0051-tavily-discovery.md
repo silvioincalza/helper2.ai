@@ -139,7 +139,7 @@ are candidates in the admin review list.
 
    A candidate that fails the checks is refused (400) and the item stays open. Rejecting records the decision only.
    A category declares its product type and ARTICLE; a merged candidate may have the type of any category that found
-   it. LinkedIn ([0053](0053-linkedin-via-tavily.md)) declares ARTICLE, NEWS, PRODUCT and EVENT.
+   it. LinkedIn ([0061](0061-linkedin-via-tavily.md)) declares ARTICLE, NEWS, PRODUCT and EVENT.
 10. **Credits are counted and capped.** Every discovery search adds its credits to the day's global credit counter,
     the one the live search counts on and the Sources page shows ([0037](../search/0037-tavily-store-and-daily-quota.md)),
     and to the Scout's own counter (`ScoutTavilyCredits`; Redis, same key, field `scout-credits`). A search costs
@@ -147,7 +147,7 @@ are candidates in the admin review list.
     `helper2.tavily.credits{feature="scout-discovery"}`. Past `helper2.scout.daily-credits`
     (`H2_SCOUT_DAILY_CREDITS`, 40) the categories due that day are SKIPPED ("Daily Tavily credit cap of the
     Scout reached") and try again the next day: the skip is `CollectedBatch.deferred`, so their pass stays open. When
-    the counter cannot be read, the cap counts as reached. LinkedIn ([0053](0053-linkedin-via-tavily.md)) counts on
+    the counter cannot be read, the cap counts as reached. LinkedIn ([0061](0061-linkedin-via-tavily.md)) counts on
     the same counters and cap, with the feature `scout-linkedin`.
 11. **Failed searches.** A search that fails alone is logged and skipped; the others, already paid for, are kept. When
     half or more of a category's searches fail (an outage, a circuit that opened mid-pass), its pass fails, its
@@ -192,7 +192,7 @@ are candidates in the admin review list.
   week), to measure in the first weeks. If it is too many, raise a category's `min-score`, turn on its
   `require-keyword`, or turn it off (`enabled: false`).
 - Credits: 39 searches × 2 credits = 78 a week, ~335 a month (390 in a month with 5 passes). With `tavily-scout`
-  (~42), `course-scout` (~43) and `linkedin-scout` (~86, [0053](0053-linkedin-via-tavily.md)) the Scout uses ~506
+  (~42), `course-scout` (~43) and `linkedin-scout` (~86, [0061](0061-linkedin-via-tavily.md)) the Scout uses ~506
   credits a month, out of the plan's 14,000 shared with live search. The daily cap (40) is about four times a normal
   day (5 categories × ~1.2 searches × 2 credits); on LinkedIn's day its 20 basic searches bring the day to about 32.
 - The global daily credit cap of the live search (`H2_TAVILY_GLOBAL_DAILY_CREDITS`) now counts the Scout's discovery

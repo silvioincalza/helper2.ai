@@ -227,7 +227,7 @@ class SourcesConfiguration {
 
   /**
    * Weekly Tavily searches restricted to linkedin.com; every page it keeps goes to the admin review
-   * list (ADR 0053). Its credits count on the Scout's daily cap, as discovery's.
+   * list (ADR 0061). Its credits count on the Scout's daily cap, as discovery's.
    */
   @Bean
   LinkedInCollector linkedInCollector(

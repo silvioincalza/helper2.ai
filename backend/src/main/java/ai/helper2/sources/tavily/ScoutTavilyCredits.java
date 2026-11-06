@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 import tools.jackson.databind.JsonNode;
 
 /**
- * The Tavily credits the Scout's searches spend: discovery (ADR 0051) and LinkedIn (ADR 0053). Each
+ * The Tavily credits the Scout's searches spend: discovery (ADR 0051) and LinkedIn (ADR 0061). Each
  * search adds its credits to the day's global credit counter, the one the live search counts on and
  * the Sources page shows, and to the Scout's own counter, which has its own daily cap: past it
  * these collectors skip until the next UTC day. The credits metric tells them apart by its feature

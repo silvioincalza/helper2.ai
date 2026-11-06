@@ -230,7 +230,7 @@ groups:
         # 14,000 credits a month; the Scout uses about 506, prod may spend 250 a day (app.dailyLimits.webSearchCredits)
         # and staging 150. The alert fires at 80% of prod's cap, before searches lose Tavily; change it with the cap.
         # The Scout's discovery and LinkedIn searches count here too (features scout-discovery and scout-linkedin, at
-        # most 40 a day together, ADR 0051 and 0053), as they count on the daily cap; its other Tavily queries do not.
+        # most 40 a day together, ADR 0051 and 0061), as they count on the daily cap; its other Tavily queries do not.
         expr: sum by (environment) (increase(helper2_tavily_credits_total{application="helper2"}[1d])) > 200
         for: 0m
         labels:

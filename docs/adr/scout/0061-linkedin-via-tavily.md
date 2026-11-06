@@ -1,4 +1,4 @@
-# 0053 — LinkedIn via Tavily: public articles, posts, company pages and events, all reviewed
+# 0061 — LinkedIn via Tavily: public articles, posts, company pages and events, all reviewed
 
 **Status.** Accepted. **Builds on:** [0018](0018-scout-runner.md), [0020](0020-scout-collectors.md), [0022](0022-next-events.md), [0033](../foundation/0033-resilience-policies.md), [0034](../operations/0034-data-retention.md), [0037](../search/0037-tavily-store-and-daily-quota.md), [0051](0051-tavily-discovery.md)
 
@@ -122,4 +122,4 @@ page title and in the URL.
 - `deploy/monitoring/helper2-rules.yaml` — `Helper2ScoutCollectorStale`, `Helper2TavilyCreditsHigh`.
 - Tests: `LinkedInCollectorTest`, `IndexAcceptedCandidateTest`, `ResourceCandidateJsonTest`,
   `SourcesPropertiesBindingTest`, `CatalogPurgeExpiredDataIT`, the rule tests.
-- Diagrams: [flow](../../diagrams/flow-0053-linkedin-via-tavily.svg) · [sequence](../../diagrams/sequence-0053-linkedin-via-tavily.svg).
+- Diagrams: [flow](../../diagrams/flow-0061-linkedin-via-tavily.svg) · [sequence](../../diagrams/sequence-0061-linkedin-via-tavily.svg).

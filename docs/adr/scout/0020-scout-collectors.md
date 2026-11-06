@@ -64,7 +64,7 @@ A collector returns hits, which the runner indexes, and candidates, which the ru
    month, capped at 40 a day. Off without `H2_TAVILY_API_KEY`.
 
 9. **LinkedIn via Tavily** (`linkedin-scout`, every `H2_SCOUT_LINKEDIN_INTERVAL`, 7 days;
-   [0053](0053-linkedin-via-tavily.md)). 20 Tavily searches restricted to `linkedin.com`; we never call LinkedIn.
+   [0061](0061-linkedin-via-tavily.md)). 20 Tavily searches restricted to `linkedin.com`; we never call LinkedIn.
    The URL path makes a page an article, a post, a company page or an event; every one becomes a `RESOURCE_CANDIDATE`
    review item, and accepting it indexes it. About 86 credits a month, on the Scout's daily cap of 40 with discovery's. Off without `H2_TAVILY_API_KEY`.
 ## Consequences
