@@ -52,6 +52,16 @@ function isCommandKey(e: KeyboardEvent): boolean {
   return !typing && !e.ctrlKey && !e.metaKey && !e.altKey;
 }
 
+/** The picks still open in [list]: the same map when none dropped out. */
+function openPicks(
+  picked: ReadonlyMap<string, ReviewItem>,
+  list: ReviewItem[],
+): ReadonlyMap<string, ReviewItem> {
+  const open = new Set(list.filter((i) => i.status === 'OPEN').map((i) => i.id));
+  const kept = [...picked].filter(([id]) => open.has(id));
+  return kept.length === picked.size ? picked : new Map(kept);
+}
+
 /** The item after [id] in [list], else the one before it: what to review next once [id] is decided. */
 function nextAfter(list: ReviewItem[], id: string): string | undefined {
   const at = list.findIndex((i) => i.id === id);
@@ -84,7 +94,7 @@ export default function ReviewQueuePage() {
   const [announcement, setAnnouncement] = useState('');
   const [help, setHelp] = useState(false);
   /** Open items picked for a bulk decision, by id; kept across reloads until decided or cleared. */
-  const [picked, setPicked] = useState<ReadonlyMap<string, ReviewItem>>(new Map());
+  const [pickedIds, setPicked] = useState<ReadonlyMap<string, ReviewItem>>(new Map());
   const [bulkResult, setBulkResult] = useState('');
   /** Set by a decision: once the list has reloaded, the selected row takes focus. */
   const focusAfterLoad = useRef(false);
@@ -101,6 +111,9 @@ export default function ReviewQueuePage() {
   const categories = (sources.data ?? sources.previous ?? []).filter((s) => s.family);
   const list = items.data?.items ?? [];
   const selected = list.find((i) => i.id === selectedId) ?? list[0];
+  // Picks live on one page (a new page or filter clears them): once the list has loaded, an item no longer open in it
+  // is decided, so it is not picked any more.
+  const picked = items.data ? openPicks(pickedIds, list) : pickedIds;
 
   useEffect(() => {
     if (items.loading || !focusAfterLoad.current) return;
@@ -164,7 +177,7 @@ export default function ReviewQueuePage() {
 
   /**
    * Decides the picked items together. The items that failed stay picked, so the reason is easy to check; the list
-   * reloads and the selected row takes focus. When the request itself fails, the list reloads too and every pick stays.
+   * reloads and the selected row takes focus. When the request itself fails, the list reloads too and the picks still open stay.
    */
   const resolveMany = async (decision: Decision, text: string | undefined) => {
     if (busy || picked.size === 0) return;
@@ -182,7 +195,7 @@ export default function ReviewQueuePage() {
       focusAfterLoad.current = true;
       items.reload();
     } catch {
-      // The server decides each item on its own, so some may be decided already: reload, and keep the picks.
+      // The server decides each item on its own, so some may be decided already: reload; the picks still open stay.
       setActionError({ kind: 'failed' });
       items.reload();
     } finally {

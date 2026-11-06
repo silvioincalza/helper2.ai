@@ -188,6 +188,7 @@ describe('Feature: deciding several review items at once (ADR 0045)', () => {
       m.calls.filter((c) => c.method === 'GET' && c.path === '/admin/review-items').length,
     ).toBeGreaterThan(1);
     expect(box(2)).toBeChecked();
+    expect(bar()).toHaveTextContent('1 selected');
   });
 
   it('Scenario: a key typed on the box of another row acts on that row, not on the selected one', async () => {
