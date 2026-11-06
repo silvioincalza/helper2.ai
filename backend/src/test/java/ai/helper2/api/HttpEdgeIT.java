@@ -187,6 +187,16 @@ class HttpEdgeIT {
     assertThat(last).isEqualTo(429);
   }
 
+  @Test
+  void theAdminHostHasNoRateLimitKeyedOnAnAddressTheClientCouldChoose() throws Exception {
+    // ADR 0035: the admin host is closed by the network, not by a per-address counter that a
+    // forwarded header could steer there.
+    for (int i = 0; i < 6; i++) {
+      assertThat(getAt(ADMIN_PORT, "/api/v1/recent").statusCode()).isEqualTo(200);
+    }
+    assertThat(redis.keys("h2:v1:rate:*")).isEmpty();
+  }
+
   private static java.util.List<String> sessionCookies(HttpResponse<?> r) {
     return r.headers().allValues("Set-Cookie").stream()
         .filter(c -> c.startsWith("SESSION="))
